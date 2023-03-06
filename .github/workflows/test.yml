@@ -21,11 +21,6 @@ jobs:
           - controlplane
           - artifact-cas
     steps:
-      - name: Install Cosign
-        uses: sigstore/cosign-installer@v2.5.0
-      - name: Install ChainLoop
-        run: |
-          curl -sfL https://chainloop.dev/install.sh | bash -s -- --version v${{ env.CHAINLOOP_VERSION }}
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
         if: ${{ matrix.app != 'main-module' }}
@@ -40,10 +35,6 @@ jobs:
           go-version-file: go.mod
           cache: true
           cache-dependency-path: go.sum
-
-      - name: Initialize Attestation
-        run: |
-          chainloop attestation init
 
       # Check that the generated ent code is up to date
       # see https://entgo.io/docs/ci/
@@ -60,25 +51,3 @@ jobs:
       - name: Test top level modules
         if: ${{ matrix.app == 'main-module' }}
         run: make test
-
-      - name: Finish and Record Attestation
-        if: ${{ success() }}
-        run: |
-          chainloop attestation status --full
-          chainloop attestation push --key env://CHAINLOOP_SIGNING_KEY
-        env:
-          CHAINLOOP_SIGNING_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
-          CHAINLOOP_SIGNING_KEY: ${{ secrets.COSIGN_KEY }}
-
-      - name: Mark attestation as failed
-        if: ${{ failure() }}
-        run: |
-          chainloop attestation reset
-      - name: Mark attestation as cancelled
-        if: ${{ cancelled() }}
-        run: |
-          chainloop attestation reset --trigger cancellation
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      CHAINLOOP_VERSION: 0.8.89
-      CHAINLOOP_ROBOT_ACCOUNT: ${{ secrets.CHAINLOOP_WF_BUILD_AND_TEST }}
