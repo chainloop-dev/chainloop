@@ -1,0 +1,24 @@
+# Example config file
+auth:
+  robot_account_public_key_path: "./configs/devkeys/cas.public.pem"
+
+server:
+  http:
+    addr: 0.0.0.0:8001
+    timeout: 1s
+  grpc:
+    addr: 0.0.0.0:9001
+    timeout: 1s
+  http_metrics:
+    addr: 0.0.0.0:5001
+
+credentials_service:
+  # Remember to run vault via docker compose up
+  vault:
+    address: ${VAULT_ADDRESS:http://0.0.0.0:8200}
+    token: ${VAULT_TOKEN:notasecret}
+
+observability:
+  sentry:
+    dsn: "http://sentryDomain"
+    environment: development # production

@@ -1,0 +1,84 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  # We want to call this workflow during release too
+  workflow_call:
+
+jobs:
+  build_and_test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app:
+          - main-module
+          - cli
+          - controlplane
+          - artifact-cas
+    steps:
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v2.5.0
+      - name: Install ChainLoop
+        run: |
+          curl -sfL https://chainloop.dev/install.sh | bash -s -- --version v${{ env.CHAINLOOP_VERSION }}
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        if: ${{ matrix.app != 'main-module' }}
+        with:
+          go-version-file: app/${{ matrix.app }}/go.mod
+          cache: true
+          cache-dependency-path: app/${{ matrix.app }}/go.sum
+
+      - uses: actions/setup-go@v3
+        if: ${{ matrix.app == 'main-module' }}
+        with:
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Initialize Attestation
+        run: |
+          chainloop attestation init
+
+      # Check that the generated ent code is up to date
+      # see https://entgo.io/docs/ci/
+      - uses: ent/contrib/ci@master
+        name: "Check all generated code is checked in"
+        if: ${{ matrix.app != 'main-module' }}
+        with:
+          working-directory: app/${{ matrix.app }}
+
+      - name: Test
+        if: ${{ matrix.app != 'main-module' }}
+        run: make -C app/${{ matrix.app }} test
+
+      - name: Test top level modules
+        if: ${{ matrix.app == 'main-module' }}
+        run: make test
+
+      - name: Finish and Record Attestation
+        if: ${{ success() }}
+        run: |
+          chainloop attestation status --full
+          chainloop attestation push --key env://CHAINLOOP_SIGNING_KEY
+        env:
+          CHAINLOOP_SIGNING_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+          CHAINLOOP_SIGNING_KEY: ${{ secrets.COSIGN_KEY }}
+
+      - name: Mark attestation as failed
+        if: ${{ failure() }}
+        run: |
+          chainloop attestation reset
+      - name: Mark attestation as cancelled
+        if: ${{ cancelled() }}
+        run: |
+          chainloop attestation reset --trigger cancellation
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CHAINLOOP_VERSION: 0.8.89
+      CHAINLOOP_ROBOT_ACCOUNT: ${{ secrets.CHAINLOOP_WF_BUILD_AND_TEST }}

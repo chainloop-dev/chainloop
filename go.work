@@ -1,0 +1,8 @@
+go 1.20
+
+use (
+	.
+	./app/artifact-cas
+	./app/cli
+	./app/controlplane
+)

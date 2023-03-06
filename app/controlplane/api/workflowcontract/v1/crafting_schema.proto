@@ -1,0 +1,61 @@
+//
+// Copyright 2023 The Chainloop Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package workflowcontract.v1;
+
+option go_package = "github.com/chainloop-dev/bedrock/app/controlplane/api/workflowcontract/v1";
+
+import "validate/validate.proto";
+
+// Schema definition provided by the user to the tool
+// that defines the schema of the workflowRun
+message CraftingSchema {
+    // Version of the schema, do not confuse with the revision of the content
+    string schema_version = 1 [(validate.rules).string.const = "v1"];
+    repeated Material materials = 2;
+    repeated string env_allow_list = 3;
+    Runner runner = 4;
+
+    message Runner {
+        RunnerType type = 1 [(validate.rules).enum = {not_in: [0]}];
+
+        enum RunnerType {
+            RUNNER_TYPE_UNSPECIFIED = 0;
+            GITHUB_ACTION = 1;
+            GITLAB_PIPELINE = 2;
+        } 
+    }
+
+    message Material {
+        MaterialType type = 1 [(validate.rules).enum = {not_in: [0]}];
+        string name = 2 [(validate.rules).string.pattern = "^[\\w|-]+$"]; // Single word optionally separated with _ or -
+        bool optional = 3;
+        // If a material is set as output it will get added to the subject in the statement
+        bool output = 4;
+
+        enum MaterialType {
+            MATERIAL_TYPE_UNSPECIFIED = 0;
+            STRING = 1;
+            CONTAINER_IMAGE = 2;
+            ARTIFACT = 3;
+            SBOM_CYCLONEDX_JSON = 4;
+            SBOM_SPDX_JSON = 5;
+            // SARIF = 5;
+        } 
+    }
+}
+

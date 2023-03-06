@@ -1,0 +1,123 @@
+//
+// Copyright 2023 The Chainloop Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package controlplane.v1;
+
+option go_package = "github.com/chainloop-dev/bedrock/app/controlplane/api/controlplane/v1;v1";
+
+import "validate/validate.proto";
+import "controlplane/v1/response_messages.proto";
+import "controlplane/v1/pagination.proto";
+
+// This service is used by the CLI to generate attestation
+service AttestationService {
+	rpc GetContract (AttestationServiceGetContractRequest) returns (AttestationServiceGetContractResponse);
+	rpc Init (AttestationServiceInitRequest) returns (AttestationServiceInitResponse);
+	rpc Store (AttestationServiceStoreRequest) returns (AttestationServiceStoreResponse);
+  // There is another endpoint to get credentials via casCredentialsService.Get
+  // This one is kept since it leverages robot-accounts in the context of a workflow
+	rpc GetUploadCreds (AttestationServiceGetUploadCredsRequest) returns (AttestationServiceGetUploadCredsResponse);
+	rpc Cancel (AttestationServiceCancelRequest) returns (AttestationServiceCancelResponse);
+}
+
+// Administrative service for the operator
+service WorkflowRunService {
+	rpc List (WorkflowRunServiceListRequest) returns (WorkflowRunServiceListResponse);
+	rpc View (WorkflowRunServiceViewRequest) returns (WorkflowRunServiceViewResponse);
+}
+
+message AttestationServiceGetContractRequest {
+  int32 contract_revision = 1;
+}
+
+message AttestationServiceGetContractResponse {
+  Result result = 1;
+  
+  message Result {
+    WorkflowItem workflow = 1;
+    WorkflowContractVersionItem contract = 2;
+  }
+}
+
+message AttestationServiceInitRequest {
+  int32 contract_revision = 1;
+  string job_url = 2;
+}
+
+message AttestationServiceInitResponse {
+  Result result = 1;
+  
+  message Result {
+    WorkflowRunItem workflow_run = 2;
+  }
+}
+
+message AttestationServiceStoreRequest {
+  // encoded DSEE envelope
+  bytes attestation = 1 [(validate.rules).bytes.min_len = 1];
+  string workflow_run_id = 2 [(validate.rules).string = {min_len: 1}];
+}
+
+message AttestationServiceStoreResponse {}
+
+message AttestationServiceCancelRequest {
+  string workflow_run_id = 1 [(validate.rules).string = {min_len: 1}];
+  TriggerType trigger = 2 [(validate.rules).enum = {not_in: [0]}];
+  string reason = 3;
+
+  enum TriggerType {
+      TRIGGER_TYPE_UNSPECIFIED = 0;
+      TRIGGER_TYPE_FAILURE = 1;
+      TRIGGER_TYPE_CANCELLATION = 2;
+  } 
+}
+
+message AttestationServiceCancelResponse {}
+
+message WorkflowRunServiceListRequest {
+  // Filter by workflow
+  string workflow_id = 1;
+  PaginationRequest pagination = 2;
+}
+
+message WorkflowRunServiceListResponse {
+  repeated WorkflowRunItem result = 1;
+  PaginationResponse pagination = 2;
+}
+
+message WorkflowRunServiceViewRequest {
+  string id = 1 [(validate.rules).string.uuid = true];
+}
+
+message WorkflowRunServiceViewResponse {
+  Result result = 1;
+
+  message Result {
+    WorkflowRunItem workflow_run = 1;
+    AttestationItem attestation = 2;
+  }
+}
+
+
+message AttestationServiceGetUploadCredsRequest {}
+message AttestationServiceGetUploadCredsResponse {
+  Result result = 1;
+  
+  message Result {
+    string token = 2;
+  }
+}

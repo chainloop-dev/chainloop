@@ -1,0 +1,80 @@
+project_name: Chainloop Bedrock
+env:
+  - CGO_ENABLED=0
+builds:
+  - binary: control-plane
+    id: control-plane
+    main: ./app/controlplane/cmd
+    ldflags:
+      - -X github.com/chainloop-dev/bedrock/app/controlplane/internal/server.Version={{ .Version }}
+      - -X main.Version={{ .Version }}
+    targets:
+      - linux_amd64
+  - binary: artifact-cas
+    id: artifact-cas
+    main: ./app/artifact-cas/cmd
+    ldflags:
+      - -X github.com/chainloop-dev/bedrock/app/artifact-cas/internal/server.Version={{ .Version }}
+      - -X main.Version={{ .Version }}
+    targets:
+      - linux_amd64
+  - binary: chainloop
+    id: cli
+    main: ./app/cli
+    ldflags:
+      - -X github.com/chainloop-dev/bedrock/app/cli/cmd.Version={{ .Version }}
+    targets:
+      - darwin_amd64
+      - darwin_arm64
+      - linux_amd64
+      - linux_arm64
+archives:
+  - builds:
+      - cli
+    name_template: "chainloop-cli-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+    # Override default to not to include the readme nor license file
+    files:
+      - none*
+blobs:
+  - provider: gs
+    bucket: chainloop-releases-public
+    folder: "cli/{{ .Version }}"
+
+checksum:
+  name_template: "checksums.txt"
+
+signs:
+  # COSIGN_PASSWORD is also required to be present
+  - cmd: cosign
+    args:
+      [
+        "sign-blob",
+        "--key=env://COSIGN_KEY",
+        "--output-signature=${signature}",
+        "${artifact}",
+      ]
+    artifacts: all
+
+docker_signs:
+  # COSIGN_PASSWORD is also required to be present
+  - cmd: cosign
+    args: ["sign", "--key=env://COSIGN_KEY", "${artifact}"]
+    artifacts: all
+
+dockers:
+  - dockerfile: app/controlplane/Dockerfile.goreleaser
+    ids:
+      - control-plane
+    image_templates:
+      - "us-east1-docker.pkg.dev/bedrock-371810/chainloop/control-plane:{{ .Tag }}"
+      - "us-east1-docker.pkg.dev/bedrock-371810/chainloop/control-plane:latest"
+  - dockerfile: app/artifact-cas/Dockerfile.goreleaser
+    ids:
+      - artifact-cas
+    image_templates:
+      - "us-east1-docker.pkg.dev/bedrock-371810/chainloop/artifact-cas:{{ .Tag }}"
+      - "us-east1-docker.pkg.dev/bedrock-371810/chainloop/artifact-cas:latest"
+
+release:
+  extra_files:
+    - glob: ./.github/workflows/cosign.pub

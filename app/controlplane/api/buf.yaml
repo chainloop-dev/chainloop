@@ -1,0 +1,17 @@
+version: v1
+breaking:
+  use:
+    - FILE
+deps:
+  - buf.build/googleapis/googleapis
+  - buf.build/envoyproxy/protoc-gen-validate:45685e052c7e406b9fbd441fc7a568a5
+lint:
+  use:
+    - DEFAULT
+  ignore_only:
+    ENUM_ZERO_VALUE_SUFFIX:
+      - controlplane/v1/pagination.proto
+    ENUM_VALUE_PREFIX:
+      # We want to keep these enums human friendly
+      - workflowcontract/v1/crafting_schema.proto
+  allow_comment_ignores: true
