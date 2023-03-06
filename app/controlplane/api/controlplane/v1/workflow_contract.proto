@@ -1,0 +1,86 @@
+//
+// Copyright 2023 The Chainloop Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package controlplane.v1;
+
+option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
+
+import "controlplane/v1/response_messages.proto";
+import "validate/validate.proto";
+import "workflowcontract/v1/crafting_schema.proto";
+
+service WorkflowContractService {
+	rpc List (WorkflowContractServiceListRequest) returns (WorkflowContractServiceListResponse);
+	rpc Create (WorkflowContractServiceCreateRequest) returns (WorkflowContractServiceCreateResponse);
+	rpc Update (WorkflowContractServiceUpdateRequest) returns (WorkflowContractServiceUpdateResponse);
+	rpc Describe (WorkflowContractServiceDescribeRequest) returns (WorkflowContractServiceDescribeResponse);
+	rpc Delete (WorkflowContractServiceDeleteRequest) returns (WorkflowContractServiceDeleteResponse);
+}
+
+message WorkflowContractServiceListRequest {}
+
+message WorkflowContractServiceListResponse {
+	repeated WorkflowContractItem result = 1;
+}
+
+message WorkflowContractServiceCreateRequest {
+  string name = 1 [(validate.rules).string = {min_len: 1}]; 
+  // Ready to support multiple schema versions
+  oneof contract {
+    workflowcontract.v1.CraftingSchema v1 = 2;
+  }
+}
+
+message WorkflowContractServiceCreateResponse {
+	WorkflowContractItem result = 1;
+}
+
+message WorkflowContractServiceUpdateRequest {
+  string id = 1 [(validate.rules).string.uuid = true];
+  string name = 2;
+  oneof contract {
+    workflowcontract.v1.CraftingSchema v1 = 3;
+  }
+}
+
+message WorkflowContractServiceUpdateResponse {
+  Result result = 1;
+  message Result {
+    WorkflowContractItem contract = 1;
+    WorkflowContractVersionItem revision = 2;
+  }
+}
+
+message WorkflowContractServiceDescribeRequest {
+  string id = 1 [(validate.rules).string.uuid = true];
+  int32 revision = 2;
+}
+
+message WorkflowContractServiceDescribeResponse {
+  Result result = 1;
+  message Result {
+    WorkflowContractItem contract = 1;
+    WorkflowContractVersionItem revision = 2;
+  }
+}
+
+
+message WorkflowContractServiceDeleteRequest {
+  string id = 1 [(validate.rules).string.uuid = true];
+}
+
+message WorkflowContractServiceDeleteResponse {}

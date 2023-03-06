@@ -1,0 +1,4 @@
+# Empty Chainloop contract valid for a workflow run in a Github Action
+schemaVersion: "v1"
+runner:
+  type: "GITHUB_ACTION"

@@ -1,0 +1,24 @@
+version: v1
+plugins:
+  - name: go
+    out: .
+    opt: paths=source_relative
+  - name: go-errors
+    out: .
+    opt: paths=source_relative
+  - name: go-grpc
+    out: .
+    opt:
+      - paths=source_relative
+  - name: go-http
+    out: .
+    opt: paths=source_relative
+  - name: validate
+    out: .
+    opt: paths=source_relative,lang=go
+  - remote: buf.build/stephenh/plugins/ts-proto
+    out: ./gen/frontend
+    opt:
+      - outputClientImpl=grpc-web # client implementation it generates
+      - esModuleInterop=true # use imports as required in modern ts setups
+      - useOptionals=messages # use optional TypeScript properties instead of undefined

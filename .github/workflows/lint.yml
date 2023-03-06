@@ -1,0 +1,49 @@
+name: Lint
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+permissions:
+  contents: read
+  # Optional: allow read access to pull request. Use with `only-new-issues` option.
+  pull-requests: read
+jobs:
+  golangci:
+    name: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        app:
+          - main-module
+          - cli
+          - controlplane
+          - artifact-cas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v3
+        with:
+          go-version: "1.20"
+
+      - uses: actions/checkout@v3
+
+      - name: Lint main module
+        uses: golangci/golangci-lint-action@v3
+        if: ${{ matrix.app == 'main-module' }}
+
+      - name: Lint ${{ matrix.app }}
+        uses: golangci/golangci-lint-action@v3
+        if: ${{ matrix.app != 'main-module' }}
+        with:
+          working-directory: app/${{ matrix.app }}
+
+  lint-protos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: bufbuild/buf-setup-action@v1
+        with:
+          buf_user: ${{ secrets.buf_user }}
+          buf_api_token: ${{ secrets.buf_api_token }}
+      - uses: bufbuild/buf-lint-action@v1

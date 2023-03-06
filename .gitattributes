@@ -1,0 +1,3 @@
+app/controlplane/api/gen/frontend/** linguist-generated=true
+app/controlplane/internal/data/ent/** linguist-generated=true
+app/controlplane/internal/data/ent/schema/* linguist-detectable=true

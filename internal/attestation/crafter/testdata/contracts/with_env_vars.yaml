@@ -1,0 +1,10 @@
+# Empty Chainloop contract valid for a workflow run in a Github Action
+schemaVersion: "v1"
+runner:
+  type: "GITHUB_ACTION"
+
+# Env vars we want the system to resolve and inject during attestation initialization
+# Additional ones can be inherited from the specified runner context below
+envAllowList:
+  - CUSTOM_VAR_1
+  - CUSTOM_VAR_2

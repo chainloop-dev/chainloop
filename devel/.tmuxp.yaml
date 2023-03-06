@@ -1,0 +1,22 @@
+# tmuxp layout definition https://github.com/tmux-python/tmuxp
+# tmuxp load .tmuxp.yaml
+session_name: chainloop
+start_directory: ./
+windows:
+- window_name: chainloop
+  focus: 'true'
+  layout: 9c73,212x48,0,0[212x24,0,0{106x24,0,0,1,105x24,107,0,4},212x23,0,25{106x23,0,25,2,105x23,107,25,3}]
+  options: {}
+  panes:
+  - shell_command:
+    - cd ../app/controlplane
+    - make run
+  - shell_command:
+    - cd ../app/cli
+    - make run
+  - shell_command:
+    - ../app/artifact-cas
+    - make run
+  - shell_command:
+    - docker compose up 
+  window_name: chainloop

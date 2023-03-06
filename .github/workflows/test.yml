@@ -1,0 +1,53 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  # We want to call this workflow during release too
+  workflow_call:
+
+jobs:
+  build_and_test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app:
+          - main-module
+          - cli
+          - controlplane
+          - artifact-cas
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        if: ${{ matrix.app != 'main-module' }}
+        with:
+          go-version-file: app/${{ matrix.app }}/go.mod
+          cache: true
+          cache-dependency-path: app/${{ matrix.app }}/go.sum
+
+      - uses: actions/setup-go@v3
+        if: ${{ matrix.app == 'main-module' }}
+        with:
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: go.sum
+
+      # Check that the generated ent code is up to date
+      # see https://entgo.io/docs/ci/
+      - uses: ent/contrib/ci@master
+        name: "Check all generated code is checked in"
+        if: ${{ matrix.app != 'main-module' }}
+        with:
+          working-directory: app/${{ matrix.app }}
+
+      - name: Test
+        if: ${{ matrix.app != 'main-module' }}
+        run: make -C app/${{ matrix.app }} test
+
+      - name: Test top level modules
+        if: ${{ matrix.app == 'main-module' }}
+        run: make test

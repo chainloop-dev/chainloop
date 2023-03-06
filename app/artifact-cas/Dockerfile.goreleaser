@@ -1,0 +1,8 @@
+FROM golang:1.18 AS builder
+
+FROM scratch
+
+COPY ./artifact-cas /
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+
+ENTRYPOINT [ "/artifact-cas", "--conf", "/data/conf"]

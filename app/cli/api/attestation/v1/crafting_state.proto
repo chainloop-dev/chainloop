@@ -1,0 +1,88 @@
+//
+// Copyright 2023 The Chainloop Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package attestation.v1;
+
+option go_package = "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1";
+
+import "workflowcontract/v1/crafting_schema.proto";
+import "validate/validate.proto";
+import "google/protobuf/timestamp.proto";
+
+message Attestation {
+    google.protobuf.Timestamp initialized_at = 1 [(validate.rules).timestamp.required = true];
+    google.protobuf.Timestamp finished_at = 2;
+
+    WorkflowMetadata workflow = 3 [(validate.rules).message.required = true];
+
+    map<string, Material> materials = 4; 
+
+    message Material {
+        oneof m {
+            KeyVal string = 1;
+            ContainerImage container_image = 2;
+            Artifact artifact = 3;
+        }
+
+        google.protobuf.Timestamp added_at = 5;
+        workflowcontract.v1.CraftingSchema.Material.MaterialType material_type = 6; 
+
+        message KeyVal {
+            string id = 1 [(validate.rules).string.min_len = 1];
+            string value = 2 [(validate.rules).string.min_len = 1];
+        }
+
+        message ContainerImage {
+            string id = 1 [(validate.rules).string.min_len = 1];
+            string name = 2 [(validate.rules).string.min_len = 1];
+            string digest = 3 [(validate.rules).string.min_len = 1];
+            bool is_subject = 4;
+        }
+
+        message Artifact {
+            // ID of the artifact
+            string id = 1 [(validate.rules).string.min_len = 1];
+            // filename, use for record purposes
+            string name = 2 [(validate.rules).string.min_len = 1];
+            // the digest is enough to retrieve the artifact since it's stored in a CAS
+            // which also has annotated the fileName
+            string digest = 3 [(validate.rules).string.min_len = 1];
+            bool is_subject = 4;
+        }
+    }
+
+    // List of env variables
+    map<string, string> env_vars = 6; 
+    string runner_url = 7; 
+    workflowcontract.v1.CraftingSchema.Runner.RunnerType runner_type = 8; 
+}
+
+// Intermediate information that will get stored in the system while the run is being executed
+message CraftingState {
+    workflowcontract.v1.CraftingSchema input_schema = 1;
+    Attestation attestation = 2;
+    bool dry_run = 3;
+}
+
+message WorkflowMetadata {
+    string name = 1 [(validate.rules).string.min_len = 1];
+    string project = 2;
+    string team = 3;
+    string workflow_id = 5 [(validate.rules).string.min_len = 1];
+    string workflow_run_id = 6; // Not required since we might be doing a dry-run
+    string schema_revision = 7 [(validate.rules).string.min_len = 1];
+}
