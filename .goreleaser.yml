@@ -35,10 +35,6 @@ archives:
     # Override default to not to include the readme nor license file
     files:
       - none*
-blobs:
-  - provider: gs
-    bucket: chainloop-releases-public
-    folder: "cli/{{ .Version }}"
 
 checksum:
   name_template: "checksums.txt"
@@ -66,14 +62,14 @@ dockers:
     ids:
       - control-plane
     image_templates:
-      - "us-east1-docker.pkg.dev/bedrock-371810/chainloop/control-plane:{{ .Tag }}"
-      - "us-east1-docker.pkg.dev/bedrock-371810/chainloop/control-plane:latest"
+      - "ghcr.io/chainloop-dev/chainloop/control-plane:{{ .Tag }}"
+      - "ghcr.io/chainloop-dev/chainloop/control-plane:latest"
   - dockerfile: app/artifact-cas/Dockerfile.goreleaser
     ids:
       - artifact-cas
     image_templates:
-      - "us-east1-docker.pkg.dev/bedrock-371810/chainloop/artifact-cas:{{ .Tag }}"
-      - "us-east1-docker.pkg.dev/bedrock-371810/chainloop/artifact-cas:latest"
+      - "ghcr.io/chainloop-dev/chainloop/artifact-cas:{{ .Tag }}"
+      - "ghcr.io/chainloop-dev/chainloop/artifact-cas:latest"
 
 release:
   extra_files:
