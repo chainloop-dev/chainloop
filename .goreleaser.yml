@@ -51,6 +51,12 @@ signs:
       ]
     artifacts: all
 
+# TODO: remove once we move the releases and the installation script to Github
+blobs:
+  - provider: gs
+    bucket: chainloop-releases-public
+    folder: "cli/{{ .Version }}"
+
 docker_signs:
   # COSIGN_PASSWORD is also required to be present
   - cmd: cosign

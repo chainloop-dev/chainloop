@@ -45,6 +45,15 @@ jobs:
         run: |
           chainloop attestation init
 
+      # TODO: remove once we move the releases and the installation script to Github
+      - name: "Configure Google Cloud credentials"
+        id: "auth-google"
+        uses: "google-github-actions/auth@v0"
+        with:
+          token_format: "access_token"
+          workload_identity_provider: projects/1044976554810/locations/global/workloadIdentityPools/chainloop-github-pool/providers/github-provider
+          service_account: chainloop-release-github@bedrock-371810.iam.gserviceaccount.com
+
       - name: Docker login to Github Packages
         uses: docker/login-action@v2
         with:
