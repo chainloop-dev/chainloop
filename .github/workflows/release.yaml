@@ -17,6 +17,7 @@ jobs:
     permissions:
       id-token: write # required to use OIDC and retrieve Google Cloud Credentials
       contents: write # required for goreleaser
+      packages: write # to push container images
     env:
       CHAINLOOP_VERSION: 0.8.89
       CHAINLOOP_ROBOT_ACCOUNT: ${{ secrets.CHAINLOOP_ROBOT_ACCOUNT }}
@@ -26,7 +27,7 @@ jobs:
       - name: Install Cosign
         uses: sigstore/cosign-installer@v2.5.0
 
-      - name: Install ChainLoop
+      - name: Install Chainloop
         run: |
           curl -sfL https://chainloop.dev/install.sh | bash -s -- --version v${{ env.CHAINLOOP_VERSION }}
 
