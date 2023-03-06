@@ -20,9 +20,9 @@ import (
 	"os"
 	"testing"
 
-	v1 "github.com/chainloop-dev/bedrock/app/cli/api/attestation/v1"
-	schemaapi "github.com/chainloop-dev/bedrock/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/bedrock/internal/attestation/crafter"
+	v1 "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 

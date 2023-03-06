@@ -19,9 +19,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/conf"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/jwt"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/jwt/robotaccount"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/robotaccount"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )

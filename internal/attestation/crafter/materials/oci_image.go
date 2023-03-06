@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"time"
 
-	api "github.com/chainloop-dev/bedrock/app/cli/api/attestation/v1"
-	schemaapi "github.com/chainloop-dev/bedrock/app/controlplane/api/workflowcontract/v1"
+	api "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"

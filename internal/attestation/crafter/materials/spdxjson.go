@@ -21,8 +21,8 @@ import (
 	"os"
 	"time"
 
-	api "github.com/chainloop-dev/bedrock/app/cli/api/attestation/v1"
-	schemaapi "github.com/chainloop-dev/bedrock/app/controlplane/api/workflowcontract/v1"
+	api "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/rs/zerolog"
 	spdx "github.com/spdx/tools-golang/jsonloader"
 	"google.golang.org/protobuf/types/known/timestamppb"

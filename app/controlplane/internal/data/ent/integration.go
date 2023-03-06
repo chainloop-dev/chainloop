@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
-	v1 "github.com/chainloop-dev/bedrock/app/controlplane/api/controlplane/v1"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/integration"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/organization"
+	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integration"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/google/uuid"
 )
 

@@ -28,7 +28,7 @@ import (
 
 	"encoding/json"
 
-	integration "github.com/chainloop-dev/bedrock/app/controlplane/internal/integrations"
+	integration "github.com/chainloop-dev/chainloop/app/controlplane/internal/integrations"
 )
 
 type base struct {

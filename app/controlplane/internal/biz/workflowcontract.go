@@ -20,7 +20,7 @@ import (
 	"errors"
 	"time"
 
-	schemav1 "github.com/chainloop-dev/bedrock/app/controlplane/api/workflowcontract/v1"
+	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"

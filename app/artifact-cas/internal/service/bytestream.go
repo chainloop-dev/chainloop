@@ -24,10 +24,10 @@ import (
 
 	"errors"
 
-	v1 "github.com/chainloop-dev/bedrock/app/artifact-cas/api/cas/v1"
-	backend "github.com/chainloop-dev/bedrock/internal/blobmanager"
-	casJWT "github.com/chainloop-dev/bedrock/internal/robotaccount/cas"
-	sl "github.com/chainloop-dev/bedrock/internal/servicelogger"
+	v1 "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
+	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
+	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
+	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	kerrors "github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
 	"google.golang.org/genproto/googleapis/bytestream"

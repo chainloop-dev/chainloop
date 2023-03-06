@@ -25,7 +25,7 @@ import (
 	"os"
 	"syscall"
 
-	v1 "github.com/chainloop-dev/bedrock/app/cli/api/attestation/v1"
+	v1 "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	"github.com/in-toto/in-toto-golang/in_toto"
 	"github.com/rs/zerolog"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"

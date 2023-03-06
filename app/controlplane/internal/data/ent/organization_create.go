@@ -10,12 +10,12 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/integration"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/membership"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/ocirepository"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/organization"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/workflow"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/workflowcontract"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integration"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/membership"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/ocirepository"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowcontract"
 	"github.com/google/uuid"
 )
 

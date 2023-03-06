@@ -18,7 +18,7 @@ package action
 import (
 	"context"
 
-	casclient "github.com/chainloop-dev/bedrock/app/cli/internal/casclient/grpc"
+	casclient "github.com/chainloop-dev/chainloop/app/cli/internal/casclient/grpc"
 	"google.golang.org/grpc"
 )
 

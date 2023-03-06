@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"time"
 
-	pb "github.com/chainloop-dev/bedrock/app/controlplane/api/controlplane/v1"
-	"github.com/chainloop-dev/bedrock/internal/attestation/renderer"
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/internal/attestation/renderer"
 	sigs "github.com/sigstore/cosign/pkg/signature"
 
 	"github.com/in-toto/in-toto-golang/in_toto"

@@ -26,7 +26,7 @@ run:
 .PHONY: build
 # build
 build:
-	mkdir -p bin/ && go build -ldflags "-X github.com/chainloop-dev/bedrock/app/cli/cmd.Version=$(VERSION)" -o ./bin/chainloop ./main.go
+	mkdir -p bin/ && go build -ldflags "-X github.com/chainloop-dev/chainloop/app/cli/cmd.Version=$(VERSION)" -o ./bin/chainloop ./main.go
 
 .PHONY: all
 # generate all

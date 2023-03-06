@@ -18,8 +18,8 @@ package crafter
 import (
 	"errors"
 
-	schemaapi "github.com/chainloop-dev/bedrock/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/bedrock/internal/attestation/crafter/runners"
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/runners"
 )
 
 var ErrRunnerContextNotFound = errors.New("the runner environment doesn't match the required runner type")

@@ -21,7 +21,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/chainloop-dev/bedrock/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 )
 
 func newAttestationInitCmd() *cobra.Command {

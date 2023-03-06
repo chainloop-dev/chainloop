@@ -1,19 +1,19 @@
-module github.com/chainloop-dev/bedrock/app/cli
+module github.com/chainloop-dev/chainloop/app/cli
 
 go 1.20
 
-replace github.com/chainloop-dev/bedrock => ../..
+replace github.com/chainloop-dev/chainloop => ../..
 
-replace github.com/chainloop-dev/bedrock/app/artifact-cas => ../artifact-cas
+replace github.com/chainloop-dev/chainloop/app/artifact-cas => ../artifact-cas
 
-replace github.com/chainloop-dev/bedrock/app/controlplane => ../controlplane
+replace github.com/chainloop-dev/chainloop/app/controlplane => ../controlplane
 
 require (
 	code.cloudfoundry.org/bytefmt v0.0.0-20211005130812-5bb3c17173e5
 	github.com/adrg/xdg v0.4.0
-	github.com/chainloop-dev/bedrock v0.0.0-00010101000000-000000000000
-	github.com/chainloop-dev/bedrock/app/artifact-cas v0.0.0-00010101000000-000000000000
-	github.com/chainloop-dev/bedrock/app/controlplane v0.0.0-00010101000000-000000000000
+	github.com/chainloop-dev/chainloop v0.0.0-00010101000000-000000000000
+	github.com/chainloop-dev/chainloop/app/artifact-cas v0.0.0-00010101000000-000000000000
+	github.com/chainloop-dev/chainloop/app/controlplane v0.0.0-00010101000000-000000000000
 	github.com/envoyproxy/protoc-gen-validate v0.9.1
 	github.com/go-kratos/kratos/v2 v2.5.3
 	github.com/golang-jwt/jwt/v4 v4.5.0

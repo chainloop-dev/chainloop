@@ -1,11 +1,11 @@
-module github.com/chainloop-dev/bedrock/app/artifact-cas
+module github.com/chainloop-dev/chainloop/app/artifact-cas
 
 go 1.20
 
-replace github.com/chainloop-dev/bedrock => ../..
+replace github.com/chainloop-dev/chainloop => ../..
 
 require (
-	github.com/chainloop-dev/bedrock v0.0.0-00010101000000-000000000000
+	github.com/chainloop-dev/chainloop v0.0.0-00010101000000-000000000000
 	github.com/getsentry/sentry-go v0.17.0
 	github.com/go-kratos/kratos/v2 v2.5.3
 	github.com/golang-jwt/jwt/v4 v4.5.0

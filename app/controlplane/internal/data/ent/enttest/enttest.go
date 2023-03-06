@@ -5,12 +5,12 @@ package enttest
 import (
 	"context"
 
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent"
 	// required by schema hooks.
-	_ "github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/runtime"
+	_ "github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/runtime"
 
 	"entgo.io/ent/dialect/sql/schema"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/migrate"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/migrate"
 )
 
 type (

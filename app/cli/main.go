@@ -18,8 +18,8 @@ package main
 import (
 	"os"
 
-	"github.com/chainloop-dev/bedrock/app/cli/cmd"
-	v1 "github.com/chainloop-dev/bedrock/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/cli/cmd"
+	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/go-kratos/kratos/v2/errors"
 	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/rs/zerolog"

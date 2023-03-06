@@ -18,7 +18,7 @@ package service
 import (
 	"context"
 
-	pb "github.com/chainloop-dev/bedrock/app/artifact-cas/api/cas/v1"
+	pb "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 )
 
 type StatusService struct {

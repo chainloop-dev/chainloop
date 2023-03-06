@@ -26,7 +26,7 @@ import (
 	"net/url"
 	"testing"
 
-	pb "github.com/chainloop-dev/bedrock/app/artifact-cas/api/cas/v1"
+	pb "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/registry"

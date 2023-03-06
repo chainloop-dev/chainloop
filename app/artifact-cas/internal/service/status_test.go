@@ -19,7 +19,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/chainloop-dev/bedrock/app/artifact-cas/internal/service"
+	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/service"
 	"github.com/stretchr/testify/assert"
 )
 

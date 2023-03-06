@@ -18,9 +18,9 @@ package service
 import (
 	"context"
 
-	backend "github.com/chainloop-dev/bedrock/internal/blobmanager"
-	casJWT "github.com/chainloop-dev/bedrock/internal/robotaccount/cas"
-	"github.com/chainloop-dev/bedrock/internal/servicelogger"
+	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
+	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
+	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	kerrors "github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware/auth/jwt"

@@ -19,9 +19,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/chainloop-dev/bedrock/internal/credentials"
-	"github.com/chainloop-dev/bedrock/internal/credentials/mocks"
-	"github.com/chainloop-dev/bedrock/internal/ociauth"
+	"github.com/chainloop-dev/chainloop/internal/credentials"
+	"github.com/chainloop-dev/chainloop/internal/credentials/mocks"
+	"github.com/chainloop-dev/chainloop/internal/ociauth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

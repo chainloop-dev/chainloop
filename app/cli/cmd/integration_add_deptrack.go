@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"syscall"
 
-	"github.com/chainloop-dev/bedrock/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )

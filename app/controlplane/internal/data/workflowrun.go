@@ -21,12 +21,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/biz"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/organization"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/workflow"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/workflowrun"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/pagination"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowrun"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/pagination"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 

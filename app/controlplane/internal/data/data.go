@@ -27,9 +27,9 @@ import (
 	entsql "entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/schema"
 
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/conf"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/organization"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"github.com/google/wire"

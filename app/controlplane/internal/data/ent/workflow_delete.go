@@ -8,8 +8,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/predicate"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/workflow"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
 )
 
 // WorkflowDelete is the builder for deleting a Workflow entity.

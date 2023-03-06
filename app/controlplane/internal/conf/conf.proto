@@ -15,7 +15,7 @@
 
 syntax = "proto3";
 
-option go_package = "github.com/chainloop-dev/bedrock/app/controlplane/internal/conf;conf";
+option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf;conf";
 
 import "google/protobuf/duration.proto";
 

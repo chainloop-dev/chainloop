@@ -2,7 +2,7 @@
 
 package runtime
 
-// The schema-stitching logic is generated in github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/runtime.go
+// The schema-stitching logic is generated in github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/runtime.go
 
 const (
 	Version = "v0.11.9-0.20230222192915-9c40fbc07b69"           // Version of ent codegen.

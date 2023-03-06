@@ -5,7 +5,7 @@ package mocks
 import (
 	context "context"
 
-	credentials "github.com/chainloop-dev/bedrock/internal/credentials"
+	credentials "github.com/chainloop-dev/chainloop/internal/credentials"
 	mock "github.com/stretchr/testify/mock"
 )
 

@@ -19,11 +19,11 @@ import (
 	"context"
 	"time"
 
-	v1 "github.com/chainloop-dev/bedrock/app/controlplane/api/controlplane/v1"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/biz"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/integrationattachment"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/workflow"
+	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integrationattachment"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )

@@ -18,7 +18,7 @@ package usercontext
 import (
 	"context"
 
-	v1 "github.com/chainloop-dev/bedrock/app/controlplane/api/controlplane/v1"
+	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/go-kratos/kratos/v2/middleware"
 )
 

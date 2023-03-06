@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/google/uuid"
 )
 

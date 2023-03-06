@@ -19,12 +19,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/biz"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/biz/testhelpers"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
 	"github.com/google/uuid"
 
-	"github.com/chainloop-dev/bedrock/internal/credentials"
-	creds "github.com/chainloop-dev/bedrock/internal/credentials/mocks"
+	"github.com/chainloop-dev/chainloop/internal/credentials"
+	creds "github.com/chainloop-dev/chainloop/internal/credentials/mocks"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

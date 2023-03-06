@@ -34,7 +34,7 @@ import (
 
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 
-	pb "github.com/chainloop-dev/bedrock/app/artifact-cas/api/cas/v1"
+	pb "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 )
 
 type Backend struct {

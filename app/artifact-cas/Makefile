@@ -14,7 +14,7 @@ api:
 # build
 build:
 	mkdir -p bin/ && go build -ldflags\
-	  "-X github.com/chainloop-dev/bedrock/app/artifact-cas/internal/server.Version=$(VERSION)\
+	  "-X github.com/chainloop-dev/chainloop/app/artifact-cas/internal/server.Version=$(VERSION)\
 	  -X main.Version=$(VERSION)"\
 	   -o ./bin/artifact-cas ./cmd/...
 

@@ -20,9 +20,9 @@ import (
 	"io"
 	"testing"
 
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/biz"
-	bizMocks "github.com/chainloop-dev/bedrock/app/controlplane/internal/biz/mocks"
-	userjwtbuilder "github.com/chainloop-dev/bedrock/app/controlplane/internal/jwt/user"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	bizMocks "github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/mocks"
+	userjwtbuilder "github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/user"
 	"github.com/go-kratos/kratos/v2/log"
 	jwtmiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/google/uuid"

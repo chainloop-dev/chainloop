@@ -21,8 +21,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/biz"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/biz/mocks"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/mocks"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )

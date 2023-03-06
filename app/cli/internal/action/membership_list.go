@@ -19,7 +19,7 @@ import (
 	"context"
 	"time"
 
-	pb "github.com/chainloop-dev/bedrock/app/controlplane/api/controlplane/v1"
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
 type MembershipList struct {

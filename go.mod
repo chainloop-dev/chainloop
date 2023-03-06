@@ -1,12 +1,12 @@
-module github.com/chainloop-dev/bedrock
+module github.com/chainloop-dev/chainloop
 
 go 1.20
 
-replace github.com/chainloop-dev/bedrock/app/artifact-cas => ./app/artifact-cas
+replace github.com/chainloop-dev/chainloop/app/artifact-cas => ./app/artifact-cas
 
-replace github.com/chainloop-dev/bedrock/app/controlplane => ./app/controlplane
+replace github.com/chainloop-dev/chainloop/app/controlplane => ./app/controlplane
 
-replace github.com/chainloop-dev/bedrock/app/cli => ./app/cli
+replace github.com/chainloop-dev/chainloop/app/cli => ./app/cli
 
 require (
 	cuelang.org/go v0.4.3
@@ -17,9 +17,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.18.1
 	github.com/aws/aws-sdk-go-v2/service/sso v1.12.4
 	github.com/aws/smithy-go v1.13.5
-	github.com/chainloop-dev/bedrock/app/artifact-cas v0.0.0-00010101000000-000000000000
-	github.com/chainloop-dev/bedrock/app/cli v0.0.0-00010101000000-000000000000
-	github.com/chainloop-dev/bedrock/app/controlplane v0.0.0-00010101000000-000000000000
+	github.com/chainloop-dev/chainloop/app/artifact-cas v0.0.0-00010101000000-000000000000
+	github.com/chainloop-dev/chainloop/app/cli v0.0.0-00010101000000-000000000000
+	github.com/chainloop-dev/chainloop/app/controlplane v0.0.0-00010101000000-000000000000
 	github.com/docker/distribution v2.8.1+incompatible
 	github.com/getsentry/sentry-go v0.17.0
 	github.com/go-kratos/kratos/contrib/log/zap/v2 v2.0.0-20230113095809-bebea0c103a8

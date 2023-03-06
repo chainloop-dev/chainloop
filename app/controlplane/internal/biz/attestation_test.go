@@ -22,8 +22,8 @@ import (
 	"io"
 	"testing"
 
-	casAPI "github.com/chainloop-dev/bedrock/app/artifact-cas/api/cas/v1"
-	"github.com/chainloop-dev/bedrock/internal/blobmanager/mocks"
+	casAPI "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
+	"github.com/chainloop-dev/chainloop/internal/blobmanager/mocks"
 	"github.com/google/uuid"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/stretchr/testify/assert"

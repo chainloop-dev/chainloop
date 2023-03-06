@@ -26,11 +26,11 @@ import (
 	// Requuired for the database waitFor strategy
 	_ "github.com/lib/pq"
 
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/biz"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/conf"
-	"github.com/chainloop-dev/bedrock/internal/credentials"
-	creds "github.com/chainloop-dev/bedrock/internal/credentials/mocks"
-	robotaccount "github.com/chainloop-dev/bedrock/internal/robotaccount/cas"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
+	"github.com/chainloop-dev/chainloop/internal/credentials"
+	creds "github.com/chainloop-dev/chainloop/internal/credentials/mocks"
+	robotaccount "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	"github.com/docker/go-connections/nat"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/stretchr/testify/assert"

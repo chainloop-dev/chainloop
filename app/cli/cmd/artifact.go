@@ -18,7 +18,7 @@ package cmd
 import (
 	"context"
 
-	pb "github.com/chainloop-dev/bedrock/app/controlplane/api/controlplane/v1"
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"

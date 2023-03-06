@@ -17,7 +17,7 @@ syntax = "proto3";
 
 package controlplane.v1;
 
-option go_package = "github.com/chainloop-dev/bedrock/app/controlplane/api/controlplane/v1;v1";
+option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
 import "validate/validate.proto";
 import "controlplane/v1/response_messages.proto";

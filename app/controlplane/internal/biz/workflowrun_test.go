@@ -22,8 +22,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/biz"
-	repoM "github.com/chainloop-dev/bedrock/app/controlplane/internal/biz/mocks"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	repoM "github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/mocks"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 

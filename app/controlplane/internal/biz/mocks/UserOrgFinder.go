@@ -5,7 +5,7 @@ package mocks
 import (
 	context "context"
 
-	biz "github.com/chainloop-dev/bedrock/app/controlplane/internal/biz"
+	biz "github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 
 	mock "github.com/stretchr/testify/mock"
 )

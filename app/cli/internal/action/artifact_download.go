@@ -24,7 +24,7 @@ import (
 	"os"
 	"path"
 
-	casclient "github.com/chainloop-dev/bedrock/app/cli/internal/casclient/grpc"
+	casclient "github.com/chainloop-dev/chainloop/app/cli/internal/casclient/grpc"
 	"google.golang.org/grpc"
 
 	crv1 "github.com/google/go-containerregistry/pkg/v1"

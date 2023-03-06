@@ -27,9 +27,9 @@ import (
 	"time"
 
 	"cuelang.org/go/cue/cuecontext"
-	api "github.com/chainloop-dev/bedrock/app/cli/api/attestation/v1"
-	schemaapi "github.com/chainloop-dev/bedrock/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/bedrock/internal/attestation/crafter/materials"
+	api "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/materials"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"

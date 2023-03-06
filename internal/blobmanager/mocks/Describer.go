@@ -20,7 +20,7 @@ package mocks
 import (
 	context "context"
 
-	v1 "github.com/chainloop-dev/bedrock/app/artifact-cas/api/cas/v1"
+	v1 "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 	mock "github.com/stretchr/testify/mock"
 )
 

@@ -16,7 +16,7 @@
 syntax = "proto3";
 
 package cas.v1;
-option go_package = "github.com/chainloop-dev/bedrock/app/artifact-cas/api/cas/v1;v1";
+option go_package = "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1;v1";
 
 service ResourceService {
 	rpc Describe (ResourceServiceDescribeRequest) returns (ResourceServiceDescribeResponse);

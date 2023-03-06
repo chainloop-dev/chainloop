@@ -18,12 +18,12 @@ package service
 import (
 	"context"
 
-	pb "github.com/chainloop-dev/bedrock/app/controlplane/api/controlplane/v1"
-	sl "github.com/chainloop-dev/bedrock/internal/servicelogger"
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	errors "github.com/go-kratos/kratos/v2/errors"
 
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/biz"
-	casJWT "github.com/chainloop-dev/bedrock/internal/robotaccount/cas"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 )
 
 type CASCredentialsService struct {

@@ -1,4 +1,4 @@
-project_name: Chainloop Bedrock
+project_name: Chainloop Core
 env:
   - CGO_ENABLED=0
 builds:
@@ -6,7 +6,7 @@ builds:
     id: control-plane
     main: ./app/controlplane/cmd
     ldflags:
-      - -X github.com/chainloop-dev/bedrock/app/controlplane/internal/server.Version={{ .Version }}
+      - -X github.com/chainloop-dev/chainloop/app/controlplane/internal/server.Version={{ .Version }}
       - -X main.Version={{ .Version }}
     targets:
       - linux_amd64
@@ -14,7 +14,7 @@ builds:
     id: artifact-cas
     main: ./app/artifact-cas/cmd
     ldflags:
-      - -X github.com/chainloop-dev/bedrock/app/artifact-cas/internal/server.Version={{ .Version }}
+      - -X github.com/chainloop-dev/chainloop/app/artifact-cas/internal/server.Version={{ .Version }}
       - -X main.Version={{ .Version }}
     targets:
       - linux_amd64
@@ -22,7 +22,7 @@ builds:
     id: cli
     main: ./app/cli
     ldflags:
-      - -X github.com/chainloop-dev/bedrock/app/cli/cmd.Version={{ .Version }}
+      - -X github.com/chainloop-dev/chainloop/app/cli/cmd.Version={{ .Version }}
     targets:
       - darwin_amd64
       - darwin_arm64

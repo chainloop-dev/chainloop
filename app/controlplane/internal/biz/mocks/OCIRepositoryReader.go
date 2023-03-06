@@ -18,8 +18,8 @@
 package mocks
 
 import (
-	biz "github.com/chainloop-dev/bedrock/app/controlplane/internal/biz"
-	backend "github.com/chainloop-dev/bedrock/internal/blobmanager"
+	biz "github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
 
 	context "context"
 

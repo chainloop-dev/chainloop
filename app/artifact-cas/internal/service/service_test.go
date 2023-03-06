@@ -19,7 +19,7 @@ import (
 	"context"
 	"testing"
 
-	casJWT "github.com/chainloop-dev/bedrock/internal/robotaccount/cas"
+	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	jwtm "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/stretchr/testify/assert"

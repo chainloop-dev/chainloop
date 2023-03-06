@@ -22,8 +22,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chainloop-dev/bedrock/internal/credentials"
-	"github.com/chainloop-dev/bedrock/internal/credentials/vault"
+	"github.com/chainloop-dev/chainloop/internal/credentials"
+	"github.com/chainloop-dev/chainloop/internal/credentials/vault"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"

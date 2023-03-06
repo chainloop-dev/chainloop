@@ -18,9 +18,9 @@ package service
 import (
 	"context"
 
-	v1 "github.com/chainloop-dev/bedrock/app/artifact-cas/api/cas/v1"
-	backend "github.com/chainloop-dev/bedrock/internal/blobmanager"
-	sl "github.com/chainloop-dev/bedrock/internal/servicelogger"
+	v1 "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
+	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
+	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 )
 
 type ResourceService struct {

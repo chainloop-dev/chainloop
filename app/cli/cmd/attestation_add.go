@@ -23,8 +23,8 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 
-	"github.com/chainloop-dev/bedrock/app/cli/internal/action"
-	pb "github.com/chainloop-dev/bedrock/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
 func newAttestationAddCmd() *cobra.Command {

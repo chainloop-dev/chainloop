@@ -22,10 +22,10 @@ import (
 	"strings"
 	"time"
 
-	v1 "github.com/chainloop-dev/bedrock/app/cli/api/attestation/v1"
+	v1 "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	"github.com/in-toto/in-toto-golang/in_toto"
 
-	schemaapi "github.com/chainloop-dev/bedrock/app/controlplane/api/workflowcontract/v1"
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	slsacommon "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/common"
 )
 

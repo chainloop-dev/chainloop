@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chainloop-dev/bedrock/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"

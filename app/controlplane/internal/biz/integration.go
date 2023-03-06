@@ -22,10 +22,10 @@ import (
 	"io"
 	"time"
 
-	v1 "github.com/chainloop-dev/bedrock/app/controlplane/api/controlplane/v1"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/integrations/dependencytrack"
-	"github.com/chainloop-dev/bedrock/internal/credentials"
-	"github.com/chainloop-dev/bedrock/internal/servicelogger"
+	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/integrations/dependencytrack"
+	"github.com/chainloop-dev/chainloop/internal/credentials"
+	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )

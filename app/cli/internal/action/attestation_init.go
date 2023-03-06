@@ -21,9 +21,9 @@ import (
 	"fmt"
 	"strconv"
 
-	clientAPI "github.com/chainloop-dev/bedrock/app/cli/api/attestation/v1"
-	pb "github.com/chainloop-dev/bedrock/app/controlplane/api/controlplane/v1"
-	"github.com/chainloop-dev/bedrock/internal/attestation/crafter"
+	clientAPI "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
 )
 
 type AttestationInitOpts struct {

@@ -18,9 +18,9 @@ package oci
 import (
 	"context"
 
-	backend "github.com/chainloop-dev/bedrock/internal/blobmanager"
-	"github.com/chainloop-dev/bedrock/internal/credentials"
-	"github.com/chainloop-dev/bedrock/internal/ociauth"
+	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
+	"github.com/chainloop-dev/chainloop/internal/credentials"
+	"github.com/chainloop-dev/chainloop/internal/ociauth"
 )
 
 type BackendProvider struct {

@@ -25,8 +25,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chainloop-dev/bedrock/internal/credentials"
-	"github.com/chainloop-dev/bedrock/internal/servicelogger"
+	"github.com/chainloop-dev/chainloop/internal/credentials"
+	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/docker/distribution/uuid"
 	"github.com/go-kratos/kratos/v2/log"
 	vault "github.com/hashicorp/vault/api"

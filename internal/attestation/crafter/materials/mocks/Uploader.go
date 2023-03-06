@@ -5,7 +5,7 @@ package mocks
 import (
 	context "context"
 
-	materials "github.com/chainloop-dev/bedrock/internal/attestation/crafter/materials"
+	materials "github.com/chainloop-dev/chainloop/internal/attestation/crafter/materials"
 	mock "github.com/stretchr/testify/mock"
 )
 

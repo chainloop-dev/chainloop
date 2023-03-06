@@ -23,8 +23,8 @@ import (
 	"path/filepath"
 
 	"github.com/adrg/xdg"
-	"github.com/chainloop-dev/bedrock/app/cli/internal/action"
-	"github.com/chainloop-dev/bedrock/app/cli/internal/bearertoken"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/bearertoken"
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"

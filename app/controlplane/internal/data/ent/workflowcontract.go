@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/organization"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/workflowcontract"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowcontract"
 	"github.com/google/uuid"
 )
 

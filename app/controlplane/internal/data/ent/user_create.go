@@ -10,8 +10,8 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/membership"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/user"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/membership"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/user"
 	"github.com/google/uuid"
 )
 

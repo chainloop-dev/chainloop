@@ -19,8 +19,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/biz"
-	repoM "github.com/chainloop-dev/bedrock/app/controlplane/internal/biz/mocks"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	repoM "github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"

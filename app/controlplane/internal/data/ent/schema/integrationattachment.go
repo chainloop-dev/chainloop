@@ -24,7 +24,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 
-	pb "github.com/chainloop-dev/bedrock/app/controlplane/api/controlplane/v1"
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
 type IntegrationAttachment struct {

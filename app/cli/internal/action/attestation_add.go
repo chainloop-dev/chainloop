@@ -18,8 +18,8 @@ package action
 import (
 	"errors"
 
-	casclient "github.com/chainloop-dev/bedrock/app/cli/internal/casclient/grpc"
-	"github.com/chainloop-dev/bedrock/internal/attestation/crafter"
+	casclient "github.com/chainloop-dev/chainloop/app/cli/internal/casclient/grpc"
+	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
 	"google.golang.org/grpc"
 )
 

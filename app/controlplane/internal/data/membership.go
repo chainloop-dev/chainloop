@@ -18,10 +18,10 @@ package data
 import (
 	"context"
 
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/biz"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/membership"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/user"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/membership"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/user"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )

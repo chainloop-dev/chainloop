@@ -16,10 +16,10 @@
 package server
 
 import (
-	"github.com/chainloop-dev/bedrock/app/artifact-cas/internal/conf"
-	"github.com/chainloop-dev/bedrock/app/artifact-cas/internal/service"
+	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf"
+	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/service"
 
-	api "github.com/chainloop-dev/bedrock/app/artifact-cas/api/cas/v1"
+	api "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware/logging"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"

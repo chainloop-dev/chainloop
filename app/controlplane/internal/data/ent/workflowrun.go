@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/biz"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/robotaccount"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/workflow"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/workflowcontractversion"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/workflowrun"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/robotaccount"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowcontractversion"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowrun"
 	"github.com/google/uuid"
 )
 

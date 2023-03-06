@@ -22,14 +22,14 @@ import (
 	"os"
 	"time"
 
-	"github.com/chainloop-dev/bedrock/internal/credentials"
-	awssecrets "github.com/chainloop-dev/bedrock/internal/credentials/aws"
-	"github.com/chainloop-dev/bedrock/internal/credentials/vault"
+	"github.com/chainloop-dev/chainloop/internal/credentials"
+	awssecrets "github.com/chainloop-dev/chainloop/internal/credentials/aws"
+	"github.com/chainloop-dev/chainloop/internal/credentials/vault"
 	"github.com/getsentry/sentry-go"
 
-	"github.com/chainloop-dev/bedrock/app/artifact-cas/internal/conf"
-	"github.com/chainloop-dev/bedrock/app/artifact-cas/internal/server"
-	"github.com/chainloop-dev/bedrock/internal/servicelogger"
+	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf"
+	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/server"
+	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/config"

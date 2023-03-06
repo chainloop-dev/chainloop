@@ -17,7 +17,7 @@ syntax = "proto3";
 
 package attestation.v1;
 
-option go_package = "github.com/chainloop-dev/bedrock/app/cli/api/attestation/v1";
+option go_package = "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1";
 
 import "workflowcontract/v1/crafting_schema.proto";
 import "validate/validate.proto";

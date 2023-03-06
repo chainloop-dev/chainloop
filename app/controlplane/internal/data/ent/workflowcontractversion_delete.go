@@ -8,8 +8,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/predicate"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent/workflowcontractversion"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowcontractversion"
 )
 
 // WorkflowContractVersionDelete is the builder for deleting a WorkflowContractVersion entity.

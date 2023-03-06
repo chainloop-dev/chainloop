@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	robotaccount "github.com/chainloop-dev/bedrock/internal/robotaccount/cas"
+	robotaccount "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"

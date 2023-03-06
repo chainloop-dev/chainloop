@@ -23,8 +23,8 @@ import (
 	"os"
 	"time"
 
-	v1 "github.com/chainloop-dev/bedrock/app/artifact-cas/api/cas/v1"
-	"github.com/chainloop-dev/bedrock/internal/attestation/crafter/materials"
+	v1 "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
+	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/materials"
 	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/rs/zerolog"
 	"google.golang.org/genproto/googleapis/bytestream"

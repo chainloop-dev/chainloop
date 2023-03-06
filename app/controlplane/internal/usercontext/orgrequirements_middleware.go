@@ -23,8 +23,8 @@ import (
 
 	"github.com/go-kratos/kratos/v2/log"
 
-	v1 "github.com/chainloop-dev/bedrock/app/controlplane/api/controlplane/v1"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/biz"
+	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/go-kratos/kratos/v2/middleware"
 )
 

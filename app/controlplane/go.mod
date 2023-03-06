@@ -1,12 +1,12 @@
-module github.com/chainloop-dev/bedrock/app/controlplane
+module github.com/chainloop-dev/chainloop/app/controlplane
 
 go 1.20
 
-replace github.com/chainloop-dev/bedrock => ../..
+replace github.com/chainloop-dev/chainloop => ../..
 
-replace github.com/chainloop-dev/bedrock/app/cli => ../cli
+replace github.com/chainloop-dev/chainloop/app/cli => ../cli
 
-replace github.com/chainloop-dev/bedrock/app/artifact-cas => ../artifact-cas
+replace github.com/chainloop-dev/chainloop/app/artifact-cas => ../artifact-cas
 
 // See warning below
 // https://golang.testcontainers.org/quickstart/#2-install-testcontainers-for-go
@@ -15,8 +15,8 @@ replace github.com/docker/docker => github.com/docker/docker v20.10.3-0.20221013
 require (
 	entgo.io/ent v0.11.9-0.20230222192915-9c40fbc07b69
 	github.com/cenkalti/backoff/v4 v4.2.0
-	github.com/chainloop-dev/bedrock v0.0.0-00010101000000-000000000000
-	github.com/chainloop-dev/bedrock/app/artifact-cas v0.0.0-00010101000000-000000000000
+	github.com/chainloop-dev/chainloop v0.0.0-00010101000000-000000000000
+	github.com/chainloop-dev/chainloop/app/artifact-cas v0.0.0-00010101000000-000000000000
 	github.com/coreos/go-oidc/v3 v3.5.0
 	github.com/docker/go-connections v0.4.0
 	github.com/envoyproxy/protoc-gen-validate v0.9.1
@@ -81,7 +81,7 @@ require (
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/chainloop-dev/bedrock/app/cli v0.0.0-00010101000000-000000000000 // indirect
+	github.com/chainloop-dev/chainloop/app/cli v0.0.0-00010101000000-000000000000 // indirect
 	github.com/cncf/udpa/go v0.0.0-20220112060539-c52dc94e7fbe // indirect
 	github.com/cncf/xds/go v0.0.0-20230105202645-06c439db220b // indirect
 	github.com/containerd/containerd v1.6.17 // indirect

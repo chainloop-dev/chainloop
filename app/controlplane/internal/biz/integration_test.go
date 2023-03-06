@@ -18,7 +18,7 @@ package biz
 import (
 	"testing"
 
-	v1 "github.com/chainloop-dev/bedrock/app/controlplane/api/controlplane/v1"
+	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/stretchr/testify/assert"
 )
 

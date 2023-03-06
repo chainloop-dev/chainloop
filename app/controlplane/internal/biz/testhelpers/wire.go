@@ -21,13 +21,13 @@
 package testhelpers
 
 import (
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/biz"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/conf"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data"
-	backend "github.com/chainloop-dev/bedrock/internal/blobmanager"
-	"github.com/chainloop-dev/bedrock/internal/blobmanager/oci"
-	"github.com/chainloop-dev/bedrock/internal/credentials"
-	robotaccount "github.com/chainloop-dev/bedrock/internal/robotaccount/cas"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
+	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
+	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
+	"github.com/chainloop-dev/chainloop/internal/credentials"
+	robotaccount "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
 	"testing"

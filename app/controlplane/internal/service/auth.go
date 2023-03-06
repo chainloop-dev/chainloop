@@ -25,13 +25,13 @@ import (
 	"net/url"
 	"time"
 
-	pb "github.com/chainloop-dev/bedrock/app/controlplane/api/controlplane/v1"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/biz"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/conf"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/jwt"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/jwt/user"
-	authenticator "github.com/chainloop-dev/bedrock/app/controlplane/internal/oidcauthenticator"
-	sl "github.com/chainloop-dev/bedrock/internal/servicelogger"
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/user"
+	authenticator "github.com/chainloop-dev/chainloop/app/controlplane/internal/oidcauthenticator"
+	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"golang.org/x/oauth2"
 )
 

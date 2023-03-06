@@ -16,7 +16,7 @@
 package cmd
 
 import (
-	"github.com/chainloop-dev/bedrock/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
 )
 

@@ -6,7 +6,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/data/ent"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent"
 )
 
 // The IntegrationFunc type is an adapter to allow the use of ordinary

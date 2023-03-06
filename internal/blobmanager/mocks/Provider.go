@@ -20,7 +20,7 @@ package mocks
 import (
 	context "context"
 
-	backend "github.com/chainloop-dev/bedrock/internal/blobmanager"
+	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
 
 	mock "github.com/stretchr/testify/mock"
 )

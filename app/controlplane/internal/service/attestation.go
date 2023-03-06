@@ -28,16 +28,16 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/in-toto/in-toto-golang/in_toto"
 
-	cpAPI "github.com/chainloop-dev/bedrock/app/controlplane/api/controlplane/v1"
-	contractAPI "github.com/chainloop-dev/bedrock/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/biz"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/integrations/dependencytrack"
-	"github.com/chainloop-dev/bedrock/app/controlplane/internal/usercontext"
-	"github.com/chainloop-dev/bedrock/internal/attestation/renderer"
-	"github.com/chainloop-dev/bedrock/internal/blobmanager/oci"
-	"github.com/chainloop-dev/bedrock/internal/credentials"
-	casJWT "github.com/chainloop-dev/bedrock/internal/robotaccount/cas"
-	sl "github.com/chainloop-dev/bedrock/internal/servicelogger"
+	cpAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	contractAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/integrations/dependencytrack"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
+	"github.com/chainloop-dev/chainloop/internal/attestation/renderer"
+	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
+	"github.com/chainloop-dev/chainloop/internal/credentials"
+	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
+	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 
 	errors "github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
@@ -169,7 +169,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	}
 
 	// TODO: Move to event bus and background processing
-	// https://github.com/chainloop-dev/bedrock/issues/396
+	// https://github.com/chainloop-dev/chainloop/issues/396
 	// Upload to OCI
 	go func() {
 		b := backoff.NewExponentialBackOff()
