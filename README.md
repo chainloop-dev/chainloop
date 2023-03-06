@@ -50,7 +50,7 @@ See the [issue tracker](https://github.com/chainloop-dev/chainloop/issues) if yo
 
 ## Changelog
 
-Take a look at the list of [[releases|http://github.com/chainloop-dev/chainloop/releases]] to stay tuned for the latest features and changes.
+Take a look at the list of [releases](http://github.com/chainloop-dev/chainloop/releases) to stay tuned for the latest features and changes.
 
 ## License
 
