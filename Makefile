@@ -18,7 +18,6 @@ init:
 .PHONY: api
 # generate api proto
 api:
-	cd ./api && buf generate
 	make -C ./app/controlplane api
 	make -C ./app/cli api
 	make -C ./app/artifact-cas api

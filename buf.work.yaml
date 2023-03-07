@@ -1,6 +1,5 @@
 version: v1
 directories:
-  - api
   - app/cli/api
   - app/controlplane/api
   - app/artifact-cas/api
