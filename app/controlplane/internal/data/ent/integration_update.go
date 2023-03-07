@@ -145,6 +145,11 @@ func (iu *IntegrationUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (iu *IntegrationUpdate) check() error {
+	if v, ok := iu.mutation.Config(); ok {
+		if err := v.Validate(); err != nil {
+			return &ValidationError{Name: "config", err: fmt.Errorf(`ent: validator failed for field "Integration.config": %w`, err)}
+		}
+	}
 	if _, ok := iu.mutation.OrganizationID(); iu.mutation.OrganizationCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Integration.organization"`)
 	}
@@ -407,6 +412,11 @@ func (iuo *IntegrationUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (iuo *IntegrationUpdateOne) check() error {
+	if v, ok := iuo.mutation.Config(); ok {
+		if err := v.Validate(); err != nil {
+			return &ValidationError{Name: "config", err: fmt.Errorf(`ent: validator failed for field "Integration.config": %w`, err)}
+		}
+	}
 	if _, ok := iuo.mutation.OrganizationID(); iuo.mutation.OrganizationCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Integration.organization"`)
 	}

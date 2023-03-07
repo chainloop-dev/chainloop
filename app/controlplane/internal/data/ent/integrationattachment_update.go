@@ -126,6 +126,11 @@ func (iau *IntegrationAttachmentUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (iau *IntegrationAttachmentUpdate) check() error {
+	if v, ok := iau.mutation.Config(); ok {
+		if err := v.Validate(); err != nil {
+			return &ValidationError{Name: "config", err: fmt.Errorf(`ent: validator failed for field "IntegrationAttachment.config": %w`, err)}
+		}
+	}
 	if _, ok := iau.mutation.IntegrationID(); iau.mutation.IntegrationCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "IntegrationAttachment.integration"`)
 	}
@@ -353,6 +358,11 @@ func (iauo *IntegrationAttachmentUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (iauo *IntegrationAttachmentUpdateOne) check() error {
+	if v, ok := iauo.mutation.Config(); ok {
+		if err := v.Validate(); err != nil {
+			return &ValidationError{Name: "config", err: fmt.Errorf(`ent: validator failed for field "IntegrationAttachment.config": %w`, err)}
+		}
+	}
 	if _, ok := iauo.mutation.IntegrationID(); iauo.mutation.IntegrationCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "IntegrationAttachment.integration"`)
 	}
