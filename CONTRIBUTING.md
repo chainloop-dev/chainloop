@@ -17,7 +17,27 @@ If you then still feel the need to ask a question and need clarification, we rec
 
 We will then take care of the issue as soon as possible.
 
-## Development
+## Local development
+
+### Pre-requisites
+
+To run Chainloop core components locally you need
+
+- Golang 1.20+ toolchain
+- `make`
+
+In addition to those, you'll need:
+
+- PostgreSQL 14
+- A secret manager i.e Hashicorp Vault or credentials for AWS secret manager
+- Open ID connect Single-Sign-On credentials.
+
+Luckily, these can be easily run by leveraging the provided docker compose that can be found in the `devel` directory.
+
+```
+cd devel
+docker compose up
+```
 
 ### Chainloop Components
 
@@ -25,36 +45,17 @@ We will then take care of the issue as soon as possible.
 - `app/artifact-cas`
 - `app/cli`
 
-See makefiles in those directories for more information
+Each of those directories have a `Makefile` with a `make run` target
 
-### Using Docker Compose
+i.e `make -C app/controlplane run`
 
-You can run the core services (controlplane and CAS) and associated dependencies (postgresql) by running
-
-```
-docker compose up
-```
-
-Then, the CLI can be run by doing
+### Logging in the control-plane
 
 ```
-docker compose run --rm cli
+make -C app/cli -- auth login
 ```
 
-Note that changes made in the source code are not reflected automatically in the running services, for that you'll need to perform a restart.
+this will redirect you to the pre-configured local OIDC provider (DEX) where there are two configured users
 
-```
-docker compose restart -t0 controlplane
-# or
-docker compose restart -t0 cas
-```
-
-### Locally
-
-Prerequisites
-
-- postgresql
-
-Note: You can run the prerequisites by leveraging the provided docker-compose file i.e `docker compose up postgresql`
-
-Then each project has a `make run` target that can be used
+- `sarah@chainloop.local`/`password`
+- `john@chainloop.local`/`password`

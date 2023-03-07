@@ -1,0 +1,43 @@
+version: '3'
+
+# NOTE: This setup is meant to be used for development purposes only.
+services:
+  postgresql:
+    image: docker.io/bitnami/postgresql:14
+    # Expose the port to the host to enable baremetal controlplane development
+    ports:
+      - 5432:5432
+    volumes:
+      - postgresql_data:/bitnami/postgresql
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+      - POSTGRESQL_DATABASE=controlplane
+      - POSTGRESQL_USERNAME=postgres
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 2s
+      retries: 10
+
+  # in memory-only vault for development
+  # note that secrets will get removed when the container is restarted
+  vault:
+    image: docker.io/vault:1.12.3
+    cap_add:
+      - IPC_LOCK
+    ports:
+      - 8200:8200
+    environment:
+      - VAULT_DEV_ROOT_TOKEN_ID=notasecret
+
+  # OIDC provider for development
+  dex:
+    volumes:
+      - ".:/wd"
+    image: docker.io/bitnami/dex:2
+    working_dir: /wd/dex
+    command: "serve config.dev.yaml"
+    ports:
+      - "0.0.0.0:5556:5556/tcp"
+
+volumes:
+  postgresql_data:

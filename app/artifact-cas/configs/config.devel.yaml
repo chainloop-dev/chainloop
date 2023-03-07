@@ -1,6 +1,7 @@
 # Configuration file meant to be used in the development environment.
 # it assumes some services are running in the host machine, like vault
-# Please make sure you run those via the convenience docker-compose file in the root of the project
+# Please make sure you run those via the convenience docker-compose file
+# [root]/devel/docker-compose.yaml
 server:
   http:
     addr: 0.0.0.0:8001
@@ -18,4 +19,4 @@ credentials_service:
     token: ${VAULT_TOKEN:notasecret}
 
 auth:
-  robot_account_public_key_path: "./configs/devkeys/cas.public.pem"
+  robot_account_public_key_path: "../../devel/devkeys/cas.pub"
