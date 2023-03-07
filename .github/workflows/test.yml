@@ -23,14 +23,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
-        if: ${{ matrix.app != 'main-module' }}
-        with:
-          go-version-file: app/${{ matrix.app }}/go.mod
-          cache: true
-          cache-dependency-path: app/${{ matrix.app }}/go.sum
-
-      - uses: actions/setup-go@v3
-        if: ${{ matrix.app == 'main-module' }}
         with:
           go-version-file: go.mod
           cache: true
