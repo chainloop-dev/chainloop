@@ -17,6 +17,7 @@ package service
 
 import (
 	"context"
+	"io"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
@@ -53,7 +54,9 @@ func loadCurrentUserAndOrg(ctx context.Context) (*usercontext.User, *usercontext
 }
 
 func newService(opts ...NewOpt) *service {
-	s := &service{}
+	s := &service{
+		log: log.NewHelper(log.NewStdLogger(io.Discard)),
+	}
 
 	for _, opt := range opts {
 		opt(s)

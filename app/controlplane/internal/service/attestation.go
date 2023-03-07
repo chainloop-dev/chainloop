@@ -72,7 +72,7 @@ type NewAttestationServiceOpts struct {
 
 func NewAttestationService(opts *NewAttestationServiceOpts) *AttestationService {
 	return &AttestationService{
-		service:                 newService(),
+		service:                 newService(opts.Opts...),
 		wrUseCase:               opts.WorkflowRunUC,
 		workflowUseCase:         opts.WorkflowUC,
 		attestationUseCase:      opts.AttestationUC,
