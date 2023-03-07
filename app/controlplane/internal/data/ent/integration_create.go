@@ -169,6 +169,11 @@ func (ic *IntegrationCreate) check() error {
 	if _, ok := ic.mutation.Config(); !ok {
 		return &ValidationError{Name: "config", err: errors.New(`ent: missing required field "Integration.config"`)}
 	}
+	if v, ok := ic.mutation.Config(); ok {
+		if err := v.Validate(); err != nil {
+			return &ValidationError{Name: "config", err: fmt.Errorf(`ent: validator failed for field "Integration.config": %w`, err)}
+		}
+	}
 	if _, ok := ic.mutation.OrganizationID(); !ok {
 		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "Integration.organization"`)}
 	}

@@ -147,6 +147,11 @@ func (iac *IntegrationAttachmentCreate) check() error {
 	if _, ok := iac.mutation.Config(); !ok {
 		return &ValidationError{Name: "config", err: errors.New(`ent: missing required field "IntegrationAttachment.config"`)}
 	}
+	if v, ok := iac.mutation.Config(); ok {
+		if err := v.Validate(); err != nil {
+			return &ValidationError{Name: "config", err: fmt.Errorf(`ent: validator failed for field "IntegrationAttachment.config": %w`, err)}
+		}
+	}
 	if _, ok := iac.mutation.IntegrationID(); !ok {
 		return &ValidationError{Name: "integration", err: errors.New(`ent: missing required edge "IntegrationAttachment.integration"`)}
 	}
