@@ -1,4 +1,6 @@
-## Local development
+# Development Environment
+
+## Local setup
 
 For development, Chainloop components (Control Plane, Artifact CAS and CLI) come pre-configured to talk to a set of auxiliary services (Dex, PostgresSQL and Vault) that can be run using [Docker Compose](https://docs.docker.com/compose/), so you can start contributing in no time! :)
 
@@ -45,13 +47,13 @@ The Command line interface (CLI) is used for both a) operate on the control plan
 
 You can run it by executing `go run app/cli/main.go`
 
-3.1 - Configure the CLI to point to the local control plane and CAS services.
+4.1 - Configure the CLI to point to the local control plane and CAS services.
 
 ```
 go run app/cli/main.go config save --insecure --control-plane localhost:9000 --artifact-cas localhost:9001
 ```
 
-3.2 - Logging in the control-plane
+4.2 - Logging in the control-plane
 
 You should now be ready to authenticate the CLI
 
@@ -66,4 +68,4 @@ You will get redirected to the pre-configured local OIDC provider (DEX) where th
 - `sarah@chainloop.local`/`password`
 - `john@chainloop.local`/`password`
 
-Once logged in, you are ready to follow our [Getting Started guide](https://docs.chainloop.dev/getting-started/setup)
+Once logged in, please refer to our [Getting Started guide](https://docs.chainloop.dev/getting-started/setup) to learn how to setup an OCI registry.
