@@ -10,12 +10,12 @@ Your commits must meet the following criteria
 
 - It is signed. To learn how, check [this guide](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits).
 - It includes a `--sign-off` stanza. By doing this you state that you can certify [Developer Certificate of Origin](https://developercertificate.org).
-- Its message tries to follow the Conventional Commits [guidelines](https://www.conventionalcommits.org/en/v1.0.0/>).
+- Its message tries to follow the Conventional Commits [guidelines](https://www.conventionalcommits.org/en/v1.0.0).
 
 A commit then would look like
 
 ```
-git commit -S -s -m "<your commit message that follows https://www.conventionalcommits.org/en/v1.0.0/>"
+git commit -S -s -m "<your commit message that follows https://www.conventionalcommits.org/en/v1.0.0"
 ```
 
 ## Code Reviews
