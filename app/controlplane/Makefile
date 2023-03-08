@@ -16,7 +16,7 @@ build:
 	mkdir -p bin/ && go build -ldflags\
 	  "-X github.com/chainloop-dev/chainloop/app/controlplane/internal/server.Version=$(VERSION)\
 	  -X main.Version=$(VERSION)"\
-	   -o ./bin/control-plane ./cmd/...
+	  -o ./bin/control-plane ./cmd/...
 
 .PHONY: run
 # run

@@ -1,37 +1,14 @@
 VERSION=$(shell git describe --tags --always)
 
-.PHONY: init
-# init env
-init:
-	go install github.com/spf13/cobra-cli@latest
-
-# If the first argument is "run"...
-ifeq (run,$(firstword $(MAKECMDGOALS)))
-  # use the rest as arguments for "run"
-  RUN_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
-  # ...and turn them into do-nothing targets
-  $(eval $(RUN_ARGS):;@:)
-endif
-
 .PHONY: api
 # generate api proto
 api:
 	cd ./api && buf generate
 
-.PHONY: run
-# run
-run:
-	go run main.go --insecure --control-plane localhost:9000 --artifact-cas localhost:9001 $(RUN_ARGS)
-
 .PHONY: build
 # build
 build:
 	mkdir -p bin/ && go build -ldflags "-X github.com/chainloop-dev/chainloop/app/cli/cmd.Version=$(VERSION)" -o ./bin/chainloop ./main.go
-
-.PHONY: all
-# generate all
-all:
-	make build;
 
 .PHONY: test
 # test
