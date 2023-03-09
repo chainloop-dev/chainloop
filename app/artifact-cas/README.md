@@ -2,7 +2,7 @@
 
 The artifact proxy is a **Content-Addressable Storage (CAS) Proxy** that sits in front of different storage backends.
 
-Clients such as the Chainloop Control Plane or the CLI will use this proxy to make sure that **uploaded artifacts are immutable and uniquely identifiable by their content digest (sha256sum)**.
+Clients such as the Chainloop Control Plane or the CLI use this proxy to make sure that **uploaded artifacts are immutable and uniquely identifiable by their content digest (sha256sum)**.
 
 NOTE: At the moment of this writing, only an [OCI](https://opencontainers.org/) storage backend is supported. In the future you should potentially expect Object Storage Support (i.e AWS s3) as well.
 
