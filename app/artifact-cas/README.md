@@ -24,7 +24,7 @@ The CAS proxy **has only one running dependency**. A secret storage backend to r
 
 This secret backend is used to download OCI repository credentials (repository path + key pair) during upload/downloads. This makes the Artifact CAS multi-tenant by default since the destination OCI backend gets selected at runtime.
 
-## Authentication
+## AuthN/AuthZ
 
 The Artifact CAS API expects each request to contain a [JSON Web Token](https://auth0.com/docs/secure/tokens/json-web-tokens) with references to a) what operation is this token allowed to do (Download, Upload) and b) a reference to where the CAS can find the OCI credentials.
 
