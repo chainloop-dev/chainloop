@@ -50,6 +50,12 @@ We've implemented two kinds of tests, unit tests (`make run test-unit`) and inte
 
 To run all the tests `make test`
 
+### Build binary
+
+```
+make build
+```
+
 ### Generate API code from protocol buffer defintions (\*.proto)
 
 We leverage buf.io to lint and generate proto files. Make sure you [install buf](https://docs.buf.build/installation) first.
