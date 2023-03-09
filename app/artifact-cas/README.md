@@ -1,8 +1,8 @@
-# Artifacts Content Addressable Storage (CAS) Proxy
+# Artifact Content Addressable Storage (CAS) Proxy
 
-The artifact CAS proxy is a **Content Addressable Storage Proxy** in front of different storage backends. At the moment of the writing, only [OCI](https://opencontainers.org/) registry backend is supported.
+The artifact proxy is a **Content Addressable Storage (CAS) Proxy** that sits in front of different storage backends. At the moment of the writing, only the [OCI](https://opencontainers.org/) registry backend is supported.
 
-Clients such as the Chainloop Control Plane or the CLI will use to to upload files so later on can be downloaded by content digest (sha256).
+Clients such as the Chainloop Control Plane or the CLI can use this proxy to make sure that uploaded files get stored in an immutable manner. This means that later on, downloads are only referenced by their content digest (sha256).
 
 ![cas](../../docs/img/cas-overview.png)
 
