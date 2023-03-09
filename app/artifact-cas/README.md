@@ -63,7 +63,15 @@ go run main.go --insecure artifact download -d [sha256:...]
 
 ### Run tests
 
-`make test`
+```
+make test
+```
+
+### Build binary
+
+```
+make build
+```
 
 ### Generate API code from protocol buffer defintions (\*.proto)
 
