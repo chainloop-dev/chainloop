@@ -203,7 +203,7 @@ func newVaultInstance(t *testing.T) *vaultInstance {
 		Env: map[string]string{
 			"VAULT_DEV_ROOT_TOKEN_ID": defaultToken,
 		},
-		WaitingFor: wait.ForListeningPort("8200/tcp"),
+		WaitingFor: wait.ForHTTP("/v1/sys/health").WithPort("8200/tcp"),
 	}
 
 	instance, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -211,8 +211,7 @@ func newVaultInstance(t *testing.T) *vaultInstance {
 		Started:          true,
 	})
 
-	assert.NoError(t, err)
-
+	require.NoError(t, err)
 	return &vaultInstance{instance}
 }
 
@@ -242,9 +241,7 @@ func (s *testSuite) SetupTest() {
 }
 
 func (s *testSuite) TearDownTest() {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-	assert.NoError(s.T(), s.vault.instance.Terminate(ctx))
+	assert.NoError(s.T(), s.vault.instance.Terminate(context.Background()))
 }
 
 // Run the tests
