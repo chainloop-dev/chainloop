@@ -29,15 +29,13 @@ information on using pull requests.
 
 To learn more about how to run the project locally refer to our development [guide](./devel/README.md).
 
-## I Have a Question
+## Feedback and Questions
 
-> If you want to ask a question, we assume that you have read the available [Documentation](https://docs.chainloop.dev).
-
-Before you ask a question, it is best to search for existing [Issues](https://github.com/chainloop-dev/chainloop/issues) that might help you. In case you have found a suitable issue and still need clarification, you can write your question in this issue. It is also advisable to search the internet for answers first.
-
-If you then still feel the need to ask a question and need clarification, we recommend the following:
+If you have any question or piece of feedback don't hesitate to
 
 - Open an [Issue](https://github.com/chainloop-dev/chainloop/issues/new)
 - Reach out via our [Discord Server](https://discord.gg/f7atkaZact)
+
+We are very excited to have you on board!
 
 Welcome contributor!
