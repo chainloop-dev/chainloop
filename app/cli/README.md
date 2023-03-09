@@ -1,6 +1,6 @@
 # Command Line Interface (CLI)
 
-This Command Line Interface (CLI) is a local client that's used for two purposes
+This Command Line Interface (CLI) is a local client that's used for two purposes:
 
 a) Operator [Management Tasks](https://docs.chainloop.dev/getting-started/workflow-definition)
 
@@ -9,15 +9,15 @@ a) Operator [Management Tasks](https://docs.chainloop.dev/getting-started/workfl
 
 b) [Attestation Crafting Process](https://docs.chainloop.dev/getting-started/attestation-crafting)
 
-- This CLI will be used in different CI/CD systems to perform the [attestation process](https://docs.chainloop.dev/getting-started/attestation-crafting)
+- Perform the [attestation process](https://docs.chainloop.dev/getting-started/attestation-crafting) inside a CI/CD system.
 
 ![cas](../../docs/img/cli-overview.png)
 
-The project is a [Go](https://go.dev/) CLI that leverages [Cobra](https://github.com/spf13/cobra) for CLI scaffolding, [Viper](https://github.com/spf13/viper) for configuration handling, [gRPC](https://grpc.io/) to communicate with both the control plane and the Artifact CAS APIs, and the [cosign](https://github.com/sigstore/cosign), [in-toto](https://github.com/in-toto/in-toto), [DSEE](https://github.com/secure-systems-lab/dsse/) and [SLSA](https://github.com/slsa-framework/slsa) projects to implement the attestation process.
+The project is a [Go](https://go.dev/) CLI that leverages [Cobra](https://github.com/spf13/cobra) for CLI scaffolding, [Viper](https://github.com/spf13/viper) for configuration handling, [gRPC](https://grpc.io/) to communicate with both the control plane and the Artifact CAS APIs, and the [cosign](https://github.com/sigstore/cosign), [in-toto](https://github.com/in-toto/in-toto), [DSEE](https://github.com/secure-systems-lab/dsse/) and [SLSA](https://github.com/slsa-framework/slsa) projects for the attestation process.
 
 ## Runbook
 
-We leverage `make` for most development tasks. Run `make -C app/cli` to see a list of the available tasks.
+We use `make` for most development tasks. Run `make -C app/cli` to see a list of the available tasks.
 
 ### Run the project in development
 
@@ -26,6 +26,8 @@ Refer to [development guide](../../devel/README.md) for more information but in 
 ```
 go run app/cli/main.go --insecure
 ```
+
+> NOTE: In development a --insecure flag must be provided to talk to the local APIs
 
 ### Configure the CLI to point to the local control plane and CAS services.
 

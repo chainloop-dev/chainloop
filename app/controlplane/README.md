@@ -27,7 +27,7 @@ The control plane has 4 main dependencies
 
 ## Runbook
 
-We leverage `make` for most development tasks. Run `make -C app/controlplane` to see a list of the available tasks.
+We use `make` for most development tasks. Run `make -C app/controlplane` to see a list of the available tasks.
 
 ### Run the project in development
 
@@ -58,7 +58,7 @@ make build
 
 ### Generate API code from protocol buffer defintions (\*.proto)
 
-We leverage buf.io to lint and generate proto files. Make sure you [install buf](https://docs.buf.build/installation) first.
+We use buf.io to lint and generate proto files. Make sure you [install buf](https://docs.buf.build/installation) first.
 
 Once done, generating the API code is as easy as executing
 
