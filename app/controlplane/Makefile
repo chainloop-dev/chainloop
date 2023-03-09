@@ -44,7 +44,6 @@ lint:
 .PHONY: generate
 # generate
 generate:
-	go get github.com/google/wire/cmd/wire@latest
 	go generate ./...
 
 .PHONY: all
