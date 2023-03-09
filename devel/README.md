@@ -33,8 +33,8 @@ docker compose up
 
 Once you have the pre-required services up and running, you should be able to run the different Chainloop server-side components, in our case we have:
 
-- The Control Plane (`app/controlplane`)
-- The Artifact Content Addressable Storage (CAS) Proxy (`app/artifact-cas`)
+- The Control Plane [`app/controlplane`](../app/controlplane/)
+- The Artifact Content Addressable Storage (CAS) Proxy [`app/artifact-cas`](../app/artifact-cas/)
 
 These components are built using [Go](https://go.dev/), have a `Makefile` and a `make run` target for convenience.
 
@@ -43,7 +43,7 @@ These components are built using [Go](https://go.dev/), have a `Makefile` and a 
 
 ### 4 - Using the CLI pointing to the local environment
 
-The Command line interface (CLI) is used for both a) operate on the control plane and b) run the attestation process on your CI/CD.
+The [Command line interface (CLI)](../app/cli/) is used for both a) operate on the control plane and b) run the attestation process on your CI/CD.
 
 You can run it by executing `go run app/cli/main.go`
 
