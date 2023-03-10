@@ -61,7 +61,7 @@ func NewBackend(repository string, regOpts *RegistryOptions) (*Backend, error) {
 }
 
 // Exists check that the artifact is already present in the repository and it points to the
-// same image digest, meaning it has not been repushed/replaced
+// same image digest, meaning it has not been re-pushed/replaced
 // This method is very naive so signatures will be used in future releases
 func (b *Backend) Exists(ctx context.Context, digest string) (bool, error) {
 	if digest == "" {
@@ -74,7 +74,7 @@ func (b *Backend) Exists(ctx context.Context, digest string) (bool, error) {
 	}
 
 	// It's not trivial to catch if the error is a 404 (yeah I know...) so we will assume that
-	// any error means no and will be catched in the next stage when we try to upload the image
+	// any error means no and will be caught in the next stage when we try to upload the image
 	image, err := remote.Image(ref, remote.WithAuthFromKeychain(b.keychain))
 	if err != nil {
 		// Image is not there
