@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"reflect"
 	"testing"
 	"time"
 
@@ -65,22 +66,23 @@ func (s *testSuite) TestNewManager() {
 
 const orgID = "test-org"
 
-func (s *testSuite) TestReadWriteOCICreds() {
+type storedSecret struct {
+	Foo, Bar string
+}
+
+func (s *testSuite) TestReadWriteCredentials() {
 	assert := assert.New(s.T())
-	validCreds := &credentials.OCIKeypair{Repo: "test-repo", Username: "username", Password: "password"}
+	validOCICreds := &credentials.OCIKeypair{Repo: "test-repo", Username: "username", Password: "password"}
 
 	testCases := []struct {
 		name               string
-		want               *credentials.OCIKeypair
+		want               any
 		path               string
 		expectedWriteError bool
 	}{
-		{"empty secret", &credentials.OCIKeypair{}, "", true},
-		{"missing repo", &credentials.OCIKeypair{Username: "un", Password: "p"}, "", true},
-		{"missing username", &credentials.OCIKeypair{Username: "", Password: "p", Repo: "repo"}, "", true},
-		{"missing password", &credentials.OCIKeypair{Username: "u", Password: "", Repo: "repo"}, "", true},
-		{"valid creds", validCreds, "", false},
-		{"valid creds custom path", validCreds, "fooo", false},
+		{"valid creds", validOCICreds, "", false},
+		{"valid creds custom path", validOCICreds, "fooo", false},
+		{"random struct is compatible", &storedSecret{"bar", "baz"}, "", false},
 	}
 
 	for _, tc := range testCases {
@@ -89,16 +91,23 @@ func (s *testSuite) TestReadWriteOCICreds() {
 			m, err := vault.NewManager(opts)
 			require.NoError(s.T(), err)
 
-			secretName, err := m.SaveOCICreds(context.Background(), orgID, tc.want)
+			secretName, err := m.SaveCredentials(context.Background(), orgID, tc.want)
 			if tc.expectedWriteError {
 				assert.Error(err)
 				return
 			}
 
 			assert.NoError(err)
-			// Read the keypair
-			got := &credentials.OCIKeypair{}
-			err = m.ReadOCICreds(context.Background(), secretName, got)
+			// Read the keypair choosing the returning struct
+			var got any
+			switch reflect.TypeOf(tc.want).String() {
+			case "*credentials.OCIKeypair":
+				got = &credentials.OCIKeypair{}
+			default:
+				got = &storedSecret{}
+			}
+
+			err = m.ReadCredentials(context.Background(), secretName, got)
 			assert.NoError(err)
 
 			// Compare the keypair
@@ -110,7 +119,7 @@ func (s *testSuite) TestReadWriteOCICreds() {
 	opts := &vault.NewManagerOpts{AuthToken: defaultToken, Address: s.connectionString}
 	m, err := vault.NewManager(opts)
 	require.NoError(s.T(), err)
-	err = m.ReadOCICreds(context.Background(), "bogus", nil)
+	err = m.ReadCredentials(context.Background(), "bogus", nil)
 	assert.ErrorIs(err, credentials.ErrNotFound)
 }
 
@@ -124,65 +133,24 @@ func (s *testSuite) TestDeleteCreds() {
 	m, err := vault.NewManager(opts)
 	require.NoError(err)
 
-	secretName, err := m.SaveOCICreds(context.Background(), orgID, validCreds)
+	secretName, err := m.SaveCredentials(context.Background(), orgID, validCreds)
 	require.NoError(err)
 
 	// Read the keypair
 	got := &credentials.OCIKeypair{}
-	err = m.ReadOCICreds(context.Background(), secretName, got)
+	err = m.ReadCredentials(context.Background(), secretName, got)
 	assert.NoError(err)
 	// Compare the keypair
 	assert.Equal(validCreds, got)
 
 	// Delete and check it does not exist
-	err = m.DeleteCreds(context.Background(), secretName)
+	err = m.DeleteCredentials(context.Background(), secretName)
 	assert.NoError(err)
 
 	// It does not exist
 	got = &credentials.OCIKeypair{}
-	err = m.ReadOCICreds(context.Background(), secretName, got)
+	err = m.ReadCredentials(context.Background(), secretName, got)
 	assert.Error(err)
-}
-
-func (s *testSuite) TestReadWriteAPICreds() {
-	assert := assert.New(s.T())
-	validCreds := &credentials.APICreds{Host: "http://hospath.local", Key: "api-key-not-a-secret"}
-
-	testCases := []struct {
-		name          string
-		want          *credentials.APICreds
-		path          string
-		expectedError bool
-	}{
-		{"empty secret", &credentials.APICreds{}, "", true},
-		{"missing host", &credentials.APICreds{Host: "", Key: "p"}, "", true},
-		{"missing key", &credentials.APICreds{Host: "host", Key: ""}, "", true},
-		{"valid creds", validCreds, "", false},
-		{"valid creds custom path", validCreds, "fooo", false},
-	}
-
-	for _, tc := range testCases {
-		s.Run(tc.name, func() {
-			opts := &vault.NewManagerOpts{AuthToken: defaultToken, Address: s.connectionString, SecretPrefix: tc.path}
-			m, err := vault.NewManager(opts)
-			require.NoError(s.T(), err)
-
-			secretName, err := m.SaveAPICreds(context.Background(), orgID, tc.want)
-			if tc.expectedError {
-				assert.Error(err)
-				return
-			}
-
-			assert.NoError(err)
-			// Read the keypair
-			got := &credentials.APICreds{}
-			err = m.ReadAPICreds(context.Background(), secretName, got)
-			assert.NoError(err)
-
-			// Compare the keypair
-			assert.Equal(tc.want, got)
-		})
-	}
 }
 
 type testSuite struct {

@@ -53,8 +53,8 @@ func (s *OrgIntegrationTestSuite) TestDeleteOrg() {
 
 	s.T().Run("org, integrations and repositories deletion", func(t *testing.T) {
 		// Mock calls to credentials deletion for both the integration and the OCI repository
-		s.mockedCredsReaderWriter.On("DeleteCreds", ctx, "stored-integration-secret").Return(nil)
-		s.mockedCredsReaderWriter.On("DeleteCreds", ctx, "stored-OCI-secret").Return(nil)
+		s.mockedCredsReaderWriter.On("DeleteCredentials", ctx, "stored-integration-secret").Return(nil)
+		s.mockedCredsReaderWriter.On("DeleteCredentials", ctx, "stored-OCI-secret").Return(nil)
 
 		err := s.Organization.Delete(ctx, s.org.ID)
 		assert.NoError(err)
@@ -102,12 +102,12 @@ func (s *OrgIntegrationTestSuite) SetupTest() {
 
 	// Dependency-track integration credentials
 	s.mockedCredsReaderWriter.On(
-		"SaveAPICreds", ctx, mock.Anything, &credentials.APICreds{Host: "host", Key: "key"},
+		"SaveCredentials", ctx, mock.Anything, &credentials.APICreds{Host: "host", Key: "key"},
 	).Return("stored-integration-secret", nil)
 
 	// OCI repository credentials
 	s.mockedCredsReaderWriter.On(
-		"SaveOCICreds", ctx, mock.Anything, &credentials.OCIKeypair{Repo: "repo", Username: "username", Password: "pass"},
+		"SaveCredentials", ctx, mock.Anything, &credentials.OCIKeypair{Repo: "repo", Username: "username", Password: "pass"},
 	).Return("stored-OCI-secret", nil)
 
 	s.TestingUseCases = testhelpers.NewTestingUseCases(t, testhelpers.WithCredsReaderWriter(s.mockedCredsReaderWriter))

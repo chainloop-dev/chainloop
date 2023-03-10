@@ -503,7 +503,7 @@ func doSendToDependencyTrack(ctx context.Context, credsReader credentials.Reader
 	attachmentConfig := i.IntegrationAttachment.Config.GetDependencyTrack()
 
 	creds := &credentials.APICreds{}
-	if err := credsReader.ReadAPICreds(ctx, i.SecretName, creds); err != nil {
+	if err := credsReader.ReadCredentials(ctx, i.SecretName, creds); err != nil {
 		return err
 	}
 

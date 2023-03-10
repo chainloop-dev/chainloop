@@ -17,6 +17,7 @@ package oci
 
 import (
 	"context"
+	"fmt"
 
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
@@ -35,8 +36,12 @@ func NewBackendProvider(cReader credentials.Reader) *BackendProvider {
 
 func (p *BackendProvider) FromCredentials(ctx context.Context, secretName string) (backend.UploaderDownloader, error) {
 	creds := &credentials.OCIKeypair{}
-	if err := p.cReader.ReadOCICreds(ctx, secretName, creds); err != nil {
+	if err := p.cReader.ReadCredentials(ctx, secretName, creds); err != nil {
 		return nil, err
+	}
+
+	if err := creds.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid credentials retrieved from storage: %w", err)
 	}
 
 	k, err := ociauth.NewCredentials(creds.Repo, creds.Username, creds.Password)

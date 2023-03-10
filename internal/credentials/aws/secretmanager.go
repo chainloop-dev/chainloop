@@ -83,52 +83,12 @@ func NewManager(opts *NewManagerOpts) (*Manager, error) {
 	}, nil
 }
 
-func (m *Manager) SaveOCICreds(ctx context.Context, orgID string, creds *credentials.OCIKeypair) (string, error) {
-	if err := creds.Validate(); err != nil {
-		return "", fmt.Errorf("validating OCI keypair: %w", err)
-	}
-
-	return m.save(ctx, orgID, creds)
-}
-
-func (m *Manager) SaveAPICreds(ctx context.Context, orgID string, creds *credentials.APICreds) (string, error) {
-	if err := creds.Validate(); err != nil {
-		return "", fmt.Errorf("validating API creds: %w", err)
-	}
-
-	return m.save(ctx, orgID, creds)
-}
-
-func (m *Manager) ReadAPICreds(ctx context.Context, secretID string, creds *credentials.APICreds) error {
-	raw, err := m.read(ctx, secretID)
-	if err != nil {
-		return fmt.Errorf("getting the secret from AWS: %w", err)
-	}
-
-	return json.Unmarshal(raw, creds)
-}
-
-func (m *Manager) ReadOCICreds(ctx context.Context, secretID string, creds *credentials.OCIKeypair) error {
-	raw, err := m.read(ctx, secretID)
-	if err != nil {
-		return fmt.Errorf("getting the secret from AWS: %w", err)
-	}
-
-	return json.Unmarshal(raw, creds)
-}
-
-func (m *Manager) DeleteCreds(ctx context.Context, secretID string) error {
-	_, err := m.client.DeleteSecret(ctx, &secretsmanager.DeleteSecretInput{
-		SecretId: aws.String(secretID),
-	})
-
-	return err
-}
-
-func (m *Manager) save(ctx context.Context, orgID string, creds interface{}) (string, error) {
+// Save Credentials, this is a generic function that can be used to save any type of credentials
+// as long as they can be passed to json.Marshall
+func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any) (string, error) {
 	secretName := strings.Join([]string{m.secretPrefix, orgID, uuid.Generate().String()}, "/")
 
-	// Store the credentials as json keypairs
+	// Store the credentials as json key pairs
 	c, err := json.Marshal(creds)
 	if err != nil {
 		return "", fmt.Errorf("marshalling credentials to be stored: %w", err)
@@ -143,7 +103,7 @@ func (m *Manager) save(ctx context.Context, orgID string, creds interface{}) (st
 	return secretName, nil
 }
 
-func (m *Manager) read(ctx context.Context, secretID string) ([]byte, error) {
+func (m *Manager) ReadCredentials(ctx context.Context, secretID string, creds any) error {
 	resp, err := m.client.GetSecretValue(ctx, &secretsmanager.GetSecretValueInput{
 		SecretId: aws.String(secretID),
 	})
@@ -153,12 +113,20 @@ func (m *Manager) read(ctx context.Context, secretID string) ([]byte, error) {
 		if errors.As(err, &apiErr) {
 			switch apiErr.ErrorCode() {
 			case (&types.ResourceNotFoundException{}).ErrorCode():
-				return nil, fmt.Errorf("%w: path=%s", credentials.ErrNotFound, secretID)
+				return fmt.Errorf("%w: path=%s", credentials.ErrNotFound, secretID)
 			default:
-				return nil, err
+				return err
 			}
 		}
 	}
 
-	return []byte(*resp.SecretString), nil
+	return json.Unmarshal([]byte(*resp.SecretString), creds)
+}
+
+func (m *Manager) DeleteCredentials(ctx context.Context, secretID string) error {
+	_, err := m.client.DeleteSecret(ctx, &secretsmanager.DeleteSecretInput{
+		SecretId: aws.String(secretID),
+	})
+
+	return err
 }

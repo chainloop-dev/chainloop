@@ -5,7 +5,6 @@ package mocks
 import (
 	context "context"
 
-	credentials "github.com/chainloop-dev/chainloop/internal/credentials"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -14,27 +13,13 @@ type Reader struct {
 	mock.Mock
 }
 
-// ReadAPICreds provides a mock function with given fields: ctx, secretName, creds
-func (_m *Reader) ReadAPICreds(ctx context.Context, secretName string, creds *credentials.APICreds) error {
-	ret := _m.Called(ctx, secretName, creds)
+// ReadCredentials provides a mock function with given fields: ctx, secretName, _a2
+func (_m *Reader) ReadCredentials(ctx context.Context, secretName string, _a2 interface{}) error {
+	ret := _m.Called(ctx, secretName, _a2)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, *credentials.APICreds) error); ok {
-		r0 = rf(ctx, secretName, creds)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// ReadOCICreds provides a mock function with given fields: ctx, secretName, creds
-func (_m *Reader) ReadOCICreds(ctx context.Context, secretName string, creds *credentials.OCIKeypair) error {
-	ret := _m.Called(ctx, secretName, creds)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, *credentials.OCIKeypair) error); ok {
-		r0 = rf(ctx, secretName, creds)
+	if rf, ok := ret.Get(0).(func(context.Context, string, interface{}) error); ok {
+		r0 = rf(ctx, secretName, _a2)
 	} else {
 		r0 = ret.Error(0)
 	}

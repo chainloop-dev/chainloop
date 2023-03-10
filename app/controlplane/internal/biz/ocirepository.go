@@ -113,8 +113,13 @@ func (uc *OCIRepositoryUseCase) CreateOrUpdate(ctx context.Context, orgID, repoU
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	// Create the secret in the external secrets manager
-	secretName, err := uc.credsRW.SaveOCICreds(ctx, orgID, &credentials.OCIKeypair{Repo: repoURL, Username: username, Password: password})
+	// Validate and store the secret in the external secrets manager
+	creds := &credentials.OCIKeypair{Repo: repoURL, Username: username, Password: password}
+	if err := creds.Validate(); err != nil {
+		return nil, newErrValidation(err)
+	}
+
+	secretName, err := uc.credsRW.SaveCredentials(ctx, orgID, creds)
 	if err != nil {
 		return nil, fmt.Errorf("storing the credentials: %w", err)
 	}
@@ -167,7 +172,7 @@ func (uc *OCIRepositoryUseCase) Delete(ctx context.Context, id string) error {
 
 	uc.logger.Infow("msg", "deleting OCI repository external secrets", "ID", id, "secretName", repo.SecretName)
 	// Delete the secret in the external secrets manager
-	if err := uc.credsRW.DeleteCreds(ctx, repo.SecretName); err != nil {
+	if err := uc.credsRW.DeleteCredentials(ctx, repo.SecretName); err != nil {
 		return fmt.Errorf("deleting the credentials: %w", err)
 	}
 

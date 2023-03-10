@@ -103,50 +103,16 @@ func validateClient(kv *vault.KVv2, pathPrefix string) error {
 	return nil
 }
 
-func (m *Manager) SaveOCICreds(ctx context.Context, orgID string, creds *credentials.OCIKeypair) (string, error) {
-	if err := creds.Validate(); err != nil {
-		return "", fmt.Errorf("validating OCI keypair: %w", err)
-	}
-
+func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any) (string, error) {
 	credsM, err := structToMap(creds)
 	if err != nil {
-		return "", fmt.Errorf("converting OCI keypair to map: %w", err)
+		return "", fmt.Errorf("converting struct to map: %w", err)
 	}
 
-	return m.save(ctx, orgID, credsM)
-}
-
-func (m *Manager) SaveAPICreds(ctx context.Context, orgID string, creds *credentials.APICreds) (string, error) {
-	if err := creds.Validate(); err != nil {
-		return "", fmt.Errorf("validating API creds: %w", err)
-	}
-
-	credsM, err := structToMap(creds)
-	if err != nil {
-		return "", fmt.Errorf("converting API creds to map: %w", err)
-	}
-
-	return m.save(ctx, orgID, credsM)
-}
-
-func (m *Manager) ReadAPICreds(ctx context.Context, secretID string, creds *credentials.APICreds) error {
-	return m.read(ctx, secretID, creds)
-}
-
-func (m *Manager) ReadOCICreds(ctx context.Context, secretID string, creds *credentials.OCIKeypair) error {
-	return m.read(ctx, secretID, creds)
-}
-
-func (m *Manager) DeleteCreds(ctx context.Context, secretID string) error {
-	m.logger.Infow("msg", "deleting credentials", "path", secretID)
-	return m.client.DeleteMetadata(ctx, secretID)
-}
-
-func (m *Manager) save(ctx context.Context, orgID string, creds map[string]interface{}) (string, error) {
 	secretName := strings.Join([]string{m.secretPrefix, orgID, uuid.Generate().String()}, "/")
 	m.logger.Infow("msg", "storing credentials", "path", secretName)
 
-	_, err := m.client.Put(ctx, secretName, creds)
+	_, err = m.client.Put(ctx, secretName, credsM)
 	if err != nil {
 		return "", fmt.Errorf("creating secret in Vault: %w", err)
 	}
@@ -154,7 +120,7 @@ func (m *Manager) save(ctx context.Context, orgID string, creds map[string]inter
 	return secretName, nil
 }
 
-func (m *Manager) read(ctx context.Context, secretID string, output interface{}) error {
+func (m *Manager) ReadCredentials(ctx context.Context, secretID string, creds any) error {
 	m.logger.Infow("msg", "reading credentials", "path", secretID)
 
 	s, err := m.client.Get(ctx, secretID)
@@ -166,11 +132,18 @@ func (m *Manager) read(ctx context.Context, secretID string, output interface{})
 		return fmt.Errorf("reading secret from Vault: %w", err)
 	}
 
-	if err := mapToStruct(s.Data, output); err != nil {
+	if err := mapToStruct(s.Data, creds); err != nil {
 		return fmt.Errorf("converting secret to struct: %w", err)
 	}
 
+	fmt.Printf("READING %+v", creds)
+
 	return nil
+}
+
+func (m *Manager) DeleteCredentials(ctx context.Context, secretID string) error {
+	m.logger.Infow("msg", "deleting credentials", "path", secretID)
+	return m.client.DeleteMetadata(ctx, secretID)
 }
 
 // convert from struct to map[string]interface{}
