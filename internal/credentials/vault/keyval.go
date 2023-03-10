@@ -136,8 +136,6 @@ func (m *Manager) ReadCredentials(ctx context.Context, secretID string, creds an
 		return fmt.Errorf("converting secret to struct: %w", err)
 	}
 
-	fmt.Printf("READING %+v", creds)
-
 	return nil
 }
 
