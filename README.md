@@ -13,6 +13,20 @@ Developer teams, on the other hand, do not need to become security experts, the 
 
 To learn more about the project motivation please look at [this blog post](https://docs.chainloop.dev/blog/introducing-chainloop) and see it in action in [this video](https://docs.chainloop.dev/blog/software-supply-chain-attestation-easy-way#see-it-in-action).
 
+## Getting started
+
+See the getting started [guide](https://docs.chainloop.dev/getting-started/installation) for detailed information on downloading and configuring the Chainloop Command Line Interface (CLI)
+
+In a nutshell:
+
+```bash
+$ curl -sfL https://docs.chainloop.dev/install.sh | bash -s
+
+$ chainloop auth login
+```
+
+You can also build and run Chainloop [from source](./CONTRIBUTING.md)
+
 ## How does it work?
 
 ### Compliant Single Source of Truth
@@ -43,7 +57,7 @@ Operators can set up third-party integrations such as [Dependency-Track](https:/
 
 Ops can mix and match with different integrations while **not requiring developers to make any changes on their side**!
 
-## Role-tailored experience
+### Role-tailored experience
 
 Chainloop makes sure to clearly define the responsibilities, experience and functional scope of the **two main personas, Security/Operation (SecOps) and Development/Application teams**.
 
@@ -60,7 +74,8 @@ To learn more, please visit the Chainloop project's documentation website, https
 Chainloop is developed in the open and is constantly improved by our users, contributors and maintainers. Got a question, comment, or idea? Please don't hesitate to reach out via:
 
 - GitHub [Issues](https://github.com/chainloop-dev/chainloop/issues)
-- [Discord Community Server](https://discord.gg/f7atkaZact)
+- Discord [Community Server](https://discord.gg/f7atkaZact)
+- Youtube [Channel](https://www.youtube.com/channel/UCISrWrPyR_AFjIQYmxAyKdg)
 
 ## Contributing
 
