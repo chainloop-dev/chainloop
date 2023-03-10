@@ -25,7 +25,9 @@ $ curl -sfL https://docs.chainloop.dev/install.sh | bash -s
 $ chainloop auth login
 ```
 
-You can also build and run Chainloop [from source](./CONTRIBUTING.md)
+> NOTE: You can also build and run Chainloop [from source](./CONTRIBUTING.md)
+
+> Once you've been logged in, follow [these instructions](https://docs.chainloop.dev/getting-started/setup) to learn how to set up your account.
 
 ## How does it work?
 
