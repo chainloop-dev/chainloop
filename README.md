@@ -1,11 +1,11 @@
-# Chainloop Core
+# Chainloop
 
-> Chainloop Core is under active development and you should expect breaking changes before the first stable release.
+> Chainloop is under active development and you should expect breaking changes before the first stable release.
 > If you are interested in contributing, please take a look at our [contributor guide](./CONTRIBUTING.md).
 
 ## What is it?
 
-Chainloop core (Chainloop) is an open source software supply chain control plane, a single source of truth for artifacts plus a declarative attestation process.
+Chainloop is an open source software supply chain control plane, a single source of truth for artifacts plus a declarative attestation process.
 
 With Chainloop, SecOps teams can declaratively state the attestation and artifacts expectations for their organization’s CI/CD workflows, while also resting assured that latest standards and best practices are put in place.
 
@@ -27,7 +27,7 @@ $ chainloop auth login
 
 > NOTE: You can also build and run Chainloop [from source](./CONTRIBUTING.md)
 
-> Once you've been logged in, follow [these instructions](https://docs.chainloop.dev/getting-started/setup) to learn how to set up your account.
+Once you've been logged in, follow [these instructions](https://docs.chainloop.dev/getting-started/setup) to learn how to set up your account.
 
 ## How does it work?
 

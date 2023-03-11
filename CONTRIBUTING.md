@@ -1,6 +1,6 @@
-# Contributing to Chainloop Core
+# Contributing to Chainloop
 
-Chainloop Core maintainers welcome contributions from the community and first want to thank you for taking the time to contribute!
+Chainloop maintainers welcome contributions from the community and first want to thank you for taking the time to contribute!
 
 This project and everyone participating in it is governed by the [Code of Conduct](./CODE_OF_CONDUCT.md) before contributing. By participating, you are expected to uphold this code.
 
