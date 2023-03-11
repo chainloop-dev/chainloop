@@ -1,4 +1,4 @@
-project_name: Chainloop Core
+project_name: Chainloop
 env:
   - CGO_ENABLED=0
 builds:
