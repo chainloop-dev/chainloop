@@ -87,7 +87,7 @@ func NewCrafter(opts ...NewOpt) *Crafter {
 type InitOpts struct {
 	// Control plane workflow metadata
 	WfInfo *api.WorkflowMetadata
-	// already marshalled schema
+	// already marshaled schema
 	SchemaV1 *schemaapi.CraftingSchema
 	// do not record, upload or push attestation
 	DryRun bool
@@ -243,8 +243,8 @@ func initialCraftingState(schema *schemaapi.CraftingSchema, wf *api.WorkflowMeta
 }
 
 func persistCraftingState(craftState *api.CraftingState, stateFilePath string) error {
-	marshaller := protojson.MarshalOptions{Indent: "  "}
-	raw, err := marshaller.Marshal(craftState)
+	marshaler := protojson.MarshalOptions{Indent: "  "}
+	raw, err := marshaler.Marshal(craftState)
 	if err != nil {
 		return err
 	}

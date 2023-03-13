@@ -70,8 +70,8 @@ func encodeContractOutput(run *action.WorkflowContractWithVersionItem) error {
 
 	switch flagOutputFormat {
 	case formatContract:
-		marshaller := protojson.MarshalOptions{Indent: "  "}
-		rawBody, err := marshaller.Marshal(run.Revision.BodyV1)
+		marshaler := protojson.MarshalOptions{Indent: "  "}
+		rawBody, err := marshaler.Marshal(run.Revision.BodyV1)
 		if err != nil {
 			return err
 		}
@@ -86,8 +86,8 @@ func encodeContractOutput(run *action.WorkflowContractWithVersionItem) error {
 func contractDescribeTableOutput(contractWithVersion *action.WorkflowContractWithVersionItem) error {
 	revision := contractWithVersion.Revision
 
-	marshaller := protojson.MarshalOptions{Indent: "  "}
-	rawBody, err := marshaller.Marshal(revision.BodyV1)
+	marshaler := protojson.MarshalOptions{Indent: "  "}
+	rawBody, err := marshaler.Marshal(revision.BodyV1)
 	if err != nil {
 		return err
 	}

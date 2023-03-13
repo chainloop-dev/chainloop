@@ -84,14 +84,14 @@ func NewManager(opts *NewManagerOpts) (*Manager, error) {
 }
 
 // Save Credentials, this is a generic function that can be used to save any type of credentials
-// as long as they can be passed to json.Marshall
+// as long as they can be passed to json.Marshal
 func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any) (string, error) {
 	secretName := strings.Join([]string{m.secretPrefix, orgID, uuid.Generate().String()}, "/")
 
 	// Store the credentials as json key pairs
 	c, err := json.Marshal(creds)
 	if err != nil {
-		return "", fmt.Errorf("marshalling credentials to be stored: %w", err)
+		return "", fmt.Errorf("marshaling credentials to be stored: %w", err)
 	}
 
 	if _, err = m.client.CreateSecret(ctx, &secretsmanager.CreateSecretInput{

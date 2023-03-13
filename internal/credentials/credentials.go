@@ -40,7 +40,6 @@ type Writer interface {
 }
 
 type Reader interface {
-	// credentials must implement marshall/unmarshall
 	ReadCredentials(ctx context.Context, secretName string, credentials any) error
 }
 
