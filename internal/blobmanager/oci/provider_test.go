@@ -32,7 +32,7 @@ func TestFromCredentials(t *testing.T) {
 	r := mocks.NewReader(t)
 	const repo, password, username = "repo", "password", "username"
 
-	r.On("ReadOCICreds", ctx, "secretName", mock.AnythingOfType("*credentials.OCIKeypair")).Return(nil).Run(
+	r.On("ReadCredentials", ctx, "secretName", mock.AnythingOfType("*credentials.OCIKeypair")).Return(nil).Run(
 		func(args mock.Arguments) {
 			credentials := args.Get(2).(*credentials.OCIKeypair)
 			credentials.Repo = repo

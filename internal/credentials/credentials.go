@@ -34,16 +34,13 @@ type ReaderWriter interface {
 	Writer
 }
 
-// TODO: Add generics
 type Writer interface {
-	SaveAPICreds(ctx context.Context, org string, creds *APICreds) (string, error)
-	SaveOCICreds(ctx context.Context, org string, creds *OCIKeypair) (string, error)
-	DeleteCreds(ctx context.Context, credID string) error
+	SaveCredentials(ctx context.Context, org string, credentials any) (string, error)
+	DeleteCredentials(ctx context.Context, credID string) error
 }
 
 type Reader interface {
-	ReadAPICreds(ctx context.Context, secretName string, creds *APICreds) error
-	ReadOCICreds(ctx context.Context, secretName string, creds *OCIKeypair) error
+	ReadCredentials(ctx context.Context, secretName string, credentials any) error
 }
 
 var ErrNotFound = errors.New("credentials not found")

@@ -17,6 +17,8 @@ package aws
 
 import (
 	"context"
+	"encoding/json"
+	"reflect"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -65,48 +67,56 @@ const defaultRegion = "default-region"
 const defaultAccessKey = "access-key-not-a-real-key"
 const defaultSecretKey = "secret-key-not-a-real-key"
 
-func (s *testSuite) TestReadWriteOCICreds() {
+func (s *testSuite) TestReadWriteCredentials() {
 	assert := assert.New(s.T())
-	validCreds := &credentials.OCIKeypair{Repo: "test-repo", Username: "username", Password: "password"}
-	//nolint:gosec
-	// This is a test secret, it is not a real secret
-	validCredsString := "{\"Repo\":\"test-repo\",\"Username\":\"username\",\"Password\":\"password\"}"
+	validOCICreds := &credentials.OCIKeypair{Repo: "test-repo", Username: "username", Password: "password"}
+	validAPICreds := &credentials.APICreds{Host: "h", Key: "k"}
 
 	testCases := []struct {
 		name          string
-		want          *credentials.OCIKeypair
+		want          any
 		path          string
 		expectedError bool
 	}{
-		{"empty secret", &credentials.OCIKeypair{}, "", true},
-		{"missing repo", &credentials.OCIKeypair{Username: "un", Password: "p"}, "", true},
-		{"missing username", &credentials.OCIKeypair{Username: "", Password: "p", Repo: "repo"}, "", true},
-		{"missing password", &credentials.OCIKeypair{Username: "u", Password: "", Repo: "repo"}, "", true},
-		{"valid creds", validCreds, "", false},
-		{"valid creds custom path", validCreds, "fooo", false},
+		{"valid OCI creds", validOCICreds, "", false},
+		{"valid OCI creds custom path", validOCICreds, "fooo", false},
+		{"valid API creds", validAPICreds, "", false},
+		{"valid API creds custom path", validAPICreds, "fooo", false},
 	}
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
+			// Re-set the manager mocked expectations
+			initMockedManager(s)
 			m := s.mockedManager
 			mc, _ := m.client.(*mclient.SecretsManagerIface)
 			ctx := context.Background()
 
 			mc.On("CreateSecret", ctx, mock.Anything).Return(nil, nil)
-			secretName, err := m.SaveOCICreds(ctx, orgID, tc.want)
+			secretName, err := m.SaveCredentials(ctx, orgID, tc.want)
 			if tc.expectedError {
 				assert.Error(err)
 				return
 			}
 
-			assert.NoError(err)
+			mockedResp, err := json.Marshal(tc.want)
+			require.NoError(s.T(), err)
+
 			// Read the keypair
-			got := &credentials.OCIKeypair{}
 			mc.On("GetSecretValue", ctx, &secretsmanager.GetSecretValueInput{
 				SecretId: aws.String(secretName),
-			}).Return(&secretsmanager.GetSecretValueOutput{SecretString: aws.String(validCredsString)}, nil)
+			}).Return(&secretsmanager.GetSecretValueOutput{SecretString: aws.String(string(mockedResp))}, nil)
 
-			err = m.ReadOCICreds(ctx, secretName, got)
+			// Choose the returning struct
+			var got any
+			switch reflect.TypeOf(tc.want).String() {
+			case "*credentials.APICreds":
+				got = &credentials.APICreds{}
+			case "*credentials.OCIKeypair":
+				got = &credentials.OCIKeypair{}
+			}
+
+			err = m.ReadCredentials(ctx, secretName, got)
 			assert.NoError(err)
 
 			// Compare the keypair
@@ -117,7 +127,7 @@ func (s *testSuite) TestReadWriteOCICreds() {
 				SecretId: aws.String("invalid"),
 			}).Return(nil, &types.ResourceNotFoundException{})
 
-			err = m.ReadOCICreds(ctx, "invalid", got)
+			err = m.ReadCredentials(ctx, "invalid", got)
 			assert.Error(err)
 			assert.ErrorIs(err, credentials.ErrNotFound)
 		})
@@ -125,7 +135,7 @@ func (s *testSuite) TestReadWriteOCICreds() {
 }
 
 // // Create a new secret, delete it and check it does not exist antymore
-func (s *testSuite) TestDeleteCreds() {
+func (s *testSuite) TestDeleteCredentials() {
 	assert := assert.New(s.T())
 	m := s.mockedManager
 	mc, _ := m.client.(*mclient.SecretsManagerIface)
@@ -136,57 +146,8 @@ func (s *testSuite) TestDeleteCreds() {
 		SecretId: aws.String(secretName),
 	}).Return(nil, nil)
 
-	err := m.DeleteCreds(ctx, secretName)
+	err := m.DeleteCredentials(ctx, secretName)
 	assert.NoError(err)
-}
-func (s *testSuite) TestReadWriteAPICreds() {
-	assert := assert.New(s.T())
-	validCreds := &credentials.APICreds{Host: "http://hospath.local", Key: "api-key-not-a-secret"}
-	//nolint:gosec
-	// This is a test secret, it is not a real secret
-	validCredsString := "{\"Host\":\"http://hospath.local\",\"Key\":\"api-key-not-a-secret\"}"
-
-	testCases := []struct {
-		name          string
-		want          *credentials.APICreds
-		path          string
-		expectedError bool
-	}{
-		{"empty secret", &credentials.APICreds{}, "", true},
-		{"missing host", &credentials.APICreds{Host: "", Key: "p"}, "", true},
-		{"missing key", &credentials.APICreds{Host: "host", Key: ""}, "", true},
-		{"valid creds", validCreds, "", false},
-		{"valid creds custom path", validCreds, "fooo", false},
-	}
-
-	for _, tc := range testCases {
-		s.Run(tc.name, func() {
-			m := s.mockedManager
-			mc, _ := m.client.(*mclient.SecretsManagerIface)
-			ctx := context.Background()
-
-			mc.On("CreateSecret", ctx, mock.Anything).Return(nil, nil)
-
-			secretName, err := m.SaveAPICreds(ctx, orgID, tc.want)
-			if tc.expectedError {
-				assert.Error(err)
-				return
-			}
-
-			assert.NoError(err)
-			// Read the keypair
-			got := &credentials.APICreds{}
-			mc.On("GetSecretValue", ctx, &secretsmanager.GetSecretValueInput{
-				SecretId: aws.String(secretName),
-			}).Return(&secretsmanager.GetSecretValueOutput{SecretString: aws.String(validCredsString)}, nil)
-
-			err = m.ReadAPICreds(ctx, secretName, got)
-			assert.NoError(err)
-
-			// Compare the keypair
-			assert.Equal(tc.want, got)
-		})
-	}
 }
 
 type testSuite struct {
@@ -196,6 +157,10 @@ type testSuite struct {
 
 // Run before each test
 func (s *testSuite) SetupTest() {
+	initMockedManager(s)
+}
+
+func initMockedManager(s *testSuite) {
 	opts := &NewManagerOpts{Region: defaultRegion, AccessKey: defaultAccessKey, SecretKey: defaultSecretKey}
 	m, err := NewManager(opts)
 	require.NoError(s.T(), err)

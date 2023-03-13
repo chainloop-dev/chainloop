@@ -97,8 +97,14 @@ func (uc *IntegrationUseCase) AddDependencyTrack(ctx context.Context, orgID, hos
 		return nil, NewErrInvalidUUID(err)
 	}
 
+	// Validate Credentials before saving them
+	creds := &credentials.APICreds{Host: host, Key: apiKey}
+	if err := creds.Validate(); err != nil {
+		return nil, newErrValidation(err)
+	}
+
 	// Create the secret in the external secrets manager
-	secretID, err := uc.credsRW.SaveAPICreds(ctx, orgID, &credentials.APICreds{Host: host, Key: apiKey})
+	secretID, err := uc.credsRW.SaveCredentials(ctx, orgID, creds)
 	if err != nil {
 		return nil, fmt.Errorf("storing the credentials: %w", err)
 	}
@@ -160,7 +166,7 @@ func (uc *IntegrationUseCase) Delete(ctx context.Context, orgID, integrationID s
 
 	if integration.SecretName != "" {
 		uc.logger.Infow("msg", "deleting integration external secrets", "ID", integrationID, "secretName", integration.SecretName)
-		if err := uc.credsRW.DeleteCreds(ctx, integration.SecretName); err != nil {
+		if err := uc.credsRW.DeleteCredentials(ctx, integration.SecretName); err != nil {
 			return fmt.Errorf("deleting the credentials: %w", err)
 		}
 	}
@@ -274,8 +280,12 @@ func validateAttachment(ctx context.Context, integration *Integration, credsR cr
 
 		// Check with the actual remote data that an upload would be possible
 		creds := &credentials.APICreds{}
-		if err := credsR.ReadAPICreds(ctx, integration.SecretName, creds); err != nil {
+		if err := credsR.ReadCredentials(ctx, integration.SecretName, creds); err != nil {
 			return err
+		}
+
+		if err := creds.Validate(); err != nil {
+			return newErrValidation(err)
 		}
 
 		// Instantiate an actual uploader to see if it would work with the current configuration

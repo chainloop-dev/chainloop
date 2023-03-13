@@ -85,7 +85,7 @@ func (s *ociRepositoryTestSuite) TestSaveMainRepoAlreadyExist() {
 	r := &biz.OCIRepository{ID: s.validUUID.String()}
 	ctx := context.Background()
 	s.repo.On("FindMainRepo", ctx, s.validUUID).Return(r, nil)
-	s.credsRW.On("SaveOCICreds", ctx, s.validUUID.String(), mock.Anything).Return("secret-key", nil)
+	s.credsRW.On("SaveCredentials", ctx, s.validUUID.String(), mock.Anything).Return("secret-key", nil)
 	s.repo.On("Update", ctx, &biz.OCIRepoUpdateOpts{
 		ID: s.validUUID,
 		OCIRepoOpts: &biz.OCIRepoOpts{
@@ -105,7 +105,7 @@ func (s *ociRepositoryTestSuite) TestSaveMainRepoOk() {
 	const repo, username, password = "repo", "username", "pass"
 
 	s.repo.On("FindMainRepo", ctx, s.validUUID).Return(nil, nil)
-	s.credsRW.On("SaveOCICreds", ctx, s.validUUID.String(), mock.Anything).Return("secret-key", nil)
+	s.credsRW.On("SaveCredentials", ctx, s.validUUID.String(), mock.Anything).Return("secret-key", nil)
 
 	newRepo := &biz.OCIRepository{}
 	s.repo.On("Create", ctx, &biz.OCIRepoCreateOpts{

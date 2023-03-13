@@ -85,7 +85,7 @@ func doUploadToOCI(ctx context.Context, backend backend.Uploader, runID string, 
 	fileName := fmt.Sprintf("attestation-%s.json", runID)
 	jsonContent, err := json.Marshal(envelope)
 	if err != nil {
-		return "", fmt.Errorf("marshalling the envelope: %w", err)
+		return "", fmt.Errorf("marshaling the envelope: %w", err)
 	}
 
 	hash := sha256.New()

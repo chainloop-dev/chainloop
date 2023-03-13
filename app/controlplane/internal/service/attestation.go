@@ -312,7 +312,7 @@ func extractPredicate(envelope *dsse.Envelope) (*renderer.ChainloopProvenancePre
 
 	statement := &in_toto.Statement{}
 	if err := json.Unmarshal(decodedPayload, statement); err != nil {
-		return nil, fmt.Errorf("unmarshalling predicate: %w", err)
+		return nil, fmt.Errorf("un-marshaling predicate: %w", err)
 	}
 
 	var predicate *renderer.ChainloopProvenancePredicateV1
@@ -370,12 +370,12 @@ func extractMaterials(in []*renderer.ChainloopProvenanceMaterial) []*cpAPI.Attes
 func extractPredicateV1(statement *in_toto.Statement) (*renderer.ChainloopProvenancePredicateV1, error) {
 	jsonPredicate, err := json.Marshal(statement.Predicate)
 	if err != nil {
-		return nil, fmt.Errorf("unmarshalling predicate: %w", err)
+		return nil, fmt.Errorf("un-marshaling predicate: %w", err)
 	}
 
 	predicate := &renderer.ChainloopProvenancePredicateV1{}
 	if err := json.Unmarshal(jsonPredicate, predicate); err != nil {
-		return nil, fmt.Errorf("unmarshalling predicate: %w", err)
+		return nil, fmt.Errorf("un-marshaling predicate: %w", err)
 	}
 
 	return predicate, nil
@@ -503,7 +503,7 @@ func doSendToDependencyTrack(ctx context.Context, credsReader credentials.Reader
 	attachmentConfig := i.IntegrationAttachment.Config.GetDependencyTrack()
 
 	creds := &credentials.APICreds{}
-	if err := credsReader.ReadAPICreds(ctx, i.SecretName, creds); err != nil {
+	if err := credsReader.ReadCredentials(ctx, i.SecretName, creds); err != nil {
 		return err
 	}
 

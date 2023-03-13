@@ -122,7 +122,7 @@ func (action *WorkflowRunDescribe) Run(runID string, verify bool, publicKey stri
 	}
 
 	if err := json.Unmarshal(decodedPayload, statement); err != nil {
-		return nil, fmt.Errorf("unmarshalling predicate: %w", err)
+		return nil, fmt.Errorf("un-marshaling predicate: %w", err)
 	}
 
 	var predicate *renderer.ChainloopProvenancePredicateV1
@@ -159,12 +159,12 @@ func (action *WorkflowRunDescribe) Run(runID string, verify bool, publicKey stri
 func extractPredicateV1(statement *in_toto.Statement) (*renderer.ChainloopProvenancePredicateV1, error) {
 	jsonPredicate, err := json.Marshal(statement.Predicate)
 	if err != nil {
-		return nil, fmt.Errorf("unmarshalling predicate: %w", err)
+		return nil, fmt.Errorf("un-marshaling predicate: %w", err)
 	}
 
 	predicate := &renderer.ChainloopProvenancePredicateV1{}
 	if err := json.Unmarshal(jsonPredicate, predicate); err != nil {
-		return nil, fmt.Errorf("unmarshalling predicate: %w", err)
+		return nil, fmt.Errorf("un-marshaling predicate: %w", err)
 	}
 
 	return predicate, nil
