@@ -17,8 +17,10 @@ package action
 
 import (
 	"context"
+	"time"
 
-	casclient "github.com/chainloop-dev/chainloop/app/cli/internal/casclient/grpc"
+	"github.com/chainloop-dev/chainloop/internal/casclient"
+	"github.com/jedib0t/go-pretty/v6/progress"
 	"google.golang.org/grpc"
 )
 
@@ -41,11 +43,19 @@ func NewArtifactUpload(opts *ArtifactUploadOpts) *ArtifactUpload {
 }
 
 func (a *ArtifactUpload) Run(filePath string) (*CASArtifact, error) {
-	client := casclient.NewUploader(a.artifactsCASConn, casclient.WithLogger(a.Logger), casclient.WithProgressRender(true))
+	client := casclient.NewUploader(a.artifactsCASConn, casclient.WithLogger(a.Logger))
+	// render progress bar
+	go renderOperationStatus(context.Background(), client.ProgressStatus, a.Logger)
+	defer close(client.ProgressStatus)
+
 	res, err := client.Upload(context.Background(), filePath)
 	if err != nil {
 		return nil, err
 	}
+
+	// Give some time for the progress renderer to finish
+	// TODO: Implement with proper subroutine messaging
+	time.Sleep(progress.DefaultUpdateFrequency)
 
 	return &CASArtifact{Digest: res.Digest, fileName: res.Filename}, nil
 }

@@ -18,14 +18,14 @@ package action
 import (
 	"errors"
 
-	casclient "github.com/chainloop-dev/chainloop/app/cli/internal/casclient/grpc"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
+	"github.com/chainloop-dev/chainloop/internal/casclient"
 	"google.golang.org/grpc"
 )
 
 type AttestationAddOpts struct {
 	*ActionsOpts
-	ArtifacsCASConn *grpc.ClientConn
+	ArtifactsCASConn *grpc.ClientConn
 }
 
 type AttestationAdd struct {
@@ -39,9 +39,9 @@ func NewAttestationAdd(cfg *AttestationAddOpts) *AttestationAdd {
 		ActionsOpts: cfg.ActionsOpts,
 		c: crafter.NewCrafter(
 			crafter.WithLogger(&cfg.Logger),
-			crafter.WithUploader(casclient.NewUploader(cfg.ArtifacsCASConn, casclient.WithLogger(cfg.Logger), casclient.WithProgressRender(true))),
+			crafter.WithUploader(casclient.NewUploader(cfg.ArtifactsCASConn, casclient.WithLogger(cfg.Logger))),
 		),
-		artifactsCASConn: cfg.ArtifacsCASConn,
+		artifactsCASConn: cfg.ArtifactsCASConn,
 	}
 }
 
