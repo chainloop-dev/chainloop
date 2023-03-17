@@ -25,12 +25,10 @@ import (
 	"io"
 	"os"
 	"path"
-	"time"
 
 	"code.cloudfoundry.org/bytefmt"
 	v1 "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/materials"
-	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/rs/zerolog"
 	"google.golang.org/genproto/googleapis/bytestream"
 	"google.golang.org/grpc"
@@ -38,11 +36,12 @@ import (
 	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
+type ProgressStatusChan chan (*materials.UpDownStatus)
 type casClient struct {
 	conn   *grpc.ClientConn
 	logger zerolog.Logger
 	// channel to send progress status to the go-routine that's rendering the progress bar
-	progressStatus chan (*materials.UpDownStatus)
+	ProgressStatus ProgressStatusChan
 	// wether to render progress bar
 	renderProgress bool
 }
@@ -71,8 +70,8 @@ func NewUploader(conn *grpc.ClientConn, opts ...ClientOpts) *UploaderClient {
 	client := &UploaderClient{
 		casClient: &casClient{
 			conn:           conn,
-			progressStatus: make(chan *materials.UpDownStatus, 2), // Adding some buffer
-			logger:         zerolog.New(os.Stderr),
+			ProgressStatus: make(chan *materials.UpDownStatus, 2), // Adding some buffer
+			logger:         zerolog.Nop(),
 		},
 		bufferSize: defaultUploadChunkSize,
 	}
@@ -89,12 +88,6 @@ func (c *UploaderClient) Upload(ctx context.Context, filepath string) (*material
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	// inititate progress bar
-	if c.renderProgress {
-		go c.renderUploadStatus(ctx, c.logger)
-		defer close(c.progressStatus)
-	}
-
 	// open file and calculate digest
 	f, err := os.Open(filepath)
 	if err != nil {
@@ -104,7 +97,7 @@ func (c *UploaderClient) Upload(ctx context.Context, filepath string) (*material
 
 	hash, _, err := cr_v1.SHA256(f)
 	if err != nil {
-		return nil, fmt.Errorf("genering digest: %w", err)
+		return nil, fmt.Errorf("generating digest: %w", err)
 	}
 
 	// Since we have already iterated on the file to calculate the digest
@@ -191,7 +184,7 @@ doUpload:
 		}
 
 		if c.renderProgress {
-			c.progressStatus <- latestStatus
+			c.ProgressStatus <- latestStatus
 		}
 
 		c.logger.Debug().
@@ -204,50 +197,7 @@ doUpload:
 		return nil, err
 	}
 
-	// Give some time for the progress renderer to finish
-	// TODO: Implement with proper subroutine messaging
-	if c.renderProgress {
-		time.Sleep(renderUpdateFrequency)
-		// Block until the buffer has been filled or the upload process has been canceled
-	}
-
 	return latestStatus, nil
-}
-
-var renderUpdateFrequency = progress.DefaultUpdateFrequency
-
-func (c *UploaderClient) renderUploadStatus(ctx context.Context, output io.Writer) {
-	pw := progress.NewWriter()
-	pw.Style().Visibility.ETA = true
-	pw.Style().Visibility.Speed = true
-	pw.SetUpdateFrequency(renderUpdateFrequency)
-
-	var tracker *progress.Tracker
-	go pw.Render()
-	defer pw.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case status, ok := <-c.progressStatus:
-			if !ok {
-				return
-			}
-
-			if tracker == nil {
-				// Hack: Add 1 to the total to make sure the tracker is not marked as done before the upload is finished
-				// this way the current value will never reach the total
-				// but instead the tracker will be marked as done by the defer statement
-				total := status.TotalSizeBytes + 1
-				tracker = &progress.Tracker{Total: total, Units: progress.UnitsBytes}
-				defer tracker.MarkAsDone()
-				pw.AppendTracker(tracker)
-			}
-
-			tracker.SetValue(status.ProcessedBytes)
-		}
-	}
 }
 
 // encodedResource returns a base64-encoded v1.UploadResource which wraps both the digest and fileName
