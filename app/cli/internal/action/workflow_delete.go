@@ -30,7 +30,7 @@ func NewWorkflowDelete(cfg *ActionsOpts) *WorkflowDelete {
 }
 
 func (action *WorkflowDelete) Run(workflowID string) error {
-	client := pb.NewWorkflowServiceClient(action.cfg.CPConnecction)
+	client := pb.NewWorkflowServiceClient(action.cfg.CPConnection)
 	if _, err := client.Delete(context.Background(), &pb.WorkflowServiceDeleteRequest{Id: workflowID}); err != nil {
 		action.cfg.Logger.Debug().Err(err).Msg("making the API request")
 		return err

@@ -30,7 +30,7 @@ func NewMembershipSet(cfg *ActionsOpts) *MembershipSetCurrent {
 }
 
 func (action *MembershipSetCurrent) Run(id string) (*MembershipItem, error) {
-	client := pb.NewOrganizationServiceClient(action.cfg.CPConnecction)
+	client := pb.NewOrganizationServiceClient(action.cfg.CPConnection)
 	resp, err := client.SetCurrentMembership(context.Background(), &pb.SetCurrentMembershipRequest{MembershipId: id})
 	if err != nil {
 		return nil, err

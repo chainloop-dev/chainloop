@@ -30,7 +30,7 @@ func NewIntegrationAddDeptrack(cfg *ActionsOpts) *IntegrationAddDeptrack {
 }
 
 func (action *IntegrationAddDeptrack) Run(host, apiKey string, allowAutoProjectCreation bool) (*IntegrationItem, error) {
-	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnecction)
+	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
 	i, err := client.AddDependencyTrack(context.Background(), &pb.AddDependencyTrackRequest{
 		ApiKey: apiKey,
 		Config: &pb.IntegrationConfig_DependencyTrack{

@@ -84,7 +84,7 @@ func (action *AttestationPush) Run() (interface{}, error) {
 		return res, nil
 	}
 
-	if err := pushToControlPlane(action.ActionsOpts.CPConnecction, res, action.c.CraftingState.Attestation.GetWorkflow().GetWorkflowRunId()); err != nil {
+	if err := pushToControlPlane(action.ActionsOpts.CPConnection, res, action.c.CraftingState.Attestation.GetWorkflow().GetWorkflowRunId()); err != nil {
 		return nil, err
 	}
 

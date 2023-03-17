@@ -31,7 +31,7 @@ func NewWorkflowRobotAccountCreate(cfg *ActionsOpts) *WorkflowRobotAccountCreate
 }
 
 func (action *WorkflowRobotAccountCreate) Run(workflowID, name string) (*WorkflowRobotAccountItem, error) {
-	client := pb.NewRobotAccountServiceClient(action.cfg.CPConnecction)
+	client := pb.NewRobotAccountServiceClient(action.cfg.CPConnection)
 	resp, err := client.Create(context.Background(), &pb.RobotAccountServiceCreateRequest{
 		WorkflowId: workflowID,
 		Name:       name,

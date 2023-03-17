@@ -30,6 +30,7 @@ import (
 	api "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/materials"
+	"github.com/chainloop-dev/chainloop/internal/casclient"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -40,7 +41,7 @@ type Crafter struct {
 	logger        *zerolog.Logger
 	statePath     string
 	CraftingState *api.CraftingState
-	uploader      materials.Uploader
+	uploader      casclient.Uploader
 	Runner        supportedRunner
 }
 
@@ -48,7 +49,7 @@ var ErrAttestationStateNotLoaded = errors.New("crafting state not loaded")
 
 type NewOpt func(c *Crafter)
 
-func WithUploader(uploader materials.Uploader) NewOpt {
+func WithUploader(uploader casclient.Uploader) NewOpt {
 	return func(c *Crafter) {
 		c.uploader = uploader
 	}

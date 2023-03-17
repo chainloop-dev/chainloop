@@ -41,7 +41,7 @@ func NewWorkflowRobotAccountList(cfg *ActionsOpts) *WorkflowRobotAccountList {
 }
 
 func (action *WorkflowRobotAccountList) Run(workflowID string, includeRevoked bool) ([]*WorkflowRobotAccountItem, error) {
-	client := pb.NewRobotAccountServiceClient(action.cfg.CPConnecction)
+	client := pb.NewRobotAccountServiceClient(action.cfg.CPConnection)
 	resp, err := client.List(context.Background(), &pb.RobotAccountServiceListRequest{WorkflowId: workflowID, IncludeRevoked: includeRevoked})
 	if err != nil {
 		return nil, err

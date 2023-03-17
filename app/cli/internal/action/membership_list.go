@@ -44,7 +44,7 @@ func NewMembershipList(cfg *ActionsOpts) *MembershipList {
 }
 
 func (action *MembershipList) Run() ([]*MembershipItem, error) {
-	client := pb.NewOrganizationServiceClient(action.cfg.CPConnecction)
+	client := pb.NewOrganizationServiceClient(action.cfg.CPConnection)
 	resp, err := client.ListMemberships(context.Background(), &pb.OrganizationServiceListMembershipsRequest{})
 	if err != nil {
 		return nil, err

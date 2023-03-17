@@ -18,36 +18,16 @@ package materials
 import (
 	"context"
 	"fmt"
-	"io"
 
 	api "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/internal/casclient"
 	"github.com/rs/zerolog"
 )
 
 // ErrInvalidMaterialType is returned when the provided material type
 // is not from the kind we are expecting
 var ErrInvalidMaterialType = fmt.Errorf("unexpected material type")
-
-type Uploader interface {
-	Upload(ctx context.Context, filePath string) (*UpDownStatus, error)
-}
-
-type UpDownStatus struct {
-	Filepath, Filename, Digest     string
-	TotalSizeBytes, ProcessedBytes int64
-}
-
-type ResourceInfo struct {
-	Digest   string
-	Filename string
-	Size     int64
-}
-
-type Downloader interface {
-	Download(ctx context.Context, w io.Writer, digest string) error
-	Describe(ctx context.Context, digest string) (*ResourceInfo, error)
-}
 
 type crafterCommon struct {
 	logger *zerolog.Logger
@@ -58,7 +38,7 @@ type Craftable interface {
 	Craft(ctx context.Context, value string) (*api.Attestation_Material, error)
 }
 
-func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Material, value string, uploader Uploader, logger *zerolog.Logger) (*api.Attestation_Material, error) {
+func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Material, value string, uploader casclient.Uploader, logger *zerolog.Logger) (*api.Attestation_Material, error) {
 	var crafter Craftable
 	var err error
 

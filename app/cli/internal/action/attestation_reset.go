@@ -53,7 +53,7 @@ func (action *AttestationReset) Run(trigger, reason string) error {
 	}
 
 	if !action.c.CraftingState.DryRun {
-		client := pb.NewAttestationServiceClient(action.CPConnecction)
+		client := pb.NewAttestationServiceClient(action.CPConnection)
 		if _, err := client.Cancel(context.Background(), &pb.AttestationServiceCancelRequest{
 			WorkflowRunId: action.c.CraftingState.GetAttestation().GetWorkflow().GetWorkflowRunId(),
 			Reason:        reason,

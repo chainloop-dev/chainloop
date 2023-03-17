@@ -173,7 +173,7 @@ func newCredentialsWriter(conf *conf.Bootstrap, l log.Logger) (credentials.Reade
 
 func newAWSCredentialsManager(conf *conf.Credentials_AWSSecretManager, l log.Logger) (*awssecrets.Manager, error) {
 	if conf == nil {
-		return nil, errors.New("incompleted configuration for AWS secret manager")
+		return nil, errors.New("uncompleted configuration for AWS secret manager")
 	}
 
 	opts := &awssecrets.NewManagerOpts{
@@ -194,7 +194,7 @@ func newAWSCredentialsManager(conf *conf.Credentials_AWSSecretManager, l log.Log
 
 func newVaultCredentialsManager(conf *conf.Credentials_Vault, l log.Logger) (*vault.Manager, error) {
 	if conf == nil {
-		return nil, errors.New("incompleted configuration for vault credentials manager")
+		return nil, errors.New("uncompleted configuration for vault credentials manager")
 	}
 
 	opts := &vault.NewManagerOpts{

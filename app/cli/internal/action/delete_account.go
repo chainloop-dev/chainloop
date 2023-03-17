@@ -30,7 +30,7 @@ func NewDeleteAccount(cfg *ActionsOpts) *DeleteAccount {
 }
 
 func (a *DeleteAccount) Run() error {
-	client := pb.NewAuthServiceClient(a.CPConnecction)
+	client := pb.NewAuthServiceClient(a.CPConnection)
 	_, err := client.DeleteAccount(context.Background(), &pb.AuthServiceDeleteAccountRequest{})
 	return err
 }

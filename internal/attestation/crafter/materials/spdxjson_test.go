@@ -23,7 +23,8 @@ import (
 	attestationApi "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	contractAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/materials"
-	mUploader "github.com/chainloop-dev/chainloop/internal/attestation/crafter/materials/mocks"
+	"github.com/chainloop-dev/chainloop/internal/casclient"
+	mUploader "github.com/chainloop-dev/chainloop/internal/casclient/mocks"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -102,7 +103,7 @@ func TestSPDXJSONCraft(t *testing.T) {
 			uploader := mUploader.NewUploader(t)
 			if tc.wantErr == "" {
 				uploader.On("Upload", context.TODO(), tc.filePath).
-					Return(&materials.UpDownStatus{
+					Return(&casclient.UpDownStatus{
 						Digest:   "deadbeef",
 						Filename: "sbom.spdx.json",
 					}, nil)

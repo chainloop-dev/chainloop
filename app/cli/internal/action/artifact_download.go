@@ -52,7 +52,7 @@ func (a *ArtifactDownload) Run(downloadPath, digest string) error {
 		return fmt.Errorf("invalid digest: %w", err)
 	}
 
-	client := casclient.NewDownloader(a.artifactsCASConn)
+	client := casclient.New(a.artifactsCASConn)
 	ctx := context.Background()
 	info, err := client.Describe(ctx, h.Hex)
 	if err != nil {
@@ -81,10 +81,10 @@ func (a *ArtifactDownload) Run(downloadPath, digest string) error {
 	a.Logger.Info().Str("name", info.Filename).Str("to", downloadPath).Msg("downloading file")
 
 	// render progress bar
-	go renderOperationStatus(ctx, client.ProgressStatus, a.Logger)
+	go renderOperationStatus(ctx, client.ProgressStatus, a.Logger, info.Size)
 	defer close(client.ProgressStatus)
 
-	err = client.Download(ctx, w, h.Hex, info.Size)
+	err = client.Download(ctx, w, h.Hex)
 	if err != nil {
 		a.Logger.Debug().Err(err).Msg("problem downloading file")
 		return errors.New("problem downloading file")
@@ -103,7 +103,7 @@ func (a *ArtifactDownload) Run(downloadPath, digest string) error {
 	return nil
 }
 
-func renderOperationStatus(ctx context.Context, progressChan casclient.ProgressStatusChan, output io.Writer) {
+func renderOperationStatus(ctx context.Context, progressChan casclient.ProgressStatusChan, output io.Writer, totalSize int64) {
 	pw := progress.NewWriter()
 	pw.Style().Visibility.ETA = true
 	pw.Style().Visibility.Speed = true
@@ -127,8 +127,7 @@ func renderOperationStatus(ctx context.Context, progressChan casclient.ProgressS
 				// Hack: Add 1 to the total to make sure the tracker is not marked as done before the upload is finished
 				// this way the current value will never reach the total
 				// but instead the tracker will be marked as done by the defer statement
-				total := status.TotalSizeBytes + 1
-				tracker = &progress.Tracker{Total: total, Units: progress.UnitsBytes}
+				tracker = &progress.Tracker{Total: totalSize + 1, Units: progress.UnitsBytes}
 				defer tracker.MarkAsDone()
 				pw.AppendTracker(tracker)
 			}

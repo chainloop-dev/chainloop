@@ -43,7 +43,7 @@ func NewWorkflowList(cfg *ActionsOpts) *WorkflowList {
 }
 
 func (action *WorkflowList) Run() ([]*WorkflowItem, error) {
-	client := pb.NewWorkflowServiceClient(action.cfg.CPConnecction)
+	client := pb.NewWorkflowServiceClient(action.cfg.CPConnection)
 	resp, err := client.List(context.Background(), &pb.WorkflowServiceListRequest{})
 	if err != nil {
 		return nil, err

@@ -17,6 +17,8 @@ package action
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/internal/casclient"
@@ -43,9 +45,22 @@ func NewArtifactUpload(opts *ArtifactUploadOpts) *ArtifactUpload {
 }
 
 func (a *ArtifactUpload) Run(filePath string) (*CASArtifact, error) {
-	client := casclient.NewUploader(a.artifactsCASConn, casclient.WithLogger(a.Logger))
+	client := casclient.New(a.artifactsCASConn, casclient.WithLogger(a.Logger))
+
+	// open file and calculate size
+	f, err := os.Open(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("can't open file to upload: %w", err)
+	}
+	defer f.Close()
+
+	info, err := f.Stat()
+	if err != nil {
+		return nil, fmt.Errorf("retrieving file information: %w", err)
+	}
+
 	// render progress bar
-	go renderOperationStatus(context.Background(), client.ProgressStatus, a.Logger)
+	go renderOperationStatus(context.Background(), client.ProgressStatus, a.Logger, info.Size())
 	defer close(client.ProgressStatus)
 
 	res, err := client.Upload(context.Background(), filePath)

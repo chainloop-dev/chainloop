@@ -34,7 +34,7 @@ type NewOCIRepositorySaveOpts struct {
 }
 
 func (action *OCIRepositorySave) Run(opts *NewOCIRepositorySaveOpts) error {
-	client := pb.NewOCIRepositoryServiceClient(action.cfg.CPConnecction)
+	client := pb.NewOCIRepositoryServiceClient(action.cfg.CPConnection)
 
 	_, err := client.Save(context.Background(), &pb.OCIRepositoryServiceSaveRequest{
 		Repository: opts.Repo,

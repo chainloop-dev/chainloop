@@ -22,22 +22,23 @@ import (
 
 	api "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/internal/casclient"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type ArtifactCrafter struct {
-	uploader Uploader
 	*crafterCommon
+	uploader casclient.Uploader
 }
 
-func NewArtifactCrafter(schema *schemaapi.CraftingSchema_Material, uploader Uploader, l *zerolog.Logger) (*ArtifactCrafter, error) {
+func NewArtifactCrafter(schema *schemaapi.CraftingSchema_Material, uploader casclient.Uploader, l *zerolog.Logger) (*ArtifactCrafter, error) {
 	if schema.Type != schemaapi.CraftingSchema_Material_ARTIFACT {
 		return nil, fmt.Errorf("material type is not artifact")
 	}
 
 	craftCommon := &crafterCommon{logger: l, input: schema}
-	return &ArtifactCrafter{uploader, craftCommon}, nil
+	return &ArtifactCrafter{uploader: uploader, crafterCommon: craftCommon}, nil
 }
 
 // Craft will calculate the digest of the artifact, simulate an upload and return the material definition

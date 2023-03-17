@@ -14,6 +14,10 @@ server:
     # We have some slow operations such as verifying an OCI registry
     timeout: 10s
 
+# Local CAS server for development
+cas_server:
+  addr: 0.0.0.0:9001
+
 credentials_service:
   vault:
     address: ${VAULT_ADDRESS:http://0.0.0.0:8200}

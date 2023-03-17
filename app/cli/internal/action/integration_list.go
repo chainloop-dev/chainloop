@@ -38,7 +38,7 @@ func NewIntegrationList(cfg *ActionsOpts) *IntegrationList {
 }
 
 func (action *IntegrationList) Run() ([]*IntegrationItem, error) {
-	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnecction)
+	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
 	resp, err := client.List(context.Background(), &pb.IntegrationsServiceListRequest{})
 	if err != nil {
 		return nil, err

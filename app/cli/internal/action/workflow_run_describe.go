@@ -76,7 +76,7 @@ func NewWorkflowRunDescribe(cfg *ActionsOpts) *WorkflowRunDescribe {
 }
 
 func (action *WorkflowRunDescribe) Run(runID string, verify bool, publicKey string) (*WorkflowRunItemFull, error) {
-	client := pb.NewWorkflowRunServiceClient(action.cfg.CPConnecction)
+	client := pb.NewWorkflowRunServiceClient(action.cfg.CPConnection)
 	resp, err := client.View(context.Background(), &pb.WorkflowRunServiceViewRequest{Id: runID})
 	if err != nil {
 		return nil, err
