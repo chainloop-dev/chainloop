@@ -22,35 +22,11 @@ import (
 	"io"
 
 	v1 "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
-	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/materials"
-	"github.com/rs/zerolog"
 	"google.golang.org/genproto/googleapis/bytestream"
-	"google.golang.org/grpc"
 )
 
-type DownloaderClient struct {
-	*casClient
-}
-
-func NewDownloader(conn *grpc.ClientConn, opts ...ClientOpts) *DownloaderClient {
-	client := &DownloaderClient{
-		casClient: &casClient{
-			conn:           conn,
-			ProgressStatus: make(chan *materials.UpDownStatus, 2),
-			logger:         zerolog.Nop(),
-		},
-	}
-
-	for _, opt := range opts {
-		opt(client.casClient)
-	}
-
-	return client
-}
-
 // Download downloads a file from the CAS and writes it to the provided writer
-// It also receives a totalBytes parameter to render the progress bar
-func (c *DownloaderClient) Download(ctx context.Context, w io.Writer, digest string, totalBytes int64) error {
+func (c *Client) Download(ctx context.Context, w io.Writer, digest string) error {
 	if digest == "" {
 		return errors.New("a digest is required")
 	}
@@ -65,7 +41,7 @@ func (c *DownloaderClient) Download(ctx context.Context, w io.Writer, digest str
 	}
 
 	var totalDownloaded int64
-	var latestStatus *materials.UpDownStatus
+	var latestStatus *UpDownStatus
 
 	for {
 		// Get a chunk
@@ -84,9 +60,7 @@ func (c *DownloaderClient) Download(ctx context.Context, w io.Writer, digest str
 
 		totalDownloaded += int64(n)
 
-		latestStatus = &materials.UpDownStatus{
-			TotalSizeBytes: totalBytes, ProcessedBytes: totalDownloaded,
-		}
+		latestStatus = &UpDownStatus{ProcessedBytes: totalDownloaded}
 
 		select {
 		case c.ProgressStatus <- latestStatus:
@@ -101,14 +75,14 @@ func (c *DownloaderClient) Download(ctx context.Context, w io.Writer, digest str
 
 // Describe returns the metadata of a resource by its digest
 // We use this to get the filename and the total size of the artifact
-func (c *DownloaderClient) Describe(ctx context.Context, digest string) (*materials.ResourceInfo, error) {
+func (c *Client) Describe(ctx context.Context, digest string) (*ResourceInfo, error) {
 	client := v1.NewResourceServiceClient(c.conn)
 	resp, err := client.Describe(ctx, &v1.ResourceServiceDescribeRequest{Digest: digest})
 	if err != nil {
 		return nil, fmt.Errorf("contacting API to get resource Info: %w", err)
 	}
 
-	return &materials.ResourceInfo{
+	return &ResourceInfo{
 		Digest: resp.GetResult().GetDigest(), Filename: resp.Result.GetFileName(), Size: resp.Result.GetSize(),
 	}, nil
 }

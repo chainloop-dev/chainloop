@@ -16,7 +16,6 @@
 package cmd
 
 import (
-	"crypto/x509"
 	"errors"
 	"fmt"
 	"os"
@@ -24,14 +23,11 @@ import (
 
 	"github.com/adrg/xdg"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/bearertoken"
-	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
+	"github.com/chainloop-dev/chainloop/internal/grpcconn"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-	grpc_insecure "google.golang.org/grpc/credentials/insecure"
 )
 
 var (
@@ -75,7 +71,11 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 				}
 			}
 
-			conn, err := newGRPCConnection(viper.GetString(confOptions.controlplaneAPI.viperKey), storedToken, flagInsecure, logger)
+			if flagInsecure {
+				logger.Warn().Msg("API contacted in insecure mode")
+			}
+
+			conn, err := grpcconn.New(viper.GetString(confOptions.controlplaneAPI.viperKey), storedToken, flagInsecure)
 			if err != nil {
 				return err
 			}
@@ -85,7 +85,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 			return nil
 		},
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
-			return cleanup(logger, actionOpts.CPConnecction)
+			return cleanup(logger, actionOpts.CPConnection)
 		},
 	}
 
@@ -163,42 +163,8 @@ func initConfigFile() {
 	cobra.CheckErr(viper.ReadInConfig())
 }
 
-func newGRPCConnection(uri, authToken string, insecure bool, logger zerolog.Logger) (*grpc.ClientConn, error) {
-	var opts []grpc.DialOption
-	if authToken != "" {
-		grpcCreds := bearertoken.NewTokenAuth(authToken, flagInsecure)
-
-		opts = []grpc.DialOption{
-			grpc.WithPerRPCCredentials(grpcCreds),
-			// Retry using default configuration
-			grpc.WithUnaryInterceptor(grpc_retry.UnaryClientInterceptor()),
-		}
-	}
-
-	var tlsDialOption grpc.DialOption
-	if insecure {
-		logger.Warn().Msg("API contacted in insecure mode")
-		tlsDialOption = grpc.WithTransportCredentials(grpc_insecure.NewCredentials())
-	} else {
-		certsPool, err := x509.SystemCertPool()
-		if err != nil {
-			return nil, err
-		}
-		tlsDialOption = grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(certsPool, ""))
-	}
-
-	opts = append(opts, tlsDialOption)
-
-	conn, err := grpc.Dial(uri, opts...)
-	if err != nil {
-		return nil, err
-	}
-
-	return conn, nil
-}
-
 func newActionOpts(logger zerolog.Logger, conn *grpc.ClientConn) *action.ActionsOpts {
-	return &action.ActionsOpts{CPConnecction: conn, Logger: logger}
+	return &action.ActionsOpts{CPConnection: conn, Logger: logger}
 }
 
 func cleanup(logger zerolog.Logger, conn *grpc.ClientConn) error {

@@ -23,8 +23,8 @@ import (
 )
 
 type ActionsOpts struct {
-	CPConnecction *grpc.ClientConn
-	Logger        zerolog.Logger
+	CPConnection *grpc.ClientConn
+	Logger       zerolog.Logger
 }
 
 func toTimePtr(t time.Time) *time.Time {

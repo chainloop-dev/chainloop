@@ -33,7 +33,7 @@ func newArtifactDownloadCmd() *cobra.Command {
 			var err error
 
 			// Retrieve temporary credentials for uploading
-			artifactCASConn, err = wrappedArtifactConn(actionOpts.CPConnecction,
+			artifactCASConn, err = wrappedArtifactConn(actionOpts.CPConnection,
 				pb.CASCredentialsServiceGetRequest_ROLE_DOWNLOADER)
 			if err != nil {
 				return err

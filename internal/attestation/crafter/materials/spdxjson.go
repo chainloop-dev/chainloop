@@ -23,17 +23,18 @@ import (
 
 	api "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/internal/casclient"
 	"github.com/rs/zerolog"
 	spdx "github.com/spdx/tools-golang/jsonloader"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type SPDXJSONCrafter struct {
-	uploader Uploader
+	uploader casclient.Uploader
 	*crafterCommon
 }
 
-func NewSPDXJSONCrafter(materialSchema *schemaapi.CraftingSchema_Material, uploader Uploader, l *zerolog.Logger) (*SPDXJSONCrafter, error) {
+func NewSPDXJSONCrafter(materialSchema *schemaapi.CraftingSchema_Material, uploader casclient.Uploader, l *zerolog.Logger) (*SPDXJSONCrafter, error) {
 	if materialSchema.Type != schemaapi.CraftingSchema_Material_SBOM_SPDX_JSON {
 		return nil, fmt.Errorf("material type is not spdx json")
 	}

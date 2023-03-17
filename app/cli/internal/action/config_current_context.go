@@ -55,7 +55,7 @@ const (
 )
 
 func (action *ConfigCurrentContext) Run() (*ConfigContextItem, error) {
-	client := pb.NewContextServiceClient(action.cfg.CPConnecction)
+	client := pb.NewContextServiceClient(action.cfg.CPConnection)
 	resp, err := client.Current(context.Background(), &pb.ContextServiceCurrentRequest{})
 	if err != nil {
 		return nil, err

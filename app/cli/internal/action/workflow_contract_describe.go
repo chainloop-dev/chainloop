@@ -35,7 +35,7 @@ func NewWorkflowContractDescribe(cfg *ActionsOpts) *WorkflowContractDescribe {
 }
 
 func (action *WorkflowContractDescribe) Run(id string, rev int32) (*WorkflowContractWithVersionItem, error) {
-	client := pb.NewWorkflowContractServiceClient(action.cfg.CPConnecction)
+	client := pb.NewWorkflowContractServiceClient(action.cfg.CPConnection)
 
 	request := &pb.WorkflowContractServiceDescribeRequest{Id: id, Revision: rev}
 

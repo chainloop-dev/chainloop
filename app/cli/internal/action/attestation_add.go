@@ -39,7 +39,7 @@ func NewAttestationAdd(cfg *AttestationAddOpts) *AttestationAdd {
 		ActionsOpts: cfg.ActionsOpts,
 		c: crafter.NewCrafter(
 			crafter.WithLogger(&cfg.Logger),
-			crafter.WithUploader(casclient.NewUploader(cfg.ArtifactsCASConn, casclient.WithLogger(cfg.Logger))),
+			crafter.WithUploader(casclient.New(cfg.ArtifactsCASConn, casclient.WithLogger(cfg.Logger))),
 		),
 		artifactsCASConn: cfg.ArtifactsCASConn,
 	}

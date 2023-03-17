@@ -26,6 +26,9 @@ message Bootstrap {
   Observability observability = 4;
   Credentials credentials_service = 5;
 
+  // CAS Server endpoint
+  Server.GRPC cas_server = 6;
+
   message Observability {
     Sentry sentry = 1;
     message Sentry {
@@ -33,6 +36,7 @@ message Bootstrap {
       string environment = 2;
     }
   }
+
 }
 
 message Server {

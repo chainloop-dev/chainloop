@@ -31,7 +31,7 @@ func NewWorkflowContractCreate(cfg *ActionsOpts) *WorkflowContractCreate {
 }
 
 func (action *WorkflowContractCreate) Run(name, contractPath string) (*WorkflowContractItem, error) {
-	client := pb.NewWorkflowContractServiceClient(action.cfg.CPConnecction)
+	client := pb.NewWorkflowContractServiceClient(action.cfg.CPConnection)
 
 	request := &pb.WorkflowContractServiceCreateRequest{Name: name}
 	if contractPath != "" {

@@ -31,7 +31,7 @@ func NewWorkflowContractUpdate(cfg *ActionsOpts) *WorkflowContractUpdate {
 }
 
 func (action *WorkflowContractUpdate) Run(contractID, name, contractPath string) (*WorkflowContractWithVersionItem, error) {
-	client := pb.NewWorkflowContractServiceClient(action.cfg.CPConnecction)
+	client := pb.NewWorkflowContractServiceClient(action.cfg.CPConnection)
 
 	request := &pb.WorkflowContractServiceUpdateRequest{Id: contractID, Name: name}
 	if contractPath != "" {

@@ -30,7 +30,7 @@ func NewWorkflowRobotAccountRevoke(cfg *ActionsOpts) *WorkflowRobotAccountRevoke
 }
 
 func (action *WorkflowRobotAccountRevoke) Run(accountID string) error {
-	client := pb.NewRobotAccountServiceClient(action.cfg.CPConnecction)
+	client := pb.NewRobotAccountServiceClient(action.cfg.CPConnection)
 	if _, err := client.Revoke(context.Background(), &pb.RobotAccountServiceRevokeRequest{Id: accountID}); err != nil {
 		return err
 	}

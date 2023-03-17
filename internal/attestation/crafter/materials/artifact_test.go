@@ -23,7 +23,8 @@ import (
 	attestationApi "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	contractAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/materials"
-	mUploader "github.com/chainloop-dev/chainloop/internal/attestation/crafter/materials/mocks"
+	"github.com/chainloop-dev/chainloop/internal/casclient"
+	mUploader "github.com/chainloop-dev/chainloop/internal/casclient/mocks"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -75,7 +76,7 @@ func TestArtifacftCraft(t *testing.T) {
 	// Mock uploader
 	uploader := mUploader.NewUploader(t)
 	uploader.On("Upload", context.TODO(), "file.txt").
-		Return(&materials.UpDownStatus{
+		Return(&casclient.UpDownStatus{
 			Digest:   "deadbeef",
 			Filename: "file.txt",
 		}, nil)

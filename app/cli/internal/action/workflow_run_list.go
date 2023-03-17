@@ -58,7 +58,7 @@ type PaginationOpts struct {
 }
 
 func (action *WorkflowRunList) Run(opts *WorkflowRunListOpts) (*PaginatedWorkflowRunItem, error) {
-	client := pb.NewWorkflowRunServiceClient(action.cfg.CPConnecction)
+	client := pb.NewWorkflowRunServiceClient(action.cfg.CPConnection)
 	resp, err := client.List(context.Background(),
 		&pb.WorkflowRunServiceListRequest{
 			WorkflowId: opts.WorkflowID,

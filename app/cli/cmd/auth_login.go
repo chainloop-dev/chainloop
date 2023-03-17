@@ -180,7 +180,7 @@ func openbrowser(url string) error {
 
 // Retrieve loginURL from the control plane
 func retrieveLoginURL() (string, error) {
-	client := pb.NewStatusServiceClient(actionOpts.CPConnecction)
+	client := pb.NewStatusServiceClient(actionOpts.CPConnection)
 	resp, err := client.Infoz(context.Background(), &pb.InfozRequest{})
 	if err != nil {
 		return "", err

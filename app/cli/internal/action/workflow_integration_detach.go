@@ -28,7 +28,7 @@ func NewWorkflowIntegrationDetach(cfg *ActionsOpts) *WorkflowIntegrationDetach {
 }
 
 func (action *WorkflowIntegrationDetach) Run(attachmentID string) error {
-	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnecction)
+	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
 
 	_, err := client.Detach(context.Background(), &pb.IntegrationsServiceDetachRequest{Id: attachmentID})
 	return err

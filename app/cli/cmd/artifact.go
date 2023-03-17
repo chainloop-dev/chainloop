@@ -19,6 +19,7 @@ import (
 	"context"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/internal/grpcconn"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
@@ -44,5 +45,9 @@ func wrappedArtifactConn(cpConn *grpc.ClientConn, role pb.CASCredentialsServiceG
 		return nil, err
 	}
 
-	return newGRPCConnection(viper.GetString(confOptions.CASAPI.viperKey), resp.Result.Token, flagInsecure, logger)
+	if flagInsecure {
+		logger.Warn().Msg("API contacted in insecure mode")
+	}
+
+	return grpcconn.New(viper.GetString(confOptions.CASAPI.viperKey), resp.Result.Token, flagInsecure)
 }

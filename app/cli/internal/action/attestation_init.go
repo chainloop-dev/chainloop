@@ -63,7 +63,7 @@ func (action *AttestationInit) Run(contractRevision int) error {
 	}
 
 	action.Logger.Debug().Msg("Retrieving attestation definition")
-	client := pb.NewAttestationServiceClient(action.ActionsOpts.CPConnecction)
+	client := pb.NewAttestationServiceClient(action.ActionsOpts.CPConnection)
 	// get information of the workflow
 	ctx := context.Background()
 	resp, err := client.GetContract(ctx, &pb.AttestationServiceGetContractRequest{ContractRevision: int32(contractRevision)})

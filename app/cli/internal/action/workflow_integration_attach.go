@@ -29,7 +29,7 @@ func NewWorkflowIntegrationAttach(cfg *ActionsOpts) *WorkflowIntegrationAttach {
 }
 
 func (action *WorkflowIntegrationAttach) RunDependencyTrack(integrationID, workflowID, projectID, projectName string) (*IntegrationAttachmentItem, error) {
-	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnecction)
+	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
 
 	var projectConfig *pb.IntegrationAttachmentConfig_DependencyTrack
 	if projectID != "" {

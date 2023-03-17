@@ -30,7 +30,7 @@ func NewIntegrationDelete(cfg *ActionsOpts) *IntegrationDelete {
 }
 
 func (action *IntegrationDelete) Run(id string) error {
-	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnecction)
+	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
 	if _, err := client.Delete(context.Background(), &pb.IntegrationsServiceDeleteRequest{Id: id}); err != nil {
 		return err
 	}

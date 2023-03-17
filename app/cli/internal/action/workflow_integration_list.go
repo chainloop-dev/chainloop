@@ -29,7 +29,7 @@ func NewWorkflowIntegrationList(cfg *ActionsOpts) *WorkflowIntegrationList {
 }
 
 func (action *WorkflowIntegrationList) Run() ([]*IntegrationAttachmentItem, error) {
-	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnecction)
+	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
 
 	resp, err := client.ListAttachments(context.Background(), &pb.ListAttachmentsRequest{})
 	if err != nil {
