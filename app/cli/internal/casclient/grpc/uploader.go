@@ -42,8 +42,6 @@ type casClient struct {
 	logger zerolog.Logger
 	// channel to send progress status to the go-routine that's rendering the progress bar
 	ProgressStatus ProgressStatusChan
-	// wether to render progress bar
-	renderProgress bool
 }
 type UploaderClient struct {
 	*casClient
@@ -51,12 +49,6 @@ type UploaderClient struct {
 }
 
 type ClientOpts func(u *casClient)
-
-func WithProgressRender(b bool) ClientOpts {
-	return func(u *casClient) {
-		u.renderProgress = b
-	}
-}
 
 func WithLogger(l zerolog.Logger) ClientOpts {
 	return func(u *casClient) {
@@ -70,7 +62,7 @@ func NewUploader(conn *grpc.ClientConn, opts ...ClientOpts) *UploaderClient {
 	client := &UploaderClient{
 		casClient: &casClient{
 			conn:           conn,
-			ProgressStatus: make(chan *materials.UpDownStatus, 2), // Adding some buffer
+			ProgressStatus: make(chan *materials.UpDownStatus),
 			logger:         zerolog.Nop(),
 		},
 		bufferSize: defaultUploadChunkSize,
@@ -183,8 +175,11 @@ doUpload:
 			Digest: hash.String(), TotalSizeBytes: info.Size(), ProcessedBytes: totalUploaded,
 		}
 
-		if c.renderProgress {
-			c.ProgressStatus <- latestStatus
+		select {
+		case c.ProgressStatus <- latestStatus:
+			// message sent
+		default:
+			c.logger.Debug().Msg("nobody listening to progress updates, dropping message")
 		}
 
 		c.logger.Debug().

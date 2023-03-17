@@ -43,7 +43,7 @@ func NewArtifactUpload(opts *ArtifactUploadOpts) *ArtifactUpload {
 }
 
 func (a *ArtifactUpload) Run(filePath string) (*CASArtifact, error) {
-	client := casclient.NewUploader(a.artifactsCASConn, casclient.WithLogger(a.Logger), casclient.WithProgressRender(true))
+	client := casclient.NewUploader(a.artifactsCASConn, casclient.WithLogger(a.Logger))
 	// render progress bar
 	go renderOperationStatus(context.Background(), client.ProgressStatus, a.Logger)
 	defer close(client.ProgressStatus)

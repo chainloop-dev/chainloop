@@ -52,7 +52,7 @@ func (a *ArtifactDownload) Run(downloadPath, digest string) error {
 		return fmt.Errorf("invalid digest: %w", err)
 	}
 
-	client := casclient.NewDownloader(a.artifactsCASConn, casclient.WithProgressRender(true))
+	client := casclient.NewDownloader(a.artifactsCASConn)
 	ctx := context.Background()
 	info, err := client.Describe(ctx, h.Hex)
 	if err != nil {

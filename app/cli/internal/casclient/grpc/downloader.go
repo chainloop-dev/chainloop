@@ -88,8 +88,11 @@ func (c *DownloaderClient) Download(ctx context.Context, w io.Writer, digest str
 			TotalSizeBytes: totalBytes, ProcessedBytes: totalDownloaded,
 		}
 
-		if c.renderProgress {
-			c.ProgressStatus <- latestStatus
+		select {
+		case c.ProgressStatus <- latestStatus:
+			// message sent
+		default:
+			c.logger.Debug().Msg("nobody listening to progress updates, dropping message")
 		}
 	}
 

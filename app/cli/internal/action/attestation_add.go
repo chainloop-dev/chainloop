@@ -25,7 +25,7 @@ import (
 
 type AttestationAddOpts struct {
 	*ActionsOpts
-	ArtifacsCASConn *grpc.ClientConn
+	ArtifactsCASConn *grpc.ClientConn
 }
 
 type AttestationAdd struct {
@@ -39,9 +39,9 @@ func NewAttestationAdd(cfg *AttestationAddOpts) *AttestationAdd {
 		ActionsOpts: cfg.ActionsOpts,
 		c: crafter.NewCrafter(
 			crafter.WithLogger(&cfg.Logger),
-			crafter.WithUploader(casclient.NewUploader(cfg.ArtifacsCASConn, casclient.WithLogger(cfg.Logger), casclient.WithProgressRender(true))),
+			crafter.WithUploader(casclient.NewUploader(cfg.ArtifactsCASConn, casclient.WithLogger(cfg.Logger))),
 		),
-		artifactsCASConn: cfg.ArtifacsCASConn,
+		artifactsCASConn: cfg.ArtifactsCASConn,
 	}
 }
 

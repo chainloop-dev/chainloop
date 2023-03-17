@@ -57,7 +57,7 @@ func newAttestationAddCmd() *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			a := action.NewAttestationAdd(
-				&action.AttestationAddOpts{ActionsOpts: actionOpts, ArtifacsCASConn: artifactCASConn},
+				&action.AttestationAddOpts{ActionsOpts: actionOpts, ArtifactsCASConn: artifactCASConn},
 			)
 
 			err := a.Run(name, value)
