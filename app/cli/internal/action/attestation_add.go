@@ -18,8 +18,8 @@ package action
 import (
 	"errors"
 
-	casclient "github.com/chainloop-dev/chainloop/app/cli/internal/casclient/grpc"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
+	"github.com/chainloop-dev/chainloop/internal/casclient"
 	"google.golang.org/grpc"
 )
 
