@@ -37,9 +37,6 @@ const defaultUploadChunkSize = 1048576 // 1MB
 
 // Uploads a given file to a CAS server
 func (c *Client) UploadFile(ctx context.Context, filepath string) (*UpDownStatus, error) {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
 	// open file and calculate digest
 	f, err := os.Open(filepath)
 	if err != nil {
