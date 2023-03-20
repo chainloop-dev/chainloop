@@ -60,7 +60,7 @@ func (a *ArtifactUpload) Run(filePath string) (*CASArtifact, error) {
 	}
 
 	// render progress bar
-	go renderOperationStatus(context.Background(), client.ProgressStatus, a.Logger, info.Size())
+	go renderOperationStatus(context.Background(), client.ProgressStatus, info.Size())
 	defer close(client.ProgressStatus)
 
 	res, err := client.Upload(context.Background(), filePath)

@@ -30,10 +30,10 @@ func NewStatusService(version string) *StatusService {
 	return &StatusService{version: version}
 }
 
-func (s *StatusService) Statusz(ctx context.Context, req *pb.StatuszRequest) (*pb.StatuszResponse, error) {
+func (s *StatusService) Statusz(_ context.Context, _ *pb.StatuszRequest) (*pb.StatuszResponse, error) {
 	return &pb.StatuszResponse{}, nil
 }
 
-func (s *StatusService) Infoz(ctx context.Context, req *pb.InfozRequest) (*pb.InfozResponse, error) {
+func (s *StatusService) Infoz(_ context.Context, _ *pb.InfozRequest) (*pb.InfozResponse, error) {
 	return &pb.InfozResponse{Version: s.version}, nil
 }

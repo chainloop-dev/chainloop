@@ -34,11 +34,9 @@ func (x *IntegrationConfig) Scan(src any) error {
 		return nil
 	}
 	if b, ok := src.([]byte); ok {
-		if err := proto.Unmarshal(b, x); err != nil {
-			return err
-		}
-		return nil
+		return proto.Unmarshal(b, x)
 	}
+
 	return fmt.Errorf("unexpected type %T", src)
 }
 
@@ -52,10 +50,8 @@ func (x *IntegrationAttachmentConfig) Scan(src any) error {
 		return nil
 	}
 	if b, ok := src.([]byte); ok {
-		if err := proto.Unmarshal(b, x); err != nil {
-			return err
-		}
-		return nil
+		return proto.Unmarshal(b, x)
 	}
+
 	return fmt.Errorf("unexpected type %T", src)
 }

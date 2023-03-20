@@ -42,7 +42,7 @@ func NewOCIImageCrafter(schema *schemaapi.CraftingSchema_Material, l *zerolog.Lo
 	return &OCIImageCrafter{craftCommon}, nil
 }
 
-func (i *OCIImageCrafter) Craft(ctx context.Context, imageRef string) (*api.Attestation_Material, error) {
+func (i *OCIImageCrafter) Craft(_ context.Context, imageRef string) (*api.Attestation_Material, error) {
 	i.logger.Debug().Str("name", imageRef).Msg("retrieving container image digest from remote")
 
 	ref, err := name.ParseReference(imageRef)

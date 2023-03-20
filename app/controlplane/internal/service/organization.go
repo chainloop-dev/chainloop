@@ -40,7 +40,7 @@ func NewOrganizationService(uc *biz.MembershipUseCase, opts ...NewOpt) *Organiza
 	}
 }
 
-func (s *OrganizationService) ListMemberships(ctx context.Context, req *pb.OrganizationServiceListMembershipsRequest) (*pb.OrganizationServiceListMembershipsResponse, error) {
+func (s *OrganizationService) ListMemberships(ctx context.Context, _ *pb.OrganizationServiceListMembershipsRequest) (*pb.OrganizationServiceListMembershipsResponse, error) {
 	currentUser, _, err := loadCurrentUserAndOrg(ctx)
 	if err != nil {
 		return nil, err

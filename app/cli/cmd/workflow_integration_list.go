@@ -54,9 +54,9 @@ func integrationAttachmentListTableOutput(attachments []*action.IntegrationAttac
 	t.AppendHeader(table.Row{"ID", "Kind", "Config", "Attached At", "Workflow"})
 	for _, i := range attachments {
 		wf := i.Workflow
-		int := i.Integration
+		integration := i.Integration
 
-		maps.Copy(i.Config, int.Config)
+		maps.Copy(i.Config, integration.Config)
 		var options []string
 		for k, v := range i.Config {
 			if v == "" {
@@ -64,7 +64,7 @@ func integrationAttachmentListTableOutput(attachments []*action.IntegrationAttac
 			}
 			options = append(options, fmt.Sprintf("%s: %v", k, v))
 		}
-		t.AppendRow(table.Row{i.ID, int.Kind, strings.Join(options, "\n"), i.CreatedAt.Format(time.RFC822), wf.NamespacedName()})
+		t.AppendRow(table.Row{i.ID, integration.Kind, strings.Join(options, "\n"), i.CreatedAt.Format(time.RFC822), wf.NamespacedName()})
 		t.AppendSeparator()
 	}
 

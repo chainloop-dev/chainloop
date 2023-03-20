@@ -67,7 +67,7 @@ func (s *IntegrationsService) AddDependencyTrack(ctx context.Context, req *pb.Ad
 	return &pb.AddDependencyTrackResponse{Result: bizIntegrationToPb(i)}, nil
 }
 
-func (s *IntegrationsService) List(ctx context.Context, req *pb.IntegrationsServiceListRequest) (*pb.IntegrationsServiceListResponse, error) {
+func (s *IntegrationsService) List(ctx context.Context, _ *pb.IntegrationsServiceListRequest) (*pb.IntegrationsServiceListResponse, error) {
 	_, org, err := loadCurrentUserAndOrg(ctx)
 	if err != nil {
 		return nil, err

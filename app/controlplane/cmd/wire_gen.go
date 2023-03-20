@@ -80,7 +80,7 @@ func wireApp(confServer *conf.Server, auth *conf.Auth, confData *conf.Data, read
 		Opts:               v,
 	}
 	workflowRunService := service.NewWorkflowRunService(newWorkflowRunServiceOpts)
-	casCredentialsUseCase, err := biz.NewCASCredentialsUseCase(auth, logger)
+	casCredentialsUseCase, err := biz.NewCASCredentialsUseCase(auth)
 	if err != nil {
 		cleanup()
 		return nil, nil, err

@@ -81,7 +81,7 @@ func (a *ArtifactDownload) Run(downloadPath, digest string) error {
 	a.Logger.Info().Str("name", info.Filename).Str("to", downloadPath).Msg("downloading file")
 
 	// render progress bar
-	go renderOperationStatus(ctx, client.ProgressStatus, a.Logger, info.Size)
+	go renderOperationStatus(ctx, client.ProgressStatus, info.Size)
 	defer close(client.ProgressStatus)
 
 	err = client.Download(ctx, w, h.Hex)
@@ -103,7 +103,7 @@ func (a *ArtifactDownload) Run(downloadPath, digest string) error {
 	return nil
 }
 
-func renderOperationStatus(ctx context.Context, progressChan casclient.ProgressStatusChan, output io.Writer, totalSize int64) {
+func renderOperationStatus(ctx context.Context, progressChan casclient.ProgressStatusChan, totalSize int64) {
 	pw := progress.NewWriter()
 	pw.Style().Visibility.ETA = true
 	pw.Style().Visibility.Speed = true

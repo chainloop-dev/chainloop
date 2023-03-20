@@ -18,6 +18,7 @@ package cmd
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 
@@ -65,7 +66,7 @@ func encodeJSONToWriter(v interface{}, w io.Writer) error {
 	encoder := json.NewEncoder(w)
 	encoder.SetIndent("", "   ")
 	if err := encoder.Encode(v); err != nil {
-		return err
+		return fmt.Errorf("failed to encode output: %w", err)
 	}
 
 	return nil

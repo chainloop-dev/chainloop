@@ -97,7 +97,7 @@ func validateClient(kv *vault.KVv2, pathPrefix string) error {
 	}
 
 	if err := kv.DeleteMetadata(ctx, healthCheckSecret); err != nil {
-		return err
+		return fmt.Errorf("deleting health check secret: %w", err)
 	}
 
 	return nil

@@ -133,7 +133,7 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 			// 3 - Make sure its account is fully functional
 			selector.Server(
 				usercontext.CheckUserInAllowList(opts.AuthConfig.AllowList),
-				usercontext.CheckOrgRequirements(opts.OCIRepositoryUseCase, logHelper),
+				usercontext.CheckOrgRequirements(opts.OCIRepositoryUseCase),
 			).Match(requireFullyConfiguredOrgMatcher()).Build(),
 		).Match(requireCurrentUserMatcher()).Build(),
 	)

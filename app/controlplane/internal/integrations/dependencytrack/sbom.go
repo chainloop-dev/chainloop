@@ -93,7 +93,7 @@ const bomUploadPermission = "BOM_UPLOAD"
 const viewPortfolioPermission = "VIEW_PORTFOLIO"
 const projectCreationPermission = "PROJECT_CREATION_UPLOAD"
 
-func (d *Integration) Validate(ctx context.Context) error {
+func (d *Integration) Validate(_ context.Context) error {
 	resp, err := teamPermissionsRequest(d.host, d.apiKey)
 	if err != nil {
 		return err
@@ -148,7 +148,7 @@ func (d *SBOMUploader) Validate(ctx context.Context) error {
 	return nil
 }
 
-func (d *SBOMUploader) Do(ctx context.Context) error {
+func (d *SBOMUploader) Do(_ context.Context) error {
 	// Now we know that we can upload
 	values := map[string]io.Reader{
 		"bom": d.sbom,

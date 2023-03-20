@@ -21,14 +21,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-kratos/kratos/v2/log"
-
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/go-kratos/kratos/v2/middleware"
 )
 
-func CheckOrgRequirements(uc biz.OCIRepositoryReader, logger *log.Helper) middleware.Middleware {
+func CheckOrgRequirements(uc biz.OCIRepositoryReader) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			org := CurrentOrg(ctx)

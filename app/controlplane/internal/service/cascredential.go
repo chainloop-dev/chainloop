@@ -67,7 +67,7 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 		return nil, errors.NotFound("not found", "main repository not found")
 	}
 
-	t, err := s.casUC.GenerateTemporaryCredentials(ctx, currentOrg.ID, repo.SecretName, role)
+	t, err := s.casUC.GenerateTemporaryCredentials(ctx, repo.SecretName, role)
 	if err != nil {
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}

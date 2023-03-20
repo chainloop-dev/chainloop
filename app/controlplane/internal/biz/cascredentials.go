@@ -22,15 +22,13 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt"
 	robotaccount "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
-
-	"github.com/go-kratos/kratos/v2/log"
 )
 
 type CASCredentialsUseCase struct {
 	jwtBuilder *robotaccount.Builder
 }
 
-func NewCASCredentialsUseCase(c *conf.Auth, logger log.Logger) (*CASCredentialsUseCase, error) {
+func NewCASCredentialsUseCase(c *conf.Auth) (*CASCredentialsUseCase, error) {
 	const defaultExpirationTime = 10 * time.Second
 
 	builder, err := robotaccount.NewBuilder(
@@ -46,6 +44,6 @@ func NewCASCredentialsUseCase(c *conf.Auth, logger log.Logger) (*CASCredentialsU
 	return &CASCredentialsUseCase{builder}, nil
 }
 
-func (uc *CASCredentialsUseCase) GenerateTemporaryCredentials(ctx context.Context, orgID, secretID string, role robotaccount.Role) (string, error) {
+func (uc *CASCredentialsUseCase) GenerateTemporaryCredentials(_ context.Context, secretID string, role robotaccount.Role) (string, error) {
 	return uc.jwtBuilder.GenerateJWT(secretID, jwt.CASAudience, role)
 }

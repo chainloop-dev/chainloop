@@ -31,12 +31,15 @@ jobs:
       - name: Lint main module
         uses: golangci/golangci-lint-action@v3
         if: ${{ matrix.app == 'main-module' }}
+        with:
+          version: v1.52
 
       - name: Lint ${{ matrix.app }}
         uses: golangci/golangci-lint-action@v3
         if: ${{ matrix.app != 'main-module' }}
         with:
           working-directory: app/${{ matrix.app }}
+          version: v1.52
 
   lint-protos:
     runs-on: ubuntu-latest
