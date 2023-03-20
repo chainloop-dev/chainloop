@@ -85,7 +85,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 			return nil
 		},
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
-			return cleanup(logger, actionOpts.CPConnection)
+			return cleanup(actionOpts.CPConnection)
 		},
 	}
 
@@ -167,7 +167,7 @@ func newActionOpts(logger zerolog.Logger, conn *grpc.ClientConn) *action.Actions
 	return &action.ActionsOpts{CPConnection: conn, Logger: logger}
 }
 
-func cleanup(logger zerolog.Logger, conn *grpc.ClientConn) error {
+func cleanup(conn *grpc.ClientConn) error {
 	if conn != nil {
 		if err := conn.Close(); err != nil {
 			return err

@@ -32,11 +32,7 @@ func newWorkflowRobotAccountCreateCmd() *cobra.Command {
 				return err
 			}
 
-			if err := encodeOutput([]*action.WorkflowRobotAccountItem{res}, robotAccountListTableOutput); err != nil {
-				return err
-			}
-
-			return nil
+			return encodeOutput([]*action.WorkflowRobotAccountItem{res}, robotAccountListTableOutput)
 		},
 	}
 

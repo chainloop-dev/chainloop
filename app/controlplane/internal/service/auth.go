@@ -299,7 +299,7 @@ func setOauthCookie(w http.ResponseWriter, name, value string) {
 }
 
 // DeleteAccount deletes an account
-func (svc *AuthService) DeleteAccount(ctx context.Context, req *pb.AuthServiceDeleteAccountRequest) (*pb.AuthServiceDeleteAccountResponse, error) {
+func (svc *AuthService) DeleteAccount(ctx context.Context, _ *pb.AuthServiceDeleteAccountRequest) (*pb.AuthServiceDeleteAccountResponse, error) {
 	user, _, err := loadCurrentUserAndOrg(ctx)
 	if err != nil {
 		return nil, err

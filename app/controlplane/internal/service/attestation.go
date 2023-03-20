@@ -202,11 +202,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 
 				s.log.Infow("msg", "attestation associated", "digest", digest, "runID", req.WorkflowRunId)
 
-				if err := s.wrUseCase.MarkAsFinished(ctx, req.WorkflowRunId, biz.WorkflowRunSuccess, ""); err != nil {
-					return err
-				}
-
-				return nil
+				return s.wrUseCase.MarkAsFinished(ctx, req.WorkflowRunId, biz.WorkflowRunSuccess, "")
 			},
 			b,
 			func(_ error, delay time.Duration) {
@@ -276,7 +272,7 @@ func (s *AttestationService) Cancel(ctx context.Context, req *cpAPI.AttestationS
 
 // There is another endpoint to get credentials via casCredentialsService.Get
 // This one is kept since it leverages robot-accounts in the context of a workflow
-func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.AttestationServiceGetUploadCredsRequest) (*cpAPI.AttestationServiceGetUploadCredsResponse, error) {
+func (s *AttestationService) GetUploadCreds(ctx context.Context, _ *cpAPI.AttestationServiceGetUploadCredsRequest) (*cpAPI.AttestationServiceGetUploadCredsResponse, error) {
 	robotAccount := usercontext.CurrentRobotAccount(ctx)
 	if robotAccount == nil {
 		return nil, errors.NotFound("not found", "robot account not found")
@@ -296,7 +292,7 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 		return nil, errors.NotFound("not found", "main repository not found")
 	}
 
-	t, err := s.casCredsUseCase.GenerateTemporaryCredentials(ctx, wf.OrgID.String(), repo.SecretName, casJWT.Uploader)
+	t, err := s.casCredsUseCase.GenerateTemporaryCredentials(ctx, repo.SecretName, casJWT.Uploader)
 	if err != nil {
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}

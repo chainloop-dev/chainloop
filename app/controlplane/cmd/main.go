@@ -133,7 +133,7 @@ type app struct {
 	runsExpirer *biz.WorkflowRunExpirerUseCase
 }
 
-func filterSensitiveArgs(level log.Level, keyvals ...interface{}) bool {
+func filterSensitiveArgs(_ log.Level, keyvals ...interface{}) bool {
 	for i := 0; i < len(keyvals); i++ {
 		if keyvals[i] == "operation" {
 			switch keyvals[i+1] {
