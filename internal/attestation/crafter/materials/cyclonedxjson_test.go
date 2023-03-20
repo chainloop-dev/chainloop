@@ -102,7 +102,7 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 			// Mock uploader
 			uploader := mUploader.NewUploader(t)
 			if tc.wantErr == "" {
-				uploader.On("Upload", context.TODO(), tc.filePath).
+				uploader.On("UploadFile", context.TODO(), tc.filePath).
 					Return(&casclient.UpDownStatus{
 						Digest:   "deadbeef",
 						Filename: "sbom.cyclonedx.json",
