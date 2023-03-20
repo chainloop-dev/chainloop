@@ -63,7 +63,7 @@ func NewBackend(repository string, regOpts *RegistryOptions) (*Backend, error) {
 // Exists check that the artifact is already present in the repository and it points to the
 // same image digest, meaning it has not been re-pushed/replaced
 // This method is very naive so signatures will be used in future releases
-func (b *Backend) Exists(ctx context.Context, digest string) (bool, error) {
+func (b *Backend) Exists(_ context.Context, digest string) (bool, error) {
 	if digest == "" {
 		return false, errors.New("digest is empty")
 	}
@@ -89,7 +89,7 @@ func (b *Backend) Exists(ctx context.Context, digest string) (bool, error) {
 	return true, nil
 }
 
-func (b *Backend) Upload(ctx context.Context, r io.Reader, resource *pb.CASResource) error {
+func (b *Backend) Upload(_ context.Context, r io.Reader, resource *pb.CASResource) error {
 	// We need to read the whole content before uploading it to the registry
 	// This is due to the fact that our OCI push implementation does not support streaming/chunks for uncompressed layers
 	// We can not use stream.Layer since it only supports compressed layers, we want to store raw data and set custom mimetypes
@@ -159,7 +159,7 @@ func detectedMediaType(b []byte) types.MediaType {
 	return types.MediaType(strings.Split(http.DetectContentType(b), ";")[0])
 }
 
-func (b *Backend) Describe(ctx context.Context, digest string) (*pb.CASResource, error) {
+func (b *Backend) Describe(_ context.Context, digest string) (*pb.CASResource, error) {
 	if digest == "" {
 		return nil, errors.New("digest is empty")
 	}
@@ -194,7 +194,7 @@ func (b *Backend) Describe(ctx context.Context, digest string) (*pb.CASResource,
 	return &pb.CASResource{Digest: digest, FileName: filename, Size: size}, nil
 }
 
-func (b *Backend) Download(ctx context.Context, w io.Writer, digest string) error {
+func (b *Backend) Download(_ context.Context, w io.Writer, digest string) error {
 	if digest == "" {
 		return errors.New("digest is empty")
 	}

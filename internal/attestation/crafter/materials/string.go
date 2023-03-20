@@ -39,7 +39,7 @@ func NewStringCrafter(materialSchema *schemaapi.CraftingSchema_Material) (*Strin
 	}, nil
 }
 
-func (i *StringCrafter) Craft(ctx context.Context, value string) (*api.Attestation_Material, error) {
+func (i *StringCrafter) Craft(_ context.Context, value string) (*api.Attestation_Material, error) {
 	return &api.Attestation_Material{
 		AddedAt:      timestamppb.New(time.Now()),
 		MaterialType: i.input.Type,

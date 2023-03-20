@@ -315,7 +315,7 @@ func (c *Crafter) ResolveEnvVars(strict bool) error {
 	c.CraftingState.Attestation.EnvVars = outputEnvVars
 
 	if err := persistCraftingState(c.CraftingState, c.statePath); err != nil {
-		return err
+		return fmt.Errorf("failed to persist crafting state: %w", err)
 	}
 
 	return nil
