@@ -18,6 +18,7 @@ syntax = "proto3";
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf;conf";
 
 import "google/protobuf/duration.proto";
+import "validate/validate.proto";
 
 message Bootstrap {
   Server server = 1;
@@ -27,7 +28,7 @@ message Bootstrap {
   Credentials credentials_service = 5;
 
   // CAS Server endpoint
-  Server.GRPC cas_server = 6;
+  CASServer cas_server = 6;
 
   message Observability {
     Sentry sentry = 1;
@@ -37,6 +38,12 @@ message Bootstrap {
     }
   }
 
+  message CASServer {
+    Server.GRPC grpc = 1 [(validate.rules).message.required = true];
+    // insecure is used to disable TLS handshake
+    // Only use for development purposes!
+    bool insecure = 2;
+  }
 }
 
 message Server {
@@ -51,7 +58,7 @@ message Server {
 
   message GRPC {
     string network = 1;
-    string addr = 2;
+    string addr = 2 [(validate.rules).string.min_len = 1];
     google.protobuf.Duration timeout = 3;
   }
 

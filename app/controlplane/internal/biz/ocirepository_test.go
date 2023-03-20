@@ -190,5 +190,5 @@ func (s *ociRepositoryTestSuite) SetupTest() {
 	s.repo = bizMocks.NewOCIRepositoryRepo(s.T())
 	s.credsRW = credentialsM.NewReaderWriter(s.T())
 	s.backendProvider = blobM.NewProvider(s.T())
-	s.useCase = biz.NewOCIRepositoryUsecase(s.repo, s.credsRW, s.backendProvider, nil)
+	s.useCase = biz.NewOCIRepositoryUseCase(s.repo, s.credsRW, s.backendProvider, nil)
 }

@@ -34,7 +34,7 @@ type organizationTestSuite struct {
 
 func (s *organizationTestSuite) SetupTest() {
 	s.repo = repoM.NewOrganizationRepo(s.T())
-	s.useCase = biz.NewOrganizationUsecase(s.repo, nil, nil, nil)
+	s.useCase = biz.NewOrganizationUseCase(s.repo, nil, nil, nil)
 }
 
 func (s *organizationTestSuite) TestCreate() {

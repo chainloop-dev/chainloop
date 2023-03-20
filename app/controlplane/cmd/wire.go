@@ -33,8 +33,7 @@ import (
 	"github.com/google/wire"
 )
 
-// wireApp init kratos application.
-func wireApp(*conf.Server, *conf.Auth, *conf.Data, credentials.ReaderWriter, log.Logger) (*app, func(), error) {
+func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger) (*app, func(), error) {
 	panic(
 		wire.Build(
 			wire.Bind(new(credentials.Reader), new(credentials.ReaderWriter)),
@@ -43,8 +42,10 @@ func wireApp(*conf.Server, *conf.Auth, *conf.Data, credentials.ReaderWriter, log
 			biz.ProviderSet,
 			service.ProviderSet,
 			wire.Bind(new(backend.Provider), new(*oci.BackendProvider)),
+			wire.Bind(new(biz.CASUploader), new(*biz.CASClientUseCase)),
 			oci.NewBackendProvider,
 			serviceOpts,
+			wire.FieldsOf(new(*conf.Bootstrap), "Server", "Auth", "Data", "CasServer"),
 			newApp,
 		),
 	)

@@ -72,7 +72,7 @@ type WorkflowRunUseCase struct {
 	logger    *log.Helper
 }
 
-func NewWorkflowRunUsecase(wfrRepo WorkflowRunRepo, wfRepo WorkflowRepo, logger log.Logger) (*WorkflowRunUseCase, error) {
+func NewWorkflowRunUseCase(wfrRepo WorkflowRunRepo, wfRepo WorkflowRepo, logger log.Logger) (*WorkflowRunUseCase, error) {
 	if logger == nil {
 		logger = log.NewStdLogger(io.Discard)
 	}

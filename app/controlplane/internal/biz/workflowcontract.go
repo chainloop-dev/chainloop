@@ -74,7 +74,7 @@ type WorkflowContractUseCase struct {
 	logger *log.Helper
 }
 
-func NewWorkflowContractUsecase(repo WorkflowContractRepo, logger log.Logger) *WorkflowContractUseCase {
+func NewWorkflowContractUseCase(repo WorkflowContractRepo, logger log.Logger) *WorkflowContractUseCase {
 	return &WorkflowContractUseCase{repo: repo, logger: log.NewHelper(logger)}
 }
 

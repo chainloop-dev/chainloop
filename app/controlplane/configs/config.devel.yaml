@@ -16,7 +16,9 @@ server:
 
 # Local CAS server for development
 cas_server:
-  addr: 0.0.0.0:9001
+  grpc:
+    addr: 0.0.0.0:9001
+  insecure: true
 
 credentials_service:
   vault:

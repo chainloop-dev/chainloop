@@ -25,6 +25,8 @@ import (
 	grpc_insecure "google.golang.org/grpc/credentials/insecure"
 )
 
+// Simple wrapper around grpc.Dial that returns a grpc.ClientConn
+// It sets up the connection with the correct credentials headers
 func New(uri, authToken string, insecure bool) (*grpc.ClientConn, error) {
 	var opts []grpc.DialOption
 	if authToken != "" {
@@ -37,6 +39,7 @@ func New(uri, authToken string, insecure bool) (*grpc.ClientConn, error) {
 		}
 	}
 
+	// Currently we only support system tls certs
 	var tlsDialOption grpc.DialOption
 	if insecure {
 		tlsDialOption = grpc.WithTransportCredentials(grpc_insecure.NewCredentials())
@@ -64,6 +67,7 @@ type tokenAuth struct {
 }
 
 // Implementation of PerRPCCredentials interface that sends a bearer token in each request.
+// https://pkg.go.dev/google.golang.org/grpc/credentials#PerRPCCredentials
 func newTokenAuth(token string, insecure bool) *tokenAuth {
 	return &tokenAuth{token, insecure}
 }

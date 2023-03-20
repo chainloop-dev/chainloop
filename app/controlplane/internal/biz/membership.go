@@ -44,7 +44,7 @@ type MembershipUseCase struct {
 	logger *log.Helper
 }
 
-func NewMembershipUsecase(repo MembershipRepo, logger log.Logger) *MembershipUseCase {
+func NewMembershipUseCase(repo MembershipRepo, logger log.Logger) *MembershipUseCase {
 	return &MembershipUseCase{repo, log.NewHelper(logger)}
 }
 

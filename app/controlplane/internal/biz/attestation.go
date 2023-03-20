@@ -26,6 +26,7 @@ import (
 	casAPI "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
+	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
@@ -36,6 +37,11 @@ type Attestation struct {
 
 type AttestationUseCase struct {
 	logger *log.Helper
+	CASUploader
+
+	// DEPRECATED
+	// We will remove it once we force all the clients to use the CAS instead
+	backendProvider backend.Provider
 }
 
 type AttestationRef struct {
@@ -45,13 +51,15 @@ type AttestationRef struct {
 	SecretRef string
 }
 
-func NewAttestationUseCase(logger log.Logger) *AttestationUseCase {
+func NewAttestationUseCase(uploader CASUploader, p backend.Provider, logger log.Logger) *AttestationUseCase {
 	if logger == nil {
 		logger = log.NewStdLogger(io.Discard)
 	}
 
 	return &AttestationUseCase{
-		logger: log.NewHelper(logger),
+		logger:          servicelogger.ScopedHelper(logger, "biz/attestation"),
+		CASUploader:     uploader,
+		backendProvider: p,
 	}
 }
 
@@ -71,18 +79,8 @@ func (uc *AttestationUseCase) FetchFromStore(ctx context.Context, downloader bac
 	return &Attestation{Envelope: &envelope}, nil
 }
 
-// UploadAttestationToOCI uploads the attestation to the OCI CAS returning the reference to the attestation
-func (uc *AttestationUseCase) UploadAttestationToOCI(ctx context.Context, envelope *dsse.Envelope, uploader backend.Uploader, workflowRunID string) (string, error) {
-	digest, err := doUploadToOCI(ctx, uploader, workflowRunID, envelope, uc.logger)
-	if err != nil {
-		return "", err
-	}
-
-	return digest, nil
-}
-
-func doUploadToOCI(ctx context.Context, backend backend.Uploader, runID string, envelope *dsse.Envelope, logger *log.Helper) (string, error) {
-	fileName := fmt.Sprintf("attestation-%s.json", runID)
+func (uc *AttestationUseCase) UploadToCAS(ctx context.Context, envelope *dsse.Envelope, secretID, workflowRunID string) (string, error) {
+	filename := fmt.Sprintf("attestation-%s.json", workflowRunID)
 	jsonContent, err := json.Marshal(envelope)
 	if err != nil {
 		return "", fmt.Errorf("marshaling the envelope: %w", err)
@@ -92,13 +90,28 @@ func doUploadToOCI(ctx context.Context, backend backend.Uploader, runID string, 
 	hash.Write(jsonContent)
 	digest := fmt.Sprintf("%x", hash.Sum(nil))
 
-	if err := backend.Upload(ctx, bytes.NewBuffer(jsonContent), &casAPI.CASResource{
-		FileName: fileName, Digest: digest,
+	if uc.CASUploader.Configured() {
+		if err := uc.CASUploader.Upload(ctx, secretID, bytes.NewBuffer(jsonContent), filename, digest); err != nil {
+			return "", fmt.Errorf("uploading to CAS: %w", err)
+		}
+
+		return digest, nil
+	}
+
+	uc.logger.Warnw("msg", "no CAS configured, falling back to old mechanism")
+
+	// fallback to old mechanism, this will be removed once we force all the clients to use the CAS
+	// TODO: remove
+	uploader, err := uc.backendProvider.FromCredentials(ctx, secretID)
+	if err != nil {
+		return "", err
+	}
+
+	if err := uploader.Upload(ctx, bytes.NewBuffer(jsonContent), &casAPI.CASResource{
+		FileName: filename, Digest: digest,
 	}); err != nil {
 		return "", fmt.Errorf("uploading to OCI: %w", err)
 	}
-
-	logger.Infow("msg", "attestation uploaded to OCI", "digest", digest, "filename", fileName, "runID", runID)
 
 	return digest, nil
 }

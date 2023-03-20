@@ -185,12 +185,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 					return backoff.Permanent(errors.NotFound("not found", "main repository not found"))
 				}
 
-				uploader, err := oci.NewBackendProvider(s.credsReader).FromCredentials(ctx, repo.SecretName)
-				if err != nil {
-					return err
-				}
-
-				digest, err := s.attestationUseCase.UploadAttestationToOCI(ctx, envelope, uploader, req.WorkflowRunId)
+				digest, err := s.attestationUseCase.UploadToCAS(ctx, envelope, repo.SecretName, req.WorkflowRunId)
 				if err != nil {
 					return err
 				}
@@ -205,8 +200,8 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 				return s.wrUseCase.MarkAsFinished(ctx, req.WorkflowRunId, biz.WorkflowRunSuccess, "")
 			},
 			b,
-			func(_ error, delay time.Duration) {
-				s.log.Warnf("error uploading attestation to OCI, retrying in %s", delay)
+			func(err error, delay time.Duration) {
+				s.log.Warnf("error uploading attestation to CAS, retrying in %s - %s", delay, err)
 			},
 		)
 		if err != nil {
@@ -292,7 +287,7 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, _ *cpAPI.Attest
 		return nil, errors.NotFound("not found", "main repository not found")
 	}
 
-	t, err := s.casCredsUseCase.GenerateTemporaryCredentials(ctx, repo.SecretName, casJWT.Uploader)
+	t, err := s.casCredsUseCase.GenerateTemporaryCredentials(repo.SecretName, casJWT.Uploader)
 	if err != nil {
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}
