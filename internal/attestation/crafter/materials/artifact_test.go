@@ -64,7 +64,7 @@ func TestNewArtifactCrafter(t *testing.T) {
 	}
 }
 
-func TestArtifacftCraft(t *testing.T) {
+func TestArtifactCraft(t *testing.T) {
 	assert := assert.New(t)
 	schema := &contractAPI.CraftingSchema_Material{
 		Name: "test",
@@ -75,7 +75,7 @@ func TestArtifacftCraft(t *testing.T) {
 
 	// Mock uploader
 	uploader := mUploader.NewUploader(t)
-	uploader.On("Upload", context.TODO(), "file.txt").
+	uploader.On("UploadFile", context.TODO(), "file.txt").
 		Return(&casclient.UpDownStatus{
 			Digest:   "deadbeef",
 			Filename: "file.txt",
