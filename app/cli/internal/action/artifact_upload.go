@@ -63,7 +63,7 @@ func (a *ArtifactUpload) Run(filePath string) (*CASArtifact, error) {
 	go renderOperationStatus(context.Background(), client.ProgressStatus, info.Size())
 	defer close(client.ProgressStatus)
 
-	res, err := client.Upload(context.Background(), filePath)
+	res, err := client.UploadFile(context.Background(), filePath)
 	if err != nil {
 		return nil, err
 	}

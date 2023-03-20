@@ -24,8 +24,8 @@ import (
 )
 
 type UpDownStatus struct {
-	Filepath, Filename, Digest string
-	ProcessedBytes             int64
+	Filename, Digest string
+	ProcessedBytes   int64
 }
 
 type ResourceInfo struct {
@@ -35,7 +35,8 @@ type ResourceInfo struct {
 }
 
 type Uploader interface {
-	Upload(ctx context.Context, filepath string) (*UpDownStatus, error)
+	UploadFile(ctx context.Context, filepath string) (*UpDownStatus, error)
+	Upload(ctx context.Context, r io.Reader, digest, fileName string) (*UpDownStatus, error)
 }
 
 type Downloader interface {

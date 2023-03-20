@@ -36,7 +36,7 @@ import (
 const defaultUploadChunkSize = 1048576 // 1MB
 
 // Uploads a given file to a CAS server
-func (c *Client) Upload(ctx context.Context, filepath string) (*UpDownStatus, error) {
+func (c *Client) UploadFile(ctx context.Context, filepath string) (*UpDownStatus, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -59,13 +59,19 @@ func (c *Client) Upload(ctx context.Context, filepath string) (*UpDownStatus, er
 		return nil, fmt.Errorf("rewinding file pointer: %w", err)
 	}
 
-	filename := path.Base(filepath)
-	resource, err := encodeResource(filename, hash.Hex)
+	return c.Upload(ctx, f, path.Base(filepath), hash.Hex)
+}
+
+func (c *Client) Upload(ctx context.Context, r io.Reader, filename, digest string) (*UpDownStatus, error) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	resource, err := encodeResource(filename, digest)
 	if err != nil {
 		return nil, fmt.Errorf("encoding resource name: %w", err)
 	}
 
-	c.logger.Info().Msgf("uploading %s - sha256:%s", filepath, hash.Hex)
+	c.logger.Info().Msgf("uploading %s - sha256:%s", filename, digest)
 
 	stream, err := bytestream.NewByteStreamClient(c.conn).Write(ctx)
 	if err != nil {
@@ -73,8 +79,6 @@ func (c *Client) Upload(ctx context.Context, filepath string) (*UpDownStatus, er
 	}
 
 	buf := make([]byte, defaultUploadChunkSize)
-
-	c.logger.Debug().Str("path", filepath).Str("digest", hash.String()).Msg("file opened")
 
 	c.logger.Debug().
 		Str("chunks", bytefmt.ByteSize(uint64(defaultUploadChunkSize))).
@@ -85,7 +89,7 @@ func (c *Client) Upload(ctx context.Context, filepath string) (*UpDownStatus, er
 
 doUpload:
 	for {
-		n, err := f.Read(buf)
+		n, err := r.Read(buf)
 		if err == io.EOF {
 			c.logger.Debug().Msg("finishing upload")
 			// Indicate that there is no more data to send
@@ -125,8 +129,9 @@ doUpload:
 		}
 
 		latestStatus = &UpDownStatus{
-			Filepath: filepath, Filename: filename,
-			Digest: hash.String(), ProcessedBytes: totalUploaded,
+			Filename:       filename,
+			Digest:         digest,
+			ProcessedBytes: totalUploaded,
 		}
 
 		select {

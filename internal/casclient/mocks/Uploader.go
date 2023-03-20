@@ -7,6 +7,8 @@ import (
 
 	casclient "github.com/chainloop-dev/chainloop/internal/casclient"
 
+	io "io"
+
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -15,8 +17,34 @@ type Uploader struct {
 	mock.Mock
 }
 
-// Upload provides a mock function with given fields: ctx, filepath
-func (_m *Uploader) Upload(ctx context.Context, filepath string) (*casclient.UpDownStatus, error) {
+// Upload provides a mock function with given fields: ctx, r, digest, fileName
+func (_m *Uploader) Upload(ctx context.Context, r io.Reader, digest string, fileName string) (*casclient.UpDownStatus, error) {
+	ret := _m.Called(ctx, r, digest, fileName)
+
+	var r0 *casclient.UpDownStatus
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, io.Reader, string, string) (*casclient.UpDownStatus, error)); ok {
+		return rf(ctx, r, digest, fileName)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, io.Reader, string, string) *casclient.UpDownStatus); ok {
+		r0 = rf(ctx, r, digest, fileName)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*casclient.UpDownStatus)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, io.Reader, string, string) error); ok {
+		r1 = rf(ctx, r, digest, fileName)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// UploadFile provides a mock function with given fields: ctx, filepath
+func (_m *Uploader) UploadFile(ctx context.Context, filepath string) (*casclient.UpDownStatus, error) {
 	ret := _m.Called(ctx, filepath)
 
 	var r0 *casclient.UpDownStatus
