@@ -22,7 +22,6 @@ import (
 	craftingpb "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/pagination"
-	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	errors "github.com/go-kratos/kratos/v2/errors"
@@ -116,12 +115,7 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 	var attestation *biz.Attestation
 	// Download the attestation if the workflow run is successful
 	if run.AttestationRef != nil {
-		downloader, err := oci.NewBackendProvider(s.credsReader).FromCredentials(ctx, run.AttestationRef.SecretRef)
-		if err != nil {
-			return nil, sl.LogAndMaskErr(err, s.log)
-		}
-
-		attestation, err = s.attestationUseCase.FetchFromStore(ctx, downloader, run.AttestationRef.Sha256)
+		attestation, err = s.attestationUseCase.FetchFromStore(ctx, run.AttestationRef.SecretRef, run.AttestationRef.Sha256)
 		if err != nil {
 			// NOTE: For now we don't return an error if the attestation is not found
 			// since we do not have a good error recovery in place for assets

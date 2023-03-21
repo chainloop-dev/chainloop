@@ -34,12 +34,18 @@ type CASClientUseCase struct {
 	logger        *log.Helper
 }
 
-type CASDescriber interface {
-	Configured() bool
-}
 type CASUploader interface {
-	CASDescriber
 	Upload(ctx context.Context, secretID string, content io.Reader, filename, digest string) error
+}
+
+type CASDownloader interface {
+	Download(ctx context.Context, secretID string, w io.Writer, digest string) error
+}
+
+type CASClient interface {
+	CASUploader
+	CASDownloader
+	Configured() bool
 }
 
 func NewCASClientUseCase(credsProvider *CASCredentialsUseCase, config *conf.Bootstrap_CASServer, l log.Logger) *CASClientUseCase {
@@ -62,6 +68,23 @@ func (uc *CASClientUseCase) Upload(ctx context.Context, secretID string, content
 	}
 
 	uc.logger.Infow("msg", "upload finished", "status", status)
+
+	return nil
+}
+
+func (uc *CASClientUseCase) Download(ctx context.Context, secretID string, w io.Writer, digest string) error {
+	uc.logger.Infow("msg", "download initialized", "digest", digest)
+
+	client, err := uc.casAPIClient(secretID, casJWT.Downloader)
+	if err != nil {
+		return fmt.Errorf("failed to create cas client: %w", err)
+	}
+
+	if err := client.Download(ctx, w, digest); err != nil {
+		return fmt.Errorf("failed to download content: %w", err)
+	}
+
+	uc.logger.Infow("msg", "download finalized", "digest", digest)
 
 	return nil
 }

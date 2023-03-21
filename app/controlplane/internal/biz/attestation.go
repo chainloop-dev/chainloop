@@ -37,7 +37,7 @@ type Attestation struct {
 
 type AttestationUseCase struct {
 	logger *log.Helper
-	CASUploader
+	CASClient
 
 	// DEPRECATED
 	// We will remove it once we force all the clients to use the CAS instead
@@ -51,24 +51,39 @@ type AttestationRef struct {
 	SecretRef string
 }
 
-func NewAttestationUseCase(uploader CASUploader, p backend.Provider, logger log.Logger) *AttestationUseCase {
+func NewAttestationUseCase(client CASClient, p backend.Provider, logger log.Logger) *AttestationUseCase {
 	if logger == nil {
 		logger = log.NewStdLogger(io.Discard)
 	}
 
 	return &AttestationUseCase{
 		logger:          servicelogger.ScopedHelper(logger, "biz/attestation"),
-		CASUploader:     uploader,
+		CASClient:       client,
 		backendProvider: p,
 	}
 }
 
-func (uc *AttestationUseCase) FetchFromStore(ctx context.Context, downloader backend.Downloader, digest string) (*Attestation, error) {
+func (uc *AttestationUseCase) FetchFromStore(ctx context.Context, secretID, digest string) (*Attestation, error) {
 	uc.logger.Infow("msg", "downloading attestation", "digest", digest)
 	buf := bytes.NewBuffer(nil)
 
-	if err := downloader.Download(ctx, buf, digest); err != nil {
-		return nil, err
+	if uc.CASClient.Configured() {
+		if err := uc.CASClient.Download(ctx, secretID, buf, digest); err != nil {
+			return nil, fmt.Errorf("downloading from CAS: %w", err)
+		}
+	} else {
+		uc.logger.Warnw("msg", "no CAS configured, falling back to old mechanism")
+
+		// DEPRECATED
+		// TODO: remove
+		downloader, err := uc.backendProvider.FromCredentials(ctx, secretID)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := downloader.Download(ctx, buf, digest); err != nil {
+			return nil, err
+		}
 	}
 
 	var envelope dsse.Envelope
@@ -90,8 +105,8 @@ func (uc *AttestationUseCase) UploadToCAS(ctx context.Context, envelope *dsse.En
 	hash.Write(jsonContent)
 	digest := fmt.Sprintf("%x", hash.Sum(nil))
 
-	if uc.CASUploader.Configured() {
-		if err := uc.CASUploader.Upload(ctx, secretID, bytes.NewBuffer(jsonContent), filename, digest); err != nil {
+	if uc.CASClient.Configured() {
+		if err := uc.CASClient.Upload(ctx, secretID, bytes.NewBuffer(jsonContent), filename, digest); err != nil {
 			return "", fmt.Errorf("uploading to CAS: %w", err)
 		}
 
