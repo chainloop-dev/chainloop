@@ -42,7 +42,7 @@ type OrganizationUseCase struct {
 	integrationUC *IntegrationUseCase
 }
 
-func NewOrganizationUsecase(repo OrganizationRepo, repoUC *OCIRepositoryUseCase, iUC *IntegrationUseCase, logger log.Logger) *OrganizationUseCase {
+func NewOrganizationUseCase(repo OrganizationRepo, repoUC *OCIRepositoryUseCase, iUC *IntegrationUseCase, logger log.Logger) *OrganizationUseCase {
 	return &OrganizationUseCase{orgRepo: repo,
 		logger:        log.NewHelper(logger),
 		ociUseCase:    repoUC,

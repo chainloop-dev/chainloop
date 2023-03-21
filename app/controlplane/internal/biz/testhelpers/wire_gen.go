@@ -31,28 +31,28 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		return nil, nil, err
 	}
 	membershipRepo := data.NewMembershipRepo(dataData, logger)
-	membershipUseCase := biz.NewMembershipUsecase(membershipRepo, logger)
+	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, logger)
 	ociRepositoryRepo := data.NewOCIRepositoryRepo(dataData, logger)
 	backendProvider := oci.NewBackendProvider(readerWriter)
-	ociRepositoryUseCase := biz.NewOCIRepositoryUsecase(ociRepositoryRepo, readerWriter, backendProvider, logger)
+	ociRepositoryUseCase := biz.NewOCIRepositoryUseCase(ociRepositoryRepo, readerWriter, backendProvider, logger)
 	integrationRepo := data.NewIntegrationRepo(dataData, logger)
 	integrationAttachmentRepo := data.NewIntegrationAttachmentRepo(dataData, logger)
 	workflowRepo := data.NewWorkflowRepo(dataData, logger)
-	newIntegrationUsecaseOpts := &biz.NewIntegrationUsecaseOpts{
+	newIntegrationUseCaseOpts := &biz.NewIntegrationUseCaseOpts{
 		IRepo:   integrationRepo,
 		IaRepo:  integrationAttachmentRepo,
 		WfRepo:  workflowRepo,
 		CredsRW: readerWriter,
 		Logger:  logger,
 	}
-	integrationUseCase := biz.NewIntegrationUsecase(newIntegrationUsecaseOpts)
+	integrationUseCase := biz.NewIntegrationUseCase(newIntegrationUseCaseOpts)
 	organizationRepo := data.NewOrganizationRepo(dataData, logger)
-	organizationUseCase := biz.NewOrganizationUsecase(organizationRepo, ociRepositoryUseCase, integrationUseCase, logger)
+	organizationUseCase := biz.NewOrganizationUseCase(organizationRepo, ociRepositoryUseCase, integrationUseCase, logger)
 	workflowContractRepo := data.NewWorkflowContractRepo(dataData, logger)
-	workflowContractUseCase := biz.NewWorkflowContractUsecase(workflowContractRepo, logger)
+	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, logger)
 	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, workflowContractUseCase, logger)
 	workflowRunRepo := data.NewWorkflowRunRepo(dataData, logger)
-	workflowRunUseCase, err := biz.NewWorkflowRunUsecase(workflowRunRepo, workflowRepo, logger)
+	workflowRunUseCase, err := biz.NewWorkflowRunUseCase(workflowRunRepo, workflowRepo, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err

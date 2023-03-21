@@ -52,7 +52,7 @@ type workflowrunTestSuite struct {
 
 func (s *workflowrunTestSuite) SetupTest() {
 	s.repo = repoM.NewWorkflowRunRepo(s.T())
-	uc, err := biz.NewWorkflowRunUsecase(s.repo, nil, nil)
+	uc, err := biz.NewWorkflowRunUseCase(s.repo, nil, nil)
 	require.NoError(s.T(), err)
 	s.useCase = uc
 	s.validID = uuid.New()

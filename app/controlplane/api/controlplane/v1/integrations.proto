@@ -39,7 +39,7 @@ service IntegrationsService {
 }
 
 message AddDependencyTrackRequest {
-	IntegrationConfig.DependencyTrack config = 1 [(validate.rules).message.required = true];;
+	IntegrationConfig.DependencyTrack config = 1 [(validate.rules).message.required = true];
 	string api_key = 2 [(validate.rules).string.min_len = 1];
 }
 
@@ -55,7 +55,7 @@ message IntegrationsServiceListResponse{
 message IntegrationsServiceAttachRequest{
   string workflow_id = 1 [(validate.rules).string.uuid = true];
   string integration_id = 2 [(validate.rules).string.uuid = true];
-  IntegrationAttachmentConfig config = 3 [(validate.rules).message.required = true];;
+  IntegrationAttachmentConfig config = 3 [(validate.rules).message.required = true];
 }
 
 message IntegrationsServiceAttachResponse{

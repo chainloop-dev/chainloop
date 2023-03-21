@@ -19,31 +19,31 @@ import (
 
 // Injectors from wire.go:
 
-// wireApp init kratos application.
-func wireApp(confServer *conf.Server, auth *conf.Auth, confData *conf.Data, readerWriter credentials.ReaderWriter, logger log.Logger) (*app, func(), error) {
+func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, logger log.Logger) (*app, func(), error) {
+	confData := bootstrap.Data
 	dataData, cleanup, err := data.NewData(confData, logger)
 	if err != nil {
 		return nil, nil, err
 	}
 	userRepo := data.NewUserRepo(dataData, logger)
 	membershipRepo := data.NewMembershipRepo(dataData, logger)
-	membershipUseCase := biz.NewMembershipUsecase(membershipRepo, logger)
+	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, logger)
 	organizationRepo := data.NewOrganizationRepo(dataData, logger)
 	ociRepositoryRepo := data.NewOCIRepositoryRepo(dataData, logger)
 	backendProvider := oci.NewBackendProvider(readerWriter)
-	ociRepositoryUseCase := biz.NewOCIRepositoryUsecase(ociRepositoryRepo, readerWriter, backendProvider, logger)
+	ociRepositoryUseCase := biz.NewOCIRepositoryUseCase(ociRepositoryRepo, readerWriter, backendProvider, logger)
 	integrationRepo := data.NewIntegrationRepo(dataData, logger)
 	integrationAttachmentRepo := data.NewIntegrationAttachmentRepo(dataData, logger)
 	workflowRepo := data.NewWorkflowRepo(dataData, logger)
-	newIntegrationUsecaseOpts := &biz.NewIntegrationUsecaseOpts{
+	newIntegrationUseCaseOpts := &biz.NewIntegrationUseCaseOpts{
 		IRepo:   integrationRepo,
 		IaRepo:  integrationAttachmentRepo,
 		WfRepo:  workflowRepo,
 		CredsRW: readerWriter,
 		Logger:  logger,
 	}
-	integrationUseCase := biz.NewIntegrationUsecase(newIntegrationUsecaseOpts)
-	organizationUseCase := biz.NewOrganizationUsecase(organizationRepo, ociRepositoryUseCase, integrationUseCase, logger)
+	integrationUseCase := biz.NewIntegrationUseCase(newIntegrationUseCaseOpts)
+	organizationUseCase := biz.NewOrganizationUseCase(organizationRepo, ociRepositoryUseCase, integrationUseCase, logger)
 	newUserUseCaseParams := &biz.NewUserUseCaseParams{
 		UserRepo:            userRepo,
 		MembershipUseCase:   membershipUseCase,
@@ -52,12 +52,14 @@ func wireApp(confServer *conf.Server, auth *conf.Auth, confData *conf.Data, read
 	}
 	userUseCase := biz.NewUserUseCase(newUserUseCaseParams)
 	robotAccountRepo := data.NewRobotAccountRepo(dataData, logger)
+	auth := bootstrap.Auth
 	robotAccountUseCase := biz.NewRootAccountUseCase(robotAccountRepo, workflowRepo, auth, logger)
 	workflowContractRepo := data.NewWorkflowContractRepo(dataData, logger)
-	workflowContractUseCase := biz.NewWorkflowContractUsecase(workflowContractRepo, logger)
+	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, logger)
 	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, workflowContractUseCase, logger)
 	v := serviceOpts(logger)
 	workflowService := service.NewWorkflowService(workflowUseCase, v...)
+	confServer := bootstrap.Server
 	authService, err := service.NewAuthService(userUseCase, organizationUseCase, membershipUseCase, auth, confServer, v...)
 	if err != nil {
 		cleanup()
@@ -65,12 +67,19 @@ func wireApp(confServer *conf.Server, auth *conf.Auth, confData *conf.Data, read
 	}
 	robotAccountService := service.NewRobotAccountService(robotAccountUseCase, v...)
 	workflowRunRepo := data.NewWorkflowRunRepo(dataData, logger)
-	workflowRunUseCase, err := biz.NewWorkflowRunUsecase(workflowRunRepo, workflowRepo, logger)
+	workflowRunUseCase, err := biz.NewWorkflowRunUseCase(workflowRunRepo, workflowRepo, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	attestationUseCase := biz.NewAttestationUseCase(logger)
+	casCredentialsUseCase, err := biz.NewCASCredentialsUseCase(auth)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	bootstrap_CASServer := bootstrap.CasServer
+	casClientUseCase := biz.NewCASClientUseCase(casCredentialsUseCase, bootstrap_CASServer, logger)
+	attestationUseCase := biz.NewAttestationUseCase(casClientUseCase, backendProvider, logger)
 	newWorkflowRunServiceOpts := &service.NewWorkflowRunServiceOpts{
 		WorkflowRunUC:      workflowRunUseCase,
 		WorkflowUC:         workflowUseCase,
@@ -80,11 +89,6 @@ func wireApp(confServer *conf.Server, auth *conf.Auth, confData *conf.Data, read
 		Opts:               v,
 	}
 	workflowRunService := service.NewWorkflowRunService(newWorkflowRunServiceOpts)
-	casCredentialsUseCase, err := biz.NewCASCredentialsUseCase(auth)
-	if err != nil {
-		cleanup()
-		return nil, nil, err
-	}
 	newAttestationServiceOpts := &service.NewAttestationServiceOpts{
 		WorkflowRunUC:      workflowRunUseCase,
 		WorkflowUC:         workflowUseCase,

@@ -63,6 +63,10 @@ func LogAndMaskErr(in error, logger *log.Helper) error {
 
 // ScopedHelper returns a new helper with information about the current component
 func ScopedHelper(logger log.Logger, scope string) *log.Helper {
+	if logger == nil {
+		logger = log.NewStdLogger(io.Discard)
+	}
+
 	return log.NewHelper(log.With(logger, "component", scope))
 }
 

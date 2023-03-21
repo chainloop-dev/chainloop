@@ -75,7 +75,7 @@ type IntegrationUseCase struct {
 
 const DependencyTrackKind = "Dependency-Track"
 
-type NewIntegrationUsecaseOpts struct {
+type NewIntegrationUseCaseOpts struct {
 	IRepo   IntegrationRepo
 	IaRepo  IntegrationAttachmentRepo
 	WfRepo  WorkflowRepo
@@ -83,7 +83,7 @@ type NewIntegrationUsecaseOpts struct {
 	Logger  log.Logger
 }
 
-func NewIntegrationUsecase(opts *NewIntegrationUsecaseOpts) *IntegrationUseCase {
+func NewIntegrationUseCase(opts *NewIntegrationUseCaseOpts) *IntegrationUseCase {
 	if opts.Logger == nil {
 		opts.Logger = log.NewStdLogger(io.Discard)
 	}

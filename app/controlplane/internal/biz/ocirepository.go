@@ -72,7 +72,7 @@ type OCIRepositoryUseCase struct {
 	ociBackendProvider backend.Provider
 }
 
-func NewOCIRepositoryUsecase(repo OCIRepositoryRepo, credsRW credentials.ReaderWriter, p backend.Provider, l log.Logger) *OCIRepositoryUseCase {
+func NewOCIRepositoryUseCase(repo OCIRepositoryRepo, credsRW credentials.ReaderWriter, p backend.Provider, l log.Logger) *OCIRepositoryUseCase {
 	if l == nil {
 		l = log.NewStdLogger(io.Discard)
 	}

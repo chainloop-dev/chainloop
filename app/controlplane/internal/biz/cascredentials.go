@@ -16,7 +16,6 @@
 package biz
 
 import (
-	"context"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
@@ -44,6 +43,6 @@ func NewCASCredentialsUseCase(c *conf.Auth) (*CASCredentialsUseCase, error) {
 	return &CASCredentialsUseCase{builder}, nil
 }
 
-func (uc *CASCredentialsUseCase) GenerateTemporaryCredentials(_ context.Context, secretID string, role robotaccount.Role) (string, error) {
+func (uc *CASCredentialsUseCase) GenerateTemporaryCredentials(secretID string, role robotaccount.Role) (string, error) {
 	return uc.jwtBuilder.GenerateJWT(secretID, jwt.CASAudience, role)
 }

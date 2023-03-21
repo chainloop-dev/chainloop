@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package biz
+package biz_test
 
 import (
 	"context"
@@ -23,7 +23,9 @@ import (
 	"testing"
 
 	casAPI "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
-	"github.com/chainloop-dev/chainloop/internal/blobmanager/mocks"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/mocks"
+	blobmock "github.com/chainloop-dev/chainloop/internal/blobmanager/mocks"
 	"github.com/google/uuid"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/stretchr/testify/assert"
@@ -32,7 +34,8 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func (s *attestationTestSuite) TestUploadToOCI() {
+// Deprecated method
+func (s *attestationTestSuite) TestUploadToCASFallbackOCI() {
 	runID := uuid.NewString()
 	envelope := &dsse.Envelope{}
 	const expectedDigest = "f845058d865c3d4d491c9019f6afe9c543ad2cd11b31620cc512e341fb03d3d8"
@@ -42,14 +45,34 @@ func (s *attestationTestSuite) TestUploadToOCI() {
 		FileName: fmt.Sprintf("attestation-%s.json", runID), Digest: expectedDigest,
 	}).Return(nil)
 
-	gotDigest, err := s.uc.UploadAttestationToOCI(context.Background(), envelope, s.uploader, runID)
+	s.casUploader.On("Configured").Return(false)
+
+	gotDigest, err := s.uc.UploadToCAS(ctx, envelope, "my-secret", runID)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), expectedDigest, gotDigest)
+}
+
+func (s *attestationTestSuite) TestUploadToCAS() {
+	runID := uuid.NewString()
+	envelope := &dsse.Envelope{}
+	const expectedDigest = "f845058d865c3d4d491c9019f6afe9c543ad2cd11b31620cc512e341fb03d3d8"
+
+	ctx := context.Background()
+	s.casUploader.On(
+		"Upload", ctx, "my-secret", mock.Anything,
+		fmt.Sprintf("attestation-%s.json", runID), expectedDigest,
+	).Return(nil)
+
+	s.casUploader.On("Configured").Return(true)
+
+	gotDigest, err := s.uc.UploadToCAS(ctx, envelope, "my-secret", runID)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), expectedDigest, gotDigest)
 }
 
 func (s *attestationTestSuite) TestFetchFromStore() {
 	const expectedDigest = "f845058d865c3d4d491c9019f6afe9c543ad2cd11b31620cc512e341fb03d3d8"
-	want := &Attestation{Envelope: &dsse.Envelope{}}
+	want := &biz.Attestation{Envelope: &dsse.Envelope{}}
 
 	ctx := context.Background()
 	s.downloader.On("Download", ctx, mock.Anything, expectedDigest).Return(nil).Run(
@@ -69,15 +92,22 @@ func TestAttestation(t *testing.T) {
 }
 
 func (s *attestationTestSuite) SetupTest() {
-	s.uc = NewAttestationUseCase(nil)
-	s.uploader = mocks.NewUploader(s.T())
-	s.downloader = mocks.NewDownloader(s.T())
+	backendProvider := blobmock.NewProvider(s.T())
+	ociBackend := blobmock.NewUploaderDownloader(s.T())
+	backendProvider.On("FromCredentials", mock.Anything, "my-secret").Maybe().Return(ociBackend, nil)
+
+	s.casUploader = mocks.NewCASUploader(s.T())
+	s.uc = biz.NewAttestationUseCase(s.casUploader, backendProvider, nil)
+	s.uploader = (*blobmock.Uploader)(ociBackend)
+	s.downloader = blobmock.NewDownloader(s.T())
 }
 
 // Utility struct to hold the test suite
 type attestationTestSuite struct {
 	suite.Suite
-	uc         *AttestationUseCase
-	uploader   *mocks.Uploader
-	downloader *mocks.Downloader
+	uc *biz.AttestationUseCase
+	// Deprecated: attestation should use the casclient instead of the blobmanager
+	uploader    *blobmock.Uploader
+	downloader  *blobmock.Downloader
+	casUploader *mocks.CASUploader
 }
