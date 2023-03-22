@@ -79,7 +79,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	bootstrap_CASServer := bootstrap.CasServer
 	casClientUseCase := biz.NewCASClientUseCase(casCredentialsUseCase, bootstrap_CASServer, logger)
-	attestationUseCase := biz.NewAttestationUseCase(casClientUseCase, backendProvider, logger)
+	attestationUseCase := biz.NewAttestationUseCase(casClientUseCase, logger)
 	newWorkflowRunServiceOpts := &service.NewWorkflowRunServiceOpts{
 		WorkflowRunUC:      workflowRunUseCase,
 		WorkflowUC:         workflowUseCase,

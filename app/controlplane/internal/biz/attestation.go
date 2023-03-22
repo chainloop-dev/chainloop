@@ -23,9 +23,6 @@ import (
 	"fmt"
 	"io"
 
-	casAPI "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
-
-	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
@@ -38,10 +35,6 @@ type Attestation struct {
 type AttestationUseCase struct {
 	logger *log.Helper
 	CASClient
-
-	// DEPRECATED
-	// We will remove it once we force all the clients to use the CAS instead
-	backendProvider backend.Provider
 }
 
 type AttestationRef struct {
@@ -51,15 +44,14 @@ type AttestationRef struct {
 	SecretRef string
 }
 
-func NewAttestationUseCase(client CASClient, p backend.Provider, logger log.Logger) *AttestationUseCase {
+func NewAttestationUseCase(client CASClient, logger log.Logger) *AttestationUseCase {
 	if logger == nil {
 		logger = log.NewStdLogger(io.Discard)
 	}
 
 	return &AttestationUseCase{
-		logger:          servicelogger.ScopedHelper(logger, "biz/attestation"),
-		CASClient:       client,
-		backendProvider: p,
+		logger:    servicelogger.ScopedHelper(logger, "biz/attestation"),
+		CASClient: client,
 	}
 }
 
@@ -67,23 +59,8 @@ func (uc *AttestationUseCase) FetchFromStore(ctx context.Context, secretID, dige
 	uc.logger.Infow("msg", "downloading attestation", "digest", digest)
 	buf := bytes.NewBuffer(nil)
 
-	if uc.CASClient.Configured() {
-		if err := uc.CASClient.Download(ctx, secretID, buf, digest); err != nil {
-			return nil, fmt.Errorf("downloading from CAS: %w", err)
-		}
-	} else {
-		uc.logger.Warnw("msg", "no CAS configured, falling back to old mechanism")
-
-		// DEPRECATED
-		// TODO: remove
-		downloader, err := uc.backendProvider.FromCredentials(ctx, secretID)
-		if err != nil {
-			return nil, err
-		}
-
-		if err := downloader.Download(ctx, buf, digest); err != nil {
-			return nil, err
-		}
+	if err := uc.CASClient.Download(ctx, secretID, buf, digest); err != nil {
+		return nil, fmt.Errorf("downloading from CAS: %w", err)
 	}
 
 	var envelope dsse.Envelope
@@ -105,27 +82,8 @@ func (uc *AttestationUseCase) UploadToCAS(ctx context.Context, envelope *dsse.En
 	hash.Write(jsonContent)
 	digest := fmt.Sprintf("%x", hash.Sum(nil))
 
-	if uc.CASClient.Configured() {
-		if err := uc.CASClient.Upload(ctx, secretID, bytes.NewBuffer(jsonContent), filename, digest); err != nil {
-			return "", fmt.Errorf("uploading to CAS: %w", err)
-		}
-
-		return digest, nil
-	}
-
-	uc.logger.Warnw("msg", "no CAS configured, falling back to old mechanism")
-
-	// fallback to old mechanism, this will be removed once we force all the clients to use the CAS
-	// TODO: remove
-	uploader, err := uc.backendProvider.FromCredentials(ctx, secretID)
-	if err != nil {
-		return "", err
-	}
-
-	if err := uploader.Upload(ctx, bytes.NewBuffer(jsonContent), &casAPI.CASResource{
-		FileName: filename, Digest: digest,
-	}); err != nil {
-		return "", fmt.Errorf("uploading to OCI: %w", err)
+	if err := uc.CASClient.Upload(ctx, secretID, bytes.NewBuffer(jsonContent), filename, digest); err != nil {
+		return "", fmt.Errorf("uploading to CAS: %w", err)
 	}
 
 	return digest, nil
