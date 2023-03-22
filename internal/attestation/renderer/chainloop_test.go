@@ -18,7 +18,7 @@ package renderer
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
@@ -68,7 +68,7 @@ func TestExtractPredicate(t *testing.T) {
 
 func testEnvelope(filePath string) (*dsse.Envelope, error) {
 	var envelope dsse.Envelope
-	content, err := ioutil.ReadFile(filePath)
+	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func testEnvelope(filePath string) (*dsse.Envelope, error) {
 
 func testPredicate(path string) (*ChainloopProvenancePredicateV1, error) {
 	var predicate ChainloopProvenancePredicateV1
-	content, err := ioutil.ReadFile(path)
+	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
