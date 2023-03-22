@@ -69,7 +69,7 @@ func (c *Client) Upload(ctx context.Context, r io.Reader, filename, digest strin
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	resource, err := encodeResource(filename, h.Hex)
+	resource, err := encodeResource(filename, h.String())
 	if err != nil {
 		return nil, fmt.Errorf("encoding resource name: %w", err)
 	}
