@@ -24,7 +24,6 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/mocks"
-	blobmock "github.com/chainloop-dev/chainloop/internal/blobmanager/mocks"
 	"github.com/google/uuid"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/stretchr/testify/assert"
@@ -78,9 +77,6 @@ func (s *attestationTestSuite) SetupTest() {
 // Utility struct to hold the test suite
 type attestationTestSuite struct {
 	suite.Suite
-	uc *biz.AttestationUseCase
-	// Deprecated: attestation should use the casclient instead of the blobmanager
-	uploader   *blobmock.Uploader
-	downloader *blobmock.Downloader
-	casClient  *mocks.CASClient
+	uc        *biz.AttestationUseCase
+	casClient *mocks.CASClient
 }
