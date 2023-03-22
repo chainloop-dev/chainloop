@@ -56,7 +56,7 @@ type errValidation struct {
 	err error
 }
 
-func newErrValidation(err error) errValidation {
+func NewErrValidation(err error) errValidation {
 	return errValidation{err}
 }
 

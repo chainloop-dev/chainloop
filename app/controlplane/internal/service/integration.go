@@ -20,6 +20,7 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/integration/deptrack"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/integrations/dependencytrack"
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	errors "github.com/go-kratos/kratos/v2/errors"
@@ -31,14 +32,16 @@ type IntegrationsService struct {
 	*service
 
 	integrationUC *biz.IntegrationUseCase
+	depTrackUC    *deptrack.Integration
 	workflowUC    *biz.WorkflowUseCase
 }
 
-func NewIntegrationsService(uc *biz.IntegrationUseCase, wuc *biz.WorkflowUseCase, opts ...NewOpt) *IntegrationsService {
+func NewIntegrationsService(uc *biz.IntegrationUseCase, deptrackUC *deptrack.Integration, wuc *biz.WorkflowUseCase, opts ...NewOpt) *IntegrationsService {
 	return &IntegrationsService{
 		service:       newService(opts...),
 		integrationUC: uc,
 		workflowUC:    wuc,
+		depTrackUC:    deptrackUC,
 	}
 }
 
@@ -59,7 +62,7 @@ func (s *IntegrationsService) AddDependencyTrack(ctx context.Context, req *pb.Ad
 		return nil, errors.BadRequest("invalid configuration", err.Error())
 	}
 
-	i, err := s.integrationUC.AddDependencyTrack(ctx, org.ID, domain, req.ApiKey, enableProjectCreation)
+	i, err := s.depTrackUC.Add(ctx, org.ID, domain, req.ApiKey, enableProjectCreation)
 	if err != nil {
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}

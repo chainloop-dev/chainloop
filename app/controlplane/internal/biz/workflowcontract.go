@@ -204,7 +204,7 @@ func (uc *WorkflowContractUseCase) Delete(ctx context.Context, orgID, contractID
 	}
 
 	if len(contract.WorkflowIDs) > 0 {
-		return newErrValidation(errors.New("there are associated workflows with this contract, delete them first"))
+		return NewErrValidation(errors.New("there are associated workflows with this contract, delete them first"))
 	}
 
 	// Check that the workflow to delete belongs to the provided organization

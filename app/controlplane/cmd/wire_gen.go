@@ -8,6 +8,7 @@ package main
 
 import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/integration/deptrack"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/server"
@@ -112,7 +113,8 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	orgMetricsService := service.NewOrgMetricsService(orgMetricsUseCase, v...)
 	ociRepositoryService := service.NewOCIRepositoryService(ociRepositoryUseCase, v...)
-	integrationsService := service.NewIntegrationsService(integrationUseCase, workflowUseCase, v...)
+	integration := deptrack.New(integrationUseCase, readerWriter)
+	integrationsService := service.NewIntegrationsService(integrationUseCase, integration, workflowUseCase, v...)
 	organizationService := service.NewOrganizationService(membershipUseCase, v...)
 	opts := &server.Opts{
 		UserUseCase:          userUseCase,
