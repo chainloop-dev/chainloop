@@ -16,30 +16,24 @@
 package service
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"sort"
-	"sync"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
 
 	cpAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	contractAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/integrations/dependencytrack"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/integration/deptrack"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer"
-	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 
 	errors "github.com/go-kratos/kratos/v2/errors"
-	"github.com/go-kratos/kratos/v2/log"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
 
@@ -54,6 +48,7 @@ type AttestationService struct {
 	attestationUseCase      *biz.AttestationUseCase
 	credsReader             credentials.Reader
 	integrationUseCase      *biz.IntegrationUseCase
+	depTrackUseCase         *deptrack.Integration
 	casCredsUseCase         *biz.CASCredentialsUseCase
 }
 
@@ -66,6 +61,7 @@ type NewAttestationServiceOpts struct {
 	CredsReader        credentials.Reader
 	IntegrationUseCase *biz.IntegrationUseCase
 	CasCredsUseCase    *biz.CASCredentialsUseCase
+	DepTrackUseCase    *deptrack.Integration
 	Opts               []NewOpt
 }
 
@@ -80,6 +76,7 @@ func NewAttestationService(opts *NewAttestationServiceOpts) *AttestationService 
 		credsReader:             opts.CredsReader,
 		integrationUseCase:      opts.IntegrationUseCase,
 		casCredsUseCase:         opts.CasCredsUseCase,
+		depTrackUseCase:         opts.DepTrackUseCase,
 	}
 }
 
@@ -168,7 +165,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	}
 
 	// TODO: Move to event bus and background processing
-	// https://github.com/chainloop-dev/chainloop/issues/396
+	// https://github.com/chainloop-dev/chainloop/issues/39
 	// Upload to OCI
 	go func() {
 		b := backoff.NewExponentialBackOff()
@@ -211,24 +208,9 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 
 	// Upload to dependency track (if applicable)
 	go func() {
-		b := backoff.NewExponentialBackOff()
-		b.MaxElapsedTime = 1 * time.Minute
-		err := backoff.RetryNotify(
-			func() error {
-				opts := &uploadSBOMToDepTrackOpts{
-					envelope: envelope,
-					orgID:    robotAccount.OrgID, workflowID: robotAccount.WorkflowID,
-					integrationUC: s.integrationUseCase, ociUC: s.ociUC, credsReader: s.credsReader, log: s.log,
-				}
-				return uploadSBOMsToDependencyTrack(opts)
-			},
-			b,
-			func(_ error, delay time.Duration) {
-				s.log.Warnf("error uploading SBOM to dependency-track, retrying in %s", delay)
-			},
-		)
-		if err != nil {
-			// Send a notification
+		// NOTE: this one is not wrapped in a backoff retry because we do it for each underlying SBOM push in the implementation
+		// This code is going to eventually be moved to an actual background mechanism https://github.com/chainloop-dev/chainloop/issues/39
+		if err := s.depTrackUseCase.UploadSBOMs(envelope, robotAccount.OrgID, robotAccount.WorkflowID); err != nil {
 			_ = sl.LogAndMaskErr(err, s.log)
 		}
 	}()
@@ -332,158 +314,4 @@ func extractMaterials(in []*renderer.ChainloopProvenanceMaterial) []*cpAPI.Attes
 		res = append(res, &cpAPI.AttestationItem_Material{Name: m.Name, Value: m.Material.String(), Type: m.Type})
 	}
 	return res
-}
-
-type uploadSBOMToDepTrackOpts struct {
-	envelope          *dsse.Envelope
-	orgID, workflowID string
-	integrationUC     *biz.IntegrationUseCase
-	ociUC             *biz.OCIRepositoryUseCase
-	credsReader       credentials.Reader
-	log               *log.Helper
-}
-
-func uploadSBOMsToDependencyTrack(opts *uploadSBOMToDepTrackOpts) error {
-	ctx := context.Background()
-	opts.log.Infow("msg", "looking for integration", "workflowID", opts.workflowID, "integration", biz.DependencyTrackKind)
-
-	// List enabled integrations with this workflow
-	attachments, err := opts.integrationUC.ListAttachments(ctx, opts.orgID, opts.workflowID)
-	if err != nil {
-		return err
-	}
-
-	// Load the ones about dependency track
-	var depTrackIntegrations []*biz.IntegrationAndAttachment
-	for _, at := range attachments {
-		integration, err := opts.integrationUC.FindByIDInOrg(ctx, opts.orgID, at.IntegrationID.String())
-		if err != nil {
-			return err
-		} else if integration == nil {
-			continue
-		}
-		if integration.Kind == biz.DependencyTrackKind {
-			depTrackIntegrations = append(depTrackIntegrations, &biz.IntegrationAndAttachment{Integration: integration, IntegrationAttachment: at})
-		}
-	}
-
-	if len(depTrackIntegrations) == 0 {
-		opts.log.Infow("msg", "no attached integrations", "workflowID", opts.workflowID, "integration", biz.DependencyTrackKind)
-		return nil
-	}
-
-	predicate, err := renderer.ExtractPredicate(opts.envelope)
-	if err != nil {
-		return err
-	}
-
-	repo, err := opts.ociUC.FindMainRepo(ctx, opts.orgID)
-	if err != nil {
-		return err
-	} else if repo == nil {
-		return errors.NotFound("not found", "main repository not found")
-	}
-
-	backend, err := oci.NewBackendProvider(opts.credsReader).FromCredentials(ctx, repo.SecretName)
-	if err != nil {
-		return err
-	}
-
-	for _, m := range predicate.Materials {
-		if m.Type != contractAPI.CraftingSchema_Material_SBOM_CYCLONEDX_JSON.String() {
-			continue
-		}
-
-		buf := bytes.NewBuffer(nil)
-		digest, ok := m.Material.SLSA.Digest["sha256"]
-		if !ok {
-			continue
-		}
-
-		opts.log.Infow("msg", "SBOM present, downloading", "workflowID", opts.workflowID, "integration", biz.DependencyTrackKind, "name", m.Name)
-		// Download SBOM
-		if err := backend.Download(ctx, buf, digest); err != nil {
-			return err
-		}
-		opts.log.Infow("msg", "SBOM downloaded", "digest", digest, "workflowID", opts.workflowID, "integration", biz.DependencyTrackKind, "name", m.Name)
-
-		// Run integrations with that sbom
-		var wg sync.WaitGroup
-		var errs = make(chan error)
-		var wgDone = make(chan bool)
-
-		for _, i := range depTrackIntegrations {
-			wg.Add(1)
-			b := backoff.NewExponentialBackOff()
-			b.MaxElapsedTime = 10 * time.Second
-
-			go func(i *biz.IntegrationAndAttachment) {
-				defer wg.Done()
-				err := backoff.RetryNotify(
-					func() error {
-						return doSendToDependencyTrack(ctx, opts.credsReader, opts.workflowID, buf, i, opts.log)
-					},
-					b,
-					func(_ error, delay time.Duration) {
-						opts.log.Warnw("msg", "error uploading SBOM", "retry", delay)
-					},
-				)
-				if err != nil {
-					errs <- err
-					log.Error(err)
-				}
-			}(i)
-		}
-
-		go func() {
-			wg.Wait()
-			close(wgDone)
-		}()
-
-		select {
-		case <-wgDone:
-			break
-		case err := <-errs:
-			return err
-		}
-	}
-
-	return nil
-}
-
-func doSendToDependencyTrack(ctx context.Context, credsReader credentials.Reader, workflowID string, sbom io.Reader, i *biz.IntegrationAndAttachment, log *log.Helper) error {
-	integrationConfig := i.Integration.Config.GetDependencyTrack()
-	attachmentConfig := i.IntegrationAttachment.Config.GetDependencyTrack()
-
-	creds := &credentials.APICreds{}
-	if err := credsReader.ReadCredentials(ctx, i.SecretName, creds); err != nil {
-		return err
-	}
-
-	log.Infow("msg", "Sending SBOM to Dependency-Track",
-		"host", integrationConfig.Domain,
-		"projectID", attachmentConfig.GetProjectId(), "projectName", attachmentConfig.GetProjectName(),
-		"workflowID", workflowID, "integration", biz.DependencyTrackKind,
-	)
-
-	d, err := dependencytrack.NewSBOMUploader(integrationConfig.Domain, creds.Key, sbom, attachmentConfig.GetProjectId(), attachmentConfig.GetProjectName())
-	if err != nil {
-		return err
-	}
-
-	if err := d.Validate(ctx); err != nil {
-		return err
-	}
-
-	if err := d.Do(ctx); err != nil {
-		return err
-	}
-
-	log.Infow("msg", "SBOM Sent to Dependency-Track",
-		"host", integrationConfig.Domain,
-		"projectID", attachmentConfig.GetProjectId(), "projectName", attachmentConfig.GetProjectName(),
-		"workflowID", workflowID, "integration", biz.DependencyTrackKind,
-	)
-
-	return nil
 }

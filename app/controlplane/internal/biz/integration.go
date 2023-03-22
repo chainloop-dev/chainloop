@@ -73,8 +73,6 @@ type IntegrationUseCase struct {
 	logger           *log.Helper
 }
 
-const DependencyTrackKind = "Dependency-Track"
-
 type NewIntegrationUseCaseOpts struct {
 	IRepo   IntegrationRepo
 	IaRepo  IntegrationAttachmentRepo
@@ -99,36 +97,6 @@ func (uc *IntegrationUseCase) Create(ctx context.Context, orgID, kind string, se
 	}
 
 	return uc.integrationRepo.Create(ctx, orgUUID, kind, secretID, config)
-}
-
-func (uc *IntegrationUseCase) AddDependencyTrack(ctx context.Context, orgID, host, apiKey string, enableProjectCreation bool) (*Integration, error) {
-	orgUUID, err := uuid.Parse(orgID)
-	if err != nil {
-		return nil, NewErrInvalidUUID(err)
-	}
-
-	// Validate Credentials before saving them
-	creds := &credentials.APICreds{Host: host, Key: apiKey}
-	if err := creds.Validate(); err != nil {
-		return nil, NewErrValidation(err)
-	}
-
-	// Create the secret in the external secrets manager
-	secretID, err := uc.credsRW.SaveCredentials(ctx, orgID, creds)
-	if err != nil {
-		return nil, fmt.Errorf("storing the credentials: %w", err)
-	}
-
-	c := &v1.IntegrationConfig{
-		Config: &v1.IntegrationConfig_DependencyTrack_{
-			DependencyTrack: &v1.IntegrationConfig_DependencyTrack{
-				AllowAutoCreate: enableProjectCreation, Domain: host,
-			},
-		},
-	}
-
-	// Persist data
-	return uc.integrationRepo.Create(ctx, orgUUID, DependencyTrackKind, secretID, c)
 }
 
 func (uc *IntegrationUseCase) List(ctx context.Context, orgID string) ([]*Integration, error) {

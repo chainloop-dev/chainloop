@@ -90,6 +90,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		Opts:               v,
 	}
 	workflowRunService := service.NewWorkflowRunService(newWorkflowRunServiceOpts)
+	integration := deptrack.New(integrationUseCase, ociRepositoryUseCase, readerWriter, logger)
 	newAttestationServiceOpts := &service.NewAttestationServiceOpts{
 		WorkflowRunUC:      workflowRunUseCase,
 		WorkflowUC:         workflowUseCase,
@@ -99,6 +100,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		CredsReader:        readerWriter,
 		IntegrationUseCase: integrationUseCase,
 		CasCredsUseCase:    casCredentialsUseCase,
+		DepTrackUseCase:    integration,
 		Opts:               v,
 	}
 	attestationService := service.NewAttestationService(newAttestationServiceOpts)
@@ -113,7 +115,6 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	orgMetricsService := service.NewOrgMetricsService(orgMetricsUseCase, v...)
 	ociRepositoryService := service.NewOCIRepositoryService(ociRepositoryUseCase, v...)
-	integration := deptrack.New(integrationUseCase, readerWriter)
 	integrationsService := service.NewIntegrationsService(integrationUseCase, integration, workflowUseCase, v...)
 	organizationService := service.NewOrganizationService(membershipUseCase, v...)
 	opts := &server.Opts{
