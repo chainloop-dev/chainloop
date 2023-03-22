@@ -56,19 +56,25 @@ func (c *Client) UploadFile(ctx context.Context, filepath string) (*UpDownStatus
 		return nil, fmt.Errorf("rewinding file pointer: %w", err)
 	}
 
-	return c.Upload(ctx, f, path.Base(filepath), hash.Hex)
+	return c.Upload(ctx, f, path.Base(filepath), hash.String())
 }
 
 func (c *Client) Upload(ctx context.Context, r io.Reader, filename, digest string) (*UpDownStatus, error) {
+	// Check digest format, including the algorithm and the hex portion
+	h, err := cr_v1.NewHash(digest)
+	if err != nil {
+		return nil, fmt.Errorf("decoding digest: %w", err)
+	}
+
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	resource, err := encodeResource(filename, digest)
+	resource, err := encodeResource(filename, h.Hex)
 	if err != nil {
 		return nil, fmt.Errorf("encoding resource name: %w", err)
 	}
 
-	c.logger.Info().Msgf("uploading %s - sha256:%s", filename, digest)
+	c.logger.Info().Msgf("uploading %s - %s", filename, h)
 
 	stream, err := bytestream.NewByteStreamClient(c.conn).Write(ctx)
 	if err != nil {
@@ -127,7 +133,7 @@ doUpload:
 
 		latestStatus = &UpDownStatus{
 			Filename:       filename,
-			Digest:         digest,
+			Digest:         h.String(),
 			ProcessedBytes: totalUploaded,
 		}
 
@@ -156,13 +162,16 @@ func encodeResource(fileName, digest string) (string, error) {
 		return "", fmt.Errorf("file name is empty")
 	}
 
-	if digest == "" {
-		return "", fmt.Errorf("digest is empty")
+	// Check digest format, including the algorithm and the hex portion
+	h, err := cr_v1.NewHash(digest)
+	if err != nil {
+		return "", fmt.Errorf("decoding digest: %w", err)
 	}
 
 	var encodedResource bytes.Buffer
 	enc := gob.NewEncoder(&encodedResource)
-	r := &v1.CASResource{FileName: fileName, Digest: digest}
+	// Currently we only support SHA256
+	r := &v1.CASResource{FileName: fileName, Digest: h.Hex}
 
 	if err := enc.Encode(r); err != nil {
 		return "", err
