@@ -56,11 +56,11 @@ func NewAttestationUseCase(client CASClient, logger log.Logger) *AttestationUseC
 	}
 }
 
-func (uc *AttestationUseCase) FetchFromStore(ctx context.Context, secretID string, digest *cr_v1.Hash) (*Attestation, error) {
+func (uc *AttestationUseCase) FetchFromStore(ctx context.Context, secretID, digest string) (*Attestation, error) {
 	uc.logger.Infow("msg", "downloading attestation", "digest", digest)
 	buf := bytes.NewBuffer(nil)
 
-	if err := uc.CASClient.Download(ctx, secretID, buf, digest.String()); err != nil {
+	if err := uc.CASClient.Download(ctx, secretID, buf, digest); err != nil {
 		return nil, fmt.Errorf("downloading from CAS: %w", err)
 	}
 

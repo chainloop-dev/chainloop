@@ -60,7 +60,7 @@ func (s *attestationTestSuite) TestFetchFromStore() {
 			require.NoError(s.T(), err)
 		})
 
-	got, err := s.uc.FetchFromStore(ctx, "my-secret", &expectedDigest)
+	got, err := s.uc.FetchFromStore(ctx, "my-secret", expectedDigest.String())
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), want, got)
 }
