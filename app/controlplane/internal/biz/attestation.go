@@ -80,11 +80,11 @@ func (uc *AttestationUseCase) UploadToCAS(ctx context.Context, envelope *dsse.En
 
 	hash := sha256.New()
 	hash.Write(jsonContent)
-	digest := fmt.Sprintf("%x", hash.Sum(nil))
+	sha256sum := fmt.Sprintf("%x", hash.Sum(nil))
 
-	if err := uc.CASClient.Upload(ctx, secretID, bytes.NewBuffer(jsonContent), filename, digest); err != nil {
+	if err := uc.CASClient.Upload(ctx, secretID, bytes.NewBuffer(jsonContent), filename, fmt.Sprintf("sha256:%s", sha256sum)); err != nil {
 		return "", fmt.Errorf("uploading to CAS: %w", err)
 	}
 
-	return digest, nil
+	return sha256sum, nil
 }
