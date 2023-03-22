@@ -24,6 +24,7 @@ import (
 
 	v1 "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	"github.com/in-toto/in-toto-golang/in_toto"
+	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	slsacommon "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/common"
@@ -212,4 +213,45 @@ func outputChainloopMaterials(att *v1.Attestation, onlyOutput bool) []*Chainloop
 	}
 
 	return res
+}
+
+// Extract the Chainloop attestation predicate from an encoded DSSE envelope
+func ExtractPredicate(envelope *dsse.Envelope) (*ChainloopProvenancePredicateV1, error) {
+	decodedPayload, err := envelope.DecodeB64Payload()
+	if err != nil {
+		return nil, err
+	}
+
+	// 1 - Extract the in-toto statement
+	statement := &in_toto.Statement{}
+	if err := json.Unmarshal(decodedPayload, statement); err != nil {
+		return nil, fmt.Errorf("un-marshaling predicate: %w", err)
+	}
+
+	// 2 - Extract the Chainloop predicate from the in-toto statement
+	var predicate *ChainloopProvenancePredicateV1
+	switch statement.PredicateType {
+	case ChainloopPredicateTypeV1:
+		if predicate, err = extractPredicateV1(statement); err != nil {
+			return nil, fmt.Errorf("extracting predicate: %w", err)
+		}
+	default:
+		return nil, fmt.Errorf("unsupported predicate type: %s", statement.PredicateType)
+	}
+
+	return predicate, nil
+}
+
+func extractPredicateV1(statement *in_toto.Statement) (*ChainloopProvenancePredicateV1, error) {
+	jsonPredicate, err := json.Marshal(statement.Predicate)
+	if err != nil {
+		return nil, fmt.Errorf("un-marshaling predicate: %w", err)
+	}
+
+	predicate := &ChainloopProvenancePredicateV1{}
+	if err := json.Unmarshal(jsonPredicate, predicate); err != nil {
+		return nil, fmt.Errorf("un-marshaling predicate: %w", err)
+	}
+
+	return predicate, nil
 }

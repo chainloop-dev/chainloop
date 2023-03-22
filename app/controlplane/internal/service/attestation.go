@@ -26,7 +26,6 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/in-toto/in-toto-golang/in_toto"
 
 	cpAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	contractAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -295,36 +294,13 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, _ *cpAPI.Attest
 	return &cpAPI.AttestationServiceGetUploadCredsResponse{Result: &cpAPI.AttestationServiceGetUploadCredsResponse_Result{Token: t}}, nil
 }
 
-func extractPredicate(envelope *dsse.Envelope) (*renderer.ChainloopProvenancePredicateV1, error) {
-	decodedPayload, err := envelope.DecodeB64Payload()
-	if err != nil {
-		return nil, err
-	}
-
-	statement := &in_toto.Statement{}
-	if err := json.Unmarshal(decodedPayload, statement); err != nil {
-		return nil, fmt.Errorf("un-marshaling predicate: %w", err)
-	}
-
-	var predicate *renderer.ChainloopProvenancePredicateV1
-	if statement.PredicateType == renderer.ChainloopPredicateTypeV1 {
-		if predicate, err = extractPredicateV1(statement); err != nil {
-			return nil, fmt.Errorf("extracting predicate: %w", err)
-		}
-	} else {
-		return nil, errors.InternalServer("internal error", "predicate type not supported")
-	}
-
-	return predicate, nil
-}
-
 func bizAttestationToPb(att *biz.Attestation) (*cpAPI.AttestationItem, error) {
 	encodedAttestation, err := json.Marshal(att.Envelope)
 	if err != nil {
 		return nil, err
 	}
 
-	predicate, err := extractPredicate(att.Envelope)
+	predicate, err := renderer.ExtractPredicate(att.Envelope)
 	if err != nil {
 		return nil, err
 	}
@@ -356,20 +332,6 @@ func extractMaterials(in []*renderer.ChainloopProvenanceMaterial) []*cpAPI.Attes
 		res = append(res, &cpAPI.AttestationItem_Material{Name: m.Name, Value: m.Material.String(), Type: m.Type})
 	}
 	return res
-}
-
-func extractPredicateV1(statement *in_toto.Statement) (*renderer.ChainloopProvenancePredicateV1, error) {
-	jsonPredicate, err := json.Marshal(statement.Predicate)
-	if err != nil {
-		return nil, fmt.Errorf("un-marshaling predicate: %w", err)
-	}
-
-	predicate := &renderer.ChainloopProvenancePredicateV1{}
-	if err := json.Unmarshal(jsonPredicate, predicate); err != nil {
-		return nil, fmt.Errorf("un-marshaling predicate: %w", err)
-	}
-
-	return predicate, nil
 }
 
 type uploadSBOMToDepTrackOpts struct {
@@ -410,7 +372,7 @@ func uploadSBOMsToDependencyTrack(opts *uploadSBOMToDepTrackOpts) error {
 		return nil
 	}
 
-	predicate, err := extractPredicate(opts.envelope)
+	predicate, err := renderer.ExtractPredicate(opts.envelope)
 	if err != nil {
 		return err
 	}
