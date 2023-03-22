@@ -24,6 +24,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/mocks"
+	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/uuid"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/stretchr/testify/assert"
@@ -35,32 +36,31 @@ import (
 var runID = uuid.NewString()
 var envelope = &dsse.Envelope{}
 
-const expectedDigest = "f845058d865c3d4d491c9019f6afe9c543ad2cd11b31620cc512e341fb03d3d8"
+var expectedDigest = cr_v1.Hash{Algorithm: "sha256", Hex: "f845058d865c3d4d491c9019f6afe9c543ad2cd11b31620cc512e341fb03d3d8"}
 
 func (s *attestationTestSuite) TestUploadToCAS() {
 	ctx := context.Background()
 	s.casClient.On(
 		"Upload", ctx, "my-secret", mock.Anything,
-		fmt.Sprintf("attestation-%s.json", runID), expectedDigest,
+		fmt.Sprintf("attestation-%s.json", runID), expectedDigest.String(),
 	).Return(nil)
 
 	gotDigest, err := s.uc.UploadToCAS(ctx, envelope, "my-secret", runID)
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), expectedDigest, gotDigest)
+	assert.Equal(s.T(), &expectedDigest, gotDigest)
 }
 
 func (s *attestationTestSuite) TestFetchFromStore() {
 	want := &biz.Attestation{Envelope: &dsse.Envelope{}}
-
 	ctx := context.Background()
-	s.casClient.On("Download", ctx, "my-secret", mock.Anything, expectedDigest).Return(nil).Run(
+	s.casClient.On("Download", ctx, "my-secret", mock.Anything, expectedDigest.String()).Return(nil).Run(
 		func(args mock.Arguments) {
 			buf := args.Get(2).(io.Writer)
 			err := json.NewEncoder(buf).Encode(want)
 			require.NoError(s.T(), err)
 		})
 
-	got, err := s.uc.FetchFromStore(ctx, "my-secret", expectedDigest)
+	got, err := s.uc.FetchFromStore(ctx, "my-secret", &expectedDigest)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), want, got)
 }

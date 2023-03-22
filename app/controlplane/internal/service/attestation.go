@@ -190,7 +190,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 				}
 
 				// associate the attestation stored in the CAS with the workflow run
-				if err := s.wrUseCase.AssociateAttestation(ctx, req.WorkflowRunId, &biz.AttestationRef{Sha256: digest, SecretRef: repo.SecretName}); err != nil {
+				if err := s.wrUseCase.AssociateAttestation(ctx, req.WorkflowRunId, &biz.AttestationRef{Sha256: digest.Hex, SecretRef: repo.SecretName}); err != nil {
 					return err
 				}
 
