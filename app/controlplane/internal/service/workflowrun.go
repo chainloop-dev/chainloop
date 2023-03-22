@@ -17,6 +17,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	craftingpb "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -115,7 +116,7 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 	var attestation *biz.Attestation
 	// Download the attestation if the workflow run is successful
 	if run.AttestationRef != nil {
-		attestation, err = s.attestationUseCase.FetchFromStore(ctx, run.AttestationRef.SecretRef, run.AttestationRef.Sha256)
+		attestation, err = s.attestationUseCase.FetchFromStore(ctx, run.AttestationRef.SecretRef, fmt.Sprintf("sha256:%s", run.AttestationRef.Sha256))
 		if err != nil {
 			// NOTE: For now we don't return an error if the attestation is not found
 			// since we do not have a good error recovery in place for assets

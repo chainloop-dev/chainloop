@@ -18,13 +18,14 @@ package biz
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
 
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
+
+	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
 
@@ -71,20 +72,21 @@ func (uc *AttestationUseCase) FetchFromStore(ctx context.Context, secretID, dige
 	return &Attestation{Envelope: &envelope}, nil
 }
 
-func (uc *AttestationUseCase) UploadToCAS(ctx context.Context, envelope *dsse.Envelope, secretID, workflowRunID string) (string, error) {
+func (uc *AttestationUseCase) UploadToCAS(ctx context.Context, envelope *dsse.Envelope, secretID, workflowRunID string) (*cr_v1.Hash, error) {
 	filename := fmt.Sprintf("attestation-%s.json", workflowRunID)
 	jsonContent, err := json.Marshal(envelope)
 	if err != nil {
-		return "", fmt.Errorf("marshaling the envelope: %w", err)
+		return nil, fmt.Errorf("marshaling the envelope: %w", err)
 	}
 
-	hash := sha256.New()
-	hash.Write(jsonContent)
-	digest := fmt.Sprintf("%x", hash.Sum(nil))
-
-	if err := uc.CASClient.Upload(ctx, secretID, bytes.NewBuffer(jsonContent), filename, digest); err != nil {
-		return "", fmt.Errorf("uploading to CAS: %w", err)
+	h, _, err := cr_v1.SHA256(bytes.NewBuffer(jsonContent))
+	if err != nil {
+		return nil, fmt.Errorf("calculating the digest: %w", err)
 	}
 
-	return digest, nil
+	if err := uc.CASClient.Upload(ctx, secretID, bytes.NewBuffer(jsonContent), filename, h.String()); err != nil {
+		return nil, fmt.Errorf("uploading to CAS: %w", err)
+	}
+
+	return &h, nil
 }
