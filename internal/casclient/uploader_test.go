@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/gob"
+	"fmt"
 	"testing"
 
 	v1 "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
@@ -26,6 +27,8 @@ import (
 )
 
 func TestEncodeResource(t *testing.T) {
+	const validDigestHex = "b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c"
+
 	testCases := []struct {
 		name      string
 		fileName  string
@@ -44,10 +47,22 @@ func TestEncodeResource(t *testing.T) {
 			wantError: true,
 		},
 		{
-			name:     "valid fields",
-			digest:   "deadbeef",
+			name:      "uncompleted digest",
+			digest:    "deadbeef",
+			fileName:  "foo.txt",
+			wantError: true,
+		},
+		{
+			name:      "invalid digest",
+			digest:    "sha256:deadbeef",
+			fileName:  "foo.txt",
+			wantError: true,
+		},
+		{
+			name:     "valid",
+			digest:   fmt.Sprintf("sha256:%s", validDigestHex),
 			fileName: "foo.txt",
-			want:     &v1.CASResource{FileName: "foo.txt", Digest: "deadbeef"},
+			want:     &v1.CASResource{FileName: "foo.txt", Digest: validDigestHex},
 		},
 	}
 

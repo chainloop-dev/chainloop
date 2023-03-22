@@ -22,20 +22,23 @@ import (
 	"io"
 
 	v1 "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
+	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
 	"google.golang.org/genproto/googleapis/bytestream"
 )
 
 // Download downloads a file from the CAS and writes it to the provided writer
 func (c *Client) Download(ctx context.Context, w io.Writer, digest string) error {
-	if digest == "" {
-		return errors.New("a digest is required")
+	// Check digest format, including the algorithm and the hex portion
+	h, err := cr_v1.NewHash(digest)
+	if err != nil {
+		return fmt.Errorf("decoding digest: %w", err)
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	// Open the stream to start reading chunks
-	reader, err := bytestream.NewByteStreamClient(c.conn).Read(ctx, &bytestream.ReadRequest{ResourceName: digest})
+	reader, err := bytestream.NewByteStreamClient(c.conn).Read(ctx, &bytestream.ReadRequest{ResourceName: h.Hex})
 	if err != nil {
 		return fmt.Errorf("creating the gRPC client: %w", err)
 	}
@@ -76,8 +79,14 @@ func (c *Client) Download(ctx context.Context, w io.Writer, digest string) error
 // Describe returns the metadata of a resource by its digest
 // We use this to get the filename and the total size of the artifact
 func (c *Client) Describe(ctx context.Context, digest string) (*ResourceInfo, error) {
+	// Check digest format, including the algorithm and the hex portion
+	h, err := cr_v1.NewHash(digest)
+	if err != nil {
+		return nil, fmt.Errorf("decoding digest: %w", err)
+	}
+
 	client := v1.NewResourceServiceClient(c.conn)
-	resp, err := client.Describe(ctx, &v1.ResourceServiceDescribeRequest{Digest: digest})
+	resp, err := client.Describe(ctx, &v1.ResourceServiceDescribeRequest{Digest: h.Hex})
 	if err != nil {
 		return nil, fmt.Errorf("contacting API to get resource Info: %w", err)
 	}

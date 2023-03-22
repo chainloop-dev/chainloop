@@ -54,9 +54,9 @@ func (a *ArtifactDownload) Run(downloadPath, digest string) error {
 
 	client := casclient.New(a.artifactsCASConn)
 	ctx := context.Background()
-	info, err := client.Describe(ctx, h.Hex)
+	info, err := client.Describe(ctx, h.String())
 	if err != nil {
-		return fmt.Errorf("resource with digest %s not found", h)
+		return fmt.Errorf("artifact with digest %s not found", h)
 	}
 
 	if downloadPath == "" {
@@ -84,7 +84,7 @@ func (a *ArtifactDownload) Run(downloadPath, digest string) error {
 	go renderOperationStatus(ctx, client.ProgressStatus, info.Size)
 	defer close(client.ProgressStatus)
 
-	err = client.Download(ctx, w, h.Hex)
+	err = client.Download(ctx, w, h.String())
 	if err != nil {
 		a.Logger.Debug().Err(err).Msg("problem downloading file")
 		return errors.New("problem downloading file")
