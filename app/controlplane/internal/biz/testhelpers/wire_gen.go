@@ -8,6 +8,7 @@ package testhelpers
 
 import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/integration/dependencytrack"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
 	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
@@ -67,6 +68,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	userUseCase := biz.NewUserUseCase(newUserUseCaseParams)
 	robotAccountRepo := data.NewRobotAccountRepo(dataData, logger)
 	robotAccountUseCase := biz.NewRootAccountUseCase(robotAccountRepo, workflowRepo, auth, logger)
+	integration := dependencytrack.New(integrationUseCase, ociRepositoryUseCase, readerWriter, logger)
 	testingUseCases := &TestingUseCases{
 		DB:               testDatabase,
 		L:                logger,
@@ -79,6 +81,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		WorkflowRun:      workflowRunUseCase,
 		User:             userUseCase,
 		RobotAccount:     robotAccountUseCase,
+		DepTrackUC:       integration,
 	}
 	return testingUseCases, func() {
 		cleanup()

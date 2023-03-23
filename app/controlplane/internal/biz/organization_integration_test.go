@@ -117,7 +117,7 @@ func (s *OrgIntegrationTestSuite) SetupTest() {
 	assert.NoError(err)
 
 	// Integration
-	_, err = s.Integration.AddDependencyTrack(ctx, s.org.ID, "host", "key", false)
+	_, err = s.DepTrackUC.Add(ctx, s.org.ID, "host", "key", false)
 	assert.NoError(err)
 
 	// OCI repository

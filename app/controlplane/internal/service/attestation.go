@@ -26,7 +26,7 @@ import (
 
 	cpAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/integration/deptrack"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/integration/dependencytrack"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
@@ -48,7 +48,7 @@ type AttestationService struct {
 	attestationUseCase      *biz.AttestationUseCase
 	credsReader             credentials.Reader
 	integrationUseCase      *biz.IntegrationUseCase
-	depTrackUseCase         *deptrack.Integration
+	depTrackUseCase         *dependencytrack.Integration
 	casCredsUseCase         *biz.CASCredentialsUseCase
 }
 
@@ -61,7 +61,7 @@ type NewAttestationServiceOpts struct {
 	CredsReader        credentials.Reader
 	IntegrationUseCase *biz.IntegrationUseCase
 	CasCredsUseCase    *biz.CASCredentialsUseCase
-	DepTrackUseCase    *deptrack.Integration
+	DepTrackUseCase    *dependencytrack.Integration
 	Opts               []NewOpt
 }
 
