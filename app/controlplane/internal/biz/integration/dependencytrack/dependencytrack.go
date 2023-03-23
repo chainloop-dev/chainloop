@@ -29,7 +29,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/integrations/dependencytrack"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer"
-	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
@@ -41,13 +40,14 @@ type Integration struct {
 	integrationUC       *biz.IntegrationUseCase
 	ociUC               *biz.OCIRepositoryUseCase
 	credentialsProvider credentials.ReaderWriter
+	casClient           biz.CASClient
 	log                 *log.Helper
 }
 
 const Kind = "Dependency-Track"
 
-func New(integrationUC *biz.IntegrationUseCase, ociUC *biz.OCIRepositoryUseCase, creds credentials.ReaderWriter, l log.Logger) *Integration {
-	return &Integration{integrationUC, ociUC, creds, servicelogger.ScopedHelper(l, "biz/integration/deptrack")}
+func New(integrationUC *biz.IntegrationUseCase, ociUC *biz.OCIRepositoryUseCase, creds credentials.ReaderWriter, c biz.CASClient, l log.Logger) *Integration {
+	return &Integration{integrationUC, ociUC, creds, c, servicelogger.ScopedHelper(l, "biz/integration/deptrack")}
 }
 
 func (uc *Integration) Add(ctx context.Context, orgID, host, apiKey string, enableProjectCreation bool) (*biz.Integration, error) {
@@ -105,6 +105,7 @@ func (uc *Integration) UploadSBOMs(envelope *dsse.Envelope, orgID, workflowID st
 		return nil
 	}
 
+	// There is at least one enabled integration, extract the SBOMs
 	predicate, err := renderer.ExtractPredicate(envelope)
 	if err != nil {
 		return err
@@ -115,11 +116,6 @@ func (uc *Integration) UploadSBOMs(envelope *dsse.Envelope, orgID, workflowID st
 		return err
 	} else if repo == nil {
 		return errors.NotFound("not found", "main repository not found")
-	}
-
-	backend, err := oci.NewBackendProvider(uc.credentialsProvider).FromCredentials(ctx, repo.SecretName)
-	if err != nil {
-		return err
 	}
 
 	for _, m := range predicate.Materials {
@@ -133,11 +129,14 @@ func (uc *Integration) UploadSBOMs(envelope *dsse.Envelope, orgID, workflowID st
 			continue
 		}
 
+		digest = "sha256:" + digest
+
 		uc.log.Infow("msg", "SBOM present, downloading", "workflowID", workflowID, "integration", Kind, "name", m.Name)
 		// Download SBOM
-		if err := backend.Download(ctx, buf, digest); err != nil {
-			return err
+		if err := uc.casClient.Download(ctx, repo.SecretName, buf, digest); err != nil {
+			return fmt.Errorf("downloading from CAS: %w", err)
 		}
+
 		uc.log.Infow("msg", "SBOM downloaded", "digest", digest, "workflowID", workflowID, "integration", Kind, "name", m.Name)
 
 		// Run integrations with that sbom

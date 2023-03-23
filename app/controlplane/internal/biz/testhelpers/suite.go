@@ -15,7 +15,9 @@
 
 package testhelpers
 
-import "github.com/stretchr/testify/suite"
+import (
+	"github.com/stretchr/testify/suite"
+)
 
 // Suite that creates a database and sets the schema before each test
 type UseCasesEachTestSuite struct {

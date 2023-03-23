@@ -84,7 +84,10 @@ func NewTestingUseCases(t *testing.T, opts ...NewTestingUCOpt) *TestingUseCases 
 
 	db := NewTestDatabase(t)
 	log := log.NewStdLogger(io.Discard)
-	testData, _, err := WireTestData(db, t, log, newArgs.credsReaderWriter, &robotaccount.Builder{}, &conf.Auth{GeneratedJwsHmacSecret: "test"})
+	testData, _, err := WireTestData(db, t, log, newArgs.credsReaderWriter, &robotaccount.Builder{}, &conf.Auth{
+		GeneratedJwsHmacSecret:        "test",
+		CasRobotAccountPrivateKeyPath: "./testdata/test-key.ec.pem",
+	})
 	assert.NoError(t, err)
 	return testData
 }
@@ -138,6 +141,10 @@ func (db *TestDatabase) ConnectionString(t *testing.T) string {
 
 func newConfData(db *TestDatabase, t *testing.T) *conf.Data {
 	return &conf.Data{Database: &conf.Data_Database{Driver: "pgx", Source: db.ConnectionString(t)}}
+}
+
+func newConfCAS() *conf.Bootstrap_CASServer {
+	return &conf.Bootstrap_CASServer{Grpc: &conf.Server_GRPC{}}
 }
 
 func (db *TestDatabase) Close(t *testing.T) {
