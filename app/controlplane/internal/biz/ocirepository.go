@@ -116,7 +116,7 @@ func (uc *OCIRepositoryUseCase) CreateOrUpdate(ctx context.Context, orgID, repoU
 	// Validate and store the secret in the external secrets manager
 	creds := &credentials.OCIKeypair{Repo: repoURL, Username: username, Password: password}
 	if err := creds.Validate(); err != nil {
-		return nil, newErrValidation(err)
+		return nil, NewErrValidation(err)
 	}
 
 	secretName, err := uc.credsRW.SaveCredentials(ctx, orgID, creds)

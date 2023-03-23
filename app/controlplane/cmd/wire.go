@@ -22,6 +22,7 @@ package main
 
 import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/integration"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/server"
@@ -40,6 +41,7 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger) (*app, func(
 			server.ProviderSet,
 			data.ProviderSet,
 			biz.ProviderSet,
+			integration.ProviderSet,
 			service.ProviderSet,
 			wire.Bind(new(backend.Provider), new(*oci.BackendProvider)),
 			wire.Bind(new(biz.CASClient), new(*biz.CASClientUseCase)),

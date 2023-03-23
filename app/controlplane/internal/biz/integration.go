@@ -73,8 +73,6 @@ type IntegrationUseCase struct {
 	logger           *log.Helper
 }
 
-const DependencyTrackKind = "Dependency-Track"
-
 type NewIntegrationUseCaseOpts struct {
 	IRepo   IntegrationRepo
 	IaRepo  IntegrationAttachmentRepo
@@ -91,34 +89,14 @@ func NewIntegrationUseCase(opts *NewIntegrationUseCaseOpts) *IntegrationUseCase 
 	return &IntegrationUseCase{opts.IRepo, opts.IaRepo, opts.WfRepo, opts.CredsRW, servicelogger.ScopedHelper(opts.Logger, "biz/integration")}
 }
 
-func (uc *IntegrationUseCase) AddDependencyTrack(ctx context.Context, orgID, host, apiKey string, enableProjectCreation bool) (*Integration, error) {
+// Persist the integration with its configuration in the database
+func (uc *IntegrationUseCase) Create(ctx context.Context, orgID, kind string, secretID string, config *v1.IntegrationConfig) (*Integration, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	// Validate Credentials before saving them
-	creds := &credentials.APICreds{Host: host, Key: apiKey}
-	if err := creds.Validate(); err != nil {
-		return nil, newErrValidation(err)
-	}
-
-	// Create the secret in the external secrets manager
-	secretID, err := uc.credsRW.SaveCredentials(ctx, orgID, creds)
-	if err != nil {
-		return nil, fmt.Errorf("storing the credentials: %w", err)
-	}
-
-	c := &v1.IntegrationConfig{
-		Config: &v1.IntegrationConfig_DependencyTrack_{
-			DependencyTrack: &v1.IntegrationConfig_DependencyTrack{
-				AllowAutoCreate: enableProjectCreation, Domain: host,
-			},
-		},
-	}
-
-	// Persist data
-	return uc.integrationRepo.Create(ctx, orgUUID, DependencyTrackKind, secretID, c)
+	return uc.integrationRepo.Create(ctx, orgUUID, kind, secretID, config)
 }
 
 func (uc *IntegrationUseCase) List(ctx context.Context, orgID string) ([]*Integration, error) {
@@ -217,7 +195,7 @@ func (uc *IntegrationUseCase) AttachToWorkflow(ctx context.Context, opts *Attach
 
 	// Check that the provided attachConfiguration is compatible with the referred integration
 	if err := validateAttachment(ctx, integration, uc.credsRW, integration.Config, opts.Config); err != nil {
-		return nil, newErrValidation(err)
+		return nil, NewErrValidation(err)
 	}
 
 	return uc.integrationARepo.Create(ctx, integrationUUID, workflowUUID, opts.Config)
@@ -285,7 +263,7 @@ func validateAttachment(ctx context.Context, integration *Integration, credsR cr
 		}
 
 		if err := creds.Validate(); err != nil {
-			return newErrValidation(err)
+			return NewErrValidation(err)
 		}
 
 		// Instantiate an actual uploader to see if it would work with the current configuration

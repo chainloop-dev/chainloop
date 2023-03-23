@@ -27,6 +27,7 @@ import (
 	_ "github.com/lib/pq"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/integration/dependencytrack"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	creds "github.com/chainloop-dev/chainloop/internal/credentials/mocks"
@@ -57,6 +58,7 @@ type TestingUseCases struct {
 	WorkflowRun      *biz.WorkflowRunUseCase
 	User             *biz.UserUseCase
 	RobotAccount     *biz.RobotAccountUseCase
+	DepTrackUC       *dependencytrack.Integration
 }
 
 type newTestingOpts struct {

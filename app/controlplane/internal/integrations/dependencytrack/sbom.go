@@ -27,8 +27,6 @@ import (
 	"strings"
 
 	"encoding/json"
-
-	integration "github.com/chainloop-dev/chainloop/app/controlplane/internal/integrations"
 )
 
 type base struct {
@@ -47,9 +45,6 @@ type SBOMUploader struct {
 	// Either use a projectID or create a new one by name
 	projectID, projectName string
 }
-
-var _ integration.Checker = (*Integration)(nil)
-var _ integration.Doer = (*SBOMUploader)(nil)
 
 func newBase(host, apiKey string) (*base, error) {
 	if apiKey == "" {

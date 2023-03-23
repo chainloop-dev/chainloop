@@ -201,7 +201,7 @@ func (uc *WorkflowRunUseCase) MarkAsFinished(ctx context.Context, id string, sta
 // Store the attestation digest for the workflowrun
 func (uc *WorkflowRunUseCase) AssociateAttestation(ctx context.Context, id string, ref *AttestationRef) error {
 	if ref == nil || ref.SecretRef == "" || ref.Sha256 == "" {
-		return newErrValidation(errors.New("attestation ref is nil or invalid"))
+		return NewErrValidation(errors.New("attestation ref is nil or invalid"))
 	}
 
 	runID, err := uuid.Parse(id)

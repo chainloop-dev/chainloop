@@ -52,18 +52,18 @@ func IsErrInvalidUUID(err error) bool {
 	return errors.As(err, &ErrInvalidUUID{})
 }
 
-type errValidation struct {
+type ErrValidation struct {
 	err error
 }
 
-func newErrValidation(err error) errValidation {
-	return errValidation{err}
+func NewErrValidation(err error) ErrValidation {
+	return ErrValidation{err}
 }
 
-func (e errValidation) Error() string {
+func (e ErrValidation) Error() string {
 	return fmt.Sprintf("validation error: %s", e.err.Error())
 }
 
 func IsErrValidation(err error) bool {
-	return errors.As(err, &errValidation{})
+	return errors.As(err, &ErrValidation{})
 }
