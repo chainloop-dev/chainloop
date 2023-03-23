@@ -90,7 +90,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		Opts:               v,
 	}
 	workflowRunService := service.NewWorkflowRunService(newWorkflowRunServiceOpts)
-	integration := dependencytrack.New(integrationUseCase, ociRepositoryUseCase, readerWriter, logger)
+	integration := dependencytrack.New(integrationUseCase, ociRepositoryUseCase, readerWriter, casClientUseCase, logger)
 	newAttestationServiceOpts := &service.NewAttestationServiceOpts{
 		WorkflowRunUC:      workflowRunUseCase,
 		WorkflowUC:         workflowUseCase,
