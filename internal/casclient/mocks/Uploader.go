@@ -17,8 +17,8 @@ type Uploader struct {
 	mock.Mock
 }
 
-// Ready provides a mock function with given fields: ctx
-func (_m *Uploader) Ready(ctx context.Context) (bool, error) {
+// IsReady provides a mock function with given fields: ctx
+func (_m *Uploader) IsReady(ctx context.Context) (bool, error) {
 	ret := _m.Called(ctx)
 
 	var r0 bool

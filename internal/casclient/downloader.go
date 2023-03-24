@@ -97,7 +97,7 @@ func (c *Client) Describe(ctx context.Context, digest string) (*ResourceInfo, er
 }
 
 // Contact the API to check if the service is ready to accept connections
-func (c *Client) Ready(ctx context.Context) (bool, error) {
+func (c *Client) IsReady(ctx context.Context) (bool, error) {
 	client := v1.NewStatusServiceClient(c.conn)
 	_, err := client.Statusz(ctx, &v1.StatuszRequest{Readiness: true})
 	if err != nil {

@@ -109,7 +109,7 @@ func casClient(conf *conf.Bootstrap_CASServer, token string) (*casclient.Client,
 }
 
 // If the CAS server can be reached and reports readiness
-func (uc *CASClientUseCase) Ready(ctx context.Context) (bool, error) {
+func (uc *CASClientUseCase) IsReady(ctx context.Context) (bool, error) {
 	if uc.casServerConf == nil {
 		return false, nil
 	}
@@ -124,5 +124,5 @@ func (uc *CASClientUseCase) Ready(ctx context.Context) (bool, error) {
 		return false, fmt.Errorf("failed to create CAS client: %w", err)
 	}
 
-	return c.Ready(ctx)
+	return c.IsReady(ctx)
 }
