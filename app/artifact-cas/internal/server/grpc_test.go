@@ -138,6 +138,23 @@ func TestJWTAuthFunc(t *testing.T) {
 	}
 }
 
+func TestRequireAuthentication(t *testing.T) {
+	testCases := []struct {
+		operation string
+		matches   bool
+	}{
+		{"/cas.v1.Resource/List", true},
+		{"/cas.v1.Bytestream/List", true},
+		{"/cas.v1.StatusService/Infoz", false},
+		{"/cas.v1.StatusService/Statusz", false},
+	}
+
+	matchFunc := requireAuthentication()
+	for _, op := range testCases {
+		assert.Equal(t, matchFunc(context.Background(), op.operation), op.matches)
+	}
+}
+
 func loadTestPublicKey(path string) jwt.Keyfunc {
 	rawKey, _ := os.ReadFile(path)
 	return func(token *jwt.Token) (interface{}, error) {

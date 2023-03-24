@@ -45,7 +45,6 @@ type CASDownloader interface {
 type CASClient interface {
 	CASUploader
 	CASDownloader
-	Configured() bool
 }
 
 func NewCASClientUseCase(credsProvider *CASCredentialsUseCase, config *conf.Bootstrap_CASServer, l log.Logger) *CASClientUseCase {
@@ -109,16 +108,21 @@ func casClient(conf *conf.Bootstrap_CASServer, token string) (*casclient.Client,
 	return casclient.New(conn), nil
 }
 
-// If the CAS client configuration is present and valid
-func (uc *CASClientUseCase) Configured() bool {
+// If the CAS server can be reached and reports readiness
+func (uc *CASClientUseCase) Ready(ctx context.Context) (bool, error) {
 	if uc.casServerConf == nil {
-		return false
+		return false, nil
 	}
 
 	err := uc.casServerConf.ValidateAll()
 	if err != nil {
-		uc.logger.Infow("msg", "Invalid CAS client configuration", "err", err.Error())
+		return false, fmt.Errorf("invalid CAS client configuration: %w", err)
 	}
 
-	return err == nil
+	c, err := casClient(uc.casServerConf, "")
+	if err != nil {
+		return false, fmt.Errorf("failed to create CAS client: %w", err)
+	}
+
+	return c.Ready(ctx)
 }

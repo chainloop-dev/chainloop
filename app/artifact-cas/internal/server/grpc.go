@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"regexp"
 
 	v1 "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf"
@@ -27,6 +28,7 @@ import (
 	"github.com/getsentry/sentry-go"
 	"github.com/go-kratos/kratos/v2/errors"
 	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
+	"github.com/go-kratos/kratos/v2/middleware/selector"
 	jwt "github.com/golang-jwt/jwt/v4"
 	"google.golang.org/genproto/googleapis/bytestream"
 
@@ -62,11 +64,14 @@ func NewGRPCServer(c *conf.Server, authConf *conf.Auth, byteService *service.Byt
 			),
 			logging.Server(logger),
 			// NOTE: JWT middleware only works for unary requests
-			// below you can see a reimplementation of the middleware as a stream interceptor
-			jwtMiddleware.Server(
-				loadPublicKey(rawKey),
-				jwtMiddleware.WithSigningMethod(casJWT.SigningMethod),
-				jwtMiddleware.WithClaims(func() jwt.Claims { return &casJWT.Claims{} })),
+			// below you can see a re-implementation of the middleware as a stream interceptor
+			// If we require a logged in user we
+			selector.Server(
+				jwtMiddleware.Server(
+					loadPublicKey(rawKey),
+					jwtMiddleware.WithSigningMethod(casJWT.SigningMethod),
+					jwtMiddleware.WithClaims(func() jwt.Claims { return &casJWT.Claims{} })),
+			).Match(requireAuthentication()).Build(),
 			validate.Validator(),
 		),
 
@@ -92,11 +97,22 @@ func NewGRPCServer(c *conf.Server, authConf *conf.Auth, byteService *service.Byt
 
 	bytestream.RegisterByteStreamServer(srv.Server, byteService)
 	v1.RegisterResourceServiceServer(srv.Server, rSvc)
+	v1.RegisterStatusServiceServer(srv.Server, service.NewStatusService(Version))
 
 	// Register and set metrics to 0
 	grpc_prometheus.Register(srv.Server)
 
 	return srv, nil
+}
+
+func requireAuthentication() selector.MatchFunc {
+	// Skip authentication on the status grpc service
+	const skipRegexp = "(cas.v1.StatusService/.*)"
+
+	return func(ctx context.Context, operation string) bool {
+		r := regexp.MustCompile(skipRegexp)
+		return !r.MatchString(operation)
+	}
 }
 
 // load key for verification
