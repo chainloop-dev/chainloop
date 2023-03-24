@@ -44,6 +44,7 @@ func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWrite
 			wire.Bind(new(backend.Provider), new(*oci.BackendProvider)),
 			wire.Bind(new(credentials.Reader), new(credentials.ReaderWriter)),
 			wire.Bind(new(biz.CASClient), new(*biz.CASClientUseCase)),
+			wire.Value([]biz.CASClientOpts{}),
 			oci.NewBackendProvider,
 			wire.Struct(new(TestingUseCases), "*"),
 			newConfData,
