@@ -47,7 +47,7 @@ func NewHTTPServer(opts *Opts, grpcSrv *grpc.Server) (*http.Server, error) {
 	// NOTE: these non-grpc transcoded methods DO NOT RUN the middlewares
 	httpSrv.Handle(service.AuthLoginPath, opts.AuthSvc.RegisterLoginHandler())
 	httpSrv.Handle(service.AuthCallbackPath, opts.AuthSvc.RegisterCallbackHandler())
-	v1.RegisterStatusServiceHTTPServer(httpSrv, service.NewStatusService(opts.AuthSvc.AuthURLs.Login, Version))
+	v1.RegisterStatusServiceHTTPServer(httpSrv, service.NewStatusService(opts.AuthSvc.AuthURLs.Login, Version, opts.CASClientUseCase))
 
 	// Wrap http server to handle grpc-web calls and we will return this new server
 	wrappedServer := http.NewServer(serverOpts...)

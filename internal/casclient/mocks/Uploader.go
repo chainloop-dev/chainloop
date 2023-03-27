@@ -17,6 +17,30 @@ type Uploader struct {
 	mock.Mock
 }
 
+// IsReady provides a mock function with given fields: ctx
+func (_m *Uploader) IsReady(ctx context.Context) (bool, error) {
+	ret := _m.Called(ctx)
+
+	var r0 bool
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context) (bool, error)); ok {
+		return rf(ctx)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context) bool); ok {
+		r0 = rf(ctx)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // Upload provides a mock function with given fields: ctx, r, digest, fileName
 func (_m *Uploader) Upload(ctx context.Context, r io.Reader, digest string, fileName string) (*casclient.UpDownStatus, error) {
 	ret := _m.Called(ctx, r, digest, fileName)

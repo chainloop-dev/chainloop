@@ -17,6 +17,7 @@ package biz
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 
@@ -29,9 +30,13 @@ import (
 )
 
 type CASClientUseCase struct {
+	// to generate temporary credentials
 	credsProvider *CASCredentialsUseCase
+	// configuration to generate the client
 	casServerConf *conf.Bootstrap_CASServer
-	logger        *log.Helper
+	// factory to generate the client
+	casClientFactory CASClientFactory
+	logger           *log.Helper
 }
 
 type CASUploader interface {
@@ -45,11 +50,40 @@ type CASDownloader interface {
 type CASClient interface {
 	CASUploader
 	CASDownloader
-	Configured() bool
 }
 
-func NewCASClientUseCase(credsProvider *CASCredentialsUseCase, config *conf.Bootstrap_CASServer, l log.Logger) *CASClientUseCase {
-	return &CASClientUseCase{credsProvider, config, servicelogger.ScopedHelper(l, "biz/cas-client")}
+type CASClientFactory func(conf *conf.Bootstrap_CASServer, token string) (casclient.DownloaderUploader, error)
+type CASClientOpts func(u *CASClientUseCase)
+
+func WithClientFactory(f CASClientFactory) CASClientOpts {
+	return func(c *CASClientUseCase) {
+		c.casClientFactory = f
+	}
+}
+
+func NewCASClientUseCase(credsProvider *CASCredentialsUseCase, config *conf.Bootstrap_CASServer, l log.Logger, opts ...CASClientOpts) *CASClientUseCase {
+	// generate a client from the given configuration
+	defaultCasClientFactory := func(conf *conf.Bootstrap_CASServer, token string) (casclient.DownloaderUploader, error) {
+		conn, err := grpcconn.New(conf.GetGrpc().GetAddr(), token, conf.GetInsecure())
+		if err != nil {
+			return nil, fmt.Errorf("failed to create grpc connection: %w", err)
+		}
+
+		return casclient.New(conn), nil
+	}
+
+	uc := &CASClientUseCase{
+		credsProvider:    credsProvider,
+		casServerConf:    config,
+		logger:           servicelogger.ScopedHelper(l, "biz/cas-client"),
+		casClientFactory: defaultCasClientFactory,
+	}
+
+	for _, opt := range opts {
+		opt(uc)
+	}
+
+	return uc
 }
 
 // The secretID is embedded in the JWT token and is used to identify the secret by the CAS server
@@ -90,35 +124,31 @@ func (uc *CASClientUseCase) Download(ctx context.Context, secretID string, w io.
 }
 
 // create a client with a temporary set of credentials for a specific operation
-func (uc *CASClientUseCase) casAPIClient(secretID string, role casJWT.Role) (*casclient.Client, error) {
+func (uc *CASClientUseCase) casAPIClient(secretID string, role casJWT.Role) (casclient.DownloaderUploader, error) {
 	token, err := uc.credsProvider.GenerateTemporaryCredentials(secretID, role)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate temporary credentials: %w", err)
 	}
 
 	// Initialize connection to CAS server
-	return casClient(uc.casServerConf, token)
+	return uc.casClientFactory(uc.casServerConf, token)
 }
 
-func casClient(conf *conf.Bootstrap_CASServer, token string) (*casclient.Client, error) {
-	conn, err := grpcconn.New(conf.GetGrpc().GetAddr(), token, conf.GetInsecure())
-	if err != nil {
-		return nil, fmt.Errorf("failed to create grpc connection: %w", err)
-	}
-
-	return casclient.New(conn), nil
-}
-
-// If the CAS client configuration is present and valid
-func (uc *CASClientUseCase) Configured() bool {
+// If the CAS server can be reached and reports readiness
+func (uc *CASClientUseCase) IsReady(ctx context.Context) (bool, error) {
 	if uc.casServerConf == nil {
-		return false
+		return false, errors.New("missing CAS server configuration")
 	}
 
 	err := uc.casServerConf.ValidateAll()
 	if err != nil {
-		uc.logger.Infow("msg", "Invalid CAS client configuration", "err", err.Error())
+		return false, fmt.Errorf("invalid CAS client configuration: %w", err)
 	}
 
-	return err == nil
+	c, err := uc.casClientFactory(uc.casServerConf, "")
+	if err != nil {
+		return false, fmt.Errorf("failed to create CAS client: %w", err)
+	}
+
+	return c.IsReady(ctx)
 }

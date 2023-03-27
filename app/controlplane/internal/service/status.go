@@ -19,18 +19,27 @@ import (
 	"context"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	"github.com/go-kratos/kratos/v2/errors"
 )
 
 type StatusService struct {
 	loginURL, version string
 	pb.UnimplementedStatusServiceServer
+	casClient *biz.CASClientUseCase
 }
 
-func NewStatusService(logingURL, version string) *StatusService {
-	return &StatusService{loginURL: logingURL, version: version}
+func NewStatusService(logingURL, version string, casClient *biz.CASClientUseCase) *StatusService {
+	return &StatusService{loginURL: logingURL, version: version, casClient: casClient}
 }
 
-func (s *StatusService) Statusz(_ context.Context, _ *pb.StatuszRequest) (*pb.StatuszResponse, error) {
+// Only on readiness probes we check this service external dependencies
+func (s *StatusService) Statusz(ctx context.Context, r *pb.StatuszRequest) (*pb.StatuszResponse, error) {
+	if r.Readiness {
+		if ok, err := s.casClient.IsReady(ctx); err != nil || !ok {
+			return nil, errors.ServiceUnavailable("CAS_NOT_READY", "Artifact CAS is not reachable")
+		}
+	}
 	return &pb.StatuszResponse{}, nil
 }
 

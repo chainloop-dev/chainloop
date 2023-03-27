@@ -95,3 +95,14 @@ func (c *Client) Describe(ctx context.Context, digest string) (*ResourceInfo, er
 		Digest: resp.GetResult().GetDigest(), Filename: resp.Result.GetFileName(), Size: resp.Result.GetSize(),
 	}, nil
 }
+
+// Contact the API to check if the service is ready to accept connections
+func (c *Client) IsReady(ctx context.Context) (bool, error) {
+	client := v1.NewStatusServiceClient(c.conn)
+	_, err := client.Statusz(ctx, &v1.StatuszRequest{Readiness: true})
+	if err != nil {
+		return false, fmt.Errorf("contacting API to get status: %w", err)
+	}
+
+	return true, nil
+}

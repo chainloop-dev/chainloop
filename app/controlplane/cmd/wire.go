@@ -47,6 +47,7 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger) (*app, func(
 			wire.Bind(new(biz.CASClient), new(*biz.CASClientUseCase)),
 			oci.NewBackendProvider,
 			serviceOpts,
+			wire.Value([]biz.CASClientOpts{}),
 			wire.FieldsOf(new(*conf.Bootstrap), "Server", "Auth", "Data", "CasServer"),
 			newApp,
 		),

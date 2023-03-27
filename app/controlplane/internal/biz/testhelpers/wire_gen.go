@@ -74,7 +74,8 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		return nil, nil, err
 	}
 	bootstrap_CASServer := newConfCAS()
-	casClientUseCase := biz.NewCASClientUseCase(casCredentialsUseCase, bootstrap_CASServer, logger)
+	v := _wireValue
+	casClientUseCase := biz.NewCASClientUseCase(casCredentialsUseCase, bootstrap_CASServer, logger, v...)
 	integration := dependencytrack.New(integrationUseCase, ociRepositoryUseCase, readerWriter, casClientUseCase, logger)
 	testingUseCases := &TestingUseCases{
 		DB:               testDatabase,
@@ -94,3 +95,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		cleanup()
 	}, nil
 }
+
+var (
+	_wireValue = []biz.CASClientOpts{}
+)
