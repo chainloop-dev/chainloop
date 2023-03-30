@@ -36,7 +36,7 @@ Refer to [development guide](../../devel/README.md) for more information but in 
 ```
 # Run external dependencies (Dex for OIDC, bitnami/postgreSQL container for persistence and Vault for secret management)
 
-docker compose -f devel/docker-compose.yml up
+docker compose -f devel/compose.yml up
 
 # Run the control plane
 make -C app/controlplane run

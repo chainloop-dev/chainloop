@@ -1,7 +1,7 @@
 # Configuration file meant to be used in the development environment.
 # it assumes some services are running in the host machine, like vault
-# Please make sure you run those via the convenience docker-compose file
-# [root]/devel/docker-compose.yaml
+# Please make sure you run those via the convenience docker compose file
+# [root]/devel/compose.yml
 server:
   http:
     addr: 0.0.0.0:8001

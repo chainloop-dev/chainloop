@@ -49,7 +49,7 @@ Refer to [development guide](../../devel/README.md) for more information but in 
 ```
 # Run external dependency (Vault for secret management)
 
-docker compose -f devel/docker-compose.yml up
+docker compose -f devel/compose.yml up
 
 # Run the service
 make -C app/artifact-cas run
