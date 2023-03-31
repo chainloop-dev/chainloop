@@ -12,7 +12,7 @@
 
 Chainloop is an open source software supply chain control plane, a single source of truth for artifacts plus a declarative attestation process.
 
-With Chainloop, SecOps teams can declaratively state the attestation and artifacts expectations for their organization’s CI/CD workflows, while also resting assured that latest standards and best practices are put in place.
+With Chainloop, SecOps teams can declaratively state the attestation and artifacts expectations for their organization’s CI/CD workflows, while also resting assured that the latest standards and best practices are put in place.
 
 Developer teams, on the other hand, do not need to become security experts, the attestation crafting tool will guide them with guardrails and a familiar developer experience.
 
@@ -20,17 +20,57 @@ To learn more about the project motivation please look at [this blog post](https
 
 ## Getting started
 
-See the getting started [guide](https://docs.chainloop.dev/getting-started/installation) for detailed information on downloading and configuring the Chainloop Command Line Interface (CLI)
+See the [getting started guide](https://docs.chainloop.dev/getting-started/installation#command-line-interface-cli-installation) for detailed information on downloading and configuring the Chainloop Command Line Interface (CLI)
 
-In a nutshell:
+### Command Line Interface (CLI) installation
+
+> Alternatively, you can download the CLI from the [releases pages](https://github.com/chainloop-dev/chainloop/releases) or [build it from source](./CONTRIBUTING.md).
+
+To **install the latest version** for macOS, Linux or Windows (using [WSL](https://learn.microsoft.com/en-us/windows/wsl/install)) just choose one of the following installation methods.
 
 ```bash
-$ curl -sfL https://docs.chainloop.dev/install.sh | bash -s
+curl -sfL https://raw.githubusercontent.com/chainloop-dev/docs/4a45f6ffa12bf3cc1d81fd9aa47e3cb17a499b0d/static/install.sh | bash -s
+```
 
+you can retrieve a specific version with
+
+```bash
+curl -sfL https://raw.githubusercontent.com/chainloop-dev/docs/4a45f6ffa12bf3cc1d81fd9aa47e3cb17a499b0d/static/install.sh | bash -s -- --version v0.8.95
+```
+
+and customize the install path (default to /usr/local/bin)
+
+```bash
+curl -sfL https://raw.githubusercontent.com/chainloop-dev/docs/4a45f6ffa12bf3cc1d81fd9aa47e3cb17a499b0d/static/install.sh | bash -s -- --path /my-path
+```
+
+if [`cosign`](https://docs.sigstore.dev/cosign) is present in your system, in addition to the checksum check, a signature verification will be performed. This behavior can be enforced via the `--force-verification` flag.
+
+```bash
+curl -sfL https://raw.githubusercontent.com/chainloop-dev/docs/4a45f6ffa12bf3cc1d81fd9aa47e3cb17a499b0d/static/install.sh | bash -s -- --force-verification
+```
+
+### Configure CLI (optional)
+
+By default, Chainloop CLI points to a [running instance of Chainloop](https://docs.chainloop.dev/chainloop-cloud).
+
+If you are running your [own instance](https://github.com/chainloop-dev/chainloop) of the Control Plane. You can make the CLI point to your instance by using the `chainloop config save` command.
+
+```sh
+chainloop config save \
+  --control-plane my-controlplane.acme.com \
+  --artifact-cas cas.acme.com
+```
+
+### Authentication
+
+Authenticate to the Control Plane by running
+
+```bash
 $ chainloop auth login
 ```
 
-> NOTE: You can also build and run Chainloop [from source](./CONTRIBUTING.md)
+### Finishing the setup
 
 Once you've been logged in, follow [these instructions](https://docs.chainloop.dev/getting-started/setup) to learn how to set up your account.
 
