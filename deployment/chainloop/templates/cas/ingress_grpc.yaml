@@ -1,0 +1,41 @@
+{{- if .Values.cas.ingressAPI.enabled -}}
+{{- $fullName := printf "%s-%s" (include "chainloop.cas.fullname" .) "grpc" -}}
+{{- $svcPort := .Values.cas.serviceAPI.port -}}
+apiVersion: {{ include "common.capabilities.ingress.apiVersion" . }}
+kind: Ingress
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "chainloop.cas.labels" . | nindent 4 }}
+  {{- with .Values.cas.ingressAPI.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if and .Values.cas.ingressAPI.className (eq "true" (include "common.ingress.supportsIngressClassname" .)) }}
+  ingressClassName: {{ .Values.cas.ingressAPI.className | quote }}
+  {{- end }}
+  {{- if .Values.cas.ingressAPI.tls }}
+  tls:
+    {{- range .Values.cas.ingressAPI.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .Values.cas.ingressAPI.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            {{- if eq "true" (include "common.ingress.supportsPathType" $) }}
+            pathType: {{ .pathType }}
+            {{- end }}
+            backend: {{- include "common.ingress.backend" (dict "serviceName" $fullName "servicePort" $svcPort "context" $)  | nindent 14 }}
+          {{- end }}
+    {{- end }}
+{{- end }}

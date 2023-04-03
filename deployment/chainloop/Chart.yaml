@@ -1,0 +1,22 @@
+apiVersion: v2
+name: chainloop
+description: Chainloop is an open source software supply chain control plane, a single source of truth for artifacts plus a declarative attestation crafting process.
+
+type: application
+version: 0.1.0
+appVersion: "v0.8.96"
+
+dependencies:
+  - name: common
+    repository: https://charts.bitnami.com/bitnami
+    tags:
+      - bitnami-common
+    version: 2.x.x
+  - condition: postgresql.enabled
+    name: postgresql
+    repository: https://charts.bitnami.com/bitnami
+    version: 12.x.x
+  - condition: development
+    name: vault
+    repository: https://helm.releases.hashicorp.com
+    version: 0.24.x

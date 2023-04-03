@@ -1,0 +1,41 @@
+{{- if .Values.cas.ingressHTTP.enabled -}}
+{{- $fullName := include "chainloop.cas.fullname" . -}}
+{{- $svcPort := .Values.cas.service.port -}}
+apiVersion: {{ include "common.capabilities.ingress.apiVersion" . }}
+kind: Ingress
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "chainloop.cas.labels" . | nindent 4 }}
+  {{- with .Values.cas.ingressHTTP.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if and .Values.cas.ingressHTTP.className (eq "true" (include "common.ingress.supportsIngressClassname" .)) }}
+  ingressClassName: {{ .Values.cas.ingressHTTP.className | quote }}
+  {{- end }}
+  {{- if .Values.cas.ingressHTTP.tls }}
+  tls:
+    {{- range .Values.cas.ingressHTTP.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .Values.cas.ingressHTTP.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            {{- if eq "true" (include "common.ingress.supportsPathType" $) }}
+            pathType: {{ .pathType }}
+            {{- end }}
+            backend: {{- include "common.ingress.backend" (dict "serviceName" $fullName "servicePort" $svcPort "context" $)  | nindent 14 }}
+          {{- end }}
+    {{- end }}
+{{- end }}
