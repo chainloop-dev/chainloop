@@ -161,8 +161,8 @@ controlplane:
     targetPort: grpc
     ## @extra controlplane.serviceAPI.annotations Service annotations
     annotations:
-      ## @skip controlplane.serviceAPI.annotations.traefik.controlplane.ingress.kubernetes.io/service.serversscheme
-      traefik.controlplane.ingress.kubernetes.io/service.serversscheme: h2c
+      ## @skip controlplane.serviceAPI.annotations.traefik.ingress.kubernetes.io/service.serversscheme
+      traefik.ingress.kubernetes.io/service.serversscheme: h2c
 
     ## @extra controlplane.serviceAPI.nodePorts.http Node port for HTTP. NOTE: choose port between <30000-32767>
     # nodePorts:
@@ -426,8 +426,8 @@ cas:
     targetPort: grpc
     ## @extra cas.serviceAPI.annotations Service annotations
     annotations:
-      ## @skip cas.serviceAPI.annotations.traefik.controlplane.ingress.kubernetes.io/service.serversscheme
-      traefik.controlplane.ingress.kubernetes.io/service.serversscheme: h2c
+      ## @skip cas.serviceAPI.annotations.traefik.ingress.kubernetes.io/service.serversscheme
+      traefik.ingress.kubernetes.io/service.serversscheme: h2c
 
     ## @extra cas.serviceAPI.nodePorts.http Node port for HTTP. NOTE: choose port between <30000-32767>
     # nodePorts:

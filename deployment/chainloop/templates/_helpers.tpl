@@ -98,8 +98,8 @@ NOTE: Load balancer service type is not supported
 {{- $service := .Values.controlplane.service }}
 {{- $ingress := .Values.controlplane.ingress }}
 
-{{- if (and $ingress $ingress.enabled (not (empty $ingress.hosts))) }}
-{{- (index $ingress.hosts 0).host }}
+{{- if (and $ingress $ingress.enabled $ingress.hostname) }}
+{{- $ingress.hostname }}
 {{- else if (and (eq $service.type "NodePort") $service.nodePorts (not (empty $service.nodePorts.http))) }}
 {{- printf "localhost:%s" $service.nodePorts.http }}
 {{- else -}}
