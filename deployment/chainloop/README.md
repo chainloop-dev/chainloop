@@ -31,11 +31,14 @@ The command removes all the Kubernetes components associated with the chart and 
 
 ### Common parameters
 
-| Name                    | Description                                                                                                                                                            | Value   |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| `kubeVersion`           | Override Kubernetes version                                                                                                                                            | `""`    |
-| `development`           | Deploys Chainloop pre-configured FOR DEVELOPMENT ONLY. It includes a Vault instance in development mode and pre-configured authentication certificates and passphrases | `false` |
-| `GKEMonitoring.enabled` | Enable GKE podMonitoring (monitoring.googleapis.com/v1) to scrape the controlplane and CAS prometheus endpoints                                                        | `false` |
+| Name                    | Description                                                                                                                                                            | Value        |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| `kubeVersion`           | Override Kubernetes version                                                                                                                                            | `""`         |
+| `development`           | Deploys Chainloop pre-configured FOR DEVELOPMENT ONLY. It includes a Vault instance in development mode and pre-configured authentication certificates and passphrases | `false`      |
+| `GKEMonitoring.enabled` | Enable GKE podMonitoring (prometheus.io scrape) to scrape the controlplane and CAS /metrics endpoints                                                                  | `false`      |
+| `sentry.enabled`        | Enable sentry.io alerting                                                                                                                                              | `false`      |
+| `sentry.dsn`            | DSN endpoint https://docs.sentry.io/product/sentry-basics/dsn-explainer/                                                                                               | `""`         |
+| `sentry.environment`    | Environment tag                                                                                                                                                        | `production` |
 
 ### Secrets Backend
 
@@ -53,7 +56,7 @@ The command removes all the Kubernetes components associated with the chart and 
 
 | Name               | Description                                                            | Value |
 | ------------------ | ---------------------------------------------------------------------- | ----- |
-| `casJWTPrivateKey` | ECDSA (ES512) private Key used for Controlplane <-> CAS Authentication | `""`  |
+| `casJWTPrivateKey` | ECDSA (ES512) private key used for Controlplane <-> CAS Authentication | `""`  |
 | `casJWTPublicKey`  | ECDSA (ES512) public key                                               | `""`  |
 
 ### Control Plane
@@ -66,16 +69,17 @@ The command removes all the Kubernetes components associated with the chart and 
 
 ### Control Plane Database
 
-| Name                                     | Description                                                | Value   |
-| ---------------------------------------- | ---------------------------------------------------------- | ------- |
-| `controlplane.externalDatabase.host`     | Database host                                              | `""`    |
-| `controlplane.externalDatabase.port`     | Database port number                                       | `5432`  |
-| `controlplane.externalDatabase.user`     | Non-root username                                          | `""`    |
-| `controlplane.externalDatabase.database` | Database name                                              | `""`    |
-| `controlplane.externalDatabase.password` | Password for the non-root username                         | `""`    |
-| `controlplane.sqlProxy.enabled`          | Enable sidecar to connect to DB via Google Cloud SQL proxy | `false` |
-| `controlplane.sqlProxy.connectionName`   | Google Cloud SQL connection name                           | `""`    |
-| `controlplane.sqlProxy.resources`        | Sidecar container resources                                | `{}`    |
+| Name                                     | Description                                                                                           | Value   |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------- |
+| `controlplane.externalDatabase`          | External PostgreSQL configuration. These values are only used when postgresql.enabled is set to false |         |
+| `controlplane.externalDatabase.host`     | Database host                                                                                         | `""`    |
+| `controlplane.externalDatabase.port`     | Database port number                                                                                  | `5432`  |
+| `controlplane.externalDatabase.user`     | Non-root username                                                                                     | `""`    |
+| `controlplane.externalDatabase.database` | Database name                                                                                         | `""`    |
+| `controlplane.externalDatabase.password` | Password for the non-root username                                                                    | `""`    |
+| `controlplane.sqlProxy.enabled`          | Enable sidecar to connect to DB via Google Cloud SQL proxy                                            | `false` |
+| `controlplane.sqlProxy.connectionName`   | Google Cloud SQL connection name                                                                      | `""`    |
+| `controlplane.sqlProxy.resources`        | Sidecar container resources                                                                           | `{}`    |
 
 ### Control Plane Authentication
 

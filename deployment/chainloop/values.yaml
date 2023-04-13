@@ -13,9 +13,17 @@ kubeVersion: ""
 ##
 development: false
 
-## @param GKEMonitoring.enabled Enable GKE podMonitoring (monitoring.googleapis.com/v1) to scrape the controlplane and CAS prometheus endpoints
+## @param GKEMonitoring.enabled Enable GKE podMonitoring (prometheus.io scrape) to scrape the controlplane and CAS /metrics endpoints
 GKEMonitoring:
   enabled: false
+
+## @param sentry.enabled Enable sentry.io alerting
+## @param sentry.dsn DSN endpoint https://docs.sentry.io/product/sentry-basics/dsn-explainer/
+## @param sentry.environment Environment tag
+sentry:
+  enabled: false
+  dsn: ""
+  environment: production
 
 ## @section Secrets Backend
 ##
@@ -55,7 +63,7 @@ secrets_backend:
 ## If development=true is set, a development key will be configured automatically
 ## otherwise you'll need to provide new keys via .Values.casJWTPrivateKey and .Values.cas.casJWTPublicKey
 
-## @param casJWTPrivateKey ECDSA (ES512) private Key used for Controlplane <-> CAS Authentication
+## @param casJWTPrivateKey ECDSA (ES512) private key used for Controlplane <-> CAS Authentication
 ##
 ## To generate one
 ## openssl ecparam -name secp521r1 -genkey -noout -out private.ec.key
@@ -100,8 +108,7 @@ controlplane:
 
   ## @section Control Plane Database
 
-  ## External PostgreSQL configuration
-  ## All of these values are only used when postgresql.enabled is set to false
+  ## @extra controlplane.externalDatabase External PostgreSQL configuration. These values are only used when postgresql.enabled is set to false
   ## @param controlplane.externalDatabase.host Database host
   ## @param controlplane.externalDatabase.port Database port number
   ## @param controlplane.externalDatabase.user Non-root username
