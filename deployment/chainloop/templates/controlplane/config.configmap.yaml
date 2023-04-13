@@ -26,5 +26,5 @@ data:
         timeout: 10s
     cas_server:
       grpc:
-        addr: {{ printf "%s-grpc:%.0f" (include "chainloop.cas.fullname" .) .Values.cas.serviceAPI.port }}
+        addr: {{ printf "%s-api:%.0f" (include "chainloop.cas.fullname" .) .Values.cas.serviceAPI.port }}
       insecure: true
