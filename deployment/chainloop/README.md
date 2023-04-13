@@ -31,10 +31,11 @@ The command removes all the Kubernetes components associated with the chart and 
 
 ### Common parameters
 
-| Name          | Description                                                                                                                                                            | Value   |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| `kubeVersion` | Override Kubernetes version                                                                                                                                            | `""`    |
-| `development` | Deploys Chainloop pre-configured FOR DEVELOPMENT ONLY. It includes a Vault instance in development mode and pre-configured authentication certificates and passphrases | `false` |
+| Name                    | Description                                                                                                                                                            | Value   |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| `kubeVersion`           | Override Kubernetes version                                                                                                                                            | `""`    |
+| `development`           | Deploys Chainloop pre-configured FOR DEVELOPMENT ONLY. It includes a Vault instance in development mode and pre-configured authentication certificates and passphrases | `false` |
+| `GKEMonitoring.enabled` | Enable GKE podmonitoring (monitoring.googleapis.com/v1) to scrape the controlplane and CAS prometheus endpoints                                                        | `false` |
 
 ### Secrets Backend
 
@@ -156,6 +157,20 @@ The command removes all the Kubernetes components associated with the chart and 
 | `cas.autoscaling.maxReplicas`                       | Maximum number of replicas    | `100`   |
 | `cas.autoscaling.targetCPUUtilizationPercentage`    | Target CPU percentage         | `80`    |
 | `cas.autoscaling.targetMemoryUtilizationPercentage` | Target CPU memory             | `80`    |
+
+### Dependencies 
+
+| Name                                 | Description                                                                                            | Value          |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------ | -------------- |
+| `postgresql.enabled`                 | Switch to enable or disable the PostgreSQL helm chart                                                  | `true`         |
+| `postgresql.auth.enablePostgresUser` | Assign a password to the "postgres" admin user. Otherwise, remote access will be blocked for this user | `false`        |
+| `postgresql.auth.username`           | Name for a custom user to create                                                                       | `chainloop`    |
+| `postgresql.auth.password`           | Password for the custom user to create                                                                 | `chainlooppwd` |
+| `postgresql.auth.database`           | Name for a custom database to create                                                                   | `chainloop-cp` |
+| `postgresql.auth.existingSecret`     | Name of existing secret to use for PostgreSQL credentials                                              | `""`           |
+| `postgresql.architecture`            | PostgreSQL architecture (`standalone` or `replication`)                                                | `standalone`   |
+| `vault.server.dev.enabled`           | Enable development mode (unsealed, in-memory, insecure)                                                | `true`         |
+| `vault.server.dev.devRootToken`      | Connection token                                                                                       | `notapassword` |
 
 
 
