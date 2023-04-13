@@ -35,7 +35,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
 | `kubeVersion`           | Override Kubernetes version                                                                                                                                            | `""`    |
 | `development`           | Deploys Chainloop pre-configured FOR DEVELOPMENT ONLY. It includes a Vault instance in development mode and pre-configured authentication certificates and passphrases | `false` |
-| `GKEMonitoring.enabled` | Enable GKE podmonitoring (monitoring.googleapis.com/v1) to scrape the controlplane and CAS prometheus endpoints                                                        | `false` |
+| `GKEMonitoring.enabled` | Enable GKE podMonitoring (monitoring.googleapis.com/v1) to scrape the controlplane and CAS prometheus endpoints                                                        | `false` |
 
 ### Secrets Backend
 
@@ -89,27 +89,34 @@ The command removes all the Kubernetes components associated with the chart and 
 
 ### Control Plane Networking
 
-| Name                                     | Description                                                                                 | Value       |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------- | ----------- |
-| `controlplane.service.type`              | Service type                                                                                | `ClusterIP` |
-| `controlplane.service.port`              | Service port                                                                                | `80`        |
-| `controlplane.service.targetPort`        | Service target Port                                                                         | `http`      |
-| `controlplane.service.nodePorts.http`    | Node port for HTTP. NOTE: choose port between <30000-32767>                                 |             |
-| `controlplane.serviceAPI.type`           | Service type                                                                                | `ClusterIP` |
-| `controlplane.serviceAPI.port`           | Service port                                                                                | `80`        |
-| `controlplane.serviceAPI.targetPort`     | Service target Port                                                                         | `grpc`      |
-| `controlplane.serviceAPI.annotations`    | Service annotations                                                                         |             |
-| `controlplane.serviceAPI.nodePorts.http` | Node port for HTTP. NOTE: choose port between <30000-32767>                                 |             |
-| `controlplane.ingress.enabled`           | Resource enabled                                                                            | `false`     |
-| `controlplane.ingress.className`         | IngressClass that will be be used                                                           | `""`        |
-| `controlplane.ingress.annotations`       | Annotations                                                                                 | `{}`        |
-| `controlplane.ingress.hosts`             | HTTP hosts                                                                                  | `[]`        |
-| `controlplane.ingress.tls`               | TLS configuration ref: https://kubernetes.io/docs/concepts/services-networking/ingress/#tls | `[]`        |
-| `controlplane.ingressAPI.enabled`        | Resource enabled                                                                            | `false`     |
-| `controlplane.ingressAPI.className`      | IngressClass that will be be used                                                           | `""`        |
-| `controlplane.ingressAPI.annotations`    | Annotations                                                                                 | `{}`        |
-| `controlplane.ingressAPI.hosts`          | HTTP hosts                                                                                  | `[]`        |
-| `controlplane.ingressAPI.tls`            | TLS configuration ref: https://kubernetes.io/docs/concepts/services-networking/ingress/#tls | `[]`        |
+| Name                                     | Description                                                                                                                      | Value                    |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| `controlplane.service.type`              | Service type                                                                                                                     | `ClusterIP`              |
+| `controlplane.service.port`              | Service port                                                                                                                     | `80`                     |
+| `controlplane.service.targetPort`        | Service target Port                                                                                                              | `http`                   |
+| `controlplane.service.nodePorts.http`    | Node port for HTTP. NOTE: choose port between <30000-32767>                                                                      |                          |
+| `controlplane.serviceAPI.type`           | Service type                                                                                                                     | `ClusterIP`              |
+| `controlplane.serviceAPI.port`           | Service port                                                                                                                     | `80`                     |
+| `controlplane.serviceAPI.targetPort`     | Service target Port                                                                                                              | `grpc`                   |
+| `controlplane.serviceAPI.annotations`    | Service annotations                                                                                                              |                          |
+| `controlplane.serviceAPI.nodePorts.http` | Node port for HTTP. NOTE: choose port between <30000-32767>                                                                      |                          |
+| `controlplane.ingress.enabled`           | Enable ingress record generation for %%MAIN_CONTAINER_NAME%%                                                                     | `false`                  |
+| `controlplane.ingress.pathType`          | Ingress path type                                                                                                                | `ImplementationSpecific` |
+| `controlplane.ingress.hostname`          | Default host for the ingress record                                                                                              | `cp.dev.local`           |
+| `controlplane.ingress.ingressClassName`  | IngressClass that will be be used to implement the Ingress (Kubernetes 1.18+)                                                    | `""`                     |
+| `controlplane.ingress.path`              | Default path for the ingress record                                                                                              | `/`                      |
+| `controlplane.ingress.annotations`       | Additional annotations for the Ingress resource. To enable certificate autogeneration, place here your cert-manager annotations. | `{}`                     |
+| `controlplane.ingress.tls`               | Enable TLS configuration for the host defined at `controlplane.ingress.hostname` parameter                                       | `false`                  |
+| `controlplane.ingress.selfSigned`        | Create a TLS secret for this ingress record using self-signed certificates generated by Helm                                     | `false`                  |
+| `controlplane.ingress.extraHosts`        | An array with additional hostname(s) to be covered with the ingress record                                                       | `[]`                     |
+| `controlplane.ingress.extraPaths`        | An array with additional arbitrary paths that may need to be added to the ingress under the main host                            | `[]`                     |
+| `controlplane.ingress.extraTls`          | TLS configuration for additional hostname(s) to be covered with this ingress record                                              | `[]`                     |
+| `controlplane.ingress.secrets`           | Custom TLS certificates as secrets                                                                                               | `[]`                     |
+| `controlplane.ingressAPI.enabled`        | Resource enabled                                                                                                                 | `false`                  |
+| `controlplane.ingressAPI.className`      | IngressClass that will be be used                                                                                                | `""`                     |
+| `controlplane.ingressAPI.annotations`    | Annotations                                                                                                                      | `{}`                     |
+| `controlplane.ingressAPI.hosts`          | HTTP hosts                                                                                                                       | `[]`                     |
+| `controlplane.ingressAPI.tls`            | TLS configuration ref: https://kubernetes.io/docs/concepts/services-networking/ingress/#tls                                      | `[]`                     |
 
 ### Controlplane Misc
 
@@ -168,11 +175,11 @@ The command removes all the Kubernetes components associated with the chart and 
 | `postgresql.auth.password`           | Password for the custom user to create                                                                 | `chainlooppwd` |
 | `postgresql.auth.database`           | Name for a custom database to create                                                                   | `chainloop-cp` |
 | `postgresql.auth.existingSecret`     | Name of existing secret to use for PostgreSQL credentials                                              | `""`           |
-| `postgresql.architecture`            | PostgreSQL architecture (`standalone` or `replication`)                                                | `standalone`   |
 | `vault.server.dev.enabled`           | Enable development mode (unsealed, in-memory, insecure)                                                | `true`         |
 | `vault.server.dev.devRootToken`      | Connection token                                                                                       | `notapassword` |
 
 
+## License
 
 Copyright &copy; 2023 The Chainloop Authors
 
