@@ -96,7 +96,7 @@ NOTE: Load balancer service type is not supported
 */}}
 {{- define "chainloop.controlplane.external_url" -}}
 {{- $service := .Values.controlplane.service }}
-{{- $ingress := .Values.controlplane.ingressHTTP }}
+{{- $ingress := .Values.controlplane.ingress }}
 
 {{- if (and $ingress $ingress.enabled (not (empty $ingress.hosts))) }}
 {{- (index $ingress.hosts 0).host }}

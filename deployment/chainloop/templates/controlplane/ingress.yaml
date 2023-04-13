@@ -1,4 +1,4 @@
-{{- if .Values.controlplane.ingressHTTP.enabled -}}
+{{- if .Values.controlplane.ingress.enabled -}}
 {{- $fullName := include "chainloop.controlplane.fullname" . -}}
 {{- $svcPort := .Values.controlplane.service.port -}}
 apiVersion: {{ include "common.capabilities.ingress.apiVersion" . }}
@@ -7,17 +7,17 @@ metadata:
   name: {{ $fullName }}
   labels:
     {{- include "chainloop.controlplane.labels" . | nindent 4 }}
-  {{- with .Values.controlplane.ingressHTTP.annotations }}
+  {{- with .Values.controlplane.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  {{- if and .Values.controlplane.ingressHTTP.className (eq "true" (include "common.ingress.supportsIngressClassname" .)) }}
-  ingressClassName: {{ .Values.controlplane.ingressHTTP.className | quote }}
+  {{- if and .Values.controlplane.ingress.className (eq "true" (include "common.ingress.supportsIngressClassname" .)) }}
+  ingressClassName: {{ .Values.controlplane.ingress.className | quote }}
   {{- end }}
-  {{- if .Values.controlplane.ingressHTTP.tls }}
+  {{- if .Values.controlplane.ingress.tls }}
   tls:
-    {{- range .Values.controlplane.ingressHTTP.tls }}
+    {{- range .Values.controlplane.ingress.tls }}
     - hosts:
         {{- range .hosts }}
         - {{ . | quote }}
@@ -26,7 +26,7 @@ spec:
     {{- end }}
   {{- end }}
   rules:
-    {{- range .Values.controlplane.ingressHTTP.hosts }}
+    {{- range .Values.controlplane.ingress.hosts }}
     - host: {{ .host | quote }}
       http:
         paths:

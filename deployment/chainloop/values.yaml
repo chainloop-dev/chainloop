@@ -1,64 +1,109 @@
-# Default values for Chainloop.
+## Default values for Chainloop Helm Chart
 
-global:
-  ## @param global.kubeVersion Override Kubernetes version
-  kubeVersion: ""
+## @skip global
+global: {}
 
-# development="true" deploys Chainloop pre-configured FOR DEVELOPMENT ONLY which includes
-# - Vault instance in development mode
-# - Authentication certificates and passphrases for Controlplane <-> CAS communication
+## @section Common parameters
+##
+## @param kubeVersion Override Kubernetes version
+##
+kubeVersion: ""
+
+## @param development Deploys Chainloop pre-configured FOR DEVELOPMENT ONLY. It includes a Vault instance in development mode and pre-configured authentication certificates and passphrases
+##
 development: false
 
-# Location where to store sensitive data such as third-party integration tokens i.e OCI registry credentials
-# If development=true and no value is changed here, the setup will connect to a development instance of Vault
+## @section Secrets Backend
+##
+
+## Location where to store sensitive data. If development.true? and no overrides provided, the setup will connect to a development instance of Vault
 secrets_backend:
-  # By default we will connect to the local development instance of vault
+  ## @param secrets_backend.backend Secrets backend type ("vault" or "aws_secret_manager") 
+  ##
   backend: "vault" # "aws_secret_manager"
-  secret_prefix: "chainloop-devel"
+  ## @param secrets_backend.secret_prefix Prefix that will be pre-pended to all secrets in the storage backend
+  ##
+  secret_prefix: "chainloop"
 
   # Either vault or AWS secret manager enabled at the same time
+  ## @extra secrets_backend.vault.address Vault address
+  ## @extra secrets_backend.vault.token Vault authentication token
+  ##
   # vault:
   #   address: ""
   #   token: ""
 
+  ## @extra secrets_backend.aws_secret_manager.access_key AWS Access KEY ID
+  ## @extra secrets_backend.aws_secret_manager.secret_key AWS Secret Key
+  ## @extra secrets_backend.aws_secret_manager.region AWS Secret Manager Region
+  ##
   # aws_secret_manager:
   #   access_key: ""
   #   secret_key: ""
   #   region: ""
 
+## @section Authentication
+##
 
-# ES512 key-pair used for Controlplane <-> CAS Authentication key-pair
-# The controlplane will use the private key to generate a JWT at user request
-# The CAS will use the public key to verify the authenticity of that token
-# If development=true is set, a development key will be configured automatically
-# otherwise you'll need to provide new keys via .Values.casJWTPrivateKey and .Values.cas.casJWTPublicKey
+## ECDSA (ES512) key-pair used for Controlplane <-> CAS Authentication key-pair
+## The controlplane will use the private key to generate a JWT at user request
+## The CAS will use the public key to verify the authenticity of that token
+## If development=true is set, a development key will be configured automatically
+## otherwise you'll need to provide new keys via .Values.casJWTPrivateKey and .Values.cas.casJWTPublicKey
 
-# To generate one
-# openssl ecparam -name secp521r1 -genkey -noout -out private.ec.key
-# casJWTPrivateKey: |-
-#   -----BEGIN EC PRIVATE KEY-----
-#   -----END EC PRIVATE KEY-----
-#
+## @param casJWTPrivateKey ECDSA (ES512) private Key used for Controlplane <-> CAS Authentication
+##
+## To generate one
+## openssl ecparam -name secp521r1 -genkey -noout -out private.ec.key
+## casJWTPrivateKey: |-
+##   -----BEGIN EC PRIVATE KEY-----
+##   -----END EC PRIVATE KEY-----
+##
+casJWTPrivateKey: ""
 
+## @param casJWTPublicKey ECDSA (ES512) public key
+##
 # openssl ec -in private.ec.key -pubout -out public.pem
 # casJWTPublicKey: |
 #   -----BEGIN PUBLIC KEY-----
 #   -----END PUBLIC KEY-----
+casJWTPublicKey: ""
 
-##################################
-#          CONTROL PLANE         #    
-##################################
+## @section Control Plane
+###################################
+##          CONTROL PLANE         #    
+###################################
 controlplane:
+  ## @param controlplane.replicaCount Number of replicas
   replicaCount: 2
 
+  ## @param controlplane.image.repository FQDN uri for the image
+  ## @extra controlplane.image.tag Image tag (immutable tags are recommended). If no set chart.appVersion will be used
   image:
     repository: ghcr.io/chainloop-dev/chainloop/control-plane
     # Overrides the image tag whose default is the chart appVersion.
     # tag: latest
 
-  # Connect to an external database already provisioned
-  # NOTE: For these settings to take effect, you need to disable the built-int database 
-  # --set postgresql.enabled=false
+  ## @skip controlplane.serviceAccount
+  serviceAccount:
+    # Specifies whether a service account should be created
+    create: true
+    # Annotations to add to the service account
+    annotations: {}
+    # The name of the service account to use.
+    # If not set and create is true, a name is generated using the fullname template
+    name: ""
+
+  ## @section Control Plane Database
+
+  ## External PostgreSQL configuration
+  ## All of these values are only used when postgresql.enabled is set to false
+  ## @param controlplane.externalDatabase.host Database host
+  ## @param controlplane.externalDatabase.port Database port number
+  ## @param controlplane.externalDatabase.user Non-root username
+  ## @param controlplane.externalDatabase.database Database name
+  ## @param controlplane.externalDatabase.password Password for the non-root username
+  ##
   externalDatabase:
     host: ""
     port: 5432
@@ -66,100 +111,144 @@ controlplane:
     database: ""
     password: ""
 
-  auth:
-    # Key used to sign the JWTs generated by the controlplane as part of the robot-accounts
-    # leave empty for auto-generation
-    jwt_hmac_secret: ""
+  sqlProxy:
+    ## @param controlplane.sqlProxy.enabled Enable sidecar to connect to DB via Google Cloud SQL proxy
+    enabled: false
+    ## @param controlplane.sqlProxy.connectionName Google Cloud SQL connection name 
+    connectionName: ""
+    ## @param controlplane.sqlProxy.resources Sidecar container resources
+    resources: {}
 
+  ## @section Control Plane Authentication
+  auth:
+    ## @param controlplane.auth.passphrase Passphrase used to sign the Auth Tokens generated by the controlplane. Leave empty for auto-generation
+    ##
+    passphrase: ""
+
+    ## @param controlplane.auth.oidc.url Full authentication path, it should match the issuer URL of the Identity provider (IDp)
+    ## @param controlplane.auth.oidc.client_id  OIDC IDp client_id
+    ## @param controlplane.auth.oidc.client_secret  OIDC IDp client_secret
+    ## @param controlplane.auth.redirect_url_scheme Schema that will be used during authentication
     oidc:
-      # Full authentication path, it should match the issuer URL of the IDp
       url: ""
       client_id: ""
       client_secret: ""
     # TODO: look into automatically inference https://github.com/chainloop-dev/chainloop/issues/61
     redirect_url_scheme: "https"
  
-  serviceAccount:
-    # Specifies whether a service account should be created
-    create: true
-    # Annotations to add to the service account
-    annotations: {}
-    # The name of the service account to use.
-    # If not set and create is true, a name is generated using the fullname template
-    name: ""
-
+  ## @section Control Plane Networking
   service:
+    ## @param controlplane.service.type Service type
     type: ClusterIP
+    ## @param controlplane.service.port Service port
     port: 80
+    ## @param controlplane.service.targetPort Service target Port
     targetPort: http
-    ## Node ports to expose
-    ## @param service.web.nodePorts.http Node port for HTTP
-    ## NOTE: choose port between <30000-32767>
+    ## @extra controlplane.service.nodePorts.http Node port for HTTP. NOTE: choose port between <30000-32767>
     # nodePorts:
     #   http: "30800"
 
   serviceAPI:
+    ## @param controlplane.serviceAPI.type Service type
     type: ClusterIP
+    ## @param controlplane.serviceAPI.port Service port
     port: 80
+    ## @param controlplane.serviceAPI.targetPort Service target Port
     targetPort: grpc
+    ## @extra controlplane.serviceAPI.annotations Service annotations
     annotations:
-      # k3s local setup
+      ## @skip controlplane.serviceAPI.annotations.traefik.ingress.kubernetes.io/service.serversscheme
       traefik.ingress.kubernetes.io/service.serversscheme: h2c
 
-    ## Node ports to expose
-    ## @param service.web.nodePorts.http Node port for HTTP
-    ## NOTE: choose port between <30000-32767>
+    ## @extra controlplane.serviceAPI.nodePorts.http Node port for HTTP. NOTE: choose port between <30000-32767>
     # nodePorts:
     #   http: "30900"
 
-  ingressHTTP:
+  ingress:
+    ## @param controlplane.ingress.enabled Resource enabled
     enabled: false
+    ## @param controlplane.ingress.className IngressClass that will be be used
     className: ""
+    ## @param controlplane.ingress.annotations Annotations
     annotations: {}
-    hosts:
-      - host: cp.dev.local
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
+    ## @param controlplane.ingress.hosts HTTP hosts
+    # hosts:
+    #   - host: cp.dev.local
+    #     paths:
+    #       - path: /
+    #         pathType: ImplementationSpecific
+    hosts: []
+
+    ## @param controlplane.ingress.tls TLS configuration ref: https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
+    ## e.g:
+    ## tls:
+    ## - hosts:
+    ##     - cp.dev.local
+    ##   secretName: cp.local-tls
+    tls: []
 
   ingressAPI:
+    ## @param controlplane.ingressAPI.enabled Resource enabled
     enabled: false
+    ## @param controlplane.ingressAPI.className IngressClass that will be be used
     className: ""
+    ## @param controlplane.ingressAPI.annotations Annotations
     annotations: {}
 
-    hosts:
-      - host: api.cp.dev.local
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
+    ## @param controlplane.ingressAPI.hosts HTTP hosts
+    # hosts:
+    #   - host: api.cp.dev.local
+    #     paths:
+    #       - path: /
+    #         pathType: ImplementationSpecific
+    hosts: []
+
+    ## @param controlplane.ingressAPI.tls TLS configuration ref: https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
+    ## e.g:
+    ## tls:
+    ## - hosts:
+    ##     - cp.dev.local
+    ##   secretName: cp.local-tls
     tls: []
-    #  - secretName: chart-example-tls
-    #    hosts:
-    #      - chart-example.local
 
-  # Enable this if you want to use a Google Cloud SQL proxy
-  sqlProxy:
-    enabled: false
+  ## @section Controlplane Misc
 
-  resources: {}
+  ## ref: https://kubernetes.io/docs/user-guide/compute-resources/
+  ## @param controlplane.resources.limits Container resource limits
+  ## @param controlplane.resources.requests Container resource requests
+  resources:
+    limits: {}
+    requests: {}
 
+  ## Deployment autoscaling
+  ## @param controlplane.autoscaling.enabled Enable deployment autoscaling
+  ## @param controlplane.autoscaling.minReplicas Minimum number of replicas
+  ## @param controlplane.autoscaling.maxReplicas Maximum number of replicas
+  ## @param controlplane.autoscaling.targetCPUUtilizationPercentage Target CPU percentage
+  ## @param controlplane.autoscaling.targetMemoryUtilizationPercentage Target CPU memory
   autoscaling:
     enabled: false
     minReplicas: 1
     maxReplicas: 100
     targetCPUUtilizationPercentage: 80
-    # targetMemoryUtilizationPercentage: 80
-
+    targetMemoryUtilizationPercentage: 80
+ 
+## @section Artifact Content Addressable (CAS) API
 ##################################
 #         Artifacts CAS          #    
 ##################################
 cas:
+  ## @param cas.replicaCount Number of replicas
   replicaCount: 2
+
+  ## @param cas.image.repository FQDN uri for the image
+  ## @extra cas.image.tag Image tag (immutable tags are recommended). If no set chart.appVersion will be used
   image:
     repository: ghcr.io/chainloop-dev/chainloop/artifact-cas
     # Overrides the image tag whose default is the chart appVersion.
     # tag: latest
 
+  ## @skip cas.serviceAccount
   serviceAccount:
     # Specifies whether a service account should be created
     create: true
@@ -169,101 +258,93 @@ cas:
     # If not set and create is true, a name is generated using the fullname template
     name: ""
 
-  service:
-    type: ClusterIP
-    port: 80
-    targetPort: http
-    ## Node ports to expose
-    ## @param service.web.nodePorts.http Node port for HTTP
-    ## NOTE: choose port between <30000-32767>
-    # nodePorts:
-    #   http: "30900"
-
+  ## @section CAS Networking
   serviceAPI:
+    ## @param cas.serviceAPI.type Service type
     type: ClusterIP
+    ## @param cas.serviceAPI.port Service port
     port: 80
+    ## @param cas.serviceAPI.targetPort Service target Port
     targetPort: grpc
+    ## @extra cas.serviceAPI.annotations Service annotations
     annotations:
+      ## @skip cas.serviceAPI.annotations.traefik.ingress.kubernetes.io/service.serversscheme
       traefik.ingress.kubernetes.io/service.serversscheme: h2c
-    ## Node ports to expose
-    ## @param service.web.nodePorts.http Node port for HTTP
-    ## NOTE: choose port between <30000-32767>
+
+    ## @extra cas.serviceAPI.nodePorts.http Node port for HTTP. NOTE: choose port between <30000-32767>
     # nodePorts:
     #   http: "30901"
 
-  ingressHTTP:
-    enabled: false
-    className: ""
-    annotations: {}
-      # kubernetes.io/ingress.class: nginx
-      # kubernetes.io/tls-acme: "true"
-    hosts:
-      - host: cas.dev.local
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
 
   ingressAPI:
+    ## @param cas.ingressAPI.enabled Resource enabled
     enabled: false
+    ## @param cas.ingressAPI.className IngressClass that will be be used
     className: ""
+    ## @param cas.ingressAPI.annotations Annotations
     annotations: {}
 
-    hosts:
-      - host: api.cas.dev.local
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
+    ## @param cas.ingressAPI.hosts HTTP hosts
+    # hosts:
+    #   - host: api.cas.dev.local
+    #     paths:
+    #       - path: /
+    #         pathType: ImplementationSpecific
+    hosts: []
+
+    ## @param cas.ingressAPI.tls TLS configuration ref: https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
+    ## e.g:
+    ## tls:
+    ## - hosts:
+    ##     - api.cas.dev.local
+    ##   secretName: cas.local-tls
     tls: []
-    #  - secretName: chart-example-tls
-    #    hosts:
-    #      - chart-example.local
 
+  ## @section CAS Misc
+  ## ref: https://kubernetes.io/docs/user-guide/compute-resources/
+  ## @param cas.resources.limits Container resource limits
+  ## @param cas.resources.requests Container resource requests
   resources:
-    {}
-    # We usually recommend not to specify default resources and to leave this as a conscious
-    # choice for the user. This also increases chances charts run on environments with little
-    # resources, such as Minikube. If you do want to specify resources, uncomment the following
-    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-    # limits:
-    #   cpu: 100m
-    #   memory: 128Mi
-    # requests:
-    #   cpu: 100m
-    #   memory: 128Mi
+    limits: {}
+    requests: {}
 
+  ## Deployment autoscaling
+  ## @param cas.autoscaling.enabled Enable deployment autoscaling
+  ## @param cas.autoscaling.minReplicas Minimum number of replicas
+  ## @param cas.autoscaling.maxReplicas Maximum number of replicas
+  ## @param cas.autoscaling.targetCPUUtilizationPercentage Target CPU percentage
+  ## @param cas.autoscaling.targetMemoryUtilizationPercentage Target CPU memory
   autoscaling:
     enabled: false
     minReplicas: 1
     maxReplicas: 100
     targetCPUUtilizationPercentage: 80
-    # targetMemoryUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
 
-##################################
-#          Dependencies          #   
-##################################
-
-postgresql:
-  enabled: true
-  auth:
-    username: "chainloop"
-    password: "chainlooppwd"
-    database: "chainloop-cp"
-
-##################################
-#           Development          #
-##################################
-
-# Vault server running in development mode --set development=true
-# IMPORTANT: This is not meant to run in production
-vault:
-  server:
-    dev:
-      enabled: true
-      devRootToken: "notapassword"
-
-##################################
-#           Misc Common          #
-##################################
-
-GKEMonitoring:
-  enabled: false
+# 
+# ##################################
+# #          Dependencies          #   
+# ##################################
+# 
+# postgresql:
+#   enabled: true
+#   auth:
+#     username: "chainloop"
+#     password: "chainlooppwd"
+#     database: "chainloop-cp"
+# 
+# # Vault server running in development mode --set development=true
+# # IMPORTANT: This is not meant to run in production
+# vault:
+#   server:
+#     dev:
+#       enabled: true
+#       devRootToken: "notapassword"
+# 
+# ##################################
+# #           Misc Common          #
+# ##################################
+# 
+# GKEMonitoring:
+#   enabled: false
+# 
