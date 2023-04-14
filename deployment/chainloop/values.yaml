@@ -57,7 +57,7 @@ secrets_backend:
 ## @section Authentication
 ##
 
-## ECDSA (ES512) key-pair used for Controlplane <-> CAS Authentication key-pair
+## ECDSA (ES512) key-pair used for Controlplane <-> CAS Authentication
 ## The controlplane will use the private key to generate a JWT at user request
 ## The CAS will use the public key to verify the authenticity of that token
 ## If development=true is set, a development key will be configured automatically

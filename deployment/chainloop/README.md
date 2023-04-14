@@ -6,23 +6,60 @@
 
 This chart bootstraps a [Chainloop](https://github.com/chainloop-dev/chainloop) deployment on a [Kubernetes](https://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
 
-## Prerequisites
+This chart comes in two flavors, regular and `development`.
 
-- Kubernetes 1.19+
-- Helm 3.2.0+
-- PV provisioner support in the underlying infrastructure
-- ReadWriteMany volumes for deployment scaling
+### Default deployment
+
+The default deployment 
+
+![Deployment](../../docs/img/deployment.png)
+
+This Chart includes
+
+- Chainloop [Controlplane](../../app/controlplane) 
+- Chainloop [Artifact proxy](../../app/artifact-cas) 
+- A PostgreSQL dependency. It's enabled by default but that can be disabled with `--set postgresql.enabled=false` 
+
+During installation, you'll need to provide
+
+- Open ID Connect Identity Provider (IDp) settings i.e Auth0
+- Connection settings for a secrets storage backend, either [Hashicorp Vault](https://www.vaultproject.io/) or [AWS Secret Manager](https://aws.amazon.com/secrets-manager)
+- ECDSA (ES512) key-pair used for Controlplane <-> CAS Authentication
+
+### Development deployment
+
+![Deployment](../../docs/img/deployment-dev.png)
+
+To provide an easy way to give Chainloop a try, this Helm Chart has a opt-in development mode that can be enabled with `--set development=true`
+
+> IMPORTANT: DO NOT USE THIS MODE IN PRODUCTION
+
+This mode includes
+
+- Chainloop [Controlplane](../../app/controlplane) 
+- Chainloop [Artifact proxy](../../app/artifact-cas) 
+- A PostgreSQL dependency. It's enabled by default but that can be disabled with `--set postgresql.enabled=false` 
+- **A pre-configured Hashicorp Vault instance running in development mode (unsealed, in-memory, insecure)**
+
+During installation, you'll need to provide
+
+- Open ID Connect Identity Provider (IDp) settings i.e Auth0
+- ~~Connection settings for a secrets storage backend, either [Hashicorp Vault](https://www.vaultproject.io/) or [AWS Secret Manager](https://aws.amazon.com/secrets-manager)~~
+- ~~ECDSA (ES512) key-pair used for Controlplane <-> CAS Authentication~~
 
 ## Installing the Chart
 
-TODO
+```sh
+helm install my-release .
+```
+
 
 ## Uninstalling the Chart
 
 To uninstall/delete the `my-release` deployment:
 
-```console
-helm delete my-release
+```sh
+helm uninstall my-release
 ```
 
 The command removes all the Kubernetes components associated with the chart and deletes the release.
