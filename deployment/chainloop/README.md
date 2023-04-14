@@ -6,15 +6,23 @@
 
 This chart bootstraps a [Chainloop](https://github.com/chainloop-dev/chainloop) deployment on a [Kubernetes](https://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
 
+## Prerequisites
+
+- Kubernetes 1.19+
+- Helm 3.2.0+
+- PV provisioner support in the underlying infrastructure
+- ReadWriteMany volumes for deployment scaling
+
+## Chart Flavors
 This chart comes in two flavors, regular and `development`.
 
-### Default deployment
-
-The default deployment 
+### Default
 
 ![Deployment](../../docs/img/deployment.png)
 
-This Chart includes
+The default deployment mode relies on external dependencies to be available in advance.
+
+This mode includes
 
 - Chainloop [Controlplane](../../app/controlplane) 
 - Chainloop [Artifact proxy](../../app/artifact-cas) 
@@ -26,7 +34,7 @@ During installation, you'll need to provide
 - Connection settings for a secrets storage backend, either [Hashicorp Vault](https://www.vaultproject.io/) or [AWS Secret Manager](https://aws.amazon.com/secrets-manager)
 - ECDSA (ES512) key-pair used for Controlplane <-> CAS Authentication
 
-### Development deployment
+### Development
 
 ![Deployment](../../docs/img/deployment-dev.png)
 
