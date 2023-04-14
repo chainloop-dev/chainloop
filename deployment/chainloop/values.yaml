@@ -29,29 +29,29 @@ sentry:
 ##
 
 ## Location where to store sensitive data. If development.true? and no overrides provided, the setup will connect to a development instance of Vault
-secrets_backend:
-  ## @param secrets_backend.backend Secrets backend type ("vault" or "aws_secret_manager") 
+secretsBackend:
+  ## @param secretsBackend.backend Secrets backend type ("vault" or "awsSecretManager") 
   ##
-  backend: "vault" # "aws_secret_manager"
-  ## @param secrets_backend.secret_prefix Prefix that will be pre-pended to all secrets in the storage backend
+  backend: "vault" # "awsSecretManager"
+  ## @param secretsBackend.secretPrefix Prefix that will be pre-pended to all secrets in the storage backend
   ##
-  secret_prefix: "chainloop"
+  secretPrefix: "chainloop"
 
   # Either vault or AWS secret manager enabled at the same time
-  ## @extra secrets_backend.vault.address Vault address
-  ## @extra secrets_backend.vault.token Vault authentication token
+  ## @extra secretsBackend.vault.address Vault address
+  ## @extra secretsBackend.vault.token Vault authentication token
   ##
   # vault:
   #   address: ""
   #   token: ""
 
-  ## @extra secrets_backend.aws_secret_manager.access_key AWS Access KEY ID
-  ## @extra secrets_backend.aws_secret_manager.secret_key AWS Secret Key
-  ## @extra secrets_backend.aws_secret_manager.region AWS Secret Manager Region
+  ## @extra secretsBackend.awsSecretManager.accessKey AWS Access KEY ID
+  ## @extra secretsBackend.awsSecretManager.secretKey AWS Secret Key
+  ## @extra secretsBackend.awsSecretManager.region AWS Secret Manager Region
   ##
-  # aws_secret_manager:
-  #   access_key: ""
-  #   secret_key: ""
+  # awsSecretManager:
+  #   accessKey: ""
+  #   secretKey: ""
   #   region: ""
 
 ## @section Authentication
@@ -137,15 +137,15 @@ controlplane:
     passphrase: ""
 
     ## @param controlplane.auth.oidc.url Full authentication path, it should match the issuer URL of the Identity provider (IDp)
-    ## @param controlplane.auth.oidc.client_id  OIDC IDp client_id
-    ## @param controlplane.auth.oidc.client_secret  OIDC IDp client_secret
-    ## @param controlplane.auth.redirect_url_scheme Schema that will be used during authentication
+    ## @param controlplane.auth.oidc.clientID  OIDC IDp clientID
+    ## @param controlplane.auth.oidc.clientSecret  OIDC IDp clientSecret
+    ## @param controlplane.auth.redirectURLScheme Schema that will be used during authentication
     oidc:
       url: ""
-      client_id: ""
-      client_secret: ""
+      clientID: ""
+      clientSecret: ""
     # TODO: look into automatically inference https://github.com/chainloop-dev/chainloop/issues/61
-    redirect_url_scheme: "https"
+    redirectURLScheme: "https"
  
   ## @section Control Plane Networking
   service:

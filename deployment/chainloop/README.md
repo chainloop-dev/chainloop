@@ -13,16 +13,17 @@ This chart bootstraps a [Chainloop](https://github.com/chainloop-dev/chainloop) 
 - PV provisioner support in the underlying infrastructure
 - ReadWriteMany volumes for deployment scaling
 
-## Chart Flavors
-This chart comes in two flavors, regular and `development`.
+## Installing the Chart
 
-### Default
+This chart comes in **two flavors**, `standard` and [`development`](#development).
+
+### Standard (default)
 
 ![Deployment](../../docs/img/deployment.png)
 
 The default deployment mode relies on external dependencies to be available in advance.
 
-This mode includes
+The Helm Chart in this mode includes
 
 - Chainloop [Controlplane](../../app/controlplane) 
 - Chainloop [Artifact proxy](../../app/artifact-cas) 
@@ -34,6 +35,65 @@ During installation, you'll need to provide
 - Connection settings for a secrets storage backend, either [Hashicorp Vault](https://www.vaultproject.io/) or [AWS Secret Manager](https://aws.amazon.com/secrets-manager)
 - ECDSA (ES512) key-pair used for Controlplane <-> CAS Authentication
 
+You can generate the ECDSA key-pair by running
+
+```sh
+# Private Key (private.ec.key)
+openssl ecparam -name secp521r1 -genkey -noout -out private.ec.key
+# Public Key (public.pem)
+openssl ec -in private.ec.key -pubout -out public.pem
+```
+
+#### Examples
+
+Bundled PostgreSQL, external OIDC IDp and Vault secret backend
+
+
+```sh
+helm install [RELEASE_NAME] . \
+    # Open ID Connect (OIDC), i.e Auth0
+    --set controlplane.auth.oidc.url=[OIDC URL] \
+    --set controlplane.auth.oidc.clientID=[clientID] \
+    --set controlplane.auth.oidc.clientSecret=[clientSecret] \
+    # Secrets backend
+    --set secretsBackend.vault.address="https://[vault address]:8200" \
+    --set secretsBackend.vault.token=[token] \
+    # Server Auth KeyPair
+	--set casJWTPrivateKey="$(cat private.ec.key)" \
+	--set casJWTPublicKey="$(cat public.pem)"
+```
+
+Using AWS secret manager instead of Vault
+
+```sh
+helm install [RELEASE_NAME] . \
+    # Open ID Connect (OIDC)
+    # ...
+    # Secrets backend
+    --set secretsBackend.awsSecretManager.accessKey=[AWS ACCESS KEY ID] \
+    --set secretsBackend.awsSecretManager.secretKey=[AWS SECRET KEY] \
+    --set secretsBackend.awsSecretManager.region=[AWS region]\
+    # Server Auth KeyPair
+    # ...
+```
+Connect to an external PostgreSQL instance instead
+
+```sh
+helm install [RELEASE_NAME] . \
+    # Open ID Connect (OIDC)
+    # ...
+    # Secrets backend
+    # ...
+    # Server Auth KeyPair
+    # ...
+    # External DB setup
+    --set postgresql.enabled=false \
+    --set controlplane.externalDatabase.host=[DB_HOST] \
+    --set controlplane.externalDatabase.user=[DB_USER] \
+    --set controlplane.externalDatabase.password=[DB_PASSWORD] \
+    --set controlplane.externalDatabase.database=[DB_NAME]
+```
+
 ### Development
 
 ![Deployment](../../docs/img/deployment-dev.png)
@@ -42,7 +102,7 @@ To provide an easy way to give Chainloop a try, this Helm Chart has a opt-in dev
 
 > IMPORTANT: DO NOT USE THIS MODE IN PRODUCTION
 
-This mode includes
+The Helm Chart in this mode includes
 
 - Chainloop [Controlplane](../../app/controlplane) 
 - Chainloop [Artifact proxy](../../app/artifact-cas) 
@@ -55,22 +115,17 @@ During installation, you'll need to provide
 - ~~Connection settings for a secrets storage backend, either [Hashicorp Vault](https://www.vaultproject.io/) or [AWS Secret Manager](https://aws.amazon.com/secrets-manager)~~
 - ~~ECDSA (ES512) key-pair used for Controlplane <-> CAS Authentication~~
 
-## Installing the Chart
+#### Examples
+
+Deploy by leveraging built-in Vault and PostgreSQL instances
 
 ```sh
-helm install my-release .
+helm install [RELEASE_NAME] . \
+    --set development=true \
+    --set controlplane.auth.oidc.url=[OIDC URL] \
+    --set controlplane.auth.oidc.clientID=[clientID] \
+    --set controlplane.auth.oidc.clientSecret=[clientSecret]
 ```
-
-
-## Uninstalling the Chart
-
-To uninstall/delete the `my-release` deployment:
-
-```sh
-helm uninstall my-release
-```
-
-The command removes all the Kubernetes components associated with the chart and deletes the release.
 
 ## Parameters
 
@@ -87,15 +142,15 @@ The command removes all the Kubernetes components associated with the chart and 
 
 ### Secrets Backend
 
-| Name                                            | Description                                                          | Value       |
-| ----------------------------------------------- | -------------------------------------------------------------------- | ----------- |
-| `secrets_backend.backend`                       | Secrets backend type ("vault" or "aws_secret_manager")               | `vault`     |
-| `secrets_backend.secret_prefix`                 | Prefix that will be pre-pended to all secrets in the storage backend | `chainloop` |
-| `secrets_backend.vault.address`                 | Vault address                                                        |             |
-| `secrets_backend.vault.token`                   | Vault authentication token                                           |             |
-| `secrets_backend.aws_secret_manager.access_key` | AWS Access KEY ID                                                    |             |
-| `secrets_backend.aws_secret_manager.secret_key` | AWS Secret Key                                                       |             |
-| `secrets_backend.aws_secret_manager.region`     | AWS Secret Manager Region                                            |             |
+| Name                                        | Description                                                          | Value       |
+| ------------------------------------------- | -------------------------------------------------------------------- | ----------- |
+| `secretsBackend.backend`                    | Secrets backend type ("vault" or "awsSecretManager")                 | `vault`     |
+| `secretsBackend.secretPrefix`              | Prefix that will be pre-pended to all secrets in the storage backend | `chainloop` |
+| `secretsBackend.vault.address`              | Vault address                                                        |             |
+| `secretsBackend.vault.token`                | Vault authentication token                                           |             |
+| `secretsBackend.awsSecretManager.accessKey` | AWS Access KEY ID                                                    |             |
+| `secretsBackend.awsSecretManager.secretKey` | AWS Secret Key                                                       |             |
+| `secretsBackend.awsSecretManager.region`    | AWS Secret Manager Region                                            |             |
 
 ### Authentication
 
@@ -132,9 +187,9 @@ The command removes all the Kubernetes components associated with the chart and 
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------ | ------- |
 | `controlplane.auth.passphrase`          | Passphrase used to sign the Auth Tokens generated by the controlplane. Leave empty for auto-generation | `""`    |
 | `controlplane.auth.oidc.url`            | Full authentication path, it should match the issuer URL of the Identity provider (IDp)                | `""`    |
-| `controlplane.auth.oidc.client_id`      | OIDC IDp client_id                                                                                     | `""`    |
-| `controlplane.auth.oidc.client_secret`  | OIDC IDp client_secret                                                                                 | `""`    |
-| `controlplane.auth.redirect_url_scheme` | Schema that will be used during authentication                                                         | `https` |
+| `controlplane.auth.oidc.clientID`       | OIDC IDp clientID                                                                                      | `""`    |
+| `controlplane.auth.oidc.clientSecret`   | OIDC IDp clientSecret                                                                                  | `""`    |
+| `controlplane.auth.redirectURLScheme` | Schema that will be used during authentication                                                         | `https` |
 
 ### Control Plane Networking
 

@@ -58,10 +58,10 @@ WBiBSPaJtz6JYk/fye4=
 {{- end -}}
 
 {{- define "chainloop.credentials_service_settings" -}}
-{{- with .Values.secrets_backend }}
+{{- with .Values.secretsBackend }}
 {{- if eq .backend "vault" }}
 vault:
-  secret_prefix: {{ required "secret prefix required" .secret_prefix | quote }}
+  secretPrefix: {{ required "secret prefix required" .secretPrefix | quote }}
   {{- if and $.Values.development (or (not .vault) not .vault.address) }}
   address: {{ printf "http://%s:8200" (include "chainloop.vault.fullname" $) | quote }}
   token: {{ $.Values.vault.server.dev.devRootToken | quote }}
@@ -70,13 +70,13 @@ vault:
   token: {{ required "vault token required" .vault.token | quote }}
   {{- end }}
 
-{{- else if eq .backend "aws_secret_manager" }}
-aws_secret_manager:
-  secret_prefix: {{ required "secret prefix required" .secret_prefix | quote }}
-  region: {{ required "region required" .aws_secret_manager.region | quote }}
+{{- else if eq .backend "awsSecretManager" }}
+awsSecretManager:
+  secretPrefix: {{ required "secret prefix required" .secretPrefix | quote }}
+  region: {{ required "region required" .awsSecretManager.region | quote }}
   creds:
-    access_key: {{ required "access key required" .aws_secret_manager.access_key | quote }}
-    secret_key: {{ required "secret key required" .aws_secret_manager.secret_key | quote }}
+    accessKey: {{ required "access key required" .awsSecretManager.accessKey | quote }}
+    secretKey: {{ required "secret key required" .awsSecretManager.secretKey | quote }}
 {{- end }}
 {{- end }}
 {{- end -}}
