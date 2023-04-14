@@ -2,8 +2,8 @@ name: Test
 
 on:
   push:
-    branches:
-      - main
+  # branches:
+  #   - main
   # pull_request:
   # We want to call this workflow during release too
   workflow_call:
