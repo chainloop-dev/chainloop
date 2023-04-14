@@ -45,3 +45,6 @@ dist/
 */*/*/secret.yaml
 
 gha-creds-*.json
+
+deployment/chainloop/charts/
+values.local.yaml
