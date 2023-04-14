@@ -24,6 +24,7 @@ jobs:
         with:
           commit-message: Bump Chart Version ${VERSION}
           signoff: true
+          base: main
           title: 'Bump Chart Version'
           body: |
             New Chart Version ${VERSION}
