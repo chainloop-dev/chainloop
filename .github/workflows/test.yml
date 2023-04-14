@@ -1,15 +1,9 @@
 name: Test
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: "Controlplane and Artifact CAS version to deploy i.e v0.0.1"
-        required: true
-        type: string
-  # push:
-  #   branches:
-  #     - main
+  push:
+    branches:
+      - main
   # pull_request:
   # We want to call this workflow during release too
   workflow_call:
@@ -18,7 +12,7 @@ jobs:
   createPullRequest:
     runs-on: ubuntu-latest
     env:
-      VERSION: ${{ inputs.version }}
+      VERSION: v1.1.0
     steps:
       - uses: actions/checkout@v3
 
@@ -30,7 +24,6 @@ jobs:
         with:
           commit-message: Bump Chart Version ${VERSION}
           signoff: true
-          base: main
           title: 'Bump Chart Version'
           body: |
             New Chart Version ${VERSION}
