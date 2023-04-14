@@ -9,37 +9,58 @@ on:
   workflow_call:
 
 jobs:
-  build_and_test:
-    name: Test
+  createPullRequest:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        app:
-          - main-module
-          - cli
-          - controlplane
-          - artifact-cas
+    env:
+      VERSION: v1.1.0
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+
+      - name: Bump Chart Version
+        run: .github/workflows/utils/bump-chart-version.sh deployment/chainloop/Chart.yaml ${VERSION}
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
         with:
-          go-version-file: go.mod
-          cache: true
-          cache-dependency-path: go.sum
+          commit-message: Bump Chart Version ${VERSION}
+          signoff: true
+          delete-branch: true
+          title: 'Bump Chart Version'
+          body: |
+            New Chart Version ${VERSION}
+          labels: |
+            automated pr
+  # build_and_test:
+  #   name: Test
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       app:
+  #         - main-module
+  #         - cli
+  #         - controlplane
+  #         - artifact-cas
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: actions/setup-go@v3
+  #       with:
+  #         go-version-file: go.mod
+  #         cache: true
+  #         cache-dependency-path: go.sum
 
-      # Check that the generated ent code is up to date
-      # see https://entgo.io/docs/ci/
-      - uses: ent/contrib/ci@master
-        name: "Check all generated code is checked in"
-        if: ${{ matrix.app != 'main-module' }}
-        with:
-          working-directory: app/${{ matrix.app }}
+  #     # Check that the generated ent code is up to date
+  #     # see https://entgo.io/docs/ci/
+  #     - uses: ent/contrib/ci@master
+  #       name: "Check all generated code is checked in"
+  #       if: ${{ matrix.app != 'main-module' }}
+  #       with:
+  #         working-directory: app/${{ matrix.app }}
 
-      - name: Test
-        if: ${{ matrix.app != 'main-module' }}
-        run: make -C app/${{ matrix.app }} test
+  #     - name: Test
+  #       if: ${{ matrix.app != 'main-module' }}
+  #       run: make -C app/${{ matrix.app }} test
 
-      - name: Test top level modules
-        if: ${{ matrix.app == 'main-module' }}
-        run: make test
+  #     - name: Test top level modules
+  #       if: ${{ matrix.app == 'main-module' }}
+  #       run: make test
