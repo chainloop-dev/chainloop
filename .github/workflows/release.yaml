@@ -17,6 +17,7 @@ jobs:
     permissions:
       contents: write # required for goreleaser to upload the release assets
       packages: write # to push container images
+      pull-request: write
     env:
       CHAINLOOP_VERSION: 0.8.92
       CHAINLOOP_ROBOT_ACCOUNT: ${{ secrets.CHAINLOOP_ROBOT_ACCOUNT }}
