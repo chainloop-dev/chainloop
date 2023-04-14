@@ -13,11 +13,11 @@ This chart bootstraps a [Chainloop](https://github.com/chainloop-dev/chainloop) 
 - PV provisioner support in the underlying infrastructure
 - ReadWriteMany volumes for deployment scaling
 
-## TLDR;
+## TL;DR
 
 Deploy Chainloop in [development mode](#development) by running
 
-```sh
+```console
 helm install [RELEASE_NAME] . \
     --set development=true \
     --set controlplane.auth.oidc.url=[OIDC URL] \
@@ -49,7 +49,7 @@ During installation, you'll need to provide
 
 You can generate the ECDSA key-pair by running
 
-```sh
+```console
 # Private Key (private.ec.key)
 openssl ecparam -name secp521r1 -genkey -noout -out private.ec.key
 # Public Key (public.pem)
@@ -60,7 +60,7 @@ openssl ec -in private.ec.key -pubout -out public.pem
 
 Deploy Chainloop configured to talk to the bundled PostgreSQL an external OIDC IDp and a Vault instance.
 
-```sh
+```console
 helm install [RELEASE_NAME] . \
     # Open ID Connect (OIDC)
     --set controlplane.auth.oidc.url=[OIDC URL] \
@@ -76,7 +76,7 @@ helm install [RELEASE_NAME] . \
 
 Deploy using AWS secret manager instead of Vault
 
-```sh
+```console
 helm install [RELEASE_NAME] . \
     # Open ID Connect (OIDC)
     # ...
@@ -90,7 +90,7 @@ helm install [RELEASE_NAME] . \
 
 Connect to an external PostgreSQL database instead
 
-```sh
+```console
 helm install [RELEASE_NAME] . \
     # Open ID Connect (OIDC)
     # ...
@@ -131,7 +131,7 @@ During installation, you'll need to provide
 
 Deploy by leveraging built-in Vault and PostgreSQL instances
 
-```sh
+```console
 helm install [RELEASE_NAME] . \
     --set development=true \
     --set controlplane.auth.oidc.url=[OIDC URL] \

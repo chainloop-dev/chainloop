@@ -17,6 +17,7 @@ jobs:
     permissions:
       contents: write # required for goreleaser to upload the release assets
       packages: write # to push container images
+      pull-requests: write
     env:
       CHAINLOOP_VERSION: 0.8.92
       CHAINLOOP_ROBOT_ACCOUNT: ${{ secrets.CHAINLOOP_ROBOT_ACCOUNT }}
@@ -112,6 +113,22 @@ jobs:
         env:
           CHAINLOOP_SIGNING_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
           CHAINLOOP_SIGNING_KEY: ${{ secrets.COSIGN_KEY }}
+
+      - name: Bump Chart Version
+        run: .github/workflows/utils/bump-chart-version.sh deployment/chainloop/Chart.yaml ${{ github.ref_name }}
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          commit-message: Bump Chart Version ${{ github.ref_name }}
+          signoff: true
+          base: main
+          title: Bump Helm Chart Version => ${{ github.ref_name }}
+          body: |
+            A new Chainloop release is available! Bumping Helm Chart reference to ${{ github.ref_name }}
+          labels: |
+            automated
+            helm
 
       - name: Mark attestation as failed
         if: ${{ failure() }}
