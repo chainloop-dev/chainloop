@@ -74,6 +74,13 @@ func newAttestationAddCmd() *cobra.Command {
 
 			return nil
 		},
+		PostRunE: func(cmd *cobra.Command, args []string) error {
+			if artifactCASConn != nil {
+				return artifactCASConn.Close()
+			}
+
+			return nil
+		},
 	}
 
 	cmd.Flags().StringVar(&name, "name", "", "name of the material to be recorded")

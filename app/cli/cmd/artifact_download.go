@@ -49,6 +49,13 @@ func newArtifactDownloadCmd() *cobra.Command {
 
 			return action.NewArtifactDownload(opts).Run(downloadPath, digest)
 		},
+		PostRunE: func(cmd *cobra.Command, args []string) error {
+			if artifactCASConn != nil {
+				return artifactCASConn.Close()
+			}
+
+			return nil
+		},
 	}
 
 	cmd.Flags().StringVarP(&digest, "digest", "d", "", "digest of the file to download")
