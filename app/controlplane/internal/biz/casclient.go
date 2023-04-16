@@ -52,7 +52,8 @@ type CASClient interface {
 	CASDownloader
 }
 
-type CASClientFactory func(conf *conf.Bootstrap_CASServer, token string) (casclient.DownloaderUploader, error)
+// Function that returns a CAS client including a connection closer method
+type CASClientFactory func(conf *conf.Bootstrap_CASServer, token string) (casclient.DownloaderUploader, func() error, error)
 type CASClientOpts func(u *CASClientUseCase)
 
 func WithClientFactory(f CASClientFactory) CASClientOpts {
@@ -63,13 +64,13 @@ func WithClientFactory(f CASClientFactory) CASClientOpts {
 
 func NewCASClientUseCase(credsProvider *CASCredentialsUseCase, config *conf.Bootstrap_CASServer, l log.Logger, opts ...CASClientOpts) *CASClientUseCase {
 	// generate a client from the given configuration
-	defaultCasClientFactory := func(conf *conf.Bootstrap_CASServer, token string) (casclient.DownloaderUploader, error) {
+	defaultCasClientFactory := func(conf *conf.Bootstrap_CASServer, token string) (casclient.DownloaderUploader, func() error, error) {
 		conn, err := grpcconn.New(conf.GetGrpc().GetAddr(), token, conf.GetInsecure())
 		if err != nil {
-			return nil, fmt.Errorf("failed to create grpc connection: %w", err)
+			return nil, nil, fmt.Errorf("failed to create grpc connection: %w", err)
 		}
 
-		return casclient.New(conn), nil
+		return casclient.New(conn), conn.Close, err
 	}
 
 	uc := &CASClientUseCase{
@@ -91,10 +92,11 @@ func (uc *CASClientUseCase) Upload(ctx context.Context, secretID string, content
 	uc.logger.Infow("msg", "upload initialized", "filename", filename, "digest", digest)
 
 	// client with temporary set of credentials
-	client, err := uc.casAPIClient(secretID, casJWT.Uploader)
+	client, closeFn, err := uc.casAPIClient(secretID, casJWT.Uploader)
 	if err != nil {
 		return fmt.Errorf("failed to create cas client: %w", err)
 	}
+	defer closeFn()
 
 	status, err := client.Upload(ctx, content, filename, digest)
 	if err != nil {
@@ -109,10 +111,11 @@ func (uc *CASClientUseCase) Upload(ctx context.Context, secretID string, content
 func (uc *CASClientUseCase) Download(ctx context.Context, secretID string, w io.Writer, digest string) error {
 	uc.logger.Infow("msg", "download initialized", "digest", digest)
 
-	client, err := uc.casAPIClient(secretID, casJWT.Downloader)
+	client, closeFn, err := uc.casAPIClient(secretID, casJWT.Downloader)
 	if err != nil {
 		return fmt.Errorf("failed to create cas client: %w", err)
 	}
+	defer closeFn()
 
 	if err := client.Download(ctx, w, digest); err != nil {
 		return fmt.Errorf("failed to download content: %w", err)
@@ -124,10 +127,10 @@ func (uc *CASClientUseCase) Download(ctx context.Context, secretID string, w io.
 }
 
 // create a client with a temporary set of credentials for a specific operation
-func (uc *CASClientUseCase) casAPIClient(secretID string, role casJWT.Role) (casclient.DownloaderUploader, error) {
+func (uc *CASClientUseCase) casAPIClient(secretID string, role casJWT.Role) (casclient.DownloaderUploader, func() error, error) {
 	token, err := uc.credsProvider.GenerateTemporaryCredentials(secretID, role)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate temporary credentials: %w", err)
+		return nil, nil, fmt.Errorf("failed to generate temporary credentials: %w", err)
 	}
 
 	// Initialize connection to CAS server
@@ -145,10 +148,11 @@ func (uc *CASClientUseCase) IsReady(ctx context.Context) (bool, error) {
 		return false, fmt.Errorf("invalid CAS client configuration: %w", err)
 	}
 
-	c, err := uc.casClientFactory(uc.casServerConf, "")
+	c, closeFn, err := uc.casClientFactory(uc.casServerConf, "")
 	if err != nil {
 		return false, fmt.Errorf("failed to create CAS client: %w", err)
 	}
+	defer closeFn()
 
 	return c.IsReady(ctx)
 }
