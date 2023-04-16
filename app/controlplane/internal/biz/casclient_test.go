@@ -65,10 +65,10 @@ func TestIsReady(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			clientProvider := func(conf *conf.Bootstrap_CASServer, token string) (casclient.DownloaderUploader, func() error, error) {
+			clientProvider := func(conf *conf.Bootstrap_CASServer, token string) (casclient.DownloaderUploader, func(), error) {
 				c := mocks.NewDownloaderUploader(t)
 				c.On("IsReady", mock.Anything).Return(tc.casReady, nil)
-				return c, func() error { return nil }, nil
+				return c, func() {}, nil
 			}
 			uc := biz.NewCASClientUseCase(nil, tc.config, nil, biz.WithClientFactory(clientProvider))
 

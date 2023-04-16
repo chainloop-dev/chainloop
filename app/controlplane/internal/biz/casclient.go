@@ -53,7 +53,7 @@ type CASClient interface {
 }
 
 // Function that returns a CAS client including a connection closer method
-type CASClientFactory func(conf *conf.Bootstrap_CASServer, token string) (casclient.DownloaderUploader, func() error, error)
+type CASClientFactory func(conf *conf.Bootstrap_CASServer, token string) (casclient.DownloaderUploader, func(), error)
 type CASClientOpts func(u *CASClientUseCase)
 
 func WithClientFactory(f CASClientFactory) CASClientOpts {
@@ -63,20 +63,29 @@ func WithClientFactory(f CASClientFactory) CASClientOpts {
 }
 
 func NewCASClientUseCase(credsProvider *CASCredentialsUseCase, config *conf.Bootstrap_CASServer, l log.Logger, opts ...CASClientOpts) *CASClientUseCase {
+	helper := servicelogger.ScopedHelper(l, "biz/cas-client")
+
 	// generate a client from the given configuration
-	defaultCasClientFactory := func(conf *conf.Bootstrap_CASServer, token string) (casclient.DownloaderUploader, func() error, error) {
+	defaultCasClientFactory := func(conf *conf.Bootstrap_CASServer, token string) (casclient.DownloaderUploader, func(), error) {
 		conn, err := grpcconn.New(conf.GetGrpc().GetAddr(), token, conf.GetInsecure())
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to create grpc connection: %w", err)
 		}
 
-		return casclient.New(conn), conn.Close, err
+		closerFn := func() {
+			err := conn.Close()
+			if err != nil {
+				helper.Error(err)
+			}
+		}
+
+		return casclient.New(conn), closerFn, err
 	}
 
 	uc := &CASClientUseCase{
 		credsProvider:    credsProvider,
 		casServerConf:    config,
-		logger:           servicelogger.ScopedHelper(l, "biz/cas-client"),
+		logger:           helper,
 		casClientFactory: defaultCasClientFactory,
 	}
 
@@ -127,7 +136,7 @@ func (uc *CASClientUseCase) Download(ctx context.Context, secretID string, w io.
 }
 
 // create a client with a temporary set of credentials for a specific operation
-func (uc *CASClientUseCase) casAPIClient(secretID string, role casJWT.Role) (casclient.DownloaderUploader, func() error, error) {
+func (uc *CASClientUseCase) casAPIClient(secretID string, role casJWT.Role) (casclient.DownloaderUploader, func(), error) {
 	token, err := uc.credsProvider.GenerateTemporaryCredentials(secretID, role)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to generate temporary credentials: %w", err)
