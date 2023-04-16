@@ -49,6 +49,13 @@ func newArtifactUploadCmd() *cobra.Command {
 			_, err := action.NewArtifactUpload(opts).Run(filePath)
 			return err
 		},
+		PostRunE: func(cmd *cobra.Command, args []string) error {
+			if artifactCASConn != nil {
+				return artifactCASConn.Close()
+			}
+
+			return nil
+		},
 	}
 
 	cmd.Flags().StringVarP(&filePath, "file", "f", "", "path to file to upload")
