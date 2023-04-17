@@ -10,6 +10,7 @@ jobs:
     name: Package and push Helm Chart
     runs-on: ubuntu-latest
     permissions:
+      contents: write
       packages: write
     steps:
       - name: Docker login to Github Packages
@@ -21,6 +22,8 @@ jobs:
 
       - name: Install Helm
         uses: azure/setup-helm@v3
+
+      - uses: actions/checkout@v3
 
       - name: Package Chart
         run: helm package deployment/chainloop/
