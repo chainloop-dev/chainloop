@@ -26,6 +26,8 @@ semVer="$(echo ${2} | sed -e 's/^v\(.*\)/\1/')"
 # AppVersion includes a v prefix
 sed -i "s#^appVersion:.*#appVersion: v${semVer}#g" "${chart_yaml}"
 
-# Bump chart version patch segment
-chartVersion=$(cat ${chart_yaml} | awk -F'[ .]' '/^version:/ {print $2"."$3"."$4+1}')
+# Bump chart version MINOR and reset PATCH segment
+# A new release means a bump in the minor segment of the Chart and a reset of the patch one
+# i.e 1.0.2 => 1.1.0
+chartVersion=$(cat ${chart_yaml} | awk -F'[ .]' '/^version:/ {print $2"."$3+1"."0}')
 sed -i "s#^version:.*#version: ${chartVersion}#g" "${chart_yaml}"
