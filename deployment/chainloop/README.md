@@ -18,7 +18,7 @@ This chart bootstraps a [Chainloop](https://github.com/chainloop-dev/chainloop) 
 Deploy Chainloop in [development mode](#development) by running
 
 ```console
-helm install [RELEASE_NAME] . \
+helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
     --set development=true \
     --set controlplane.auth.oidc.url=[OIDC URL] \
     --set controlplane.auth.oidc.clientID=[clientID] \
@@ -61,7 +61,7 @@ openssl ec -in private.ec.key -pubout -out public.pem
 Deploy Chainloop configured to talk to the bundled PostgreSQL an external OIDC IDp and a Vault instance.
 
 ```console
-helm install [RELEASE_NAME] . \
+helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
     # Open ID Connect (OIDC)
     --set controlplane.auth.oidc.url=[OIDC URL] \
     --set controlplane.auth.oidc.clientID=[clientID] \
@@ -77,7 +77,7 @@ helm install [RELEASE_NAME] . \
 Deploy using AWS secret manager instead of Vault
 
 ```console
-helm install [RELEASE_NAME] . \
+helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
     # Open ID Connect (OIDC)
     # ...
     # Secrets backend
@@ -91,7 +91,7 @@ helm install [RELEASE_NAME] . \
 Connect to an external PostgreSQL database instead
 
 ```console
-helm install [RELEASE_NAME] . \
+helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
     # Open ID Connect (OIDC)
     # ...
     # Secrets backend
@@ -132,7 +132,7 @@ During installation, you'll need to provide
 Deploy by leveraging built-in Vault and PostgreSQL instances
 
 ```console
-helm install [RELEASE_NAME] . \
+helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
     --set development=true \
     --set controlplane.auth.oidc.url=[OIDC URL] \
     --set controlplane.auth.oidc.clientID=[clientID] \
