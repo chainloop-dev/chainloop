@@ -384,8 +384,6 @@ controlplane:
   resources:
     # GKE auto-pilot min
     # https://cloud.google.com/kubernetes-engine/docs/concepts/autopilot-resource-requests#min-max-requests
-    cpu: 250m
-    memory: 512Mi
     requests:
       cpu: 250m
       memory: 512Mi
@@ -557,8 +555,6 @@ cas:
   resources:
     # GKE auto-pilot min
     # https://cloud.google.com/kubernetes-engine/docs/concepts/autopilot-resource-requests#min-max-requests
-    cpu: 250m
-    memory: 512Mi
     requests:
       cpu: 250m
       memory: 512Mi
