@@ -382,8 +382,16 @@ controlplane:
   ## @param controlplane.resources.limits Container resource limits
   ## @param controlplane.resources.requests Container resource requests
   resources:
-    limits: {}
-    requests: {}
+    # GKE auto-pilot min
+    # https://cloud.google.com/kubernetes-engine/docs/concepts/autopilot-resource-requests#min-max-requests
+    cpu: 250m
+    memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 250m
+      memory: 512Mi
 
   ## Deployment autoscaling
   ## @param controlplane.autoscaling.enabled Enable deployment autoscaling
@@ -547,8 +555,16 @@ cas:
   ## @param cas.resources.limits Container resource limits
   ## @param cas.resources.requests Container resource requests
   resources:
-    limits: {}
-    requests: {}
+    # GKE auto-pilot min
+    # https://cloud.google.com/kubernetes-engine/docs/concepts/autopilot-resource-requests#min-max-requests
+    cpu: 250m
+    memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 250m
+      memory: 512Mi
 
   ## Deployment autoscaling
   ## @param cas.autoscaling.enabled Enable deployment autoscaling
