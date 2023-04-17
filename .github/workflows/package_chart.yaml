@@ -1,16 +1,17 @@
 name: Package Helm Chart
 
 on:
-  pull_request:
+  # Only push Helm Chart if the deployment templates have changed
   push:
-    # branch: main
+    branch: main
+    paths:
+      - deployment/chainloop/**
 
 jobs:
   package:
     name: Package and push Helm Chart
     runs-on: ubuntu-latest
     permissions:
-      contents: write
       packages: write
     steps:
       - name: Docker login to Github Packages
