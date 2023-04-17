@@ -21,8 +21,6 @@ jobs:
 
       - name: Install Helm
         uses: azure/setup-helm@v3
-        with:
-          version: 3.*
 
       - name: Package Chart
         run: helm package deployment/chainloop/
