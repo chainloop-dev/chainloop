@@ -1,0 +1,37 @@
+name: Package Helm Chart
+
+on:
+  # Only push Helm Chart if the deployment templates have changed
+  push:
+    branch: main
+    paths:
+      - deployment/chainloop/**
+
+jobs:
+  package:
+    name: Package and push Helm Chart
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Docker login to Github Packages
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+
+      - uses: actions/checkout@v3
+
+      - name: Package Chart
+        run: helm package deployment/chainloop/
+
+      - name: Push Chart
+        run: |
+          for pkg in chainloop*.tgz; do
+            helm push ${pkg} oci://ghcr.io/chainloop-dev/charts
+          done
+        
