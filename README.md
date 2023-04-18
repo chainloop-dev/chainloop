@@ -10,7 +10,7 @@
 
 ## What is it?
 
-Chainloop is an open source software supply chain control plane, a single source of truth for artifacts plus a declarative attestation process.
+Chainloop is an open-source software supply chain control plane, a single source of truth for artifacts plus a declarative attestation process.
 
 With Chainloop, SecOps teams can declaratively state the attestation and artifacts expectations for their organization’s CI/CD workflows, while also resting assured that the latest standards and best practices are put in place.
 
@@ -20,7 +20,7 @@ To learn more about the project motivation please look at [this blog post](https
 
 ## Getting started
 
-See the [getting started guide](https://docs.chainloop.dev/getting-started/installation#command-line-interface-cli-installation) for detailed information on downloading and configuring the Chainloop Command Line Interface (CLI)
+See the [getting started guide](https://docs.chainloop.dev/getting-started/installation#command-line-interface-cli-installation) for detailed information on a) how to download and configure the Chainloop CLI and b) how to deploy Chainloop on your Kubernetes Cluster.
 
 ### Command Line Interface (CLI) installation
 
@@ -50,9 +50,13 @@ if [`cosign`](https://docs.sigstore.dev/cosign) is present in your system, in ad
 curl -sfL https://raw.githubusercontent.com/chainloop-dev/docs/4a45f6ffa12bf3cc1d81fd9aa47e3cb17a499b0d/static/install.sh | bash -s -- --force-verification
 ```
 
-### Configure CLI (optional)
+### Deploy Chainloop (optional)
 
-By default, Chainloop CLI points to a [running instance of Chainloop](https://docs.chainloop.dev/chainloop-cloud).
+Downloading the CLI is everything you need to give Chainloop a try, since, by default, it points to a [running instance of Chainloop](https://docs.chainloop.dev/chainloop-cloud).
+
+You can also **run your own Chainloop instance** on your Kubernetes cluster by leveraging [this Helm Chart](./deployment/chainloop/).
+
+### Configure CLI (optional)
 
 If you are running your [own instance](https://github.com/chainloop-dev/chainloop) of the Control Plane. You can make the CLI point to your instance by using the `chainloop config save` command.
 
