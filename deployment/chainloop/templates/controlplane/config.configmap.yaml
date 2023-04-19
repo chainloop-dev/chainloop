@@ -18,7 +18,7 @@ data:
       http:
         addr: 0.0.0.0:8000
         timeout: 1s
-        external_addr: {{ include "chainloop.controlplane.external_url" . }}
+        external_url: {{ include "chainloop.controlplane.external_url" . }}
       http_metrics:
         addr: 0.0.0.0:5000
       grpc:
