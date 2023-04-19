@@ -139,13 +139,10 @@ controlplane:
     ## @param controlplane.auth.oidc.url Full authentication path, it should match the issuer URL of the Identity provider (IDp)
     ## @param controlplane.auth.oidc.clientID  OIDC IDp clientID
     ## @param controlplane.auth.oidc.clientSecret  OIDC IDp clientSecret
-    ## @param controlplane.auth.redirectURLScheme Schema that will be used during authentication
     oidc:
       url: ""
       clientID: ""
       clientSecret: ""
-    # TODO: look into automatically inference https://github.com/chainloop-dev/chainloop/issues/61
-    redirectURLScheme: "https"
  
   ## @section Control Plane Networking
   service:
@@ -379,8 +376,10 @@ controlplane:
   ## @section Controlplane Misc
 
   ## ref: https://kubernetes.io/docs/user-guide/compute-resources/
-  ## @param controlplane.resources.limits Container resource limits
-  ## @param controlplane.resources.requests Container resource requests
+  ## @param controlplane.resources.limits.cpu Container resource limits CPU
+  ## @param controlplane.resources.limits.memory Container resource limits memory
+  ## @param controlplane.resources.requests.cpu Container resource requests CPU
+  ## @param controlplane.resources.requests.memory Container resource requests memory
   resources:
     # GKE auto-pilot min
     # https://cloud.google.com/kubernetes-engine/docs/concepts/autopilot-resource-requests#min-max-requests
@@ -550,8 +549,10 @@ cas:
 
   ## @section CAS Misc
   ## ref: https://kubernetes.io/docs/user-guide/compute-resources/
-  ## @param cas.resources.limits Container resource limits
-  ## @param cas.resources.requests Container resource requests
+  ## @param cas.resources.limits.cpu Container resource limits CPU
+  ## @param cas.resources.limits.memory Container resource limits memory
+  ## @param cas.resources.requests.cpu Container resource requests CPU
+  ## @param cas.resources.requests.memory Container resource requests memory
   resources:
     # GKE auto-pilot min
     # https://cloud.google.com/kubernetes-engine/docs/concepts/autopilot-resource-requests#min-max-requests
