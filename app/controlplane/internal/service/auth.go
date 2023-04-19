@@ -70,7 +70,11 @@ func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC
 	}
 
 	// Craft Auth related endpoints
-	authURLs := getAuthURLs(oidcConfig.RedirectUrlScheme, serverConfig)
+	authURLs, err := getAuthURLs(oidcConfig.RedirectUrlScheme, serverConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get auth URLs: %w", err)
+	}
+
 	authInst, err := authenticator.NewOIDC(oidcConfig.Domain, oidcConfig.ClientId, oidcConfig.ClientSecret, authURLs.callback)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create OIDC authenticator: %w", err)
@@ -91,14 +95,42 @@ type AuthURLs struct {
 	Login, callback string
 }
 
-func getAuthURLs(urlScheme string, serverConfig *conf.Server) *AuthURLs {
+// urlScheme is deprecated, now it will be inferred from the serverConfig externalURL
+func getAuthURLs(urlScheme string, serverConfig *conf.Server) (*AuthURLs, error) {
 	host := serverConfig.Http.Addr
-	if ea := serverConfig.Http.ExternalAddr; ea != "" {
-		host = ea
+
+	// New mode using FQDN ExternalURL
+	httpServerConfig := serverConfig.GetHttp()
+	if ea := httpServerConfig.GetExternalUrl(); ea != "" {
+		// x must be a valid absolute URI (via RFC 3986)
+		if err := httpServerConfig.Validate(); err != nil {
+			return nil, fmt.Errorf("validation error: %w", err)
+		}
+
+		url, err := url.Parse(ea)
+		if err != nil {
+			return nil, fmt.Errorf("parsing external address %s: %w", ea, err)
+		}
+
+		return craftAuthURLs(url.Scheme, url.Host, url.Path), nil
 	}
 
-	login := url.URL{Scheme: urlScheme, Host: host, Path: AuthLoginPath}
-	callback := url.URL{Scheme: urlScheme, Host: host, Path: AuthCallbackPath}
+	// DEPRECATED mode, using externalAddr and the provided urlScheme
+	if ea := serverConfig.Http.ExternalAddr; ea != "" { //nolint:all, I know its deprecated but we need to keep it for compatibility reasons
+		if urlScheme == "" {
+			urlScheme = "http"
+		}
+		return craftAuthURLs(urlScheme, ea, ""), nil
+	}
+
+	// Fallback no external URL
+	return craftAuthURLs("http", host, ""), nil
+}
+
+func craftAuthURLs(scheme, host, path string) *AuthURLs {
+	base := url.URL{Scheme: scheme, Host: host, Path: path}
+	login := base.JoinPath(AuthLoginPath)
+	callback := base.JoinPath(AuthCallbackPath)
 
 	return &AuthURLs{Login: login.String(), callback: callback.String()}
 }
