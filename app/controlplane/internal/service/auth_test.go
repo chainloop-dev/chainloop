@@ -23,11 +23,10 @@ import (
 )
 
 func TestGetAuthURLs(t *testing.T) {
-	internalServer := &conf.Server{Http: &conf.Server_HTTP{Addr: "1.2.3.4"}}
+	internalServer := &conf.Server_HTTP{Addr: "1.2.3.4"}
 	testCases := []struct {
 		name    string
-		scheme  string
-		config  *conf.Server
+		config  *conf.Server_HTTP
 		want    *AuthURLs
 		wantErr bool
 	}{
@@ -37,46 +36,35 @@ func TestGetAuthURLs(t *testing.T) {
 			want:   &AuthURLs{callback: "http://1.2.3.4/auth/callback", Login: "http://1.2.3.4/auth/login"},
 		},
 		{
-			name:   "deprecated external address without schema",
-			config: &conf.Server{Http: &conf.Server_HTTP{Addr: "1.2.3.4", ExternalAddr: "foo.com"}},
-			want:   &AuthURLs{callback: "http://foo.com/auth/callback", Login: "http://foo.com/auth/login"},
-		},
-		{
-			name:   "deprecated external address with schema",
-			config: &conf.Server{Http: &conf.Server_HTTP{Addr: "1.2.3.4", ExternalAddr: "foo.com"}},
-			scheme: "https",
-			want:   &AuthURLs{callback: "https://foo.com/auth/callback", Login: "https://foo.com/auth/login"},
-		},
-		{
 			name:   "correct URL, http",
-			config: &conf.Server{Http: &conf.Server_HTTP{Addr: "1.2.3.4", ExternalUrl: "http://foo.com"}},
+			config: &conf.Server_HTTP{Addr: "1.2.3.4", ExternalUrl: "http://foo.com"},
 			want:   &AuthURLs{callback: "http://foo.com/auth/callback", Login: "http://foo.com/auth/login"},
 		},
 		{
 			name:   "correct URL, https",
-			config: &conf.Server{Http: &conf.Server_HTTP{Addr: "1.2.3.4", ExternalUrl: "https://foo.com"}},
+			config: &conf.Server_HTTP{Addr: "1.2.3.4", ExternalUrl: "https://foo.com"},
 			want:   &AuthURLs{callback: "https://foo.com/auth/callback", Login: "https://foo.com/auth/login"},
 		},
 		{
 			name:   "with path",
-			config: &conf.Server{Http: &conf.Server_HTTP{Addr: "1.2.3.4", ExternalUrl: "https://foo.com/path"}},
+			config: &conf.Server_HTTP{Addr: "1.2.3.4", ExternalUrl: "https://foo.com/path"},
 			want:   &AuthURLs{callback: "https://foo.com/path/auth/callback", Login: "https://foo.com/path/auth/login"},
 		},
 		{
 			name:   "with port",
-			config: &conf.Server{Http: &conf.Server_HTTP{Addr: "1.2.3.4", ExternalUrl: "https://foo.com:1234"}},
+			config: &conf.Server_HTTP{Addr: "1.2.3.4", ExternalUrl: "https://foo.com:1234"},
 			want:   &AuthURLs{callback: "https://foo.com:1234/auth/callback", Login: "https://foo.com:1234/auth/login"},
 		},
 		{
 			name:    "invalid, missing scheme",
-			config:  &conf.Server{Http: &conf.Server_HTTP{Addr: "1.2.3.4", ExternalUrl: "foo.com"}},
+			config:  &conf.Server_HTTP{Addr: "1.2.3.4", ExternalUrl: "localhost.com"},
 			wantErr: true,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := getAuthURLs(tc.scheme, tc.config)
+			got, err := getAuthURLs(tc.config)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return

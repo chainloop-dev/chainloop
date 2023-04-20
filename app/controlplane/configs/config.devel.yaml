@@ -5,7 +5,6 @@
 server:
   http:
     addr: 0.0.0.0:8000
-    external_addr: localhost:8000
     timeout: 1s
   http_metrics:
     addr: 0.0.0.0:5000

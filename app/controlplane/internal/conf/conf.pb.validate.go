@@ -1345,28 +1345,7 @@ func (m *Server_HTTP) validate(all bool) error {
 
 	// no validation rules for Addr
 
-	// no validation rules for ExternalAddr
-
-	if uri, err := url.Parse(m.GetExternalUrl()); err != nil {
-		err = Server_HTTPValidationError{
-			field:  "ExternalUrl",
-			reason: "value must be a valid URI",
-			cause:  err,
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	} else if !uri.IsAbs() {
-		err := Server_HTTPValidationError{
-			field:  "ExternalUrl",
-			reason: "value must be absolute",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for ExternalUrl
 
 	if all {
 		switch v := interface{}(m.GetTimeout()).(type) {
