@@ -70,7 +70,7 @@ func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC
 	}
 
 	// Craft Auth related endpoints
-	authURLs, err := getAuthURLs(oidcConfig.RedirectUrlScheme, serverConfig)
+	authURLs, err := getAuthURLs(serverConfig.GetHttp())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get auth URLs: %w", err)
 	}
@@ -96,14 +96,13 @@ type AuthURLs struct {
 }
 
 // urlScheme is deprecated, now it will be inferred from the serverConfig externalURL
-func getAuthURLs(urlScheme string, serverConfig *conf.Server) (*AuthURLs, error) {
-	host := serverConfig.Http.Addr
+func getAuthURLs(serverConfig *conf.Server_HTTP) (*AuthURLs, error) {
+	host := serverConfig.Addr
 
 	// New mode using FQDN ExternalURL
-	httpServerConfig := serverConfig.GetHttp()
-	if ea := httpServerConfig.GetExternalUrl(); ea != "" {
+	if ea := serverConfig.GetExternalUrl(); ea != "" {
 		// x must be a valid absolute URI (via RFC 3986)
-		if err := httpServerConfig.Validate(); err != nil {
+		if err := serverConfig.Validate(); err != nil {
 			return nil, fmt.Errorf("validation error: %w", err)
 		}
 
@@ -113,14 +112,6 @@ func getAuthURLs(urlScheme string, serverConfig *conf.Server) (*AuthURLs, error)
 		}
 
 		return craftAuthURLs(url.Scheme, url.Host, url.Path), nil
-	}
-
-	// DEPRECATED mode, using externalAddr and the provided urlScheme
-	if ea := serverConfig.Http.ExternalAddr; ea != "" { //nolint:all, I know its deprecated but we need to keep it for compatibility reasons
-		if urlScheme == "" {
-			urlScheme = "http"
-		}
-		return craftAuthURLs(urlScheme, ea, ""), nil
 	}
 
 	// Fallback no external URL
@@ -218,7 +209,7 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) (
 	}
 
 	// Generate user token
-	userToken, err := generateUserJWT(u.ID, svc.authConfig)
+	userToken, err := generateUserJWT(u.ID, svc.authConfig.GeneratedJwsHmacSecret)
 	if err != nil {
 		return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
 	}
@@ -312,11 +303,11 @@ func extractUserInfoFromToken(ctx context.Context, svc *AuthService, r *http.Req
 }
 
 // Take an upstream token from Google and generates a temporary Chainloop JWT
-func generateUserJWT(userID string, c *conf.Auth) (string, error) {
+func generateUserJWT(userID, passphrase string) (string, error) {
 	b, err := user.NewBuilder(
 		user.WithExpiration(24*time.Hour),
 		user.WithIssuer(jwt.DefaultIssuer),
-		user.WithKeySecret(c.GeneratedJwsHmacSecret),
+		user.WithKeySecret(passphrase),
 	)
 
 	if err != nil {

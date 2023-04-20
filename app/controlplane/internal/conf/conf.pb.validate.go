@@ -1345,8 +1345,6 @@ func (m *Server_HTTP) validate(all bool) error {
 
 	// no validation rules for Addr
 
-	// no validation rules for ExternalAddr
-
 	if uri, err := url.Parse(m.GetExternalUrl()); err != nil {
 		err = Server_HTTPValidationError{
 			field:  "ExternalUrl",

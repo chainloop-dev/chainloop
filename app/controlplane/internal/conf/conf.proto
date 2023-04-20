@@ -50,9 +50,6 @@ message Server {
   message HTTP {
     string network = 1;
     string addr = 2;
-    // Hostname for the HTTP server to get redirected (deprecated)
-    // Optional
-    string external_addr = 3 [deprecated = true];
     // In the form of [scheme]://[host] i.e https://instance.chainloop.dev
     // Optional
     string external_url = 4 [(validate.rules).string.uri = true];
