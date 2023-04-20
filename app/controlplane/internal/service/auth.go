@@ -102,13 +102,9 @@ func getAuthURLs(serverConfig *conf.Server_HTTP) (*AuthURLs, error) {
 	// New mode using FQDN ExternalURL
 	if ea := serverConfig.GetExternalUrl(); ea != "" {
 		// x must be a valid absolute URI (via RFC 3986)
-		if err := serverConfig.Validate(); err != nil {
-			return nil, fmt.Errorf("validation error: %w", err)
-		}
-
-		url, err := url.Parse(ea)
+		url, err := url.ParseRequestURI(ea)
 		if err != nil {
-			return nil, fmt.Errorf("parsing external address %s: %w", ea, err)
+			return nil, fmt.Errorf("validation error: %w", err)
 		}
 
 		return craftAuthURLs(url.Scheme, url.Host, url.Path), nil

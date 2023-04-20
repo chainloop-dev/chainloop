@@ -52,7 +52,7 @@ message Server {
     string addr = 2;
     // In the form of [scheme]://[host] i.e https://instance.chainloop.dev
     // Optional
-    string external_url = 4 [(validate.rules).string.uri = true];
+    string external_url = 4;
     google.protobuf.Duration timeout = 5;
   }
 

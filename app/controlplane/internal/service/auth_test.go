@@ -57,7 +57,7 @@ func TestGetAuthURLs(t *testing.T) {
 		},
 		{
 			name:    "invalid, missing scheme",
-			config:  &conf.Server_HTTP{Addr: "1.2.3.4", ExternalUrl: "foo.com"},
+			config:  &conf.Server_HTTP{Addr: "1.2.3.4", ExternalUrl: "localhost.com"},
 			wantErr: true,
 		},
 	}
