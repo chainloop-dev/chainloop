@@ -292,7 +292,7 @@ controlplane:
     ## NOTE: You may need to set this to '/*' in order to use this with ALB ingress controllers
     ##
     path: /
-    ## @param controlplane.ingressAPI.annotations Additional annotations for the Ingress resource. To enable certificate autogeneration, place here your cert-manager annotations.
+    ## @extra controlplane.ingressAPI.annotations Additional annotations for the Ingress resource. To enable certificate autogeneration, place here your cert-manager annotations.
     ## Use this parameter to set the required annotations for cert-manager, see
     ## ref: https://cert-manager.io/docs/usage/ingress/#supported-annotations
     ## e.g:
@@ -300,7 +300,9 @@ controlplane:
     ##   kubernetes.io/controlplane.ingress.class: nginx
     ##   cert-manager.io/cluster-issuer: cluster-issuer-name
     ##
-    annotations: {}
+    annotations:
+      ## @param controlplane.ingressAPI.annotations.nginx.ingress.kubernetes.io/backend-protocol Tell Nginx Ingress Controller to expect gRPC traffic
+      nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
     
     ## @param controlplane.ingressAPI.tls Enable TLS configuration for the host defined at `controlplane.ingress.hostname` parameter
     ## TLS certificates will be retrieved from a TLS secret with name: `{{- printf "%s-tls" .Values.controlplane.ingress.hostname }}`
@@ -466,7 +468,7 @@ cas:
     ## NOTE: You may need to set this to '/*' in order to use this with ALB ingress controllers
     ##
     path: /
-    ## @param cas.ingressAPI.annotations Additional annotations for the Ingress resource. To enable certificate autogeneration, place here your cert-manager annotations.
+    ## @extra cas.ingressAPI.annotations Additional annotations for the Ingress resource. To enable certificate autogeneration, place here your cert-manager annotations.
     ## Use this parameter to set the required annotations for cert-manager, see
     ## ref: https://cert-manager.io/docs/usage/ingress/#supported-annotations
     ## e.g:
@@ -474,7 +476,14 @@ cas:
     ##   kubernetes.io/controlplane.ingress.class: nginx
     ##   cert-manager.io/cluster-issuer: cluster-issuer-name
     ##
-    annotations: {}
+    annotations:
+      # Nginx Ingress settings
+      ## @param cas.ingressAPI.annotations.nginx.ingress.kubernetes.io/proxy-body-size Limit the size of uploads/downloads (0 means unlimited)
+      # Limit file uploads/downloads to 100MB. Alternatively you can disable this limitation by setting it to 0 
+      # Even though we send data in chunks of 1MB, this size refers to all the data sent during the whole streaming session
+      nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+      ## @param cas.ingressAPI.annotations.nginx.ingress.kubernetes.io/backend-protocol Tell Nginx Ingress Controller to expect gRPC traffic
+      nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
     
     ## @param cas.ingressAPI.tls Enable TLS configuration for the host defined at `controlplane.ingress.hostname` parameter
     ## TLS certificates will be retrieved from a TLS secret with name: `{{- printf "%s-tls" .Values.controlplane.ingress.hostname }}`

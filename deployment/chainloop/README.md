@@ -10,8 +10,7 @@ This chart bootstraps a [Chainloop](https://github.com/chainloop-dev/chainloop) 
 
 - Kubernetes 1.19+
 - Helm 3.2.0+
-- PV provisioner support in the underlying infrastructure
-- ReadWriteMany volumes for deployment scaling
+- PV provisioner support in the underlying infrastructure (If built-in PostgreSQL is enabled)
 
 ## TL;DR
 
@@ -24,6 +23,8 @@ helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
     --set controlplane.auth.oidc.clientID=[clientID] \
     --set controlplane.auth.oidc.clientSecret=[clientSecret]
 ```
+
+> **CAUTION**: Do not use this mode in production, for that, use the [standard mode](#standard-default) instead.
 
 ## Installing the Chart
 
@@ -47,16 +48,11 @@ During installation, you'll need to provide
 - Connection settings for a secrets storage backend, either [Hashicorp Vault](https://www.vaultproject.io/) or [AWS Secret Manager](https://aws.amazon.com/secrets-manager)
 - ECDSA (ES512) key-pair used for Controlplane <-> CAS Authentication
 
-You can generate the ECDSA key-pair by running
-
-```console
-# Private Key (private.ec.key)
-openssl ecparam -name secp521r1 -genkey -noout -out private.ec.key
-# Public Key (public.pem)
-openssl ec -in private.ec.key -pubout -out public.pem
-```
+Instructions on how to create the ECDSA keypair can be found [here](#generate-a-ecdsa-key-pair).
 
 #### Installation Examples
+
+> **NOTE**: **We do not recommend passing nor storing sensitive data in plain text**. For production, please consider having your overrides encrypted with tools such as [Sops](https://github.com/mozilla/sops), [Helm Secrets](https://github.com/jkroepke/helm-secrets) or [Sealed Secrets](https://github.com/bitnami-labs/sealed-secrets).
 
 Deploy Chainloop configured to talk to the bundled PostgreSQL an external OIDC IDp and a Vault instance.
 
@@ -121,6 +117,8 @@ The Helm Chart in this mode includes
 - A PostgreSQL dependency enabled by default
 - **A pre-configured Hashicorp Vault instance running in development mode (unsealed, in-memory, insecure)**
 
+> **CAUTION**: Do not use this mode in production, for that, use the [standard mode](#standard-default) instead.
+
 During installation, you'll need to provide
 
 - Open ID Connect Identity Provider (IDp) settings i.e [Auth0 settings](https://auth0.com/docs/get-started/applications/application-settings#basic-information)
@@ -138,7 +136,163 @@ helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
     --set controlplane.auth.oidc.clientID=[clientID] \
     --set controlplane.auth.oidc.clientSecret=[clientSecret]
 ```
+## How to guides
 
+### Generate a ECDSA key-pair
+
+An ECDSA key-pair is required to perform authentication between the control-plane and the Artifact CAS
+
+You can generate both the private and public keys by running
+
+```bash
+# Private Key (private.ec.key)
+openssl ecparam -name secp521r1 -genkey -noout -out private.ec.key
+# Public Key (public.pem)
+openssl ec -in private.ec.key -pubout -out public.pem
+```
+
+Then, you can either provide it in a custom `values.yaml` file override
+
+```yaml
+casJWTPrivateKey: |-
+    -----BEGIN EC PRIVATE KEY-----
+    REDACTED
+    -----END EC PRIVATE KEY-----
+casJWTPublicKey: |
+    -----BEGIN PUBLIC KEY-----
+    REDACTED
+    -----END PUBLIC KEY-----
+```
+
+or as shown before, provide them as imperative inputs during Helm Install/Upgrade `--set casJWTPrivateKey="$(cat private.ec.key)"--set casJWTPublicKey="$(cat public.pem)"`
+
+### Enable a custom domain with TLS
+
+Chainloop uses three endpoints so we'll need to enable the ingress resource for each one of them.
+
+See below an example of a `values.yaml` override
+
+```yaml
+controlplane:
+  ingress:
+    enabled: true
+    hostname: cp.chainloop.dev
+
+  ingressAPI:
+    enabled: true
+    hostname: api.cp.chainloop.dev
+
+cas:
+    ingressAPI:
+    enabled: true
+    hostname: api.cas.chainloop.dev
+```
+
+A complete setup that uses
+
+- NGINX as ingress Controller https://kubernetes.github.io/ingress-nginx/
+- [cert-manager](https://cert-manager.io/) as TLS provider
+
+would look like
+
+```yaml
+controlplane:
+  ingress:
+    enabled: true
+    tls: true
+    ingressClassName: nginx
+    hostname: cp.chainloop.dev
+    annotations:
+      # This depends on your configured issuer 
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+
+  ingressAPI:
+    enabled: true
+    tls: true
+    ingressClassName: nginx
+    hostname: api.cp.chainloop.dev
+    annotations:
+      nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+          
+cas:
+  ingressAPI:
+    enabled: true
+    tls: true
+    ingressClassName: nginx
+    hostname: api.cas.chainloop.dev
+    annotations:
+      nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+      # limit the size of the files that go through the proxy
+      # 0 means to not check the size of the request so we do not get 413 error.
+      # For now we are going to set a limit on 100MB files
+      # Even though we send data in chunks of 1MB, this size refers to all the data sent in the streaming connection
+      nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+```
+
+### Connect to an external PostgreSQL database
+
+```yaml
+# Disable built-in DB
+postgresql:
+  enabled: false
+
+# Provide with external connection
+controlplane:
+    externalDatabase:
+        host: 1.2.3.4
+        port: 5432
+        user: chainloop
+        password: [REDACTED]
+        database: chainloop-controlplane-prod
+```
+
+Alternatively, if you are using [Google Cloud SQL](https://cloud.google.com/sql) and you are running Chainloop in Google Kubernetes Engine. You can connect instead via [a proxy](https://cloud.google.com/sql/docs/mysql/connect-kubernetes-engine#proxy)
+
+This method can also be easily enabled in this chart by doing
+
+```yaml
+# Disable built-in DB
+postgresql:
+  enabled: false
+
+# Provide with external connection
+controlplane:
+    sqlProxy:
+        # Inject the proxy sidecar
+        enabled: true
+        ## @param controlplane.sqlProxy.connectionName Google Cloud SQL connection name
+        connectionName: "my-sql-instance"
+    # Then you'll need to configure your DB settings to use the proxy IP address
+    externalDatabase:
+        host: [proxy-sidecar-ip-address]
+        port: 5432
+        user: chainloop
+        password: [REDACTED]
+        database: chainloop-controlplane-prod
+```
+
+### Use AWS secret manager
+
+You can swap the secret manager backend with the following settings
+
+```yaml
+secretsBackend:
+    backend: awsSecretManager
+    awsSecretManager:
+        accessKey: [KEY]
+        secretKey: [SECRET]
+        region: [REGION]
+```
+### Send exceptions to Sentry
+
+```yaml
+sentry:
+    enabled: true
+    dsn: [your secret sentry project DSN URL]
+    environment: production
+```
 ## Parameters
 
 ### Common parameters
@@ -204,43 +358,44 @@ helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
 
 ### Control Plane Networking
 
-| Name                                       | Description                                                                                                                      | Value                    |
-| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| `controlplane.service.type`                | Service type                                                                                                                     | `ClusterIP`              |
-| `controlplane.service.port`                | Service port                                                                                                                     | `80`                     |
-| `controlplane.service.targetPort`          | Service target Port                                                                                                              | `http`                   |
-| `controlplane.service.nodePorts.http`      | Node port for HTTP. NOTE: choose port between <30000-32767>                                                                      |                          |
-| `controlplane.serviceAPI.type`             | Service type                                                                                                                     | `ClusterIP`              |
-| `controlplane.serviceAPI.port`             | Service port                                                                                                                     | `80`                     |
-| `controlplane.serviceAPI.targetPort`       | Service target Port                                                                                                              | `grpc`                   |
-| `controlplane.serviceAPI.annotations`      | Service annotations                                                                                                              |                          |
-| `controlplane.serviceAPI.nodePorts.http`   | Node port for HTTP. NOTE: choose port between <30000-32767>                                                                      |                          |
-| `controlplane.ingress.enabled`             | Enable ingress record generation for %%MAIN_CONTAINER_NAME%%                                                                     | `false`                  |
-| `controlplane.ingress.pathType`            | Ingress path type                                                                                                                | `ImplementationSpecific` |
-| `controlplane.ingress.hostname`            | Default host for the ingress record                                                                                              | `cp.dev.local`           |
-| `controlplane.ingress.ingressClassName`    | IngressClass that will be be used to implement the Ingress (Kubernetes 1.18+)                                                    | `""`                     |
-| `controlplane.ingress.path`                | Default path for the ingress record                                                                                              | `/`                      |
-| `controlplane.ingress.annotations`         | Additional annotations for the Ingress resource. To enable certificate autogeneration, place here your cert-manager annotations. | `{}`                     |
-| `controlplane.ingress.tls`                 | Enable TLS configuration for the host defined at `controlplane.ingress.hostname` parameter                                       | `false`                  |
-| `controlplane.ingress.selfSigned`          | Create a TLS secret for this ingress record using self-signed certificates generated by Helm                                     | `false`                  |
-| `controlplane.ingress.extraHosts`          | An array with additional hostname(s) to be covered with the ingress record                                                       | `[]`                     |
-| `controlplane.ingress.extraPaths`          | An array with additional arbitrary paths that may need to be added to the ingress under the main host                            | `[]`                     |
-| `controlplane.ingress.extraTls`            | TLS configuration for additional hostname(s) to be covered with this ingress record                                              | `[]`                     |
-| `controlplane.ingress.secrets`             | Custom TLS certificates as secrets                                                                                               | `[]`                     |
-| `controlplane.ingress.extraRules`          | Additional rules to be covered with this ingress record                                                                          | `[]`                     |
-| `controlplane.ingressAPI.enabled`          | Enable ingress record generation for %%MAIN_CONTAINER_NAME%%                                                                     | `false`                  |
-| `controlplane.ingressAPI.pathType`         | Ingress path type                                                                                                                | `ImplementationSpecific` |
-| `controlplane.ingressAPI.hostname`         | Default host for the ingress record                                                                                              | `api.cp.dev.local`       |
-| `controlplane.ingressAPI.ingressClassName` | IngressClass that will be be used to implement the Ingress (Kubernetes 1.18+)                                                    | `""`                     |
-| `controlplane.ingressAPI.path`             | Default path for the ingress record                                                                                              | `/`                      |
-| `controlplane.ingressAPI.annotations`      | Additional annotations for the Ingress resource. To enable certificate autogeneration, place here your cert-manager annotations. | `{}`                     |
-| `controlplane.ingressAPI.tls`              | Enable TLS configuration for the host defined at `controlplane.ingress.hostname` parameter                                       | `false`                  |
-| `controlplane.ingressAPI.selfSigned`       | Create a TLS secret for this ingress record using self-signed certificates generated by Helm                                     | `false`                  |
-| `controlplane.ingressAPI.extraHosts`       | An array with additional hostname(s) to be covered with the ingress record                                                       | `[]`                     |
-| `controlplane.ingressAPI.extraPaths`       | An array with additional arbitrary paths that may need to be added to the ingress under the main host                            | `[]`                     |
-| `controlplane.ingressAPI.extraTls`         | TLS configuration for additional hostname(s) to be covered with this ingress record                                              | `[]`                     |
-| `controlplane.ingressAPI.secrets`          | Custom TLS certificates as secrets                                                                                               | `[]`                     |
-| `controlplane.ingressAPI.extraRules`       | Additional rules to be covered with this ingress record                                                                          | `[]`                     |
+| Name                                                                               | Description                                                                                                                      | Value                    |
+| ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| `controlplane.service.type`                                                        | Service type                                                                                                                     | `ClusterIP`              |
+| `controlplane.service.port`                                                        | Service port                                                                                                                     | `80`                     |
+| `controlplane.service.targetPort`                                                  | Service target Port                                                                                                              | `http`                   |
+| `controlplane.service.nodePorts.http`                                              | Node port for HTTP. NOTE: choose port between <30000-32767>                                                                      |                          |
+| `controlplane.serviceAPI.type`                                                     | Service type                                                                                                                     | `ClusterIP`              |
+| `controlplane.serviceAPI.port`                                                     | Service port                                                                                                                     | `80`                     |
+| `controlplane.serviceAPI.targetPort`                                               | Service target Port                                                                                                              | `grpc`                   |
+| `controlplane.serviceAPI.annotations`                                              | Service annotations                                                                                                              |                          |
+| `controlplane.serviceAPI.nodePorts.http`                                           | Node port for HTTP. NOTE: choose port between <30000-32767>                                                                      |                          |
+| `controlplane.ingress.enabled`                                                     | Enable ingress record generation for %%MAIN_CONTAINER_NAME%%                                                                     | `false`                  |
+| `controlplane.ingress.pathType`                                                    | Ingress path type                                                                                                                | `ImplementationSpecific` |
+| `controlplane.ingress.hostname`                                                    | Default host for the ingress record                                                                                              | `cp.dev.local`           |
+| `controlplane.ingress.ingressClassName`                                            | IngressClass that will be be used to implement the Ingress (Kubernetes 1.18+)                                                    | `""`                     |
+| `controlplane.ingress.path`                                                        | Default path for the ingress record                                                                                              | `/`                      |
+| `controlplane.ingress.annotations`                                                 | Additional annotations for the Ingress resource. To enable certificate autogeneration, place here your cert-manager annotations. | `{}`                     |
+| `controlplane.ingress.tls`                                                         | Enable TLS configuration for the host defined at `controlplane.ingress.hostname` parameter                                       | `false`                  |
+| `controlplane.ingress.selfSigned`                                                  | Create a TLS secret for this ingress record using self-signed certificates generated by Helm                                     | `false`                  |
+| `controlplane.ingress.extraHosts`                                                  | An array with additional hostname(s) to be covered with the ingress record                                                       | `[]`                     |
+| `controlplane.ingress.extraPaths`                                                  | An array with additional arbitrary paths that may need to be added to the ingress under the main host                            | `[]`                     |
+| `controlplane.ingress.extraTls`                                                    | TLS configuration for additional hostname(s) to be covered with this ingress record                                              | `[]`                     |
+| `controlplane.ingress.secrets`                                                     | Custom TLS certificates as secrets                                                                                               | `[]`                     |
+| `controlplane.ingress.extraRules`                                                  | Additional rules to be covered with this ingress record                                                                          | `[]`                     |
+| `controlplane.ingressAPI.enabled`                                                  | Enable ingress record generation for %%MAIN_CONTAINER_NAME%%                                                                     | `false`                  |
+| `controlplane.ingressAPI.pathType`                                                 | Ingress path type                                                                                                                | `ImplementationSpecific` |
+| `controlplane.ingressAPI.hostname`                                                 | Default host for the ingress record                                                                                              | `api.cp.dev.local`       |
+| `controlplane.ingressAPI.ingressClassName`                                         | IngressClass that will be be used to implement the Ingress (Kubernetes 1.18+)                                                    | `""`                     |
+| `controlplane.ingressAPI.path`                                                     | Default path for the ingress record                                                                                              | `/`                      |
+| `controlplane.ingressAPI.annotations`                                              | Additional annotations for the Ingress resource. To enable certificate autogeneration, place here your cert-manager annotations. |                          |
+| `controlplane.ingressAPI.annotations.nginx.ingress.kubernetes.io/backend-protocol` | Tell Nginx Ingress Controller to expect gRPC traffic                                                                             | `GRPC`                   |
+| `controlplane.ingressAPI.tls`                                                      | Enable TLS configuration for the host defined at `controlplane.ingress.hostname` parameter                                       | `false`                  |
+| `controlplane.ingressAPI.selfSigned`                                               | Create a TLS secret for this ingress record using self-signed certificates generated by Helm                                     | `false`                  |
+| `controlplane.ingressAPI.extraHosts`                                               | An array with additional hostname(s) to be covered with the ingress record                                                       | `[]`                     |
+| `controlplane.ingressAPI.extraPaths`                                               | An array with additional arbitrary paths that may need to be added to the ingress under the main host                            | `[]`                     |
+| `controlplane.ingressAPI.extraTls`                                                 | TLS configuration for additional hostname(s) to be covered with this ingress record                                              | `[]`                     |
+| `controlplane.ingressAPI.secrets`                                                  | Custom TLS certificates as secrets                                                                                               | `[]`                     |
+| `controlplane.ingressAPI.extraRules`                                               | Additional rules to be covered with this ingress record                                                                          | `[]`                     |
 
 ### Controlplane Misc
 
@@ -266,26 +421,28 @@ helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
 
 ### CAS Networking
 
-| Name                              | Description                                                                                                                      | Value                    |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| `cas.serviceAPI.type`             | Service type                                                                                                                     | `ClusterIP`              |
-| `cas.serviceAPI.port`             | Service port                                                                                                                     | `80`                     |
-| `cas.serviceAPI.targetPort`       | Service target Port                                                                                                              | `grpc`                   |
-| `cas.serviceAPI.annotations`      | Service annotations                                                                                                              |                          |
-| `cas.serviceAPI.nodePorts.http`   | Node port for HTTP. NOTE: choose port between <30000-32767>                                                                      |                          |
-| `cas.ingressAPI.enabled`          | Enable ingress record generation for %%MAIN_CONTAINER_NAME%%                                                                     | `false`                  |
-| `cas.ingressAPI.pathType`         | Ingress path type                                                                                                                | `ImplementationSpecific` |
-| `cas.ingressAPI.hostname`         | Default host for the ingress record                                                                                              | `api.cp.dev.local`       |
-| `cas.ingressAPI.ingressClassName` | IngressClass that will be be used to implement the Ingress (Kubernetes 1.18+)                                                    | `""`                     |
-| `cas.ingressAPI.path`             | Default path for the ingress record                                                                                              | `/`                      |
-| `cas.ingressAPI.annotations`      | Additional annotations for the Ingress resource. To enable certificate autogeneration, place here your cert-manager annotations. | `{}`                     |
-| `cas.ingressAPI.tls`              | Enable TLS configuration for the host defined at `controlplane.ingress.hostname` parameter                                       | `false`                  |
-| `cas.ingressAPI.selfSigned`       | Create a TLS secret for this ingress record using self-signed certificates generated by Helm                                     | `false`                  |
-| `cas.ingressAPI.extraHosts`       | An array with additional hostname(s) to be covered with the ingress record                                                       | `[]`                     |
-| `cas.ingressAPI.extraPaths`       | An array with additional arbitrary paths that may need to be added to the ingress under the main host                            | `[]`                     |
-| `cas.ingressAPI.extraTls`         | TLS configuration for additional hostname(s) to be covered with this ingress record                                              | `[]`                     |
-| `cas.ingressAPI.secrets`          | Custom TLS certificates as secrets                                                                                               | `[]`                     |
-| `cas.ingressAPI.extraRules`       | Additional rules to be covered with this ingress record                                                                          | `[]`                     |
+| Name                                                                      | Description                                                                                                                      | Value                    |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| `cas.serviceAPI.type`                                                     | Service type                                                                                                                     | `ClusterIP`              |
+| `cas.serviceAPI.port`                                                     | Service port                                                                                                                     | `80`                     |
+| `cas.serviceAPI.targetPort`                                               | Service target Port                                                                                                              | `grpc`                   |
+| `cas.serviceAPI.annotations`                                              | Service annotations                                                                                                              |                          |
+| `cas.serviceAPI.nodePorts.http`                                           | Node port for HTTP. NOTE: choose port between <30000-32767>                                                                      |                          |
+| `cas.ingressAPI.enabled`                                                  | Enable ingress record generation for %%MAIN_CONTAINER_NAME%%                                                                     | `false`                  |
+| `cas.ingressAPI.pathType`                                                 | Ingress path type                                                                                                                | `ImplementationSpecific` |
+| `cas.ingressAPI.hostname`                                                 | Default host for the ingress record                                                                                              | `api.cp.dev.local`       |
+| `cas.ingressAPI.ingressClassName`                                         | IngressClass that will be be used to implement the Ingress (Kubernetes 1.18+)                                                    | `""`                     |
+| `cas.ingressAPI.path`                                                     | Default path for the ingress record                                                                                              | `/`                      |
+| `cas.ingressAPI.annotations`                                              | Additional annotations for the Ingress resource. To enable certificate autogeneration, place here your cert-manager annotations. |                          |
+| `cas.ingressAPI.annotations.nginx.ingress.kubernetes.io/proxy-body-size`  | Limit the size of uploads/downloads (0 means unlimited)                                                                          | `100m`                   |
+| `cas.ingressAPI.annotations.nginx.ingress.kubernetes.io/backend-protocol` | Tell Nginx Ingress Controller to expect gRPC traffic                                                                             | `GRPC`                   |
+| `cas.ingressAPI.tls`                                                      | Enable TLS configuration for the host defined at `controlplane.ingress.hostname` parameter                                       | `false`                  |
+| `cas.ingressAPI.selfSigned`                                               | Create a TLS secret for this ingress record using self-signed certificates generated by Helm                                     | `false`                  |
+| `cas.ingressAPI.extraHosts`                                               | An array with additional hostname(s) to be covered with the ingress record                                                       | `[]`                     |
+| `cas.ingressAPI.extraPaths`                                               | An array with additional arbitrary paths that may need to be added to the ingress under the main host                            | `[]`                     |
+| `cas.ingressAPI.extraTls`                                                 | TLS configuration for additional hostname(s) to be covered with this ingress record                                              | `[]`                     |
+| `cas.ingressAPI.secrets`                                                  | Custom TLS certificates as secrets                                                                                               | `[]`                     |
+| `cas.ingressAPI.extraRules`                                               | Additional rules to be covered with this ingress record                                                                          | `[]`                     |
 
 ### CAS Misc
 
