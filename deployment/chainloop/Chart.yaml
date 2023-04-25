@@ -3,7 +3,9 @@ name: chainloop
 description: Chainloop is an open source software supply chain control plane, a single source of truth for artifacts plus a declarative attestation crafting process.
 
 type: application
-version: 1.1.1
+# Bump the patch (not minor, not major) version on each change in the Chart Source code
+version: 1.1.2
+# Do not update appVersion, this is handled automatically by the release process
 appVersion: v0.8.99
 
 dependencies:
