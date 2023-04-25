@@ -12,6 +12,11 @@ This chart bootstraps a [Chainloop](https://github.com/chainloop-dev/chainloop) 
 - Helm 3.2.0+
 - PV provisioner support in the underlying infrastructure (If built-in PostgreSQL is enabled)
 
+Compatibility with the following Ingress Controllers have been checked, other might or might not work.
+
+- [Nginx Ingress Controller](https://kubernetes.github.io/ingress-nginx/)
+- [Traefik](https://doc.traefik.io/traefik/providers/kubernetes-ingress/)
+
 ## TL;DR
 
 Deploy Chainloop in [development mode](#development) by running
