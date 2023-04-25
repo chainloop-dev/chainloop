@@ -301,7 +301,8 @@ controlplane:
     ##   cert-manager.io/cluster-issuer: cluster-issuer-name
     ##
     annotations:
-      ## @param controlplane.ingressAPI.annotations.nginx.ingress.kubernetes.io/backend-protocol Tell Nginx Ingress Controller to expect gRPC traffic
+      ## @skip controlplane.ingressAPI.annotations.nginx.ingress.kubernetes.io/backend-protocol
+      ## Tell Nginx Ingress Controller to expect gRPC traffic
       nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
     
     ## @param controlplane.ingressAPI.tls Enable TLS configuration for the host defined at `controlplane.ingress.hostname` parameter
@@ -478,11 +479,12 @@ cas:
     ##
     annotations:
       # Nginx Ingress settings
-      ## @param cas.ingressAPI.annotations.nginx.ingress.kubernetes.io/proxy-body-size Limit the size of uploads/downloads (0 means unlimited)
+      ## @skip cas.ingressAPI.annotations.nginx.ingress.kubernetes.io/proxy-body-size
       # Limit file uploads/downloads to 100MB. Alternatively you can disable this limitation by setting it to 0 
       # Even though we send data in chunks of 1MB, this size refers to all the data sent during the whole streaming session
       nginx.ingress.kubernetes.io/proxy-body-size: "100m"
-      ## @param cas.ingressAPI.annotations.nginx.ingress.kubernetes.io/backend-protocol Tell Nginx Ingress Controller to expect gRPC traffic
+      ## @skip cas.ingressAPI.annotations.nginx.ingress.kubernetes.io/backend-protocol
+      ## Tell Nginx Ingress Controller to expect gRPC traffic
       nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
     
     ## @param cas.ingressAPI.tls Enable TLS configuration for the host defined at `controlplane.ingress.hostname` parameter
