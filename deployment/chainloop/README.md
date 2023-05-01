@@ -12,7 +12,7 @@ This chart bootstraps a [Chainloop](https://github.com/chainloop-dev/chainloop) 
 - Helm 3.2.0+
 - PV provisioner support in the underlying infrastructure (If built-in PostgreSQL is enabled)
 
-Compatibility with the following Ingress Controllers have been checked, others might or might not work.
+Compatibility with the following Ingress Controllers has been verified, other controllers might or might not work.
 
 - [Nginx Ingress Controller](https://kubernetes.github.io/ingress-nginx/)
 - [Traefik](https://doc.traefik.io/traefik/providers/kubernetes-ingress/)
@@ -236,6 +236,8 @@ cas:
       nginx.ingress.kubernetes.io/proxy-body-size: "100m"
 ```
 
+Remember, once you have set up your domain, make sure you use the [CLI pointing](#configure-chainloop-cli-to-point-to-your-instance) to it instead of the defaults.
+
 ### Connect to an external PostgreSQL database
 
 ```yaml
@@ -298,6 +300,23 @@ sentry:
     dsn: [your secret sentry project DSN URL]
     environment: production
 ```
+
+### Enable Prometheus Monitoring in GKE
+
+Chainloop exposes Prometheus compatible `/metrics` endpoints that can be easily scraped by a Prometheus data collector Server.
+
+Google Cloud has a [managed Prometheus offering](https://cloud.google.com/stackdriver/docs/managed-prometheus/setup-managed) that could be easily enabled by setting `--set GKEMonitoring.enabled=true`. This will inject the required `PodMonitoring` custom resources.
+
+### Configure Chainloop CLI to point to your instance
+
+Once you have your instance of Chainloop deployed, you need to configure the [CLI](https://github.com/chainloop-dev/chainloop/releases) to point to both the CAS and the Control plane gRPC APIs like this.
+
+```
+chainloop config save \
+  --control-plane my-controlplane.acme.com:443 \
+  --artifact-cas cas.acme.com:443
+```
+
 ## Parameters
 
 ### Common parameters
