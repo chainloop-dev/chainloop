@@ -29,7 +29,7 @@ import (
 	"github.com/in-toto/in-toto-golang/in_toto"
 	"github.com/rs/zerolog"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
-	"github.com/sigstore/cosign/pkg/signature"
+	"github.com/sigstore/cosign/v2/pkg/signature"
 	sigdsee "github.com/sigstore/sigstore/pkg/signature/dsse"
 	"golang.org/x/term"
 )
