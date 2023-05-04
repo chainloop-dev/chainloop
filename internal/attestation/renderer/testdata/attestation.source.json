@@ -1,0 +1,84 @@
+{
+  "inputSchema": {
+    "schemaVersion": "v1",
+    "materials": [
+      {
+        "type": "CONTAINER_IMAGE",
+        "name": "skynet-control-plane",
+        "output": true
+      },
+      {
+        "type": "ARTIFACT",
+        "name": "rootfs"
+      },
+      {
+        "type": "ARTIFACT",
+        "name": "dockerfile",
+        "optional": true
+      },
+      {
+        "type": "STRING",
+        "name": "build-ref"
+      },
+      {
+        "type": "SBOM_CYCLONEDX_JSON",
+        "name": "skynet-sbom"
+      }
+    ],
+    "envAllowList": [
+      "CUSTOM_VAR"
+    ],
+    "runner": {
+      "type": "GITHUB_ACTION"
+    }
+  },
+  "attestation": {
+    "initializedAt": "2023-05-03T17:22:12.743426076Z",
+    "workflow": {
+      "name": "foo",
+      "project": "bar",
+      "workflowId": "54ea7c5c-7592-48ac-9a9f-084b72447184",
+      "schemaRevision": "1"
+    },
+    "materials": {
+      "build-ref": {
+        "string": {
+          "id": "build-ref",
+          "value": "a-string"
+        },
+        "addedAt": "2023-05-03T17:23:27.113091137Z",
+        "materialType": "STRING"
+      },
+      "rootfs": {
+        "artifact": {
+          "id": "rootfs",
+          "name": "Makefile",
+          "digest": "sha256:cfc7d8e24d21ade921d720228ad1693de59dab45ff679606940be75b7bf660dc"
+        },
+        "addedAt": "2023-05-03T17:23:13.548426342Z",
+        "materialType": "ARTIFACT"
+      },
+      "skynet-control-plane": {
+        "containerImage": {
+          "id": "skynet-control-plane",
+          "name": "index.docker.io/bitnami/nginx",
+          "digest": "sha256:580ac09da7771920dfd0c214964e7bfe4c27903bcbe075769a4044a67c9a390a",
+          "isSubject": true
+        },
+        "addedAt": "2023-05-03T17:22:49.616972571Z",
+        "materialType": "CONTAINER_IMAGE"
+      },
+      "skynet-sbom": {
+        "artifact": {
+          "id": "skynet-sbom",
+          "name": "sbom.cyclonedx.json",
+          "digest": "sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c"
+        },
+        "addedAt": "2023-05-03T17:24:31.956266292Z",
+        "materialType": "SBOM_CYCLONEDX_JSON"
+      }
+    },
+    "runnerType": "GITHUB_ACTION"
+  },
+  "dryRun": true
+}

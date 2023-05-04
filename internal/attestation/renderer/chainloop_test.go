@@ -21,10 +21,66 @@ import (
 	"os"
 	"testing"
 
+	api "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
+	"github.com/in-toto/in-toto-golang/in_toto"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
 )
+
+func TestRender(t *testing.T) {
+	testCases := []struct {
+		name       string
+		sourcePath string
+		outputPath string
+	}{
+		{
+			name:       "render v0.1",
+			sourcePath: "testdata/attestation.source.json",
+			outputPath: "testdata/attestation.output.v0.1.json",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Load expected resulting output
+			wantRaw, err := os.ReadFile(tc.outputPath)
+			require.NoError(t, err)
+
+			var want *in_toto.Statement
+			err = json.Unmarshal(wantRaw, &want)
+			require.NoError(t, err)
+
+			// Initialize renderer
+			state := &api.CraftingState{}
+			stateRaw, err := os.ReadFile(tc.sourcePath)
+			require.NoError(t, err)
+
+			err = protojson.Unmarshal(stateRaw, state)
+			require.NoError(t, err)
+
+			renderer, err := NewAttestationRenderer(state, "", "dev", "sha256:59e14f1a9de709cdd0e91c36b33e54fcca95f7dba1dc7169a7f81986e02108e5")
+			require.NoError(t, err)
+
+			// Compare header
+			gotHeader, err := renderer.renderer.Header()
+			assert.NoError(t, err)
+			assert.Equal(t, want.Type, gotHeader.Type)
+			assert.Equal(t, want.Subject, gotHeader.Subject)
+			assert.Equal(t, want.PredicateType, gotHeader.PredicateType)
+
+			// Compare predicate
+			gotPredicateI, err := renderer.renderer.Predicate()
+			assert.NoError(t, err)
+			gotPredicate := gotPredicateI.(ChainloopProvenancePredicateV1)
+			wantPredicate, err := extractPredicateV1(want)
+			wantPredicate.Metadata.FinishedAt = gotPredicate.Metadata.FinishedAt
+			assert.NoError(t, err)
+			assert.EqualValues(t, wantPredicate, &gotPredicate)
+		})
+	}
+}
 
 func TestExtractPredicate(t *testing.T) {
 	testCases := []struct {

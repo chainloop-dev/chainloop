@@ -1,0 +1,79 @@
+{
+  "_type": "https://in-toto.io/Statement/v0.1",
+  "predicateType": "chainloop.dev/attestation/v0.1",
+  "subject": [
+    {
+      "name": "chainloop.dev/workflow/foo",
+      "digest": {
+        "sha256": "6cd649c6105e12a235510a585371eb69c8c9ee797d8dc80d30695828ca116b00"
+      }
+    },
+    {
+      "name": "index.docker.io/bitnami/nginx",
+      "digest": {
+        "sha256": "580ac09da7771920dfd0c214964e7bfe4c27903bcbe075769a4044a67c9a390a"
+      }
+    }
+  ],
+  "predicate": {
+    "metadata": {
+      "name": "foo",
+      "project": "bar",
+      "team": "",
+      "initializedAt": "2023-05-03T17:22:12.743426076Z",
+      "finishedAt": "2023-05-03T19:27:51.352850152+02:00",
+      "workflowRunID": "",
+      "workflowID": "54ea7c5c-7592-48ac-9a9f-084b72447184"
+    },
+    "materials": [
+      {
+        "name": "build-ref",
+        "type": "STRING",
+        "material": {
+          "stringVal": "a-string"
+        }
+      },
+      {
+        "name": "rootfs",
+        "type": "ARTIFACT",
+        "material": {
+          "slsa": {
+            "uri": "Makefile",
+            "digest": {
+              "sha256": "cfc7d8e24d21ade921d720228ad1693de59dab45ff679606940be75b7bf660dc"
+            }
+          }
+        }
+      },
+      {
+        "name": "skynet-control-plane",
+        "type": "CONTAINER_IMAGE",
+        "material": {
+          "slsa": {
+            "uri": "index.docker.io/bitnami/nginx",
+            "digest": {
+              "sha256": "580ac09da7771920dfd0c214964e7bfe4c27903bcbe075769a4044a67c9a390a"
+            }
+          }
+        }
+      },
+      {
+        "name": "skynet-sbom",
+        "type": "SBOM_CYCLONEDX_JSON",
+        "material": {
+          "slsa": {
+            "uri": "sbom.cyclonedx.json",
+            "digest": {
+              "sha256": "16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c"
+            }
+          }
+        }
+      }
+    ],
+    "builder": {
+      "id": "chainloop.dev/cli/dev@sha256:59e14f1a9de709cdd0e91c36b33e54fcca95f7dba1dc7169a7f81986e02108e5"
+    },
+    "buildType": "chainloop.dev/workflowrun/v0.1",
+    "runnerType": "GITHUB_ACTION"
+  }
+}
