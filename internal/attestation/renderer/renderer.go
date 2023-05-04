@@ -26,6 +26,7 @@ import (
 	"syscall"
 
 	v1 "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/in-toto/in-toto-golang/in_toto"
 	"github.com/rs/zerolog"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
@@ -63,7 +64,7 @@ func NewAttestationRenderer(state *v1.CraftingState, keyPath, builderVersion, bu
 		logger:         zerolog.Nop(),
 		signingKeyPath: keyPath,
 		att:            state.GetAttestation(),
-		renderer:       newChainloopRenderer(state.GetAttestation(), builderVersion, builderDigest),
+		renderer:       chainloop.NewChainloopRendererV01(state.GetAttestation(), builderVersion, builderDigest),
 	}
 
 	for _, opt := range opts {

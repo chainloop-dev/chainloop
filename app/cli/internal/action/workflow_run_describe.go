@@ -23,7 +23,7 @@ import (
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	"github.com/chainloop-dev/chainloop/internal/attestation/renderer"
+	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	sigs "github.com/sigstore/cosign/v2/pkg/signature"
 
 	"github.com/in-toto/in-toto-golang/in_toto"
@@ -47,7 +47,7 @@ type WorkflowRunAttestationItem struct {
 	CreatedAt   *time.Time     `json:"createdAt"`
 	Envelope    *dsse.Envelope `json:"envelope"`
 	statement   *in_toto.Statement
-	predicateV1 *renderer.ChainloopProvenancePredicateV1
+	predicateV1 *chainloop.ProvenancePredicateV01
 	Materials   []*Material `json:"materials,omitempty"`
 	EnvVars     []*EnvVar   `json:"envvars,omitempty"`
 }
@@ -63,7 +63,7 @@ type EnvVar struct {
 	Value string `json:"value"`
 }
 
-func (i *WorkflowRunAttestationItem) Predicate() *renderer.ChainloopProvenancePredicateV1 {
+func (i *WorkflowRunAttestationItem) Predicate() *chainloop.ProvenancePredicateV01 {
 	return i.predicateV1
 }
 
@@ -125,8 +125,8 @@ func (action *WorkflowRunDescribe) Run(runID string, verify bool, publicKey stri
 		return nil, fmt.Errorf("un-marshaling predicate: %w", err)
 	}
 
-	var predicate *renderer.ChainloopProvenancePredicateV1
-	if statement.PredicateType == renderer.ChainloopPredicateTypeV1 {
+	var predicate *chainloop.ProvenancePredicateV01
+	if statement.PredicateType == chainloop.PredicateTypeV01 {
 		if predicate, err = extractPredicateV1(statement); err != nil {
 			return nil, fmt.Errorf("extracting predicate: %w", err)
 		}
@@ -156,13 +156,13 @@ func (action *WorkflowRunDescribe) Run(runID string, verify bool, publicKey stri
 	return item, nil
 }
 
-func extractPredicateV1(statement *in_toto.Statement) (*renderer.ChainloopProvenancePredicateV1, error) {
+func extractPredicateV1(statement *in_toto.Statement) (*chainloop.ProvenancePredicateV01, error) {
 	jsonPredicate, err := json.Marshal(statement.Predicate)
 	if err != nil {
 		return nil, fmt.Errorf("un-marshaling predicate: %w", err)
 	}
 
-	predicate := &renderer.ChainloopProvenancePredicateV1{}
+	predicate := &chainloop.ProvenancePredicateV01{}
 	if err := json.Unmarshal(jsonPredicate, predicate); err != nil {
 		return nil, fmt.Errorf("un-marshaling predicate: %w", err)
 	}

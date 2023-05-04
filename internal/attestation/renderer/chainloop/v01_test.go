@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package renderer
+package chainloop
 
 import (
 	"encoding/json"
@@ -29,7 +29,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
-func TestRender(t *testing.T) {
+func TestRenderV01(t *testing.T) {
 	testCases := []struct {
 		name       string
 		sourcePath string
@@ -60,24 +60,25 @@ func TestRender(t *testing.T) {
 			err = protojson.Unmarshal(stateRaw, state)
 			require.NoError(t, err)
 
-			renderer, err := NewAttestationRenderer(state, "", "dev", "sha256:59e14f1a9de709cdd0e91c36b33e54fcca95f7dba1dc7169a7f81986e02108e5")
-			require.NoError(t, err)
+			renderer := NewChainloopRendererV01(state.Attestation, "dev", "sha256:59e14f1a9de709cdd0e91c36b33e54fcca95f7dba1dc7169a7f81986e02108e5")
 
 			// Compare header
-			gotHeader, err := renderer.renderer.Header()
+			gotHeader, err := renderer.Header()
 			assert.NoError(t, err)
 			assert.Equal(t, want.Type, gotHeader.Type)
 			assert.Equal(t, want.Subject, gotHeader.Subject)
 			assert.Equal(t, want.PredicateType, gotHeader.PredicateType)
 
 			// Compare predicate
-			gotPredicateI, err := renderer.renderer.Predicate()
+			gotPredicateI, err := renderer.Predicate()
 			assert.NoError(t, err)
-			gotPredicate := gotPredicateI.(ChainloopProvenancePredicateV1)
-			wantPredicate, err := extractPredicateV1(want)
+			gotPredicate := gotPredicateI.(ProvenancePredicateV01)
+
+			wantPredicate := ProvenancePredicateV01{}
+			err = extractPredicate(want, &wantPredicate)
+			assert.NoError(t, err)
 			wantPredicate.Metadata.FinishedAt = gotPredicate.Metadata.FinishedAt
-			assert.NoError(t, err)
-			assert.EqualValues(t, wantPredicate, &gotPredicate)
+			assert.EqualValues(t, wantPredicate, gotPredicate)
 		})
 	}
 }
@@ -107,7 +108,7 @@ func TestExtractPredicate(t *testing.T) {
 			envelope, err := testEnvelope(tc.envelopePath)
 			require.NoError(t, err)
 
-			got, err := ExtractPredicate(envelope)
+			versions, err := ExtractPredicate(envelope)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return
@@ -117,7 +118,7 @@ func TestExtractPredicate(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.NoError(t, err)
-			assert.Equal(t, want, got)
+			assert.Equal(t, want, versions.V01)
 		})
 	}
 }
@@ -137,8 +138,8 @@ func testEnvelope(filePath string) (*dsse.Envelope, error) {
 	return &envelope, nil
 }
 
-func testPredicate(path string) (*ChainloopProvenancePredicateV1, error) {
-	var predicate ChainloopProvenancePredicateV1
+func testPredicate(path string) (*ProvenancePredicateV01, error) {
+	var predicate ProvenancePredicateV01
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err

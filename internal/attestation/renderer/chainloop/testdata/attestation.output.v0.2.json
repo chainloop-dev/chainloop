@@ -1,0 +1,73 @@
+{
+  "_type": "https://in-toto.io/Statement/v0.1",
+  "predicateType": "chainloop.dev/attestation/v0.2",
+  "subject": [
+    {
+      "name": "chainloop.dev/workflow/foo",
+      "digest": {
+        "sha256": "6cd649c6105e12a235510a585371eb69c8c9ee797d8dc80d30695828ca116b00"
+      }
+    },
+    {
+      "name": "index.docker.io/bitnami/nginx",
+      "digest": {
+        "sha256": "580ac09da7771920dfd0c214964e7bfe4c27903bcbe075769a4044a67c9a390a"
+      }
+    }
+  ],
+  "predicate": {
+    "metadata": {
+      "name": "foo",
+      "project": "bar",
+      "team": "",
+      "initializedAt": "2023-05-03T17:22:12.743426076Z",
+      "finishedAt": "2023-05-04T15:53:13.659779816+02:00",
+      "workflowRunID": "",
+      "workflowID": "54ea7c5c-7592-48ac-9a9f-084b72447184"
+    },
+    "builder": {
+      "id": "chainloop.dev/cli/dev@sha256:59e14f1a9de709cdd0e91c36b33e54fcca95f7dba1dc7169a7f81986e02108e5"
+    },
+    "buildType": "chainloop.dev/workflowrun/v0.1",
+    "runnerType": "GITHUB_ACTION",
+    "materials": [
+      {
+        "content": "YS1zdHJpbmc=",
+        "annotations": {
+          "chainloop.material.name": "build-ref",
+          "chainloop.material.type": "STRING"
+        }
+      },
+      {
+        "digest": {
+          "sha256": "cfc7d8e24d21ade921d720228ad1693de59dab45ff679606940be75b7bf660dc"
+        },
+        "name": "Makefile",
+        "annotations": {
+          "chainloop.material.name": "rootfs",
+          "chainloop.material.type": "ARTIFACT"
+        }
+      },
+      {
+        "digest": {
+          "sha256": "580ac09da7771920dfd0c214964e7bfe4c27903bcbe075769a4044a67c9a390a"
+        },
+        "name": "index.docker.io/bitnami/nginx",
+        "annotations": {
+          "chainloop.material.name": "skynet-control-plane",
+          "chainloop.material.type": "CONTAINER_IMAGE"
+        }
+      },
+      {
+        "digest": {
+          "sha256": "16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c"
+        },
+        "name": "sbom.cyclonedx.json",
+        "annotations": {
+          "chainloop.material.name": "skynet-sbom",
+          "chainloop.material.type": "SBOM_CYCLONEDX_JSON"
+        }
+      }
+    ]
+  }
+}
