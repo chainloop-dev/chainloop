@@ -21,15 +21,10 @@
       "project": "bar",
       "team": "",
       "initializedAt": "2023-05-03T17:22:12.743426076Z",
-      "finishedAt": "2023-05-04T15:53:13.659779816+02:00",
+      "finishedAt": "2023-05-03T19:27:51.352850152+02:00",
       "workflowRunID": "",
       "workflowID": "54ea7c5c-7592-48ac-9a9f-084b72447184"
     },
-    "builder": {
-      "id": "chainloop.dev/cli/dev@sha256:59e14f1a9de709cdd0e91c36b33e54fcca95f7dba1dc7169a7f81986e02108e5"
-    },
-    "buildType": "chainloop.dev/workflowrun/v0.1",
-    "runnerType": "GITHUB_ACTION",
     "materials": [
       {
         "content": "YS1zdHJpbmc=",
@@ -68,6 +63,11 @@
           "chainloop.material.type": "SBOM_CYCLONEDX_JSON"
         }
       }
-    ]
+    ],
+    "builder": {
+      "id": "chainloop.dev/cli/dev@sha256:59e14f1a9de709cdd0e91c36b33e54fcca95f7dba1dc7169a7f81986e02108e5"
+    },
+    "buildType": "chainloop.dev/workflowrun/v0.1",
+    "runnerType": "GITHUB_ACTION"
   }
 }
