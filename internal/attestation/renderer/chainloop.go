@@ -19,6 +19,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -95,20 +96,23 @@ type ChainloopMaintainer struct {
 }
 
 type ChainloopRenderer struct {
-	att             *v1.Attestation
-	schema          *schemaapi.CraftingSchema
+	att     *v1.Attestation
+	builder *builderInfo
+}
+
+type builderInfo struct {
 	version, digest string
 }
 
-func newChainloopRenderer(att *v1.Attestation, schema *schemaapi.CraftingSchema, version, digest string) *ChainloopRenderer {
-	return &ChainloopRenderer{att, schema, version, digest}
+func newChainloopRenderer(att *v1.Attestation, builderVersion, builderDigest string) *ChainloopRenderer {
+	return &ChainloopRenderer{att, &builderInfo{builderVersion, builderDigest}}
 }
 
 func (r *ChainloopRenderer) Predicate() (interface{}, error) {
 	return ChainloopProvenancePredicateV1{
 		Materials:  outputChainloopMaterials(r.att, false),
 		BuildType:  chainloopBuildType,
-		Builder:    &slsacommon.ProvenanceBuilder{ID: fmt.Sprintf(builderIDFmt, r.version, r.digest)},
+		Builder:    &slsacommon.ProvenanceBuilder{ID: fmt.Sprintf(builderIDFmt, r.builder.version, r.builder.digest)},
 		Metadata:   getChainloopMeta(r.att),
 		Env:        r.att.EnvVars,
 		RunnerType: r.att.GetRunnerType().String(),
@@ -167,8 +171,19 @@ func (r *ChainloopRenderer) Header() (*in_toto.StatementHeader, error) {
 }
 
 func outputChainloopMaterials(att *v1.Attestation, onlyOutput bool) []*ChainloopProvenanceMaterial {
+	// Sort material keys to stabilize output
+	keys := make([]string, 0, len(att.GetMaterials()))
+	for k := range att.GetMaterials() {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
 	res := []*ChainloopProvenanceMaterial{}
-	for mdefName, mdef := range att.GetMaterials() {
+	materials := att.GetMaterials()
+	for _, mdefName := range keys {
+		mdef := materials[mdefName]
+
 		var value, digest string
 		artifactType := mdef.MaterialType
 		var isOutput bool

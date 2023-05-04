@@ -35,7 +35,7 @@ import (
 )
 
 type AttestationRenderer struct {
-	logger         *zerolog.Logger
+	logger         zerolog.Logger
 	signingKeyPath string
 	att            *v1.Attestation
 	renderer       r
@@ -46,17 +46,31 @@ type r interface {
 	Predicate() (interface{}, error)
 }
 
-func NewAttestationRenderer(state *v1.CraftingState, keyPath, builderVersion, builderDigest string, logger *zerolog.Logger) (*AttestationRenderer, error) {
+type Opt func(*AttestationRenderer)
+
+func WithLogger(logger zerolog.Logger) Opt {
+	return func(ar *AttestationRenderer) {
+		ar.logger = logger
+	}
+}
+
+func NewAttestationRenderer(state *v1.CraftingState, keyPath, builderVersion, builderDigest string, opts ...Opt) (*AttestationRenderer, error) {
 	if state.GetAttestation() == nil {
 		return nil, errors.New("attestation not initialized")
 	}
 
-	return &AttestationRenderer{
-		logger:         logger,
+	r := &AttestationRenderer{
+		logger:         zerolog.Nop(),
 		signingKeyPath: keyPath,
 		att:            state.GetAttestation(),
-		renderer:       newChainloopRenderer(state.GetAttestation(), state.GetInputSchema(), builderVersion, builderDigest),
-	}, nil
+		renderer:       newChainloopRenderer(state.GetAttestation(), builderVersion, builderDigest),
+	}
+
+	for _, opt := range opts {
+		opt(r)
+	}
+
+	return r, nil
 }
 
 // Attestation (dsee envelope) -> { message: { Statement(in-toto): [subject, predicate] }, signature: "sig" }.

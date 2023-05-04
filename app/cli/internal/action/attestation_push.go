@@ -28,7 +28,7 @@ import (
 
 type AttestationPushOpts struct {
 	*ActionsOpts
-	KeyPath, CLIversion, CLIDigest string
+	KeyPath, CLIVersion, CLIDigest string
 }
 
 type AttestationPush struct {
@@ -42,7 +42,7 @@ func NewAttestationPush(cfg *AttestationPushOpts) *AttestationPush {
 		ActionsOpts: cfg.ActionsOpts,
 		c:           crafter.NewCrafter(crafter.WithLogger(&cfg.Logger)),
 		keyPath:     cfg.KeyPath,
-		cliVersion:  cfg.CLIversion,
+		cliVersion:  cfg.CLIVersion,
 		cliDigest:   cfg.CLIDigest,
 	}
 }
@@ -64,7 +64,7 @@ func (action *AttestationPush) Run() (interface{}, error) {
 
 	action.Logger.Debug().Msg("validation completed")
 
-	renderer, err := renderer.NewAttestationRenderer(action.c.CraftingState, action.keyPath, action.cliVersion, action.cliDigest, &action.Logger)
+	renderer, err := renderer.NewAttestationRenderer(action.c.CraftingState, action.keyPath, action.cliVersion, action.cliDigest, renderer.WithLogger(action.Logger))
 	if err != nil {
 		return nil, err
 	}
