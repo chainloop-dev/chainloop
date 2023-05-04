@@ -24,7 +24,7 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer"
-	sigs "github.com/sigstore/cosign/pkg/signature"
+	sigs "github.com/sigstore/cosign/v2/pkg/signature"
 
 	"github.com/in-toto/in-toto-golang/in_toto"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
@@ -114,7 +114,7 @@ func (action *WorkflowRunDescribe) Run(runID string, verify bool, publicKey stri
 		item.Verified = true
 	}
 
-	// Decode intoto statement
+	// Decode in-toto statement
 	statement := &in_toto.Statement{}
 	decodedPayload, err := envelope.DecodeB64Payload()
 	if err != nil {
@@ -172,17 +172,17 @@ func extractPredicateV1(statement *in_toto.Statement) (*renderer.ChainloopProven
 
 func verifyEnvelope(ctx context.Context, e *dsse.Envelope, publicKey string) error {
 	// Currently we only support basic cosign public key check
-	// TODO: Add more verification methos
+	// TODO: Add more verification methods
 	verifier, err := sigs.PublicKeyFromKeyRef(ctx, publicKey)
 	if err != nil {
 		return err
 	}
 
-	dssev, err := dsse.NewEnvelopeVerifier(&sigdsee.VerifierAdapter{SignatureVerifier: verifier})
+	dsseVerifier, err := dsse.NewEnvelopeVerifier(&sigdsee.VerifierAdapter{SignatureVerifier: verifier})
 	if err != nil {
 		return err
 	}
 
-	_, err = dssev.Verify(e)
+	_, err = dsseVerifier.Verify(ctx, e)
 	return err
 }
