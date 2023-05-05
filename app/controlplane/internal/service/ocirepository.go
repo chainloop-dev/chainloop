@@ -50,10 +50,10 @@ func (s *OCIRepositoryService) Save(ctx context.Context, req *pb.OCIRepositorySe
 	username := req.GetKeyPair().Username
 	password := req.GetKeyPair().Password
 
-	// Create credentials
+	// Create and validate credentials
 	k, err := ociauth.NewCredentials(req.Repository, username, password)
 	if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, errors.BadRequest("wrong credentials", err.Error())
 	}
 
 	// Check credentials
