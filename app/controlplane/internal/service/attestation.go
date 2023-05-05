@@ -28,7 +28,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/integration/dependencytrack"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
-	"github.com/chainloop-dev/chainloop/internal/attestation/renderer"
+	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
@@ -282,9 +282,14 @@ func bizAttestationToPb(att *biz.Attestation) (*cpAPI.AttestationItem, error) {
 		return nil, err
 	}
 
-	predicate, err := renderer.ExtractPredicate(att.Envelope)
+	predicates, err := chainloop.ExtractPredicate(att.Envelope)
 	if err != nil {
 		return nil, err
+	}
+
+	predicate := predicates.V01
+	if predicate == nil {
+		return nil, errors.InternalServer("invalid attestation type", "attestation does not contain a V01 predicate")
 	}
 
 	return &cpAPI.AttestationItem{
@@ -308,7 +313,7 @@ func extractEnvVariables(in map[string]string) []*cpAPI.AttestationItem_EnvVaria
 	return res
 }
 
-func extractMaterials(in []*renderer.ChainloopProvenanceMaterial) []*cpAPI.AttestationItem_Material {
+func extractMaterials(in []*chainloop.ProvenanceMaterial) []*cpAPI.AttestationItem_Material {
 	res := make([]*cpAPI.AttestationItem_Material, 0, len(in))
 	for _, m := range in {
 		res = append(res, &cpAPI.AttestationItem_Material{Name: m.Name, Value: m.Material.String(), Type: m.Type})

@@ -28,11 +28,11 @@ import (
 	contractAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/integrations/dependencytrack"
-	"github.com/chainloop-dev/chainloop/internal/attestation/renderer"
+	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
+	errors "github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/go-openapi/errors"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
 
@@ -106,9 +106,14 @@ func (uc *Integration) UploadSBOMs(envelope *dsse.Envelope, orgID, workflowID st
 	}
 
 	// There is at least one enabled integration, extract the SBOMs
-	predicate, err := renderer.ExtractPredicate(envelope)
+	predicates, err := chainloop.ExtractPredicate(envelope)
 	if err != nil {
 		return err
+	}
+
+	predicate := predicates.V01
+	if predicate == nil {
+		return errors.Forbidden("not implemented", "only v0.1 predicate is supported for now")
 	}
 
 	repo, err := uc.ociUC.FindMainRepo(ctx, orgID)
