@@ -17,6 +17,7 @@ package ociauth
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -31,7 +32,7 @@ type Credentials struct {
 func NewCredentials(repoURI, username, password string) (authn.Keychain, error) {
 	repo, err := name.NewRepository(repoURI)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid repository URI: %w", err)
 	}
 
 	// NOTE: NewRepository parses incorrectly URIs with schemas
