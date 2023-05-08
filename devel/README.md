@@ -69,3 +69,4 @@ You will get redirected to the pre-configured local OIDC provider (DEX) where th
 - `john@chainloop.local`/`password`
 
 Once logged in, please refer to our [Getting Started guide](https://docs.chainloop.dev/getting-started/setup) to learn how to setup an OCI registry.
+

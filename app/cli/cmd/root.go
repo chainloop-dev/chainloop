@@ -37,6 +37,8 @@ var (
 	flagOutputFormat string
 	actionOpts       *action.ActionsOpts
 	logger           zerolog.Logger
+	defaultCPAPI     = "api.cp.chainloop.dev:443"
+	defaultCASAPI    = "api.cas.chainloop.dev:443"
 )
 
 const useWorkflowRobotAccount = "withWorkflowRobotAccount"
@@ -92,11 +94,12 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
 
 	rootCmd.PersistentFlags().StringVarP(&flagCfgFile, "config", "c", "", "Path to an existing config file (default is $HOME/.config/chainloop/config.toml)")
-	rootCmd.PersistentFlags().String(confOptions.controlplaneAPI.flagName, "api.cp.chainloop.dev:443", "URL for the Control Plane API")
+
+	rootCmd.PersistentFlags().String(confOptions.controlplaneAPI.flagName, defaultCPAPI, "URL for the Control Plane API")
 	err := viper.BindPFlag(confOptions.controlplaneAPI.viperKey, rootCmd.PersistentFlags().Lookup(confOptions.controlplaneAPI.flagName))
 	cobra.CheckErr(err)
 
-	rootCmd.PersistentFlags().String(confOptions.CASAPI.flagName, "api.cas.chainloop.dev:443", "URL for the Artifacts Content Addressable Storage (CAS)")
+	rootCmd.PersistentFlags().String(confOptions.CASAPI.flagName, defaultCASAPI, "URL for the Artifacts Content Addressable Storage (CAS)")
 	err = viper.BindPFlag(confOptions.CASAPI.viperKey, rootCmd.PersistentFlags().Lookup(confOptions.CASAPI.flagName))
 	cobra.CheckErr(err)
 

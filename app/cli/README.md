@@ -57,6 +57,19 @@ We leverage buf.io to lint and generate proto files. Make sure you [install buf]
 make api
 ```
 
+### Updating default values
+
+By default CLI uses the following values for the Control Plane and Artifacts CAS API endpoints:
+
+- Artifacts CAS: api.cas.chainloop.dev:443
+- Control Plane API: api.cp.chainloop.dev:443
+
+If you want to change them to your custom endpoints, you can do that at build time. We will use `ldflags` and the following variables: `defaultCASAPI` and `defaultCPAPI`. We assume in this example that we have our instance of Chainloop running at the following locations: `api.cas.acme.com:443` and `api.cp.acme.com:443`.
+
+```
+go build -ldflags "-X 'github.com/chainloop-dev/chainloop/app/cli/cmd.defaultCASAPI=api.cas.acme.com:443' -X 'github.com/chainloop-dev/chainloop/app/cli/cmd.defaultCPAPI=api.cp.acme.com:443'" app/cli/main.go
+```
+
 ## Contribution guidelines
 
 Please make sure to review the [Contribution guidelines](../../CONTRIBUTING.md) and feel free to reach out if you have any questions!
