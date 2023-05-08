@@ -133,3 +133,33 @@ func outputSLSAMaterials(att *v1.Attestation, onlyOutput bool) []*slsa_v1.Resour
 
 	return res
 }
+
+// Implement NormalizablePredicate interface
+func (p *ProvenancePredicateV02) GetMaterials() []*NormalizedMaterial {
+	res := make([]*NormalizedMaterial, 0, len(p.Materials))
+	for _, material := range p.Materials {
+		m := &NormalizedMaterial{}
+		if v, ok := material.Annotations[AnnotationMaterialType]; ok {
+			// Set the type
+			m.Type = v.(string)
+			// Set the Value
+			if m.Type == schemaapi.CraftingSchema_Material_STRING.String() {
+				m.StringValue = string(material.Content)
+			} else {
+				// we just care about the first one
+				for alg, h := range material.Digest {
+					m.StringValue = fmt.Sprintf("%s@%s:%s", material.Name, alg, h)
+				}
+			}
+		}
+
+		// Set the Material Name
+		if v, ok := material.Annotations[AnnotationMaterialName]; ok {
+			m.Name = v.(string)
+		}
+
+		res = append(res, m)
+	}
+
+	return res
+}

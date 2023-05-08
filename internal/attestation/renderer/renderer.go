@@ -64,7 +64,7 @@ func NewAttestationRenderer(state *v1.CraftingState, keyPath, builderVersion, bu
 		logger:         zerolog.Nop(),
 		signingKeyPath: keyPath,
 		att:            state.GetAttestation(),
-		renderer:       chainloop.NewChainloopRendererV01(state.GetAttestation(), builderVersion, builderDigest),
+		renderer:       chainloop.NewChainloopRendererV02(state.GetAttestation(), builderVersion, builderDigest),
 	}
 
 	for _, opt := range opts {

@@ -17,7 +17,6 @@ package action
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -43,13 +42,12 @@ type WorkflowRunItemFull struct {
 }
 
 type WorkflowRunAttestationItem struct {
-	ID          string         `json:"id"`
-	CreatedAt   *time.Time     `json:"createdAt"`
-	Envelope    *dsse.Envelope `json:"envelope"`
-	statement   *in_toto.Statement
-	predicateV1 *chainloop.ProvenancePredicateV01
-	Materials   []*Material `json:"materials,omitempty"`
-	EnvVars     []*EnvVar   `json:"envvars,omitempty"`
+	ID        string         `json:"id"`
+	CreatedAt *time.Time     `json:"createdAt"`
+	Envelope  *dsse.Envelope `json:"envelope"`
+	statement *in_toto.Statement
+	Materials []*Material `json:"materials,omitempty"`
+	EnvVars   []*EnvVar   `json:"envvars,omitempty"`
 }
 
 type Material struct {
@@ -61,10 +59,6 @@ type Material struct {
 type EnvVar struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
-}
-
-func (i *WorkflowRunAttestationItem) Predicate() *chainloop.ProvenancePredicateV01 {
-	return i.predicateV1
 }
 
 func (i *WorkflowRunAttestationItem) Statement() *in_toto.Statement {
@@ -114,24 +108,9 @@ func (action *WorkflowRunDescribe) Run(runID string, verify bool, publicKey stri
 		item.Verified = true
 	}
 
-	// Decode in-toto statement
-	statement := &in_toto.Statement{}
-	decodedPayload, err := envelope.DecodeB64Payload()
+	statement, err := chainloop.ExtractStatement(envelope)
 	if err != nil {
-		return nil, fmt.Errorf("decoding payload: %w", err)
-	}
-
-	if err := json.Unmarshal(decodedPayload, statement); err != nil {
-		return nil, fmt.Errorf("un-marshaling predicate: %w", err)
-	}
-
-	var predicate *chainloop.ProvenancePredicateV01
-	if statement.PredicateType == chainloop.PredicateTypeV01 {
-		if predicate, err = extractPredicateV1(statement); err != nil {
-			return nil, fmt.Errorf("extracting predicate: %w", err)
-		}
-	} else {
-		return nil, errors.New("predicate type not supported")
+		return nil, fmt.Errorf("extracting statement: %w", err)
 	}
 
 	envVars := make([]*EnvVar, 0, len(attestation.GetEnvVars()))
@@ -146,28 +125,13 @@ func (action *WorkflowRunDescribe) Run(runID string, verify bool, publicKey stri
 
 	item.Attestation = &WorkflowRunAttestationItem{
 		ID: attestation.Id, CreatedAt: toTimePtr(attestation.CreatedAt.AsTime()),
-		Envelope:    envelope,
-		statement:   statement,
-		predicateV1: predicate,
-		EnvVars:     envVars,
-		Materials:   materials,
+		Envelope:  envelope,
+		statement: statement,
+		EnvVars:   envVars,
+		Materials: materials,
 	}
 
 	return item, nil
-}
-
-func extractPredicateV1(statement *in_toto.Statement) (*chainloop.ProvenancePredicateV01, error) {
-	jsonPredicate, err := json.Marshal(statement.Predicate)
-	if err != nil {
-		return nil, fmt.Errorf("un-marshaling predicate: %w", err)
-	}
-
-	predicate := &chainloop.ProvenancePredicateV01{}
-	if err := json.Unmarshal(jsonPredicate, predicate); err != nil {
-		return nil, fmt.Errorf("un-marshaling predicate: %w", err)
-	}
-
-	return predicate, nil
 }
 
 func verifyEnvelope(ctx context.Context, e *dsse.Envelope, publicKey string) error {
