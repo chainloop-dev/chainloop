@@ -69,3 +69,41 @@ You will get redirected to the pre-configured local OIDC provider (DEX) where th
 - `john@chainloop.local`/`password`
 
 Once logged in, please refer to our [Getting Started guide](https://docs.chainloop.dev/getting-started/setup) to learn how to setup an OCI registry.
+
+## Building CLI
+### Updating default values
+
+By default the Chainloop command line tool uses the following values for the Control Plane and Artifacts CAS API endpoints:
+
+- Artifacts CAS: api.cas.chainloop.dev:443
+- Control Plane API: api.cp.chainloop.dev:443
+
+You can review them in the Chainloop CLI help message.
+
+```
+Flags:
+      --artifact-cas string    URL for the Artifacts Content Addressable Storage (CAS) (default "api.cas.chainloop.dev:443")
+  -c, --config string          Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
+      --control-plane string   URL for the Control Plane API (default "api.cp.chainloop.dev:443")
+```
+
+If you want to change these default values to your custom endpoints, you can do that at the command line build time. Please take a look at some examples below:
+
+**Example 1** Building the Chainloop CLI:
+
+```
+cd chainloop
+go build app/cli/main.go
+```
+
+**Example 2** Set the default value for the Artifacts CAS endpoint. We will use `ldflags` and the `defaultCasAPI` variable. We assume in this example that we have our instance of CAS running at the following location: `api.cas.acme.com:443`.
+
+```
+go build -ldflags "-X 'github.com/chainloop-dev/chainloop/app/cli/cmd.defaultCasAPI=api.cas.acme.com:443'" app/cli/main.go
+```
+
+**Example 3** Set both the Artifacts CAS and Control Plane endpoints. We use two variables here: `defaultCasAPI` and `defaultCpAPI`.
+
+```
+go build -ldflags "-X 'github.com/chainloop-dev/chainloop/app/cli/cmd.defaultCasAPI=api.cas.acme.com:443' -X 'github.com/chainloop-dev/chainloop/app/cli/cmd.defaultCpAPI=api.cp.acme.com:443'" app/cli/main.go
+```
