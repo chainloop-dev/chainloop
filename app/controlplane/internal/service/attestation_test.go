@@ -66,5 +66,4 @@ func TestExtractMaterials(t *testing.T) {
 			assert.Equal(t, got, tc.want)
 		})
 	}
-
 }
