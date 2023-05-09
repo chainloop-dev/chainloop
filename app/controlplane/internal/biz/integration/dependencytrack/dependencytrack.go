@@ -124,6 +124,7 @@ func (uc *Integration) UploadSBOMs(envelope *dsse.Envelope, orgID, workflowID st
 		}
 
 		if material.Hash == nil {
+			uc.log.Warnw("msg", "CYCLONE_DX material but download digest missing, skipping", "workflowID", workflowID, "integration", Kind, "name", material.Name)
 			continue
 		}
 

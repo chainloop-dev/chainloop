@@ -316,10 +316,10 @@ func extractMaterials(in []*chainloop.NormalizedMaterial) []*cpAPI.AttestationIt
 		// Override if there is a hash attached
 		if m.Hash != nil {
 			displayValue = fmt.Sprintf("%s@%s", m.Value, m.Hash)
-
 		}
 
 		res = append(res, &cpAPI.AttestationItem_Material{Name: m.Name, Value: displayValue, Type: m.Type})
 	}
+
 	return res
 }

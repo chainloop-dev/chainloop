@@ -51,7 +51,7 @@ func NewChainloopRendererV02(att *v1.Attestation, builderVersion, builderDigest 
 func (r *RendererV02) Predicate() (interface{}, error) {
 	return ProvenancePredicateV02{
 		ProvenancePredicateCommon: predicateCommon(r.builder, r.att),
-		Materials:                 outputSLSAMaterials(r.att, false),
+		Materials:                 outputMaterials(r.att, false),
 	}, nil
 }
 
@@ -71,7 +71,7 @@ func (r *RendererV02) Header() (*in_toto.StatementHeader, error) {
 		},
 	}
 
-	for _, m := range outputSLSAMaterials(r.att, true) {
+	for _, m := range outputMaterials(r.att, true) {
 		if m.Digest != nil {
 			subjects = append(subjects, in_toto.Subject{
 				Name:   m.Name,
@@ -90,7 +90,7 @@ func (r *RendererV02) Header() (*in_toto.StatementHeader, error) {
 const AnnotationMaterialType = "chainloop.material.type"
 const AnnotationMaterialName = "chainloop.material.name"
 
-func outputSLSAMaterials(att *v1.Attestation, onlyOutput bool) []*slsa_v1.ResourceDescriptor {
+func outputMaterials(att *v1.Attestation, onlyOutput bool) []*slsa_v1.ResourceDescriptor {
 	// Sort material keys to stabilize output
 	keys := make([]string, 0, len(att.GetMaterials()))
 	for k := range att.GetMaterials() {
@@ -140,29 +140,61 @@ func outputSLSAMaterials(att *v1.Attestation, onlyOutput bool) []*slsa_v1.Resour
 func (p *ProvenancePredicateV02) GetMaterials() []*NormalizedMaterial {
 	res := make([]*NormalizedMaterial, 0, len(p.Materials))
 	for _, material := range p.Materials {
-		m := &NormalizedMaterial{}
-		if v, ok := material.Annotations[AnnotationMaterialType]; ok {
-			// Set the type
-			m.Type = v.(string)
-			// Set the Value
-			if m.Type == schemaapi.CraftingSchema_Material_STRING.String() {
-				m.Value = string(material.Content)
-			} else {
-				// we just care about the first one
-				for alg, h := range material.Digest {
-					m.Value = material.Name
-					m.Hash = &crv1.Hash{Algorithm: alg, Hex: h}
-				}
-			}
-		}
-
-		// Set the Material Name
-		if v, ok := material.Annotations[AnnotationMaterialName]; ok {
-			m.Name = v.(string)
+		m, err := normalizeMaterial(material)
+		if err != nil {
+			continue
 		}
 
 		res = append(res, m)
 	}
 
 	return res
+}
+
+// Translate a ResourceDescriptor to a NormalizedMaterial
+func normalizeMaterial(material *slsa_v1.ResourceDescriptor) (*NormalizedMaterial, error) {
+	m := &NormalizedMaterial{}
+
+	mType, ok := material.Annotations[AnnotationMaterialType]
+	if !ok {
+		return nil, fmt.Errorf("material type not found")
+	}
+
+	// Set the type
+	m.Type = mType.(string)
+
+	mName, ok := material.Annotations[AnnotationMaterialName]
+	if !ok {
+		return nil, fmt.Errorf("material name not found")
+	}
+
+	// Set the Material Name
+	m.Name = mName.(string)
+
+	// Set the Value
+	// If we have a string material, we just set the value
+	if m.Type == schemaapi.CraftingSchema_Material_STRING.String() {
+		if material.Content == nil {
+			return nil, fmt.Errorf("material content not found")
+		}
+
+		m.Value = string(material.Content)
+
+		return m, nil
+	}
+
+	// for the rest of the materials we use both the name and the digest
+	d, ok := material.Digest["sha256"]
+	if !ok {
+		return nil, fmt.Errorf("material digest not found")
+	}
+
+	m.Hash = &crv1.Hash{Algorithm: "sha256", Hex: d}
+	if material.Name == "" {
+		return nil, fmt.Errorf("material name not found")
+	}
+
+	m.Value = material.Name
+
+	return m, nil
 }

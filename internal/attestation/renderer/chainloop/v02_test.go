@@ -21,7 +21,9 @@ import (
 	"testing"
 
 	api "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
+	crv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/in-toto/in-toto-golang/in_toto"
+	slsa_v1 "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -77,6 +79,124 @@ func TestRenderV02(t *testing.T) {
 			assert.NoError(t, err)
 			wantPredicate.Metadata.FinishedAt = gotPredicate.Metadata.FinishedAt
 			assert.EqualValues(t, wantPredicate, gotPredicate)
+		})
+	}
+}
+
+func TestNormalizeMaterial(t *testing.T) {
+	testCases := []struct {
+		name    string
+		input   *slsa_v1.ResourceDescriptor
+		want    *NormalizedMaterial
+		wantErr bool
+	}{
+		{
+			name: "invalid material type",
+			input: &slsa_v1.ResourceDescriptor{
+				Annotations: map[string]interface{}{
+					"chainloop.material.name": "foo",
+					"chainloop.material.type": "INVALID",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing material type",
+			input: &slsa_v1.ResourceDescriptor{
+				Annotations: map[string]interface{}{
+					"chainloop.material.name": "foo",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing material name",
+			input: &slsa_v1.ResourceDescriptor{
+				Annotations: map[string]interface{}{
+					"chainloop.material.type": "STRING",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "valid string material",
+			input: &slsa_v1.ResourceDescriptor{
+				Annotations: map[string]interface{}{
+					"chainloop.material.name": "foo",
+					"chainloop.material.type": "STRING",
+				},
+				Content: []byte("bar"),
+			},
+			want: &NormalizedMaterial{
+				Name:  "foo",
+				Type:  "STRING",
+				Value: "bar",
+			},
+		},
+		{
+			name: "empty string material",
+			input: &slsa_v1.ResourceDescriptor{
+				Annotations: map[string]interface{}{
+					"chainloop.material.name": "foo",
+					"chainloop.material.type": "STRING",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "valid artifact material",
+			input: &slsa_v1.ResourceDescriptor{
+				Annotations: map[string]interface{}{
+					"chainloop.material.name": "foo",
+					"chainloop.material.type": "ARTIFACT",
+				},
+				Digest: map[string]string{
+					"sha256": "deadbeef",
+				},
+				Name: "artifact.tgz",
+			},
+			want: &NormalizedMaterial{
+				Name:  "foo",
+				Type:  "ARTIFACT",
+				Value: "artifact.tgz",
+				Hash:  &crv1.Hash{Algorithm: "sha256", Hex: "deadbeef"},
+			},
+		},
+		{
+			name: "invalid artifact material, missing file name",
+			input: &slsa_v1.ResourceDescriptor{
+				Annotations: map[string]interface{}{
+					"chainloop.material.name": "foo",
+					"chainloop.material.type": "ARTIFACT",
+				},
+				Digest: map[string]string{
+					"sha256": "deadbeef",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid artifact material, missing digest",
+			input: &slsa_v1.ResourceDescriptor{
+				Annotations: map[string]interface{}{
+					"chainloop.material.name": "foo",
+					"chainloop.material.type": "ARTIFACT",
+				},
+				Name: "artifact.tgz",
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := normalizeMaterial(tc.input)
+			if tc.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.EqualValues(t, tc.want, got)
+			}
 		})
 	}
 }
