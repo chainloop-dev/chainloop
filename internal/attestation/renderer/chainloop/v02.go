@@ -23,12 +23,14 @@ import (
 	"strings"
 
 	v1 "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
+	crv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/in-toto/in-toto-golang/in_toto"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	slsa_v1 "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v1"
 )
 
+// Replace custom material type with https://github.com/in-toto/attestation/blob/main/spec/v1.0/resource_descriptor.md
 const PredicateTypeV02 = "chainloop.dev/attestation/v0.2"
 
 type ProvenancePredicateV02 struct {
@@ -144,11 +146,12 @@ func (p *ProvenancePredicateV02) GetMaterials() []*NormalizedMaterial {
 			m.Type = v.(string)
 			// Set the Value
 			if m.Type == schemaapi.CraftingSchema_Material_STRING.String() {
-				m.StringValue = string(material.Content)
+				m.Value = string(material.Content)
 			} else {
 				// we just care about the first one
 				for alg, h := range material.Digest {
-					m.StringValue = fmt.Sprintf("%s@%s:%s", material.Name, alg, h)
+					m.Value = material.Name
+					m.Hash = &crv1.Hash{Algorithm: alg, Hex: h}
 				}
 			}
 		}

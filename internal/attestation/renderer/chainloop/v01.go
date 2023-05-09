@@ -26,6 +26,7 @@ import (
 	"github.com/in-toto/in-toto-golang/in_toto"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	crv1 "github.com/google/go-containerregistry/pkg/v1"
 	slsacommon "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/common"
 )
 
@@ -44,23 +45,6 @@ type ProvenanceMaterial struct {
 
 type SLSACommonProvenanceMaterial struct {
 	*slsacommon.ProvenanceMaterial
-}
-
-func (m *SLSACommonProvenanceMaterial) String() (res string) {
-	// we just care about the first one
-	for alg, h := range m.Digest {
-		res = fmt.Sprintf("%s@%s:%s", m.URI, alg, h)
-	}
-
-	return
-}
-
-func (m *ProvenanceM) String() string {
-	if m.SLSA != nil {
-		return m.SLSA.String()
-	}
-
-	return m.StringVal
 }
 
 type ProvenanceM struct {
@@ -169,11 +153,19 @@ func outputChainloopMaterials(att *v1.Attestation, onlyOutput bool) []*Provenanc
 func (p *ProvenancePredicateV01) GetMaterials() []*NormalizedMaterial {
 	res := make([]*NormalizedMaterial, 0, len(p.Materials))
 	for _, m := range p.Materials {
-		res = append(res, &NormalizedMaterial{
-			Name:        m.Name,
-			Type:        m.Type,
-			StringValue: m.Material.String(),
-		})
+		nm := &NormalizedMaterial{
+			Name: m.Name,
+			Type: m.Type,
+		}
+
+		if m.Material.StringVal != "" {
+			nm.Value = m.Material.StringVal
+		} else if m.Material.SLSA != nil {
+			nm.Value = m.Material.SLSA.URI
+			nm.Hash = &crv1.Hash{Algorithm: "sha256", Hex: m.Material.SLSA.Digest["sha256"]}
+		}
+
+		res = append(res, nm)
 	}
 
 	return res

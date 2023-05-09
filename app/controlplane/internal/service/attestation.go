@@ -282,16 +282,9 @@ func bizAttestationToPb(att *biz.Attestation) (*cpAPI.AttestationItem, error) {
 		return nil, err
 	}
 
-	predicates, err := chainloop.ExtractPredicate(att.Envelope)
+	predicate, err := chainloop.ExtractPredicate(att.Envelope)
 	if err != nil {
 		return nil, fmt.Errorf("error extracting predicate from attestation: %w", err)
-	}
-
-	var predicate chainloop.NormalizablePredicate
-	if predicates.V01 != nil {
-		predicate = predicates.V01
-	} else if predicates.V02 != nil {
-		predicate = predicates.V02
 	}
 
 	return &cpAPI.AttestationItem{
@@ -318,7 +311,15 @@ func extractEnvVariables(in map[string]string) []*cpAPI.AttestationItem_EnvVaria
 func extractMaterials(in []*chainloop.NormalizedMaterial) []*cpAPI.AttestationItem_Material {
 	res := make([]*cpAPI.AttestationItem_Material, 0, len(in))
 	for _, m := range in {
-		res = append(res, &cpAPI.AttestationItem_Material{Name: m.Name, Value: m.StringValue, Type: m.Type})
+		// Initialize simply with the value
+		displayValue := m.Value
+		// Override if there is a hash attached
+		if m.Hash != nil {
+			displayValue = fmt.Sprintf("%s@%s", m.Value, m.Hash)
+
+		}
+
+		res = append(res, &cpAPI.AttestationItem_Material{Name: m.Name, Value: displayValue, Type: m.Type})
 	}
 	return res
 }

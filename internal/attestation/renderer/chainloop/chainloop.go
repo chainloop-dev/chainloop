@@ -23,12 +23,10 @@ import (
 	v1 "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 
+	crv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/in-toto/in-toto-golang/in_toto"
 	slsacommon "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/common"
 )
-
-// // Replace custom material type with https://github.com/in-toto/attestation/blob/main/spec/v1.0/resource_descriptor.md
-// const ChainloopPredicateTypeV02 = "chainloop.dev/attestation/v0.2"
 
 // TODO: Figure out a more appropriate meaning
 const chainloopBuildType = "chainloop.dev/workflowrun/v0.1"
@@ -42,14 +40,14 @@ type NormalizablePredicate interface {
 }
 
 type NormalizedMaterial struct {
-	Name        string
-	Type        string
-	StringValue string
-}
-
-type ProvenancePredicateVersions struct {
-	V01 *ProvenancePredicateV01
-	V02 *ProvenancePredicateV02
+	// Name of the Material
+	Name string
+	// Type of the Material
+	Type string
+	// Either the fileName or the actual string content
+	Value string
+	// Hash of the Material
+	Hash *crv1.Hash
 }
 
 type ProvenancePredicateCommon struct {
@@ -131,7 +129,12 @@ func ExtractStatement(envelope *dsse.Envelope) (*in_toto.Statement, error) {
 }
 
 // Extract the Chainloop attestation predicate from an encoded DSSE envelope
-func ExtractPredicate(envelope *dsse.Envelope) (*ProvenancePredicateVersions, error) {
+// NOTE: We return a NormalizablePredicate interface to allow for future versions
+// of the predicate to be extracted without updating the consumer.
+// Yes, having the producer define and return an interface is an anti-pattern.
+// but it greatly simplifies the code since there are multiple consumers at different layers of the app
+// and we expect predicates to evolve quickly
+func ExtractPredicate(envelope *dsse.Envelope) (NormalizablePredicate, error) {
 	// 1 - Extract the in-toto statement
 	statement, err := ExtractStatement(envelope)
 	if err != nil {
@@ -146,14 +149,14 @@ func ExtractPredicate(envelope *dsse.Envelope) (*ProvenancePredicateVersions, er
 			return nil, fmt.Errorf("extracting predicate: %w", err)
 		}
 
-		return &ProvenancePredicateVersions{V01: predicate}, nil
+		return predicate, nil
 	case PredicateTypeV02:
 		var predicate *ProvenancePredicateV02
 		if err = extractPredicate(statement, &predicate); err != nil {
 			return nil, fmt.Errorf("extracting predicate: %w", err)
 		}
 
-		return &ProvenancePredicateVersions{V02: predicate}, nil
+		return predicate, nil
 	default:
 		return nil, fmt.Errorf("unsupported predicate type: %s", statement.PredicateType)
 	}

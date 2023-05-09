@@ -17,11 +17,11 @@ package chainloop
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"testing"
 
 	api "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
+	crv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/in-toto/in-toto-golang/in_toto"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/stretchr/testify/assert"
@@ -85,16 +85,33 @@ func TestRenderV01(t *testing.T) {
 
 func TestExtractPredicate(t *testing.T) {
 	testCases := []struct {
-		name          string
-		envelopePath  string
-		predicatePath string
-		wantErr       bool
+		name         string
+		envelopePath string
+		envVars      map[string]string
+		materials    []*NormalizedMaterial
+		wantErr      bool
 	}{
 		{
-			name:          "valid envelope",
-			envelopePath:  "testdata/valid.envelope.json",
-			predicatePath: "testdata/valid.predicate.json",
-			wantErr:       false,
+			name:         "valid envelope",
+			envelopePath: "testdata/valid.envelope.json",
+			envVars:      map[string]string{"GITHUB_ACTOR": "migmartri", "GITHUB_REF": "refs/tags/v0.0.39", "GITHUB_REPOSITORY": "chainloop-dev/integration-demo", "GITHUB_REPOSITORY_OWNER": "chainloop-dev", "GITHUB_RUN_ID": "4410543365", "GITHUB_SHA": "0accc9392fb1f9b258167c18ffa0aeb626973f1c", "RUNNER_NAME": "Hosted Agent", "RUNNER_OS": "Linux"},
+			materials: []*NormalizedMaterial{
+				{
+					Name: "binary", Type: "ARTIFACT",
+					Value: "integration-demo_0.0.39_linux_amd64.tar.gz",
+					Hash:  &crv1.Hash{Algorithm: "sha256", Hex: "b155cdfc328b273c4b741c08b3b84ac441b0562ca51893f23495b35abf89ea87"},
+				},
+				{
+					Name: "image", Type: "CONTAINER_IMAGE",
+					Value: "ghcr.io/chainloop-dev/integration-demo",
+					Hash:  &crv1.Hash{Algorithm: "sha256", Hex: "e0d8179991dd735baf0961901b33476a76a0f300bc4ea07e3d7ae7c24e147193"},
+				},
+				{
+					Name: "sbom", Type: "SBOM_CYCLONEDX_JSON",
+					Value: "sbom.cyclonedx.json",
+					Hash:  &crv1.Hash{Algorithm: "sha256", Hex: "b50f38961cc2e97d0903f4683a40e2528f7f6c9d382e8c6048b0363af95b7080"},
+				},
+			},
 		},
 		{
 			name:         "unknown source attestation",
@@ -108,17 +125,17 @@ func TestExtractPredicate(t *testing.T) {
 			envelope, err := testEnvelope(tc.envelopePath)
 			require.NoError(t, err)
 
-			versions, err := ExtractPredicate(envelope)
+			gotPredicate, err := ExtractPredicate(envelope)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return
 			}
 
-			want, err := testPredicate(tc.predicatePath)
-			require.NoError(t, err)
+			gotVars := gotPredicate.GetEnvVars()
+			assert.Equal(t, tc.envVars, gotVars)
 
-			assert.NoError(t, err)
-			assert.Equal(t, want, versions.V01)
+			gotMaterials := gotPredicate.GetMaterials()
+			assert.Equal(t, tc.materials, gotMaterials)
 		})
 	}
 }
@@ -136,18 +153,4 @@ func testEnvelope(filePath string) (*dsse.Envelope, error) {
 	}
 
 	return &envelope, nil
-}
-
-func testPredicate(path string) (*ProvenancePredicateV01, error) {
-	var predicate ProvenancePredicateV01
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := json.Unmarshal(content, &predicate); err != nil {
-		return nil, fmt.Errorf("un-marshaling predicate: %w", err)
-	}
-
-	return &predicate, nil
 }
