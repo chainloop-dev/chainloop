@@ -21,21 +21,33 @@ import (
 	"time"
 
 	v1 "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
+	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 
+	crv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/in-toto/in-toto-golang/in_toto"
 	slsacommon "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/common"
 )
-
-// // Replace custom material type with https://github.com/in-toto/attestation/blob/main/spec/v1.0/resource_descriptor.md
-// const ChainloopPredicateTypeV02 = "chainloop.dev/attestation/v0.2"
 
 // TODO: Figure out a more appropriate meaning
 const chainloopBuildType = "chainloop.dev/workflowrun/v0.1"
 
 const builderIDFmt = "chainloop.dev/cli/%s@%s"
 
-type ProvenancePredicateVersions struct {
-	V01 *ProvenancePredicateV01
+// NormalizablePredicate represents a common interface of how to extract materials and env vars
+type NormalizablePredicate interface {
+	GetEnvVars() map[string]string
+	GetMaterials() []*NormalizedMaterial
+}
+
+type NormalizedMaterial struct {
+	// Name of the Material
+	Name string
+	// Type of the Material
+	Type string
+	// Either the fileName or the actual string content
+	Value string
+	// Hash of the Material
+	Hash *crv1.Hash
 }
 
 type ProvenancePredicateCommon struct {
@@ -101,6 +113,55 @@ func getChainloopMeta(att *v1.Attestation) *Metadata {
 	}
 }
 
+func ExtractStatement(envelope *dsse.Envelope) (*in_toto.Statement, error) {
+	decodedPayload, err := envelope.DecodeB64Payload()
+	if err != nil {
+		return nil, err
+	}
+
+	// 1 - Extract the in-toto statement
+	statement := &in_toto.Statement{}
+	if err := json.Unmarshal(decodedPayload, statement); err != nil {
+		return nil, fmt.Errorf("un-marshaling predicate: %w", err)
+	}
+
+	return statement, nil
+}
+
+// Extract the Chainloop attestation predicate from an encoded DSSE envelope
+// NOTE: We return a NormalizablePredicate interface to allow for future versions
+// of the predicate to be extracted without updating the consumer.
+// Yes, having the producer define and return an interface is an anti-pattern.
+// but it greatly simplifies the code since there are multiple consumers at different layers of the app
+// and we expect predicates to evolve quickly
+func ExtractPredicate(envelope *dsse.Envelope) (NormalizablePredicate, error) {
+	// 1 - Extract the in-toto statement
+	statement, err := ExtractStatement(envelope)
+	if err != nil {
+		return nil, fmt.Errorf("extracting statement: %w", err)
+	}
+
+	// 2 - Extract the Chainloop predicate from the in-toto statement
+	switch statement.PredicateType {
+	case PredicateTypeV01:
+		var predicate *ProvenancePredicateV01
+		if err = extractPredicate(statement, &predicate); err != nil {
+			return nil, fmt.Errorf("extracting predicate: %w", err)
+		}
+
+		return predicate, nil
+	case PredicateTypeV02:
+		var predicate *ProvenancePredicateV02
+		if err = extractPredicate(statement, &predicate); err != nil {
+			return nil, fmt.Errorf("extracting predicate: %w", err)
+		}
+
+		return predicate, nil
+	default:
+		return nil, fmt.Errorf("unsupported predicate type: %s", statement.PredicateType)
+	}
+}
+
 func extractPredicate(statement *in_toto.Statement, v any) error {
 	jsonPredicate, err := json.Marshal(statement.Predicate)
 	if err != nil {
@@ -112,4 +173,9 @@ func extractPredicate(statement *in_toto.Statement, v any) error {
 	}
 
 	return nil
+}
+
+// Implement NormalizablePredicate interface
+func (p *ProvenancePredicateCommon) GetEnvVars() map[string]string {
+	return p.Env
 }

@@ -282,20 +282,15 @@ func bizAttestationToPb(att *biz.Attestation) (*cpAPI.AttestationItem, error) {
 		return nil, err
 	}
 
-	predicates, err := chainloop.ExtractPredicate(att.Envelope)
+	predicate, err := chainloop.ExtractPredicate(att.Envelope)
 	if err != nil {
-		return nil, err
-	}
-
-	predicate := predicates.V01
-	if predicate == nil {
-		return nil, errors.InternalServer("invalid attestation type", "attestation does not contain a V01 predicate")
+		return nil, fmt.Errorf("error extracting predicate from attestation: %w", err)
 	}
 
 	return &cpAPI.AttestationItem{
 		Envelope:  encodedAttestation,
-		EnvVars:   extractEnvVariables(predicate.Env),
-		Materials: extractMaterials(predicate.Materials),
+		EnvVars:   extractEnvVariables(predicate.GetEnvVars()),
+		Materials: extractMaterials(predicate.GetMaterials()),
 	}, nil
 }
 
@@ -313,10 +308,18 @@ func extractEnvVariables(in map[string]string) []*cpAPI.AttestationItem_EnvVaria
 	return res
 }
 
-func extractMaterials(in []*chainloop.ProvenanceMaterial) []*cpAPI.AttestationItem_Material {
+func extractMaterials(in []*chainloop.NormalizedMaterial) []*cpAPI.AttestationItem_Material {
 	res := make([]*cpAPI.AttestationItem_Material, 0, len(in))
 	for _, m := range in {
-		res = append(res, &cpAPI.AttestationItem_Material{Name: m.Name, Value: m.Material.String(), Type: m.Type})
+		// Initialize simply with the value
+		displayValue := m.Value
+		// Override if there is a hash attached
+		if m.Hash != nil {
+			displayValue = fmt.Sprintf("%s@%s", m.Value, m.Hash)
+		}
+
+		res = append(res, &cpAPI.AttestationItem_Material{Name: m.Name, Value: displayValue, Type: m.Type})
 	}
+
 	return res
 }

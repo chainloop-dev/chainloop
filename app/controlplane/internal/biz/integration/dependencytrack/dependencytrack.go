@@ -106,14 +106,9 @@ func (uc *Integration) UploadSBOMs(envelope *dsse.Envelope, orgID, workflowID st
 	}
 
 	// There is at least one enabled integration, extract the SBOMs
-	predicates, err := chainloop.ExtractPredicate(envelope)
+	predicate, err := chainloop.ExtractPredicate(envelope)
 	if err != nil {
 		return err
-	}
-
-	predicate := predicates.V01
-	if predicate == nil {
-		return errors.Forbidden("not implemented", "only v0.1 predicate is supported for now")
 	}
 
 	repo, err := uc.ociUC.FindMainRepo(ctx, orgID)
@@ -123,26 +118,26 @@ func (uc *Integration) UploadSBOMs(envelope *dsse.Envelope, orgID, workflowID st
 		return errors.NotFound("not found", "main repository not found")
 	}
 
-	for _, m := range predicate.Materials {
-		if m.Type != contractAPI.CraftingSchema_Material_SBOM_CYCLONEDX_JSON.String() {
+	for _, material := range predicate.GetMaterials() {
+		if material.Type != contractAPI.CraftingSchema_Material_SBOM_CYCLONEDX_JSON.String() {
 			continue
 		}
 
-		buf := bytes.NewBuffer(nil)
-		digest, ok := m.Material.SLSA.Digest["sha256"]
-		if !ok {
+		if material.Hash == nil {
+			uc.log.Warnw("msg", "CYCLONE_DX material but download digest missing, skipping", "workflowID", workflowID, "integration", Kind, "name", material.Name)
 			continue
 		}
 
-		digest = "sha256:" + digest
+		digest := material.Hash.String()
 
-		uc.log.Infow("msg", "SBOM present, downloading", "workflowID", workflowID, "integration", Kind, "name", m.Name)
+		uc.log.Infow("msg", "SBOM present, downloading", "workflowID", workflowID, "integration", Kind, "name", material.Name)
 		// Download SBOM
+		buf := bytes.NewBuffer(nil)
 		if err := uc.casClient.Download(ctx, repo.SecretName, buf, digest); err != nil {
 			return fmt.Errorf("downloading from CAS: %w", err)
 		}
 
-		uc.log.Infow("msg", "SBOM downloaded", "digest", digest, "workflowID", workflowID, "integration", Kind, "name", m.Name)
+		uc.log.Infow("msg", "SBOM downloaded", "digest", digest, "workflowID", workflowID, "integration", Kind, "name", material.Name)
 
 		// Run integrations with that sbom
 		var wg sync.WaitGroup

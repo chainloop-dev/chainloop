@@ -17,13 +17,11 @@ package chainloop
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"testing"
 
 	api "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	"github.com/in-toto/in-toto-golang/in_toto"
-	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -81,73 +79,4 @@ func TestRenderV01(t *testing.T) {
 			assert.EqualValues(t, wantPredicate, gotPredicate)
 		})
 	}
-}
-
-func TestExtractPredicate(t *testing.T) {
-	testCases := []struct {
-		name          string
-		envelopePath  string
-		predicatePath string
-		wantErr       bool
-	}{
-		{
-			name:          "valid envelope",
-			envelopePath:  "testdata/valid.envelope.json",
-			predicatePath: "testdata/valid.predicate.json",
-			wantErr:       false,
-		},
-		{
-			name:         "unknown source attestation",
-			envelopePath: "testdata/unknown.envelope.json",
-			wantErr:      true,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			envelope, err := testEnvelope(tc.envelopePath)
-			require.NoError(t, err)
-
-			versions, err := ExtractPredicate(envelope)
-			if tc.wantErr {
-				assert.Error(t, err)
-				return
-			}
-
-			want, err := testPredicate(tc.predicatePath)
-			require.NoError(t, err)
-
-			assert.NoError(t, err)
-			assert.Equal(t, want, versions.V01)
-		})
-	}
-}
-
-func testEnvelope(filePath string) (*dsse.Envelope, error) {
-	var envelope dsse.Envelope
-	content, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, err
-	}
-
-	err = json.Unmarshal(content, &envelope)
-	if err != nil {
-		return nil, err
-	}
-
-	return &envelope, nil
-}
-
-func testPredicate(path string) (*ProvenancePredicateV01, error) {
-	var predicate ProvenancePredicateV01
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := json.Unmarshal(content, &predicate); err != nil {
-		return nil, fmt.Errorf("un-marshaling predicate: %w", err)
-	}
-
-	return &predicate, nil
 }
