@@ -2,18 +2,31 @@
 import { grpc } from "@improbable-eng/grpc-web";
 import { BrowserHeaders } from "browser-headers";
 import _m0 from "protobufjs/minimal";
+import { Any } from "../../google/protobuf/any";
 import { Timestamp } from "../../google/protobuf/timestamp";
 import { WorkflowItem } from "./response_messages";
 
 export const protobufPackage = "controlplane.v1";
 
-export interface AddDependencyTrackRequest {
-  config?: IntegrationConfig_DependencyTrack;
-  apiKey: string;
+export interface IntegrationsServiceRegisterRequest {
+  /** Kind of integration to register */
+  kind: string;
+  /** Associated registration configuration */
+  registrationConfig?: Any;
 }
 
-export interface AddDependencyTrackResponse {
+export interface IntegrationsServiceRegisterResponse {
   result?: IntegrationItem;
+}
+
+export interface IntegrationsServiceAttachRequest {
+  workflowId: string;
+  integrationId: string;
+  attachmentConfig?: Any;
+}
+
+export interface IntegrationsServiceAttachResponse {
+  result?: IntegrationAttachmentItem;
 }
 
 export interface IntegrationsServiceListRequest {
@@ -21,16 +34,6 @@ export interface IntegrationsServiceListRequest {
 
 export interface IntegrationsServiceListResponse {
   result: IntegrationItem[];
-}
-
-export interface IntegrationsServiceAttachRequest {
-  workflowId: string;
-  integrationId: string;
-  config?: IntegrationAttachmentConfig;
-}
-
-export interface IntegrationsServiceAttachResponse {
-  result?: IntegrationAttachmentItem;
 }
 
 export interface IntegrationsServiceDetachRequest {
@@ -53,26 +56,15 @@ export interface IntegrationItem {
   id: string;
   kind: string;
   createdAt?: Date;
-  config?: IntegrationConfig;
+  config?: Any;
 }
 
 export interface IntegrationAttachmentItem {
   id: string;
   createdAt?: Date;
-  config?: IntegrationAttachmentConfig;
+  config?: Any;
   integration?: IntegrationItem;
   workflow?: WorkflowItem;
-}
-
-/** Configuration used when a Integration is created in an organization */
-export interface IntegrationConfig {
-  dependencyTrack?: IntegrationConfig_DependencyTrack | undefined;
-}
-
-export interface IntegrationConfig_DependencyTrack {
-  domain: string;
-  /** Support the option to automatically create projects if requested */
-  allowAutoCreate: boolean;
 }
 
 /** Configuration used when a Integration is attached to a Workflow */
@@ -96,25 +88,25 @@ export interface IntegrationsServiceDeleteRequest {
 export interface IntegrationsServiceDeleteResponse {
 }
 
-function createBaseAddDependencyTrackRequest(): AddDependencyTrackRequest {
-  return { config: undefined, apiKey: "" };
+function createBaseIntegrationsServiceRegisterRequest(): IntegrationsServiceRegisterRequest {
+  return { kind: "", registrationConfig: undefined };
 }
 
-export const AddDependencyTrackRequest = {
-  encode(message: AddDependencyTrackRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.config !== undefined) {
-      IntegrationConfig_DependencyTrack.encode(message.config, writer.uint32(10).fork()).ldelim();
+export const IntegrationsServiceRegisterRequest = {
+  encode(message: IntegrationsServiceRegisterRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.kind !== "") {
+      writer.uint32(10).string(message.kind);
     }
-    if (message.apiKey !== "") {
-      writer.uint32(18).string(message.apiKey);
+    if (message.registrationConfig !== undefined) {
+      Any.encode(message.registrationConfig, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): AddDependencyTrackRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): IntegrationsServiceRegisterRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAddDependencyTrackRequest();
+    const message = createBaseIntegrationsServiceRegisterRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -123,14 +115,14 @@ export const AddDependencyTrackRequest = {
             break;
           }
 
-          message.config = IntegrationConfig_DependencyTrack.decode(reader, reader.uint32());
+          message.kind = reader.string();
           continue;
         case 2:
           if (tag != 18) {
             break;
           }
 
-          message.apiKey = reader.string();
+          message.registrationConfig = Any.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
@@ -141,51 +133,55 @@ export const AddDependencyTrackRequest = {
     return message;
   },
 
-  fromJSON(object: any): AddDependencyTrackRequest {
+  fromJSON(object: any): IntegrationsServiceRegisterRequest {
     return {
-      config: isSet(object.config) ? IntegrationConfig_DependencyTrack.fromJSON(object.config) : undefined,
-      apiKey: isSet(object.apiKey) ? String(object.apiKey) : "",
+      kind: isSet(object.kind) ? String(object.kind) : "",
+      registrationConfig: isSet(object.registrationConfig) ? Any.fromJSON(object.registrationConfig) : undefined,
     };
   },
 
-  toJSON(message: AddDependencyTrackRequest): unknown {
+  toJSON(message: IntegrationsServiceRegisterRequest): unknown {
     const obj: any = {};
-    message.config !== undefined &&
-      (obj.config = message.config ? IntegrationConfig_DependencyTrack.toJSON(message.config) : undefined);
-    message.apiKey !== undefined && (obj.apiKey = message.apiKey);
+    message.kind !== undefined && (obj.kind = message.kind);
+    message.registrationConfig !== undefined &&
+      (obj.registrationConfig = message.registrationConfig ? Any.toJSON(message.registrationConfig) : undefined);
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<AddDependencyTrackRequest>, I>>(base?: I): AddDependencyTrackRequest {
-    return AddDependencyTrackRequest.fromPartial(base ?? {});
+  create<I extends Exact<DeepPartial<IntegrationsServiceRegisterRequest>, I>>(
+    base?: I,
+  ): IntegrationsServiceRegisterRequest {
+    return IntegrationsServiceRegisterRequest.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<AddDependencyTrackRequest>, I>>(object: I): AddDependencyTrackRequest {
-    const message = createBaseAddDependencyTrackRequest();
-    message.config = (object.config !== undefined && object.config !== null)
-      ? IntegrationConfig_DependencyTrack.fromPartial(object.config)
+  fromPartial<I extends Exact<DeepPartial<IntegrationsServiceRegisterRequest>, I>>(
+    object: I,
+  ): IntegrationsServiceRegisterRequest {
+    const message = createBaseIntegrationsServiceRegisterRequest();
+    message.kind = object.kind ?? "";
+    message.registrationConfig = (object.registrationConfig !== undefined && object.registrationConfig !== null)
+      ? Any.fromPartial(object.registrationConfig)
       : undefined;
-    message.apiKey = object.apiKey ?? "";
     return message;
   },
 };
 
-function createBaseAddDependencyTrackResponse(): AddDependencyTrackResponse {
+function createBaseIntegrationsServiceRegisterResponse(): IntegrationsServiceRegisterResponse {
   return { result: undefined };
 }
 
-export const AddDependencyTrackResponse = {
-  encode(message: AddDependencyTrackResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const IntegrationsServiceRegisterResponse = {
+  encode(message: IntegrationsServiceRegisterResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.result !== undefined) {
       IntegrationItem.encode(message.result, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): AddDependencyTrackResponse {
+  decode(input: _m0.Reader | Uint8Array, length?: number): IntegrationsServiceRegisterResponse {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAddDependencyTrackResponse();
+    const message = createBaseIntegrationsServiceRegisterResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -205,24 +201,182 @@ export const AddDependencyTrackResponse = {
     return message;
   },
 
-  fromJSON(object: any): AddDependencyTrackResponse {
+  fromJSON(object: any): IntegrationsServiceRegisterResponse {
     return { result: isSet(object.result) ? IntegrationItem.fromJSON(object.result) : undefined };
   },
 
-  toJSON(message: AddDependencyTrackResponse): unknown {
+  toJSON(message: IntegrationsServiceRegisterResponse): unknown {
     const obj: any = {};
     message.result !== undefined && (obj.result = message.result ? IntegrationItem.toJSON(message.result) : undefined);
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<AddDependencyTrackResponse>, I>>(base?: I): AddDependencyTrackResponse {
-    return AddDependencyTrackResponse.fromPartial(base ?? {});
+  create<I extends Exact<DeepPartial<IntegrationsServiceRegisterResponse>, I>>(
+    base?: I,
+  ): IntegrationsServiceRegisterResponse {
+    return IntegrationsServiceRegisterResponse.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<AddDependencyTrackResponse>, I>>(object: I): AddDependencyTrackResponse {
-    const message = createBaseAddDependencyTrackResponse();
+  fromPartial<I extends Exact<DeepPartial<IntegrationsServiceRegisterResponse>, I>>(
+    object: I,
+  ): IntegrationsServiceRegisterResponse {
+    const message = createBaseIntegrationsServiceRegisterResponse();
     message.result = (object.result !== undefined && object.result !== null)
       ? IntegrationItem.fromPartial(object.result)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseIntegrationsServiceAttachRequest(): IntegrationsServiceAttachRequest {
+  return { workflowId: "", integrationId: "", attachmentConfig: undefined };
+}
+
+export const IntegrationsServiceAttachRequest = {
+  encode(message: IntegrationsServiceAttachRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.workflowId !== "") {
+      writer.uint32(10).string(message.workflowId);
+    }
+    if (message.integrationId !== "") {
+      writer.uint32(18).string(message.integrationId);
+    }
+    if (message.attachmentConfig !== undefined) {
+      Any.encode(message.attachmentConfig, writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): IntegrationsServiceAttachRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseIntegrationsServiceAttachRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.workflowId = reader.string();
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.integrationId = reader.string();
+          continue;
+        case 3:
+          if (tag != 26) {
+            break;
+          }
+
+          message.attachmentConfig = Any.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): IntegrationsServiceAttachRequest {
+    return {
+      workflowId: isSet(object.workflowId) ? String(object.workflowId) : "",
+      integrationId: isSet(object.integrationId) ? String(object.integrationId) : "",
+      attachmentConfig: isSet(object.attachmentConfig) ? Any.fromJSON(object.attachmentConfig) : undefined,
+    };
+  },
+
+  toJSON(message: IntegrationsServiceAttachRequest): unknown {
+    const obj: any = {};
+    message.workflowId !== undefined && (obj.workflowId = message.workflowId);
+    message.integrationId !== undefined && (obj.integrationId = message.integrationId);
+    message.attachmentConfig !== undefined &&
+      (obj.attachmentConfig = message.attachmentConfig ? Any.toJSON(message.attachmentConfig) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<IntegrationsServiceAttachRequest>, I>>(
+    base?: I,
+  ): IntegrationsServiceAttachRequest {
+    return IntegrationsServiceAttachRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<IntegrationsServiceAttachRequest>, I>>(
+    object: I,
+  ): IntegrationsServiceAttachRequest {
+    const message = createBaseIntegrationsServiceAttachRequest();
+    message.workflowId = object.workflowId ?? "";
+    message.integrationId = object.integrationId ?? "";
+    message.attachmentConfig = (object.attachmentConfig !== undefined && object.attachmentConfig !== null)
+      ? Any.fromPartial(object.attachmentConfig)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseIntegrationsServiceAttachResponse(): IntegrationsServiceAttachResponse {
+  return { result: undefined };
+}
+
+export const IntegrationsServiceAttachResponse = {
+  encode(message: IntegrationsServiceAttachResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.result !== undefined) {
+      IntegrationAttachmentItem.encode(message.result, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): IntegrationsServiceAttachResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseIntegrationsServiceAttachResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.result = IntegrationAttachmentItem.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): IntegrationsServiceAttachResponse {
+    return { result: isSet(object.result) ? IntegrationAttachmentItem.fromJSON(object.result) : undefined };
+  },
+
+  toJSON(message: IntegrationsServiceAttachResponse): unknown {
+    const obj: any = {};
+    message.result !== undefined &&
+      (obj.result = message.result ? IntegrationAttachmentItem.toJSON(message.result) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<IntegrationsServiceAttachResponse>, I>>(
+    base?: I,
+  ): IntegrationsServiceAttachResponse {
+    return IntegrationsServiceAttachResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<IntegrationsServiceAttachResponse>, I>>(
+    object: I,
+  ): IntegrationsServiceAttachResponse {
+    const message = createBaseIntegrationsServiceAttachResponse();
+    message.result = (object.result !== undefined && object.result !== null)
+      ? IntegrationAttachmentItem.fromPartial(object.result)
       : undefined;
     return message;
   },
@@ -330,160 +484,6 @@ export const IntegrationsServiceListResponse = {
   ): IntegrationsServiceListResponse {
     const message = createBaseIntegrationsServiceListResponse();
     message.result = object.result?.map((e) => IntegrationItem.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-function createBaseIntegrationsServiceAttachRequest(): IntegrationsServiceAttachRequest {
-  return { workflowId: "", integrationId: "", config: undefined };
-}
-
-export const IntegrationsServiceAttachRequest = {
-  encode(message: IntegrationsServiceAttachRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.workflowId !== "") {
-      writer.uint32(10).string(message.workflowId);
-    }
-    if (message.integrationId !== "") {
-      writer.uint32(18).string(message.integrationId);
-    }
-    if (message.config !== undefined) {
-      IntegrationAttachmentConfig.encode(message.config, writer.uint32(26).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): IntegrationsServiceAttachRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseIntegrationsServiceAttachRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag != 10) {
-            break;
-          }
-
-          message.workflowId = reader.string();
-          continue;
-        case 2:
-          if (tag != 18) {
-            break;
-          }
-
-          message.integrationId = reader.string();
-          continue;
-        case 3:
-          if (tag != 26) {
-            break;
-          }
-
-          message.config = IntegrationAttachmentConfig.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) == 4 || tag == 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): IntegrationsServiceAttachRequest {
-    return {
-      workflowId: isSet(object.workflowId) ? String(object.workflowId) : "",
-      integrationId: isSet(object.integrationId) ? String(object.integrationId) : "",
-      config: isSet(object.config) ? IntegrationAttachmentConfig.fromJSON(object.config) : undefined,
-    };
-  },
-
-  toJSON(message: IntegrationsServiceAttachRequest): unknown {
-    const obj: any = {};
-    message.workflowId !== undefined && (obj.workflowId = message.workflowId);
-    message.integrationId !== undefined && (obj.integrationId = message.integrationId);
-    message.config !== undefined &&
-      (obj.config = message.config ? IntegrationAttachmentConfig.toJSON(message.config) : undefined);
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<IntegrationsServiceAttachRequest>, I>>(
-    base?: I,
-  ): IntegrationsServiceAttachRequest {
-    return IntegrationsServiceAttachRequest.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<IntegrationsServiceAttachRequest>, I>>(
-    object: I,
-  ): IntegrationsServiceAttachRequest {
-    const message = createBaseIntegrationsServiceAttachRequest();
-    message.workflowId = object.workflowId ?? "";
-    message.integrationId = object.integrationId ?? "";
-    message.config = (object.config !== undefined && object.config !== null)
-      ? IntegrationAttachmentConfig.fromPartial(object.config)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseIntegrationsServiceAttachResponse(): IntegrationsServiceAttachResponse {
-  return { result: undefined };
-}
-
-export const IntegrationsServiceAttachResponse = {
-  encode(message: IntegrationsServiceAttachResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.result !== undefined) {
-      IntegrationAttachmentItem.encode(message.result, writer.uint32(10).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): IntegrationsServiceAttachResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseIntegrationsServiceAttachResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag != 10) {
-            break;
-          }
-
-          message.result = IntegrationAttachmentItem.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) == 4 || tag == 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): IntegrationsServiceAttachResponse {
-    return { result: isSet(object.result) ? IntegrationAttachmentItem.fromJSON(object.result) : undefined };
-  },
-
-  toJSON(message: IntegrationsServiceAttachResponse): unknown {
-    const obj: any = {};
-    message.result !== undefined &&
-      (obj.result = message.result ? IntegrationAttachmentItem.toJSON(message.result) : undefined);
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<IntegrationsServiceAttachResponse>, I>>(
-    base?: I,
-  ): IntegrationsServiceAttachResponse {
-    return IntegrationsServiceAttachResponse.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<IntegrationsServiceAttachResponse>, I>>(
-    object: I,
-  ): IntegrationsServiceAttachResponse {
-    const message = createBaseIntegrationsServiceAttachResponse();
-    message.result = (object.result !== undefined && object.result !== null)
-      ? IntegrationAttachmentItem.fromPartial(object.result)
-      : undefined;
     return message;
   },
 };
@@ -730,7 +730,7 @@ export const IntegrationItem = {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(26).fork()).ldelim();
     }
     if (message.config !== undefined) {
-      IntegrationConfig.encode(message.config, writer.uint32(34).fork()).ldelim();
+      Any.encode(message.config, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -763,12 +763,12 @@ export const IntegrationItem = {
 
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
-        case 4:
-          if (tag != 34) {
+        case 5:
+          if (tag != 42) {
             break;
           }
 
-          message.config = IntegrationConfig.decode(reader, reader.uint32());
+          message.config = Any.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
@@ -784,7 +784,7 @@ export const IntegrationItem = {
       id: isSet(object.id) ? String(object.id) : "",
       kind: isSet(object.kind) ? String(object.kind) : "",
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
-      config: isSet(object.config) ? IntegrationConfig.fromJSON(object.config) : undefined,
+      config: isSet(object.config) ? Any.fromJSON(object.config) : undefined,
     };
   },
 
@@ -793,8 +793,7 @@ export const IntegrationItem = {
     message.id !== undefined && (obj.id = message.id);
     message.kind !== undefined && (obj.kind = message.kind);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
-    message.config !== undefined &&
-      (obj.config = message.config ? IntegrationConfig.toJSON(message.config) : undefined);
+    message.config !== undefined && (obj.config = message.config ? Any.toJSON(message.config) : undefined);
     return obj;
   },
 
@@ -808,7 +807,7 @@ export const IntegrationItem = {
     message.kind = object.kind ?? "";
     message.createdAt = object.createdAt ?? undefined;
     message.config = (object.config !== undefined && object.config !== null)
-      ? IntegrationConfig.fromPartial(object.config)
+      ? Any.fromPartial(object.config)
       : undefined;
     return message;
   },
@@ -827,7 +826,7 @@ export const IntegrationAttachmentItem = {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(18).fork()).ldelim();
     }
     if (message.config !== undefined) {
-      IntegrationAttachmentConfig.encode(message.config, writer.uint32(26).fork()).ldelim();
+      Any.encode(message.config, writer.uint32(26).fork()).ldelim();
     }
     if (message.integration !== undefined) {
       IntegrationItem.encode(message.integration, writer.uint32(34).fork()).ldelim();
@@ -864,7 +863,7 @@ export const IntegrationAttachmentItem = {
             break;
           }
 
-          message.config = IntegrationAttachmentConfig.decode(reader, reader.uint32());
+          message.config = Any.decode(reader, reader.uint32());
           continue;
         case 4:
           if (tag != 34) {
@@ -893,7 +892,7 @@ export const IntegrationAttachmentItem = {
     return {
       id: isSet(object.id) ? String(object.id) : "",
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
-      config: isSet(object.config) ? IntegrationAttachmentConfig.fromJSON(object.config) : undefined,
+      config: isSet(object.config) ? Any.fromJSON(object.config) : undefined,
       integration: isSet(object.integration) ? IntegrationItem.fromJSON(object.integration) : undefined,
       workflow: isSet(object.workflow) ? WorkflowItem.fromJSON(object.workflow) : undefined,
     };
@@ -903,8 +902,7 @@ export const IntegrationAttachmentItem = {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
-    message.config !== undefined &&
-      (obj.config = message.config ? IntegrationAttachmentConfig.toJSON(message.config) : undefined);
+    message.config !== undefined && (obj.config = message.config ? Any.toJSON(message.config) : undefined);
     message.integration !== undefined &&
       (obj.integration = message.integration ? IntegrationItem.toJSON(message.integration) : undefined);
     message.workflow !== undefined &&
@@ -921,7 +919,7 @@ export const IntegrationAttachmentItem = {
     message.id = object.id ?? "";
     message.createdAt = object.createdAt ?? undefined;
     message.config = (object.config !== undefined && object.config !== null)
-      ? IntegrationAttachmentConfig.fromPartial(object.config)
+      ? Any.fromPartial(object.config)
       : undefined;
     message.integration = (object.integration !== undefined && object.integration !== null)
       ? IntegrationItem.fromPartial(object.integration)
@@ -929,145 +927,6 @@ export const IntegrationAttachmentItem = {
     message.workflow = (object.workflow !== undefined && object.workflow !== null)
       ? WorkflowItem.fromPartial(object.workflow)
       : undefined;
-    return message;
-  },
-};
-
-function createBaseIntegrationConfig(): IntegrationConfig {
-  return { dependencyTrack: undefined };
-}
-
-export const IntegrationConfig = {
-  encode(message: IntegrationConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.dependencyTrack !== undefined) {
-      IntegrationConfig_DependencyTrack.encode(message.dependencyTrack, writer.uint32(10).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): IntegrationConfig {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseIntegrationConfig();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag != 10) {
-            break;
-          }
-
-          message.dependencyTrack = IntegrationConfig_DependencyTrack.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) == 4 || tag == 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): IntegrationConfig {
-    return {
-      dependencyTrack: isSet(object.dependencyTrack)
-        ? IntegrationConfig_DependencyTrack.fromJSON(object.dependencyTrack)
-        : undefined,
-    };
-  },
-
-  toJSON(message: IntegrationConfig): unknown {
-    const obj: any = {};
-    message.dependencyTrack !== undefined && (obj.dependencyTrack = message.dependencyTrack
-      ? IntegrationConfig_DependencyTrack.toJSON(message.dependencyTrack)
-      : undefined);
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<IntegrationConfig>, I>>(base?: I): IntegrationConfig {
-    return IntegrationConfig.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<IntegrationConfig>, I>>(object: I): IntegrationConfig {
-    const message = createBaseIntegrationConfig();
-    message.dependencyTrack = (object.dependencyTrack !== undefined && object.dependencyTrack !== null)
-      ? IntegrationConfig_DependencyTrack.fromPartial(object.dependencyTrack)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseIntegrationConfig_DependencyTrack(): IntegrationConfig_DependencyTrack {
-  return { domain: "", allowAutoCreate: false };
-}
-
-export const IntegrationConfig_DependencyTrack = {
-  encode(message: IntegrationConfig_DependencyTrack, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.domain !== "") {
-      writer.uint32(10).string(message.domain);
-    }
-    if (message.allowAutoCreate === true) {
-      writer.uint32(16).bool(message.allowAutoCreate);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): IntegrationConfig_DependencyTrack {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseIntegrationConfig_DependencyTrack();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag != 10) {
-            break;
-          }
-
-          message.domain = reader.string();
-          continue;
-        case 2:
-          if (tag != 16) {
-            break;
-          }
-
-          message.allowAutoCreate = reader.bool();
-          continue;
-      }
-      if ((tag & 7) == 4 || tag == 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): IntegrationConfig_DependencyTrack {
-    return {
-      domain: isSet(object.domain) ? String(object.domain) : "",
-      allowAutoCreate: isSet(object.allowAutoCreate) ? Boolean(object.allowAutoCreate) : false,
-    };
-  },
-
-  toJSON(message: IntegrationConfig_DependencyTrack): unknown {
-    const obj: any = {};
-    message.domain !== undefined && (obj.domain = message.domain);
-    message.allowAutoCreate !== undefined && (obj.allowAutoCreate = message.allowAutoCreate);
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<IntegrationConfig_DependencyTrack>, I>>(
-    base?: I,
-  ): IntegrationConfig_DependencyTrack {
-    return IntegrationConfig_DependencyTrack.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<IntegrationConfig_DependencyTrack>, I>>(
-    object: I,
-  ): IntegrationConfig_DependencyTrack {
-    const message = createBaseIntegrationConfig_DependencyTrack();
-    message.domain = object.domain ?? "";
-    message.allowAutoCreate = object.allowAutoCreate ?? false;
     return message;
   },
 };
@@ -1320,11 +1179,11 @@ export const IntegrationsServiceDeleteResponse = {
 };
 
 export interface IntegrationsService {
-  /** ORG related CRUD */
-  AddDependencyTrack(
-    request: DeepPartial<AddDependencyTrackRequest>,
+  /** Register a new integration in the organization */
+  Register(
+    request: DeepPartial<IntegrationsServiceRegisterRequest>,
     metadata?: grpc.Metadata,
-  ): Promise<AddDependencyTrackResponse>;
+  ): Promise<IntegrationsServiceRegisterResponse>;
   List(
     request: DeepPartial<IntegrationsServiceListRequest>,
     metadata?: grpc.Metadata,
@@ -1333,15 +1192,14 @@ export interface IntegrationsService {
     request: DeepPartial<IntegrationsServiceDeleteRequest>,
     metadata?: grpc.Metadata,
   ): Promise<IntegrationsServiceDeleteResponse>;
-  /**
-   * Workflow Related operations
-   * Attach to a workflow
-   */
   Attach(
     request: DeepPartial<IntegrationsServiceAttachRequest>,
     metadata?: grpc.Metadata,
   ): Promise<IntegrationsServiceAttachResponse>;
-  /** Detach integration from a workflow */
+  /**
+   * Workflow Related operations
+   * Detach integration from a workflow
+   */
   Detach(
     request: DeepPartial<IntegrationsServiceDetachRequest>,
     metadata?: grpc.Metadata,
@@ -1357,7 +1215,7 @@ export class IntegrationsServiceClientImpl implements IntegrationsService {
 
   constructor(rpc: Rpc) {
     this.rpc = rpc;
-    this.AddDependencyTrack = this.AddDependencyTrack.bind(this);
+    this.Register = this.Register.bind(this);
     this.List = this.List.bind(this);
     this.Delete = this.Delete.bind(this);
     this.Attach = this.Attach.bind(this);
@@ -1365,13 +1223,13 @@ export class IntegrationsServiceClientImpl implements IntegrationsService {
     this.ListAttachments = this.ListAttachments.bind(this);
   }
 
-  AddDependencyTrack(
-    request: DeepPartial<AddDependencyTrackRequest>,
+  Register(
+    request: DeepPartial<IntegrationsServiceRegisterRequest>,
     metadata?: grpc.Metadata,
-  ): Promise<AddDependencyTrackResponse> {
+  ): Promise<IntegrationsServiceRegisterResponse> {
     return this.rpc.unary(
-      IntegrationsServiceAddDependencyTrackDesc,
-      AddDependencyTrackRequest.fromPartial(request),
+      IntegrationsServiceRegisterDesc,
+      IntegrationsServiceRegisterRequest.fromPartial(request),
       metadata,
     );
   }
@@ -1430,19 +1288,19 @@ export class IntegrationsServiceClientImpl implements IntegrationsService {
 
 export const IntegrationsServiceDesc = { serviceName: "controlplane.v1.IntegrationsService" };
 
-export const IntegrationsServiceAddDependencyTrackDesc: UnaryMethodDefinitionish = {
-  methodName: "AddDependencyTrack",
+export const IntegrationsServiceRegisterDesc: UnaryMethodDefinitionish = {
+  methodName: "Register",
   service: IntegrationsServiceDesc,
   requestStream: false,
   responseStream: false,
   requestType: {
     serializeBinary() {
-      return AddDependencyTrackRequest.encode(this).finish();
+      return IntegrationsServiceRegisterRequest.encode(this).finish();
     },
   } as any,
   responseType: {
     deserializeBinary(data: Uint8Array) {
-      const value = AddDependencyTrackResponse.decode(data);
+      const value = IntegrationsServiceRegisterResponse.decode(data);
       return {
         ...value,
         toObject() {

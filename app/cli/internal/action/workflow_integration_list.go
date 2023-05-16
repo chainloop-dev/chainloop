@@ -20,6 +20,7 @@ import (
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	pbplugin "github.com/chainloop-dev/chainloop/app/controlplane/integrations/gen/dependencytrack/cyclonedx/v1"
 )
 
 type WorkflowIntegrationList struct{ cfg *ActionsOpts }
@@ -52,11 +53,15 @@ func pbIntegrationAttachmentItemToAction(in *pb.IntegrationAttachmentItem) *Inte
 		Workflow:    pbWorkflowItemToAction(in.GetWorkflow()),
 	}
 
-	if c := in.GetConfig().GetDependencyTrack(); c != nil {
-		i.Config = map[string]interface{}{
-			"projectID":   c.GetProjectId(),
-			"projectName": c.GetProjectName(),
-		}
+	// TODO: make it generic for any kind
+	c := new(pbplugin.AttachmentConfig)
+	if err := in.Config.UnmarshalTo(c); err != nil {
+		return i
+	}
+
+	i.Config = map[string]interface{}{
+		"projectID":   c.GetProjectId(),
+		"projectName": c.GetProjectName(),
 	}
 
 	return i

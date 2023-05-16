@@ -20,8 +20,6 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
-	deptrack "github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/integration/dependencytrack"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/integrations/dependencytrack"
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	errors "github.com/go-kratos/kratos/v2/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -32,42 +30,63 @@ type IntegrationsService struct {
 	*service
 
 	integrationUC *biz.IntegrationUseCase
-	depTrackUC    *deptrack.Integration
 	workflowUC    *biz.WorkflowUseCase
 }
 
-func NewIntegrationsService(uc *biz.IntegrationUseCase, deptrackUC *deptrack.Integration, wuc *biz.WorkflowUseCase, opts ...NewOpt) *IntegrationsService {
+func NewIntegrationsService(uc *biz.IntegrationUseCase, wuc *biz.WorkflowUseCase, opts ...NewOpt) *IntegrationsService {
 	return &IntegrationsService{
 		service:       newService(opts...),
 		integrationUC: uc,
 		workflowUC:    wuc,
-		depTrackUC:    deptrackUC,
 	}
 }
 
-func (s *IntegrationsService) AddDependencyTrack(ctx context.Context, req *pb.AddDependencyTrackRequest) (*pb.AddDependencyTrackResponse, error) {
+func (s *IntegrationsService) Register(ctx context.Context, req *pb.IntegrationsServiceRegisterRequest) (*pb.IntegrationsServiceRegisterResponse, error) {
 	_, org, err := loadCurrentUserAndOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	domain, enableProjectCreation := req.GetConfig().GetDomain(), req.GetConfig().GetAllowAutoCreate()
-	// TODO: Move validation logic to biz use-case
-	checker, err := dependencytrack.NewIntegration(domain, req.ApiKey, enableProjectCreation)
+	i, err := s.integrationUC.Create(ctx, org.ID, req.Kind, req.RegistrationConfig)
+	if err != nil {
+		if biz.IsNotFound(err) {
+			return nil, errors.NotFound("not found", err.Error())
+		} else if biz.IsErrValidation(err) {
+			return nil, errors.BadRequest("wrong validation", err.Error())
+		}
+
+		return nil, sl.LogAndMaskErr(err, s.log)
+	}
+
+	return &pb.IntegrationsServiceRegisterResponse{Result: bizIntegrationToPb(i)}, nil
+}
+
+func (s *IntegrationsService) Attach(ctx context.Context, req *pb.IntegrationsServiceAttachRequest) (*pb.IntegrationsServiceAttachResponse, error) {
+	_, org, err := loadCurrentUserAndOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := s.integrationUC.AttachToWorkflow(ctx, &biz.AttachOpts{
+		OrgID: org.ID, IntegrationID: req.IntegrationId, WorkflowID: req.WorkflowId, AttachmentConfig: req.AttachmentConfig,
+	})
+
+	if err != nil {
+		if biz.IsNotFound(err) {
+			return nil, errors.NotFound("not found", err.Error())
+		} else if biz.IsErrValidation(err) {
+			return nil, errors.BadRequest("wrong validation", err.Error())
+		}
+
+		return nil, sl.LogAndMaskErr(err, s.log)
+	}
+
+	result, err := s.bizIntegrationAttachmentToPb(ctx, res, org.ID)
 	if err != nil {
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}
 
-	if err := checker.Validate(ctx); err != nil {
-		return nil, errors.BadRequest("invalid configuration", err.Error())
-	}
-
-	i, err := s.depTrackUC.Add(ctx, org.ID, domain, req.ApiKey, enableProjectCreation)
-	if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
-	}
-
-	return &pb.AddDependencyTrackResponse{Result: bizIntegrationToPb(i)}, nil
+	return &pb.IntegrationsServiceAttachResponse{Result: result}, nil
 }
 
 func (s *IntegrationsService) List(ctx context.Context, _ *pb.IntegrationsServiceListRequest) (*pb.IntegrationsServiceListResponse, error) {
@@ -103,33 +122,6 @@ func (s *IntegrationsService) Delete(ctx context.Context, req *pb.IntegrationsSe
 	}
 
 	return &pb.IntegrationsServiceDeleteResponse{}, nil
-}
-
-func (s *IntegrationsService) Attach(ctx context.Context, req *pb.IntegrationsServiceAttachRequest) (*pb.IntegrationsServiceAttachResponse, error) {
-	_, org, err := loadCurrentUserAndOrg(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	res, err := s.integrationUC.AttachToWorkflow(ctx, &biz.AttachOpts{
-		OrgID: org.ID, IntegrationID: req.IntegrationId, WorkflowID: req.WorkflowId, Config: req.Config,
-	})
-	if err != nil {
-		if biz.IsNotFound(err) {
-			return nil, errors.NotFound("not found", err.Error())
-		} else if biz.IsErrValidation(err) {
-			return nil, errors.BadRequest("wrong validation", err.Error())
-		}
-
-		return nil, sl.LogAndMaskErr(err, s.log)
-	}
-
-	result, err := s.bizIntegrationAttachmentToPb(ctx, res, org.ID)
-	if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
-	}
-
-	return &pb.IntegrationsServiceAttachResponse{Result: result}, nil
 }
 
 func (s *IntegrationsService) ListAttachments(ctx context.Context, req *pb.ListAttachmentsRequest) (*pb.ListAttachmentsResponse, error) {

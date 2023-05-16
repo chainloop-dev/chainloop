@@ -11,12 +11,12 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integration"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integrationattachment"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // IntegrationUpdate is the builder for updating Integration entities.
@@ -32,9 +32,15 @@ func (iu *IntegrationUpdate) Where(ps ...predicate.Integration) *IntegrationUpda
 	return iu
 }
 
-// SetConfig sets the "config" field.
-func (iu *IntegrationUpdate) SetConfig(vc *v1.IntegrationConfig) *IntegrationUpdate {
-	iu.mutation.SetConfig(vc)
+// SetConf sets the "conf" field.
+func (iu *IntegrationUpdate) SetConf(a *anypb.Any) *IntegrationUpdate {
+	iu.mutation.SetConf(a)
+	return iu
+}
+
+// ClearConf clears the value of the "conf" field.
+func (iu *IntegrationUpdate) ClearConf() *IntegrationUpdate {
+	iu.mutation.ClearConf()
 	return iu
 }
 
@@ -145,11 +151,6 @@ func (iu *IntegrationUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (iu *IntegrationUpdate) check() error {
-	if v, ok := iu.mutation.Config(); ok {
-		if err := v.Validate(); err != nil {
-			return &ValidationError{Name: "config", err: fmt.Errorf(`ent: validator failed for field "Integration.config": %w`, err)}
-		}
-	}
 	if _, ok := iu.mutation.OrganizationID(); iu.mutation.OrganizationCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Integration.organization"`)
 	}
@@ -168,8 +169,11 @@ func (iu *IntegrationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := iu.mutation.Config(); ok {
-		_spec.SetField(integration.FieldConfig, field.TypeBytes, value)
+	if value, ok := iu.mutation.Conf(); ok {
+		_spec.SetField(integration.FieldConf, field.TypeJSON, value)
+	}
+	if iu.mutation.ConfCleared() {
+		_spec.ClearField(integration.FieldConf, field.TypeJSON)
 	}
 	if value, ok := iu.mutation.DeletedAt(); ok {
 		_spec.SetField(integration.FieldDeletedAt, field.TypeTime, value)
@@ -286,9 +290,15 @@ type IntegrationUpdateOne struct {
 	mutation *IntegrationMutation
 }
 
-// SetConfig sets the "config" field.
-func (iuo *IntegrationUpdateOne) SetConfig(vc *v1.IntegrationConfig) *IntegrationUpdateOne {
-	iuo.mutation.SetConfig(vc)
+// SetConf sets the "conf" field.
+func (iuo *IntegrationUpdateOne) SetConf(a *anypb.Any) *IntegrationUpdateOne {
+	iuo.mutation.SetConf(a)
+	return iuo
+}
+
+// ClearConf clears the value of the "conf" field.
+func (iuo *IntegrationUpdateOne) ClearConf() *IntegrationUpdateOne {
+	iuo.mutation.ClearConf()
 	return iuo
 }
 
@@ -412,11 +422,6 @@ func (iuo *IntegrationUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (iuo *IntegrationUpdateOne) check() error {
-	if v, ok := iuo.mutation.Config(); ok {
-		if err := v.Validate(); err != nil {
-			return &ValidationError{Name: "config", err: fmt.Errorf(`ent: validator failed for field "Integration.config": %w`, err)}
-		}
-	}
 	if _, ok := iuo.mutation.OrganizationID(); iuo.mutation.OrganizationCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Integration.organization"`)
 	}
@@ -452,8 +457,11 @@ func (iuo *IntegrationUpdateOne) sqlSave(ctx context.Context) (_node *Integratio
 			}
 		}
 	}
-	if value, ok := iuo.mutation.Config(); ok {
-		_spec.SetField(integration.FieldConfig, field.TypeBytes, value)
+	if value, ok := iuo.mutation.Conf(); ok {
+		_spec.SetField(integration.FieldConf, field.TypeJSON, value)
+	}
+	if iuo.mutation.ConfCleared() {
+		_spec.ClearField(integration.FieldConf, field.TypeJSON)
 	}
 	if value, ok := iuo.mutation.DeletedAt(); ok {
 		_spec.SetField(integration.FieldDeletedAt, field.TypeTime, value)

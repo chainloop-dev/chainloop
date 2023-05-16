@@ -34,25 +34,24 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	IntegrationsService_AddDependencyTrack_FullMethodName = "/controlplane.v1.IntegrationsService/AddDependencyTrack"
-	IntegrationsService_List_FullMethodName               = "/controlplane.v1.IntegrationsService/List"
-	IntegrationsService_Delete_FullMethodName             = "/controlplane.v1.IntegrationsService/Delete"
-	IntegrationsService_Attach_FullMethodName             = "/controlplane.v1.IntegrationsService/Attach"
-	IntegrationsService_Detach_FullMethodName             = "/controlplane.v1.IntegrationsService/Detach"
-	IntegrationsService_ListAttachments_FullMethodName    = "/controlplane.v1.IntegrationsService/ListAttachments"
+	IntegrationsService_Register_FullMethodName        = "/controlplane.v1.IntegrationsService/Register"
+	IntegrationsService_List_FullMethodName            = "/controlplane.v1.IntegrationsService/List"
+	IntegrationsService_Delete_FullMethodName          = "/controlplane.v1.IntegrationsService/Delete"
+	IntegrationsService_Attach_FullMethodName          = "/controlplane.v1.IntegrationsService/Attach"
+	IntegrationsService_Detach_FullMethodName          = "/controlplane.v1.IntegrationsService/Detach"
+	IntegrationsService_ListAttachments_FullMethodName = "/controlplane.v1.IntegrationsService/ListAttachments"
 )
 
 // IntegrationsServiceClient is the client API for IntegrationsService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type IntegrationsServiceClient interface {
-	// ORG related CRUD
-	AddDependencyTrack(ctx context.Context, in *AddDependencyTrackRequest, opts ...grpc.CallOption) (*AddDependencyTrackResponse, error)
+	// Register a new integration in the organization
+	Register(ctx context.Context, in *IntegrationsServiceRegisterRequest, opts ...grpc.CallOption) (*IntegrationsServiceRegisterResponse, error)
 	List(ctx context.Context, in *IntegrationsServiceListRequest, opts ...grpc.CallOption) (*IntegrationsServiceListResponse, error)
 	Delete(ctx context.Context, in *IntegrationsServiceDeleteRequest, opts ...grpc.CallOption) (*IntegrationsServiceDeleteResponse, error)
-	// Workflow Related operations
-	// Attach to a workflow
 	Attach(ctx context.Context, in *IntegrationsServiceAttachRequest, opts ...grpc.CallOption) (*IntegrationsServiceAttachResponse, error)
+	// Workflow Related operations
 	// Detach integration from a workflow
 	Detach(ctx context.Context, in *IntegrationsServiceDetachRequest, opts ...grpc.CallOption) (*IntegrationsServiceDetachResponse, error)
 	ListAttachments(ctx context.Context, in *ListAttachmentsRequest, opts ...grpc.CallOption) (*ListAttachmentsResponse, error)
@@ -66,9 +65,9 @@ func NewIntegrationsServiceClient(cc grpc.ClientConnInterface) IntegrationsServi
 	return &integrationsServiceClient{cc}
 }
 
-func (c *integrationsServiceClient) AddDependencyTrack(ctx context.Context, in *AddDependencyTrackRequest, opts ...grpc.CallOption) (*AddDependencyTrackResponse, error) {
-	out := new(AddDependencyTrackResponse)
-	err := c.cc.Invoke(ctx, IntegrationsService_AddDependencyTrack_FullMethodName, in, out, opts...)
+func (c *integrationsServiceClient) Register(ctx context.Context, in *IntegrationsServiceRegisterRequest, opts ...grpc.CallOption) (*IntegrationsServiceRegisterResponse, error) {
+	out := new(IntegrationsServiceRegisterResponse)
+	err := c.cc.Invoke(ctx, IntegrationsService_Register_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -124,13 +123,12 @@ func (c *integrationsServiceClient) ListAttachments(ctx context.Context, in *Lis
 // All implementations must embed UnimplementedIntegrationsServiceServer
 // for forward compatibility
 type IntegrationsServiceServer interface {
-	// ORG related CRUD
-	AddDependencyTrack(context.Context, *AddDependencyTrackRequest) (*AddDependencyTrackResponse, error)
+	// Register a new integration in the organization
+	Register(context.Context, *IntegrationsServiceRegisterRequest) (*IntegrationsServiceRegisterResponse, error)
 	List(context.Context, *IntegrationsServiceListRequest) (*IntegrationsServiceListResponse, error)
 	Delete(context.Context, *IntegrationsServiceDeleteRequest) (*IntegrationsServiceDeleteResponse, error)
-	// Workflow Related operations
-	// Attach to a workflow
 	Attach(context.Context, *IntegrationsServiceAttachRequest) (*IntegrationsServiceAttachResponse, error)
+	// Workflow Related operations
 	// Detach integration from a workflow
 	Detach(context.Context, *IntegrationsServiceDetachRequest) (*IntegrationsServiceDetachResponse, error)
 	ListAttachments(context.Context, *ListAttachmentsRequest) (*ListAttachmentsResponse, error)
@@ -141,8 +139,8 @@ type IntegrationsServiceServer interface {
 type UnimplementedIntegrationsServiceServer struct {
 }
 
-func (UnimplementedIntegrationsServiceServer) AddDependencyTrack(context.Context, *AddDependencyTrackRequest) (*AddDependencyTrackResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AddDependencyTrack not implemented")
+func (UnimplementedIntegrationsServiceServer) Register(context.Context, *IntegrationsServiceRegisterRequest) (*IntegrationsServiceRegisterResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Register not implemented")
 }
 func (UnimplementedIntegrationsServiceServer) List(context.Context, *IntegrationsServiceListRequest) (*IntegrationsServiceListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
@@ -172,20 +170,20 @@ func RegisterIntegrationsServiceServer(s grpc.ServiceRegistrar, srv Integrations
 	s.RegisterService(&IntegrationsService_ServiceDesc, srv)
 }
 
-func _IntegrationsService_AddDependencyTrack_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddDependencyTrackRequest)
+func _IntegrationsService_Register_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IntegrationsServiceRegisterRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(IntegrationsServiceServer).AddDependencyTrack(ctx, in)
+		return srv.(IntegrationsServiceServer).Register(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: IntegrationsService_AddDependencyTrack_FullMethodName,
+		FullMethod: IntegrationsService_Register_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(IntegrationsServiceServer).AddDependencyTrack(ctx, req.(*AddDependencyTrackRequest))
+		return srv.(IntegrationsServiceServer).Register(ctx, req.(*IntegrationsServiceRegisterRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -288,8 +286,8 @@ var IntegrationsService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*IntegrationsServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "AddDependencyTrack",
-			Handler:    _IntegrationsService_AddDependencyTrack_Handler,
+			MethodName: "Register",
+			Handler:    _IntegrationsService_Register_Handler,
 		},
 		{
 			MethodName: "List",

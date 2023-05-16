@@ -10,11 +10,11 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integration"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integrationattachment"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // IntegrationAttachmentCreate is the builder for creating a IntegrationAttachment entity.
@@ -38,9 +38,9 @@ func (iac *IntegrationAttachmentCreate) SetNillableCreatedAt(t *time.Time) *Inte
 	return iac
 }
 
-// SetConfig sets the "config" field.
-func (iac *IntegrationAttachmentCreate) SetConfig(vac *v1.IntegrationAttachmentConfig) *IntegrationAttachmentCreate {
-	iac.mutation.SetConfig(vac)
+// SetConf sets the "conf" field.
+func (iac *IntegrationAttachmentCreate) SetConf(a *anypb.Any) *IntegrationAttachmentCreate {
+	iac.mutation.SetConf(a)
 	return iac
 }
 
@@ -144,14 +144,6 @@ func (iac *IntegrationAttachmentCreate) check() error {
 	if _, ok := iac.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "IntegrationAttachment.created_at"`)}
 	}
-	if _, ok := iac.mutation.Config(); !ok {
-		return &ValidationError{Name: "config", err: errors.New(`ent: missing required field "IntegrationAttachment.config"`)}
-	}
-	if v, ok := iac.mutation.Config(); ok {
-		if err := v.Validate(); err != nil {
-			return &ValidationError{Name: "config", err: fmt.Errorf(`ent: validator failed for field "IntegrationAttachment.config": %w`, err)}
-		}
-	}
 	if _, ok := iac.mutation.IntegrationID(); !ok {
 		return &ValidationError{Name: "integration", err: errors.New(`ent: missing required edge "IntegrationAttachment.integration"`)}
 	}
@@ -197,9 +189,9 @@ func (iac *IntegrationAttachmentCreate) createSpec() (*IntegrationAttachment, *s
 		_spec.SetField(integrationattachment.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := iac.mutation.Config(); ok {
-		_spec.SetField(integrationattachment.FieldConfig, field.TypeBytes, value)
-		_node.Config = value
+	if value, ok := iac.mutation.Conf(); ok {
+		_spec.SetField(integrationattachment.FieldConf, field.TypeJSON, value)
+		_node.Conf = value
 	}
 	if value, ok := iac.mutation.DeletedAt(); ok {
 		_spec.SetField(integrationattachment.FieldDeletedAt, field.TypeTime, value)

@@ -23,8 +23,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
-
-	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 type IntegrationAttachment struct {
@@ -38,7 +37,7 @@ func (IntegrationAttachment) Fields() []ent.Field {
 			Default(time.Now).
 			Immutable().
 			Annotations(&entsql.Annotation{Default: "CURRENT_TIMESTAMP"}),
-		field.Bytes("config").GoType(&pb.IntegrationAttachmentConfig{}),
+		field.JSON("conf", &anypb.Any{}).Optional(),
 		field.Time("deleted_at").Optional(),
 	}
 }

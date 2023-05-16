@@ -34,7 +34,7 @@ func (s *testSuite) TestAdd() {
 	org, err := s.Organization.Create(ctx, "testing org")
 	assert.NoError(err)
 
-	i := dependencytrack.New(s.Integration, s.OCIRepo, credsReader, nil, nil)
+	i := dependencytrack.New(s.Integration, credsReader, nil, nil)
 
 	credsReader.On("SaveCredentials", ctx, org.ID, mock.Anything).Return("secret-key", nil)
 

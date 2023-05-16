@@ -164,6 +164,11 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}
 
+	repo, err := s.ociUC.FindMainRepo(context.Background(), robotAccount.OrgID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find main repository: %w", err)
+	}
+
 	// TODO: Move to event bus and background processing
 	// https://github.com/chainloop-dev/chainloop/issues/39
 	// Upload to OCI
@@ -174,13 +179,6 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 			func() error {
 				// Reset context
 				ctx := context.Background()
-				repo, err := s.ociUC.FindMainRepo(ctx, robotAccount.OrgID)
-				if err != nil {
-					return backoff.Permanent(err)
-				} else if repo == nil {
-					return backoff.Permanent(errors.NotFound("not found", "main repository not found"))
-				}
-
 				digest, err := s.attestationUseCase.UploadToCAS(ctx, envelope, repo.SecretName, req.WorkflowRunId)
 				if err != nil {
 					return err
@@ -210,7 +208,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	go func() {
 		// NOTE: this one is not wrapped in a backoff retry because we do it for each underlying SBOM push in the implementation
 		// This code is going to eventually be moved to an actual background mechanism https://github.com/chainloop-dev/chainloop/issues/39
-		if err := s.depTrackUseCase.UploadSBOMs(envelope, robotAccount.OrgID, robotAccount.WorkflowID); err != nil {
+		if err := s.depTrackUseCase.UploadSBOMs(envelope, robotAccount.OrgID, robotAccount.WorkflowID, repo.SecretName); err != nil {
 			_ = sl.LogAndMaskErr(err, s.log)
 		}
 	}()

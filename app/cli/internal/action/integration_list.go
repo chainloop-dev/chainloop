@@ -20,6 +20,7 @@ import (
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	pbplugin "github.com/chainloop-dev/chainloop/app/controlplane/integrations/gen/dependencytrack/cyclonedx/v1"
 )
 
 type IntegrationList struct {
@@ -62,11 +63,19 @@ func pbIntegrationItemToAction(in *pb.IntegrationItem) *IntegrationItem {
 		CreatedAt: toTimePtr(in.GetCreatedAt().AsTime()),
 	}
 
-	if c := in.GetConfig().GetDependencyTrack(); c != nil {
-		i.Config = map[string]interface{}{
-			"host":            c.Domain,
-			"allowAutoCreate": c.AllowAutoCreate,
-		}
+	// New format
+	if in.Config == nil {
+		return i
+	}
+
+	m := new(pbplugin.RegistrationConfig)
+	if err := in.Config.UnmarshalTo(m); err != nil {
+		return i
+	}
+
+	i.Config = map[string]interface{}{
+		"host":            m.Domain,
+		"allowAutoCreate": m.AllowAutoCreate,
 	}
 
 	return i

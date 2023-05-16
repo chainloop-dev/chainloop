@@ -1,12 +1,17 @@
 VERSION=$(shell git describe --tags --always)
 
+.PHONY: integrations-api
+# generate integrations proto bindings
+integrations-api:
+	cd ./integrations && buf generate
+
 .PHONY: config
-# generate internal proto
+# generate config proto bindings
 config:
 	cd ./internal/conf && buf generate
 
 .PHONY: api
-# generate api proto
+# generate api proto bindings
 api:
 	cd ./api && buf generate
 
@@ -36,14 +41,14 @@ test-unit:
 .PHONY: lint
 # lint
 lint:
-	golangci-lint run
 	buf lint api
+	buf lint integrations
 	buf lint internal/conf
+	golangci-lint run
 
-# Install dependencies that are only used during generation
 .PHONY: generate
-# generate
-generate:
+# generate proto bindings, wire injectors, and ent models
+generate: api config integrations-api
 	go generate ./...
 
 .PHONY: all

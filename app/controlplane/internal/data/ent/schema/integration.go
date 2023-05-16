@@ -24,7 +24,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 
-	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 type Integration struct {
@@ -40,8 +40,8 @@ func (Integration) Fields() []ent.Field {
 			Default(time.Now).
 			Immutable().
 			Annotations(&entsql.Annotation{Default: "CURRENT_TIMESTAMP"}),
-		// kind specific config
-		field.Bytes("config").GoType(&pb.IntegrationConfig{}),
+		// NOTE: Optional for now until we migrate all the integrations to this new schema
+		field.JSON("conf", &anypb.Any{}).Optional(),
 		field.Time("deleted_at").Optional(),
 	}
 }

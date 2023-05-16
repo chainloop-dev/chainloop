@@ -38,71 +38,32 @@ var (
 // define the regex for a UUID once up-front
 var _integrations_uuidPattern = regexp.MustCompile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 
-// Validate checks the field values on AddDependencyTrackRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *AddDependencyTrackRequest) Validate() error {
+// Validate checks the field values on IntegrationsServiceRegisterRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *IntegrationsServiceRegisterRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on AddDependencyTrackRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// AddDependencyTrackRequestMultiError, or nil if none found.
-func (m *AddDependencyTrackRequest) ValidateAll() error {
+// ValidateAll checks the field values on IntegrationsServiceRegisterRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// IntegrationsServiceRegisterRequestMultiError, or nil if none found.
+func (m *IntegrationsServiceRegisterRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *AddDependencyTrackRequest) validate(all bool) error {
+func (m *IntegrationsServiceRegisterRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
 	var errors []error
 
-	if m.GetConfig() == nil {
-		err := AddDependencyTrackRequestValidationError{
-			field:  "Config",
-			reason: "value is required",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if all {
-		switch v := interface{}(m.GetConfig()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, AddDependencyTrackRequestValidationError{
-					field:  "Config",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, AddDependencyTrackRequestValidationError{
-					field:  "Config",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetConfig()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return AddDependencyTrackRequestValidationError{
-				field:  "Config",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if utf8.RuneCountInString(m.GetApiKey()) < 1 {
-		err := AddDependencyTrackRequestValidationError{
-			field:  "ApiKey",
+	if utf8.RuneCountInString(m.GetKind()) < 1 {
+		err := IntegrationsServiceRegisterRequestValidationError{
+			field:  "Kind",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -111,20 +72,36 @@ func (m *AddDependencyTrackRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	if m.GetRegistrationConfig() == nil {
+		err := IntegrationsServiceRegisterRequestValidationError{
+			field:  "RegistrationConfig",
+			reason: "value is required",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if a := m.GetRegistrationConfig(); a != nil {
+
+	}
+
 	if len(errors) > 0 {
-		return AddDependencyTrackRequestMultiError(errors)
+		return IntegrationsServiceRegisterRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// AddDependencyTrackRequestMultiError is an error wrapping multiple validation
-// errors returned by AddDependencyTrackRequest.ValidateAll() if the
-// designated constraints aren't met.
-type AddDependencyTrackRequestMultiError []error
+// IntegrationsServiceRegisterRequestMultiError is an error wrapping multiple
+// validation errors returned by
+// IntegrationsServiceRegisterRequest.ValidateAll() if the designated
+// constraints aren't met.
+type IntegrationsServiceRegisterRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m AddDependencyTrackRequestMultiError) Error() string {
+func (m IntegrationsServiceRegisterRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -133,11 +110,12 @@ func (m AddDependencyTrackRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m AddDependencyTrackRequestMultiError) AllErrors() []error { return m }
+func (m IntegrationsServiceRegisterRequestMultiError) AllErrors() []error { return m }
 
-// AddDependencyTrackRequestValidationError is the validation error returned by
-// AddDependencyTrackRequest.Validate if the designated constraints aren't met.
-type AddDependencyTrackRequestValidationError struct {
+// IntegrationsServiceRegisterRequestValidationError is the validation error
+// returned by IntegrationsServiceRegisterRequest.Validate if the designated
+// constraints aren't met.
+type IntegrationsServiceRegisterRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -145,24 +123,24 @@ type AddDependencyTrackRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e AddDependencyTrackRequestValidationError) Field() string { return e.field }
+func (e IntegrationsServiceRegisterRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e AddDependencyTrackRequestValidationError) Reason() string { return e.reason }
+func (e IntegrationsServiceRegisterRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e AddDependencyTrackRequestValidationError) Cause() error { return e.cause }
+func (e IntegrationsServiceRegisterRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e AddDependencyTrackRequestValidationError) Key() bool { return e.key }
+func (e IntegrationsServiceRegisterRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e AddDependencyTrackRequestValidationError) ErrorName() string {
-	return "AddDependencyTrackRequestValidationError"
+func (e IntegrationsServiceRegisterRequestValidationError) ErrorName() string {
+	return "IntegrationsServiceRegisterRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e AddDependencyTrackRequestValidationError) Error() string {
+func (e IntegrationsServiceRegisterRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -174,14 +152,14 @@ func (e AddDependencyTrackRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sAddDependencyTrackRequest.%s: %s%s",
+		"invalid %sIntegrationsServiceRegisterRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = AddDependencyTrackRequestValidationError{}
+var _ error = IntegrationsServiceRegisterRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -189,24 +167,25 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = AddDependencyTrackRequestValidationError{}
+} = IntegrationsServiceRegisterRequestValidationError{}
 
-// Validate checks the field values on AddDependencyTrackResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *AddDependencyTrackResponse) Validate() error {
+// Validate checks the field values on IntegrationsServiceRegisterResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *IntegrationsServiceRegisterResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on AddDependencyTrackResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// AddDependencyTrackResponseMultiError, or nil if none found.
-func (m *AddDependencyTrackResponse) ValidateAll() error {
+// ValidateAll checks the field values on IntegrationsServiceRegisterResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// IntegrationsServiceRegisterResponseMultiError, or nil if none found.
+func (m *IntegrationsServiceRegisterResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *AddDependencyTrackResponse) validate(all bool) error {
+func (m *IntegrationsServiceRegisterResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -217,7 +196,7 @@ func (m *AddDependencyTrackResponse) validate(all bool) error {
 		switch v := interface{}(m.GetResult()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, AddDependencyTrackResponseValidationError{
+				errors = append(errors, IntegrationsServiceRegisterResponseValidationError{
 					field:  "Result",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -225,7 +204,7 @@ func (m *AddDependencyTrackResponse) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, AddDependencyTrackResponseValidationError{
+				errors = append(errors, IntegrationsServiceRegisterResponseValidationError{
 					field:  "Result",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -234,7 +213,7 @@ func (m *AddDependencyTrackResponse) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetResult()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return AddDependencyTrackResponseValidationError{
+			return IntegrationsServiceRegisterResponseValidationError{
 				field:  "Result",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -243,19 +222,20 @@ func (m *AddDependencyTrackResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return AddDependencyTrackResponseMultiError(errors)
+		return IntegrationsServiceRegisterResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// AddDependencyTrackResponseMultiError is an error wrapping multiple
-// validation errors returned by AddDependencyTrackResponse.ValidateAll() if
-// the designated constraints aren't met.
-type AddDependencyTrackResponseMultiError []error
+// IntegrationsServiceRegisterResponseMultiError is an error wrapping multiple
+// validation errors returned by
+// IntegrationsServiceRegisterResponse.ValidateAll() if the designated
+// constraints aren't met.
+type IntegrationsServiceRegisterResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m AddDependencyTrackResponseMultiError) Error() string {
+func (m IntegrationsServiceRegisterResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -264,11 +244,12 @@ func (m AddDependencyTrackResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m AddDependencyTrackResponseMultiError) AllErrors() []error { return m }
+func (m IntegrationsServiceRegisterResponseMultiError) AllErrors() []error { return m }
 
-// AddDependencyTrackResponseValidationError is the validation error returned
-// by AddDependencyTrackResponse.Validate if the designated constraints aren't met.
-type AddDependencyTrackResponseValidationError struct {
+// IntegrationsServiceRegisterResponseValidationError is the validation error
+// returned by IntegrationsServiceRegisterResponse.Validate if the designated
+// constraints aren't met.
+type IntegrationsServiceRegisterResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -276,24 +257,24 @@ type AddDependencyTrackResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e AddDependencyTrackResponseValidationError) Field() string { return e.field }
+func (e IntegrationsServiceRegisterResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e AddDependencyTrackResponseValidationError) Reason() string { return e.reason }
+func (e IntegrationsServiceRegisterResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e AddDependencyTrackResponseValidationError) Cause() error { return e.cause }
+func (e IntegrationsServiceRegisterResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e AddDependencyTrackResponseValidationError) Key() bool { return e.key }
+func (e IntegrationsServiceRegisterResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e AddDependencyTrackResponseValidationError) ErrorName() string {
-	return "AddDependencyTrackResponseValidationError"
+func (e IntegrationsServiceRegisterResponseValidationError) ErrorName() string {
+	return "IntegrationsServiceRegisterResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e AddDependencyTrackResponseValidationError) Error() string {
+func (e IntegrationsServiceRegisterResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -305,14 +286,14 @@ func (e AddDependencyTrackResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sAddDependencyTrackResponse.%s: %s%s",
+		"invalid %sIntegrationsServiceRegisterResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = AddDependencyTrackResponseValidationError{}
+var _ error = IntegrationsServiceRegisterResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -320,7 +301,293 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = AddDependencyTrackResponseValidationError{}
+} = IntegrationsServiceRegisterResponseValidationError{}
+
+// Validate checks the field values on IntegrationsServiceAttachRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *IntegrationsServiceAttachRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on IntegrationsServiceAttachRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// IntegrationsServiceAttachRequestMultiError, or nil if none found.
+func (m *IntegrationsServiceAttachRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *IntegrationsServiceAttachRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if err := m._validateUuid(m.GetWorkflowId()); err != nil {
+		err = IntegrationsServiceAttachRequestValidationError{
+			field:  "WorkflowId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if err := m._validateUuid(m.GetIntegrationId()); err != nil {
+		err = IntegrationsServiceAttachRequestValidationError{
+			field:  "IntegrationId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetAttachmentConfig() == nil {
+		err := IntegrationsServiceAttachRequestValidationError{
+			field:  "AttachmentConfig",
+			reason: "value is required",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if a := m.GetAttachmentConfig(); a != nil {
+
+	}
+
+	if len(errors) > 0 {
+		return IntegrationsServiceAttachRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *IntegrationsServiceAttachRequest) _validateUuid(uuid string) error {
+	if matched := _integrations_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
+	}
+
+	return nil
+}
+
+// IntegrationsServiceAttachRequestMultiError is an error wrapping multiple
+// validation errors returned by
+// IntegrationsServiceAttachRequest.ValidateAll() if the designated
+// constraints aren't met.
+type IntegrationsServiceAttachRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m IntegrationsServiceAttachRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m IntegrationsServiceAttachRequestMultiError) AllErrors() []error { return m }
+
+// IntegrationsServiceAttachRequestValidationError is the validation error
+// returned by IntegrationsServiceAttachRequest.Validate if the designated
+// constraints aren't met.
+type IntegrationsServiceAttachRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e IntegrationsServiceAttachRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e IntegrationsServiceAttachRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e IntegrationsServiceAttachRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e IntegrationsServiceAttachRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e IntegrationsServiceAttachRequestValidationError) ErrorName() string {
+	return "IntegrationsServiceAttachRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e IntegrationsServiceAttachRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sIntegrationsServiceAttachRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = IntegrationsServiceAttachRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = IntegrationsServiceAttachRequestValidationError{}
+
+// Validate checks the field values on IntegrationsServiceAttachResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *IntegrationsServiceAttachResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on IntegrationsServiceAttachResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// IntegrationsServiceAttachResponseMultiError, or nil if none found.
+func (m *IntegrationsServiceAttachResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *IntegrationsServiceAttachResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetResult()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, IntegrationsServiceAttachResponseValidationError{
+					field:  "Result",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, IntegrationsServiceAttachResponseValidationError{
+					field:  "Result",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetResult()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return IntegrationsServiceAttachResponseValidationError{
+				field:  "Result",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return IntegrationsServiceAttachResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// IntegrationsServiceAttachResponseMultiError is an error wrapping multiple
+// validation errors returned by
+// IntegrationsServiceAttachResponse.ValidateAll() if the designated
+// constraints aren't met.
+type IntegrationsServiceAttachResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m IntegrationsServiceAttachResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m IntegrationsServiceAttachResponseMultiError) AllErrors() []error { return m }
+
+// IntegrationsServiceAttachResponseValidationError is the validation error
+// returned by IntegrationsServiceAttachResponse.Validate if the designated
+// constraints aren't met.
+type IntegrationsServiceAttachResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e IntegrationsServiceAttachResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e IntegrationsServiceAttachResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e IntegrationsServiceAttachResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e IntegrationsServiceAttachResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e IntegrationsServiceAttachResponseValidationError) ErrorName() string {
+	return "IntegrationsServiceAttachResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e IntegrationsServiceAttachResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sIntegrationsServiceAttachResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = IntegrationsServiceAttachResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = IntegrationsServiceAttachResponseValidationError{}
 
 // Validate checks the field values on IntegrationsServiceListRequest with the
 // rules defined in the proto definition for this message. If any rules are
@@ -561,317 +828,6 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = IntegrationsServiceListResponseValidationError{}
-
-// Validate checks the field values on IntegrationsServiceAttachRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the first error encountered is returned, or nil if there are
-// no violations.
-func (m *IntegrationsServiceAttachRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on IntegrationsServiceAttachRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// IntegrationsServiceAttachRequestMultiError, or nil if none found.
-func (m *IntegrationsServiceAttachRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *IntegrationsServiceAttachRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if err := m._validateUuid(m.GetWorkflowId()); err != nil {
-		err = IntegrationsServiceAttachRequestValidationError{
-			field:  "WorkflowId",
-			reason: "value must be a valid UUID",
-			cause:  err,
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if err := m._validateUuid(m.GetIntegrationId()); err != nil {
-		err = IntegrationsServiceAttachRequestValidationError{
-			field:  "IntegrationId",
-			reason: "value must be a valid UUID",
-			cause:  err,
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if m.GetConfig() == nil {
-		err := IntegrationsServiceAttachRequestValidationError{
-			field:  "Config",
-			reason: "value is required",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if all {
-		switch v := interface{}(m.GetConfig()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, IntegrationsServiceAttachRequestValidationError{
-					field:  "Config",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, IntegrationsServiceAttachRequestValidationError{
-					field:  "Config",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetConfig()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return IntegrationsServiceAttachRequestValidationError{
-				field:  "Config",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if len(errors) > 0 {
-		return IntegrationsServiceAttachRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-func (m *IntegrationsServiceAttachRequest) _validateUuid(uuid string) error {
-	if matched := _integrations_uuidPattern.MatchString(uuid); !matched {
-		return errors.New("invalid uuid format")
-	}
-
-	return nil
-}
-
-// IntegrationsServiceAttachRequestMultiError is an error wrapping multiple
-// validation errors returned by
-// IntegrationsServiceAttachRequest.ValidateAll() if the designated
-// constraints aren't met.
-type IntegrationsServiceAttachRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m IntegrationsServiceAttachRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m IntegrationsServiceAttachRequestMultiError) AllErrors() []error { return m }
-
-// IntegrationsServiceAttachRequestValidationError is the validation error
-// returned by IntegrationsServiceAttachRequest.Validate if the designated
-// constraints aren't met.
-type IntegrationsServiceAttachRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e IntegrationsServiceAttachRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e IntegrationsServiceAttachRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e IntegrationsServiceAttachRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e IntegrationsServiceAttachRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e IntegrationsServiceAttachRequestValidationError) ErrorName() string {
-	return "IntegrationsServiceAttachRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e IntegrationsServiceAttachRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sIntegrationsServiceAttachRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = IntegrationsServiceAttachRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = IntegrationsServiceAttachRequestValidationError{}
-
-// Validate checks the field values on IntegrationsServiceAttachResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the first error encountered is returned, or nil if there are
-// no violations.
-func (m *IntegrationsServiceAttachResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on IntegrationsServiceAttachResponse
-// with the rules defined in the proto definition for this message. If any
-// rules are violated, the result is a list of violation errors wrapped in
-// IntegrationsServiceAttachResponseMultiError, or nil if none found.
-func (m *IntegrationsServiceAttachResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *IntegrationsServiceAttachResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if all {
-		switch v := interface{}(m.GetResult()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, IntegrationsServiceAttachResponseValidationError{
-					field:  "Result",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, IntegrationsServiceAttachResponseValidationError{
-					field:  "Result",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetResult()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return IntegrationsServiceAttachResponseValidationError{
-				field:  "Result",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if len(errors) > 0 {
-		return IntegrationsServiceAttachResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// IntegrationsServiceAttachResponseMultiError is an error wrapping multiple
-// validation errors returned by
-// IntegrationsServiceAttachResponse.ValidateAll() if the designated
-// constraints aren't met.
-type IntegrationsServiceAttachResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m IntegrationsServiceAttachResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m IntegrationsServiceAttachResponseMultiError) AllErrors() []error { return m }
-
-// IntegrationsServiceAttachResponseValidationError is the validation error
-// returned by IntegrationsServiceAttachResponse.Validate if the designated
-// constraints aren't met.
-type IntegrationsServiceAttachResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e IntegrationsServiceAttachResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e IntegrationsServiceAttachResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e IntegrationsServiceAttachResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e IntegrationsServiceAttachResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e IntegrationsServiceAttachResponseValidationError) ErrorName() string {
-	return "IntegrationsServiceAttachResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e IntegrationsServiceAttachResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sIntegrationsServiceAttachResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = IntegrationsServiceAttachResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = IntegrationsServiceAttachResponseValidationError{}
 
 // Validate checks the field values on IntegrationsServiceDetachRequest with
 // the rules defined in the proto definition for this message. If any rules
@@ -1725,154 +1681,6 @@ var _ interface {
 	ErrorName() string
 } = IntegrationAttachmentItemValidationError{}
 
-// Validate checks the field values on IntegrationConfig with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
-func (m *IntegrationConfig) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on IntegrationConfig with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// IntegrationConfigMultiError, or nil if none found.
-func (m *IntegrationConfig) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *IntegrationConfig) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	switch v := m.Config.(type) {
-	case *IntegrationConfig_DependencyTrack_:
-		if v == nil {
-			err := IntegrationConfigValidationError{
-				field:  "Config",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetDependencyTrack()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, IntegrationConfigValidationError{
-						field:  "DependencyTrack",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, IntegrationConfigValidationError{
-						field:  "DependencyTrack",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetDependencyTrack()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return IntegrationConfigValidationError{
-					field:  "DependencyTrack",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	default:
-		_ = v // ensures v is used
-	}
-
-	if len(errors) > 0 {
-		return IntegrationConfigMultiError(errors)
-	}
-
-	return nil
-}
-
-// IntegrationConfigMultiError is an error wrapping multiple validation errors
-// returned by IntegrationConfig.ValidateAll() if the designated constraints
-// aren't met.
-type IntegrationConfigMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m IntegrationConfigMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m IntegrationConfigMultiError) AllErrors() []error { return m }
-
-// IntegrationConfigValidationError is the validation error returned by
-// IntegrationConfig.Validate if the designated constraints aren't met.
-type IntegrationConfigValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e IntegrationConfigValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e IntegrationConfigValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e IntegrationConfigValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e IntegrationConfigValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e IntegrationConfigValidationError) ErrorName() string {
-	return "IntegrationConfigValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e IntegrationConfigValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sIntegrationConfig.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = IntegrationConfigValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = IntegrationConfigValidationError{}
-
 // Validate checks the field values on IntegrationAttachmentConfig with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -2251,124 +2059,6 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = IntegrationsServiceDeleteResponseValidationError{}
-
-// Validate checks the field values on IntegrationConfig_DependencyTrack with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the first error encountered is returned, or nil if there are
-// no violations.
-func (m *IntegrationConfig_DependencyTrack) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on IntegrationConfig_DependencyTrack
-// with the rules defined in the proto definition for this message. If any
-// rules are violated, the result is a list of violation errors wrapped in
-// IntegrationConfig_DependencyTrackMultiError, or nil if none found.
-func (m *IntegrationConfig_DependencyTrack) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *IntegrationConfig_DependencyTrack) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if utf8.RuneCountInString(m.GetDomain()) < 1 {
-		err := IntegrationConfig_DependencyTrackValidationError{
-			field:  "Domain",
-			reason: "value length must be at least 1 runes",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	// no validation rules for AllowAutoCreate
-
-	if len(errors) > 0 {
-		return IntegrationConfig_DependencyTrackMultiError(errors)
-	}
-
-	return nil
-}
-
-// IntegrationConfig_DependencyTrackMultiError is an error wrapping multiple
-// validation errors returned by
-// IntegrationConfig_DependencyTrack.ValidateAll() if the designated
-// constraints aren't met.
-type IntegrationConfig_DependencyTrackMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m IntegrationConfig_DependencyTrackMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m IntegrationConfig_DependencyTrackMultiError) AllErrors() []error { return m }
-
-// IntegrationConfig_DependencyTrackValidationError is the validation error
-// returned by IntegrationConfig_DependencyTrack.Validate if the designated
-// constraints aren't met.
-type IntegrationConfig_DependencyTrackValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e IntegrationConfig_DependencyTrackValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e IntegrationConfig_DependencyTrackValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e IntegrationConfig_DependencyTrackValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e IntegrationConfig_DependencyTrackValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e IntegrationConfig_DependencyTrackValidationError) ErrorName() string {
-	return "IntegrationConfig_DependencyTrackValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e IntegrationConfig_DependencyTrackValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sIntegrationConfig_DependencyTrack.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = IntegrationConfig_DependencyTrackValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = IntegrationConfig_DependencyTrackValidationError{}
 
 // Validate checks the field values on
 // IntegrationAttachmentConfig_DependencyTrack with the rules defined in the

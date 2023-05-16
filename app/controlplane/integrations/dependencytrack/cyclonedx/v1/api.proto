@@ -1,0 +1,46 @@
+//
+// Copyright 2023 The Chainloop Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package integrations.dependencytrack.cyclonedx.v1;
+
+option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/integrations/gen/dependencytrack/cyclonedx/v1;v1";
+import "validate/validate.proto";
+
+message RegistrationRequest {
+	RegistrationConfig config = 1 [(validate.rules).message.required = true];
+	string api_key = 2 [(validate.rules).string.min_len = 1];
+}
+
+message AttachmentRequest {
+	AttachmentConfig config = 1 [(validate.rules).message.required = true];
+}
+
+message RegistrationConfig {
+	string domain = 1 [(validate.rules).string.min_len = 1];
+	// Support the option to automatically create projects if requested
+	bool allow_auto_create = 2;
+}
+
+message AttachmentConfig {
+	oneof project {
+		option (validate.required) = true;
+		// The integration might either use a pre-configured projectID
+		string project_id = 1;
+		// name of the project ot be auto created
+		string project_name = 2;
+	}
+}

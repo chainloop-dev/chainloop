@@ -3,15 +3,16 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
-	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integration"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // Integration is the model entity for the Integration schema.
@@ -25,8 +26,8 @@ type Integration struct {
 	SecretName string `json:"secret_name,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
-	// Config holds the value of the "config" field.
-	Config *v1.IntegrationConfig `json:"config,omitempty"`
+	// Conf holds the value of the "conf" field.
+	Conf *anypb.Any `json:"conf,omitempty"`
 	// DeletedAt holds the value of the "deleted_at" field.
 	DeletedAt time.Time `json:"deleted_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -73,14 +74,14 @@ func (*Integration) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case integration.FieldConf:
+			values[i] = new([]byte)
 		case integration.FieldKind, integration.FieldSecretName:
 			values[i] = new(sql.NullString)
 		case integration.FieldCreatedAt, integration.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
 		case integration.FieldID:
 			values[i] = new(uuid.UUID)
-		case integration.FieldConfig:
-			values[i] = new(v1.IntegrationConfig)
 		case integration.ForeignKeys[0]: // organization_integrations
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
@@ -122,11 +123,13 @@ func (i *Integration) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				i.CreatedAt = value.Time
 			}
-		case integration.FieldConfig:
-			if value, ok := values[j].(*v1.IntegrationConfig); !ok {
-				return fmt.Errorf("unexpected type %T for field config", values[j])
-			} else if value != nil {
-				i.Config = value
+		case integration.FieldConf:
+			if value, ok := values[j].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field conf", values[j])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &i.Conf); err != nil {
+					return fmt.Errorf("unmarshal field conf: %w", err)
+				}
 			}
 		case integration.FieldDeletedAt:
 			if value, ok := values[j].(*sql.NullTime); !ok {
@@ -188,8 +191,8 @@ func (i *Integration) String() string {
 	builder.WriteString("created_at=")
 	builder.WriteString(i.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
-	builder.WriteString("config=")
-	builder.WriteString(fmt.Sprintf("%v", i.Config))
+	builder.WriteString("conf=")
+	builder.WriteString(fmt.Sprintf("%v", i.Conf))
 	builder.WriteString(", ")
 	builder.WriteString("deleted_at=")
 	builder.WriteString(i.DeletedAt.Format(time.ANSIC))

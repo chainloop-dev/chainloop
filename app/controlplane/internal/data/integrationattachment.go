@@ -19,13 +19,13 @@ import (
 	"context"
 	"time"
 
-	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integrationattachment"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 type IntegrationAttachmentRepo struct {
@@ -40,11 +40,11 @@ func NewIntegrationAttachmentRepo(data *Data, logger log.Logger) biz.Integration
 	}
 }
 
-func (r *IntegrationAttachmentRepo) Create(ctx context.Context, integrationID, workflowID uuid.UUID, config *v1.IntegrationAttachmentConfig) (*biz.IntegrationAttachment, error) {
+func (r *IntegrationAttachmentRepo) Create(ctx context.Context, integrationID, workflowID uuid.UUID, config *anypb.Any) (*biz.IntegrationAttachment, error) {
 	ia, err := r.data.db.IntegrationAttachment.Create().
 		SetWorkflowID(workflowID).
 		SetIntegrationID(integrationID).
-		SetConfig(config).
+		SetConf(config).
 		Save(ctx)
 	if err != nil {
 		return nil, err
@@ -107,7 +107,7 @@ func entIntegrationAttachmentToBiz(i *ent.IntegrationAttachment) *biz.Integratio
 	}
 
 	r := &biz.IntegrationAttachment{ID: i.ID,
-		CreatedAt: toTimePtr(i.CreatedAt), Config: i.Config,
+		CreatedAt: toTimePtr(i.CreatedAt), Config: i.Conf,
 	}
 
 	if i.Edges.Workflow != nil {

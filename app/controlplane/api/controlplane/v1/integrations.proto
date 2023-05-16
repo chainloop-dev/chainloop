@@ -20,46 +20,47 @@ package controlplane.v1;
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 import "validate/validate.proto";
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/any.proto";
 import "controlplane/v1/response_messages.proto";
 
 service IntegrationsService {
-	// ORG related CRUD
-	rpc AddDependencyTrack (AddDependencyTrackRequest) returns (AddDependencyTrackResponse);
+	// Register a new integration in the organization
+	rpc Register (IntegrationsServiceRegisterRequest) returns (IntegrationsServiceRegisterResponse);
 	rpc List (IntegrationsServiceListRequest) returns (IntegrationsServiceListResponse);
 	rpc Delete (IntegrationsServiceDeleteRequest) returns (IntegrationsServiceDeleteResponse);
 
-	// Workflow Related operations
-	// Attach to a workflow
 	rpc Attach (IntegrationsServiceAttachRequest) returns (IntegrationsServiceAttachResponse);
-
+	// Workflow Related operations
 	// Detach integration from a workflow
 	rpc Detach (IntegrationsServiceDetachRequest) returns (IntegrationsServiceDetachResponse);
-	
 	rpc ListAttachments (ListAttachmentsRequest) returns (ListAttachmentsResponse);
 }
 
-message AddDependencyTrackRequest {
-	IntegrationConfig.DependencyTrack config = 1 [(validate.rules).message.required = true];
-	string api_key = 2 [(validate.rules).string.min_len = 1];
+message IntegrationsServiceRegisterRequest {
+	// Kind of integration to register
+	string kind = 1 [(validate.rules).string.min_len = 1];
+	// Associated registration configuration
+	google.protobuf.Any registration_config = 2 [(validate.rules).any.required = true];
 }
 
-message AddDependencyTrackResponse {
+message IntegrationsServiceRegisterResponse {
 	IntegrationItem result = 1;
-}
-
-message IntegrationsServiceListRequest{}
-message IntegrationsServiceListResponse{
-	repeated IntegrationItem result = 1;
 }
 
 message IntegrationsServiceAttachRequest{
   string workflow_id = 1 [(validate.rules).string.uuid = true];
   string integration_id = 2 [(validate.rules).string.uuid = true];
-  IntegrationAttachmentConfig config = 3 [(validate.rules).message.required = true];
+  google.protobuf.Any attachment_config = 3 [(validate.rules).any.required = true];
 }
 
 message IntegrationsServiceAttachResponse{
 	IntegrationAttachmentItem result = 1;
+}
+
+
+message IntegrationsServiceListRequest{}
+message IntegrationsServiceListResponse{
+	repeated IntegrationItem result = 1;
 }
 
 message IntegrationsServiceDetachRequest{
@@ -81,28 +82,15 @@ message IntegrationItem {
 	string id = 1;
 	string kind = 2;
 	google.protobuf.Timestamp created_at = 3;
-	IntegrationConfig config = 4;
+	google.protobuf.Any config = 5;
 }
 
 message IntegrationAttachmentItem {
 	string id = 1;
 	google.protobuf.Timestamp created_at = 2;
-	IntegrationAttachmentConfig config = 3;
+	google.protobuf.Any config = 3;
 	IntegrationItem integration = 4;
 	WorkflowItem workflow = 5;
-}
-
-// Configuration used when a Integration is created in an organization
-message IntegrationConfig {
-	oneof config {
-		DependencyTrack dependency_track = 1;
-	}
-
-	message DependencyTrack {
-		string domain = 1 [(validate.rules).string.min_len = 1];
-		// Support the option to automatically create projects if requested
-		bool allow_auto_create = 2;
-	}
 }
 
 // Configuration used when a Integration is attached to a Workflow

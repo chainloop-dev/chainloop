@@ -55,7 +55,6 @@ func (s *testSuite) TestUpload() {
 	s.T().Run("digest mistmatch", func(t *testing.T) {
 		r := &pb.CASResource{Digest: "sha256:deadbeef", FileName: "test.txt"}
 		err := s.validBackend.Upload(context.TODO(), bytes.NewBuffer(s.uploadedContent), r)
-		fmt.Println(err)
 		assert.ErrorContains(s.T(), err, "layer digest does not match")
 	})
 
