@@ -19,20 +19,19 @@ jobs:
       packages: write # to push container images
       pull-requests: write
     env:
-      CHAINLOOP_VERSION: 0.9.0
+      CHAINLOOP_VERSION: 0.9.1
       CHAINLOOP_ROBOT_ACCOUNT: ${{ secrets.CHAINLOOP_ROBOT_ACCOUNT }}
       CONTAINER_IMAGE_CP: ghcr.io/chainloop-dev/chainloop/control-plane:${{ github.ref_name }}
       CONTAINER_IMAGE_CAS: ghcr.io/chainloop-dev/chainloop/artifact-cas:${{ github.ref_name }}
     steps:
-      - name: Install Chainloop
-        run: |
-          curl -sfL https://docs.chainloop.dev/install.sh | bash -s -- --version v${{ env.CHAINLOOP_VERSION }}
-
-      # TODO(miguel) Move once the next release of chainloop is out and recorded in rekor
       - name: Install Cosign
         uses: sigstore/cosign-installer@main
         with:
           cosign-release: 'v2.0.2'
+
+      - name: Install Chainloop
+        run: |
+          curl -sfL https://docs.chainloop.dev/install.sh | bash -s -- --version v${{ env.CHAINLOOP_VERSION }}
 
       - name: Download jq
         run: |
