@@ -47,6 +47,7 @@ signs:
         "sign-blob",
         "--key=env://COSIGN_KEY",
         "--output-signature=${signature}",
+        "--yes",
         "${artifact}",
       ]
     artifacts: all
@@ -54,7 +55,7 @@ signs:
 docker_signs:
   # COSIGN_PASSWORD is also required to be present
   - cmd: cosign
-    args: ["sign", "--key=env://COSIGN_KEY", "${artifact}"]
+    args: ["sign", "--key=env://COSIGN_KEY", "--yes", "${artifact}"]
     artifacts: all
 
 dockers:
