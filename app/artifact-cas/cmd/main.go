@@ -24,6 +24,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	awssecrets "github.com/chainloop-dev/chainloop/internal/credentials/aws"
+	"github.com/chainloop-dev/chainloop/internal/credentials/gcp"
 	"github.com/chainloop-dev/chainloop/internal/credentials/vault"
 	"github.com/getsentry/sentry-go"
 
@@ -125,15 +126,19 @@ func main() {
 }
 
 func newCredentialsReader(conf *conf.Credentials, l log.Logger) (credentials.Reader, error) {
-	awsc, vaultc := conf.GetAwsSecretManager(), conf.GetVault()
-	if awsc == nil && vaultc == nil {
+	awsc, vaultc, gcpc := conf.GetAwsSecretManager(), conf.GetVault(), conf.GetGcpSecretManager()
+	if awsc == nil && vaultc == nil && gcpc == nil {
 		return nil, errors.New("no credentials manager configuration found")
-	} else if awsc != nil && vaultc != nil {
+	} else if awsc != nil && vaultc != nil && gcpc != nil {
 		return nil, errors.New("only one credentials manager can be configured")
 	}
 
 	if c := conf.GetAwsSecretManager(); c != nil {
 		return newAWSCredentialsManager(c, l)
+	}
+
+	if c := conf.GetGcpSecretManager(); c != nil {
+		return newGCPCredentialsManager(c, l)
 	}
 
 	return newVaultCredentialsManager(conf.GetVault(), l)
@@ -176,6 +181,25 @@ func newVaultCredentialsManager(conf *conf.Credentials_Vault, l log.Logger) (*va
 	}
 
 	_ = l.Log(log.LevelInfo, "msg", "secrets manager configured", "backend", "Vault")
+
+	return m, nil
+}
+
+func newGCPCredentialsManager(conf *conf.Credentials_GCPSecretManager, l log.Logger) (*gcp.Manager, error) {
+	if conf == nil {
+		return nil, errors.New("uncompleted configuration for GCP secret manager")
+	}
+
+	opts := &gcp.NewManagerOpts{
+		ProjectID: conf.ProjectId,
+		AuthKey:   conf.AuthKey,
+		Logger:    l,
+	}
+
+	m, err := gcp.NewManager(opts)
+	if err != nil {
+		return nil, fmt.Errorf("configuring the GCP secret manager: %w", err)
+	}
 
 	return m, nil
 }
