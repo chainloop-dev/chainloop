@@ -66,6 +66,7 @@ message Credentials {
     oneof backend {
         AWSSecretManager aws_secret_manager = 1;
         Vault vault = 2;
+        GCPSecretManager gcp_secret_manager = 3;
     }
 
     // Top level is deprecated now
@@ -87,5 +88,10 @@ message Credentials {
       string address = 2;
       // mount path of the kv engine, default /secret
       string mount_path = 3;
+    }
+
+    message GCPSecretManager {
+        string project_id = 1;
+        string auth_key   = 2;
     }
 }
