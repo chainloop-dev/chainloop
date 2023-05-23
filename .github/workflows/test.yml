@@ -28,7 +28,7 @@ jobs:
           cache: true
           cache-dependency-path: go.sum
 
-      - name: tidy check
+      - name: Go Module tidy check
         run: |
           go mod tidy
           git diff --exit-code -- go.mod go.sum
