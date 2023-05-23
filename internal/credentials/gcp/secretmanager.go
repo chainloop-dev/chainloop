@@ -1,3 +1,18 @@
+//
+// Copyright 2023 The Chainloop Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package gcp
 
 import (
@@ -54,7 +69,7 @@ func NewManager(opts *NewManagerOpts) (*Manager, error) {
 
 	cli, err := secretmanager.NewRESTClient(context.TODO(), option.WithCredentialsJSON([]byte(opts.AuthKey)))
 	if err != nil {
-		return nil, fmt.Errorf("error while connecting to the project: %v", err)
+		return nil, fmt.Errorf("error while connecting to the project: %w", err)
 	}
 
 	return &Manager{
@@ -133,19 +148,11 @@ func (m *Manager) DeleteCredentials(ctx context.Context, secretID string) error 
 	return fmt.Errorf("%w: path=%s", credentials.ErrNotFound, secretID)
 }
 
-func (c *Manager) secretExists(ctx context.Context, secretID string) bool {
+func (m *Manager) secretExists(ctx context.Context, secretID string) bool {
 	accessRequest := secretmanagerpb.GetSecretRequest{
-		Name: fmt.Sprintf("projects/%v/secrets/%v", c.projectID, secretID),
+		Name: fmt.Sprintf("projects/%v/secrets/%v", m.projectID, secretID),
 	}
 
-	_, err := c.client.GetSecret(ctx, &accessRequest)
+	_, err := m.client.GetSecret(ctx, &accessRequest)
 	return err == nil
-}
-
-// Close closes the manager
-func (m *Manager) Close() error {
-	if m.client == nil {
-		return nil
-	}
-	return m.client.Close()
 }
