@@ -28,6 +28,11 @@ jobs:
           cache: true
           cache-dependency-path: go.sum
 
+      - name: Go Module tidy check
+        run: |
+          go mod tidy
+          git diff --exit-code -- go.mod go.sum
+
       # Check that the generated ent code is up to date
       # see https://entgo.io/docs/ci/
       - uses: ent/contrib/ci@master
