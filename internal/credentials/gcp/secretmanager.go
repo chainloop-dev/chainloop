@@ -44,14 +44,15 @@ type SecretsManagerInterface interface {
 }
 
 type Manager struct {
-	projectID string
-	client    SecretsManagerInterface
-	logger    *log.Helper
+	projectID    string
+	secretPrefix string
+	client       SecretsManagerInterface
+	logger       *log.Helper
 }
 
 type NewManagerOpts struct {
-	ProjectID, AuthKey string
-	Logger             log.Logger
+	ProjectID, AuthKey, SecretPrefix string
+	Logger                           log.Logger
 }
 
 func NewManager(opts *NewManagerOpts) (*Manager, error) {
@@ -80,9 +81,10 @@ func NewManager(opts *NewManagerOpts) (*Manager, error) {
 	logger.Infow("msg", "created GCP connection", "projectID", opts.ProjectID)
 
 	return &Manager{
-		projectID: opts.ProjectID,
-		client:    cli,
-		logger:    logger,
+		projectID:    opts.ProjectID,
+		secretPrefix: opts.SecretPrefix,
+		client:       cli,
+		logger:       logger,
 	}, nil
 }
 
@@ -94,7 +96,7 @@ func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any) 
 		return "", fmt.Errorf("marshaling credentials to be stored: %w", err)
 	}
 
-	secretID := strings.Join([]string{orgID, uuid.Generate().String()}, "-")
+	secretID := strings.Join([]string{m.secretPrefix, orgID, uuid.Generate().String()}, "-")
 
 	// first create the secret itself
 	createSecretReq := &secretmanagerpb.CreateSecretRequest{

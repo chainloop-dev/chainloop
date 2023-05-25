@@ -26,3 +26,4 @@ observability:
 ## gcp_secret_manager:
 ##   project_id: 522312304548
 ##   auth_key: "./configs/gcp_auth_key.json"
+##   secret_prefix: "pre-"

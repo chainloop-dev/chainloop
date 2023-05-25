@@ -124,5 +124,6 @@ message Credentials {
     message GCPSecretManager {
         string project_id = 1;
         string auth_key   = 2;
+        string secret_prefix = 3; 
     }
 }

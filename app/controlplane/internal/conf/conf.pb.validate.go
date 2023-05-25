@@ -2118,6 +2118,8 @@ func (m *Credentials_GCPSecretManager) validate(all bool) error {
 
 	// no validation rules for AuthKey
 
+	// no validation rules for SecretPrefix
+
 	if len(errors) > 0 {
 		return Credentials_GCPSecretManagerMultiError(errors)
 	}
