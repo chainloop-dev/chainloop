@@ -32,19 +32,7 @@ import (
 
 const defaultOrgID = "test-org"
 const defaultProjectID = "1234-5678-9012"
-const defaultAccessKey string = `{
-  "type": "service_account",
-  "project_id": "chainloop-test-dev",
-  "private_key_id": "12345123451234512345",
-  "private_key": "-----BEGIN PRIVATE KEY-----\nAAABBB\n-----END PRIVATE KEY-----\n",
-  "client_email": "chainloop-dev@chainloop-dev.iam.gserviceaccount.com",
-  "client_id": "5678567856781234",
-  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-  "token_uri": "https://oauth2.googleapis.com/token",
-  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/chainloop-dev%40chainloop-dev.iam.gserviceaccount.com",
-  "universe_domain": "googleapis.com"
-}`
+const defaultAuthKey string = "./_fixtures/gcp_key.json"
 
 func TestNewManager(t *testing.T) {
 	assert := assert.New(t)
@@ -55,9 +43,9 @@ func TestNewManager(t *testing.T) {
 		authKey       string
 		expectedError bool
 	}{
-		{name: "missing projectID", projectID: "", authKey: defaultAccessKey, expectedError: true},
+		{name: "missing projectID", projectID: "", authKey: defaultAuthKey, expectedError: true},
 		{name: "missing authKey", projectID: defaultProjectID, authKey: "", expectedError: true},
-		{name: "valid manager", projectID: defaultProjectID, authKey: defaultAccessKey},
+		{name: "valid manager", projectID: defaultProjectID, authKey: defaultAuthKey},
 	}
 
 	for _, tc := range testCases {
