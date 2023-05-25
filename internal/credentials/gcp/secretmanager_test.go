@@ -18,11 +18,14 @@ package gcp
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"testing"
 
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	gcpmocks "github.com/chainloop-dev/chainloop/internal/credentials/gcp/mocks"
+	"github.com/chainloop-dev/chainloop/internal/servicelogger"
+	"github.com/go-kratos/kratos/v2/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -77,6 +80,7 @@ func TestCreateCredentials(t *testing.T) {
 
 	ctx := context.Background()
 	m := &Manager{}
+	m.logger = servicelogger.ScopedHelper(log.NewStdLogger(io.Discard), "credentials/gcp-secrets-manager")
 	clientMock := gcpmocks.NewSecretsManagerInterface(t)
 	m.client = clientMock
 
@@ -90,6 +94,7 @@ func TestCreateCredentials(t *testing.T) {
 func TestReadCredentials(t *testing.T) {
 	ctx := context.Background()
 	m := &Manager{}
+	m.logger = servicelogger.ScopedHelper(log.NewStdLogger(io.Discard), "credentials/gcp-secrets-manager")
 	clientMock := gcpmocks.NewSecretsManagerInterface(t)
 	m.client = clientMock
 	secretID := "some-secret-id"
@@ -114,6 +119,7 @@ func TestReadCredentials(t *testing.T) {
 
 func TestDeleteCredentials(t *testing.T) {
 	m := &Manager{}
+	m.logger = servicelogger.ScopedHelper(log.NewStdLogger(io.Discard), "credentials/gcp-secrets-manager")
 	clientMock := gcpmocks.NewSecretsManagerInterface(t)
 	m.client = clientMock
 	m.projectID = defaultProjectID
