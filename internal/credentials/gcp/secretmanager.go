@@ -123,7 +123,6 @@ func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any) 
 			Data: c,
 		},
 	}
-
 	v, err := m.client.AddSecretVersion(ctx, addSecretVersionReq)
 	if err != nil {
 		return "", fmt.Errorf("creating secret version in GCP: %w", err)
@@ -138,7 +137,6 @@ func (m *Manager) ReadCredentials(ctx context.Context, secretID string, creds an
 	getSecretRequest := secretmanagerpb.AccessSecretVersionRequest{
 		Name: fmt.Sprintf("projects/%v/secrets/%v/versions/latest", m.projectID, secretID),
 	}
-
 	result, err := m.client.AccessSecretVersion(ctx, &getSecretRequest)
 	if err != nil {
 		return fmt.Errorf("%w: path=%s", credentials.ErrNotFound, secretID)
