@@ -71,6 +71,7 @@ func NewManager(opts *NewManagerOpts) (*Manager, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error while connecting to the project: %w", err)
 	}
+	logger.Infow("msg", "created GCP connection", "projectID", opts.ProjectID)
 
 	return &Manager{
 		projectID: opts.ProjectID,
@@ -105,6 +106,7 @@ func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any) 
 	if err != nil {
 		return "", fmt.Errorf("creating secret in GCP: %w", err)
 	}
+	m.logger.Infow("msg", "created new secrect", "secretID", secretID)
 
 	// once the secret is created store it as the newest version
 	addSecretVersionReq := &secretmanagerpb.AddSecretVersionRequest{
@@ -113,10 +115,12 @@ func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any) 
 			Data: c,
 		},
 	}
-	_, err = m.client.AddSecretVersion(ctx, addSecretVersionReq)
+
+	v, err := m.client.AddSecretVersion(ctx, addSecretVersionReq)
 	if err != nil {
 		return "", fmt.Errorf("creating secret version in GCP: %w", err)
 	}
+	m.logger.Infow("msg", "added new secret version", "secretID", secretID, "versionID", v.Name)
 
 	return secretID, nil
 }
@@ -131,6 +135,7 @@ func (m *Manager) ReadCredentials(ctx context.Context, secretID string, creds an
 	if err != nil {
 		return fmt.Errorf("%w: path=%s", credentials.ErrNotFound, secretID)
 	}
+	m.logger.Infow("msg", "accessed secret", "secretID", secretID)
 
 	return json.Unmarshal(result.Payload.Data, creds)
 }
@@ -141,6 +146,7 @@ func (m *Manager) DeleteCredentials(ctx context.Context, secretID string) error 
 		deleteRequest := secretmanagerpb.DeleteSecretRequest{
 			Name: fmt.Sprintf("projects/%v/secrets/%v", m.projectID, secretID),
 		}
+		m.logger.Infow("msg", "deleting secret", "secretID", secretID)
 
 		return m.client.DeleteSecret(ctx, &deleteRequest)
 	}
