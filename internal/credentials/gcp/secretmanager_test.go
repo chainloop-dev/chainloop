@@ -32,25 +32,25 @@ import (
 
 const defaultOrgID = "test-org"
 const defaultProjectID = "1234-5678-9012"
-const defaultAuthKey string = "./_fixtures/gcp_key.json"
+const defaultServiceAccountKey string = "./_fixtures/gcp_key.json"
 
 func TestNewManager(t *testing.T) {
 	assert := assert.New(t)
 
 	testCases := []struct {
-		name          string
-		projectID     string
-		authKey       string
-		expectedError bool
+		name              string
+		projectID         string
+		serviceAccountKey string
+		expectedError     bool
 	}{
-		{name: "missing projectID", projectID: "", authKey: defaultAuthKey, expectedError: true},
-		{name: "missing authKey", projectID: defaultProjectID, authKey: "", expectedError: true},
-		{name: "valid manager", projectID: defaultProjectID, authKey: defaultAuthKey},
+		{name: "missing projectID", projectID: "", serviceAccountKey: defaultServiceAccountKey, expectedError: true},
+		{name: "missing authKey", projectID: defaultProjectID, serviceAccountKey: "", expectedError: true},
+		{name: "valid manager", projectID: defaultProjectID, serviceAccountKey: defaultServiceAccountKey},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			opts := &NewManagerOpts{ProjectID: tc.projectID, AuthKey: tc.authKey}
+			opts := &NewManagerOpts{ProjectID: tc.projectID, ServiceAccountKey: tc.serviceAccountKey}
 			_, err := NewManager(opts)
 			if tc.expectedError {
 				assert.Error(err)

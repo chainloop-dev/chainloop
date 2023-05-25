@@ -51,13 +51,13 @@ type Manager struct {
 }
 
 type NewManagerOpts struct {
-	ProjectID, AuthKey, SecretPrefix string
-	Logger                           log.Logger
+	ProjectID, ServiceAccountKey, SecretPrefix string
+	Logger                                     log.Logger
 }
 
 func NewManager(opts *NewManagerOpts) (*Manager, error) {
-	if opts.ProjectID == "" || opts.AuthKey == "" {
-		return nil, errors.New("projectID and authKey are required")
+	if opts.ProjectID == "" || opts.ServiceAccountKey == "" {
+		return nil, errors.New("projectID and serviceAccountKey are required")
 	}
 
 	l := opts.Logger
@@ -69,12 +69,12 @@ func NewManager(opts *NewManagerOpts) (*Manager, error) {
 	logger.Infow("msg", "configuring gcp secrets-manager", "projectID", opts.ProjectID)
 
 	// read credentials file
-	authKey, err := os.ReadFile(opts.AuthKey)
+	serviceAccountKey, err := os.ReadFile(opts.ServiceAccountKey)
 	if err != nil {
 		return nil, fmt.Errorf("error while reading auth key file: %w", err)
 	}
 
-	cli, err := secretmanager.NewClient(context.TODO(), option.WithCredentialsJSON(authKey))
+	cli, err := secretmanager.NewClient(context.TODO(), option.WithCredentialsJSON(serviceAccountKey))
 	if err != nil {
 		return nil, fmt.Errorf("error while creating the client: %w", err)
 	}
