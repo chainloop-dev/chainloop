@@ -81,6 +81,12 @@ func NewManager(opts *NewManagerOpts) (*Manager, error) {
 
 // SaveCredentials saves credentials
 func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any) (string, error) {
+	// store creds in key-value pair
+	c, err := json.Marshal(creds)
+	if err != nil {
+		return "", fmt.Errorf("marshaling credentials to be stored: %w", err)
+	}
+
 	secretID := strings.Join([]string{orgID, uuid.Generate().String()}, "-")
 
 	// first create the secret itself
@@ -98,12 +104,6 @@ func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any) 
 	secret, err := m.client.CreateSecret(ctx, createSecretReq)
 	if err != nil {
 		return "", fmt.Errorf("creating secret in GCP: %w", err)
-	}
-
-	// store creds in key-value pair
-	c, err := json.Marshal(creds)
-	if err != nil {
-		return "", fmt.Errorf("marshaling credentials to be stored: %w", err)
 	}
 
 	// once the secret is created store it as the newest version
