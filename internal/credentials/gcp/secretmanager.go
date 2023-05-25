@@ -76,7 +76,7 @@ func NewManager(opts *NewManagerOpts) (*Manager, error) {
 
 	cli, err := secretmanager.NewClient(context.TODO(), option.WithCredentialsJSON(authKey))
 	if err != nil {
-		return nil, fmt.Errorf("error while connecting to the project: %w", err)
+		return nil, fmt.Errorf("error while creating the client: %w", err)
 	}
 	logger.Infow("msg", "created GCP connection", "projectID", opts.ProjectID)
 
