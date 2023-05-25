@@ -126,13 +126,6 @@ func main() {
 }
 
 func newCredentialsReader(conf *conf.Credentials, l log.Logger) (credentials.Reader, error) {
-	awsc, vaultc, gcpc := conf.GetAwsSecretManager(), conf.GetVault(), conf.GetGcpSecretManager()
-	if awsc == nil && vaultc == nil && gcpc == nil {
-		return nil, errors.New("no credentials manager configuration found")
-	} else if awsc != nil && vaultc != nil && gcpc != nil {
-		return nil, errors.New("only one credentials manager can be configured")
-	}
-
 	if c := conf.GetAwsSecretManager(); c != nil {
 		return newAWSCredentialsManager(c, l)
 	}
