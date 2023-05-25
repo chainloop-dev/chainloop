@@ -150,23 +150,10 @@ func (m *Manager) ReadCredentials(ctx context.Context, secretID string, creds an
 
 // DeleteCredentials deletes credentials and versions
 func (m *Manager) DeleteCredentials(ctx context.Context, secretID string) error {
-	if m.secretExists(ctx, secretID) {
-		deleteRequest := secretmanagerpb.DeleteSecretRequest{
-			Name: fmt.Sprintf("projects/%v/secrets/%v", m.projectID, secretID),
-		}
-		m.logger.Infow("msg", "deleting secret", "secretID", secretID)
-
-		return m.client.DeleteSecret(ctx, &deleteRequest)
-	}
-
-	return fmt.Errorf("%w: path=%s", credentials.ErrNotFound, secretID)
-}
-
-func (m *Manager) secretExists(ctx context.Context, secretID string) bool {
-	accessRequest := secretmanagerpb.GetSecretRequest{
+	deleteRequest := secretmanagerpb.DeleteSecretRequest{
 		Name: fmt.Sprintf("projects/%v/secrets/%v", m.projectID, secretID),
 	}
+	m.logger.Infow("msg", "deleting secret", "secretID", secretID)
 
-	_, err := m.client.GetSecret(ctx, &accessRequest)
-	return err == nil
+	return m.client.DeleteSecret(ctx, &deleteRequest)
 }

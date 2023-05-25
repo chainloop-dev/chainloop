@@ -113,7 +113,6 @@ func TestDeleteCredentials(t *testing.T) {
 	m.projectID = defaultProjectID
 	secretID := "some-secret-id"
 
-	clientMock.On("GetSecret", mock.Anything, mock.Anything).Return(&secretmanagerpb.Secret{}, nil).Once()
 	clientMock.On("DeleteSecret", mock.Anything, mock.Anything).Return(nil)
 
 	err := m.DeleteCredentials(context.Background(), secretID)
