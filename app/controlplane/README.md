@@ -20,7 +20,7 @@ The control plane has 4 main dependencies
 
 - OpenID Connect (OIDC) provider. Chainloop authentication backend is delegated to a OIDC provider (i.e Google, GitHub or [Auth0](https://auth0.com/)) for single sign on.
 - The persistance layer requires a [PostgreSQL](https://www.postgresql.org/) database.
-- Sensitive information provided by the user such as OCI registry credentials is sent to a secret storage backend. Currently we support both [Hashicorp Vault](https://www.vaultproject.io/) and [AWS Secret Manager](https://aws.amazon.com/secrets-manager/).
+- Sensitive information provided by the user such as OCI registry credentials is sent to a secret storage backend. Currently we support [Hashicorp Vault](https://www.vaultproject.io/), [AWS Secret Manager](https://aws.amazon.com/secrets-manager/) and [GCP Secret Manager](https://cloud.google.com/secret-manager).
 - In addition to those third party dependencies, the control plane also has a dependency on Chainloop own [Artifact CAS](../artifact-cas). It is used to upload the received attestation to the end-user storage backend.
 
 > NOTE: The control plane does not store attestation or artifact data, these get forwarded to the user storage backend through the Artifact CAS.
