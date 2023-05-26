@@ -234,7 +234,7 @@ func (m *CraftingSchema_Runner) validate(all bool) error {
 	if _, ok := _CraftingSchema_Runner_Type_NotInLookup[m.GetType()]; ok {
 		err := CraftingSchema_RunnerValidationError{
 			field:  "Type",
-			reason: "value must not be in list [0]",
+			reason: "value must not be in list [RUNNER_TYPE_UNSPECIFIED]",
 		}
 		if !all {
 			return err
@@ -351,7 +351,7 @@ func (m *CraftingSchema_Material) validate(all bool) error {
 	if _, ok := _CraftingSchema_Material_Type_NotInLookup[m.GetType()]; ok {
 		err := CraftingSchema_MaterialValidationError{
 			field:  "Type",
-			reason: "value must not be in list [0]",
+			reason: "value must not be in list [MATERIAL_TYPE_UNSPECIFIED]",
 		}
 		if !all {
 			return err
