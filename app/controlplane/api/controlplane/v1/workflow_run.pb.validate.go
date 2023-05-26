@@ -782,7 +782,7 @@ func (m *AttestationServiceCancelRequest) validate(all bool) error {
 	if _, ok := _AttestationServiceCancelRequest_Trigger_NotInLookup[m.GetTrigger()]; ok {
 		err := AttestationServiceCancelRequestValidationError{
 			field:  "Trigger",
-			reason: "value must not be in list [0]",
+			reason: "value must not be in list [TRIGGER_TYPE_UNSPECIFIED]",
 		}
 		if !all {
 			return err

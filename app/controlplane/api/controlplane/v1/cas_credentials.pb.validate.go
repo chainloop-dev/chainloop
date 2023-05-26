@@ -60,7 +60,7 @@ func (m *CASCredentialsServiceGetRequest) validate(all bool) error {
 	if _, ok := _CASCredentialsServiceGetRequest_Role_InLookup[m.GetRole()]; !ok {
 		err := CASCredentialsServiceGetRequestValidationError{
 			field:  "Role",
-			reason: "value must be in list [1 2]",
+			reason: "value must be in list [ROLE_DOWNLOADER ROLE_UPLOADER]",
 		}
 		if !all {
 			return err

@@ -111,19 +111,24 @@ export const OrgMetricsServiceTotalsRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): OrgMetricsServiceTotalsRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseOrgMetricsServiceTotalsRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.timeWindow = reader.int32() as any;
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -167,22 +172,31 @@ export const TopWorkflowsByRunsCountRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): TopWorkflowsByRunsCountRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseTopWorkflowsByRunsCountRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.numWorkflows = reader.int32();
-          break;
+          continue;
         case 2:
+          if (tag != 16) {
+            break;
+          }
+
           message.timeWindow = reader.int32() as any;
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -228,19 +242,24 @@ export const TopWorkflowsByRunsCountResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): TopWorkflowsByRunsCountResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseTopWorkflowsByRunsCountResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.result.push(TopWorkflowsByRunsCountResponse_TotalByStatus.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -295,16 +314,24 @@ export const TopWorkflowsByRunsCountResponse_TotalByStatus = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): TopWorkflowsByRunsCountResponse_TotalByStatus {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseTopWorkflowsByRunsCountResponse_TotalByStatus();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.workflow = WorkflowItem.decode(reader, reader.uint32());
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           const entry2 = TopWorkflowsByRunsCountResponse_TotalByStatus_RunsTotalByStatusEntry.decode(
             reader,
             reader.uint32(),
@@ -312,11 +339,12 @@ export const TopWorkflowsByRunsCountResponse_TotalByStatus = {
           if (entry2.value !== undefined) {
             message.runsTotalByStatus[entry2.key] = entry2.value;
           }
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -394,22 +422,31 @@ export const TopWorkflowsByRunsCountResponse_TotalByStatus_RunsTotalByStatusEntr
     input: _m0.Reader | Uint8Array,
     length?: number,
   ): TopWorkflowsByRunsCountResponse_TotalByStatus_RunsTotalByStatusEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseTopWorkflowsByRunsCountResponse_TotalByStatus_RunsTotalByStatusEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 16) {
+            break;
+          }
+
           message.value = reader.int32();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -454,19 +491,24 @@ export const OrgMetricsServiceTotalsResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): OrgMetricsServiceTotalsResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseOrgMetricsServiceTotalsResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.result = OrgMetricsServiceTotalsResponse_Result.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -524,22 +566,34 @@ export const OrgMetricsServiceTotalsResponse_Result = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): OrgMetricsServiceTotalsResponse_Result {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseOrgMetricsServiceTotalsResponse_Result();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.runsTotal = reader.int32();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           const entry2 = OrgMetricsServiceTotalsResponse_Result_RunsTotalByStatusEntry.decode(reader, reader.uint32());
           if (entry2.value !== undefined) {
             message.runsTotalByStatus[entry2.key] = entry2.value;
           }
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           const entry3 = OrgMetricsServiceTotalsResponse_Result_RunsTotalByRunnerTypeEntry.decode(
             reader,
             reader.uint32(),
@@ -547,11 +601,12 @@ export const OrgMetricsServiceTotalsResponse_Result = {
           if (entry3.value !== undefined) {
             message.runsTotalByRunnerType[entry3.key] = entry3.value;
           }
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -646,22 +701,31 @@ export const OrgMetricsServiceTotalsResponse_Result_RunsTotalByStatusEntry = {
     input: _m0.Reader | Uint8Array,
     length?: number,
   ): OrgMetricsServiceTotalsResponse_Result_RunsTotalByStatusEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseOrgMetricsServiceTotalsResponse_Result_RunsTotalByStatusEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 16) {
+            break;
+          }
+
           message.value = reader.int32();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -715,22 +779,31 @@ export const OrgMetricsServiceTotalsResponse_Result_RunsTotalByRunnerTypeEntry =
     input: _m0.Reader | Uint8Array,
     length?: number,
   ): OrgMetricsServiceTotalsResponse_Result_RunsTotalByRunnerTypeEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseOrgMetricsServiceTotalsResponse_Result_RunsTotalByRunnerTypeEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 16) {
+            break;
+          }
+
           message.value = reader.int32();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },

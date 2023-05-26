@@ -60,7 +60,7 @@ func (m *OrgMetricsServiceTotalsRequest) validate(all bool) error {
 	if _, ok := _OrgMetricsServiceTotalsRequest_TimeWindow_NotInLookup[m.GetTimeWindow()]; ok {
 		err := OrgMetricsServiceTotalsRequestValidationError{
 			field:  "TimeWindow",
-			reason: "value must not be in list [0]",
+			reason: "value must not be in list [METRICS_TIME_WINDOW_UNSPECIFIED]",
 		}
 		if !all {
 			return err
@@ -189,7 +189,7 @@ func (m *TopWorkflowsByRunsCountRequest) validate(all bool) error {
 	if _, ok := _TopWorkflowsByRunsCountRequest_TimeWindow_NotInLookup[m.GetTimeWindow()]; ok {
 		err := TopWorkflowsByRunsCountRequestValidationError{
 			field:  "TimeWindow",
-			reason: "value must not be in list [0]",
+			reason: "value must not be in list [METRICS_TIME_WINDOW_UNSPECIFIED]",
 		}
 		if !all {
 			return err
