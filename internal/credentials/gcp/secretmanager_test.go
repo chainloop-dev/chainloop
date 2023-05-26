@@ -45,9 +45,9 @@ func TestNewManager(t *testing.T) {
 	}{
 		{name: "missing projectID", projectID: "", serviceAccountKey: defaultServiceAccountKey, expectedError: true},
 		{name: "missing service account key", projectID: defaultProjectID, serviceAccountKey: "", expectedError: true},
-		{name: "invalid service account key", projectID: defaultProjectID, serviceAccountKey: defaultServiceAccountKey, expectedError: true},
 		{name: "wrong service account key path", projectID: defaultProjectID, serviceAccountKey: "./non/existing/path/key.json", expectedError: true},
 		{name: "wrong type of service account key", projectID: defaultProjectID, serviceAccountKey: "./testdata/key.txt", expectedError: true},
+		{name: "valid service account key", projectID: defaultProjectID, serviceAccountKey: defaultServiceAccountKey},
 	}
 
 	for _, tc := range testCases {
