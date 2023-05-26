@@ -830,9 +830,10 @@ type Credentials_AWSSecretManager struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Creds        *Credentials_AWSSecretManager_Creds `protobuf:"bytes,1,opt,name=creds,proto3" json:"creds,omitempty"`
-	Region       string                              `protobuf:"bytes,2,opt,name=region,proto3" json:"region,omitempty"`
-	SecretPrefix string                              `protobuf:"bytes,3,opt,name=secret_prefix,json=secretPrefix,proto3" json:"secret_prefix,omitempty"`
+	Creds  *Credentials_AWSSecretManager_Creds `protobuf:"bytes,1,opt,name=creds,proto3" json:"creds,omitempty"`
+	Region string                              `protobuf:"bytes,2,opt,name=region,proto3" json:"region,omitempty"`
+	// Secret prefix to be prepended during secret write
+	SecretPrefix string `protobuf:"bytes,3,opt,name=secret_prefix,json=secretPrefix,proto3" json:"secret_prefix,omitempty"`
 }
 
 func (x *Credentials_AWSSecretManager) Reset() {
@@ -899,7 +900,8 @@ type Credentials_Vault struct {
 	// i.e "http://127.0.0.1:8200"
 	Address string `protobuf:"bytes,2,opt,name=address,proto3" json:"address,omitempty"`
 	// mount path of the kv engine, default /secret
-	MountPath    string `protobuf:"bytes,3,opt,name=mount_path,json=mountPath,proto3" json:"mount_path,omitempty"`
+	MountPath string `protobuf:"bytes,3,opt,name=mount_path,json=mountPath,proto3" json:"mount_path,omitempty"`
+	// Secret prefix to be prepended during secret write
 	SecretPrefix string `protobuf:"bytes,4,opt,name=secret_prefix,json=secretPrefix,proto3" json:"secret_prefix,omitempty"`
 }
 
@@ -972,7 +974,8 @@ type Credentials_GCPSecretManager struct {
 	ProjectId string `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
 	// service account key
 	ServiceAccountKey string `protobuf:"bytes,2,opt,name=service_account_key,json=serviceAccountKey,proto3" json:"service_account_key,omitempty"`
-	SecretPrefix      string `protobuf:"bytes,3,opt,name=secret_prefix,json=secretPrefix,proto3" json:"secret_prefix,omitempty"`
+	// Secret prefix to be prepended during secret write
+	SecretPrefix string `protobuf:"bytes,3,opt,name=secret_prefix,json=secretPrefix,proto3" json:"secret_prefix,omitempty"`
 }
 
 func (x *Credentials_GCPSecretManager) Reset() {

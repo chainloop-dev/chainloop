@@ -191,7 +191,6 @@ func newGCPCredentialsManager(conf *conf.Credentials_GCPSecretManager, l log.Log
 	opts := &gcp.NewManagerOpts{
 		ProjectID:         conf.ProjectId,
 		ServiceAccountKey: conf.ServiceAccountKey,
-		SecretPrefix:      conf.SecretPrefix,
 		Logger:            l,
 	}
 
