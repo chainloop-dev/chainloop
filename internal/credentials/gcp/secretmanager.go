@@ -107,7 +107,7 @@ func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any) 
 	if err != nil {
 		return "", fmt.Errorf("creating secret in GCP: %w", err)
 	}
-	m.logger.Infow("msg", "created new secrect", "secretID", secretID)
+	m.logger.Infow("msg", "created new secret", "secretID", secretID)
 
 	// once the secret is created store it as the newest version
 	addSecretVersionReq := &secretmanagerpb.AddSecretVersionRequest{
