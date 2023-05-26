@@ -35,13 +35,12 @@ func newWorkflowIntegrationAttachDependencyTrackCmd() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_, err := action.NewWorkflowIntegrationAttach(actionOpts).RunDependencyTrack(integrationID, workflowID, projectID, projectName)
+			res, err := action.NewWorkflowIntegrationAttach(actionOpts).RunDependencyTrack(integrationID, workflowID, projectID, projectName)
 			if err != nil {
 				return err
 			}
 
-			logger.Info().Msg("Integration attached successfully")
-			return nil
+			return encodeOutput([]*action.IntegrationAttachmentItem{res}, integrationAttachmentListTableOutput)
 		},
 	}
 

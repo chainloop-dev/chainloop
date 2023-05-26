@@ -30,7 +30,7 @@ func NewWorkflowIntegrationAttach(cfg *ActionsOpts) *WorkflowIntegrationAttach {
 	return &WorkflowIntegrationAttach{cfg}
 }
 
-func (action *WorkflowIntegrationAttach) RunDependencyTrack(integrationID, workflowID, projectID, projectName string) (string, error) {
+func (action *WorkflowIntegrationAttach) RunDependencyTrack(integrationID, workflowID, projectID, projectName string) (*IntegrationAttachmentItem, error) {
 	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
 
 	var projectConfig *cxpb.AttachmentConfig
@@ -46,7 +46,7 @@ func (action *WorkflowIntegrationAttach) RunDependencyTrack(integrationID, workf
 
 	anyConfig, err := anypb.New(&cxpb.AttachmentRequest{Config: projectConfig})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	resp, err := client.Attach(context.Background(), &pb.IntegrationsServiceAttachRequest{
@@ -54,8 +54,8 @@ func (action *WorkflowIntegrationAttach) RunDependencyTrack(integrationID, workf
 	})
 
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return resp.Result.GetId(), nil
+	return pbIntegrationAttachmentItemToAction(resp.Result), nil
 }

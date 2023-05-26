@@ -1,10 +1,5 @@
 VERSION=$(shell git describe --tags --always)
 
-.PHONY: integrations-api
-# generate integrations proto bindings
-integrations-api:
-	cd ./integrations && buf generate
-
 .PHONY: config
 # generate config proto bindings
 config:
@@ -14,6 +9,11 @@ config:
 # generate api proto bindings
 api:
 	cd ./api && buf generate
+
+.PHONY: api-integrations
+# generate integrations proto bindings
+api-integrations:
+	cd ./integrations && buf generate
 
 .PHONY: build
 # build
@@ -48,7 +48,7 @@ lint:
 
 .PHONY: generate
 # generate proto bindings, wire injectors, and ent models
-generate: api config integrations-api
+generate: api config api-integrations
 	go generate ./...
 
 .PHONY: all
