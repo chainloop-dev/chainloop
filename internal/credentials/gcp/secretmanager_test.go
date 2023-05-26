@@ -32,7 +32,7 @@ import (
 
 const defaultOrgID = "test-org"
 const defaultProjectID = "1234-5678-9012"
-const defaultServiceAccountKey string = "./_fixtures/gcp_key.json"
+const defaultServiceAccountKey string = "./testdata/test_gcp_key.json"
 
 func TestNewManager(t *testing.T) {
 	assert := assert.New(t)
@@ -44,8 +44,10 @@ func TestNewManager(t *testing.T) {
 		expectedError     bool
 	}{
 		{name: "missing projectID", projectID: "", serviceAccountKey: defaultServiceAccountKey, expectedError: true},
-		{name: "missing authKey", projectID: defaultProjectID, serviceAccountKey: "", expectedError: true},
-		{name: "valid manager", projectID: defaultProjectID, serviceAccountKey: defaultServiceAccountKey},
+		{name: "missing service account key", projectID: defaultProjectID, serviceAccountKey: "", expectedError: true},
+		{name: "invalid service account key", projectID: defaultProjectID, serviceAccountKey: defaultServiceAccountKey, expectedError: true},
+		{name: "wrong service account key path", projectID: defaultProjectID, serviceAccountKey: "./non/existing/path/key.json", expectedError: true},
+		{name: "wrong type of service account key", projectID: defaultProjectID, serviceAccountKey: "./testdata/key.txt", expectedError: true},
 	}
 
 	for _, tc := range testCases {

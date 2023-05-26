@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
@@ -68,13 +67,7 @@ func NewManager(opts *NewManagerOpts) (*Manager, error) {
 	logger := servicelogger.ScopedHelper(l, "credentials/gcp-secrets-manager")
 	logger.Infow("msg", "configuring gcp secrets-manager", "projectID", opts.ProjectID)
 
-	// read credentials file
-	serviceAccountKey, err := os.ReadFile(opts.ServiceAccountKey)
-	if err != nil {
-		return nil, fmt.Errorf("error while reading auth key file: %w", err)
-	}
-
-	cli, err := secretmanager.NewClient(context.TODO(), option.WithCredentialsJSON(serviceAccountKey))
+	cli, err := secretmanager.NewClient(context.TODO(), option.WithCredentialsFile(opts.ServiceAccountKey))
 	if err != nil {
 		return nil, fmt.Errorf("error while creating the client: %w", err)
 	}
