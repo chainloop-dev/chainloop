@@ -3,6 +3,7 @@ module github.com/chainloop-dev/chainloop
 go 1.20
 
 require (
+	cloud.google.com/go/secretmanager v1.10.0
 	code.cloudfoundry.org/bytefmt v0.0.0-20211005130812-5bb3c17173e5
 	cuelang.org/go v0.5.0
 	entgo.io/ent v0.11.9
@@ -18,7 +19,7 @@ require (
 	github.com/coreos/go-oidc/v3 v3.5.0
 	github.com/docker/distribution v2.8.2+incompatible
 	github.com/docker/go-connections v0.4.0
-	github.com/envoyproxy/protoc-gen-validate v0.9.1
+	github.com/envoyproxy/protoc-gen-validate v0.10.0
 	github.com/getsentry/sentry-go v0.17.0
 	github.com/go-kratos/kratos/contrib/log/zap/v2 v2.0.0-20230113095809-bebea0c103a8
 	github.com/go-kratos/kratos/v2 v2.5.3
@@ -28,6 +29,7 @@ require (
 	github.com/google/subcommands v1.0.1
 	github.com/google/uuid v1.3.0
 	github.com/google/wire v0.5.0
+	github.com/googleapis/gax-go/v2 v2.8.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/hashicorp/vault/api v1.9.1
@@ -55,6 +57,7 @@ require (
 	golang.org/x/exp v0.0.0-20230124195608-d38c7dcee874
 	golang.org/x/oauth2 v0.7.0
 	golang.org/x/term v0.7.0
+	google.golang.org/api v0.119.0
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1
 	google.golang.org/grpc v1.54.0
 	google.golang.org/protobuf v1.30.0
@@ -65,6 +68,7 @@ require (
 	ariga.io/atlas v0.9.1 // indirect
 	cloud.google.com/go/compute v1.19.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
+	cloud.google.com/go/iam v0.13.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest v0.11.28 // indirect
@@ -124,6 +128,7 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.12.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/certificate-transparency-go v1.1.4 // indirect
@@ -132,7 +137,9 @@ require (
 	github.com/google/go-github/v50 v50.2.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
+	github.com/google/s2a-go v0.1.2 // indirect
 	github.com/google/trillian v1.5.1 // indirect
+	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
@@ -210,6 +217,7 @@ require (
 	github.com/xanzy/go-gitlab v0.83.0 // indirect
 	github.com/zclconf/go-cty v1.8.0 // indirect
 	go.mongodb.org/mongo-driver v1.11.3 // indirect
+	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/otel v1.14.0 // indirect
 	go.opentelemetry.io/otel/trace v1.14.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
