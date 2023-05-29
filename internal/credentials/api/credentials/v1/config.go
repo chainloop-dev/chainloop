@@ -18,6 +18,7 @@ package v1
 import (
 	"errors"
 	"fmt"
+	"io"
 
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	"github.com/chainloop-dev/chainloop/internal/credentials/aws"
@@ -27,25 +28,28 @@ import (
 )
 
 func NewFromConfig(conf *Credentials, l log.Logger) (credentials.ReaderWriter, error) {
-	awsc, vaultc, gcpc := conf.GetAwsSecretManager(), conf.GetVault(), conf.GetGcpSecretManager()
-	if awsc == nil && vaultc == nil && gcpc == nil {
-		return nil, errors.New("no credentials manager configuration found")
+	if l == nil {
+		l = log.NewStdLogger(io.Discard)
 	}
 
-	if awsc != nil {
+	if awsc := conf.GetAwsSecretManager(); awsc != nil {
 		return newAWSCredentialsManager(awsc, l)
 	}
 
-	if gcpc != nil {
+	if gcpc := conf.GetGcpSecretManager(); gcpc != nil {
 		return newGCPCredentialsManager(gcpc, l)
 	}
 
-	return newVaultCredentialsManager(vaultc, l)
+	if vaultc := conf.GetVault(); vaultc != nil {
+		return newVaultCredentialsManager(vaultc, l)
+	}
+
+	return nil, errors.New("no credentials manager configuration found")
 }
 
 func newAWSCredentialsManager(conf *Credentials_AWSSecretManager, l log.Logger) (*aws.Manager, error) {
-	if conf == nil {
-		return nil, errors.New("uncompleted configuration for AWS secret manager")
+	if err := conf.ValidateAll(); err != nil {
+		return nil, fmt.Errorf("uncompleted configuration for AWS secret manager: %w", err)
 	}
 
 	opts := &aws.NewManagerOpts{
@@ -65,8 +69,8 @@ func newAWSCredentialsManager(conf *Credentials_AWSSecretManager, l log.Logger) 
 }
 
 func newVaultCredentialsManager(conf *Credentials_Vault, l log.Logger) (*vault.Manager, error) {
-	if conf == nil {
-		return nil, errors.New("uncompleted configuration for vault credentials manager")
+	if err := conf.ValidateAll(); err != nil {
+		return nil, fmt.Errorf("uncompleted configuration for Vault secret manager: %w", err)
 	}
 
 	opts := &vault.NewManagerOpts{
@@ -85,8 +89,8 @@ func newVaultCredentialsManager(conf *Credentials_Vault, l log.Logger) (*vault.M
 }
 
 func newGCPCredentialsManager(conf *Credentials_GCPSecretManager, l log.Logger) (*gcp.Manager, error) {
-	if conf == nil {
-		return nil, errors.New("uncompleted configuration for GCP secret manager")
+	if err := conf.ValidateAll(); err != nil {
+		return nil, fmt.Errorf("uncompleted configuration for GCP secret manager: %w", err)
 	}
 
 	opts := &gcp.NewManagerOpts{
