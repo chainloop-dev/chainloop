@@ -38,6 +38,7 @@ require (
 	github.com/in-toto/in-toto-golang v0.8.0
 	github.com/jackc/pgx/v4 v4.18.1
 	github.com/jedib0t/go-pretty/v6 v6.4.6
+	github.com/joshdk/go-junit v1.0.0
 	github.com/lib/pq v1.10.7
 	github.com/moby/moby v23.0.1+incompatible
 	github.com/opencontainers/image-spec v1.1.0-rc2
@@ -162,7 +163,6 @@ require (
 	github.com/jackc/pgtype v1.14.0 // indirect
 	github.com/jedisct1/go-minisign v0.0.0-20211028175153-1c139d1cc84b // indirect
 	github.com/josharian/intern v1.0.0 // indirect
-	github.com/joshdk/go-junit v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.16.0 // indirect
 	github.com/leodido/go-urn v1.2.2 // indirect
