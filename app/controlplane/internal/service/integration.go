@@ -73,15 +73,36 @@ func (s *IntegrationsService) Register(ctx context.Context, req *pb.Integrations
 
 	return &pb.IntegrationsServiceRegisterResponse{Result: bizIntegrationToPb(i)}, nil
 }
-
 func (s *IntegrationsService) Attach(ctx context.Context, req *pb.IntegrationsServiceAttachRequest) (*pb.IntegrationsServiceAttachResponse, error) {
 	_, org, err := loadCurrentUserAndOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
 
+	integration, err := s.integrationUC.FindByIDInOrg(ctx, org.ID, req.IntegrationId)
+	if err != nil {
+		if biz.IsNotFound(err) {
+			return nil, errors.NotFound("not found", err.Error())
+		}
+		return nil, sl.LogAndMaskErr(err, s.log)
+	}
+
+	// TODO:
+	// Currently we only support dependency-track, in a following patch we'll iterate over the list of enabled integrations
+	if integration.Kind != dti.Kind {
+		return nil, errors.BadRequest("wrong validation", "invalid integration kind")
+	}
+
+	// Register integrations in the app
+	attachable, err := dti.NewIntegration()
+	if err != nil {
+		return nil, fmt.Errorf("creating integration: %w", err)
+	}
+
 	res, err := s.integrationUC.AttachToWorkflow(ctx, &biz.AttachOpts{
-		OrgID: org.ID, IntegrationID: req.IntegrationId, WorkflowID: req.WorkflowId, AttachmentConfig: req.AttachmentConfig,
+		OrgID: org.ID, IntegrationID: req.IntegrationId, WorkflowID: req.WorkflowId,
+		AttachmentConfig: req.AttachmentConfig,
+		Attachable:       attachable,
 	})
 
 	if err != nil {

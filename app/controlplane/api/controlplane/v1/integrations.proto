@@ -29,8 +29,9 @@ service IntegrationsService {
 	rpc List (IntegrationsServiceListRequest) returns (IntegrationsServiceListResponse);
 	rpc Delete (IntegrationsServiceDeleteRequest) returns (IntegrationsServiceDeleteResponse);
 
-	rpc Attach (IntegrationsServiceAttachRequest) returns (IntegrationsServiceAttachResponse);
 	// Workflow Related operations
+	// Attach an integration to a workflow
+	rpc Attach (IntegrationsServiceAttachRequest) returns (IntegrationsServiceAttachResponse);
 	// Detach integration from a workflow
 	rpc Detach (IntegrationsServiceDetachRequest) returns (IntegrationsServiceDetachResponse);
 	rpc ListAttachments (ListAttachmentsRequest) returns (ListAttachmentsResponse);
@@ -91,23 +92,6 @@ message IntegrationAttachmentItem {
 	google.protobuf.Any config = 3;
 	IntegrationItem integration = 4;
 	WorkflowItem workflow = 5;
-}
-
-// Configuration used when a Integration is attached to a Workflow
-message IntegrationAttachmentConfig {
-	oneof config {
-		DependencyTrack dependency_track = 1;
-	}
-
-	message DependencyTrack {
-		oneof project {
-			option (validate.required) = true;
-			// The integration might either use a pre-configured projectID
-			string project_id = 1;
-			// name of the project ot be auto created
-			string project_name = 2;
-		}
-	}
 }
 
 message IntegrationsServiceDeleteRequest {

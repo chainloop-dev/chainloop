@@ -17,7 +17,7 @@ package biz_test
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/integrations"
@@ -25,6 +25,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
 	creds "github.com/chainloop-dev/chainloop/internal/credentials/mocks"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
@@ -36,27 +37,17 @@ func (s *testSuite) TestCreate() {
 	const kind = "my-integration"
 	assert := assert.New(s.T())
 
-	config, err := structpb.NewValue(map[string]interface{}{
-		"firstName": "John",
-	})
-
-	assert.NoError(err)
-
-	configAny, err := anypb.New(config)
-	assert.NoError(err)
-
 	// Mocked integration that will return both generic configuration and credentials
 	integration := integrationMocks.NewRegistrable(s.T())
 
 	ctx := context.Background()
-	integration.On("PreRegister", ctx, configAny).Return(&integrations.PreRegistration{
-		Configuration: config, Kind: kind, Credentials: &integrations.Credentials{
+	integration.On("PreRegister", ctx, s.configAny).Return(&integrations.PreRegistration{
+		Configuration: s.config, Kind: kind, Credentials: &integrations.Credentials{
 			Password: "key", URL: "host"},
 	}, nil)
 
-	got, err := s.Integration.Create(ctx, s.org.ID, integration, configAny)
+	got, err := s.Integration.Create(ctx, s.org.ID, integration, s.configAny)
 	assert.NoError(err)
-	fmt.Println(got)
 	assert.Equal(kind, got.Kind)
 
 	// Check stored configuration
@@ -68,25 +59,161 @@ func (s *testSuite) TestCreate() {
 	// Check credential was stored
 	assert.Equal("stored-integration-secret", got.SecretName)
 }
+
+func (s *testSuite) TestAttachWorkflow() {
+	assert := assert.New(s.T())
+	s.Run("org does not exist", func() {
+		_, err := s.Integration.AttachToWorkflow(context.Background(), &biz.AttachOpts{
+			OrgID:            uuid.NewString(),
+			IntegrationID:    s.integration.ID.String(),
+			WorkflowID:       s.workflow.ID.String(),
+			Attachable:       s.attachable,
+			AttachmentConfig: s.configAny,
+		})
+		assert.ErrorAs(err, &biz.ErrNotFound{})
+	})
+
+	s.Run("workflow does not exist", func() {
+		_, err := s.Integration.AttachToWorkflow(context.Background(), &biz.AttachOpts{
+			OrgID:            s.org.ID,
+			IntegrationID:    s.integration.ID.String(),
+			WorkflowID:       uuid.NewString(),
+			Attachable:       s.attachable,
+			AttachmentConfig: s.configAny,
+		})
+		assert.ErrorAs(err, &biz.ErrNotFound{})
+	})
+
+	s.Run("workflow belongs to another org", func() {
+		_, err := s.Integration.AttachToWorkflow(context.Background(), &biz.AttachOpts{
+			OrgID:            s.emptyOrg.ID,
+			IntegrationID:    s.integration.ID.String(),
+			WorkflowID:       s.workflow.ID.String(),
+			Attachable:       s.attachable,
+			AttachmentConfig: s.configAny,
+		})
+		assert.ErrorAs(err, &biz.ErrNotFound{})
+	})
+
+	s.Run("integration does not exist", func() {
+		_, err := s.Integration.AttachToWorkflow(context.Background(), &biz.AttachOpts{
+			OrgID:            s.org.ID,
+			IntegrationID:    uuid.NewString(),
+			WorkflowID:       s.workflow.ID.String(),
+			Attachable:       s.attachable,
+			AttachmentConfig: s.configAny,
+		})
+		assert.ErrorAs(err, &biz.ErrNotFound{})
+	})
+
+	s.Run("integration belongs to another org", func() {
+		_, err := s.Integration.AttachToWorkflow(context.Background(), &biz.AttachOpts{
+			OrgID:            s.emptyOrg.ID,
+			IntegrationID:    s.integration.ID.String(),
+			WorkflowID:       s.workflow.ID.String(),
+			Attachable:       s.attachable,
+			AttachmentConfig: s.configAny,
+		})
+		assert.ErrorAs(err, &biz.ErrNotFound{})
+	})
+
+	s.Run("attachable not provided", func() {
+		_, err := s.Integration.AttachToWorkflow(context.Background(), &biz.AttachOpts{
+			OrgID:            s.org.ID,
+			IntegrationID:    s.integration.ID.String(),
+			WorkflowID:       s.workflow.ID.String(),
+			Attachable:       nil,
+			AttachmentConfig: s.configAny,
+		})
+		assert.ErrorAs(err, &biz.ErrValidation{})
+	})
+
+	s.Run("attachment OK", func() {
+		ctx := context.Background()
+		s.attachable.On("PreAttach", ctx, mock.Anything).Return(&integrations.PreAttachment{
+			Configuration: s.config,
+		}, nil).Once()
+
+		got, err := s.Integration.AttachToWorkflow(ctx, &biz.AttachOpts{
+			OrgID:            s.org.ID,
+			IntegrationID:    s.integration.ID.String(),
+			WorkflowID:       s.workflow.ID.String(),
+			Attachable:       s.attachable,
+			AttachmentConfig: s.configAny,
+		})
+		assert.NoError(err)
+
+		gotConfig := new(structpb.Value)
+		err = got.Config.UnmarshalTo(gotConfig)
+		assert.NoError(err)
+		// Check configuration was stored
+		assert.Equal("John", gotConfig.GetStructValue().Fields["firstName"].GetStringValue())
+		assert.Equal(s.integration.ID, got.IntegrationID)
+		assert.Equal(s.workflow.ID, got.WorkflowID)
+
+		// Make sure it has been stored
+		attachments, err := s.Integration.ListAttachments(ctx, s.org.ID, s.workflow.ID.String())
+		assert.NoError(err)
+		assert.Len(attachments, 1)
+	})
+
+	s.Run("attachment fails", func() {
+		ctx := context.Background()
+		s.attachable.On("PreAttach", ctx, mock.Anything).Return(nil, errors.New("invalid attachment options")).Once()
+
+		_, err := s.Integration.AttachToWorkflow(ctx, &biz.AttachOpts{
+			OrgID:            s.org.ID,
+			IntegrationID:    s.integration.ID.String(),
+			WorkflowID:       s.workflow.ID.String(),
+			Attachable:       s.attachable,
+			AttachmentConfig: s.configAny,
+		})
+		assert.ErrorAs(err, &biz.ErrValidation{})
+		assert.ErrorContains(err, "invalid attachment options")
+	})
+}
+
 func (s *testSuite) SetupTest() {
 	t := s.T()
-	var err error
-	assert := assert.New(s.T())
+	assert := assert.New(t)
 	ctx := context.Background()
 
 	// Override credentials writer to set expectations
 	s.mockedCredsReaderWriter = creds.NewReaderWriter(t)
-	// Mock API call to store credentials
-
-	// Dependency-track integration credentials
+	// integration credentials
 	s.mockedCredsReaderWriter.On(
 		"SaveCredentials", ctx, mock.Anything, &integrations.Credentials{URL: "host", Password: "key"},
-	).Return("stored-integration-secret", nil)
+	).Return("stored-integration-secret", nil).Maybe()
 
 	s.TestingUseCases = testhelpers.NewTestingUseCases(t, testhelpers.WithCredsReaderWriter(s.mockedCredsReaderWriter))
 
+	var err error
 	// Create org, integration and oci repository
 	s.org, err = s.Organization.Create(ctx, "testing org")
+	assert.NoError(err)
+	s.emptyOrg, err = s.Organization.Create(ctx, "empty org")
+	assert.NoError(err)
+
+	// Workflow
+	s.workflow, err = s.Workflow.Create(ctx, &biz.CreateOpts{Name: "test workflow", OrgID: s.org.ID})
+	assert.NoError(err)
+
+	// Mocked integration that will return both generic configuration and credentials
+	integration := integrationMocks.NewRegistrable(s.T())
+	integration.On("PreRegister", ctx, mock.Anything).Return(&integrations.PreRegistration{Configuration: &anypb.Any{}}, nil)
+	s.registrable = integration
+	s.attachable = integrationMocks.NewAttachable(s.T())
+
+	s.integration, err = s.Integration.Create(ctx, s.org.ID, integration, nil)
+	assert.NoError(err)
+
+	// Integration configuration
+	s.config, err = structpb.NewValue(map[string]interface{}{
+		"firstName": "John",
+	})
+	assert.NoError(err)
+
+	s.configAny, err = anypb.New(s.config)
 	assert.NoError(err)
 }
 
@@ -98,6 +225,12 @@ func TestIntegration(t *testing.T) {
 // Utility struct to hold the test suite
 type testSuite struct {
 	testhelpers.UseCasesEachTestSuite
-	org                     *biz.Organization
+	org, emptyOrg           *biz.Organization
+	workflow                *biz.Workflow
+	integration             *biz.Integration
 	mockedCredsReaderWriter *creds.ReaderWriter
+	config                  *structpb.Value
+	configAny               *anypb.Any
+	registrable             *integrationMocks.Registrable
+	attachable              *integrationMocks.Attachable
 }

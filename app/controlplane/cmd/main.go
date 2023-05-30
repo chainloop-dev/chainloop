@@ -135,7 +135,7 @@ func filterSensitiveArgs(_ log.Level, keyvals ...interface{}) bool {
 			switch keyvals[i+1] {
 			case "/controlplane.v1.OCIRepositoryService/Save", "/controlplane.v1.AttestationService/Store":
 				maskArgs(keyvals)
-			case "/controlplane.v1.IntegrationsService/AddDependencyTrack":
+			case "/controlplane.v1.IntegrationsService/Register", "/controlplane.v1.IntegrationsService.Attach":
 				maskArgs(keyvals)
 			}
 		}

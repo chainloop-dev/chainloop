@@ -22,7 +22,6 @@ package testhelpers
 
 import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/integration"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
@@ -40,15 +39,11 @@ func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWrite
 		wire.Build(
 			data.ProviderSet,
 			biz.ProviderSet,
-			integration.ProviderSet,
 			wire.Bind(new(backend.Provider), new(*oci.BackendProvider)),
 			wire.Bind(new(credentials.Reader), new(credentials.ReaderWriter)),
-			wire.Bind(new(biz.CASClient), new(*biz.CASClientUseCase)),
-			wire.Value([]biz.CASClientOpts{}),
 			oci.NewBackendProvider,
 			wire.Struct(new(TestingUseCases), "*"),
 			newConfData,
-			newConfCAS,
 		),
 	)
 }

@@ -50,8 +50,9 @@ type IntegrationsServiceClient interface {
 	Register(ctx context.Context, in *IntegrationsServiceRegisterRequest, opts ...grpc.CallOption) (*IntegrationsServiceRegisterResponse, error)
 	List(ctx context.Context, in *IntegrationsServiceListRequest, opts ...grpc.CallOption) (*IntegrationsServiceListResponse, error)
 	Delete(ctx context.Context, in *IntegrationsServiceDeleteRequest, opts ...grpc.CallOption) (*IntegrationsServiceDeleteResponse, error)
-	Attach(ctx context.Context, in *IntegrationsServiceAttachRequest, opts ...grpc.CallOption) (*IntegrationsServiceAttachResponse, error)
 	// Workflow Related operations
+	// Attach an integration to a workflow
+	Attach(ctx context.Context, in *IntegrationsServiceAttachRequest, opts ...grpc.CallOption) (*IntegrationsServiceAttachResponse, error)
 	// Detach integration from a workflow
 	Detach(ctx context.Context, in *IntegrationsServiceDetachRequest, opts ...grpc.CallOption) (*IntegrationsServiceDetachResponse, error)
 	ListAttachments(ctx context.Context, in *ListAttachmentsRequest, opts ...grpc.CallOption) (*ListAttachmentsResponse, error)
@@ -127,8 +128,9 @@ type IntegrationsServiceServer interface {
 	Register(context.Context, *IntegrationsServiceRegisterRequest) (*IntegrationsServiceRegisterResponse, error)
 	List(context.Context, *IntegrationsServiceListRequest) (*IntegrationsServiceListResponse, error)
 	Delete(context.Context, *IntegrationsServiceDeleteRequest) (*IntegrationsServiceDeleteResponse, error)
-	Attach(context.Context, *IntegrationsServiceAttachRequest) (*IntegrationsServiceAttachResponse, error)
 	// Workflow Related operations
+	// Attach an integration to a workflow
+	Attach(context.Context, *IntegrationsServiceAttachRequest) (*IntegrationsServiceAttachResponse, error)
 	// Detach integration from a workflow
 	Detach(context.Context, *IntegrationsServiceDetachRequest) (*IntegrationsServiceDetachResponse, error)
 	ListAttachments(context.Context, *ListAttachmentsRequest) (*ListAttachmentsResponse, error)

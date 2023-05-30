@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/integrations"
-	dti "github.com/chainloop-dev/chainloop/app/controlplane/integrations/dependencytrack/cyclonedx/v1"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
@@ -123,13 +122,20 @@ func (uc *IntegrationUseCase) Create(ctx context.Context, orgID string, i integr
 
 type AttachOpts struct {
 	IntegrationID, WorkflowID, OrgID string
-	AttachmentConfig                 *anypb.Any
+	// The integration that is being attached
+	Attachable integrations.Attachable
+	// The attachment configuration
+	AttachmentConfig *anypb.Any
 }
 
 // - Integration and workflows exists in current organization
 // - Run specific validation for the integration
 // - Persist integration attachment
 func (uc *IntegrationUseCase) AttachToWorkflow(ctx context.Context, opts *AttachOpts) (*IntegrationAttachment, error) {
+	if opts.Attachable == nil {
+		return nil, NewErrValidation(errors.New("integration not provided"))
+	}
+
 	orgUUID, err := uuid.Parse(opts.OrgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -140,7 +146,7 @@ func (uc *IntegrationUseCase) AttachToWorkflow(ctx context.Context, opts *Attach
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	// Check workflow is in this org
+	// Get workflow in the scope of this organization
 	wf, err := uc.workflowRepo.GetOrgScoped(ctx, orgUUID, workflowUUID)
 	if err != nil {
 		return nil, err
@@ -161,27 +167,16 @@ func (uc *IntegrationUseCase) AttachToWorkflow(ctx context.Context, opts *Attach
 		return nil, NewErrNotFound("integration")
 	}
 
+	// Retrieve credentials from the external secrets manager
 	creds := &integrations.Credentials{}
-	if err := uc.credsRW.ReadCredentials(ctx, integration.SecretName, creds); err != nil {
-		return nil, fmt.Errorf("reading credentials: %w", err)
-	}
-
-	// Load integration preAttacher
-	// Currently we only support dependency-track, in a following patch we'll iterate over the list of enabled integrations
-	// TODO: iterate over the list of enabled integrations
-	if integration.Kind != dti.Kind {
-		return nil, NewErrValidation(errors.New("invalid integration kind"))
-	}
-
-	var attachable integrations.Attachable
-	// Register integrations in the app
-	attachable, err = dti.NewIntegration()
-	if err != nil {
-		return nil, fmt.Errorf("creating integration: %w", err)
+	if integration.SecretName != "" {
+		if err := uc.credsRW.ReadCredentials(ctx, integration.SecretName, creds); err != nil {
+			return nil, fmt.Errorf("reading credentials: %w", err)
+		}
 	}
 
 	// Execute integration pre-attachment logic
-	preAttachResp, err := attachable.PreAttach(ctx, &integrations.BundledConfig{Registration: integration.Config, Attachment: opts.AttachmentConfig, Credentials: creds})
+	preAttachResp, err := opts.Attachable.PreAttach(ctx, &integrations.BundledConfig{Registration: integration.Config, Attachment: opts.AttachmentConfig, Credentials: creds})
 	if err != nil {
 		return nil, NewErrValidation(err)
 	}
@@ -193,7 +188,12 @@ func (uc *IntegrationUseCase) AttachToWorkflow(ctx context.Context, opts *Attach
 	}
 
 	// Persist the attachment
-	return uc.integrationARepo.Create(ctx, integrationUUID, workflowUUID, config)
+	attachment, err := uc.integrationARepo.Create(ctx, integrationUUID, workflowUUID, config)
+	if err != nil {
+		return nil, fmt.Errorf("persisting attachment: %w", err)
+	}
+
+	return attachment, nil
 }
 
 func (uc *IntegrationUseCase) List(ctx context.Context, orgID string) ([]*Integration, error) {

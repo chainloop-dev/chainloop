@@ -67,20 +67,6 @@ export interface IntegrationAttachmentItem {
   workflow?: WorkflowItem;
 }
 
-/** Configuration used when a Integration is attached to a Workflow */
-export interface IntegrationAttachmentConfig {
-  dependencyTrack?: IntegrationAttachmentConfig_DependencyTrack | undefined;
-}
-
-export interface IntegrationAttachmentConfig_DependencyTrack {
-  /** The integration might either use a pre-configured projectID */
-  projectId?:
-    | string
-    | undefined;
-  /** name of the project ot be auto created */
-  projectName?: string | undefined;
-}
-
 export interface IntegrationsServiceDeleteRequest {
   id: string;
 }
@@ -931,145 +917,6 @@ export const IntegrationAttachmentItem = {
   },
 };
 
-function createBaseIntegrationAttachmentConfig(): IntegrationAttachmentConfig {
-  return { dependencyTrack: undefined };
-}
-
-export const IntegrationAttachmentConfig = {
-  encode(message: IntegrationAttachmentConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.dependencyTrack !== undefined) {
-      IntegrationAttachmentConfig_DependencyTrack.encode(message.dependencyTrack, writer.uint32(10).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): IntegrationAttachmentConfig {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseIntegrationAttachmentConfig();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag != 10) {
-            break;
-          }
-
-          message.dependencyTrack = IntegrationAttachmentConfig_DependencyTrack.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) == 4 || tag == 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): IntegrationAttachmentConfig {
-    return {
-      dependencyTrack: isSet(object.dependencyTrack)
-        ? IntegrationAttachmentConfig_DependencyTrack.fromJSON(object.dependencyTrack)
-        : undefined,
-    };
-  },
-
-  toJSON(message: IntegrationAttachmentConfig): unknown {
-    const obj: any = {};
-    message.dependencyTrack !== undefined && (obj.dependencyTrack = message.dependencyTrack
-      ? IntegrationAttachmentConfig_DependencyTrack.toJSON(message.dependencyTrack)
-      : undefined);
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<IntegrationAttachmentConfig>, I>>(base?: I): IntegrationAttachmentConfig {
-    return IntegrationAttachmentConfig.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<IntegrationAttachmentConfig>, I>>(object: I): IntegrationAttachmentConfig {
-    const message = createBaseIntegrationAttachmentConfig();
-    message.dependencyTrack = (object.dependencyTrack !== undefined && object.dependencyTrack !== null)
-      ? IntegrationAttachmentConfig_DependencyTrack.fromPartial(object.dependencyTrack)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseIntegrationAttachmentConfig_DependencyTrack(): IntegrationAttachmentConfig_DependencyTrack {
-  return { projectId: undefined, projectName: undefined };
-}
-
-export const IntegrationAttachmentConfig_DependencyTrack = {
-  encode(message: IntegrationAttachmentConfig_DependencyTrack, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.projectId !== undefined) {
-      writer.uint32(10).string(message.projectId);
-    }
-    if (message.projectName !== undefined) {
-      writer.uint32(18).string(message.projectName);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): IntegrationAttachmentConfig_DependencyTrack {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseIntegrationAttachmentConfig_DependencyTrack();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag != 10) {
-            break;
-          }
-
-          message.projectId = reader.string();
-          continue;
-        case 2:
-          if (tag != 18) {
-            break;
-          }
-
-          message.projectName = reader.string();
-          continue;
-      }
-      if ((tag & 7) == 4 || tag == 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): IntegrationAttachmentConfig_DependencyTrack {
-    return {
-      projectId: isSet(object.projectId) ? String(object.projectId) : undefined,
-      projectName: isSet(object.projectName) ? String(object.projectName) : undefined,
-    };
-  },
-
-  toJSON(message: IntegrationAttachmentConfig_DependencyTrack): unknown {
-    const obj: any = {};
-    message.projectId !== undefined && (obj.projectId = message.projectId);
-    message.projectName !== undefined && (obj.projectName = message.projectName);
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<IntegrationAttachmentConfig_DependencyTrack>, I>>(
-    base?: I,
-  ): IntegrationAttachmentConfig_DependencyTrack {
-    return IntegrationAttachmentConfig_DependencyTrack.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<IntegrationAttachmentConfig_DependencyTrack>, I>>(
-    object: I,
-  ): IntegrationAttachmentConfig_DependencyTrack {
-    const message = createBaseIntegrationAttachmentConfig_DependencyTrack();
-    message.projectId = object.projectId ?? undefined;
-    message.projectName = object.projectName ?? undefined;
-    return message;
-  },
-};
-
 function createBaseIntegrationsServiceDeleteRequest(): IntegrationsServiceDeleteRequest {
   return { id: "" };
 }
@@ -1192,14 +1039,15 @@ export interface IntegrationsService {
     request: DeepPartial<IntegrationsServiceDeleteRequest>,
     metadata?: grpc.Metadata,
   ): Promise<IntegrationsServiceDeleteResponse>;
+  /**
+   * Workflow Related operations
+   * Attach an integration to a workflow
+   */
   Attach(
     request: DeepPartial<IntegrationsServiceAttachRequest>,
     metadata?: grpc.Metadata,
   ): Promise<IntegrationsServiceAttachResponse>;
-  /**
-   * Workflow Related operations
-   * Detach integration from a workflow
-   */
+  /** Detach integration from a workflow */
   Detach(
     request: DeepPartial<IntegrationsServiceDetachRequest>,
     metadata?: grpc.Metadata,
