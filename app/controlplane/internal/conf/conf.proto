@@ -19,13 +19,14 @@ option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/interna
 
 import "google/protobuf/duration.proto";
 import "validate/validate.proto";
+import "credentials/v1/config.proto";
 
 message Bootstrap {
   Server server = 1;
   Data data = 2;
   Auth auth = 3;
   Observability observability = 4;
-  Credentials credentials_service = 5;
+  credentials.v1.Credentials credentials_service = 5;
 
   // CAS Server endpoint
   CASServer cas_server = 6;
@@ -88,47 +89,5 @@ message Auth {
     string client_id = 2;
     string client_secret = 3;
     string redirect_url_scheme = 4;
-  }
-}
-
-message Credentials {
-  oneof backend {
-    AWSSecretManager aws_secret_manager = 1;
-    Vault vault = 2;
-    GCPSecretManager gcp_secret_manager = 3;
-  }
-
-  // Top level is deprecated now
-  message AWSSecretManager {
-    Creds creds = 1;
-    string region = 2;
-    // Secret prefix to be prepended during secret write
-    string secret_prefix = 3;
-
-    message Creds {
-      string access_key = 1;
-      string secret_key = 2;
-    }
-  }
-
-  message Vault {
-    // TODO: Use application role auth instead
-    string token = 1;
-    // Instance address, including port
-    // i.e "http://127.0.0.1:8200"
-    string address = 2;
-    // mount path of the kv engine, default /secret
-    string mount_path = 3;
-    // Secret prefix to be prepended during secret write
-    string secret_prefix = 4;
-  }
-
-  message GCPSecretManager {
-    // project number
-    string project_id = 1;
-    // service account key
-    string service_account_key   = 2;
-    // Secret prefix to be prepended during secret write
-    string secret_prefix = 3; 
   }
 }

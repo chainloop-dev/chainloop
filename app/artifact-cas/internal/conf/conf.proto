@@ -18,12 +18,13 @@ syntax = "proto3";
 option go_package = "github.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf;conf";
 
 import "google/protobuf/duration.proto";
+import "credentials/v1/config.proto";
 
 message Bootstrap {
   Server server = 1;
   Auth auth = 2;
   Observability observability = 3;
-  Credentials credentials_service = 4;
+  credentials.v1.Credentials credentials_service = 4;
 
   message Observability {
     Sentry sentry = 1;
@@ -59,41 +60,4 @@ message Auth {
   // Public key used to verify the received JWT token
   // This token in the context of chainloop has been crafted by the controlplane
   string robot_account_public_key_path = 1;
-}
-
-// Where the credentials to access the backends are stored
-message Credentials {
-  oneof backend {
-    AWSSecretManager aws_secret_manager = 1;
-    Vault vault = 2;
-    GCPSecretManager gcp_secret_manager = 3;
-  }
-
-  // Top level is deprecated now
-  message AWSSecretManager {
-    Creds creds = 1;
-    string region = 2;
-
-    message Creds {
-      string access_key = 1;
-      string secret_key = 2;
-    }
-  }
-
-  message Vault {
-    // TODO: Use application role auth instead
-    string token = 1;
-    // Instance address, including port
-    // i.e "http://127.0.0.1:8200"
-    string address = 2;
-    // mount path of the kv engine, default /secret
-    string mount_path = 3;
-  }
-
-  message GCPSecretManager {
-    // project number
-    string project_id = 1;
-    // service account key
-    string service_account_key   = 2;
-  }
 }

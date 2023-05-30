@@ -16,16 +16,11 @@
 package main
 
 import (
-	"errors"
 	"flag"
-	"fmt"
 	"os"
 	"time"
 
-	"github.com/chainloop-dev/chainloop/internal/credentials"
-	awssecrets "github.com/chainloop-dev/chainloop/internal/credentials/aws"
-	"github.com/chainloop-dev/chainloop/internal/credentials/gcp"
-	"github.com/chainloop-dev/chainloop/internal/credentials/vault"
+	credsConfig "github.com/chainloop-dev/chainloop/internal/credentials/api/credentials/v1"
 	"github.com/getsentry/sentry-go"
 
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf"
@@ -108,7 +103,7 @@ func main() {
 		panic(err)
 	}
 
-	credentialsReader, err := newCredentialsReader(bc.GetCredentialsService(), logger)
+	credentialsReader, err := credsConfig.NewFromConfig(bc.GetCredentialsService(), logger)
 	if err != nil {
 		panic(err)
 	}
@@ -123,83 +118,6 @@ func main() {
 	if err := app.Run(); err != nil {
 		panic(err)
 	}
-}
-
-func newCredentialsReader(conf *conf.Credentials, l log.Logger) (credentials.Reader, error) {
-	awsc, vaultc, gcpc := conf.GetAwsSecretManager(), conf.GetVault(), conf.GetGcpSecretManager()
-	if awsc == nil && vaultc == nil && gcpc == nil {
-		return nil, errors.New("no credentials manager configuration found")
-	}
-
-	if awsc != nil {
-		return newAWSCredentialsManager(awsc, l)
-	}
-
-	if gcpc != nil {
-		return newGCPCredentialsManager(gcpc, l)
-	}
-
-	return newVaultCredentialsManager(vaultc, l)
-}
-
-func newAWSCredentialsManager(conf *conf.Credentials_AWSSecretManager, l log.Logger) (*awssecrets.Manager, error) {
-	if conf == nil {
-		return nil, errors.New("incompleted configuration for AWS secret manager")
-	}
-
-	opts := &awssecrets.NewManagerOpts{
-		Region:    conf.Region,
-		AccessKey: conf.GetCreds().GetAccessKey(), SecretKey: conf.GetCreds().GetSecretKey(),
-		Logger: l,
-	}
-
-	m, err := awssecrets.NewManager(opts)
-	if err != nil {
-		return nil, fmt.Errorf("configuring the secrets manager: %w", err)
-	}
-
-	_ = l.Log(log.LevelInfo, "msg", "secrets manager configured", "backend", "AWS secret manager")
-
-	return m, nil
-}
-
-func newVaultCredentialsManager(conf *conf.Credentials_Vault, l log.Logger) (*vault.Manager, error) {
-	if conf == nil {
-		return nil, errors.New("incompleted configuration for vault credentials manager")
-	}
-
-	opts := &vault.NewManagerOpts{
-		AuthToken: conf.Token, Address: conf.Address,
-		MountPath: conf.MountPath, Logger: l,
-	}
-
-	m, err := vault.NewManager(opts)
-	if err != nil {
-		return nil, fmt.Errorf("configuring vault: %w", err)
-	}
-
-	_ = l.Log(log.LevelInfo, "msg", "secrets manager configured", "backend", "Vault")
-
-	return m, nil
-}
-
-func newGCPCredentialsManager(conf *conf.Credentials_GCPSecretManager, l log.Logger) (*gcp.Manager, error) {
-	if conf == nil {
-		return nil, errors.New("uncompleted configuration for GCP secret manager")
-	}
-
-	opts := &gcp.NewManagerOpts{
-		ProjectID:         conf.ProjectId,
-		ServiceAccountKey: conf.ServiceAccountKey,
-		Logger:            l,
-	}
-
-	m, err := gcp.NewManager(opts)
-	if err != nil {
-		return nil, fmt.Errorf("configuring the GCP secret manager: %w", err)
-	}
-
-	return m, nil
 }
 
 func initSentry(c *conf.Bootstrap, logger log.Logger) (cleanupFunc func(), err error) {

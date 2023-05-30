@@ -22,10 +22,17 @@ api:
 	make -C ./app/cli api
 	make -C ./app/artifact-cas api
 
+.PHONY: config
+# generate config proto
+config:
+	cd ./internal/credentials/api && buf generate
+	make -C ./app/controlplane config
+	make -C ./app/artifact-cas config
+
 .PHONY: generate
 
 # generate
-generate:
+generate: config api
 	go generate ./...
 
 .PHONY: all
