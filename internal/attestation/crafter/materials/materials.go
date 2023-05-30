@@ -41,8 +41,7 @@ type crafterUploader struct {
 	uploader casclient.Uploader
 }
 
-// Craft will calculate the digest of the artifact, simulate an upload and return the material definition
-func (i *crafterUploader) Craft(ctx context.Context, artifactPath string) (*api.Attestation_Material, error) {
+func (i *crafterUploader) craft(ctx context.Context, artifactPath string) (*api.Attestation_Material, error) {
 	result, err := i.uploader.UploadFile(ctx, artifactPath)
 	if err != nil {
 		i.logger.Debug().Err(err)
