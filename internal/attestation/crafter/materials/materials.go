@@ -18,11 +18,13 @@ package materials
 import (
 	"context"
 	"fmt"
+	"time"
 
 	api "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
 	"github.com/rs/zerolog"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ErrInvalidMaterialType is returned when the provided material type
@@ -32,6 +34,32 @@ var ErrInvalidMaterialType = fmt.Errorf("unexpected material type")
 type crafterCommon struct {
 	logger *zerolog.Logger
 	input  *schemaapi.CraftingSchema_Material
+}
+
+type crafterUploader struct {
+	*crafterCommon
+	uploader casclient.Uploader
+}
+
+// Craft will calculate the digest of the artifact, simulate an upload and return the material definition
+func (i *crafterUploader) Craft(ctx context.Context, artifactPath string) (*api.Attestation_Material, error) {
+	result, err := i.uploader.UploadFile(ctx, artifactPath)
+	if err != nil {
+		i.logger.Debug().Err(err)
+		return nil, err
+	}
+
+	res := &api.Attestation_Material{
+		AddedAt:      timestamppb.New(time.Now()),
+		MaterialType: i.input.Type,
+		M: &api.Attestation_Material_Artifact_{
+			Artifact: &api.Attestation_Material_Artifact{
+				Id: i.input.Name, Digest: result.Digest, Name: result.Filename, IsSubject: i.input.Output,
+			},
+		},
+	}
+
+	return res, nil
 }
 
 type Craftable interface {
@@ -53,6 +81,8 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 		crafter, err = NewCyclonedxJSONCrafter(materialSchema, uploader, logger)
 	case schemaapi.CraftingSchema_Material_SBOM_SPDX_JSON:
 		crafter, err = NewSPDXJSONCrafter(materialSchema, uploader, logger)
+	case schemaapi.CraftingSchema_Material_JUNIT_XML:
+		crafter, err = NewJUnitXMLCrafter(materialSchema, uploader, logger)
 	default:
 		return nil, fmt.Errorf("material of type %q not supported yet", materialSchema.Type)
 	}

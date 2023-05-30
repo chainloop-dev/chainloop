@@ -162,6 +162,7 @@ require (
 	github.com/jackc/pgtype v1.14.0 // indirect
 	github.com/jedisct1/go-minisign v0.0.0-20211028175153-1c139d1cc84b // indirect
 	github.com/josharian/intern v1.0.0 // indirect
+	github.com/joshdk/go-junit v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.16.0 // indirect
 	github.com/leodido/go-urn v1.2.2 // indirect
