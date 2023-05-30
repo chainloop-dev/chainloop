@@ -17,8 +17,10 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	dti "github.com/chainloop-dev/chainloop/app/controlplane/integrations/dependencytrack/cyclonedx/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	errors "github.com/go-kratos/kratos/v2/errors"
@@ -47,7 +49,18 @@ func (s *IntegrationsService) Register(ctx context.Context, req *pb.Integrations
 		return nil, err
 	}
 
-	i, err := s.integrationUC.Create(ctx, org.ID, req.Kind, req.RegistrationConfig)
+	// TODO:
+	// Currently we only support dependency-track, in a following patch we'll iterate over the list of enabled integrations
+	if req.Kind != dti.Kind {
+		return nil, errors.BadRequest("wrong validation", "invalid integration kind")
+	}
+
+	integration, err := dti.NewIntegration()
+	if err != nil {
+		return nil, fmt.Errorf("creating integration: %w", err)
+	}
+
+	i, err := s.integrationUC.Create(ctx, org.ID, integration, req.RegistrationConfig)
 	if err != nil {
 		if biz.IsNotFound(err) {
 			return nil, errors.NotFound("not found", err.Error())

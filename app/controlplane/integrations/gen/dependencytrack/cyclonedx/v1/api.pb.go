@@ -36,6 +36,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// RegistrationRequest is what the integration expect as input of the pre-registration step
 type RegistrationRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -91,6 +92,7 @@ func (x *RegistrationRequest) GetApiKey() string {
 	return ""
 }
 
+// AttachmentRequest is what the integration expect as input of the pre-attachment step
 type AttachmentRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -138,6 +140,7 @@ func (x *AttachmentRequest) GetConfig() *AttachmentConfig {
 	return nil
 }
 
+// Structs containing the information to be stored in the integration step
 type RegistrationConfig struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

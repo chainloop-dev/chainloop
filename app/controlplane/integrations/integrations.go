@@ -22,39 +22,44 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
-type PreRegistrationResponse struct {
+// Registrable is the interface that needs to be implemented by all integrations
+// To be able to be registered in Chainloop control plane
+type Registrable interface {
+	// Validate, marshall and return the configuration that needs to be persisted
+	PreRegister(ctx context.Context, req *anypb.Any) (*PreRegistration, error)
+}
+
+// Attachable describes what an integration needs to implement to be able to get "attached" to a workflow
+type Attachable interface {
+	// Validate that the attachment configuration is valid in the context of the provided registration
+	PreAttach(ctx context.Context, c *BundledConfig) (*PreAttachment, error)
+}
+
+type PreRegistration struct {
 	// Credentials to be persisted
 	// JSON serializable
 	Credentials *Credentials
 	// Configuration to be persisted
 	Configuration proto.Message
-	// Identifier of the integration
-	IntegrationID string
+	// registration kind
+	Kind string
 }
 
-type PreAttachmentResponse struct {
+type PreAttachment struct {
 	// Configuration to be persisted
 	Configuration proto.Message
 }
 
-type Credentials struct {
-	URL, Username, Password string
-}
-
-// Interface that any integration needs to meet
-type Registrable interface {
-	// Validate, marshall and return the configuration that needs to be persisted
-	PreRegister(ctx context.Context, req *anypb.Any) (*PreRegistrationResponse, error)
-}
-
 // BundledConfig is the collection of the registration and attachment configuration
 type BundledConfig struct {
+	// Registration configuration
 	Registration *anypb.Any
-	Attachment   *anypb.Any
-	Credentials  *Credentials
+	// Attachment configuration
+	Attachment *anypb.Any
+	// Stored credentials
+	Credentials *Credentials
 }
 
-type Attachable interface {
-	// Validate that the attachment configuration is valid in the context of the provided registration
-	PreAttach(ctx context.Context, c *BundledConfig) (*PreAttachmentResponse, error)
+type Credentials struct {
+	URL, Username, Password string
 }

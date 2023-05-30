@@ -91,34 +91,24 @@ func NewIntegrationUseCase(opts *NewIntegrationUseCaseOpts) *IntegrationUseCase 
 }
 
 // Persist the secret and integration with its configuration in the database
-func (uc *IntegrationUseCase) Create(ctx context.Context, orgID, kind string, regConfig *anypb.Any) (*Integration, error) {
+func (uc *IntegrationUseCase) Create(ctx context.Context, orgID string, i integrations.Registrable, regConfig *anypb.Any) (*Integration, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	// Currently we only support dependency-track, in a following patch we'll iterate over the list of enabled integrations
-	if kind != dti.Kind {
-		return nil, NewErrValidation(errors.New("invalid integration kind"))
-	}
-
-	var integration integrations.Registrable
-	// Register integrations in the app
-	// TODO: remove from here
-	integration, err = dti.NewIntegration()
-	if err != nil {
-		return nil, fmt.Errorf("creating integration: %w", err)
-	}
-
-	preRegistration, err := integration.PreRegister(ctx, regConfig)
+	preRegistration, err := i.PreRegister(ctx, regConfig)
 	if err != nil {
 		return nil, NewErrValidation(err)
 	}
 
-	// Create the secret in the external secrets manager
-	secretID, err := uc.credsRW.SaveCredentials(ctx, orgID, preRegistration.Credentials)
-	if err != nil {
-		return nil, fmt.Errorf("saving credentials: %w", err)
+	var secretID string
+	if preRegistration.Credentials != nil {
+		// Create the secret in the external secrets manager
+		secretID, err = uc.credsRW.SaveCredentials(ctx, orgID, preRegistration.Credentials)
+		if err != nil {
+			return nil, fmt.Errorf("saving credentials: %w", err)
+		}
 	}
 
 	// Wrap the configuration in an anypb.Any to store it in the DB
@@ -128,7 +118,7 @@ func (uc *IntegrationUseCase) Create(ctx context.Context, orgID, kind string, re
 	}
 
 	// Persist the integration configuration
-	return uc.integrationRepo.Create(ctx, orgUUID, kind, secretID, config)
+	return uc.integrationRepo.Create(ctx, orgUUID, preRegistration.Kind, secretID, config)
 }
 
 type AttachOpts struct {

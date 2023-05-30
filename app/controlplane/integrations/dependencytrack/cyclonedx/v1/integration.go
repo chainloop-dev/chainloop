@@ -43,7 +43,7 @@ func NewIntegration() (*Integration, error) {
 	}, nil
 }
 
-func (i *Integration) PreRegister(ctx context.Context, registrationRequest *anypb.Any) (*core.PreRegistrationResponse, error) {
+func (i *Integration) PreRegister(ctx context.Context, registrationRequest *anypb.Any) (*core.PreRegistration, error) {
 	// Extract the request and un-marshal it to a concrete type
 	req := new(pb.RegistrationRequest)
 	if err := registrationRequest.UnmarshalTo(req); err != nil {
@@ -68,15 +68,15 @@ func (i *Integration) PreRegister(ctx context.Context, registrationRequest *anyp
 	}
 
 	// Return what configuration to store in the database and what to store in the external secrets manager
-	return &core.PreRegistrationResponse{
+	return &core.PreRegistration{
 		Credentials:   &core.Credentials{Password: req.GetApiKey()},
 		Configuration: req.Config,
-		IntegrationID: i.ID,
+		Kind:          Kind,
 	}, nil
 }
 
 // Check configuration and return what configuration attachment to persist
-func (i *Integration) PreAttach(ctx context.Context, b *core.BundledConfig) (*core.PreAttachmentResponse, error) {
+func (i *Integration) PreAttach(ctx context.Context, b *core.BundledConfig) (*core.PreAttachment, error) {
 	// Extract registration configuration
 	rc := new(pb.RegistrationConfig)
 	if err := b.Registration.UnmarshalTo(rc); err != nil {
@@ -93,7 +93,7 @@ func (i *Integration) PreAttach(ctx context.Context, b *core.BundledConfig) (*co
 		return nil, fmt.Errorf("invalid attachment configuration: %w", err)
 	}
 
-	return &core.PreAttachmentResponse{Configuration: ar.Config}, nil
+	return &core.PreAttachment{Configuration: ar.Config}, nil
 }
 
 // i.e we want to attach to a dependency track integration and we are proving the right attachment options
