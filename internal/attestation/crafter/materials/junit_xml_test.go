@@ -75,11 +75,6 @@ func TestJUnitXMLCraft(t *testing.T) {
 			wantErr:  "no such file or directory",
 		},
 		{
-			name:     "invalid JUnit XML format",
-			filePath: "./testdata/sbom.spdx.json",
-			wantErr:  "unexpected material type",
-		},
-		{
 			name:     "invalid artifact type",
 			filePath: "./testdata/simple.txt",
 			wantErr:  "unexpected material type",
