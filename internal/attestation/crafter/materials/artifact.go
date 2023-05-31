@@ -41,6 +41,7 @@ func NewArtifactCrafter(schema *schemaapi.CraftingSchema_Material, uploader casc
 	return &ArtifactCrafter{uploader: uploader, crafterCommon: craftCommon}, nil
 }
 
+// Craft will calculate the digest of the artifact, simulate an upload and return the material definition
 func (i *ArtifactCrafter) Craft(ctx context.Context, artifactPath string) (*api.Attestation_Material, error) {
 	result, err := i.uploader.UploadFile(ctx, artifactPath)
 	if err != nil {
