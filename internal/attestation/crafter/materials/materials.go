@@ -36,24 +36,23 @@ type crafterCommon struct {
 	input  *schemaapi.CraftingSchema_Material
 }
 
-type crafterUploader struct {
-	*crafterCommon
-	uploader casclient.Uploader
-}
-
-func (i *crafterUploader) craft(ctx context.Context, artifactPath string) (*api.Attestation_Material, error) {
-	result, err := i.uploader.UploadFile(ctx, artifactPath)
+// uploadAndCraft uploads the artifact to CAS and crafts the material
+// this function is used by all the uploadable artifacts crafters (SBOMs, JUnit, and more in the future)
+func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Material, uploader casclient.Uploader, artifactPath string) (*api.Attestation_Material, error) {
+	result, err := uploader.UploadFile(ctx, artifactPath)
 	if err != nil {
-		i.logger.Debug().Err(err)
 		return nil, err
 	}
 
 	res := &api.Attestation_Material{
 		AddedAt:      timestamppb.New(time.Now()),
-		MaterialType: i.input.Type,
+		MaterialType: input.Type,
 		M: &api.Attestation_Material_Artifact_{
 			Artifact: &api.Attestation_Material_Artifact{
-				Id: i.input.Name, Digest: result.Digest, Name: result.Filename, IsSubject: i.input.Output,
+				Id:        input.Name,
+				Name:      result.Filename,
+				Digest:    result.Digest,
+				IsSubject: input.Output,
 			},
 		},
 	}
