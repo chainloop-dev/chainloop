@@ -22,7 +22,10 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v0.10.0
 	github.com/getsentry/sentry-go v0.17.0
 	github.com/go-kratos/kratos/contrib/log/zap/v2 v2.0.0-20230113095809-bebea0c103a8
-	github.com/go-kratos/kratos/v2 v2.5.3
+	// Currently fixed to a non-release because we need this fix
+	// https://github.com/go-kratos/kratos/commit/4a56b5669defa65e595301a8ad9dcc49496cc11c
+	// to be present so we can upgrade some other dependencies such as grpc
+	github.com/go-kratos/kratos/v2 v2.6.3-0.20230509063647-4a56b5669def
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/go-containerregistry v0.14.1-0.20230409045903-ed5c185df419
@@ -111,6 +114,7 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-chi/chi v4.1.2+incompatible // indirect
 	github.com/go-jose/go-jose/v3 v3.0.0 // indirect
+	github.com/go-kratos/aegis v0.2.0 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/analysis v0.21.4 // indirect
