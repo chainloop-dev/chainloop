@@ -62,13 +62,16 @@ func (i *JUnitXMLCrafter) validate(filePath string) error {
 	if err != nil {
 		return fmt.Errorf("can't read the file: %w", err)
 	}
+
 	if err := xml.Unmarshal(bytes, &junit.Suite{}); err != nil {
 		return fmt.Errorf("invalid JUnit XML file: %w", ErrInvalidMaterialType)
 	}
+
 	_, err = junit.IngestReader(f)
 	if err != nil {
 		i.logger.Debug().Err(err).Msg("error decoding file: " + filePath)
 		return fmt.Errorf("invalid JUnit XML file: %w", ErrInvalidMaterialType)
 	}
+
 	return nil
 }
