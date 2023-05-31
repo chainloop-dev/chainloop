@@ -38,6 +38,7 @@ require (
 	github.com/in-toto/in-toto-golang v0.8.0
 	github.com/jackc/pgx/v4 v4.18.1
 	github.com/jedib0t/go-pretty/v6 v6.4.6
+	github.com/joshdk/go-junit v1.0.0
 	github.com/lib/pq v1.10.7
 	github.com/moby/moby v23.0.1+incompatible
 	github.com/opencontainers/image-spec v1.1.0-rc2

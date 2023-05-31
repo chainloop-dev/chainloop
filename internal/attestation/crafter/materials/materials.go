@@ -18,11 +18,13 @@ package materials
 import (
 	"context"
 	"fmt"
+	"time"
 
 	api "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
 	"github.com/rs/zerolog"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ErrInvalidMaterialType is returned when the provided material type
@@ -32,6 +34,30 @@ var ErrInvalidMaterialType = fmt.Errorf("unexpected material type")
 type crafterCommon struct {
 	logger *zerolog.Logger
 	input  *schemaapi.CraftingSchema_Material
+}
+
+// uploadAndCraft uploads the artifact to CAS and crafts the material
+// this function is used by all the uploadable artifacts crafters (SBOMs, JUnit, and more in the future)
+func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Material, uploader casclient.Uploader, artifactPath string) (*api.Attestation_Material, error) {
+	result, err := uploader.UploadFile(ctx, artifactPath)
+	if err != nil {
+		return nil, fmt.Errorf("uploading material: %w", err)
+	}
+
+	res := &api.Attestation_Material{
+		AddedAt:      timestamppb.New(time.Now()),
+		MaterialType: input.Type,
+		M: &api.Attestation_Material_Artifact_{
+			Artifact: &api.Attestation_Material_Artifact{
+				Id:        input.Name,
+				Name:      result.Filename,
+				Digest:    result.Digest,
+				IsSubject: input.Output,
+			},
+		},
+	}
+
+	return res, nil
 }
 
 type Craftable interface {
@@ -53,6 +79,8 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 		crafter, err = NewCyclonedxJSONCrafter(materialSchema, uploader, logger)
 	case schemaapi.CraftingSchema_Material_SBOM_SPDX_JSON:
 		crafter, err = NewSPDXJSONCrafter(materialSchema, uploader, logger)
+	case schemaapi.CraftingSchema_Material_JUNIT_XML:
+		crafter, err = NewJUnitXMLCrafter(materialSchema, uploader, logger)
 	default:
 		return nil, fmt.Errorf("material of type %q not supported yet", materialSchema.Type)
 	}
