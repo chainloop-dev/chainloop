@@ -41,7 +41,7 @@ type crafterCommon struct {
 func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Material, uploader casclient.Uploader, artifactPath string) (*api.Attestation_Material, error) {
 	result, err := uploader.UploadFile(ctx, artifactPath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("uploading material: %w", err)
 	}
 
 	res := &api.Attestation_Material{

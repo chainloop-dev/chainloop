@@ -44,13 +44,14 @@ func NewJUnitXMLCrafter(schema *schemaapi.CraftingSchema_Material, uploader casc
 }
 
 func (i *JUnitXMLCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
-	if err := i.validate(ctx, filePath); err != nil {
+	if err := i.validate(filePath); err != nil {
 		return nil, err
 	}
+
 	return uploadAndCraft(ctx, i.input, i.uploader, filePath)
 }
 
-func (i *JUnitXMLCrafter) validate(_ context.Context, filePath string) error {
+func (i *JUnitXMLCrafter) validate(filePath string) error {
 	f, err := os.Open(filePath)
 	if err != nil {
 		return fmt.Errorf("can't open the file: %w", err)
