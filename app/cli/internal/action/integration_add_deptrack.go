@@ -54,5 +54,5 @@ func (action *IntegrationAddDeptrack) Run(host, apiKey string, allowAutoProjectC
 		return nil, err
 	}
 
-	return pbIntegrationItemToAction(i.Result), nil
+	return pbIntegrationItemToAction(i.Result)
 }

@@ -57,5 +57,5 @@ func (action *WorkflowIntegrationAttach) RunDependencyTrack(integrationID, workf
 		return nil, err
 	}
 
-	return pbIntegrationAttachmentItemToAction(resp.Result), nil
+	return pbIntegrationAttachmentItemToAction(resp.Result)
 }
