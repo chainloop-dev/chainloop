@@ -17,6 +17,7 @@ package action
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
@@ -38,28 +39,40 @@ func (action *WorkflowIntegrationList) Run() ([]*IntegrationAttachmentItem, erro
 
 	result := make([]*IntegrationAttachmentItem, 0, len(resp.Result))
 	for _, i := range resp.Result {
-		result = append(result, pbIntegrationAttachmentItemToAction(i))
+		attachment, err := pbIntegrationAttachmentItemToAction(i)
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, attachment)
 	}
 
 	return result, nil
 }
 
-func pbIntegrationAttachmentItemToAction(in *pb.IntegrationAttachmentItem) *IntegrationAttachmentItem {
+func pbIntegrationAttachmentItemToAction(in *pb.IntegrationAttachmentItem) (*IntegrationAttachmentItem, error) {
+	integration, err := pbIntegrationItemToAction(in.GetIntegration())
+	if err != nil {
+		return nil, err
+	}
+
 	i := &IntegrationAttachmentItem{
 		ID:          in.GetId(),
 		CreatedAt:   toTimePtr(in.GetCreatedAt().AsTime()),
-		Integration: pbIntegrationItemToAction(in.GetIntegration()),
+		Integration: integration,
 		Workflow:    pbWorkflowItemToAction(in.GetWorkflow()),
 	}
 
-	if c := in.GetConfig().GetDependencyTrack(); c != nil {
-		i.Config = map[string]interface{}{
-			"projectID":   c.GetProjectId(),
-			"projectName": c.GetProjectName(),
-		}
+	// Old format does not include config so we skip it
+	if in.Config == nil {
+		return i, nil
 	}
 
-	return i
+	if i.Config, err = anyPbToMap(in.Config); err != nil {
+		return nil, fmt.Errorf("failed to convert config: %w", err)
+	}
+
+	return i, nil
 }
 
 type IntegrationAttachmentItem struct {

@@ -24,59 +24,35 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	contractAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/integrations"
+	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/dependencytrack/cyclonedx/v1/uploader"
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/integrations/gen/dependencytrack/cyclonedx/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/integrations/dependencytrack"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
-	errors "github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
 
+// TODO: This module will be removed and added as part of the new integrations framework
 type Integration struct {
 	integrationUC       *biz.IntegrationUseCase
-	ociUC               *biz.OCIRepositoryUseCase
 	credentialsProvider credentials.ReaderWriter
 	casClient           biz.CASClient
 	log                 *log.Helper
 }
 
+// TODO: remove
 const Kind = "Dependency-Track"
 
-func New(integrationUC *biz.IntegrationUseCase, ociUC *biz.OCIRepositoryUseCase, creds credentials.ReaderWriter, c biz.CASClient, l log.Logger) *Integration {
-	return &Integration{integrationUC, ociUC, creds, c, servicelogger.ScopedHelper(l, "biz/integration/deptrack")}
-}
-
-func (uc *Integration) Add(ctx context.Context, orgID, host, apiKey string, enableProjectCreation bool) (*biz.Integration, error) {
-	// Validate Credentials before saving them
-	creds := &credentials.APICreds{Host: host, Key: apiKey}
-	if err := creds.Validate(); err != nil {
-		return nil, biz.NewErrValidation(err)
-	}
-
-	// Create the secret in the external secrets manager
-	secretID, err := uc.credentialsProvider.SaveCredentials(ctx, orgID, creds)
-	if err != nil {
-		return nil, fmt.Errorf("storing the credentials: %w", err)
-	}
-
-	c := &v1.IntegrationConfig{
-		Config: &v1.IntegrationConfig_DependencyTrack_{
-			DependencyTrack: &v1.IntegrationConfig_DependencyTrack{
-				AllowAutoCreate: enableProjectCreation, Domain: host,
-			},
-		},
-	}
-
-	// Persist data
-	return uc.integrationUC.Create(ctx, orgID, Kind, secretID, c)
+func New(integrationUC *biz.IntegrationUseCase, creds credentials.ReaderWriter, c biz.CASClient, l log.Logger) *Integration {
+	return &Integration{integrationUC, creds, c, servicelogger.ScopedHelper(l, "biz/integration/deptrack")}
 }
 
 // Upload the SBOMs wrapped in the DSSE envelope to the configured Dependency Track instance
-func (uc *Integration) UploadSBOMs(envelope *dsse.Envelope, orgID, workflowID string) error {
+func (uc *Integration) UploadSBOMs(envelope *dsse.Envelope, orgID, workflowID, secretName string) error {
 	ctx := context.Background()
 	uc.log.Infow("msg", "looking for integration", "workflowID", workflowID, "integration", Kind)
 
@@ -111,13 +87,6 @@ func (uc *Integration) UploadSBOMs(envelope *dsse.Envelope, orgID, workflowID st
 		return err
 	}
 
-	repo, err := uc.ociUC.FindMainRepo(ctx, orgID)
-	if err != nil {
-		return err
-	} else if repo == nil {
-		return errors.NotFound("not found", "main repository not found")
-	}
-
 	for _, material := range predicate.GetMaterials() {
 		if material.Type != contractAPI.CraftingSchema_Material_SBOM_CYCLONEDX_JSON.String() {
 			continue
@@ -133,7 +102,7 @@ func (uc *Integration) UploadSBOMs(envelope *dsse.Envelope, orgID, workflowID st
 		uc.log.Infow("msg", "SBOM present, downloading", "workflowID", workflowID, "integration", Kind, "name", material.Name)
 		// Download SBOM
 		buf := bytes.NewBuffer(nil)
-		if err := uc.casClient.Download(ctx, repo.SecretName, buf, digest); err != nil {
+		if err := uc.casClient.Download(ctx, secretName, buf, digest); err != nil {
 			return fmt.Errorf("downloading from CAS: %w", err)
 		}
 
@@ -184,10 +153,17 @@ func (uc *Integration) UploadSBOMs(envelope *dsse.Envelope, orgID, workflowID st
 }
 
 func doSendToDependencyTrack(ctx context.Context, credsReader credentials.Reader, workflowID string, sbom io.Reader, i *biz.IntegrationAndAttachment, log *log.Helper) error {
-	integrationConfig := i.Integration.Config.GetDependencyTrack()
-	attachmentConfig := i.IntegrationAttachment.Config.GetDependencyTrack()
+	integrationConfig := new(pb.RegistrationConfig)
+	if err := i.Integration.Config.UnmarshalTo(integrationConfig); err != nil {
+		return fmt.Errorf("unmarshalling config: %w", err)
+	}
 
-	creds := &credentials.APICreds{}
+	attachmentConfig := new(pb.AttachmentConfig)
+	if err := i.IntegrationAttachment.Config.UnmarshalTo(attachmentConfig); err != nil {
+		return fmt.Errorf("unmarshalling config: %w", err)
+	}
+
+	creds := &integrations.Credentials{}
 	if err := credsReader.ReadCredentials(ctx, i.SecretName, creds); err != nil {
 		return err
 	}
@@ -198,7 +174,7 @@ func doSendToDependencyTrack(ctx context.Context, credsReader credentials.Reader
 		"workflowID", workflowID, "integration", Kind,
 	)
 
-	d, err := dependencytrack.NewSBOMUploader(integrationConfig.Domain, creds.Key, sbom, attachmentConfig.GetProjectId(), attachmentConfig.GetProjectName())
+	d, err := uploader.NewSBOMUploader(integrationConfig.Domain, creds.Password, sbom, attachmentConfig.GetProjectId(), attachmentConfig.GetProjectName())
 	if err != nil {
 		return err
 	}

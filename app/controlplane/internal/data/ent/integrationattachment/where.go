@@ -7,7 +7,6 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
 	"github.com/google/uuid"
 )
@@ -62,11 +61,6 @@ func CreatedAt(v time.Time) predicate.IntegrationAttachment {
 	return predicate.IntegrationAttachment(sql.FieldEQ(FieldCreatedAt, v))
 }
 
-// Config applies equality check predicate on the "config" field. It's identical to ConfigEQ.
-func Config(v *v1.IntegrationAttachmentConfig) predicate.IntegrationAttachment {
-	return predicate.IntegrationAttachment(sql.FieldEQ(FieldConfig, v))
-}
-
 // DeletedAt applies equality check predicate on the "deleted_at" field. It's identical to DeletedAtEQ.
 func DeletedAt(v time.Time) predicate.IntegrationAttachment {
 	return predicate.IntegrationAttachment(sql.FieldEQ(FieldDeletedAt, v))
@@ -112,44 +106,14 @@ func CreatedAtLTE(v time.Time) predicate.IntegrationAttachment {
 	return predicate.IntegrationAttachment(sql.FieldLTE(FieldCreatedAt, v))
 }
 
-// ConfigEQ applies the EQ predicate on the "config" field.
-func ConfigEQ(v *v1.IntegrationAttachmentConfig) predicate.IntegrationAttachment {
-	return predicate.IntegrationAttachment(sql.FieldEQ(FieldConfig, v))
+// ConfIsNil applies the IsNil predicate on the "conf" field.
+func ConfIsNil() predicate.IntegrationAttachment {
+	return predicate.IntegrationAttachment(sql.FieldIsNull(FieldConf))
 }
 
-// ConfigNEQ applies the NEQ predicate on the "config" field.
-func ConfigNEQ(v *v1.IntegrationAttachmentConfig) predicate.IntegrationAttachment {
-	return predicate.IntegrationAttachment(sql.FieldNEQ(FieldConfig, v))
-}
-
-// ConfigIn applies the In predicate on the "config" field.
-func ConfigIn(vs ...*v1.IntegrationAttachmentConfig) predicate.IntegrationAttachment {
-	return predicate.IntegrationAttachment(sql.FieldIn(FieldConfig, vs...))
-}
-
-// ConfigNotIn applies the NotIn predicate on the "config" field.
-func ConfigNotIn(vs ...*v1.IntegrationAttachmentConfig) predicate.IntegrationAttachment {
-	return predicate.IntegrationAttachment(sql.FieldNotIn(FieldConfig, vs...))
-}
-
-// ConfigGT applies the GT predicate on the "config" field.
-func ConfigGT(v *v1.IntegrationAttachmentConfig) predicate.IntegrationAttachment {
-	return predicate.IntegrationAttachment(sql.FieldGT(FieldConfig, v))
-}
-
-// ConfigGTE applies the GTE predicate on the "config" field.
-func ConfigGTE(v *v1.IntegrationAttachmentConfig) predicate.IntegrationAttachment {
-	return predicate.IntegrationAttachment(sql.FieldGTE(FieldConfig, v))
-}
-
-// ConfigLT applies the LT predicate on the "config" field.
-func ConfigLT(v *v1.IntegrationAttachmentConfig) predicate.IntegrationAttachment {
-	return predicate.IntegrationAttachment(sql.FieldLT(FieldConfig, v))
-}
-
-// ConfigLTE applies the LTE predicate on the "config" field.
-func ConfigLTE(v *v1.IntegrationAttachmentConfig) predicate.IntegrationAttachment {
-	return predicate.IntegrationAttachment(sql.FieldLTE(FieldConfig, v))
+// ConfNotNil applies the NotNil predicate on the "conf" field.
+func ConfNotNil() predicate.IntegrationAttachment {
+	return predicate.IntegrationAttachment(sql.FieldNotNull(FieldConf))
 }
 
 // DeletedAtEQ applies the EQ predicate on the "deleted_at" field.

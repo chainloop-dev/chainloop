@@ -19,9 +19,12 @@ import (
 	"context"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/integrations"
+	integrationMocks "github.com/chainloop-dev/chainloop/app/controlplane/integrations/mocks"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	creds "github.com/chainloop-dev/chainloop/internal/credentials/mocks"
@@ -53,7 +56,6 @@ func (s *OrgIntegrationTestSuite) TestDeleteOrg() {
 
 	s.T().Run("org, integrations and repositories deletion", func(t *testing.T) {
 		// Mock calls to credentials deletion for both the integration and the OCI repository
-		s.mockedCredsReaderWriter.On("DeleteCredentials", ctx, "stored-integration-secret").Return(nil)
 		s.mockedCredsReaderWriter.On("DeleteCredentials", ctx, "stored-OCI-secret").Return(nil)
 
 		err := s.Organization.Delete(ctx, s.org.ID)
@@ -100,11 +102,6 @@ func (s *OrgIntegrationTestSuite) SetupTest() {
 	s.mockedCredsReaderWriter = creds.NewReaderWriter(t)
 	// Mock API call to store credentials
 
-	// Dependency-track integration credentials
-	s.mockedCredsReaderWriter.On(
-		"SaveCredentials", ctx, mock.Anything, &credentials.APICreds{Host: "host", Key: "key"},
-	).Return("stored-integration-secret", nil)
-
 	// OCI repository credentials
 	s.mockedCredsReaderWriter.On(
 		"SaveCredentials", ctx, mock.Anything, &credentials.OCIKeypair{Repo: "repo", Username: "username", Password: "pass"},
@@ -117,7 +114,11 @@ func (s *OrgIntegrationTestSuite) SetupTest() {
 	assert.NoError(err)
 
 	// Integration
-	_, err = s.DepTrackUC.Add(ctx, s.org.ID, "host", "key", false)
+	// Mocked integration that will return both generic configuration and credentials
+	integration := integrationMocks.NewRegistrable(s.T())
+	integration.On("PreRegister", ctx, mock.Anything).Return(&integrations.PreRegistration{
+		Configuration: &anypb.Any{}}, nil)
+	_, err = s.Integration.RegisterAndSave(ctx, s.org.ID, integration, nil)
 	assert.NoError(err)
 
 	// OCI repository

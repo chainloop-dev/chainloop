@@ -11,12 +11,12 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integration"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integrationattachment"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // IntegrationAttachmentUpdate is the builder for updating IntegrationAttachment entities.
@@ -32,9 +32,15 @@ func (iau *IntegrationAttachmentUpdate) Where(ps ...predicate.IntegrationAttachm
 	return iau
 }
 
-// SetConfig sets the "config" field.
-func (iau *IntegrationAttachmentUpdate) SetConfig(vac *v1.IntegrationAttachmentConfig) *IntegrationAttachmentUpdate {
-	iau.mutation.SetConfig(vac)
+// SetConf sets the "conf" field.
+func (iau *IntegrationAttachmentUpdate) SetConf(a *anypb.Any) *IntegrationAttachmentUpdate {
+	iau.mutation.SetConf(a)
+	return iau
+}
+
+// ClearConf clears the value of the "conf" field.
+func (iau *IntegrationAttachmentUpdate) ClearConf() *IntegrationAttachmentUpdate {
+	iau.mutation.ClearConf()
 	return iau
 }
 
@@ -126,11 +132,6 @@ func (iau *IntegrationAttachmentUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (iau *IntegrationAttachmentUpdate) check() error {
-	if v, ok := iau.mutation.Config(); ok {
-		if err := v.Validate(); err != nil {
-			return &ValidationError{Name: "config", err: fmt.Errorf(`ent: validator failed for field "IntegrationAttachment.config": %w`, err)}
-		}
-	}
 	if _, ok := iau.mutation.IntegrationID(); iau.mutation.IntegrationCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "IntegrationAttachment.integration"`)
 	}
@@ -152,8 +153,11 @@ func (iau *IntegrationAttachmentUpdate) sqlSave(ctx context.Context) (n int, err
 			}
 		}
 	}
-	if value, ok := iau.mutation.Config(); ok {
-		_spec.SetField(integrationattachment.FieldConfig, field.TypeBytes, value)
+	if value, ok := iau.mutation.Conf(); ok {
+		_spec.SetField(integrationattachment.FieldConf, field.TypeJSON, value)
+	}
+	if iau.mutation.ConfCleared() {
+		_spec.ClearField(integrationattachment.FieldConf, field.TypeJSON)
 	}
 	if value, ok := iau.mutation.DeletedAt(); ok {
 		_spec.SetField(integrationattachment.FieldDeletedAt, field.TypeTime, value)
@@ -251,9 +255,15 @@ type IntegrationAttachmentUpdateOne struct {
 	mutation *IntegrationAttachmentMutation
 }
 
-// SetConfig sets the "config" field.
-func (iauo *IntegrationAttachmentUpdateOne) SetConfig(vac *v1.IntegrationAttachmentConfig) *IntegrationAttachmentUpdateOne {
-	iauo.mutation.SetConfig(vac)
+// SetConf sets the "conf" field.
+func (iauo *IntegrationAttachmentUpdateOne) SetConf(a *anypb.Any) *IntegrationAttachmentUpdateOne {
+	iauo.mutation.SetConf(a)
+	return iauo
+}
+
+// ClearConf clears the value of the "conf" field.
+func (iauo *IntegrationAttachmentUpdateOne) ClearConf() *IntegrationAttachmentUpdateOne {
+	iauo.mutation.ClearConf()
 	return iauo
 }
 
@@ -358,11 +368,6 @@ func (iauo *IntegrationAttachmentUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (iauo *IntegrationAttachmentUpdateOne) check() error {
-	if v, ok := iauo.mutation.Config(); ok {
-		if err := v.Validate(); err != nil {
-			return &ValidationError{Name: "config", err: fmt.Errorf(`ent: validator failed for field "IntegrationAttachment.config": %w`, err)}
-		}
-	}
 	if _, ok := iauo.mutation.IntegrationID(); iauo.mutation.IntegrationCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "IntegrationAttachment.integration"`)
 	}
@@ -401,8 +406,11 @@ func (iauo *IntegrationAttachmentUpdateOne) sqlSave(ctx context.Context) (_node 
 			}
 		}
 	}
-	if value, ok := iauo.mutation.Config(); ok {
-		_spec.SetField(integrationattachment.FieldConfig, field.TypeBytes, value)
+	if value, ok := iauo.mutation.Conf(); ok {
+		_spec.SetField(integrationattachment.FieldConf, field.TypeJSON, value)
+	}
+	if iauo.mutation.ConfCleared() {
+		_spec.ClearField(integrationattachment.FieldConf, field.TypeJSON)
 	}
 	if value, ok := iauo.mutation.DeletedAt(); ok {
 		_spec.SetField(integrationattachment.FieldDeletedAt, field.TypeTime, value)

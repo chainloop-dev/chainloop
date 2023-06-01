@@ -19,6 +19,8 @@ import (
 	"context"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	cxpb "github.com/chainloop-dev/chainloop/app/controlplane/integrations/gen/dependencytrack/cyclonedx/v1"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // Attach a third party integration to a workflow
@@ -31,26 +33,29 @@ func NewWorkflowIntegrationAttach(cfg *ActionsOpts) *WorkflowIntegrationAttach {
 func (action *WorkflowIntegrationAttach) RunDependencyTrack(integrationID, workflowID, projectID, projectName string) (*IntegrationAttachmentItem, error) {
 	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
 
-	var projectConfig *pb.IntegrationAttachmentConfig_DependencyTrack
+	var projectConfig *cxpb.AttachmentConfig
 	if projectID != "" {
-		projectConfig = &pb.IntegrationAttachmentConfig_DependencyTrack{
-			Project: &pb.IntegrationAttachmentConfig_DependencyTrack_ProjectId{ProjectId: projectID},
+		projectConfig = &cxpb.AttachmentConfig{
+			Project: &cxpb.AttachmentConfig_ProjectId{ProjectId: projectID},
 		}
 	} else if projectName != "" {
-		projectConfig = &pb.IntegrationAttachmentConfig_DependencyTrack{
-			Project: &pb.IntegrationAttachmentConfig_DependencyTrack_ProjectName{ProjectName: projectName},
+		projectConfig = &cxpb.AttachmentConfig{
+			Project: &cxpb.AttachmentConfig_ProjectName{ProjectName: projectName},
 		}
 	}
 
-	resp, err := client.Attach(context.Background(), &pb.IntegrationsServiceAttachRequest{
-		WorkflowId: workflowID, IntegrationId: integrationID,
-		Config: &pb.IntegrationAttachmentConfig{
-			Config: &pb.IntegrationAttachmentConfig_DependencyTrack_{DependencyTrack: projectConfig},
-		},
-	})
+	anyConfig, err := anypb.New(&cxpb.AttachmentRequest{Config: projectConfig})
 	if err != nil {
 		return nil, err
 	}
 
-	return pbIntegrationAttachmentItemToAction(resp.Result), nil
+	resp, err := client.Attach(context.Background(), &pb.IntegrationsServiceAttachRequest{
+		WorkflowId: workflowID, IntegrationId: integrationID, AttachmentConfig: anyConfig,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return pbIntegrationAttachmentItemToAction(resp.Result)
 }

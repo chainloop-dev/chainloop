@@ -70,7 +70,7 @@ make api
 
 We use [ent](https://entgo.io) as database Object Relational Mapping (ORM).
 
-The way a change in the data model will works is
+The way a change in the data model is as follows
 
 - Add a new/update an existing entity via a schema update. Schemas can be found at `internal/data/ent/schema`
 - Generate the code changes associated with that schema change. `make generate`

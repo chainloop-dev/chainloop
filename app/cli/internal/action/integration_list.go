@@ -17,9 +17,14 @@ package action
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 type IntegrationList struct {
@@ -46,15 +51,20 @@ func (action *IntegrationList) Run() ([]*IntegrationItem, error) {
 
 	result := make([]*IntegrationItem, 0, len(resp.Result))
 	for _, p := range resp.Result {
-		result = append(result, pbIntegrationItemToAction(p))
+		i, err := pbIntegrationItemToAction(p)
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, i)
 	}
 
 	return result, nil
 }
 
-func pbIntegrationItemToAction(in *pb.IntegrationItem) *IntegrationItem {
+func pbIntegrationItemToAction(in *pb.IntegrationItem) (*IntegrationItem, error) {
 	if in == nil {
-		return nil
+		return nil, errors.New("nil input")
 	}
 
 	i := &IntegrationItem{
@@ -62,12 +72,35 @@ func pbIntegrationItemToAction(in *pb.IntegrationItem) *IntegrationItem {
 		CreatedAt: toTimePtr(in.GetCreatedAt().AsTime()),
 	}
 
-	if c := in.GetConfig().GetDependencyTrack(); c != nil {
-		i.Config = map[string]interface{}{
-			"host":            c.Domain,
-			"allowAutoCreate": c.AllowAutoCreate,
-		}
+	// Old format does not include config so we skip it
+	if in.Config == nil {
+		return i, nil
 	}
 
-	return i
+	var err error
+	if i.Config, err = anyPbToMap(in.Config); err != nil {
+		return nil, fmt.Errorf("failed to convert config: %w", err)
+	}
+
+	return i, nil
+}
+
+func anyPbToMap(in *anypb.Any) (map[string]interface{}, error) {
+	if in == nil {
+		return nil, errors.New("nil input")
+	}
+
+	// proto => JSON
+	configJSON, _ := protojson.Marshal(in)
+
+	// JSON => map
+	result := make(map[string]interface{})
+	if err := json.Unmarshal(configJSON, &result); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)
+	}
+
+	// remove the key "@type" belonging to proto.Any
+	delete(result, "@type")
+
+	return result, nil
 }

@@ -10,11 +10,11 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integration"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integrationattachment"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // IntegrationCreate is the builder for creating a Integration entity.
@@ -50,9 +50,9 @@ func (ic *IntegrationCreate) SetNillableCreatedAt(t *time.Time) *IntegrationCrea
 	return ic
 }
 
-// SetConfig sets the "config" field.
-func (ic *IntegrationCreate) SetConfig(vc *v1.IntegrationConfig) *IntegrationCreate {
-	ic.mutation.SetConfig(vc)
+// SetConf sets the "conf" field.
+func (ic *IntegrationCreate) SetConf(a *anypb.Any) *IntegrationCreate {
+	ic.mutation.SetConf(a)
 	return ic
 }
 
@@ -166,14 +166,6 @@ func (ic *IntegrationCreate) check() error {
 	if _, ok := ic.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Integration.created_at"`)}
 	}
-	if _, ok := ic.mutation.Config(); !ok {
-		return &ValidationError{Name: "config", err: errors.New(`ent: missing required field "Integration.config"`)}
-	}
-	if v, ok := ic.mutation.Config(); ok {
-		if err := v.Validate(); err != nil {
-			return &ValidationError{Name: "config", err: fmt.Errorf(`ent: validator failed for field "Integration.config": %w`, err)}
-		}
-	}
 	if _, ok := ic.mutation.OrganizationID(); !ok {
 		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "Integration.organization"`)}
 	}
@@ -224,9 +216,9 @@ func (ic *IntegrationCreate) createSpec() (*Integration, *sqlgraph.CreateSpec) {
 		_spec.SetField(integration.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := ic.mutation.Config(); ok {
-		_spec.SetField(integration.FieldConfig, field.TypeBytes, value)
-		_node.Config = value
+	if value, ok := ic.mutation.Conf(); ok {
+		_spec.SetField(integration.FieldConf, field.TypeJSON, value)
+		_node.Conf = value
 	}
 	if value, ok := ic.mutation.DeletedAt(); ok {
 		_spec.SetField(integration.FieldDeletedAt, field.TypeTime, value)

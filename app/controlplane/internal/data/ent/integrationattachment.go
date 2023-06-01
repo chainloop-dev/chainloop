@@ -3,16 +3,17 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
-	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integration"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integrationattachment"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // IntegrationAttachment is the model entity for the IntegrationAttachment schema.
@@ -22,8 +23,8 @@ type IntegrationAttachment struct {
 	ID uuid.UUID `json:"id,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
-	// Config holds the value of the "config" field.
-	Config *v1.IntegrationAttachmentConfig `json:"config,omitempty"`
+	// Conf holds the value of the "conf" field.
+	Conf *anypb.Any `json:"conf,omitempty"`
 	// DeletedAt holds the value of the "deleted_at" field.
 	DeletedAt time.Time `json:"deleted_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -75,12 +76,12 @@ func (*IntegrationAttachment) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case integrationattachment.FieldConf:
+			values[i] = new([]byte)
 		case integrationattachment.FieldCreatedAt, integrationattachment.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
 		case integrationattachment.FieldID:
 			values[i] = new(uuid.UUID)
-		case integrationattachment.FieldConfig:
-			values[i] = new(v1.IntegrationAttachmentConfig)
 		case integrationattachment.ForeignKeys[0]: // integration_attachment_integration
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case integrationattachment.ForeignKeys[1]: // integration_attachment_workflow
@@ -112,11 +113,13 @@ func (ia *IntegrationAttachment) assignValues(columns []string, values []any) er
 			} else if value.Valid {
 				ia.CreatedAt = value.Time
 			}
-		case integrationattachment.FieldConfig:
-			if value, ok := values[i].(*v1.IntegrationAttachmentConfig); !ok {
-				return fmt.Errorf("unexpected type %T for field config", values[i])
-			} else if value != nil {
-				ia.Config = value
+		case integrationattachment.FieldConf:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field conf", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &ia.Conf); err != nil {
+					return fmt.Errorf("unmarshal field conf: %w", err)
+				}
 			}
 		case integrationattachment.FieldDeletedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -179,8 +182,8 @@ func (ia *IntegrationAttachment) String() string {
 	builder.WriteString("created_at=")
 	builder.WriteString(ia.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
-	builder.WriteString("config=")
-	builder.WriteString(fmt.Sprintf("%v", ia.Config))
+	builder.WriteString("conf=")
+	builder.WriteString(fmt.Sprintf("%v", ia.Conf))
 	builder.WriteString(", ")
 	builder.WriteString("deleted_at=")
 	builder.WriteString(ia.DeletedAt.Format(time.ANSIC))

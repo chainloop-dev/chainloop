@@ -8,7 +8,6 @@ package testhelpers
 
 import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/integration/dependencytrack"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
 	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
@@ -68,15 +67,6 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	userUseCase := biz.NewUserUseCase(newUserUseCaseParams)
 	robotAccountRepo := data.NewRobotAccountRepo(dataData, logger)
 	robotAccountUseCase := biz.NewRootAccountUseCase(robotAccountRepo, workflowRepo, auth, logger)
-	casCredentialsUseCase, err := biz.NewCASCredentialsUseCase(auth)
-	if err != nil {
-		cleanup()
-		return nil, nil, err
-	}
-	bootstrap_CASServer := newConfCAS()
-	v := _wireValue
-	casClientUseCase := biz.NewCASClientUseCase(casCredentialsUseCase, bootstrap_CASServer, logger, v...)
-	integration := dependencytrack.New(integrationUseCase, ociRepositoryUseCase, readerWriter, casClientUseCase, logger)
 	testingUseCases := &TestingUseCases{
 		DB:               testDatabase,
 		L:                logger,
@@ -89,13 +79,8 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		WorkflowRun:      workflowRunUseCase,
 		User:             userUseCase,
 		RobotAccount:     robotAccountUseCase,
-		DepTrackUC:       integration,
 	}
 	return testingUseCases, func() {
 		cleanup()
 	}, nil
 }
-
-var (
-	_wireValue = []biz.CASClientOpts{}
-)

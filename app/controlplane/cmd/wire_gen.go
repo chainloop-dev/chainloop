@@ -91,7 +91,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		Opts:               v2,
 	}
 	workflowRunService := service.NewWorkflowRunService(newWorkflowRunServiceOpts)
-	integration := dependencytrack.New(integrationUseCase, ociRepositoryUseCase, readerWriter, casClientUseCase, logger)
+	integration := dependencytrack.New(integrationUseCase, readerWriter, casClientUseCase, logger)
 	newAttestationServiceOpts := &service.NewAttestationServiceOpts{
 		WorkflowRunUC:      workflowRunUseCase,
 		WorkflowUC:         workflowUseCase,
@@ -116,13 +116,14 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	orgMetricsService := service.NewOrgMetricsService(orgMetricsUseCase, v2...)
 	ociRepositoryService := service.NewOCIRepositoryService(ociRepositoryUseCase, v2...)
-	integrationsService := service.NewIntegrationsService(integrationUseCase, integration, workflowUseCase, v2...)
+	integrationsService := service.NewIntegrationsService(integrationUseCase, workflowUseCase, v2...)
 	organizationService := service.NewOrganizationService(membershipUseCase, v2...)
 	opts := &server.Opts{
 		UserUseCase:          userUseCase,
 		RobotAccountUseCase:  robotAccountUseCase,
 		OCIRepositoryUseCase: ociRepositoryUseCase,
 		CASClientUseCase:     casClientUseCase,
+		IntegrationUseCase:   integrationUseCase,
 		WorkflowSvc:          workflowService,
 		AuthSvc:              authService,
 		RobotAccountSvc:      robotAccountService,
@@ -138,6 +139,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		Logger:               logger,
 		ServerConfig:         confServer,
 		AuthConfig:           auth,
+		Credentials:          readerWriter,
 	}
 	grpcServer := server.NewGRPCServer(opts)
 	httpServer, err := server.NewHTTPServer(opts, grpcServer)

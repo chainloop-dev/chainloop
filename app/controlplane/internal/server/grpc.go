@@ -27,6 +27,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/user"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
+	"github.com/chainloop-dev/chainloop/internal/credentials"
 	"github.com/getsentry/sentry-go"
 	jwt "github.com/golang-jwt/jwt/v4"
 
@@ -48,6 +49,7 @@ type Opts struct {
 	RobotAccountUseCase  *biz.RobotAccountUseCase
 	OCIRepositoryUseCase *biz.OCIRepositoryUseCase
 	CASClientUseCase     *biz.CASClientUseCase
+	IntegrationUseCase   *biz.IntegrationUseCase
 	// Services
 	WorkflowSvc         *service.WorkflowService
 	AuthSvc             *service.AuthService
@@ -65,6 +67,7 @@ type Opts struct {
 	Logger       log.Logger
 	ServerConfig *conf.Server
 	AuthConfig   *conf.Auth
+	Credentials  credentials.ReaderWriter
 }
 
 // NewGRPCServer new a gRPC server.

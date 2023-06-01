@@ -27,7 +27,6 @@ import (
 	_ "github.com/lib/pq"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/integration/dependencytrack"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	creds "github.com/chainloop-dev/chainloop/internal/credentials/mocks"
@@ -58,7 +57,6 @@ type TestingUseCases struct {
 	WorkflowRun      *biz.WorkflowRunUseCase
 	User             *biz.UserUseCase
 	RobotAccount     *biz.RobotAccountUseCase
-	DepTrackUC       *dependencytrack.Integration
 }
 
 type newTestingOpts struct {
@@ -141,10 +139,6 @@ func (db *TestDatabase) ConnectionString(t *testing.T) string {
 
 func newConfData(db *TestDatabase, t *testing.T) *conf.Data {
 	return &conf.Data{Database: &conf.Data_Database{Driver: "pgx", Source: db.ConnectionString(t)}}
-}
-
-func newConfCAS() *conf.Bootstrap_CASServer {
-	return &conf.Bootstrap_CASServer{Grpc: &conf.Server_GRPC{}}
 }
 
 func (db *TestDatabase) Close(t *testing.T) {
