@@ -52,5 +52,6 @@ func newIntegrationAddDepTrackCmd() *cobra.Command {
 	cobra.CheckErr(cmd.MarkFlagRequired("instance"))
 
 	cmd.Flags().BoolVar(&allowAutoCreate, "allow-project-auto-create", false, "Allow auto-creation of projects or require to always specify an existing one")
+
 	return cmd
 }

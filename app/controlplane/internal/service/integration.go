@@ -60,7 +60,7 @@ func (s *IntegrationsService) Register(ctx context.Context, req *pb.Integrations
 		return nil, fmt.Errorf("creating integration: %w", err)
 	}
 
-	i, err := s.integrationUC.Create(ctx, org.ID, integration, req.RegistrationConfig)
+	i, err := s.integrationUC.RegisterAndSave(ctx, org.ID, integration, req.RegistrationConfig)
 	if err != nil {
 		if biz.IsNotFound(err) {
 			return nil, errors.NotFound("not found", err.Error())
@@ -73,6 +73,7 @@ func (s *IntegrationsService) Register(ctx context.Context, req *pb.Integrations
 
 	return &pb.IntegrationsServiceRegisterResponse{Result: bizIntegrationToPb(i)}, nil
 }
+
 func (s *IntegrationsService) Attach(ctx context.Context, req *pb.IntegrationsServiceAttachRequest) (*pb.IntegrationsServiceAttachResponse, error) {
 	_, org, err := loadCurrentUserAndOrg(ctx)
 	if err != nil {

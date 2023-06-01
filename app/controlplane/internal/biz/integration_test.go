@@ -46,7 +46,7 @@ func (s *testSuite) TestCreate() {
 			Password: "key", URL: "host"},
 	}, nil)
 
-	got, err := s.Integration.Create(ctx, s.org.ID, integration, s.configAny)
+	got, err := s.Integration.RegisterAndSave(ctx, s.org.ID, integration, s.configAny)
 	assert.NoError(err)
 	assert.Equal(kind, got.Kind)
 
@@ -204,7 +204,7 @@ func (s *testSuite) SetupTest() {
 	s.registrable = integration
 	s.attachable = integrationMocks.NewAttachable(s.T())
 
-	s.integration, err = s.Integration.Create(ctx, s.org.ID, integration, nil)
+	s.integration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, integration, nil)
 	assert.NoError(err)
 
 	// Integration configuration

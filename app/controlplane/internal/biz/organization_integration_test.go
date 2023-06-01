@@ -118,7 +118,7 @@ func (s *OrgIntegrationTestSuite) SetupTest() {
 	integration := integrationMocks.NewRegistrable(s.T())
 	integration.On("PreRegister", ctx, mock.Anything).Return(&integrations.PreRegistration{
 		Configuration: &anypb.Any{}}, nil)
-	_, err = s.Integration.Create(ctx, s.org.ID, integration, nil)
+	_, err = s.Integration.RegisterAndSave(ctx, s.org.ID, integration, nil)
 	assert.NoError(err)
 
 	// OCI repository

@@ -36,10 +36,10 @@ type Attachable interface {
 }
 
 type PreRegistration struct {
-	// Credentials to be persisted
+	// Credentials to be persisted in Credentials Manager
 	// JSON serializable
 	Credentials *Credentials
-	// Configuration to be persisted
+	// Configuration to be persisted in DB
 	Configuration proto.Message
 	// registration kind
 	Kind string
