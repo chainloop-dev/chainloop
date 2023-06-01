@@ -18,9 +18,35 @@ package integrations
 import (
 	"context"
 
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
+	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 )
+
+type InputType int64
+
+type Inputs struct {
+	DSSEnvelope   bool
+	InputMaterial *InputMaterial
+}
+
+type InputMaterial struct {
+	// Name of the material kind that the integration expects
+	Type schemaapi.CraftingSchema_Material_MaterialType
+}
+
+type Integration struct {
+	// Identifier of the integration
+	ID string
+	// Kind of inputs does the integration expect as part of the execution
+	SubscribedInputs *Inputs
+}
+
+func (i *Integration) ExpectedInputs() *Inputs {
+	return i.SubscribedInputs
+}
 
 // Registrable is the interface that needs to be implemented by all integrations
 // To be able to be registered in Chainloop control plane
@@ -33,6 +59,30 @@ type Registrable interface {
 type Attachable interface {
 	// Validate that the attachment configuration is valid in the context of the provided registration
 	PreAttach(ctx context.Context, c *BundledConfig) (*PreAttachment, error)
+}
+
+// An execute method will receive either the envelope or a material as input
+// The material will contain its content as well as the metadata
+type ExecuteInput struct {
+	DSSEnvelope *dsse.Envelope
+	Material    *ExecuteMaterial
+}
+
+type ExecuteMaterial struct {
+	*chainloop.NormalizedMaterial
+	// Content of the material already downloaded
+	Content []byte
+}
+
+type ExecuteOpts struct {
+	Config *BundledConfig
+	Input  *ExecuteInput
+}
+
+type Executable interface {
+	// What kind of inputs does the integration expect
+	ExpectedInputs() *Inputs
+	Execute(ctx context.Context, opts *ExecuteOpts) error
 }
 
 type PreRegistration struct {
@@ -58,6 +108,8 @@ type BundledConfig struct {
 	Attachment *anypb.Any
 	// Stored credentials
 	Credentials *Credentials
+	// Chainloop Metadata
+	WorkflowID string
 }
 
 type Credentials struct {

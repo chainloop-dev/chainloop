@@ -26,8 +26,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	contractAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/integrations"
-	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/dependencytrack/cyclonedx/v1/uploader"
-	pb "github.com/chainloop-dev/chainloop/app/controlplane/integrations/gen/dependencytrack/cyclonedx/v1"
+	dti "github.com/chainloop-dev/chainloop/app/controlplane/integrations/dependencytrack/cyclonedx/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
@@ -122,7 +121,36 @@ func (uc *Integration) UploadSBOMs(envelope *dsse.Envelope, orgID, workflowID, s
 				defer wg.Done()
 				err := backoff.RetryNotify(
 					func() error {
-						return doSendToDependencyTrack(ctx, uc.credentialsProvider, workflowID, buf, i, uc.log)
+						creds := &integrations.Credentials{}
+						if err := uc.credentialsProvider.ReadCredentials(ctx, i.SecretName, creds); err != nil {
+							return err
+						}
+
+						integration, err := dti.NewIntegration()
+						if err != nil {
+							return fmt.Errorf("creating integration: %w", err)
+						}
+
+						materialContent, err := io.ReadAll(buf)
+						if err != nil {
+							return fmt.Errorf("reading material content: %w", err)
+						}
+
+						// Execute integration pre-attachment logic
+						err = integration.Execute(ctx, &integrations.ExecuteOpts{
+							Config: &integrations.BundledConfig{
+								Registration: i.Integration.Config, Attachment: i.IntegrationAttachment.Config, Credentials: creds,
+								WorkflowID: workflowID,
+							},
+							Input: &integrations.ExecuteInput{
+								Material: &integrations.ExecuteMaterial{NormalizedMaterial: material, Content: materialContent},
+							},
+						})
+						if err != nil {
+							return fmt.Errorf("executing integration: %w", err)
+						}
+
+						return nil
 					},
 					b,
 					func(err error, delay time.Duration) {
@@ -148,50 +176,6 @@ func (uc *Integration) UploadSBOMs(envelope *dsse.Envelope, orgID, workflowID, s
 			return err
 		}
 	}
-
-	return nil
-}
-
-func doSendToDependencyTrack(ctx context.Context, credsReader credentials.Reader, workflowID string, sbom io.Reader, i *biz.IntegrationAndAttachment, log *log.Helper) error {
-	integrationConfig := new(pb.RegistrationConfig)
-	if err := i.Integration.Config.UnmarshalTo(integrationConfig); err != nil {
-		return fmt.Errorf("unmarshalling config: %w", err)
-	}
-
-	attachmentConfig := new(pb.AttachmentConfig)
-	if err := i.IntegrationAttachment.Config.UnmarshalTo(attachmentConfig); err != nil {
-		return fmt.Errorf("unmarshalling config: %w", err)
-	}
-
-	creds := &integrations.Credentials{}
-	if err := credsReader.ReadCredentials(ctx, i.SecretName, creds); err != nil {
-		return err
-	}
-
-	log.Infow("msg", "Sending SBOM to Dependency-Track",
-		"host", integrationConfig.Domain,
-		"projectID", attachmentConfig.GetProjectId(), "projectName", attachmentConfig.GetProjectName(),
-		"workflowID", workflowID, "integration", Kind,
-	)
-
-	d, err := uploader.NewSBOMUploader(integrationConfig.Domain, creds.Password, sbom, attachmentConfig.GetProjectId(), attachmentConfig.GetProjectName())
-	if err != nil {
-		return err
-	}
-
-	if err := d.Validate(ctx); err != nil {
-		return err
-	}
-
-	if err := d.Do(ctx); err != nil {
-		return err
-	}
-
-	log.Infow("msg", "SBOM Sent to Dependency-Track",
-		"host", integrationConfig.Domain,
-		"projectID", attachmentConfig.GetProjectId(), "projectName", attachmentConfig.GetProjectName(),
-		"workflowID", workflowID, "integration", Kind,
-	)
 
 	return nil
 }
