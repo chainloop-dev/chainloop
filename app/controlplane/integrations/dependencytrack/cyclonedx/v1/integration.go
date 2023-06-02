@@ -58,7 +58,7 @@ func NewIntegration(l log.Logger) (*DependencyTrack, error) {
 }
 
 func (i *DependencyTrack) PreRegister(ctx context.Context, registrationRequest *anypb.Any) (*core.PreRegistration, error) {
-	i.Logger.Info("msg", "pre-registration requested")
+	i.Logger.Info("pre-registration requested")
 
 	// Extract the request and un-marshal it to a concrete type
 	req := new(pb.RegistrationRequest)
@@ -95,7 +95,7 @@ func (i *DependencyTrack) PreRegister(ctx context.Context, registrationRequest *
 
 // Check configuration and return what configuration attachment to persist
 func (i *DependencyTrack) PreAttach(ctx context.Context, b *core.BundledConfig) (*core.PreAttachment, error) {
-	i.Logger.Info("msg", "pre-attachment requested")
+	i.Logger.Info("pre-attachment requested")
 
 	// Extract registration configuration
 	rc := new(pb.RegistrationConfig)
@@ -120,7 +120,7 @@ func (i *DependencyTrack) PreAttach(ctx context.Context, b *core.BundledConfig) 
 
 // Send the SBOM to the configured Dependency Track instance
 func (i *DependencyTrack) Execute(ctx context.Context, opts *core.ExecuteReq) error {
-	i.Logger.Info("msg", "execution requested")
+	i.Logger.Info("execution requested")
 
 	if err := validateExecuteOpts(opts); err != nil {
 		return fmt.Errorf("running validation: %w", err)
@@ -139,10 +139,10 @@ func (i *DependencyTrack) Execute(ctx context.Context, opts *core.ExecuteReq) er
 	}
 
 	// TODO, load logger from initializer
-	i.Logger.Infow("msg", "Sending SBOM to Dependency-Track",
+	i.Logger.Infow("msg", "Uploading SBOM",
 		"host", registrationConfig.Domain,
 		"projectID", attachmentConfig.GetProjectId(), "projectName", attachmentConfig.GetProjectName(),
-		"workflowID", opts.Config.WorkflowID, "integration", ID,
+		"workflowID", opts.Config.WorkflowID,
 	)
 
 	// Create an SBOM uploader and perform validation and upload
@@ -163,10 +163,10 @@ func (i *DependencyTrack) Execute(ctx context.Context, opts *core.ExecuteReq) er
 		return fmt.Errorf("uploading SBOM: %w", err)
 	}
 
-	i.Logger.Infow("msg", "SBOM Sent to Dependency-Track",
+	i.Logger.Infow("msg", "SBOM Uploaded",
 		"host", registrationConfig.Domain,
 		"projectID", attachmentConfig.GetProjectId(), "projectName", attachmentConfig.GetProjectName(),
-		"workflowID", opts.Config.WorkflowID, "integration", ID,
+		"workflowID", opts.Config.WorkflowID,
 	)
 
 	return nil

@@ -44,17 +44,22 @@ type Integration struct {
 	l                   log.Logger
 }
 
-// TODO: remove
-const Kind = "Dependency-Track"
-
 func New(integrationUC *biz.IntegrationUseCase, creds credentials.ReaderWriter, c biz.CASClient, l log.Logger) *Integration {
 	return &Integration{integrationUC, creds, c, servicelogger.ScopedHelper(l, "biz/integration/deptrack"), l}
 }
 
 // Upload the SBOMs wrapped in the DSSE envelope to the configured Dependency Track instance
 func (uc *Integration) UploadSBOMs(envelope *dsse.Envelope, orgID, workflowID, secretName string) error {
+	// TODO: all this code will be replaced by a new generic dispatcher
+	deptrackFanOut, err := dti.NewIntegration(uc.l)
+	if err != nil {
+		return fmt.Errorf("creating integration: %w", err)
+	}
+
+	kind := deptrackFanOut.Describe().ID
+
 	ctx := context.Background()
-	uc.log.Infow("msg", "looking for integration", "workflowID", workflowID, "integration", Kind)
+	uc.log.Infow("msg", "looking for integration", "workflowID", workflowID, "integration", kind)
 
 	// List enabled integrations with this workflow
 	attachments, err := uc.integrationUC.ListAttachments(ctx, orgID, workflowID)
@@ -71,13 +76,13 @@ func (uc *Integration) UploadSBOMs(envelope *dsse.Envelope, orgID, workflowID, s
 		} else if integration == nil {
 			continue
 		}
-		if integration.Kind == Kind {
+		if integration.Kind == kind {
 			depTrackIntegrations = append(depTrackIntegrations, &biz.IntegrationAndAttachment{Integration: integration, IntegrationAttachment: at})
 		}
 	}
 
 	if len(depTrackIntegrations) == 0 {
-		uc.log.Infow("msg", "no attached integrations", "workflowID", workflowID, "integration", Kind)
+		uc.log.Infow("msg", "no attached integrations", "workflowID", workflowID, "integration", kind)
 		return nil
 	}
 
@@ -93,20 +98,20 @@ func (uc *Integration) UploadSBOMs(envelope *dsse.Envelope, orgID, workflowID, s
 		}
 
 		if material.Hash == nil {
-			uc.log.Warnw("msg", "CYCLONE_DX material but download digest missing, skipping", "workflowID", workflowID, "integration", Kind, "name", material.Name)
+			uc.log.Warnw("msg", "CYCLONE_DX material but download digest missing, skipping", "workflowID", workflowID, "integration", kind, "name", material.Name)
 			continue
 		}
 
 		digest := material.Hash.String()
 
-		uc.log.Infow("msg", "SBOM present, downloading", "workflowID", workflowID, "integration", Kind, "name", material.Name)
+		uc.log.Infow("msg", "SBOM present, downloading", "workflowID", workflowID, "integration", kind, "name", material.Name)
 		// Download SBOM
 		buf := bytes.NewBuffer(nil)
 		if err := uc.casClient.Download(ctx, secretName, buf, digest); err != nil {
 			return fmt.Errorf("downloading from CAS: %w", err)
 		}
 
-		uc.log.Infow("msg", "SBOM downloaded", "digest", digest, "workflowID", workflowID, "integration", Kind, "name", material.Name)
+		uc.log.Infow("msg", "SBOM downloaded", "digest", digest, "workflowID", workflowID, "integration", kind, "name", material.Name)
 
 		// Run integrations with that sbom
 		var wg sync.WaitGroup
@@ -127,18 +132,13 @@ func (uc *Integration) UploadSBOMs(envelope *dsse.Envelope, orgID, workflowID, s
 							return err
 						}
 
-						integration, err := dti.NewIntegration(uc.l)
-						if err != nil {
-							return fmt.Errorf("creating integration: %w", err)
-						}
-
 						materialContent, err := io.ReadAll(buf)
 						if err != nil {
 							return fmt.Errorf("reading material content: %w", err)
 						}
 
 						// Execute integration pre-attachment logic
-						err = integration.Execute(ctx, &integrations.ExecuteReq{
+						err = deptrackFanOut.Execute(ctx, &integrations.ExecuteReq{
 							Config: &integrations.BundledConfig{
 								Registration: i.Integration.Config, Attachment: i.IntegrationAttachment.Config, Credentials: creds,
 								WorkflowID: workflowID,
