@@ -134,12 +134,10 @@ func loadIntegrations(l log.Logger) (integrations.Initialized, error) {
 	var res integrations.Initialized
 
 	var d integrations.FanOut
-	d, err := deptrack.NewIntegration()
+	d, err := deptrack.NewIntegration(l)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load dependency track integration: %w", err)
 	}
-
-	_ = l.Log(log.LevelInfo, "msg", "fanOut Integration loaded", "info", d.String())
 
 	return append(res, d), nil
 }

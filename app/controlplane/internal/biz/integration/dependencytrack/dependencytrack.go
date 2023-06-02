@@ -41,13 +41,14 @@ type Integration struct {
 	credentialsProvider credentials.ReaderWriter
 	casClient           biz.CASClient
 	log                 *log.Helper
+	l                   log.Logger
 }
 
 // TODO: remove
 const Kind = "Dependency-Track"
 
 func New(integrationUC *biz.IntegrationUseCase, creds credentials.ReaderWriter, c biz.CASClient, l log.Logger) *Integration {
-	return &Integration{integrationUC, creds, c, servicelogger.ScopedHelper(l, "biz/integration/deptrack")}
+	return &Integration{integrationUC, creds, c, servicelogger.ScopedHelper(l, "biz/integration/deptrack"), l}
 }
 
 // Upload the SBOMs wrapped in the DSSE envelope to the configured Dependency Track instance
@@ -126,7 +127,7 @@ func (uc *Integration) UploadSBOMs(envelope *dsse.Envelope, orgID, workflowID, s
 							return err
 						}
 
-						integration, err := dti.NewIntegration()
+						integration, err := dti.NewIntegration(uc.l)
 						if err != nil {
 							return fmt.Errorf("creating integration: %w", err)
 						}

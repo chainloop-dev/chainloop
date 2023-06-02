@@ -18,9 +18,12 @@ package integrations
 import (
 	"context"
 	"fmt"
+	"io"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
+	"github.com/chainloop-dev/chainloop/internal/servicelogger"
+	"github.com/go-kratos/kratos/v2/log"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -44,22 +47,8 @@ type BaseIntegration struct {
 	description string
 	// Kind of inputs does the integration expect as part of the execution
 	subscribedInputs *Inputs
-}
-
-type NewOpt func(*BaseIntegration)
-
-func WithEnvelope() NewOpt {
-	return func(c *BaseIntegration) {
-		c.subscribedInputs.DSSEnvelope = true
-	}
-}
-
-func WithInputMaterial(materialType schemaapi.CraftingSchema_Material_MaterialType) NewOpt {
-	return func(c *BaseIntegration) {
-		c.subscribedInputs.InputMaterial = &InputMaterial{
-			Type: materialType,
-		}
-	}
+	log              log.Logger
+	Logger           *log.Helper
 }
 
 func NewBaseIntegration(id, description string, opts ...NewOpt) (*BaseIntegration, error) {
@@ -70,6 +59,7 @@ func NewBaseIntegration(id, description string, opts ...NewOpt) (*BaseIntegratio
 	c := &BaseIntegration{
 		id:          id,
 		description: description,
+		log:         log.NewStdLogger(io.Discard),
 	}
 
 	for _, opt := range opts {
@@ -79,6 +69,8 @@ func NewBaseIntegration(id, description string, opts ...NewOpt) (*BaseIntegratio
 	if c.subscribedInputs == nil || (!c.subscribedInputs.DSSEnvelope && c.subscribedInputs.InputMaterial == nil) {
 		return nil, fmt.Errorf("the integration needs to subscribe to at least one input type. An envelope and/or a material")
 	}
+
+	c.Logger = servicelogger.ScopedHelper(c.log, fmt.Sprintf("integrations/%s", id))
 
 	return c, nil
 }
@@ -198,4 +190,36 @@ func (i *BaseIntegration) String() string {
 	}
 
 	return fmt.Sprintf("id=%s, expectsEnvelope=%t, expectedMaterial=%s", i.id, inputs.DSSEnvelope, materialType)
+}
+
+type NewOpt func(*BaseIntegration)
+
+// Set a logger only if provided
+func WithLogger(logger log.Logger) NewOpt {
+	return func(c *BaseIntegration) {
+		if logger != nil {
+			c.log = logger
+		}
+	}
+}
+
+func WithEnvelope() NewOpt {
+	return func(c *BaseIntegration) {
+		if c.subscribedInputs == nil {
+			c.subscribedInputs = &Inputs{DSSEnvelope: true}
+		} else {
+			c.subscribedInputs.DSSEnvelope = true
+		}
+	}
+}
+
+func WithInputMaterial(materialType schemaapi.CraftingSchema_Material_MaterialType) NewOpt {
+	return func(c *BaseIntegration) {
+		material := &InputMaterial{Type: materialType}
+		if c.subscribedInputs == nil {
+			c.subscribedInputs = &Inputs{InputMaterial: material}
+		} else {
+			c.subscribedInputs.InputMaterial = material
+		}
+	}
 }

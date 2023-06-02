@@ -39,14 +39,18 @@ type DependencyTrack struct {
 
 // Attach attaches the integration service to the given grpc server.
 // In the future this will be a plugin entrypoint
-func NewIntegration() (*DependencyTrack, error) {
+func NewIntegration(l log.Logger) (*DependencyTrack, error) {
 	base, err := core.NewBaseIntegration(
 		ID, ID,
 		core.WithInputMaterial(schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON),
+		core.WithLogger(l),
 	)
+
 	if err != nil {
 		return nil, err
 	}
+
+	base.Logger.Infof("integration initialized: %s", base)
 
 	return &DependencyTrack{
 		base,
@@ -54,6 +58,8 @@ func NewIntegration() (*DependencyTrack, error) {
 }
 
 func (i *DependencyTrack) PreRegister(ctx context.Context, registrationRequest *anypb.Any) (*core.PreRegistration, error) {
+	i.Logger.Info("msg", "pre-registration requested")
+
 	// Extract the request and un-marshal it to a concrete type
 	req := new(pb.RegistrationRequest)
 	if err := registrationRequest.UnmarshalTo(req); err != nil {
@@ -77,6 +83,8 @@ func (i *DependencyTrack) PreRegister(ctx context.Context, registrationRequest *
 		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
 
+	i.Logger.Infow("msg", "pre-registration OK", "domain", domain, "allowAutoCreate", enableProjectCreation)
+
 	// Return what configuration to store in the database and what to store in the external secrets manager
 	return &core.PreRegistration{
 		Credentials:   &core.Credentials{Password: req.GetApiKey()},
@@ -87,6 +95,8 @@ func (i *DependencyTrack) PreRegister(ctx context.Context, registrationRequest *
 
 // Check configuration and return what configuration attachment to persist
 func (i *DependencyTrack) PreAttach(ctx context.Context, b *core.BundledConfig) (*core.PreAttachment, error) {
+	i.Logger.Info("msg", "pre-attachment requested")
+
 	// Extract registration configuration
 	rc := new(pb.RegistrationConfig)
 	if err := b.Registration.UnmarshalTo(rc); err != nil {
@@ -103,11 +113,15 @@ func (i *DependencyTrack) PreAttach(ctx context.Context, b *core.BundledConfig) 
 		return nil, fmt.Errorf("invalid attachment configuration: %w", err)
 	}
 
+	i.Logger.Infow("msg", "pre-attachment OK", "project", ar.GetConfig().GetProject())
+
 	return &core.PreAttachment{Configuration: ar.Config}, nil
 }
 
 // Send the SBOM to the configured Dependency Track instance
 func (i *DependencyTrack) Execute(ctx context.Context, opts *core.ExecuteReq) error {
+	i.Logger.Info("msg", "execution requested")
+
 	if err := validateExecuteOpts(opts); err != nil {
 		return fmt.Errorf("running validation: %w", err)
 	}
@@ -125,7 +139,7 @@ func (i *DependencyTrack) Execute(ctx context.Context, opts *core.ExecuteReq) er
 	}
 
 	// TODO, load logger from initializer
-	log.Infow("msg", "Sending SBOM to Dependency-Track",
+	i.Logger.Infow("msg", "Sending SBOM to Dependency-Track",
 		"host", registrationConfig.Domain,
 		"projectID", attachmentConfig.GetProjectId(), "projectName", attachmentConfig.GetProjectName(),
 		"workflowID", opts.Config.WorkflowID, "integration", ID,
@@ -149,7 +163,7 @@ func (i *DependencyTrack) Execute(ctx context.Context, opts *core.ExecuteReq) er
 		return fmt.Errorf("uploading SBOM: %w", err)
 	}
 
-	log.Infow("msg", "SBOM Sent to Dependency-Track",
+	i.Logger.Infow("msg", "SBOM Sent to Dependency-Track",
 		"host", registrationConfig.Domain,
 		"projectID", attachmentConfig.GetProjectId(), "projectName", attachmentConfig.GetProjectName(),
 		"workflowID", opts.Config.WorkflowID, "integration", ID,
