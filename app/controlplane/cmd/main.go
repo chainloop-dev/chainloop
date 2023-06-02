@@ -17,18 +17,21 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"time"
 
 	"github.com/getsentry/sentry-go"
 	flag "github.com/spf13/pflag"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/integrations"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/server"
 	credsConfig "github.com/chainloop-dev/chainloop/internal/credentials/api/credentials/v1"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 
+	deptrack "github.com/chainloop-dev/chainloop/app/controlplane/integrations/dependencytrack/cyclonedx/v1"
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/config/env"
@@ -124,8 +127,26 @@ func main() {
 	}
 }
 
+// Load the available third party integrations
+// In the future this code will iterate over a dynamic directory of plugins
+// and try to load them one by one
+func loadIntegrations(l log.Logger) (integrations.Initialized, error) {
+	var res integrations.Initialized
+
+	var d integrations.FanOut
+	d, err := deptrack.NewIntegration()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load dependency track integration: %w", err)
+	}
+
+	_ = l.Log(log.LevelInfo, "msg", "fanOut Integration loaded", "info", d.String())
+
+	return append(res, d), nil
+}
+
 type app struct {
 	*kratos.App
+	// Periodic job that expires unfinished attestation processes older than a given threshold
 	runsExpirer *biz.WorkflowRunExpirerUseCase
 }
 

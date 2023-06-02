@@ -49,6 +49,7 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger) (*app, func(
 			serviceOpts,
 			wire.Value([]biz.CASClientOpts{}),
 			wire.FieldsOf(new(*conf.Bootstrap), "Server", "Auth", "Data", "CasServer"),
+			loadIntegrations,
 			newApp,
 		),
 	)

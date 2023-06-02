@@ -18,15 +18,15 @@ type FanOut struct {
 }
 
 // Describe provides a mock function with given fields:
-func (_m *FanOut) Describe() *integrations.Core {
+func (_m *FanOut) Describe() *integrations.IntegrationInfo {
 	ret := _m.Called()
 
-	var r0 *integrations.Core
-	if rf, ok := ret.Get(0).(func() *integrations.Core); ok {
+	var r0 *integrations.IntegrationInfo
+	if rf, ok := ret.Get(0).(func() *integrations.IntegrationInfo); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*integrations.Core)
+			r0 = ret.Get(0).(*integrations.IntegrationInfo)
 		}
 	}
 
@@ -97,6 +97,20 @@ func (_m *FanOut) PreRegister(ctx context.Context, req *anypb.Any) (*integration
 	}
 
 	return r0, r1
+}
+
+// String provides a mock function with given fields:
+func (_m *FanOut) String() string {
+	ret := _m.Called()
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	return r0
 }
 
 type mockConstructorTestingTNewFanOut interface {

@@ -17,6 +17,7 @@ package integrations
 
 import (
 	"context"
+	"fmt"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
@@ -35,21 +36,69 @@ type InputMaterial struct {
 	Type schemaapi.CraftingSchema_Material_MaterialType
 }
 
-// Core integration struct
-type Core struct {
+// BaseIntegration integration struct
+type BaseIntegration struct {
 	// Identifier of the integration
-	ID string
+	id string
+	// Brief description of what the integration does
+	description string
 	// Kind of inputs does the integration expect as part of the execution
-	SubscribedInputs *Inputs
+	subscribedInputs *Inputs
 }
 
-func (i *Core) Describe() *Core {
-	return i
+type NewOpt func(*BaseIntegration)
+
+func WithEnvelope() NewOpt {
+	return func(c *BaseIntegration) {
+		c.subscribedInputs.DSSEnvelope = true
+	}
+}
+
+func WithInputMaterial(materialType schemaapi.CraftingSchema_Material_MaterialType) NewOpt {
+	return func(c *BaseIntegration) {
+		c.subscribedInputs.InputMaterial = &InputMaterial{
+			Type: materialType,
+		}
+	}
+}
+
+func NewBaseIntegration(id, description string, opts ...NewOpt) (*BaseIntegration, error) {
+	if id == "" || description == "" {
+		return nil, fmt.Errorf("id and description are required")
+	}
+
+	c := &BaseIntegration{
+		id:          id,
+		description: description,
+	}
+
+	for _, opt := range opts {
+		opt(c)
+	}
+
+	if c.subscribedInputs == nil || (!c.subscribedInputs.DSSEnvelope && c.subscribedInputs.InputMaterial == nil) {
+		return nil, fmt.Errorf("the integration needs to subscribe to at least one input type. An envelope and/or a material")
+	}
+
+	return c, nil
 }
 
 type FanOut interface {
+	// Implemented by the core struct
+	CoreI
+	// To be implemented per integration
+	Custom
+}
+
+// Implemented by the core struct
+type CoreI interface {
 	// Return information about the integration
-	Describe() *Core
+	Describe() *IntegrationInfo
+	fmt.Stringer
+}
+
+// To be implemented per integration
+type Custom interface {
 	// Validate, marshall and return the configuration that needs to be persisted
 	PreRegister(ctx context.Context, req *anypb.Any) (*PreRegistration, error)
 	// Validate that the attachment configuration is valid in the context of the provided registration
@@ -106,4 +155,47 @@ type BundledConfig struct {
 
 type Credentials struct {
 	URL, Username, Password string
+}
+
+// List of initialized integrations
+type Initialized []FanOut
+
+// FindByID returns the integration with the given ID from the list of available integrations
+// If not found, an error is returned
+func (i Initialized) FindByID(id string) (FanOut, error) {
+	for _, integration := range i {
+		if integration.Describe().ID == id {
+			return integration, nil
+		}
+	}
+
+	return nil, fmt.Errorf("integration %q not found", id)
+}
+
+type IntegrationInfo struct {
+	// Identifier of the integration
+	ID string
+	// Brief description of what the integration does
+	Description string
+	// Kind of inputs does the integration expect as part of the execution
+	SubscribedInputs *Inputs
+}
+
+func (i *BaseIntegration) Describe() *IntegrationInfo {
+	return &IntegrationInfo{
+		ID:               i.id,
+		Description:      i.description,
+		SubscribedInputs: i.subscribedInputs,
+	}
+}
+
+func (i *BaseIntegration) String() string {
+	inputs := i.subscribedInputs
+
+	materialType := "none"
+	if inputs.InputMaterial != nil {
+		materialType = inputs.InputMaterial.Type.String()
+	}
+
+	return fmt.Sprintf("id=%s, expectsEnvelope=%t, expectedMaterial=%s", i.id, inputs.DSSEnvelope, materialType)
 }

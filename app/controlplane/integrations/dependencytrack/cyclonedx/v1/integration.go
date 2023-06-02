@@ -34,22 +34,22 @@ const ID = "dependencytrack.cyclonedx.v1"
 var _ core.FanOut = (*DependencyTrack)(nil)
 
 type DependencyTrack struct {
-	core.Core
+	*core.BaseIntegration
 }
 
 // Attach attaches the integration service to the given grpc server.
 // In the future this will be a plugin entrypoint
 func NewIntegration() (*DependencyTrack, error) {
+	base, err := core.NewBaseIntegration(
+		ID, ID,
+		core.WithInputMaterial(schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON),
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	return &DependencyTrack{
-		Core: core.Core{
-			ID: ID,
-			// Subscribe to the SBOM material type
-			SubscribedInputs: &core.Inputs{
-				InputMaterial: &core.InputMaterial{
-					Type: schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
-				},
-			},
-		},
+		base,
 	}, nil
 }
 
@@ -81,7 +81,7 @@ func (i *DependencyTrack) PreRegister(ctx context.Context, registrationRequest *
 	return &core.PreRegistration{
 		Credentials:   &core.Credentials{Password: req.GetApiKey()},
 		Configuration: req.Config,
-		Kind:          i.ID,
+		Kind:          ID,
 	}, nil
 }
 
@@ -128,7 +128,7 @@ func (i *DependencyTrack) Execute(ctx context.Context, opts *core.ExecuteReq) er
 	log.Infow("msg", "Sending SBOM to Dependency-Track",
 		"host", registrationConfig.Domain,
 		"projectID", attachmentConfig.GetProjectId(), "projectName", attachmentConfig.GetProjectName(),
-		"workflowID", opts.Config.WorkflowID, "integration", i.ID,
+		"workflowID", opts.Config.WorkflowID, "integration", ID,
 	)
 
 	// Create an SBOM uploader and perform validation and upload
@@ -152,7 +152,7 @@ func (i *DependencyTrack) Execute(ctx context.Context, opts *core.ExecuteReq) er
 	log.Infow("msg", "SBOM Sent to Dependency-Track",
 		"host", registrationConfig.Domain,
 		"projectID", attachmentConfig.GetProjectId(), "projectName", attachmentConfig.GetProjectName(),
-		"workflowID", opts.Config.WorkflowID, "integration", i.ID,
+		"workflowID", opts.Config.WorkflowID, "integration", ID,
 	)
 
 	return nil
