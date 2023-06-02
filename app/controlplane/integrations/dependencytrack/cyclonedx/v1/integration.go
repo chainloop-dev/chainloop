@@ -30,6 +30,7 @@ import (
 )
 
 const ID = "dependencytrack.cyclonedx.v1"
+const description = "Dependency Track CycloneDX Software Bill Of Materials Integration"
 
 var _ core.FanOut = (*DependencyTrack)(nil)
 
@@ -41,7 +42,7 @@ type DependencyTrack struct {
 // In the future this will be a plugin entrypoint
 func NewIntegration(l log.Logger) (*DependencyTrack, error) {
 	base, err := core.NewBaseIntegration(
-		ID, ID,
+		ID, description,
 		core.WithInputMaterial(schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON),
 		core.WithLogger(l),
 	)
@@ -213,7 +214,7 @@ func validateAttachmentConfiguration(ic *pb.RegistrationConfig, ac *pb.Attachmen
 }
 
 func validateExecuteOpts(opts *core.ExecuteReq) error {
-	if opts.Input == nil || opts.Input.Material == nil || opts.Input.Material.Content == nil {
+	if opts == nil || opts.Input == nil || opts.Input.Material == nil || opts.Input.Material.Content == nil {
 		return errors.New("invalid input")
 	}
 
@@ -222,11 +223,11 @@ func validateExecuteOpts(opts *core.ExecuteReq) error {
 	}
 
 	if opts.Config == nil || opts.Config.Registration == nil || opts.Config.Attachment == nil {
-		return errors.New("invalid configuration")
+		return errors.New("missing configuration")
 	}
 
 	if opts.Config.Credentials == nil || opts.Config.Credentials.Password == "" {
-		return errors.New("invalid credentials")
+		return errors.New("missing credentials")
 	}
 
 	return nil

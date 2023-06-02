@@ -18,8 +18,13 @@ package integration
 import (
 	"testing"
 
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	core "github.com/chainloop-dev/chainloop/app/controlplane/integrations"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/integrations/gen/dependencytrack/cyclonedx/v1"
+	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 func TestValidateConfiguration(t *testing.T) {
@@ -65,6 +70,100 @@ func TestValidateConfiguration(t *testing.T) {
 			err := validateAttachmentConfiguration(tc.integrationConfig, tc.attachmentConfig)
 			if tc.errorMsg != "" {
 				assert.ErrorContains(t, err, tc.errorMsg)
+			} else {
+				assert.Nil(t, err)
+			}
+		})
+	}
+}
+
+func TestNewIntegration(t *testing.T) {
+	i, err := NewIntegration(nil)
+	assert.NoError(t, err)
+
+	assert.Equal(t, i.Describe(), &core.IntegrationInfo{
+		ID:          "dependencytrack.cyclonedx.v1",
+		Description: "Dependency Track CycloneDX Software Bill Of Materials Integration",
+		SubscribedInputs: &core.Inputs{
+			Materials: []*core.InputMaterial{
+				{
+					Type: schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
+				},
+			},
+		},
+	})
+}
+
+func TestValidateExecuteOpts(t *testing.T) {
+	validMaterial := &core.ExecuteMaterial{NormalizedMaterial: &chainloop.NormalizedMaterial{Type: "SBOM_CYCLONEDX_JSON"}, Content: []byte("content")}
+	config, _ := anypb.New(&emptypb.Empty{})
+
+	testCases := []struct {
+		name   string
+		opts   *core.ExecuteReq
+		errMsg string
+	}{
+		{name: "invalid - missing input", errMsg: "invalid input"},
+		{name: "invalid - missing input", opts: &core.ExecuteReq{Input: &core.ExecuteInput{}}, errMsg: "invalid input"},
+		{
+			name: "invalid - missing material",
+			opts: &core.ExecuteReq{
+				Input: &core.ExecuteInput{Material: &core.ExecuteMaterial{}},
+			},
+			errMsg: "invalid input",
+		},
+		{
+			name: "invalid - invalid material",
+			opts: &core.ExecuteReq{
+				Input: &core.ExecuteInput{Material: &core.ExecuteMaterial{NormalizedMaterial: &chainloop.NormalizedMaterial{Type: "invalid"}, Content: []byte("content")}},
+			},
+			errMsg: "invalid input type",
+		},
+		{
+			name: "invalid - missing configuration",
+			opts: &core.ExecuteReq{
+				Input: &core.ExecuteInput{Material: validMaterial},
+			},
+			errMsg: "missing configuration",
+		},
+		{
+			name: "invalid - missing attachment configuration",
+			opts: &core.ExecuteReq{
+				Input:  &core.ExecuteInput{Material: validMaterial},
+				Config: &core.BundledConfig{Registration: config},
+			},
+			errMsg: "missing configuration",
+		},
+		{
+			name: "invalid - missing registration configuration",
+			opts: &core.ExecuteReq{
+				Input:  &core.ExecuteInput{Material: validMaterial},
+				Config: &core.BundledConfig{Attachment: config},
+			},
+			errMsg: "missing configuration",
+		},
+		{
+			name: "invalid - missing credentials",
+			opts: &core.ExecuteReq{
+				Input:  &core.ExecuteInput{Material: validMaterial},
+				Config: &core.BundledConfig{Registration: config, Attachment: config},
+			},
+			errMsg: "missing credentials",
+		},
+		{
+			name: "ok - all good",
+			opts: &core.ExecuteReq{
+				Input:  &core.ExecuteInput{Material: validMaterial},
+				Config: &core.BundledConfig{Registration: config, Attachment: config, Credentials: &core.Credentials{Password: "password"}},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateExecuteOpts(tc.opts)
+			if tc.errMsg != "" {
+				assert.ErrorContains(t, err, tc.errMsg)
 			} else {
 				assert.Nil(t, err)
 			}
