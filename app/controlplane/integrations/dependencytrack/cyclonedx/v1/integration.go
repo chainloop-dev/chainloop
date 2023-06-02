@@ -29,22 +29,20 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
-const Kind = "Dependency-Track"
+const ID = "dependencytrack.cyclonedx.v1"
 
-var _ core.Registrable = (*DependencyTrack)(nil)
-var _ core.Attachable = (*DependencyTrack)(nil)
-var _ core.Executable = (*DependencyTrack)(nil)
+var _ core.FanOut = (*DependencyTrack)(nil)
 
 type DependencyTrack struct {
-	core.Integration
+	core.Core
 }
 
 // Attach attaches the integration service to the given grpc server.
 // In the future this will be a plugin entrypoint
 func NewIntegration() (*DependencyTrack, error) {
 	return &DependencyTrack{
-		Integration: core.Integration{
-			ID: Kind,
+		Core: core.Core{
+			ID: ID,
 			// Subscribe to the SBOM material type
 			SubscribedInputs: &core.Inputs{
 				InputMaterial: &core.InputMaterial{
@@ -83,7 +81,7 @@ func (i *DependencyTrack) PreRegister(ctx context.Context, registrationRequest *
 	return &core.PreRegistration{
 		Credentials:   &core.Credentials{Password: req.GetApiKey()},
 		Configuration: req.Config,
-		Kind:          Kind,
+		Kind:          i.ID,
 	}, nil
 }
 
@@ -109,7 +107,7 @@ func (i *DependencyTrack) PreAttach(ctx context.Context, b *core.BundledConfig) 
 }
 
 // Send the SBOM to the configured Dependency Track instance
-func (i *DependencyTrack) Execute(ctx context.Context, opts *core.ExecuteOpts) error {
+func (i *DependencyTrack) Execute(ctx context.Context, opts *core.ExecuteReq) error {
 	if err := validateExecuteOpts(opts); err != nil {
 		return fmt.Errorf("running validation: %w", err)
 	}
@@ -200,7 +198,7 @@ func validateAttachmentConfiguration(ic *pb.RegistrationConfig, ac *pb.Attachmen
 	return nil
 }
 
-func validateExecuteOpts(opts *core.ExecuteOpts) error {
+func validateExecuteOpts(opts *core.ExecuteReq) error {
 	if opts.Input == nil || opts.Input.Material == nil || opts.Input.Material.Content == nil {
 		return errors.New("invalid input")
 	}

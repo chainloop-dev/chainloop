@@ -51,7 +51,7 @@ func (s *IntegrationsService) Register(ctx context.Context, req *pb.Integrations
 
 	// TODO:
 	// Currently we only support dependency-track, in a following patch we'll iterate over the list of enabled integrations
-	if req.Kind != dti.Kind {
+	if req.Kind != dti.ID {
 		return nil, errors.BadRequest("wrong validation", "invalid integration kind")
 	}
 
@@ -90,7 +90,7 @@ func (s *IntegrationsService) Attach(ctx context.Context, req *pb.IntegrationsSe
 
 	// TODO:
 	// Currently we only support dependency-track, in a following patch we'll iterate over the list of enabled integrations
-	if integration.Kind != dti.Kind {
+	if integration.Kind != dti.ID {
 		return nil, errors.BadRequest("wrong validation", "invalid integration kind")
 	}
 
@@ -102,8 +102,8 @@ func (s *IntegrationsService) Attach(ctx context.Context, req *pb.IntegrationsSe
 
 	res, err := s.integrationUC.AttachToWorkflow(ctx, &biz.AttachOpts{
 		OrgID: org.ID, IntegrationID: req.IntegrationId, WorkflowID: req.WorkflowId,
-		AttachmentConfig: req.AttachmentConfig,
-		Attachable:       attachable,
+		AttachmentConfig:  req.AttachmentConfig,
+		FanOutIntegration: attachable,
 	})
 
 	if err != nil {

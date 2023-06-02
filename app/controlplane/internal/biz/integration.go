@@ -90,7 +90,7 @@ func NewIntegrationUseCase(opts *NewIntegrationUseCaseOpts) *IntegrationUseCase 
 }
 
 // Persist the secret and integration with its configuration in the database
-func (uc *IntegrationUseCase) RegisterAndSave(ctx context.Context, orgID string, i integrations.Registrable, regConfig *anypb.Any) (*Integration, error) {
+func (uc *IntegrationUseCase) RegisterAndSave(ctx context.Context, orgID string, i integrations.FanOut, regConfig *anypb.Any) (*Integration, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -123,7 +123,7 @@ func (uc *IntegrationUseCase) RegisterAndSave(ctx context.Context, orgID string,
 type AttachOpts struct {
 	IntegrationID, WorkflowID, OrgID string
 	// The integration that is being attached
-	Attachable integrations.Attachable
+	FanOutIntegration integrations.FanOut
 	// The attachment configuration
 	AttachmentConfig *anypb.Any
 }
@@ -132,7 +132,7 @@ type AttachOpts struct {
 // - Run specific validation for the integration
 // - Persist integration attachment
 func (uc *IntegrationUseCase) AttachToWorkflow(ctx context.Context, opts *AttachOpts) (*IntegrationAttachment, error) {
-	if opts.Attachable == nil {
+	if opts.FanOutIntegration == nil {
 		return nil, NewErrValidation(errors.New("integration not provided"))
 	}
 
@@ -176,7 +176,7 @@ func (uc *IntegrationUseCase) AttachToWorkflow(ctx context.Context, opts *Attach
 	}
 
 	// Execute integration pre-attachment logic
-	preAttachResp, err := opts.Attachable.PreAttach(ctx, &integrations.BundledConfig{Registration: integration.Config, Attachment: opts.AttachmentConfig, Credentials: creds})
+	preAttachResp, err := opts.FanOutIntegration.PreAttach(ctx, &integrations.BundledConfig{Registration: integration.Config, Attachment: opts.AttachmentConfig, Credentials: creds})
 	if err != nil {
 		return nil, NewErrValidation(err)
 	}

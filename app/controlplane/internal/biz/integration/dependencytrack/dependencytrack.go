@@ -137,7 +137,7 @@ func (uc *Integration) UploadSBOMs(envelope *dsse.Envelope, orgID, workflowID, s
 						}
 
 						// Execute integration pre-attachment logic
-						err = integration.Execute(ctx, &integrations.ExecuteOpts{
+						err = integration.Execute(ctx, &integrations.ExecuteReq{
 							Config: &integrations.BundledConfig{
 								Registration: i.Integration.Config, Attachment: i.IntegrationAttachment.Config, Credentials: creds,
 								WorkflowID: workflowID,

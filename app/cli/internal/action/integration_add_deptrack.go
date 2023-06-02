@@ -47,7 +47,7 @@ func (action *IntegrationAddDeptrack) Run(host, apiKey string, allowAutoProjectC
 	}
 
 	i, err := client.Register(context.Background(), &pb.IntegrationsServiceRegisterRequest{
-		Kind:               deptrack.Kind,
+		Kind:               deptrack.ID,
 		RegistrationConfig: anyConfig,
 	})
 	if err != nil {

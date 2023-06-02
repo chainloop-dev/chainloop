@@ -115,7 +115,7 @@ func (s *OrgIntegrationTestSuite) SetupTest() {
 
 	// Integration
 	// Mocked integration that will return both generic configuration and credentials
-	integration := integrationMocks.NewRegistrable(s.T())
+	integration := integrationMocks.NewFanOut(s.T())
 	integration.On("PreRegister", ctx, mock.Anything).Return(&integrations.PreRegistration{
 		Configuration: &anypb.Any{}}, nil)
 	_, err = s.Integration.RegisterAndSave(ctx, s.org.ID, integration, nil)

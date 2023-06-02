@@ -25,8 +25,6 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
-type InputType int64
-
 type Inputs struct {
 	DSSEnvelope   bool
 	InputMaterial *InputMaterial
@@ -37,52 +35,27 @@ type InputMaterial struct {
 	Type schemaapi.CraftingSchema_Material_MaterialType
 }
 
-type Integration struct {
+// Core integration struct
+type Core struct {
 	// Identifier of the integration
 	ID string
 	// Kind of inputs does the integration expect as part of the execution
 	SubscribedInputs *Inputs
 }
 
-func (i *Integration) ExpectedInputs() *Inputs {
-	return i.SubscribedInputs
+func (i *Core) Describe() *Core {
+	return i
 }
 
-// Registrable is the interface that needs to be implemented by all integrations
-// To be able to be registered in Chainloop control plane
-type Registrable interface {
+type FanOut interface {
+	// Return information about the integration
+	Describe() *Core
 	// Validate, marshall and return the configuration that needs to be persisted
 	PreRegister(ctx context.Context, req *anypb.Any) (*PreRegistration, error)
-}
-
-// Attachable describes what an integration needs to implement to be able to get "attached" to a workflow
-type Attachable interface {
 	// Validate that the attachment configuration is valid in the context of the provided registration
 	PreAttach(ctx context.Context, c *BundledConfig) (*PreAttachment, error)
-}
-
-// An execute method will receive either the envelope or a material as input
-// The material will contain its content as well as the metadata
-type ExecuteInput struct {
-	DSSEnvelope *dsse.Envelope
-	Material    *ExecuteMaterial
-}
-
-type ExecuteMaterial struct {
-	*chainloop.NormalizedMaterial
-	// Content of the material already downloaded
-	Content []byte
-}
-
-type ExecuteOpts struct {
-	Config *BundledConfig
-	Input  *ExecuteInput
-}
-
-type Executable interface {
-	// What kind of inputs does the integration expect
-	ExpectedInputs() *Inputs
-	Execute(ctx context.Context, opts *ExecuteOpts) error
+	// Execute the integration
+	Execute(ctx context.Context, opts *ExecuteReq) error
 }
 
 type PreRegistration struct {
@@ -98,6 +71,25 @@ type PreRegistration struct {
 type PreAttachment struct {
 	// Configuration to be persisted
 	Configuration proto.Message
+}
+
+// ExecuteReq is the request to execute the integration
+type ExecuteReq struct {
+	Config *BundledConfig
+	Input  *ExecuteInput
+}
+
+// An execute method will receive either the envelope or a material as input
+// The material will contain its content as well as the metadata
+type ExecuteInput struct {
+	DSSEnvelope *dsse.Envelope
+	Material    *ExecuteMaterial
+}
+
+type ExecuteMaterial struct {
+	*chainloop.NormalizedMaterial
+	// Content of the material already downloaded
+	Content []byte
 }
 
 // BundledConfig is the collection of the registration and attachment configuration
