@@ -29,9 +29,11 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
+// An integration can be subscribed to an envelope and/or a list of materials
+// To subscribe to any material type it will use schemaapi.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED
 type Inputs struct {
-	DSSEnvelope   bool
-	InputMaterial *InputMaterial
+	DSSEnvelope bool
+	Materials   []*InputMaterial
 }
 
 type InputMaterial struct {
@@ -39,7 +41,6 @@ type InputMaterial struct {
 	Type schemaapi.CraftingSchema_Material_MaterialType
 }
 
-// BaseIntegration integration struct
 type BaseIntegration struct {
 	// Identifier of the integration
 	id string
@@ -52,27 +53,45 @@ type BaseIntegration struct {
 }
 
 func NewBaseIntegration(id, description string, opts ...NewOpt) (*BaseIntegration, error) {
-	if id == "" || description == "" {
-		return nil, fmt.Errorf("id and description are required")
-	}
-
 	c := &BaseIntegration{
-		id:          id,
-		description: description,
-		log:         log.NewStdLogger(io.Discard),
+		id:               id,
+		description:      description,
+		log:              log.NewStdLogger(io.Discard),
+		subscribedInputs: &Inputs{},
 	}
 
 	for _, opt := range opts {
 		opt(c)
 	}
 
-	if c.subscribedInputs == nil || (!c.subscribedInputs.DSSEnvelope && c.subscribedInputs.InputMaterial == nil) {
-		return nil, fmt.Errorf("the integration needs to subscribe to at least one input type. An envelope and/or a material")
+	if err := validateConstructor(c); err != nil {
+		return nil, err
 	}
 
 	c.Logger = servicelogger.ScopedHelper(c.log, fmt.Sprintf("integrations/%s", id))
 
 	return c, nil
+}
+
+func validateConstructor(c *BaseIntegration) error {
+	if c.id == "" || c.description == "" {
+		return fmt.Errorf("id and description are required")
+	}
+
+	if c.subscribedInputs == nil || (!c.subscribedInputs.DSSEnvelope && (c.subscribedInputs.Materials == nil || len(c.subscribedInputs.Materials) == 0)) {
+		return fmt.Errorf("the integration needs to subscribe to at least one input type. An envelope and/or a material")
+	}
+
+	// If you subscribe to a generic material type you can't subscribe to an specific one
+	if c.subscribedInputs.Materials != nil && len(c.subscribedInputs.Materials) > 1 {
+		for _, m := range c.subscribedInputs.Materials {
+			if m.Type == schemaapi.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED {
+				return fmt.Errorf("can't subscribe to specific material type since you are already subscribed to a generic one")
+			}
+		}
+	}
+
+	return nil
 }
 
 type FanOut interface {
@@ -184,12 +203,12 @@ func (i *BaseIntegration) Describe() *IntegrationInfo {
 func (i *BaseIntegration) String() string {
 	inputs := i.subscribedInputs
 
-	materialType := "none"
-	if inputs.InputMaterial != nil {
-		materialType = inputs.InputMaterial.Type.String()
+	subscribedMaterials := make([]string, len(inputs.Materials))
+	for i, m := range inputs.Materials {
+		subscribedMaterials[i] = m.Type.String()
 	}
 
-	return fmt.Sprintf("id=%s, expectsEnvelope=%t, expectedMaterial=%s", i.id, inputs.DSSEnvelope, materialType)
+	return fmt.Sprintf("id=%s, expectsEnvelope=%t, expectedMaterials=%s", i.id, inputs.DSSEnvelope, subscribedMaterials)
 }
 
 type NewOpt func(*BaseIntegration)
@@ -216,10 +235,14 @@ func WithEnvelope() NewOpt {
 func WithInputMaterial(materialType schemaapi.CraftingSchema_Material_MaterialType) NewOpt {
 	return func(c *BaseIntegration) {
 		material := &InputMaterial{Type: materialType}
-		if c.subscribedInputs == nil {
-			c.subscribedInputs = &Inputs{InputMaterial: material}
-		} else {
-			c.subscribedInputs.InputMaterial = material
+
+		switch {
+		case c.subscribedInputs == nil: // Inputs is not defined
+			c.subscribedInputs = &Inputs{Materials: []*InputMaterial{material}}
+		case len(c.subscribedInputs.Materials) == 0: // Materials struct is empty
+			c.subscribedInputs.Materials = []*InputMaterial{material}
+		default: // Materials struct contains data
+			c.subscribedInputs.Materials = append(c.subscribedInputs.Materials, material)
 		}
 	}
 }
