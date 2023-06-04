@@ -30,6 +30,7 @@ import (
 )
 
 const ID = "dependencytrack.cyclonedx.v1"
+const version = "1.0"
 const description = "Dependency Track CycloneDX Software Bill Of Materials Integration"
 
 var _ sdk.FanOut = (*DependencyTrack)(nil)
@@ -42,7 +43,7 @@ type DependencyTrack struct {
 // In the future this will be a plugin entrypoint
 func NewIntegration(l log.Logger) (*DependencyTrack, error) {
 	base, err := sdk.NewBaseIntegration(
-		ID, description,
+		ID, description, version,
 		sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON),
 		sdk.WithLogger(l),
 	)

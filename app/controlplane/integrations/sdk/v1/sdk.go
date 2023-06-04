@@ -44,6 +44,8 @@ type InputMaterial struct {
 type BaseIntegration struct {
 	// Identifier of the integration
 	id string
+	// Integration version
+	version string
 	// Brief description of what the integration does
 	description string
 	// Kind of inputs does the integration expect as part of the execution
@@ -52,9 +54,10 @@ type BaseIntegration struct {
 	Logger           *log.Helper
 }
 
-func NewBaseIntegration(id, description string, opts ...NewOpt) (*BaseIntegration, error) {
+func NewBaseIntegration(id, version, description string, opts ...NewOpt) (*BaseIntegration, error) {
 	c := &BaseIntegration{
 		id:               id,
+		version:          version,
 		description:      description,
 		log:              log.NewStdLogger(io.Discard),
 		subscribedInputs: &Inputs{},
@@ -76,6 +79,10 @@ func NewBaseIntegration(id, description string, opts ...NewOpt) (*BaseIntegratio
 func validateConstructor(c *BaseIntegration) error {
 	if c.id == "" || c.description == "" {
 		return fmt.Errorf("id and description are required")
+	}
+
+	if c.version == "" {
+		return fmt.Errorf("version is required")
 	}
 
 	if c.subscribedInputs == nil || (!c.subscribedInputs.DSSEnvelope && (c.subscribedInputs.Materials == nil || len(c.subscribedInputs.Materials) == 0)) {
@@ -186,6 +193,8 @@ func (i Initialized) FindByID(id string) (FanOut, error) {
 type IntegrationInfo struct {
 	// Identifier of the integration
 	ID string
+	// Integration version
+	Version string
 	// Brief description of what the integration does
 	Description string
 	// Kind of inputs does the integration expect as part of the execution
@@ -195,6 +204,7 @@ type IntegrationInfo struct {
 func (i *BaseIntegration) Describe() *IntegrationInfo {
 	return &IntegrationInfo{
 		ID:               i.id,
+		Version:          i.version,
 		Description:      i.description,
 		SubscribedInputs: i.subscribedInputs,
 	}
@@ -208,7 +218,7 @@ func (i *BaseIntegration) String() string {
 		subscribedMaterials[i] = m.Type.String()
 	}
 
-	return fmt.Sprintf("id=%s, expectsEnvelope=%t, expectedMaterials=%s", i.id, inputs.DSSEnvelope, subscribedMaterials)
+	return fmt.Sprintf("id=%s, version=%s, expectsEnvelope=%t, expectedMaterials=%s", i.id, i.version, inputs.DSSEnvelope, subscribedMaterials)
 }
 
 type NewOpt func(*BaseIntegration)

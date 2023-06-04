@@ -28,6 +28,7 @@ func TestNewBaseIntegration(t *testing.T) {
 	testCases := []struct {
 		name        string
 		id          string
+		version     string
 		description string
 		opts        []sdk.NewOpt
 		errMsg      string
@@ -35,14 +36,15 @@ func TestNewBaseIntegration(t *testing.T) {
 	}{
 		{name: "invalid - missing id", description: "desc", errMsg: "id and description are required"},
 		{name: "invalid - missing description", id: "id", errMsg: "id and description are required"},
-		{name: "invalid - need one input", id: "id", description: "description", errMsg: "at least one input"},
-		{name: "ok - has envelope", id: "id", description: "description", opts: []sdk.NewOpt{sdk.WithEnvelope()}, wantInput: &sdk.Inputs{DSSEnvelope: true}},
-		{name: "ok - generic material", id: "id", description: "description",
+		{name: "invalid - missing version", id: "id", description: "desc", errMsg: "version is required"},
+		{name: "invalid - need one input", id: "id", version: "123", description: "description", errMsg: "at least one input"},
+		{name: "ok - has envelope", id: "id", version: "123", description: "description", opts: []sdk.NewOpt{sdk.WithEnvelope()}, wantInput: &sdk.Inputs{DSSEnvelope: true}},
+		{name: "ok - generic material", id: "id", version: "123", description: "description",
 			opts:      []sdk.NewOpt{sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED)},
 			wantInput: &sdk.Inputs{Materials: []*sdk.InputMaterial{{Type: schemaapi.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED}}},
 		},
 		{
-			name: "ok - specific material", id: "id", description: "description",
+			name: "ok - specific material", id: "id", version: "123", description: "description",
 			opts: []sdk.NewOpt{
 				sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_JUNIT_XML),
 			},
@@ -53,7 +55,7 @@ func TestNewBaseIntegration(t *testing.T) {
 			}},
 		},
 		{
-			name: "ok - both material and envelope", id: "id", description: "description",
+			name: "ok - both material and envelope", id: "id", version: "123", description: "description",
 			opts: []sdk.NewOpt{
 				sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_JUNIT_XML),
 				sdk.WithEnvelope(),
@@ -65,7 +67,7 @@ func TestNewBaseIntegration(t *testing.T) {
 			}, DSSEnvelope: true},
 		},
 		{
-			name: "ok - multiple materials and envelope", id: "id", description: "description",
+			name: "ok - multiple materials and envelope", id: "id", version: "123", description: "description",
 			opts: []sdk.NewOpt{
 				sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_JUNIT_XML),
 				sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_CONTAINER_IMAGE),
@@ -81,7 +83,7 @@ func TestNewBaseIntegration(t *testing.T) {
 			}, DSSEnvelope: true},
 		},
 		{
-			name: "ok - cant have both generic and specific", id: "id", description: "description",
+			name: "ok - cant have both generic and specific", id: "id", version: "123", description: "description",
 			opts: []sdk.NewOpt{
 				sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED),
 				sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_CONTAINER_IMAGE),
@@ -93,7 +95,7 @@ func TestNewBaseIntegration(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := sdk.NewBaseIntegration(tc.id, tc.description, tc.opts...)
+			got, err := sdk.NewBaseIntegration(tc.id, tc.version, tc.description, tc.opts...)
 			if tc.errMsg != "" {
 				assert.ErrorContains(t, err, tc.errMsg)
 			} else {
@@ -130,36 +132,37 @@ func TestFindByID(t *testing.T) {
 
 func TestString(t *testing.T) {
 	testCases := []struct {
-		name string
-		id   string
-		opts []sdk.NewOpt
-		want string
+		name    string
+		id      string
+		version string
+		opts    []sdk.NewOpt
+		want    string
 	}{
 		{
-			name: "with envelope", id: "id",
+			name: "with envelope", id: "id", version: "123",
 			opts: []sdk.NewOpt{sdk.WithEnvelope()},
-			want: "id=id, expectsEnvelope=true, expectedMaterials=[]",
+			want: "id=id, version=123, expectsEnvelope=true, expectedMaterials=[]",
 		},
 		{
-			name: "only material", id: "id",
+			name: "only material", id: "id", version: "234",
 			opts: []sdk.NewOpt{sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_CONTAINER_IMAGE)},
-			want: "id=id, expectsEnvelope=false, expectedMaterials=[CONTAINER_IMAGE]",
+			want: "id=id, version=234, expectsEnvelope=false, expectedMaterials=[CONTAINER_IMAGE]",
 		},
 		{
-			name: "both material and envelope", id: "id",
+			name: "both material and envelope", id: "id", version: "123",
 			opts: []sdk.NewOpt{sdk.WithEnvelope(), sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_CONTAINER_IMAGE)},
-			want: "id=id, expectsEnvelope=true, expectedMaterials=[CONTAINER_IMAGE]",
+			want: "id=id, version=123, expectsEnvelope=true, expectedMaterials=[CONTAINER_IMAGE]",
 		},
 		{
-			name: "multiple materials", id: "id",
+			name: "multiple materials", id: "id", version: "123",
 			opts: []sdk.NewOpt{sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_CONTAINER_IMAGE), sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_JUNIT_XML)},
-			want: "id=id, expectsEnvelope=false, expectedMaterials=[CONTAINER_IMAGE JUNIT_XML]",
+			want: "id=id, version=123, expectsEnvelope=false, expectedMaterials=[CONTAINER_IMAGE JUNIT_XML]",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := sdk.NewBaseIntegration(tc.id, "desc", tc.opts...)
+			got, err := sdk.NewBaseIntegration(tc.id, tc.version, "desc", tc.opts...)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.want, got.String())
 		})
