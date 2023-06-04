@@ -43,7 +43,7 @@ type DependencyTrack struct {
 // In the future this will be a plugin entrypoint
 func NewIntegration(l log.Logger) (*DependencyTrack, error) {
 	base, err := sdk.NewBaseIntegration(
-		ID, description, version,
+		ID, version, description,
 		sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON),
 		sdk.WithLogger(l),
 	)

@@ -81,9 +81,10 @@ func TestNewIntegration(t *testing.T) {
 	i, err := NewIntegration(nil)
 	assert.NoError(t, err)
 
-	assert.Equal(t, i.Describe(), &sdk.IntegrationInfo{
+	assert.Equal(t, &sdk.IntegrationInfo{
 		ID:          "dependencytrack.cyclonedx.v1",
 		Description: "Dependency Track CycloneDX Software Bill Of Materials Integration",
+		Version:     "1.0",
 		SubscribedInputs: &sdk.Inputs{
 			Materials: []*sdk.InputMaterial{
 				{
@@ -91,7 +92,7 @@ func TestNewIntegration(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, i.Describe())
 }
 
 func TestValidateExecuteOpts(t *testing.T) {
