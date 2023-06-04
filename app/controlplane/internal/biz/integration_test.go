@@ -20,8 +20,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/integrations"
-	integrationMocks "github.com/chainloop-dev/chainloop/app/controlplane/integrations/mocks"
+	integrationsSDK "github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1"
+	integrationMocks "github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1/mocks"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
 	creds "github.com/chainloop-dev/chainloop/internal/credentials/mocks"
@@ -41,8 +41,8 @@ func (s *testSuite) TestCreate() {
 	integration := integrationMocks.NewFanOut(s.T())
 
 	ctx := context.Background()
-	integration.On("PreRegister", ctx, s.configAny).Return(&integrations.PreRegistration{
-		Configuration: s.config, Kind: kind, Credentials: &integrations.Credentials{
+	integration.On("PreRegister", ctx, s.configAny).Return(&integrationsSDK.PreRegistration{
+		Configuration: s.config, Kind: kind, Credentials: &integrationsSDK.Credentials{
 			Password: "key", URL: "host"},
 	}, nil)
 
@@ -130,7 +130,7 @@ func (s *testSuite) TestAttachWorkflow() {
 
 	s.Run("attachment OK", func() {
 		ctx := context.Background()
-		s.fanOutIntegration.On("PreAttach", ctx, mock.Anything).Return(&integrations.PreAttachment{
+		s.fanOutIntegration.On("PreAttach", ctx, mock.Anything).Return(&integrationsSDK.PreAttachment{
 			Configuration: s.config,
 		}, nil).Once()
 
@@ -182,7 +182,7 @@ func (s *testSuite) SetupTest() {
 	s.mockedCredsReaderWriter = creds.NewReaderWriter(t)
 	// integration credentials
 	s.mockedCredsReaderWriter.On(
-		"SaveCredentials", ctx, mock.Anything, &integrations.Credentials{URL: "host", Password: "key"},
+		"SaveCredentials", ctx, mock.Anything, &integrationsSDK.Credentials{URL: "host", Password: "key"},
 	).Return("stored-integration-secret", nil).Maybe()
 
 	s.TestingUseCases = testhelpers.NewTestingUseCases(t, testhelpers.WithCredsReaderWriter(s.mockedCredsReaderWriter))
@@ -200,7 +200,7 @@ func (s *testSuite) SetupTest() {
 
 	// Mocked fanOut that will return both generic configuration and credentials
 	fanOut := integrationMocks.NewFanOut(s.T())
-	fanOut.On("PreRegister", ctx, mock.Anything).Return(&integrations.PreRegistration{Configuration: &anypb.Any{}}, nil)
+	fanOut.On("PreRegister", ctx, mock.Anything).Return(&integrationsSDK.PreRegistration{Configuration: &anypb.Any{}}, nil)
 	s.fanOutIntegration = fanOut
 
 	s.integration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, fanOut, nil)

@@ -24,7 +24,7 @@ import (
 	"github.com/getsentry/sentry-go"
 	flag "github.com/spf13/pflag"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/integrations"
+	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/server"
@@ -130,10 +130,10 @@ func main() {
 // Load the available third party integrations
 // In the future this code will iterate over a dynamic directory of plugins
 // and try to load them one by one
-func loadIntegrations(l log.Logger) (integrations.Initialized, error) {
-	var res integrations.Initialized
+func loadIntegrations(l log.Logger) (sdk.Initialized, error) {
+	var res sdk.Initialized
 
-	var d integrations.FanOut
+	var d sdk.FanOut
 	d, err := deptrack.NewIntegration(l)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load dependency track integration: %w", err)

@@ -19,8 +19,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/integrations"
-	integrationMocks "github.com/chainloop-dev/chainloop/app/controlplane/integrations/mocks"
+	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1"
+	integrationMocks "github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1/mocks"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
 	"github.com/google/uuid"
@@ -116,7 +116,7 @@ func (s *OrgIntegrationTestSuite) SetupTest() {
 	// Integration
 	// Mocked integration that will return both generic configuration and credentials
 	integration := integrationMocks.NewFanOut(s.T())
-	integration.On("PreRegister", ctx, mock.Anything).Return(&integrations.PreRegistration{
+	integration.On("PreRegister", ctx, mock.Anything).Return(&sdk.PreRegistration{
 		Configuration: &anypb.Any{}}, nil)
 	_, err = s.Integration.RegisterAndSave(ctx, s.org.ID, integration, nil)
 	assert.NoError(err)

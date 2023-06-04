@@ -19,8 +19,8 @@ import (
 	"testing"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	core "github.com/chainloop-dev/chainloop/app/controlplane/integrations"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/integrations/gen/dependencytrack/cyclonedx/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -81,11 +81,11 @@ func TestNewIntegration(t *testing.T) {
 	i, err := NewIntegration(nil)
 	assert.NoError(t, err)
 
-	assert.Equal(t, i.Describe(), &core.IntegrationInfo{
+	assert.Equal(t, i.Describe(), &sdk.IntegrationInfo{
 		ID:          "dependencytrack.cyclonedx.v1",
 		Description: "Dependency Track CycloneDX Software Bill Of Materials Integration",
-		SubscribedInputs: &core.Inputs{
-			Materials: []*core.InputMaterial{
+		SubscribedInputs: &sdk.Inputs{
+			Materials: []*sdk.InputMaterial{
 				{
 					Type: schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
 				},
@@ -95,66 +95,66 @@ func TestNewIntegration(t *testing.T) {
 }
 
 func TestValidateExecuteOpts(t *testing.T) {
-	validMaterial := &core.ExecuteMaterial{NormalizedMaterial: &chainloop.NormalizedMaterial{Type: "SBOM_CYCLONEDX_JSON"}, Content: []byte("content")}
+	validMaterial := &sdk.ExecuteMaterial{NormalizedMaterial: &chainloop.NormalizedMaterial{Type: "SBOM_CYCLONEDX_JSON"}, Content: []byte("content")}
 	config, _ := anypb.New(&emptypb.Empty{})
 
 	testCases := []struct {
 		name   string
-		opts   *core.ExecuteReq
+		opts   *sdk.ExecuteReq
 		errMsg string
 	}{
 		{name: "invalid - missing input", errMsg: "invalid input"},
-		{name: "invalid - missing input", opts: &core.ExecuteReq{Input: &core.ExecuteInput{}}, errMsg: "invalid input"},
+		{name: "invalid - missing input", opts: &sdk.ExecuteReq{Input: &sdk.ExecuteInput{}}, errMsg: "invalid input"},
 		{
 			name: "invalid - missing material",
-			opts: &core.ExecuteReq{
-				Input: &core.ExecuteInput{Material: &core.ExecuteMaterial{}},
+			opts: &sdk.ExecuteReq{
+				Input: &sdk.ExecuteInput{Material: &sdk.ExecuteMaterial{}},
 			},
 			errMsg: "invalid input",
 		},
 		{
 			name: "invalid - invalid material",
-			opts: &core.ExecuteReq{
-				Input: &core.ExecuteInput{Material: &core.ExecuteMaterial{NormalizedMaterial: &chainloop.NormalizedMaterial{Type: "invalid"}, Content: []byte("content")}},
+			opts: &sdk.ExecuteReq{
+				Input: &sdk.ExecuteInput{Material: &sdk.ExecuteMaterial{NormalizedMaterial: &chainloop.NormalizedMaterial{Type: "invalid"}, Content: []byte("content")}},
 			},
 			errMsg: "invalid input type",
 		},
 		{
 			name: "invalid - missing configuration",
-			opts: &core.ExecuteReq{
-				Input: &core.ExecuteInput{Material: validMaterial},
+			opts: &sdk.ExecuteReq{
+				Input: &sdk.ExecuteInput{Material: validMaterial},
 			},
 			errMsg: "missing configuration",
 		},
 		{
 			name: "invalid - missing attachment configuration",
-			opts: &core.ExecuteReq{
-				Input:  &core.ExecuteInput{Material: validMaterial},
-				Config: &core.BundledConfig{Registration: config},
+			opts: &sdk.ExecuteReq{
+				Input:  &sdk.ExecuteInput{Material: validMaterial},
+				Config: &sdk.BundledConfig{Registration: config},
 			},
 			errMsg: "missing configuration",
 		},
 		{
 			name: "invalid - missing registration configuration",
-			opts: &core.ExecuteReq{
-				Input:  &core.ExecuteInput{Material: validMaterial},
-				Config: &core.BundledConfig{Attachment: config},
+			opts: &sdk.ExecuteReq{
+				Input:  &sdk.ExecuteInput{Material: validMaterial},
+				Config: &sdk.BundledConfig{Attachment: config},
 			},
 			errMsg: "missing configuration",
 		},
 		{
 			name: "invalid - missing credentials",
-			opts: &core.ExecuteReq{
-				Input:  &core.ExecuteInput{Material: validMaterial},
-				Config: &core.BundledConfig{Registration: config, Attachment: config},
+			opts: &sdk.ExecuteReq{
+				Input:  &sdk.ExecuteInput{Material: validMaterial},
+				Config: &sdk.BundledConfig{Registration: config, Attachment: config},
 			},
 			errMsg: "missing credentials",
 		},
 		{
 			name: "ok - all good",
-			opts: &core.ExecuteReq{
-				Input:  &core.ExecuteInput{Material: validMaterial},
-				Config: &core.BundledConfig{Registration: config, Attachment: config, Credentials: &core.Credentials{Password: "password"}},
+			opts: &sdk.ExecuteReq{
+				Input:  &sdk.ExecuteInput{Material: validMaterial},
+				Config: &sdk.BundledConfig{Registration: config, Attachment: config, Credentials: &sdk.Credentials{Password: "password"}},
 			},
 		},
 	}

@@ -13,14 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package integrations_test
+package sdk_test
 
 import (
 	"testing"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/integrations"
-	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/mocks"
+	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1/mocks"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -29,24 +29,24 @@ func TestNewBaseIntegration(t *testing.T) {
 		name        string
 		id          string
 		description string
-		opts        []integrations.NewOpt
+		opts        []sdk.NewOpt
 		errMsg      string
-		wantInput   *integrations.Inputs
+		wantInput   *sdk.Inputs
 	}{
 		{name: "invalid - missing id", description: "desc", errMsg: "id and description are required"},
 		{name: "invalid - missing description", id: "id", errMsg: "id and description are required"},
 		{name: "invalid - need one input", id: "id", description: "description", errMsg: "at least one input"},
-		{name: "ok - has envelope", id: "id", description: "description", opts: []integrations.NewOpt{integrations.WithEnvelope()}, wantInput: &integrations.Inputs{DSSEnvelope: true}},
+		{name: "ok - has envelope", id: "id", description: "description", opts: []sdk.NewOpt{sdk.WithEnvelope()}, wantInput: &sdk.Inputs{DSSEnvelope: true}},
 		{name: "ok - generic material", id: "id", description: "description",
-			opts:      []integrations.NewOpt{integrations.WithInputMaterial(schemaapi.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED)},
-			wantInput: &integrations.Inputs{Materials: []*integrations.InputMaterial{{Type: schemaapi.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED}}},
+			opts:      []sdk.NewOpt{sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED)},
+			wantInput: &sdk.Inputs{Materials: []*sdk.InputMaterial{{Type: schemaapi.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED}}},
 		},
 		{
 			name: "ok - specific material", id: "id", description: "description",
-			opts: []integrations.NewOpt{
-				integrations.WithInputMaterial(schemaapi.CraftingSchema_Material_JUNIT_XML),
+			opts: []sdk.NewOpt{
+				sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_JUNIT_XML),
 			},
-			wantInput: &integrations.Inputs{Materials: []*integrations.InputMaterial{
+			wantInput: &sdk.Inputs{Materials: []*sdk.InputMaterial{
 				{
 					Type: schemaapi.CraftingSchema_Material_JUNIT_XML,
 				},
@@ -54,11 +54,11 @@ func TestNewBaseIntegration(t *testing.T) {
 		},
 		{
 			name: "ok - both material and envelope", id: "id", description: "description",
-			opts: []integrations.NewOpt{
-				integrations.WithInputMaterial(schemaapi.CraftingSchema_Material_JUNIT_XML),
-				integrations.WithEnvelope(),
+			opts: []sdk.NewOpt{
+				sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_JUNIT_XML),
+				sdk.WithEnvelope(),
 			},
-			wantInput: &integrations.Inputs{Materials: []*integrations.InputMaterial{
+			wantInput: &sdk.Inputs{Materials: []*sdk.InputMaterial{
 				{
 					Type: schemaapi.CraftingSchema_Material_JUNIT_XML,
 				},
@@ -66,12 +66,12 @@ func TestNewBaseIntegration(t *testing.T) {
 		},
 		{
 			name: "ok - multiple materials and envelope", id: "id", description: "description",
-			opts: []integrations.NewOpt{
-				integrations.WithInputMaterial(schemaapi.CraftingSchema_Material_JUNIT_XML),
-				integrations.WithInputMaterial(schemaapi.CraftingSchema_Material_CONTAINER_IMAGE),
-				integrations.WithEnvelope(),
+			opts: []sdk.NewOpt{
+				sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_JUNIT_XML),
+				sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_CONTAINER_IMAGE),
+				sdk.WithEnvelope(),
 			},
-			wantInput: &integrations.Inputs{Materials: []*integrations.InputMaterial{
+			wantInput: &sdk.Inputs{Materials: []*sdk.InputMaterial{
 				{
 					Type: schemaapi.CraftingSchema_Material_JUNIT_XML,
 				},
@@ -82,10 +82,10 @@ func TestNewBaseIntegration(t *testing.T) {
 		},
 		{
 			name: "ok - cant have both generic and specific", id: "id", description: "description",
-			opts: []integrations.NewOpt{
-				integrations.WithInputMaterial(schemaapi.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED),
-				integrations.WithInputMaterial(schemaapi.CraftingSchema_Material_CONTAINER_IMAGE),
-				integrations.WithEnvelope(),
+			opts: []sdk.NewOpt{
+				sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED),
+				sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_CONTAINER_IMAGE),
+				sdk.WithEnvelope(),
 			},
 			errMsg: "can't subscribe to specific material",
 		},
@@ -93,7 +93,7 @@ func TestNewBaseIntegration(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := integrations.NewBaseIntegration(tc.id, tc.description, tc.opts...)
+			got, err := sdk.NewBaseIntegration(tc.id, tc.description, tc.opts...)
 			if tc.errMsg != "" {
 				assert.ErrorContains(t, err, tc.errMsg)
 			} else {
@@ -109,11 +109,11 @@ func TestNewBaseIntegration(t *testing.T) {
 
 func TestFindByID(t *testing.T) {
 	want := mocks.NewFanOut(t)
-	want.On("Describe").Return(&integrations.IntegrationInfo{ID: "id"})
+	want.On("Describe").Return(&sdk.IntegrationInfo{ID: "id"})
 	want2 := mocks.NewFanOut(t)
-	want2.On("Describe").Return(&integrations.IntegrationInfo{ID: "id2"})
+	want2.On("Describe").Return(&sdk.IntegrationInfo{ID: "id2"})
 
-	var available integrations.Initialized = []integrations.FanOut{want, want2}
+	var available sdk.Initialized = []sdk.FanOut{want, want2}
 	got, err := available.FindByID("id")
 	assert.NoError(t, err)
 	assert.Equal(t, want.Describe().ID, got.Describe().ID)
@@ -132,34 +132,34 @@ func TestString(t *testing.T) {
 	testCases := []struct {
 		name string
 		id   string
-		opts []integrations.NewOpt
+		opts []sdk.NewOpt
 		want string
 	}{
 		{
 			name: "with envelope", id: "id",
-			opts: []integrations.NewOpt{integrations.WithEnvelope()},
+			opts: []sdk.NewOpt{sdk.WithEnvelope()},
 			want: "id=id, expectsEnvelope=true, expectedMaterials=[]",
 		},
 		{
 			name: "only material", id: "id",
-			opts: []integrations.NewOpt{integrations.WithInputMaterial(schemaapi.CraftingSchema_Material_CONTAINER_IMAGE)},
+			opts: []sdk.NewOpt{sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_CONTAINER_IMAGE)},
 			want: "id=id, expectsEnvelope=false, expectedMaterials=[CONTAINER_IMAGE]",
 		},
 		{
 			name: "both material and envelope", id: "id",
-			opts: []integrations.NewOpt{integrations.WithEnvelope(), integrations.WithInputMaterial(schemaapi.CraftingSchema_Material_CONTAINER_IMAGE)},
+			opts: []sdk.NewOpt{sdk.WithEnvelope(), sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_CONTAINER_IMAGE)},
 			want: "id=id, expectsEnvelope=true, expectedMaterials=[CONTAINER_IMAGE]",
 		},
 		{
 			name: "multiple materials", id: "id",
-			opts: []integrations.NewOpt{integrations.WithInputMaterial(schemaapi.CraftingSchema_Material_CONTAINER_IMAGE), integrations.WithInputMaterial(schemaapi.CraftingSchema_Material_JUNIT_XML)},
+			opts: []sdk.NewOpt{sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_CONTAINER_IMAGE), sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_JUNIT_XML)},
 			want: "id=id, expectsEnvelope=false, expectedMaterials=[CONTAINER_IMAGE JUNIT_XML]",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := integrations.NewBaseIntegration(tc.id, "desc", tc.opts...)
+			got, err := sdk.NewBaseIntegration(tc.id, "desc", tc.opts...)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.want, got.String())
 		})

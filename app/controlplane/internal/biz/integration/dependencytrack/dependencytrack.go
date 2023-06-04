@@ -25,8 +25,8 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	contractAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/integrations"
 	dti "github.com/chainloop-dev/chainloop/app/controlplane/integrations/dependencytrack/cyclonedx/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
@@ -127,7 +127,7 @@ func (uc *Integration) UploadSBOMs(envelope *dsse.Envelope, orgID, workflowID, s
 				defer wg.Done()
 				err := backoff.RetryNotify(
 					func() error {
-						creds := &integrations.Credentials{}
+						creds := &sdk.Credentials{}
 						if err := uc.credentialsProvider.ReadCredentials(ctx, i.SecretName, creds); err != nil {
 							return err
 						}
@@ -138,13 +138,13 @@ func (uc *Integration) UploadSBOMs(envelope *dsse.Envelope, orgID, workflowID, s
 						}
 
 						// Execute integration pre-attachment logic
-						err = deptrackFanOut.Execute(ctx, &integrations.ExecuteReq{
-							Config: &integrations.BundledConfig{
+						err = deptrackFanOut.Execute(ctx, &sdk.ExecuteReq{
+							Config: &sdk.BundledConfig{
 								Registration: i.Integration.Config, Attachment: i.IntegrationAttachment.Config, Credentials: creds,
 								WorkflowID: workflowID,
 							},
-							Input: &integrations.ExecuteInput{
-								Material: &integrations.ExecuteMaterial{NormalizedMaterial: material, Content: materialContent},
+							Input: &sdk.ExecuteInput{
+								Material: &sdk.ExecuteMaterial{NormalizedMaterial: material, Content: materialContent},
 							},
 						})
 						if err != nil {

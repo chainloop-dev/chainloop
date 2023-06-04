@@ -22,7 +22,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/integrations"
+	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
@@ -90,7 +90,7 @@ func NewIntegrationUseCase(opts *NewIntegrationUseCaseOpts) *IntegrationUseCase 
 }
 
 // Persist the secret and integration with its configuration in the database
-func (uc *IntegrationUseCase) RegisterAndSave(ctx context.Context, orgID string, i integrations.FanOut, regConfig *anypb.Any) (*Integration, error) {
+func (uc *IntegrationUseCase) RegisterAndSave(ctx context.Context, orgID string, i sdk.FanOut, regConfig *anypb.Any) (*Integration, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -123,7 +123,7 @@ func (uc *IntegrationUseCase) RegisterAndSave(ctx context.Context, orgID string,
 type AttachOpts struct {
 	IntegrationID, WorkflowID, OrgID string
 	// The integration that is being attached
-	FanOutIntegration integrations.FanOut
+	FanOutIntegration sdk.FanOut
 	// The attachment configuration
 	AttachmentConfig *anypb.Any
 }
@@ -168,7 +168,7 @@ func (uc *IntegrationUseCase) AttachToWorkflow(ctx context.Context, opts *Attach
 	}
 
 	// Retrieve credentials from the external secrets manager
-	creds := &integrations.Credentials{}
+	creds := &sdk.Credentials{}
 	if integration.SecretName != "" {
 		if err := uc.credsRW.ReadCredentials(ctx, integration.SecretName, creds); err != nil {
 			return nil, fmt.Errorf("reading credentials: %w", err)
@@ -176,7 +176,7 @@ func (uc *IntegrationUseCase) AttachToWorkflow(ctx context.Context, opts *Attach
 	}
 
 	// Execute integration pre-attachment logic
-	preAttachResp, err := opts.FanOutIntegration.PreAttach(ctx, &integrations.BundledConfig{Registration: integration.Config, Attachment: opts.AttachmentConfig, Credentials: creds})
+	preAttachResp, err := opts.FanOutIntegration.PreAttach(ctx, &sdk.BundledConfig{Registration: integration.Config, Attachment: opts.AttachmentConfig, Credentials: creds})
 	if err != nil {
 		return nil, NewErrValidation(err)
 	}
