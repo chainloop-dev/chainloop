@@ -8,9 +8,9 @@ package main
 
 import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/integration/dependencytrack"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/server"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
 	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
@@ -91,7 +91,12 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		Opts:               v2,
 	}
 	workflowRunService := service.NewWorkflowRunService(newWorkflowRunServiceOpts)
-	integration := dependencytrack.New(integrationUseCase, readerWriter, casClientUseCase, logger)
+	initialized, err := loadIntegrations(logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	dispatcherDispatcher := dispatcher.New(integrationUseCase, readerWriter, casClientUseCase, initialized, logger)
 	newAttestationServiceOpts := &service.NewAttestationServiceOpts{
 		WorkflowRunUC:      workflowRunUseCase,
 		WorkflowUC:         workflowUseCase,
@@ -101,7 +106,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		CredsReader:        readerWriter,
 		IntegrationUseCase: integrationUseCase,
 		CasCredsUseCase:    casCredentialsUseCase,
-		DepTrackUseCase:    integration,
+		FanoutDispatcher:   dispatcherDispatcher,
 		Opts:               v2,
 	}
 	attestationService := service.NewAttestationService(newAttestationServiceOpts)
@@ -116,11 +121,6 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	orgMetricsService := service.NewOrgMetricsService(orgMetricsUseCase, v2...)
 	ociRepositoryService := service.NewOCIRepositoryService(ociRepositoryUseCase, v2...)
-	initialized, err := loadIntegrations(logger)
-	if err != nil {
-		cleanup()
-		return nil, nil, err
-	}
 	integrationsService := service.NewIntegrationsService(integrationUseCase, workflowUseCase, initialized, v2...)
 	organizationService := service.NewOrganizationService(membershipUseCase, v2...)
 	opts := &server.Opts{

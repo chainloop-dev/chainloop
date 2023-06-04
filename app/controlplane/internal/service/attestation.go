@@ -26,7 +26,7 @@ import (
 
 	cpAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/integration/dependencytrack"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
@@ -48,7 +48,7 @@ type AttestationService struct {
 	attestationUseCase      *biz.AttestationUseCase
 	credsReader             credentials.Reader
 	integrationUseCase      *biz.IntegrationUseCase
-	depTrackUseCase         *dependencytrack.Integration
+	integrationDispatcher   *dispatcher.Dispatcher
 	casCredsUseCase         *biz.CASCredentialsUseCase
 }
 
@@ -61,7 +61,7 @@ type NewAttestationServiceOpts struct {
 	CredsReader        credentials.Reader
 	IntegrationUseCase *biz.IntegrationUseCase
 	CasCredsUseCase    *biz.CASCredentialsUseCase
-	DepTrackUseCase    *dependencytrack.Integration
+	FanoutDispatcher   *dispatcher.Dispatcher
 	Opts               []NewOpt
 }
 
@@ -76,7 +76,7 @@ func NewAttestationService(opts *NewAttestationServiceOpts) *AttestationService 
 		credsReader:             opts.CredsReader,
 		integrationUseCase:      opts.IntegrationUseCase,
 		casCredsUseCase:         opts.CasCredsUseCase,
-		depTrackUseCase:         opts.DepTrackUseCase,
+		integrationDispatcher:   opts.FanoutDispatcher,
 	}
 }
 
@@ -172,6 +172,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	// TODO: Move to event bus and background processing
 	// https://github.com/chainloop-dev/chainloop/issues/39
 	// Upload to OCI
+	// TODO: Move to generic dispatcher and integrations
 	go func() {
 		b := backoff.NewExponentialBackOff()
 		b.MaxElapsedTime = 1 * time.Minute
@@ -204,11 +205,10 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 		}
 	}()
 
-	// Upload to dependency track (if applicable)
 	go func() {
-		// NOTE: this one is not wrapped in a backoff retry because we do it for each underlying SBOM push in the implementation
-		// This code is going to eventually be moved to an actual background mechanism https://github.com/chainloop-dev/chainloop/issues/39
-		if err := s.depTrackUseCase.UploadSBOMs(envelope, robotAccount.OrgID, robotAccount.WorkflowID, repo.SecretName); err != nil {
+		// reset context
+		ctx = context.Background()
+		if err := s.integrationDispatcher.Run(ctx, envelope, robotAccount.OrgID, robotAccount.WorkflowID, repo.SecretName); err != nil {
 			_ = sl.LogAndMaskErr(err, s.log)
 		}
 	}()
