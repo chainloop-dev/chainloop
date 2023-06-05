@@ -178,9 +178,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 		b.MaxElapsedTime = 1 * time.Minute
 		err := backoff.RetryNotify(
 			func() error {
-				// Reset context
-				ctx := context.Background()
-				digest, err := s.attestationUseCase.UploadToCAS(ctx, envelope, repo.SecretName, req.WorkflowRunId)
+				digest, err := s.attestationUseCase.UploadToCAS(context.Background(), envelope, repo.SecretName, req.WorkflowRunId)
 				if err != nil {
 					return err
 				}
@@ -206,9 +204,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	}()
 
 	go func() {
-		// reset context
-		ctx = context.Background()
-		if err := s.integrationDispatcher.Run(ctx, envelope, robotAccount.OrgID, robotAccount.WorkflowID, repo.SecretName); err != nil {
+		if err := s.integrationDispatcher.Run(context.Background(), envelope, robotAccount.OrgID, robotAccount.WorkflowID, repo.SecretName); err != nil {
 			_ = sl.LogAndMaskErr(err, s.log)
 		}
 	}()
