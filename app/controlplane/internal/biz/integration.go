@@ -117,7 +117,7 @@ func (uc *IntegrationUseCase) RegisterAndSave(ctx context.Context, orgID string,
 	}
 
 	// Persist the integration configuration
-	return uc.integrationRepo.Create(ctx, orgUUID, preRegistration.Kind, secretID, config)
+	return uc.integrationRepo.Create(ctx, orgUUID, i.Describe().ID, secretID, config)
 }
 
 type AttachOpts struct {
@@ -251,6 +251,7 @@ func (uc *IntegrationUseCase) Delete(ctx context.Context, orgID, integrationID s
 	return uc.integrationRepo.SoftDelete(ctx, integrationUUID)
 }
 
+// List attachments returns the list of attachments for a given organization and optionally workflow
 func (uc *IntegrationUseCase) ListAttachments(ctx context.Context, orgID, workflowID string) ([]*IntegrationAttachment, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
@@ -263,6 +264,15 @@ func (uc *IntegrationUseCase) ListAttachments(ctx context.Context, orgID, workfl
 		workflowUUID, err = uuid.Parse(workflowID)
 		if err != nil {
 			return nil, NewErrInvalidUUID(err)
+		}
+
+		// We check that the workflow belongs to the provided organization
+		// This check is mostly informative to the user
+		wf, err := uc.workflowRepo.GetOrgScoped(ctx, orgUUID, workflowUUID)
+		if err != nil {
+			return nil, err
+		} else if wf == nil {
+			return nil, NewErrNotFound("workflow")
 		}
 	}
 

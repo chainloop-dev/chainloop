@@ -26,6 +26,7 @@ import (
 	// Requuired for the database waitFor strategy
 	_ "github.com/lib/pq"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
@@ -48,19 +49,21 @@ type TestingUseCases struct {
 	L  log.Logger
 
 	// Use cases
-	Membership       *biz.MembershipUseCase
-	OCIRepo          *biz.OCIRepositoryUseCase
-	Integration      *biz.IntegrationUseCase
-	Organization     *biz.OrganizationUseCase
-	WorkflowContract *biz.WorkflowContractUseCase
-	Workflow         *biz.WorkflowUseCase
-	WorkflowRun      *biz.WorkflowRunUseCase
-	User             *biz.UserUseCase
-	RobotAccount     *biz.RobotAccountUseCase
+	Membership             *biz.MembershipUseCase
+	OCIRepo                *biz.OCIRepositoryUseCase
+	Integration            *biz.IntegrationUseCase
+	Organization           *biz.OrganizationUseCase
+	WorkflowContract       *biz.WorkflowContractUseCase
+	Workflow               *biz.WorkflowUseCase
+	WorkflowRun            *biz.WorkflowRunUseCase
+	User                   *biz.UserUseCase
+	RobotAccount           *biz.RobotAccountUseCase
+	RegisteredIntegrations sdk.Initialized
 }
 
 type newTestingOpts struct {
 	credsReaderWriter credentials.ReaderWriter
+	integrations      sdk.Initialized
 }
 
 type NewTestingUCOpt func(*newTestingOpts)
@@ -71,9 +74,19 @@ func WithCredsReaderWriter(rw credentials.ReaderWriter) NewTestingUCOpt {
 	}
 }
 
+func WithRegisteredIntegration(i sdk.FanOut) NewTestingUCOpt {
+	return func(tu *newTestingOpts) {
+		if tu.integrations == nil {
+			tu.integrations = []sdk.FanOut{i}
+		} else {
+			tu.integrations = append(tu.integrations, i)
+		}
+	}
+}
+
 func NewTestingUseCases(t *testing.T, opts ...NewTestingUCOpt) *TestingUseCases {
 	// default args
-	newArgs := &newTestingOpts{credsReaderWriter: creds.NewReaderWriter(t)}
+	newArgs := &newTestingOpts{credsReaderWriter: creds.NewReaderWriter(t), integrations: make(sdk.Initialized, 0)}
 
 	// Overrides
 	for _, opt := range opts {
@@ -85,8 +98,9 @@ func NewTestingUseCases(t *testing.T, opts ...NewTestingUCOpt) *TestingUseCases 
 	testData, _, err := WireTestData(db, t, log, newArgs.credsReaderWriter, &robotaccount.Builder{}, &conf.Auth{
 		GeneratedJwsHmacSecret:        "test",
 		CasRobotAccountPrivateKeyPath: "./testdata/test-key.ec.pem",
-	})
+	}, newArgs.integrations)
 	assert.NoError(t, err)
+
 	return testData
 }
 

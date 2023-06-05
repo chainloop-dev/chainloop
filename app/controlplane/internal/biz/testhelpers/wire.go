@@ -21,6 +21,7 @@
 package testhelpers
 
 import (
+	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
@@ -34,7 +35,7 @@ import (
 )
 
 // wireTestData init testing data
-func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWriter, *robotaccount.Builder, *conf.Auth) (*TestingUseCases, func(), error) {
+func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWriter, *robotaccount.Builder, *conf.Auth, sdk.Initialized) (*TestingUseCases, func(), error) {
 	panic(
 		wire.Build(
 			data.ProviderSet,
