@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	dti "github.com/chainloop-dev/chainloop/app/controlplane/integrations/dependencytrack/cyclonedx/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	errors "github.com/go-kratos/kratos/v2/errors"
@@ -33,13 +33,15 @@ type IntegrationsService struct {
 
 	integrationUC *biz.IntegrationUseCase
 	workflowUC    *biz.WorkflowUseCase
+	integrations  sdk.Initialized
 }
 
-func NewIntegrationsService(uc *biz.IntegrationUseCase, wuc *biz.WorkflowUseCase, opts ...NewOpt) *IntegrationsService {
+func NewIntegrationsService(uc *biz.IntegrationUseCase, wuc *biz.WorkflowUseCase, integrations sdk.Initialized, opts ...NewOpt) *IntegrationsService {
 	return &IntegrationsService{
 		service:       newService(opts...),
 		integrationUC: uc,
 		workflowUC:    wuc,
+		integrations:  integrations,
 	}
 }
 
@@ -49,15 +51,10 @@ func (s *IntegrationsService) Register(ctx context.Context, req *pb.Integrations
 		return nil, err
 	}
 
-	// TODO:
-	// Currently we only support dependency-track, in a following patch we'll iterate over the list of enabled integrations
-	if req.Kind != dti.Kind {
-		return nil, errors.BadRequest("wrong validation", "invalid integration kind")
-	}
-
-	integration, err := dti.NewIntegration()
+	// lookup the integration
+	integration, err := s.integrations.FindByID(req.Kind)
 	if err != nil {
-		return nil, fmt.Errorf("creating integration: %w", err)
+		return nil, fmt.Errorf("loading integration: %w", err)
 	}
 
 	i, err := s.integrationUC.RegisterAndSave(ctx, org.ID, integration, req.RegistrationConfig)
@@ -88,22 +85,16 @@ func (s *IntegrationsService) Attach(ctx context.Context, req *pb.IntegrationsSe
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}
 
-	// TODO:
-	// Currently we only support dependency-track, in a following patch we'll iterate over the list of enabled integrations
-	if integration.Kind != dti.Kind {
-		return nil, errors.BadRequest("wrong validation", "invalid integration kind")
-	}
-
-	// Register integrations in the app
-	attachable, err := dti.NewIntegration()
+	// lookup the integration
+	attachable, err := s.integrations.FindByID(integration.Kind)
 	if err != nil {
-		return nil, fmt.Errorf("creating integration: %w", err)
+		return nil, fmt.Errorf("loading integration: %w", err)
 	}
 
 	res, err := s.integrationUC.AttachToWorkflow(ctx, &biz.AttachOpts{
 		OrgID: org.ID, IntegrationID: req.IntegrationId, WorkflowID: req.WorkflowId,
-		AttachmentConfig: req.AttachmentConfig,
-		Attachable:       attachable,
+		AttachmentConfig:  req.AttachmentConfig,
+		FanOutIntegration: attachable,
 	})
 
 	if err != nil {

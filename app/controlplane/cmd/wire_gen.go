@@ -116,7 +116,12 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	orgMetricsService := service.NewOrgMetricsService(orgMetricsUseCase, v2...)
 	ociRepositoryService := service.NewOCIRepositoryService(ociRepositoryUseCase, v2...)
-	integrationsService := service.NewIntegrationsService(integrationUseCase, workflowUseCase, v2...)
+	initialized, err := loadIntegrations(logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	integrationsService := service.NewIntegrationsService(integrationUseCase, workflowUseCase, initialized, v2...)
 	organizationService := service.NewOrganizationService(membershipUseCase, v2...)
 	opts := &server.Opts{
 		UserUseCase:          userUseCase,

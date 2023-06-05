@@ -20,8 +20,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/integrations"
-	integrationMocks "github.com/chainloop-dev/chainloop/app/controlplane/integrations/mocks"
+	integrationsSDK "github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1"
+	integrationMocks "github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1/mocks"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
 	creds "github.com/chainloop-dev/chainloop/internal/credentials/mocks"
@@ -38,11 +38,11 @@ func (s *testSuite) TestCreate() {
 	assert := assert.New(s.T())
 
 	// Mocked integration that will return both generic configuration and credentials
-	integration := integrationMocks.NewRegistrable(s.T())
+	integration := integrationMocks.NewFanOut(s.T())
 
 	ctx := context.Background()
-	integration.On("PreRegister", ctx, s.configAny).Return(&integrations.PreRegistration{
-		Configuration: s.config, Kind: kind, Credentials: &integrations.Credentials{
+	integration.On("PreRegister", ctx, s.configAny).Return(&integrationsSDK.PreRegistration{
+		Configuration: s.config, Kind: kind, Credentials: &integrationsSDK.Credentials{
 			Password: "key", URL: "host"},
 	}, nil)
 
@@ -64,82 +64,82 @@ func (s *testSuite) TestAttachWorkflow() {
 	assert := assert.New(s.T())
 	s.Run("org does not exist", func() {
 		_, err := s.Integration.AttachToWorkflow(context.Background(), &biz.AttachOpts{
-			OrgID:            uuid.NewString(),
-			IntegrationID:    s.integration.ID.String(),
-			WorkflowID:       s.workflow.ID.String(),
-			Attachable:       s.attachable,
-			AttachmentConfig: s.configAny,
+			OrgID:             uuid.NewString(),
+			IntegrationID:     s.integration.ID.String(),
+			WorkflowID:        s.workflow.ID.String(),
+			FanOutIntegration: s.fanOutIntegration,
+			AttachmentConfig:  s.configAny,
 		})
 		assert.ErrorAs(err, &biz.ErrNotFound{})
 	})
 
 	s.Run("workflow does not exist", func() {
 		_, err := s.Integration.AttachToWorkflow(context.Background(), &biz.AttachOpts{
-			OrgID:            s.org.ID,
-			IntegrationID:    s.integration.ID.String(),
-			WorkflowID:       uuid.NewString(),
-			Attachable:       s.attachable,
-			AttachmentConfig: s.configAny,
+			OrgID:             s.org.ID,
+			IntegrationID:     s.integration.ID.String(),
+			WorkflowID:        uuid.NewString(),
+			FanOutIntegration: s.fanOutIntegration,
+			AttachmentConfig:  s.configAny,
 		})
 		assert.ErrorAs(err, &biz.ErrNotFound{})
 	})
 
 	s.Run("workflow belongs to another org", func() {
 		_, err := s.Integration.AttachToWorkflow(context.Background(), &biz.AttachOpts{
-			OrgID:            s.emptyOrg.ID,
-			IntegrationID:    s.integration.ID.String(),
-			WorkflowID:       s.workflow.ID.String(),
-			Attachable:       s.attachable,
-			AttachmentConfig: s.configAny,
+			OrgID:             s.emptyOrg.ID,
+			IntegrationID:     s.integration.ID.String(),
+			WorkflowID:        s.workflow.ID.String(),
+			FanOutIntegration: s.fanOutIntegration,
+			AttachmentConfig:  s.configAny,
 		})
 		assert.ErrorAs(err, &biz.ErrNotFound{})
 	})
 
 	s.Run("integration does not exist", func() {
 		_, err := s.Integration.AttachToWorkflow(context.Background(), &biz.AttachOpts{
-			OrgID:            s.org.ID,
-			IntegrationID:    uuid.NewString(),
-			WorkflowID:       s.workflow.ID.String(),
-			Attachable:       s.attachable,
-			AttachmentConfig: s.configAny,
+			OrgID:             s.org.ID,
+			IntegrationID:     uuid.NewString(),
+			WorkflowID:        s.workflow.ID.String(),
+			FanOutIntegration: s.fanOutIntegration,
+			AttachmentConfig:  s.configAny,
 		})
 		assert.ErrorAs(err, &biz.ErrNotFound{})
 	})
 
 	s.Run("integration belongs to another org", func() {
 		_, err := s.Integration.AttachToWorkflow(context.Background(), &biz.AttachOpts{
-			OrgID:            s.emptyOrg.ID,
-			IntegrationID:    s.integration.ID.String(),
-			WorkflowID:       s.workflow.ID.String(),
-			Attachable:       s.attachable,
-			AttachmentConfig: s.configAny,
+			OrgID:             s.emptyOrg.ID,
+			IntegrationID:     s.integration.ID.String(),
+			WorkflowID:        s.workflow.ID.String(),
+			FanOutIntegration: s.fanOutIntegration,
+			AttachmentConfig:  s.configAny,
 		})
 		assert.ErrorAs(err, &biz.ErrNotFound{})
 	})
 
 	s.Run("attachable not provided", func() {
 		_, err := s.Integration.AttachToWorkflow(context.Background(), &biz.AttachOpts{
-			OrgID:            s.org.ID,
-			IntegrationID:    s.integration.ID.String(),
-			WorkflowID:       s.workflow.ID.String(),
-			Attachable:       nil,
-			AttachmentConfig: s.configAny,
+			OrgID:             s.org.ID,
+			IntegrationID:     s.integration.ID.String(),
+			WorkflowID:        s.workflow.ID.String(),
+			FanOutIntegration: nil,
+			AttachmentConfig:  s.configAny,
 		})
 		assert.ErrorAs(err, &biz.ErrValidation{})
 	})
 
 	s.Run("attachment OK", func() {
 		ctx := context.Background()
-		s.attachable.On("PreAttach", ctx, mock.Anything).Return(&integrations.PreAttachment{
+		s.fanOutIntegration.On("PreAttach", ctx, mock.Anything).Return(&integrationsSDK.PreAttachment{
 			Configuration: s.config,
 		}, nil).Once()
 
 		got, err := s.Integration.AttachToWorkflow(ctx, &biz.AttachOpts{
-			OrgID:            s.org.ID,
-			IntegrationID:    s.integration.ID.String(),
-			WorkflowID:       s.workflow.ID.String(),
-			Attachable:       s.attachable,
-			AttachmentConfig: s.configAny,
+			OrgID:             s.org.ID,
+			IntegrationID:     s.integration.ID.String(),
+			WorkflowID:        s.workflow.ID.String(),
+			FanOutIntegration: s.fanOutIntegration,
+			AttachmentConfig:  s.configAny,
 		})
 		assert.NoError(err)
 
@@ -159,14 +159,14 @@ func (s *testSuite) TestAttachWorkflow() {
 
 	s.Run("attachment fails", func() {
 		ctx := context.Background()
-		s.attachable.On("PreAttach", ctx, mock.Anything).Return(nil, errors.New("invalid attachment options")).Once()
+		s.fanOutIntegration.On("PreAttach", ctx, mock.Anything).Return(nil, errors.New("invalid attachment options")).Once()
 
 		_, err := s.Integration.AttachToWorkflow(ctx, &biz.AttachOpts{
-			OrgID:            s.org.ID,
-			IntegrationID:    s.integration.ID.String(),
-			WorkflowID:       s.workflow.ID.String(),
-			Attachable:       s.attachable,
-			AttachmentConfig: s.configAny,
+			OrgID:             s.org.ID,
+			IntegrationID:     s.integration.ID.String(),
+			WorkflowID:        s.workflow.ID.String(),
+			FanOutIntegration: s.fanOutIntegration,
+			AttachmentConfig:  s.configAny,
 		})
 		assert.ErrorAs(err, &biz.ErrValidation{})
 		assert.ErrorContains(err, "invalid attachment options")
@@ -182,7 +182,7 @@ func (s *testSuite) SetupTest() {
 	s.mockedCredsReaderWriter = creds.NewReaderWriter(t)
 	// integration credentials
 	s.mockedCredsReaderWriter.On(
-		"SaveCredentials", ctx, mock.Anything, &integrations.Credentials{URL: "host", Password: "key"},
+		"SaveCredentials", ctx, mock.Anything, &integrationsSDK.Credentials{URL: "host", Password: "key"},
 	).Return("stored-integration-secret", nil).Maybe()
 
 	s.TestingUseCases = testhelpers.NewTestingUseCases(t, testhelpers.WithCredsReaderWriter(s.mockedCredsReaderWriter))
@@ -198,13 +198,12 @@ func (s *testSuite) SetupTest() {
 	s.workflow, err = s.Workflow.Create(ctx, &biz.CreateOpts{Name: "test workflow", OrgID: s.org.ID})
 	assert.NoError(err)
 
-	// Mocked integration that will return both generic configuration and credentials
-	integration := integrationMocks.NewRegistrable(s.T())
-	integration.On("PreRegister", ctx, mock.Anything).Return(&integrations.PreRegistration{Configuration: &anypb.Any{}}, nil)
-	s.registrable = integration
-	s.attachable = integrationMocks.NewAttachable(s.T())
+	// Mocked fanOut that will return both generic configuration and credentials
+	fanOut := integrationMocks.NewFanOut(s.T())
+	fanOut.On("PreRegister", ctx, mock.Anything).Return(&integrationsSDK.PreRegistration{Configuration: &anypb.Any{}}, nil)
+	s.fanOutIntegration = fanOut
 
-	s.integration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, integration, nil)
+	s.integration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, fanOut, nil)
 	assert.NoError(err)
 
 	// Integration configuration
@@ -231,6 +230,5 @@ type testSuite struct {
 	mockedCredsReaderWriter *creds.ReaderWriter
 	config                  *structpb.Value
 	configAny               *anypb.Any
-	registrable             *integrationMocks.Registrable
-	attachable              *integrationMocks.Attachable
+	fanOutIntegration       *integrationMocks.FanOut
 }
