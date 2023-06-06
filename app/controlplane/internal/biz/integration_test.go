@@ -41,8 +41,8 @@ func (s *testSuite) TestCreate() {
 	integration := integrationMocks.NewFanOut(s.T())
 
 	ctx := context.Background()
-	integration.On("PreRegister", ctx, s.configAny).Return(&integrationsSDK.PreRegistration{
-		Configuration: s.config, Kind: kind, Credentials: &integrationsSDK.Credentials{
+	integration.On("Register", ctx, s.configAny).Return(&integrationsSDK.RegisterResponse{
+		Configuration: s.config, Credentials: &integrationsSDK.Credentials{
 			Password: "key", URL: "host"},
 	}, nil)
 
@@ -198,14 +198,6 @@ func (s *testSuite) SetupTest() {
 	s.workflow, err = s.Workflow.Create(ctx, &biz.CreateOpts{Name: "test workflow", OrgID: s.org.ID})
 	assert.NoError(err)
 
-	// Mocked fanOut that will return both generic configuration and credentials
-	fanOut := integrationMocks.NewFanOut(s.T())
-	fanOut.On("PreRegister", ctx, mock.Anything).Return(&integrationsSDK.PreRegistration{Configuration: &anypb.Any{}}, nil)
-	s.fanOutIntegration = fanOut
-
-	s.integration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, fanOut, nil)
-	assert.NoError(err)
-
 	// Integration configuration
 	s.config, err = structpb.NewValue(map[string]interface{}{
 		"firstName": "John",
@@ -213,6 +205,13 @@ func (s *testSuite) SetupTest() {
 	assert.NoError(err)
 
 	s.configAny, err = anypb.New(s.config)
+	assert.NoError(err)
+	// Mocked fanOut that will return both generic configuration and credentials
+	fanOut := integrationMocks.NewFanOut(s.T())
+	fanOut.On("Register", ctx, mock.Anything).Return(&integrationsSDK.RegisterResponse{Configuration: &anypb.Any{}}, nil)
+	s.fanOutIntegration = fanOut
+
+	s.integration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, fanOut, s.configAny)
 	assert.NoError(err)
 }
 

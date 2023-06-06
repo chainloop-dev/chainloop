@@ -54,14 +54,25 @@ type BaseIntegration struct {
 	Logger           *log.Helper
 }
 
-func NewBaseIntegration(id, version, description string, opts ...NewOpt) (*BaseIntegration, error) {
+type NewParams struct {
+	ID, Version, Description string
+	Logger                   log.Logger
+}
+
+func NewBaseIntegration(p *NewParams, opts ...NewOpt) (*BaseIntegration, error) {
 	c := &BaseIntegration{
-		id:               id,
-		version:          version,
-		description:      description,
-		log:              log.NewStdLogger(io.Discard),
+		id:               p.ID,
+		version:          p.Version,
+		description:      p.Description,
+		log:              p.Logger,
 		subscribedInputs: &Inputs{},
 	}
+
+	if c.log == nil {
+		c.log = log.NewStdLogger(io.Discard)
+	}
+
+	c.Logger = servicelogger.ScopedHelper(c.log, fmt.Sprintf("integrations/%s", p.ID))
 
 	for _, opt := range opts {
 		opt(c)
@@ -71,14 +82,12 @@ func NewBaseIntegration(id, version, description string, opts ...NewOpt) (*BaseI
 		return nil, err
 	}
 
-	c.Logger = servicelogger.ScopedHelper(c.log, fmt.Sprintf("integrations/%s", id))
-
 	return c, nil
 }
 
 func validateConstructor(c *BaseIntegration) error {
-	if c.id == "" || c.description == "" {
-		return fmt.Errorf("id and description are required")
+	if c.id == "" {
+		return fmt.Errorf("id is required")
 	}
 
 	if c.version == "" {
@@ -118,21 +127,19 @@ type CoreI interface {
 // To be implemented per integration
 type Custom interface {
 	// Validate, marshall and return the configuration that needs to be persisted
-	PreRegister(ctx context.Context, req *anypb.Any) (*PreRegistration, error)
+	Register(ctx context.Context, req any) (*RegisterResponse, error)
 	// Validate that the attachment configuration is valid in the context of the provided registration
 	PreAttach(ctx context.Context, c *BundledConfig) (*PreAttachment, error)
 	// Execute the integration
 	Execute(ctx context.Context, opts *ExecuteReq) error
 }
 
-type PreRegistration struct {
+type RegisterResponse struct {
 	// Credentials to be persisted in Credentials Manager
 	// JSON serializable
 	Credentials *Credentials
 	// Configuration to be persisted in DB
 	Configuration proto.Message
-	// registration kind
-	Kind string
 }
 
 type PreAttachment struct {
@@ -195,8 +202,6 @@ type IntegrationInfo struct {
 	ID string
 	// Integration version
 	Version string
-	// Brief description of what the integration does
-	Description string
 	// Kind of inputs does the integration expect as part of the execution
 	SubscribedInputs *Inputs
 }
@@ -205,7 +210,6 @@ func (i *BaseIntegration) Describe() *IntegrationInfo {
 	return &IntegrationInfo{
 		ID:               i.id,
 		Version:          i.version,
-		Description:      i.description,
 		SubscribedInputs: i.subscribedInputs,
 	}
 }
@@ -222,15 +226,6 @@ func (i *BaseIntegration) String() string {
 }
 
 type NewOpt func(*BaseIntegration)
-
-// Set a logger only if provided
-func WithLogger(logger log.Logger) NewOpt {
-	return func(c *BaseIntegration) {
-		if logger != nil {
-			c.log = logger
-		}
-	}
-}
 
 func WithEnvelope() NewOpt {
 	return func(c *BaseIntegration) {

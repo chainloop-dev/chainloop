@@ -26,7 +26,6 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/integrations/gen/dependencytrack/cyclonedx/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1"
 	"github.com/go-kratos/kratos/v2/log"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 const ID = "dependencytrack.cyclonedx.v1"
@@ -43,10 +42,12 @@ type DependencyTrack struct {
 // In the future this will be a plugin entrypoint
 func NewIntegration(l log.Logger) (*DependencyTrack, error) {
 	base, err := sdk.NewBaseIntegration(
-		ID, version, description,
-		sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON),
-		sdk.WithLogger(l),
-	)
+		&sdk.NewParams{
+			ID:          ID,
+			Version:     version,
+			Description: description,
+			Logger:      l,
+		}, sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON))
 
 	if err != nil {
 		return nil, err
@@ -59,13 +60,12 @@ func NewIntegration(l log.Logger) (*DependencyTrack, error) {
 	}, nil
 }
 
-func (i *DependencyTrack) PreRegister(ctx context.Context, registrationRequest *anypb.Any) (*sdk.PreRegistration, error) {
+func (i *DependencyTrack) Register(ctx context.Context, registrationRequest any) (*sdk.RegisterResponse, error) {
 	i.Logger.Info("pre-registration requested")
 
-	// Extract the request and un-marshal it to a concrete type
-	req := new(pb.RegistrationRequest)
-	if err := registrationRequest.UnmarshalTo(req); err != nil {
-		return nil, fmt.Errorf("invalid request type: %w", err)
+	req, ok := registrationRequest.(*pb.RegistrationRequest)
+	if !ok {
+		return nil, errors.New("invalid request")
 	}
 
 	// Validate the request payload
@@ -88,10 +88,9 @@ func (i *DependencyTrack) PreRegister(ctx context.Context, registrationRequest *
 	i.Logger.Infow("msg", "pre-registration OK", "domain", domain, "allowAutoCreate", enableProjectCreation)
 
 	// Return what configuration to store in the database and what to store in the external secrets manager
-	return &sdk.PreRegistration{
+	return &sdk.RegisterResponse{
 		Credentials:   &sdk.Credentials{Password: req.GetApiKey()},
 		Configuration: req.Config,
-		Kind:          ID,
 	}, nil
 }
 

@@ -96,7 +96,13 @@ func (uc *IntegrationUseCase) RegisterAndSave(ctx context.Context, orgID string,
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	preRegistration, err := i.PreRegister(ctx, regConfig)
+	// Marshall the configuration into the integration's schema to validate it
+	registerConfig, err := regConfig.UnmarshalNew()
+	if err != nil {
+		return nil, NewErrValidation(err)
+	}
+
+	preRegistration, err := i.Register(ctx, registerConfig)
 	if err != nil {
 		return nil, NewErrValidation(err)
 	}
@@ -117,7 +123,7 @@ func (uc *IntegrationUseCase) RegisterAndSave(ctx context.Context, orgID string,
 	}
 
 	// Persist the integration configuration
-	return uc.integrationRepo.Create(ctx, orgUUID, preRegistration.Kind, secretID, config)
+	return uc.integrationRepo.Create(ctx, orgUUID, i.Describe().ID, secretID, config)
 }
 
 type AttachOpts struct {

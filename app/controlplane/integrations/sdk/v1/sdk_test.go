@@ -34,8 +34,7 @@ func TestNewBaseIntegration(t *testing.T) {
 		errMsg      string
 		wantInput   *sdk.Inputs
 	}{
-		{name: "invalid - missing id", description: "desc", errMsg: "id and description are required"},
-		{name: "invalid - missing description", id: "id", errMsg: "id and description are required"},
+		{name: "invalid - missing id", description: "desc", errMsg: "id is required"},
 		{name: "invalid - missing version", id: "id", description: "desc", errMsg: "version is required"},
 		{name: "invalid - need one input", id: "id", version: "123", description: "description", errMsg: "at least one input"},
 		{name: "ok - has envelope", id: "id", version: "123", description: "description", opts: []sdk.NewOpt{sdk.WithEnvelope()}, wantInput: &sdk.Inputs{DSSEnvelope: true}},
@@ -95,7 +94,11 @@ func TestNewBaseIntegration(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := sdk.NewBaseIntegration(tc.id, tc.version, tc.description, tc.opts...)
+			got, err := sdk.NewBaseIntegration(
+				&sdk.NewParams{
+					ID:      tc.id,
+					Version: tc.version,
+				}, tc.opts...)
 			if tc.errMsg != "" {
 				assert.ErrorContains(t, err, tc.errMsg)
 			} else {
@@ -103,7 +106,6 @@ func TestNewBaseIntegration(t *testing.T) {
 				d := got.Describe()
 				assert.Equal(t, tc.wantInput, d.SubscribedInputs)
 				assert.Equal(t, tc.id, d.ID)
-				assert.Equal(t, tc.description, d.Description)
 			}
 		})
 	}
@@ -162,7 +164,7 @@ func TestString(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := sdk.NewBaseIntegration(tc.id, tc.version, "desc", tc.opts...)
+			got, err := sdk.NewBaseIntegration(&sdk.NewParams{ID: tc.id, Version: tc.version}, tc.opts...)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.want, got.String())
 		})

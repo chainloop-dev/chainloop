@@ -82,9 +82,8 @@ func TestNewIntegration(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, &sdk.IntegrationInfo{
-		ID:          "dependencytrack.cyclonedx.v1",
-		Description: "Dependency Track CycloneDX Software Bill Of Materials Integration",
-		Version:     "1.0",
+		ID:      "dependencytrack.cyclonedx.v1",
+		Version: "1.0",
 		SubscribedInputs: &sdk.Inputs{
 			Materials: []*sdk.InputMaterial{
 				{
