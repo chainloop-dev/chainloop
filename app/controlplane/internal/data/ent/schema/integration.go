@@ -23,8 +23,6 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
-
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 type Integration struct {
@@ -41,7 +39,7 @@ func (Integration) Fields() []ent.Field {
 			Immutable().
 			Annotations(&entsql.Annotation{Default: "CURRENT_TIMESTAMP"}),
 		// NOTE: Optional for now until we migrate all the integrations to this new schema
-		field.JSON("conf", &anypb.Any{}).Optional(),
+		field.Bytes("configuration").Optional(),
 		field.Time("deleted_at").Optional(),
 	}
 }

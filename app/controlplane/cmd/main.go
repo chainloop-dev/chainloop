@@ -130,8 +130,8 @@ func main() {
 // Load the available third party integrations
 // In the future this code will iterate over a dynamic directory of plugins
 // and try to load them one by one
-func loadIntegrations(l log.Logger) (sdk.Initialized, error) {
-	var res sdk.Initialized
+func loadIntegrations(l log.Logger) (sdk.Loaded, error) {
+	var res sdk.Loaded
 
 	var d sdk.FanOut
 	d, err := deptrack.NewIntegration(l)

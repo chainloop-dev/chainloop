@@ -16,7 +16,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
 	"github.com/google/uuid"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // IntegrationAttachmentUpdate is the builder for updating IntegrationAttachment entities.
@@ -32,15 +31,15 @@ func (iau *IntegrationAttachmentUpdate) Where(ps ...predicate.IntegrationAttachm
 	return iau
 }
 
-// SetConf sets the "conf" field.
-func (iau *IntegrationAttachmentUpdate) SetConf(a *anypb.Any) *IntegrationAttachmentUpdate {
-	iau.mutation.SetConf(a)
+// SetConfiguration sets the "configuration" field.
+func (iau *IntegrationAttachmentUpdate) SetConfiguration(b []byte) *IntegrationAttachmentUpdate {
+	iau.mutation.SetConfiguration(b)
 	return iau
 }
 
-// ClearConf clears the value of the "conf" field.
-func (iau *IntegrationAttachmentUpdate) ClearConf() *IntegrationAttachmentUpdate {
-	iau.mutation.ClearConf()
+// ClearConfiguration clears the value of the "configuration" field.
+func (iau *IntegrationAttachmentUpdate) ClearConfiguration() *IntegrationAttachmentUpdate {
+	iau.mutation.ClearConfiguration()
 	return iau
 }
 
@@ -153,11 +152,11 @@ func (iau *IntegrationAttachmentUpdate) sqlSave(ctx context.Context) (n int, err
 			}
 		}
 	}
-	if value, ok := iau.mutation.Conf(); ok {
-		_spec.SetField(integrationattachment.FieldConf, field.TypeJSON, value)
+	if value, ok := iau.mutation.Configuration(); ok {
+		_spec.SetField(integrationattachment.FieldConfiguration, field.TypeBytes, value)
 	}
-	if iau.mutation.ConfCleared() {
-		_spec.ClearField(integrationattachment.FieldConf, field.TypeJSON)
+	if iau.mutation.ConfigurationCleared() {
+		_spec.ClearField(integrationattachment.FieldConfiguration, field.TypeBytes)
 	}
 	if value, ok := iau.mutation.DeletedAt(); ok {
 		_spec.SetField(integrationattachment.FieldDeletedAt, field.TypeTime, value)
@@ -255,15 +254,15 @@ type IntegrationAttachmentUpdateOne struct {
 	mutation *IntegrationAttachmentMutation
 }
 
-// SetConf sets the "conf" field.
-func (iauo *IntegrationAttachmentUpdateOne) SetConf(a *anypb.Any) *IntegrationAttachmentUpdateOne {
-	iauo.mutation.SetConf(a)
+// SetConfiguration sets the "configuration" field.
+func (iauo *IntegrationAttachmentUpdateOne) SetConfiguration(b []byte) *IntegrationAttachmentUpdateOne {
+	iauo.mutation.SetConfiguration(b)
 	return iauo
 }
 
-// ClearConf clears the value of the "conf" field.
-func (iauo *IntegrationAttachmentUpdateOne) ClearConf() *IntegrationAttachmentUpdateOne {
-	iauo.mutation.ClearConf()
+// ClearConfiguration clears the value of the "configuration" field.
+func (iauo *IntegrationAttachmentUpdateOne) ClearConfiguration() *IntegrationAttachmentUpdateOne {
+	iauo.mutation.ClearConfiguration()
 	return iauo
 }
 
@@ -406,11 +405,11 @@ func (iauo *IntegrationAttachmentUpdateOne) sqlSave(ctx context.Context) (_node 
 			}
 		}
 	}
-	if value, ok := iauo.mutation.Conf(); ok {
-		_spec.SetField(integrationattachment.FieldConf, field.TypeJSON, value)
+	if value, ok := iauo.mutation.Configuration(); ok {
+		_spec.SetField(integrationattachment.FieldConfiguration, field.TypeBytes, value)
 	}
-	if iauo.mutation.ConfCleared() {
-		_spec.ClearField(integrationattachment.FieldConf, field.TypeJSON)
+	if iauo.mutation.ConfigurationCleared() {
+		_spec.ClearField(integrationattachment.FieldConfiguration, field.TypeBytes)
 	}
 	if value, ok := iauo.mutation.DeletedAt(); ok {
 		_spec.SetField(integrationattachment.FieldDeletedAt, field.TypeTime, value)

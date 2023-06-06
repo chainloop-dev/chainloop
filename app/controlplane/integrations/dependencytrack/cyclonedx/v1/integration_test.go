@@ -100,35 +100,35 @@ func TestValidateExecuteOpts(t *testing.T) {
 
 	testCases := []struct {
 		name   string
-		opts   *sdk.ExecuteReq
+		opts   *sdk.ExecutionRequest
 		errMsg string
 	}{
 		{name: "invalid - missing input", errMsg: "invalid input"},
-		{name: "invalid - missing input", opts: &sdk.ExecuteReq{Input: &sdk.ExecuteInput{}}, errMsg: "invalid input"},
+		{name: "invalid - missing input", opts: &sdk.ExecutionRequest{Input: &sdk.ExecuteInput{}}, errMsg: "invalid input"},
 		{
 			name: "invalid - missing material",
-			opts: &sdk.ExecuteReq{
+			opts: &sdk.ExecutionRequest{
 				Input: &sdk.ExecuteInput{Material: &sdk.ExecuteMaterial{}},
 			},
 			errMsg: "invalid input",
 		},
 		{
 			name: "invalid - invalid material",
-			opts: &sdk.ExecuteReq{
+			opts: &sdk.ExecutionRequest{
 				Input: &sdk.ExecuteInput{Material: &sdk.ExecuteMaterial{NormalizedMaterial: &chainloop.NormalizedMaterial{Type: "invalid"}, Content: []byte("content")}},
 			},
 			errMsg: "invalid input type",
 		},
 		{
 			name: "invalid - missing configuration",
-			opts: &sdk.ExecuteReq{
+			opts: &sdk.ExecutionRequest{
 				Input: &sdk.ExecuteInput{Material: validMaterial},
 			},
 			errMsg: "missing configuration",
 		},
 		{
 			name: "invalid - missing attachment configuration",
-			opts: &sdk.ExecuteReq{
+			opts: &sdk.ExecutionRequest{
 				Input:  &sdk.ExecuteInput{Material: validMaterial},
 				Config: &sdk.BundledConfig{Registration: config},
 			},
@@ -136,7 +136,7 @@ func TestValidateExecuteOpts(t *testing.T) {
 		},
 		{
 			name: "invalid - missing registration configuration",
-			opts: &sdk.ExecuteReq{
+			opts: &sdk.ExecutionRequest{
 				Input:  &sdk.ExecuteInput{Material: validMaterial},
 				Config: &sdk.BundledConfig{Attachment: config},
 			},
@@ -144,7 +144,7 @@ func TestValidateExecuteOpts(t *testing.T) {
 		},
 		{
 			name: "invalid - missing credentials",
-			opts: &sdk.ExecuteReq{
+			opts: &sdk.ExecutionRequest{
 				Input:  &sdk.ExecuteInput{Material: validMaterial},
 				Config: &sdk.BundledConfig{Registration: config, Attachment: config},
 			},
@@ -152,7 +152,7 @@ func TestValidateExecuteOpts(t *testing.T) {
 		},
 		{
 			name: "ok - all good",
-			opts: &sdk.ExecuteReq{
+			opts: &sdk.ExecutionRequest{
 				Input:  &sdk.ExecuteInput{Material: validMaterial},
 				Config: &sdk.BundledConfig{Registration: config, Attachment: config, Credentials: &sdk.Credentials{Password: "password"}},
 			},

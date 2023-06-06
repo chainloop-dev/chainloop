@@ -94,7 +94,7 @@ func TestNewBaseIntegration(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := sdk.NewBaseIntegration(
+			got, err := sdk.NewFanout(
 				&sdk.NewParams{
 					ID:      tc.id,
 					Version: tc.version,
@@ -117,7 +117,7 @@ func TestFindByID(t *testing.T) {
 	want2 := mocks.NewFanOut(t)
 	want2.On("Describe").Return(&sdk.IntegrationInfo{ID: "id2"})
 
-	var available sdk.Initialized = []sdk.FanOut{want, want2}
+	var available sdk.Loaded = []sdk.FanOut{want, want2}
 	got, err := available.FindByID("id")
 	assert.NoError(t, err)
 	assert.Equal(t, want.Describe().ID, got.Describe().ID)
@@ -164,7 +164,7 @@ func TestString(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := sdk.NewBaseIntegration(&sdk.NewParams{ID: tc.id, Version: tc.version}, tc.opts...)
+			got, err := sdk.NewFanout(&sdk.NewParams{ID: tc.id, Version: tc.version}, tc.opts...)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.want, got.String())
 		})

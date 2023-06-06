@@ -31,11 +31,11 @@ func (_m *FanOut) Describe() *sdk.IntegrationInfo {
 }
 
 // Execute provides a mock function with given fields: ctx, opts
-func (_m *FanOut) Execute(ctx context.Context, opts *sdk.ExecuteReq) error {
+func (_m *FanOut) Execute(ctx context.Context, opts *sdk.ExecutionRequest) error {
 	ret := _m.Called(ctx, opts)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *sdk.ExecuteReq) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *sdk.ExecutionRequest) error); ok {
 		r0 = rf(ctx, opts)
 	} else {
 		r0 = ret.Error(0)
@@ -45,19 +45,19 @@ func (_m *FanOut) Execute(ctx context.Context, opts *sdk.ExecuteReq) error {
 }
 
 // PreAttach provides a mock function with given fields: ctx, c
-func (_m *FanOut) PreAttach(ctx context.Context, c *sdk.BundledConfig) (*sdk.PreAttachment, error) {
+func (_m *FanOut) PreAttach(ctx context.Context, c *sdk.BundledConfig) (*sdk.AttachmentResponse, error) {
 	ret := _m.Called(ctx, c)
 
-	var r0 *sdk.PreAttachment
+	var r0 *sdk.AttachmentResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, *sdk.BundledConfig) (*sdk.PreAttachment, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *sdk.BundledConfig) (*sdk.AttachmentResponse, error)); ok {
 		return rf(ctx, c)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, *sdk.BundledConfig) *sdk.PreAttachment); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *sdk.BundledConfig) *sdk.AttachmentResponse); ok {
 		r0 = rf(ctx, c)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*sdk.PreAttachment)
+			r0 = ret.Get(0).(*sdk.AttachmentResponse)
 		}
 	}
 
@@ -71,19 +71,19 @@ func (_m *FanOut) PreAttach(ctx context.Context, c *sdk.BundledConfig) (*sdk.Pre
 }
 
 // Register provides a mock function with given fields: ctx, req
-func (_m *FanOut) Register(ctx context.Context, req interface{}) (*sdk.RegisterResponse, error) {
+func (_m *FanOut) Register(ctx context.Context, req interface{}) (*sdk.RegistrationResponse, error) {
 	ret := _m.Called(ctx, req)
 
-	var r0 *sdk.RegisterResponse
+	var r0 *sdk.RegistrationResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, interface{}) (*sdk.RegisterResponse, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, interface{}) (*sdk.RegistrationResponse, error)); ok {
 		return rf(ctx, req)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, interface{}) *sdk.RegisterResponse); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, interface{}) *sdk.RegistrationResponse); ok {
 		r0 = rf(ctx, req)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*sdk.RegisterResponse)
+			r0 = ret.Get(0).(*sdk.RegistrationResponse)
 		}
 	}
 

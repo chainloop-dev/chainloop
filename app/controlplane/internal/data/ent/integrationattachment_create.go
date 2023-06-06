@@ -14,7 +14,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integrationattachment"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
 	"github.com/google/uuid"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // IntegrationAttachmentCreate is the builder for creating a IntegrationAttachment entity.
@@ -38,9 +37,9 @@ func (iac *IntegrationAttachmentCreate) SetNillableCreatedAt(t *time.Time) *Inte
 	return iac
 }
 
-// SetConf sets the "conf" field.
-func (iac *IntegrationAttachmentCreate) SetConf(a *anypb.Any) *IntegrationAttachmentCreate {
-	iac.mutation.SetConf(a)
+// SetConfiguration sets the "configuration" field.
+func (iac *IntegrationAttachmentCreate) SetConfiguration(b []byte) *IntegrationAttachmentCreate {
+	iac.mutation.SetConfiguration(b)
 	return iac
 }
 
@@ -189,9 +188,9 @@ func (iac *IntegrationAttachmentCreate) createSpec() (*IntegrationAttachment, *s
 		_spec.SetField(integrationattachment.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := iac.mutation.Conf(); ok {
-		_spec.SetField(integrationattachment.FieldConf, field.TypeJSON, value)
-		_node.Conf = value
+	if value, ok := iac.mutation.Configuration(); ok {
+		_spec.SetField(integrationattachment.FieldConfiguration, field.TypeBytes, value)
+		_node.Configuration = value
 	}
 	if value, ok := iac.mutation.DeletedAt(); ok {
 		_spec.SetField(integrationattachment.FieldDeletedAt, field.TypeTime, value)

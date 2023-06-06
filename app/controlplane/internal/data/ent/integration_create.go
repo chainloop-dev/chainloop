@@ -14,7 +14,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integrationattachment"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/google/uuid"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // IntegrationCreate is the builder for creating a Integration entity.
@@ -50,9 +49,9 @@ func (ic *IntegrationCreate) SetNillableCreatedAt(t *time.Time) *IntegrationCrea
 	return ic
 }
 
-// SetConf sets the "conf" field.
-func (ic *IntegrationCreate) SetConf(a *anypb.Any) *IntegrationCreate {
-	ic.mutation.SetConf(a)
+// SetConfiguration sets the "configuration" field.
+func (ic *IntegrationCreate) SetConfiguration(b []byte) *IntegrationCreate {
+	ic.mutation.SetConfiguration(b)
 	return ic
 }
 
@@ -216,9 +215,9 @@ func (ic *IntegrationCreate) createSpec() (*Integration, *sqlgraph.CreateSpec) {
 		_spec.SetField(integration.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := ic.mutation.Conf(); ok {
-		_spec.SetField(integration.FieldConf, field.TypeJSON, value)
-		_node.Conf = value
+	if value, ok := ic.mutation.Configuration(); ok {
+		_spec.SetField(integration.FieldConfiguration, field.TypeBytes, value)
+		_node.Configuration = value
 	}
 	if value, ok := ic.mutation.DeletedAt(); ok {
 		_spec.SetField(integration.FieldDeletedAt, field.TypeTime, value)

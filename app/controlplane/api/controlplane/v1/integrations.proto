@@ -83,13 +83,15 @@ message IntegrationItem {
 	string id = 1;
 	string kind = 2;
 	google.protobuf.Timestamp created_at = 3;
-	google.protobuf.Any config = 5;
+	// Arbitrary configuration for the integration
+	bytes config = 5;
 }
 
 message IntegrationAttachmentItem {
 	string id = 1;
 	google.protobuf.Timestamp created_at = 2;
-	google.protobuf.Any config = 3;
+	// Arbitrary configuration for the attachment
+	bytes config = 3;
 	IntegrationItem integration = 4;
 	WorkflowItem workflow = 5;
 }

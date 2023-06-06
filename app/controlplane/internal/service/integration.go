@@ -33,10 +33,10 @@ type IntegrationsService struct {
 
 	integrationUC *biz.IntegrationUseCase
 	workflowUC    *biz.WorkflowUseCase
-	integrations  sdk.Initialized
+	integrations  sdk.Loaded
 }
 
-func NewIntegrationsService(uc *biz.IntegrationUseCase, wuc *biz.WorkflowUseCase, integrations sdk.Initialized, opts ...NewOpt) *IntegrationsService {
+func NewIntegrationsService(uc *biz.IntegrationUseCase, wuc *biz.WorkflowUseCase, integrations sdk.Loaded, opts ...NewOpt) *IntegrationsService {
 	return &IntegrationsService{
 		service:       newService(opts...),
 		integrationUC: uc,

@@ -39,5 +39,5 @@ func (s *UseCasesEachTestSuite) SetupTest() {
 
 // Run after each test
 func (s *UseCasesEachTestSuite) TearDownTest() {
-	s.TestingUseCases.DB.Close(s.T())
+	// s.TestingUseCases.DB.Close(s.T())
 }

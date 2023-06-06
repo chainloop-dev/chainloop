@@ -17,7 +17,7 @@ package action
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
@@ -68,8 +68,9 @@ func pbIntegrationAttachmentItemToAction(in *pb.IntegrationAttachmentItem) (*Int
 		return i, nil
 	}
 
-	if i.Config, err = anyPbToMap(in.Config); err != nil {
-		return nil, fmt.Errorf("failed to convert config: %w", err)
+	if err = json.Unmarshal(in.Config, &i.Config); err != nil {
+		// Can't process configuration
+		return i, nil
 	}
 
 	return i, nil

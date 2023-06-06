@@ -22,23 +22,14 @@ import "validate/validate.proto";
 
 // RegistrationRequest is what the integration expect as input of the pre-registration step
 message RegistrationRequest {
-	RegistrationConfig config = 1 [(validate.rules).message.required = true];
+	string domain = 1 [(validate.rules).string.min_len = 1];
 	string api_key = 2 [(validate.rules).string.min_len = 1];
+	// Support the option to automatically create projects if requested
+	bool allow_auto_create = 3;
 }
 
 // AttachmentRequest is what the integration expect as input of the pre-attachment step
 message AttachmentRequest {
-	AttachmentConfig config = 1 [(validate.rules).message.required = true];
-}
-
-// Structs containing the information to be stored in the integration step
-message RegistrationConfig {
-	string domain = 1 [(validate.rules).string.min_len = 1];
-	// Support the option to automatically create projects if requested
-	bool allow_auto_create = 2;
-}
-
-message AttachmentConfig {
 	oneof project {
 		option (validate.required) = true;
 		// The integration might either use a pre-configured projectID

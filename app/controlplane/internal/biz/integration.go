@@ -33,7 +33,7 @@ import (
 type IntegrationAttachment struct {
 	ID                        uuid.UUID
 	CreatedAt                 *time.Time
-	Config                    *anypb.Any
+	Config                    []byte
 	WorkflowID, IntegrationID uuid.UUID
 }
 
@@ -41,7 +41,7 @@ type Integration struct {
 	ID        uuid.UUID
 	Kind      string
 	CreatedAt *time.Time
-	Config    *anypb.Any
+	Config    []byte
 	// Identifier to the external provider where any secret information is stored
 	SecretName string
 }
@@ -52,14 +52,14 @@ type IntegrationAndAttachment struct {
 }
 
 type IntegrationRepo interface {
-	Create(ctx context.Context, orgID uuid.UUID, kind string, secretID string, config *anypb.Any) (*Integration, error)
+	Create(ctx context.Context, orgID uuid.UUID, kind string, secretID string, config []byte) (*Integration, error)
 	List(ctx context.Context, orgID uuid.UUID) ([]*Integration, error)
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*Integration, error)
 	SoftDelete(ctx context.Context, ID uuid.UUID) error
 }
 
 type IntegrationAttachmentRepo interface {
-	Create(ctx context.Context, integrationID, workflowID uuid.UUID, config *anypb.Any) (*IntegrationAttachment, error)
+	Create(ctx context.Context, integrationID, workflowID uuid.UUID, config []byte) (*IntegrationAttachment, error)
 	List(ctx context.Context, orgID, workflowID uuid.UUID) ([]*IntegrationAttachment, error)
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*IntegrationAttachment, error)
 	SoftDelete(ctx context.Context, ID uuid.UUID) error
@@ -90,46 +90,40 @@ func NewIntegrationUseCase(opts *NewIntegrationUseCaseOpts) *IntegrationUseCase 
 }
 
 // Persist the secret and integration with its configuration in the database
-func (uc *IntegrationUseCase) RegisterAndSave(ctx context.Context, orgID string, i sdk.FanOut, regConfig *anypb.Any) (*Integration, error) {
+func (uc *IntegrationUseCase) RegisterAndSave(ctx context.Context, orgID string, i sdk.FanOutIntegrationI, regConfig *anypb.Any) (*Integration, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
 	}
 
 	// Marshall the configuration into the integration's schema to validate it
-	registerConfig, err := regConfig.UnmarshalNew()
+	registrationPayload, err := regConfig.UnmarshalNew()
 	if err != nil {
 		return nil, NewErrValidation(err)
 	}
 
-	preRegistration, err := i.Register(ctx, registerConfig)
+	registrationResponse, err := i.Register(ctx, &sdk.RegistrationRequest{Payload: registrationPayload})
 	if err != nil {
 		return nil, NewErrValidation(err)
 	}
 
 	var secretID string
-	if preRegistration.Credentials != nil {
+	if registrationResponse.Credentials != nil {
 		// Create the secret in the external secrets manager
-		secretID, err = uc.credsRW.SaveCredentials(ctx, orgID, preRegistration.Credentials)
+		secretID, err = uc.credsRW.SaveCredentials(ctx, orgID, registrationResponse.Credentials)
 		if err != nil {
 			return nil, fmt.Errorf("saving credentials: %w", err)
 		}
 	}
 
-	// Wrap the configuration in an anypb.Any to store it in the DB
-	config, err := anypb.New(preRegistration.Configuration)
-	if err != nil {
-		return nil, fmt.Errorf("creating configuration: %w", err)
-	}
-
 	// Persist the integration configuration
-	return uc.integrationRepo.Create(ctx, orgUUID, i.Describe().ID, secretID, config)
+	return uc.integrationRepo.Create(ctx, orgUUID, i.Describe().ID, secretID, registrationResponse.Configuration)
 }
 
 type AttachOpts struct {
 	IntegrationID, WorkflowID, OrgID string
 	// The integration that is being attached
-	FanOutIntegration sdk.FanOut
+	FanOutIntegration sdk.FanOutIntegrationI
 	// The attachment configuration
 	AttachmentConfig *anypb.Any
 }
@@ -181,20 +175,24 @@ func (uc *IntegrationUseCase) AttachToWorkflow(ctx context.Context, opts *Attach
 		}
 	}
 
-	// Execute integration pre-attachment logic
-	preAttachResp, err := opts.FanOutIntegration.PreAttach(ctx, &sdk.BundledConfig{Registration: integration.Config, Attachment: opts.AttachmentConfig, Credentials: creds})
+	// Marshall the configuration into the integration's schema to validate it
+	attachmentPayload, err := opts.AttachmentConfig.UnmarshalNew()
 	if err != nil {
 		return nil, NewErrValidation(err)
 	}
 
-	// Wrap the attachment configuration in an anypb.Any to store it in the DB
-	config, err := anypb.New(preAttachResp.Configuration)
+	// Execute integration pre-attachment logic
+	attachResponse, err := opts.FanOutIntegration.Attach(ctx,
+		&sdk.AttachmentRequest{
+			Payload:          attachmentPayload,
+			RegistrationInfo: &sdk.RegistrationResponse{Credentials: creds, Configuration: integration.Config},
+		})
 	if err != nil {
-		return nil, fmt.Errorf("creating configuration: %w", err)
+		return nil, NewErrValidation(err)
 	}
 
 	// Persist the attachment
-	attachment, err := uc.integrationARepo.Create(ctx, integrationUUID, workflowUUID, config)
+	attachment, err := uc.integrationARepo.Create(ctx, integrationUUID, workflowUUID, attachResponse.Configuration)
 	if err != nil {
 		return nil, fmt.Errorf("persisting attachment: %w", err)
 	}
@@ -257,6 +255,7 @@ func (uc *IntegrationUseCase) Delete(ctx context.Context, orgID, integrationID s
 	return uc.integrationRepo.SoftDelete(ctx, integrationUUID)
 }
 
+// List attachments returns the list of attachments for a given organization and optionally workflow
 func (uc *IntegrationUseCase) ListAttachments(ctx context.Context, orgID, workflowID string) ([]*IntegrationAttachment, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
@@ -269,6 +268,15 @@ func (uc *IntegrationUseCase) ListAttachments(ctx context.Context, orgID, workfl
 		workflowUUID, err = uuid.Parse(workflowID)
 		if err != nil {
 			return nil, NewErrInvalidUUID(err)
+		}
+
+		// We check that the workflow belongs to the provided organization
+		// This check is mostly informative to the user
+		wf, err := uc.workflowRepo.GetOrgScoped(ctx, orgUUID, workflowUUID)
+		if err != nil {
+			return nil, err
+		} else if wf == nil {
+			return nil, NewErrNotFound("workflow")
 		}
 	}
 

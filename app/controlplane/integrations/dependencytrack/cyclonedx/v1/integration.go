@@ -18,6 +18,7 @@ package integration
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -30,23 +31,31 @@ import (
 
 const ID = "dependencytrack.cyclonedx.v1"
 const version = "1.0"
-const description = "Dependency Track CycloneDX Software Bill Of Materials Integration"
 
 var _ sdk.FanOut = (*DependencyTrack)(nil)
 
 type DependencyTrack struct {
-	*sdk.BaseIntegration
+	*sdk.FanOutIntegration
+}
+
+type registrationConfig struct {
+	Domain          string `json:"domain"`
+	AllowAutoCreate bool   `json:"allowAutoCreate"`
+}
+
+type attachmentConfig struct {
+	ProjectID   string `json:"projectId"`
+	ProjectName string `json:"projectName"`
 }
 
 // Attach attaches the integration service to the given grpc server.
 // In the future this will be a plugin entrypoint
 func NewIntegration(l log.Logger) (*DependencyTrack, error) {
-	base, err := sdk.NewBaseIntegration(
+	base, err := sdk.NewFanout(
 		&sdk.NewParams{
-			ID:          ID,
-			Version:     version,
-			Description: description,
-			Logger:      l,
+			ID:      "dependencytrack.cyclonedx.v1",
+			Version: "1.0",
+			Logger:  l,
 		}, sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON))
 
 	if err != nil {
@@ -55,27 +64,25 @@ func NewIntegration(l log.Logger) (*DependencyTrack, error) {
 
 	base.Logger.Infof("integration initialized: %s", base)
 
-	return &DependencyTrack{
-		base,
-	}, nil
+	return &DependencyTrack{base}, nil
 }
 
-func (i *DependencyTrack) Register(ctx context.Context, registrationRequest any) (*sdk.RegisterResponse, error) {
-	i.Logger.Info("pre-registration requested")
+func (i *DependencyTrack) Register(ctx context.Context, req *sdk.RegistrationRequest) (*sdk.RegistrationResponse, error) {
+	i.Logger.Info("registration requested")
 
-	req, ok := registrationRequest.(*pb.RegistrationRequest)
+	request, ok := req.Payload.(*pb.RegistrationRequest)
 	if !ok {
 		return nil, errors.New("invalid request")
 	}
 
 	// Validate the request payload
-	if err := req.ValidateAll(); err != nil {
+	if err := request.ValidateAll(); err != nil {
 		return nil, fmt.Errorf("invalid request: %w", err)
 	}
 
 	// Validate that the provided configuration is valid
-	domain, enableProjectCreation := req.GetConfig().GetDomain(), req.GetConfig().GetAllowAutoCreate()
-	checker, err := uploader.NewIntegration(domain, req.ApiKey, enableProjectCreation)
+	domain, enableProjectCreation := request.GetDomain(), request.GetAllowAutoCreate()
+	checker, err := uploader.NewIntegration(domain, request.ApiKey, enableProjectCreation)
 	if err != nil {
 		return nil, fmt.Errorf("checking integration: %w", err)
 	}
@@ -85,73 +92,90 @@ func (i *DependencyTrack) Register(ctx context.Context, registrationRequest any)
 		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
 
-	i.Logger.Infow("msg", "pre-registration OK", "domain", domain, "allowAutoCreate", enableProjectCreation)
+	i.Logger.Infow("msg", "registration OK", "domain", domain, "allowAutoCreate", enableProjectCreation)
+
+	rawConfig, err := json.Marshal(&registrationConfig{Domain: domain, AllowAutoCreate: enableProjectCreation})
+	if err != nil {
+		return nil, fmt.Errorf("marshalling configuration: %w", err)
+	}
 
 	// Return what configuration to store in the database and what to store in the external secrets manager
-	return &sdk.RegisterResponse{
-		Credentials:   &sdk.Credentials{Password: req.GetApiKey()},
-		Configuration: req.Config,
+	return &sdk.RegistrationResponse{
+		Credentials:   &sdk.Credentials{Password: request.GetApiKey()},
+		Configuration: rawConfig,
 	}, nil
 }
 
 // Check configuration and return what configuration attachment to persist
-func (i *DependencyTrack) PreAttach(ctx context.Context, b *sdk.BundledConfig) (*sdk.PreAttachment, error) {
-	i.Logger.Info("pre-attachment requested")
+func (i *DependencyTrack) Attach(ctx context.Context, req *sdk.AttachmentRequest) (*sdk.AttachmentResponse, error) {
+	i.Logger.Info("attachment requested")
 
-	// Extract registration configuration
-	rc := new(pb.RegistrationConfig)
-	if err := b.Registration.UnmarshalTo(rc); err != nil {
-		return nil, fmt.Errorf("invalid registration configuration: %w", err)
+	request, ok := req.Payload.(*pb.AttachmentRequest)
+	if !ok {
+		return nil, errors.New("invalid attachment configuration")
 	}
 
-	ar := new(pb.AttachmentRequest)
-	if err := b.Attachment.UnmarshalTo(ar); err != nil {
-		return nil, fmt.Errorf("invalid registration configuration: %w", err)
+	// Validate the request payload
+	if err := request.ValidateAll(); err != nil {
+		return nil, fmt.Errorf("invalid request: %w", err)
+	}
+
+	// Extract registration configuration
+	var rc *registrationConfig
+	if err := json.Unmarshal(req.RegistrationInfo.Configuration, &rc); err != nil {
+		return nil, errors.New("invalid registration configuration")
 	}
 
 	// Validate dynamic configuration
-	if err := validateAttachment(ctx, rc, ar.Config, b.Credentials); err != nil {
+	if err := validateAttachment(ctx, rc, request, req.RegistrationInfo.Credentials); err != nil {
 		return nil, fmt.Errorf("invalid attachment configuration: %w", err)
 	}
 
-	i.Logger.Infow("msg", "pre-attachment OK", "project", ar.GetConfig().GetProject())
+	i.Logger.Infow("msg", "attachment OK", "project", request.GetProject())
 
-	return &sdk.PreAttachment{Configuration: ar.Config}, nil
+	rawConfig, err := json.Marshal(&attachmentConfig{
+		ProjectID:   request.GetProjectId(),
+		ProjectName: request.GetProjectName(),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("marshalling configuration: %w", err)
+	}
+
+	return &sdk.AttachmentResponse{Configuration: rawConfig}, nil
 }
 
 // Send the SBOM to the configured Dependency Track instance
-func (i *DependencyTrack) Execute(ctx context.Context, opts *sdk.ExecuteReq) error {
+func (i *DependencyTrack) Execute(ctx context.Context, req *sdk.ExecutionRequest) error {
 	i.Logger.Info("execution requested")
 
-	if err := validateExecuteOpts(opts); err != nil {
+	if err := validateExecuteOpts(req); err != nil {
 		return fmt.Errorf("running validation: %w", err)
 	}
 
-	// Load registration configuration
-	registrationConfig := new(pb.RegistrationConfig)
-	if err := opts.Config.Registration.UnmarshalTo(registrationConfig); err != nil {
-		return fmt.Errorf("invalid registration configuration: %w", err)
+	// Extract registration configuration
+	var registrationConfig *registrationConfig
+	if err := json.Unmarshal(req.RegistrationInfo.Configuration, &registrationConfig); err != nil {
+		return errors.New("invalid registration configuration")
 	}
 
-	// Load attachment configuration
-	attachmentConfig := new(pb.AttachmentConfig)
-	if err := opts.Config.Attachment.UnmarshalTo(attachmentConfig); err != nil {
-		return fmt.Errorf("invalid registration configuration: %w", err)
+	// Extract attachment configuration
+	var attachmentConfig *attachmentConfig
+	if err := json.Unmarshal(req.AttachmentInfo.Configuration, &attachmentConfig); err != nil {
+		return errors.New("invalid registration configuration")
 	}
 
-	// TODO, load logger from initializer
 	i.Logger.Infow("msg", "Uploading SBOM",
 		"host", registrationConfig.Domain,
-		"projectID", attachmentConfig.GetProjectId(), "projectName", attachmentConfig.GetProjectName(),
-		"workflowID", opts.Config.WorkflowID,
+		"projectID", attachmentConfig.ProjectID, "projectName", attachmentConfig.ProjectName,
+		"workflowID", req.WorkflowID,
 	)
 
 	// Create an SBOM uploader and perform validation and upload
 	d, err := uploader.NewSBOMUploader(registrationConfig.Domain,
-		opts.Config.Credentials.Password,
-		bytes.NewReader(opts.Input.Material.Content),
-		attachmentConfig.GetProjectId(),
-		attachmentConfig.GetProjectName())
+		req.RegistrationInfo.Credentials.Password,
+		bytes.NewReader(req.Input.Material.Content),
+		attachmentConfig.ProjectID,
+		attachmentConfig.ProjectName)
 	if err != nil {
 		return fmt.Errorf("creating uploader: %w", err)
 	}
@@ -166,8 +190,8 @@ func (i *DependencyTrack) Execute(ctx context.Context, opts *sdk.ExecuteReq) err
 
 	i.Logger.Infow("msg", "SBOM Uploaded",
 		"host", registrationConfig.Domain,
-		"projectID", attachmentConfig.GetProjectId(), "projectName", attachmentConfig.GetProjectName(),
-		"workflowID", opts.Config.WorkflowID,
+		"projectID", attachmentConfig.ProjectID, "projectName", attachmentConfig.ProjectName,
+		"workflowID", req.WorkflowID,
 	)
 
 	return nil
@@ -175,13 +199,17 @@ func (i *DependencyTrack) Execute(ctx context.Context, opts *sdk.ExecuteReq) err
 
 // i.e we want to attach to a dependency track integration and we are proving the right attachment options
 // Not only syntactically but also semantically, i.e we can only request auto-creation of projects if the integration allows it
-func validateAttachment(ctx context.Context, rc *pb.RegistrationConfig, ac *pb.AttachmentConfig, credentials *sdk.Credentials) error {
-	if err := validateAttachmentConfiguration(rc, ac); err != nil {
-		return fmt.Errorf("validating configuration: %w", err)
+func validateAttachment(ctx context.Context, rc *registrationConfig, ac *pb.AttachmentRequest, credentials *sdk.Credentials) error {
+	if rc == nil || ac == nil {
+		return errors.New("invalid configuration")
+	}
+
+	if ac.GetProjectName() != "" && !rc.AllowAutoCreate {
+		return errors.New("auto creation of projects is not supported in this integration")
 	}
 
 	// Instantiate an actual uploader to see if it would work with the current configuration
-	d, err := uploader.NewSBOMUploader(rc.GetDomain(), credentials.Password, nil, ac.GetProjectId(), ac.GetProjectName())
+	d, err := uploader.NewSBOMUploader(rc.Domain, credentials.Password, nil, ac.GetProjectId(), ac.GetProjectName())
 	if err != nil {
 		return fmt.Errorf("creating uploader: %w", err)
 	}
@@ -193,27 +221,7 @@ func validateAttachment(ctx context.Context, rc *pb.RegistrationConfig, ac *pb.A
 	return nil
 }
 
-func validateAttachmentConfiguration(ic *pb.RegistrationConfig, ac *pb.AttachmentConfig) error {
-	if ic == nil || ac == nil {
-		return errors.New("invalid configuration")
-	}
-
-	if err := ic.ValidateAll(); err != nil {
-		return fmt.Errorf("invalid integration configuration: %w", err)
-	}
-
-	if err := ac.ValidateAll(); err != nil {
-		return fmt.Errorf("invalid integration configuration: %w", err)
-	}
-
-	if ac.GetProjectName() != "" && !ic.AllowAutoCreate {
-		return errors.New("auto creation of projects is not supported in this integration")
-	}
-
-	return nil
-}
-
-func validateExecuteOpts(opts *sdk.ExecuteReq) error {
+func validateExecuteOpts(opts *sdk.ExecutionRequest) error {
 	if opts == nil || opts.Input == nil || opts.Input.Material == nil || opts.Input.Material.Content == nil {
 		return errors.New("invalid input")
 	}
@@ -222,12 +230,12 @@ func validateExecuteOpts(opts *sdk.ExecuteReq) error {
 		return fmt.Errorf("invalid input type: %s", opts.Input.Material.Type)
 	}
 
-	if opts.Config == nil || opts.Config.Registration == nil || opts.Config.Attachment == nil {
-		return errors.New("missing configuration")
+	if opts.RegistrationInfo == nil || opts.RegistrationInfo.Configuration == nil || opts.RegistrationInfo.Credentials == nil {
+		return errors.New("missing registration configuration")
 	}
 
-	if opts.Config.Credentials == nil || opts.Config.Credentials.Password == "" {
-		return errors.New("missing credentials")
+	if opts.AttachmentInfo == nil || opts.AttachmentInfo.Configuration == nil {
+		return errors.New("missing attachment configuration")
 	}
 
 	return nil

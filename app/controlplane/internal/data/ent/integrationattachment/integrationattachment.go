@@ -15,8 +15,8 @@ const (
 	FieldID = "id"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
-	// FieldConf holds the string denoting the conf field in the database.
-	FieldConf = "conf"
+	// FieldConfiguration holds the string denoting the configuration field in the database.
+	FieldConfiguration = "configuration"
 	// FieldDeletedAt holds the string denoting the deleted_at field in the database.
 	FieldDeletedAt = "deleted_at"
 	// EdgeIntegration holds the string denoting the integration edge name in mutations.
@@ -45,7 +45,7 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldCreatedAt,
-	FieldConf,
+	FieldConfiguration,
 	FieldDeletedAt,
 }
 
