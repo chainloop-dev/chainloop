@@ -199,7 +199,7 @@ func (s *testSuite) SetupTest() {
 	s.configAny, err = anypb.New(config)
 	assert.NoError(err)
 
-	s.config = []byte("deadbeeg")
+	s.config = []byte("deadbeef")
 
 	// Mocked fanOut that will return both generic configuration and credentials
 	fanOut := integrationMocks.NewFanOut(s.T())
