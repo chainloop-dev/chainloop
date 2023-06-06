@@ -119,7 +119,7 @@ func (s *OrgIntegrationTestSuite) SetupTest() {
 	integration := integrationMocks.NewFanOut(s.T())
 	integration.On("Describe").Return(&sdk.IntegrationInfo{})
 	integration.On("Register", ctx, mock.Anything).Return(&sdk.RegistrationResponse{
-		Configuration: &anypb.Any{}}, nil)
+		Configuration: []byte("deadbeef")}, nil)
 
 	config, err := structpb.NewValue(map[string]interface{}{"firstName": "John"})
 	assert.NoError(err)

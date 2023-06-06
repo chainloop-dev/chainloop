@@ -23,35 +23,30 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/protobuf/types/known/anypb"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 func TestValidateConfiguration(t *testing.T) {
-	testIntegrationConfig := func(allowAutoCreate bool) *v1.RegistrationConfig {
-		return &v1.RegistrationConfig{
+	testIntegrationConfig := func(allowAutoCreate bool) *registrationConfig {
+		return &registrationConfig{
 			AllowAutoCreate: allowAutoCreate,
 			Domain:          "domain",
 		}
 	}
 
-	testAttachmentConfig := func(projectID, projectName string) *v1.AttachmentConfig {
+	testAttachmentConfig := func(projectID, projectName string) *v1.AttachmentRequest {
+		req := &v1.AttachmentRequest{}
 		if projectID != "" {
-			return &v1.AttachmentConfig{
-				Project: &v1.AttachmentConfig_ProjectId{ProjectId: projectID},
-			}
+			req.Project = &v1.AttachmentRequest_ProjectId{ProjectId: projectID}
 		} else if projectName != "" {
-			return &v1.AttachmentConfig{
-				Project: &v1.AttachmentConfig_ProjectName{ProjectName: projectName},
-			}
+			req.Project = &v1.AttachmentRequest_ProjectName{ProjectName: projectName}
 		}
 
-		return &v1.AttachmentConfig{}
+		return req
 	}
 
 	tests := []struct {
-		integrationConfig *v1.RegistrationConfig
-		attachmentConfig  *v1.AttachmentConfig
+		integrationConfig *registrationConfig
+		attachmentConfig  *v1.AttachmentRequest
 		errorMsg          string
 	}{
 		{nil, nil, "invalid configuration"},
@@ -60,7 +55,7 @@ func TestValidateConfiguration(t *testing.T) {
 		// autocreate required and supported
 		{testIntegrationConfig(true), testAttachmentConfig("", "new-project"), ""},
 		// Neither projectID nor autocreate provided
-		{testIntegrationConfig(false), testAttachmentConfig("", ""), "AttachmentConfig.Project: value is required"},
+		{testIntegrationConfig(false), testAttachmentConfig("", ""), "project id or name must be provided"},
 		// project ID provided
 		{testIntegrationConfig(false), testAttachmentConfig("pid", ""), ""},
 	}
@@ -96,7 +91,6 @@ func TestNewIntegration(t *testing.T) {
 
 func TestValidateExecuteOpts(t *testing.T) {
 	validMaterial := &sdk.ExecuteMaterial{NormalizedMaterial: &chainloop.NormalizedMaterial{Type: "SBOM_CYCLONEDX_JSON"}, Content: []byte("content")}
-	config, _ := anypb.New(&emptypb.Empty{})
 
 	testCases := []struct {
 		name   string
@@ -124,37 +118,39 @@ func TestValidateExecuteOpts(t *testing.T) {
 			opts: &sdk.ExecutionRequest{
 				Input: &sdk.ExecuteInput{Material: validMaterial},
 			},
-			errMsg: "missing configuration",
+			errMsg: "missing registration configuration",
 		},
 		{
 			name: "invalid - missing attachment configuration",
 			opts: &sdk.ExecutionRequest{
-				Input:  &sdk.ExecuteInput{Material: validMaterial},
-				Config: &sdk.BundledConfig{Registration: config},
+				Input:            &sdk.ExecuteInput{Material: validMaterial},
+				RegistrationInfo: &sdk.RegistrationResponse{Configuration: []byte("config"), Credentials: &sdk.Credentials{Password: "password"}},
 			},
-			errMsg: "missing configuration",
+			errMsg: "missing attachment configuration",
 		},
 		{
 			name: "invalid - missing registration configuration",
 			opts: &sdk.ExecutionRequest{
-				Input:  &sdk.ExecuteInput{Material: validMaterial},
-				Config: &sdk.BundledConfig{Attachment: config},
+				Input:          &sdk.ExecuteInput{Material: validMaterial},
+				AttachmentInfo: &sdk.AttachmentResponse{},
 			},
-			errMsg: "missing configuration",
+			errMsg: "missing registration configuration",
 		},
 		{
 			name: "invalid - missing credentials",
 			opts: &sdk.ExecutionRequest{
-				Input:  &sdk.ExecuteInput{Material: validMaterial},
-				Config: &sdk.BundledConfig{Registration: config, Attachment: config},
+				Input:            &sdk.ExecuteInput{Material: validMaterial},
+				RegistrationInfo: &sdk.RegistrationResponse{Configuration: []byte("config")},
+				AttachmentInfo:   &sdk.AttachmentResponse{Configuration: []byte("config")},
 			},
 			errMsg: "missing credentials",
 		},
 		{
 			name: "ok - all good",
 			opts: &sdk.ExecutionRequest{
-				Input:  &sdk.ExecuteInput{Material: validMaterial},
-				Config: &sdk.BundledConfig{Registration: config, Attachment: config, Credentials: &sdk.Credentials{Password: "password"}},
+				Input:            &sdk.ExecuteInput{Material: validMaterial},
+				RegistrationInfo: &sdk.RegistrationResponse{Configuration: []byte("config"), Credentials: &sdk.Credentials{Password: "password"}},
+				AttachmentInfo:   &sdk.AttachmentResponse{Configuration: []byte("config")},
 			},
 		},
 	}

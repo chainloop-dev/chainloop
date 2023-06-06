@@ -29,9 +29,6 @@ import (
 )
 
 const ID = "dependencytrack.cyclonedx.v1"
-const version = "1.0"
-
-var _ sdk.FanOut = (*DependencyTrack)(nil)
 
 type DependencyTrack struct {
 	*sdk.FanOutIntegration
@@ -49,7 +46,7 @@ type attachmentConfig struct {
 
 // Attach attaches the integration service to the given grpc server.
 // In the future this will be a plugin entrypoint
-func NewIntegration(l log.Logger) (*DependencyTrack, error) {
+func NewIntegration(l log.Logger) (sdk.FanOut, error) {
 	base, err := sdk.NewFanout(
 		&sdk.NewParams{
 			ID:      "dependencytrack.cyclonedx.v1",
@@ -196,12 +193,8 @@ func (i *DependencyTrack) Execute(ctx context.Context, req *sdk.ExecutionRequest
 // i.e we want to attach to a dependency track integration and we are proving the right attachment options
 // Not only syntactically but also semantically, i.e we can only request auto-creation of projects if the integration allows it
 func validateAttachment(ctx context.Context, rc *registrationConfig, ac *pb.AttachmentRequest, credentials *sdk.Credentials) error {
-	if rc == nil || ac == nil {
-		return errors.New("invalid configuration")
-	}
-
-	if ac.GetProjectName() != "" && !rc.AllowAutoCreate {
-		return errors.New("auto creation of projects is not supported in this integration")
+	if err := validateAttachmentConfiguration(rc, ac); err != nil {
+		return fmt.Errorf("validating attachment configuration: %w", err)
 	}
 
 	// Instantiate an actual uploader to see if it would work with the current configuration
@@ -217,6 +210,22 @@ func validateAttachment(ctx context.Context, rc *registrationConfig, ac *pb.Atta
 	return nil
 }
 
+func validateAttachmentConfiguration(rc *registrationConfig, ac *pb.AttachmentRequest) error {
+	if rc == nil || ac == nil {
+		return errors.New("invalid configuration")
+	}
+
+	if ac.GetProjectName() != "" && !rc.AllowAutoCreate {
+		return errors.New("auto creation of projects is not supported in this integration")
+	}
+
+	if ac.GetProjectId() == "" && ac.GetProjectName() == "" {
+		return errors.New("project id or name must be provided")
+	}
+
+	return nil
+}
+
 func validateExecuteOpts(opts *sdk.ExecutionRequest) error {
 	if opts == nil || opts.Input == nil || opts.Input.Material == nil || opts.Input.Material.Content == nil {
 		return errors.New("invalid input")
@@ -226,8 +235,12 @@ func validateExecuteOpts(opts *sdk.ExecutionRequest) error {
 		return fmt.Errorf("invalid input type: %s", opts.Input.Material.Type)
 	}
 
-	if opts.RegistrationInfo == nil || opts.RegistrationInfo.Configuration == nil || opts.RegistrationInfo.Credentials == nil {
+	if opts.RegistrationInfo == nil || opts.RegistrationInfo.Configuration == nil {
 		return errors.New("missing registration configuration")
+	}
+
+	if opts.RegistrationInfo.Credentials == nil {
+		return errors.New("missing credentials")
 	}
 
 	if opts.AttachmentInfo == nil || opts.AttachmentInfo.Configuration == nil {

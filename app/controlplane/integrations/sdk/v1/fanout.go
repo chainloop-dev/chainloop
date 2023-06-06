@@ -25,6 +25,8 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
+	"google.golang.org/protobuf/proto"
+
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
 
@@ -61,7 +63,7 @@ type FanOutExtension interface {
 
 type RegistrationRequest struct {
 	// Custom Payload to be used by the integration
-	Payload any
+	Payload proto.Message
 }
 
 type RegistrationResponse struct {
@@ -73,7 +75,7 @@ type RegistrationResponse struct {
 }
 
 type AttachmentRequest struct {
-	Payload          any
+	Payload          proto.Message
 	RegistrationInfo *RegistrationResponse
 }
 
