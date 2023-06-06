@@ -18,7 +18,6 @@ package integration
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -94,7 +93,7 @@ func (i *DependencyTrack) Register(ctx context.Context, req *sdk.RegistrationReq
 
 	i.Logger.Infow("msg", "registration OK", "domain", domain, "allowAutoCreate", enableProjectCreation)
 
-	rawConfig, err := json.Marshal(&registrationConfig{Domain: domain, AllowAutoCreate: enableProjectCreation})
+	rawConfig, err := sdk.Config(&registrationConfig{Domain: domain, AllowAutoCreate: enableProjectCreation})
 	if err != nil {
 		return nil, fmt.Errorf("marshalling configuration: %w", err)
 	}
@@ -106,7 +105,7 @@ func (i *DependencyTrack) Register(ctx context.Context, req *sdk.RegistrationReq
 	}, nil
 }
 
-// Check configuration and return what configuration attachment to persist
+// Validate and return what configuration attachment to persist
 func (i *DependencyTrack) Attach(ctx context.Context, req *sdk.AttachmentRequest) (*sdk.AttachmentResponse, error) {
 	i.Logger.Info("attachment requested")
 
@@ -122,21 +121,18 @@ func (i *DependencyTrack) Attach(ctx context.Context, req *sdk.AttachmentRequest
 
 	// Extract registration configuration
 	var rc *registrationConfig
-	if err := json.Unmarshal(req.RegistrationInfo.Configuration, &rc); err != nil {
+	if err := sdk.FromConfig(req.RegistrationInfo.Configuration, &rc); err != nil {
 		return nil, errors.New("invalid registration configuration")
 	}
 
-	// Validate dynamic configuration
 	if err := validateAttachment(ctx, rc, request, req.RegistrationInfo.Credentials); err != nil {
 		return nil, fmt.Errorf("invalid attachment configuration: %w", err)
 	}
 
 	i.Logger.Infow("msg", "attachment OK", "project", request.GetProject())
 
-	rawConfig, err := json.Marshal(&attachmentConfig{
-		ProjectID:   request.GetProjectId(),
-		ProjectName: request.GetProjectName(),
-	})
+	// We want to store the project configuration
+	rawConfig, err := sdk.Config(&attachmentConfig{ProjectID: request.GetProjectId(), ProjectName: request.GetProjectName()})
 	if err != nil {
 		return nil, fmt.Errorf("marshalling configuration: %w", err)
 	}
@@ -154,14 +150,14 @@ func (i *DependencyTrack) Execute(ctx context.Context, req *sdk.ExecutionRequest
 
 	// Extract registration configuration
 	var registrationConfig *registrationConfig
-	if err := json.Unmarshal(req.RegistrationInfo.Configuration, &registrationConfig); err != nil {
+	if err := sdk.FromConfig(req.RegistrationInfo.Configuration, &registrationConfig); err != nil {
 		return errors.New("invalid registration configuration")
 	}
 
 	// Extract attachment configuration
 	var attachmentConfig *attachmentConfig
-	if err := json.Unmarshal(req.AttachmentInfo.Configuration, &attachmentConfig); err != nil {
-		return errors.New("invalid registration configuration")
+	if err := sdk.FromConfig(req.AttachmentInfo.Configuration, &attachmentConfig); err != nil {
+		return errors.New("invalid attachment configuration")
 	}
 
 	i.Logger.Infow("msg", "Uploading SBOM",

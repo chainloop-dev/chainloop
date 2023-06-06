@@ -90,7 +90,7 @@ func NewIntegrationUseCase(opts *NewIntegrationUseCaseOpts) *IntegrationUseCase 
 }
 
 // Persist the secret and integration with its configuration in the database
-func (uc *IntegrationUseCase) RegisterAndSave(ctx context.Context, orgID string, i sdk.FanOutIntegrationI, regConfig *anypb.Any) (*Integration, error) {
+func (uc *IntegrationUseCase) RegisterAndSave(ctx context.Context, orgID string, i sdk.FanOut, regConfig *anypb.Any) (*Integration, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -123,7 +123,7 @@ func (uc *IntegrationUseCase) RegisterAndSave(ctx context.Context, orgID string,
 type AttachOpts struct {
 	IntegrationID, WorkflowID, OrgID string
 	// The integration that is being attached
-	FanOutIntegration sdk.FanOutIntegrationI
+	FanOutIntegration sdk.FanOut
 	// The attachment configuration
 	AttachmentConfig *anypb.Any
 }

@@ -17,6 +17,7 @@ package sdk
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -25,7 +26,6 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // FanOutIntegration represents an extension point for integrations to be able to
@@ -69,7 +69,7 @@ type RegistrationResponse struct {
 	// JSON serializable
 	Credentials *Credentials
 	// Configuration to be persisted in DB
-	Configuration []byte
+	Configuration
 }
 
 type AttachmentRequest struct {
@@ -79,7 +79,7 @@ type AttachmentRequest struct {
 
 type AttachmentResponse struct {
 	// JSON serializable configuration to be persisted
-	Configuration []byte
+	Configuration
 }
 
 type ChainloopMetadata struct {
@@ -105,18 +105,6 @@ type ExecuteMaterial struct {
 	*chainloop.NormalizedMaterial
 	// Content of the material already downloaded
 	Content []byte
-}
-
-// BundledConfig is the collection of the registration and attachment configuration
-type BundledConfig struct {
-	// Registration configuration
-	Registration *anypb.Any
-	// Attachment configuration
-	Attachment *anypb.Any
-	// Stored credentials
-	Credentials *Credentials
-	// Chainloop Metadata
-	WorkflowID string
 }
 
 type Credentials struct {
@@ -265,4 +253,16 @@ func WithInputMaterial(materialType schemaapi.CraftingSchema_Material_MaterialTy
 			c.subscribedInputs.Materials = append(c.subscribedInputs.Materials, material)
 		}
 	}
+}
+
+// Configuration represents any raw configuration to be stored in the DB
+// This wrapper is just a way to clearly indicate that the content needs to be JSON serializable
+type Configuration []byte
+
+func Config(m any) (Configuration, error) {
+	return json.Marshal(m)
+}
+
+func FromConfig(data Configuration, v any) error {
+	return json.Unmarshal(data, v)
 }
