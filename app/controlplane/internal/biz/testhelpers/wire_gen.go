@@ -7,6 +7,7 @@
 package testhelpers
 
 import (
+	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
@@ -24,7 +25,7 @@ import (
 // Injectors from wire.go:
 
 // wireTestData init testing data
-func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, readerWriter credentials.ReaderWriter, builder *robotaccount.Builder, auth *conf.Auth) (*TestingUseCases, func(), error) {
+func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, readerWriter credentials.ReaderWriter, builder *robotaccount.Builder, auth *conf.Auth, initialized sdk.Initialized) (*TestingUseCases, func(), error) {
 	confData := newConfData(testDatabase, t)
 	dataData, cleanup, err := data.NewData(confData, logger)
 	if err != nil {
@@ -68,17 +69,18 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	robotAccountRepo := data.NewRobotAccountRepo(dataData, logger)
 	robotAccountUseCase := biz.NewRootAccountUseCase(robotAccountRepo, workflowRepo, auth, logger)
 	testingUseCases := &TestingUseCases{
-		DB:               testDatabase,
-		L:                logger,
-		Membership:       membershipUseCase,
-		OCIRepo:          ociRepositoryUseCase,
-		Integration:      integrationUseCase,
-		Organization:     organizationUseCase,
-		WorkflowContract: workflowContractUseCase,
-		Workflow:         workflowUseCase,
-		WorkflowRun:      workflowRunUseCase,
-		User:             userUseCase,
-		RobotAccount:     robotAccountUseCase,
+		DB:                     testDatabase,
+		L:                      logger,
+		Membership:             membershipUseCase,
+		OCIRepo:                ociRepositoryUseCase,
+		Integration:            integrationUseCase,
+		Organization:           organizationUseCase,
+		WorkflowContract:       workflowContractUseCase,
+		Workflow:               workflowUseCase,
+		WorkflowRun:            workflowRunUseCase,
+		User:                   userUseCase,
+		RobotAccount:           robotAccountUseCase,
+		RegisteredIntegrations: initialized,
 	}
 	return testingUseCases, func() {
 		cleanup()
