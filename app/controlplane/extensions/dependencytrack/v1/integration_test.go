@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	v1 "github.com/chainloop-dev/chainloop/app/controlplane/extensions/gen/dependencytrack/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/dependencytrack/v1/api"
 	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/stretchr/testify/assert"
@@ -28,31 +28,31 @@ import (
 func TestValidateRegistrationInput(t *testing.T) {
 	testCases := []struct {
 		name   string
-		input  *v1.RegistrationRequest
+		input  *api.RegistrationRequest
 		errMsg string
 	}{
 		{
 			name:   "missing instance URL",
-			input:  &v1.RegistrationRequest{},
+			input:  &api.RegistrationRequest{},
 			errMsg: "invalid RegistrationRequest.InstanceUri",
 		},
 		{
 			name:   "invalid instance URL",
-			input:  &v1.RegistrationRequest{InstanceUri: "localhost"},
+			input:  &api.RegistrationRequest{InstanceUri: "localhost"},
 			errMsg: "invalid RegistrationRequest.InstanceUri",
 		},
 		{
 			name:   "missing API key",
-			input:  &v1.RegistrationRequest{InstanceUri: "https://foo.com"},
+			input:  &api.RegistrationRequest{InstanceUri: "https://foo.com"},
 			errMsg: "invalid RegistrationRequest.ApiKey",
 		},
 		{
 			name:  "valid request",
-			input: &v1.RegistrationRequest{InstanceUri: "http://localhost:8080", ApiKey: "api-key"},
+			input: &api.RegistrationRequest{InstanceUri: "http://localhost:8080", ApiKey: "api-key"},
 		},
 		{
 			name:  "valid request with path",
-			input: &v1.RegistrationRequest{InstanceUri: "http://localhost:8080/path", ApiKey: "api-key"},
+			input: &api.RegistrationRequest{InstanceUri: "http://localhost:8080/path", ApiKey: "api-key"},
 		},
 	}
 
@@ -71,21 +71,21 @@ func TestValidateRegistrationInput(t *testing.T) {
 func TestValidateAttachmentInput(t *testing.T) {
 	testCases := []struct {
 		name   string
-		input  *v1.AttachmentRequest
+		input  *api.AttachmentRequest
 		errMsg string
 	}{
 		{
 			name:   "missing project info",
-			input:  &v1.AttachmentRequest{},
+			input:  &api.AttachmentRequest{},
 			errMsg: "invalid AttachmentRequest.Project",
 		},
 		{
 			name:  "valid request, project ID",
-			input: &v1.AttachmentRequest{Project: &v1.AttachmentRequest_ProjectId{ProjectId: "project-id"}},
+			input: &api.AttachmentRequest{Project: &api.AttachmentRequest_ProjectId{ProjectId: "project-id"}},
 		},
 		{
 			name:  "valid request with name",
-			input: &v1.AttachmentRequest{Project: &v1.AttachmentRequest_ProjectName{ProjectName: "project-name"}},
+			input: &api.AttachmentRequest{Project: &api.AttachmentRequest_ProjectName{ProjectName: "project-name"}},
 		},
 	}
 
@@ -109,12 +109,12 @@ func TestValidateConfiguration(t *testing.T) {
 		}
 	}
 
-	testAttachmentConfig := func(projectID, projectName string) *v1.AttachmentRequest {
-		req := &v1.AttachmentRequest{}
+	testAttachmentConfig := func(projectID, projectName string) *api.AttachmentRequest {
+		req := &api.AttachmentRequest{}
 		if projectID != "" {
-			req.Project = &v1.AttachmentRequest_ProjectId{ProjectId: projectID}
+			req.Project = &api.AttachmentRequest_ProjectId{ProjectId: projectID}
 		} else if projectName != "" {
-			req.Project = &v1.AttachmentRequest_ProjectName{ProjectName: projectName}
+			req.Project = &api.AttachmentRequest_ProjectName{ProjectName: projectName}
 		}
 
 		return req
@@ -122,7 +122,7 @@ func TestValidateConfiguration(t *testing.T) {
 
 	tests := []struct {
 		integrationConfig *registrationConfig
-		attachmentConfig  *v1.AttachmentRequest
+		attachmentConfig  *api.AttachmentRequest
 		errorMsg          string
 	}{
 		{nil, nil, "invalid configuration"},

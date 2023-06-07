@@ -22,7 +22,7 @@ import (
 	"fmt"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	pb "github.com/chainloop-dev/chainloop/app/controlplane/extensions/dependencytrack/v1/api"
+	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/dependencytrack/v1/api"
 	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/dependencytrack/v1/client"
 	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
 	"github.com/go-kratos/kratos/v2/log"
@@ -66,7 +66,7 @@ func NewIntegration(l log.Logger) (sdk.FanOut, error) {
 func (i *DependencyTrack) Register(ctx context.Context, req *sdk.RegistrationRequest) (*sdk.RegistrationResponse, error) {
 	i.Logger.Info("registration requested")
 
-	request, ok := req.Payload.(*pb.RegistrationRequest)
+	request, ok := req.Payload.(*api.RegistrationRequest)
 	if !ok {
 		return nil, errors.New("invalid request")
 	}
@@ -106,7 +106,7 @@ func (i *DependencyTrack) Register(ctx context.Context, req *sdk.RegistrationReq
 func (i *DependencyTrack) Attach(ctx context.Context, req *sdk.AttachmentRequest) (*sdk.AttachmentResponse, error) {
 	i.Logger.Info("attachment requested")
 
-	request, ok := req.Payload.(*pb.AttachmentRequest)
+	request, ok := req.Payload.(*api.AttachmentRequest)
 	if !ok {
 		return nil, errors.New("invalid attachment configuration")
 	}
@@ -192,7 +192,7 @@ func (i *DependencyTrack) Execute(ctx context.Context, req *sdk.ExecutionRequest
 
 // i.e we want to attach to a dependency track integration and we are proving the right attachment options
 // Not only syntactically but also semantically, i.e we can only request auto-creation of projects if the integration allows it
-func validateAttachment(ctx context.Context, rc *registrationConfig, ac *pb.AttachmentRequest, credentials *sdk.Credentials) error {
+func validateAttachment(ctx context.Context, rc *registrationConfig, ac *api.AttachmentRequest, credentials *sdk.Credentials) error {
 	if err := validateAttachmentConfiguration(rc, ac); err != nil {
 		return fmt.Errorf("validating attachment configuration: %w", err)
 	}
@@ -210,7 +210,7 @@ func validateAttachment(ctx context.Context, rc *registrationConfig, ac *pb.Atta
 	return nil
 }
 
-func validateAttachmentConfiguration(rc *registrationConfig, ac *pb.AttachmentRequest) error {
+func validateAttachmentConfiguration(rc *registrationConfig, ac *api.AttachmentRequest) error {
 	if rc == nil || ac == nil {
 		return errors.New("invalid configuration")
 	}
