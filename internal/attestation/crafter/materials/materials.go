@@ -45,8 +45,9 @@ func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Materia
 	}
 
 	res := &api.Attestation_Material{
-		AddedAt:      timestamppb.New(time.Now()),
-		MaterialType: input.Type,
+		AddedAt:       timestamppb.New(time.Now()),
+		MaterialType:  input.Type,
+		UploadedToCas: true,
 		M: &api.Attestation_Material_Artifact_{
 			Artifact: &api.Attestation_Material_Artifact{
 				Id:        input.Name,
