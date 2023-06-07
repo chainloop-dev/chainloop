@@ -7,6 +7,7 @@
 package main
 
 import (
+	"github.com/chainloop-dev/chainloop/app/controlplane/extensions"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
@@ -91,7 +92,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		Opts:               v2,
 	}
 	workflowRunService := service.NewWorkflowRunService(newWorkflowRunServiceOpts)
-	loaded, err := loadExtensions(logger)
+	loaded, err := extensions.Load(logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err

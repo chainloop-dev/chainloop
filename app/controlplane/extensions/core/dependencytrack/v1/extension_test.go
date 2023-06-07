@@ -13,13 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package integration
+package dependencytrack
 
 import (
 	"testing"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/dependencytrack/v1/api"
+	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/dependencytrack/v1/api"
 	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/stretchr/testify/assert"
@@ -149,7 +149,7 @@ func TestValidateConfiguration(t *testing.T) {
 }
 
 func TestNewIntegration(t *testing.T) {
-	i, err := NewIntegration(nil)
+	i, err := New(nil)
 	assert.NoError(t, err)
 
 	assert.Equal(t, &sdk.IntegrationInfo{

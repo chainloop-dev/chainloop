@@ -11,10 +11,10 @@ api:
 	cd ./api && buf generate
 	cd ./extensions && buf generate
 
-.PHONY: api-integrations
+.PHONY: api-extensions
 # generate integrations proto bindings
-api-integrations:
-	cd ./integrations && buf generate
+api-extensions:
+	cd ./extensions && buf generate
 
 .PHONY: build
 # build
@@ -43,13 +43,13 @@ test-unit:
 # lint
 lint:
 	buf lint api
-	buf lint integrations
+	buf lint extensions
 	buf lint internal/conf
 	golangci-lint run
 
 .PHONY: generate
 # generate proto bindings, wire injectors, and ent models
-generate: api config api-integrations
+generate: api config api-extensions
 	go generate ./...
 
 .PHONY: all

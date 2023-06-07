@@ -19,8 +19,8 @@ import (
 	"context"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	deptrack "github.com/chainloop-dev/chainloop/app/controlplane/extensions/dependencytrack/v1"
-	cxpb "github.com/chainloop-dev/chainloop/app/controlplane/extensions/dependencytrack/v1/api"
+	deptrack "github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/dependencytrack/v1"
+	cxpb "github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/dependencytrack/v1/api"
 	"google.golang.org/protobuf/types/known/anypb"
 )
 

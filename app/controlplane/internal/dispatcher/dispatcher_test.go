@@ -152,7 +152,7 @@ func (s *dispatcherTestSuite) SetupTest() {
 	customImplementation.On("Register", ctx, mock.Anything).Return(&sdk.RegistrationResponse{Configuration: []byte("deadbeef")}, nil)
 	customImplementation.On("Attach", ctx, mock.Anything).Return(&sdk.AttachmentResponse{Configuration: []byte("deadbeef")}, nil)
 
-	b, err := sdk.NewFanout(
+	b, err := sdk.NewFanOut(
 		&sdk.NewParams{
 			ID:      "SBOM_INTEGRATION",
 			Version: "1.0",
@@ -168,7 +168,7 @@ func (s *dispatcherTestSuite) SetupTest() {
 	require.NoError(s.T(), err)
 
 	// Any material integration
-	b, err = sdk.NewFanout(
+	b, err = sdk.NewFanOut(
 		&sdk.NewParams{
 			ID:      "ANY_INTEGRATION",
 			Version: "1.0",
@@ -182,7 +182,7 @@ func (s *dispatcherTestSuite) SetupTest() {
 	require.NoError(s.T(), err)
 
 	// Attestation integration
-	b, err = sdk.NewFanout(
+	b, err = sdk.NewFanOut(
 		&sdk.NewParams{
 			ID:      "OCI_INTEGRATION",
 			Version: "1.0",

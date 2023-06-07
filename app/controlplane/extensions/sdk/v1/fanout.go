@@ -137,7 +137,7 @@ type NewParams struct {
 	Logger      log.Logger
 }
 
-func NewFanout(p *NewParams, opts ...NewOpt) (*FanOutIntegration, error) {
+func NewFanOut(p *NewParams, opts ...NewOpt) (*FanOutIntegration, error) {
 	c := &FanOutIntegration{
 		id:               p.ID,
 		version:          p.Version,
@@ -189,6 +189,7 @@ func validateConstructor(c *FanOutIntegration) error {
 
 // List of loaded integrations
 type Loaded []FanOut
+type FanOutFactory = func(l log.Logger) (FanOut, error)
 
 // FindByID returns the integration with the given ID from the list of available integrations
 // If not found, an error is returned
