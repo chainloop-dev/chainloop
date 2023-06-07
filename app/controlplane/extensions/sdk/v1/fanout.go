@@ -149,7 +149,7 @@ func NewFanout(p *NewParams, opts ...NewOpt) (*FanOutIntegration, error) {
 		c.log = log.NewStdLogger(io.Discard)
 	}
 
-	c.Logger = servicelogger.ScopedHelper(c.log, fmt.Sprintf("integrations/%s", p.ID))
+	c.Logger = servicelogger.ScopedHelper(c.log, fmt.Sprintf("extensions/%s", p.ID))
 
 	for _, opt := range opts {
 		opt(c)

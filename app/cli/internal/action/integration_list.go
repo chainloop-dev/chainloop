@@ -30,7 +30,7 @@ type IntegrationList struct {
 
 type IntegrationItem struct {
 	ID        string                 `json:"id"`
-	Kind      string                 `json:"kind"`
+	Name      string                 `json:"name"`
 	CreatedAt *time.Time             `json:"createdAt"`
 	Config    map[string]interface{} `json:"config"`
 }
@@ -65,7 +65,7 @@ func pbIntegrationItemToAction(in *pb.IntegrationItem) (*IntegrationItem, error)
 	}
 
 	i := &IntegrationItem{
-		Kind: in.GetKind(), ID: in.GetId(),
+		Name: in.GetKind(), ID: in.GetId(),
 		CreatedAt: toTimePtr(in.GetCreatedAt().AsTime()),
 	}
 

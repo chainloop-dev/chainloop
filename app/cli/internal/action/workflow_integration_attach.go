@@ -19,7 +19,7 @@ import (
 	"context"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	cxpb "github.com/chainloop-dev/chainloop/app/controlplane/integrations/gen/dependencytrack/cyclonedx/v1"
+	cxpb "github.com/chainloop-dev/chainloop/app/controlplane/extensions/gen/dependencytrack/v1"
 	"google.golang.org/protobuf/types/known/anypb"
 )
 

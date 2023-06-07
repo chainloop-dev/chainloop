@@ -22,9 +22,9 @@ import (
 	"fmt"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/dependencytrack/cyclonedx/v1/uploader"
-	pb "github.com/chainloop-dev/chainloop/app/controlplane/integrations/gen/dependencytrack/cyclonedx/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/dependencytrack/v1/client"
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/extensions/gen/dependencytrack/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
 	"github.com/go-kratos/kratos/v2/log"
 )
 
@@ -58,7 +58,7 @@ func NewIntegration(l log.Logger) (sdk.FanOut, error) {
 		return nil, err
 	}
 
-	base.Logger.Infof("integration initialized: %s", base)
+	base.Logger.Infof("loaded: %s", base)
 
 	return &DependencyTrack{base}, nil
 }
@@ -78,7 +78,7 @@ func (i *DependencyTrack) Register(ctx context.Context, req *sdk.RegistrationReq
 
 	// Validate that the provided configuration is valid
 	instance, enableProjectCreation := request.GetInstanceUri(), request.GetAllowAutoCreate()
-	checker, err := uploader.NewIntegration(instance, request.ApiKey, enableProjectCreation)
+	checker, err := client.NewIntegration(instance, request.ApiKey, enableProjectCreation)
 	if err != nil {
 		return nil, fmt.Errorf("checking integration: %w", err)
 	}
@@ -163,8 +163,8 @@ func (i *DependencyTrack) Execute(ctx context.Context, req *sdk.ExecutionRequest
 		"workflowID", req.WorkflowID,
 	)
 
-	// Create an SBOM uploader and perform validation and upload
-	d, err := uploader.NewSBOMUploader(registrationConfig.Domain,
+	// Create an SBOM client and perform validation and upload
+	d, err := client.NewSBOMUploader(registrationConfig.Domain,
 		req.RegistrationInfo.Credentials.Password,
 		bytes.NewReader(req.Input.Material.Content),
 		attachmentConfig.ProjectID,
@@ -197,8 +197,8 @@ func validateAttachment(ctx context.Context, rc *registrationConfig, ac *pb.Atta
 		return fmt.Errorf("validating attachment configuration: %w", err)
 	}
 
-	// Instantiate an actual uploader to see if it would work with the current configuration
-	d, err := uploader.NewSBOMUploader(rc.Domain, credentials.Password, nil, ac.GetProjectId(), ac.GetProjectName())
+	// Instantiate an actual client to see if it would work with the current configuration
+	d, err := client.NewSBOMUploader(rc.Domain, credentials.Password, nil, ac.GetProjectId(), ac.GetProjectName())
 	if err != nil {
 		return fmt.Errorf("creating uploader: %w", err)
 	}

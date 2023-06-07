@@ -91,7 +91,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		Opts:               v2,
 	}
 	workflowRunService := service.NewWorkflowRunService(newWorkflowRunServiceOpts)
-	loaded, err := loadIntegrations(logger)
+	loaded, err := loadExtensions(logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err

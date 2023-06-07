@@ -19,8 +19,8 @@ import (
 	"testing"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1/mocks"
+	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1/mocks"
 	"github.com/stretchr/testify/assert"
 )
 

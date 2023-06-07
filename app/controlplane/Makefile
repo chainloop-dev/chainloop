@@ -9,6 +9,7 @@ config:
 # generate api proto bindings
 api:
 	cd ./api && buf generate
+	cd ./extensions && buf generate
 
 .PHONY: api-integrations
 # generate integrations proto bindings

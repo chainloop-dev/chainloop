@@ -17,7 +17,7 @@ syntax = "proto3";
 
 package integrations.dependencytrack.cyclonedx.v1;
 
-option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/integrations/gen/dependencytrack/cyclonedx/v1;v1";
+option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/extensions/gen/dependencytrack/v1;v1";
 import "validate/validate.proto";
 
 // RegistrationRequest is what the integration expect as input of the pre-registration step

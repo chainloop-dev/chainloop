@@ -48,7 +48,7 @@ type AttestationService struct {
 	attestationUseCase      *biz.AttestationUseCase
 	credsReader             credentials.Reader
 	integrationUseCase      *biz.IntegrationUseCase
-	integrationDispatcher   *dispatcher.Dispatcher
+	integrationDispatcher   *dispatcher.FanOutDispatcher
 	casCredsUseCase         *biz.CASCredentialsUseCase
 }
 
@@ -61,7 +61,7 @@ type NewAttestationServiceOpts struct {
 	CredsReader        credentials.Reader
 	IntegrationUseCase *biz.IntegrationUseCase
 	CasCredsUseCase    *biz.CASCredentialsUseCase
-	FanoutDispatcher   *dispatcher.Dispatcher
+	FanoutDispatcher   *dispatcher.FanOutDispatcher
 	Opts               []NewOpt
 }
 
@@ -178,7 +178,9 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 		b.MaxElapsedTime = 1 * time.Minute
 		err := backoff.RetryNotify(
 			func() error {
-				digest, err := s.attestationUseCase.UploadToCAS(context.Background(), envelope, repo.SecretName, req.WorkflowRunId)
+				// reset context
+				ctx := context.Background()
+				digest, err := s.attestationUseCase.UploadToCAS(ctx, envelope, repo.SecretName, req.WorkflowRunId)
 				if err != nil {
 					return err
 				}
@@ -204,7 +206,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	}()
 
 	go func() {
-		if err := s.integrationDispatcher.Run(context.Background(), envelope, robotAccount.OrgID, robotAccount.WorkflowID, repo.SecretName); err != nil {
+		if err := s.integrationDispatcher.Run(context.TODO(), envelope, robotAccount.OrgID, robotAccount.WorkflowID, repo.SecretName); err != nil {
 			_ = sl.LogAndMaskErr(err, s.log)
 		}
 	}()

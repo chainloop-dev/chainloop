@@ -24,14 +24,14 @@ import (
 	"github.com/getsentry/sentry-go"
 	flag "github.com/spf13/pflag"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/server"
 	credsConfig "github.com/chainloop-dev/chainloop/internal/credentials/api/credentials/v1"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 
-	deptrack "github.com/chainloop-dev/chainloop/app/controlplane/integrations/dependencytrack/cyclonedx/v1"
+	deptrack "github.com/chainloop-dev/chainloop/app/controlplane/extensions/dependencytrack/v1"
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/config/env"
@@ -130,13 +130,13 @@ func main() {
 // Load the available third party integrations
 // In the future this code will iterate over a dynamic directory of plugins
 // and try to load them one by one
-func loadIntegrations(l log.Logger) (sdk.Loaded, error) {
+func loadExtensions(l log.Logger) (sdk.Loaded, error) {
 	var res sdk.Loaded
 
 	var d sdk.FanOut
 	d, err := deptrack.NewIntegration(l)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load dependency track integration: %w", err)
+		return nil, fmt.Errorf("failed to load dependency track extension: %w", err)
 	}
 
 	return append(res, d), nil
@@ -154,7 +154,7 @@ func filterSensitiveArgs(_ log.Level, keyvals ...interface{}) bool {
 			switch keyvals[i+1] {
 			case "/controlplane.v1.OCIRepositoryService/Save", "/controlplane.v1.AttestationService/Store":
 				maskArgs(keyvals)
-			case "/controlplane.v1.IntegrationsService/Register", "/controlplane.v1.IntegrationsService.Attach":
+			case "/controlplane.v1.IntegrationsService/Register", "/controlplane.v1.IntegrationsService/Attach":
 				maskArgs(keyvals)
 			}
 		}

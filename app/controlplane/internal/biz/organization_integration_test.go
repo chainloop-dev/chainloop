@@ -19,8 +19,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1"
-	integrationMocks "github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1/mocks"
+	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
+	integrationMocks "github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1/mocks"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
 	"github.com/google/uuid"

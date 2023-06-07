@@ -25,7 +25,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
@@ -34,17 +34,17 @@ import (
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
 
-type Dispatcher struct {
+type FanOutDispatcher struct {
 	integrationUC       *biz.IntegrationUseCase
 	credentialsProvider credentials.ReaderWriter
 	casClient           biz.CASClient
 	log                 *log.Helper
 	l                   log.Logger
-	registered          sdk.Loaded
+	loaded              sdk.Loaded
 }
 
-func New(integrationUC *biz.IntegrationUseCase, creds credentials.ReaderWriter, c biz.CASClient, registered sdk.Loaded, l log.Logger) *Dispatcher {
-	return &Dispatcher{integrationUC, creds, c, servicelogger.ScopedHelper(l, "integrations-dispatcher"), l, registered}
+func New(integrationUC *biz.IntegrationUseCase, creds credentials.ReaderWriter, c biz.CASClient, registered sdk.Loaded, l log.Logger) *FanOutDispatcher {
+	return &FanOutDispatcher{integrationUC, creds, c, servicelogger.ScopedHelper(l, "fanout-dispatcher"), l, registered}
 }
 
 type integrationInfo struct {
@@ -74,7 +74,7 @@ type dispatchQueue struct {
 // and attestation that are part of the workflow
 // The result is a fully populated dispatchQueue that contains the backend instance, and the configuration that will be required
 // to be run during dispatch.Run
-func (d *Dispatcher) calculateDispatchQueue(ctx context.Context, orgID, workflowID string) (*dispatchQueue, error) {
+func (d *FanOutDispatcher) calculateDispatchQueue(ctx context.Context, orgID, workflowID string) (*dispatchQueue, error) {
 	d.log.Infow("msg", "looking for attached integration", "workflowID", workflowID)
 
 	// List enabled integrations with this workflow
@@ -96,7 +96,7 @@ func (d *Dispatcher) calculateDispatchQueue(ctx context.Context, orgID, workflow
 		}
 
 		// Find the integration backend from the list of registered integrations
-		backend, err := d.registered.FindByID(dbIntegration.Kind)
+		backend, err := d.loaded.FindByID(dbIntegration.Kind)
 		if err != nil {
 			d.log.Warnw("msg", "integration backend not registered, skipped", "Kind", attachment.IntegrationID.String(), "err", err.Error())
 			continue
@@ -108,7 +108,7 @@ func (d *Dispatcher) calculateDispatchQueue(ctx context.Context, orgID, workflow
 		// Retrieve credentials
 		// TODO: remove from here since it's possible that this integration in fact is not being used in the end
 		// so we'll be retrieving credentials for nothing
-		var creds *sdk.Credentials
+		creds := &sdk.Credentials{}
 		if dbIntegration.SecretName != "" {
 			if err := d.credentialsProvider.ReadCredentials(ctx, dbIntegration.SecretName, creds); err != nil {
 				return nil, fmt.Errorf("reading credentials: %w", err)
@@ -153,7 +153,7 @@ func (d *Dispatcher) calculateDispatchQueue(ctx context.Context, orgID, workflow
 }
 
 // Run attestation and materials to the attached integrations
-func (d *Dispatcher) Run(ctx context.Context, envelope *dsse.Envelope, orgID, workflowID, downloadSecretName string) error {
+func (d *FanOutDispatcher) Run(ctx context.Context, envelope *dsse.Envelope, orgID, workflowID, downloadSecretName string) error {
 	queue, err := d.calculateDispatchQueue(ctx, orgID, workflowID)
 	if err != nil {
 		return fmt.Errorf("calculating dispatch queue: %w", err)

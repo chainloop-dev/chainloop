@@ -20,8 +20,8 @@ import (
 	"testing"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1"
-	mockedSDK "github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1/mocks"
+	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
+	mockedSDK "github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1/mocks"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/mocks"
 
@@ -235,5 +235,5 @@ type dispatcherTestSuite struct {
 	cdxIntegrationBackend, ociIntegrationBackend, anyIntegrationBackend sdk.FanOut
 	org, emptyOrg                                                       *biz.Organization
 	workflow, emptyWorkflow                                             *biz.Workflow
-	dispatcher                                                          *Dispatcher
+	dispatcher                                                          *FanOutDispatcher
 }

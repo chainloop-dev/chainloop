@@ -7,7 +7,7 @@
 package testhelpers
 
 import (
-	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
