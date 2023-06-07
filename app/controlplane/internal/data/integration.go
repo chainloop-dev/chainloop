@@ -25,7 +25,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integrationattachment"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 type IntegrationRepo struct {
@@ -40,12 +39,12 @@ func NewIntegrationRepo(data *Data, logger log.Logger) biz.IntegrationRepo {
 	}
 }
 
-func (r *IntegrationRepo) Create(ctx context.Context, orgID uuid.UUID, kind, secretName string, config *anypb.Any) (*biz.Integration, error) {
+func (r *IntegrationRepo) Create(ctx context.Context, orgID uuid.UUID, kind, secretName string, config []byte) (*biz.Integration, error) {
 	integration, err := r.data.db.Integration.Create().
 		SetOrganizationID(orgID).
 		SetKind(kind).
 		SetSecretName(secretName).
-		SetConf(config).
+		SetConfiguration(config).
 		Save(ctx)
 
 	if err != nil {
@@ -111,5 +110,5 @@ func entIntegrationToBiz(i *ent.Integration) *biz.Integration {
 		return nil
 	}
 
-	return &biz.Integration{ID: i.ID, Kind: i.Kind, CreatedAt: toTimePtr(i.CreatedAt), SecretName: i.SecretName, Config: i.Conf}
+	return &biz.Integration{ID: i.ID, Kind: i.Kind, CreatedAt: toTimePtr(i.CreatedAt), SecretName: i.SecretName, Config: i.Configuration}
 }

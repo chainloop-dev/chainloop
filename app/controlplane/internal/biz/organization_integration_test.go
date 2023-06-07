@@ -19,12 +19,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1"
-	integrationMocks "github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1/mocks"
+	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
+	integrationMocks "github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1/mocks"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	creds "github.com/chainloop-dev/chainloop/internal/credentials/mocks"
@@ -117,9 +118,16 @@ func (s *OrgIntegrationTestSuite) SetupTest() {
 	// Mocked integration that will return both generic configuration and credentials
 	integration := integrationMocks.NewFanOut(s.T())
 	integration.On("Describe").Return(&sdk.IntegrationInfo{})
-	integration.On("PreRegister", ctx, mock.Anything).Return(&sdk.PreRegistration{
-		Configuration: &anypb.Any{}}, nil)
-	_, err = s.Integration.RegisterAndSave(ctx, s.org.ID, integration, nil)
+	integration.On("Register", ctx, mock.Anything).Return(&sdk.RegistrationResponse{
+		Configuration: []byte("deadbeef")}, nil)
+
+	config, err := structpb.NewValue(map[string]interface{}{"firstName": "John"})
+	assert.NoError(err)
+
+	configAny, err := anypb.New(config)
+	assert.NoError(err)
+
+	_, err = s.Integration.RegisterAndSave(ctx, s.org.ID, integration, configAny)
 	assert.NoError(err)
 
 	// OCI repository

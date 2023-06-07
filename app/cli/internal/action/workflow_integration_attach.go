@@ -19,7 +19,7 @@ import (
 	"context"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	cxpb "github.com/chainloop-dev/chainloop/app/controlplane/integrations/gen/dependencytrack/cyclonedx/v1"
+	cxpb "github.com/chainloop-dev/chainloop/app/controlplane/extensions/dependencytrack/v1/api"
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
@@ -33,18 +33,14 @@ func NewWorkflowIntegrationAttach(cfg *ActionsOpts) *WorkflowIntegrationAttach {
 func (action *WorkflowIntegrationAttach) RunDependencyTrack(integrationID, workflowID, projectID, projectName string) (*IntegrationAttachmentItem, error) {
 	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
 
-	var projectConfig *cxpb.AttachmentConfig
+	request := &cxpb.AttachmentRequest{}
 	if projectID != "" {
-		projectConfig = &cxpb.AttachmentConfig{
-			Project: &cxpb.AttachmentConfig_ProjectId{ProjectId: projectID},
-		}
+		request.Project = &cxpb.AttachmentRequest_ProjectId{ProjectId: projectID}
 	} else if projectName != "" {
-		projectConfig = &cxpb.AttachmentConfig{
-			Project: &cxpb.AttachmentConfig_ProjectName{ProjectName: projectName},
-		}
+		request.Project = &cxpb.AttachmentRequest_ProjectName{ProjectName: projectName}
 	}
 
-	anyConfig, err := anypb.New(&cxpb.AttachmentRequest{Config: projectConfig})
+	anyConfig, err := anypb.New(request)
 	if err != nil {
 		return nil, err
 	}

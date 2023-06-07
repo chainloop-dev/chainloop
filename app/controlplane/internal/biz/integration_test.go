@@ -20,8 +20,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1"
-	integrationMocks "github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1/mocks"
+	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
+	integrationMocks "github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1/mocks"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
 	creds "github.com/chainloop-dev/chainloop/internal/credentials/mocks"
@@ -42,8 +42,8 @@ func (s *testSuite) TestCreate() {
 
 	ctx := context.Background()
 	integration.On("Describe").Return(&sdk.IntegrationInfo{ID: kind})
-	integration.On("PreRegister", ctx, s.configAny).Return(&sdk.PreRegistration{
-		Configuration: s.config, Kind: kind, Credentials: &sdk.Credentials{
+	integration.On("Register", ctx, mock.Anything).Return(&sdk.RegistrationResponse{
+		Configuration: s.config, Credentials: &sdk.Credentials{
 			Password: "key", URL: "host"},
 	}, nil)
 
@@ -51,12 +51,8 @@ func (s *testSuite) TestCreate() {
 	assert.NoError(err)
 	assert.Equal(kind, got.Kind)
 
-	// Check stored configuration
-	gotConfig := new(structpb.Value)
-	err = got.Config.UnmarshalTo(gotConfig)
-	assert.NoError(err)
 	// Check configuration was stored
-	assert.Equal("John", gotConfig.GetStructValue().Fields["firstName"].GetStringValue())
+	assert.Equal(s.config, got.Config)
 	// Check credential was stored
 	assert.Equal("stored-integration-secret", got.SecretName)
 }
@@ -131,7 +127,7 @@ func (s *testSuite) TestAttachWorkflow() {
 
 	s.Run("attachment OK", func() {
 		ctx := context.Background()
-		s.fanOutIntegration.On("PreAttach", ctx, mock.Anything).Return(&sdk.PreAttachment{
+		s.fanOutIntegration.On("Attach", ctx, mock.Anything).Return(&sdk.AttachmentResponse{
 			Configuration: s.config,
 		}, nil).Once()
 
@@ -144,11 +140,8 @@ func (s *testSuite) TestAttachWorkflow() {
 		})
 		assert.NoError(err)
 
-		gotConfig := new(structpb.Value)
-		err = got.Config.UnmarshalTo(gotConfig)
-		assert.NoError(err)
 		// Check configuration was stored
-		assert.Equal("John", gotConfig.GetStructValue().Fields["firstName"].GetStringValue())
+		assert.Equal(s.config, got.Config)
 		assert.Equal(s.integration.ID, got.IntegrationID)
 		assert.Equal(s.workflow.ID, got.WorkflowID)
 
@@ -160,7 +153,7 @@ func (s *testSuite) TestAttachWorkflow() {
 
 	s.Run("attachment fails", func() {
 		ctx := context.Background()
-		s.fanOutIntegration.On("PreAttach", ctx, mock.Anything).Return(nil, errors.New("invalid attachment options")).Once()
+		s.fanOutIntegration.On("Attach", ctx, mock.Anything).Return(nil, errors.New("invalid attachment options")).Once()
 
 		_, err := s.Integration.AttachToWorkflow(ctx, &biz.AttachOpts{
 			OrgID:             s.org.ID,
@@ -199,22 +192,22 @@ func (s *testSuite) SetupTest() {
 	s.workflow, err = s.Workflow.Create(ctx, &biz.CreateOpts{Name: "test workflow", OrgID: s.org.ID})
 	assert.NoError(err)
 
+	// Integration configuration
+	config, err := structpb.NewValue(map[string]interface{}{"firstName": "John"})
+	assert.NoError(err)
+
+	s.configAny, err = anypb.New(config)
+	assert.NoError(err)
+
+	s.config = []byte("deadbeef")
+
 	// Mocked fanOut that will return both generic configuration and credentials
 	fanOut := integrationMocks.NewFanOut(s.T())
 	fanOut.On("Describe").Return(&sdk.IntegrationInfo{})
-	fanOut.On("PreRegister", ctx, mock.Anything).Return(&sdk.PreRegistration{Configuration: &anypb.Any{}}, nil)
+	fanOut.On("Register", ctx, mock.Anything).Return(&sdk.RegistrationResponse{Configuration: s.config}, nil)
 	s.fanOutIntegration = fanOut
 
-	s.integration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, fanOut, nil)
-	assert.NoError(err)
-
-	// Integration configuration
-	s.config, err = structpb.NewValue(map[string]interface{}{
-		"firstName": "John",
-	})
-	assert.NoError(err)
-
-	s.configAny, err = anypb.New(s.config)
+	s.integration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, fanOut, s.configAny)
 	assert.NoError(err)
 }
 
@@ -230,7 +223,7 @@ type testSuite struct {
 	workflow                *biz.Workflow
 	integration             *biz.Integration
 	mockedCredsReaderWriter *creds.ReaderWriter
-	config                  *structpb.Value
+	config                  []byte
 	configAny               *anypb.Any
 	fanOutIntegration       *integrationMocks.FanOut
 }

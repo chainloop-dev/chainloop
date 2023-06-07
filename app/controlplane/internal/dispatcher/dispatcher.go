@@ -25,7 +25,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
@@ -34,22 +34,24 @@ import (
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
 
-type Dispatcher struct {
+type FanOutDispatcher struct {
 	integrationUC       *biz.IntegrationUseCase
 	credentialsProvider credentials.ReaderWriter
 	casClient           biz.CASClient
 	log                 *log.Helper
 	l                   log.Logger
-	registered          sdk.Initialized
+	loaded              sdk.Loaded
 }
 
-func New(integrationUC *biz.IntegrationUseCase, creds credentials.ReaderWriter, c biz.CASClient, registered sdk.Initialized, l log.Logger) *Dispatcher {
-	return &Dispatcher{integrationUC, creds, c, servicelogger.ScopedHelper(l, "integrations-dispatcher"), l, registered}
+func New(integrationUC *biz.IntegrationUseCase, creds credentials.ReaderWriter, c biz.CASClient, registered sdk.Loaded, l log.Logger) *FanOutDispatcher {
+	return &FanOutDispatcher{integrationUC, creds, c, servicelogger.ScopedHelper(l, "fanout-dispatcher"), l, registered}
 }
 
 type integrationInfo struct {
-	config  *sdk.BundledConfig
-	backend sdk.FanOut
+	registrationConfig, attachmentConfig []byte
+	credentials                          *sdk.Credentials
+	workflowID                           string
+	backend                              sdk.FanOut
 }
 
 // List of integrations that expect a material as input grouped by material type
@@ -72,7 +74,7 @@ type dispatchQueue struct {
 // and attestation that are part of the workflow
 // The result is a fully populated dispatchQueue that contains the backend instance, and the configuration that will be required
 // to be run during dispatch.Run
-func (d *Dispatcher) calculateDispatchQueue(ctx context.Context, orgID, workflowID string) (*dispatchQueue, error) {
+func (d *FanOutDispatcher) calculateDispatchQueue(ctx context.Context, orgID, workflowID string) (*dispatchQueue, error) {
 	d.log.Infow("msg", "looking for attached integration", "workflowID", workflowID)
 
 	// List enabled integrations with this workflow
@@ -94,7 +96,7 @@ func (d *Dispatcher) calculateDispatchQueue(ctx context.Context, orgID, workflow
 		}
 
 		// Find the integration backend from the list of registered integrations
-		backend, err := d.registered.FindByID(dbIntegration.Kind)
+		backend, err := d.loaded.FindByID(dbIntegration.Kind)
 		if err != nil {
 			d.log.Warnw("msg", "integration backend not registered, skipped", "Kind", attachment.IntegrationID.String(), "err", err.Error())
 			continue
@@ -106,7 +108,7 @@ func (d *Dispatcher) calculateDispatchQueue(ctx context.Context, orgID, workflow
 		// Retrieve credentials
 		// TODO: remove from here since it's possible that this integration in fact is not being used in the end
 		// so we'll be retrieving credentials for nothing
-		var creds *sdk.Credentials
+		creds := &sdk.Credentials{}
 		if dbIntegration.SecretName != "" {
 			if err := d.credentialsProvider.ReadCredentials(ctx, dbIntegration.SecretName, creds); err != nil {
 				return nil, fmt.Errorf("reading credentials: %w", err)
@@ -115,13 +117,11 @@ func (d *Dispatcher) calculateDispatchQueue(ctx context.Context, orgID, workflow
 
 		// All the required configuration needed to run the integration
 		executionConfig := &integrationInfo{
-			config: &sdk.BundledConfig{
-				Registration: dbIntegration.Config,
-				Attachment:   attachment.Config,
-				Credentials:  creds,
-				WorkflowID:   workflowID,
-			},
-			backend: backend,
+			registrationConfig: dbIntegration.Config,
+			attachmentConfig:   attachment.Config,
+			credentials:        creds,
+			workflowID:         workflowID,
+			backend:            backend,
 		}
 
 		// Extract the list of materials this kind of backend is subscribed to
@@ -153,7 +153,7 @@ func (d *Dispatcher) calculateDispatchQueue(ctx context.Context, orgID, workflow
 }
 
 // Run attestation and materials to the attached integrations
-func (d *Dispatcher) Run(ctx context.Context, envelope *dsse.Envelope, orgID, workflowID, downloadSecretName string) error {
+func (d *FanOutDispatcher) Run(ctx context.Context, envelope *dsse.Envelope, orgID, workflowID, downloadSecretName string) error {
 	queue, err := d.calculateDispatchQueue(ctx, orgID, workflowID)
 	if err != nil {
 		return fmt.Errorf("calculating dispatch queue: %w", err)
@@ -161,15 +161,13 @@ func (d *Dispatcher) Run(ctx context.Context, envelope *dsse.Envelope, orgID, wo
 
 	// Send the envelope to the integrations that are subscribed to it
 	for _, integration := range queue.attestations {
-		opts := &sdk.ExecuteReq{
-			Config: integration.config,
-			Input: &sdk.ExecuteInput{
-				DSSEnvelope: envelope,
-			},
+		req := generateRequest(integration)
+		req.Input = &sdk.ExecuteInput{
+			DSSEnvelope: envelope,
 		}
 
 		go func(backend sdk.FanOut) {
-			_ = dispatch(ctx, backend, opts, d.log)
+			_ = dispatch(ctx, backend, req, d.log)
 		}(integration.backend)
 	}
 
@@ -214,18 +212,16 @@ func (d *Dispatcher) Run(ctx context.Context, envelope *dsse.Envelope, orgID, wo
 
 		// Execute the integration backends
 		for _, b := range backends {
-			opts := &sdk.ExecuteReq{
-				Config: b.config,
-				Input: &sdk.ExecuteInput{
-					Material: &sdk.ExecuteMaterial{
-						NormalizedMaterial: material,
-						Content:            content,
-					},
+			req := generateRequest(b)
+			req.Input = &sdk.ExecuteInput{
+				Material: &sdk.ExecuteMaterial{
+					NormalizedMaterial: material,
+					Content:            content,
 				},
 			}
 
 			go func() {
-				_ = dispatch(ctx, b.backend, opts, d.log)
+				_ = dispatch(ctx, b.backend, req, d.log)
 			}()
 
 			d.log.Infow("msg", "integration executed!", "workflowID", workflowID, "materialType", material.Type, "integration", b.backend.Describe().ID)
@@ -235,7 +231,7 @@ func (d *Dispatcher) Run(ctx context.Context, envelope *dsse.Envelope, orgID, wo
 	return nil
 }
 
-func dispatch(ctx context.Context, backend sdk.FanOut, opts *sdk.ExecuteReq, logger *log.Helper) error {
+func dispatch(ctx context.Context, backend sdk.FanOut, opts *sdk.ExecutionRequest, logger *log.Helper) error {
 	b := backoff.NewExponentialBackOff()
 	b.MaxElapsedTime = 1 * time.Minute
 
@@ -264,4 +260,17 @@ func dispatch(ctx context.Context, backend sdk.FanOut, opts *sdk.ExecuteReq, log
 			logger.Warnf("error executing integration %s, will retry in %s - %s", backend.String(), delay, err)
 		},
 	)
+}
+
+func generateRequest(in *integrationInfo) *sdk.ExecutionRequest {
+	return &sdk.ExecutionRequest{
+		ChainloopMetadata: &sdk.ChainloopMetadata{WorkflowID: in.workflowID},
+		RegistrationInfo: &sdk.RegistrationResponse{
+			Credentials:   in.credentials,
+			Configuration: in.registrationConfig,
+		},
+		AttachmentInfo: &sdk.AttachmentResponse{
+			Configuration: in.attachmentConfig,
+		},
+	}
 }

@@ -71,6 +71,11 @@ func CreatedAt(v time.Time) predicate.Integration {
 	return predicate.Integration(sql.FieldEQ(FieldCreatedAt, v))
 }
 
+// Configuration applies equality check predicate on the "configuration" field. It's identical to ConfigurationEQ.
+func Configuration(v []byte) predicate.Integration {
+	return predicate.Integration(sql.FieldEQ(FieldConfiguration, v))
+}
+
 // DeletedAt applies equality check predicate on the "deleted_at" field. It's identical to DeletedAtEQ.
 func DeletedAt(v time.Time) predicate.Integration {
 	return predicate.Integration(sql.FieldEQ(FieldDeletedAt, v))
@@ -246,14 +251,54 @@ func CreatedAtLTE(v time.Time) predicate.Integration {
 	return predicate.Integration(sql.FieldLTE(FieldCreatedAt, v))
 }
 
-// ConfIsNil applies the IsNil predicate on the "conf" field.
-func ConfIsNil() predicate.Integration {
-	return predicate.Integration(sql.FieldIsNull(FieldConf))
+// ConfigurationEQ applies the EQ predicate on the "configuration" field.
+func ConfigurationEQ(v []byte) predicate.Integration {
+	return predicate.Integration(sql.FieldEQ(FieldConfiguration, v))
 }
 
-// ConfNotNil applies the NotNil predicate on the "conf" field.
-func ConfNotNil() predicate.Integration {
-	return predicate.Integration(sql.FieldNotNull(FieldConf))
+// ConfigurationNEQ applies the NEQ predicate on the "configuration" field.
+func ConfigurationNEQ(v []byte) predicate.Integration {
+	return predicate.Integration(sql.FieldNEQ(FieldConfiguration, v))
+}
+
+// ConfigurationIn applies the In predicate on the "configuration" field.
+func ConfigurationIn(vs ...[]byte) predicate.Integration {
+	return predicate.Integration(sql.FieldIn(FieldConfiguration, vs...))
+}
+
+// ConfigurationNotIn applies the NotIn predicate on the "configuration" field.
+func ConfigurationNotIn(vs ...[]byte) predicate.Integration {
+	return predicate.Integration(sql.FieldNotIn(FieldConfiguration, vs...))
+}
+
+// ConfigurationGT applies the GT predicate on the "configuration" field.
+func ConfigurationGT(v []byte) predicate.Integration {
+	return predicate.Integration(sql.FieldGT(FieldConfiguration, v))
+}
+
+// ConfigurationGTE applies the GTE predicate on the "configuration" field.
+func ConfigurationGTE(v []byte) predicate.Integration {
+	return predicate.Integration(sql.FieldGTE(FieldConfiguration, v))
+}
+
+// ConfigurationLT applies the LT predicate on the "configuration" field.
+func ConfigurationLT(v []byte) predicate.Integration {
+	return predicate.Integration(sql.FieldLT(FieldConfiguration, v))
+}
+
+// ConfigurationLTE applies the LTE predicate on the "configuration" field.
+func ConfigurationLTE(v []byte) predicate.Integration {
+	return predicate.Integration(sql.FieldLTE(FieldConfiguration, v))
+}
+
+// ConfigurationIsNil applies the IsNil predicate on the "configuration" field.
+func ConfigurationIsNil() predicate.Integration {
+	return predicate.Integration(sql.FieldIsNull(FieldConfiguration))
+}
+
+// ConfigurationNotNil applies the NotNil predicate on the "configuration" field.
+func ConfigurationNotNil() predicate.Integration {
+	return predicate.Integration(sql.FieldNotNull(FieldConfiguration))
 }
 
 // DeletedAtEQ applies the EQ predicate on the "deleted_at" field.

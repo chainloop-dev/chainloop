@@ -16,7 +16,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
 	"github.com/google/uuid"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // IntegrationUpdate is the builder for updating Integration entities.
@@ -32,15 +31,15 @@ func (iu *IntegrationUpdate) Where(ps ...predicate.Integration) *IntegrationUpda
 	return iu
 }
 
-// SetConf sets the "conf" field.
-func (iu *IntegrationUpdate) SetConf(a *anypb.Any) *IntegrationUpdate {
-	iu.mutation.SetConf(a)
+// SetConfiguration sets the "configuration" field.
+func (iu *IntegrationUpdate) SetConfiguration(b []byte) *IntegrationUpdate {
+	iu.mutation.SetConfiguration(b)
 	return iu
 }
 
-// ClearConf clears the value of the "conf" field.
-func (iu *IntegrationUpdate) ClearConf() *IntegrationUpdate {
-	iu.mutation.ClearConf()
+// ClearConfiguration clears the value of the "configuration" field.
+func (iu *IntegrationUpdate) ClearConfiguration() *IntegrationUpdate {
+	iu.mutation.ClearConfiguration()
 	return iu
 }
 
@@ -169,11 +168,11 @@ func (iu *IntegrationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := iu.mutation.Conf(); ok {
-		_spec.SetField(integration.FieldConf, field.TypeJSON, value)
+	if value, ok := iu.mutation.Configuration(); ok {
+		_spec.SetField(integration.FieldConfiguration, field.TypeBytes, value)
 	}
-	if iu.mutation.ConfCleared() {
-		_spec.ClearField(integration.FieldConf, field.TypeJSON)
+	if iu.mutation.ConfigurationCleared() {
+		_spec.ClearField(integration.FieldConfiguration, field.TypeBytes)
 	}
 	if value, ok := iu.mutation.DeletedAt(); ok {
 		_spec.SetField(integration.FieldDeletedAt, field.TypeTime, value)
@@ -290,15 +289,15 @@ type IntegrationUpdateOne struct {
 	mutation *IntegrationMutation
 }
 
-// SetConf sets the "conf" field.
-func (iuo *IntegrationUpdateOne) SetConf(a *anypb.Any) *IntegrationUpdateOne {
-	iuo.mutation.SetConf(a)
+// SetConfiguration sets the "configuration" field.
+func (iuo *IntegrationUpdateOne) SetConfiguration(b []byte) *IntegrationUpdateOne {
+	iuo.mutation.SetConfiguration(b)
 	return iuo
 }
 
-// ClearConf clears the value of the "conf" field.
-func (iuo *IntegrationUpdateOne) ClearConf() *IntegrationUpdateOne {
-	iuo.mutation.ClearConf()
+// ClearConfiguration clears the value of the "configuration" field.
+func (iuo *IntegrationUpdateOne) ClearConfiguration() *IntegrationUpdateOne {
+	iuo.mutation.ClearConfiguration()
 	return iuo
 }
 
@@ -457,11 +456,11 @@ func (iuo *IntegrationUpdateOne) sqlSave(ctx context.Context) (_node *Integratio
 			}
 		}
 	}
-	if value, ok := iuo.mutation.Conf(); ok {
-		_spec.SetField(integration.FieldConf, field.TypeJSON, value)
+	if value, ok := iuo.mutation.Configuration(); ok {
+		_spec.SetField(integration.FieldConfiguration, field.TypeBytes, value)
 	}
-	if iuo.mutation.ConfCleared() {
-		_spec.ClearField(integration.FieldConf, field.TypeJSON)
+	if iuo.mutation.ConfigurationCleared() {
+		_spec.ClearField(integration.FieldConfiguration, field.TypeBytes)
 	}
 	if value, ok := iuo.mutation.DeletedAt(); ok {
 		_spec.SetField(integration.FieldDeletedAt, field.TypeTime, value)

@@ -19,8 +19,8 @@ import (
 	"context"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	deptrack "github.com/chainloop-dev/chainloop/app/controlplane/integrations/dependencytrack/cyclonedx/v1"
-	cxpb "github.com/chainloop-dev/chainloop/app/controlplane/integrations/gen/dependencytrack/cyclonedx/v1"
+	deptrack "github.com/chainloop-dev/chainloop/app/controlplane/extensions/dependencytrack/v1"
+	cxpb "github.com/chainloop-dev/chainloop/app/controlplane/extensions/dependencytrack/v1/api"
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
@@ -35,10 +35,9 @@ func NewIntegrationAddDeptrack(cfg *ActionsOpts) *IntegrationAddDeptrack {
 func (action *IntegrationAddDeptrack) Run(host, apiKey string, allowAutoProjectCreation bool) (*IntegrationItem, error) {
 	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
 	cdxRegistrationRequest := cxpb.RegistrationRequest{
-		ApiKey: apiKey,
-		Config: &cxpb.RegistrationConfig{
-			Domain: host, AllowAutoCreate: allowAutoProjectCreation,
-		},
+		ApiKey:          apiKey,
+		InstanceUri:     host,
+		AllowAutoCreate: allowAutoProjectCreation,
 	}
 
 	anyConfig, err := anypb.New(&cdxRegistrationRequest)

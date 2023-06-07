@@ -1,15 +1,15 @@
 version: v1
 plugins:
   - name: go
-    out: ./gen
+    out: .
     opt: paths=source_relative
   - name: go-grpc
-    out: ./gen
+    out: .
     opt:
       - paths=source_relative
   - name: go-http
-    out: ./gen
+    out: .
     opt: paths=source_relative
   - name: validate
-    out: ./gen
+    out: .
     opt: paths=source_relative,lang=go

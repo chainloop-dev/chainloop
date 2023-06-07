@@ -25,7 +25,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowcontractversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowrun"
 	"github.com/google/uuid"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 const (
@@ -59,7 +58,7 @@ type IntegrationMutation struct {
 	kind                *string
 	secret_name         *string
 	created_at          *time.Time
-	conf                **anypb.Any
+	configuration       *[]byte
 	deleted_at          *time.Time
 	clearedFields       map[string]struct{}
 	attachments         map[uuid.UUID]struct{}
@@ -284,53 +283,53 @@ func (m *IntegrationMutation) ResetCreatedAt() {
 	m.created_at = nil
 }
 
-// SetConf sets the "conf" field.
-func (m *IntegrationMutation) SetConf(a *anypb.Any) {
-	m.conf = &a
+// SetConfiguration sets the "configuration" field.
+func (m *IntegrationMutation) SetConfiguration(b []byte) {
+	m.configuration = &b
 }
 
-// Conf returns the value of the "conf" field in the mutation.
-func (m *IntegrationMutation) Conf() (r *anypb.Any, exists bool) {
-	v := m.conf
+// Configuration returns the value of the "configuration" field in the mutation.
+func (m *IntegrationMutation) Configuration() (r []byte, exists bool) {
+	v := m.configuration
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldConf returns the old "conf" field's value of the Integration entity.
+// OldConfiguration returns the old "configuration" field's value of the Integration entity.
 // If the Integration object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *IntegrationMutation) OldConf(ctx context.Context) (v *anypb.Any, err error) {
+func (m *IntegrationMutation) OldConfiguration(ctx context.Context) (v []byte, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldConf is only allowed on UpdateOne operations")
+		return v, errors.New("OldConfiguration is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldConf requires an ID field in the mutation")
+		return v, errors.New("OldConfiguration requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldConf: %w", err)
+		return v, fmt.Errorf("querying old value for OldConfiguration: %w", err)
 	}
-	return oldValue.Conf, nil
+	return oldValue.Configuration, nil
 }
 
-// ClearConf clears the value of the "conf" field.
-func (m *IntegrationMutation) ClearConf() {
-	m.conf = nil
-	m.clearedFields[integration.FieldConf] = struct{}{}
+// ClearConfiguration clears the value of the "configuration" field.
+func (m *IntegrationMutation) ClearConfiguration() {
+	m.configuration = nil
+	m.clearedFields[integration.FieldConfiguration] = struct{}{}
 }
 
-// ConfCleared returns if the "conf" field was cleared in this mutation.
-func (m *IntegrationMutation) ConfCleared() bool {
-	_, ok := m.clearedFields[integration.FieldConf]
+// ConfigurationCleared returns if the "configuration" field was cleared in this mutation.
+func (m *IntegrationMutation) ConfigurationCleared() bool {
+	_, ok := m.clearedFields[integration.FieldConfiguration]
 	return ok
 }
 
-// ResetConf resets all changes to the "conf" field.
-func (m *IntegrationMutation) ResetConf() {
-	m.conf = nil
-	delete(m.clearedFields, integration.FieldConf)
+// ResetConfiguration resets all changes to the "configuration" field.
+func (m *IntegrationMutation) ResetConfiguration() {
+	m.configuration = nil
+	delete(m.clearedFields, integration.FieldConfiguration)
 }
 
 // SetDeletedAt sets the "deleted_at" field.
@@ -519,8 +518,8 @@ func (m *IntegrationMutation) Fields() []string {
 	if m.created_at != nil {
 		fields = append(fields, integration.FieldCreatedAt)
 	}
-	if m.conf != nil {
-		fields = append(fields, integration.FieldConf)
+	if m.configuration != nil {
+		fields = append(fields, integration.FieldConfiguration)
 	}
 	if m.deleted_at != nil {
 		fields = append(fields, integration.FieldDeletedAt)
@@ -539,8 +538,8 @@ func (m *IntegrationMutation) Field(name string) (ent.Value, bool) {
 		return m.SecretName()
 	case integration.FieldCreatedAt:
 		return m.CreatedAt()
-	case integration.FieldConf:
-		return m.Conf()
+	case integration.FieldConfiguration:
+		return m.Configuration()
 	case integration.FieldDeletedAt:
 		return m.DeletedAt()
 	}
@@ -558,8 +557,8 @@ func (m *IntegrationMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldSecretName(ctx)
 	case integration.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
-	case integration.FieldConf:
-		return m.OldConf(ctx)
+	case integration.FieldConfiguration:
+		return m.OldConfiguration(ctx)
 	case integration.FieldDeletedAt:
 		return m.OldDeletedAt(ctx)
 	}
@@ -592,12 +591,12 @@ func (m *IntegrationMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetCreatedAt(v)
 		return nil
-	case integration.FieldConf:
-		v, ok := value.(*anypb.Any)
+	case integration.FieldConfiguration:
+		v, ok := value.([]byte)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetConf(v)
+		m.SetConfiguration(v)
 		return nil
 	case integration.FieldDeletedAt:
 		v, ok := value.(time.Time)
@@ -636,8 +635,8 @@ func (m *IntegrationMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *IntegrationMutation) ClearedFields() []string {
 	var fields []string
-	if m.FieldCleared(integration.FieldConf) {
-		fields = append(fields, integration.FieldConf)
+	if m.FieldCleared(integration.FieldConfiguration) {
+		fields = append(fields, integration.FieldConfiguration)
 	}
 	if m.FieldCleared(integration.FieldDeletedAt) {
 		fields = append(fields, integration.FieldDeletedAt)
@@ -656,8 +655,8 @@ func (m *IntegrationMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *IntegrationMutation) ClearField(name string) error {
 	switch name {
-	case integration.FieldConf:
-		m.ClearConf()
+	case integration.FieldConfiguration:
+		m.ClearConfiguration()
 		return nil
 	case integration.FieldDeletedAt:
 		m.ClearDeletedAt()
@@ -679,8 +678,8 @@ func (m *IntegrationMutation) ResetField(name string) error {
 	case integration.FieldCreatedAt:
 		m.ResetCreatedAt()
 		return nil
-	case integration.FieldConf:
-		m.ResetConf()
+	case integration.FieldConfiguration:
+		m.ResetConfiguration()
 		return nil
 	case integration.FieldDeletedAt:
 		m.ResetDeletedAt()
@@ -798,7 +797,7 @@ type IntegrationAttachmentMutation struct {
 	typ                string
 	id                 *uuid.UUID
 	created_at         *time.Time
-	conf               **anypb.Any
+	configuration      *[]byte
 	deleted_at         *time.Time
 	clearedFields      map[string]struct{}
 	integration        *uuid.UUID
@@ -950,53 +949,53 @@ func (m *IntegrationAttachmentMutation) ResetCreatedAt() {
 	m.created_at = nil
 }
 
-// SetConf sets the "conf" field.
-func (m *IntegrationAttachmentMutation) SetConf(a *anypb.Any) {
-	m.conf = &a
+// SetConfiguration sets the "configuration" field.
+func (m *IntegrationAttachmentMutation) SetConfiguration(b []byte) {
+	m.configuration = &b
 }
 
-// Conf returns the value of the "conf" field in the mutation.
-func (m *IntegrationAttachmentMutation) Conf() (r *anypb.Any, exists bool) {
-	v := m.conf
+// Configuration returns the value of the "configuration" field in the mutation.
+func (m *IntegrationAttachmentMutation) Configuration() (r []byte, exists bool) {
+	v := m.configuration
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldConf returns the old "conf" field's value of the IntegrationAttachment entity.
+// OldConfiguration returns the old "configuration" field's value of the IntegrationAttachment entity.
 // If the IntegrationAttachment object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *IntegrationAttachmentMutation) OldConf(ctx context.Context) (v *anypb.Any, err error) {
+func (m *IntegrationAttachmentMutation) OldConfiguration(ctx context.Context) (v []byte, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldConf is only allowed on UpdateOne operations")
+		return v, errors.New("OldConfiguration is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldConf requires an ID field in the mutation")
+		return v, errors.New("OldConfiguration requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldConf: %w", err)
+		return v, fmt.Errorf("querying old value for OldConfiguration: %w", err)
 	}
-	return oldValue.Conf, nil
+	return oldValue.Configuration, nil
 }
 
-// ClearConf clears the value of the "conf" field.
-func (m *IntegrationAttachmentMutation) ClearConf() {
-	m.conf = nil
-	m.clearedFields[integrationattachment.FieldConf] = struct{}{}
+// ClearConfiguration clears the value of the "configuration" field.
+func (m *IntegrationAttachmentMutation) ClearConfiguration() {
+	m.configuration = nil
+	m.clearedFields[integrationattachment.FieldConfiguration] = struct{}{}
 }
 
-// ConfCleared returns if the "conf" field was cleared in this mutation.
-func (m *IntegrationAttachmentMutation) ConfCleared() bool {
-	_, ok := m.clearedFields[integrationattachment.FieldConf]
+// ConfigurationCleared returns if the "configuration" field was cleared in this mutation.
+func (m *IntegrationAttachmentMutation) ConfigurationCleared() bool {
+	_, ok := m.clearedFields[integrationattachment.FieldConfiguration]
 	return ok
 }
 
-// ResetConf resets all changes to the "conf" field.
-func (m *IntegrationAttachmentMutation) ResetConf() {
-	m.conf = nil
-	delete(m.clearedFields, integrationattachment.FieldConf)
+// ResetConfiguration resets all changes to the "configuration" field.
+func (m *IntegrationAttachmentMutation) ResetConfiguration() {
+	m.configuration = nil
+	delete(m.clearedFields, integrationattachment.FieldConfiguration)
 }
 
 // SetDeletedAt sets the "deleted_at" field.
@@ -1164,8 +1163,8 @@ func (m *IntegrationAttachmentMutation) Fields() []string {
 	if m.created_at != nil {
 		fields = append(fields, integrationattachment.FieldCreatedAt)
 	}
-	if m.conf != nil {
-		fields = append(fields, integrationattachment.FieldConf)
+	if m.configuration != nil {
+		fields = append(fields, integrationattachment.FieldConfiguration)
 	}
 	if m.deleted_at != nil {
 		fields = append(fields, integrationattachment.FieldDeletedAt)
@@ -1180,8 +1179,8 @@ func (m *IntegrationAttachmentMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case integrationattachment.FieldCreatedAt:
 		return m.CreatedAt()
-	case integrationattachment.FieldConf:
-		return m.Conf()
+	case integrationattachment.FieldConfiguration:
+		return m.Configuration()
 	case integrationattachment.FieldDeletedAt:
 		return m.DeletedAt()
 	}
@@ -1195,8 +1194,8 @@ func (m *IntegrationAttachmentMutation) OldField(ctx context.Context, name strin
 	switch name {
 	case integrationattachment.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
-	case integrationattachment.FieldConf:
-		return m.OldConf(ctx)
+	case integrationattachment.FieldConfiguration:
+		return m.OldConfiguration(ctx)
 	case integrationattachment.FieldDeletedAt:
 		return m.OldDeletedAt(ctx)
 	}
@@ -1215,12 +1214,12 @@ func (m *IntegrationAttachmentMutation) SetField(name string, value ent.Value) e
 		}
 		m.SetCreatedAt(v)
 		return nil
-	case integrationattachment.FieldConf:
-		v, ok := value.(*anypb.Any)
+	case integrationattachment.FieldConfiguration:
+		v, ok := value.([]byte)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetConf(v)
+		m.SetConfiguration(v)
 		return nil
 	case integrationattachment.FieldDeletedAt:
 		v, ok := value.(time.Time)
@@ -1259,8 +1258,8 @@ func (m *IntegrationAttachmentMutation) AddField(name string, value ent.Value) e
 // mutation.
 func (m *IntegrationAttachmentMutation) ClearedFields() []string {
 	var fields []string
-	if m.FieldCleared(integrationattachment.FieldConf) {
-		fields = append(fields, integrationattachment.FieldConf)
+	if m.FieldCleared(integrationattachment.FieldConfiguration) {
+		fields = append(fields, integrationattachment.FieldConfiguration)
 	}
 	if m.FieldCleared(integrationattachment.FieldDeletedAt) {
 		fields = append(fields, integrationattachment.FieldDeletedAt)
@@ -1279,8 +1278,8 @@ func (m *IntegrationAttachmentMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *IntegrationAttachmentMutation) ClearField(name string) error {
 	switch name {
-	case integrationattachment.FieldConf:
-		m.ClearConf()
+	case integrationattachment.FieldConfiguration:
+		m.ClearConfiguration()
 		return nil
 	case integrationattachment.FieldDeletedAt:
 		m.ClearDeletedAt()
@@ -1296,8 +1295,8 @@ func (m *IntegrationAttachmentMutation) ResetField(name string) error {
 	case integrationattachment.FieldCreatedAt:
 		m.ResetCreatedAt()
 		return nil
-	case integrationattachment.FieldConf:
-		m.ResetConf()
+	case integrationattachment.FieldConfiguration:
+		m.ResetConfiguration()
 		return nil
 	case integrationattachment.FieldDeletedAt:
 		m.ResetDeletedAt()

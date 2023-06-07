@@ -22,7 +22,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
@@ -33,7 +33,7 @@ import (
 type IntegrationAttachment struct {
 	ID                        uuid.UUID
 	CreatedAt                 *time.Time
-	Config                    *anypb.Any
+	Config                    []byte
 	WorkflowID, IntegrationID uuid.UUID
 }
 
@@ -41,7 +41,7 @@ type Integration struct {
 	ID        uuid.UUID
 	Kind      string
 	CreatedAt *time.Time
-	Config    *anypb.Any
+	Config    []byte
 	// Identifier to the external provider where any secret information is stored
 	SecretName string
 }
@@ -52,14 +52,14 @@ type IntegrationAndAttachment struct {
 }
 
 type IntegrationRepo interface {
-	Create(ctx context.Context, orgID uuid.UUID, kind string, secretID string, config *anypb.Any) (*Integration, error)
+	Create(ctx context.Context, orgID uuid.UUID, kind string, secretID string, config []byte) (*Integration, error)
 	List(ctx context.Context, orgID uuid.UUID) ([]*Integration, error)
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*Integration, error)
 	SoftDelete(ctx context.Context, ID uuid.UUID) error
 }
 
 type IntegrationAttachmentRepo interface {
-	Create(ctx context.Context, integrationID, workflowID uuid.UUID, config *anypb.Any) (*IntegrationAttachment, error)
+	Create(ctx context.Context, integrationID, workflowID uuid.UUID, config []byte) (*IntegrationAttachment, error)
 	List(ctx context.Context, orgID, workflowID uuid.UUID) ([]*IntegrationAttachment, error)
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*IntegrationAttachment, error)
 	SoftDelete(ctx context.Context, ID uuid.UUID) error
@@ -96,28 +96,28 @@ func (uc *IntegrationUseCase) RegisterAndSave(ctx context.Context, orgID string,
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	preRegistration, err := i.PreRegister(ctx, regConfig)
+	// Marshall the configuration into the integration's schema to validate it
+	registrationPayload, err := regConfig.UnmarshalNew()
+	if err != nil {
+		return nil, NewErrValidation(err)
+	}
+
+	registrationResponse, err := i.Register(ctx, &sdk.RegistrationRequest{Payload: registrationPayload})
 	if err != nil {
 		return nil, NewErrValidation(err)
 	}
 
 	var secretID string
-	if preRegistration.Credentials != nil {
+	if registrationResponse.Credentials != nil {
 		// Create the secret in the external secrets manager
-		secretID, err = uc.credsRW.SaveCredentials(ctx, orgID, preRegistration.Credentials)
+		secretID, err = uc.credsRW.SaveCredentials(ctx, orgID, registrationResponse.Credentials)
 		if err != nil {
 			return nil, fmt.Errorf("saving credentials: %w", err)
 		}
 	}
 
-	// Wrap the configuration in an anypb.Any to store it in the DB
-	config, err := anypb.New(preRegistration.Configuration)
-	if err != nil {
-		return nil, fmt.Errorf("creating configuration: %w", err)
-	}
-
 	// Persist the integration configuration
-	return uc.integrationRepo.Create(ctx, orgUUID, i.Describe().ID, secretID, config)
+	return uc.integrationRepo.Create(ctx, orgUUID, i.Describe().ID, secretID, registrationResponse.Configuration)
 }
 
 type AttachOpts struct {
@@ -175,20 +175,24 @@ func (uc *IntegrationUseCase) AttachToWorkflow(ctx context.Context, opts *Attach
 		}
 	}
 
-	// Execute integration pre-attachment logic
-	preAttachResp, err := opts.FanOutIntegration.PreAttach(ctx, &sdk.BundledConfig{Registration: integration.Config, Attachment: opts.AttachmentConfig, Credentials: creds})
+	// Marshall the configuration into the integration's schema to validate it
+	attachmentPayload, err := opts.AttachmentConfig.UnmarshalNew()
 	if err != nil {
 		return nil, NewErrValidation(err)
 	}
 
-	// Wrap the attachment configuration in an anypb.Any to store it in the DB
-	config, err := anypb.New(preAttachResp.Configuration)
+	// Execute integration pre-attachment logic
+	attachResponse, err := opts.FanOutIntegration.Attach(ctx,
+		&sdk.AttachmentRequest{
+			Payload:          attachmentPayload,
+			RegistrationInfo: &sdk.RegistrationResponse{Credentials: creds, Configuration: integration.Config},
+		})
 	if err != nil {
-		return nil, fmt.Errorf("creating configuration: %w", err)
+		return nil, NewErrValidation(err)
 	}
 
 	// Persist the attachment
-	attachment, err := uc.integrationARepo.Create(ctx, integrationUUID, workflowUUID, config)
+	attachment, err := uc.integrationARepo.Create(ctx, integrationUUID, workflowUUID, attachResponse.Configuration)
 	if err != nil {
 		return nil, fmt.Errorf("persisting attachment: %w", err)
 	}

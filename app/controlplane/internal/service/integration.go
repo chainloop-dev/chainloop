@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	errors "github.com/go-kratos/kratos/v2/errors"
@@ -33,10 +33,10 @@ type IntegrationsService struct {
 
 	integrationUC *biz.IntegrationUseCase
 	workflowUC    *biz.WorkflowUseCase
-	integrations  sdk.Initialized
+	integrations  sdk.Loaded
 }
 
-func NewIntegrationsService(uc *biz.IntegrationUseCase, wuc *biz.WorkflowUseCase, integrations sdk.Initialized, opts ...NewOpt) *IntegrationsService {
+func NewIntegrationsService(uc *biz.IntegrationUseCase, wuc *biz.WorkflowUseCase, integrations sdk.Loaded, opts ...NewOpt) *IntegrationsService {
 	return &IntegrationsService{
 		service:       newService(opts...),
 		integrationUC: uc,

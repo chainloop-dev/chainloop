@@ -26,7 +26,7 @@ import (
 	// Requuired for the database waitFor strategy
 	_ "github.com/lib/pq"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/integrations/sdk/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
@@ -58,12 +58,12 @@ type TestingUseCases struct {
 	WorkflowRun            *biz.WorkflowRunUseCase
 	User                   *biz.UserUseCase
 	RobotAccount           *biz.RobotAccountUseCase
-	RegisteredIntegrations sdk.Initialized
+	RegisteredIntegrations sdk.Loaded
 }
 
 type newTestingOpts struct {
 	credsReaderWriter credentials.ReaderWriter
-	integrations      sdk.Initialized
+	integrations      sdk.Loaded
 }
 
 type NewTestingUCOpt func(*newTestingOpts)
@@ -86,7 +86,7 @@ func WithRegisteredIntegration(i sdk.FanOut) NewTestingUCOpt {
 
 func NewTestingUseCases(t *testing.T, opts ...NewTestingUCOpt) *TestingUseCases {
 	// default args
-	newArgs := &newTestingOpts{credsReaderWriter: creds.NewReaderWriter(t), integrations: make(sdk.Initialized, 0)}
+	newArgs := &newTestingOpts{credsReaderWriter: creds.NewReaderWriter(t), integrations: make(sdk.Loaded, 0)}
 
 	// Overrides
 	for _, opt := range opts {

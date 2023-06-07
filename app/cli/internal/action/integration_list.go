@@ -19,12 +19,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 type IntegrationList struct {
@@ -33,7 +30,7 @@ type IntegrationList struct {
 
 type IntegrationItem struct {
 	ID        string                 `json:"id"`
-	Kind      string                 `json:"kind"`
+	Name      string                 `json:"name"`
 	CreatedAt *time.Time             `json:"createdAt"`
 	Config    map[string]interface{} `json:"config"`
 }
@@ -68,7 +65,7 @@ func pbIntegrationItemToAction(in *pb.IntegrationItem) (*IntegrationItem, error)
 	}
 
 	i := &IntegrationItem{
-		Kind: in.GetKind(), ID: in.GetId(),
+		Name: in.GetKind(), ID: in.GetId(),
 		CreatedAt: toTimePtr(in.GetCreatedAt().AsTime()),
 	}
 
@@ -77,30 +74,11 @@ func pbIntegrationItemToAction(in *pb.IntegrationItem) (*IntegrationItem, error)
 		return i, nil
 	}
 
-	var err error
-	if i.Config, err = anyPbToMap(in.Config); err != nil {
-		return nil, fmt.Errorf("failed to convert config: %w", err)
+	err := json.Unmarshal(in.Config, &i.Config)
+	if err != nil {
+		// Can't extract the config
+		return i, nil
 	}
 
 	return i, nil
-}
-
-func anyPbToMap(in *anypb.Any) (map[string]interface{}, error) {
-	if in == nil {
-		return nil, errors.New("nil input")
-	}
-
-	// proto => JSON
-	configJSON, _ := protojson.Marshal(in)
-
-	// JSON => map
-	result := make(map[string]interface{})
-	if err := json.Unmarshal(configJSON, &result); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)
-	}
-
-	// remove the key "@type" belonging to proto.Any
-	delete(result, "@type")
-
-	return result, nil
 }

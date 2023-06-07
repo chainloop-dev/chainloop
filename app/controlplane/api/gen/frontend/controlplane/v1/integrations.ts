@@ -56,13 +56,15 @@ export interface IntegrationItem {
   id: string;
   kind: string;
   createdAt?: Date;
-  config?: Any;
+  /** Arbitrary configuration for the integration */
+  config: Uint8Array;
 }
 
 export interface IntegrationAttachmentItem {
   id: string;
   createdAt?: Date;
-  config?: Any;
+  /** Arbitrary configuration for the attachment */
+  config: Uint8Array;
   integration?: IntegrationItem;
   workflow?: WorkflowItem;
 }
@@ -701,7 +703,7 @@ export const ListAttachmentsResponse = {
 };
 
 function createBaseIntegrationItem(): IntegrationItem {
-  return { id: "", kind: "", createdAt: undefined, config: undefined };
+  return { id: "", kind: "", createdAt: undefined, config: new Uint8Array() };
 }
 
 export const IntegrationItem = {
@@ -715,8 +717,8 @@ export const IntegrationItem = {
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(26).fork()).ldelim();
     }
-    if (message.config !== undefined) {
-      Any.encode(message.config, writer.uint32(42).fork()).ldelim();
+    if (message.config.length !== 0) {
+      writer.uint32(42).bytes(message.config);
     }
     return writer;
   },
@@ -754,7 +756,7 @@ export const IntegrationItem = {
             break;
           }
 
-          message.config = Any.decode(reader, reader.uint32());
+          message.config = reader.bytes();
           continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
@@ -770,7 +772,7 @@ export const IntegrationItem = {
       id: isSet(object.id) ? String(object.id) : "",
       kind: isSet(object.kind) ? String(object.kind) : "",
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
-      config: isSet(object.config) ? Any.fromJSON(object.config) : undefined,
+      config: isSet(object.config) ? bytesFromBase64(object.config) : new Uint8Array(),
     };
   },
 
@@ -779,7 +781,8 @@ export const IntegrationItem = {
     message.id !== undefined && (obj.id = message.id);
     message.kind !== undefined && (obj.kind = message.kind);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
-    message.config !== undefined && (obj.config = message.config ? Any.toJSON(message.config) : undefined);
+    message.config !== undefined &&
+      (obj.config = base64FromBytes(message.config !== undefined ? message.config : new Uint8Array()));
     return obj;
   },
 
@@ -792,15 +795,13 @@ export const IntegrationItem = {
     message.id = object.id ?? "";
     message.kind = object.kind ?? "";
     message.createdAt = object.createdAt ?? undefined;
-    message.config = (object.config !== undefined && object.config !== null)
-      ? Any.fromPartial(object.config)
-      : undefined;
+    message.config = object.config ?? new Uint8Array();
     return message;
   },
 };
 
 function createBaseIntegrationAttachmentItem(): IntegrationAttachmentItem {
-  return { id: "", createdAt: undefined, config: undefined, integration: undefined, workflow: undefined };
+  return { id: "", createdAt: undefined, config: new Uint8Array(), integration: undefined, workflow: undefined };
 }
 
 export const IntegrationAttachmentItem = {
@@ -811,8 +812,8 @@ export const IntegrationAttachmentItem = {
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(18).fork()).ldelim();
     }
-    if (message.config !== undefined) {
-      Any.encode(message.config, writer.uint32(26).fork()).ldelim();
+    if (message.config.length !== 0) {
+      writer.uint32(26).bytes(message.config);
     }
     if (message.integration !== undefined) {
       IntegrationItem.encode(message.integration, writer.uint32(34).fork()).ldelim();
@@ -849,7 +850,7 @@ export const IntegrationAttachmentItem = {
             break;
           }
 
-          message.config = Any.decode(reader, reader.uint32());
+          message.config = reader.bytes();
           continue;
         case 4:
           if (tag != 34) {
@@ -878,7 +879,7 @@ export const IntegrationAttachmentItem = {
     return {
       id: isSet(object.id) ? String(object.id) : "",
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
-      config: isSet(object.config) ? Any.fromJSON(object.config) : undefined,
+      config: isSet(object.config) ? bytesFromBase64(object.config) : new Uint8Array(),
       integration: isSet(object.integration) ? IntegrationItem.fromJSON(object.integration) : undefined,
       workflow: isSet(object.workflow) ? WorkflowItem.fromJSON(object.workflow) : undefined,
     };
@@ -888,7 +889,8 @@ export const IntegrationAttachmentItem = {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
-    message.config !== undefined && (obj.config = message.config ? Any.toJSON(message.config) : undefined);
+    message.config !== undefined &&
+      (obj.config = base64FromBytes(message.config !== undefined ? message.config : new Uint8Array()));
     message.integration !== undefined &&
       (obj.integration = message.integration ? IntegrationItem.toJSON(message.integration) : undefined);
     message.workflow !== undefined &&
@@ -904,9 +906,7 @@ export const IntegrationAttachmentItem = {
     const message = createBaseIntegrationAttachmentItem();
     message.id = object.id ?? "";
     message.createdAt = object.createdAt ?? undefined;
-    message.config = (object.config !== undefined && object.config !== null)
-      ? Any.fromPartial(object.config)
-      : undefined;
+    message.config = object.config ?? new Uint8Array();
     message.integration = (object.integration !== undefined && object.integration !== null)
       ? IntegrationItem.fromPartial(object.integration)
       : undefined;
@@ -1360,6 +1360,31 @@ var tsProtoGlobalThis: any = (() => {
   }
   throw "Unable to locate global object";
 })();
+
+function bytesFromBase64(b64: string): Uint8Array {
+  if (tsProtoGlobalThis.Buffer) {
+    return Uint8Array.from(tsProtoGlobalThis.Buffer.from(b64, "base64"));
+  } else {
+    const bin = tsProtoGlobalThis.atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; ++i) {
+      arr[i] = bin.charCodeAt(i);
+    }
+    return arr;
+  }
+}
+
+function base64FromBytes(arr: Uint8Array): string {
+  if (tsProtoGlobalThis.Buffer) {
+    return tsProtoGlobalThis.Buffer.from(arr).toString("base64");
+  } else {
+    const bin: string[] = [];
+    arr.forEach((byte) => {
+      bin.push(String.fromCharCode(byte));
+    });
+    return tsProtoGlobalThis.btoa(bin.join(""));
+  }
+}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

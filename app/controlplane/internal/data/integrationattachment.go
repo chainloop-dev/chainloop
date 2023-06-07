@@ -25,7 +25,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 type IntegrationAttachmentRepo struct {
@@ -40,11 +39,11 @@ func NewIntegrationAttachmentRepo(data *Data, logger log.Logger) biz.Integration
 	}
 }
 
-func (r *IntegrationAttachmentRepo) Create(ctx context.Context, integrationID, workflowID uuid.UUID, config *anypb.Any) (*biz.IntegrationAttachment, error) {
+func (r *IntegrationAttachmentRepo) Create(ctx context.Context, integrationID, workflowID uuid.UUID, config []byte) (*biz.IntegrationAttachment, error) {
 	ia, err := r.data.db.IntegrationAttachment.Create().
 		SetWorkflowID(workflowID).
 		SetIntegrationID(integrationID).
-		SetConf(config).
+		SetConfiguration(config).
 		Save(ctx)
 	if err != nil {
 		return nil, err
@@ -107,7 +106,7 @@ func entIntegrationAttachmentToBiz(i *ent.IntegrationAttachment) *biz.Integratio
 	}
 
 	r := &biz.IntegrationAttachment{ID: i.ID,
-		CreatedAt: toTimePtr(i.CreatedAt), Config: i.Conf,
+		CreatedAt: toTimePtr(i.CreatedAt), Config: i.Configuration,
 	}
 
 	if i.Edges.Workflow != nil {
