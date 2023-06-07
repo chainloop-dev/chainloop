@@ -57,7 +57,7 @@ func (s *IntegrationsService) Register(ctx context.Context, req *pb.Integrations
 		return nil, fmt.Errorf("loading integration: %w", err)
 	}
 
-	i, err := s.integrationUC.RegisterAndSave(ctx, org.ID, integration, req.RegistrationConfig)
+	i, err := s.integrationUC.RegisterAndSave(ctx, org.ID, req.Description, integration, req.RegistrationConfig)
 	if err != nil {
 		if biz.IsNotFound(err) {
 			return nil, errors.NotFound("not found", err.Error())

@@ -31,6 +31,26 @@ func (iu *IntegrationUpdate) Where(ps ...predicate.Integration) *IntegrationUpda
 	return iu
 }
 
+// SetDescription sets the "description" field.
+func (iu *IntegrationUpdate) SetDescription(s string) *IntegrationUpdate {
+	iu.mutation.SetDescription(s)
+	return iu
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (iu *IntegrationUpdate) SetNillableDescription(s *string) *IntegrationUpdate {
+	if s != nil {
+		iu.SetDescription(*s)
+	}
+	return iu
+}
+
+// ClearDescription clears the value of the "description" field.
+func (iu *IntegrationUpdate) ClearDescription() *IntegrationUpdate {
+	iu.mutation.ClearDescription()
+	return iu
+}
+
 // SetConfiguration sets the "configuration" field.
 func (iu *IntegrationUpdate) SetConfiguration(b []byte) *IntegrationUpdate {
 	iu.mutation.SetConfiguration(b)
@@ -168,6 +188,12 @@ func (iu *IntegrationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := iu.mutation.Description(); ok {
+		_spec.SetField(integration.FieldDescription, field.TypeString, value)
+	}
+	if iu.mutation.DescriptionCleared() {
+		_spec.ClearField(integration.FieldDescription, field.TypeString)
+	}
 	if value, ok := iu.mutation.Configuration(); ok {
 		_spec.SetField(integration.FieldConfiguration, field.TypeBytes, value)
 	}
@@ -287,6 +313,26 @@ type IntegrationUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *IntegrationMutation
+}
+
+// SetDescription sets the "description" field.
+func (iuo *IntegrationUpdateOne) SetDescription(s string) *IntegrationUpdateOne {
+	iuo.mutation.SetDescription(s)
+	return iuo
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (iuo *IntegrationUpdateOne) SetNillableDescription(s *string) *IntegrationUpdateOne {
+	if s != nil {
+		iuo.SetDescription(*s)
+	}
+	return iuo
+}
+
+// ClearDescription clears the value of the "description" field.
+func (iuo *IntegrationUpdateOne) ClearDescription() *IntegrationUpdateOne {
+	iuo.mutation.ClearDescription()
+	return iuo
 }
 
 // SetConfiguration sets the "configuration" field.
@@ -455,6 +501,12 @@ func (iuo *IntegrationUpdateOne) sqlSave(ctx context.Context) (_node *Integratio
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := iuo.mutation.Description(); ok {
+		_spec.SetField(integration.FieldDescription, field.TypeString, value)
+	}
+	if iuo.mutation.DescriptionCleared() {
+		_spec.ClearField(integration.FieldDescription, field.TypeString)
 	}
 	if value, ok := iuo.mutation.Configuration(); ok {
 		_spec.SetField(integration.FieldConfiguration, field.TypeBytes, value)

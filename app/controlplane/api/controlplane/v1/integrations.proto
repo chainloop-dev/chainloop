@@ -39,7 +39,10 @@ service IntegrationsService {
 
 message IntegrationsServiceRegisterRequest {
 	// Kind of integration to register
+	// This should match the ID of an existing integration
 	string kind = 1 [(validate.rules).string.min_len = 1];
+	// Description of the registration, used for display purposes
+	string description = 3;
 	// Associated registration configuration
 	google.protobuf.Any registration_config = 2 [(validate.rules).any.required = true];
 }

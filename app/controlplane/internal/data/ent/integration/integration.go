@@ -15,6 +15,8 @@ const (
 	FieldID = "id"
 	// FieldKind holds the string denoting the kind field in the database.
 	FieldKind = "kind"
+	// FieldDescription holds the string denoting the description field in the database.
+	FieldDescription = "description"
 	// FieldSecretName holds the string denoting the secret_name field in the database.
 	FieldSecretName = "secret_name"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -49,6 +51,7 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldKind,
+	FieldDescription,
 	FieldSecretName,
 	FieldCreatedAt,
 	FieldConfiguration,

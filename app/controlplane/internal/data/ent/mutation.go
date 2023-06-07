@@ -56,6 +56,7 @@ type IntegrationMutation struct {
 	typ                 string
 	id                  *uuid.UUID
 	kind                *string
+	description         *string
 	secret_name         *string
 	created_at          *time.Time
 	configuration       *[]byte
@@ -209,6 +210,55 @@ func (m *IntegrationMutation) OldKind(ctx context.Context) (v string, err error)
 // ResetKind resets all changes to the "kind" field.
 func (m *IntegrationMutation) ResetKind() {
 	m.kind = nil
+}
+
+// SetDescription sets the "description" field.
+func (m *IntegrationMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *IntegrationMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the Integration entity.
+// If the Integration object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *IntegrationMutation) OldDescription(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of the "description" field.
+func (m *IntegrationMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[integration.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *IntegrationMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[integration.FieldDescription]
+	return ok
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *IntegrationMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, integration.FieldDescription)
 }
 
 // SetSecretName sets the "secret_name" field.
@@ -508,9 +558,12 @@ func (m *IntegrationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *IntegrationMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
 	if m.kind != nil {
 		fields = append(fields, integration.FieldKind)
+	}
+	if m.description != nil {
+		fields = append(fields, integration.FieldDescription)
 	}
 	if m.secret_name != nil {
 		fields = append(fields, integration.FieldSecretName)
@@ -534,6 +587,8 @@ func (m *IntegrationMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case integration.FieldKind:
 		return m.Kind()
+	case integration.FieldDescription:
+		return m.Description()
 	case integration.FieldSecretName:
 		return m.SecretName()
 	case integration.FieldCreatedAt:
@@ -553,6 +608,8 @@ func (m *IntegrationMutation) OldField(ctx context.Context, name string) (ent.Va
 	switch name {
 	case integration.FieldKind:
 		return m.OldKind(ctx)
+	case integration.FieldDescription:
+		return m.OldDescription(ctx)
 	case integration.FieldSecretName:
 		return m.OldSecretName(ctx)
 	case integration.FieldCreatedAt:
@@ -576,6 +633,13 @@ func (m *IntegrationMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetKind(v)
+		return nil
+	case integration.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
 		return nil
 	case integration.FieldSecretName:
 		v, ok := value.(string)
@@ -635,6 +699,9 @@ func (m *IntegrationMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *IntegrationMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(integration.FieldDescription) {
+		fields = append(fields, integration.FieldDescription)
+	}
 	if m.FieldCleared(integration.FieldConfiguration) {
 		fields = append(fields, integration.FieldConfiguration)
 	}
@@ -655,6 +722,9 @@ func (m *IntegrationMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *IntegrationMutation) ClearField(name string) error {
 	switch name {
+	case integration.FieldDescription:
+		m.ClearDescription()
+		return nil
 	case integration.FieldConfiguration:
 		m.ClearConfiguration()
 		return nil
@@ -671,6 +741,9 @@ func (m *IntegrationMutation) ResetField(name string) error {
 	switch name {
 	case integration.FieldKind:
 		m.ResetKind()
+		return nil
+	case integration.FieldDescription:
+		m.ResetDescription()
 		return nil
 	case integration.FieldSecretName:
 		m.ResetSecretName()

@@ -164,7 +164,7 @@ func (s *dispatcherTestSuite) SetupTest() {
 	config, _ := anypb.New(&emptypb.Empty{})
 
 	s.cdxIntegrationBackend = &mockedIntegration{FanOutExtension: customImplementation, FanOutIntegration: b}
-	s.cdxIntegration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, s.cdxIntegrationBackend, config)
+	s.cdxIntegration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "", s.cdxIntegrationBackend, config)
 	require.NoError(s.T(), err)
 
 	// Any material integration
@@ -178,7 +178,7 @@ func (s *dispatcherTestSuite) SetupTest() {
 	require.NoError(s.T(), err)
 
 	s.anyIntegrationBackend = &mockedIntegration{FanOutExtension: customImplementation, FanOutIntegration: b}
-	s.anyIntegration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, s.anyIntegrationBackend, config)
+	s.anyIntegration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "", s.anyIntegrationBackend, config)
 	require.NoError(s.T(), err)
 
 	// Attestation integration
@@ -192,7 +192,7 @@ func (s *dispatcherTestSuite) SetupTest() {
 	require.NoError(s.T(), err)
 
 	s.ociIntegrationBackend = &mockedIntegration{FanOutExtension: customImplementation, FanOutIntegration: b}
-	s.ociIntegration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, s.ociIntegrationBackend, config)
+	s.ociIntegration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "", s.ociIntegrationBackend, config)
 	require.NoError(s.T(), err)
 
 	// Attach all the integrations to the workflow

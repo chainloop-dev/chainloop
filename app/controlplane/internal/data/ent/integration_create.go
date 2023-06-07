@@ -29,6 +29,20 @@ func (ic *IntegrationCreate) SetKind(s string) *IntegrationCreate {
 	return ic
 }
 
+// SetDescription sets the "description" field.
+func (ic *IntegrationCreate) SetDescription(s string) *IntegrationCreate {
+	ic.mutation.SetDescription(s)
+	return ic
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (ic *IntegrationCreate) SetNillableDescription(s *string) *IntegrationCreate {
+	if s != nil {
+		ic.SetDescription(*s)
+	}
+	return ic
+}
+
 // SetSecretName sets the "secret_name" field.
 func (ic *IntegrationCreate) SetSecretName(s string) *IntegrationCreate {
 	ic.mutation.SetSecretName(s)
@@ -206,6 +220,10 @@ func (ic *IntegrationCreate) createSpec() (*Integration, *sqlgraph.CreateSpec) {
 	if value, ok := ic.mutation.Kind(); ok {
 		_spec.SetField(integration.FieldKind, field.TypeString, value)
 		_node.Kind = value
+	}
+	if value, ok := ic.mutation.Description(); ok {
+		_spec.SetField(integration.FieldDescription, field.TypeString, value)
+		_node.Description = value
 	}
 	if value, ok := ic.mutation.SecretName(); ok {
 		_spec.SetField(integration.FieldSecretName, field.TypeString, value)

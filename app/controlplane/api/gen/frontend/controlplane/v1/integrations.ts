@@ -9,8 +9,13 @@ import { WorkflowItem } from "./response_messages";
 export const protobufPackage = "controlplane.v1";
 
 export interface IntegrationsServiceRegisterRequest {
-  /** Kind of integration to register */
+  /**
+   * Kind of integration to register
+   * This should match the ID of an existing integration
+   */
   kind: string;
+  /** Description of the registration, used for display purposes */
+  description: string;
   /** Associated registration configuration */
   registrationConfig?: Any;
 }
@@ -77,13 +82,16 @@ export interface IntegrationsServiceDeleteResponse {
 }
 
 function createBaseIntegrationsServiceRegisterRequest(): IntegrationsServiceRegisterRequest {
-  return { kind: "", registrationConfig: undefined };
+  return { kind: "", description: "", registrationConfig: undefined };
 }
 
 export const IntegrationsServiceRegisterRequest = {
   encode(message: IntegrationsServiceRegisterRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.kind !== "") {
       writer.uint32(10).string(message.kind);
+    }
+    if (message.description !== "") {
+      writer.uint32(26).string(message.description);
     }
     if (message.registrationConfig !== undefined) {
       Any.encode(message.registrationConfig, writer.uint32(18).fork()).ldelim();
@@ -105,6 +113,13 @@ export const IntegrationsServiceRegisterRequest = {
 
           message.kind = reader.string();
           continue;
+        case 3:
+          if (tag != 26) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
         case 2:
           if (tag != 18) {
             break;
@@ -124,6 +139,7 @@ export const IntegrationsServiceRegisterRequest = {
   fromJSON(object: any): IntegrationsServiceRegisterRequest {
     return {
       kind: isSet(object.kind) ? String(object.kind) : "",
+      description: isSet(object.description) ? String(object.description) : "",
       registrationConfig: isSet(object.registrationConfig) ? Any.fromJSON(object.registrationConfig) : undefined,
     };
   },
@@ -131,6 +147,7 @@ export const IntegrationsServiceRegisterRequest = {
   toJSON(message: IntegrationsServiceRegisterRequest): unknown {
     const obj: any = {};
     message.kind !== undefined && (obj.kind = message.kind);
+    message.description !== undefined && (obj.description = message.description);
     message.registrationConfig !== undefined &&
       (obj.registrationConfig = message.registrationConfig ? Any.toJSON(message.registrationConfig) : undefined);
     return obj;
@@ -147,6 +164,7 @@ export const IntegrationsServiceRegisterRequest = {
   ): IntegrationsServiceRegisterRequest {
     const message = createBaseIntegrationsServiceRegisterRequest();
     message.kind = object.kind ?? "";
+    message.description = object.description ?? "";
     message.registrationConfig = (object.registrationConfig !== undefined && object.registrationConfig !== null)
       ? Any.fromPartial(object.registrationConfig)
       : undefined;

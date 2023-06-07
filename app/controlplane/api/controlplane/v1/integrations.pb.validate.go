@@ -72,6 +72,8 @@ func (m *IntegrationsServiceRegisterRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for Description
+
 	if m.GetRegistrationConfig() == nil {
 		err := IntegrationsServiceRegisterRequestValidationError{
 			field:  "RegistrationConfig",
