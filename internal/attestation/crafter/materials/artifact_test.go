@@ -87,6 +87,7 @@ func TestArtifactCraft(t *testing.T) {
 	got, err := crafter.Craft(context.TODO(), "file.txt")
 	assert.NoError(err)
 	assert.Equal(contractAPI.CraftingSchema_Material_ARTIFACT.String(), got.MaterialType.String())
+	assert.True(got.UploadedToCas)
 	assert.WithinDuration(time.Now(), got.AddedAt.AsTime(), 5*time.Second)
 
 	// The result includes the digest reference

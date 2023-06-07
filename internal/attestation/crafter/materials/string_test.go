@@ -76,6 +76,7 @@ func TestStringCraft(t *testing.T) {
 	got, err := crafter.Craft(context.TODO(), "value")
 	assert.NoError(err)
 	assert.Equal(contractAPI.CraftingSchema_Material_STRING, got.MaterialType)
+	assert.False(got.UploadedToCas)
 	assert.WithinDuration(time.Now(), got.AddedAt.AsTime(), 5*time.Second)
 	assert.Equal(got.GetString_(), &attestationApi.Attestation_Material_KeyVal{
 		Id: "test", Value: "value",

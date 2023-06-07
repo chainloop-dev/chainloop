@@ -149,6 +149,7 @@ func TestNormalizeMaterial(t *testing.T) {
 				Annotations: map[string]interface{}{
 					"chainloop.material.name": "foo",
 					"chainloop.material.type": "ARTIFACT",
+					"chainloop.material.cas":  true,
 				},
 				Digest: map[string]string{
 					"sha256": "deadbeef",
@@ -156,10 +157,11 @@ func TestNormalizeMaterial(t *testing.T) {
 				Name: "artifact.tgz",
 			},
 			want: &NormalizedMaterial{
-				Name:  "foo",
-				Type:  "ARTIFACT",
-				Value: "artifact.tgz",
-				Hash:  &crv1.Hash{Algorithm: "sha256", Hex: "deadbeef"},
+				Name:                "foo",
+				Type:                "ARTIFACT",
+				Value:               "artifact.tgz",
+				Hash:                &crv1.Hash{Algorithm: "sha256", Hex: "deadbeef"},
+				DownloadableFromCAS: true,
 			},
 		},
 		{
