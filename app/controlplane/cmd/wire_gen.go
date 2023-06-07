@@ -96,7 +96,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		cleanup()
 		return nil, nil, err
 	}
-	dispatcherDispatcher := dispatcher.New(integrationUseCase, readerWriter, casClientUseCase, loaded, logger)
+	fanOutDispatcher := dispatcher.New(integrationUseCase, readerWriter, casClientUseCase, loaded, logger)
 	newAttestationServiceOpts := &service.NewAttestationServiceOpts{
 		WorkflowRunUC:      workflowRunUseCase,
 		WorkflowUC:         workflowUseCase,
@@ -106,7 +106,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		CredsReader:        readerWriter,
 		IntegrationUseCase: integrationUseCase,
 		CasCredsUseCase:    casCredentialsUseCase,
-		FanoutDispatcher:   dispatcherDispatcher,
+		FanoutDispatcher:   fanOutDispatcher,
 		Opts:               v2,
 	}
 	attestationService := service.NewAttestationService(newAttestationServiceOpts)
