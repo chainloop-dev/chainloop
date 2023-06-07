@@ -20,7 +20,7 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	deptrack "github.com/chainloop-dev/chainloop/app/controlplane/extensions/dependencytrack/v1"
-	cxpb "github.com/chainloop-dev/chainloop/app/controlplane/extensions/gen/dependencytrack/v1"
+	cxpb "github.com/chainloop-dev/chainloop/app/controlplane/extensions/dependencytrack/v1/api"
 	"google.golang.org/protobuf/types/known/anypb"
 )
 

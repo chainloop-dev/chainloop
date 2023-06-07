@@ -22,8 +22,8 @@ import (
 	"fmt"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/extensions/dependencytrack/v1/api"
 	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/dependencytrack/v1/client"
-	pb "github.com/chainloop-dev/chainloop/app/controlplane/extensions/gen/dependencytrack/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
 	"github.com/go-kratos/kratos/v2/log"
 )
