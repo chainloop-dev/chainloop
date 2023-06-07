@@ -17,21 +17,18 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"time"
 
 	"github.com/getsentry/sentry-go"
 	flag "github.com/spf13/pflag"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/server"
 	credsConfig "github.com/chainloop-dev/chainloop/internal/credentials/api/credentials/v1"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 
-	deptrack "github.com/chainloop-dev/chainloop/app/controlplane/extensions/dependencytrack/v1"
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/config/env"
@@ -125,21 +122,6 @@ func main() {
 	if err := app.Run(); err != nil {
 		panic(err)
 	}
-}
-
-// Load the available third party integrations
-// In the future this code will iterate over a dynamic directory of plugins
-// and try to load them one by one
-func loadExtensions(l log.Logger) (sdk.Loaded, error) {
-	var res sdk.Loaded
-
-	var d sdk.FanOut
-	d, err := deptrack.NewIntegration(l)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load dependency track extension: %w", err)
-	}
-
-	return append(res, d), nil
 }
 
 type app struct {

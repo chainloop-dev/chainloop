@@ -17,7 +17,7 @@ syntax = "proto3";
 
 package extensions.dependencytrack.v1;
 
-option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/extensions/dependencytrack/v1/api";
+option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/dependencytrack/v1/api";
 import "validate/validate.proto";
 
 // RegistrationRequest is what the integration expect as input of the pre-registration step

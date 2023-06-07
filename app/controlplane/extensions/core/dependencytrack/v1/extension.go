@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package integration
+package dependencytrack
 
 import (
 	"bytes"
@@ -22,8 +22,8 @@ import (
 	"fmt"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/dependencytrack/v1/api"
-	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/dependencytrack/v1/client"
+	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/dependencytrack/v1/api"
+	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/dependencytrack/v1/client"
 	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
 	"github.com/go-kratos/kratos/v2/log"
 )
@@ -46,7 +46,7 @@ type attachmentConfig struct {
 
 // Attach attaches the integration service to the given grpc server.
 // In the future this will be a plugin entrypoint
-func NewIntegration(l log.Logger) (sdk.FanOut, error) {
+func New(l log.Logger) (sdk.FanOut, error) {
 	base, err := sdk.NewFanout(
 		&sdk.NewParams{
 			ID:      ID,
@@ -57,8 +57,6 @@ func NewIntegration(l log.Logger) (sdk.FanOut, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	base.Logger.Infof("loaded: %s", base)
 
 	return &DependencyTrack{base}, nil
 }
