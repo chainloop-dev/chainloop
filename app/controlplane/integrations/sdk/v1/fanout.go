@@ -261,7 +261,7 @@ func WithInputMaterial(materialType schemaapi.CraftingSchema_Material_MaterialTy
 // This wrapper is just a way to clearly indicate that the content needs to be JSON serializable
 type Configuration []byte
 
-func Config(m any) (Configuration, error) {
+func ToConfig(m any) (Configuration, error) {
 	return json.Marshal(m)
 }
 

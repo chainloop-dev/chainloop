@@ -36,7 +36,7 @@ func (action *IntegrationAddDeptrack) Run(host, apiKey string, allowAutoProjectC
 	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
 	cdxRegistrationRequest := cxpb.RegistrationRequest{
 		ApiKey:          apiKey,
-		Domain:          host,
+		InstanceUri:     host,
 		AllowAutoCreate: allowAutoProjectCreation,
 	}
 

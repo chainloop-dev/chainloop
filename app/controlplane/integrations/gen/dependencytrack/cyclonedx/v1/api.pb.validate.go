@@ -57,10 +57,20 @@ func (m *RegistrationRequest) validate(all bool) error {
 
 	var errors []error
 
-	if utf8.RuneCountInString(m.GetDomain()) < 1 {
+	if uri, err := url.Parse(m.GetInstanceUri()); err != nil {
+		err = RegistrationRequestValidationError{
+			field:  "InstanceUri",
+			reason: "value must be a valid URI",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	} else if !uri.IsAbs() {
 		err := RegistrationRequestValidationError{
-			field:  "Domain",
-			reason: "value length must be at least 1 runes",
+			field:  "InstanceUri",
+			reason: "value must be absolute",
 		}
 		if !all {
 			return err

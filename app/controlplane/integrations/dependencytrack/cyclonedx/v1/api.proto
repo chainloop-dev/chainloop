@@ -22,7 +22,8 @@ import "validate/validate.proto";
 
 // RegistrationRequest is what the integration expect as input of the pre-registration step
 message RegistrationRequest {
-	string domain = 1 [(validate.rules).string.min_len = 1];
+	// The URL of the Dependency-Track instance
+	string instance_uri = 1 [(validate.rules).string.uri = true];
 	string api_key = 2 [(validate.rules).string.min_len = 1];
 	// Support the option to automatically create projects if requested
 	bool allow_auto_create = 3;

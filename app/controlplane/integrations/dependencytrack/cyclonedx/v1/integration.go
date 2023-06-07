@@ -28,7 +28,7 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 )
 
-const ID = "dependencytrack.cyclonedx.v1"
+const ID = "dependencytrack"
 
 type DependencyTrack struct {
 	*sdk.FanOutIntegration
@@ -49,7 +49,7 @@ type attachmentConfig struct {
 func NewIntegration(l log.Logger) (sdk.FanOut, error) {
 	base, err := sdk.NewFanout(
 		&sdk.NewParams{
-			ID:      "dependencytrack.cyclonedx.v1",
+			ID:      ID,
 			Version: "1.0",
 			Logger:  l,
 		}, sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON))
@@ -77,8 +77,8 @@ func (i *DependencyTrack) Register(ctx context.Context, req *sdk.RegistrationReq
 	}
 
 	// Validate that the provided configuration is valid
-	domain, enableProjectCreation := request.GetDomain(), request.GetAllowAutoCreate()
-	checker, err := uploader.NewIntegration(domain, request.ApiKey, enableProjectCreation)
+	instance, enableProjectCreation := request.GetInstanceUri(), request.GetAllowAutoCreate()
+	checker, err := uploader.NewIntegration(instance, request.ApiKey, enableProjectCreation)
 	if err != nil {
 		return nil, fmt.Errorf("checking integration: %w", err)
 	}
@@ -88,9 +88,9 @@ func (i *DependencyTrack) Register(ctx context.Context, req *sdk.RegistrationReq
 		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
 
-	i.Logger.Infow("msg", "registration OK", "domain", domain, "allowAutoCreate", enableProjectCreation)
+	i.Logger.Infow("msg", "registration OK", "instance", instance, "allowAutoCreate", enableProjectCreation)
 
-	rawConfig, err := sdk.Config(&registrationConfig{Domain: domain, AllowAutoCreate: enableProjectCreation})
+	rawConfig, err := sdk.ToConfig(&registrationConfig{Domain: instance, AllowAutoCreate: enableProjectCreation})
 	if err != nil {
 		return nil, fmt.Errorf("marshalling configuration: %w", err)
 	}
@@ -129,7 +129,7 @@ func (i *DependencyTrack) Attach(ctx context.Context, req *sdk.AttachmentRequest
 	i.Logger.Infow("msg", "attachment OK", "project", request.GetProject())
 
 	// We want to store the project configuration
-	rawConfig, err := sdk.Config(&attachmentConfig{ProjectID: request.GetProjectId(), ProjectName: request.GetProjectName()})
+	rawConfig, err := sdk.ToConfig(&attachmentConfig{ProjectID: request.GetProjectId(), ProjectName: request.GetProjectName()})
 	if err != nil {
 		return nil, fmt.Errorf("marshalling configuration: %w", err)
 	}

@@ -25,6 +25,82 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestValidateRegistrationInput(t *testing.T) {
+	testCases := []struct {
+		name   string
+		input  *v1.RegistrationRequest
+		errMsg string
+	}{
+		{
+			name:   "missing instance URL",
+			input:  &v1.RegistrationRequest{},
+			errMsg: "invalid RegistrationRequest.InstanceUri",
+		},
+		{
+			name:   "invalid instance URL",
+			input:  &v1.RegistrationRequest{InstanceUri: "localhost"},
+			errMsg: "invalid RegistrationRequest.InstanceUri",
+		},
+		{
+			name:   "missing API key",
+			input:  &v1.RegistrationRequest{InstanceUri: "https://foo.com"},
+			errMsg: "invalid RegistrationRequest.ApiKey",
+		},
+		{
+			name:  "valid request",
+			input: &v1.RegistrationRequest{InstanceUri: "http://localhost:8080", ApiKey: "api-key"},
+		},
+		{
+			name:  "valid request with path",
+			input: &v1.RegistrationRequest{InstanceUri: "http://localhost:8080/path", ApiKey: "api-key"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.input.Validate()
+			if tc.errMsg != "" {
+				assert.ErrorContains(t, err, tc.errMsg)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateAttachmentInput(t *testing.T) {
+	testCases := []struct {
+		name   string
+		input  *v1.AttachmentRequest
+		errMsg string
+	}{
+		{
+			name:   "missing project info",
+			input:  &v1.AttachmentRequest{},
+			errMsg: "invalid AttachmentRequest.Project",
+		},
+		{
+			name:  "valid request, project ID",
+			input: &v1.AttachmentRequest{Project: &v1.AttachmentRequest_ProjectId{ProjectId: "project-id"}},
+		},
+		{
+			name:  "valid request with name",
+			input: &v1.AttachmentRequest{Project: &v1.AttachmentRequest_ProjectName{ProjectName: "project-name"}},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.input.Validate()
+			if tc.errMsg != "" {
+				assert.ErrorContains(t, err, tc.errMsg)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestValidateConfiguration(t *testing.T) {
 	testIntegrationConfig := func(allowAutoCreate bool) *registrationConfig {
 		return &registrationConfig{
@@ -77,7 +153,7 @@ func TestNewIntegration(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, &sdk.IntegrationInfo{
-		ID:      "dependencytrack.cyclonedx.v1",
+		ID:      "dependencytrack",
 		Version: "1.0",
 		SubscribedInputs: &sdk.Inputs{
 			Materials: []*sdk.InputMaterial{
