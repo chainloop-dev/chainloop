@@ -94,7 +94,7 @@ func TestNewBaseIntegration(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := sdk.NewFanout(
+			got, err := sdk.NewFanOut(
 				&sdk.NewParams{
 					ID:      tc.id,
 					Version: tc.version,
@@ -164,7 +164,7 @@ func TestString(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := sdk.NewFanout(&sdk.NewParams{ID: tc.id, Version: tc.version}, tc.opts...)
+			got, err := sdk.NewFanOut(&sdk.NewParams{ID: tc.id, Version: tc.version}, tc.opts...)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.want, got.String())
 		})

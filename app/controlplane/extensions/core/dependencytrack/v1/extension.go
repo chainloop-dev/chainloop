@@ -47,7 +47,7 @@ type attachmentConfig struct {
 // Attach attaches the integration service to the given grpc server.
 // In the future this will be a plugin entrypoint
 func New(l log.Logger) (sdk.FanOut, error) {
-	base, err := sdk.NewFanout(
+	base, err := sdk.NewFanOut(
 		&sdk.NewParams{
 			ID:      ID,
 			Version: "1.0",

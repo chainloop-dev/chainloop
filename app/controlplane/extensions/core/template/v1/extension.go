@@ -37,7 +37,7 @@ type Integration struct {
 // Attach attaches the integration service to the given grpc server.
 // In the future this will be a plugin entrypoint
 func New(l log.Logger) (sdk.FanOut, error) {
-	base, err := sdk.NewFanout(
+	base, err := sdk.NewFanOut(
 		&sdk.NewParams{
 			ID:      "template",
 			Version: "1.0",
@@ -60,7 +60,7 @@ func New(l log.Logger) (sdk.FanOut, error) {
 }
 
 // Register is executed when a operator wants to register a specific instance of this integration with their Chainloop organization
-func (i *Integration) Register(ctx context.Context, req *sdk.RegistrationRequest) (*sdk.RegistrationResponse, error) {
+func (i *Integration) Register(_ context.Context, req *sdk.RegistrationRequest) (*sdk.RegistrationResponse, error) {
 	i.Logger.Info("registration requested")
 
 	// Parse the request
@@ -103,7 +103,7 @@ func (i *Integration) Register(ctx context.Context, req *sdk.RegistrationRequest
 }
 
 // Attachment is executed when to attach a registered instance of this integration to a specific workflow
-func (i *Integration) Attach(ctx context.Context, req *sdk.AttachmentRequest) (*sdk.AttachmentResponse, error) {
+func (i *Integration) Attach(_ context.Context, req *sdk.AttachmentRequest) (*sdk.AttachmentResponse, error) {
 	i.Logger.Info("attachment requested")
 
 	// Parse the request
@@ -143,7 +143,7 @@ func (i *Integration) Attach(ctx context.Context, req *sdk.AttachmentRequest) (*
 }
 
 // Send the SBOM to the configured Dependency Track instance
-func (i *Integration) Execute(ctx context.Context, req *sdk.ExecutionRequest) error {
+func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) error {
 	i.Logger.Info("execution requested")
 
 	// Example of custom validation

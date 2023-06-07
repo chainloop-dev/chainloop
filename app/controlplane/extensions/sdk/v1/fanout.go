@@ -137,7 +137,7 @@ type NewParams struct {
 	Logger      log.Logger
 }
 
-func NewFanout(p *NewParams, opts ...NewOpt) (*FanOutIntegration, error) {
+func NewFanOut(p *NewParams, opts ...NewOpt) (*FanOutIntegration, error) {
 	c := &FanOutIntegration{
 		id:               p.ID,
 		version:          p.Version,

@@ -12,7 +12,6 @@ linters:
     - nakedret
     - revive
     - gosec
-    - depguard
     - asciicheck
     - whitespace
     - errorlint
