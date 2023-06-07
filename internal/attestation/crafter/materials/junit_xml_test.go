@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:dupl
 package materials_test
 
 import (
@@ -45,7 +46,7 @@ func TestNewJUnitXMLCrafter(t *testing.T) {
 		{
 			name: "wrong type",
 			input: &contractAPI.CraftingSchema_Material{
-				Type: contractAPI.CraftingSchema_Material_CONTAINER_IMAGE,
+				Type: contractAPI.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
 			},
 			wantErr: true,
 		},
@@ -63,6 +64,7 @@ func TestNewJUnitXMLCrafter(t *testing.T) {
 		})
 	}
 }
+
 func TestJUnitXMLCraft(t *testing.T) {
 	testCases := []struct {
 		name     string
@@ -95,6 +97,7 @@ func TestJUnitXMLCraft(t *testing.T) {
 		Name: "test",
 		Type: contractAPI.CraftingSchema_Material_JUNIT_XML,
 	}
+
 	l := zerolog.Nop()
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
