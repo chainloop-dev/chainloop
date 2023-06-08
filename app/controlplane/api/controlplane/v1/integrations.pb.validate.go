@@ -72,7 +72,7 @@ func (m *IntegrationsServiceRegisterRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Description
+	// no validation rules for DisplayName
 
 	if m.GetRegistrationConfig() == nil {
 		err := IntegrationsServiceRegisterRequestValidationError{
@@ -1326,6 +1326,8 @@ func (m *IntegrationItem) validate(all bool) error {
 	// no validation rules for Id
 
 	// no validation rules for Kind
+
+	// no validation rules for DisplayName
 
 	if all {
 		switch v := interface{}(m.GetCreatedAt()).(type) {

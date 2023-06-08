@@ -29,16 +29,16 @@ func (ic *IntegrationCreate) SetKind(s string) *IntegrationCreate {
 	return ic
 }
 
-// SetDescription sets the "description" field.
-func (ic *IntegrationCreate) SetDescription(s string) *IntegrationCreate {
-	ic.mutation.SetDescription(s)
+// SetDisplayName sets the "display_name" field.
+func (ic *IntegrationCreate) SetDisplayName(s string) *IntegrationCreate {
+	ic.mutation.SetDisplayName(s)
 	return ic
 }
 
-// SetNillableDescription sets the "description" field if the given value is not nil.
-func (ic *IntegrationCreate) SetNillableDescription(s *string) *IntegrationCreate {
+// SetNillableDisplayName sets the "display_name" field if the given value is not nil.
+func (ic *IntegrationCreate) SetNillableDisplayName(s *string) *IntegrationCreate {
 	if s != nil {
-		ic.SetDescription(*s)
+		ic.SetDisplayName(*s)
 	}
 	return ic
 }
@@ -221,9 +221,9 @@ func (ic *IntegrationCreate) createSpec() (*Integration, *sqlgraph.CreateSpec) {
 		_spec.SetField(integration.FieldKind, field.TypeString, value)
 		_node.Kind = value
 	}
-	if value, ok := ic.mutation.Description(); ok {
-		_spec.SetField(integration.FieldDescription, field.TypeString, value)
-		_node.Description = value
+	if value, ok := ic.mutation.DisplayName(); ok {
+		_spec.SetField(integration.FieldDisplayName, field.TypeString, value)
+		_node.DisplayName = value
 	}
 	if value, ok := ic.mutation.SecretName(); ok {
 		_spec.SetField(integration.FieldSecretName, field.TypeString, value)

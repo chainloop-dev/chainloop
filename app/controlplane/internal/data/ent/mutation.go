@@ -56,7 +56,7 @@ type IntegrationMutation struct {
 	typ                 string
 	id                  *uuid.UUID
 	kind                *string
-	description         *string
+	display_name        *string
 	secret_name         *string
 	created_at          *time.Time
 	configuration       *[]byte
@@ -212,53 +212,53 @@ func (m *IntegrationMutation) ResetKind() {
 	m.kind = nil
 }
 
-// SetDescription sets the "description" field.
-func (m *IntegrationMutation) SetDescription(s string) {
-	m.description = &s
+// SetDisplayName sets the "display_name" field.
+func (m *IntegrationMutation) SetDisplayName(s string) {
+	m.display_name = &s
 }
 
-// Description returns the value of the "description" field in the mutation.
-func (m *IntegrationMutation) Description() (r string, exists bool) {
-	v := m.description
+// DisplayName returns the value of the "display_name" field in the mutation.
+func (m *IntegrationMutation) DisplayName() (r string, exists bool) {
+	v := m.display_name
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldDescription returns the old "description" field's value of the Integration entity.
+// OldDisplayName returns the old "display_name" field's value of the Integration entity.
 // If the Integration object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *IntegrationMutation) OldDescription(ctx context.Context) (v string, err error) {
+func (m *IntegrationMutation) OldDisplayName(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+		return v, errors.New("OldDisplayName is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldDescription requires an ID field in the mutation")
+		return v, errors.New("OldDisplayName requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+		return v, fmt.Errorf("querying old value for OldDisplayName: %w", err)
 	}
-	return oldValue.Description, nil
+	return oldValue.DisplayName, nil
 }
 
-// ClearDescription clears the value of the "description" field.
-func (m *IntegrationMutation) ClearDescription() {
-	m.description = nil
-	m.clearedFields[integration.FieldDescription] = struct{}{}
+// ClearDisplayName clears the value of the "display_name" field.
+func (m *IntegrationMutation) ClearDisplayName() {
+	m.display_name = nil
+	m.clearedFields[integration.FieldDisplayName] = struct{}{}
 }
 
-// DescriptionCleared returns if the "description" field was cleared in this mutation.
-func (m *IntegrationMutation) DescriptionCleared() bool {
-	_, ok := m.clearedFields[integration.FieldDescription]
+// DisplayNameCleared returns if the "display_name" field was cleared in this mutation.
+func (m *IntegrationMutation) DisplayNameCleared() bool {
+	_, ok := m.clearedFields[integration.FieldDisplayName]
 	return ok
 }
 
-// ResetDescription resets all changes to the "description" field.
-func (m *IntegrationMutation) ResetDescription() {
-	m.description = nil
-	delete(m.clearedFields, integration.FieldDescription)
+// ResetDisplayName resets all changes to the "display_name" field.
+func (m *IntegrationMutation) ResetDisplayName() {
+	m.display_name = nil
+	delete(m.clearedFields, integration.FieldDisplayName)
 }
 
 // SetSecretName sets the "secret_name" field.
@@ -562,8 +562,8 @@ func (m *IntegrationMutation) Fields() []string {
 	if m.kind != nil {
 		fields = append(fields, integration.FieldKind)
 	}
-	if m.description != nil {
-		fields = append(fields, integration.FieldDescription)
+	if m.display_name != nil {
+		fields = append(fields, integration.FieldDisplayName)
 	}
 	if m.secret_name != nil {
 		fields = append(fields, integration.FieldSecretName)
@@ -587,8 +587,8 @@ func (m *IntegrationMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case integration.FieldKind:
 		return m.Kind()
-	case integration.FieldDescription:
-		return m.Description()
+	case integration.FieldDisplayName:
+		return m.DisplayName()
 	case integration.FieldSecretName:
 		return m.SecretName()
 	case integration.FieldCreatedAt:
@@ -608,8 +608,8 @@ func (m *IntegrationMutation) OldField(ctx context.Context, name string) (ent.Va
 	switch name {
 	case integration.FieldKind:
 		return m.OldKind(ctx)
-	case integration.FieldDescription:
-		return m.OldDescription(ctx)
+	case integration.FieldDisplayName:
+		return m.OldDisplayName(ctx)
 	case integration.FieldSecretName:
 		return m.OldSecretName(ctx)
 	case integration.FieldCreatedAt:
@@ -634,12 +634,12 @@ func (m *IntegrationMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetKind(v)
 		return nil
-	case integration.FieldDescription:
+	case integration.FieldDisplayName:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetDescription(v)
+		m.SetDisplayName(v)
 		return nil
 	case integration.FieldSecretName:
 		v, ok := value.(string)
@@ -699,8 +699,8 @@ func (m *IntegrationMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *IntegrationMutation) ClearedFields() []string {
 	var fields []string
-	if m.FieldCleared(integration.FieldDescription) {
-		fields = append(fields, integration.FieldDescription)
+	if m.FieldCleared(integration.FieldDisplayName) {
+		fields = append(fields, integration.FieldDisplayName)
 	}
 	if m.FieldCleared(integration.FieldConfiguration) {
 		fields = append(fields, integration.FieldConfiguration)
@@ -722,8 +722,8 @@ func (m *IntegrationMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *IntegrationMutation) ClearField(name string) error {
 	switch name {
-	case integration.FieldDescription:
-		m.ClearDescription()
+	case integration.FieldDisplayName:
+		m.ClearDisplayName()
 		return nil
 	case integration.FieldConfiguration:
 		m.ClearConfiguration()
@@ -742,8 +742,8 @@ func (m *IntegrationMutation) ResetField(name string) error {
 	case integration.FieldKind:
 		m.ResetKind()
 		return nil
-	case integration.FieldDescription:
-		m.ResetDescription()
+	case integration.FieldDisplayName:
+		m.ResetDisplayName()
 		return nil
 	case integration.FieldSecretName:
 		m.ResetSecretName()

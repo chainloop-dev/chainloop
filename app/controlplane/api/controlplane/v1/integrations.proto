@@ -42,7 +42,7 @@ message IntegrationsServiceRegisterRequest {
 	// This should match the ID of an existing integration
 	string kind = 1 [(validate.rules).string.min_len = 1];
 	// Description of the registration, used for display purposes
-	string description = 3;
+	string display_name = 3;
 	// Associated registration configuration
 	google.protobuf.Any registration_config = 2 [(validate.rules).any.required = true];
 }
@@ -85,6 +85,8 @@ message ListAttachmentsResponse{
 message IntegrationItem {
 	string id = 1;
 	string kind = 2;
+	// Description of the registration, used for display purposes
+	string display_name = 4;
 	google.protobuf.Timestamp created_at = 3;
 	// Arbitrary configuration for the integration
 	bytes config = 5;
