@@ -199,7 +199,7 @@ func (d *FanOutDispatcher) Run(ctx context.Context, envelope *dsse.Envelope, org
 		// Retrieve material content
 		content := []byte(material.Value)
 		// It's a downloadable so we retrieve and override the content variable
-		if material.Hash != nil {
+		if material.Hash != nil && material.UploadedToCAS {
 			digest := material.Hash.String()
 			d.log.Infow("msg", "downloading material", "workflowID", workflowID, "materialType", material.Type, "name", material.Name)
 			buf := bytes.NewBuffer(nil)

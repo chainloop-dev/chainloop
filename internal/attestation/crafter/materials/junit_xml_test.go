@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:dupl
 package materials_test
 
 import (
@@ -63,6 +64,7 @@ func TestNewJUnitXMLCrafter(t *testing.T) {
 		})
 	}
 }
+
 func TestJUnitXMLCraft(t *testing.T) {
 	testCases := []struct {
 		name     string
@@ -95,6 +97,7 @@ func TestJUnitXMLCraft(t *testing.T) {
 		Name: "test",
 		Type: contractAPI.CraftingSchema_Material_JUNIT_XML,
 	}
+
 	l := zerolog.Nop()
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -119,6 +122,7 @@ func TestJUnitXMLCraft(t *testing.T) {
 
 			require.NoError(t, err)
 			assert.Equal(contractAPI.CraftingSchema_Material_JUNIT_XML.String(), got.MaterialType.String())
+			assert.True(got.UploadedToCas)
 			assert.WithinDuration(time.Now(), got.AddedAt.AsTime(), 5*time.Second)
 
 			// The result includes the digest reference

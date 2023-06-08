@@ -121,8 +121,9 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(contractAPI.CraftingSchema_Material_SBOM_CYCLONEDX_JSON.String(), got.MaterialType.String())
 			assert.WithinDuration(time.Now(), got.AddedAt.AsTime(), 5*time.Second)
+			assert.True(got.UploadedToCas)
 
-			// // The result includes the digest reference
+			// The result includes the digest reference
 			assert.Equal(got.GetArtifact(), &attestationApi.Attestation_Material_Artifact{
 				Id: "test", Digest: "deadbeef", Name: "sbom.cyclonedx.json",
 			})

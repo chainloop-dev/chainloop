@@ -19,14 +19,12 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"time"
 
 	cdx "github.com/CycloneDX/cyclonedx-go"
 	api "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
 	"github.com/rs/zerolog"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type CyclonedxJSONCrafter struct {
@@ -64,21 +62,5 @@ func (i *CyclonedxJSONCrafter) Craft(ctx context.Context, filePath string) (*api
 		return nil, fmt.Errorf("invalid cyclonedx sbom file: %w", ErrInvalidMaterialType)
 	}
 
-	result, err := i.uploader.UploadFile(ctx, filePath)
-	if err != nil {
-		i.logger.Debug().Err(err)
-		return nil, err
-	}
-
-	res := &api.Attestation_Material{
-		AddedAt:      timestamppb.New(time.Now()),
-		MaterialType: i.input.Type,
-		M: &api.Attestation_Material_Artifact_{
-			Artifact: &api.Attestation_Material_Artifact{
-				Id: i.input.Name, Digest: result.Digest, Name: "sbom.cyclonedx.json",
-			},
-		},
-	}
-
-	return res, nil
+	return uploadAndCraft(ctx, i.input, i.uploader, filePath)
 }

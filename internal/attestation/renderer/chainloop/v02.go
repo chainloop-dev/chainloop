@@ -89,6 +89,7 @@ func (r *RendererV02) Header() (*in_toto.StatementHeader, error) {
 
 const AnnotationMaterialType = "chainloop.material.type"
 const AnnotationMaterialName = "chainloop.material.name"
+const AnnotationMaterialCAS = "chainloop.material.cas"
 
 func outputMaterials(att *v1.Attestation, onlyOutput bool) []*slsa_v1.ResourceDescriptor {
 	// Sort material keys to stabilize output
@@ -128,6 +129,10 @@ func outputMaterials(att *v1.Attestation, onlyOutput bool) []*slsa_v1.ResourceDe
 		material.Annotations = map[string]interface{}{
 			AnnotationMaterialType: artifactType.String(),
 			AnnotationMaterialName: mdefName,
+		}
+
+		if mdef.UploadedToCas {
+			material.Annotations[AnnotationMaterialCAS] = true
 		}
 
 		res = append(res, material)
@@ -192,6 +197,10 @@ func normalizeMaterial(material *slsa_v1.ResourceDescriptor) (*NormalizedMateria
 	m.Hash = &crv1.Hash{Algorithm: "sha256", Hex: d}
 	if material.Name == "" {
 		return nil, fmt.Errorf("material name not found")
+	}
+
+	if v, ok := material.Annotations[AnnotationMaterialCAS]; ok && v.(bool) {
+		m.UploadedToCAS = true
 	}
 
 	m.Value = material.Name

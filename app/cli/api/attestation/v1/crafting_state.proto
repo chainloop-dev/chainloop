@@ -41,6 +41,9 @@ message Attestation {
         google.protobuf.Timestamp added_at = 5;
         workflowcontract.v1.CraftingSchema.Material.MaterialType material_type = 6; 
 
+        // Whether the material has been uploaded to the CAS
+        bool uploaded_to_cas = 7;
+
         message KeyVal {
             string id = 1 [(validate.rules).string.min_len = 1];
             string value = 2 [(validate.rules).string.min_len = 1];

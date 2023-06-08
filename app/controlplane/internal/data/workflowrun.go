@@ -138,7 +138,7 @@ func (r *WorkflowRunRepo) List(ctx context.Context, orgID, workflowID uuid.UUID,
 
 	workflowRuns, err := wfRunsQuery.All(ctx)
 	if err != nil {
-		return
+		return nil, "", err
 	}
 
 	for i, wr := range workflowRuns {

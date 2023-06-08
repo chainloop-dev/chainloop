@@ -622,6 +622,8 @@ func (m *Attestation_Material) validate(all bool) error {
 
 	// no validation rules for MaterialType
 
+	// no validation rules for UploadedToCas
+
 	switch v := m.M.(type) {
 	case *Attestation_Material_String_:
 		if v == nil {

@@ -18,13 +18,11 @@ package materials
 import (
 	"context"
 	"fmt"
-	"time"
 
 	api "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
 	"github.com/rs/zerolog"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type ArtifactCrafter struct {
@@ -43,21 +41,5 @@ func NewArtifactCrafter(schema *schemaapi.CraftingSchema_Material, uploader casc
 
 // Craft will calculate the digest of the artifact, simulate an upload and return the material definition
 func (i *ArtifactCrafter) Craft(ctx context.Context, artifactPath string) (*api.Attestation_Material, error) {
-	result, err := i.uploader.UploadFile(ctx, artifactPath)
-	if err != nil {
-		i.logger.Debug().Err(err)
-		return nil, err
-	}
-
-	res := &api.Attestation_Material{
-		AddedAt:      timestamppb.New(time.Now()),
-		MaterialType: i.input.Type,
-		M: &api.Attestation_Material_Artifact_{
-			Artifact: &api.Attestation_Material_Artifact{
-				Id: i.input.Name, Digest: result.Digest, Name: result.Filename, IsSubject: i.input.Output,
-			},
-		},
-	}
-
-	return res, nil
+	return uploadAndCraft(ctx, i.input, i.uploader, artifactPath)
 }

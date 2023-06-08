@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:dupl
 package materials_test
 
 import (
@@ -71,14 +72,14 @@ func TestSPDXJSONCraft(t *testing.T) {
 		wantErr  string
 	}{
 		{
-			name:     "invalid path",
-			filePath: "./testdata/non-existing.json",
-			wantErr:  "no such file or directory",
-		},
-		{
 			name:     "invalid sbom format",
 			filePath: "./testdata/sbom.cyclonedx.json",
 			wantErr:  "unexpected material type",
+		},
+		{
+			name:     "invalid path",
+			filePath: "./testdata/non-existing.json",
+			wantErr:  "no such file or directory",
 		},
 		{
 			name:     "invalid artifact type",
@@ -117,9 +118,10 @@ func TestSPDXJSONCraft(t *testing.T) {
 				assert.ErrorContains(err, tc.wantErr)
 				return
 			}
-
 			require.NoError(t, err)
+
 			assert.Equal(contractAPI.CraftingSchema_Material_SBOM_SPDX_JSON.String(), got.MaterialType.String())
+			assert.True(got.UploadedToCas)
 			assert.WithinDuration(time.Now(), got.AddedAt.AsTime(), 5*time.Second)
 
 			// // The result includes the digest reference
