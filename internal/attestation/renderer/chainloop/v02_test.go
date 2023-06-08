@@ -157,11 +157,11 @@ func TestNormalizeMaterial(t *testing.T) {
 				Name: "artifact.tgz",
 			},
 			want: &NormalizedMaterial{
-				Name:                "foo",
-				Type:                "ARTIFACT",
-				Value:               "artifact.tgz",
-				Hash:                &crv1.Hash{Algorithm: "sha256", Hex: "deadbeef"},
-				DownloadableFromCAS: true,
+				Name:          "foo",
+				Type:          "ARTIFACT",
+				Value:         "artifact.tgz",
+				Hash:          &crv1.Hash{Algorithm: "sha256", Hex: "deadbeef"},
+				UploadedToCAS: true,
 			},
 		},
 		{

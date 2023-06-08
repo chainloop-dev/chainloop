@@ -49,7 +49,7 @@ type NormalizedMaterial struct {
 	// Hash of the Material
 	Hash *crv1.Hash
 	// Whether the Material was uploaded and available for download from CAS
-	DownloadableFromCAS bool
+	UploadedToCAS bool
 }
 
 type ProvenancePredicateCommon struct {

@@ -200,7 +200,7 @@ func normalizeMaterial(material *slsa_v1.ResourceDescriptor) (*NormalizedMateria
 	}
 
 	if v, ok := material.Annotations[AnnotationMaterialCAS]; ok && v.(bool) {
-		m.DownloadableFromCAS = true
+		m.UploadedToCAS = true
 	}
 
 	m.Value = material.Name

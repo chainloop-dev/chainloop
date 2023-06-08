@@ -46,7 +46,7 @@ func TestNewJUnitXMLCrafter(t *testing.T) {
 		{
 			name: "wrong type",
 			input: &contractAPI.CraftingSchema_Material{
-				Type: contractAPI.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
+				Type: contractAPI.CraftingSchema_Material_CONTAINER_IMAGE,
 			},
 			wantErr: true,
 		},
