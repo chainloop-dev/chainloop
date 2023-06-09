@@ -32,7 +32,7 @@ func NewIntegrationAddDeptrack(cfg *ActionsOpts) *IntegrationAddDeptrack {
 	return &IntegrationAddDeptrack{cfg}
 }
 
-func (action *IntegrationAddDeptrack) Run(host, apiKey string, allowAutoProjectCreation bool) (*IntegrationItem, error) {
+func (action *IntegrationAddDeptrack) Run(host, apiKey, description string, allowAutoProjectCreation bool) (*IntegrationItem, error) {
 	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
 	cdxRegistrationRequest := cxpb.RegistrationRequest{
 		ApiKey:          apiKey,
@@ -48,6 +48,7 @@ func (action *IntegrationAddDeptrack) Run(host, apiKey string, allowAutoProjectC
 	i, err := client.Register(context.Background(), &pb.IntegrationsServiceRegisterRequest{
 		Kind:               deptrack.ID,
 		RegistrationConfig: anyConfig,
+		DisplayName:        description,
 	})
 	if err != nil {
 		return nil, err

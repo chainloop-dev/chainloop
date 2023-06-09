@@ -39,7 +39,7 @@ func newIntegrationAddDepTrackCmd() *cobra.Command {
 				return fmt.Errorf("retrieving token from stdin: %w", err)
 			}
 
-			res, err := action.NewIntegrationAddDeptrack(actionOpts).Run(instance, string(apiKey), allowAutoCreate)
+			res, err := action.NewIntegrationAddDeptrack(actionOpts).Run(instance, string(apiKey), integrationDescription, allowAutoCreate)
 			if err != nil {
 				return err
 			}

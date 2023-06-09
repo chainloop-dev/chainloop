@@ -9,8 +9,13 @@ import { WorkflowItem } from "./response_messages";
 export const protobufPackage = "controlplane.v1";
 
 export interface IntegrationsServiceRegisterRequest {
-  /** Kind of integration to register */
+  /**
+   * Kind of integration to register
+   * This should match the ID of an existing integration
+   */
   kind: string;
+  /** Description of the registration, used for display purposes */
+  displayName: string;
   /** Associated registration configuration */
   registrationConfig?: Any;
 }
@@ -55,6 +60,8 @@ export interface ListAttachmentsResponse {
 export interface IntegrationItem {
   id: string;
   kind: string;
+  /** Description of the registration, used for display purposes */
+  displayName: string;
   createdAt?: Date;
   /** Arbitrary configuration for the integration */
   config: Uint8Array;
@@ -77,13 +84,16 @@ export interface IntegrationsServiceDeleteResponse {
 }
 
 function createBaseIntegrationsServiceRegisterRequest(): IntegrationsServiceRegisterRequest {
-  return { kind: "", registrationConfig: undefined };
+  return { kind: "", displayName: "", registrationConfig: undefined };
 }
 
 export const IntegrationsServiceRegisterRequest = {
   encode(message: IntegrationsServiceRegisterRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.kind !== "") {
       writer.uint32(10).string(message.kind);
+    }
+    if (message.displayName !== "") {
+      writer.uint32(26).string(message.displayName);
     }
     if (message.registrationConfig !== undefined) {
       Any.encode(message.registrationConfig, writer.uint32(18).fork()).ldelim();
@@ -105,6 +115,13 @@ export const IntegrationsServiceRegisterRequest = {
 
           message.kind = reader.string();
           continue;
+        case 3:
+          if (tag != 26) {
+            break;
+          }
+
+          message.displayName = reader.string();
+          continue;
         case 2:
           if (tag != 18) {
             break;
@@ -124,6 +141,7 @@ export const IntegrationsServiceRegisterRequest = {
   fromJSON(object: any): IntegrationsServiceRegisterRequest {
     return {
       kind: isSet(object.kind) ? String(object.kind) : "",
+      displayName: isSet(object.displayName) ? String(object.displayName) : "",
       registrationConfig: isSet(object.registrationConfig) ? Any.fromJSON(object.registrationConfig) : undefined,
     };
   },
@@ -131,6 +149,7 @@ export const IntegrationsServiceRegisterRequest = {
   toJSON(message: IntegrationsServiceRegisterRequest): unknown {
     const obj: any = {};
     message.kind !== undefined && (obj.kind = message.kind);
+    message.displayName !== undefined && (obj.displayName = message.displayName);
     message.registrationConfig !== undefined &&
       (obj.registrationConfig = message.registrationConfig ? Any.toJSON(message.registrationConfig) : undefined);
     return obj;
@@ -147,6 +166,7 @@ export const IntegrationsServiceRegisterRequest = {
   ): IntegrationsServiceRegisterRequest {
     const message = createBaseIntegrationsServiceRegisterRequest();
     message.kind = object.kind ?? "";
+    message.displayName = object.displayName ?? "";
     message.registrationConfig = (object.registrationConfig !== undefined && object.registrationConfig !== null)
       ? Any.fromPartial(object.registrationConfig)
       : undefined;
@@ -703,7 +723,7 @@ export const ListAttachmentsResponse = {
 };
 
 function createBaseIntegrationItem(): IntegrationItem {
-  return { id: "", kind: "", createdAt: undefined, config: new Uint8Array() };
+  return { id: "", kind: "", displayName: "", createdAt: undefined, config: new Uint8Array() };
 }
 
 export const IntegrationItem = {
@@ -713,6 +733,9 @@ export const IntegrationItem = {
     }
     if (message.kind !== "") {
       writer.uint32(18).string(message.kind);
+    }
+    if (message.displayName !== "") {
+      writer.uint32(34).string(message.displayName);
     }
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(26).fork()).ldelim();
@@ -744,6 +767,13 @@ export const IntegrationItem = {
 
           message.kind = reader.string();
           continue;
+        case 4:
+          if (tag != 34) {
+            break;
+          }
+
+          message.displayName = reader.string();
+          continue;
         case 3:
           if (tag != 26) {
             break;
@@ -771,6 +801,7 @@ export const IntegrationItem = {
     return {
       id: isSet(object.id) ? String(object.id) : "",
       kind: isSet(object.kind) ? String(object.kind) : "",
+      displayName: isSet(object.displayName) ? String(object.displayName) : "",
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
       config: isSet(object.config) ? bytesFromBase64(object.config) : new Uint8Array(),
     };
@@ -780,6 +811,7 @@ export const IntegrationItem = {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
     message.kind !== undefined && (obj.kind = message.kind);
+    message.displayName !== undefined && (obj.displayName = message.displayName);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
     message.config !== undefined &&
       (obj.config = base64FromBytes(message.config !== undefined ? message.config : new Uint8Array()));
@@ -794,6 +826,7 @@ export const IntegrationItem = {
     const message = createBaseIntegrationItem();
     message.id = object.id ?? "";
     message.kind = object.kind ?? "";
+    message.displayName = object.displayName ?? "";
     message.createdAt = object.createdAt ?? undefined;
     message.config = object.config ?? new Uint8Array();
     return message;

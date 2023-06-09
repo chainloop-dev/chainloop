@@ -39,12 +39,13 @@ func NewIntegrationRepo(data *Data, logger log.Logger) biz.IntegrationRepo {
 	}
 }
 
-func (r *IntegrationRepo) Create(ctx context.Context, orgID uuid.UUID, kind, secretName string, config []byte) (*biz.Integration, error) {
+func (r *IntegrationRepo) Create(ctx context.Context, opts *biz.IntegrationCreateOpts) (*biz.Integration, error) {
 	integration, err := r.data.db.Integration.Create().
-		SetOrganizationID(orgID).
-		SetKind(kind).
-		SetSecretName(secretName).
-		SetConfiguration(config).
+		SetOrganizationID(opts.OrgID).
+		SetKind(opts.Kind).
+		SetDisplayName(opts.DisplayName).
+		SetSecretName(opts.SecretName).
+		SetConfiguration(opts.Config).
 		Save(ctx)
 
 	if err != nil {
@@ -110,5 +111,12 @@ func entIntegrationToBiz(i *ent.Integration) *biz.Integration {
 		return nil
 	}
 
-	return &biz.Integration{ID: i.ID, Kind: i.Kind, CreatedAt: toTimePtr(i.CreatedAt), SecretName: i.SecretName, Config: i.Configuration}
+	return &biz.Integration{
+		ID:          i.ID,
+		Kind:        i.Kind,
+		DisplayName: i.DisplayName,
+		CreatedAt:   toTimePtr(i.CreatedAt),
+		SecretName:  i.SecretName,
+		Config:      i.Configuration,
+	}
 }

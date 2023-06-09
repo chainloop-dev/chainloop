@@ -127,7 +127,7 @@ func (s *OrgIntegrationTestSuite) SetupTest() {
 	configAny, err := anypb.New(config)
 	assert.NoError(err)
 
-	_, err = s.Integration.RegisterAndSave(ctx, s.org.ID, integration, configAny)
+	_, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "", integration, configAny)
 	assert.NoError(err)
 
 	// OCI repository

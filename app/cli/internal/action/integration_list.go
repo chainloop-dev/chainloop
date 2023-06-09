@@ -29,10 +29,13 @@ type IntegrationList struct {
 }
 
 type IntegrationItem struct {
-	ID        string                 `json:"id"`
-	Name      string                 `json:"name"`
-	CreatedAt *time.Time             `json:"createdAt"`
-	Config    map[string]interface{} `json:"config"`
+	ID string `json:"id"`
+	// Integration backend kind, i.e slack, pagerduty, etc
+	Kind string `json:"name"`
+	// Integration description for display and differentiation purposes
+	Description string                 `json:"description"`
+	CreatedAt   *time.Time             `json:"createdAt"`
+	Config      map[string]interface{} `json:"config"`
 }
 
 func NewIntegrationList(cfg *ActionsOpts) *IntegrationList {
@@ -65,8 +68,9 @@ func pbIntegrationItemToAction(in *pb.IntegrationItem) (*IntegrationItem, error)
 	}
 
 	i := &IntegrationItem{
-		Name: in.GetKind(), ID: in.GetId(),
-		CreatedAt: toTimePtr(in.GetCreatedAt().AsTime()),
+		Kind: in.GetKind(), ID: in.GetId(),
+		Description: in.GetDisplayName(),
+		CreatedAt:   toTimePtr(in.GetCreatedAt().AsTime()),
 	}
 
 	// Old format does not include config so we skip it

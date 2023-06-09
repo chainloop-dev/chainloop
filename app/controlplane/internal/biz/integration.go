@@ -38,12 +38,17 @@ type IntegrationAttachment struct {
 }
 
 type Integration struct {
-	ID        uuid.UUID
-	Kind      string
-	CreatedAt *time.Time
-	Config    []byte
+	ID uuid.UUID
+	// Kind is the type of the integration, it matches the registered extension ID
+	Kind string
+	// DisplayName is a human readable description of the integration registration
+	// It helps to differentiate different instances of the same kind
+	DisplayName string
+	// Registration Configuration, usually JSON marshalled
+	Config []byte
 	// Identifier to the external provider where any secret information is stored
 	SecretName string
+	CreatedAt  *time.Time
 }
 
 type IntegrationAndAttachment struct {
@@ -51,8 +56,14 @@ type IntegrationAndAttachment struct {
 	*IntegrationAttachment
 }
 
+type IntegrationCreateOpts struct {
+	Kind, DisplayName, SecretName string
+	OrgID                         uuid.UUID
+	Config                        []byte
+}
+
 type IntegrationRepo interface {
-	Create(ctx context.Context, orgID uuid.UUID, kind string, secretID string, config []byte) (*Integration, error)
+	Create(ctx context.Context, opts *IntegrationCreateOpts) (*Integration, error)
 	List(ctx context.Context, orgID uuid.UUID) ([]*Integration, error)
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*Integration, error)
 	SoftDelete(ctx context.Context, ID uuid.UUID) error
@@ -90,7 +101,7 @@ func NewIntegrationUseCase(opts *NewIntegrationUseCaseOpts) *IntegrationUseCase 
 }
 
 // Persist the secret and integration with its configuration in the database
-func (uc *IntegrationUseCase) RegisterAndSave(ctx context.Context, orgID string, i sdk.FanOut, regConfig *anypb.Any) (*Integration, error) {
+func (uc *IntegrationUseCase) RegisterAndSave(ctx context.Context, orgID, displayName string, i sdk.FanOut, regConfig *anypb.Any) (*Integration, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -117,7 +128,10 @@ func (uc *IntegrationUseCase) RegisterAndSave(ctx context.Context, orgID string,
 	}
 
 	// Persist the integration configuration
-	return uc.integrationRepo.Create(ctx, orgUUID, i.Describe().ID, secretID, registrationResponse.Configuration)
+	return uc.integrationRepo.Create(ctx, &IntegrationCreateOpts{
+		OrgID: orgUUID, Kind: i.Describe().ID, DisplayName: displayName,
+		SecretName: secretID, Config: registrationResponse.Configuration,
+	})
 }
 
 type AttachOpts struct {

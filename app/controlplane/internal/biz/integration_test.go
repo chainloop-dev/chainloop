@@ -35,6 +35,7 @@ import (
 
 func (s *testSuite) TestCreate() {
 	const kind = "my-integration"
+	const description = "my registration description"
 	assert := assert.New(s.T())
 
 	// Mocked integration that will return both generic configuration and credentials
@@ -47,9 +48,10 @@ func (s *testSuite) TestCreate() {
 			Password: "key", URL: "host"},
 	}, nil)
 
-	got, err := s.Integration.RegisterAndSave(ctx, s.org.ID, integration, s.configAny)
+	got, err := s.Integration.RegisterAndSave(ctx, s.org.ID, description, integration, s.configAny)
 	assert.NoError(err)
 	assert.Equal(kind, got.Kind)
+	assert.Equal(description, got.DisplayName)
 
 	// Check configuration was stored
 	assert.Equal(s.config, got.Config)
@@ -207,7 +209,7 @@ func (s *testSuite) SetupTest() {
 	fanOut.On("Register", ctx, mock.Anything).Return(&sdk.RegistrationResponse{Configuration: s.config}, nil)
 	s.fanOutIntegration = fanOut
 
-	s.integration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, fanOut, s.configAny)
+	s.integration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "my integration instance", fanOut, s.configAny)
 	assert.NoError(err)
 }
 

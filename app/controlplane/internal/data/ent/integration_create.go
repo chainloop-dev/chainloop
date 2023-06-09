@@ -29,6 +29,20 @@ func (ic *IntegrationCreate) SetKind(s string) *IntegrationCreate {
 	return ic
 }
 
+// SetDisplayName sets the "display_name" field.
+func (ic *IntegrationCreate) SetDisplayName(s string) *IntegrationCreate {
+	ic.mutation.SetDisplayName(s)
+	return ic
+}
+
+// SetNillableDisplayName sets the "display_name" field if the given value is not nil.
+func (ic *IntegrationCreate) SetNillableDisplayName(s *string) *IntegrationCreate {
+	if s != nil {
+		ic.SetDisplayName(*s)
+	}
+	return ic
+}
+
 // SetSecretName sets the "secret_name" field.
 func (ic *IntegrationCreate) SetSecretName(s string) *IntegrationCreate {
 	ic.mutation.SetSecretName(s)
@@ -206,6 +220,10 @@ func (ic *IntegrationCreate) createSpec() (*Integration, *sqlgraph.CreateSpec) {
 	if value, ok := ic.mutation.Kind(); ok {
 		_spec.SetField(integration.FieldKind, field.TypeString, value)
 		_node.Kind = value
+	}
+	if value, ok := ic.mutation.DisplayName(); ok {
+		_spec.SetField(integration.FieldDisplayName, field.TypeString, value)
+		_node.DisplayName = value
 	}
 	if value, ok := ic.mutation.SecretName(); ok {
 		_spec.SetField(integration.FieldSecretName, field.TypeString, value)
