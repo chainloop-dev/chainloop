@@ -50,13 +50,13 @@ func integrationListTableOutput(items []*action.IntegrationItem) error {
 	}
 
 	t := newTableWriter()
-	t.AppendHeader(table.Row{"ID", "Display Name", "Kind", "Config", "Created At"})
+	t.AppendHeader(table.Row{"ID", "Description", "Kind", "Config", "Created At"})
 	for _, i := range items {
 		var options []string
 		for k, v := range i.Config {
 			options = append(options, fmt.Sprintf("%s: %v", k, v))
 		}
-		t.AppendRow(table.Row{i.ID, i.DisplayName, i.Kind, strings.Join(options, "\n"), i.CreatedAt.Format(time.RFC822)})
+		t.AppendRow(table.Row{i.ID, i.Description, i.Kind, strings.Join(options, "\n"), i.CreatedAt.Format(time.RFC822)})
 		t.AppendSeparator()
 	}
 

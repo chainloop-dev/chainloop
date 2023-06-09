@@ -33,7 +33,7 @@ type IntegrationItem struct {
 	// Integration backend kind, i.e slack, pagerduty, etc
 	Kind string `json:"name"`
 	// Integration description for display and differentiation purposes
-	DisplayName string                 `json:"description"`
+	Description string                 `json:"description"`
 	CreatedAt   *time.Time             `json:"createdAt"`
 	Config      map[string]interface{} `json:"config"`
 }
@@ -69,7 +69,7 @@ func pbIntegrationItemToAction(in *pb.IntegrationItem) (*IntegrationItem, error)
 
 	i := &IntegrationItem{
 		Kind: in.GetKind(), ID: in.GetId(),
-		DisplayName: in.GetDisplayName(),
+		Description: in.GetDisplayName(),
 		CreatedAt:   toTimePtr(in.GetCreatedAt().AsTime()),
 	}
 

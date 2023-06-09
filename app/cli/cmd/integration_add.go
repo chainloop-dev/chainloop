@@ -19,7 +19,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var integrationDisplayName string
+var integrationDescription string
 
 func newConfigIntegratioAddCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -27,7 +27,7 @@ func newConfigIntegratioAddCmd() *cobra.Command {
 		Short: "Add integration",
 	}
 
-	cmd.PersistentFlags().StringVar(&integrationDisplayName, "display-name", "", "integration registration description")
+	cmd.PersistentFlags().StringVar(&integrationDescription, "description", "", "integration registration description")
 	cmd.AddCommand(newIntegrationAddDepTrackCmd())
 	return cmd
 }
