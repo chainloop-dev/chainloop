@@ -25,6 +25,7 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/invopop/jsonschema"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
@@ -39,8 +40,15 @@ type FanOutIntegration struct {
 	version string
 	// Kind of inputs does the integration expect as part of the execution
 	subscribedInputs *Inputs
-	log              log.Logger
-	Logger           *log.Helper
+	// Schema definition
+	schema *Schema
+	log    log.Logger
+	Logger *log.Helper
+}
+
+type Schema struct {
+	// Structs defining the registration and attachment schemas
+	Registration, Attachment any
 }
 
 // Interface required to be implemented by any integration
@@ -135,6 +143,7 @@ type InputMaterial struct {
 type NewParams struct {
 	ID, Version string
 	Logger      log.Logger
+	Schema      *Schema
 }
 
 func NewFanOut(p *NewParams, opts ...NewOpt) (*FanOutIntegration, error) {
@@ -143,6 +152,7 @@ func NewFanOut(p *NewParams, opts ...NewOpt) (*FanOutIntegration, error) {
 		version:          p.Version,
 		log:              p.Logger,
 		subscribedInputs: &Inputs{},
+		schema:           p.Schema,
 	}
 
 	if c.log == nil {
@@ -155,14 +165,55 @@ func NewFanOut(p *NewParams, opts ...NewOpt) (*FanOutIntegration, error) {
 		opt(c)
 	}
 
-	if err := validateConstructor(c); err != nil {
+	if err := validateInputs(c); err != nil {
+		return nil, err
+	}
+
+	if err := validateSchema(c); err != nil {
 		return nil, err
 	}
 
 	return c, nil
 }
 
-func validateConstructor(c *FanOutIntegration) error {
+func validateSchema(c *FanOutIntegration) error {
+	// Schema
+	if c.schema == nil {
+		return fmt.Errorf("schema is required")
+	}
+
+	// Registration schema
+	if c.schema.Registration == nil {
+		return fmt.Errorf("registration schema is required")
+	}
+
+	// Attachment schema
+	if c.schema.Attachment == nil {
+		return fmt.Errorf("attachment schema is required")
+	}
+
+	// Try to generate it
+	schema := jsonschema.Reflect(c.schema.Registration)
+	bytes, err := json.MarshalIndent(schema, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal registration schema: %w", err)
+	}
+
+	fmt.Println(string(bytes))
+
+	// Try to generate it
+	schema = jsonschema.Reflect(c.schema.Attachment)
+	bytes, err = json.MarshalIndent(schema, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal registration schema: %w", err)
+	}
+
+	fmt.Println(string(bytes))
+
+	return nil
+}
+
+func validateInputs(c *FanOutIntegration) error {
 	if c.id == "" {
 		return fmt.Errorf("id is required")
 	}
@@ -171,6 +222,7 @@ func validateConstructor(c *FanOutIntegration) error {
 		return fmt.Errorf("version is required")
 	}
 
+	// Subscribed inputs
 	if c.subscribedInputs == nil || (!c.subscribedInputs.DSSEnvelope && (c.subscribedInputs.Materials == nil || len(c.subscribedInputs.Materials) == 0)) {
 		return fmt.Errorf("the integration needs to subscribe to at least one input type. An envelope and/or a material")
 	}

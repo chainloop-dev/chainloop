@@ -34,6 +34,22 @@ type DependencyTrack struct {
 	*sdk.FanOutIntegration
 }
 
+// Schema
+type registrationSchema struct {
+	// The URL of the Dependency-Track instance
+	InstanceURI string `json:"instance_uri"`
+	APIKey      string `json:"api_key"`
+	// Support the option to automatically create projects if requested (optional)
+	AllowAutoCreate bool `json:"allowAutoCreate,omitempty"`
+}
+
+type attachmentSchema struct {
+	// Either one or the other
+	ProjectID   string `json:"projectID" jsonschema:"oneof_required"`
+	ProjectName string `json:"projectName" jsonschema:"oneof_required"`
+}
+
+// State
 type registrationConfig struct {
 	Domain          string `json:"domain"`
 	AllowAutoCreate bool   `json:"allowAutoCreate"`
@@ -52,6 +68,10 @@ func New(l log.Logger) (sdk.FanOut, error) {
 			ID:      ID,
 			Version: "1.0",
 			Logger:  l,
+			Schema: &sdk.Schema{
+				Registration: registrationSchema{},
+				Attachment:   attachmentSchema{},
+			},
 		}, sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON))
 
 	if err != nil {
