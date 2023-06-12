@@ -16,8 +16,6 @@
 package extensions
 
 import (
-	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/template/v1"
-
 	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/dependencytrack/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
@@ -34,7 +32,6 @@ func Load(l log.Logger) (sdk.AvailableExtensions, error) {
 	// Eventually this will be dynamically loaded from a directory
 	toEnable := []sdk.FanOutFactory{
 		dependencytrack.New,
-		template.New,
 	}
 
 	// Initialize and load the extensions
