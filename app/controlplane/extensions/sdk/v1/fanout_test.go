@@ -16,6 +16,7 @@
 package sdk_test
 
 import (
+	"encoding/json"
 	"testing"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -187,6 +188,148 @@ func TestString(t *testing.T) {
 			got, err := sdk.NewFanOut(&sdk.NewParams{ID: tc.id, Version: tc.version, InputSchema: inputSchema}, tc.opts...)
 			require.NoError(t, err)
 			assert.Equal(t, tc.want, got.String())
+		})
+	}
+}
+
+func TestValidateRegistrationRequest(t *testing.T) {
+	var schema struct {
+		Username string `json:"username"`
+		Email    string `json:"email" jsonschema:"format=email"`
+		Optional int    `json:"optional,omitempty"`
+	}
+
+	testCases := []struct {
+		name    string
+		input   map[string]interface{}
+		wantErr string
+	}{
+		{
+			name: "ok all properties",
+			input: map[string]interface{}{
+				"username": "user",
+				"email":    "foo@gmail.com",
+				"optional": 1,
+			},
+		},
+		{
+			name: "ok all required properties",
+			input: map[string]interface{}{
+				"username": "user",
+				"email":    "foo@gmail.com",
+			},
+		},
+		{
+			name: "invalid type",
+			input: map[string]interface{}{
+				"username": "user",
+				"email":    "foo@gmail.com",
+				"optional": "1",
+			},
+			wantErr: "expected integer, but got string",
+		},
+		{
+			name: "invalid email",
+			input: map[string]interface{}{
+				"username": "user",
+				"email":    "foo",
+			},
+			wantErr: "is not valid 'email'",
+		},
+		{
+			name: "missing username",
+			input: map[string]interface{}{
+				"email": "foo@gmail.com",
+			},
+			wantErr: "missing properties: 'username'",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := sdk.NewFanOut(
+				&sdk.NewParams{
+					ID: "ID", Version: "123",
+					InputSchema: &sdk.InputSchema{Registration: &schema, Attachment: struct{}{}},
+				}, sdk.WithEnvelope())
+
+			require.NoError(t, err)
+			payload, err := json.Marshal(tc.input)
+			require.NoError(t, err)
+
+			err = got.ValidateRegistrationRequest(payload)
+			if tc.wantErr != "" {
+				assert.ErrorContains(t, err, tc.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateAttachmentRequest(t *testing.T) {
+	var schema struct {
+		ProjectID   int    `json:"projectID,omitempty" jsonschema:"oneof_required=projectID,minLength=1"`
+		ProjectName string `json:"projectName,omitempty" jsonschema:"oneof_required=projectName,minLength=1"`
+	}
+
+	testCases := []struct {
+		name    string
+		input   map[string]interface{}
+		wantErr string
+	}{
+		{
+			name: "ok projectID set",
+			input: map[string]interface{}{
+				"projectID": 123,
+			},
+		},
+		{
+			name: "invalid projectID",
+			input: map[string]interface{}{
+				"projectID": []int{123},
+			},
+			wantErr: "expected integer, but got array",
+		},
+		{
+			name: "ok projectName set",
+			input: map[string]interface{}{
+				"projectName": "my-project",
+			},
+		},
+		{
+			name:    "ko no properties set",
+			input:   map[string]interface{}{},
+			wantErr: "missing properties",
+		},
+		{
+			name: "ko both properties set",
+			input: map[string]interface{}{
+				"projectID":   123,
+				"projectName": "my-project",
+			},
+			wantErr: "valid against schemas at indexes 0 and 1",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := sdk.NewFanOut(
+				&sdk.NewParams{
+					ID: "ID", Version: "123",
+					InputSchema: &sdk.InputSchema{Registration: struct{}{}, Attachment: &schema},
+				}, sdk.WithEnvelope())
+
+			require.NoError(t, err)
+			payload, err := json.Marshal(tc.input)
+			require.NoError(t, err)
+
+			err = got.ValidateAttachmentRequest(payload)
+			if tc.wantErr != "" {
+				assert.ErrorContains(t, err, tc.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }

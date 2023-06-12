@@ -40,13 +40,13 @@ func (action *WorkflowIntegrationAttach) RunDependencyTrack(integrationID, workf
 		config["projectName"] = projectName
 	}
 
-	configRequest, err := structpb.NewStruct(config)
+	requestConfig, err := structpb.NewStruct(config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse arguments: %w", err)
 	}
 
 	resp, err := client.Attach(context.Background(), &pb.IntegrationsServiceAttachRequest{
-		WorkflowId: workflowID, IntegrationId: integrationID, Config: configRequest,
+		WorkflowId: workflowID, IntegrationId: integrationID, Config: requestConfig,
 	})
 
 	if err != nil {

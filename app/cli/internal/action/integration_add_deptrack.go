@@ -40,14 +40,14 @@ func (action *IntegrationAddDeptrack) Run(host, apiKey, description string, allo
 	config["allowAutoCreate"] = allowAutoProjectCreation
 
 	// Transform to structpb for transport
-	configRequest, err := structpb.NewStruct(config)
+	requestConfig, err := structpb.NewStruct(config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse arguments: %w", err)
 	}
 
 	i, err := client.Register(context.Background(), &pb.IntegrationsServiceRegisterRequest{
 		Kind:        "dependencytrack",
-		Config:      configRequest,
+		Config:      requestConfig,
 		DisplayName: description,
 	})
 	if err != nil {
