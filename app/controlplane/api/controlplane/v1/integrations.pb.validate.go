@@ -61,9 +61,9 @@ func (m *IntegrationsServiceRegisterRequest) validate(all bool) error {
 
 	var errors []error
 
-	if utf8.RuneCountInString(m.GetKind()) < 1 {
+	if utf8.RuneCountInString(m.GetExtensionId()) < 1 {
 		err := IntegrationsServiceRegisterRequestValidationError{
-			field:  "Kind",
+			field:  "ExtensionId",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {

@@ -46,8 +46,8 @@ service IntegrationsService {
 
 message IntegrationsServiceRegisterRequest {
 	// Kind of integration to register
-	// This should match the ID of an existing integration
-	string kind = 1 [(validate.rules).string.min_len = 1];
+	// This should match the ID of an existing extension
+	string extension_id = 1 [(validate.rules).string.min_len = 1];
 	// Arbitrary configuration for the integration
 	google.protobuf.Struct config = 3 [(validate.rules).message.required = true];
 	// Description of the registration, used for display purposes
@@ -59,7 +59,9 @@ message IntegrationsServiceRegisterResponse {
 }
 
 message IntegrationsServiceAttachRequest{
+	// UUID of the workflow to attach
 	string workflow_id = 1 [(validate.rules).string.uuid = true];
+	// UUID of the integration registration to attach
 	string integration_id = 2 [(validate.rules).string.uuid = true];
 	// Arbitrary configuration for the integration
 	google.protobuf.Struct config = 4 [(validate.rules).message.required = true];

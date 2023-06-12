@@ -23,10 +23,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var integrationDescription string
-
 func newConfigIntegrationAddCmd() *cobra.Command {
 	var options []string
+	var integrationDescription string
 
 	cmd := &cobra.Command{
 		Use:     "add INTEGRATION_ID --options key=value,key=value",
