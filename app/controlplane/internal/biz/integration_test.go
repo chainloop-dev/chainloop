@@ -51,7 +51,7 @@ func (s *testSuite) TestCreate() {
 	got, err := s.Integration.RegisterAndSave(ctx, s.org.ID, description, integration, s.configStruct)
 	assert.NoError(err)
 	assert.Equal(kind, got.Kind)
-	assert.Equal(description, got.DisplayName)
+	assert.Equal(description, got.Description)
 
 	// Check configuration was stored
 	assert.Equal(s.config, got.Config)

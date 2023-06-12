@@ -69,7 +69,7 @@ func pbIntegrationItemToAction(in *pb.RegisteredIntegrationItem) (*IntegrationIt
 
 	i := &IntegrationItem{
 		Kind: in.GetKind(), ID: in.GetId(),
-		Description: in.GetDisplayName(),
+		Description: in.GetDescription(),
 		CreatedAt:   toTimePtr(in.GetCreatedAt().AsTime()),
 	}
 
