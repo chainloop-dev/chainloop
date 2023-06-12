@@ -34,16 +34,12 @@ func newConfigIntegrationAddCmd() *cobra.Command {
 		Example: `  chainloop integration add dependencytrack --options instance=https://deptrack.company.com,apiKey=1234567890`,
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			var opts = make(map[string]any)
-			for _, opt := range options {
-				kv := strings.Split(opt, "=")
-				if len(kv) != 2 {
-					return fmt.Errorf("invalid option %q, the expected format is key=value", opt)
-				}
-				opts[kv[0]] = kv[1]
+			opts, err := parseKeyValOpts(options)
+			if err != nil {
+				return err
 			}
 
-			res, err := action.NewIntegrationRegister(actionOpts).Run(args[0], integrationDescription, opts)
+			res, err := action.NewIntegrationAdd(actionOpts).Run(args[0], integrationDescription, opts)
 			if err != nil {
 				return err
 			}
@@ -61,4 +57,16 @@ func newConfigIntegrationAddCmd() *cobra.Command {
 	cmd.AddCommand(newIntegrationAddDepTrackCmd())
 
 	return cmd
+}
+
+func parseKeyValOpts(opts []string) (map[string]any, error) {
+	var options = make(map[string]any)
+	for _, opt := range opts {
+		kv := strings.Split(opt, "=")
+		if len(kv) != 2 {
+			return nil, fmt.Errorf("invalid option %q, the expected format is key=value", opt)
+		}
+		options[kv[0]] = kv[1]
+	}
+	return options, nil
 }

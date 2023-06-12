@@ -46,7 +46,7 @@ func newIntegrationAddDepTrackCmd() *cobra.Command {
 				"allowAutoCreate": allowAutoCreate,
 			}
 
-			res, err := action.NewIntegrationRegister(actionOpts).Run("dependencytrack", integrationDescription, opts)
+			res, err := action.NewIntegrationAdd(actionOpts).Run("dependencytrack", integrationDescription, opts)
 			if err != nil {
 				return err
 			}

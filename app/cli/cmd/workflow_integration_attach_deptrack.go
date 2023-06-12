@@ -26,8 +26,9 @@ func newWorkflowIntegrationAttachDependencyTrackCmd() *cobra.Command {
 	var integrationID, workflowID, projectID, projectName string
 
 	cmd := &cobra.Command{
-		Use:   "dependency-track",
-		Short: "Attach a Dependency-Track integration to this workflow",
+		Use:        "dependency-track",
+		Short:      "Attach a Dependency-Track integration to this workflow",
+		Deprecated: "use `chainloop workflow integration attach --integration <id> --workflow <id> --options ...` instead",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if projectID == "" && projectName == "" {
 				return errors.New("either a Dependency-Track --project-id or the --project-name flag must be set")
@@ -35,7 +36,14 @@ func newWorkflowIntegrationAttachDependencyTrackCmd() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewWorkflowIntegrationAttach(actionOpts).RunDependencyTrack(integrationID, workflowID, projectID, projectName)
+			opts := make(map[string]any)
+			if projectID != "" {
+				opts["projectID"] = projectID
+			} else if projectName != "" {
+				opts["projectName"] = projectName
+			}
+
+			res, err := action.NewWorkflowIntegrationAttach(actionOpts).Run(integrationID, workflowID, opts)
 			if err != nil {
 				return err
 			}

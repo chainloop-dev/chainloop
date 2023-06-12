@@ -27,7 +27,7 @@ type IntegrationAdd struct {
 	cfg *ActionsOpts
 }
 
-func NewIntegrationRegister(cfg *ActionsOpts) *IntegrationAdd {
+func NewIntegrationAdd(cfg *ActionsOpts) *IntegrationAdd {
 	return &IntegrationAdd{cfg}
 }
 
