@@ -11,9 +11,9 @@ export const protobufPackage = "controlplane.v1";
 export interface IntegrationsServiceRegisterRequest {
   /**
    * Kind of integration to register
-   * This should match the ID of an existing integration
+   * This should match the ID of an existing extension
    */
-  kind: string;
+  extensionId: string;
   /** Arbitrary configuration for the integration */
   config?: { [key: string]: any };
   /** Description of the registration, used for display purposes */
@@ -25,7 +25,9 @@ export interface IntegrationsServiceRegisterResponse {
 }
 
 export interface IntegrationsServiceAttachRequest {
+  /** UUID of the workflow to attach */
   workflowId: string;
+  /** UUID of the integration registration to attach */
   integrationId: string;
   /** Arbitrary configuration for the integration */
   config?: { [key: string]: any };
@@ -105,13 +107,13 @@ export interface IntegrationsServiceDeregisterResponse {
 }
 
 function createBaseIntegrationsServiceRegisterRequest(): IntegrationsServiceRegisterRequest {
-  return { kind: "", config: undefined, displayName: "" };
+  return { extensionId: "", config: undefined, displayName: "" };
 }
 
 export const IntegrationsServiceRegisterRequest = {
   encode(message: IntegrationsServiceRegisterRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.kind !== "") {
-      writer.uint32(10).string(message.kind);
+    if (message.extensionId !== "") {
+      writer.uint32(10).string(message.extensionId);
     }
     if (message.config !== undefined) {
       Struct.encode(Struct.wrap(message.config), writer.uint32(26).fork()).ldelim();
@@ -134,7 +136,7 @@ export const IntegrationsServiceRegisterRequest = {
             break;
           }
 
-          message.kind = reader.string();
+          message.extensionId = reader.string();
           continue;
         case 3:
           if (tag != 26) {
@@ -161,7 +163,7 @@ export const IntegrationsServiceRegisterRequest = {
 
   fromJSON(object: any): IntegrationsServiceRegisterRequest {
     return {
-      kind: isSet(object.kind) ? String(object.kind) : "",
+      extensionId: isSet(object.extensionId) ? String(object.extensionId) : "",
       config: isObject(object.config) ? object.config : undefined,
       displayName: isSet(object.displayName) ? String(object.displayName) : "",
     };
@@ -169,7 +171,7 @@ export const IntegrationsServiceRegisterRequest = {
 
   toJSON(message: IntegrationsServiceRegisterRequest): unknown {
     const obj: any = {};
-    message.kind !== undefined && (obj.kind = message.kind);
+    message.extensionId !== undefined && (obj.extensionId = message.extensionId);
     message.config !== undefined && (obj.config = message.config);
     message.displayName !== undefined && (obj.displayName = message.displayName);
     return obj;
@@ -185,7 +187,7 @@ export const IntegrationsServiceRegisterRequest = {
     object: I,
   ): IntegrationsServiceRegisterRequest {
     const message = createBaseIntegrationsServiceRegisterRequest();
-    message.kind = object.kind ?? "";
+    message.extensionId = object.extensionId ?? "";
     message.config = object.config ?? undefined;
     message.displayName = object.displayName ?? "";
     return message;

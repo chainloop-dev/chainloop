@@ -76,7 +76,7 @@ func (s *IntegrationsService) Register(ctx context.Context, req *pb.Integrations
 	}
 
 	// lookup the integration
-	integration, err := s.integrations.FindByID(req.Kind)
+	integration, err := s.integrations.FindByID(req.ExtensionId)
 	if err != nil {
 		return nil, errors.NotFound("not found", err.Error())
 	}

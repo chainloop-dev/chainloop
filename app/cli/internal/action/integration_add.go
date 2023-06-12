@@ -31,7 +31,7 @@ func NewIntegrationAdd(cfg *ActionsOpts) *IntegrationAdd {
 	return &IntegrationAdd{cfg}
 }
 
-func (action *IntegrationAdd) Run(kind, description string, options map[string]any) (*IntegrationItem, error) {
+func (action *IntegrationAdd) Run(extensionID, description string, options map[string]any) (*IntegrationItem, error) {
 	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
 
 	// Transform to structpb for transport
@@ -41,7 +41,7 @@ func (action *IntegrationAdd) Run(kind, description string, options map[string]a
 	}
 
 	i, err := client.Register(context.Background(), &pb.IntegrationsServiceRegisterRequest{
-		Kind:        kind,
+		ExtensionId: extensionID,
 		Config:      requestConfig,
 		DisplayName: description,
 	})

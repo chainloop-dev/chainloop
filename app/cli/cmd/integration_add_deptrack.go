@@ -25,7 +25,7 @@ import (
 )
 
 func newIntegrationAddDepTrackCmd() *cobra.Command {
-	var instance string
+	var instance, integrationDescription string
 	var allowAutoCreate bool
 
 	cmd := &cobra.Command{
