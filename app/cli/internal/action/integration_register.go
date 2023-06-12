@@ -23,30 +23,25 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-type IntegrationAddDeptrack struct {
+type IntegrationRegister struct {
 	cfg *ActionsOpts
 }
 
-func NewIntegrationAddDeptrack(cfg *ActionsOpts) *IntegrationAddDeptrack {
-	return &IntegrationAddDeptrack{cfg}
+func NewIntegrationRegister(cfg *ActionsOpts) *IntegrationRegister {
+	return &IntegrationRegister{cfg}
 }
 
-func (action *IntegrationAddDeptrack) Run(host, apiKey, description string, allowAutoProjectCreation bool) (*IntegrationItem, error) {
+func (action *IntegrationRegister) Run(kind, description string, options map[string]any) (*IntegrationItem, error) {
 	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
 
-	config := make(map[string]any)
-	config["instanceURI"] = host
-	config["apiKey"] = apiKey
-	config["allowAutoCreate"] = allowAutoProjectCreation
-
 	// Transform to structpb for transport
-	requestConfig, err := structpb.NewStruct(config)
+	requestConfig, err := structpb.NewStruct(options)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse arguments: %w", err)
 	}
 
 	i, err := client.Register(context.Background(), &pb.IntegrationsServiceRegisterRequest{
-		Kind:        "dependencytrack",
+		Kind:        kind,
 		Config:      requestConfig,
 		DisplayName: description,
 	})

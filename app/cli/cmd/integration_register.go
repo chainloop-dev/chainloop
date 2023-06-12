@@ -17,35 +17,34 @@ package cmd
 
 import (
 	"fmt"
-	"syscall"
+	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
 )
 
-func newIntegrationAddDepTrackCmd() *cobra.Command {
-	var instance string
-	var allowAutoCreate bool
+func newIntegrationRegisterCmd() *cobra.Command {
+	var options []string
 
 	cmd := &cobra.Command{
-		Use:     "dependency-track",
-		Aliases: []string{"deptrack"},
-		Short:   "Add Dependency-Track integration ",
+		Use:    "register INTEGRATION_ID --options key=value,key=value",
+		Short:  "Register a new instance of an integration",
+		Hidden: true,
+		Example: `
+chainloop integration register dependencytrack --options instance=https://deptrack.company.com,apiKey=1234567890
+		`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Print("Enter API Token: \n")
-			apiKey, err := term.ReadPassword(syscall.Stdin)
-			if err != nil {
-				return fmt.Errorf("retrieving token from stdin: %w", err)
+			var opts = make(map[string]any)
+			for _, opt := range options {
+				kv := strings.Split(opt, "=")
+				if len(kv) != 2 {
+					return fmt.Errorf("invalid option %q, the expected format is key=value", opt)
+				}
+				opts[kv[0]] = kv[1]
 			}
 
-			opts := map[string]any{
-				"instanceURI":     instance,
-				"apiKey":          string(apiKey),
-				"allowAutoCreate": allowAutoCreate,
-			}
-
-			res, err := action.NewIntegrationRegister(actionOpts).Run("dependencytrack", integrationDescription, opts)
+			res, err := action.NewIntegrationRegister(actionOpts).Run(args[0], integrationDescription, opts)
 			if err != nil {
 				return err
 			}
@@ -54,10 +53,8 @@ func newIntegrationAddDepTrackCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&instance, "instance", "", "dependency track instance URL")
-	cobra.CheckErr(cmd.MarkFlagRequired("instance"))
-
-	cmd.Flags().BoolVar(&allowAutoCreate, "allow-project-auto-create", false, "Allow auto-creation of projects or require to always specify an existing one")
+	cmd.Flags().StringVar(&integrationDescription, "description", "", "integration registration description")
+	cmd.Flags().StringSliceVar(&options, "options", nil, "integration arguments")
 
 	return cmd
 }

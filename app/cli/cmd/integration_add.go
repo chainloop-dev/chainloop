@@ -25,6 +25,8 @@ func newConfigIntegratioAddCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "add",
 		Short: "Add integration",
+		// TODO(miguel): we'll enable deprecated warnings in the future
+		// Deprecated: "use `chainloop integration register` instead",
 	}
 
 	cmd.PersistentFlags().StringVar(&integrationDescription, "description", "", "integration registration description")
