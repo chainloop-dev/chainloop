@@ -17,10 +17,10 @@ package action
 
 import (
 	"context"
+	"fmt"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	cxpb "github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/dependencytrack/v1/api"
-	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // Attach a third party integration to a workflow
@@ -33,20 +33,20 @@ func NewWorkflowIntegrationAttach(cfg *ActionsOpts) *WorkflowIntegrationAttach {
 func (action *WorkflowIntegrationAttach) RunDependencyTrack(integrationID, workflowID, projectID, projectName string) (*IntegrationAttachmentItem, error) {
 	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
 
-	request := &cxpb.AttachmentRequest{}
+	config := make(map[string]any)
 	if projectID != "" {
-		request.Project = &cxpb.AttachmentRequest_ProjectId{ProjectId: projectID}
+		config["projectID"] = projectID
 	} else if projectName != "" {
-		request.Project = &cxpb.AttachmentRequest_ProjectName{ProjectName: projectName}
+		config["projectName"] = projectName
 	}
 
-	anyConfig, err := anypb.New(request)
+	configRequest, err := structpb.NewStruct(config)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse arguments: %w", err)
 	}
 
 	resp, err := client.Attach(context.Background(), &pb.IntegrationsServiceAttachRequest{
-		WorkflowId: workflowID, IntegrationId: integrationID, AttachmentConfig: anyConfig,
+		WorkflowId: workflowID, IntegrationId: integrationID, Config: configRequest,
 	})
 
 	if err != nil {

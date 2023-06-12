@@ -20,7 +20,7 @@ package controlplane.v1;
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 import "validate/validate.proto";
 import "google/protobuf/timestamp.proto";
-import "google/protobuf/any.proto";
+import "google/protobuf/struct.proto";
 import "controlplane/v1/response_messages.proto";
 
 service IntegrationsService {
@@ -40,8 +40,8 @@ service IntegrationsService {
 message IntegrationsServiceRegisterRequest {
 	// Kind of integration to register
 	string kind = 1 [(validate.rules).string.min_len = 1];
-	// Associated registration configuration
-	google.protobuf.Any registration_config = 2 [(validate.rules).any.required = true];
+	// Arbitrary configuration for the integration
+	google.protobuf.Struct config = 3 [(validate.rules).message.required = true];
 }
 
 message IntegrationsServiceRegisterResponse {
@@ -49,9 +49,10 @@ message IntegrationsServiceRegisterResponse {
 }
 
 message IntegrationsServiceAttachRequest{
-  string workflow_id = 1 [(validate.rules).string.uuid = true];
-  string integration_id = 2 [(validate.rules).string.uuid = true];
-  google.protobuf.Any attachment_config = 3 [(validate.rules).any.required = true];
+	string workflow_id = 1 [(validate.rules).string.uuid = true];
+	string integration_id = 2 [(validate.rules).string.uuid = true];
+	// Arbitrary configuration for the integration
+	google.protobuf.Struct config = 4 [(validate.rules).message.required = true];
 }
 
 message IntegrationsServiceAttachResponse{

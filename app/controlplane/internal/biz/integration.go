@@ -27,7 +27,7 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
-	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type IntegrationAttachment struct {
@@ -90,19 +90,24 @@ func NewIntegrationUseCase(opts *NewIntegrationUseCaseOpts) *IntegrationUseCase 
 }
 
 // Persist the secret and integration with its configuration in the database
-func (uc *IntegrationUseCase) RegisterAndSave(ctx context.Context, orgID string, i sdk.FanOut, regConfig *anypb.Any) (*Integration, error) {
+func (uc *IntegrationUseCase) RegisterAndSave(ctx context.Context, orgID string, i sdk.FanOut, regConfig *structpb.Struct) (*Integration, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	// Marshall the configuration into the integration's schema to validate it
-	registrationPayload, err := regConfig.UnmarshalNew()
+	// 1 - Extract JSON from proto struct
+	extensionRequest, err := regConfig.MarshalJSON()
 	if err != nil {
 		return nil, NewErrValidation(err)
 	}
 
-	registrationResponse, err := i.Register(ctx, &sdk.RegistrationRequest{Payload: registrationPayload})
+	// 2 - validate JSON against the schema
+	if err := i.ValidateRegistrationRequest(extensionRequest); err != nil {
+		return nil, NewErrValidation(err)
+	}
+
+	registrationResponse, err := i.Register(ctx, &sdk.RegistrationRequest{Payload: extensionRequest})
 	if err != nil {
 		return nil, NewErrValidation(err)
 	}
@@ -125,7 +130,7 @@ type AttachOpts struct {
 	// The integration that is being attached
 	FanOutIntegration sdk.FanOut
 	// The attachment configuration
-	AttachmentConfig *anypb.Any
+	AttachmentConfig *structpb.Struct
 }
 
 // - Integration and workflows exists in current organization
@@ -175,16 +180,21 @@ func (uc *IntegrationUseCase) AttachToWorkflow(ctx context.Context, opts *Attach
 		}
 	}
 
-	// Marshall the configuration into the integration's schema to validate it
-	attachmentPayload, err := opts.AttachmentConfig.UnmarshalNew()
+	// 1 - Extract JSON from struct
+	extensionRequest, err := opts.AttachmentConfig.MarshalJSON()
 	if err != nil {
+		return nil, NewErrValidation(err)
+	}
+
+	// 2 - validate JSON against the schema
+	if err := opts.FanOutIntegration.ValidateAttachmentRequest(extensionRequest); err != nil {
 		return nil, NewErrValidation(err)
 	}
 
 	// Execute integration pre-attachment logic
 	attachResponse, err := opts.FanOutIntegration.Attach(ctx,
 		&sdk.AttachmentRequest{
-			Payload:          attachmentPayload,
+			Payload:          extensionRequest,
 			RegistrationInfo: &sdk.RegistrationResponse{Credentials: creds, Configuration: integration.Config},
 		})
 	if err != nil {

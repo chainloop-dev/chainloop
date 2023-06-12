@@ -21,7 +21,6 @@ import (
 	"fmt"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/template/v1/api"
 	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
 	"github.com/go-kratos/kratos/v2/log"
 )
@@ -64,16 +63,16 @@ func (i *Integration) Register(_ context.Context, req *sdk.RegistrationRequest) 
 	i.Logger.Info("registration requested")
 
 	// Parse the request
-	request, ok := req.Payload.(*api.RegistrationRequest)
-	if !ok {
-		return nil, errors.New("invalid request")
-	}
+	// request, ok := req.Payload.(*api.RegistrationRequest)
+	// if !ok {
+	// 	return nil, errors.New("invalid request")
+	// }
 
-	// Validate it
-	// NOTE: This validation is defined as proto buffers annotations
-	if err := request.ValidateAll(); err != nil {
-		return nil, fmt.Errorf("invalid request: %w", err)
-	}
+	// // Validate it
+	// // NOTE: This validation is defined as proto buffers annotations
+	// if err := request.ValidateAll(); err != nil {
+	// 	return nil, fmt.Errorf("invalid request: %w", err)
+	// }
 
 	// START CUSTOM LOGIC
 	// i.e validate the received information against the actual external server
@@ -107,15 +106,15 @@ func (i *Integration) Attach(_ context.Context, req *sdk.AttachmentRequest) (*sd
 	i.Logger.Info("attachment requested")
 
 	// Parse the request
-	request, ok := req.Payload.(*api.AttachmentRequest)
-	if !ok {
-		return nil, errors.New("invalid attachment configuration")
-	}
+	// request, ok := req.Payload.(*api.AttachmentRequest)
+	// if !ok {
+	// 	return nil, errors.New("invalid attachment configuration")
+	// }
 
-	// Validate the request payload
-	if err := request.ValidateAll(); err != nil {
-		return nil, fmt.Errorf("invalid request: %w", err)
-	}
+	// // Validate the request payload
+	// if err := request.ValidateAll(); err != nil {
+	// 	return nil, fmt.Errorf("invalid request: %w", err)
+	// }
 
 	// You also have access to the configuration and credentials from the registration phase
 	// They can be accessed via

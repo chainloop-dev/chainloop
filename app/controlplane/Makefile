@@ -9,12 +9,6 @@ config:
 # generate api proto bindings
 api:
 	cd ./api && buf generate
-	cd ./extensions && buf generate
-
-.PHONY: api-extensions
-# generate integrations proto bindings
-api-extensions:
-	cd ./extensions && buf generate
 
 .PHONY: build
 # build
@@ -43,13 +37,12 @@ test-unit:
 # lint
 lint:
 	buf lint api
-	buf lint extensions
 	buf lint internal/conf
 	golangci-lint run
 
 .PHONY: generate
 # generate proto bindings, wire injectors, and ent models
-generate: api config api-extensions
+generate: api config
 	go generate ./...
 
 .PHONY: all

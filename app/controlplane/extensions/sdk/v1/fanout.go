@@ -16,8 +16,10 @@
 package sdk
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 
@@ -26,7 +28,7 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/invopop/jsonschema"
-	"google.golang.org/protobuf/proto"
+	schema_validator "github.com/santhosh-tekuri/jsonschema/v5"
 
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
@@ -40,10 +42,13 @@ type FanOutIntegration struct {
 	version string
 	// Kind of inputs does the integration expect as part of the execution
 	subscribedInputs *Inputs
-	// Schema definition
-	schema *Schema
-	log    log.Logger
-	Logger *log.Helper
+	// Rendered schema definitions
+	// Generated from the schema definitions using https://github.com/invopop/jsonschema
+	registrationJSONSchema []byte
+	attachmentJSONSchema   []byte
+	log                    log.Logger
+	Logger                 *log.Helper
+	debug                  bool
 }
 
 type Schema struct {
@@ -59,6 +64,15 @@ type FanOut interface {
 	FanOutExtension
 }
 
+// Implemented by the core struct
+type Core interface {
+	fmt.Stringer
+	// Return information about the integration
+	Describe() *IntegrationInfo
+	ValidateRegistrationRequest(jsonPayload []byte) error
+	ValidateAttachmentRequest(jsonPayload []byte) error
+}
+
 // To be implemented per integration
 type FanOutExtension interface {
 	// Validate, marshall and return the configuration that needs to be persisted
@@ -71,7 +85,7 @@ type FanOutExtension interface {
 
 type RegistrationRequest struct {
 	// Custom Payload to be used by the integration
-	Payload proto.Message
+	Payload Configuration
 }
 
 type RegistrationResponse struct {
@@ -83,7 +97,7 @@ type RegistrationResponse struct {
 }
 
 type AttachmentRequest struct {
-	Payload          proto.Message
+	Payload          Configuration
 	RegistrationInfo *RegistrationResponse
 }
 
@@ -121,13 +135,6 @@ type Credentials struct {
 	URL, Username, Password string
 }
 
-// Implemented by the core struct
-type Core interface {
-	// Return information about the integration
-	Describe() *IntegrationInfo
-	fmt.Stringer
-}
-
 // An integration can be subscribed to an envelope and/or a list of materials
 // To subscribe to any material type it will use schemaapi.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED
 type Inputs struct {
@@ -152,7 +159,6 @@ func NewFanOut(p *NewParams, opts ...NewOpt) (*FanOutIntegration, error) {
 		version:          p.Version,
 		log:              p.Logger,
 		subscribedInputs: &Inputs{},
-		schema:           p.Schema,
 	}
 
 	if c.log == nil {
@@ -169,46 +175,50 @@ func NewFanOut(p *NewParams, opts ...NewOpt) (*FanOutIntegration, error) {
 		return nil, err
 	}
 
-	if err := validateSchema(c); err != nil {
+	if err := validateAndMarshalSchema(p, c); err != nil {
 		return nil, err
+	}
+
+	// Debugging mode
+	if c.debug {
+		debugInformation(c)
 	}
 
 	return c, nil
 }
 
-func validateSchema(c *FanOutIntegration) error {
+func debugInformation(c *FanOutIntegration) {
+	fmt.Println("### DEBUG mode enabled ###")
+	fmt.Println(c.String())
+	fmt.Printf("registration schema\n %s\n", c.registrationJSONSchema)
+	fmt.Printf("attachmentSchema schema\n %s\n", c.attachmentJSONSchema)
+}
+
+func validateAndMarshalSchema(p *NewParams, c *FanOutIntegration) error {
 	// Schema
-	if c.schema == nil {
+	if p.Schema == nil {
 		return fmt.Errorf("schema is required")
 	}
 
 	// Registration schema
-	if c.schema.Registration == nil {
+	if p.Schema.Registration == nil {
 		return fmt.Errorf("registration schema is required")
 	}
 
 	// Attachment schema
-	if c.schema.Attachment == nil {
+	if p.Schema.Attachment == nil {
 		return fmt.Errorf("attachment schema is required")
 	}
 
-	// Try to generate it
-	schema := jsonschema.Reflect(c.schema.Registration)
-	bytes, err := json.MarshalIndent(schema, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal registration schema: %w", err)
+	// Try to generate JSON schemas
+	var err error
+	if c.registrationJSONSchema, err = generateJSONSchema(p.Schema.Registration); err != nil {
+		return fmt.Errorf("failed to generate registration schema: %w", err)
 	}
 
-	fmt.Println(string(bytes))
-
-	// Try to generate it
-	schema = jsonschema.Reflect(c.schema.Attachment)
-	bytes, err = json.MarshalIndent(schema, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal registration schema: %w", err)
+	if c.attachmentJSONSchema, err = generateJSONSchema(p.Schema.Attachment); err != nil {
+		return fmt.Errorf("failed to generate attachment schema: %w", err)
 	}
-
-	fmt.Println(string(bytes))
 
 	return nil
 }
@@ -262,14 +272,64 @@ type IntegrationInfo struct {
 	Version string
 	// Kind of inputs does the integration expect as part of the execution
 	SubscribedInputs *Inputs
+	// Schemas in JSON schema format
+	RegistrationJSONSchema, AttachmentJSONSchema []byte
 }
 
 func (i *FanOutIntegration) Describe() *IntegrationInfo {
 	return &IntegrationInfo{
-		ID:               i.id,
-		Version:          i.version,
-		SubscribedInputs: i.subscribedInputs,
+		ID:                     i.id,
+		Version:                i.version,
+		SubscribedInputs:       i.subscribedInputs,
+		RegistrationJSONSchema: i.registrationJSONSchema,
+		AttachmentJSONSchema:   i.attachmentJSONSchema,
 	}
+}
+
+// Validate the registration payload against the registration JSON schema
+func (i *FanOutIntegration) ValidateRegistrationRequest(jsonPayload []byte) error {
+	return validatePayloadAgainstJSONSchema(jsonPayload, i.registrationJSONSchema)
+}
+
+// Validate the attachment payload against the attachment JSON schema
+func (i *FanOutIntegration) ValidateAttachmentRequest(jsonPayload []byte) error {
+	return validatePayloadAgainstJSONSchema(jsonPayload, i.attachmentJSONSchema)
+}
+
+func validatePayloadAgainstJSONSchema(jsonPayload []byte, jsonSchema []byte) error {
+	compiler := schema_validator.NewCompiler()
+	// Enable format validation
+	compiler.AssertFormat = true
+
+	if err := compiler.AddResource("schema.json", bytes.NewReader(jsonSchema)); err != nil {
+		return fmt.Errorf("failed to compile schema: %w", err)
+	}
+
+	schema, err := compiler.Compile("schema.json")
+	if err != nil {
+		return fmt.Errorf("failed to compile schema: %w", err)
+	}
+
+	var v any
+	if err := json.Unmarshal(jsonPayload, &v); err != nil {
+		return fmt.Errorf("failed to unmarshal payload: %w", err)
+	}
+
+	if err = schema.Validate(v); err != nil {
+		var validationError *schema_validator.ValidationError
+
+		// Return only the last error to avoid giving the user context about the schema used.
+		// The last error usually shows the information about the actual property not matching the schema
+		// for example "missing property apiKey"
+		if ok := errors.As(err, &validationError); ok {
+			validationErrors := validationError.BasicOutput().Errors
+			return errors.New(validationErrors[len(validationErrors)-1].Error)
+		}
+
+		return err
+	}
+
+	return nil
 }
 
 func (i *FanOutIntegration) String() string {
@@ -310,6 +370,13 @@ func WithInputMaterial(materialType schemaapi.CraftingSchema_Material_MaterialTy
 	}
 }
 
+// Enable/disable debug mode
+func WithDebug(d bool) NewOpt {
+	return func(c *FanOutIntegration) {
+		c.debug = d
+	}
+}
+
 // Configuration represents any raw configuration to be stored in the DB
 // This wrapper is just a way to clearly indicate that the content needs to be JSON serializable
 type Configuration []byte
@@ -320,4 +387,10 @@ func ToConfig(m any) (Configuration, error) {
 
 func FromConfig(data Configuration, v any) error {
 	return json.Unmarshal(data, v)
+}
+
+// generate a JSON schema from a struct, see
+func generateJSONSchema(schema any) ([]byte, error) {
+	s := jsonschema.Reflect(schema)
+	return json.MarshalIndent(s, "", "  ")
 }

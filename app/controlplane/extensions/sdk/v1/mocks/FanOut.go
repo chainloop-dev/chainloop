@@ -110,6 +110,34 @@ func (_m *FanOut) String() string {
 	return r0
 }
 
+// ValidateAttachmentRequest provides a mock function with given fields: jsonPayload
+func (_m *FanOut) ValidateAttachmentRequest(jsonPayload []byte) error {
+	ret := _m.Called(jsonPayload)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func([]byte) error); ok {
+		r0 = rf(jsonPayload)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// ValidateRegistrationRequest provides a mock function with given fields: jsonPayload
+func (_m *FanOut) ValidateRegistrationRequest(jsonPayload []byte) error {
+	ret := _m.Called(jsonPayload)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func([]byte) error); ok {
+		r0 = rf(jsonPayload)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 type mockConstructorTestingTNewFanOut interface {
 	mock.TestingT
 	Cleanup(func())
