@@ -21,7 +21,6 @@ import (
 	"fmt"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/template/v1/api"
 	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
 	"github.com/go-kratos/kratos/v2/log"
 )
@@ -29,6 +28,16 @@ import (
 type Integration struct {
 	*sdk.FanOutIntegration
 }
+
+// Define the input schemas for both registration and attachment
+// You can annotate the struct with jsonschema tags to define the enable validations
+// see https://github.com/invopop/jsonschema#example for more information
+type registrationRequest struct {
+	// TestURL is a required, valid URL
+	TestURL string `json:"testInput" jsonschema:"format=uri"`
+}
+
+type attachmentRequest struct{}
 
 // You can use an arbitrary struct as a configuration state
 // type registrationState struct{}
@@ -42,6 +51,10 @@ func New(l log.Logger) (sdk.FanOut, error) {
 			ID:      "template",
 			Version: "1.0",
 			Logger:  l,
+			InputSchema: &sdk.InputSchema{
+				Registration: registrationRequest{},
+				Attachment:   attachmentRequest{},
+			},
 		},
 		// You can specify the inputs this attestation will be subscribed to, materials and or attestation envelope.
 		// In this case we are subscribing to SBOM_CYCLONEDX_JSON
@@ -63,16 +76,11 @@ func New(l log.Logger) (sdk.FanOut, error) {
 func (i *Integration) Register(_ context.Context, req *sdk.RegistrationRequest) (*sdk.RegistrationResponse, error) {
 	i.Logger.Info("registration requested")
 
-	// Parse the request
-	request, ok := req.Payload.(*api.RegistrationRequest)
-	if !ok {
-		return nil, errors.New("invalid request")
-	}
-
-	// Validate it
-	// NOTE: This validation is defined as proto buffers annotations
-	if err := request.ValidateAll(); err != nil {
-		return nil, fmt.Errorf("invalid request: %w", err)
+	// Unmarshal the request
+	// NOTE: the request payload has been already validated against the input schema
+	var request *registrationRequest
+	if err := sdk.FromConfig(req.Payload, &request); err != nil {
+		return nil, fmt.Errorf("invalid registration request: %w", err)
 	}
 
 	// START CUSTOM LOGIC
@@ -106,16 +114,13 @@ func (i *Integration) Register(_ context.Context, req *sdk.RegistrationRequest) 
 func (i *Integration) Attach(_ context.Context, req *sdk.AttachmentRequest) (*sdk.AttachmentResponse, error) {
 	i.Logger.Info("attachment requested")
 
-	// Parse the request
-	request, ok := req.Payload.(*api.AttachmentRequest)
-	if !ok {
-		return nil, errors.New("invalid attachment configuration")
+	// Parse the request that has already been validated against the input schema
+	var request *attachmentRequest
+	if err := sdk.FromConfig(req.Payload, &request); err != nil {
+		return nil, fmt.Errorf("invalid attachment request: %w", err)
 	}
 
-	// Validate the request payload
-	if err := request.ValidateAll(); err != nil {
-		return nil, fmt.Errorf("invalid request: %w", err)
-	}
+	// ....
 
 	// You also have access to the configuration and credentials from the registration phase
 	// They can be accessed via

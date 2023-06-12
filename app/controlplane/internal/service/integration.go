@@ -54,10 +54,10 @@ func (s *IntegrationsService) Register(ctx context.Context, req *pb.Integrations
 	// lookup the integration
 	integration, err := s.integrations.FindByID(req.Kind)
 	if err != nil {
-		return nil, fmt.Errorf("loading integration: %w", err)
+		return nil, errors.NotFound("not found", err.Error())
 	}
 
-	i, err := s.integrationUC.RegisterAndSave(ctx, org.ID, req.DisplayName, integration, req.RegistrationConfig)
+	i, err := s.integrationUC.RegisterAndSave(ctx, org.ID, req.DisplayName, integration, req.Config)
 	if err != nil {
 		if biz.IsNotFound(err) {
 			return nil, errors.NotFound("not found", err.Error())
@@ -93,7 +93,7 @@ func (s *IntegrationsService) Attach(ctx context.Context, req *pb.IntegrationsSe
 
 	res, err := s.integrationUC.AttachToWorkflow(ctx, &biz.AttachOpts{
 		OrgID: org.ID, IntegrationID: req.IntegrationId, WorkflowID: req.WorkflowId,
-		AttachmentConfig:  req.AttachmentConfig,
+		AttachmentConfig:  req.Config,
 		FanOutIntegration: attachable,
 	})
 

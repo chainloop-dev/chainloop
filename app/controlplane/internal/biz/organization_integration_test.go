@@ -24,7 +24,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
 	"github.com/google/uuid"
-	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/chainloop-dev/chainloop/internal/credentials"
@@ -118,16 +117,14 @@ func (s *OrgIntegrationTestSuite) SetupTest() {
 	// Mocked integration that will return both generic configuration and credentials
 	integration := integrationMocks.NewFanOut(s.T())
 	integration.On("Describe").Return(&sdk.IntegrationInfo{})
+	integration.On("ValidateRegistrationRequest", mock.Anything).Return(nil)
 	integration.On("Register", ctx, mock.Anything).Return(&sdk.RegistrationResponse{
 		Configuration: []byte("deadbeef")}, nil)
 
-	config, err := structpb.NewValue(map[string]interface{}{"firstName": "John"})
+	config, err := structpb.NewStruct(map[string]interface{}{"firstName": "John"})
 	assert.NoError(err)
 
-	configAny, err := anypb.New(config)
-	assert.NoError(err)
-
-	_, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "", integration, configAny)
+	_, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "", integration, config)
 	assert.NoError(err)
 
 	// OCI repository

@@ -16,13 +16,20 @@
 package sdk_test
 
 import (
+	"encoding/json"
 	"testing"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+var inputSchema = &sdk.InputSchema{
+	Registration: struct{ TestProperty string }{TestProperty: "test"},
+	Attachment:   struct{ TestProperty string }{TestProperty: "test"},
+}
 
 func TestNewBaseIntegration(t *testing.T) {
 	testCases := []struct {
@@ -33,14 +40,23 @@ func TestNewBaseIntegration(t *testing.T) {
 		opts        []sdk.NewOpt
 		errMsg      string
 		wantInput   *sdk.Inputs
+		schema      *sdk.InputSchema
 	}{
 		{name: "invalid - missing id", description: "desc", errMsg: "id is required"},
 		{name: "invalid - missing version", id: "id", description: "desc", errMsg: "version is required"},
 		{name: "invalid - need one input", id: "id", version: "123", description: "description", errMsg: "at least one input"},
-		{name: "ok - has envelope", id: "id", version: "123", description: "description", opts: []sdk.NewOpt{sdk.WithEnvelope()}, wantInput: &sdk.Inputs{DSSEnvelope: true}},
+		{name: "invalid - missing schema", id: "id", version: "123", description: "description",
+			opts: []sdk.NewOpt{sdk.WithEnvelope()}, wantInput: &sdk.Inputs{DSSEnvelope: true},
+			errMsg: "input schema is required",
+		},
+		{name: "ok - has envelope", id: "id", version: "123", description: "description",
+			opts: []sdk.NewOpt{sdk.WithEnvelope()}, wantInput: &sdk.Inputs{DSSEnvelope: true},
+			schema: inputSchema,
+		},
 		{name: "ok - generic material", id: "id", version: "123", description: "description",
 			opts:      []sdk.NewOpt{sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED)},
 			wantInput: &sdk.Inputs{Materials: []*sdk.InputMaterial{{Type: schemaapi.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED}}},
+			schema:    inputSchema,
 		},
 		{
 			name: "ok - specific material", id: "id", version: "123", description: "description",
@@ -52,6 +68,7 @@ func TestNewBaseIntegration(t *testing.T) {
 					Type: schemaapi.CraftingSchema_Material_JUNIT_XML,
 				},
 			}},
+			schema: inputSchema,
 		},
 		{
 			name: "ok - both material and envelope", id: "id", version: "123", description: "description",
@@ -64,6 +81,7 @@ func TestNewBaseIntegration(t *testing.T) {
 					Type: schemaapi.CraftingSchema_Material_JUNIT_XML,
 				},
 			}, DSSEnvelope: true},
+			schema: inputSchema,
 		},
 		{
 			name: "ok - multiple materials and envelope", id: "id", version: "123", description: "description",
@@ -80,6 +98,7 @@ func TestNewBaseIntegration(t *testing.T) {
 					Type: schemaapi.CraftingSchema_Material_CONTAINER_IMAGE,
 				},
 			}, DSSEnvelope: true},
+			schema: inputSchema,
 		},
 		{
 			name: "ok - cant have both generic and specific", id: "id", version: "123", description: "description",
@@ -89,6 +108,7 @@ func TestNewBaseIntegration(t *testing.T) {
 				sdk.WithEnvelope(),
 			},
 			errMsg: "can't subscribe to specific material",
+			schema: inputSchema,
 		},
 	}
 
@@ -96,13 +116,14 @@ func TestNewBaseIntegration(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := sdk.NewFanOut(
 				&sdk.NewParams{
-					ID:      tc.id,
-					Version: tc.version,
+					ID:          tc.id,
+					Version:     tc.version,
+					InputSchema: tc.schema,
 				}, tc.opts...)
 			if tc.errMsg != "" {
 				assert.ErrorContains(t, err, tc.errMsg)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				d := got.Describe()
 				assert.Equal(t, tc.wantInput, d.SubscribedInputs)
 				assert.Equal(t, tc.id, d.ID)
@@ -164,9 +185,151 @@ func TestString(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := sdk.NewFanOut(&sdk.NewParams{ID: tc.id, Version: tc.version}, tc.opts...)
-			assert.NoError(t, err)
+			got, err := sdk.NewFanOut(&sdk.NewParams{ID: tc.id, Version: tc.version, InputSchema: inputSchema}, tc.opts...)
+			require.NoError(t, err)
 			assert.Equal(t, tc.want, got.String())
+		})
+	}
+}
+
+func TestValidateRegistrationRequest(t *testing.T) {
+	var schema struct {
+		Username string `json:"username"`
+		Email    string `json:"email" jsonschema:"format=email"`
+		Optional int    `json:"optional,omitempty"`
+	}
+
+	testCases := []struct {
+		name    string
+		input   map[string]interface{}
+		wantErr string
+	}{
+		{
+			name: "ok all properties",
+			input: map[string]interface{}{
+				"username": "user",
+				"email":    "foo@gmail.com",
+				"optional": 1,
+			},
+		},
+		{
+			name: "ok all required properties",
+			input: map[string]interface{}{
+				"username": "user",
+				"email":    "foo@gmail.com",
+			},
+		},
+		{
+			name: "invalid type",
+			input: map[string]interface{}{
+				"username": "user",
+				"email":    "foo@gmail.com",
+				"optional": "1",
+			},
+			wantErr: "expected integer, but got string",
+		},
+		{
+			name: "invalid email",
+			input: map[string]interface{}{
+				"username": "user",
+				"email":    "foo",
+			},
+			wantErr: "is not valid 'email'",
+		},
+		{
+			name: "missing username",
+			input: map[string]interface{}{
+				"email": "foo@gmail.com",
+			},
+			wantErr: "missing properties: 'username'",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := sdk.NewFanOut(
+				&sdk.NewParams{
+					ID: "ID", Version: "123",
+					InputSchema: &sdk.InputSchema{Registration: &schema, Attachment: struct{}{}},
+				}, sdk.WithEnvelope())
+
+			require.NoError(t, err)
+			payload, err := json.Marshal(tc.input)
+			require.NoError(t, err)
+
+			err = got.ValidateRegistrationRequest(payload)
+			if tc.wantErr != "" {
+				assert.ErrorContains(t, err, tc.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateAttachmentRequest(t *testing.T) {
+	var schema struct {
+		ProjectID   int    `json:"projectID,omitempty" jsonschema:"oneof_required=projectID,minLength=1"`
+		ProjectName string `json:"projectName,omitempty" jsonschema:"oneof_required=projectName,minLength=1"`
+	}
+
+	testCases := []struct {
+		name    string
+		input   map[string]interface{}
+		wantErr string
+	}{
+		{
+			name: "ok projectID set",
+			input: map[string]interface{}{
+				"projectID": 123,
+			},
+		},
+		{
+			name: "invalid projectID",
+			input: map[string]interface{}{
+				"projectID": []int{123},
+			},
+			wantErr: "expected integer, but got array",
+		},
+		{
+			name: "ok projectName set",
+			input: map[string]interface{}{
+				"projectName": "my-project",
+			},
+		},
+		{
+			name:    "ko no properties set",
+			input:   map[string]interface{}{},
+			wantErr: "missing properties",
+		},
+		{
+			name: "ko both properties set",
+			input: map[string]interface{}{
+				"projectID":   123,
+				"projectName": "my-project",
+			},
+			wantErr: "valid against schemas at indexes 0 and 1",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := sdk.NewFanOut(
+				&sdk.NewParams{
+					ID: "ID", Version: "123",
+					InputSchema: &sdk.InputSchema{Registration: struct{}{}, Attachment: &schema},
+				}, sdk.WithEnvelope())
+
+			require.NoError(t, err)
+			payload, err := json.Marshal(tc.input)
+			require.NoError(t, err)
+
+			err = got.ValidateAttachmentRequest(payload)
+			if tc.wantErr != "" {
+				assert.ErrorContains(t, err, tc.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }

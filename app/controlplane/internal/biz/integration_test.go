@@ -29,7 +29,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
-	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -43,12 +42,13 @@ func (s *testSuite) TestCreate() {
 
 	ctx := context.Background()
 	integration.On("Describe").Return(&sdk.IntegrationInfo{ID: kind})
+	integration.On("ValidateRegistrationRequest", mock.Anything).Return(nil)
 	integration.On("Register", ctx, mock.Anything).Return(&sdk.RegistrationResponse{
 		Configuration: s.config, Credentials: &sdk.Credentials{
 			Password: "key", URL: "host"},
 	}, nil)
 
-	got, err := s.Integration.RegisterAndSave(ctx, s.org.ID, description, integration, s.configAny)
+	got, err := s.Integration.RegisterAndSave(ctx, s.org.ID, description, integration, s.configStruct)
 	assert.NoError(err)
 	assert.Equal(kind, got.Kind)
 	assert.Equal(description, got.DisplayName)
@@ -67,7 +67,7 @@ func (s *testSuite) TestAttachWorkflow() {
 			IntegrationID:     s.integration.ID.String(),
 			WorkflowID:        s.workflow.ID.String(),
 			FanOutIntegration: s.fanOutIntegration,
-			AttachmentConfig:  s.configAny,
+			AttachmentConfig:  s.configStruct,
 		})
 		assert.ErrorAs(err, &biz.ErrNotFound{})
 	})
@@ -78,7 +78,7 @@ func (s *testSuite) TestAttachWorkflow() {
 			IntegrationID:     s.integration.ID.String(),
 			WorkflowID:        uuid.NewString(),
 			FanOutIntegration: s.fanOutIntegration,
-			AttachmentConfig:  s.configAny,
+			AttachmentConfig:  s.configStruct,
 		})
 		assert.ErrorAs(err, &biz.ErrNotFound{})
 	})
@@ -89,7 +89,7 @@ func (s *testSuite) TestAttachWorkflow() {
 			IntegrationID:     s.integration.ID.String(),
 			WorkflowID:        s.workflow.ID.String(),
 			FanOutIntegration: s.fanOutIntegration,
-			AttachmentConfig:  s.configAny,
+			AttachmentConfig:  s.configStruct,
 		})
 		assert.ErrorAs(err, &biz.ErrNotFound{})
 	})
@@ -100,7 +100,7 @@ func (s *testSuite) TestAttachWorkflow() {
 			IntegrationID:     uuid.NewString(),
 			WorkflowID:        s.workflow.ID.String(),
 			FanOutIntegration: s.fanOutIntegration,
-			AttachmentConfig:  s.configAny,
+			AttachmentConfig:  s.configStruct,
 		})
 		assert.ErrorAs(err, &biz.ErrNotFound{})
 	})
@@ -111,7 +111,7 @@ func (s *testSuite) TestAttachWorkflow() {
 			IntegrationID:     s.integration.ID.String(),
 			WorkflowID:        s.workflow.ID.String(),
 			FanOutIntegration: s.fanOutIntegration,
-			AttachmentConfig:  s.configAny,
+			AttachmentConfig:  s.configStruct,
 		})
 		assert.ErrorAs(err, &biz.ErrNotFound{})
 	})
@@ -122,7 +122,7 @@ func (s *testSuite) TestAttachWorkflow() {
 			IntegrationID:     s.integration.ID.String(),
 			WorkflowID:        s.workflow.ID.String(),
 			FanOutIntegration: nil,
-			AttachmentConfig:  s.configAny,
+			AttachmentConfig:  s.configStruct,
 		})
 		assert.ErrorAs(err, &biz.ErrValidation{})
 	})
@@ -132,13 +132,14 @@ func (s *testSuite) TestAttachWorkflow() {
 		s.fanOutIntegration.On("Attach", ctx, mock.Anything).Return(&sdk.AttachmentResponse{
 			Configuration: s.config,
 		}, nil).Once()
+		s.fanOutIntegration.On("ValidateAttachmentRequest", mock.Anything).Return(nil)
 
 		got, err := s.Integration.AttachToWorkflow(ctx, &biz.AttachOpts{
 			OrgID:             s.org.ID,
 			IntegrationID:     s.integration.ID.String(),
 			WorkflowID:        s.workflow.ID.String(),
 			FanOutIntegration: s.fanOutIntegration,
-			AttachmentConfig:  s.configAny,
+			AttachmentConfig:  s.configStruct,
 		})
 		assert.NoError(err)
 
@@ -156,13 +157,14 @@ func (s *testSuite) TestAttachWorkflow() {
 	s.Run("attachment fails", func() {
 		ctx := context.Background()
 		s.fanOutIntegration.On("Attach", ctx, mock.Anything).Return(nil, errors.New("invalid attachment options")).Once()
+		s.fanOutIntegration.On("ValidateAttachmentRequest", mock.Anything).Return(nil)
 
 		_, err := s.Integration.AttachToWorkflow(ctx, &biz.AttachOpts{
 			OrgID:             s.org.ID,
 			IntegrationID:     s.integration.ID.String(),
 			WorkflowID:        s.workflow.ID.String(),
 			FanOutIntegration: s.fanOutIntegration,
-			AttachmentConfig:  s.configAny,
+			AttachmentConfig:  s.configStruct,
 		})
 		assert.ErrorAs(err, &biz.ErrValidation{})
 		assert.ErrorContains(err, "invalid attachment options")
@@ -195,10 +197,7 @@ func (s *testSuite) SetupTest() {
 	assert.NoError(err)
 
 	// Integration configuration
-	config, err := structpb.NewValue(map[string]interface{}{"firstName": "John"})
-	assert.NoError(err)
-
-	s.configAny, err = anypb.New(config)
+	s.configStruct, err = structpb.NewStruct(map[string]interface{}{"firstName": "John"})
 	assert.NoError(err)
 
 	s.config = []byte("deadbeef")
@@ -206,10 +205,11 @@ func (s *testSuite) SetupTest() {
 	// Mocked fanOut that will return both generic configuration and credentials
 	fanOut := integrationMocks.NewFanOut(s.T())
 	fanOut.On("Describe").Return(&sdk.IntegrationInfo{})
+	fanOut.On("ValidateRegistrationRequest", mock.Anything).Return(nil)
 	fanOut.On("Register", ctx, mock.Anything).Return(&sdk.RegistrationResponse{Configuration: s.config}, nil)
 	s.fanOutIntegration = fanOut
 
-	s.integration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "my integration instance", fanOut, s.configAny)
+	s.integration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "my integration instance", fanOut, s.configStruct)
 	assert.NoError(err)
 }
 
@@ -226,6 +226,6 @@ type testSuite struct {
 	integration             *biz.Integration
 	mockedCredsReaderWriter *creds.ReaderWriter
 	config                  []byte
-	configAny               *anypb.Any
+	configStruct            *structpb.Struct
 	fanOutIntegration       *integrationMocks.FanOut
 }

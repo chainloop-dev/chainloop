@@ -17,11 +17,10 @@ package action
 
 import (
 	"context"
+	"fmt"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	deptrack "github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/dependencytrack/v1"
-	cxpb "github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/dependencytrack/v1/api"
-	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type IntegrationAddDeptrack struct {
@@ -34,21 +33,22 @@ func NewIntegrationAddDeptrack(cfg *ActionsOpts) *IntegrationAddDeptrack {
 
 func (action *IntegrationAddDeptrack) Run(host, apiKey, description string, allowAutoProjectCreation bool) (*IntegrationItem, error) {
 	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
-	cdxRegistrationRequest := cxpb.RegistrationRequest{
-		ApiKey:          apiKey,
-		InstanceUri:     host,
-		AllowAutoCreate: allowAutoProjectCreation,
-	}
 
-	anyConfig, err := anypb.New(&cdxRegistrationRequest)
+	config := make(map[string]any)
+	config["instanceURI"] = host
+	config["apiKey"] = apiKey
+	config["allowAutoCreate"] = allowAutoProjectCreation
+
+	// Transform to structpb for transport
+	requestConfig, err := structpb.NewStruct(config)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse arguments: %w", err)
 	}
 
 	i, err := client.Register(context.Background(), &pb.IntegrationsServiceRegisterRequest{
-		Kind:               deptrack.ID,
-		RegistrationConfig: anyConfig,
-		DisplayName:        description,
+		Kind:        "dependencytrack",
+		Config:      requestConfig,
+		DisplayName: description,
 	})
 	if err != nil {
 		return nil, err

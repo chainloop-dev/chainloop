@@ -72,11 +72,9 @@ func (m *IntegrationsServiceRegisterRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for DisplayName
-
-	if m.GetRegistrationConfig() == nil {
+	if m.GetConfig() == nil {
 		err := IntegrationsServiceRegisterRequestValidationError{
-			field:  "RegistrationConfig",
+			field:  "Config",
 			reason: "value is required",
 		}
 		if !all {
@@ -85,9 +83,36 @@ func (m *IntegrationsServiceRegisterRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if a := m.GetRegistrationConfig(); a != nil {
-
+	if all {
+		switch v := interface{}(m.GetConfig()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, IntegrationsServiceRegisterRequestValidationError{
+					field:  "Config",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, IntegrationsServiceRegisterRequestValidationError{
+					field:  "Config",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetConfig()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return IntegrationsServiceRegisterRequestValidationError{
+				field:  "Config",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
 	}
+
+	// no validation rules for DisplayName
 
 	if len(errors) > 0 {
 		return IntegrationsServiceRegisterRequestMultiError(errors)
@@ -352,9 +377,9 @@ func (m *IntegrationsServiceAttachRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if m.GetAttachmentConfig() == nil {
+	if m.GetConfig() == nil {
 		err := IntegrationsServiceAttachRequestValidationError{
-			field:  "AttachmentConfig",
+			field:  "Config",
 			reason: "value is required",
 		}
 		if !all {
@@ -363,8 +388,33 @@ func (m *IntegrationsServiceAttachRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if a := m.GetAttachmentConfig(); a != nil {
-
+	if all {
+		switch v := interface{}(m.GetConfig()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, IntegrationsServiceAttachRequestValidationError{
+					field:  "Config",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, IntegrationsServiceAttachRequestValidationError{
+					field:  "Config",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetConfig()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return IntegrationsServiceAttachRequestValidationError{
+				field:  "Config",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
 	}
 
 	if len(errors) > 0 {

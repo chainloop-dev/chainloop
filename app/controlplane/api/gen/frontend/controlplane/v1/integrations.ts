@@ -2,7 +2,7 @@
 import { grpc } from "@improbable-eng/grpc-web";
 import { BrowserHeaders } from "browser-headers";
 import _m0 from "protobufjs/minimal";
-import { Any } from "../../google/protobuf/any";
+import { Struct } from "../../google/protobuf/struct";
 import { Timestamp } from "../../google/protobuf/timestamp";
 import { WorkflowItem } from "./response_messages";
 
@@ -14,10 +14,10 @@ export interface IntegrationsServiceRegisterRequest {
    * This should match the ID of an existing integration
    */
   kind: string;
+  /** Arbitrary configuration for the integration */
+  config?: { [key: string]: any };
   /** Description of the registration, used for display purposes */
   displayName: string;
-  /** Associated registration configuration */
-  registrationConfig?: Any;
 }
 
 export interface IntegrationsServiceRegisterResponse {
@@ -27,7 +27,8 @@ export interface IntegrationsServiceRegisterResponse {
 export interface IntegrationsServiceAttachRequest {
   workflowId: string;
   integrationId: string;
-  attachmentConfig?: Any;
+  /** Arbitrary configuration for the integration */
+  config?: { [key: string]: any };
 }
 
 export interface IntegrationsServiceAttachResponse {
@@ -84,7 +85,7 @@ export interface IntegrationsServiceDeleteResponse {
 }
 
 function createBaseIntegrationsServiceRegisterRequest(): IntegrationsServiceRegisterRequest {
-  return { kind: "", displayName: "", registrationConfig: undefined };
+  return { kind: "", config: undefined, displayName: "" };
 }
 
 export const IntegrationsServiceRegisterRequest = {
@@ -92,11 +93,11 @@ export const IntegrationsServiceRegisterRequest = {
     if (message.kind !== "") {
       writer.uint32(10).string(message.kind);
     }
-    if (message.displayName !== "") {
-      writer.uint32(26).string(message.displayName);
+    if (message.config !== undefined) {
+      Struct.encode(Struct.wrap(message.config), writer.uint32(26).fork()).ldelim();
     }
-    if (message.registrationConfig !== undefined) {
-      Any.encode(message.registrationConfig, writer.uint32(18).fork()).ldelim();
+    if (message.displayName !== "") {
+      writer.uint32(34).string(message.displayName);
     }
     return writer;
   },
@@ -120,14 +121,14 @@ export const IntegrationsServiceRegisterRequest = {
             break;
           }
 
-          message.displayName = reader.string();
+          message.config = Struct.unwrap(Struct.decode(reader, reader.uint32()));
           continue;
-        case 2:
-          if (tag != 18) {
+        case 4:
+          if (tag != 34) {
             break;
           }
 
-          message.registrationConfig = Any.decode(reader, reader.uint32());
+          message.displayName = reader.string();
           continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
@@ -141,17 +142,16 @@ export const IntegrationsServiceRegisterRequest = {
   fromJSON(object: any): IntegrationsServiceRegisterRequest {
     return {
       kind: isSet(object.kind) ? String(object.kind) : "",
+      config: isObject(object.config) ? object.config : undefined,
       displayName: isSet(object.displayName) ? String(object.displayName) : "",
-      registrationConfig: isSet(object.registrationConfig) ? Any.fromJSON(object.registrationConfig) : undefined,
     };
   },
 
   toJSON(message: IntegrationsServiceRegisterRequest): unknown {
     const obj: any = {};
     message.kind !== undefined && (obj.kind = message.kind);
+    message.config !== undefined && (obj.config = message.config);
     message.displayName !== undefined && (obj.displayName = message.displayName);
-    message.registrationConfig !== undefined &&
-      (obj.registrationConfig = message.registrationConfig ? Any.toJSON(message.registrationConfig) : undefined);
     return obj;
   },
 
@@ -166,10 +166,8 @@ export const IntegrationsServiceRegisterRequest = {
   ): IntegrationsServiceRegisterRequest {
     const message = createBaseIntegrationsServiceRegisterRequest();
     message.kind = object.kind ?? "";
+    message.config = object.config ?? undefined;
     message.displayName = object.displayName ?? "";
-    message.registrationConfig = (object.registrationConfig !== undefined && object.registrationConfig !== null)
-      ? Any.fromPartial(object.registrationConfig)
-      : undefined;
     return message;
   },
 };
@@ -237,7 +235,7 @@ export const IntegrationsServiceRegisterResponse = {
 };
 
 function createBaseIntegrationsServiceAttachRequest(): IntegrationsServiceAttachRequest {
-  return { workflowId: "", integrationId: "", attachmentConfig: undefined };
+  return { workflowId: "", integrationId: "", config: undefined };
 }
 
 export const IntegrationsServiceAttachRequest = {
@@ -248,8 +246,8 @@ export const IntegrationsServiceAttachRequest = {
     if (message.integrationId !== "") {
       writer.uint32(18).string(message.integrationId);
     }
-    if (message.attachmentConfig !== undefined) {
-      Any.encode(message.attachmentConfig, writer.uint32(26).fork()).ldelim();
+    if (message.config !== undefined) {
+      Struct.encode(Struct.wrap(message.config), writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -275,12 +273,12 @@ export const IntegrationsServiceAttachRequest = {
 
           message.integrationId = reader.string();
           continue;
-        case 3:
-          if (tag != 26) {
+        case 4:
+          if (tag != 34) {
             break;
           }
 
-          message.attachmentConfig = Any.decode(reader, reader.uint32());
+          message.config = Struct.unwrap(Struct.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
@@ -295,7 +293,7 @@ export const IntegrationsServiceAttachRequest = {
     return {
       workflowId: isSet(object.workflowId) ? String(object.workflowId) : "",
       integrationId: isSet(object.integrationId) ? String(object.integrationId) : "",
-      attachmentConfig: isSet(object.attachmentConfig) ? Any.fromJSON(object.attachmentConfig) : undefined,
+      config: isObject(object.config) ? object.config : undefined,
     };
   },
 
@@ -303,8 +301,7 @@ export const IntegrationsServiceAttachRequest = {
     const obj: any = {};
     message.workflowId !== undefined && (obj.workflowId = message.workflowId);
     message.integrationId !== undefined && (obj.integrationId = message.integrationId);
-    message.attachmentConfig !== undefined &&
-      (obj.attachmentConfig = message.attachmentConfig ? Any.toJSON(message.attachmentConfig) : undefined);
+    message.config !== undefined && (obj.config = message.config);
     return obj;
   },
 
@@ -320,9 +317,7 @@ export const IntegrationsServiceAttachRequest = {
     const message = createBaseIntegrationsServiceAttachRequest();
     message.workflowId = object.workflowId ?? "";
     message.integrationId = object.integrationId ?? "";
-    message.attachmentConfig = (object.attachmentConfig !== undefined && object.attachmentConfig !== null)
-      ? Any.fromPartial(object.attachmentConfig)
-      : undefined;
+    message.config = object.config ?? undefined;
     return message;
   },
 };
@@ -1450,6 +1445,10 @@ function fromJsonTimestamp(o: any): Date {
   } else {
     return fromTimestamp(Timestamp.fromJSON(o));
   }
+}
+
+function isObject(value: any): boolean {
+  return typeof value === "object" && value !== null;
 }
 
 function isSet(value: any): boolean {
