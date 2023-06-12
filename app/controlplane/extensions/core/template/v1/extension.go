@@ -111,19 +111,16 @@ func (i *Integration) Register(_ context.Context, req *sdk.RegistrationRequest) 
 }
 
 // Attachment is executed when to attach a registered instance of this integration to a specific workflow
-func (i *Integration) Attach(_ context.Context, _ *sdk.AttachmentRequest) (*sdk.AttachmentResponse, error) {
+func (i *Integration) Attach(_ context.Context, req *sdk.AttachmentRequest) (*sdk.AttachmentResponse, error) {
 	i.Logger.Info("attachment requested")
 
-	// Parse the request
-	// var request *attachmentRequest
-	// if err := sdk.FromConfig(req.Payload, &request); err != nil {
-	// 	return nil, fmt.Errorf("invalid attachment request: %w", err)
-	// }
+	// Parse the request that has already been validated against the input schema
+	var request *attachmentRequest
+	if err := sdk.FromConfig(req.Payload, &request); err != nil {
+		return nil, fmt.Errorf("invalid attachment request: %w", err)
+	}
 
-	// // Validate the request payload
-	// if err := request.ValidateAll(); err != nil {
-	// 	return nil, fmt.Errorf("invalid request: %w", err)
-	// }
+	// ....
 
 	// You also have access to the configuration and credentials from the registration phase
 	// They can be accessed via
