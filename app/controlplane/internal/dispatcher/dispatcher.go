@@ -40,10 +40,10 @@ type FanOutDispatcher struct {
 	casClient           biz.CASClient
 	log                 *log.Helper
 	l                   log.Logger
-	loaded              sdk.Loaded
+	loaded              sdk.AvailableExtensions
 }
 
-func New(integrationUC *biz.IntegrationUseCase, creds credentials.ReaderWriter, c biz.CASClient, registered sdk.Loaded, l log.Logger) *FanOutDispatcher {
+func New(integrationUC *biz.IntegrationUseCase, creds credentials.ReaderWriter, c biz.CASClient, registered sdk.AvailableExtensions, l log.Logger) *FanOutDispatcher {
 	return &FanOutDispatcher{integrationUC, creds, c, servicelogger.ScopedHelper(l, "fanout-dispatcher"), l, registered}
 }
 

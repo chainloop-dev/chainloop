@@ -33,16 +33,40 @@ type IntegrationsService struct {
 
 	integrationUC *biz.IntegrationUseCase
 	workflowUC    *biz.WorkflowUseCase
-	integrations  sdk.Loaded
+	integrations  sdk.AvailableExtensions
 }
 
-func NewIntegrationsService(uc *biz.IntegrationUseCase, wuc *biz.WorkflowUseCase, integrations sdk.Loaded, opts ...NewOpt) *IntegrationsService {
+func NewIntegrationsService(uc *biz.IntegrationUseCase, wuc *biz.WorkflowUseCase, integrations sdk.AvailableExtensions, opts ...NewOpt) *IntegrationsService {
 	return &IntegrationsService{
 		service:       newService(opts...),
 		integrationUC: uc,
 		workflowUC:    wuc,
 		integrations:  integrations,
 	}
+}
+
+func (s *IntegrationsService) ListAvailable(_ context.Context, _ *pb.IntegrationsServiceListAvailableRequest) (*pb.IntegrationsServiceListAvailableResponse, error) {
+	result := make([]*pb.IntegrationsServiceListAvailableResponse_Integration, 0, len(s.integrations))
+
+	for _, i := range s.integrations {
+		d := i.Describe()
+		item := &pb.IntegrationsServiceListAvailableResponse_Integration{
+			Id:                    d.ID,
+			Version:               d.Version,
+			AttachmentSchema:      d.AttachmentJSONSchema,
+			RegistrationSchema:    d.RegistrationJSONSchema,
+			SubscribedAttestation: d.SubscribedInputs.DSSEnvelope,
+			SubscribedMaterials:   make([]string, 0),
+		}
+
+		for _, m := range d.SubscribedInputs.Materials {
+			item.SubscribedMaterials = append(item.SubscribedMaterials, m.Type.String())
+		}
+
+		result = append(result, item)
+	}
+
+	return &pb.IntegrationsServiceListAvailableResponse{Result: result}, nil
 }
 
 func (s *IntegrationsService) Register(ctx context.Context, req *pb.IntegrationsServiceRegisterRequest) (*pb.IntegrationsServiceRegisterResponse, error) {
@@ -115,7 +139,7 @@ func (s *IntegrationsService) Attach(ctx context.Context, req *pb.IntegrationsSe
 	return &pb.IntegrationsServiceAttachResponse{Result: result}, nil
 }
 
-func (s *IntegrationsService) List(ctx context.Context, _ *pb.IntegrationsServiceListRequest) (*pb.IntegrationsServiceListResponse, error) {
+func (s *IntegrationsService) ListRegistrations(ctx context.Context, _ *pb.IntegrationsServiceListRegistrationsRequest) (*pb.IntegrationsServiceListRegistrationsResponse, error) {
 	_, org, err := loadCurrentUserAndOrg(ctx)
 	if err != nil {
 		return nil, err
@@ -126,15 +150,15 @@ func (s *IntegrationsService) List(ctx context.Context, _ *pb.IntegrationsServic
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}
 
-	result := make([]*pb.IntegrationItem, 0, len(integrations))
+	result := make([]*pb.RegisteredIntegrationItem, 0, len(integrations))
 	for _, i := range integrations {
 		result = append(result, bizIntegrationToPb(i))
 	}
 
-	return &pb.IntegrationsServiceListResponse{Result: result}, nil
+	return &pb.IntegrationsServiceListRegistrationsResponse{Result: result}, nil
 }
 
-func (s *IntegrationsService) Delete(ctx context.Context, req *pb.IntegrationsServiceDeleteRequest) (*pb.IntegrationsServiceDeleteResponse, error) {
+func (s *IntegrationsService) Deregister(ctx context.Context, req *pb.IntegrationsServiceDeregisterRequest) (*pb.IntegrationsServiceDeregisterResponse, error) {
 	_, org, err := loadCurrentUserAndOrg(ctx)
 	if err != nil {
 		return nil, err
@@ -147,7 +171,7 @@ func (s *IntegrationsService) Delete(ctx context.Context, req *pb.IntegrationsSe
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}
 
-	return &pb.IntegrationsServiceDeleteResponse{}, nil
+	return &pb.IntegrationsServiceDeregisterResponse{}, nil
 }
 
 func (s *IntegrationsService) ListAttachments(ctx context.Context, req *pb.ListAttachmentsRequest) (*pb.ListAttachmentsResponse, error) {
@@ -190,8 +214,8 @@ func (s *IntegrationsService) Detach(ctx context.Context, req *pb.IntegrationsSe
 	return &pb.IntegrationsServiceDetachResponse{}, nil
 }
 
-func bizIntegrationToPb(e *biz.Integration) *pb.IntegrationItem {
-	return &pb.IntegrationItem{
+func bizIntegrationToPb(e *biz.Integration) *pb.RegisteredIntegrationItem {
+	return &pb.RegisteredIntegrationItem{
 		Id: e.ID.String(), CreatedAt: timestamppb.New(*e.CreatedAt),
 		DisplayName: e.DisplayName,
 		Kind:        e.Kind, Config: e.Config,

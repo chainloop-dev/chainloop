@@ -92,12 +92,12 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		Opts:               v2,
 	}
 	workflowRunService := service.NewWorkflowRunService(newWorkflowRunServiceOpts)
-	loaded, err := extensions.Load(logger)
+	availableExtensions, err := extensions.Load(logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	fanOutDispatcher := dispatcher.New(integrationUseCase, readerWriter, casClientUseCase, loaded, logger)
+	fanOutDispatcher := dispatcher.New(integrationUseCase, readerWriter, casClientUseCase, availableExtensions, logger)
 	newAttestationServiceOpts := &service.NewAttestationServiceOpts{
 		WorkflowRunUC:      workflowRunUseCase,
 		WorkflowUC:         workflowUseCase,
@@ -122,7 +122,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	orgMetricsService := service.NewOrgMetricsService(orgMetricsUseCase, v2...)
 	ociRepositoryService := service.NewOCIRepositoryService(ociRepositoryUseCase, v2...)
-	integrationsService := service.NewIntegrationsService(integrationUseCase, workflowUseCase, loaded, v2...)
+	integrationsService := service.NewIntegrationsService(integrationUseCase, workflowUseCase, availableExtensions, v2...)
 	organizationService := service.NewOrganizationService(membershipUseCase, v2...)
 	opts := &server.Opts{
 		UserUseCase:          userUseCase,

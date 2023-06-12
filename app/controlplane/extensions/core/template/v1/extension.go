@@ -60,7 +60,7 @@ func New(l log.Logger) (sdk.FanOut, error) {
 		// In this case we are subscribing to SBOM_CYCLONEDX_JSON
 		sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON),
 		// You can also subscribed to any kind of materials
-		sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED),
+		// sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED),
 		// Or to the actual attestation
 		// sdk.WithEnvelope(),
 	)

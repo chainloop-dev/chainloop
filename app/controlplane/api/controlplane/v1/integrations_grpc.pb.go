@@ -34,27 +34,34 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	IntegrationsService_Register_FullMethodName        = "/controlplane.v1.IntegrationsService/Register"
-	IntegrationsService_List_FullMethodName            = "/controlplane.v1.IntegrationsService/List"
-	IntegrationsService_Delete_FullMethodName          = "/controlplane.v1.IntegrationsService/Delete"
-	IntegrationsService_Attach_FullMethodName          = "/controlplane.v1.IntegrationsService/Attach"
-	IntegrationsService_Detach_FullMethodName          = "/controlplane.v1.IntegrationsService/Detach"
-	IntegrationsService_ListAttachments_FullMethodName = "/controlplane.v1.IntegrationsService/ListAttachments"
+	IntegrationsService_ListAvailable_FullMethodName     = "/controlplane.v1.IntegrationsService/ListAvailable"
+	IntegrationsService_Register_FullMethodName          = "/controlplane.v1.IntegrationsService/Register"
+	IntegrationsService_Deregister_FullMethodName        = "/controlplane.v1.IntegrationsService/Deregister"
+	IntegrationsService_ListRegistrations_FullMethodName = "/controlplane.v1.IntegrationsService/ListRegistrations"
+	IntegrationsService_Attach_FullMethodName            = "/controlplane.v1.IntegrationsService/Attach"
+	IntegrationsService_Detach_FullMethodName            = "/controlplane.v1.IntegrationsService/Detach"
+	IntegrationsService_ListAttachments_FullMethodName   = "/controlplane.v1.IntegrationsService/ListAttachments"
 )
 
 // IntegrationsServiceClient is the client API for IntegrationsService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type IntegrationsServiceClient interface {
+	// Integrations available and loaded in the controlplane ready to be used during registration
+	ListAvailable(ctx context.Context, in *IntegrationsServiceListAvailableRequest, opts ...grpc.CallOption) (*IntegrationsServiceListAvailableResponse, error)
+	// Registration Related operations
 	// Register a new integration in the organization
 	Register(ctx context.Context, in *IntegrationsServiceRegisterRequest, opts ...grpc.CallOption) (*IntegrationsServiceRegisterResponse, error)
-	List(ctx context.Context, in *IntegrationsServiceListRequest, opts ...grpc.CallOption) (*IntegrationsServiceListResponse, error)
-	Delete(ctx context.Context, in *IntegrationsServiceDeleteRequest, opts ...grpc.CallOption) (*IntegrationsServiceDeleteResponse, error)
-	// Workflow Related operations
+	// Delete registered integrations
+	Deregister(ctx context.Context, in *IntegrationsServiceDeregisterRequest, opts ...grpc.CallOption) (*IntegrationsServiceDeregisterResponse, error)
+	// List registered integrations
+	ListRegistrations(ctx context.Context, in *IntegrationsServiceListRegistrationsRequest, opts ...grpc.CallOption) (*IntegrationsServiceListRegistrationsResponse, error)
+	// Attachment Related operations
 	// Attach an integration to a workflow
 	Attach(ctx context.Context, in *IntegrationsServiceAttachRequest, opts ...grpc.CallOption) (*IntegrationsServiceAttachResponse, error)
 	// Detach integration from a workflow
 	Detach(ctx context.Context, in *IntegrationsServiceDetachRequest, opts ...grpc.CallOption) (*IntegrationsServiceDetachResponse, error)
+	// List attachments
 	ListAttachments(ctx context.Context, in *ListAttachmentsRequest, opts ...grpc.CallOption) (*ListAttachmentsResponse, error)
 }
 
@@ -66,6 +73,15 @@ func NewIntegrationsServiceClient(cc grpc.ClientConnInterface) IntegrationsServi
 	return &integrationsServiceClient{cc}
 }
 
+func (c *integrationsServiceClient) ListAvailable(ctx context.Context, in *IntegrationsServiceListAvailableRequest, opts ...grpc.CallOption) (*IntegrationsServiceListAvailableResponse, error) {
+	out := new(IntegrationsServiceListAvailableResponse)
+	err := c.cc.Invoke(ctx, IntegrationsService_ListAvailable_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *integrationsServiceClient) Register(ctx context.Context, in *IntegrationsServiceRegisterRequest, opts ...grpc.CallOption) (*IntegrationsServiceRegisterResponse, error) {
 	out := new(IntegrationsServiceRegisterResponse)
 	err := c.cc.Invoke(ctx, IntegrationsService_Register_FullMethodName, in, out, opts...)
@@ -75,18 +91,18 @@ func (c *integrationsServiceClient) Register(ctx context.Context, in *Integratio
 	return out, nil
 }
 
-func (c *integrationsServiceClient) List(ctx context.Context, in *IntegrationsServiceListRequest, opts ...grpc.CallOption) (*IntegrationsServiceListResponse, error) {
-	out := new(IntegrationsServiceListResponse)
-	err := c.cc.Invoke(ctx, IntegrationsService_List_FullMethodName, in, out, opts...)
+func (c *integrationsServiceClient) Deregister(ctx context.Context, in *IntegrationsServiceDeregisterRequest, opts ...grpc.CallOption) (*IntegrationsServiceDeregisterResponse, error) {
+	out := new(IntegrationsServiceDeregisterResponse)
+	err := c.cc.Invoke(ctx, IntegrationsService_Deregister_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *integrationsServiceClient) Delete(ctx context.Context, in *IntegrationsServiceDeleteRequest, opts ...grpc.CallOption) (*IntegrationsServiceDeleteResponse, error) {
-	out := new(IntegrationsServiceDeleteResponse)
-	err := c.cc.Invoke(ctx, IntegrationsService_Delete_FullMethodName, in, out, opts...)
+func (c *integrationsServiceClient) ListRegistrations(ctx context.Context, in *IntegrationsServiceListRegistrationsRequest, opts ...grpc.CallOption) (*IntegrationsServiceListRegistrationsResponse, error) {
+	out := new(IntegrationsServiceListRegistrationsResponse)
+	err := c.cc.Invoke(ctx, IntegrationsService_ListRegistrations_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -124,15 +140,21 @@ func (c *integrationsServiceClient) ListAttachments(ctx context.Context, in *Lis
 // All implementations must embed UnimplementedIntegrationsServiceServer
 // for forward compatibility
 type IntegrationsServiceServer interface {
+	// Integrations available and loaded in the controlplane ready to be used during registration
+	ListAvailable(context.Context, *IntegrationsServiceListAvailableRequest) (*IntegrationsServiceListAvailableResponse, error)
+	// Registration Related operations
 	// Register a new integration in the organization
 	Register(context.Context, *IntegrationsServiceRegisterRequest) (*IntegrationsServiceRegisterResponse, error)
-	List(context.Context, *IntegrationsServiceListRequest) (*IntegrationsServiceListResponse, error)
-	Delete(context.Context, *IntegrationsServiceDeleteRequest) (*IntegrationsServiceDeleteResponse, error)
-	// Workflow Related operations
+	// Delete registered integrations
+	Deregister(context.Context, *IntegrationsServiceDeregisterRequest) (*IntegrationsServiceDeregisterResponse, error)
+	// List registered integrations
+	ListRegistrations(context.Context, *IntegrationsServiceListRegistrationsRequest) (*IntegrationsServiceListRegistrationsResponse, error)
+	// Attachment Related operations
 	// Attach an integration to a workflow
 	Attach(context.Context, *IntegrationsServiceAttachRequest) (*IntegrationsServiceAttachResponse, error)
 	// Detach integration from a workflow
 	Detach(context.Context, *IntegrationsServiceDetachRequest) (*IntegrationsServiceDetachResponse, error)
+	// List attachments
 	ListAttachments(context.Context, *ListAttachmentsRequest) (*ListAttachmentsResponse, error)
 	mustEmbedUnimplementedIntegrationsServiceServer()
 }
@@ -141,14 +163,17 @@ type IntegrationsServiceServer interface {
 type UnimplementedIntegrationsServiceServer struct {
 }
 
+func (UnimplementedIntegrationsServiceServer) ListAvailable(context.Context, *IntegrationsServiceListAvailableRequest) (*IntegrationsServiceListAvailableResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListAvailable not implemented")
+}
 func (UnimplementedIntegrationsServiceServer) Register(context.Context, *IntegrationsServiceRegisterRequest) (*IntegrationsServiceRegisterResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Register not implemented")
 }
-func (UnimplementedIntegrationsServiceServer) List(context.Context, *IntegrationsServiceListRequest) (*IntegrationsServiceListResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
+func (UnimplementedIntegrationsServiceServer) Deregister(context.Context, *IntegrationsServiceDeregisterRequest) (*IntegrationsServiceDeregisterResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Deregister not implemented")
 }
-func (UnimplementedIntegrationsServiceServer) Delete(context.Context, *IntegrationsServiceDeleteRequest) (*IntegrationsServiceDeleteResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
+func (UnimplementedIntegrationsServiceServer) ListRegistrations(context.Context, *IntegrationsServiceListRegistrationsRequest) (*IntegrationsServiceListRegistrationsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListRegistrations not implemented")
 }
 func (UnimplementedIntegrationsServiceServer) Attach(context.Context, *IntegrationsServiceAttachRequest) (*IntegrationsServiceAttachResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Attach not implemented")
@@ -172,6 +197,24 @@ func RegisterIntegrationsServiceServer(s grpc.ServiceRegistrar, srv Integrations
 	s.RegisterService(&IntegrationsService_ServiceDesc, srv)
 }
 
+func _IntegrationsService_ListAvailable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IntegrationsServiceListAvailableRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IntegrationsServiceServer).ListAvailable(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IntegrationsService_ListAvailable_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IntegrationsServiceServer).ListAvailable(ctx, req.(*IntegrationsServiceListAvailableRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _IntegrationsService_Register_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(IntegrationsServiceRegisterRequest)
 	if err := dec(in); err != nil {
@@ -190,38 +233,38 @@ func _IntegrationsService_Register_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
-func _IntegrationsService_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(IntegrationsServiceListRequest)
+func _IntegrationsService_Deregister_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IntegrationsServiceDeregisterRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(IntegrationsServiceServer).List(ctx, in)
+		return srv.(IntegrationsServiceServer).Deregister(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: IntegrationsService_List_FullMethodName,
+		FullMethod: IntegrationsService_Deregister_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(IntegrationsServiceServer).List(ctx, req.(*IntegrationsServiceListRequest))
+		return srv.(IntegrationsServiceServer).Deregister(ctx, req.(*IntegrationsServiceDeregisterRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _IntegrationsService_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(IntegrationsServiceDeleteRequest)
+func _IntegrationsService_ListRegistrations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IntegrationsServiceListRegistrationsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(IntegrationsServiceServer).Delete(ctx, in)
+		return srv.(IntegrationsServiceServer).ListRegistrations(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: IntegrationsService_Delete_FullMethodName,
+		FullMethod: IntegrationsService_ListRegistrations_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(IntegrationsServiceServer).Delete(ctx, req.(*IntegrationsServiceDeleteRequest))
+		return srv.(IntegrationsServiceServer).ListRegistrations(ctx, req.(*IntegrationsServiceListRegistrationsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -288,16 +331,20 @@ var IntegrationsService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*IntegrationsServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
+			MethodName: "ListAvailable",
+			Handler:    _IntegrationsService_ListAvailable_Handler,
+		},
+		{
 			MethodName: "Register",
 			Handler:    _IntegrationsService_Register_Handler,
 		},
 		{
-			MethodName: "List",
-			Handler:    _IntegrationsService_List_Handler,
+			MethodName: "Deregister",
+			Handler:    _IntegrationsService_Deregister_Handler,
 		},
 		{
-			MethodName: "Delete",
-			Handler:    _IntegrationsService_Delete_Handler,
+			MethodName: "ListRegistrations",
+			Handler:    _IntegrationsService_ListRegistrations_Handler,
 		},
 		{
 			MethodName: "Attach",
