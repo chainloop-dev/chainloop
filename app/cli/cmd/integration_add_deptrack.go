@@ -55,6 +55,7 @@ func newIntegrationAddDepTrackCmd() *cobra.Command {
 		},
 	}
 
+	cmd.Flags().StringVar(&integrationDescription, "description", "", "integration registration description")
 	cmd.Flags().StringVar(&instance, "instance", "", "dependency track instance URL")
 	cobra.CheckErr(cmd.MarkFlagRequired("instance"))
 

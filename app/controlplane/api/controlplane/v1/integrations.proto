@@ -51,7 +51,7 @@ message IntegrationsServiceRegisterRequest {
 	// Arbitrary configuration for the integration
 	google.protobuf.Struct config = 3 [(validate.rules).message.required = true];
 	// Description of the registration, used for display purposes
-	string display_name = 4;
+	string description = 4;
 }
 
 message IntegrationsServiceRegisterResponse {
@@ -113,7 +113,7 @@ message RegisteredIntegrationItem {
 	string id = 1;
 	string kind = 2;
 	// Description of the registration, used for display purposes
-	string display_name = 4;
+	string description = 4;
 	google.protobuf.Timestamp created_at = 3;
 	// Arbitrary configuration for the integration
 	bytes config = 5;

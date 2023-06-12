@@ -17,7 +17,7 @@ export interface IntegrationsServiceRegisterRequest {
   /** Arbitrary configuration for the integration */
   config?: { [key: string]: any };
   /** Description of the registration, used for display purposes */
-  displayName: string;
+  description: string;
 }
 
 export interface IntegrationsServiceRegisterResponse {
@@ -84,7 +84,7 @@ export interface RegisteredIntegrationItem {
   id: string;
   kind: string;
   /** Description of the registration, used for display purposes */
-  displayName: string;
+  description: string;
   createdAt?: Date;
   /** Arbitrary configuration for the integration */
   config: Uint8Array;
@@ -107,7 +107,7 @@ export interface IntegrationsServiceDeregisterResponse {
 }
 
 function createBaseIntegrationsServiceRegisterRequest(): IntegrationsServiceRegisterRequest {
-  return { extensionId: "", config: undefined, displayName: "" };
+  return { extensionId: "", config: undefined, description: "" };
 }
 
 export const IntegrationsServiceRegisterRequest = {
@@ -118,8 +118,8 @@ export const IntegrationsServiceRegisterRequest = {
     if (message.config !== undefined) {
       Struct.encode(Struct.wrap(message.config), writer.uint32(26).fork()).ldelim();
     }
-    if (message.displayName !== "") {
-      writer.uint32(34).string(message.displayName);
+    if (message.description !== "") {
+      writer.uint32(34).string(message.description);
     }
     return writer;
   },
@@ -150,7 +150,7 @@ export const IntegrationsServiceRegisterRequest = {
             break;
           }
 
-          message.displayName = reader.string();
+          message.description = reader.string();
           continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
@@ -165,7 +165,7 @@ export const IntegrationsServiceRegisterRequest = {
     return {
       extensionId: isSet(object.extensionId) ? String(object.extensionId) : "",
       config: isObject(object.config) ? object.config : undefined,
-      displayName: isSet(object.displayName) ? String(object.displayName) : "",
+      description: isSet(object.description) ? String(object.description) : "",
     };
   },
 
@@ -173,7 +173,7 @@ export const IntegrationsServiceRegisterRequest = {
     const obj: any = {};
     message.extensionId !== undefined && (obj.extensionId = message.extensionId);
     message.config !== undefined && (obj.config = message.config);
-    message.displayName !== undefined && (obj.displayName = message.displayName);
+    message.description !== undefined && (obj.description = message.description);
     return obj;
   },
 
@@ -189,7 +189,7 @@ export const IntegrationsServiceRegisterRequest = {
     const message = createBaseIntegrationsServiceRegisterRequest();
     message.extensionId = object.extensionId ?? "";
     message.config = object.config ?? undefined;
-    message.displayName = object.displayName ?? "";
+    message.description = object.description ?? "";
     return message;
   },
 };
@@ -1019,7 +1019,7 @@ export const ListAttachmentsResponse = {
 };
 
 function createBaseRegisteredIntegrationItem(): RegisteredIntegrationItem {
-  return { id: "", kind: "", displayName: "", createdAt: undefined, config: new Uint8Array() };
+  return { id: "", kind: "", description: "", createdAt: undefined, config: new Uint8Array() };
 }
 
 export const RegisteredIntegrationItem = {
@@ -1030,8 +1030,8 @@ export const RegisteredIntegrationItem = {
     if (message.kind !== "") {
       writer.uint32(18).string(message.kind);
     }
-    if (message.displayName !== "") {
-      writer.uint32(34).string(message.displayName);
+    if (message.description !== "") {
+      writer.uint32(34).string(message.description);
     }
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(26).fork()).ldelim();
@@ -1068,7 +1068,7 @@ export const RegisteredIntegrationItem = {
             break;
           }
 
-          message.displayName = reader.string();
+          message.description = reader.string();
           continue;
         case 3:
           if (tag != 26) {
@@ -1097,7 +1097,7 @@ export const RegisteredIntegrationItem = {
     return {
       id: isSet(object.id) ? String(object.id) : "",
       kind: isSet(object.kind) ? String(object.kind) : "",
-      displayName: isSet(object.displayName) ? String(object.displayName) : "",
+      description: isSet(object.description) ? String(object.description) : "",
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
       config: isSet(object.config) ? bytesFromBase64(object.config) : new Uint8Array(),
     };
@@ -1107,7 +1107,7 @@ export const RegisteredIntegrationItem = {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
     message.kind !== undefined && (obj.kind = message.kind);
-    message.displayName !== undefined && (obj.displayName = message.displayName);
+    message.description !== undefined && (obj.description = message.description);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
     message.config !== undefined &&
       (obj.config = base64FromBytes(message.config !== undefined ? message.config : new Uint8Array()));
@@ -1122,7 +1122,7 @@ export const RegisteredIntegrationItem = {
     const message = createBaseRegisteredIntegrationItem();
     message.id = object.id ?? "";
     message.kind = object.kind ?? "";
-    message.displayName = object.displayName ?? "";
+    message.description = object.description ?? "";
     message.createdAt = object.createdAt ?? undefined;
     message.config = object.config ?? new Uint8Array();
     return message;

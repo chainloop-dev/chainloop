@@ -20,8 +20,8 @@ type Integration struct {
 	ID uuid.UUID `json:"id,omitempty"`
 	// Kind holds the value of the "kind" field.
 	Kind string `json:"kind,omitempty"`
-	// DisplayName holds the value of the "display_name" field.
-	DisplayName string `json:"display_name,omitempty"`
+	// Description holds the value of the "description" field.
+	Description string `json:"description,omitempty"`
 	// SecretName holds the value of the "secret_name" field.
 	SecretName string `json:"secret_name,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -76,7 +76,7 @@ func (*Integration) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case integration.FieldConfiguration:
 			values[i] = new([]byte)
-		case integration.FieldKind, integration.FieldDisplayName, integration.FieldSecretName:
+		case integration.FieldKind, integration.FieldDescription, integration.FieldSecretName:
 			values[i] = new(sql.NullString)
 		case integration.FieldCreatedAt, integration.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
@@ -111,11 +111,11 @@ func (i *Integration) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				i.Kind = value.String
 			}
-		case integration.FieldDisplayName:
+		case integration.FieldDescription:
 			if value, ok := values[j].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field display_name", values[j])
+				return fmt.Errorf("unexpected type %T for field description", values[j])
 			} else if value.Valid {
-				i.DisplayName = value.String
+				i.Description = value.String
 			}
 		case integration.FieldSecretName:
 			if value, ok := values[j].(*sql.NullString); !ok {
@@ -189,8 +189,8 @@ func (i *Integration) String() string {
 	builder.WriteString("kind=")
 	builder.WriteString(i.Kind)
 	builder.WriteString(", ")
-	builder.WriteString("display_name=")
-	builder.WriteString(i.DisplayName)
+	builder.WriteString("description=")
+	builder.WriteString(i.Description)
 	builder.WriteString(", ")
 	builder.WriteString("secret_name=")
 	builder.WriteString(i.SecretName)

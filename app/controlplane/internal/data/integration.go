@@ -43,7 +43,7 @@ func (r *IntegrationRepo) Create(ctx context.Context, opts *biz.IntegrationCreat
 	integration, err := r.data.db.Integration.Create().
 		SetOrganizationID(opts.OrgID).
 		SetKind(opts.Kind).
-		SetDisplayName(opts.DisplayName).
+		SetDescription(opts.Description).
 		SetSecretName(opts.SecretName).
 		SetConfiguration(opts.Config).
 		Save(ctx)
@@ -114,7 +114,7 @@ func entIntegrationToBiz(i *ent.Integration) *biz.Integration {
 	return &biz.Integration{
 		ID:          i.ID,
 		Kind:        i.Kind,
-		DisplayName: i.DisplayName,
+		Description: i.Description,
 		CreatedAt:   toTimePtr(i.CreatedAt),
 		SecretName:  i.SecretName,
 		Config:      i.Configuration,

@@ -43,7 +43,7 @@ func (action *IntegrationAdd) Run(extensionID, description string, options map[s
 	i, err := client.Register(context.Background(), &pb.IntegrationsServiceRegisterRequest{
 		ExtensionId: extensionID,
 		Config:      requestConfig,
-		DisplayName: description,
+		Description: description,
 	})
 	if err != nil {
 		return nil, err

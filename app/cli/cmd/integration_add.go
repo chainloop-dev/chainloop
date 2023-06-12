@@ -47,7 +47,6 @@ func newConfigIntegrationAddCmd() *cobra.Command {
 		},
 	}
 
-	cmd.PersistentFlags().StringVar(&integrationDescription, "description", "", "integration registration description")
 	cmd.Flags().StringVar(&integrationDescription, "description", "", "integration registration description")
 	cmd.Flags().StringSliceVar(&options, "options", nil, "integration arguments")
 

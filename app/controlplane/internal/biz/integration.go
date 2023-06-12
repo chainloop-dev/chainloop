@@ -41,9 +41,9 @@ type Integration struct {
 	ID uuid.UUID
 	// Kind is the type of the integration, it matches the registered extension ID
 	Kind string
-	// DisplayName is a human readable description of the integration registration
+	// Description is a human readable description of the integration registration
 	// It helps to differentiate different instances of the same kind
-	DisplayName string
+	Description string
 	// Registration Configuration, usually JSON marshalled
 	Config []byte
 	// Identifier to the external provider where any secret information is stored
@@ -57,7 +57,7 @@ type IntegrationAndAttachment struct {
 }
 
 type IntegrationCreateOpts struct {
-	Kind, DisplayName, SecretName string
+	Kind, Description, SecretName string
 	OrgID                         uuid.UUID
 	Config                        []byte
 }
@@ -101,7 +101,7 @@ func NewIntegrationUseCase(opts *NewIntegrationUseCaseOpts) *IntegrationUseCase 
 }
 
 // Persist the secret and integration with its configuration in the database
-func (uc *IntegrationUseCase) RegisterAndSave(ctx context.Context, orgID, displayName string, i sdk.FanOut, regConfig *structpb.Struct) (*Integration, error) {
+func (uc *IntegrationUseCase) RegisterAndSave(ctx context.Context, orgID, description string, i sdk.FanOut, regConfig *structpb.Struct) (*Integration, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -134,7 +134,7 @@ func (uc *IntegrationUseCase) RegisterAndSave(ctx context.Context, orgID, displa
 
 	// Persist the integration configuration
 	return uc.integrationRepo.Create(ctx, &IntegrationCreateOpts{
-		OrgID: orgUUID, Kind: i.Describe().ID, DisplayName: displayName,
+		OrgID: orgUUID, Kind: i.Describe().ID, Description: description,
 		SecretName: secretID, Config: registrationResponse.Configuration,
 	})
 }
