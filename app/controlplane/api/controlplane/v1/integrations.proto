@@ -24,16 +24,23 @@ import "google/protobuf/struct.proto";
 import "controlplane/v1/response_messages.proto";
 
 service IntegrationsService {
+	// Integrations available and loaded in the controlplane ready to be used during registration
+	rpc ListAvailable (IntegrationsServiceListAvailableRequest) returns (IntegrationsServiceListAvailableResponse);
+
+	// Registration Related operations
 	// Register a new integration in the organization
 	rpc Register (IntegrationsServiceRegisterRequest) returns (IntegrationsServiceRegisterResponse);
-	rpc List (IntegrationsServiceListRequest) returns (IntegrationsServiceListResponse);
-	rpc Delete (IntegrationsServiceDeleteRequest) returns (IntegrationsServiceDeleteResponse);
+	// Delete registered integrations
+	rpc Deregister (IntegrationsServiceDeregisterRequest) returns (IntegrationsServiceDeregisterResponse);
+	// List registered integrations
+	rpc ListRegistrations (IntegrationsServiceListRegistrationsRequest) returns (IntegrationsServiceListRegistrationsResponse);
 
-	// Workflow Related operations
+	// Attachment Related operations
 	// Attach an integration to a workflow
 	rpc Attach (IntegrationsServiceAttachRequest) returns (IntegrationsServiceAttachResponse);
 	// Detach integration from a workflow
 	rpc Detach (IntegrationsServiceDetachRequest) returns (IntegrationsServiceDetachResponse);
+	// List attachments
 	rpc ListAttachments (ListAttachmentsRequest) returns (ListAttachmentsResponse);
 }
 
@@ -48,7 +55,7 @@ message IntegrationsServiceRegisterRequest {
 }
 
 message IntegrationsServiceRegisterResponse {
-	IntegrationItem result = 1;
+	RegisteredIntegrationItem result = 1;
 }
 
 message IntegrationsServiceAttachRequest{
@@ -62,10 +69,27 @@ message IntegrationsServiceAttachResponse{
 	IntegrationAttachmentItem result = 1;
 }
 
+message IntegrationsServiceListAvailableRequest{}
+message IntegrationsServiceListAvailableResponse{
+	repeated Integration result = 1;
 
-message IntegrationsServiceListRequest{}
-message IntegrationsServiceListResponse{
-	repeated IntegrationItem result = 1;
+	message Integration {
+		// Integration identifier
+		string id = 1;
+		string version = 2;
+		// Registration and attachment JSON schemas
+		bytes registration_schema = 3;
+		bytes attachment_schema = 4;
+		// List of materials that the integration is subscribed to
+		repeated string subscribed_materials = 5;
+		// Weather the integration is subscribed to attestations
+		bool subscribed_attestation = 6;
+	}
+}
+
+message IntegrationsServiceListRegistrationsRequest{}
+message IntegrationsServiceListRegistrationsResponse{
+	repeated RegisteredIntegrationItem result = 1;
 }
 
 message IntegrationsServiceDetachRequest{
@@ -83,7 +107,7 @@ message ListAttachmentsResponse{
 	repeated IntegrationAttachmentItem result = 1;
 }
 
-message IntegrationItem {
+message RegisteredIntegrationItem {
 	string id = 1;
 	string kind = 2;
 	// Description of the registration, used for display purposes
@@ -98,12 +122,12 @@ message IntegrationAttachmentItem {
 	google.protobuf.Timestamp created_at = 2;
 	// Arbitrary configuration for the attachment
 	bytes config = 3;
-	IntegrationItem integration = 4;
+	RegisteredIntegrationItem integration = 4;
 	WorkflowItem workflow = 5;
 }
 
-message IntegrationsServiceDeleteRequest {
+message IntegrationsServiceDeregisterRequest {
   string id = 1 [(validate.rules).string.uuid = true];
 }
 
-message IntegrationsServiceDeleteResponse {}
+message IntegrationsServiceDeregisterResponse {}

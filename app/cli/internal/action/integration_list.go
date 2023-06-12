@@ -44,7 +44,7 @@ func NewIntegrationList(cfg *ActionsOpts) *IntegrationList {
 
 func (action *IntegrationList) Run() ([]*IntegrationItem, error) {
 	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
-	resp, err := client.List(context.Background(), &pb.IntegrationsServiceListRequest{})
+	resp, err := client.ListRegistrations(context.Background(), &pb.IntegrationsServiceListRegistrationsRequest{})
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (action *IntegrationList) Run() ([]*IntegrationItem, error) {
 	return result, nil
 }
 
-func pbIntegrationItemToAction(in *pb.IntegrationItem) (*IntegrationItem, error) {
+func pbIntegrationItemToAction(in *pb.RegisteredIntegrationItem) (*IntegrationItem, error) {
 	if in == nil {
 		return nil, errors.New("nil input")
 	}

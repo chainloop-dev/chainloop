@@ -237,12 +237,12 @@ func validateInputs(c *FanOutIntegration) error {
 }
 
 // List of loaded integrations
-type Loaded []FanOut
+type AvailableExtensions []FanOut
 type FanOutFactory = func(l log.Logger) (FanOut, error)
 
 // FindByID returns the integration with the given ID from the list of available integrations
 // If not found, an error is returned
-func (i Loaded) FindByID(id string) (FanOut, error) {
+func (i AvailableExtensions) FindByID(id string) (FanOut, error) {
 	for _, integration := range i {
 		if integration.Describe().ID == id {
 			return integration, nil

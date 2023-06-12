@@ -25,7 +25,7 @@ import (
 // Injectors from wire.go:
 
 // wireTestData init testing data
-func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, readerWriter credentials.ReaderWriter, builder *robotaccount.Builder, auth *conf.Auth, loaded sdk.Loaded) (*TestingUseCases, func(), error) {
+func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, readerWriter credentials.ReaderWriter, builder *robotaccount.Builder, auth *conf.Auth, loaded sdk.AvailableExtensions) (*TestingUseCases, func(), error) {
 	confData := newConfData(testDatabase, t)
 	dataData, cleanup, err := data.NewData(confData, logger)
 	if err != nil {

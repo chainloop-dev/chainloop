@@ -25,8 +25,8 @@ import (
 // Load the available third party integrations
 // In the future this code will iterate over a dynamic directory of plugins
 // and try to load them one by one
-func Load(l log.Logger) (sdk.Loaded, error) {
-	var res sdk.Loaded
+func Load(l log.Logger) (sdk.AvailableExtensions, error) {
+	var res sdk.AvailableExtensions
 
 	// Array of integrations that are meant to be loaded
 	// Eventually this will be dynamically loaded from a directory
@@ -39,7 +39,7 @@ func Load(l log.Logger) (sdk.Loaded, error) {
 	for _, f := range toEnable {
 		d, err := f(l)
 		if err != nil {
-			logger.Errorw("failed to load extension", "error", err.Error())
+			logger.Errorw("msg", "failed to load extension", "error", err.Error())
 			continue
 		}
 
