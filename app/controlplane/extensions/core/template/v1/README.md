@@ -17,4 +17,4 @@ These are the required steps
 
 ### Enable extension for
 
-- Add it to the list of available extensions [here](`../integrations.go`). This will make this extension available the next time the control plane starts.
+- Add it to the list of available extensions [here](`../../../../../extensions.go`). This will make this extension available the next time the control plane starts.
