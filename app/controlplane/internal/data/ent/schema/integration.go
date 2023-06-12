@@ -33,6 +33,7 @@ func (Integration) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique().Immutable(),
 		field.String("kind").Immutable(),
+		field.String("display_name").Optional(),
 		field.String("secret_name").Immutable(),
 		field.Time("created_at").
 			Default(time.Now).

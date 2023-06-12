@@ -57,7 +57,7 @@ func (s *IntegrationsService) Register(ctx context.Context, req *pb.Integrations
 		return nil, errors.NotFound("not found", err.Error())
 	}
 
-	i, err := s.integrationUC.RegisterAndSave(ctx, org.ID, integration, req.Config)
+	i, err := s.integrationUC.RegisterAndSave(ctx, org.ID, req.DisplayName, integration, req.Config)
 	if err != nil {
 		if biz.IsNotFound(err) {
 			return nil, errors.NotFound("not found", err.Error())
@@ -193,7 +193,8 @@ func (s *IntegrationsService) Detach(ctx context.Context, req *pb.IntegrationsSe
 func bizIntegrationToPb(e *biz.Integration) *pb.IntegrationItem {
 	return &pb.IntegrationItem{
 		Id: e.ID.String(), CreatedAt: timestamppb.New(*e.CreatedAt),
-		Kind: e.Kind, Config: e.Config,
+		DisplayName: e.DisplayName,
+		Kind:        e.Kind, Config: e.Config,
 	}
 }
 

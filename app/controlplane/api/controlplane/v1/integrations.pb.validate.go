@@ -112,6 +112,8 @@ func (m *IntegrationsServiceRegisterRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for DisplayName
+
 	if len(errors) > 0 {
 		return IntegrationsServiceRegisterRequestMultiError(errors)
 	}
@@ -1374,6 +1376,8 @@ func (m *IntegrationItem) validate(all bool) error {
 	// no validation rules for Id
 
 	// no validation rules for Kind
+
+	// no validation rules for DisplayName
 
 	if all {
 		switch v := interface{}(m.GetCreatedAt()).(type) {

@@ -31,7 +31,7 @@ func NewIntegrationAddDeptrack(cfg *ActionsOpts) *IntegrationAddDeptrack {
 	return &IntegrationAddDeptrack{cfg}
 }
 
-func (action *IntegrationAddDeptrack) Run(host, apiKey string, allowAutoProjectCreation bool) (*IntegrationItem, error) {
+func (action *IntegrationAddDeptrack) Run(host, apiKey, description string, allowAutoProjectCreation bool) (*IntegrationItem, error) {
 	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
 
 	config := make(map[string]any)
@@ -46,8 +46,9 @@ func (action *IntegrationAddDeptrack) Run(host, apiKey string, allowAutoProjectC
 	}
 
 	i, err := client.Register(context.Background(), &pb.IntegrationsServiceRegisterRequest{
-		Kind:   "dependencytrack",
-		Config: configRequest,
+		Kind:        "dependencytrack",
+		Config:      configRequest,
+		DisplayName: description,
 	})
 	if err != nil {
 		return nil, err

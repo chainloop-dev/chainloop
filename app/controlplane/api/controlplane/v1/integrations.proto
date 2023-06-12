@@ -39,9 +39,12 @@ service IntegrationsService {
 
 message IntegrationsServiceRegisterRequest {
 	// Kind of integration to register
+	// This should match the ID of an existing integration
 	string kind = 1 [(validate.rules).string.min_len = 1];
 	// Arbitrary configuration for the integration
 	google.protobuf.Struct config = 3 [(validate.rules).message.required = true];
+	// Description of the registration, used for display purposes
+	string display_name = 4;
 }
 
 message IntegrationsServiceRegisterResponse {
@@ -83,6 +86,8 @@ message ListAttachmentsResponse{
 message IntegrationItem {
 	string id = 1;
 	string kind = 2;
+	// Description of the registration, used for display purposes
+	string display_name = 4;
 	google.protobuf.Timestamp created_at = 3;
 	// Arbitrary configuration for the integration
 	bytes config = 5;

@@ -64,7 +64,7 @@ func integrationAttachmentListTableOutput(attachments []*action.IntegrationAttac
 			}
 			options = append(options, fmt.Sprintf("%s: %v", k, v))
 		}
-		t.AppendRow(table.Row{i.ID, integration.Name, strings.Join(options, "\n"), i.CreatedAt.Format(time.RFC822), wf.NamespacedName()})
+		t.AppendRow(table.Row{i.ID, integration.Kind, strings.Join(options, "\n"), i.CreatedAt.Format(time.RFC822), wf.NamespacedName()})
 		t.AppendSeparator()
 	}
 

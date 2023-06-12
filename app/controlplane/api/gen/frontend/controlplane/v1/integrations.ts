@@ -9,10 +9,15 @@ import { WorkflowItem } from "./response_messages";
 export const protobufPackage = "controlplane.v1";
 
 export interface IntegrationsServiceRegisterRequest {
-  /** Kind of integration to register */
+  /**
+   * Kind of integration to register
+   * This should match the ID of an existing integration
+   */
   kind: string;
   /** Arbitrary configuration for the integration */
   config?: { [key: string]: any };
+  /** Description of the registration, used for display purposes */
+  displayName: string;
 }
 
 export interface IntegrationsServiceRegisterResponse {
@@ -56,6 +61,8 @@ export interface ListAttachmentsResponse {
 export interface IntegrationItem {
   id: string;
   kind: string;
+  /** Description of the registration, used for display purposes */
+  displayName: string;
   createdAt?: Date;
   /** Arbitrary configuration for the integration */
   config: Uint8Array;
@@ -78,7 +85,7 @@ export interface IntegrationsServiceDeleteResponse {
 }
 
 function createBaseIntegrationsServiceRegisterRequest(): IntegrationsServiceRegisterRequest {
-  return { kind: "", config: undefined };
+  return { kind: "", config: undefined, displayName: "" };
 }
 
 export const IntegrationsServiceRegisterRequest = {
@@ -88,6 +95,9 @@ export const IntegrationsServiceRegisterRequest = {
     }
     if (message.config !== undefined) {
       Struct.encode(Struct.wrap(message.config), writer.uint32(26).fork()).ldelim();
+    }
+    if (message.displayName !== "") {
+      writer.uint32(34).string(message.displayName);
     }
     return writer;
   },
@@ -113,6 +123,13 @@ export const IntegrationsServiceRegisterRequest = {
 
           message.config = Struct.unwrap(Struct.decode(reader, reader.uint32()));
           continue;
+        case 4:
+          if (tag != 34) {
+            break;
+          }
+
+          message.displayName = reader.string();
+          continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
         break;
@@ -126,6 +143,7 @@ export const IntegrationsServiceRegisterRequest = {
     return {
       kind: isSet(object.kind) ? String(object.kind) : "",
       config: isObject(object.config) ? object.config : undefined,
+      displayName: isSet(object.displayName) ? String(object.displayName) : "",
     };
   },
 
@@ -133,6 +151,7 @@ export const IntegrationsServiceRegisterRequest = {
     const obj: any = {};
     message.kind !== undefined && (obj.kind = message.kind);
     message.config !== undefined && (obj.config = message.config);
+    message.displayName !== undefined && (obj.displayName = message.displayName);
     return obj;
   },
 
@@ -148,6 +167,7 @@ export const IntegrationsServiceRegisterRequest = {
     const message = createBaseIntegrationsServiceRegisterRequest();
     message.kind = object.kind ?? "";
     message.config = object.config ?? undefined;
+    message.displayName = object.displayName ?? "";
     return message;
   },
 };
@@ -698,7 +718,7 @@ export const ListAttachmentsResponse = {
 };
 
 function createBaseIntegrationItem(): IntegrationItem {
-  return { id: "", kind: "", createdAt: undefined, config: new Uint8Array() };
+  return { id: "", kind: "", displayName: "", createdAt: undefined, config: new Uint8Array() };
 }
 
 export const IntegrationItem = {
@@ -708,6 +728,9 @@ export const IntegrationItem = {
     }
     if (message.kind !== "") {
       writer.uint32(18).string(message.kind);
+    }
+    if (message.displayName !== "") {
+      writer.uint32(34).string(message.displayName);
     }
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(26).fork()).ldelim();
@@ -739,6 +762,13 @@ export const IntegrationItem = {
 
           message.kind = reader.string();
           continue;
+        case 4:
+          if (tag != 34) {
+            break;
+          }
+
+          message.displayName = reader.string();
+          continue;
         case 3:
           if (tag != 26) {
             break;
@@ -766,6 +796,7 @@ export const IntegrationItem = {
     return {
       id: isSet(object.id) ? String(object.id) : "",
       kind: isSet(object.kind) ? String(object.kind) : "",
+      displayName: isSet(object.displayName) ? String(object.displayName) : "",
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
       config: isSet(object.config) ? bytesFromBase64(object.config) : new Uint8Array(),
     };
@@ -775,6 +806,7 @@ export const IntegrationItem = {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
     message.kind !== undefined && (obj.kind = message.kind);
+    message.displayName !== undefined && (obj.displayName = message.displayName);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
     message.config !== undefined &&
       (obj.config = base64FromBytes(message.config !== undefined ? message.config : new Uint8Array()));
@@ -789,6 +821,7 @@ export const IntegrationItem = {
     const message = createBaseIntegrationItem();
     message.id = object.id ?? "";
     message.kind = object.kind ?? "";
+    message.displayName = object.displayName ?? "";
     message.createdAt = object.createdAt ?? undefined;
     message.config = object.config ?? new Uint8Array();
     return message;
