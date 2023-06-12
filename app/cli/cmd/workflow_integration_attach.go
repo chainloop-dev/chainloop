@@ -16,15 +16,40 @@
 package cmd
 
 import (
+	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
 )
 
 func newWorkflowIntegrationAttachCmd() *cobra.Command {
+	var options []string
+	var integrationID, workflowID string
+
 	cmd := &cobra.Command{
-		Use:   "attach",
-		Short: "Attach a third-party integration to a workflow",
+		Use:     "attach",
+		Short:   "Attach an existing registered integration to a workflow",
+		Example: `  chainloop workflow integration attach --workflow deadbeef --integration beefdoingwell --options projectName=MyProject`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			opts, err := parseKeyValOpts(options)
+			if err != nil {
+				return err
+			}
+
+			res, err := action.NewWorkflowIntegrationAttach(actionOpts).Run(integrationID, workflowID, opts)
+			if err != nil {
+				return err
+			}
+
+			return encodeOutput([]*action.IntegrationAttachmentItem{res}, integrationAttachmentListTableOutput)
+		},
 	}
 
+	cmd.Flags().StringVar(&integrationID, "integration", "", "ID of the integration already registered in this organization")
+	cobra.CheckErr(cmd.MarkFlagRequired("integration"))
+
+	cmd.Flags().StringVar(&workflowID, "workflow", "", "ID of the workflow to attach this integration")
+	cobra.CheckErr(cmd.MarkFlagRequired("workflow"))
+
+	cmd.Flags().StringSliceVar(&options, "options", nil, "integration attachment arguments")
 	cmd.AddCommand(newWorkflowIntegrationAttachDependencyTrackCmd())
 
 	return cmd

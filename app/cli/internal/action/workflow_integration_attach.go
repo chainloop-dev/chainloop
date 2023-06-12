@@ -30,17 +30,10 @@ func NewWorkflowIntegrationAttach(cfg *ActionsOpts) *WorkflowIntegrationAttach {
 	return &WorkflowIntegrationAttach{cfg}
 }
 
-func (action *WorkflowIntegrationAttach) RunDependencyTrack(integrationID, workflowID, projectID, projectName string) (*IntegrationAttachmentItem, error) {
+func (action *WorkflowIntegrationAttach) Run(integrationID, workflowID string, options map[string]any) (*IntegrationAttachmentItem, error) {
 	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
 
-	config := make(map[string]any)
-	if projectID != "" {
-		config["projectID"] = projectID
-	} else if projectName != "" {
-		config["projectName"] = projectName
-	}
-
-	requestConfig, err := structpb.NewStruct(config)
+	requestConfig, err := structpb.NewStruct(options)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse arguments: %w", err)
 	}

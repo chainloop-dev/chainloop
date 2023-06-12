@@ -16,18 +16,57 @@
 package cmd
 
 import (
+	"fmt"
+	"strings"
+
+	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
 )
 
 var integrationDescription string
 
-func newConfigIntegratioAddCmd() *cobra.Command {
+func newConfigIntegrationAddCmd() *cobra.Command {
+	var options []string
+
 	cmd := &cobra.Command{
-		Use:   "add",
-		Short: "Add integration",
+		Use:     "add INTEGRATION_ID --options key=value,key=value",
+		Short:   "Register a new instance of an integration",
+		Example: `  chainloop integration add dependencytrack --options instance=https://deptrack.company.com,apiKey=1234567890`,
+		Args:    cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			opts, err := parseKeyValOpts(options)
+			if err != nil {
+				return err
+			}
+
+			res, err := action.NewIntegrationAdd(actionOpts).Run(args[0], integrationDescription, opts)
+			if err != nil {
+				return err
+			}
+
+			return encodeOutput([]*action.IntegrationItem{res}, integrationListTableOutput)
+		},
 	}
 
 	cmd.PersistentFlags().StringVar(&integrationDescription, "description", "", "integration registration description")
+	cmd.Flags().StringVar(&integrationDescription, "description", "", "integration registration description")
+	cmd.Flags().StringSliceVar(&options, "options", nil, "integration arguments")
+
+	// We maintain the dependencytrack integration as a separate command for now
+	// for compatibility reasons
 	cmd.AddCommand(newIntegrationAddDepTrackCmd())
+
 	return cmd
+}
+
+func parseKeyValOpts(opts []string) (map[string]any, error) {
+	var options = make(map[string]any)
+	for _, opt := range opts {
+		kv := strings.Split(opt, "=")
+		if len(kv) != 2 {
+			return nil, fmt.Errorf("invalid option %q, the expected format is key=value", opt)
+		}
+		options[kv[0]] = kv[1]
+	}
+	return options, nil
 }

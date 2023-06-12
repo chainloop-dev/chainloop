@@ -29,9 +29,10 @@ func newIntegrationAddDepTrackCmd() *cobra.Command {
 	var allowAutoCreate bool
 
 	cmd := &cobra.Command{
-		Use:     "dependency-track",
-		Aliases: []string{"deptrack"},
-		Short:   "Add Dependency-Track integration ",
+		Use:        "dependency-track",
+		Aliases:    []string{"deptrack"},
+		Short:      "Add Dependency-Track integration ",
+		Deprecated: "use `chainloop integration add` instead",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fmt.Print("Enter API Token: \n")
 			apiKey, err := term.ReadPassword(syscall.Stdin)
@@ -39,7 +40,13 @@ func newIntegrationAddDepTrackCmd() *cobra.Command {
 				return fmt.Errorf("retrieving token from stdin: %w", err)
 			}
 
-			res, err := action.NewIntegrationAddDeptrack(actionOpts).Run(instance, string(apiKey), integrationDescription, allowAutoCreate)
+			opts := map[string]any{
+				"instanceURI":     instance,
+				"apiKey":          string(apiKey),
+				"allowAutoCreate": allowAutoCreate,
+			}
+
+			res, err := action.NewIntegrationAdd(actionOpts).Run("dependencytrack", integrationDescription, opts)
 			if err != nil {
 				return err
 			}
