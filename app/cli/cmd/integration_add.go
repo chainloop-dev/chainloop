@@ -16,20 +16,48 @@
 package cmd
 
 import (
+	"fmt"
+	"strings"
+
+	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
 )
 
 var integrationDescription string
 
-func newConfigIntegratioAddCmd() *cobra.Command {
+func newConfigIntegrationAddCmd() *cobra.Command {
+	var options []string
+
 	cmd := &cobra.Command{
-		Use:   "add",
-		Short: "Add integration",
-		// TODO(miguel): we'll enable deprecated warnings in the future
-		// Deprecated: "use `chainloop integration register` instead",
+		Use:   "add INTEGRATION_ID --options key=value,key=value",
+		Short: "Register a new instance of an integration",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var opts = make(map[string]any)
+			for _, opt := range options {
+				kv := strings.Split(opt, "=")
+				if len(kv) != 2 {
+					return fmt.Errorf("invalid option %q, the expected format is key=value", opt)
+				}
+				opts[kv[0]] = kv[1]
+			}
+
+			res, err := action.NewIntegrationRegister(actionOpts).Run(args[0], integrationDescription, opts)
+			if err != nil {
+				return err
+			}
+
+			return encodeOutput([]*action.IntegrationItem{res}, integrationListTableOutput)
+		},
 	}
 
 	cmd.PersistentFlags().StringVar(&integrationDescription, "description", "", "integration registration description")
+	cmd.Flags().StringVar(&integrationDescription, "description", "", "integration registration description")
+	cmd.Flags().StringSliceVar(&options, "options", nil, "integration arguments")
+
+	// We maintain the dependencytrack integration as a separate command for now
+	// for compatibility reasons
 	cmd.AddCommand(newIntegrationAddDepTrackCmd())
+
 	return cmd
 }
