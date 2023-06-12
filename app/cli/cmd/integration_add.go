@@ -29,9 +29,10 @@ func newConfigIntegrationAddCmd() *cobra.Command {
 	var options []string
 
 	cmd := &cobra.Command{
-		Use:   "add INTEGRATION_ID --options key=value,key=value",
-		Short: "Register a new instance of an integration",
-		Args:  cobra.ExactArgs(1),
+		Use:     "add INTEGRATION_ID --options key=value,key=value",
+		Short:   "Register a new instance of an integration",
+		Example: `  chainloop integration add dependencytrack --options instance=https://deptrack.company.com,apiKey=1234567890`,
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var opts = make(map[string]any)
 			for _, opt := range options {
