@@ -30,8 +30,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"google.golang.org/protobuf/types/known/anypb"
-	"google.golang.org/protobuf/types/known/emptypb"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func (s *dispatcherTestSuite) TestCalculateDispatchQueue() {
@@ -151,17 +150,20 @@ func (s *dispatcherTestSuite) SetupTest() {
 	customImplementation := mockedSDK.NewFanOutExtension(s.T())
 	customImplementation.On("Register", ctx, mock.Anything).Return(&sdk.RegistrationResponse{Configuration: []byte("deadbeef")}, nil)
 	customImplementation.On("Attach", ctx, mock.Anything).Return(&sdk.AttachmentResponse{Configuration: []byte("deadbeef")}, nil)
+	fanOutSchemas := &sdk.InputSchema{Registration: struct{ TestProperty string }{}, Attachment: struct{ TestProperty string }{}}
 
 	b, err := sdk.NewFanOut(
 		&sdk.NewParams{
-			ID:      "SBOM_INTEGRATION",
-			Version: "1.0",
+			ID:          "SBOM_INTEGRATION",
+			Version:     "1.0",
+			InputSchema: fanOutSchemas,
 		},
 		sdk.WithInputMaterial(v1.CraftingSchema_Material_SBOM_CYCLONEDX_JSON),
 	)
 	require.NoError(s.T(), err)
 
-	config, _ := anypb.New(&emptypb.Empty{})
+	// Registration configuration
+	config, _ := structpb.NewStruct(map[string]interface{}{"TestProperty": "testValue"})
 
 	s.cdxIntegrationBackend = &mockedIntegration{FanOutExtension: customImplementation, FanOutIntegration: b}
 	s.cdxIntegration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, s.cdxIntegrationBackend, config)
@@ -170,8 +172,9 @@ func (s *dispatcherTestSuite) SetupTest() {
 	// Any material integration
 	b, err = sdk.NewFanOut(
 		&sdk.NewParams{
-			ID:      "ANY_INTEGRATION",
-			Version: "1.0",
+			ID:          "ANY_INTEGRATION",
+			Version:     "1.0",
+			InputSchema: fanOutSchemas,
 		},
 		sdk.WithInputMaterial(v1.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED),
 	)
@@ -184,8 +187,9 @@ func (s *dispatcherTestSuite) SetupTest() {
 	// Attestation integration
 	b, err = sdk.NewFanOut(
 		&sdk.NewParams{
-			ID:      "OCI_INTEGRATION",
-			Version: "1.0",
+			ID:          "OCI_INTEGRATION",
+			Version:     "1.0",
+			InputSchema: fanOutSchemas,
 		},
 		sdk.WithEnvelope(),
 	)

@@ -4,4 +4,3 @@ directories:
   - app/controlplane/api
   - app/artifact-cas/api
   - internal/credentials/api
-  - app/controlplane/extensions

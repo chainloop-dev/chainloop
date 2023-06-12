@@ -16,48 +16,58 @@
 package dependencytrack
 
 import (
+	"encoding/json"
 	"testing"
 
-	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValidateRegistrationInput(t *testing.T) {
 	testCases := []struct {
 		name   string
-		input  *api.RegistrationRequest
+		input  map[string]interface{}
 		errMsg string
 	}{
 		{
 			name:   "missing instance URL",
-			input:  &api.RegistrationRequest{},
-			errMsg: "invalid RegistrationRequest.InstanceUri",
+			input:  map[string]interface{}{},
+			errMsg: "missing properties: 'instanceURI'",
 		},
 		{
 			name:   "invalid instance URL",
-			input:  &api.RegistrationRequest{InstanceUri: "localhost"},
-			errMsg: "invalid RegistrationRequest.InstanceUri",
+			input:  map[string]interface{}{"instanceURI": "localhost"},
+			errMsg: "is not valid 'uri'",
 		},
 		{
 			name:   "missing API key",
-			input:  &api.RegistrationRequest{InstanceUri: "https://foo.com"},
-			errMsg: "invalid RegistrationRequest.ApiKey",
+			input:  map[string]interface{}{"instanceURI": "https://foo.com"},
+			errMsg: "missing properties: 'apiKey'",
 		},
 		{
 			name:  "valid request",
-			input: &api.RegistrationRequest{InstanceUri: "http://localhost:8080", ApiKey: "api-key"},
+			input: map[string]interface{}{"instanceURI": "https://foo.com", "apiKey": "api-key"},
 		},
 		{
 			name:  "valid request with path",
-			input: &api.RegistrationRequest{InstanceUri: "http://localhost:8080/path", ApiKey: "api-key"},
+			input: map[string]interface{}{"instanceURI": "https://foo.com:3000/path", "apiKey": "api-key"},
+		},
+		{
+			name:  "valid request with allowAutoCreate",
+			input: map[string]interface{}{"instanceURI": "https://foo.com:3000/path", "apiKey": "api-key", "allowAutoCreate": true},
 		},
 	}
 
+	integration, err := New(nil)
+	require.NoError(t, err)
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.input.Validate()
+			payload, err := json.Marshal(tc.input)
+			require.NoError(t, err)
+			err = integration.ValidateRegistrationRequest(payload)
 			if tc.errMsg != "" {
 				assert.ErrorContains(t, err, tc.errMsg)
 			} else {
@@ -70,27 +80,37 @@ func TestValidateRegistrationInput(t *testing.T) {
 func TestValidateAttachmentInput(t *testing.T) {
 	testCases := []struct {
 		name   string
-		input  *api.AttachmentRequest
+		input  map[string]interface{}
 		errMsg string
 	}{
 		{
 			name:   "missing project info",
-			input:  &api.AttachmentRequest{},
-			errMsg: "invalid AttachmentRequest.Project",
+			input:  map[string]interface{}{},
+			errMsg: "missing properties: 'projectName'",
 		},
 		{
 			name:  "valid request, project ID",
-			input: &api.AttachmentRequest{Project: &api.AttachmentRequest_ProjectId{ProjectId: "project-id"}},
+			input: map[string]interface{}{"projectID": "project-id"},
 		},
 		{
 			name:  "valid request with name",
-			input: &api.AttachmentRequest{Project: &api.AttachmentRequest_ProjectName{ProjectName: "project-name"}},
+			input: map[string]interface{}{"projectName": "project-name"},
+		},
+		{
+			name:   "invalid with both",
+			input:  map[string]interface{}{"projectID": "project-id", "projectName": "project-name"},
+			errMsg: "valid against schemas at indexes 0 and 1",
 		},
 	}
 
+	integration, err := New(nil)
+	require.NoError(t, err)
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.input.Validate()
+			payload, err := json.Marshal(tc.input)
+			require.NoError(t, err)
+			err = integration.ValidateAttachmentRequest(payload)
 			if tc.errMsg != "" {
 				assert.ErrorContains(t, err, tc.errMsg)
 			} else {
@@ -100,68 +120,9 @@ func TestValidateAttachmentInput(t *testing.T) {
 	}
 }
 
-func TestValidateConfiguration(t *testing.T) {
-	testIntegrationConfig := func(allowAutoCreate bool) *registrationConfig {
-		return &registrationConfig{
-			AllowAutoCreate: allowAutoCreate,
-			Domain:          "domain",
-		}
-	}
-
-	testAttachmentConfig := func(projectID, projectName string) *api.AttachmentRequest {
-		req := &api.AttachmentRequest{}
-		if projectID != "" {
-			req.Project = &api.AttachmentRequest_ProjectId{ProjectId: projectID}
-		} else if projectName != "" {
-			req.Project = &api.AttachmentRequest_ProjectName{ProjectName: projectName}
-		}
-
-		return req
-	}
-
-	tests := []struct {
-		integrationConfig *registrationConfig
-		attachmentConfig  *api.AttachmentRequest
-		errorMsg          string
-	}{
-		{nil, nil, "invalid configuration"},
-		// autocreate required but not supported
-		{testIntegrationConfig(false), testAttachmentConfig("", "new-project"), "auto creation of projects is not supported in this integration"},
-		// autocreate required and supported
-		{testIntegrationConfig(true), testAttachmentConfig("", "new-project"), ""},
-		// Neither projectID nor autocreate provided
-		{testIntegrationConfig(false), testAttachmentConfig("", ""), "project id or name must be provided"},
-		// project ID provided
-		{testIntegrationConfig(false), testAttachmentConfig("pid", ""), ""},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.errorMsg, func(t *testing.T) {
-			err := validateAttachmentConfiguration(tc.integrationConfig, tc.attachmentConfig)
-			if tc.errorMsg != "" {
-				assert.ErrorContains(t, err, tc.errorMsg)
-			} else {
-				assert.Nil(t, err)
-			}
-		})
-	}
-}
-
 func TestNewIntegration(t *testing.T) {
-	i, err := New(nil)
+	_, err := New(nil)
 	assert.NoError(t, err)
-
-	assert.Equal(t, &sdk.IntegrationInfo{
-		ID:      "dependencytrack",
-		Version: "1.0",
-		SubscribedInputs: &sdk.Inputs{
-			Materials: []*sdk.InputMaterial{
-				{
-					Type: schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
-				},
-			},
-		},
-	}, i.Describe())
 }
 
 func TestValidateExecuteOpts(t *testing.T) {

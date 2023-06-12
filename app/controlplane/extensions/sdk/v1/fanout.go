@@ -48,10 +48,9 @@ type FanOutIntegration struct {
 	attachmentJSONSchema   []byte
 	log                    log.Logger
 	Logger                 *log.Helper
-	debug                  bool
 }
 
-type Schema struct {
+type InputSchema struct {
 	// Structs defining the registration and attachment schemas
 	Registration, Attachment any
 }
@@ -150,7 +149,7 @@ type InputMaterial struct {
 type NewParams struct {
 	ID, Version string
 	Logger      log.Logger
-	Schema      *Schema
+	InputSchema *InputSchema
 }
 
 func NewFanOut(p *NewParams, opts ...NewOpt) (*FanOutIntegration, error) {
@@ -179,44 +178,32 @@ func NewFanOut(p *NewParams, opts ...NewOpt) (*FanOutIntegration, error) {
 		return nil, err
 	}
 
-	// Debugging mode
-	if c.debug {
-		debugInformation(c)
-	}
-
 	return c, nil
-}
-
-func debugInformation(c *FanOutIntegration) {
-	fmt.Println("### DEBUG mode enabled ###")
-	fmt.Println(c.String())
-	fmt.Printf("registration schema\n %s\n", c.registrationJSONSchema)
-	fmt.Printf("attachmentSchema schema\n %s\n", c.attachmentJSONSchema)
 }
 
 func validateAndMarshalSchema(p *NewParams, c *FanOutIntegration) error {
 	// Schema
-	if p.Schema == nil {
-		return fmt.Errorf("schema is required")
+	if p.InputSchema == nil {
+		return fmt.Errorf("input schema is required")
 	}
 
 	// Registration schema
-	if p.Schema.Registration == nil {
+	if p.InputSchema.Registration == nil {
 		return fmt.Errorf("registration schema is required")
 	}
 
 	// Attachment schema
-	if p.Schema.Attachment == nil {
+	if p.InputSchema.Attachment == nil {
 		return fmt.Errorf("attachment schema is required")
 	}
 
 	// Try to generate JSON schemas
 	var err error
-	if c.registrationJSONSchema, err = generateJSONSchema(p.Schema.Registration); err != nil {
+	if c.registrationJSONSchema, err = generateJSONSchema(p.InputSchema.Registration); err != nil {
 		return fmt.Errorf("failed to generate registration schema: %w", err)
 	}
 
-	if c.attachmentJSONSchema, err = generateJSONSchema(p.Schema.Attachment); err != nil {
+	if c.attachmentJSONSchema, err = generateJSONSchema(p.InputSchema.Attachment); err != nil {
 		return fmt.Errorf("failed to generate attachment schema: %w", err)
 	}
 
@@ -367,13 +354,6 @@ func WithInputMaterial(materialType schemaapi.CraftingSchema_Material_MaterialTy
 		default: // Materials struct contains data
 			c.subscribedInputs.Materials = append(c.subscribedInputs.Materials, material)
 		}
-	}
-}
-
-// Enable/disable debug mode
-func WithDebug(d bool) NewOpt {
-	return func(c *FanOutIntegration) {
-		c.debug = d
 	}
 }
 

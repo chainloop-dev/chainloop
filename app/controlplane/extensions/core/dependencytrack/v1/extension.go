@@ -65,11 +65,11 @@ func New(l log.Logger) (sdk.FanOut, error) {
 			ID:      "dependencytrack",
 			Version: "1.0",
 			Logger:  l,
-			Schema: &sdk.Schema{
+			InputSchema: &sdk.InputSchema{
 				Registration: registrationRequest{},
 				Attachment:   attachmentRequest{},
 			},
-		}, sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON), sdk.WithDebug(true))
+		}, sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON))
 
 	if err != nil {
 		return nil, err

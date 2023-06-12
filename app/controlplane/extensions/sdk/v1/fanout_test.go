@@ -22,7 +22,13 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+var inputSchema = &sdk.InputSchema{
+	Registration: struct{ TestProperty string }{TestProperty: "test"},
+	Attachment:   struct{ TestProperty string }{TestProperty: "test"},
+}
 
 func TestNewBaseIntegration(t *testing.T) {
 	testCases := []struct {
@@ -33,14 +39,23 @@ func TestNewBaseIntegration(t *testing.T) {
 		opts        []sdk.NewOpt
 		errMsg      string
 		wantInput   *sdk.Inputs
+		schema      *sdk.InputSchema
 	}{
 		{name: "invalid - missing id", description: "desc", errMsg: "id is required"},
 		{name: "invalid - missing version", id: "id", description: "desc", errMsg: "version is required"},
 		{name: "invalid - need one input", id: "id", version: "123", description: "description", errMsg: "at least one input"},
-		{name: "ok - has envelope", id: "id", version: "123", description: "description", opts: []sdk.NewOpt{sdk.WithEnvelope()}, wantInput: &sdk.Inputs{DSSEnvelope: true}},
+		{name: "invalid - missing schema", id: "id", version: "123", description: "description",
+			opts: []sdk.NewOpt{sdk.WithEnvelope()}, wantInput: &sdk.Inputs{DSSEnvelope: true},
+			errMsg: "input schema is required",
+		},
+		{name: "ok - has envelope", id: "id", version: "123", description: "description",
+			opts: []sdk.NewOpt{sdk.WithEnvelope()}, wantInput: &sdk.Inputs{DSSEnvelope: true},
+			schema: inputSchema,
+		},
 		{name: "ok - generic material", id: "id", version: "123", description: "description",
 			opts:      []sdk.NewOpt{sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED)},
 			wantInput: &sdk.Inputs{Materials: []*sdk.InputMaterial{{Type: schemaapi.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED}}},
+			schema:    inputSchema,
 		},
 		{
 			name: "ok - specific material", id: "id", version: "123", description: "description",
@@ -52,6 +67,7 @@ func TestNewBaseIntegration(t *testing.T) {
 					Type: schemaapi.CraftingSchema_Material_JUNIT_XML,
 				},
 			}},
+			schema: inputSchema,
 		},
 		{
 			name: "ok - both material and envelope", id: "id", version: "123", description: "description",
@@ -64,6 +80,7 @@ func TestNewBaseIntegration(t *testing.T) {
 					Type: schemaapi.CraftingSchema_Material_JUNIT_XML,
 				},
 			}, DSSEnvelope: true},
+			schema: inputSchema,
 		},
 		{
 			name: "ok - multiple materials and envelope", id: "id", version: "123", description: "description",
@@ -80,6 +97,7 @@ func TestNewBaseIntegration(t *testing.T) {
 					Type: schemaapi.CraftingSchema_Material_CONTAINER_IMAGE,
 				},
 			}, DSSEnvelope: true},
+			schema: inputSchema,
 		},
 		{
 			name: "ok - cant have both generic and specific", id: "id", version: "123", description: "description",
@@ -89,6 +107,7 @@ func TestNewBaseIntegration(t *testing.T) {
 				sdk.WithEnvelope(),
 			},
 			errMsg: "can't subscribe to specific material",
+			schema: inputSchema,
 		},
 	}
 
@@ -96,13 +115,14 @@ func TestNewBaseIntegration(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := sdk.NewFanOut(
 				&sdk.NewParams{
-					ID:      tc.id,
-					Version: tc.version,
+					ID:          tc.id,
+					Version:     tc.version,
+					InputSchema: tc.schema,
 				}, tc.opts...)
 			if tc.errMsg != "" {
 				assert.ErrorContains(t, err, tc.errMsg)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				d := got.Describe()
 				assert.Equal(t, tc.wantInput, d.SubscribedInputs)
 				assert.Equal(t, tc.id, d.ID)
@@ -164,8 +184,8 @@ func TestString(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := sdk.NewFanOut(&sdk.NewParams{ID: tc.id, Version: tc.version}, tc.opts...)
-			assert.NoError(t, err)
+			got, err := sdk.NewFanOut(&sdk.NewParams{ID: tc.id, Version: tc.version, InputSchema: inputSchema}, tc.opts...)
+			require.NoError(t, err)
 			assert.Equal(t, tc.want, got.String())
 		})
 	}
