@@ -110,7 +110,10 @@ func (i *Integration) Register(_ context.Context, req *sdk.RegistrationRequest) 
 	- To: %s
 	`
 	body := fmt.Sprintf(tpl, i.Describe().ID, i.Describe().Version, host, port, user, from, to)
-	sendEmail(host, port, user, password, from, to, "", subject, body)
+	err = sendEmail(host, port, user, password, from, to, "", subject, body)
+	if err != nil {
+		return nil, fmt.Errorf("sending an email: %w", err)
+	}
 
 	return response, nil
 }
@@ -187,7 +190,10 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 This email has been delivered via integration %s version %s.
 	`
 	body := fmt.Sprintf(tpl, req.WorkflowID, jsonBytes, i.Describe().ID, i.Describe().Version)
-	sendEmail(host, port, user, password, from, to, ac.Cc, subject, body)
+	err = sendEmail(host, port, user, password, from, to, ac.Cc, subject, body)
+	if err != nil {
+		return fmt.Errorf("sending an email: %w", err)
+	}
 
 	return nil
 }
