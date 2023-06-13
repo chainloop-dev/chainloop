@@ -34,7 +34,7 @@ type Integration struct {
 // see https://github.com/invopop/jsonschema#example for more information
 type registrationRequest struct {
 	// TestURL is a required, valid URL
-	TestURL string `json:"testInput" jsonschema:"format=uri"`
+	TestURL string `json:"testURL" jsonschema:"format=uri"`
 }
 
 type attachmentRequest struct{}
