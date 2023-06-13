@@ -37,7 +37,8 @@ type registrationRequest struct {
 	User     string `json:"user" jsonschema:"minLength=1,description=The username to use for the SMTP authentication."`
 	Password string `json:"password" jsonschema:"description=The password to use for the SMTP authentication."`
 	Host     string `json:"host" jsonschema:"description=The host to use for the SMTP authentication."`
-	Port     string `json:"port" jsonschema:"description=The port to use for the SMTP authentication"`
+	// TODO: Make the port an integer
+	Port string `json:"port" jsonschema:"description=The port to use for the SMTP authentication"`
 }
 
 type registrationState struct {
@@ -49,11 +50,11 @@ type registrationState struct {
 }
 
 type attachmentRequest struct {
-	Cc string `json:"cc,omitempty" jsonschema:"format=email,description=The email address of the carbon copy recipient."`
+	CC string `json:"cc,omitempty" jsonschema:"format=email,description=The email address of the carbon copy recipient."`
 }
 
 type attachmentState struct {
-	Cc string `json:"cc"`
+	CC string `json:"cc"`
 }
 
 func New(l log.Logger) (sdk.FanOut, error) {
@@ -87,15 +88,7 @@ func (i *Integration) Register(_ context.Context, req *sdk.RegistrationRequest) 
 		return nil, fmt.Errorf("invalid registration request: %w", err)
 	}
 
-	response := &sdk.RegistrationResponse{}
-
 	to, from, user, password, host, port := request.To, request.From, request.User, request.Password, request.Host, request.Port
-	rawConfig, err := sdk.ToConfig(&registrationState{To: to, From: from, User: user, Host: host, Port: port})
-	if err != nil {
-		return nil, fmt.Errorf("marshalling configuration: %w", err)
-	}
-	response.Configuration = rawConfig
-	response.Credentials = &sdk.Credentials{Password: password}
 
 	// validate and notify
 	subject := "[chainloop] New SMTP integration added!"
@@ -110,10 +103,18 @@ func (i *Integration) Register(_ context.Context, req *sdk.RegistrationRequest) 
 	- To: %s
 	`
 	body := fmt.Sprintf(tpl, i.Describe().ID, i.Describe().Version, host, port, user, from, to)
-	err = sendEmail(host, port, user, password, from, to, "", subject, body)
+	err := sendEmail(host, port, user, password, from, to, "", subject, body)
 	if err != nil {
 		return nil, fmt.Errorf("sending an email: %w", err)
 	}
+
+	response := &sdk.RegistrationResponse{}
+	rawConfig, err := sdk.ToConfig(&registrationState{To: to, From: from, User: user, Host: host, Port: port})
+	if err != nil {
+		return nil, fmt.Errorf("marshalling configuration: %w", err)
+	}
+	response.Configuration = rawConfig
+	response.Credentials = &sdk.Credentials{Password: password}
 
 	return response, nil
 }
@@ -128,13 +129,8 @@ func (i *Integration) Attach(_ context.Context, req *sdk.AttachmentRequest) (*sd
 		return nil, fmt.Errorf("invalid attachment request: %w", err)
 	}
 
-	var rc *registrationState
-	if err := sdk.FromConfig(req.RegistrationInfo.Configuration, &rc); err != nil {
-		return nil, errors.New("invalid registration configuration")
-	}
-
 	response := &sdk.AttachmentResponse{}
-	rawConfig, err := sdk.ToConfig(&attachmentState{Cc: request.Cc})
+	rawConfig, err := sdk.ToConfig(&attachmentState{CC: request.CC})
 	if err != nil {
 		return nil, fmt.Errorf("marshalling configuration: %w", err)
 	}
@@ -171,10 +167,8 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 		return fmt.Errorf("un-marshaling predicate: %w", err)
 	}
 	jsonBytes, err := json.MarshalIndent(statement, "", "  ")
-	i.Logger.Info("statement", string(jsonBytes))
 	if err != nil {
-		fmt.Println("Error marshaling JSON:", err)
-		return err
+		return fmt.Errorf("error marshaling JSON: %w", err)
 	}
 
 	// send the email
@@ -190,7 +184,7 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 This email has been delivered via integration %s version %s.
 	`
 	body := fmt.Sprintf(tpl, req.WorkflowID, jsonBytes, i.Describe().ID, i.Describe().Version)
-	err = sendEmail(host, port, user, password, from, to, ac.Cc, subject, body)
+	err = sendEmail(host, port, user, password, from, to, ac.CC, subject, body)
 	if err != nil {
 		return fmt.Errorf("sending an email: %w", err)
 	}
@@ -221,15 +215,14 @@ func validateExecuteRequest(req *sdk.ExecutionRequest) error {
 func sendEmail(host string, port string, user, password, from, to, cc, subject, body string) error {
 	message := "From: " + from + "\n" +
 		"To: " + to + "\n" +
-		"Cc: " + cc + "\n" +
+		"CC: " + cc + "\n" +
 		"Subject: " + subject + "\n\n" +
 		body
 
 	auth := nsmtp.PlainAuth("", user, password, host)
 	err := nsmtp.SendMail(host+":"+port, auth, from, []string{to}, []byte(message))
 	if err != nil {
-		fmt.Println("Error sending email1:", err)
-		return err
+		return fmt.Errorf("error sending email: %w", err)
 	}
 
 	return nil

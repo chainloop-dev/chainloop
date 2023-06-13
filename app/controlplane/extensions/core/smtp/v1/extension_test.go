@@ -36,7 +36,12 @@ func TestValidateRegistrationInput(t *testing.T) {
 		},
 		{
 			name:  "valid request",
-			input: map[string]interface{}{"from": "test@example.com", "to": "test@example.com", "host": "localhost", "port": "25", "user": "test", "password": "test"},
+			input: map[string]interface{}{"from": "test@example.com", "to": "test@example.com", "host": "smtp.service.example.com", "port": "25", "user": "test", "password": "test"},
+		},
+		{
+			name:   "invalid email",
+			input:  map[string]interface{}{"from": "testexample.com", "to": "test@example.com", "host": "smtp.service.example.com", "port": "25", "user": "test", "password": "test"},
+			errMsg: "is not valid 'email'",
 		},
 	}
 
