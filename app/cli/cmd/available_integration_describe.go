@@ -22,7 +22,6 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/jedib0t/go-pretty/v6/table"
-	_ "github.com/santhosh-tekuri/jsonschema/v5"
 	"github.com/spf13/cobra"
 )
 
