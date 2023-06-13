@@ -372,5 +372,5 @@ func FromConfig(data Configuration, v any) error {
 // generate a JSON schema from a struct, see
 func generateJSONSchema(schema any) ([]byte, error) {
 	s := jsonschema.Reflect(schema)
-	return json.MarshalIndent(s, "", "  ")
+	return json.Marshal(s)
 }

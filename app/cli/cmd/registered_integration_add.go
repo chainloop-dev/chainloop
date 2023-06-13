@@ -43,7 +43,7 @@ func newRegisteredIntegrationAddCmd() *cobra.Command {
 				return err
 			}
 
-			return encodeOutput([]*action.RegisteredIntegrationItem{res}, integrationListTableOutput)
+			return encodeOutput([]*action.RegisteredIntegrationItem{res}, registeredIntegrationListTableOutput)
 		},
 	}
 
