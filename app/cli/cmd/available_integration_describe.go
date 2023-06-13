@@ -26,32 +26,25 @@ import (
 )
 
 func newAvailableIntegrationDescribeCmd() *cobra.Command {
+	var integrationID string
 	cmd := &cobra.Command{
 		Use:   "describe",
 		Short: "Describe integration",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			items, err := action.NewAvailableIntegrationList(actionOpts).Run()
+			item, err := action.NewAvailableIntegrationDescribe(actionOpts).Run(integrationID)
 			if err != nil {
 				return err
 			}
 
-			// Filter by ID
-			wantID, err := cmd.Flags().GetString("id")
-			if err != nil {
-				return err
+			if item == nil {
+				return fmt.Errorf("integration %q not found", integrationID)
 			}
 
-			for _, i := range items {
-				if i.ID == wantID {
-					return encodeOutput([]*action.AvailableIntegrationItem{i}, availableIntegrationDescribeTableOutput)
-				}
-			}
-
-			return fmt.Errorf("integration %q not found", wantID)
+			return encodeOutput([]*action.AvailableIntegrationItem{item}, availableIntegrationDescribeTableOutput)
 		},
 	}
 
-	cmd.Flags().String("id", "", "integration ID")
+	cmd.Flags().StringVar(&integrationID, "id", "", "integration ID")
 	err := cmd.MarkFlagRequired("id")
 	cobra.CheckErr(err)
 
