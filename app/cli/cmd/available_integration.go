@@ -19,12 +19,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newIntegrationCmd() *cobra.Command {
+func newAvailableIntegrationCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "integration",
-		Short: "Third party integrations",
+		Use:   "available",
+		Short: "Integrations available in the controlplane ready to be registered",
 	}
 
-	cmd.AddCommand(newRegisteredIntegrationCmd(), newAvailableIntegrationCmd())
+	cmd.AddCommand(newAvailableIntegrationListCmd(), newAvailableIntegrationDescribeCmd())
 	return cmd
 }

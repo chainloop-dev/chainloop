@@ -34,16 +34,16 @@ type DependencyTrack struct {
 // Request schemas for both registration and attachment
 type registrationRequest struct {
 	// The URL of the Dependency-Track instance
-	InstanceURI string `json:"instanceURI" jsonschema:"format=uri"`
-	APIKey      string `json:"apiKey"`
+	InstanceURI string `json:"instanceURI" jsonschema:"format=uri,description=The URL of the Dependency-Track instance"`
+	APIKey      string `json:"apiKey" jsonschema:"description=The API key to use for authentication"`
 	// Support the option to automatically create projects if requested (optional)
-	AllowAutoCreate bool `json:"allowAutoCreate,omitempty"`
+	AllowAutoCreate bool `json:"allowAutoCreate,omitempty" jsonschema:"description=Support of creating projects on demand"`
 }
 
 type attachmentRequest struct {
 	// Either one or the other
-	ProjectID   string `json:"projectID,omitempty" jsonschema:"oneof_required=projectID,minLength=1"`
-	ProjectName string `json:"projectName,omitempty" jsonschema:"oneof_required=projectName,minLength=1"`
+	ProjectID   string `json:"projectID,omitempty" jsonschema:"oneof_required=projectID,minLength=1,description=The ID of the existing project to send the SBOMs to"`
+	ProjectName string `json:"projectName,omitempty" jsonschema:"oneof_required=projectName,minLength=1,description=The name of the project to create and send the SBOMs to"`
 }
 
 // Internal state for both registration and attachment

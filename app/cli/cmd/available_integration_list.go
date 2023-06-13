@@ -17,46 +17,40 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
-	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 )
 
-func newRegisteredIntegrationListCmd() *cobra.Command {
+func newAvailableIntegrationListCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "list",
 		Aliases: []string{"ls"},
-		Short:   "List registered integrations",
+		Short:   "List available integrations",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewRegisteredIntegrationList(actionOpts).Run()
+			res, err := action.NewAvailableIntegrationList(actionOpts).Run()
 			if err != nil {
 				return err
 			}
 
-			return encodeOutput(res, registeredIntegrationListTableOutput)
+			return encodeOutput(res, availableIntegrationListTableOutput)
 		},
 	}
 
 	return cmd
 }
 
-func registeredIntegrationListTableOutput(items []*action.RegisteredIntegrationItem) error {
+func availableIntegrationListTableOutput(items []*action.AvailableIntegrationItem) error {
 	if len(items) == 0 {
-		fmt.Println("there are no third party integrations configured in your organization yet")
+		fmt.Println("there are no integrations available")
 		return nil
 	}
 
 	t := newTableWriter()
-	t.AppendHeader(table.Row{"ID", "Description", "Kind", "Config", "Created At"})
+	t.AppendHeader(table.Row{"ID", "Version"})
 	for _, i := range items {
-		var options []string
-		for k, v := range i.Config {
-			options = append(options, fmt.Sprintf("%s: %v", k, v))
-		}
-		t.AppendRow(table.Row{i.ID, i.Description, i.Kind, strings.Join(options, "\n"), i.CreatedAt.Format(time.RFC822)})
+		t.AppendRow(table.Row{i.ID, i.Version})
 		t.AppendSeparator()
 	}
 
