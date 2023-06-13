@@ -32,12 +32,12 @@ type Integration struct {
 }
 
 type registrationRequest struct {
-	To       string `json:"to" jsonschema:"required,format=email"`
-	From     string `json:"from" jsonschema:"required,format=email"`
-	User     string `json:"user" jsonschema:"required,minLength=1"`
-	Password string `json:"password" jsonschema:"required"`
-	Host     string `json:"host" jsonschema:"required,format="`
-	Port     string `json:"port" jsonschema:"required"`
+	To       string `json:"to" jsonschema:"format=email,description=The email address to send the email to."`
+	From     string `json:"from" jsonschema:"format=email,description=The email address of the sender."`
+	User     string `json:"user" jsonschema:"minLength=1,description=The username to use for the SMTP authentication."`
+	Password string `json:"password" jsonschema:"description=The password to use for the SMTP authentication."`
+	Host     string `json:"host" jsonschema:"description=The host to use for the SMTP authentication."`
+	Port     string `json:"port" jsonschema:"description=The port to use for the SMTP authentication"`
 }
 
 type registrationState struct {
@@ -49,7 +49,7 @@ type registrationState struct {
 }
 
 type attachmentRequest struct {
-	Cc string `json:"cc" jsonschema:"format=email"`
+	Cc string `json:"cc,omitempty" jsonschema:"format=email,description=The email address of the carbon copy recipient."`
 }
 
 type attachmentState struct {
