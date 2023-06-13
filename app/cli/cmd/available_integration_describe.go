@@ -22,11 +22,13 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/santhosh-tekuri/jsonschema/v5"
 	"github.com/spf13/cobra"
 )
 
 func newAvailableIntegrationDescribeCmd() *cobra.Command {
 	var integrationID string
+
 	cmd := &cobra.Command{
 		Use:   "describe",
 		Short: "Describe integration",
@@ -45,6 +47,7 @@ func newAvailableIntegrationDescribeCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&integrationID, "id", "", "integration ID")
+	cmd.Flags().BoolVar(&full, "full", false, "show the full output including JSON schemas")
 	err := cmd.MarkFlagRequired("id")
 	cobra.CheckErr(err)
 
@@ -63,27 +66,82 @@ func availableIntegrationDescribeTableOutput(items []*action.AvailableIntegratio
 	t.AppendRow(table.Row{i.ID, i.Version})
 	t.Render()
 
-	var prettyRegistrationJSON bytes.Buffer
-	err := json.Indent(&prettyRegistrationJSON, []byte(i.RegistrationJSONSchema), "", "  ")
-	if err != nil {
+	rt := newTableWriter()
+	rt.SetTitle("Registration inputs")
+	rt.AppendHeader(table.Row{"Field", "Type", "Required", "Description"})
+	if err := renderSchemaOptions(rt, i.Registration.Parsed); err != nil {
 		return err
 	}
-
-	rt := newTableWriter()
-	rt.SetTitle("Registration Schema")
-	rt.AppendRow(table.Row{prettyRegistrationJSON.String()})
 	rt.Render()
 
-	var prettyAttachmentJSON bytes.Buffer
-	err = json.Indent(&prettyAttachmentJSON, []byte(i.AttachmentJSONSchema), "", "  ")
-	if err != nil {
-		return err
+	if full {
+		var prettyRegistrationJSON bytes.Buffer
+		err := json.Indent(&prettyRegistrationJSON, []byte(i.Registration.Raw), "", "  ")
+		if err != nil {
+			return err
+		}
+
+		rt = newTableWriter()
+		rt.SetTitle("Registration JSON schema")
+		rt.AppendRow(table.Row{prettyRegistrationJSON.String()})
+		rt.Render()
 	}
 
-	at := newTableWriter()
-	at.SetTitle("Attachment schema")
-	at.AppendRow(table.Row{prettyAttachmentJSON.String()})
-	at.Render()
+	rt = newTableWriter()
+	rt.SetTitle("Attachment inputs")
+	rt.AppendHeader(table.Row{"Field", "Type", "Required", "Description"})
+	if err := renderSchemaOptions(rt, i.Attachment.Parsed); err != nil {
+		return err
+	}
+	rt.Render()
+
+	if full {
+		var prettyAttachmentJSON bytes.Buffer
+		err := json.Indent(&prettyAttachmentJSON, []byte(i.Attachment.Raw), "", "  ")
+		if err != nil {
+			return err
+		}
+		rt = newTableWriter()
+		rt.SetTitle("Attachment JSON schema")
+		rt.AppendRow(table.Row{prettyAttachmentJSON.String()})
+		rt.Render()
+	}
+
+	return nil
+}
+
+func renderSchemaOptions(t table.Writer, s *jsonschema.Schema) error {
+	// Schema with reference
+	if s.Ref != nil {
+		return renderSchemaOptions(t, s.Ref)
+	}
+
+	// Appended schemas
+	if s.AllOf != nil {
+		for _, s := range s.AllOf {
+			if err := renderSchemaOptions(t, s); err != nil {
+				return err
+			}
+		}
+	}
+
+	if s.Properties != nil {
+		requiredMap := make(map[string]bool)
+		for _, r := range s.Required {
+			requiredMap[r] = true
+		}
+
+		for k, v := range s.Properties {
+			if err := renderSchemaOptions(t, v); err != nil {
+				return err
+			}
+
+			// We do not support nested schemas
+			// They are restricted at build time
+			var required = requiredMap[k]
+			t.AppendRow(table.Row{k, v.Types[0], required, v.Description})
+		}
+	}
 
 	return nil
 }

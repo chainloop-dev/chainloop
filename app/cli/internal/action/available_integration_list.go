@@ -16,10 +16,13 @@
 package action
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"fmt"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/santhosh-tekuri/jsonschema/v5"
 )
 
 type AvailableIntegrationList struct {
@@ -27,10 +30,18 @@ type AvailableIntegrationList struct {
 }
 
 type AvailableIntegrationItem struct {
-	ID                     string `json:"id"`
-	Version                string `json:"version"`
-	RegistrationJSONSchema string `json:"registrationJSONschema"`
-	AttachmentJSONSchema   string `json:"attachmentJSONschema"`
+	ID           string      `json:"id"`
+	Version      string      `json:"version"`
+	Registration *JSONSchema `json:"registration"`
+	Attachment   *JSONSchema `json:"attachment"`
+}
+
+type JSONSchema struct {
+	// Show it as raw string so the json output contains it
+	Raw string `json:"schema"`
+	// Parsed schema so it can be used for validation or other purposes
+	// It's not shown in the json output
+	Parsed *jsonschema.Schema `json:"-"`
 }
 
 func NewAvailableIntegrationList(cfg *ActionsOpts) *AvailableIntegrationList {
@@ -64,9 +75,36 @@ func pbAvailableIntegrationItemToAction(in *pb.IntegrationsServiceListAvailableR
 
 	i := &AvailableIntegrationItem{
 		ID: in.GetId(), Version: in.GetVersion(),
-		RegistrationJSONSchema: string(in.GetRegistrationSchema()),
-		AttachmentJSONSchema:   string(in.GetAttachmentSchema()),
+		Registration: &JSONSchema{Raw: string(in.GetRegistrationSchema())},
+		Attachment:   &JSONSchema{Raw: string(in.GetAttachmentSchema())},
+	}
+
+	// Parse the schemas so they can be used for validation or other purposes
+	var err error
+	i.Registration.Parsed, err = compileJSONSchema(in.GetRegistrationSchema())
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile registration schema: %w", err)
+	}
+
+	i.Attachment.Parsed, err = compileJSONSchema(in.GetAttachmentSchema())
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile registration schema: %w", err)
 	}
 
 	return i, nil
+}
+
+func compileJSONSchema(in []byte) (*jsonschema.Schema, error) {
+	// Parse the schemas
+	compiler := jsonschema.NewCompiler()
+	// Enable format validation
+	compiler.AssertFormat = true
+	// Show description
+	compiler.ExtractAnnotations = true
+
+	if err := compiler.AddResource("schema.json", bytes.NewReader(in)); err != nil {
+		return nil, fmt.Errorf("failed to compile schema: %w", err)
+	}
+
+	return compiler.Compile("schema.json")
 }
