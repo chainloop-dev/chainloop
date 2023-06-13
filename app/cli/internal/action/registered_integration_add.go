@@ -23,15 +23,15 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-type IntegrationAdd struct {
+type RegisteredIntegrationAdd struct {
 	cfg *ActionsOpts
 }
 
-func NewIntegrationAdd(cfg *ActionsOpts) *IntegrationAdd {
-	return &IntegrationAdd{cfg}
+func NewRegisteredIntegrationAdd(cfg *ActionsOpts) *RegisteredIntegrationAdd {
+	return &RegisteredIntegrationAdd{cfg}
 }
 
-func (action *IntegrationAdd) Run(extensionID, description string, options map[string]any) (*IntegrationItem, error) {
+func (action *RegisteredIntegrationAdd) Run(extensionID, description string, options map[string]any) (*RegisteredIntegrationItem, error) {
 	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
 
 	// Transform to structpb for transport
@@ -49,5 +49,5 @@ func (action *IntegrationAdd) Run(extensionID, description string, options map[s
 		return nil, err
 	}
 
-	return pbIntegrationItemToAction(i.Result)
+	return pbRegisteredIntegrationItemToAction(i.Result)
 }

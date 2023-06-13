@@ -24,7 +24,7 @@ import (
 	"golang.org/x/term"
 )
 
-func newIntegrationAddDepTrackCmd() *cobra.Command {
+func newRegisteredIntegrationAddDepTrackCmd() *cobra.Command {
 	var instance, integrationDescription string
 	var allowAutoCreate bool
 
@@ -32,7 +32,7 @@ func newIntegrationAddDepTrackCmd() *cobra.Command {
 		Use:        "dependency-track",
 		Aliases:    []string{"deptrack"},
 		Short:      "Add Dependency-Track integration ",
-		Deprecated: "use `chainloop integration add` instead",
+		Deprecated: "use `chainloop integration registered add` instead",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fmt.Print("Enter API Token: \n")
 			apiKey, err := term.ReadPassword(syscall.Stdin)
@@ -46,12 +46,12 @@ func newIntegrationAddDepTrackCmd() *cobra.Command {
 				"allowAutoCreate": allowAutoCreate,
 			}
 
-			res, err := action.NewIntegrationAdd(actionOpts).Run("dependencytrack", integrationDescription, opts)
+			res, err := action.NewRegisteredIntegrationAdd(actionOpts).Run("dependencytrack", integrationDescription, opts)
 			if err != nil {
 				return err
 			}
 
-			return encodeOutput([]*action.IntegrationItem{res}, integrationListTableOutput)
+			return encodeOutput([]*action.RegisteredIntegrationItem{res}, integrationListTableOutput)
 		},
 	}
 

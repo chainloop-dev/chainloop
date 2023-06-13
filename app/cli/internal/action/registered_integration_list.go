@@ -24,11 +24,11 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
-type IntegrationList struct {
+type RegisteredIntegrationList struct {
 	cfg *ActionsOpts
 }
 
-type IntegrationItem struct {
+type RegisteredIntegrationItem struct {
 	ID string `json:"id"`
 	// Integration backend kind, i.e slack, pagerduty, etc
 	Kind string `json:"name"`
@@ -38,20 +38,20 @@ type IntegrationItem struct {
 	Config      map[string]interface{} `json:"config"`
 }
 
-func NewIntegrationList(cfg *ActionsOpts) *IntegrationList {
-	return &IntegrationList{cfg}
+func NewRegisteredIntegrationList(cfg *ActionsOpts) *RegisteredIntegrationList {
+	return &RegisteredIntegrationList{cfg}
 }
 
-func (action *IntegrationList) Run() ([]*IntegrationItem, error) {
+func (action *RegisteredIntegrationList) Run() ([]*RegisteredIntegrationItem, error) {
 	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
 	resp, err := client.ListRegistrations(context.Background(), &pb.IntegrationsServiceListRegistrationsRequest{})
 	if err != nil {
 		return nil, err
 	}
 
-	result := make([]*IntegrationItem, 0, len(resp.Result))
+	result := make([]*RegisteredIntegrationItem, 0, len(resp.Result))
 	for _, p := range resp.Result {
-		i, err := pbIntegrationItemToAction(p)
+		i, err := pbRegisteredIntegrationItemToAction(p)
 		if err != nil {
 			return nil, err
 		}
@@ -62,12 +62,12 @@ func (action *IntegrationList) Run() ([]*IntegrationItem, error) {
 	return result, nil
 }
 
-func pbIntegrationItemToAction(in *pb.RegisteredIntegrationItem) (*IntegrationItem, error) {
+func pbRegisteredIntegrationItemToAction(in *pb.RegisteredIntegrationItem) (*RegisteredIntegrationItem, error) {
 	if in == nil {
 		return nil, errors.New("nil input")
 	}
 
-	i := &IntegrationItem{
+	i := &RegisteredIntegrationItem{
 		Kind: in.GetKind(), ID: in.GetId(),
 		Description: in.GetDescription(),
 		CreatedAt:   toTimePtr(in.GetCreatedAt().AsTime()),

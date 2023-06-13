@@ -23,14 +23,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newConfigIntegrationAddCmd() *cobra.Command {
+func newRegisteredIntegrationAddCmd() *cobra.Command {
 	var options []string
 	var integrationDescription string
 
 	cmd := &cobra.Command{
 		Use:     "add INTEGRATION_ID --options key=value,key=value",
 		Short:   "Register a new instance of an integration",
-		Example: `  chainloop integration add dependencytrack --options instance=https://deptrack.company.com,apiKey=1234567890`,
+		Example: `  chainloop integration registered add dependencytrack --options instance=https://deptrack.company.com,apiKey=1234567890`,
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts, err := parseKeyValOpts(options)
@@ -38,12 +38,12 @@ func newConfigIntegrationAddCmd() *cobra.Command {
 				return err
 			}
 
-			res, err := action.NewIntegrationAdd(actionOpts).Run(args[0], integrationDescription, opts)
+			res, err := action.NewRegisteredIntegrationAdd(actionOpts).Run(args[0], integrationDescription, opts)
 			if err != nil {
 				return err
 			}
 
-			return encodeOutput([]*action.IntegrationItem{res}, integrationListTableOutput)
+			return encodeOutput([]*action.RegisteredIntegrationItem{res}, integrationListTableOutput)
 		},
 	}
 
@@ -52,7 +52,7 @@ func newConfigIntegrationAddCmd() *cobra.Command {
 
 	// We maintain the dependencytrack integration as a separate command for now
 	// for compatibility reasons
-	cmd.AddCommand(newIntegrationAddDepTrackCmd())
+	cmd.AddCommand(newRegisteredIntegrationAddDepTrackCmd())
 
 	return cmd
 }
