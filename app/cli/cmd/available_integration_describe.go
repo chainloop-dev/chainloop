@@ -22,7 +22,6 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/jedib0t/go-pretty/v6/table"
-	"github.com/santhosh-tekuri/jsonschema/v5"
 	"github.com/spf13/cobra"
 )
 
@@ -66,82 +65,53 @@ func availableIntegrationDescribeTableOutput(items []*action.AvailableIntegratio
 	t.AppendRow(table.Row{i.ID, i.Version})
 	t.Render()
 
-	rt := newTableWriter()
-	rt.SetTitle("Registration inputs")
-	rt.AppendHeader(table.Row{"Field", "Type", "Required", "Description"})
-	if err := renderSchemaOptions(rt, i.Registration.Parsed); err != nil {
+	if err := renderSchemaTable("Registration inputs", i.Registration.Properties); err != nil {
 		return err
 	}
-	rt.Render()
 
 	if full {
-		var prettyRegistrationJSON bytes.Buffer
-		err := json.Indent(&prettyRegistrationJSON, []byte(i.Registration.Raw), "", "  ")
-		if err != nil {
+		if err := renderSchemaRaw("Registration JSON schema", i.Registration.Raw); err != nil {
 			return err
 		}
-
-		rt = newTableWriter()
-		rt.SetTitle("Registration JSON schema")
-		rt.AppendRow(table.Row{prettyRegistrationJSON.String()})
-		rt.Render()
 	}
 
-	rt = newTableWriter()
-	rt.SetTitle("Attachment inputs")
-	rt.AppendHeader(table.Row{"Field", "Type", "Required", "Description"})
-	if err := renderSchemaOptions(rt, i.Attachment.Parsed); err != nil {
+	if err := renderSchemaTable("Attachment inputs", i.Attachment.Properties); err != nil {
 		return err
 	}
-	rt.Render()
 
 	if full {
-		var prettyAttachmentJSON bytes.Buffer
-		err := json.Indent(&prettyAttachmentJSON, []byte(i.Attachment.Raw), "", "  ")
-		if err != nil {
+		if err := renderSchemaRaw("Attachment JSON schema", i.Attachment.Raw); err != nil {
 			return err
 		}
-		rt = newTableWriter()
-		rt.SetTitle("Attachment JSON schema")
-		rt.AppendRow(table.Row{prettyAttachmentJSON.String()})
-		rt.Render()
 	}
 
 	return nil
 }
 
-func renderSchemaOptions(t table.Writer, s *jsonschema.Schema) error {
-	// Schema with reference
-	if s.Ref != nil {
-		return renderSchemaOptions(t, s.Ref)
+func renderSchemaTable(tableTitle string, properties action.SchemaPropertiesMap) error {
+	t := newTableWriter()
+	t.SetTitle(tableTitle)
+	t.AppendHeader(table.Row{"Field", "Type", "Required", "Description"})
+
+	for k, v := range properties {
+		t.AppendRow(table.Row{k, v.Type, v.Required, v.Description})
 	}
 
-	// Appended schemas
-	if s.AllOf != nil {
-		for _, s := range s.AllOf {
-			if err := renderSchemaOptions(t, s); err != nil {
-				return err
-			}
-		}
+	t.Render()
+
+	return nil
+}
+
+func renderSchemaRaw(tableTitle string, s string) error {
+	var prettyAttachmentJSON bytes.Buffer
+	err := json.Indent(&prettyAttachmentJSON, []byte(s), "", "  ")
+	if err != nil {
+		return err
 	}
-
-	if s.Properties != nil {
-		requiredMap := make(map[string]bool)
-		for _, r := range s.Required {
-			requiredMap[r] = true
-		}
-
-		for k, v := range s.Properties {
-			if err := renderSchemaOptions(t, v); err != nil {
-				return err
-			}
-
-			// We do not support nested schemas
-			// They are restricted at build time
-			var required = requiredMap[k]
-			t.AppendRow(table.Row{k, v.Types[0], required, v.Description})
-		}
-	}
+	rt := newTableWriter()
+	rt.SetTitle(tableTitle)
+	rt.AppendRow(table.Row{prettyAttachmentJSON.String()})
+	rt.Render()
 
 	return nil
 }

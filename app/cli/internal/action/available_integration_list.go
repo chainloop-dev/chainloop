@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/santhosh-tekuri/jsonschema/v5"
@@ -41,7 +42,16 @@ type JSONSchema struct {
 	Raw string `json:"schema"`
 	// Parsed schema so it can be used for validation or other purposes
 	// It's not shown in the json output
-	Parsed *jsonschema.Schema `json:"-"`
+	Parsed     *jsonschema.Schema  `json:"-"`
+	Properties SchemaPropertiesMap `json:"properties"`
+}
+
+type SchemaPropertiesMap map[string]*SchemaProperty
+type SchemaProperty struct {
+	Name        string
+	Type        string
+	Required    bool
+	Description string
 }
 
 func NewAvailableIntegrationList(cfg *ActionsOpts) *AvailableIntegrationList {
@@ -91,6 +101,17 @@ func pbAvailableIntegrationItemToAction(in *pb.IntegrationsServiceListAvailableR
 		return nil, fmt.Errorf("failed to compile registration schema: %w", err)
 	}
 
+	// Calculate the properties map
+	i.Registration.Properties = make(SchemaPropertiesMap)
+	if err := calculatePropertiesMap(i.Registration.Parsed, &i.Registration.Properties); err != nil {
+		return nil, fmt.Errorf("failed to calculate registration properties: %w", err)
+	}
+
+	i.Attachment.Properties = make(SchemaPropertiesMap)
+	if err := calculatePropertiesMap(i.Attachment.Parsed, &i.Attachment.Properties); err != nil {
+		return nil, fmt.Errorf("failed to calculate attachment properties: %w", err)
+	}
+
 	return i, nil
 }
 
@@ -107,4 +128,68 @@ func compileJSONSchema(in []byte) (*jsonschema.Schema, error) {
 	}
 
 	return compiler.Compile("schema.json")
+}
+
+// calculate a map with all the properties of a schema
+func calculatePropertiesMap(s *jsonschema.Schema, m *SchemaPropertiesMap) error {
+	if m == nil {
+		return nil
+	}
+
+	// Schema with reference
+	if s.Ref != nil {
+		return calculatePropertiesMap(s.Ref, m)
+	}
+
+	// Appended schemas
+	if s.AllOf != nil {
+		for _, s := range s.AllOf {
+			if err := calculatePropertiesMap(s, m); err != nil {
+				return err
+			}
+		}
+	}
+
+	if s.Properties != nil {
+		requiredMap := make(map[string]bool)
+		for _, r := range s.Required {
+			requiredMap[r] = true
+		}
+
+		for k, v := range s.Properties {
+			if err := calculatePropertiesMap(v, m); err != nil {
+				return err
+			}
+
+			var required = requiredMap[k]
+			(*m)[k] = &SchemaProperty{
+				Name:        k,
+				Type:        v.Types[0],
+				Required:    required,
+				Description: v.Description,
+			}
+		}
+	}
+
+	// We return the map sorted
+	// This is not strictly necessary but it makes the output more readable
+	// and it's easier to test
+
+	// Sort the keys
+	keys := make([]string, 0, len(*m))
+	for k := range *m {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	// Create a new map with the sorted keys
+	newMap := make(SchemaPropertiesMap)
+	for _, k := range keys {
+		newMap[k] = (*m)[k]
+	}
+
+	*m = newMap
+
+	return nil
 }
