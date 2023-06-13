@@ -89,6 +89,10 @@ func availableIntegrationDescribeTableOutput(items []*action.AvailableIntegratio
 }
 
 func renderSchemaTable(tableTitle string, properties action.SchemaPropertiesMap) error {
+	if len(properties) == 0 {
+		return nil
+	}
+
 	t := newTableWriter()
 	t.SetTitle(tableTitle)
 	t.AppendHeader(table.Row{"Field", "Type", "Required", "Description"})
@@ -108,6 +112,7 @@ func renderSchemaRaw(tableTitle string, s string) error {
 	if err != nil {
 		return err
 	}
+
 	rt := newTableWriter()
 	rt.SetTitle(tableTitle)
 	rt.AppendRow(table.Row{prettyAttachmentJSON.String()})

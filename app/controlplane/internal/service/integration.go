@@ -158,6 +158,22 @@ func (s *IntegrationsService) ListRegistrations(ctx context.Context, _ *pb.Integ
 	return &pb.IntegrationsServiceListRegistrationsResponse{Result: result}, nil
 }
 
+func (s *IntegrationsService) DescribeRegistration(ctx context.Context, req *pb.IntegrationsServiceDescribeRegistrationRequest) (*pb.IntegrationsServiceDescribeRegistrationResponse, error) {
+	_, org, err := loadCurrentUserAndOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	i, err := s.integrationUC.FindByIDInOrg(ctx, org.ID, req.Id)
+	if err != nil {
+		return nil, sl.LogAndMaskErr(err, s.log)
+	} else if i == nil {
+		return nil, errors.NotFound("not found", "integration not found")
+	}
+
+	return &pb.IntegrationsServiceDescribeRegistrationResponse{Result: bizIntegrationToPb(i)}, nil
+}
+
 func (s *IntegrationsService) Deregister(ctx context.Context, req *pb.IntegrationsServiceDeregisterRequest) (*pb.IntegrationsServiceDeregisterResponse, error) {
 	_, org, err := loadCurrentUserAndOrg(ctx)
 	if err != nil {

@@ -32,14 +32,13 @@ func NewRegisteredIntegrationAdd(cfg *ActionsOpts) *RegisteredIntegrationAdd {
 }
 
 func (action *RegisteredIntegrationAdd) Run(extensionID, description string, options map[string]any) (*RegisteredIntegrationItem, error) {
-	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
-
 	// Transform to structpb for transport
 	requestConfig, err := structpb.NewStruct(options)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse arguments: %w", err)
 	}
 
+	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
 	i, err := client.Register(context.Background(), &pb.IntegrationsServiceRegisterRequest{
 		ExtensionId: extensionID,
 		Config:      requestConfig,
