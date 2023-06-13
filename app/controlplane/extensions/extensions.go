@@ -17,6 +17,7 @@ package extensions
 
 import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/dependencytrack/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/smtp/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
@@ -32,6 +33,7 @@ func Load(l log.Logger) (sdk.AvailableExtensions, error) {
 	// Eventually this will be dynamically loaded from a directory
 	toEnable := []sdk.FanOutFactory{
 		dependencytrack.New,
+		smtp.New,
 	}
 
 	// Initialize and load the extensions
