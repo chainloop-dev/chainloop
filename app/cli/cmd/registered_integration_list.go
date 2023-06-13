@@ -25,13 +25,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newIntegrationListCmd() *cobra.Command {
+func newRegisteredIntegrationListCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "list",
 		Aliases: []string{"ls"},
-		Short:   "List integrations",
+		Short:   "List registered integrations",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewIntegrationList(actionOpts).Run()
+			res, err := action.NewRegisteredIntegrationList(actionOpts).Run()
 			if err != nil {
 				return err
 			}
@@ -43,7 +43,7 @@ func newIntegrationListCmd() *cobra.Command {
 	return cmd
 }
 
-func integrationListTableOutput(items []*action.IntegrationItem) error {
+func integrationListTableOutput(items []*action.RegisteredIntegrationItem) error {
 	if len(items) == 0 {
 		fmt.Println("there are no third party integrations configured in your organization yet")
 		return nil

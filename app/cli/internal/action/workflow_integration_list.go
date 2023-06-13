@@ -51,7 +51,7 @@ func (action *WorkflowIntegrationList) Run() ([]*IntegrationAttachmentItem, erro
 }
 
 func pbIntegrationAttachmentItemToAction(in *pb.IntegrationAttachmentItem) (*IntegrationAttachmentItem, error) {
-	integration, err := pbIntegrationItemToAction(in.GetIntegration())
+	integration, err := pbRegisteredIntegrationItemToAction(in.GetIntegration())
 	if err != nil {
 		return nil, err
 	}
@@ -77,9 +77,9 @@ func pbIntegrationAttachmentItemToAction(in *pb.IntegrationAttachmentItem) (*Int
 }
 
 type IntegrationAttachmentItem struct {
-	ID          string                 `json:"id"`
-	CreatedAt   *time.Time             `json:"createdAt"`
-	Config      map[string]interface{} `json:"config"`
-	Integration *IntegrationItem       `json:"integration"`
-	Workflow    *WorkflowItem          `json:"workflow"`
+	ID          string                     `json:"id"`
+	CreatedAt   *time.Time                 `json:"createdAt"`
+	Config      map[string]interface{}     `json:"config"`
+	Integration *RegisteredIntegrationItem `json:"integration"`
+	Workflow    *WorkflowItem              `json:"workflow"`
 }

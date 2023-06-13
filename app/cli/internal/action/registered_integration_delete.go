@@ -13,18 +13,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package action
 
 import (
-	"github.com/spf13/cobra"
+	"context"
+
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
-func newIntegrationCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "integration",
-		Short: "Third party integrations",
+type RegisteredIntegrationDelete struct {
+	cfg *ActionsOpts
+}
+
+func NewRegisteredIntegrationDelete(cfg *ActionsOpts) *RegisteredIntegrationDelete {
+	return &RegisteredIntegrationDelete{cfg}
+}
+
+func (action *RegisteredIntegrationDelete) Run(id string) error {
+	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
+	if _, err := client.Deregister(context.Background(), &pb.IntegrationsServiceDeregisterRequest{Id: id}); err != nil {
+		return err
 	}
 
-	cmd.AddCommand(newRegisteredIntegrationCmd())
-	return cmd
+	return nil
 }

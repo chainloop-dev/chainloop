@@ -20,22 +20,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newIntegrationDeleteCmd() *cobra.Command {
+func newRegisteredIntegrationDeleteCmd() *cobra.Command {
 	var integrationID string
 	cmd := &cobra.Command{
 		Use:   "delete",
-		Short: "Delete integration",
+		Short: "De-register an integration",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := action.NewIntegrationDelete(actionOpts).Run(integrationID); err != nil {
+			if err := action.NewRegisteredIntegrationDelete(actionOpts).Run(integrationID); err != nil {
 				return err
 			}
 
-			logger.Info().Msg("Integration removed!")
+			logger.Info().Msg("Integration deregistered!")
 			return nil
 		},
 	}
 
-	cmd.Flags().StringVar(&integrationID, "id", "", "contract ID")
+	cmd.Flags().StringVar(&integrationID, "id", "", "integration ID")
 	cobra.CheckErr(cmd.MarkFlagRequired("id"))
 
 	return cmd
