@@ -73,7 +73,6 @@ func TestDoLoad(t *testing.T) {
 				assert.Equal(t, tc.want, got)
 			} else {
 				assert.NoError(t, err)
-
 			}
 		})
 	}
