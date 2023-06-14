@@ -30,7 +30,7 @@ func NewWorkflowIntegrationAttach(cfg *ActionsOpts) *WorkflowIntegrationAttach {
 	return &WorkflowIntegrationAttach{cfg}
 }
 
-func (action *WorkflowIntegrationAttach) Run(integrationID, workflowID string, options map[string]any) (*IntegrationAttachmentItem, error) {
+func (action *WorkflowIntegrationAttach) Run(integrationID, workflowID string, options map[string]any) (*AttachedIntegrationItem, error) {
 	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
 
 	requestConfig, err := structpb.NewStruct(options)

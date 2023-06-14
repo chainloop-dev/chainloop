@@ -56,7 +56,7 @@ func newWorkflowIntegrationAttachCmd() *cobra.Command {
 				return err
 			}
 
-			return encodeOutput([]*action.IntegrationAttachmentItem{res}, integrationAttachmentListTableOutput)
+			return encodeOutput([]*action.AttachedIntegrationItem{res}, attachedIntegrationListTableOutput)
 		},
 	}
 

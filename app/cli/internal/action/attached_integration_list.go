@@ -23,13 +23,13 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
-type WorkflowIntegrationList struct{ cfg *ActionsOpts }
+type AttachedIntegrationList struct{ cfg *ActionsOpts }
 
-func NewWorkflowIntegrationList(cfg *ActionsOpts) *WorkflowIntegrationList {
-	return &WorkflowIntegrationList{cfg}
+func NewAttachedIntegrationList(cfg *ActionsOpts) *AttachedIntegrationList {
+	return &AttachedIntegrationList{cfg}
 }
 
-func (action *WorkflowIntegrationList) Run() ([]*IntegrationAttachmentItem, error) {
+func (action *AttachedIntegrationList) Run() ([]*AttachedIntegrationItem, error) {
 	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
 
 	resp, err := client.ListAttachments(context.Background(), &pb.ListAttachmentsRequest{})
@@ -37,7 +37,7 @@ func (action *WorkflowIntegrationList) Run() ([]*IntegrationAttachmentItem, erro
 		return nil, err
 	}
 
-	result := make([]*IntegrationAttachmentItem, 0, len(resp.Result))
+	result := make([]*AttachedIntegrationItem, 0, len(resp.Result))
 	for _, i := range resp.Result {
 		attachment, err := pbIntegrationAttachmentItemToAction(i)
 		if err != nil {
@@ -50,13 +50,13 @@ func (action *WorkflowIntegrationList) Run() ([]*IntegrationAttachmentItem, erro
 	return result, nil
 }
 
-func pbIntegrationAttachmentItemToAction(in *pb.IntegrationAttachmentItem) (*IntegrationAttachmentItem, error) {
+func pbIntegrationAttachmentItemToAction(in *pb.IntegrationAttachmentItem) (*AttachedIntegrationItem, error) {
 	integration, err := pbRegisteredIntegrationItemToAction(in.GetIntegration())
 	if err != nil {
 		return nil, err
 	}
 
-	i := &IntegrationAttachmentItem{
+	i := &AttachedIntegrationItem{
 		ID:          in.GetId(),
 		CreatedAt:   toTimePtr(in.GetCreatedAt().AsTime()),
 		Integration: integration,
@@ -76,7 +76,7 @@ func pbIntegrationAttachmentItemToAction(in *pb.IntegrationAttachmentItem) (*Int
 	return i, nil
 }
 
-type IntegrationAttachmentItem struct {
+type AttachedIntegrationItem struct {
 	ID          string                     `json:"id"`
 	CreatedAt   *time.Time                 `json:"createdAt"`
 	Config      map[string]interface{}     `json:"config"`

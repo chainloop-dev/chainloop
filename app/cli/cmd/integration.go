@@ -25,6 +25,6 @@ func newIntegrationCmd() *cobra.Command {
 		Short: "Third party integrations",
 	}
 
-	cmd.AddCommand(newRegisteredIntegrationCmd(), newAvailableIntegrationCmd())
+	cmd.AddCommand(newRegisteredIntegrationCmd(), newAvailableIntegrationCmd(), newAttachedIntegrationCmd())
 	return cmd
 }

@@ -19,12 +19,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newWorkflowIntegrationCmd() *cobra.Command {
+func newAttachedIntegrationCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "integration",
-		Short: "Third party integrations",
+		Use:   "attached",
+		Short: "Integrations attached to workflows",
 	}
 
-	cmd.AddCommand(newWorkflowIntegrationAttachCmd(), newWorkflowIntegrationDetachCmd(), newWorkflowIntegrationListCmd())
+	cmd.AddCommand(newWorkflowIntegrationAttachCmd(), newWorkflowIntegrationDetachCmd(), newAttachedIntegrationListCmd())
 	return cmd
 }

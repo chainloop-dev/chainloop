@@ -41,7 +41,7 @@ type tabulatedData interface {
 		*action.ConfigContextItem |
 		[]*action.RegisteredIntegrationItem |
 		[]*action.AvailableIntegrationItem |
-		[]*action.IntegrationAttachmentItem |
+		[]*action.AttachedIntegrationItem |
 		[]*action.MembershipItem
 }
 
