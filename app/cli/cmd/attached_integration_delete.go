@@ -20,14 +20,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newWorkflowIntegrationDetachCmd() *cobra.Command {
+func newAttachedIntegrationDeleteCmd() *cobra.Command {
 	var attachmentID string
 
 	cmd := &cobra.Command{
-		Use:   "detach",
-		Short: "Remove a third-party integration attached to a workflow",
+		Use:     "delete",
+		Aliases: []string{"detach"},
+		Short:   "Detach an integration that's attached to a workflow",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := action.NewWorkflowIntegrationDetach(actionOpts).Run(attachmentID); err != nil {
+			if err := action.NewAttachedIntegrationDelete(actionOpts).Run(attachmentID); err != nil {
 				return err
 			}
 

@@ -21,13 +21,13 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
-type WorkflowIntegrationDetach struct{ cfg *ActionsOpts }
+type AttachedIntegrationDelete struct{ cfg *ActionsOpts }
 
-func NewWorkflowIntegrationDetach(cfg *ActionsOpts) *WorkflowIntegrationDetach {
-	return &WorkflowIntegrationDetach{cfg}
+func NewAttachedIntegrationDelete(cfg *ActionsOpts) *AttachedIntegrationDelete {
+	return &AttachedIntegrationDelete{cfg}
 }
 
-func (action *WorkflowIntegrationDetach) Run(attachmentID string) error {
+func (action *AttachedIntegrationDelete) Run(attachmentID string) error {
 	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
 
 	_, err := client.Detach(context.Background(), &pb.IntegrationsServiceDetachRequest{Id: attachmentID})

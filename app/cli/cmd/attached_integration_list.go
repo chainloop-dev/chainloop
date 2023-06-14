@@ -50,6 +50,7 @@ func attachedIntegrationListTableOutput(attachments []*action.AttachedIntegratio
 		return nil
 	}
 
+	fmt.Println("Integrations attached to workflows")
 	t := newTableWriter()
 	t.AppendHeader(table.Row{"ID", "Kind", "Config", "Attached At", "Workflow"})
 	for _, i := range attachments {

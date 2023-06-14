@@ -24,13 +24,13 @@ import (
 )
 
 // Attach a third party integration to a workflow
-type WorkflowIntegrationAttach struct{ cfg *ActionsOpts }
+type AttachedIntegrationAdd struct{ cfg *ActionsOpts }
 
-func NewWorkflowIntegrationAttach(cfg *ActionsOpts) *WorkflowIntegrationAttach {
-	return &WorkflowIntegrationAttach{cfg}
+func NewAttachedIntegrationAdd(cfg *ActionsOpts) *AttachedIntegrationAdd {
+	return &AttachedIntegrationAdd{cfg}
 }
 
-func (action *WorkflowIntegrationAttach) Run(integrationID, workflowID string, options map[string]any) (*AttachedIntegrationItem, error) {
+func (action *AttachedIntegrationAdd) Run(integrationID, workflowID string, options map[string]any) (*AttachedIntegrationItem, error) {
 	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
 
 	requestConfig, err := structpb.NewStruct(options)

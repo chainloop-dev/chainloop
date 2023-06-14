@@ -68,10 +68,6 @@ func newRegisteredIntegrationAddCmd() *cobra.Command {
 	cmd.Flags().StringVar(&integrationDescription, "description", "", "integration registration description")
 	cmd.Flags().StringSliceVar(&options, "options", nil, "integration arguments")
 
-	// We maintain the dependencytrack integration as a separate command for now
-	// for compatibility reasons
-	cmd.AddCommand(newRegisteredIntegrationAddDepTrackCmd())
-
 	return cmd
 }
 

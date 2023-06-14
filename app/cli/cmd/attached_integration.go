@@ -25,6 +25,6 @@ func newAttachedIntegrationCmd() *cobra.Command {
 		Short: "Integrations attached to workflows",
 	}
 
-	cmd.AddCommand(newWorkflowIntegrationAttachCmd(), newWorkflowIntegrationDetachCmd(), newAttachedIntegrationListCmd())
+	cmd.AddCommand(newAttachedIntegrationAttachCmd(), newAttachedIntegrationDeleteCmd(), newAttachedIntegrationListCmd())
 	return cmd
 }

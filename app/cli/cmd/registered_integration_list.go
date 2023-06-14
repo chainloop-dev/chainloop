@@ -49,6 +49,7 @@ func registeredIntegrationListTableOutput(items []*action.RegisteredIntegrationI
 		return nil
 	}
 
+	fmt.Println("Integrations registered and configured in your organization")
 	t := newTableWriter()
 	t.AppendHeader(table.Row{"ID", "Description", "Kind", "Config", "Created At"})
 	for _, i := range items {
