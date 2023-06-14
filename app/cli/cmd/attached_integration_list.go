@@ -26,30 +26,31 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-func newWorkflowIntegrationListCmd() *cobra.Command {
+func newAttachedIntegrationListCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "list",
 		Aliases: []string{"ls"},
 		Short:   "List integrations attached to workflows",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewWorkflowIntegrationList(actionOpts).Run()
+			res, err := action.NewAttachedIntegrationList(actionOpts).Run()
 			if err != nil {
 				return err
 			}
 
-			return encodeOutput(res, integrationAttachmentListTableOutput)
+			return encodeOutput(res, attachedIntegrationListTableOutput)
 		},
 	}
 
 	return cmd
 }
 
-func integrationAttachmentListTableOutput(attachments []*action.IntegrationAttachmentItem) error {
+func attachedIntegrationListTableOutput(attachments []*action.AttachedIntegrationItem) error {
 	if len(attachments) == 0 {
 		fmt.Println("there are no integration attached")
 		return nil
 	}
 
+	fmt.Println("Integrations attached to workflows")
 	t := newTableWriter()
 	t.AppendHeader(table.Row{"ID", "Kind", "Config", "Attached At", "Workflow"})
 	for _, i := range attachments {

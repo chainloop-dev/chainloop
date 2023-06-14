@@ -13,18 +13,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package action
 
 import (
-	"github.com/spf13/cobra"
+	"context"
+
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
-func newWorkflowIntegrationCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "integration",
-		Short: "Third party integrations",
-	}
+type AttachedIntegrationDelete struct{ cfg *ActionsOpts }
 
-	cmd.AddCommand(newWorkflowIntegrationAttachCmd(), newWorkflowIntegrationDetachCmd(), newWorkflowIntegrationListCmd())
-	return cmd
+func NewAttachedIntegrationDelete(cfg *ActionsOpts) *AttachedIntegrationDelete {
+	return &AttachedIntegrationDelete{cfg}
+}
+
+func (action *AttachedIntegrationDelete) Run(attachmentID string) error {
+	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
+
+	_, err := client.Detach(context.Background(), &pb.IntegrationsServiceDetachRequest{Id: attachmentID})
+	return err
 }

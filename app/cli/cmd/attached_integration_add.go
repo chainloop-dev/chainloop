@@ -20,14 +20,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newWorkflowIntegrationAttachCmd() *cobra.Command {
+func newAttachedIntegrationAttachCmd() *cobra.Command {
 	var options []string
 	var integrationID, workflowID string
 
 	cmd := &cobra.Command{
-		Use:     "attach",
+		Use:     "add",
+		Aliases: []string{"attach"},
 		Short:   "Attach an existing registered integration to a workflow",
-		Example: `  chainloop workflow integration attach --workflow deadbeef --integration beefdoingwell --options projectName=MyProject`,
+		Example: `  chainloop integration attached add --workflow deadbeef --integration beefdoingwell --options projectName=MyProject`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Find the integration to extract the kind of integration we care about
 			integration, err := action.NewRegisteredIntegrationDescribe(actionOpts).Run(integrationID)
@@ -51,12 +52,12 @@ func newWorkflowIntegrationAttachCmd() *cobra.Command {
 				return err
 			}
 
-			res, err := action.NewWorkflowIntegrationAttach(actionOpts).Run(integrationID, workflowID, opts)
+			res, err := action.NewAttachedIntegrationAdd(actionOpts).Run(integrationID, workflowID, opts)
 			if err != nil {
 				return err
 			}
 
-			return encodeOutput([]*action.IntegrationAttachmentItem{res}, integrationAttachmentListTableOutput)
+			return encodeOutput([]*action.AttachedIntegrationItem{res}, attachedIntegrationListTableOutput)
 		},
 	}
 
@@ -67,7 +68,6 @@ func newWorkflowIntegrationAttachCmd() *cobra.Command {
 	cobra.CheckErr(cmd.MarkFlagRequired("workflow"))
 
 	cmd.Flags().StringSliceVar(&options, "options", nil, "integration attachment arguments")
-	cmd.AddCommand(newWorkflowIntegrationAttachDependencyTrackCmd())
 
 	return cmd
 }
