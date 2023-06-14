@@ -151,6 +151,7 @@ func (i *Integration) Execute(ctx context.Context, req *sdk.ExecutionRequest) er
 		return fmt.Errorf("creating OCI backend %w", err)
 	}
 
+	i.Logger.Infow("msg", "Uploading attestation", "repo", config.Repository, "workflowID", req.WorkflowID)
 	// Perform the upload
 	jsonContent, err := json.Marshal(req.Input.DSSEnvelope)
 	if err != nil {
@@ -163,9 +164,11 @@ func (i *Integration) Execute(ctx context.Context, req *sdk.ExecutionRequest) er
 		return fmt.Errorf("calculating the digest: %w", err)
 	}
 
-	if err := ociClient.Upload(ctx, bytes.NewBuffer(jsonContent), &v1.CASResource{Digest: h.String(), FileName: "attestation.json"}); err != nil {
+	if err := ociClient.Upload(ctx, bytes.NewBuffer(jsonContent), &v1.CASResource{Digest: h.Hex, FileName: "attestation.json"}); err != nil {
 		return fmt.Errorf("uploading the attestation: %w", err)
 	}
+
+	i.Logger.Infow("msg", "Attestation uploaded", "repo", config.Repository, "workflowID", req.WorkflowID)
 
 	return nil
 }
