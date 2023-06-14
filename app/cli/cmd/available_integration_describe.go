@@ -63,10 +63,9 @@ func availableIntegrationDescribeTableOutput(items []*action.AvailableIntegratio
 	i := items[0]
 
 	// General information
-	t := newTableWriter()
-	t.AppendHeader(table.Row{"ID", "Version"})
-	t.AppendRow(table.Row{i.ID, i.Version})
-	t.Render()
+	if err := availableIntegrationListTableOutput(items); err != nil {
+		return err
+	}
 
 	// Schema information
 	if err := renderSchemaTable("Registration inputs", i.Registration.Properties); err != nil {
