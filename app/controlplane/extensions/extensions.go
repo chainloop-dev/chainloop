@@ -48,6 +48,7 @@ func doLoad(extensions []sdk.FanOutFactory, l log.Logger) (sdk.AvailableExtensio
 
 	for _, f := range extensions {
 		d, err := f(l)
+		// For now we fail, once we load plugins we should warn and skip instead
 		if err != nil {
 			return nil, fmt.Errorf("failed to load extension: %w", err)
 		}
