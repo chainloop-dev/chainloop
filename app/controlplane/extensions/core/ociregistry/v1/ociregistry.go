@@ -36,21 +36,25 @@ type Integration struct {
 
 // 1 - API schema definitions
 type registrationRequest struct {
-	// NOTE: it can not be an URI since http schemas are not expected
-	Repository string `json:"repository" jsonschema:"format=uri-reference,description=OCI repository uri and path"`
+	// Repository is not fully URI compliant and hence can not be validated with jsonschema
+	Repository string `json:"repository" jsonschema:"minLength=1,description=OCI repository uri and path"`
 	Username   string `json:"username" jsonschema:"minLength=1,description=OCI repository username"`
 	Password   string `json:"password" jsonschema:"minLength=1,description=OCI repository password"`
 }
 
-type attachmentRequest struct{}
+type attachmentRequest struct {
+	Prefix string `json:"prefix,omitempty" jsonschema:"minLength=1,description=OCI images name prefix (default chainloop)"`
+}
 
 // 2 - Configuration state
 type registrationState struct {
 	Repository string `json:"repository"`
 }
 
-// Attach attaches the integration service to the given grpc server.
-// In the future this will be a plugin entrypoint
+type attachmentState struct {
+	Prefix string `json:"prefix"`
+}
+
 func New(l log.Logger) (sdk.FanOut, error) {
 	base, err := sdk.NewFanOut(
 		&sdk.NewParams{
@@ -59,8 +63,8 @@ func New(l log.Logger) (sdk.FanOut, error) {
 			Description: "Send attestations to a compatible OCI registry",
 			Logger:      l,
 			InputSchema: &sdk.InputSchema{
-				Registration: registrationRequest{},
-				Attachment:   attachmentRequest{},
+				Registration: &registrationRequest{},
+				Attachment:   &attachmentRequest{},
 			},
 		},
 		sdk.WithEnvelope(),
@@ -77,18 +81,19 @@ func New(l log.Logger) (sdk.FanOut, error) {
 func (i *Integration) Register(_ context.Context, req *sdk.RegistrationRequest) (*sdk.RegistrationResponse, error) {
 	i.Logger.Info("registration requested")
 
+	// Extract request payload
 	var request *registrationRequest
 	if err := sdk.FromConfig(req.Payload, &request); err != nil {
 		return nil, fmt.Errorf("invalid registration request: %w", err)
 	}
 
-	// Create and validate credentials
+	// Create and validate OCI credentials
 	k, err := ociauth.NewCredentials(request.Repository, request.Username, request.Password)
 	if err != nil {
 		return nil, fmt.Errorf("the provided credentials are invalid")
 	}
 
-	// Check credentials
+	// Check write permissions
 	b, err := oci.NewBackend(request.Repository, &oci.RegistryOptions{Keychain: k})
 	if err != nil {
 		return nil, fmt.Errorf("the provided credentials are invalid")
@@ -98,7 +103,7 @@ func (i *Integration) Register(_ context.Context, req *sdk.RegistrationRequest) 
 		return nil, fmt.Errorf("the provided credentials don't have write permissions")
 	}
 
-	// they seem valid, let's store them
+	// They seem valid, let's store them in the configuration and credentials state
 	response := &sdk.RegistrationResponse{}
 
 	// a) Configuration State
@@ -118,11 +123,20 @@ func (i *Integration) Register(_ context.Context, req *sdk.RegistrationRequest) 
 }
 
 // Attachment is executed when to attach a registered instance of this integration to a specific workflow
-func (i *Integration) Attach(_ context.Context, _ *sdk.AttachmentRequest) (*sdk.AttachmentResponse, error) {
-	i.Logger.Info("attachment requested")
+func (i *Integration) Attach(_ context.Context, req *sdk.AttachmentRequest) (*sdk.AttachmentResponse, error) {
+	// Extract request payload
+	var request *attachmentRequest
+	if err := sdk.FromConfig(req.Payload, &request); err != nil {
+		return nil, fmt.Errorf("invalid registration request: %w", err)
+	}
 
-	// NOOP
-	return &sdk.AttachmentResponse{}, nil
+	// Define the state to be stored
+	config, err := sdk.ToConfig(&attachmentState{Prefix: request.Prefix})
+	if err != nil {
+		return nil, fmt.Errorf("marshalling configuration: %w", err)
+	}
+
+	return &sdk.AttachmentResponse{Configuration: config}, nil
 }
 
 func (i *Integration) Execute(ctx context.Context, req *sdk.ExecutionRequest) error {
@@ -133,32 +147,44 @@ func (i *Integration) Execute(ctx context.Context, req *sdk.ExecutionRequest) er
 	}
 
 	// Extract registration configuration and credentials
-	var config *registrationState
-	if err := sdk.FromConfig(req.RegistrationInfo.Configuration, &config); err != nil {
+	var registrationConfig *registrationState
+	if err := sdk.FromConfig(req.RegistrationInfo.Configuration, &registrationConfig); err != nil {
 		return fmt.Errorf("invalid registration configuration %w", err)
 	}
 
-	credentials := req.RegistrationInfo.Credentials
+	// Extract attachment configuration
+	var attachmentConfig *attachmentState
+	if err := sdk.FromConfig(req.AttachmentInfo.Configuration, &attachmentConfig); err != nil {
+		return fmt.Errorf("invalid attachment configuration %w", err)
+	}
 
 	// Create OCI backend client
-	k, err := ociauth.NewCredentials(config.Repository, credentials.Username, credentials.Password)
+	credentials := req.RegistrationInfo.Credentials
+	k, err := ociauth.NewCredentials(registrationConfig.Repository, credentials.Username, credentials.Password)
 	if err != nil {
 		return fmt.Errorf("setting up the keychain: %w", err)
 	}
 
-	ociClient, err := oci.NewBackend(config.Repository, &oci.RegistryOptions{Keychain: k})
+	// Add prefix if provided
+	var opts = make([]oci.NewBackendOpt, 0)
+	if attachmentConfig.Prefix != "" {
+		opts = append(opts, oci.WithPrefix(attachmentConfig.Prefix))
+	}
+
+	ociClient, err := oci.NewBackend(registrationConfig.Repository, &oci.RegistryOptions{Keychain: k}, opts...)
 	if err != nil {
 		return fmt.Errorf("creating OCI backend %w", err)
 	}
 
-	i.Logger.Infow("msg", "Uploading attestation", "repo", config.Repository, "workflowID", req.WorkflowID)
-	// Perform the upload
+	i.Logger.Infow("msg", "Uploading attestation", "repo", registrationConfig.Repository, "workflowID", req.WorkflowID)
+
+	// Perform the upload of the json marshalled attestation
 	jsonContent, err := json.Marshal(req.Input.DSSEnvelope)
 	if err != nil {
 		return fmt.Errorf("marshaling the envelope: %w", err)
 	}
 
-	// Calculate digest
+	// Calculate digest since it will be used as CAS reference
 	h, _, err := cr_v1.SHA256(bytes.NewBuffer(jsonContent))
 	if err != nil {
 		return fmt.Errorf("calculating the digest: %w", err)
@@ -168,7 +194,7 @@ func (i *Integration) Execute(ctx context.Context, req *sdk.ExecutionRequest) er
 		return fmt.Errorf("uploading the attestation: %w", err)
 	}
 
-	i.Logger.Infow("msg", "Attestation uploaded", "repo", config.Repository, "workflowID", req.WorkflowID)
+	i.Logger.Infow("msg", "Attestation uploaded", "repo", registrationConfig.Repository, "workflowID", req.WorkflowID)
 
 	return nil
 }
