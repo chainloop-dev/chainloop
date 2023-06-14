@@ -64,6 +64,50 @@ func (s *testSuite) TestUpload() {
 	})
 }
 
+func (s *testSuite) TestNewBackend() {
+	testCases := []struct {
+		name    string
+		repo    string
+		prefix  string
+		opts    []NewBackendOpt
+		wantErr bool
+	}{
+		{
+			name: "default prefix",
+			repo: "localhost:5000",
+			opts: []NewBackendOpt{},
+		},
+		{
+			name:   "custom prefix",
+			repo:   "localhost:5000",
+			prefix: "custom-prefix",
+		},
+	}
+
+	for _, tc := range testCases {
+		s.T().Run(tc.name, func(t *testing.T) {
+			var opts = make([]NewBackendOpt, 0)
+			if tc.prefix != "" {
+				opts = append(opts, WithPrefix(tc.prefix))
+			}
+
+			got, err := NewBackend(tc.repo, &RegistryOptions{}, opts...)
+			if tc.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, got)
+				assert.Equal(t, tc.repo, got.repo)
+				if tc.prefix == "" {
+					assert.Equal(t, defaultPrefix, got.prefix)
+				} else {
+					assert.Equal(t, tc.prefix, got.prefix)
+				}
+			}
+		})
+	}
+}
+
 func (s *testSuite) TestExists() {
 	assert := assert.New(s.T())
 	// Valid image

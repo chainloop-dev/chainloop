@@ -50,14 +50,28 @@ type RegistryOptions struct {
 	Keychain      Keychain
 }
 
+type NewBackendOpt func(*Backend)
+
+func WithPrefix(prefix string) NewBackendOpt {
+	return func(b *Backend) {
+		b.prefix = prefix
+	}
+}
+
 const defaultPrefix = "chainloop"
 
-func NewBackend(repository string, regOpts *RegistryOptions) (*Backend, error) {
-	return &Backend{
+func NewBackend(repository string, regOpts *RegistryOptions, opts ...NewBackendOpt) (*Backend, error) {
+	b := &Backend{
 		repo:     repository,
 		prefix:   defaultPrefix,
 		keychain: regOpts.Keychain,
-	}, nil
+	}
+
+	for _, opt := range opts {
+		opt(b)
+	}
+
+	return b, nil
 }
 
 // Exists check that the artifact is already present in the repository and it points to the
