@@ -63,7 +63,7 @@ func New(l log.Logger) (sdk.FanOut, error) {
 	base, err := sdk.NewFanOut(
 		&sdk.NewParams{
 			ID:      "dependencytrack",
-			Version: "1.0",
+			Version: "0.2",
 			Logger:  l,
 			InputSchema: &sdk.InputSchema{
 				Registration: registrationRequest{},
