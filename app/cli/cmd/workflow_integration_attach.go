@@ -42,7 +42,7 @@ func newWorkflowIntegrationAttachCmd() *cobra.Command {
 			}
 
 			// Parse and validate options
-			opts, err := parseAndValidateOpts(options, item.Registration)
+			opts, err := parseAndValidateOpts(options, item.Attachment)
 			if err != nil {
 				// Show schema table if validation fails
 				if err := renderSchemaTable("Available options", item.Attachment.Properties); err != nil {
