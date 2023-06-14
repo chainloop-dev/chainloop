@@ -57,14 +57,17 @@ type attachmentConfig struct {
 	ProjectName string `json:"projectName"`
 }
 
+const description = "Send CycloneDX SBOMs to your Dependency-Track instance"
+
 // Attach attaches the integration service to the given grpc server.
 // In the future this will be a plugin entrypoint
 func New(l log.Logger) (sdk.FanOut, error) {
 	base, err := sdk.NewFanOut(
 		&sdk.NewParams{
-			ID:      "dependencytrack",
-			Version: "0.2",
-			Logger:  l,
+			ID:          "dependencytrack",
+			Version:     "0.2",
+			Description: description,
+			Logger:      l,
 			InputSchema: &sdk.InputSchema{
 				Registration: registrationRequest{},
 				Attachment:   attachmentRequest{},

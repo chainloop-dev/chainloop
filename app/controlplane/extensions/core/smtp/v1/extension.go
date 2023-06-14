@@ -57,12 +57,15 @@ type attachmentState struct {
 	CC string `json:"cc"`
 }
 
+const description = "Send emails with information about a received attestation"
+
 func New(l log.Logger) (sdk.FanOut, error) {
 	base, err := sdk.NewFanOut(
 		&sdk.NewParams{
-			ID:      "smtp",
-			Version: "0.1",
-			Logger:  l,
+			ID:          "smtp",
+			Version:     "0.1",
+			Description: description,
+			Logger:      l,
 			InputSchema: &sdk.InputSchema{
 				Registration: registrationRequest{},
 				Attachment:   attachmentRequest{},

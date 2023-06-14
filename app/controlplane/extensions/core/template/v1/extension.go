@@ -50,9 +50,10 @@ type attachmentRequest struct {
 func New(l log.Logger) (sdk.FanOut, error) {
 	base, err := sdk.NewFanOut(
 		&sdk.NewParams{
-			ID:      "template",
-			Version: "0.1",
-			Logger:  l,
+			ID:          "template",
+			Version:     "0.1",
+			Description: "Template integration that can be used as a starting point for your own integrations",
+			Logger:      l,
 			InputSchema: &sdk.InputSchema{
 				Registration: registrationRequest{},
 				Attachment:   attachmentRequest{},

@@ -887,6 +887,120 @@ var _ interface {
 	ErrorName() string
 } = IntegrationsServiceListAvailableResponseValidationError{}
 
+// Validate checks the field values on IntegrationAvailableItem with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *IntegrationAvailableItem) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on IntegrationAvailableItem with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// IntegrationAvailableItemMultiError, or nil if none found.
+func (m *IntegrationAvailableItem) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *IntegrationAvailableItem) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Id
+
+	// no validation rules for Version
+
+	// no validation rules for RegistrationSchema
+
+	// no validation rules for AttachmentSchema
+
+	// no validation rules for SubscribedAttestation
+
+	// no validation rules for Description
+
+	if len(errors) > 0 {
+		return IntegrationAvailableItemMultiError(errors)
+	}
+
+	return nil
+}
+
+// IntegrationAvailableItemMultiError is an error wrapping multiple validation
+// errors returned by IntegrationAvailableItem.ValidateAll() if the designated
+// constraints aren't met.
+type IntegrationAvailableItemMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m IntegrationAvailableItemMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m IntegrationAvailableItemMultiError) AllErrors() []error { return m }
+
+// IntegrationAvailableItemValidationError is the validation error returned by
+// IntegrationAvailableItem.Validate if the designated constraints aren't met.
+type IntegrationAvailableItemValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e IntegrationAvailableItemValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e IntegrationAvailableItemValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e IntegrationAvailableItemValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e IntegrationAvailableItemValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e IntegrationAvailableItemValidationError) ErrorName() string {
+	return "IntegrationAvailableItemValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e IntegrationAvailableItemValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sIntegrationAvailableItem.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = IntegrationAvailableItemValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = IntegrationAvailableItemValidationError{}
+
 // Validate checks the field values on
 // IntegrationsServiceListRegistrationsRequest with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
@@ -2434,127 +2548,3 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = IntegrationsServiceDeregisterResponseValidationError{}
-
-// Validate checks the field values on
-// IntegrationsServiceListAvailableResponse_Integration with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
-func (m *IntegrationsServiceListAvailableResponse_Integration) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on
-// IntegrationsServiceListAvailableResponse_Integration with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in
-// IntegrationsServiceListAvailableResponse_IntegrationMultiError, or nil if
-// none found.
-func (m *IntegrationsServiceListAvailableResponse_Integration) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *IntegrationsServiceListAvailableResponse_Integration) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Id
-
-	// no validation rules for Version
-
-	// no validation rules for RegistrationSchema
-
-	// no validation rules for AttachmentSchema
-
-	// no validation rules for SubscribedAttestation
-
-	if len(errors) > 0 {
-		return IntegrationsServiceListAvailableResponse_IntegrationMultiError(errors)
-	}
-
-	return nil
-}
-
-// IntegrationsServiceListAvailableResponse_IntegrationMultiError is an error
-// wrapping multiple validation errors returned by
-// IntegrationsServiceListAvailableResponse_Integration.ValidateAll() if the
-// designated constraints aren't met.
-type IntegrationsServiceListAvailableResponse_IntegrationMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m IntegrationsServiceListAvailableResponse_IntegrationMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m IntegrationsServiceListAvailableResponse_IntegrationMultiError) AllErrors() []error { return m }
-
-// IntegrationsServiceListAvailableResponse_IntegrationValidationError is the
-// validation error returned by
-// IntegrationsServiceListAvailableResponse_Integration.Validate if the
-// designated constraints aren't met.
-type IntegrationsServiceListAvailableResponse_IntegrationValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e IntegrationsServiceListAvailableResponse_IntegrationValidationError) Field() string {
-	return e.field
-}
-
-// Reason function returns reason value.
-func (e IntegrationsServiceListAvailableResponse_IntegrationValidationError) Reason() string {
-	return e.reason
-}
-
-// Cause function returns cause value.
-func (e IntegrationsServiceListAvailableResponse_IntegrationValidationError) Cause() error {
-	return e.cause
-}
-
-// Key function returns key value.
-func (e IntegrationsServiceListAvailableResponse_IntegrationValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e IntegrationsServiceListAvailableResponse_IntegrationValidationError) ErrorName() string {
-	return "IntegrationsServiceListAvailableResponse_IntegrationValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e IntegrationsServiceListAvailableResponse_IntegrationValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sIntegrationsServiceListAvailableResponse_Integration.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = IntegrationsServiceListAvailableResponse_IntegrationValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = IntegrationsServiceListAvailableResponse_IntegrationValidationError{}

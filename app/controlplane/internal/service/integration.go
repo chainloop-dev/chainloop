@@ -46,13 +46,14 @@ func NewIntegrationsService(uc *biz.IntegrationUseCase, wuc *biz.WorkflowUseCase
 }
 
 func (s *IntegrationsService) ListAvailable(_ context.Context, _ *pb.IntegrationsServiceListAvailableRequest) (*pb.IntegrationsServiceListAvailableResponse, error) {
-	result := make([]*pb.IntegrationsServiceListAvailableResponse_Integration, 0, len(s.integrations))
+	result := make([]*pb.IntegrationAvailableItem, 0, len(s.integrations))
 
 	for _, i := range s.integrations {
 		d := i.Describe()
-		item := &pb.IntegrationsServiceListAvailableResponse_Integration{
+		item := &pb.IntegrationAvailableItem{
 			Id:                    d.ID,
 			Version:               d.Version,
+			Description:           d.Description,
 			AttachmentSchema:      d.AttachmentJSONSchema,
 			RegistrationSchema:    d.RegistrationJSONSchema,
 			SubscribedAttestation: d.SubscribedInputs.DSSEnvelope,

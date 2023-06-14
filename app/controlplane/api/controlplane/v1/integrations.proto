@@ -75,20 +75,21 @@ message IntegrationsServiceAttachResponse{
 
 message IntegrationsServiceListAvailableRequest{}
 message IntegrationsServiceListAvailableResponse{
-	repeated Integration result = 1;
+	repeated IntegrationAvailableItem result = 1;
+}
 
-	message Integration {
-		// Integration identifier
-		string id = 1;
-		string version = 2;
-		// Registration and attachment JSON schemas
-		bytes registration_schema = 3;
-		bytes attachment_schema = 4;
-		// List of materials that the integration is subscribed to
-		repeated string subscribed_materials = 5;
-		// Weather the integration is subscribed to attestations
-		bool subscribed_attestation = 6;
-	}
+message IntegrationAvailableItem {
+	// Integration identifier
+	string id = 1;
+	string version = 2;
+	// Registration and attachment JSON schemas
+	bytes registration_schema = 3;
+	bytes attachment_schema = 4;
+	// List of materials that the integration is subscribed to
+	repeated string subscribed_materials = 5;
+	// Whether the integration is subscribed to attestations
+	bool subscribed_attestation = 6;
+	string description = 7;
 }
 
 message IntegrationsServiceListRegistrationsRequest{}
