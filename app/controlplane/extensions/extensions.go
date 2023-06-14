@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/dependencytrack/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/ociregistry/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/smtp/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
@@ -34,6 +35,7 @@ func Load(l log.Logger) (sdk.AvailableExtensions, error) {
 	toEnable := []sdk.FanOutFactory{
 		dependencytrack.New,
 		smtp.New,
+		ociregistry.New,
 	}
 
 	return doLoad(toEnable, l)

@@ -33,7 +33,7 @@ func newRegisteredIntegrationAddCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "add INTEGRATION_ID --options key=value,key=value",
 		Short:   "Register a new instance of an integration",
-		Example: `  chainloop integration registered add dependencytrack --options instance=https://deptrack.company.com,apiKey=1234567890`,
+		Example: `  chainloop integration registered add dependencytrack --opt instance=https://deptrack.company.com,apiKey=1234567890 --opt username=chainloop`,
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Retrieve schema for validation and options marshaling
@@ -66,7 +66,9 @@ func newRegisteredIntegrationAddCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&integrationDescription, "description", "", "integration registration description")
-	cmd.Flags().StringSliceVar(&options, "options", nil, "integration arguments")
+	// StringSlice seems to struggle with comma-separated values such as p12 jsonKeys provided as passwords
+	// So we need to use StringArrayVar instead
+	cmd.Flags().StringArrayVar(&options, "opt", nil, "integration arguments")
 
 	return cmd
 }
@@ -93,13 +95,14 @@ func parseAndValidateOpts(opts []string, schema *action.JSONSchema) (map[string]
 	return res, nil
 }
 
+// parseKeyValOpts performs two steps
+// 1 - Split the options into key/value pairs
+// 2 - Cast the values to the expected type defined in the schema
 func parseKeyValOpts(opts []string, propertiesMap action.SchemaPropertiesMap) (map[string]any, error) {
-	// Two steps process
-
 	// 1 - Split the options into key/value pairs
 	var options = make(map[string]any)
 	for _, opt := range opts {
-		kv := strings.Split(opt, "=")
+		kv := strings.SplitN(opt, "=", 2)
 		if len(kv) != 2 {
 			return nil, fmt.Errorf("invalid option %q, the expected format is key=value", opt)
 		}

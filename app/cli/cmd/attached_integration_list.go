@@ -57,14 +57,17 @@ func attachedIntegrationListTableOutput(attachments []*action.AttachedIntegratio
 		wf := i.Workflow
 		integration := i.Integration
 
-		maps.Copy(i.Config, integration.Config)
 		var options []string
-		for k, v := range i.Config {
-			if v == "" {
-				continue
+		if i.Config != nil {
+			maps.Copy(i.Config, integration.Config)
+			for k, v := range i.Config {
+				if v == "" {
+					continue
+				}
+				options = append(options, fmt.Sprintf("%s: %v", k, v))
 			}
-			options = append(options, fmt.Sprintf("%s: %v", k, v))
 		}
+
 		t.AppendRow(table.Row{i.ID, integration.Kind, strings.Join(options, "\n"), i.CreatedAt.Format(time.RFC822), wf.NamespacedName()})
 		t.AppendSeparator()
 	}

@@ -29,6 +29,7 @@ type Integration struct {
 	*sdk.FanOutIntegration
 }
 
+// 1 - API schema definitions
 // Define the input schemas for both registration and attachment
 // You can annotate the struct with jsonschema tags to define the enable validations
 // see https://github.com/invopop/jsonschema#example for more information
@@ -41,12 +42,11 @@ type attachmentRequest struct {
 	OptionalBool bool `json:"optionalBool,omitempty" jsonschema:"description=Example of optional boolean input"`
 }
 
-// You can use an arbitrary struct as a configuration state
+// 2 - Configuration state
+// You can use an arbitrary struct as a configuration state, this means data that you want to persist across
 // type registrationState struct{}
 // type attachmentState struct{}
 
-// Attach attaches the integration service to the given grpc server.
-// In the future this will be a plugin entrypoint
 func New(l log.Logger) (sdk.FanOut, error) {
 	base, err := sdk.NewFanOut(
 		&sdk.NewParams{
@@ -107,8 +107,7 @@ func (i *Integration) Register(_ context.Context, req *sdk.RegistrationRequest) 
 	// In some cases you might have sensitive information that you want to store
 	// like for example user credentials, API Keys and so on
 	// in such cases, you can attach them to the response as well via the Credentials field
-	// rawConfig, err := sdk.ToConfig(&registrationState{})
-	// response.Credentials =  &sdk.Credentials{Password: "deadbeef"},
+	// response.Credentials =  &sdk.Credentials{Password: "deadbeef"}
 
 	return response, nil
 }
@@ -129,7 +128,7 @@ func (i *Integration) Attach(_ context.Context, req *sdk.AttachmentRequest) (*sd
 	// They can be accessed via
 	// var rc *registrationState
 	// if err := sdk.FromConfig(req.RegistrationInfo.Configuration, &rc); err != nil {
-	// 	return nil, errors.New("invalid registration configuration")
+	//  return nil, fmt.Errorf("invalid registration configuration %w", err)
 	// }
 	// and the credentials via req.RegistrationInfo.Credentials
 
@@ -150,7 +149,8 @@ func (i *Integration) Attach(_ context.Context, req *sdk.AttachmentRequest) (*sd
 	return response, nil
 }
 
-// Send the SBOM to the configured Dependency Track instance
+// Execute will be instantiate when either an attestation or a material has been received
+// It's up to the extension builder to differentiate between inputs
 func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) error {
 	i.Logger.Info("execution requested")
 
@@ -162,13 +162,13 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 	// Extract registration and attachment configuration if needed
 	// var registrationConfig *registrationState
 	// if err := sdk.FromConfig(req.RegistrationInfo.Configuration, &registrationConfig); err != nil {
-	// 	return errors.New("invalid registration configuration")
+	//  return fmt.Errorf("invalid registration configuration %w", err)
 	// }
 
 	// // Extract attachment configuration
 	// var attachmentConfig *attachmentState
 	// if err := sdk.FromConfig(req.AttachmentInfo.Configuration, &attachmentConfig); err != nil {
-	// 	return errors.New("invalid attachment configuration")
+	//  return fmt.Errorf("invalid attachment configuration %w", err)
 	// }
 
 	// START CUSTOM LOGIC
