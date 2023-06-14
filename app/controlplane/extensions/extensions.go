@@ -16,6 +16,8 @@
 package extensions
 
 import (
+	"fmt"
+
 	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/dependencytrack/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/smtp/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
@@ -27,8 +29,6 @@ import (
 // In the future this code will iterate over a dynamic directory of plugins
 // and try to load them one by one
 func Load(l log.Logger) (sdk.AvailableExtensions, error) {
-	var res sdk.AvailableExtensions
-
 	// Array of integrations that are meant to be loaded
 	// Eventually this will be dynamically loaded from a directory
 	toEnable := []sdk.FanOutFactory{
@@ -36,18 +36,32 @@ func Load(l log.Logger) (sdk.AvailableExtensions, error) {
 		smtp.New,
 	}
 
-	// Initialize and load the extensions
+	return doLoad(toEnable, l)
+}
+
+// doLoad loads the integrations making sure that no duplicates are loaded
+func doLoad(extensions []sdk.FanOutFactory, l log.Logger) (sdk.AvailableExtensions, error) {
 	logger := servicelogger.ScopedHelper(l, "extensions")
-	for _, f := range toEnable {
+
+	var res sdk.AvailableExtensions
+	var registeredIDs = make(map[string]bool)
+
+	for _, f := range extensions {
 		d, err := f(l)
 		if err != nil {
-			logger.Errorw("msg", "failed to load extension", "error", err.Error())
-			continue
+			return nil, fmt.Errorf("failed to load extension: %w", err)
 		}
 
-		logger.Infow("msg", "loaded", "extension", d.String())
+		// NOTE: we do not take into account version yet.
+		id := d.Describe().ID
+		if _, ok := registeredIDs[id]; ok {
+			return nil, fmt.Errorf("there is already an extension loaded with id %q", id)
+		}
+
+		registeredIDs[id] = true
 
 		res = append(res, d)
+		logger.Infow("msg", "loaded", "extension", d.String())
 	}
 
 	return res, nil
