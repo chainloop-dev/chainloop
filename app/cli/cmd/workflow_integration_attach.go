@@ -16,10 +16,7 @@
 package cmd
 
 import (
-	"errors"
-
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
-	"github.com/santhosh-tekuri/jsonschema/v5"
 	"github.com/spf13/cobra"
 )
 
@@ -32,7 +29,7 @@ func newWorkflowIntegrationAttachCmd() *cobra.Command {
 		Short:   "Attach an existing registered integration to a workflow",
 		Example: `  chainloop workflow integration attach --workflow deadbeef --integration beefdoingwell --options projectName=MyProject`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Find the integration
+			// Find the integration to extract the kind of integration we care about
 			integration, err := action.NewRegisteredIntegrationDescribe(actionOpts).Run(integrationID)
 			if err != nil {
 				return err
@@ -44,27 +41,14 @@ func newWorkflowIntegrationAttachCmd() *cobra.Command {
 				return err
 			}
 
-			opts, err := parseKeyValOpts(options, item.Attachment.Properties)
+			// Parse and validate options
+			opts, err := parseAndValidateOpts(options, item.Registration)
 			if err != nil {
+				// Show schema table if validation fails
 				if err := renderSchemaTable("Available options", item.Attachment.Properties); err != nil {
 					return err
 				}
 				return err
-			}
-
-			// Validate options against schema
-			if err = validateAgainstSchema(opts, item.Attachment.Parsed); err != nil {
-				// If validation fails, print the schema table
-				var validationError *jsonschema.ValidationError
-
-				if errors.As(err, &validationError) {
-					if err := renderSchemaTable("Available options", item.Attachment.Properties); err != nil {
-						return err
-					}
-				}
-
-				validationErrors := validationError.BasicOutput().Errors
-				return errors.New(validationErrors[len(validationErrors)-1].Error)
 			}
 
 			res, err := action.NewWorkflowIntegrationAttach(actionOpts).Run(integrationID, workflowID, opts)

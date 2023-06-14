@@ -28,7 +28,7 @@ import (
 )
 
 func newRegisteredIntegrationAddCmd() *cobra.Command {
-	var flagOpts []string
+	var options []string
 	var integrationDescription string
 
 	cmd := &cobra.Command{
@@ -47,28 +47,14 @@ func newRegisteredIntegrationAddCmd() *cobra.Command {
 				return fmt.Errorf("integration %q not found", args[0])
 			}
 
-			// Parse options
-			opts, err := parseKeyValOpts(flagOpts, item.Registration.Properties)
+			// Parse and validate options
+			opts, err := parseAndValidateOpts(options, item.Registration)
 			if err != nil {
+				// Show schema table if validation fails
 				if err := renderSchemaTable("Available options", item.Registration.Properties); err != nil {
 					return err
 				}
 				return err
-			}
-
-			// Validate options against schema
-			if err = validateAgainstSchema(opts, item.Registration.Parsed); err != nil {
-				// If validation fails, print the schema table
-				var validationError *jsonschema.ValidationError
-
-				if errors.As(err, &validationError) {
-					if err := renderSchemaTable("Available options", item.Registration.Properties); err != nil {
-						return err
-					}
-				}
-
-				validationErrors := validationError.BasicOutput().Errors
-				return errors.New(validationErrors[len(validationErrors)-1].Error)
 			}
 
 			res, err := action.NewRegisteredIntegrationAdd(actionOpts).Run(args[0], integrationDescription, opts)
@@ -81,13 +67,35 @@ func newRegisteredIntegrationAddCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&integrationDescription, "description", "", "integration registration description")
-	cmd.Flags().StringSliceVar(&flagOpts, "options", nil, "integration arguments")
+	cmd.Flags().StringSliceVar(&options, "options", nil, "integration arguments")
 
 	// We maintain the dependencytrack integration as a separate command for now
 	// for compatibility reasons
 	cmd.AddCommand(newRegisteredIntegrationAddDepTrackCmd())
 
 	return cmd
+}
+
+func parseAndValidateOpts(opts []string, schema *action.JSONSchema) (map[string]any, error) {
+	// Parse
+	res, err := parseKeyValOpts(opts, schema.Properties)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse options: %w", err)
+	}
+
+	// Validate
+	if err = validateAgainstSchema(res, schema.Parsed); err != nil {
+		// If validation fails, print the schema table
+		var validationError *jsonschema.ValidationError
+
+		// Prepare error message
+		if errors.As(err, &validationError) {
+			validationErrors := validationError.BasicOutput().Errors
+			return nil, errors.New(validationErrors[len(validationErrors)-1].Error)
+		}
+	}
+
+	return res, nil
 }
 
 func validateAgainstSchema(opts map[string]any, schema *jsonschema.Schema) error {

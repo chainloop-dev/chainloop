@@ -19,9 +19,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
 )
 
@@ -100,12 +102,33 @@ func renderSchemaTable(tableTitle string, properties action.SchemaPropertiesMap)
 	t.SetTitle(tableTitle)
 	t.AppendHeader(table.Row{"Field", "Type", "Required", "Description"})
 
-	for k, v := range properties {
+	// Sort map
+	keys := make([]string, 0, len(properties))
+	for k := range properties {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		v := properties[k]
+
 		propertyType := v.Type
 		if v.Format != "" {
 			propertyType = fmt.Sprintf("%s (%s)", propertyType, v.Format)
 		}
-		t.AppendRow(table.Row{k, propertyType, v.Required, v.Description})
+
+		color := text.Colors{}
+		if v.Required {
+			color = text.Colors{text.FgHiYellow}
+		}
+
+		required := "no"
+		if v.Required {
+			required = "yes"
+		}
+
+		t.AppendRow(table.Row{color.Sprint(v.Name), color.Sprint(propertyType), color.Sprint(required), v.Description})
 	}
 
 	t.Render()
