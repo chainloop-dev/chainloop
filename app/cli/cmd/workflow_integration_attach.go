@@ -29,8 +29,25 @@ func newWorkflowIntegrationAttachCmd() *cobra.Command {
 		Short:   "Attach an existing registered integration to a workflow",
 		Example: `  chainloop workflow integration attach --workflow deadbeef --integration beefdoingwell --options projectName=MyProject`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			opts, err := parseKeyValOpts(options)
+			// Find the integration to extract the kind of integration we care about
+			integration, err := action.NewRegisteredIntegrationDescribe(actionOpts).Run(integrationID)
 			if err != nil {
+				return err
+			}
+
+			// Retrieve schema for validation and options marshaling
+			item, err := action.NewAvailableIntegrationDescribe(actionOpts).Run(integration.Kind)
+			if err != nil {
+				return err
+			}
+
+			// Parse and validate options
+			opts, err := parseAndValidateOpts(options, item.Attachment)
+			if err != nil {
+				// Show schema table if validation fails
+				if err := renderSchemaTable("Available options", item.Attachment.Properties); err != nil {
+					return err
+				}
 				return err
 			}
 

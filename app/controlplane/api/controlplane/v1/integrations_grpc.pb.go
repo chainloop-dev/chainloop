@@ -34,13 +34,14 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	IntegrationsService_ListAvailable_FullMethodName     = "/controlplane.v1.IntegrationsService/ListAvailable"
-	IntegrationsService_Register_FullMethodName          = "/controlplane.v1.IntegrationsService/Register"
-	IntegrationsService_Deregister_FullMethodName        = "/controlplane.v1.IntegrationsService/Deregister"
-	IntegrationsService_ListRegistrations_FullMethodName = "/controlplane.v1.IntegrationsService/ListRegistrations"
-	IntegrationsService_Attach_FullMethodName            = "/controlplane.v1.IntegrationsService/Attach"
-	IntegrationsService_Detach_FullMethodName            = "/controlplane.v1.IntegrationsService/Detach"
-	IntegrationsService_ListAttachments_FullMethodName   = "/controlplane.v1.IntegrationsService/ListAttachments"
+	IntegrationsService_ListAvailable_FullMethodName        = "/controlplane.v1.IntegrationsService/ListAvailable"
+	IntegrationsService_Register_FullMethodName             = "/controlplane.v1.IntegrationsService/Register"
+	IntegrationsService_Deregister_FullMethodName           = "/controlplane.v1.IntegrationsService/Deregister"
+	IntegrationsService_ListRegistrations_FullMethodName    = "/controlplane.v1.IntegrationsService/ListRegistrations"
+	IntegrationsService_DescribeRegistration_FullMethodName = "/controlplane.v1.IntegrationsService/DescribeRegistration"
+	IntegrationsService_Attach_FullMethodName               = "/controlplane.v1.IntegrationsService/Attach"
+	IntegrationsService_Detach_FullMethodName               = "/controlplane.v1.IntegrationsService/Detach"
+	IntegrationsService_ListAttachments_FullMethodName      = "/controlplane.v1.IntegrationsService/ListAttachments"
 )
 
 // IntegrationsServiceClient is the client API for IntegrationsService service.
@@ -56,6 +57,8 @@ type IntegrationsServiceClient interface {
 	Deregister(ctx context.Context, in *IntegrationsServiceDeregisterRequest, opts ...grpc.CallOption) (*IntegrationsServiceDeregisterResponse, error)
 	// List registered integrations
 	ListRegistrations(ctx context.Context, in *IntegrationsServiceListRegistrationsRequest, opts ...grpc.CallOption) (*IntegrationsServiceListRegistrationsResponse, error)
+	// View registered integration
+	DescribeRegistration(ctx context.Context, in *IntegrationsServiceDescribeRegistrationRequest, opts ...grpc.CallOption) (*IntegrationsServiceDescribeRegistrationResponse, error)
 	// Attachment Related operations
 	// Attach an integration to a workflow
 	Attach(ctx context.Context, in *IntegrationsServiceAttachRequest, opts ...grpc.CallOption) (*IntegrationsServiceAttachResponse, error)
@@ -109,6 +112,15 @@ func (c *integrationsServiceClient) ListRegistrations(ctx context.Context, in *I
 	return out, nil
 }
 
+func (c *integrationsServiceClient) DescribeRegistration(ctx context.Context, in *IntegrationsServiceDescribeRegistrationRequest, opts ...grpc.CallOption) (*IntegrationsServiceDescribeRegistrationResponse, error) {
+	out := new(IntegrationsServiceDescribeRegistrationResponse)
+	err := c.cc.Invoke(ctx, IntegrationsService_DescribeRegistration_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *integrationsServiceClient) Attach(ctx context.Context, in *IntegrationsServiceAttachRequest, opts ...grpc.CallOption) (*IntegrationsServiceAttachResponse, error) {
 	out := new(IntegrationsServiceAttachResponse)
 	err := c.cc.Invoke(ctx, IntegrationsService_Attach_FullMethodName, in, out, opts...)
@@ -149,6 +161,8 @@ type IntegrationsServiceServer interface {
 	Deregister(context.Context, *IntegrationsServiceDeregisterRequest) (*IntegrationsServiceDeregisterResponse, error)
 	// List registered integrations
 	ListRegistrations(context.Context, *IntegrationsServiceListRegistrationsRequest) (*IntegrationsServiceListRegistrationsResponse, error)
+	// View registered integration
+	DescribeRegistration(context.Context, *IntegrationsServiceDescribeRegistrationRequest) (*IntegrationsServiceDescribeRegistrationResponse, error)
 	// Attachment Related operations
 	// Attach an integration to a workflow
 	Attach(context.Context, *IntegrationsServiceAttachRequest) (*IntegrationsServiceAttachResponse, error)
@@ -174,6 +188,9 @@ func (UnimplementedIntegrationsServiceServer) Deregister(context.Context, *Integ
 }
 func (UnimplementedIntegrationsServiceServer) ListRegistrations(context.Context, *IntegrationsServiceListRegistrationsRequest) (*IntegrationsServiceListRegistrationsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListRegistrations not implemented")
+}
+func (UnimplementedIntegrationsServiceServer) DescribeRegistration(context.Context, *IntegrationsServiceDescribeRegistrationRequest) (*IntegrationsServiceDescribeRegistrationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DescribeRegistration not implemented")
 }
 func (UnimplementedIntegrationsServiceServer) Attach(context.Context, *IntegrationsServiceAttachRequest) (*IntegrationsServiceAttachResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Attach not implemented")
@@ -269,6 +286,24 @@ func _IntegrationsService_ListRegistrations_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _IntegrationsService_DescribeRegistration_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IntegrationsServiceDescribeRegistrationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IntegrationsServiceServer).DescribeRegistration(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IntegrationsService_DescribeRegistration_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IntegrationsServiceServer).DescribeRegistration(ctx, req.(*IntegrationsServiceDescribeRegistrationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _IntegrationsService_Attach_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(IntegrationsServiceAttachRequest)
 	if err := dec(in); err != nil {
@@ -345,6 +380,10 @@ var IntegrationsService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListRegistrations",
 			Handler:    _IntegrationsService_ListRegistrations_Handler,
+		},
+		{
+			MethodName: "DescribeRegistration",
+			Handler:    _IntegrationsService_DescribeRegistration_Handler,
 		},
 		{
 			MethodName: "Attach",

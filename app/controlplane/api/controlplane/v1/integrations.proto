@@ -34,6 +34,8 @@ service IntegrationsService {
 	rpc Deregister (IntegrationsServiceDeregisterRequest) returns (IntegrationsServiceDeregisterResponse);
 	// List registered integrations
 	rpc ListRegistrations (IntegrationsServiceListRegistrationsRequest) returns (IntegrationsServiceListRegistrationsResponse);
+	// View registered integration
+	rpc DescribeRegistration (IntegrationsServiceDescribeRegistrationRequest) returns (IntegrationsServiceDescribeRegistrationResponse);
 
 	// Attachment Related operations
 	// Attach an integration to a workflow
@@ -92,6 +94,14 @@ message IntegrationsServiceListAvailableResponse{
 message IntegrationsServiceListRegistrationsRequest{}
 message IntegrationsServiceListRegistrationsResponse{
 	repeated RegisteredIntegrationItem result = 1;
+}
+
+message IntegrationsServiceDescribeRegistrationRequest{
+  string id = 1 [(validate.rules).string.uuid = true];
+}
+
+message IntegrationsServiceDescribeRegistrationResponse{
+	RegisteredIntegrationItem result = 1;
 }
 
 message IntegrationsServiceDetachRequest{

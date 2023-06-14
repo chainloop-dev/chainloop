@@ -64,6 +64,14 @@ export interface IntegrationsServiceListRegistrationsResponse {
   result: RegisteredIntegrationItem[];
 }
 
+export interface IntegrationsServiceDescribeRegistrationRequest {
+  id: string;
+}
+
+export interface IntegrationsServiceDescribeRegistrationResponse {
+  result?: RegisteredIntegrationItem;
+}
+
 export interface IntegrationsServiceDetachRequest {
   id: string;
 }
@@ -792,6 +800,135 @@ export const IntegrationsServiceListRegistrationsResponse = {
   },
 };
 
+function createBaseIntegrationsServiceDescribeRegistrationRequest(): IntegrationsServiceDescribeRegistrationRequest {
+  return { id: "" };
+}
+
+export const IntegrationsServiceDescribeRegistrationRequest = {
+  encode(
+    message: IntegrationsServiceDescribeRegistrationRequest,
+    writer: _m0.Writer = _m0.Writer.create(),
+  ): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): IntegrationsServiceDescribeRegistrationRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseIntegrationsServiceDescribeRegistrationRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): IntegrationsServiceDescribeRegistrationRequest {
+    return { id: isSet(object.id) ? String(object.id) : "" };
+  },
+
+  toJSON(message: IntegrationsServiceDescribeRegistrationRequest): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<IntegrationsServiceDescribeRegistrationRequest>, I>>(
+    base?: I,
+  ): IntegrationsServiceDescribeRegistrationRequest {
+    return IntegrationsServiceDescribeRegistrationRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<IntegrationsServiceDescribeRegistrationRequest>, I>>(
+    object: I,
+  ): IntegrationsServiceDescribeRegistrationRequest {
+    const message = createBaseIntegrationsServiceDescribeRegistrationRequest();
+    message.id = object.id ?? "";
+    return message;
+  },
+};
+
+function createBaseIntegrationsServiceDescribeRegistrationResponse(): IntegrationsServiceDescribeRegistrationResponse {
+  return { result: undefined };
+}
+
+export const IntegrationsServiceDescribeRegistrationResponse = {
+  encode(
+    message: IntegrationsServiceDescribeRegistrationResponse,
+    writer: _m0.Writer = _m0.Writer.create(),
+  ): _m0.Writer {
+    if (message.result !== undefined) {
+      RegisteredIntegrationItem.encode(message.result, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): IntegrationsServiceDescribeRegistrationResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseIntegrationsServiceDescribeRegistrationResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.result = RegisteredIntegrationItem.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): IntegrationsServiceDescribeRegistrationResponse {
+    return { result: isSet(object.result) ? RegisteredIntegrationItem.fromJSON(object.result) : undefined };
+  },
+
+  toJSON(message: IntegrationsServiceDescribeRegistrationResponse): unknown {
+    const obj: any = {};
+    message.result !== undefined &&
+      (obj.result = message.result ? RegisteredIntegrationItem.toJSON(message.result) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<IntegrationsServiceDescribeRegistrationResponse>, I>>(
+    base?: I,
+  ): IntegrationsServiceDescribeRegistrationResponse {
+    return IntegrationsServiceDescribeRegistrationResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<IntegrationsServiceDescribeRegistrationResponse>, I>>(
+    object: I,
+  ): IntegrationsServiceDescribeRegistrationResponse {
+    const message = createBaseIntegrationsServiceDescribeRegistrationResponse();
+    message.result = (object.result !== undefined && object.result !== null)
+      ? RegisteredIntegrationItem.fromPartial(object.result)
+      : undefined;
+    return message;
+  },
+};
+
 function createBaseIntegrationsServiceDetachRequest(): IntegrationsServiceDetachRequest {
   return { id: "" };
 }
@@ -1378,6 +1515,11 @@ export interface IntegrationsService {
     request: DeepPartial<IntegrationsServiceListRegistrationsRequest>,
     metadata?: grpc.Metadata,
   ): Promise<IntegrationsServiceListRegistrationsResponse>;
+  /** View registered integration */
+  DescribeRegistration(
+    request: DeepPartial<IntegrationsServiceDescribeRegistrationRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<IntegrationsServiceDescribeRegistrationResponse>;
   /**
    * Attachment Related operations
    * Attach an integration to a workflow
@@ -1407,6 +1549,7 @@ export class IntegrationsServiceClientImpl implements IntegrationsService {
     this.Register = this.Register.bind(this);
     this.Deregister = this.Deregister.bind(this);
     this.ListRegistrations = this.ListRegistrations.bind(this);
+    this.DescribeRegistration = this.DescribeRegistration.bind(this);
     this.Attach = this.Attach.bind(this);
     this.Detach = this.Detach.bind(this);
     this.ListAttachments = this.ListAttachments.bind(this);
@@ -1452,6 +1595,17 @@ export class IntegrationsServiceClientImpl implements IntegrationsService {
     return this.rpc.unary(
       IntegrationsServiceListRegistrationsDesc,
       IntegrationsServiceListRegistrationsRequest.fromPartial(request),
+      metadata,
+    );
+  }
+
+  DescribeRegistration(
+    request: DeepPartial<IntegrationsServiceDescribeRegistrationRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<IntegrationsServiceDescribeRegistrationResponse> {
+    return this.rpc.unary(
+      IntegrationsServiceDescribeRegistrationDesc,
+      IntegrationsServiceDescribeRegistrationRequest.fromPartial(request),
       metadata,
     );
   }
@@ -1574,6 +1728,29 @@ export const IntegrationsServiceListRegistrationsDesc: UnaryMethodDefinitionish 
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = IntegrationsServiceListRegistrationsResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const IntegrationsServiceDescribeRegistrationDesc: UnaryMethodDefinitionish = {
+  methodName: "DescribeRegistration",
+  service: IntegrationsServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return IntegrationsServiceDescribeRegistrationRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = IntegrationsServiceDescribeRegistrationResponse.decode(data);
       return {
         ...value,
         toObject() {

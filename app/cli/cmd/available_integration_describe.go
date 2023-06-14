@@ -19,10 +19,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/jedib0t/go-pretty/v6/table"
-	"github.com/santhosh-tekuri/jsonschema/v5"
+	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
 )
 
@@ -61,87 +62,92 @@ func availableIntegrationDescribeTableOutput(items []*action.AvailableIntegratio
 
 	i := items[0]
 
+	// General information
 	t := newTableWriter()
 	t.AppendHeader(table.Row{"ID", "Version"})
 	t.AppendRow(table.Row{i.ID, i.Version})
 	t.Render()
 
-	rt := newTableWriter()
-	rt.SetTitle("Registration inputs")
-	rt.AppendHeader(table.Row{"Field", "Type", "Required", "Description"})
-	if err := renderSchemaOptions(rt, i.Registration.Parsed); err != nil {
+	// Schema information
+	if err := renderSchemaTable("Registration inputs", i.Registration.Properties); err != nil {
 		return err
 	}
-	rt.Render()
 
 	if full {
-		var prettyRegistrationJSON bytes.Buffer
-		err := json.Indent(&prettyRegistrationJSON, []byte(i.Registration.Raw), "", "  ")
-		if err != nil {
+		if err := renderSchemaRaw("Registration JSON schema", i.Registration.Raw); err != nil {
 			return err
 		}
-
-		rt = newTableWriter()
-		rt.SetTitle("Registration JSON schema")
-		rt.AppendRow(table.Row{prettyRegistrationJSON.String()})
-		rt.Render()
 	}
 
-	rt = newTableWriter()
-	rt.SetTitle("Attachment inputs")
-	rt.AppendHeader(table.Row{"Field", "Type", "Required", "Description"})
-	if err := renderSchemaOptions(rt, i.Attachment.Parsed); err != nil {
+	if err := renderSchemaTable("Attachment inputs", i.Attachment.Properties); err != nil {
 		return err
 	}
-	rt.Render()
 
 	if full {
-		var prettyAttachmentJSON bytes.Buffer
-		err := json.Indent(&prettyAttachmentJSON, []byte(i.Attachment.Raw), "", "  ")
-		if err != nil {
+		if err := renderSchemaRaw("Attachment JSON schema", i.Attachment.Raw); err != nil {
 			return err
 		}
-		rt = newTableWriter()
-		rt.SetTitle("Attachment JSON schema")
-		rt.AppendRow(table.Row{prettyAttachmentJSON.String()})
-		rt.Render()
 	}
 
 	return nil
 }
 
-func renderSchemaOptions(t table.Writer, s *jsonschema.Schema) error {
-	// Schema with reference
-	if s.Ref != nil {
-		return renderSchemaOptions(t, s.Ref)
+// render de-normalized schema format
+func renderSchemaTable(tableTitle string, properties action.SchemaPropertiesMap) error {
+	if len(properties) == 0 {
+		return nil
 	}
 
-	// Appended schemas
-	if s.AllOf != nil {
-		for _, s := range s.AllOf {
-			if err := renderSchemaOptions(t, s); err != nil {
-				return err
-			}
-		}
+	t := newTableWriter()
+	t.SetTitle(tableTitle)
+	t.AppendHeader(table.Row{"Field", "Type", "Required", "Description"})
+
+	// Sort map
+	keys := make([]string, 0, len(properties))
+	for k := range properties {
+		keys = append(keys, k)
 	}
 
-	if s.Properties != nil {
-		requiredMap := make(map[string]bool)
-		for _, r := range s.Required {
-			requiredMap[r] = true
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		v := properties[k]
+
+		propertyType := v.Type
+		if v.Format != "" {
+			propertyType = fmt.Sprintf("%s (%s)", propertyType, v.Format)
 		}
 
-		for k, v := range s.Properties {
-			if err := renderSchemaOptions(t, v); err != nil {
-				return err
-			}
-
-			// We do not support nested schemas
-			// They are restricted at build time
-			var required = requiredMap[k]
-			t.AppendRow(table.Row{k, v.Types[0], required, v.Description})
+		color := text.Colors{}
+		if v.Required {
+			color = text.Colors{text.FgHiYellow}
 		}
+
+		required := "no"
+		if v.Required {
+			required = "yes"
+		}
+
+		t.AppendRow(table.Row{color.Sprint(v.Name), color.Sprint(propertyType), color.Sprint(required), v.Description})
 	}
+
+	t.Render()
+
+	return nil
+}
+
+// render raw JSON schema document
+func renderSchemaRaw(tableTitle string, s string) error {
+	var prettyAttachmentJSON bytes.Buffer
+	err := json.Indent(&prettyAttachmentJSON, []byte(s), "", "  ")
+	if err != nil {
+		return err
+	}
+
+	rt := newTableWriter()
+	rt.SetTitle(tableTitle)
+	rt.AppendRow(table.Row{prettyAttachmentJSON.String()})
+	rt.Render()
 
 	return nil
 }
