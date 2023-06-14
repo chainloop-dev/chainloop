@@ -34,10 +34,12 @@ type Integration struct {
 // see https://github.com/invopop/jsonschema#example for more information
 type registrationRequest struct {
 	// TestURL is a required, valid URL
-	TestURL string `json:"testURL" jsonschema:"format=uri"`
+	TestURL string `json:"testURL" jsonschema:"format=uri,description=Example of URL-type input"`
 }
 
-type attachmentRequest struct{}
+type attachmentRequest struct {
+	OptionalBool bool `json:"optionalBool,omitempty" jsonschema:"description=Example of optional boolean input"`
+}
 
 // You can use an arbitrary struct as a configuration state
 // type registrationState struct{}
@@ -49,7 +51,7 @@ func New(l log.Logger) (sdk.FanOut, error) {
 	base, err := sdk.NewFanOut(
 		&sdk.NewParams{
 			ID:      "template",
-			Version: "1.0",
+			Version: "0.1",
 			Logger:  l,
 			InputSchema: &sdk.InputSchema{
 				Registration: registrationRequest{},
@@ -178,10 +180,15 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 // In this case we expect to receive a SBOM in CycloneDX format
 // plus registration, attachment state and credentials
 func validateExecuteRequest(req *sdk.ExecutionRequest) error {
-	if req == nil || req.Input == nil || req.Input.Material == nil || req.Input.Material.Content == nil {
-		return errors.New("invalid input")
+	if req == nil || req.Input == nil {
+		return errors.New("execution input not received")
 	}
 
+	if req.Input.Material == nil || req.Input.Material.Content == nil {
+		return errors.New("execution input invalid, material not provided or empty content")
+	}
+
+	// This is just an example of guard clause, you can remove it if you want to accept any kind of input
 	if req.Input.Material.Type != schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON.String() {
 		return fmt.Errorf("invalid input type: %s", req.Input.Material.Type)
 	}
