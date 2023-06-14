@@ -48,10 +48,16 @@ type JSONSchema struct {
 
 type SchemaPropertiesMap map[string]*SchemaProperty
 type SchemaProperty struct {
-	Name        string
-	Type        string
-	Required    bool
+	// Name of the property
+	Name string
+	// optional description
 	Description string
+	// Type of the property (string, boolean, number)
+	Type string
+	// If the property is required
+	Required bool
+	// Optional format (email, host)
+	Format string
 }
 
 func NewAvailableIntegrationList(cfg *ActionsOpts) *AvailableIntegrationList {
@@ -167,6 +173,7 @@ func calculatePropertiesMap(s *jsonschema.Schema, m *SchemaPropertiesMap) error 
 				Type:        v.Types[0],
 				Required:    required,
 				Description: v.Description,
+				Format:      v.Format,
 			}
 		}
 	}

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/dependencytrack/v1/registration-request",
+  "$ref": "#/$defs/registrationRequest",
+  "$defs": {
+    "registrationRequest": {
+      "properties": {
+        "instanceURI": {
+          "type": "string",
+          "format": "uri",
+          "description": "The URL of the Dependency-Track instance"
+        },
+        "apiKey": {
+          "type": "string",
+          "description": "The API key to use for authentication"
+        },
+        "port": {
+          "type": "number"
+        },
+        "allowAutoCreate": {
+          "type": "boolean",
+          "description": "Support of creating projects on demand"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": ["instanceURI", "apiKey"]
+    }
+  }
+}

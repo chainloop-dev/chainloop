@@ -60,11 +60,13 @@ func availableIntegrationDescribeTableOutput(items []*action.AvailableIntegratio
 
 	i := items[0]
 
+	// General information
 	t := newTableWriter()
 	t.AppendHeader(table.Row{"ID", "Version"})
 	t.AppendRow(table.Row{i.ID, i.Version})
 	t.Render()
 
+	// Schema information
 	if err := renderSchemaTable("Registration inputs", i.Registration.Properties); err != nil {
 		return err
 	}
@@ -88,6 +90,7 @@ func availableIntegrationDescribeTableOutput(items []*action.AvailableIntegratio
 	return nil
 }
 
+// render de-normalized schema format
 func renderSchemaTable(tableTitle string, properties action.SchemaPropertiesMap) error {
 	if len(properties) == 0 {
 		return nil
@@ -98,7 +101,11 @@ func renderSchemaTable(tableTitle string, properties action.SchemaPropertiesMap)
 	t.AppendHeader(table.Row{"Field", "Type", "Required", "Description"})
 
 	for k, v := range properties {
-		t.AppendRow(table.Row{k, v.Type, v.Required, v.Description})
+		propertyType := v.Type
+		if v.Format != "" {
+			propertyType = fmt.Sprintf("%s (%s)", propertyType, v.Format)
+		}
+		t.AppendRow(table.Row{k, propertyType, v.Required, v.Description})
 	}
 
 	t.Render()
@@ -106,6 +113,7 @@ func renderSchemaTable(tableTitle string, properties action.SchemaPropertiesMap)
 	return nil
 }
 
+// render raw JSON schema document
 func renderSchemaRaw(tableTitle string, s string) error {
 	var prettyAttachmentJSON bytes.Buffer
 	err := json.Indent(&prettyAttachmentJSON, []byte(s), "", "  ")
