@@ -8,13 +8,13 @@ In the following example, we will use the AWS SES service.
 
 1. To get started, you need to register the extension in your Chainloop organization.
 ```
-chainloop integration registered add smtp --options user=AHDHSYEE7e73,password=kjsdfda8asd****,host=email-smtp.us-east-1.amazonaws.com,port=587,to=platform-team@example.com,from=notifier@example.com
+chainloop integration registered add smtp --opt user=AHDHSYEE7e73 --opt password=kjsdfda8asd**** --opt host=email-smtp.us-east-1.amazonaws.com --opt port=587 --opt to=platform-team@example.com --opt from=notifier@example.com
 ```
 
 2. When attaching the integration to your workflow, you have the option to specify CC:
 
 ```
-chainloop workflow integration attach --workflow $WID --integration $IID --options cc=security@example.com
+chainloop integration attached add --workflow $WID --integration $IID --opt cc=security@example.com
 ```
 
 cc is optional:
