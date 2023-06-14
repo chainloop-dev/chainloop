@@ -375,8 +375,37 @@ func FromConfig(data Configuration, v any) error {
 	return json.Unmarshal(data, v)
 }
 
-// generate a JSON schema from a struct, see
+// generate a flat JSON schema from a struct using https://github.com/invopop/jsonschema
+// We've put some limitations on the kind of input structs we support, for example:
+// - Nested schemas are not supported
+// - Array based properties are not supported
+
 func generateJSONSchema(schema any) ([]byte, error) {
-	s := jsonschema.Reflect(schema)
+	if schema == nil {
+		return nil, fmt.Errorf("schema is nil")
+	}
+
+	r := &jsonschema.Reflector{}
+	// Set top-level properties flattened
+	// https://github.com/invopop/jsonschema#expandedstruct
+	r.ExpandedStruct = true
+
+	s := r.Reflect(schema)
+
+	// Double check that the schema is valid
+	// Nested schemas are not supported
+	if len(s.Definitions) > 0 {
+		return nil, fmt.Errorf("nested schemas are not supported")
+	}
+
+	// Array based properties are not supported
+	for _, k := range s.Properties.Keys() {
+		p, _ := s.Properties.Get(k)
+		s := p.(*jsonschema.Schema)
+		if s.Items != nil {
+			return nil, fmt.Errorf("array based properties are not supported")
+		}
+	}
+
 	return json.Marshal(s)
 }

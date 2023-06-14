@@ -150,7 +150,11 @@ func (s *dispatcherTestSuite) SetupTest() {
 	customImplementation := mockedSDK.NewFanOutExtension(s.T())
 	customImplementation.On("Register", ctx, mock.Anything).Return(&sdk.RegistrationResponse{Configuration: []byte("deadbeef")}, nil)
 	customImplementation.On("Attach", ctx, mock.Anything).Return(&sdk.AttachmentResponse{Configuration: []byte("deadbeef")}, nil)
-	fanOutSchemas := &sdk.InputSchema{Registration: struct{ TestProperty string }{}, Attachment: struct{ TestProperty string }{}}
+	type schema struct {
+		TestProperty string
+	}
+
+	fanOutSchemas := &sdk.InputSchema{Registration: schema{}, Attachment: schema{}}
 
 	b, err := sdk.NewFanOut(
 		&sdk.NewParams{

@@ -26,9 +26,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type schema struct {
+	TestProperty string `json:"testProperty"`
+}
+
 var inputSchema = &sdk.InputSchema{
-	Registration: struct{ TestProperty string }{TestProperty: "test"},
-	Attachment:   struct{ TestProperty string }{TestProperty: "test"},
+	Registration: schema{},
+	Attachment:   schema{},
 }
 
 func TestNewBaseIntegration(t *testing.T) {
@@ -192,13 +196,13 @@ func TestString(t *testing.T) {
 	}
 }
 
-func TestValidateRegistrationRequest(t *testing.T) {
-	var schema struct {
-		Username string `json:"username"`
-		Email    string `json:"email" jsonschema:"format=email"`
-		Optional int    `json:"optional,omitempty"`
-	}
+type registrationSchema struct {
+	Username string `json:"username"`
+	Email    string `json:"email" jsonschema:"format=email"`
+	Optional int    `json:"optional,omitempty"`
+}
 
+func TestValidateRegistrationRequest(t *testing.T) {
 	testCases := []struct {
 		name    string
 		input   map[string]interface{}
@@ -250,7 +254,7 @@ func TestValidateRegistrationRequest(t *testing.T) {
 			got, err := sdk.NewFanOut(
 				&sdk.NewParams{
 					ID: "ID", Version: "123",
-					InputSchema: &sdk.InputSchema{Registration: &schema, Attachment: struct{}{}},
+					InputSchema: &sdk.InputSchema{Registration: &registrationSchema{}, Attachment: &attachmentSchema{}},
 				}, sdk.WithEnvelope())
 
 			require.NoError(t, err)
@@ -267,12 +271,12 @@ func TestValidateRegistrationRequest(t *testing.T) {
 	}
 }
 
-func TestValidateAttachmentRequest(t *testing.T) {
-	var schema struct {
-		ProjectID   int    `json:"projectID,omitempty" jsonschema:"oneof_required=projectID,minLength=1"`
-		ProjectName string `json:"projectName,omitempty" jsonschema:"oneof_required=projectName,minLength=1"`
-	}
+type attachmentSchema struct {
+	ProjectID   int    `json:"projectID,omitempty" jsonschema:"oneof_required=projectID,minLength=1"`
+	ProjectName string `json:"projectName,omitempty" jsonschema:"oneof_required=projectName,minLength=1"`
+}
 
+func TestValidateAttachmentRequest(t *testing.T) {
 	testCases := []struct {
 		name    string
 		input   map[string]interface{}
@@ -317,7 +321,7 @@ func TestValidateAttachmentRequest(t *testing.T) {
 			got, err := sdk.NewFanOut(
 				&sdk.NewParams{
 					ID: "ID", Version: "123",
-					InputSchema: &sdk.InputSchema{Registration: struct{}{}, Attachment: &schema},
+					InputSchema: &sdk.InputSchema{Registration: &registrationSchema{}, Attachment: &attachmentSchema{}},
 				}, sdk.WithEnvelope())
 
 			require.NoError(t, err)
