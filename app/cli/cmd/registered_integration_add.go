@@ -16,7 +16,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -84,7 +83,7 @@ func parseAndValidateOpts(opts []string, schema *action.JSONSchema) (map[string]
 	}
 
 	// Validate
-	if err = validateAgainstSchema(res, schema.Parsed); err != nil {
+	if err = schema.Parsed.Validate(res); err != nil {
 		// If validation fails, print the schema table
 		var validationError *jsonschema.ValidationError
 
@@ -96,27 +95,6 @@ func parseAndValidateOpts(opts []string, schema *action.JSONSchema) (map[string]
 	}
 
 	return res, nil
-}
-
-func validateAgainstSchema(opts map[string]any, schema *jsonschema.Schema) error {
-	// 1 - Marshal the options to JSON
-	b, err := json.Marshal(opts)
-	if err != nil {
-		return err
-	}
-
-	var v any
-	if err := json.Unmarshal(b, &v); err != nil {
-		return fmt.Errorf("failed to unmarshal payload: %w", err)
-	}
-
-	// 2 - Validate the JSON against the schema
-	err = schema.Validate(v)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func parseKeyValOpts(opts []string, propertiesMap action.SchemaPropertiesMap) (map[string]any, error) {
