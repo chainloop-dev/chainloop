@@ -48,9 +48,9 @@ func availableIntegrationListTableOutput(items []*action.AvailableIntegrationIte
 	}
 
 	t := newTableWriter()
-	t.AppendHeader(table.Row{"ID", "Version"})
+	t.AppendHeader(table.Row{"ID", "Version", "Description"})
 	for _, i := range items {
-		t.AppendRow(table.Row{i.ID, i.Version})
+		t.AppendRow(table.Row{i.ID, i.Version, i.Description})
 		t.AppendSeparator()
 	}
 

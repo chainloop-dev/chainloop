@@ -33,6 +33,7 @@ type AvailableIntegrationList struct {
 type AvailableIntegrationItem struct {
 	ID           string      `json:"id"`
 	Version      string      `json:"version"`
+	Description  string      `json:"description,omitempty"`
 	Registration *JSONSchema `json:"registration"`
 	Attachment   *JSONSchema `json:"attachment"`
 }
@@ -43,7 +44,7 @@ type JSONSchema struct {
 	// Parsed schema so it can be used for validation or other purposes
 	// It's not shown in the json output
 	Parsed     *jsonschema.Schema  `json:"-"`
-	Properties SchemaPropertiesMap `json:"properties"`
+	Properties SchemaPropertiesMap `json:"-"`
 }
 
 type SchemaPropertiesMap map[string]*SchemaProperty
@@ -84,13 +85,13 @@ func (action *AvailableIntegrationList) Run() ([]*AvailableIntegrationItem, erro
 	return result, nil
 }
 
-func pbAvailableIntegrationItemToAction(in *pb.IntegrationsServiceListAvailableResponse_Integration) (*AvailableIntegrationItem, error) {
+func pbAvailableIntegrationItemToAction(in *pb.IntegrationAvailableItem) (*AvailableIntegrationItem, error) {
 	if in == nil {
 		return nil, errors.New("nil input")
 	}
 
 	i := &AvailableIntegrationItem{
-		ID: in.GetId(), Version: in.GetVersion(),
+		ID: in.GetId(), Version: in.GetVersion(), Description: in.GetDescription(),
 		Registration: &JSONSchema{Raw: string(in.GetRegistrationSchema())},
 		Attachment:   &JSONSchema{Raw: string(in.GetAttachmentSchema())},
 	}

@@ -41,10 +41,10 @@ export interface IntegrationsServiceListAvailableRequest {
 }
 
 export interface IntegrationsServiceListAvailableResponse {
-  result: IntegrationsServiceListAvailableResponse_Integration[];
+  result: IntegrationAvailableItem[];
 }
 
-export interface IntegrationsServiceListAvailableResponse_Integration {
+export interface IntegrationAvailableItem {
   /** Integration identifier */
   id: string;
   version: string;
@@ -53,8 +53,9 @@ export interface IntegrationsServiceListAvailableResponse_Integration {
   attachmentSchema: Uint8Array;
   /** List of materials that the integration is subscribed to */
   subscribedMaterials: string[];
-  /** Weather the integration is subscribed to attestations */
+  /** Whether the integration is subscribed to attestations */
   subscribedAttestation: boolean;
+  description: string;
 }
 
 export interface IntegrationsServiceListRegistrationsRequest {
@@ -471,7 +472,7 @@ function createBaseIntegrationsServiceListAvailableResponse(): IntegrationsServi
 export const IntegrationsServiceListAvailableResponse = {
   encode(message: IntegrationsServiceListAvailableResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.result) {
-      IntegrationsServiceListAvailableResponse_Integration.encode(v!, writer.uint32(10).fork()).ldelim();
+      IntegrationAvailableItem.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
@@ -488,7 +489,7 @@ export const IntegrationsServiceListAvailableResponse = {
             break;
           }
 
-          message.result.push(IntegrationsServiceListAvailableResponse_Integration.decode(reader, reader.uint32()));
+          message.result.push(IntegrationAvailableItem.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
@@ -501,18 +502,14 @@ export const IntegrationsServiceListAvailableResponse = {
 
   fromJSON(object: any): IntegrationsServiceListAvailableResponse {
     return {
-      result: Array.isArray(object?.result)
-        ? object.result.map((e: any) => IntegrationsServiceListAvailableResponse_Integration.fromJSON(e))
-        : [],
+      result: Array.isArray(object?.result) ? object.result.map((e: any) => IntegrationAvailableItem.fromJSON(e)) : [],
     };
   },
 
   toJSON(message: IntegrationsServiceListAvailableResponse): unknown {
     const obj: any = {};
     if (message.result) {
-      obj.result = message.result.map((e) =>
-        e ? IntegrationsServiceListAvailableResponse_Integration.toJSON(e) : undefined
-      );
+      obj.result = message.result.map((e) => e ? IntegrationAvailableItem.toJSON(e) : undefined);
     } else {
       obj.result = [];
     }
@@ -529,13 +526,12 @@ export const IntegrationsServiceListAvailableResponse = {
     object: I,
   ): IntegrationsServiceListAvailableResponse {
     const message = createBaseIntegrationsServiceListAvailableResponse();
-    message.result = object.result?.map((e) => IntegrationsServiceListAvailableResponse_Integration.fromPartial(e)) ||
-      [];
+    message.result = object.result?.map((e) => IntegrationAvailableItem.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBaseIntegrationsServiceListAvailableResponse_Integration(): IntegrationsServiceListAvailableResponse_Integration {
+function createBaseIntegrationAvailableItem(): IntegrationAvailableItem {
   return {
     id: "",
     version: "",
@@ -543,14 +539,12 @@ function createBaseIntegrationsServiceListAvailableResponse_Integration(): Integ
     attachmentSchema: new Uint8Array(),
     subscribedMaterials: [],
     subscribedAttestation: false,
+    description: "",
   };
 }
 
-export const IntegrationsServiceListAvailableResponse_Integration = {
-  encode(
-    message: IntegrationsServiceListAvailableResponse_Integration,
-    writer: _m0.Writer = _m0.Writer.create(),
-  ): _m0.Writer {
+export const IntegrationAvailableItem = {
+  encode(message: IntegrationAvailableItem, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.id !== "") {
       writer.uint32(10).string(message.id);
     }
@@ -569,13 +563,16 @@ export const IntegrationsServiceListAvailableResponse_Integration = {
     if (message.subscribedAttestation === true) {
       writer.uint32(48).bool(message.subscribedAttestation);
     }
+    if (message.description !== "") {
+      writer.uint32(58).string(message.description);
+    }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): IntegrationsServiceListAvailableResponse_Integration {
+  decode(input: _m0.Reader | Uint8Array, length?: number): IntegrationAvailableItem {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseIntegrationsServiceListAvailableResponse_Integration();
+    const message = createBaseIntegrationAvailableItem();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -621,6 +618,13 @@ export const IntegrationsServiceListAvailableResponse_Integration = {
 
           message.subscribedAttestation = reader.bool();
           continue;
+        case 7:
+          if (tag != 58) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
         break;
@@ -630,7 +634,7 @@ export const IntegrationsServiceListAvailableResponse_Integration = {
     return message;
   },
 
-  fromJSON(object: any): IntegrationsServiceListAvailableResponse_Integration {
+  fromJSON(object: any): IntegrationAvailableItem {
     return {
       id: isSet(object.id) ? String(object.id) : "",
       version: isSet(object.version) ? String(object.version) : "",
@@ -642,10 +646,11 @@ export const IntegrationsServiceListAvailableResponse_Integration = {
         ? object.subscribedMaterials.map((e: any) => String(e))
         : [],
       subscribedAttestation: isSet(object.subscribedAttestation) ? Boolean(object.subscribedAttestation) : false,
+      description: isSet(object.description) ? String(object.description) : "",
     };
   },
 
-  toJSON(message: IntegrationsServiceListAvailableResponse_Integration): unknown {
+  toJSON(message: IntegrationAvailableItem): unknown {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
     message.version !== undefined && (obj.version = message.version);
@@ -663,25 +668,23 @@ export const IntegrationsServiceListAvailableResponse_Integration = {
       obj.subscribedMaterials = [];
     }
     message.subscribedAttestation !== undefined && (obj.subscribedAttestation = message.subscribedAttestation);
+    message.description !== undefined && (obj.description = message.description);
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<IntegrationsServiceListAvailableResponse_Integration>, I>>(
-    base?: I,
-  ): IntegrationsServiceListAvailableResponse_Integration {
-    return IntegrationsServiceListAvailableResponse_Integration.fromPartial(base ?? {});
+  create<I extends Exact<DeepPartial<IntegrationAvailableItem>, I>>(base?: I): IntegrationAvailableItem {
+    return IntegrationAvailableItem.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<IntegrationsServiceListAvailableResponse_Integration>, I>>(
-    object: I,
-  ): IntegrationsServiceListAvailableResponse_Integration {
-    const message = createBaseIntegrationsServiceListAvailableResponse_Integration();
+  fromPartial<I extends Exact<DeepPartial<IntegrationAvailableItem>, I>>(object: I): IntegrationAvailableItem {
+    const message = createBaseIntegrationAvailableItem();
     message.id = object.id ?? "";
     message.version = object.version ?? "";
     message.registrationSchema = object.registrationSchema ?? new Uint8Array();
     message.attachmentSchema = object.attachmentSchema ?? new Uint8Array();
     message.subscribedMaterials = object.subscribedMaterials?.map((e) => e) || [];
     message.subscribedAttestation = object.subscribedAttestation ?? false;
+    message.description = object.description ?? "";
     return message;
   },
 };

@@ -34,12 +34,14 @@ import (
 )
 
 // FanOutIntegration represents an extension point for integrations to be able to
-// fanout subscribed inputs
+// fanOut subscribed inputs
 type FanOutIntegration struct {
 	// Identifier of the integration
 	id string
 	// Integration version
 	version string
+	// Optional description
+	description string
 	// Kind of inputs does the integration expect as part of the execution
 	subscribedInputs *Inputs
 	// Rendered schema definitions
@@ -147,15 +149,16 @@ type InputMaterial struct {
 }
 
 type NewParams struct {
-	ID, Version string
-	Logger      log.Logger
-	InputSchema *InputSchema
+	ID, Version, Description string
+	Logger                   log.Logger
+	InputSchema              *InputSchema
 }
 
 func NewFanOut(p *NewParams, opts ...NewOpt) (*FanOutIntegration, error) {
 	c := &FanOutIntegration{
 		id:               p.ID,
 		version:          p.Version,
+		description:      p.Description,
 		log:              p.Logger,
 		subscribedInputs: &Inputs{},
 	}
@@ -257,6 +260,8 @@ type IntegrationInfo struct {
 	ID string
 	// Integration version
 	Version string
+	// Integration description
+	Description string
 	// Kind of inputs does the integration expect as part of the execution
 	SubscribedInputs *Inputs
 	// Schemas in JSON schema format
@@ -267,6 +272,7 @@ func (i *FanOutIntegration) Describe() *IntegrationInfo {
 	return &IntegrationInfo{
 		ID:                     i.id,
 		Version:                i.version,
+		Description:            i.description,
 		SubscribedInputs:       i.subscribedInputs,
 		RegistrationJSONSchema: i.registrationJSONSchema,
 		AttachmentJSONSchema:   i.attachmentJSONSchema,
