@@ -27,6 +27,7 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/in-toto/in-toto-golang/in_toto"
 	"github.com/invopop/jsonschema"
 	schema_validator "github.com/santhosh-tekuri/jsonschema/v5"
 
@@ -122,8 +123,14 @@ type ExecutionRequest struct {
 // An execute method will receive either the envelope or a material as input
 // The material will contain its content as well as the metadata
 type ExecuteInput struct {
-	DSSEnvelope *dsse.Envelope
+	Attestation *ExecuteAttestation
 	Material    *ExecuteMaterial
+}
+
+type ExecuteAttestation struct {
+	Envelope  *dsse.Envelope
+	Statement *in_toto.Statement
+	Predicate chainloop.NormalizablePredicate
 }
 
 type ExecuteMaterial struct {

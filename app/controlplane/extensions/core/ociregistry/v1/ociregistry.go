@@ -179,7 +179,7 @@ func (i *Integration) Execute(ctx context.Context, req *sdk.ExecutionRequest) er
 	i.Logger.Infow("msg", "Uploading attestation", "repo", registrationConfig.Repository, "workflowID", req.WorkflowID)
 
 	// Perform the upload of the json marshalled attestation
-	jsonContent, err := json.Marshal(req.Input.DSSEnvelope)
+	jsonContent, err := json.Marshal(req.Input.Attestation.Envelope)
 	if err != nil {
 		return fmt.Errorf("marshaling the envelope: %w", err)
 	}
@@ -206,7 +206,7 @@ func validateExecuteRequest(req *sdk.ExecutionRequest) error {
 		return errors.New("execution input not received")
 	}
 
-	if req.Input.DSSEnvelope == nil {
+	if req.Input.Attestation == nil {
 		return errors.New("execution input invalid, the envelope is empty")
 	}
 
