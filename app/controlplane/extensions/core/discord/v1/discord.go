@@ -24,6 +24,8 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"strings"
+	"text/template"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
 	"github.com/go-kratos/kratos/v2/log"
@@ -36,7 +38,7 @@ type Integration struct {
 // 1 - API schema definitions
 type registrationRequest struct {
 	WebhookURL string `json:"webhook" jsonschema:"format=uri,description=URL of the discord webhook"`
-	Username   string `json:"username,omitempty" jsonschema:"minLenght=1,description=Override the default username of the webhook	"`
+	Username   string `json:"username,omitempty" jsonschema:"minLength=1,description=Override the default username of the webhook	"`
 }
 
 type attachmentRequest struct{}
@@ -143,8 +145,16 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 		return fmt.Errorf("error marshaling JSON: %w", err)
 	}
 
+	metadata := req.ChainloopMetadata
+	tplData := &templateContent{
+		WorkflowID:      metadata.WorkflowID,
+		WorkflowName:    metadata.WorkflowName,
+		WorkflowProject: metadata.WorkflowProject,
+		RunnerLink:      req.Input.Attestation.Predicate.GetRunLink(),
+	}
+
 	webhookURL := req.RegistrationInfo.Credentials.Password
-	if err := executeWebhook(webhookURL, config.Username, attestationJSON); err != nil {
+	if err := executeWebhook(webhookURL, config.Username, attestationJSON, renderContent(tplData)); err != nil {
 		return fmt.Errorf("error executing webhook: %w", err)
 	}
 
@@ -170,14 +180,14 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 // --boundary
 // Content-Disposition: form-data; name="files[0]"; filename="statement.json"
 // --boundary
-func executeWebhook(webhookURL, username string, jsonStatement []byte) error {
+func executeWebhook(webhookURL, usernameOverride string, jsonStatement []byte, msgContent string) error {
 	var b bytes.Buffer
 	multipartWriter := multipart.NewWriter(&b)
 
 	// webhook POST payload JSON
 	payload := payloadJSON{
-		Content:  "New attestation!",
-		Username: username,
+		Content:  msgContent,
+		Username: usernameOverride,
 		Attachments: []payloadAttachment{
 			{
 				ID:       0,
@@ -258,3 +268,26 @@ func validateExecuteRequest(req *sdk.ExecutionRequest) error {
 
 	return nil
 }
+
+type templateContent struct {
+	WorkflowID, WorkflowName, WorkflowProject, RunnerLink string
+}
+
+func renderContent(metadata *templateContent) string {
+	t := template.Must(template.New("content").Parse(msgTemplate))
+
+	var b bytes.Buffer
+	if err := t.Execute(&b, metadata); err != nil {
+		return ""
+	}
+
+	return strings.Trim(b.String(), "\n")
+}
+
+const msgTemplate = `
+New attestation received!
+- workflow: {{.WorkflowProject}}/{{.WorkflowName}}
+{{- if .RunnerLink }}
+- link to run: {{.RunnerLink}}
+{{end}}
+`

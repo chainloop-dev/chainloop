@@ -58,7 +58,6 @@ func attachedIntegrationListTableOutput(attachments []*action.AttachedIntegratio
 		integration := attachment.Integration
 
 		// Merge attachment and integration configs
-
 		// If there are not attachment configuration then create an empty map
 		if attachment.Config == nil {
 			attachment.Config = make(map[string]any)

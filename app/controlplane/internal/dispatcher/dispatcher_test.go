@@ -227,7 +227,7 @@ func (s *dispatcherTestSuite) SetupTest() {
 
 	// Register the integrations in the dispatcher
 	registeredIntegrations := sdk.AvailableExtensions{s.cdxIntegrationBackend, s.anyIntegrationBackend, s.ociIntegrationBackend}
-	s.dispatcher = New(s.Integration, nil, mocks.NewCASClient(s.T()), registeredIntegrations, s.L)
+	s.dispatcher = New(s.Integration, nil, nil, mocks.NewCASClient(s.T()), registeredIntegrations, s.L)
 }
 
 type mockedIntegration struct {

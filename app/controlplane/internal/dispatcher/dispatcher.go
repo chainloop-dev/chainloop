@@ -36,6 +36,7 @@ import (
 
 type FanOutDispatcher struct {
 	integrationUC       *biz.IntegrationUseCase
+	wfUC                *biz.WorkflowUseCase
 	credentialsProvider credentials.ReaderWriter
 	casClient           biz.CASClient
 	log                 *log.Helper
@@ -43,8 +44,8 @@ type FanOutDispatcher struct {
 	loaded              sdk.AvailableExtensions
 }
 
-func New(integrationUC *biz.IntegrationUseCase, creds credentials.ReaderWriter, c biz.CASClient, registered sdk.AvailableExtensions, l log.Logger) *FanOutDispatcher {
-	return &FanOutDispatcher{integrationUC, creds, c, servicelogger.ScopedHelper(l, "fanout-dispatcher"), l, registered}
+func New(integrationUC *biz.IntegrationUseCase, wfUC *biz.WorkflowUseCase, creds credentials.ReaderWriter, c biz.CASClient, registered sdk.AvailableExtensions, l log.Logger) *FanOutDispatcher {
+	return &FanOutDispatcher{integrationUC, wfUC, creds, c, servicelogger.ScopedHelper(l, "fanout-dispatcher"), l, registered}
 }
 
 type integrationInfo struct {
@@ -154,6 +155,20 @@ func (d *FanOutDispatcher) calculateDispatchQueue(ctx context.Context, orgID, wo
 
 // Run attestation and materials to the attached integrations
 func (d *FanOutDispatcher) Run(ctx context.Context, envelope *dsse.Envelope, orgID, workflowID, downloadSecretName string) error {
+	// Calculate metadata
+	wf, err := d.wfUC.FindByID(ctx, workflowID)
+	if err != nil {
+		return fmt.Errorf("finding workflow: %w", err)
+	} else if wf == nil {
+		return fmt.Errorf("workflow not found")
+	}
+
+	workflowMetadata := &sdk.ChainloopMetadata{
+		WorkflowID:      workflowID,
+		WorkflowName:    wf.Name,
+		WorkflowProject: wf.Project,
+	}
+
 	queue, err := d.calculateDispatchQueue(ctx, orgID, workflowID)
 	if err != nil {
 		return fmt.Errorf("calculating dispatch queue: %w", err)
@@ -179,7 +194,7 @@ func (d *FanOutDispatcher) Run(ctx context.Context, envelope *dsse.Envelope, org
 
 	// Send the envelope to the integrations that are subscribed to it
 	for _, integration := range queue.attestations {
-		req := generateRequest(integration)
+		req := generateRequest(integration, workflowMetadata)
 		req.Input = &sdk.ExecuteInput{
 			Attestation: attestationInput,
 		}
@@ -231,7 +246,7 @@ func (d *FanOutDispatcher) Run(ctx context.Context, envelope *dsse.Envelope, org
 
 		// Execute the integration backends
 		for _, b := range backends {
-			req := generateRequest(b)
+			req := generateRequest(b, workflowMetadata)
 			req.Input = &sdk.ExecuteInput{
 				// They receive both the attestation information and the specific material information
 				Material:    materialInput,
@@ -280,9 +295,9 @@ func dispatch(ctx context.Context, backend sdk.FanOut, opts *sdk.ExecutionReques
 	)
 }
 
-func generateRequest(in *integrationInfo) *sdk.ExecutionRequest {
+func generateRequest(in *integrationInfo, metadata *sdk.ChainloopMetadata) *sdk.ExecutionRequest {
 	return &sdk.ExecutionRequest{
-		ChainloopMetadata: &sdk.ChainloopMetadata{WorkflowID: in.workflowID},
+		ChainloopMetadata: metadata,
 		RegistrationInfo: &sdk.RegistrationResponse{
 			Credentials:   in.credentials,
 			Configuration: in.registrationConfig,

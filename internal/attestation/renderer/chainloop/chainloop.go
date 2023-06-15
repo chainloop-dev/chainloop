@@ -37,6 +37,7 @@ const builderIDFmt = "chainloop.dev/cli/%s@%s"
 type NormalizablePredicate interface {
 	GetEnvVars() map[string]string
 	GetMaterials() []*NormalizedMaterial
+	GetRunLink() string
 }
 
 type NormalizedMaterial struct {
@@ -180,4 +181,8 @@ func extractPredicate(statement *in_toto.Statement, v any) error {
 // Implement NormalizablePredicate interface
 func (p *ProvenancePredicateCommon) GetEnvVars() map[string]string {
 	return p.Env
+}
+
+func (p *ProvenancePredicateCommon) GetRunLink() string {
+	return p.RunnerURL
 }
