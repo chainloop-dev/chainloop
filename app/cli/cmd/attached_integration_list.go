@@ -53,22 +53,33 @@ func attachedIntegrationListTableOutput(attachments []*action.AttachedIntegratio
 	fmt.Println("Integrations attached to workflows")
 	t := newTableWriter()
 	t.AppendHeader(table.Row{"ID", "Kind", "Config", "Attached At", "Workflow"})
-	for _, i := range attachments {
-		wf := i.Workflow
-		integration := i.Integration
+	for _, attachment := range attachments {
+		wf := attachment.Workflow
+		integration := attachment.Integration
 
-		var options []string
-		if i.Config != nil {
-			maps.Copy(i.Config, integration.Config)
-			for k, v := range i.Config {
-				if v == "" {
-					continue
-				}
-				options = append(options, fmt.Sprintf("%s: %v", k, v))
-			}
+		// Merge attachment and integration configs
+
+		// If there are not attachment configuration then create an empty map
+		if attachment.Config == nil {
+			attachment.Config = make(map[string]any)
 		}
 
-		t.AppendRow(table.Row{i.ID, integration.Kind, strings.Join(options, "\n"), i.CreatedAt.Format(time.RFC822), wf.NamespacedName()})
+		if integration.Config == nil {
+			integration.Config = make(map[string]any)
+		}
+
+		var options []string
+		maps.Copy(attachment.Config, integration.Config)
+
+		// Show it as key-value pairs
+		for k, v := range attachment.Config {
+			if v == "" {
+				continue
+			}
+			options = append(options, fmt.Sprintf("%s: %v", k, v))
+		}
+
+		t.AppendRow(table.Row{attachment.ID, integration.Kind, strings.Join(options, "\n"), attachment.CreatedAt.Format(time.RFC822), wf.NamespacedName()})
 		t.AppendSeparator()
 	}
 
