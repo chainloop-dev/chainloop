@@ -82,14 +82,23 @@ message IntegrationAvailableItem {
 	// Integration identifier
 	string id = 1;
 	string version = 2;
-	// Registration and attachment JSON schemas
-	bytes registration_schema = 3;
-	bytes attachment_schema = 4;
+	string description = 3;
+
+	oneof type {
+		ExtensionFanout fanout = 4;
+	}
+}
+
+// ExtensionFanout describes an extension that can be used to fanout attestation and materials to multiple integrations
+message ExtensionFanout {
+	// Registration JSON schema
+	bytes registration_schema = 4;
+	// Attachment JSON schema
+	bytes attachment_schema = 5;
 	// List of materials that the integration is subscribed to
-	repeated string subscribed_materials = 5;
+	repeated string subscribed_materials = 6;
 	// Whether the integration is subscribed to attestations
-	bool subscribed_attestation = 6;
-	string description = 7;
+	bool subscribed_attestation = 7;
 }
 
 message IntegrationsServiceListRegistrationsRequest{}

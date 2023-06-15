@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/jedib0t/go-pretty/v6/table"
@@ -50,9 +51,9 @@ func availableIntegrationListTableOutput(items []*action.AvailableIntegrationIte
 	fmt.Println("Available integrations ready to be used during registration")
 
 	t := newTableWriter()
-	t.AppendHeader(table.Row{"ID", "Version", "Description"})
+	t.AppendHeader(table.Row{"ID", "Version", "Material Requirement", "Description"})
 	for _, i := range items {
-		t.AppendRow(table.Row{i.ID, i.Version, i.Description})
+		t.AppendRow(table.Row{i.ID, i.Version, strings.Join(i.SubscribedInputs, ", "), i.Description})
 		t.AppendSeparator()
 	}
 

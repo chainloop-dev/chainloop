@@ -50,18 +50,24 @@ func (s *IntegrationsService) ListAvailable(_ context.Context, _ *pb.Integration
 
 	for _, i := range s.integrations {
 		d := i.Describe()
-		item := &pb.IntegrationAvailableItem{
-			Id:                    d.ID,
-			Version:               d.Version,
-			Description:           d.Description,
-			AttachmentSchema:      d.AttachmentJSONSchema,
-			RegistrationSchema:    d.RegistrationJSONSchema,
-			SubscribedAttestation: d.SubscribedInputs.DSSEnvelope,
-			SubscribedMaterials:   make([]string, 0),
+
+		var subscribedMaterials = make([]string, 0)
+		for _, m := range d.SubscribedInputs.Materials {
+			subscribedMaterials = append(subscribedMaterials, m.Type.String())
 		}
 
-		for _, m := range d.SubscribedInputs.Materials {
-			item.SubscribedMaterials = append(item.SubscribedMaterials, m.Type.String())
+		item := &pb.IntegrationAvailableItem{
+			Id:          d.ID,
+			Version:     d.Version,
+			Description: d.Description,
+			Type: &pb.IntegrationAvailableItem_Fanout{
+				Fanout: &pb.ExtensionFanout{
+					AttachmentSchema:      d.AttachmentJSONSchema,
+					RegistrationSchema:    d.RegistrationJSONSchema,
+					SubscribedAttestation: d.SubscribedInputs.DSSEnvelope,
+					SubscribedMaterials:   subscribedMaterials,
+				},
+			},
 		}
 
 		result = append(result, item)

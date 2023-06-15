@@ -48,14 +48,20 @@ export interface IntegrationAvailableItem {
   /** Integration identifier */
   id: string;
   version: string;
-  /** Registration and attachment JSON schemas */
+  description: string;
+  fanout?: ExtensionFanout | undefined;
+}
+
+/** ExtensionFanout describes an extension that can be used to fanout attestation and materials to multiple integrations */
+export interface ExtensionFanout {
+  /** Registration JSON schema */
   registrationSchema: Uint8Array;
+  /** Attachment JSON schema */
   attachmentSchema: Uint8Array;
   /** List of materials that the integration is subscribed to */
   subscribedMaterials: string[];
   /** Whether the integration is subscribed to attestations */
   subscribedAttestation: boolean;
-  description: string;
 }
 
 export interface IntegrationsServiceListRegistrationsRequest {
@@ -532,15 +538,7 @@ export const IntegrationsServiceListAvailableResponse = {
 };
 
 function createBaseIntegrationAvailableItem(): IntegrationAvailableItem {
-  return {
-    id: "",
-    version: "",
-    registrationSchema: new Uint8Array(),
-    attachmentSchema: new Uint8Array(),
-    subscribedMaterials: [],
-    subscribedAttestation: false,
-    description: "",
-  };
+  return { id: "", version: "", description: "", fanout: undefined };
 }
 
 export const IntegrationAvailableItem = {
@@ -551,20 +549,11 @@ export const IntegrationAvailableItem = {
     if (message.version !== "") {
       writer.uint32(18).string(message.version);
     }
-    if (message.registrationSchema.length !== 0) {
-      writer.uint32(26).bytes(message.registrationSchema);
-    }
-    if (message.attachmentSchema.length !== 0) {
-      writer.uint32(34).bytes(message.attachmentSchema);
-    }
-    for (const v of message.subscribedMaterials) {
-      writer.uint32(42).string(v!);
-    }
-    if (message.subscribedAttestation === true) {
-      writer.uint32(48).bool(message.subscribedAttestation);
-    }
     if (message.description !== "") {
-      writer.uint32(58).string(message.description);
+      writer.uint32(26).string(message.description);
+    }
+    if (message.fanout !== undefined) {
+      ExtensionFanout.encode(message.fanout, writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -595,35 +584,14 @@ export const IntegrationAvailableItem = {
             break;
           }
 
-          message.registrationSchema = reader.bytes();
+          message.description = reader.string();
           continue;
         case 4:
           if (tag != 34) {
             break;
           }
 
-          message.attachmentSchema = reader.bytes();
-          continue;
-        case 5:
-          if (tag != 42) {
-            break;
-          }
-
-          message.subscribedMaterials.push(reader.string());
-          continue;
-        case 6:
-          if (tag != 48) {
-            break;
-          }
-
-          message.subscribedAttestation = reader.bool();
-          continue;
-        case 7:
-          if (tag != 58) {
-            break;
-          }
-
-          message.description = reader.string();
+          message.fanout = ExtensionFanout.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
@@ -638,6 +606,108 @@ export const IntegrationAvailableItem = {
     return {
       id: isSet(object.id) ? String(object.id) : "",
       version: isSet(object.version) ? String(object.version) : "",
+      description: isSet(object.description) ? String(object.description) : "",
+      fanout: isSet(object.fanout) ? ExtensionFanout.fromJSON(object.fanout) : undefined,
+    };
+  },
+
+  toJSON(message: IntegrationAvailableItem): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    message.version !== undefined && (obj.version = message.version);
+    message.description !== undefined && (obj.description = message.description);
+    message.fanout !== undefined && (obj.fanout = message.fanout ? ExtensionFanout.toJSON(message.fanout) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<IntegrationAvailableItem>, I>>(base?: I): IntegrationAvailableItem {
+    return IntegrationAvailableItem.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<IntegrationAvailableItem>, I>>(object: I): IntegrationAvailableItem {
+    const message = createBaseIntegrationAvailableItem();
+    message.id = object.id ?? "";
+    message.version = object.version ?? "";
+    message.description = object.description ?? "";
+    message.fanout = (object.fanout !== undefined && object.fanout !== null)
+      ? ExtensionFanout.fromPartial(object.fanout)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseExtensionFanout(): ExtensionFanout {
+  return {
+    registrationSchema: new Uint8Array(),
+    attachmentSchema: new Uint8Array(),
+    subscribedMaterials: [],
+    subscribedAttestation: false,
+  };
+}
+
+export const ExtensionFanout = {
+  encode(message: ExtensionFanout, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.registrationSchema.length !== 0) {
+      writer.uint32(34).bytes(message.registrationSchema);
+    }
+    if (message.attachmentSchema.length !== 0) {
+      writer.uint32(42).bytes(message.attachmentSchema);
+    }
+    for (const v of message.subscribedMaterials) {
+      writer.uint32(50).string(v!);
+    }
+    if (message.subscribedAttestation === true) {
+      writer.uint32(56).bool(message.subscribedAttestation);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ExtensionFanout {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExtensionFanout();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 4:
+          if (tag != 34) {
+            break;
+          }
+
+          message.registrationSchema = reader.bytes();
+          continue;
+        case 5:
+          if (tag != 42) {
+            break;
+          }
+
+          message.attachmentSchema = reader.bytes();
+          continue;
+        case 6:
+          if (tag != 50) {
+            break;
+          }
+
+          message.subscribedMaterials.push(reader.string());
+          continue;
+        case 7:
+          if (tag != 56) {
+            break;
+          }
+
+          message.subscribedAttestation = reader.bool();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExtensionFanout {
+    return {
       registrationSchema: isSet(object.registrationSchema)
         ? bytesFromBase64(object.registrationSchema)
         : new Uint8Array(),
@@ -646,14 +716,11 @@ export const IntegrationAvailableItem = {
         ? object.subscribedMaterials.map((e: any) => String(e))
         : [],
       subscribedAttestation: isSet(object.subscribedAttestation) ? Boolean(object.subscribedAttestation) : false,
-      description: isSet(object.description) ? String(object.description) : "",
     };
   },
 
-  toJSON(message: IntegrationAvailableItem): unknown {
+  toJSON(message: ExtensionFanout): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.version !== undefined && (obj.version = message.version);
     message.registrationSchema !== undefined &&
       (obj.registrationSchema = base64FromBytes(
         message.registrationSchema !== undefined ? message.registrationSchema : new Uint8Array(),
@@ -668,23 +735,19 @@ export const IntegrationAvailableItem = {
       obj.subscribedMaterials = [];
     }
     message.subscribedAttestation !== undefined && (obj.subscribedAttestation = message.subscribedAttestation);
-    message.description !== undefined && (obj.description = message.description);
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<IntegrationAvailableItem>, I>>(base?: I): IntegrationAvailableItem {
-    return IntegrationAvailableItem.fromPartial(base ?? {});
+  create<I extends Exact<DeepPartial<ExtensionFanout>, I>>(base?: I): ExtensionFanout {
+    return ExtensionFanout.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<IntegrationAvailableItem>, I>>(object: I): IntegrationAvailableItem {
-    const message = createBaseIntegrationAvailableItem();
-    message.id = object.id ?? "";
-    message.version = object.version ?? "";
+  fromPartial<I extends Exact<DeepPartial<ExtensionFanout>, I>>(object: I): ExtensionFanout {
+    const message = createBaseExtensionFanout();
     message.registrationSchema = object.registrationSchema ?? new Uint8Array();
     message.attachmentSchema = object.attachmentSchema ?? new Uint8Array();
     message.subscribedMaterials = object.subscribedMaterials?.map((e) => e) || [];
     message.subscribedAttestation = object.subscribedAttestation ?? false;
-    message.description = object.description ?? "";
     return message;
   },
 };
