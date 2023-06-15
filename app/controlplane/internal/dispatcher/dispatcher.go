@@ -153,10 +153,18 @@ func (d *FanOutDispatcher) calculateDispatchQueue(ctx context.Context, orgID, wo
 	return &dispatchQueue{materials: materialDispatch, attestations: attestationDispatch}, nil
 }
 
+type DispatcherOpts struct {
+	Envelope           *dsse.Envelope
+	OrgID              string
+	WorkflowID         string
+	WorkflowRunID      string
+	DownloadSecretName string
+}
+
 // Run attestation and materials to the attached integrations
-func (d *FanOutDispatcher) Run(ctx context.Context, envelope *dsse.Envelope, orgID, workflowID, downloadSecretName string) error {
+func (d *FanOutDispatcher) Run(ctx context.Context, opts *DispatcherOpts) error {
 	// Calculate metadata
-	wf, err := d.wfUC.FindByID(ctx, workflowID)
+	wf, err := d.wfUC.FindByID(ctx, opts.WorkflowID)
 	if err != nil {
 		return fmt.Errorf("finding workflow: %w", err)
 	} else if wf == nil {
@@ -164,30 +172,31 @@ func (d *FanOutDispatcher) Run(ctx context.Context, envelope *dsse.Envelope, org
 	}
 
 	workflowMetadata := &sdk.ChainloopMetadata{
-		WorkflowID:      workflowID,
+		WorkflowID:      opts.WorkflowID,
+		WorkflowRunID:   opts.WorkflowRunID,
 		WorkflowName:    wf.Name,
 		WorkflowProject: wf.Project,
 	}
 
-	queue, err := d.calculateDispatchQueue(ctx, orgID, workflowID)
+	queue, err := d.calculateDispatchQueue(ctx, opts.OrgID, opts.WorkflowID)
 	if err != nil {
 		return fmt.Errorf("calculating dispatch queue: %w", err)
 	}
 
 	// get the in_toto statement from the envelope if present
-	statement, err := chainloop.ExtractStatement(envelope)
+	statement, err := chainloop.ExtractStatement(opts.Envelope)
 	if err != nil {
 		return fmt.Errorf("extracting statement: %w", err)
 	}
 
 	// Iterate over the materials in the attestation and dispatch them to the integrations that are subscribed to them
-	predicate, err := chainloop.ExtractPredicate(envelope)
+	predicate, err := chainloop.ExtractPredicate(opts.Envelope)
 	if err != nil {
 		return fmt.Errorf("extracting predicate: %w", err)
 	}
 
 	var attestationInput = &sdk.ExecuteAttestation{
-		Envelope:  envelope,
+		Envelope:  opts.Envelope,
 		Statement: statement,
 		Predicate: predicate,
 	}
@@ -222,16 +231,16 @@ func (d *FanOutDispatcher) Run(ctx context.Context, envelope *dsse.Envelope, org
 			continue
 		}
 
-		d.log.Infow("msg", fmt.Sprintf("%d integrations found for this material type", len(backends)), "workflowID", workflowID, "materialType", material.Type, "name", material.Name)
+		d.log.Infow("msg", fmt.Sprintf("%d integrations found for this material type", len(backends)), "workflowID", opts.WorkflowID, "materialType", material.Type, "name", material.Name)
 
 		// Retrieve material content
 		content := []byte(material.Value)
 		// It's a downloadable so we retrieve and override the content variable
 		if material.Hash != nil && material.UploadedToCAS {
 			digest := material.Hash.String()
-			d.log.Infow("msg", "downloading material", "workflowID", workflowID, "materialType", material.Type, "name", material.Name)
+			d.log.Infow("msg", "downloading material", "workflowID", opts.WorkflowID, "materialType", material.Type, "name", material.Name)
 			buf := bytes.NewBuffer(nil)
-			if err := d.casClient.Download(ctx, downloadSecretName, buf, digest); err != nil {
+			if err := d.casClient.Download(ctx, opts.DownloadSecretName, buf, digest); err != nil {
 				return fmt.Errorf("downloading from CAS: %w", err)
 			}
 
@@ -257,7 +266,7 @@ func (d *FanOutDispatcher) Run(ctx context.Context, envelope *dsse.Envelope, org
 				_ = dispatch(ctx, b.backend, req, d.log)
 			}()
 
-			d.log.Infow("msg", "integration executed!", "workflowID", workflowID, "materialType", material.Type, "integration", b.backend.Describe().ID)
+			d.log.Infow("msg", "integration executed!", "workflowID", opts.WorkflowID, "materialType", material.Type, "integration", b.backend.Describe().ID)
 		}
 	}
 

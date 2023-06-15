@@ -95,24 +95,26 @@ func TestRenderContent(t *testing.T) {
 		{
 			name: "all fields",
 			input: &templateContent{
-				WorkflowID:      "deadbeef",
+				WorkflowRunID:   "deadbeef",
 				WorkflowName:    "test",
 				WorkflowProject: "project",
 				RunnerLink:      "http://runner.io",
 			},
 			expected: `New attestation received!
-- workflow: project/test
-- link to run: http://runner.io`,
+- Workflow: project/test
+- Workflow Run: deadbeef
+- Link to runner: http://runner.io`,
 		},
 		{
 			name: "no runner link",
 			input: &templateContent{
-				WorkflowID:      "deadbeef",
+				WorkflowRunID:   "deadbeef",
 				WorkflowName:    "test",
 				WorkflowProject: "project",
 			},
 			expected: `New attestation received!
-- workflow: project/test`,
+- Workflow: project/test
+- Workflow Run: deadbeef`,
 		},
 	}
 

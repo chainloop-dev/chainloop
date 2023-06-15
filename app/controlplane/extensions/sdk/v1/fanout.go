@@ -112,6 +112,8 @@ type ChainloopMetadata struct {
 	WorkflowID      string
 	WorkflowName    string
 	WorkflowProject string
+
+	WorkflowRunID string
 }
 
 // ExecutionRequest is the request to execute the integration

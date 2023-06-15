@@ -149,6 +149,7 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 	tplData := &templateContent{
 		WorkflowID:      metadata.WorkflowID,
 		WorkflowName:    metadata.WorkflowName,
+		WorkflowRunID:   metadata.WorkflowRunID,
 		WorkflowProject: metadata.WorkflowProject,
 		RunnerLink:      req.Input.Attestation.Predicate.GetRunLink(),
 	}
@@ -270,7 +271,7 @@ func validateExecuteRequest(req *sdk.ExecutionRequest) error {
 }
 
 type templateContent struct {
-	WorkflowID, WorkflowName, WorkflowProject, RunnerLink string
+	WorkflowID, WorkflowName, WorkflowProject, WorkflowRunID, RunnerLink string
 }
 
 func renderContent(metadata *templateContent) string {
@@ -286,8 +287,9 @@ func renderContent(metadata *templateContent) string {
 
 const msgTemplate = `
 New attestation received!
-- workflow: {{.WorkflowProject}}/{{.WorkflowName}}
+- Workflow: {{.WorkflowProject}}/{{.WorkflowName}}
+- Workflow Run: {{.WorkflowRunID}}
 {{- if .RunnerLink }}
-- link to run: {{.RunnerLink}}
+- Link to runner: {{.RunnerLink}}
 {{end}}
 `
