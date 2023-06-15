@@ -913,13 +913,53 @@ func (m *IntegrationAvailableItem) validate(all bool) error {
 
 	// no validation rules for Version
 
-	// no validation rules for RegistrationSchema
-
-	// no validation rules for AttachmentSchema
-
-	// no validation rules for SubscribedAttestation
-
 	// no validation rules for Description
+
+	switch v := m.Type.(type) {
+	case *IntegrationAvailableItem_Fanout:
+		if v == nil {
+			err := IntegrationAvailableItemValidationError{
+				field:  "Type",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetFanout()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, IntegrationAvailableItemValidationError{
+						field:  "Fanout",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, IntegrationAvailableItemValidationError{
+						field:  "Fanout",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetFanout()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return IntegrationAvailableItemValidationError{
+					field:  "Fanout",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	default:
+		_ = v // ensures v is used
+	}
 
 	if len(errors) > 0 {
 		return IntegrationAvailableItemMultiError(errors)
@@ -1000,6 +1040,112 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = IntegrationAvailableItemValidationError{}
+
+// Validate checks the field values on ExtensionFanout with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ExtensionFanout) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ExtensionFanout with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ExtensionFanoutMultiError, or nil if none found.
+func (m *ExtensionFanout) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ExtensionFanout) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for RegistrationSchema
+
+	// no validation rules for AttachmentSchema
+
+	// no validation rules for SubscribedAttestation
+
+	if len(errors) > 0 {
+		return ExtensionFanoutMultiError(errors)
+	}
+
+	return nil
+}
+
+// ExtensionFanoutMultiError is an error wrapping multiple validation errors
+// returned by ExtensionFanout.ValidateAll() if the designated constraints
+// aren't met.
+type ExtensionFanoutMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ExtensionFanoutMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ExtensionFanoutMultiError) AllErrors() []error { return m }
+
+// ExtensionFanoutValidationError is the validation error returned by
+// ExtensionFanout.Validate if the designated constraints aren't met.
+type ExtensionFanoutValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ExtensionFanoutValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ExtensionFanoutValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ExtensionFanoutValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ExtensionFanoutValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ExtensionFanoutValidationError) ErrorName() string { return "ExtensionFanoutValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ExtensionFanoutValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sExtensionFanout.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ExtensionFanoutValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ExtensionFanoutValidationError{}
 
 // Validate checks the field values on
 // IntegrationsServiceListRegistrationsRequest with the rules defined in the

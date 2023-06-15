@@ -36,6 +36,8 @@ type AvailableIntegrationItem struct {
 	Description  string      `json:"description,omitempty"`
 	Registration *JSONSchema `json:"registration"`
 	Attachment   *JSONSchema `json:"attachment"`
+	// Subscribed inputs (material types)
+	SubscribedInputs []string `json:"subscribedInputs"`
 }
 
 type JSONSchema struct {
@@ -90,20 +92,27 @@ func pbAvailableIntegrationItemToAction(in *pb.IntegrationAvailableItem) (*Avail
 		return nil, errors.New("nil input")
 	}
 
+	if in.GetFanout() == nil {
+		fmt.Printf("skipping integration %s, type not supported\n", in.GetId())
+		return nil, nil
+	}
+
+	foType := in.GetFanout()
+
 	i := &AvailableIntegrationItem{
 		ID: in.GetId(), Version: in.GetVersion(), Description: in.GetDescription(),
-		Registration: &JSONSchema{Raw: string(in.GetRegistrationSchema())},
-		Attachment:   &JSONSchema{Raw: string(in.GetAttachmentSchema())},
+		Registration: &JSONSchema{Raw: string(foType.GetRegistrationSchema())},
+		Attachment:   &JSONSchema{Raw: string(foType.GetAttachmentSchema())},
 	}
 
 	// Parse the schemas so they can be used for validation or other purposes
 	var err error
-	i.Registration.Parsed, err = compileJSONSchema(in.GetRegistrationSchema())
+	i.Registration.Parsed, err = compileJSONSchema(foType.GetRegistrationSchema())
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile registration schema: %w", err)
 	}
 
-	i.Attachment.Parsed, err = compileJSONSchema(in.GetAttachmentSchema())
+	i.Attachment.Parsed, err = compileJSONSchema(foType.GetAttachmentSchema())
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile registration schema: %w", err)
 	}
@@ -118,6 +127,9 @@ func pbAvailableIntegrationItemToAction(in *pb.IntegrationAvailableItem) (*Avail
 	if err := calculatePropertiesMap(i.Attachment.Parsed, &i.Attachment.Properties); err != nil {
 		return nil, fmt.Errorf("failed to calculate attachment properties: %w", err)
 	}
+
+	// Subscribed inputs
+	i.SubscribedInputs = append(i.SubscribedInputs, foType.GetSubscribedMaterials()...)
 
 	return i, nil
 }
