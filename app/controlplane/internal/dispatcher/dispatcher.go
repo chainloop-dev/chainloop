@@ -159,22 +159,34 @@ func (d *FanOutDispatcher) Run(ctx context.Context, envelope *dsse.Envelope, org
 		return fmt.Errorf("calculating dispatch queue: %w", err)
 	}
 
-	// Send the envelope to the integrations that are subscribed to it
-	for _, integration := range queue.attestations {
-		req := generateRequest(integration)
-		req.Input = &sdk.ExecuteInput{
-			DSSEnvelope: envelope,
-		}
-
-		go func(backend sdk.FanOut) {
-			_ = dispatch(ctx, backend, req, d.log)
-		}(integration.backend)
+	// get the in_toto statement from the envelope if present
+	statement, err := chainloop.ExtractStatement(envelope)
+	if err != nil {
+		return fmt.Errorf("extracting statement: %w", err)
 	}
 
 	// Iterate over the materials in the attestation and dispatch them to the integrations that are subscribed to them
 	predicate, err := chainloop.ExtractPredicate(envelope)
 	if err != nil {
-		return err
+		return fmt.Errorf("extracting predicate: %w", err)
+	}
+
+	var attestationInput = &sdk.ExecuteAttestation{
+		Envelope:  envelope,
+		Statement: statement,
+		Predicate: predicate,
+	}
+
+	// Send the envelope to the integrations that are subscribed to it
+	for _, integration := range queue.attestations {
+		req := generateRequest(integration)
+		req.Input = &sdk.ExecuteInput{
+			Attestation: attestationInput,
+		}
+
+		go func(backend sdk.FanOut) {
+			_ = dispatch(ctx, backend, req, d.log)
+		}(integration.backend)
 	}
 
 	for _, material := range predicate.GetMaterials() {
@@ -190,6 +202,7 @@ func (d *FanOutDispatcher) Run(ctx context.Context, envelope *dsse.Envelope, org
 			backends = append(backends, b...)
 		}
 
+		// There are no backends that are subscribed to this material type
 		if len(backends) == 0 {
 			continue
 		}
@@ -210,14 +223,19 @@ func (d *FanOutDispatcher) Run(ctx context.Context, envelope *dsse.Envelope, org
 			content = buf.Bytes()
 		}
 
+		// Material information to be sent to the integration
+		var materialInput = &sdk.ExecuteMaterial{
+			NormalizedMaterial: material,
+			Content:            content,
+		}
+
 		// Execute the integration backends
 		for _, b := range backends {
 			req := generateRequest(b)
 			req.Input = &sdk.ExecuteInput{
-				Material: &sdk.ExecuteMaterial{
-					NormalizedMaterial: material,
-					Content:            content,
-				},
+				// They receive both the attestation information and the specific material information
+				Material:    materialInput,
+				Attestation: attestationInput,
 			}
 
 			go func() {
@@ -237,7 +255,7 @@ func dispatch(ctx context.Context, backend sdk.FanOut, opts *sdk.ExecutionReques
 
 	var inputType string
 	switch {
-	case opts.Input.DSSEnvelope != nil:
+	case opts.Input.Attestation != nil:
 		inputType = "DSSEnvelope"
 	case opts.Input.Material != nil:
 		inputType = fmt.Sprintf("Material:%s", opts.Input.Material.Type)

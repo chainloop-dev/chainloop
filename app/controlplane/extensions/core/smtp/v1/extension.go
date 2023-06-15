@@ -24,7 +24,6 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/in-toto/in-toto-golang/in_toto"
 )
 
 type Integration struct {
@@ -160,16 +159,8 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 		return errors.New("invalid attachment configuration")
 	}
 
-	// get the attestation
-	decodedPayload, err := req.Input.DSSEnvelope.DecodeB64Payload()
-	if err != nil {
-		return err
-	}
-	statement := &in_toto.Statement{}
-	if err := json.Unmarshal(decodedPayload, statement); err != nil {
-		return fmt.Errorf("un-marshaling predicate: %w", err)
-	}
-	jsonBytes, err := json.MarshalIndent(statement, "", "  ")
+	// marshal the statement
+	jsonBytes, err := json.MarshalIndent(req.Input.Attestation.Statement, "", "  ")
 	if err != nil {
 		return fmt.Errorf("error marshaling JSON: %w", err)
 	}
@@ -196,7 +187,7 @@ This email has been delivered via integration %s version %s.
 }
 
 func validateExecuteRequest(req *sdk.ExecutionRequest) error {
-	if req == nil || req.Input == nil || req.Input.DSSEnvelope == nil {
+	if req == nil || req.Input == nil || req.Input.Attestation == nil {
 		return errors.New("invalid input")
 	}
 
