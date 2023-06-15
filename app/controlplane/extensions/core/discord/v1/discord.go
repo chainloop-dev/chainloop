@@ -21,7 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"strings"
@@ -231,7 +231,7 @@ func executeWebhook(webhookURL, usernameOverride string, jsonStatement []byte, m
 	defer r.Body.Close()
 
 	if r.StatusCode != http.StatusOK {
-		b, _ := ioutil.ReadAll(r.Body)
+		b, _ := io.ReadAll(r.Body)
 		return fmt.Errorf("non-OK HTTP status while calling the webhook: %d, body: %s", r.StatusCode, string(b))
 	}
 
