@@ -206,7 +206,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	}()
 
 	go func() {
-		if err := s.integrationDispatcher.Run(context.TODO(), &dispatcher.DispatcherOpts{
+		if err := s.integrationDispatcher.Run(context.TODO(), &dispatcher.RunOpts{
 			Envelope: envelope, OrgID: robotAccount.OrgID, WorkflowID: robotAccount.WorkflowID, DownloadSecretName: repo.SecretName, WorkflowRunID: req.WorkflowRunId,
 		}); err != nil {
 			_ = sl.LogAndMaskErr(err, s.log)

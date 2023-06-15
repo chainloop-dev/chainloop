@@ -153,7 +153,7 @@ func (d *FanOutDispatcher) calculateDispatchQueue(ctx context.Context, orgID, wo
 	return &dispatchQueue{materials: materialDispatch, attestations: attestationDispatch}, nil
 }
 
-type DispatcherOpts struct {
+type RunOpts struct {
 	Envelope           *dsse.Envelope
 	OrgID              string
 	WorkflowID         string
@@ -162,7 +162,7 @@ type DispatcherOpts struct {
 }
 
 // Run attestation and materials to the attached integrations
-func (d *FanOutDispatcher) Run(ctx context.Context, opts *DispatcherOpts) error {
+func (d *FanOutDispatcher) Run(ctx context.Context, opts *RunOpts) error {
 	// Calculate metadata
 	wf, err := d.wfUC.FindByID(ctx, opts.WorkflowID)
 	if err != nil {
