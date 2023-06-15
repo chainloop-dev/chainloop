@@ -70,3 +70,40 @@ You will get redirected to the pre-configured local OIDC provider (DEX) where th
 
 Once logged in, please refer to our [Getting Started guide](https://docs.chainloop.dev/getting-started/setup) to learn how to setup an OCI registry.
 
+## Troubleshooting
+
+### Integration tests failing on OSX with Docker Desktop
+
+You might be getting the following error on OSX with Docker Desktop:
+
+```
+Cannot connect to the Docker daemon at unix:///var/run/docker.sock
+```
+
+```
+$ cd chainloop
+$ make test
+[...]
+   --- FAIL: TestVaultIntegration/TestReadWriteCredentials (0.00s)
+        keyval_test.go:182:
+                Error Trace:    projects/chainloop/chainloop/internal/credentials/vault/keyval_test.go:182
+                                                        projects/chainloop/chainloop/internal/credentials/vault/keyval_test.go:207
+                                                        go/pkg/mod/github.com/stretchr/testify@v1.8.2/suite/suite.go:187
+                Error:          Received unexpected error:
+                                Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?: failed to create container
+                Test:           TestVaultIntegration/TestReadWriteCredentials
+        suite.go:87: test panicked: runtime error: invalid memory address or nil pointer dereference
+[...]
+```
+
+We use testcontainers for integration tests. You can check all requirements on [this page](https://www.testcontainers.org/supported_docker_environment/).
+
+This is a known issue listed there:
+
+"Docker Desktop Starting 4.13, run sudo ln -s $HOME/.docker/run/docker.sock /var/run/docker.sock"
+
+Running the following command fixes the issue:
+
+```
+sudo ln -s $HOME/.docker/run/docker.sock /var/run/docker.sock
+```
