@@ -36,6 +36,7 @@ import (
 
 type FanOutDispatcher struct {
 	integrationUC       *biz.IntegrationUseCase
+	wfUC                *biz.WorkflowUseCase
 	credentialsProvider credentials.ReaderWriter
 	casClient           biz.CASClient
 	log                 *log.Helper
@@ -43,8 +44,8 @@ type FanOutDispatcher struct {
 	loaded              sdk.AvailableExtensions
 }
 
-func New(integrationUC *biz.IntegrationUseCase, creds credentials.ReaderWriter, c biz.CASClient, registered sdk.AvailableExtensions, l log.Logger) *FanOutDispatcher {
-	return &FanOutDispatcher{integrationUC, creds, c, servicelogger.ScopedHelper(l, "fanout-dispatcher"), l, registered}
+func New(integrationUC *biz.IntegrationUseCase, wfUC *biz.WorkflowUseCase, creds credentials.ReaderWriter, c biz.CASClient, registered sdk.AvailableExtensions, l log.Logger) *FanOutDispatcher {
+	return &FanOutDispatcher{integrationUC, wfUC, creds, c, servicelogger.ScopedHelper(l, "fanout-dispatcher"), l, registered}
 }
 
 type integrationInfo struct {
@@ -152,34 +153,57 @@ func (d *FanOutDispatcher) calculateDispatchQueue(ctx context.Context, orgID, wo
 	return &dispatchQueue{materials: materialDispatch, attestations: attestationDispatch}, nil
 }
 
+type RunOpts struct {
+	Envelope           *dsse.Envelope
+	OrgID              string
+	WorkflowID         string
+	WorkflowRunID      string
+	DownloadSecretName string
+}
+
 // Run attestation and materials to the attached integrations
-func (d *FanOutDispatcher) Run(ctx context.Context, envelope *dsse.Envelope, orgID, workflowID, downloadSecretName string) error {
-	queue, err := d.calculateDispatchQueue(ctx, orgID, workflowID)
+func (d *FanOutDispatcher) Run(ctx context.Context, opts *RunOpts) error {
+	// Calculate metadata
+	wf, err := d.wfUC.FindByID(ctx, opts.WorkflowID)
+	if err != nil {
+		return fmt.Errorf("finding workflow: %w", err)
+	} else if wf == nil {
+		return fmt.Errorf("workflow not found")
+	}
+
+	workflowMetadata := &sdk.ChainloopMetadata{
+		WorkflowID:      opts.WorkflowID,
+		WorkflowRunID:   opts.WorkflowRunID,
+		WorkflowName:    wf.Name,
+		WorkflowProject: wf.Project,
+	}
+
+	queue, err := d.calculateDispatchQueue(ctx, opts.OrgID, opts.WorkflowID)
 	if err != nil {
 		return fmt.Errorf("calculating dispatch queue: %w", err)
 	}
 
 	// get the in_toto statement from the envelope if present
-	statement, err := chainloop.ExtractStatement(envelope)
+	statement, err := chainloop.ExtractStatement(opts.Envelope)
 	if err != nil {
 		return fmt.Errorf("extracting statement: %w", err)
 	}
 
 	// Iterate over the materials in the attestation and dispatch them to the integrations that are subscribed to them
-	predicate, err := chainloop.ExtractPredicate(envelope)
+	predicate, err := chainloop.ExtractPredicate(opts.Envelope)
 	if err != nil {
 		return fmt.Errorf("extracting predicate: %w", err)
 	}
 
 	var attestationInput = &sdk.ExecuteAttestation{
-		Envelope:  envelope,
+		Envelope:  opts.Envelope,
 		Statement: statement,
 		Predicate: predicate,
 	}
 
 	// Send the envelope to the integrations that are subscribed to it
 	for _, integration := range queue.attestations {
-		req := generateRequest(integration)
+		req := generateRequest(integration, workflowMetadata)
 		req.Input = &sdk.ExecuteInput{
 			Attestation: attestationInput,
 		}
@@ -207,16 +231,16 @@ func (d *FanOutDispatcher) Run(ctx context.Context, envelope *dsse.Envelope, org
 			continue
 		}
 
-		d.log.Infow("msg", fmt.Sprintf("%d integrations found for this material type", len(backends)), "workflowID", workflowID, "materialType", material.Type, "name", material.Name)
+		d.log.Infow("msg", fmt.Sprintf("%d integrations found for this material type", len(backends)), "workflowID", opts.WorkflowID, "materialType", material.Type, "name", material.Name)
 
 		// Retrieve material content
 		content := []byte(material.Value)
 		// It's a downloadable so we retrieve and override the content variable
 		if material.Hash != nil && material.UploadedToCAS {
 			digest := material.Hash.String()
-			d.log.Infow("msg", "downloading material", "workflowID", workflowID, "materialType", material.Type, "name", material.Name)
+			d.log.Infow("msg", "downloading material", "workflowID", opts.WorkflowID, "materialType", material.Type, "name", material.Name)
 			buf := bytes.NewBuffer(nil)
-			if err := d.casClient.Download(ctx, downloadSecretName, buf, digest); err != nil {
+			if err := d.casClient.Download(ctx, opts.DownloadSecretName, buf, digest); err != nil {
 				return fmt.Errorf("downloading from CAS: %w", err)
 			}
 
@@ -231,7 +255,7 @@ func (d *FanOutDispatcher) Run(ctx context.Context, envelope *dsse.Envelope, org
 
 		// Execute the integration backends
 		for _, b := range backends {
-			req := generateRequest(b)
+			req := generateRequest(b, workflowMetadata)
 			req.Input = &sdk.ExecuteInput{
 				// They receive both the attestation information and the specific material information
 				Material:    materialInput,
@@ -242,7 +266,7 @@ func (d *FanOutDispatcher) Run(ctx context.Context, envelope *dsse.Envelope, org
 				_ = dispatch(ctx, b.backend, req, d.log)
 			}()
 
-			d.log.Infow("msg", "integration executed!", "workflowID", workflowID, "materialType", material.Type, "integration", b.backend.Describe().ID)
+			d.log.Infow("msg", "integration executed!", "workflowID", opts.WorkflowID, "materialType", material.Type, "integration", b.backend.Describe().ID)
 		}
 	}
 
@@ -280,9 +304,9 @@ func dispatch(ctx context.Context, backend sdk.FanOut, opts *sdk.ExecutionReques
 	)
 }
 
-func generateRequest(in *integrationInfo) *sdk.ExecutionRequest {
+func generateRequest(in *integrationInfo, metadata *sdk.ChainloopMetadata) *sdk.ExecutionRequest {
 	return &sdk.ExecutionRequest{
-		ChainloopMetadata: &sdk.ChainloopMetadata{WorkflowID: in.workflowID},
+		ChainloopMetadata: metadata,
 		RegistrationInfo: &sdk.RegistrationResponse{
 			Credentials:   in.credentials,
 			Configuration: in.registrationConfig,

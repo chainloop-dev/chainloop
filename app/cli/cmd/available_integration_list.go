@@ -48,8 +48,6 @@ func availableIntegrationListTableOutput(items []*action.AvailableIntegrationIte
 		return nil
 	}
 
-	fmt.Println("Available integrations ready to be used during registration")
-
 	t := newTableWriter()
 	t.AppendHeader(table.Row{"ID", "Version", "Material Requirement", "Description"})
 	for _, i := range items {

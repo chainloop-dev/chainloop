@@ -109,7 +109,11 @@ type AttachmentResponse struct {
 }
 
 type ChainloopMetadata struct {
-	WorkflowID string
+	WorkflowID      string
+	WorkflowName    string
+	WorkflowProject string
+
+	WorkflowRunID string
 }
 
 // ExecutionRequest is the request to execute the integration
