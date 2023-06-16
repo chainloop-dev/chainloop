@@ -50,7 +50,7 @@ type registrationState struct {
 	WebhookOwner string `json:"owner"`
 
 	// Username to be used while posting the message
-	Username string `json:"username"`
+	Username string `json:"username,omitempty"`
 }
 
 func New(l log.Logger) (sdk.FanOut, error) {

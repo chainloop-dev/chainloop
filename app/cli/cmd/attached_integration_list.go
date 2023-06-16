@@ -57,8 +57,8 @@ func attachedIntegrationListTableOutput(attachments []*action.AttachedIntegratio
 		wf := attachment.Workflow
 		integration := attachment.Integration
 
-		// Merge attachment and integration configs
-		// If there are not attachment configuration then create an empty map
+		// Merge attachment and integration configs to show them in the same table
+		// If the same key exists in both configs, the value in attachment config will be used
 		if attachment.Config == nil {
 			attachment.Config = make(map[string]any)
 		}
@@ -68,10 +68,10 @@ func attachedIntegrationListTableOutput(attachments []*action.AttachedIntegratio
 		}
 
 		var options []string
-		maps.Copy(attachment.Config, integration.Config)
+		maps.Copy(integration.Config, attachment.Config)
 
 		// Show it as key-value pairs
-		for k, v := range attachment.Config {
+		for k, v := range integration.Config {
 			if v == "" {
 				continue
 			}
