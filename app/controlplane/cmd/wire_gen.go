@@ -82,11 +82,9 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		cleanup()
 		return nil, nil, err
 	}
-	attestationUseCase := biz.NewAttestationUseCase(casClientUseCase, logger)
 	newWorkflowRunServiceOpts := &service.NewWorkflowRunServiceOpts{
 		WorkflowRunUC:      workflowRunUseCase,
 		WorkflowUC:         workflowUseCase,
-		AttestationUC:      attestationUseCase,
 		WorkflowContractUC: workflowContractUseCase,
 		CredsReader:        readerWriter,
 		Opts:               v2,
@@ -103,7 +101,6 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		WorkflowUC:         workflowUseCase,
 		WorkflowContractUC: workflowContractUseCase,
 		OCIUC:              ociRepositoryUseCase,
-		AttestationUC:      attestationUseCase,
 		CredsReader:        readerWriter,
 		IntegrationUseCase: integrationUseCase,
 		CasCredsUseCase:    casCredentialsUseCase,

@@ -253,7 +253,7 @@ var (
 		{Name: "reason", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "run_url", Type: field.TypeString, Nullable: true},
 		{Name: "runner_type", Type: field.TypeString, Nullable: true},
-		{Name: "attestation_ref", Type: field.TypeJSON, Nullable: true},
+		{Name: "attestation", Type: field.TypeJSON, Nullable: true},
 		{Name: "robot_account_workflowruns", Type: field.TypeUUID, Nullable: true},
 		{Name: "workflow_workflowruns", Type: field.TypeUUID, Nullable: true},
 		{Name: "workflow_run_contract_version", Type: field.TypeUUID, Nullable: true},

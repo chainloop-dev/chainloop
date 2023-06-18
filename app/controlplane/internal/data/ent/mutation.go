@@ -25,6 +25,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowcontractversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowrun"
 	"github.com/google/uuid"
+	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
 
 const (
@@ -6882,7 +6883,7 @@ type WorkflowRunMutation struct {
 	reason                  *string
 	run_url                 *string
 	runner_type             *string
-	attestation_ref         **biz.AttestationRef
+	attestation             **dsse.Envelope
 	clearedFields           map[string]struct{}
 	workflow                *uuid.UUID
 	clearedworkflow         bool
@@ -7267,53 +7268,53 @@ func (m *WorkflowRunMutation) ResetRunnerType() {
 	delete(m.clearedFields, workflowrun.FieldRunnerType)
 }
 
-// SetAttestationRef sets the "attestation_ref" field.
-func (m *WorkflowRunMutation) SetAttestationRef(br *biz.AttestationRef) {
-	m.attestation_ref = &br
+// SetAttestation sets the "attestation" field.
+func (m *WorkflowRunMutation) SetAttestation(d *dsse.Envelope) {
+	m.attestation = &d
 }
 
-// AttestationRef returns the value of the "attestation_ref" field in the mutation.
-func (m *WorkflowRunMutation) AttestationRef() (r *biz.AttestationRef, exists bool) {
-	v := m.attestation_ref
+// Attestation returns the value of the "attestation" field in the mutation.
+func (m *WorkflowRunMutation) Attestation() (r *dsse.Envelope, exists bool) {
+	v := m.attestation
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldAttestationRef returns the old "attestation_ref" field's value of the WorkflowRun entity.
+// OldAttestation returns the old "attestation" field's value of the WorkflowRun entity.
 // If the WorkflowRun object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *WorkflowRunMutation) OldAttestationRef(ctx context.Context) (v *biz.AttestationRef, err error) {
+func (m *WorkflowRunMutation) OldAttestation(ctx context.Context) (v *dsse.Envelope, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldAttestationRef is only allowed on UpdateOne operations")
+		return v, errors.New("OldAttestation is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldAttestationRef requires an ID field in the mutation")
+		return v, errors.New("OldAttestation requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldAttestationRef: %w", err)
+		return v, fmt.Errorf("querying old value for OldAttestation: %w", err)
 	}
-	return oldValue.AttestationRef, nil
+	return oldValue.Attestation, nil
 }
 
-// ClearAttestationRef clears the value of the "attestation_ref" field.
-func (m *WorkflowRunMutation) ClearAttestationRef() {
-	m.attestation_ref = nil
-	m.clearedFields[workflowrun.FieldAttestationRef] = struct{}{}
+// ClearAttestation clears the value of the "attestation" field.
+func (m *WorkflowRunMutation) ClearAttestation() {
+	m.attestation = nil
+	m.clearedFields[workflowrun.FieldAttestation] = struct{}{}
 }
 
-// AttestationRefCleared returns if the "attestation_ref" field was cleared in this mutation.
-func (m *WorkflowRunMutation) AttestationRefCleared() bool {
-	_, ok := m.clearedFields[workflowrun.FieldAttestationRef]
+// AttestationCleared returns if the "attestation" field was cleared in this mutation.
+func (m *WorkflowRunMutation) AttestationCleared() bool {
+	_, ok := m.clearedFields[workflowrun.FieldAttestation]
 	return ok
 }
 
-// ResetAttestationRef resets all changes to the "attestation_ref" field.
-func (m *WorkflowRunMutation) ResetAttestationRef() {
-	m.attestation_ref = nil
-	delete(m.clearedFields, workflowrun.FieldAttestationRef)
+// ResetAttestation resets all changes to the "attestation" field.
+func (m *WorkflowRunMutation) ResetAttestation() {
+	m.attestation = nil
+	delete(m.clearedFields, workflowrun.FieldAttestation)
 }
 
 // SetWorkflowID sets the "workflow" edge to the Workflow entity by id.
@@ -7486,8 +7487,8 @@ func (m *WorkflowRunMutation) Fields() []string {
 	if m.runner_type != nil {
 		fields = append(fields, workflowrun.FieldRunnerType)
 	}
-	if m.attestation_ref != nil {
-		fields = append(fields, workflowrun.FieldAttestationRef)
+	if m.attestation != nil {
+		fields = append(fields, workflowrun.FieldAttestation)
 	}
 	return fields
 }
@@ -7509,8 +7510,8 @@ func (m *WorkflowRunMutation) Field(name string) (ent.Value, bool) {
 		return m.RunURL()
 	case workflowrun.FieldRunnerType:
 		return m.RunnerType()
-	case workflowrun.FieldAttestationRef:
-		return m.AttestationRef()
+	case workflowrun.FieldAttestation:
+		return m.Attestation()
 	}
 	return nil, false
 }
@@ -7532,8 +7533,8 @@ func (m *WorkflowRunMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldRunURL(ctx)
 	case workflowrun.FieldRunnerType:
 		return m.OldRunnerType(ctx)
-	case workflowrun.FieldAttestationRef:
-		return m.OldAttestationRef(ctx)
+	case workflowrun.FieldAttestation:
+		return m.OldAttestation(ctx)
 	}
 	return nil, fmt.Errorf("unknown WorkflowRun field %s", name)
 }
@@ -7585,12 +7586,12 @@ func (m *WorkflowRunMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetRunnerType(v)
 		return nil
-	case workflowrun.FieldAttestationRef:
-		v, ok := value.(*biz.AttestationRef)
+	case workflowrun.FieldAttestation:
+		v, ok := value.(*dsse.Envelope)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetAttestationRef(v)
+		m.SetAttestation(v)
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun field %s", name)
@@ -7634,8 +7635,8 @@ func (m *WorkflowRunMutation) ClearedFields() []string {
 	if m.FieldCleared(workflowrun.FieldRunnerType) {
 		fields = append(fields, workflowrun.FieldRunnerType)
 	}
-	if m.FieldCleared(workflowrun.FieldAttestationRef) {
-		fields = append(fields, workflowrun.FieldAttestationRef)
+	if m.FieldCleared(workflowrun.FieldAttestation) {
+		fields = append(fields, workflowrun.FieldAttestation)
 	}
 	return fields
 }
@@ -7663,8 +7664,8 @@ func (m *WorkflowRunMutation) ClearField(name string) error {
 	case workflowrun.FieldRunnerType:
 		m.ClearRunnerType()
 		return nil
-	case workflowrun.FieldAttestationRef:
-		m.ClearAttestationRef()
+	case workflowrun.FieldAttestation:
+		m.ClearAttestation()
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun nullable field %s", name)
@@ -7692,8 +7693,8 @@ func (m *WorkflowRunMutation) ResetField(name string) error {
 	case workflowrun.FieldRunnerType:
 		m.ResetRunnerType()
 		return nil
-	case workflowrun.FieldAttestationRef:
-		m.ResetAttestationRef()
+	case workflowrun.FieldAttestation:
+		m.ResetAttestation()
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun field %s", name)

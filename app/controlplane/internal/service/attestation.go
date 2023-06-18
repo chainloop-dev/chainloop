@@ -20,9 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
-	"time"
-
-	"github.com/cenkalti/backoff/v4"
 
 	cpAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
@@ -45,7 +42,6 @@ type AttestationService struct {
 	workflowUseCase         *biz.WorkflowUseCase
 	workflowContractUseCase *biz.WorkflowContractUseCase
 	ociUC                   *biz.OCIRepositoryUseCase
-	attestationUseCase      *biz.AttestationUseCase
 	credsReader             credentials.Reader
 	integrationUseCase      *biz.IntegrationUseCase
 	integrationDispatcher   *dispatcher.FanOutDispatcher
@@ -57,7 +53,6 @@ type NewAttestationServiceOpts struct {
 	WorkflowUC         *biz.WorkflowUseCase
 	WorkflowContractUC *biz.WorkflowContractUseCase
 	OCIUC              *biz.OCIRepositoryUseCase
-	AttestationUC      *biz.AttestationUseCase
 	CredsReader        credentials.Reader
 	IntegrationUseCase *biz.IntegrationUseCase
 	CasCredsUseCase    *biz.CASCredentialsUseCase
@@ -70,7 +65,6 @@ func NewAttestationService(opts *NewAttestationServiceOpts) *AttestationService 
 		service:                 newService(opts.Opts...),
 		wrUseCase:               opts.WorkflowRunUC,
 		workflowUseCase:         opts.WorkflowUC,
-		attestationUseCase:      opts.AttestationUC,
 		workflowContractUseCase: opts.WorkflowContractUC,
 		ociUC:                   opts.OCIUC,
 		credsReader:             opts.CredsReader,
@@ -158,53 +152,28 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 
 	// Decode the envelope through json encoding but
 	// TODO: Verify the envelope signature before storing it
-	// see sigstore's dsee signer/verifier helpers
+	// see sigstore's dsse signer/verifier helpers
 	envelope := &dsse.Envelope{}
 	if err := json.Unmarshal(req.Attestation, envelope); err != nil {
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}
 
+	// Store the attestation
+	if err := s.wrUseCase.SaveAttestation(ctx, req.WorkflowRunId, envelope); err != nil {
+		return nil, sl.LogAndMaskErr(err, s.log)
+	}
+
+	if err := s.wrUseCase.MarkAsFinished(ctx, req.WorkflowRunId, biz.WorkflowRunSuccess, ""); err != nil {
+		return nil, sl.LogAndMaskErr(err, s.log)
+	}
+
+	// find the CAS oci credentials so the dispatcher can download the materials if needed
 	repo, err := s.ociUC.FindMainRepo(context.Background(), robotAccount.OrgID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find main repository: %w", err)
 	}
 
-	// TODO: Move to event bus and background processing
-	// https://github.com/chainloop-dev/chainloop/issues/39
-	// Upload to OCI
-	// TODO: Move to generic dispatcher and integrations
-	go func() {
-		b := backoff.NewExponentialBackOff()
-		b.MaxElapsedTime = 1 * time.Minute
-		err := backoff.RetryNotify(
-			func() error {
-				// reset context
-				ctx := context.Background()
-				digest, err := s.attestationUseCase.UploadToCAS(ctx, envelope, repo.SecretName, req.WorkflowRunId)
-				if err != nil {
-					return err
-				}
-
-				// associate the attestation stored in the CAS with the workflow run
-				if err := s.wrUseCase.AssociateAttestation(ctx, req.WorkflowRunId, &biz.AttestationRef{Sha256: digest.Hex, SecretRef: repo.SecretName}); err != nil {
-					return err
-				}
-
-				s.log.Infow("msg", "attestation associated", "digest", digest, "runID", req.WorkflowRunId)
-
-				return s.wrUseCase.MarkAsFinished(ctx, req.WorkflowRunId, biz.WorkflowRunSuccess, "")
-			},
-			b,
-			func(err error, delay time.Duration) {
-				s.log.Warnf("error uploading attestation to CAS, retrying in %s - %s", delay, err)
-			},
-		)
-		if err != nil {
-			// Send a notification
-			_ = sl.LogAndMaskErr(err, s.log)
-		}
-	}()
-
+	// Run integrations dispatcher
 	go func() {
 		if err := s.integrationDispatcher.Run(context.TODO(), &dispatcher.RunOpts{
 			Envelope: envelope, OrgID: robotAccount.OrgID, WorkflowID: robotAccount.WorkflowID, DownloadSecretName: repo.SecretName, WorkflowRunID: req.WorkflowRunId,
@@ -275,6 +244,10 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, _ *cpAPI.Attest
 }
 
 func bizAttestationToPb(att *biz.Attestation) (*cpAPI.AttestationItem, error) {
+	if att.Envelope == nil {
+		return nil, nil
+	}
+
 	encodedAttestation, err := json.Marshal(att.Envelope)
 	if err != nil {
 		return nil, err

@@ -29,6 +29,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/pagination"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
+	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 
 	"entgo.io/ent/dialect/sql"
 )
@@ -87,8 +88,9 @@ func (r *WorkflowRunRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID
 	return entWrToBizWr(run), nil
 }
 
-func (r *WorkflowRunRepo) SaveAttestationRef(ctx context.Context, id uuid.UUID, ref *biz.AttestationRef) error {
-	run, err := r.data.db.WorkflowRun.UpdateOneID(id).SetAttestationRef(ref).Save(ctx)
+// Save the attestation for a workflow run in the database
+func (r *WorkflowRunRepo) SaveAttestation(ctx context.Context, id uuid.UUID, att *dsse.Envelope) error {
+	run, err := r.data.db.WorkflowRun.UpdateOneID(id).SetAttestation(att).Save(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return err
 	} else if run == nil {
@@ -181,14 +183,14 @@ func (r *WorkflowRunRepo) Expire(ctx context.Context, id uuid.UUID) error {
 
 func entWrToBizWr(wr *ent.WorkflowRun) *biz.WorkflowRun {
 	r := &biz.WorkflowRun{
-		ID:             wr.ID,
-		CreatedAt:      toTimePtr(wr.CreatedAt),
-		FinishedAt:     toTimePtr(wr.FinishedAt),
-		State:          string(wr.State),
-		Reason:         wr.Reason,
-		RunURL:         wr.RunURL,
-		RunnerType:     wr.RunnerType,
-		AttestationRef: wr.AttestationRef,
+		ID:          wr.ID,
+		CreatedAt:   toTimePtr(wr.CreatedAt),
+		FinishedAt:  toTimePtr(wr.FinishedAt),
+		State:       string(wr.State),
+		Reason:      wr.Reason,
+		RunURL:      wr.RunURL,
+		RunnerType:  wr.RunnerType,
+		Attestation: wr.Attestation,
 	}
 
 	if cv := wr.Edges.ContractVersion; cv != nil {

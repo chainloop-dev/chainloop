@@ -24,7 +24,6 @@ var ProviderSet = wire.NewSet(
 	NewRootAccountUseCase,
 	NewWorkflowRunUseCase,
 	NewOrganizationUseCase,
-	NewAttestationUseCase,
 	NewWorkflowContractUseCase,
 	NewCASCredentialsUseCase,
 	NewOCIRepositoryUseCase,

@@ -16,6 +16,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowcontractversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowrun"
 	"github.com/google/uuid"
+	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
 
 // WorkflowRunCreate is the builder for creating a WorkflowRun entity.
@@ -109,9 +110,9 @@ func (wrc *WorkflowRunCreate) SetNillableRunnerType(s *string) *WorkflowRunCreat
 	return wrc
 }
 
-// SetAttestationRef sets the "attestation_ref" field.
-func (wrc *WorkflowRunCreate) SetAttestationRef(br *biz.AttestationRef) *WorkflowRunCreate {
-	wrc.mutation.SetAttestationRef(br)
+// SetAttestation sets the "attestation" field.
+func (wrc *WorkflowRunCreate) SetAttestation(d *dsse.Envelope) *WorkflowRunCreate {
+	wrc.mutation.SetAttestation(d)
 	return wrc
 }
 
@@ -307,9 +308,9 @@ func (wrc *WorkflowRunCreate) createSpec() (*WorkflowRun, *sqlgraph.CreateSpec) 
 		_spec.SetField(workflowrun.FieldRunnerType, field.TypeString, value)
 		_node.RunnerType = value
 	}
-	if value, ok := wrc.mutation.AttestationRef(); ok {
-		_spec.SetField(workflowrun.FieldAttestationRef, field.TypeJSON, value)
-		_node.AttestationRef = value
+	if value, ok := wrc.mutation.Attestation(); ok {
+		_spec.SetField(workflowrun.FieldAttestation, field.TypeJSON, value)
+		_node.Attestation = value
 	}
 	if nodes := wrc.mutation.WorkflowIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
