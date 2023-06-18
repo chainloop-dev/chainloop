@@ -35,7 +35,11 @@ type WorkflowRun struct {
 	AttestationID         uuid.UUID
 	RunURL, RunnerType    string
 	ContractVersionID     uuid.UUID
-	Attestation           *dsse.Envelope
+	Attestation           *Attestation
+}
+
+type Attestation struct {
+	Envelope *dsse.Envelope
 }
 
 type WorkflowRunWithContract struct {

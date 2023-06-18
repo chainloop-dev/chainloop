@@ -109,7 +109,7 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 		return nil, errors.NotFound("not found", "workflow run not found")
 	}
 
-	attestation, err := bizAttestationToPb(&biz.Attestation{Envelope: run.Attestation})
+	attestation, err := bizAttestationToPb(run.Attestation)
 	if err != nil {
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}
