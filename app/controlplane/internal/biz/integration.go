@@ -270,7 +270,7 @@ func (uc *IntegrationUseCase) Delete(ctx context.Context, orgID, integrationID s
 	if integration.SecretName != "" {
 		uc.logger.Infow("msg", "deleting integration external secrets", "ID", integrationID, "secretName", integration.SecretName)
 		if err := uc.credsRW.DeleteCredentials(ctx, integration.SecretName); err != nil {
-			return fmt.Errorf("deleting the credentials: %w", err)
+			uc.logger.Warnw("msg", "can't delete credentials", "name", integration.SecretName, "err", err)
 		}
 	}
 
