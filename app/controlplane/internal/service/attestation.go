@@ -244,7 +244,7 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, _ *cpAPI.Attest
 }
 
 func bizAttestationToPb(att *biz.Attestation) (*cpAPI.AttestationItem, error) {
-	if att.Envelope == nil {
+	if att == nil || att.Envelope == nil {
 		return nil, nil
 	}
 
