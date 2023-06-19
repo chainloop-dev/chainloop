@@ -3,7 +3,8 @@ name: Package Helm Chart
 on:
   # Only push Helm Chart if the deployment templates have changed
   push:
-    branch: main
+    branches:
+      - main
     paths:
       - deployment/chainloop/**
 
