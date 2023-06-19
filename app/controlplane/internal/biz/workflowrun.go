@@ -17,11 +17,11 @@ package biz
 
 import (
 	"context"
-	"errors"
 	"io"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/pagination"
+	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
@@ -35,7 +35,11 @@ type WorkflowRun struct {
 	AttestationID         uuid.UUID
 	RunURL, RunnerType    string
 	ContractVersionID     uuid.UUID
-	AttestationRef        *AttestationRef
+	Attestation           *Attestation
+}
+
+type Attestation struct {
+	Envelope *dsse.Envelope
 }
 
 type WorkflowRunWithContract struct {
@@ -58,7 +62,7 @@ type WorkflowRunRepo interface {
 	FindByID(ctx context.Context, ID uuid.UUID) (*WorkflowRun, error)
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*WorkflowRun, error)
 	MarkAsFinished(ctx context.Context, ID uuid.UUID, status WorkflowRunStatus, reason string) error
-	SaveAttestationRef(ctx context.Context, ID uuid.UUID, ref *AttestationRef) error
+	SaveAttestation(ctx context.Context, ID uuid.UUID, att *dsse.Envelope) error
 	List(ctx context.Context, orgID, workflowID uuid.UUID, p *pagination.Options) ([]*WorkflowRun, string, error)
 	// List the runs that have not finished and are older than a given time
 	ListNotFinishedOlderThan(ctx context.Context, olderThan time.Time) ([]*WorkflowRun, error)
@@ -198,18 +202,13 @@ func (uc *WorkflowRunUseCase) MarkAsFinished(ctx context.Context, id string, sta
 	return uc.wfRunRepo.MarkAsFinished(ctx, runID, status, reason)
 }
 
-// Store the attestation digest for the workflowrun
-func (uc *WorkflowRunUseCase) AssociateAttestation(ctx context.Context, id string, ref *AttestationRef) error {
-	if ref == nil || ref.SecretRef == "" || ref.Sha256 == "" {
-		return NewErrValidation(errors.New("attestation ref is nil or invalid"))
-	}
-
+func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, envelope *dsse.Envelope) error {
 	runID, err := uuid.Parse(id)
 	if err != nil {
 		return NewErrInvalidUUID(err)
 	}
 
-	return uc.wfRunRepo.SaveAttestationRef(ctx, runID, ref)
+	return uc.wfRunRepo.SaveAttestation(ctx, runID, envelope)
 }
 
 // List the workflowruns associated with an org and optionally filtered by a workflow

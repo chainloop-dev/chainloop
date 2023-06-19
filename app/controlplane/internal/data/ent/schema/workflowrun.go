@@ -25,6 +25,7 @@ import (
 	"entgo.io/ent/schema/index"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/google/uuid"
+	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
 
 // WorkflowRun holds the schema definition for the WorkflowRun entity.
@@ -47,7 +48,7 @@ func (WorkflowRun) Fields() []ent.Field {
 		field.Text("reason").Optional(),
 		field.String("run_url").Optional(),
 		field.String("runner_type").Optional(),
-		field.JSON("attestation_ref", &biz.AttestationRef{}).Optional(),
+		field.JSON("attestation", &dsse.Envelope{}).Optional(),
 	}
 }
 

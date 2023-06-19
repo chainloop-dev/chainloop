@@ -23,7 +23,7 @@ The control plane has 4 main dependencies
 - Sensitive information provided by the user such as OCI registry credentials is sent to a secret storage backend. Currently we support [Hashicorp Vault](https://www.vaultproject.io/), [AWS Secret Manager](https://aws.amazon.com/secrets-manager/) and [GCP Secret Manager](https://cloud.google.com/secret-manager).
 - In addition to those third party dependencies, the control plane also has a dependency on Chainloop own [Artifact CAS](../artifact-cas). It is used to upload the received attestation to the end-user storage backend.
 
-> NOTE: The control plane does not store attestation or artifact data, these get forwarded to the user storage backend through the Artifact CAS.
+> NOTE: The control plane does not store artifacts, these get forwarded to the user storage backend (i.e OCI registry) through the Artifact CAS.
 
 ## Runbook
 

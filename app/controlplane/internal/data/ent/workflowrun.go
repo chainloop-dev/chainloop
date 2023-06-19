@@ -15,6 +15,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowcontractversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowrun"
 	"github.com/google/uuid"
+	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
 
 // WorkflowRun is the model entity for the WorkflowRun schema.
@@ -34,8 +35,8 @@ type WorkflowRun struct {
 	RunURL string `json:"run_url,omitempty"`
 	// RunnerType holds the value of the "runner_type" field.
 	RunnerType string `json:"runner_type,omitempty"`
-	// AttestationRef holds the value of the "attestation_ref" field.
-	AttestationRef *biz.AttestationRef `json:"attestation_ref,omitempty"`
+	// Attestation holds the value of the "attestation" field.
+	Attestation *dsse.Envelope `json:"attestation,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the WorkflowRunQuery when eager-loading is set.
 	Edges                         WorkflowRunEdges `json:"edges"`
@@ -101,7 +102,7 @@ func (*WorkflowRun) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case workflowrun.FieldAttestationRef:
+		case workflowrun.FieldAttestation:
 			values[i] = new([]byte)
 		case workflowrun.FieldState, workflowrun.FieldReason, workflowrun.FieldRunURL, workflowrun.FieldRunnerType:
 			values[i] = new(sql.NullString)
@@ -172,12 +173,12 @@ func (wr *WorkflowRun) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				wr.RunnerType = value.String
 			}
-		case workflowrun.FieldAttestationRef:
+		case workflowrun.FieldAttestation:
 			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field attestation_ref", values[i])
+				return fmt.Errorf("unexpected type %T for field attestation", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &wr.AttestationRef); err != nil {
-					return fmt.Errorf("unmarshal field attestation_ref: %w", err)
+				if err := json.Unmarshal(*value, &wr.Attestation); err != nil {
+					return fmt.Errorf("unmarshal field attestation: %w", err)
 				}
 			}
 		case workflowrun.ForeignKeys[0]:
@@ -262,8 +263,8 @@ func (wr *WorkflowRun) String() string {
 	builder.WriteString("runner_type=")
 	builder.WriteString(wr.RunnerType)
 	builder.WriteString(", ")
-	builder.WriteString("attestation_ref=")
-	builder.WriteString(fmt.Sprintf("%v", wr.AttestationRef))
+	builder.WriteString("attestation=")
+	builder.WriteString(fmt.Sprintf("%v", wr.Attestation))
 	builder.WriteByte(')')
 	return builder.String()
 }

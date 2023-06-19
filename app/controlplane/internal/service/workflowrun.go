@@ -17,7 +17,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	craftingpb "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -36,14 +35,12 @@ type WorkflowRunService struct {
 	wrUseCase               *biz.WorkflowRunUseCase
 	workflowUseCase         *biz.WorkflowUseCase
 	workflowContractUseCase *biz.WorkflowContractUseCase
-	attestationUseCase      *biz.AttestationUseCase
 	credsReader             credentials.Reader
 }
 
 type NewWorkflowRunServiceOpts struct {
 	WorkflowRunUC      *biz.WorkflowRunUseCase
 	WorkflowUC         *biz.WorkflowUseCase
-	AttestationUC      *biz.AttestationUseCase
 	WorkflowContractUC *biz.WorkflowContractUseCase
 	CredsReader        credentials.Reader
 	Opts               []NewOpt
@@ -54,7 +51,6 @@ func NewWorkflowRunService(opts *NewWorkflowRunServiceOpts) *WorkflowRunService 
 		service:                 newService(opts.Opts...),
 		wrUseCase:               opts.WorkflowRunUC,
 		workflowUseCase:         opts.WorkflowUC,
-		attestationUseCase:      opts.AttestationUC,
 		workflowContractUseCase: opts.WorkflowContractUC,
 		credsReader:             opts.CredsReader,
 	}
@@ -113,25 +109,9 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 		return nil, errors.NotFound("not found", "workflow run not found")
 	}
 
-	var attestation *biz.Attestation
-	// Download the attestation if the workflow run is successful
-	if run.AttestationRef != nil {
-		attestation, err = s.attestationUseCase.FetchFromStore(ctx, run.AttestationRef.SecretRef, fmt.Sprintf("sha256:%s", run.AttestationRef.Sha256))
-		if err != nil {
-			// NOTE: For now we don't return an error if the attestation is not found
-			// since we do not have a good error recovery in place for assets
-			// stored in the object store.
-			// If for some reason we can't retrieve the attestation we just return an empy attestatiation
-			_ = sl.LogAndMaskErr(err, s.log)
-		}
-	}
-
-	var att *pb.AttestationItem
-	if attestation != nil {
-		att, err = bizAttestationToPb(attestation)
-		if err != nil {
-			return nil, sl.LogAndMaskErr(err, s.log)
-		}
+	attestation, err := bizAttestationToPb(run.Attestation)
+	if err != nil {
+		return nil, sl.LogAndMaskErr(err, s.log)
 	}
 
 	contractVersion, err := s.workflowContractUseCase.FindVersionByID(ctx, run.ContractVersionID.String())
@@ -146,7 +126,7 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 	wr.ContractVersion = bizWorkFlowContractVersionToPb(contractVersion)
 	res := &pb.WorkflowRunServiceViewResponse_Result{
 		WorkflowRun: wr,
-		Attestation: att,
+		Attestation: attestation,
 	}
 
 	return &pb.WorkflowRunServiceViewResponse{Result: res}, nil

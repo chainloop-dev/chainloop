@@ -22,25 +22,21 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
 	"github.com/google/uuid"
+	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
-func (s *workflowRunIntegrationTestSuite) TestAssociateAttestation() {
+func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 	assert := assert.New(s.T())
 	ctx := context.Background()
-	validRef := &biz.AttestationRef{Sha256: "deadbeef", SecretRef: "secret-ref"}
+
+	validEnvelope := &dsse.Envelope{}
 
 	s.T().Run("non existing workflowRun", func(t *testing.T) {
-		err := s.WorkflowRun.AssociateAttestation(ctx, uuid.NewString(), validRef)
+		err := s.WorkflowRun.SaveAttestation(ctx, uuid.NewString(), validEnvelope)
 		assert.Error(err)
 		assert.True(biz.IsNotFound(err))
-	})
-
-	s.T().Run("empty attestation ref", func(t *testing.T) {
-		err := s.WorkflowRun.AssociateAttestation(ctx, uuid.NewString(), nil)
-		assert.Error(err)
-		assert.True(biz.IsErrValidation(err))
 	})
 
 	s.T().Run("valid workflowrun", func(t *testing.T) {
@@ -64,13 +60,13 @@ func (s *workflowRunIntegrationTestSuite) TestAssociateAttestation() {
 		})
 		assert.NoError(err)
 
-		err = s.WorkflowRun.AssociateAttestation(ctx, run.ID.String(), validRef)
+		err = s.WorkflowRun.SaveAttestation(ctx, run.ID.String(), validEnvelope)
 		assert.NoError(err)
 
 		// Retrieve attestation ref from storage and compare
 		r, err := s.WorkflowRun.View(ctx, org.ID, run.ID.String())
 		assert.NoError(err)
-		assert.Equal(r.AttestationRef, validRef)
+		assert.Equal(r.Attestation, &biz.Attestation{Envelope: validEnvelope})
 	})
 }
 

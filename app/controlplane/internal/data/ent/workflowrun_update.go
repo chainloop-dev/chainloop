@@ -18,6 +18,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowcontractversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowrun"
 	"github.com/google/uuid"
+	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
 
 // WorkflowRunUpdate is the builder for updating WorkflowRun entities.
@@ -127,15 +128,15 @@ func (wru *WorkflowRunUpdate) ClearRunnerType() *WorkflowRunUpdate {
 	return wru
 }
 
-// SetAttestationRef sets the "attestation_ref" field.
-func (wru *WorkflowRunUpdate) SetAttestationRef(br *biz.AttestationRef) *WorkflowRunUpdate {
-	wru.mutation.SetAttestationRef(br)
+// SetAttestation sets the "attestation" field.
+func (wru *WorkflowRunUpdate) SetAttestation(d *dsse.Envelope) *WorkflowRunUpdate {
+	wru.mutation.SetAttestation(d)
 	return wru
 }
 
-// ClearAttestationRef clears the value of the "attestation_ref" field.
-func (wru *WorkflowRunUpdate) ClearAttestationRef() *WorkflowRunUpdate {
-	wru.mutation.ClearAttestationRef()
+// ClearAttestation clears the value of the "attestation" field.
+func (wru *WorkflowRunUpdate) ClearAttestation() *WorkflowRunUpdate {
+	wru.mutation.ClearAttestation()
 	return wru
 }
 
@@ -295,11 +296,11 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if wru.mutation.RunnerTypeCleared() {
 		_spec.ClearField(workflowrun.FieldRunnerType, field.TypeString)
 	}
-	if value, ok := wru.mutation.AttestationRef(); ok {
-		_spec.SetField(workflowrun.FieldAttestationRef, field.TypeJSON, value)
+	if value, ok := wru.mutation.Attestation(); ok {
+		_spec.SetField(workflowrun.FieldAttestation, field.TypeJSON, value)
 	}
-	if wru.mutation.AttestationRefCleared() {
-		_spec.ClearField(workflowrun.FieldAttestationRef, field.TypeJSON)
+	if wru.mutation.AttestationCleared() {
+		_spec.ClearField(workflowrun.FieldAttestation, field.TypeJSON)
 	}
 	if wru.mutation.WorkflowCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -520,15 +521,15 @@ func (wruo *WorkflowRunUpdateOne) ClearRunnerType() *WorkflowRunUpdateOne {
 	return wruo
 }
 
-// SetAttestationRef sets the "attestation_ref" field.
-func (wruo *WorkflowRunUpdateOne) SetAttestationRef(br *biz.AttestationRef) *WorkflowRunUpdateOne {
-	wruo.mutation.SetAttestationRef(br)
+// SetAttestation sets the "attestation" field.
+func (wruo *WorkflowRunUpdateOne) SetAttestation(d *dsse.Envelope) *WorkflowRunUpdateOne {
+	wruo.mutation.SetAttestation(d)
 	return wruo
 }
 
-// ClearAttestationRef clears the value of the "attestation_ref" field.
-func (wruo *WorkflowRunUpdateOne) ClearAttestationRef() *WorkflowRunUpdateOne {
-	wruo.mutation.ClearAttestationRef()
+// ClearAttestation clears the value of the "attestation" field.
+func (wruo *WorkflowRunUpdateOne) ClearAttestation() *WorkflowRunUpdateOne {
+	wruo.mutation.ClearAttestation()
 	return wruo
 }
 
@@ -718,11 +719,11 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 	if wruo.mutation.RunnerTypeCleared() {
 		_spec.ClearField(workflowrun.FieldRunnerType, field.TypeString)
 	}
-	if value, ok := wruo.mutation.AttestationRef(); ok {
-		_spec.SetField(workflowrun.FieldAttestationRef, field.TypeJSON, value)
+	if value, ok := wruo.mutation.Attestation(); ok {
+		_spec.SetField(workflowrun.FieldAttestation, field.TypeJSON, value)
 	}
-	if wruo.mutation.AttestationRefCleared() {
-		_spec.ClearField(workflowrun.FieldAttestationRef, field.TypeJSON)
+	if wruo.mutation.AttestationCleared() {
+		_spec.ClearField(workflowrun.FieldAttestation, field.TypeJSON)
 	}
 	if wruo.mutation.WorkflowCleared() {
 		edge := &sqlgraph.EdgeSpec{

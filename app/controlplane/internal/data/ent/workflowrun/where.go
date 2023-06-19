@@ -427,14 +427,14 @@ func RunnerTypeContainsFold(v string) predicate.WorkflowRun {
 	return predicate.WorkflowRun(sql.FieldContainsFold(FieldRunnerType, v))
 }
 
-// AttestationRefIsNil applies the IsNil predicate on the "attestation_ref" field.
-func AttestationRefIsNil() predicate.WorkflowRun {
-	return predicate.WorkflowRun(sql.FieldIsNull(FieldAttestationRef))
+// AttestationIsNil applies the IsNil predicate on the "attestation" field.
+func AttestationIsNil() predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldIsNull(FieldAttestation))
 }
 
-// AttestationRefNotNil applies the NotNil predicate on the "attestation_ref" field.
-func AttestationRefNotNil() predicate.WorkflowRun {
-	return predicate.WorkflowRun(sql.FieldNotNull(FieldAttestationRef))
+// AttestationNotNil applies the NotNil predicate on the "attestation" field.
+func AttestationNotNil() predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNotNull(FieldAttestation))
 }
 
 // HasWorkflow applies the HasEdge predicate on the "workflow" edge.
