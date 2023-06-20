@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -29,10 +30,10 @@ import (
 )
 
 const registrationInputHeader = "## Registration Input Schema"
-const AttachmentInputHeader = "## Attachment Input Schema"
+const attachmentInputHeader = "## Attachment Input Schema"
 
-var registrationInputRe = regexp.MustCompile(registrationInputHeader)
-var attachmentInputRe = regexp.MustCompile(AttachmentInputHeader)
+var registrationInputRe = regexp.MustCompile(fmt.Sprintf("%s\n+```json\n+(.|\\s)*```", registrationInputHeader))
+var attachmentInputRe = regexp.MustCompile(fmt.Sprintf("%s\n+```json\n+(.|\\s)*```", attachmentInputHeader))
 
 var extensionsDir string
 
@@ -45,7 +46,7 @@ func main() {
 	}
 
 	for _, e := range extensions {
-		// Find README file
+		// Find README file and extract its content
 		file, err := os.OpenFile(filepath.Join(extensionsDir, e.Describe().ID, "v1", "README.md"), os.O_RDWR, 0644)
 		if err != nil {
 			_ = l.Log(log.LevelWarn, "msg", "failed to open README.md file", "err", err)
@@ -65,16 +66,32 @@ func main() {
 			_ = l.Log(log.LevelWarn, "msg", "failed to indent JSON", "err", err)
 		}
 
-		fileContent = registrationInputRe.ReplaceAllLiteral(fileContent, []byte(registrationInputHeader+"\n\n```json\n"+prettyRegistrationJSON.String()+"\n```"))
-		// Replace attachment schema
+		registrationInputSection := registrationInputHeader + "\n\n```json\n" + prettyRegistrationJSON.String() + "\n```"
+		// If the section already exists, replace it
+		if registrationInputRe.Match(fileContent) {
+			// fileContent = registrationInputRe.ReplaceAllLiteral(fileContent, []byte(registrationInputSection))
+			fileContent = registrationInputRe.ReplaceAllLiteral(fileContent, []byte(registrationInputSection))
+		} else {
+			// Otherwise, append it
+			fileContent = append(fileContent, []byte("\n\n"+registrationInputSection)...)
+		}
 
+		// Replace attachment schema
 		var prettyAttachmentJSON bytes.Buffer
 		err = json.Indent(&prettyAttachmentJSON, e.Describe().AttachmentJSONSchema, "", "  ")
 		if err != nil {
 			panic(err)
 		}
 
-		fileContent = attachmentInputRe.ReplaceAllLiteral(fileContent, []byte(AttachmentInputHeader+"\n\n```json\n"+prettyAttachmentJSON.String()+"\n```"))
+		attachmentInputSection := attachmentInputHeader + "\n\n```json\n" + prettyAttachmentJSON.String() + "\n```"
+		// If the section already exists, replace it
+		if attachmentInputRe.Match(fileContent) {
+			fileContent = attachmentInputRe.ReplaceAllLiteral(fileContent, []byte(attachmentInputSection))
+		} else {
+			// Otherwise, append it
+			fileContent = append(fileContent, []byte("\n\n"+attachmentInputSection)...)
+		}
+
 		// Write the new content in the file
 		_, err = file.Seek(0, 0)
 		if err != nil {
