@@ -12,7 +12,7 @@ An fanOut extension goes through 4 different stages. Loading, Registration, Atta
 
 ### Loading Stage
 
-The loading stage is when the extension gets enabled in the Chainloop Control Plane. This is implemented via the extension constructor. This is when you, as a extension developer, will define:
+The loading stage is when the extension gets enabled in the Chainloop Control Plane. This is implemented via the extension constructor. It is when you, as a extension developer, will define:
 
 - The extension identifier, version and description.
 - What kind of input you want your extension to receive, materials, attestations or both.
@@ -65,7 +65,9 @@ $ chainloop integration available describe --id dependencytrack
 
 In addition to the constructor 3 more handlers need to be implemented.
 
-### Registration
+![FanOut sdk](../../../docs/img/fanout-sdk.png)
+
+### Registration Stage
 
 Registration is when a specific instance of the extension is configured on a Chainloop organization. A registered instance is then available to be attached to any workflow, more on that later.
 
@@ -76,7 +78,7 @@ Examples:
 - Register a Dependency-Track instance by receiving its URL and API key. At this stage, the extension will make sure that the provided information is valid and store it for later use.
 - Register a Discord instance by receiving its webhook URL. The handler will store the webhook URL securely for later use.
 
-### Attachment
+### Attachment Stage
 
 In order for an user to use a registered instance, it needs to be attached to a workflow. This stage can be also used to optionally customize the behavior of the extension for a specific workflow.
 
@@ -87,7 +89,7 @@ Examples:
 - Tell the already registered Dependency Track instance to send the SBOMs **to a specific project**.
 - Tell the already registered Discord instance to send all attestations to the configured channel
 
-### Execution
+### Execution Stage
 
 This is the actual execution of the extension. This is where the extension will do its work. i.e call a workflow or send a notification. 
 
@@ -105,8 +107,6 @@ A Discord webhook extension will
 
 - Get the Webhook URL from the state stored during the registration phase
 - Craft message to send to the Discord webhook
-
-![FanOut sdk](../../../docs/img/fanout-sdk.png)
 
 ## How to create a new extension
 
