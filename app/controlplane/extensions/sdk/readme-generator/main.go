@@ -74,7 +74,7 @@ func main() {
 			panic(err)
 		}
 
-		fileContent = attachmentInputRe.ReplaceAllLiteral(fileContent, []byte(AttachmentInputHeader+"\n\n```json\n"+prettyRegistrationJSON.String()+"\n```"))
+		fileContent = attachmentInputRe.ReplaceAllLiteral(fileContent, []byte(AttachmentInputHeader+"\n\n```json\n"+prettyAttachmentJSON.String()+"\n```"))
 		// Write the new content in the file
 		_, err = file.Seek(0, 0)
 		if err != nil {
