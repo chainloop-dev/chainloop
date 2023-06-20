@@ -63,11 +63,11 @@ $ chainloop integration available describe --id dependencytrack
 └─────────────┴────────┴──────────┴─────────────────────────────────────────────────────────┘
 ```
 
-In addition to the constructor 3 more handlers need to be implemented.
+In addition to the constructor, 3 more handlers need to be implemented.
 
 ![FanOut sdk](../../../docs/img/fanout-sdk.png)
 
-### Registration Stage
+### Registration Handler
 
 Registration is when a specific instance of the extension is configured on a Chainloop organization. A registered instance is then available to be attached to any workflow, more on that later.
 
@@ -78,7 +78,7 @@ Examples:
 - Register a Dependency-Track instance by receiving its URL and API key. At this stage, the extension will make sure that the provided information is valid and store it for later use.
 - Register a Discord instance by receiving its webhook URL. The handler will store the webhook URL securely for later use.
 
-### Attachment Stage
+### Attachment Handler
 
 In order for an user to use a registered instance, it needs to be attached to a workflow. This stage can be also used to optionally customize the behavior of the extension for a specific workflow.
 
@@ -86,14 +86,14 @@ This handler **will receive not only the input from the user but also the output
 
 Examples:
 
-- Tell the already registered Dependency Track instance to send the SBOMs **to a specific project**.
-- Tell the already registered Discord instance to send all attestations to the configured channel
+- Tell the already registered Dependency Track extension to send the SBOMs **to a specific project**.
+- Tell the already registered Discord extension to send all attestations to the configured channel.
 
-### Execution Stage
+### Execution Handler
 
-This is the actual execution of the extension. This is where the extension will do its work. i.e call a workflow or send a notification. 
+This is the actual execution of the extension. This is where the extension will do its work. i.e forward the attestation/material data to a third-party API, send a notification and so on.
 
-This handler **will also have access to the outputs from the registration and attachment phases**.
+In addition to the attestation and material data, this handler **will also have access to the outputs from the registration and attachment phases**.
 
 Examples:
 
@@ -110,4 +110,13 @@ A Discord webhook extension will
 
 ## How to create a new extension
 
-We offer a [starter template](./core/template). Just copy it to a new folder and follow the steps shown in its readme file.
+We offer a [starter template](./core/template) that can be used as baseline. Just copy it to a new folder i.e `core/my-extension/v1` to get started.
+
+Next:
+
+- Replace all the occurrences of `template` in the code with your extension name.
+- Add it to the list of available extensions [here](`./extensions.go`). This will make this extension available the next time the control plane starts.
+- Define the API request payloads for both Registration and Attachment.
+- Implement the [FanOutExtension interface](https://github.com/chainloop-dev/chainloop/blob/main/app/controlplane/extensions/sdk/v2/fanout.go#L55). The template comes prefilled with some commented out code as guideline.
+
+Remember that you can find some examples of fully functional extensions in [here](./core/).
