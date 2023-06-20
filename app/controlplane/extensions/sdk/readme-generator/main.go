@@ -32,78 +32,79 @@ import (
 const registrationInputHeader = "## Registration Input Schema"
 const attachmentInputHeader = "## Attachment Input Schema"
 
-var registrationInputRe = regexp.MustCompile(fmt.Sprintf("%s\n+```json\n+(.|\\s)*```", registrationInputHeader))
-var attachmentInputRe = regexp.MustCompile(fmt.Sprintf("%s\n+```json\n+(.|\\s)*```", attachmentInputHeader))
-
+// base path to the extensions directory
 var extensionsDir string
 
-func main() {
+func addSchemaToSection(src []byte, sectionHeader string, schema []byte) ([]byte, error) {
+	var prettyJSON bytes.Buffer
+	err := json.Indent(&prettyJSON, schema, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+
+	inputSection := sectionHeader + "\n\n```json\n" + prettyJSON.String() + "\n```"
+	r := regexp.MustCompile(fmt.Sprintf("%s\n+```json\n+(.|\\s)*```", sectionHeader))
+	// If the section already exists, replace it
+	if r.Match(src) {
+		return r.ReplaceAllLiteral(src, []byte(inputSection)), nil
+	}
+
+	// Append it
+	return append(src, []byte("\n\n"+inputSection)...), nil
+}
+
+func mainE() error {
 	l := log.NewStdLogger(os.Stdout)
 
 	extensions, err := extensionsSDK.Load(l)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("failed to load extensions: %w", err)
 	}
 
 	for _, e := range extensions {
 		// Find README file and extract its content
 		file, err := os.OpenFile(filepath.Join(extensionsDir, e.Describe().ID, "v1", "README.md"), os.O_RDWR, 0644)
 		if err != nil {
-			_ = l.Log(log.LevelWarn, "msg", "failed to open README.md file", "err", err)
-			continue
+			return fmt.Errorf("failed to open README.md file: %w", err)
 		}
 
 		fileContent, err := io.ReadAll(file)
 		if err != nil {
-			_ = l.Log(log.LevelWarn, "msg", "failed to read README.md file", "err", err)
-			continue
+			return fmt.Errorf("failed to read README.md file: %w", err)
 		}
 
-		// Replace registration input schema
-		var prettyRegistrationJSON bytes.Buffer
-		err = json.Indent(&prettyRegistrationJSON, e.Describe().RegistrationJSONSchema, "", "  ")
+		// Replace/Add registration input schema
+		fileContent, err = addSchemaToSection(fileContent, registrationInputHeader, e.Describe().RegistrationJSONSchema)
 		if err != nil {
-			_ = l.Log(log.LevelWarn, "msg", "failed to indent JSON", "err", err)
+			return fmt.Errorf("failed to add registration schema to README.md file: %w", err)
 		}
 
-		registrationInputSection := registrationInputHeader + "\n\n```json\n" + prettyRegistrationJSON.String() + "\n```"
-		// If the section already exists, replace it
-		if registrationInputRe.Match(fileContent) {
-			// fileContent = registrationInputRe.ReplaceAllLiteral(fileContent, []byte(registrationInputSection))
-			fileContent = registrationInputRe.ReplaceAllLiteral(fileContent, []byte(registrationInputSection))
-		} else {
-			// Otherwise, append it
-			fileContent = append(fileContent, []byte("\n\n"+registrationInputSection)...)
-		}
-
-		// Replace attachment schema
-		var prettyAttachmentJSON bytes.Buffer
-		err = json.Indent(&prettyAttachmentJSON, e.Describe().AttachmentJSONSchema, "", "  ")
+		// Replace/Add attachment input schema
+		fileContent, err = addSchemaToSection(fileContent, attachmentInputHeader, e.Describe().AttachmentJSONSchema)
 		if err != nil {
-			panic(err)
-		}
-
-		attachmentInputSection := attachmentInputHeader + "\n\n```json\n" + prettyAttachmentJSON.String() + "\n```"
-		// If the section already exists, replace it
-		if attachmentInputRe.Match(fileContent) {
-			fileContent = attachmentInputRe.ReplaceAllLiteral(fileContent, []byte(attachmentInputSection))
-		} else {
-			// Otherwise, append it
-			fileContent = append(fileContent, []byte("\n\n"+attachmentInputSection)...)
+			return fmt.Errorf("failed to add attachment schema to README.md file: %w", err)
 		}
 
 		// Write the new content in the file
 		_, err = file.Seek(0, 0)
 		if err != nil {
-			_ = l.Log(log.LevelWarn, "msg", "failed to seek README.md file", "err", err)
-			continue
+			return fmt.Errorf("failed to seek README.md file: %w", err)
 		}
 
 		_, err = file.Write(fileContent)
 		if err != nil {
-			_ = l.Log(log.LevelWarn, "msg", "failed to write README.md file", "err", err)
-			continue
+			fmt.Errorf("failed to write README.md file: %w", err)
 		}
+
+		_ = l.Log(log.LevelInfo, "msg", "README.md file updated", "extension", e.Describe().ID)
+	}
+
+	return nil
+}
+
+func main() {
+	if err := mainE(); err != nil {
+		panic(err)
 	}
 }
 
