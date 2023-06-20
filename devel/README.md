@@ -70,6 +70,11 @@ You will get redirected to the pre-configured local OIDC provider (DEX) where th
 
 Once logged in, please refer to our [Getting Started guide](https://docs.chainloop.dev/getting-started/setup) to learn how to setup an OCI registry.
 
+## Developing Extensions / Integrations
+
+Refer to the [Extensions](../app/controlplane/extensions/README.md) documentation for more information.
+
+
 ## Troubleshooting
 
 ### Integration tests failing on OSX with Docker Desktop

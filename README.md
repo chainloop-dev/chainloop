@@ -108,6 +108,8 @@ Operators can set up third-party integrations such as [Dependency-Track](https:/
 
 Ops can mix and match with different integrations while **not requiring developers to make any changes on their side**!
 
+You can see the list of available integrations by running `chainloop integration available list` or by browsing [their source code](./app/controlplane/extensions/).
+
 ### Role-tailored experience
 
 Chainloop makes sure to clearly define the responsibilities, experience and functional scope of the **two main personas, Security/Operation (SecOps) and Development/Application teams**.
