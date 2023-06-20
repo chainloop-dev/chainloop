@@ -18,6 +18,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"io"
 	"os"
 	"path/filepath"
@@ -28,8 +29,12 @@ import (
 )
 
 const registrationInputHeader = "## Registration Input Schema"
+const AttachmentInputHeader = "## Attachment Input Schema"
 
 var registrationInputRe = regexp.MustCompile(registrationInputHeader)
+var attachmentInputRe = regexp.MustCompile(AttachmentInputHeader)
+
+var extensionsDir string
 
 func main() {
 	l := log.NewStdLogger(os.Stdout)
@@ -40,10 +45,8 @@ func main() {
 	}
 
 	for _, e := range extensions {
-
 		// Find README file
-
-		file, err := os.OpenFile(filepath.Join("../../core", e.Describe().ID, "v1", "README.md"), os.O_RDWR, 0644)
+		file, err := os.OpenFile(filepath.Join(extensionsDir, e.Describe().ID, "v1", "README.md"), os.O_RDWR, 0644)
 		if err != nil {
 			_ = l.Log(log.LevelWarn, "msg", "failed to open README.md file", "err", err)
 			continue
@@ -62,8 +65,7 @@ func main() {
 			_ = l.Log(log.LevelWarn, "msg", "failed to indent JSON", "err", err)
 		}
 
-		newContent := registrationInputRe.ReplaceAllLiteral(fileContent, []byte(registrationInputHeader+"\n```json\n"+prettyRegistrationJSON.String()+"\n```"))
-
+		fileContent = registrationInputRe.ReplaceAllLiteral(fileContent, []byte(registrationInputHeader+"\n\n```json\n"+prettyRegistrationJSON.String()+"\n```"))
 		// Replace attachment schema
 
 		var prettyAttachmentJSON bytes.Buffer
@@ -72,6 +74,23 @@ func main() {
 			panic(err)
 		}
 
-		// fmt.Println(prettyAttachmentJSON.String())
+		fileContent = attachmentInputRe.ReplaceAllLiteral(fileContent, []byte(AttachmentInputHeader+"\n\n```json\n"+prettyRegistrationJSON.String()+"\n```"))
+		// Write the new content in the file
+		_, err = file.Seek(0, 0)
+		if err != nil {
+			_ = l.Log(log.LevelWarn, "msg", "failed to seek README.md file", "err", err)
+			continue
+		}
+
+		_, err = file.Write(fileContent)
+		if err != nil {
+			_ = l.Log(log.LevelWarn, "msg", "failed to write README.md file", "err", err)
+			continue
+		}
 	}
+}
+
+func init() {
+	flag.StringVar(&extensionsDir, "dir", "", "base directory for extensions i.e ./core")
+	flag.Parse()
 }
