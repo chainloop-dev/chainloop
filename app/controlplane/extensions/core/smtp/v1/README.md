@@ -72,21 +72,3 @@ Starting now, every time a workflow run occurs, an email notification will be se
   ]
 }
 ```
-
-## Attachment Input Schema
-
-```json
-{
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/smtp/v1/attachment-request",
-  "properties": {
-    "cc": {
-      "type": "string",
-      "format": "email",
-      "description": "The email address of the carbon copy recipient."
-    }
-  },
-  "additionalProperties": false,
-  "type": "object"
-}
-```
