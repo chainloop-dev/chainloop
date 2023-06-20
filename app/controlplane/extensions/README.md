@@ -110,4 +110,4 @@ A Discord webhook extension will
 
 ## How to create a new extension
 
-We offer a starter template in `./core/template`. Just copy it to a new folder and follow the steps shown in its readme file.
+We offer a [starter template](./core/template). Just copy it to a new folder and follow the steps shown in its readme file.
