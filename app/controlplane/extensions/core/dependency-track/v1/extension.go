@@ -62,7 +62,7 @@ const description = "Send CycloneDX SBOMs to your Dependency-Track instance"
 func New(l log.Logger) (sdk.FanOut, error) {
 	base, err := sdk.NewFanOut(
 		&sdk.NewParams{
-			ID:          "dependencytrack",
+			ID:          "dependency-track",
 			Version:     "0.2",
 			Description: description,
 			Logger:      l,

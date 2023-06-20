@@ -18,9 +18,9 @@ package extensions
 import (
 	"fmt"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/dependencytrack/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/discord/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/ociregistry/v1"
+	dependencytrack "github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/dependency-track/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/discord-webhook/v1"
+	ociregistry "github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/oci-registry/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/smtp/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"

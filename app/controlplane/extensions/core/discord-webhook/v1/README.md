@@ -20,3 +20,7 @@ $ chainloop integration registered add discord-webhook --opt webhook=[webhookURL
 ```console
 chainloop integration attached add --workflow $WID --integration $IID
 ```
+
+## Registration Input Schema
+
+## Attachment Input Schema
