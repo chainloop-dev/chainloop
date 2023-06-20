@@ -2,7 +2,7 @@
 
 Chainloop extensions are a way to add functionality to Chainloop by integrating with third-parties.
 
-Currently we only support one type, fanOut extensions. FanOut extensions implement logic that will get executed when attestations or materials are received. This logic can be anything from sending an email, uploading an attestation to a storage backend and so on.
+Currently we only support one type, fanOut extensions. A FanOut extension implements logic that will get executed when attestations or materials are received. This logic can be anything from sending a Slack message, uploading the attestation to a storage backend or sending a Software Bill Of Materials (SBOMs) to Dependency-Track for analysis, for example.
 
 ![FanOut Extension](../../../docs/img/fanout.png)
 
@@ -10,11 +10,9 @@ Currently we only support one type, fanOut extensions. FanOut extensions impleme
 
 An fanOut extension goes through 4 different stages. Loading, Registration, Attachment and Execution.
 
-### Loading
+### Loading Stage
 
-Loading is when the extension gets enabled in the Chainloop Control Plane. This is implemented via the extension constructor.
-
-This is when you, as a extension developer, will define:
+The loading stage is when the extension gets enabled in the Chainloop Control Plane. This is implemented via the extension constructor. This is when you, as a extension developer, will define:
 
 - The extension identifier, version and description.
 - What kind of input you want your extension to receive, materials, attestations or both.
@@ -69,13 +67,9 @@ In addition to the constructor 3 more handlers need to be implemented.
 
 ### Registration
 
-![FanOut sdk](../../../docs/img/fanout-sdk.png)
-
 Registration is when a specific instance of the extension is configured on a Chainloop organization. A registered instance is then available to be attached to any workflow, more on that later.
 
-This handler will receive the input from the user, will validate it against the defined schema and run any custom logic.
-
-The handler's return value will be stored in the extension state, which will make it available to the other handlers.
+This handler will receive the input from the user, will validate it against the defined schema and run any custom logic. The handler's returned value will be stored in the extension state, which will make it available to the other handlers.
 
 Examples:
 
@@ -84,15 +78,13 @@ Examples:
 
 ### Attachment
 
-In order for an user to use a registered instance, it needs to be attached to a workflow. This means that any attestations or materials that are received for the workflow will be sent to the attached extension for processing. This stage can be also used to optionally customize the behavior of the extension for a specific workflow.
+In order for an user to use a registered instance, it needs to be attached to a workflow. This stage can be also used to optionally customize the behavior of the extension for a specific workflow.
 
-This handler **will receive not only the input from the user but also the output from the registration state**.
-
-Similarly to the registration handler, the handler returned output value will be stored in the state for later use.
+This handler **will receive not only the input from the user but also the output from the registration state**. Similarly to the registration handler, the handler returned output value will be stored in the state for later use.
 
 Examples:
 
-- Tell the already registered Dependency Track instance to send the SBOMs to a specific project.
+- Tell the already registered Dependency Track instance to send the SBOMs **to a specific project**.
 - Tell the already registered Discord instance to send all attestations to the configured channel
 
 ### Execution
@@ -113,6 +105,8 @@ A Discord webhook extension will
 
 - Get the Webhook URL from the state stored during the registration phase
 - Craft message to send to the Discord webhook
+
+![FanOut sdk](../../../docs/img/fanout-sdk.png)
 
 ## How to create a new extension
 
