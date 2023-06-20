@@ -12,6 +12,10 @@ It's implemented following(ish) [Hexagonal architecture](https://netflixtechblog
 - Business layer `./internal/biz`. Implementation of use-cases referenced by the service layer and definition of the data repository abstractions.
 - Data layer `./internal/data`. Implementation of data repositories interfaces defined in the business layer.
 
+## Extensions
+
+The source code and documentation for the different supported extensions can be found at `./extensions`.
+
 ## System Dependencies
 
 The control plane has 4 main dependencies
