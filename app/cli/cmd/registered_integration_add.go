@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 	"github.com/spf13/cobra"
 )
@@ -98,7 +99,7 @@ func parseAndValidateOpts(opts []string, schema *action.JSONSchema) (map[string]
 // parseKeyValOpts performs two steps
 // 1 - Split the options into key/value pairs
 // 2 - Cast the values to the expected type defined in the schema
-func parseKeyValOpts(opts []string, propertiesMap action.SchemaPropertiesMap) (map[string]any, error) {
+func parseKeyValOpts(opts []string, propertiesMap sdk.SchemaPropertiesMap) (map[string]any, error) {
 	// 1 - Split the options into key/value pairs
 	var options = make(map[string]any)
 	for _, opt := range opts {

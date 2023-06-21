@@ -58,3 +58,66 @@ $ chainloop integration registered add oci-registry \
 ### AWS Container Registry
 
 Not supported at the moment
+
+
+
+## Registration Input Schema
+
+|Field|Type|Required|Description|
+|---|---|---|---|
+|password|string|yes|OCI repository password|
+|repository|string|yes|OCI repository uri and path|
+|username|string|yes|OCI repository username|
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/oci-registry/v1/registration-request",
+  "properties": {
+    "repository": {
+      "type": "string",
+      "minLength": 1,
+      "description": "OCI repository uri and path"
+    },
+    "username": {
+      "type": "string",
+      "minLength": 1,
+      "description": "OCI repository username"
+    },
+    "password": {
+      "type": "string",
+      "minLength": 1,
+      "description": "OCI repository password"
+    }
+  },
+  "additionalProperties": false,
+  "type": "object",
+  "required": [
+    "repository",
+    "username",
+    "password"
+  ]
+}
+```
+
+## Attachment Input Schema
+
+|Field|Type|Required|Description|
+|---|---|---|---|
+|prefix|string|no|OCI images name prefix (default chainloop)|
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/chainloop-dev/chainloop/app/controlplane/extensions/core/oci-registry/v1/attachment-request",
+  "properties": {
+    "prefix": {
+      "type": "string",
+      "minLength": 1,
+      "description": "OCI images name prefix (default chainloop)"
+    }
+  },
+  "additionalProperties": false,
+  "type": "object"
+}
+```

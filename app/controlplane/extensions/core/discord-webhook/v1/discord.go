@@ -38,7 +38,7 @@ type Integration struct {
 // 1 - API schema definitions
 type registrationRequest struct {
 	WebhookURL string `json:"webhook" jsonschema:"format=uri,description=URL of the discord webhook"`
-	Username   string `json:"username,omitempty" jsonschema:"minLength=1,description=Override the default username of the webhook	"`
+	Username   string `json:"username,omitempty" jsonschema:"minLength=1,description=Override the default username of the webhook"`
 }
 
 type attachmentRequest struct{}

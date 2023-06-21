@@ -15,3 +15,6 @@ These are the required steps
 
 - Define the API request payloads for both Registration and Attachment
 - Implement the [FanOutExtension interface](https://github.com/chainloop-dev/chainloop/blob/main/app/controlplane/extensions/sdk/v1/fanout.go#L55). The template comes prefilled with some commented out code.
+
+## Registration Input Schema
+## Attachment Input Schema

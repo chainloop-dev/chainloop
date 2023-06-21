@@ -17,6 +17,8 @@ package sdk_test
 
 import (
 	"encoding/json"
+	"fmt"
+	"os"
 	"testing"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -334,6 +336,74 @@ func TestValidateAttachmentRequest(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
+		})
+	}
+}
+
+func TestCalculatePropertiesMap(t *testing.T) {
+	testCases := []struct {
+		schemaPath string
+		want       sdk.SchemaPropertiesMap
+	}{
+		{
+			"basic.json",
+			sdk.SchemaPropertiesMap{
+				"allowAutoCreate": {
+					Name:        "allowAutoCreate",
+					Description: "Support of creating projects on demand",
+					Type:        "boolean",
+					Required:    false,
+				},
+				"apiKey": {
+					Name:        "apiKey",
+					Description: "The API key to use for authentication",
+					Type:        "string",
+					Required:    true,
+				},
+				"instanceURI": {
+					Name:        "instanceURI",
+					Description: "The URL of the Dependency-Track instance",
+					Type:        "string",
+					Required:    true,
+					Format:      "uri",
+				},
+				"port": {
+					Name: "port",
+					Type: "number",
+				},
+			},
+		},
+		{
+			// NOTE: oneof work in the validation but are not shown in the map
+			// This testCase is here to document this limitation
+			"oneof_required.json",
+			sdk.SchemaPropertiesMap{
+				"projectID": {
+					Name:        "projectID",
+					Description: "The ID of the existing project to send the SBOMs to",
+					Type:        "string",
+				},
+				"projectName": {
+					Name:        "projectName",
+					Description: "The name of the project to create and send the SBOMs to",
+					Type:        "string",
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.schemaPath, func(t *testing.T) {
+			schemaRaw, err := os.ReadFile(fmt.Sprintf("testdata/schemas/%s", tc.schemaPath))
+			require.NoError(t, err)
+			schema, err := sdk.CompileJSONSchema(schemaRaw)
+			require.NoError(t, err)
+
+			var got = make(sdk.SchemaPropertiesMap)
+			err = sdk.CalculatePropertiesMap(schema, &got)
+			assert.NoError(t, err)
+
+			assert.Equal(t, tc.want, got)
 		})
 	}
 }
