@@ -108,7 +108,7 @@ Operators can set up third-party integrations such as [Dependency-Track](https:/
 
 Ops can mix and match with different integrations while **not requiring developers to make any changes on their side**!
 
-You can see the list of available integrations by running `chainloop integration available list` or by browsing [their source code](./app/controlplane/plugins/).
+You can see the list of available integrations [here](./docs/integrations.md) of by using the CLI `chainloop integration available list`
 
 ### Role-tailored experience
 
