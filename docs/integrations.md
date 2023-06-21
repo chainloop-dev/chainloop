@@ -36,7 +36,7 @@ $ chainloop integration available list
 
 Once you find your integration, i.e `oci-registry`, it's time to configure it.
 
-Configuring a integration has two steps: 1) register it in your organization and 2) attach the registered integration to your workflows.
+Configuring an integration has two steps: 1) register it in your organization and 2) attach the registered integration to your workflows.
 
 ### Registering an integration
 
@@ -83,7 +83,7 @@ $ chainloop integration registered add oci-registry \
 
 ### Attaching an integration
 
-Once the integration is registered, we can attach it to any workflow. In practice this means that attestations and material information received by this workflow will be sent to the registered integration. 
+Once the integration is registered, we can attach it to any workflow. In practice this means that attestations and material information generated in this workflow will be sent to the registered integration.
 
 The attachment process has at least two required parameters, the `workflowID` and the registered `integrationID`. Additionally each integration might have additional to customize its behavior per-workflow. In our case, on the table above, we can see that the `oci-registry` integration has an optional parameter called `prefix` that allows you to customize the name of the image that will be pushed to the registry. 
 
@@ -91,7 +91,7 @@ The attachment process has at least two required parameters, the `workflowID` an
 $ chainloop integration attached add --workflow $WID --integration $IID --opt prefix=custom-prefix
 ```
 
-Congratulations, you are done now! Any attestation or material information received by the workflow will be sent to the registered integration.
+Congratulations, you are done now! Every new attestation from this workflow will be uploaded to your OCI registry!
 
 ## FAQ
 
