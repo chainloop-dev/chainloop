@@ -21,17 +21,17 @@ First you need to make sure that the integration that you are looking for is ava
 
 ```console
 $ chainloop integration available list
-┌─────────────────┬─────────┬──────────────────────┬───────────────────────────────────────────────────────────┐
-│ ID              │ VERSION │ MATERIAL REQUIREMENT │ DESCRIPTION                                               │
-├─────────────────┼─────────┼──────────────────────┼───────────────────────────────────────────────────────────┤
-│ dependencytrack │ 0.2     │ SBOM_CYCLONEDX_JSON  │ Send CycloneDX SBOMs to your Dependency-Track instance    │
-├─────────────────┼─────────┼──────────────────────┼───────────────────────────────────────────────────────────┤
-│ smtp            │ 0.1     │                      │ Send emails with information about a received attestation │
-├─────────────────┼─────────┼──────────────────────┼───────────────────────────────────────────────────────────┤
-│ oci-registry    │ 0.1     │                      │ Send attestations to a compatible OCI registry            │
-├─────────────────┼─────────┼──────────────────────┼───────────────────────────────────────────────────────────┤
-│ discord-webhook │ 0.1     │                      │ Send attestations to Discord                              │
-└─────────────────┴─────────┴──────────────────────┴───────────────────────────────────────────────────────────
+┌──────────────────┬─────────┬──────────────────────┬───────────────────────────────────────────────────────────┐
+│ ID               │ VERSION │ MATERIAL REQUIREMENT │ DESCRIPTION                                               │
+├──────────────────┼─────────┼──────────────────────┼───────────────────────────────────────────────────────────┤
+│ dependency-track │ 1.2     │ SBOM_CYCLONEDX_JSON  │ Send CycloneDX SBOMs to your Dependency-Track instance    │
+├──────────────────┼─────────┼──────────────────────┼───────────────────────────────────────────────────────────┤
+│ smtp             │ 1.0     │                      │ Send emails with information about a received attestation │
+├──────────────────┼─────────┼──────────────────────┼───────────────────────────────────────────────────────────┤
+│ oci-registry     │ 1.0     │                      │ Send attestations to a compatible OCI registry            │
+├──────────────────┼─────────┼──────────────────────┼───────────────────────────────────────────────────────────┤
+│ discord-webhook  │ 1.1     │                      │ Send attestations to Discord                              │
+└──────────────────┴─────────┴──────────────────────┴───────────────────────────────────────────────────────────┘
 ```
 
 Once you find the integration you are looking for, i.e `oci-registry`, it's time to configure them.
@@ -49,7 +49,7 @@ chainloop integration available describe --id oci-registry
 ┌──────────────┬─────────┬──────────────────────┬────────────────────────────────────────────────┐
 │ ID           │ VERSION │ MATERIAL REQUIREMENT │ DESCRIPTION                                    │
 ├──────────────┼─────────┼──────────────────────┼────────────────────────────────────────────────┤
-│ oci-registry │ 0.1     │                      │ Send attestations to a compatible OCI registry │
+│ oci-registry │ 1.1     │                      │ Send attestations to a compatible OCI registry │
 └──────────────┴─────────┴──────────────────────┴────────────────────────────────────────────────┘
 ┌──────────────────────────────────────────────────────────────┐
 │ Registration inputs                                          │
