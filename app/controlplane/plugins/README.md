@@ -1,4 +1,4 @@
-# Chainloop Plugins
+# Plugins Overview
 
 Chainloop plugins are a way to add functionality to Chainloop by integrating with third-parties.
 
