@@ -73,7 +73,6 @@ Starting now, every time a workflow run occurs, an email notification will be se
 }
 ```
 
-
 ## Attachment Input Schema
 
 ```json
@@ -90,4 +89,4 @@ Starting now, every time a workflow run occurs, an email notification will be se
   "additionalProperties": false,
   "type": "object"
 }
-```
+````

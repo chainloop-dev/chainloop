@@ -37,24 +37,7 @@ const attachmentInputHeader = "## Attachment Input Schema"
 // base path to the extensions directory
 var extensionsDir string
 
-func addSchemaToSection(src []byte, sectionHeader string, schema []byte) ([]byte, error) {
-	var prettyJSON bytes.Buffer
-	err := json.Indent(&prettyJSON, schema, "", "  ")
-	if err != nil {
-		return nil, err
-	}
-
-	inputSection := sectionHeader + "\n\n```json\n" + prettyJSON.String() + "\n```"
-	r := regexp.MustCompile(fmt.Sprintf("%s\n+```json\n+(.|\\s)*```", sectionHeader))
-	// If the section already exists, replace it
-	if r.Match(src) {
-		return r.ReplaceAllLiteral(src, []byte(inputSection)), nil
-	}
-
-	// Append it
-	return append(src, []byte("\n\n"+inputSection)...), nil
-}
-
+// Enhance README.md files for the registrations with the registration and attachment input schemas
 func mainE() error {
 	l := log.NewStdLogger(os.Stdout)
 
@@ -95,7 +78,7 @@ func mainE() error {
 
 		_, err = file.Write(fileContent)
 		if err != nil {
-			fmt.Errorf("failed to write README.md file: %w", err)
+			return fmt.Errorf("failed to write README.md file: %w", err)
 		}
 
 		_ = l.Log(log.LevelInfo, "msg", "README.md file updated", "extension", e.Describe().ID)
@@ -113,4 +96,22 @@ func main() {
 func init() {
 	flag.StringVar(&extensionsDir, "dir", "", "base directory for extensions i.e ./core")
 	flag.Parse()
+}
+
+func addSchemaToSection(src []byte, sectionHeader string, schema []byte) ([]byte, error) {
+	var prettyJSON bytes.Buffer
+	err := json.Indent(&prettyJSON, schema, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+
+	inputSection := sectionHeader + "\n\n```json\n" + prettyJSON.String() + "\n```"
+	r := regexp.MustCompile(fmt.Sprintf("%s\n+```json\n+(.|\\s)*```", sectionHeader))
+	// If the section already exists, replace it
+	if r.Match(src) {
+		return r.ReplaceAllLiteral(src, []byte(inputSection)), nil
+	}
+
+	// Append it
+	return append(src, []byte("\n\n"+inputSection)...), nil
 }
