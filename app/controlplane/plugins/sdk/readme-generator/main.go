@@ -88,8 +88,8 @@ func updateIntegrationsIndex(plugins sdk.AvailablePlugins) error {
 		}
 
 		// We need to full URL path because we render this file in the website
-		const repoBase = "https://github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/core"
-		pathToPlugin := filepath.Join(repoBase, p.Describe().ID, "v1", "README.md")
+		const repoBase = "https://github.com/chainloop-dev/chainloop/tree/main/app/controlplane/plugins/core"
+		pathToPlugin := filepath.Join(repoBase, p.Describe().ID, "v1")
 
 		indexTable += fmt.Sprintf("| [%s](%s) | %s | %s | %s |\n", info.ID, pathToPlugin, info.Version, info.Description, strings.Join(subscribedMaterials, ", "))
 	}

@@ -2,24 +2,24 @@
 
 Operators can extend Chainloop functionality by setting up third-party integrations that operate on your attestation metadata. Integrations can range from sending a Slack message, uploading the attestation to a storage backend or sending a Software Bill Of Materials (SBOMs) to a third-party service for analysis, for example.
 
-Below you can find the list of currently available integrations. If you can't find the integration you are looking for, feel free [to reach out](https://github.com/chainloop-dev/chainloop/issues) or [contribute your own](https://github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/README.md)!
-
 ![FanOut Plugin](./img/fanout.png)
+
+Below you can find the list of currently available integrations. If you can't find the integration you are looking for, feel free [to reach out](https://github.com/chainloop-dev/chainloop/issues) or [contribute your own](https://github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/README.md)!
 
 ## Available Integrations
 
 | ID | Version | Description | Material Requirement |
 | --- | --- | --- | --- |
-| [dependency-track](https:/github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/core/dependency-track/v1/README.md) | 1.2 | Send CycloneDX SBOMs to your Dependency-Track instance | SBOM_CYCLONEDX_JSON |
-| [smtp](https:/github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/core/smtp/v1/README.md) | 1.0 | Send emails with information about a received attestation |  |
-| [oci-registry](https:/github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/core/oci-registry/v1/README.md) | 1.0 | Send attestations to a compatible OCI registry |  |
-| [discord-webhook](https:/github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/core/discord-webhook/v1/README.md) | 1.1 | Send attestations to Discord |  |
+| [dependency-track](https:/github.com/chainloop-dev/chainloop/tree/main/app/controlplane/plugins/core/dependency-track/v1) | 1.2 | Send CycloneDX SBOMs to your Dependency-Track instance | SBOM_CYCLONEDX_JSON |
+| [smtp](https:/github.com/chainloop-dev/chainloop/tree/main/app/controlplane/plugins/core/smtp/v1) | 1.0 | Send emails with information about a received attestation |  |
+| [oci-registry](https:/github.com/chainloop-dev/chainloop/tree/main/app/controlplane/plugins/core/oci-registry/v1) | 1.0 | Send attestations to a compatible OCI registry |  |
+| [discord-webhook](https:/github.com/chainloop-dev/chainloop/tree/main/app/controlplane/plugins/core/discord-webhook/v1) | 1.1 | Send attestations to Discord |  |
 
 ## How to use integrations
 
 First, you need to make sure that the integration that you are looking for is available in your Chainloop instance, to do so you will:
 
-```console
+```sh
 $ chainloop integration available list
 ┌──────────────────┬─────────┬──────────────────────┬───────────────────────────────────────────────────────────┐
 │ ID               │ VERSION │ MATERIAL REQUIREMENT │ DESCRIPTION                                               │
@@ -36,16 +36,16 @@ $ chainloop integration available list
 
 Once you find your integration, i.e `oci-registry`, it's time to configure it.
 
-Configuring an extension has two steps: 1) register it in your organization and 2) attach the registered integration to your workflows.
+Configuring a integration has two steps: 1) register it in your organization and 2) attach the registered integration to your workflows.
 
-### Registering an extension
+### Registering an integration
 
 Registration is when a specific instance of the integration is configured on a Chainloop organization. A registered instance is then available to be attached to any workflow.
 
 In our case, we want to register an instance of the `oci-registry` integration. To do so, we need to first figure out what configuration parameters are required by the integration. We can do so by running:
 
-```console
-chainloop integration available describe --id oci-registry   
+```sh
+$ chainloop integration available describe --id oci-registry
 ┌──────────────┬─────────┬──────────────────────┬────────────────────────────────────────────────┐
 │ ID           │ VERSION │ MATERIAL REQUIREMENT │ DESCRIPTION                                    │
 ├──────────────┼─────────┼──────────────────────┼────────────────────────────────────────────────┤
@@ -71,7 +71,7 @@ chainloop integration available describe --id oci-registry
 
 In the console output we can see a registration section that indicates that 3 parameters are required, let's go ahead and register it using our Google Artifact Registry Credentials by running:
 
-```console
+```sh
 $ chainloop integration registered add oci-registry \
     # i.e us-east1-docker.pkg.dev/my-project/chainloop-cas-devel
     --opt repository=[region]-docker.pkg.dev/[my-project]/[my-repository] \
@@ -81,7 +81,7 @@ $ chainloop integration registered add oci-registry \
 
 > Note: You can find more examples on how to configure this specific integration [here](https://github.com/chainloop-dev/chainloop/tree/main/app/controlplane/plugins/core/oci-registry/v1)
 
-### Attaching an extension
+### Attaching an integration
 
 Once the integration is registered, we can attach it to any workflow. In practice this means that attestations and material information received by this workflow will be sent to the registered integration. 
 
