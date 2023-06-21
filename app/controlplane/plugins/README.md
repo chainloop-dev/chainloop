@@ -119,6 +119,6 @@ Next:
 - Replace all the occurrences of `template` in the code with your plugin name.
 - Add it to the list of available plugins [here](https://github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/plugins.go). This will make this plugin available the next time the control plane starts.
 - Define the API request payloads for both Registration and Attachment.
-- Implement the [FanOutPlugin interface](https://github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/sdk/v2/fanout.go#L55). The template comes prefilled with some commented out code as guideline.
+- Implement the [FanOutPlugin interface](https://github.com/chainloop-dev/chainloop/blob/38f42c8d7b68607a7fa326664f778516ed5c4c9e/app/controlplane/plugins/sdk/v1/fanout.go#L80). The template comes prefilled with some commented out code as guideline.
 
 Remember that you can find some examples of fully functional plugins in [here](https://github.com/chainloop-dev/chainloop/tree/main/app/controlplane/plugins/core).
