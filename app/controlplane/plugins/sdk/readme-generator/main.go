@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:generate go run main.go --dir ../../core
+//go:generate go run main.go --dir ../../core --integrations-index-path ../../../../../docs/integrations.md
 
 package main
 
@@ -27,17 +27,16 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/go-kratos/kratos/v2/log"
 )
 
-const registrationInputHeader = "## Registration Input Schema"
-const attachmentInputHeader = "## Attachment Input Schema"
-
 // base path to the plugins directory
 var pluginsDir string
+var integrationsIndexPath string
 
 // Enhance README.md files for the registrations with the registration and attachment input schemas
 func mainE() error {
@@ -48,45 +47,111 @@ func mainE() error {
 		return fmt.Errorf("failed to load plugins: %w", err)
 	}
 
+	// Update the list of available plugins
+	// Update each readme file
 	for _, e := range plugins {
-		// Find README file and extract its content
-		file, err := os.OpenFile(filepath.Join(pluginsDir, e.Describe().ID, "v1", "README.md"), os.O_RDWR, 0644)
-		if err != nil {
-			return fmt.Errorf("failed to open README.md file: %w", err)
+		if err := updatePluginReadme(e); err != nil {
+			return fmt.Errorf("failed to update README.md file: %w", err)
 		}
+	}
 
-		fileContent, err := io.ReadAll(file)
-		if err != nil {
-			return fmt.Errorf("failed to read README.md file: %w", err)
-		}
-
-		// Replace/Add registration input schema
-		fileContent, err = addSchemaToSection(fileContent, registrationInputHeader, e.Describe().RegistrationJSONSchema)
-		if err != nil {
-			return fmt.Errorf("failed to add registration schema to README.md file: %w", err)
-		}
-
-		// Replace/Add attachment input schema
-		fileContent, err = addSchemaToSection(fileContent, attachmentInputHeader, e.Describe().AttachmentJSONSchema)
-		if err != nil {
-			return fmt.Errorf("failed to add attachment schema to README.md file: %w", err)
-		}
-
-		// Write the new content in the file
-		_, err = file.Seek(0, 0)
-		if err != nil {
-			return fmt.Errorf("failed to seek README.md file: %w", err)
-		}
-
-		_, err = file.Write(fileContent)
-		if err != nil {
-			return fmt.Errorf("failed to write README.md file: %w", err)
-		}
-
-		_ = l.Log(log.LevelInfo, "msg", "README.md file updated", "plugin", e.Describe().ID)
+	// Update integrations index file
+	if err := updateIntegrationsIndex(plugins); err != nil {
+		return fmt.Errorf("failed to update integrations index: %w", err)
 	}
 
 	return nil
+}
+
+func updateIntegrationsIndex(plugins sdk.AvailablePlugins) error {
+	const indexHeader = "## Available Integrations"
+
+	// Find README integrationsIndex and extract its content
+	indexFile, err := os.OpenFile(integrationsIndexPath, os.O_RDWR, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to open index file %q: %w", integrationsIndexPath, err)
+	}
+	defer indexFile.Close()
+
+	fileContent, err := io.ReadAll(indexFile)
+	if err != nil {
+		return fmt.Errorf("failed to read file %q: %w", integrationsIndexPath, err)
+	}
+
+	indexTable := "| ID | Version | Description | Material Requirement |\n| --- | --- | --- | --- |\n"
+	for _, p := range plugins {
+		info := p.Describe()
+		// Load the materials
+		var subscribedMaterials = make([]string, 0)
+		for _, m := range info.SubscribedInputs.Materials {
+			subscribedMaterials = append(subscribedMaterials, m.Type.String())
+		}
+
+		// We need to full URL path because we render this file in the website
+		const repoBase = "https://github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/core"
+		pathToPlugin := filepath.Join(repoBase, p.Describe().ID, "v1", "README.md")
+
+		indexTable += fmt.Sprintf("| [%s](%s) | %s | %s | %s |\n", info.ID, pathToPlugin, info.Version, info.Description, strings.Join(subscribedMaterials, ", "))
+	}
+
+	// Replace the table
+	section := indexHeader + "\n\n" + indexTable + "\n"
+	// Find the content that starts with the indexHeader and contains a markdown table
+	// letters, |, _, -, \n, separators, ... are allowed between the indexHeader and the table
+	r := regexp.MustCompile(fmt.Sprintf("%s\n*[\\w|\\||\\-|\\s|\\.|_|\\[|\\]|\\(|\\)|\\/|:]*", indexHeader))
+
+	fileContent = r.ReplaceAllLiteral(fileContent, []byte(section))
+
+	return truncateAndWriteFile(indexFile, fileContent)
+}
+
+func truncateAndWriteFile(f *os.File, content []byte) error {
+	// Write the new content in the file
+	if err := f.Truncate(0); err != nil {
+		return fmt.Errorf("failed to truncate file: %w", err)
+	}
+
+	if _, err := f.Seek(0, 0); err != nil {
+		return fmt.Errorf("failed to seek file: %w", err)
+	}
+
+	_, err := f.Write(content)
+	if err != nil {
+		return fmt.Errorf("failed to write file %q: %w", integrationsIndexPath, err)
+	}
+
+	return nil
+}
+
+func updatePluginReadme(p sdk.FanOut) error {
+	const registrationInputHeader = "## Registration Input Schema"
+	const attachmentInputHeader = "## Attachment Input Schema"
+
+	// Find README file and extract its content
+	file, err := os.OpenFile(filepath.Join(pluginsDir, p.Describe().ID, "v1", "README.md"), os.O_RDWR, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to open README.md file: %w", err)
+	}
+	defer file.Close()
+
+	fileContent, err := io.ReadAll(file)
+	if err != nil {
+		return fmt.Errorf("failed to read README.md file: %w", err)
+	}
+
+	// Replace/Add registration input schema
+	fileContent, err = addSchemaToSection(fileContent, registrationInputHeader, p.Describe().RegistrationJSONSchema)
+	if err != nil {
+		return fmt.Errorf("failed to add registration schema to README.md file: %w", err)
+	}
+
+	// Replace/Add attachment input schema
+	fileContent, err = addSchemaToSection(fileContent, attachmentInputHeader, p.Describe().AttachmentJSONSchema)
+	if err != nil {
+		return fmt.Errorf("failed to add attachment schema to README.md file: %w", err)
+	}
+
+	return truncateAndWriteFile(file, fileContent)
 }
 
 func main() {
@@ -97,6 +162,7 @@ func main() {
 
 func init() {
 	flag.StringVar(&pluginsDir, "dir", "", "base directory for plugins i.e ./core")
+	flag.StringVar(&integrationsIndexPath, "integrations-index-path", "", "integrations list markdown file i.e docs/integrations.md")
 	flag.Parse()
 }
 

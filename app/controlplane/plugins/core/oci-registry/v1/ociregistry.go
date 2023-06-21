@@ -59,7 +59,7 @@ func New(l log.Logger) (sdk.FanOut, error) {
 	base, err := sdk.NewFanOut(
 		&sdk.NewParams{
 			ID:          "oci-registry",
-			Version:     "0.1",
+			Version:     "1.0",
 			Description: "Send attestations to a compatible OCI registry",
 			Logger:      l,
 			InputSchema: &sdk.InputSchema{
