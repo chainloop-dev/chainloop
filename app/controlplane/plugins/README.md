@@ -1,4 +1,4 @@
-# Chainloop Plugins
+# Plugins Overview
 
 Chainloop plugins are a way to add functionality to Chainloop by integrating with third-parties.
 
@@ -112,13 +112,13 @@ A Discord webhook plugin will
 
 ## How to create a new plugin
 
-We offer a [starter template](./core/template) that can be used as baseline. Just copy it to a new folder i.e `core/my-plugin/v1` to get started.
+We offer a [starter template](https://github.com/chainloop-dev/chainloop/tree/main/app/controlplane/plugins/core/template) that can be used as baseline. Just copy it to a new folder i.e `core/my-plugin/v1` to get started.
 
 Next:
 
 - Replace all the occurrences of `template` in the code with your plugin name.
-- Add it to the list of available plugins [here](`./plugins.go`). This will make this plugin available the next time the control plane starts.
+- Add it to the list of available plugins [here](https://github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/plugins.go). This will make this plugin available the next time the control plane starts.
 - Define the API request payloads for both Registration and Attachment.
-- Implement the [FanOutPlugin interface](https://github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/sdk/v2/fanout.go#L55). The template comes prefilled with some commented out code as guideline.
+- Implement the [FanOutPlugin interface](https://github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/sdk/v1/fanout.go#L80). The template comes prefilled with some commented out code as guideline.
 
-Remember that you can find some examples of fully functional plugins in [here](./core/).
+Remember that you can find some examples of fully functional plugins in [here](https://github.com/chainloop-dev/chainloop/tree/main/app/controlplane/plugins/core).
