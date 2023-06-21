@@ -14,7 +14,7 @@ It's implemented following(ish) [Hexagonal architecture](https://netflixtechblog
 
 ## Plugins
 
-The source code and documentation for the different supported extensions can be found at `./extensions`.
+The source code and documentation for the different supported plugins can be found at `./plugins`.
 
 ## System Dependencies
 
