@@ -8,8 +8,6 @@ Below you can find the list of currently available integrations. If you can't fi
 
 ## Available Integrations
 
-[boom](https:/github.com/chainloop-dev/chainloop/tree/main/app/controlplane/plugins/core/dependency-track/v1)
-
 | ID | Version | Description | Material Requirement |
 | --- | --- | --- | --- |
 | [dependency-track](https:/github.com/chainloop-dev/chainloop/tree/main/app/controlplane/plugins/core/dependency-track/v1) | 1.2 | Send CycloneDX SBOMs to your Dependency-Track instance | SBOM_CYCLONEDX_JSON |
