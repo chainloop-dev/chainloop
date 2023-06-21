@@ -26,8 +26,10 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 
 	extensionsSDK "github.com/chainloop-dev/chainloop/app/controlplane/extensions"
+	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
 	"github.com/go-kratos/kratos/v2/log"
 )
 
@@ -99,14 +101,19 @@ func init() {
 }
 
 func addSchemaToSection(src []byte, sectionHeader string, schema []byte) ([]byte, error) {
-	var prettyJSON bytes.Buffer
-	err := json.Indent(&prettyJSON, schema, "", "  ")
+	var jsonSchema bytes.Buffer
+	err := json.Indent(&jsonSchema, schema, "", "  ")
 	if err != nil {
 		return nil, err
 	}
 
-	inputSection := sectionHeader + "\n\n```json\n" + prettyJSON.String() + "\n```"
-	r := regexp.MustCompile(fmt.Sprintf("%s\n+```json\n+(.|\\s)*```", sectionHeader))
+	propertiesTable, err := renderSchemaTable(schema)
+	if err != nil {
+		return nil, err
+	}
+
+	inputSection := sectionHeader + "\n\n" + propertiesTable + "```json\n" + jsonSchema.String() + "\n```"
+	r := regexp.MustCompile(fmt.Sprintf("%s\n+(.|\\s)*```", sectionHeader))
 	// If the section already exists, replace it
 	if r.Match(src) {
 		return r.ReplaceAllLiteral(src, []byte(inputSection)), nil
@@ -114,4 +121,49 @@ func addSchemaToSection(src []byte, sectionHeader string, schema []byte) ([]byte
 
 	// Append it
 	return append(src, []byte("\n\n"+inputSection)...), nil
+}
+
+func renderSchemaTable(schemaRaw []byte) (string, error) {
+	schema, err := sdk.CompileJSONSchema(schemaRaw)
+	if err != nil {
+		return "", fmt.Errorf("failed to compile schema: %w", err)
+	}
+
+	properties := make(sdk.SchemaPropertiesMap)
+	err = sdk.CalculatePropertiesMap(schema, &properties)
+	if err != nil {
+		return "", fmt.Errorf("failed to calculate properties map: %w", err)
+	}
+
+	if len(properties) == 0 {
+		return "", nil
+	}
+
+	table := "|Field|Type|Required|Description|\n|---|---|---|---|\n"
+
+	// Sort map
+	keys := make([]string, 0, len(properties))
+	for k := range properties {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		v := properties[k]
+
+		propertyType := v.Type
+		if v.Format != "" {
+			propertyType = fmt.Sprintf("%s (%s)", propertyType, v.Format)
+		}
+
+		required := "no"
+		if v.Required {
+			required = "yes"
+		}
+
+		table += fmt.Sprintf("|%s|%s|%s|%s|\n", v.Name, propertyType, required, v.Description)
+	}
+
+	return table + "\n", nil
 }

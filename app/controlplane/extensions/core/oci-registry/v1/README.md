@@ -60,7 +60,14 @@ $ chainloop integration registered add oci-registry \
 Not supported at the moment
 
 
+
 ## Registration Input Schema
+
+|Field|Type|Required|Description|
+|---|---|---|---|
+|password|string|yes|OCI repository password|
+|repository|string|yes|OCI repository uri and path|
+|username|string|yes|OCI repository username|
 
 ```json
 {
@@ -94,6 +101,10 @@ Not supported at the moment
 ```
 
 ## Attachment Input Schema
+
+|Field|Type|Required|Description|
+|---|---|---|---|
+|prefix|string|no|OCI images name prefix (default chainloop)|
 
 ```json
 {

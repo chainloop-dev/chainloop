@@ -23,6 +23,11 @@ chainloop integration attached add --workflow $WID --integration $IID
 
 ## Registration Input Schema
 
+|Field|Type|Required|Description|
+|---|---|---|---|
+|username|string|no|Override the default username of the webhook|
+|webhook|string (uri)|yes|URL of the discord webhook|
+
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -57,4 +62,4 @@ chainloop integration attached add --workflow $WID --integration $IID
   "additionalProperties": false,
   "type": "object"
 }
-```
+````

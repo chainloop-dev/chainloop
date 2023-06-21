@@ -4,7 +4,14 @@ This extension implements sending cycloneDX Software Bill of Materials (SBOM) to
 
 See https://docs.chainloop.dev/guides/dependency-track/
 
+
 ## Registration Input Schema
+
+|Field|Type|Required|Description|
+|---|---|---|---|
+|allowAutoCreate|boolean|no|Support of creating projects on demand|
+|apiKey|string|yes|The API key to use for authentication|
+|instanceURI|string (uri)|yes|The URL of the Dependency-Track instance|
 
 ```json
 {
@@ -35,6 +42,11 @@ See https://docs.chainloop.dev/guides/dependency-track/
 ```
 
 ## Attachment Input Schema
+
+|Field|Type|Required|Description|
+|---|---|---|---|
+|projectID|string|no|The ID of the existing project to send the SBOMs to|
+|projectName|string|no|The name of the project to create and send the SBOMs to|
 
 ```json
 {

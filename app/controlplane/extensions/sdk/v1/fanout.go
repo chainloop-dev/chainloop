@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sort"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
@@ -301,15 +302,7 @@ func (i *FanOutIntegration) ValidateAttachmentRequest(jsonPayload []byte) error 
 }
 
 func validatePayloadAgainstJSONSchema(jsonPayload []byte, jsonSchema []byte) error {
-	compiler := schema_validator.NewCompiler()
-	// Enable format validation
-	compiler.AssertFormat = true
-
-	if err := compiler.AddResource("schema.json", bytes.NewReader(jsonSchema)); err != nil {
-		return fmt.Errorf("failed to compile schema: %w", err)
-	}
-
-	schema, err := compiler.Compile("schema.json")
+	schema, err := CompileJSONSchema(jsonSchema)
 	if err != nil {
 		return fmt.Errorf("failed to compile schema: %w", err)
 	}
@@ -419,4 +412,98 @@ func generateJSONSchema(schema any) ([]byte, error) {
 	}
 
 	return json.Marshal(s)
+}
+
+type SchemaPropertiesMap map[string]*SchemaProperty
+type SchemaProperty struct {
+	// Name of the property
+	Name string
+	// optional description
+	Description string
+	// Type of the property (string, boolean, number)
+	Type string
+	// If the property is required
+	Required bool
+	// Optional format (email, host)
+	Format string
+}
+
+func CompileJSONSchema(in []byte) (*schema_validator.Schema, error) {
+	// Parse the schemas
+	compiler := schema_validator.NewCompiler()
+	// Enable format validation
+	compiler.AssertFormat = true
+	// Show description
+	compiler.ExtractAnnotations = true
+
+	if err := compiler.AddResource("schema.json", bytes.NewReader(in)); err != nil {
+		return nil, fmt.Errorf("failed to compile schema: %w", err)
+	}
+
+	return compiler.Compile("schema.json")
+}
+
+// Denormalize the properties of a json schema
+func CalculatePropertiesMap(s *schema_validator.Schema, m *SchemaPropertiesMap) error {
+	if m == nil {
+		return nil
+	}
+
+	// Schema with reference
+	if s.Ref != nil {
+		return CalculatePropertiesMap(s.Ref, m)
+	}
+
+	// Appended schemas
+	if s.AllOf != nil {
+		for _, s := range s.AllOf {
+			if err := CalculatePropertiesMap(s, m); err != nil {
+				return err
+			}
+		}
+	}
+
+	if s.Properties != nil {
+		requiredMap := make(map[string]bool)
+		for _, r := range s.Required {
+			requiredMap[r] = true
+		}
+
+		for k, v := range s.Properties {
+			if err := CalculatePropertiesMap(v, m); err != nil {
+				return err
+			}
+
+			var required = requiredMap[k]
+			(*m)[k] = &SchemaProperty{
+				Name:        k,
+				Type:        v.Types[0],
+				Required:    required,
+				Description: v.Description,
+				Format:      v.Format,
+			}
+		}
+	}
+
+	// We return the map sorted
+	// This is not strictly necessary but it makes the output more readable
+	// and it's easier to test
+
+	// Sort the keys
+	keys := make([]string, 0, len(*m))
+	for k := range *m {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	// Create a new map with the sorted keys
+	newMap := make(SchemaPropertiesMap)
+	for _, k := range keys {
+		newMap[k] = (*m)[k]
+	}
+
+	*m = newMap
+
+	return nil
 }
