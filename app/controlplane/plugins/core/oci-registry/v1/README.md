@@ -1,10 +1,10 @@
-# OCI registry extension
+# OCI registry plugin
 
 Send attestations to a compatible OCI repository.
 
 ## How to use it
 
-1. To get started, you need to register the extension in your Chainloop organization.
+1. To get started, you need to register the plugin in your Chainloop organization.
 
 ```console
 $ chainloop integration registered add oci-registry --opt repository=[repo] --opt username=[username] --opt password=[password]
@@ -18,7 +18,7 @@ chainloop integration attached add --workflow $WID --integration $IID --opt pref
 
 ## Examples different providers
 
-See below a non-exhaustive list of examples for different OCI registry providers known to work well with this extension.
+See below a non-exhaustive list of examples for different OCI registry providers known to work well with this plugin.
 
 ### Google Artifact Registry
 

@@ -36,21 +36,21 @@ import (
 const registrationInputHeader = "## Registration Input Schema"
 const attachmentInputHeader = "## Attachment Input Schema"
 
-// base path to the extensions directory
-var extensionsDir string
+// base path to the plugins directory
+var pluginsDir string
 
 // Enhance README.md files for the registrations with the registration and attachment input schemas
 func mainE() error {
 	l := log.NewStdLogger(os.Stdout)
 
-	extensions, err := plugins.Load(l)
+	plugins, err := plugins.Load(l)
 	if err != nil {
-		return fmt.Errorf("failed to load extensions: %w", err)
+		return fmt.Errorf("failed to load plugins: %w", err)
 	}
 
-	for _, e := range extensions {
+	for _, e := range plugins {
 		// Find README file and extract its content
-		file, err := os.OpenFile(filepath.Join(extensionsDir, e.Describe().ID, "v1", "README.md"), os.O_RDWR, 0644)
+		file, err := os.OpenFile(filepath.Join(pluginsDir, e.Describe().ID, "v1", "README.md"), os.O_RDWR, 0644)
 		if err != nil {
 			return fmt.Errorf("failed to open README.md file: %w", err)
 		}
@@ -83,7 +83,7 @@ func mainE() error {
 			return fmt.Errorf("failed to write README.md file: %w", err)
 		}
 
-		_ = l.Log(log.LevelInfo, "msg", "README.md file updated", "extension", e.Describe().ID)
+		_ = l.Log(log.LevelInfo, "msg", "README.md file updated", "plugin", e.Describe().ID)
 	}
 
 	return nil
@@ -96,7 +96,7 @@ func main() {
 }
 
 func init() {
-	flag.StringVar(&extensionsDir, "dir", "", "base directory for extensions i.e ./core")
+	flag.StringVar(&pluginsDir, "dir", "", "base directory for plugins i.e ./core")
 	flag.Parse()
 }
 

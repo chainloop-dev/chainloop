@@ -25,49 +25,49 @@ import (
 )
 
 func TestDoLoad(t *testing.T) {
-	extensionA := mocks.NewFanOut(t)
-	extensionAFactory := func(l log.Logger) (sdk.FanOut, error) {
-		extensionA.On("Describe").Return(&sdk.IntegrationInfo{ID: "a"})
-		extensionA.On("String").Return("a").Maybe()
-		return extensionA, nil
+	pluginA := mocks.NewFanOut(t)
+	pluginAFactory := func(l log.Logger) (sdk.FanOut, error) {
+		pluginA.On("Describe").Return(&sdk.IntegrationInfo{ID: "a"})
+		pluginA.On("String").Return("a").Maybe()
+		return pluginA, nil
 	}
 
-	extensionB := mocks.NewFanOut(t)
-	extensionBFactory := func(l log.Logger) (sdk.FanOut, error) {
-		extensionB.On("Describe").Return(&sdk.IntegrationInfo{ID: "b"})
-		extensionB.On("String").Return("b").Maybe()
-		return extensionB, nil
+	pluginB := mocks.NewFanOut(t)
+	pluginBFactory := func(l log.Logger) (sdk.FanOut, error) {
+		pluginB.On("Describe").Return(&sdk.IntegrationInfo{ID: "b"})
+		pluginB.On("String").Return("b").Maybe()
+		return pluginB, nil
 	}
 
-	extensionAA := mocks.NewFanOut(t)
-	extensionAAFactory := func(l log.Logger) (sdk.FanOut, error) {
-		extensionAA.On("Describe").Return(&sdk.IntegrationInfo{ID: "a"})
-		extensionAA.On("String").Return("c").Maybe()
-		return extensionAA, nil
+	pluginAA := mocks.NewFanOut(t)
+	pluginAAFactory := func(l log.Logger) (sdk.FanOut, error) {
+		pluginAA.On("Describe").Return(&sdk.IntegrationInfo{ID: "a"})
+		pluginAA.On("String").Return("c").Maybe()
+		return pluginAA, nil
 	}
 
 	testCases := []struct {
-		name       string
-		extensions []sdk.FanOutFactory
-		wantErr    bool
-		want       sdk.AvailableExtensions
+		name    string
+		plugins []sdk.FanOutFactory
+		wantErr bool
+		want    sdk.AvailablePlugins
 	}{
 		{
-			name:       "no duplicates",
-			extensions: []sdk.FanOutFactory{extensionAFactory, extensionBFactory},
-			wantErr:    false,
-			want:       []sdk.FanOut{extensionA, extensionB},
+			name:    "no duplicates",
+			plugins: []sdk.FanOutFactory{pluginAFactory, pluginBFactory},
+			wantErr: false,
+			want:    []sdk.FanOut{pluginA, pluginB},
 		},
 		{
-			name:       "duplicates",
-			extensions: []sdk.FanOutFactory{extensionAFactory, extensionAAFactory},
-			wantErr:    true,
+			name:    "duplicates",
+			plugins: []sdk.FanOutFactory{pluginAFactory, pluginAAFactory},
+			wantErr: true,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := doLoad(tc.extensions, nil)
+			got, err := doLoad(tc.plugins, nil)
 			if tc.wantErr {
 				assert.Error(t, err)
 				assert.Equal(t, tc.want, got)

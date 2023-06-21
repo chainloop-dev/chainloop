@@ -97,7 +97,7 @@ func (i *Integration) Register(_ context.Context, req *sdk.RegistrationRequest) 
 	tpl := `
 	We successfully registered a new SMTP integration in your Chainloop organization.
 
-	Extension: %s version: %s
+	Plugin: %s version: %s
 	- Host: %s
 	- Port: %s
 	- User: %s

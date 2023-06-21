@@ -35,7 +35,7 @@ import (
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
 
-// FanOutIntegration represents an extension point for integrations to be able to
+// FanOutIntegration represents an plugin point for integrations to be able to
 // fanOut subscribed inputs
 type FanOutIntegration struct {
 	// Identifier of the integration
@@ -64,7 +64,7 @@ type FanOut interface {
 	// Implemented by the fanout base
 	Core
 	// To be implemented per integration
-	FanOutExtension
+	FanOutPlugin
 }
 
 // Implemented by the core struct
@@ -77,7 +77,7 @@ type Core interface {
 }
 
 // To be implemented per integration
-type FanOutExtension interface {
+type FanOutPlugin interface {
 	// Validate, marshall and return the configuration that needs to be persisted
 	Register(ctx context.Context, req *RegistrationRequest) (*RegistrationResponse, error)
 	// Validate that the attachment configuration is valid in the context of the provided registration
@@ -179,7 +179,7 @@ func NewFanOut(p *NewParams, opts ...NewOpt) (*FanOutIntegration, error) {
 		c.log = log.NewStdLogger(io.Discard)
 	}
 
-	c.Logger = servicelogger.ScopedHelper(c.log, fmt.Sprintf("extensions/%s", p.ID))
+	c.Logger = servicelogger.ScopedHelper(c.log, fmt.Sprintf("plugins/%s", p.ID))
 
 	for _, opt := range opts {
 		opt(c)
@@ -252,12 +252,12 @@ func validateInputs(c *FanOutIntegration) error {
 }
 
 // List of loaded integrations
-type AvailableExtensions []FanOut
+type AvailablePlugins []FanOut
 type FanOutFactory = func(l log.Logger) (FanOut, error)
 
 // FindByID returns the integration with the given ID from the list of available integrations
 // If not found, an error is returned
-func (i AvailableExtensions) FindByID(id string) (FanOut, error) {
+func (i AvailablePlugins) FindByID(id string) (FanOut, error) {
 	for _, integration := range i {
 		if integration.Describe().ID == id {
 			return integration, nil

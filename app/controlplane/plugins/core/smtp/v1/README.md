@@ -1,12 +1,12 @@
-# SMTP Fan-out Extension
+# SMTP Fan-out Plugin
 
-With this extension, you can send an email for every workflow run and attestation.
+With this plugin, you can send an email for every workflow run and attestation.
 
 ## How to use it
 
 In the following example, we will use the AWS SES service.
 
-1. To get started, you need to register the extension in your Chainloop organization.
+1. To get started, you need to register the plugin in your Chainloop organization.
 ```
 chainloop integration registered add smtp --opt user=AHDHSYEE7e73 --opt password=kjsdfda8asd**** --opt host=email-smtp.us-east-1.amazonaws.com --opt port=587 --opt to=platform-team@example.com --opt from=notifier@example.com
 ```

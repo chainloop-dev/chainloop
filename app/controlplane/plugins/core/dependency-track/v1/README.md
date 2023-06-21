@@ -1,6 +1,6 @@
-### Dependency-Track fan-out Extension
+### Dependency-Track fan-out Plugin
 
-This extension implements sending cycloneDX Software Bill of Materials (SBOM) to Dependency-Track. 
+This plugin implements sending cycloneDX Software Bill of Materials (SBOM) to Dependency-Track. 
 
 See https://docs.chainloop.dev/guides/dependency-track/
 

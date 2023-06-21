@@ -127,7 +127,7 @@ func (i *Integration) Attach(_ context.Context, _ *sdk.AttachmentRequest) (*sdk.
 }
 
 // Execute will be instantiate when either an attestation or a material has been received
-// It's up to the extension builder to differentiate between inputs
+// It's up to the plugin builder to differentiate between inputs
 func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) error {
 	i.Logger.Info("execution requested")
 

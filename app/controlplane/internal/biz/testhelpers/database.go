@@ -58,12 +58,12 @@ type TestingUseCases struct {
 	WorkflowRun            *biz.WorkflowRunUseCase
 	User                   *biz.UserUseCase
 	RobotAccount           *biz.RobotAccountUseCase
-	RegisteredIntegrations sdk.AvailableExtensions
+	RegisteredIntegrations sdk.AvailablePlugins
 }
 
 type newTestingOpts struct {
 	credsReaderWriter credentials.ReaderWriter
-	integrations      sdk.AvailableExtensions
+	integrations      sdk.AvailablePlugins
 }
 
 type NewTestingUCOpt func(*newTestingOpts)
@@ -86,7 +86,7 @@ func WithRegisteredIntegration(i sdk.FanOut) NewTestingUCOpt {
 
 func NewTestingUseCases(t *testing.T, opts ...NewTestingUCOpt) *TestingUseCases {
 	// default args
-	newArgs := &newTestingOpts{credsReaderWriter: creds.NewReaderWriter(t), integrations: make(sdk.AvailableExtensions, 0)}
+	newArgs := &newTestingOpts{credsReaderWriter: creds.NewReaderWriter(t), integrations: make(sdk.AvailablePlugins, 0)}
 
 	// Overrides
 	for _, opt := range opts {

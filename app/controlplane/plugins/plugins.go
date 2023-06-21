@@ -30,7 +30,7 @@ import (
 // Load the available third party integrations
 // In the future this code will iterate over a dynamic directory of plugins
 // and try to load them one by one
-func Load(l log.Logger) (sdk.AvailableExtensions, error) {
+func Load(l log.Logger) (sdk.AvailablePlugins, error) {
 	// Array of integrations that are meant to be loaded
 	// Eventually this will be dynamically loaded from a directory
 	toEnable := []sdk.FanOutFactory{
@@ -44,28 +44,28 @@ func Load(l log.Logger) (sdk.AvailableExtensions, error) {
 }
 
 // doLoad loads the integrations making sure that no duplicates are loaded
-func doLoad(extensions []sdk.FanOutFactory, l log.Logger) (sdk.AvailableExtensions, error) {
-	logger := servicelogger.ScopedHelper(l, "extensions")
+func doLoad(plugins []sdk.FanOutFactory, l log.Logger) (sdk.AvailablePlugins, error) {
+	logger := servicelogger.ScopedHelper(l, "plugins")
 
-	var res sdk.AvailableExtensions
+	var res sdk.AvailablePlugins
 	var registeredIDs = make(map[string]bool)
 
-	for _, f := range extensions {
+	for _, f := range plugins {
 		d, err := f(l)
 		if err != nil {
-			return nil, fmt.Errorf("failed to load extension: %w", err)
+			return nil, fmt.Errorf("failed to load plugin: %w", err)
 		}
 
 		// NOTE: we do not take into account version yet.
 		id := d.Describe().ID
 		if _, ok := registeredIDs[id]; ok {
-			return nil, fmt.Errorf("there is already an extension loaded with id %q", id)
+			return nil, fmt.Errorf("there is already an plugin loaded with id %q", id)
 		}
 
 		registeredIDs[id] = true
 
 		res = append(res, d)
-		logger.Infow("msg", "loaded", "extension", d.String())
+		logger.Infow("msg", "loaded", "plugin", d.String())
 	}
 
 	return res, nil

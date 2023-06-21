@@ -1,9 +1,9 @@
-# Discord Webhook Extension
+# Discord Webhook Plugin
 
 Send attestations to Discord using webhooks.
 ## How to use it
 
-1. To get started, you need to register the extension in your Chainloop organization.
+1. To get started, you need to register the plugin in your Chainloop organization.
 
 ```console
 $ chainloop integration registered add discord-webhook --opt webhook=[webhookURL]
