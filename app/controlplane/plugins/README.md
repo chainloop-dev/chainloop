@@ -2,6 +2,8 @@
 
 Chainloop plugins are a way to add functionality to Chainloop by integrating with third-parties.
 
+> NOTE: Currently, our plugin framework has the limitation that it requires any new plugin to be added to Chainloop's Control Plane source code and released with it. In other words, you can not develop a plugin on your end, and test it out in an existing instance of Chainloop. [There are plans](https://github.com/chainloop-dev/chainloop/issues/195) to change this behavior, stay tuned.
+
 Currently we only support one type, fanOut plugins. A FanOut plugin implements logic that will get executed when attestations or materials are received. This logic can be anything from sending a Slack message, uploading the attestation to a storage backend or sending a Software Bill Of Materials (SBOMs) to Dependency-Track for analysis, for example.
 
 ![FanOut Plugin](../../../docs/img/fanout.png)
