@@ -4,7 +4,7 @@ Operators can set up third-party integrations that extend Chainloop functionalit
 
 Below you can find the list of currently available integrations. If you can't find the integration you are looking for, feel free [to reach out](https://github.com/chainloop-dev/chainloop/issues) or [contribute your own](https://github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/README.md)!
 
-![FanOut Plugin](../docs/img/fanout.png)
+![FanOut Plugin](./img/fanout.png)
 
 ## Available Integrations
 
