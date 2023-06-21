@@ -61,9 +61,9 @@ func (m *IntegrationsServiceRegisterRequest) validate(all bool) error {
 
 	var errors []error
 
-	if utf8.RuneCountInString(m.GetExtensionId()) < 1 {
+	if utf8.RuneCountInString(m.GetPluginId()) < 1 {
 		err := IntegrationsServiceRegisterRequestValidationError{
-			field:  "ExtensionId",
+			field:  "PluginId",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -1041,22 +1041,22 @@ var _ interface {
 	ErrorName() string
 } = IntegrationAvailableItemValidationError{}
 
-// Validate checks the field values on ExtensionFanout with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
-func (m *ExtensionFanout) Validate() error {
+// Validate checks the field values on PluginFanout with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *PluginFanout) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ExtensionFanout with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// ExtensionFanoutMultiError, or nil if none found.
-func (m *ExtensionFanout) ValidateAll() error {
+// ValidateAll checks the field values on PluginFanout with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in PluginFanoutMultiError, or
+// nil if none found.
+func (m *PluginFanout) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ExtensionFanout) validate(all bool) error {
+func (m *PluginFanout) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -1070,19 +1070,18 @@ func (m *ExtensionFanout) validate(all bool) error {
 	// no validation rules for SubscribedAttestation
 
 	if len(errors) > 0 {
-		return ExtensionFanoutMultiError(errors)
+		return PluginFanoutMultiError(errors)
 	}
 
 	return nil
 }
 
-// ExtensionFanoutMultiError is an error wrapping multiple validation errors
-// returned by ExtensionFanout.ValidateAll() if the designated constraints
-// aren't met.
-type ExtensionFanoutMultiError []error
+// PluginFanoutMultiError is an error wrapping multiple validation errors
+// returned by PluginFanout.ValidateAll() if the designated constraints aren't met.
+type PluginFanoutMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ExtensionFanoutMultiError) Error() string {
+func (m PluginFanoutMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -1091,11 +1090,11 @@ func (m ExtensionFanoutMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ExtensionFanoutMultiError) AllErrors() []error { return m }
+func (m PluginFanoutMultiError) AllErrors() []error { return m }
 
-// ExtensionFanoutValidationError is the validation error returned by
-// ExtensionFanout.Validate if the designated constraints aren't met.
-type ExtensionFanoutValidationError struct {
+// PluginFanoutValidationError is the validation error returned by
+// PluginFanout.Validate if the designated constraints aren't met.
+type PluginFanoutValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -1103,22 +1102,22 @@ type ExtensionFanoutValidationError struct {
 }
 
 // Field function returns field value.
-func (e ExtensionFanoutValidationError) Field() string { return e.field }
+func (e PluginFanoutValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ExtensionFanoutValidationError) Reason() string { return e.reason }
+func (e PluginFanoutValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ExtensionFanoutValidationError) Cause() error { return e.cause }
+func (e PluginFanoutValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ExtensionFanoutValidationError) Key() bool { return e.key }
+func (e PluginFanoutValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ExtensionFanoutValidationError) ErrorName() string { return "ExtensionFanoutValidationError" }
+func (e PluginFanoutValidationError) ErrorName() string { return "PluginFanoutValidationError" }
 
 // Error satisfies the builtin error interface
-func (e ExtensionFanoutValidationError) Error() string {
+func (e PluginFanoutValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -1130,14 +1129,14 @@ func (e ExtensionFanoutValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sExtensionFanout.%s: %s%s",
+		"invalid %sPluginFanout.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ExtensionFanoutValidationError{}
+var _ error = PluginFanoutValidationError{}
 
 var _ interface {
 	Field() string
@@ -1145,7 +1144,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ExtensionFanoutValidationError{}
+} = PluginFanoutValidationError{}
 
 // Validate checks the field values on
 // IntegrationsServiceListRegistrationsRequest with the rules defined in the

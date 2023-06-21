@@ -22,7 +22,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
@@ -39,7 +39,7 @@ type IntegrationAttachment struct {
 
 type Integration struct {
 	ID uuid.UUID
-	// Kind is the type of the integration, it matches the registered extension ID
+	// Kind is the type of the integration, it matches the registered plugin ID
 	Kind string
 	// Description is a human readable description of the integration registration
 	// It helps to differentiate different instances of the same kind
@@ -108,17 +108,17 @@ func (uc *IntegrationUseCase) RegisterAndSave(ctx context.Context, orgID, descri
 	}
 
 	// 1 - Extract JSON from proto struct
-	extensionRequest, err := regConfig.MarshalJSON()
+	pluginRequest, err := regConfig.MarshalJSON()
 	if err != nil {
 		return nil, NewErrValidation(err)
 	}
 
 	// 2 - validate JSON against the schema
-	if err := i.ValidateRegistrationRequest(extensionRequest); err != nil {
+	if err := i.ValidateRegistrationRequest(pluginRequest); err != nil {
 		return nil, NewErrValidation(err)
 	}
 
-	registrationResponse, err := i.Register(ctx, &sdk.RegistrationRequest{Payload: extensionRequest})
+	registrationResponse, err := i.Register(ctx, &sdk.RegistrationRequest{Payload: pluginRequest})
 	if err != nil {
 		return nil, NewErrValidation(err)
 	}
@@ -195,20 +195,20 @@ func (uc *IntegrationUseCase) AttachToWorkflow(ctx context.Context, opts *Attach
 	}
 
 	// 1 - Extract JSON from struct
-	extensionRequest, err := opts.AttachmentConfig.MarshalJSON()
+	pluginRequest, err := opts.AttachmentConfig.MarshalJSON()
 	if err != nil {
 		return nil, NewErrValidation(err)
 	}
 
 	// 2 - validate JSON against the schema
-	if err := opts.FanOutIntegration.ValidateAttachmentRequest(extensionRequest); err != nil {
+	if err := opts.FanOutIntegration.ValidateAttachmentRequest(pluginRequest); err != nil {
 		return nil, NewErrValidation(err)
 	}
 
 	// Execute integration pre-attachment logic
 	attachResponse, err := opts.FanOutIntegration.Attach(ctx,
 		&sdk.AttachmentRequest{
-			Payload:          extensionRequest,
+			Payload:          pluginRequest,
 			RegistrationInfo: &sdk.RegistrationResponse{Credentials: creds, Configuration: integration.Config},
 		})
 	if err != nil {

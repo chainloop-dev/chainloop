@@ -21,13 +21,13 @@
 package main
 
 import (
-	"github.com/chainloop-dev/chainloop/app/controlplane/extensions"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/server"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
+	"github.com/chainloop-dev/chainloop/app/controlplane/plugins"
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
 	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
@@ -49,7 +49,7 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger) (*app, func(
 			serviceOpts,
 			wire.Value([]biz.CASClientOpts{}),
 			wire.FieldsOf(new(*conf.Bootstrap), "Server", "Auth", "Data", "CasServer"),
-			extensions.Load,
+			plugins.Load,
 			dispatcher.New,
 			newApp,
 		),

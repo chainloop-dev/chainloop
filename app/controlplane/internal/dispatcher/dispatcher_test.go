@@ -20,10 +20,10 @@ import (
 	"testing"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
-	mockedSDK "github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1/mocks"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/mocks"
+	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
+	mockedSDK "github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1/mocks"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
 	"github.com/stretchr/testify/assert"
@@ -147,7 +147,7 @@ func (s *dispatcherTestSuite) SetupTest() {
 	s.emptyWorkflow, err = s.Workflow.Create(ctx, &biz.CreateOpts{Name: "empty workflow", OrgID: s.org.ID})
 	assert.NoError(s.T(), err)
 
-	customImplementation := mockedSDK.NewFanOutExtension(s.T())
+	customImplementation := mockedSDK.NewFanOutPlugin(s.T())
 	customImplementation.On("Register", ctx, mock.Anything).Return(&sdk.RegistrationResponse{Configuration: []byte("deadbeef")}, nil)
 	customImplementation.On("Attach", ctx, mock.Anything).Return(&sdk.AttachmentResponse{Configuration: []byte("deadbeef")}, nil)
 	type schema struct {
@@ -169,7 +169,7 @@ func (s *dispatcherTestSuite) SetupTest() {
 	// Registration configuration
 	config, _ := structpb.NewStruct(map[string]interface{}{"TestProperty": "testValue"})
 
-	s.cdxIntegrationBackend = &mockedIntegration{FanOutExtension: customImplementation, FanOutIntegration: b}
+	s.cdxIntegrationBackend = &mockedIntegration{FanOutPlugin: customImplementation, FanOutIntegration: b}
 	s.cdxIntegration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "", s.cdxIntegrationBackend, config)
 	require.NoError(s.T(), err)
 
@@ -184,7 +184,7 @@ func (s *dispatcherTestSuite) SetupTest() {
 	)
 	require.NoError(s.T(), err)
 
-	s.anyIntegrationBackend = &mockedIntegration{FanOutExtension: customImplementation, FanOutIntegration: b}
+	s.anyIntegrationBackend = &mockedIntegration{FanOutPlugin: customImplementation, FanOutIntegration: b}
 	s.anyIntegration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "", s.anyIntegrationBackend, config)
 	require.NoError(s.T(), err)
 
@@ -199,7 +199,7 @@ func (s *dispatcherTestSuite) SetupTest() {
 	)
 	require.NoError(s.T(), err)
 
-	s.ociIntegrationBackend = &mockedIntegration{FanOutExtension: customImplementation, FanOutIntegration: b}
+	s.ociIntegrationBackend = &mockedIntegration{FanOutPlugin: customImplementation, FanOutIntegration: b}
 	s.ociIntegration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "", s.ociIntegrationBackend, config)
 	require.NoError(s.T(), err)
 
@@ -226,13 +226,13 @@ func (s *dispatcherTestSuite) SetupTest() {
 	}
 
 	// Register the integrations in the dispatcher
-	registeredIntegrations := sdk.AvailableExtensions{s.cdxIntegrationBackend, s.anyIntegrationBackend, s.ociIntegrationBackend}
+	registeredIntegrations := sdk.AvailablePlugins{s.cdxIntegrationBackend, s.anyIntegrationBackend, s.ociIntegrationBackend}
 	s.dispatcher = New(s.Integration, nil, nil, mocks.NewCASClient(s.T()), registeredIntegrations, s.L)
 }
 
 type mockedIntegration struct {
 	*sdk.FanOutIntegration
-	*mockedSDK.FanOutExtension
+	*mockedSDK.FanOutPlugin
 }
 
 // Utility struct to hold the test suite

@@ -11,9 +11,9 @@ export const protobufPackage = "controlplane.v1";
 export interface IntegrationsServiceRegisterRequest {
   /**
    * Kind of integration to register
-   * This should match the ID of an existing extension
+   * This should match the ID of an existing plugin
    */
-  extensionId: string;
+  pluginId: string;
   /** Arbitrary configuration for the integration */
   config?: { [key: string]: any };
   /** Description of the registration, used for display purposes */
@@ -49,11 +49,11 @@ export interface IntegrationAvailableItem {
   id: string;
   version: string;
   description: string;
-  fanout?: ExtensionFanout | undefined;
+  fanout?: PluginFanout | undefined;
 }
 
-/** ExtensionFanout describes an extension that can be used to fanout attestation and materials to multiple integrations */
-export interface ExtensionFanout {
+/** PluginFanout describes a plugin that can be used to fanout attestation and materials to multiple integrations */
+export interface PluginFanout {
   /** Registration JSON schema */
   registrationSchema: Uint8Array;
   /** Attachment JSON schema */
@@ -122,13 +122,13 @@ export interface IntegrationsServiceDeregisterResponse {
 }
 
 function createBaseIntegrationsServiceRegisterRequest(): IntegrationsServiceRegisterRequest {
-  return { extensionId: "", config: undefined, description: "" };
+  return { pluginId: "", config: undefined, description: "" };
 }
 
 export const IntegrationsServiceRegisterRequest = {
   encode(message: IntegrationsServiceRegisterRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.extensionId !== "") {
-      writer.uint32(10).string(message.extensionId);
+    if (message.pluginId !== "") {
+      writer.uint32(10).string(message.pluginId);
     }
     if (message.config !== undefined) {
       Struct.encode(Struct.wrap(message.config), writer.uint32(26).fork()).ldelim();
@@ -151,7 +151,7 @@ export const IntegrationsServiceRegisterRequest = {
             break;
           }
 
-          message.extensionId = reader.string();
+          message.pluginId = reader.string();
           continue;
         case 3:
           if (tag != 26) {
@@ -178,7 +178,7 @@ export const IntegrationsServiceRegisterRequest = {
 
   fromJSON(object: any): IntegrationsServiceRegisterRequest {
     return {
-      extensionId: isSet(object.extensionId) ? String(object.extensionId) : "",
+      pluginId: isSet(object.pluginId) ? String(object.pluginId) : "",
       config: isObject(object.config) ? object.config : undefined,
       description: isSet(object.description) ? String(object.description) : "",
     };
@@ -186,7 +186,7 @@ export const IntegrationsServiceRegisterRequest = {
 
   toJSON(message: IntegrationsServiceRegisterRequest): unknown {
     const obj: any = {};
-    message.extensionId !== undefined && (obj.extensionId = message.extensionId);
+    message.pluginId !== undefined && (obj.pluginId = message.pluginId);
     message.config !== undefined && (obj.config = message.config);
     message.description !== undefined && (obj.description = message.description);
     return obj;
@@ -202,7 +202,7 @@ export const IntegrationsServiceRegisterRequest = {
     object: I,
   ): IntegrationsServiceRegisterRequest {
     const message = createBaseIntegrationsServiceRegisterRequest();
-    message.extensionId = object.extensionId ?? "";
+    message.pluginId = object.pluginId ?? "";
     message.config = object.config ?? undefined;
     message.description = object.description ?? "";
     return message;
@@ -553,7 +553,7 @@ export const IntegrationAvailableItem = {
       writer.uint32(26).string(message.description);
     }
     if (message.fanout !== undefined) {
-      ExtensionFanout.encode(message.fanout, writer.uint32(34).fork()).ldelim();
+      PluginFanout.encode(message.fanout, writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -591,7 +591,7 @@ export const IntegrationAvailableItem = {
             break;
           }
 
-          message.fanout = ExtensionFanout.decode(reader, reader.uint32());
+          message.fanout = PluginFanout.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
@@ -607,7 +607,7 @@ export const IntegrationAvailableItem = {
       id: isSet(object.id) ? String(object.id) : "",
       version: isSet(object.version) ? String(object.version) : "",
       description: isSet(object.description) ? String(object.description) : "",
-      fanout: isSet(object.fanout) ? ExtensionFanout.fromJSON(object.fanout) : undefined,
+      fanout: isSet(object.fanout) ? PluginFanout.fromJSON(object.fanout) : undefined,
     };
   },
 
@@ -616,7 +616,7 @@ export const IntegrationAvailableItem = {
     message.id !== undefined && (obj.id = message.id);
     message.version !== undefined && (obj.version = message.version);
     message.description !== undefined && (obj.description = message.description);
-    message.fanout !== undefined && (obj.fanout = message.fanout ? ExtensionFanout.toJSON(message.fanout) : undefined);
+    message.fanout !== undefined && (obj.fanout = message.fanout ? PluginFanout.toJSON(message.fanout) : undefined);
     return obj;
   },
 
@@ -630,13 +630,13 @@ export const IntegrationAvailableItem = {
     message.version = object.version ?? "";
     message.description = object.description ?? "";
     message.fanout = (object.fanout !== undefined && object.fanout !== null)
-      ? ExtensionFanout.fromPartial(object.fanout)
+      ? PluginFanout.fromPartial(object.fanout)
       : undefined;
     return message;
   },
 };
 
-function createBaseExtensionFanout(): ExtensionFanout {
+function createBasePluginFanout(): PluginFanout {
   return {
     registrationSchema: new Uint8Array(),
     attachmentSchema: new Uint8Array(),
@@ -645,8 +645,8 @@ function createBaseExtensionFanout(): ExtensionFanout {
   };
 }
 
-export const ExtensionFanout = {
-  encode(message: ExtensionFanout, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const PluginFanout = {
+  encode(message: PluginFanout, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.registrationSchema.length !== 0) {
       writer.uint32(34).bytes(message.registrationSchema);
     }
@@ -662,10 +662,10 @@ export const ExtensionFanout = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ExtensionFanout {
+  decode(input: _m0.Reader | Uint8Array, length?: number): PluginFanout {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseExtensionFanout();
+    const message = createBasePluginFanout();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -706,7 +706,7 @@ export const ExtensionFanout = {
     return message;
   },
 
-  fromJSON(object: any): ExtensionFanout {
+  fromJSON(object: any): PluginFanout {
     return {
       registrationSchema: isSet(object.registrationSchema)
         ? bytesFromBase64(object.registrationSchema)
@@ -719,7 +719,7 @@ export const ExtensionFanout = {
     };
   },
 
-  toJSON(message: ExtensionFanout): unknown {
+  toJSON(message: PluginFanout): unknown {
     const obj: any = {};
     message.registrationSchema !== undefined &&
       (obj.registrationSchema = base64FromBytes(
@@ -738,12 +738,12 @@ export const ExtensionFanout = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<ExtensionFanout>, I>>(base?: I): ExtensionFanout {
-    return ExtensionFanout.fromPartial(base ?? {});
+  create<I extends Exact<DeepPartial<PluginFanout>, I>>(base?: I): PluginFanout {
+    return PluginFanout.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<ExtensionFanout>, I>>(object: I): ExtensionFanout {
-    const message = createBaseExtensionFanout();
+  fromPartial<I extends Exact<DeepPartial<PluginFanout>, I>>(object: I): PluginFanout {
+    const message = createBasePluginFanout();
     message.registrationSchema = object.registrationSchema ?? new Uint8Array();
     message.attachmentSchema = object.attachmentSchema ?? new Uint8Array();
     message.subscribedMaterials = object.subscribedMaterials?.map((e) => e) || [];

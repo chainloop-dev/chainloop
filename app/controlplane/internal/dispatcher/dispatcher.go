@@ -25,8 +25,8 @@ import (
 	"github.com/cenkalti/backoff/v4"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
@@ -41,10 +41,10 @@ type FanOutDispatcher struct {
 	casClient           biz.CASClient
 	log                 *log.Helper
 	l                   log.Logger
-	loaded              sdk.AvailableExtensions
+	loaded              sdk.AvailablePlugins
 }
 
-func New(integrationUC *biz.IntegrationUseCase, wfUC *biz.WorkflowUseCase, creds credentials.ReaderWriter, c biz.CASClient, registered sdk.AvailableExtensions, l log.Logger) *FanOutDispatcher {
+func New(integrationUC *biz.IntegrationUseCase, wfUC *biz.WorkflowUseCase, creds credentials.ReaderWriter, c biz.CASClient, registered sdk.AvailablePlugins, l log.Logger) *FanOutDispatcher {
 	return &FanOutDispatcher{integrationUC, wfUC, creds, c, servicelogger.ScopedHelper(l, "fanout-dispatcher"), l, registered}
 }
 

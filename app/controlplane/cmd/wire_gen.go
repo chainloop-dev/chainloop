@@ -7,13 +7,13 @@
 package main
 
 import (
-	"github.com/chainloop-dev/chainloop/app/controlplane/extensions"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/server"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
+	"github.com/chainloop-dev/chainloop/app/controlplane/plugins"
 	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	"github.com/go-kratos/kratos/v2/log"
@@ -90,12 +90,12 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		Opts:               v2,
 	}
 	workflowRunService := service.NewWorkflowRunService(newWorkflowRunServiceOpts)
-	availableExtensions, err := extensions.Load(logger)
+	availablePlugins, err := plugins.Load(logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	fanOutDispatcher := dispatcher.New(integrationUseCase, workflowUseCase, readerWriter, casClientUseCase, availableExtensions, logger)
+	fanOutDispatcher := dispatcher.New(integrationUseCase, workflowUseCase, readerWriter, casClientUseCase, availablePlugins, logger)
 	newAttestationServiceOpts := &service.NewAttestationServiceOpts{
 		WorkflowRunUC:      workflowRunUseCase,
 		WorkflowUC:         workflowUseCase,
@@ -119,7 +119,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	orgMetricsService := service.NewOrgMetricsService(orgMetricsUseCase, v2...)
 	ociRepositoryService := service.NewOCIRepositoryService(ociRepositoryUseCase, v2...)
-	integrationsService := service.NewIntegrationsService(integrationUseCase, workflowUseCase, availableExtensions, v2...)
+	integrationsService := service.NewIntegrationsService(integrationUseCase, workflowUseCase, availablePlugins, v2...)
 	organizationService := service.NewOrganizationService(membershipUseCase, v2...)
 	opts := &server.Opts{
 		UserUseCase:          userUseCase,

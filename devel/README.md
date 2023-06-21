@@ -72,7 +72,7 @@ Once logged in, please refer to our [Getting Started guide](https://docs.chainlo
 
 ## Developing Extensions / Integrations
 
-Refer to the [Extensions](../app/controlplane/extensions/README.md) documentation for more information.
+Refer to the [Extensions](../app/controlplane/plugins/README.md) documentation for more information.
 
 
 ## Troubleshooting

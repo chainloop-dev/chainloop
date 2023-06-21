@@ -20,8 +20,8 @@ import (
 	"fmt"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	errors "github.com/go-kratos/kratos/v2/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -33,10 +33,10 @@ type IntegrationsService struct {
 
 	integrationUC *biz.IntegrationUseCase
 	workflowUC    *biz.WorkflowUseCase
-	integrations  sdk.AvailableExtensions
+	integrations  sdk.AvailablePlugins
 }
 
-func NewIntegrationsService(uc *biz.IntegrationUseCase, wuc *biz.WorkflowUseCase, integrations sdk.AvailableExtensions, opts ...NewOpt) *IntegrationsService {
+func NewIntegrationsService(uc *biz.IntegrationUseCase, wuc *biz.WorkflowUseCase, integrations sdk.AvailablePlugins, opts ...NewOpt) *IntegrationsService {
 	return &IntegrationsService{
 		service:       newService(opts...),
 		integrationUC: uc,
@@ -61,7 +61,7 @@ func (s *IntegrationsService) ListAvailable(_ context.Context, _ *pb.Integration
 			Version:     d.Version,
 			Description: d.Description,
 			Type: &pb.IntegrationAvailableItem_Fanout{
-				Fanout: &pb.ExtensionFanout{
+				Fanout: &pb.PluginFanout{
 					AttachmentSchema:      d.AttachmentJSONSchema,
 					RegistrationSchema:    d.RegistrationJSONSchema,
 					SubscribedAttestation: d.SubscribedInputs.DSSEnvelope,
@@ -83,7 +83,7 @@ func (s *IntegrationsService) Register(ctx context.Context, req *pb.Integrations
 	}
 
 	// lookup the integration
-	integration, err := s.integrations.FindByID(req.ExtensionId)
+	integration, err := s.integrations.FindByID(req.PluginId)
 	if err != nil {
 		return nil, errors.NotFound("not found", err.Error())
 	}

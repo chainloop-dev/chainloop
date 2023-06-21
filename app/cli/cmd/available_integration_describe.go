@@ -22,7 +22,7 @@ import (
 	"sort"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
-	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"

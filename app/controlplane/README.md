@@ -12,9 +12,9 @@ It's implemented following(ish) [Hexagonal architecture](https://netflixtechblog
 - Business layer `./internal/biz`. Implementation of use-cases referenced by the service layer and definition of the data repository abstractions.
 - Data layer `./internal/data`. Implementation of data repositories interfaces defined in the business layer.
 
-## Extensions
+## Plugins
 
-The source code and documentation for the different supported extensions can be found at `./extensions`.
+The source code and documentation for the different supported plugins can be found at `./plugins`.
 
 ## System Dependencies
 

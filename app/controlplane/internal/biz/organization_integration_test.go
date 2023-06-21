@@ -19,10 +19,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
-	integrationMocks "github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1/mocks"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
+	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
+	integrationMocks "github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1/mocks"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/structpb"
 
