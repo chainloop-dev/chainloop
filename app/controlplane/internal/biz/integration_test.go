@@ -20,10 +20,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1"
-	integrationMocks "github.com/chainloop-dev/chainloop/app/controlplane/extensions/sdk/v1/mocks"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
+	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
+	integrationMocks "github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1/mocks"
 	creds "github.com/chainloop-dev/chainloop/internal/credentials/mocks"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
