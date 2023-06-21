@@ -57,7 +57,7 @@ func New(l log.Logger) (sdk.FanOut, error) {
 	base, err := sdk.NewFanOut(
 		&sdk.NewParams{
 			ID:          "discord-webhook",
-			Version:     "0.1",
+			Version:     "1.1",
 			Description: "Send attestations to Discord",
 			Logger:      l,
 			InputSchema: &sdk.InputSchema{

@@ -10,10 +10,10 @@ Below you can find the list of currently available integrations. If you can't fi
 
 | ID | Version | Description | Material Requirement |
 | --- | --- | --- | --- |
-| [dependency-track](https:/github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/core/dependency-track/v1/README.md) | 0.2 | Send CycloneDX SBOMs to your Dependency-Track instance | SBOM_CYCLONEDX_JSON |
-| [smtp](https:/github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/core/smtp/v1/README.md) | 0.1 | Send emails with information about a received attestation |  |
-| [oci-registry](https:/github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/core/oci-registry/v1/README.md) | 0.1 | Send attestations to a compatible OCI registry |  |
-| [discord-webhook](https:/github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/core/discord-webhook/v1/README.md) | 0.1 | Send attestations to Discord |  |
+| [dependency-track](https:/github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/core/dependency-track/v1/README.md) | 1.2 | Send CycloneDX SBOMs to your Dependency-Track instance | SBOM_CYCLONEDX_JSON |
+| [smtp](https:/github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/core/smtp/v1/README.md) | 1.0 | Send emails with information about a received attestation |  |
+| [oci-registry](https:/github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/core/oci-registry/v1/README.md) | 1.0 | Send attestations to a compatible OCI registry |  |
+| [discord-webhook](https:/github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/core/discord-webhook/v1/README.md) | 1.1 | Send attestations to Discord |  |
 
 ## How to use integrations
 
@@ -92,3 +92,31 @@ $ chainloop integration attached add --workflow $WID --integration $IID --opt pr
 ```
 
 Congratulations, you are done now! Any attestation or material information received by the workflow will be sent to the registered integration.
+
+## FAQ
+
+### How do I know if an integration is available?
+
+You can use the `chainloop integration available list` command to list all the available integrations.
+
+### How do I know what configuration parameters are required by an integration?
+
+You can use the `chainloop integration available describe` command to list all the required configuration parameters.
+
+### How do I know what registered integrations I have in my organization?
+
+You can use the `chainloop integration registered list` command to list all the registered integrations.
+
+You can also delete a registered integration by using the `chainloop integration registered delete` command.
+
+### How do I know what attachments I have in my organization?
+
+You can use the `chainloop integration attached list` command to list all the attachments, and detach them by using the `chainloop integration attached delete` command.
+
+### What If I can't find the integration I am looking for?
+
+If you can't find the integration you are looking for, feel free [to report it](https://github.com/chainloop-dev/chainloop/issues) or [contribute your own](https://github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/README.md)!
+
+### I am stuck, what do I do?
+
+If you have any questions or run into any issues, don't hesitate to reach out via our [Discord Server](https://discord.gg/f7atkaZact) or open an [Issue](https://github.com/chainloop-dev/chainloop/issues/new). We'll be happy to help.

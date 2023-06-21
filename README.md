@@ -108,7 +108,7 @@ Operators can set up third-party integrations such as [Dependency-Track](https:/
 
 Ops can mix and match with different integrations while **not requiring developers to make any changes on their side**!
 
-You can see the list of available integrations [here](./docs/integrations.md) of by using the CLI `chainloop integration available list`
+To learn more and to find the list of available integrations, check our [integrations page](./docs/integrations.md)
 
 ### Role-tailored experience
 
