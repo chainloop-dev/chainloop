@@ -62,4 +62,4 @@ chainloop integration attached add --workflow $WID --integration $IID
   "additionalProperties": false,
   "type": "object"
 }
-````
+```
