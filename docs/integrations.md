@@ -1,6 +1,6 @@
 # Chainloop Integrations
 
-Operators can set up third-party integrations that extend Chainloop functionality by operating on your attestation metadata. This logic could go from sending a Slack message, uploading the attestation to a storage backend or sending a Software Bill Of Materials (SBOMs) to a third-party for analysis.
+Operators can extend Chainloop functionality by setting up third-party integrations that operate on your attestation metadata. Integrations can range from sending a Slack message, uploading the attestation to a storage backend or sending a Software Bill Of Materials (SBOMs) to a third-party service for analysis, for example.
 
 Below you can find the list of currently available integrations. If you can't find the integration you are looking for, feel free [to reach out](https://github.com/chainloop-dev/chainloop/issues) or [contribute your own](https://github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/README.md)!
 
@@ -17,7 +17,7 @@ Below you can find the list of currently available integrations. If you can't fi
 
 ## How to use integrations
 
-First you need to make sure that the integration that you are looking for is available in your Chainloop instance, to do so you will
+First, you need to make sure that the integration that you are looking for is available in your Chainloop instance, to do so you will:
 
 ```console
 $ chainloop integration available list
@@ -34,9 +34,9 @@ $ chainloop integration available list
 └──────────────────┴─────────┴──────────────────────┴───────────────────────────────────────────────────────────┘
 ```
 
-Once you find the integration you are looking for, i.e `oci-registry`, it's time to configure them.
+Once you find your integration, i.e `oci-registry`, it's time to configure it.
 
-Configuring an extension has two steps: 1) register the extension in your organization and 2)attach the extension to your workflows.
+Configuring an extension has two steps: 1) register it in your organization and 2) attach the registered integration to your workflows.
 
 ### Registering an extension
 
@@ -69,7 +69,7 @@ chainloop integration available describe --id oci-registry
 └────────┴────────┴──────────┴────────────────────────────────────────────┘
 ```
 
-In the console output we can see a registration section that indicates that 3 parameters are required, let's go ahead and register it by using our Google Artifact Registry Credentials, for example.
+In the console output we can see a registration section that indicates that 3 parameters are required, let's go ahead and register it using our Google Artifact Registry Credentials by running:
 
 ```console
 $ chainloop integration registered add oci-registry \
@@ -85,7 +85,7 @@ $ chainloop integration registered add oci-registry \
 
 Once the integration is registered, we can attach it to any workflow. In practice this means that attestations and material information received by this workflow will be sent to the registered integration. 
 
-Attachment has at least two required parameters, the workflowID and the registered integration ID. Additionally each integration might have additional configuration parameters that could allow you to customize its behavior. In our case, on the table above, you can see that the `oci-registry` integration has an optional attachment parameter called `prefix` that allows you to customize the name of the image that will be pushed to the registry. 
+The attachment process has at least two required parameters, the `workflowID` and the registered `integrationID`. Additionally each integration might have additional to customize its behavior per-workflow. In our case, on the table above, we can see that the `oci-registry` integration has an optional parameter called `prefix` that allows you to customize the name of the image that will be pushed to the registry. 
 
 ```console 
 $ chainloop integration attached add --workflow $WID --integration $IID --opt prefix=custom-prefix
