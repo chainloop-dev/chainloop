@@ -129,7 +129,7 @@ type ExecutionRequest struct {
 // The material will contain its content as well as the metadata
 type ExecuteInput struct {
 	Attestation *ExecuteAttestation
-	Material    *ExecuteMaterial
+	Materials   []*ExecuteMaterial
 }
 
 type ExecuteAttestation struct {

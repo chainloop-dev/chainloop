@@ -258,7 +258,7 @@ func (d *FanOutDispatcher) Run(ctx context.Context, opts *RunOpts) error {
 			req := generateRequest(b, workflowMetadata)
 			req.Input = &sdk.ExecuteInput{
 				// They receive both the attestation information and the specific material information
-				Material:    materialInput,
+				Materials:   []*sdk.ExecuteMaterial{materialInput},
 				Attestation: attestationInput,
 			}
 
@@ -281,8 +281,13 @@ func dispatch(ctx context.Context, backend sdk.FanOut, opts *sdk.ExecutionReques
 	switch {
 	case opts.Input.Attestation != nil:
 		inputType = "DSSEnvelope"
-	case opts.Input.Material != nil:
-		inputType = fmt.Sprintf("Material:%s", opts.Input.Material.Type)
+	case len(opts.Input.Materials) > 0:
+		var materialTypes []string
+		for _, m := range opts.Input.Materials {
+			materialTypes = append(materialTypes, m.Type)
+		}
+
+		inputType = fmt.Sprintf("Materials: %q", materialTypes)
 	default:
 		return errors.New("no input provided")
 	}

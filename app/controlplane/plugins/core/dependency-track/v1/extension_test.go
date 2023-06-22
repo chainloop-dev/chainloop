@@ -133,33 +133,31 @@ func TestValidateExecuteOpts(t *testing.T) {
 		opts   *sdk.ExecutionRequest
 		errMsg string
 	}{
-		{name: "invalid - missing input", errMsg: "invalid input"},
-		{name: "invalid - missing input", opts: &sdk.ExecutionRequest{Input: &sdk.ExecuteInput{}}, errMsg: "invalid input"},
 		{
 			name: "invalid - missing material",
 			opts: &sdk.ExecutionRequest{
-				Input: &sdk.ExecuteInput{Material: &sdk.ExecuteMaterial{}},
+				Input: &sdk.ExecuteInput{Materials: []*sdk.ExecuteMaterial{{}}},
 			},
 			errMsg: "invalid input",
 		},
 		{
 			name: "invalid - invalid material",
 			opts: &sdk.ExecutionRequest{
-				Input: &sdk.ExecuteInput{Material: &sdk.ExecuteMaterial{NormalizedMaterial: &chainloop.NormalizedMaterial{Type: "invalid"}, Content: []byte("content")}},
+				Input: &sdk.ExecuteInput{Materials: []*sdk.ExecuteMaterial{{NormalizedMaterial: &chainloop.NormalizedMaterial{Type: "invalid"}, Content: []byte("content")}}},
 			},
 			errMsg: "invalid input type",
 		},
 		{
 			name: "invalid - missing configuration",
 			opts: &sdk.ExecutionRequest{
-				Input: &sdk.ExecuteInput{Material: validMaterial},
+				Input: &sdk.ExecuteInput{Materials: []*sdk.ExecuteMaterial{validMaterial}},
 			},
 			errMsg: "missing registration configuration",
 		},
 		{
 			name: "invalid - missing attachment configuration",
 			opts: &sdk.ExecutionRequest{
-				Input:            &sdk.ExecuteInput{Material: validMaterial},
+				Input:            &sdk.ExecuteInput{Materials: []*sdk.ExecuteMaterial{validMaterial}},
 				RegistrationInfo: &sdk.RegistrationResponse{Configuration: []byte("config"), Credentials: &sdk.Credentials{Password: "password"}},
 			},
 			errMsg: "missing attachment configuration",
@@ -167,7 +165,7 @@ func TestValidateExecuteOpts(t *testing.T) {
 		{
 			name: "invalid - missing registration configuration",
 			opts: &sdk.ExecutionRequest{
-				Input:          &sdk.ExecuteInput{Material: validMaterial},
+				Input:          &sdk.ExecuteInput{Materials: []*sdk.ExecuteMaterial{validMaterial}},
 				AttachmentInfo: &sdk.AttachmentResponse{},
 			},
 			errMsg: "missing registration configuration",
@@ -175,7 +173,7 @@ func TestValidateExecuteOpts(t *testing.T) {
 		{
 			name: "invalid - missing credentials",
 			opts: &sdk.ExecutionRequest{
-				Input:            &sdk.ExecuteInput{Material: validMaterial},
+				Input:            &sdk.ExecuteInput{Materials: []*sdk.ExecuteMaterial{validMaterial}},
 				RegistrationInfo: &sdk.RegistrationResponse{Configuration: []byte("config")},
 				AttachmentInfo:   &sdk.AttachmentResponse{Configuration: []byte("config")},
 			},
@@ -184,7 +182,7 @@ func TestValidateExecuteOpts(t *testing.T) {
 		{
 			name: "ok - all good",
 			opts: &sdk.ExecutionRequest{
-				Input:            &sdk.ExecuteInput{Material: validMaterial},
+				Input:            &sdk.ExecuteInput{Materials: []*sdk.ExecuteMaterial{validMaterial}},
 				RegistrationInfo: &sdk.RegistrationResponse{Configuration: []byte("config"), Credentials: &sdk.Credentials{Password: "password"}},
 				AttachmentInfo:   &sdk.AttachmentResponse{Configuration: []byte("config")},
 			},
@@ -193,7 +191,8 @@ func TestValidateExecuteOpts(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := validateExecuteOpts(tc.opts)
+			m := tc.opts.Input.Materials[0]
+			err := validateExecuteOpts(m, tc.opts.RegistrationInfo, tc.opts.AttachmentInfo)
 			if tc.errMsg != "" {
 				assert.ErrorContains(t, err, tc.errMsg)
 			} else {
