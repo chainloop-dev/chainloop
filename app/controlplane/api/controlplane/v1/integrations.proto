@@ -97,8 +97,6 @@ message PluginFanout {
 	bytes attachment_schema = 5;
 	// List of materials that the integration is subscribed to
 	repeated string subscribed_materials = 6;
-	// Whether the integration is subscribed to attestations
-	bool subscribed_attestation = 7;
 }
 
 message IntegrationsServiceListRegistrationsRequest{}

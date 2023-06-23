@@ -52,7 +52,7 @@ func (s *IntegrationsService) ListAvailable(_ context.Context, _ *pb.Integration
 		d := i.Describe()
 
 		var subscribedMaterials = make([]string, 0)
-		for _, m := range d.SubscribedInputs.Materials {
+		for _, m := range d.SubscribedMaterials {
 			subscribedMaterials = append(subscribedMaterials, m.Type.String())
 		}
 
@@ -62,10 +62,9 @@ func (s *IntegrationsService) ListAvailable(_ context.Context, _ *pb.Integration
 			Description: d.Description,
 			Type: &pb.IntegrationAvailableItem_Fanout{
 				Fanout: &pb.PluginFanout{
-					AttachmentSchema:      d.AttachmentJSONSchema,
-					RegistrationSchema:    d.RegistrationJSONSchema,
-					SubscribedAttestation: d.SubscribedInputs.DSSEnvelope,
-					SubscribedMaterials:   subscribedMaterials,
+					AttachmentSchema:    d.AttachmentJSONSchema,
+					RegistrationSchema:  d.RegistrationJSONSchema,
+					SubscribedMaterials: subscribedMaterials,
 				},
 			},
 		}

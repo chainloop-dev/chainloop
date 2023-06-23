@@ -39,81 +39,53 @@ var inputSchema = &sdk.InputSchema{
 
 func TestNewBaseIntegration(t *testing.T) {
 	testCases := []struct {
-		name        string
-		id          string
-		version     string
-		description string
-		opts        []sdk.NewOpt
-		errMsg      string
-		wantInput   *sdk.Inputs
-		schema      *sdk.InputSchema
+		name          string
+		id            string
+		version       string
+		description   string
+		opts          []sdk.NewOpt
+		errMsg        string
+		wantMaterials []*sdk.InputMaterial
+		schema        *sdk.InputSchema
 	}{
 		{name: "invalid - missing id", description: "desc", errMsg: "id is required"},
 		{name: "invalid - missing version", id: "id", description: "desc", errMsg: "version is required"},
-		{name: "invalid - need one input", id: "id", version: "123", description: "description", errMsg: "at least one input"},
-		{name: "invalid - missing schema", id: "id", version: "123", description: "description",
-			opts: []sdk.NewOpt{sdk.WithEnvelope()}, wantInput: &sdk.Inputs{DSSEnvelope: true},
-			errMsg: "input schema is required",
-		},
-		{name: "ok - has envelope", id: "id", version: "123", description: "description",
-			opts: []sdk.NewOpt{sdk.WithEnvelope()}, wantInput: &sdk.Inputs{DSSEnvelope: true},
-			schema: inputSchema,
-		},
-		{name: "ok - generic material", id: "id", version: "123", description: "description",
-			opts:      []sdk.NewOpt{sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED)},
-			wantInput: &sdk.Inputs{Materials: []*sdk.InputMaterial{{Type: schemaapi.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED}}},
-			schema:    inputSchema,
-		},
+		{name: "invalid - missing schema", id: "id", version: "123", description: "description", errMsg: "input schema is required"},
+		{name: "ok - subscribed to no materials", id: "id", version: "123", description: "description", wantMaterials: []*sdk.InputMaterial{}, schema: inputSchema},
 		{
 			name: "ok - specific material", id: "id", version: "123", description: "description",
 			opts: []sdk.NewOpt{
 				sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_JUNIT_XML),
 			},
-			wantInput: &sdk.Inputs{Materials: []*sdk.InputMaterial{
+			wantMaterials: []*sdk.InputMaterial{
 				{
 					Type: schemaapi.CraftingSchema_Material_JUNIT_XML,
 				},
-			}},
-			schema: inputSchema,
-		},
-		{
-			name: "ok - both material and envelope", id: "id", version: "123", description: "description",
-			opts: []sdk.NewOpt{
-				sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_JUNIT_XML),
-				sdk.WithEnvelope(),
 			},
-			wantInput: &sdk.Inputs{Materials: []*sdk.InputMaterial{
-				{
-					Type: schemaapi.CraftingSchema_Material_JUNIT_XML,
-				},
-			}, DSSEnvelope: true},
 			schema: inputSchema,
 		},
 		{
-			name: "ok - multiple materials and envelope", id: "id", version: "123", description: "description",
+			name: "ok - multiple materials", id: "id", version: "123", description: "description",
 			opts: []sdk.NewOpt{
 				sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_JUNIT_XML),
 				sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_CONTAINER_IMAGE),
-				sdk.WithEnvelope(),
 			},
-			wantInput: &sdk.Inputs{Materials: []*sdk.InputMaterial{
+			wantMaterials: []*sdk.InputMaterial{
 				{
 					Type: schemaapi.CraftingSchema_Material_JUNIT_XML,
 				},
 				{
 					Type: schemaapi.CraftingSchema_Material_CONTAINER_IMAGE,
 				},
-			}, DSSEnvelope: true},
+			},
 			schema: inputSchema,
 		},
 		{
-			name: "ok - cant have both generic and specific", id: "id", version: "123", description: "description",
+			name: "ok - cant have both generic/all materials", id: "id", version: "123", description: "description",
 			opts: []sdk.NewOpt{
 				sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED),
-				sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_CONTAINER_IMAGE),
-				sdk.WithEnvelope(),
 			},
-			errMsg: "can't subscribe to specific material",
+			errMsg: "is not a valid material type",
 			schema: inputSchema,
 		},
 	}
@@ -131,7 +103,7 @@ func TestNewBaseIntegration(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				d := got.Describe()
-				assert.Equal(t, tc.wantInput, d.SubscribedInputs)
+				assert.Equal(t, tc.wantMaterials, d.SubscribedMaterials)
 				assert.Equal(t, tc.id, d.ID)
 			}
 		})
@@ -169,23 +141,22 @@ func TestString(t *testing.T) {
 	}{
 		{
 			name: "with envelope", id: "id", version: "123",
-			opts: []sdk.NewOpt{sdk.WithEnvelope()},
-			want: "id=id, version=123, expectsEnvelope=true, expectedMaterials=[]",
+			want: "id=id, version=123, expectedMaterials=[]",
 		},
 		{
 			name: "only material", id: "id", version: "234",
 			opts: []sdk.NewOpt{sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_CONTAINER_IMAGE)},
-			want: "id=id, version=234, expectsEnvelope=false, expectedMaterials=[CONTAINER_IMAGE]",
+			want: "id=id, version=234, expectedMaterials=[CONTAINER_IMAGE]",
 		},
 		{
 			name: "both material and envelope", id: "id", version: "123",
-			opts: []sdk.NewOpt{sdk.WithEnvelope(), sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_CONTAINER_IMAGE)},
-			want: "id=id, version=123, expectsEnvelope=true, expectedMaterials=[CONTAINER_IMAGE]",
+			opts: []sdk.NewOpt{sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_CONTAINER_IMAGE)},
+			want: "id=id, version=123, expectedMaterials=[CONTAINER_IMAGE]",
 		},
 		{
 			name: "multiple materials", id: "id", version: "123",
 			opts: []sdk.NewOpt{sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_CONTAINER_IMAGE), sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_JUNIT_XML)},
-			want: "id=id, version=123, expectsEnvelope=false, expectedMaterials=[CONTAINER_IMAGE JUNIT_XML]",
+			want: "id=id, version=123, expectedMaterials=[CONTAINER_IMAGE JUNIT_XML]",
 		},
 	}
 
@@ -257,7 +228,7 @@ func TestValidateRegistrationRequest(t *testing.T) {
 				&sdk.NewParams{
 					ID: "ID", Version: "123",
 					InputSchema: &sdk.InputSchema{Registration: &registrationSchema{}, Attachment: &attachmentSchema{}},
-				}, sdk.WithEnvelope())
+				})
 
 			require.NoError(t, err)
 			payload, err := json.Marshal(tc.input)
@@ -269,6 +240,64 @@ func TestValidateRegistrationRequest(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
+		})
+	}
+}
+
+func TestIsSubscribedTo(t *testing.T) {
+	testCases := []struct {
+		name                string
+		subscribedMaterials []schemaapi.CraftingSchema_Material_MaterialType
+		input               string
+		want                bool
+	}{
+		{
+			name:                "empty",
+			subscribedMaterials: []schemaapi.CraftingSchema_Material_MaterialType{},
+			input:               "foo",
+			want:                false,
+		},
+		{
+			name:                "not subscribed",
+			subscribedMaterials: []schemaapi.CraftingSchema_Material_MaterialType{schemaapi.CraftingSchema_Material_CONTAINER_IMAGE},
+			input:               "foo",
+			want:                false,
+		},
+		{
+			name:                "subscribed",
+			subscribedMaterials: []schemaapi.CraftingSchema_Material_MaterialType{schemaapi.CraftingSchema_Material_CONTAINER_IMAGE},
+			input:               "CONTAINER_IMAGE",
+			want:                true,
+		},
+		{
+			name:                "subscribed multiple",
+			subscribedMaterials: []schemaapi.CraftingSchema_Material_MaterialType{schemaapi.CraftingSchema_Material_CONTAINER_IMAGE, schemaapi.CraftingSchema_Material_JUNIT_XML},
+			input:               "CONTAINER_IMAGE",
+			want:                true,
+		},
+		{
+			name:                "subscribed multiple 2",
+			subscribedMaterials: []schemaapi.CraftingSchema_Material_MaterialType{schemaapi.CraftingSchema_Material_CONTAINER_IMAGE, schemaapi.CraftingSchema_Material_JUNIT_XML},
+			input:               "JUNIT_XML",
+			want:                true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := []sdk.NewOpt{}
+			for _, m := range tc.subscribedMaterials {
+				opts = append(opts, sdk.WithInputMaterial(m))
+			}
+
+			got, err := sdk.NewFanOut(
+				&sdk.NewParams{
+					ID: "ID", Version: "123",
+					InputSchema: &sdk.InputSchema{Registration: &registrationSchema{}, Attachment: &attachmentSchema{}},
+				}, opts...)
+
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got.IsSubscribedTo(tc.input))
 		})
 	}
 }
@@ -324,7 +353,7 @@ func TestValidateAttachmentRequest(t *testing.T) {
 				&sdk.NewParams{
 					ID: "ID", Version: "123",
 					InputSchema: &sdk.InputSchema{Registration: &registrationSchema{}, Attachment: &attachmentSchema{}},
-				}, sdk.WithEnvelope())
+				})
 
 			require.NoError(t, err)
 			payload, err := json.Marshal(tc.input)

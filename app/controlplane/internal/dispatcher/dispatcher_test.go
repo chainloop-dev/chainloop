@@ -33,10 +33,10 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-func (s *dispatcherTestSuite) TestCalculateDispatchQueue() {
-	integrationInfoBuilder := func(b sdk.FanOut) *integrationInfo {
-		return &integrationInfo{
-			backend:            b,
+func (s *dispatcherTestSuite) TestInitDispatchQueue() {
+	integrationInfoBuilder := func(b sdk.FanOut) *dispatchItem {
+		return &dispatchItem{
+			plugin:             b,
 			registrationConfig: []byte("deadbeef"),
 			attachmentConfig:   []byte("deadbeef"),
 			credentials:        nil,
@@ -63,59 +63,45 @@ func (s *dispatcherTestSuite) TestCalculateDispatchQueue() {
 
 	for _, tc := range testCasesWithError {
 		s.Run(tc.name, func() {
-			q, err := s.dispatcher.calculateDispatchQueue(context.TODO(), tc.orgID, tc.workflowID)
+			q, err := s.dispatcher.initDispatchQueue(context.TODO(), tc.orgID, tc.workflowID)
 			assert.Error(s.T(), err)
 			assert.Nil(s.T(), q)
 		})
 	}
 
 	s.T().Run("integration does NOT have integrations", func(t *testing.T) {
-		q, err := s.dispatcher.calculateDispatchQueue(context.TODO(), s.org.ID, s.emptyWorkflow.ID.String())
+		q, err := s.dispatcher.initDispatchQueue(context.TODO(), s.org.ID, s.emptyWorkflow.ID.String())
 		require.NoError(t, err)
 		require.NotNil(t, q)
-		assert.Equal(t, make(materialsDispatch), q.materials)
-		assert.Equal(t, make(attestationDispatch, 0), q.attestations)
+		assert.Len(t, q, 0)
 	})
 
-	s.T().Run("integration does have attestation-based integrations", func(t *testing.T) {
-		wantAttestations := attestationDispatch{integrationInfoBuilder(s.ociIntegrationBackend)}
-
-		q, err := s.dispatcher.calculateDispatchQueue(context.TODO(), s.org.ID, s.workflow.ID.String())
-		require.NoError(t, err)
-
-		// Attestation integrations
-		assert.Len(t, q.attestations, 1)
-		assert.Equal(t, wantAttestations[0].backend, q.attestations[0].backend)
-		assert.Equal(t, q.attestations[0].backend.Describe().ID, "OCI_INTEGRATION")
-		assert.Equal(t, wantAttestations[0].attachmentConfig, q.attestations[0].attachmentConfig)
-	})
-
-	s.T().Run("integration does have material-based integrations", func(t *testing.T) {
-		wantMaterials := make(materialsDispatch)
-		wantMaterials[v1.CraftingSchema_Material_SBOM_CYCLONEDX_JSON] = []*integrationInfo{
-			integrationInfoBuilder(s.cdxIntegrationBackend),
+	s.T().Run("integration does have integrations", func(t *testing.T) {
+		wantAttestations := dispatchQueue{
+			integrationInfoBuilder(s.ociIntegrationBackend), integrationInfoBuilder(s.containerIntegrationBackend),
+			integrationInfoBuilder(s.cdxIntegrationBackend), integrationInfoBuilder(s.cdxIntegrationBackend),
 		}
-		q, err := s.dispatcher.calculateDispatchQueue(context.TODO(), s.org.ID, s.workflow.ID.String())
+
+		q, err := s.dispatcher.initDispatchQueue(context.TODO(), s.org.ID, s.workflow.ID.String())
 		require.NoError(t, err)
 
-		// the map has two keys
-		require.Len(t, q.materials, 2)
-		sbomQueue := q.materials[v1.CraftingSchema_Material_SBOM_CYCLONEDX_JSON]
-		// There are two integrations for SBOM material attached
-		require.Len(t, sbomQueue, 2)
-		assert.Equal(t, s.cdxIntegrationBackend, sbomQueue[0].backend)
-		assert.Equal(t, "SBOM_INTEGRATION", sbomQueue[0].backend.Describe().ID)
-		assert.Equal(t, s.cdxIntegrationBackend, sbomQueue[1].backend)
-		assert.Equal(t, "SBOM_INTEGRATION", sbomQueue[1].backend.Describe().ID)
-		assert.Equal(t, []byte("deadbeef"), sbomQueue[0].attachmentConfig)
-		assert.Equal(t, []byte("deadbeef"), sbomQueue[1].attachmentConfig)
+		// There are 4 integrations attached
+		require.Len(t, q, 4)
 
-		// and one for any material type
-		anyQueue := q.materials[v1.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED]
-		require.Len(t, anyQueue, 1)
-		assert.Equal(t, s.anyIntegrationBackend, anyQueue[0].backend)
-		assert.Equal(t, "ANY_INTEGRATION", anyQueue[0].backend.Describe().ID)
-		assert.Equal(t, []byte("deadbeef"), anyQueue[0].attachmentConfig)
+		for i, tc := range []struct{ id, subscribedMaterial string }{
+			{"OCI_INTEGRATION", ""},
+			{"CONTAINER_INTEGRATION", "CONTAINER_IMAGE"},
+			{"SBOM_INTEGRATION", "SBOM_CYCLONEDX_JSON"},
+			{"SBOM_INTEGRATION", "SBOM_CYCLONEDX_JSON"},
+		} {
+			assert.Equal(t, tc.id, q[i].plugin.Describe().ID)
+			assert.Equal(t, wantAttestations[i].plugin, q[i].plugin)
+			assert.Equal(t, wantAttestations[i].attachmentConfig, q[i].attachmentConfig)
+
+			if tc.subscribedMaterial != "" {
+				assert.True(t, q[i].plugin.IsSubscribedTo(tc.subscribedMaterial))
+			}
+		}
 	})
 }
 
@@ -173,19 +159,18 @@ func (s *dispatcherTestSuite) SetupTest() {
 	s.cdxIntegration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "", s.cdxIntegrationBackend, config)
 	require.NoError(s.T(), err)
 
-	// Any material integration
 	b, err = sdk.NewFanOut(
 		&sdk.NewParams{
-			ID:          "ANY_INTEGRATION",
+			ID:          "CONTAINER_INTEGRATION",
 			Version:     "1.0",
 			InputSchema: fanOutSchemas,
 		},
-		sdk.WithInputMaterial(v1.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED),
+		sdk.WithInputMaterial(v1.CraftingSchema_Material_CONTAINER_IMAGE),
 	)
 	require.NoError(s.T(), err)
 
-	s.anyIntegrationBackend = &mockedIntegration{FanOutPlugin: customImplementation, FanOutIntegration: b}
-	s.anyIntegration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "", s.anyIntegrationBackend, config)
+	s.containerIntegrationBackend = &mockedIntegration{FanOutPlugin: customImplementation, FanOutIntegration: b}
+	s.containerIntegration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "", s.containerIntegrationBackend, config)
 	require.NoError(s.T(), err)
 
 	// Attestation integration
@@ -195,7 +180,6 @@ func (s *dispatcherTestSuite) SetupTest() {
 			Version:     "1.0",
 			InputSchema: fanOutSchemas,
 		},
-		sdk.WithEnvelope(),
 	)
 	require.NoError(s.T(), err)
 
@@ -206,19 +190,19 @@ func (s *dispatcherTestSuite) SetupTest() {
 	// Attach all the integrations to the workflow
 	for _, i := range []struct {
 		integrationID string
-		fanout        sdk.FanOut
+		fanOut        sdk.FanOut
 	}{
 		// We attach the CDX integration twice
 		{s.cdxIntegration.ID.String(), s.cdxIntegrationBackend},
 		{s.cdxIntegration.ID.String(), s.cdxIntegrationBackend},
-		{s.anyIntegration.ID.String(), s.anyIntegrationBackend},
+		{s.containerIntegration.ID.String(), s.containerIntegrationBackend},
 		{s.ociIntegration.ID.String(), s.ociIntegrationBackend},
 	} {
 		_, err = s.Integration.AttachToWorkflow(ctx, &biz.AttachOpts{
 			OrgID:             s.org.ID,
 			IntegrationID:     i.integrationID,
 			WorkflowID:        s.workflow.ID.String(),
-			FanOutIntegration: i.fanout,
+			FanOutIntegration: i.fanOut,
 			AttachmentConfig:  config,
 		})
 
@@ -226,7 +210,7 @@ func (s *dispatcherTestSuite) SetupTest() {
 	}
 
 	// Register the integrations in the dispatcher
-	registeredIntegrations := sdk.AvailablePlugins{s.cdxIntegrationBackend, s.anyIntegrationBackend, s.ociIntegrationBackend}
+	registeredIntegrations := sdk.AvailablePlugins{s.cdxIntegrationBackend, s.containerIntegrationBackend, s.ociIntegrationBackend}
 	s.dispatcher = New(s.Integration, nil, nil, mocks.NewCASClient(s.T()), registeredIntegrations, s.L)
 }
 
@@ -239,9 +223,9 @@ type mockedIntegration struct {
 type dispatcherTestSuite struct {
 	suite.Suite
 	testhelpers.UseCasesEachTestSuite
-	cdxIntegration, ociIntegration, anyIntegration                      *biz.Integration
-	cdxIntegrationBackend, ociIntegrationBackend, anyIntegrationBackend sdk.FanOut
-	org, emptyOrg                                                       *biz.Organization
-	workflow, emptyWorkflow                                             *biz.Workflow
-	dispatcher                                                          *FanOutDispatcher
+	cdxIntegration, ociIntegration, containerIntegration                      *biz.Integration
+	cdxIntegrationBackend, ociIntegrationBackend, containerIntegrationBackend sdk.FanOut
+	org, emptyOrg                                                             *biz.Organization
+	workflow, emptyWorkflow                                                   *biz.Workflow
+	dispatcher                                                                *FanOutDispatcher
 }

@@ -167,6 +167,7 @@ func (i *DependencyTrack) Execute(ctx context.Context, req *sdk.ExecutionRequest
 		}
 
 		i.Logger.Infow("msg", "Uploading SBOM",
+			"materialName", sbom.Name,
 			"host", registrationConfig.Domain,
 			"projectID", attachmentConfig.ProjectID, "projectName", attachmentConfig.ProjectName,
 			"workflowID", req.WorkflowID,
@@ -191,6 +192,7 @@ func (i *DependencyTrack) Execute(ctx context.Context, req *sdk.ExecutionRequest
 		}
 
 		i.Logger.Infow("msg", "SBOM Uploaded",
+			"materialName", sbom.Name,
 			"host", registrationConfig.Domain,
 			"projectID", attachmentConfig.ProjectID, "projectName", attachmentConfig.ProjectName,
 			"workflowID", req.WorkflowID,

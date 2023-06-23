@@ -67,7 +67,6 @@ func New(l log.Logger) (sdk.FanOut, error) {
 				Attachment:   &attachmentRequest{},
 			},
 		},
-		sdk.WithEnvelope(),
 	)
 
 	if err != nil {
