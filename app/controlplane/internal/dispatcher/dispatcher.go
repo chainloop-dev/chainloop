@@ -169,6 +169,10 @@ func (d *FanOutDispatcher) initDispatchQueue(ctx context.Context, orgID, workflo
 
 // Load the inputs for the dispatchItem, both materials and attestation
 func (d *FanOutDispatcher) loadInputs(ctx context.Context, queue dispatchQueue, att *dsse.Envelope, secretName string) error {
+	if att == nil {
+		return fmt.Errorf("attestation is nil")
+	}
+
 	// Calculate the attestation information from the envelope
 	statement, err := chainloop.ExtractStatement(att)
 	if err != nil {

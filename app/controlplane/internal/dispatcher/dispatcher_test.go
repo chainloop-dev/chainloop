@@ -16,7 +16,11 @@
 package dispatcher
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"io"
+	"os"
 	"testing"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -24,6 +28,8 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/mocks"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	mockedSDK "github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1/mocks"
+	"github.com/go-kratos/kratos/v2/log"
+	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
 	"github.com/stretchr/testify/assert"
@@ -33,16 +39,77 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-func (s *dispatcherTestSuite) TestInitDispatchQueue() {
-	integrationInfoBuilder := func(b sdk.FanOut) *dispatchItem {
-		return &dispatchItem{
-			plugin:             b,
-			registrationConfig: []byte("deadbeef"),
-			attachmentConfig:   []byte("deadbeef"),
-			credentials:        nil,
-		}
+var integrationInfoBuilder = func(b sdk.FanOut) *dispatchItem {
+	return &dispatchItem{
+		plugin:             b,
+		registrationConfig: []byte("deadbeef"),
+		attachmentConfig:   []byte("deadbeef"),
+		credentials:        nil,
+	}
+}
+
+func (s *dispatcherTestSuite) TestLoadInputs() {
+	queue := dispatchQueue{
+		integrationInfoBuilder(s.ociIntegrationBackend),
+		integrationInfoBuilder(s.containerIntegrationBackend),
+		integrationInfoBuilder(s.cdxIntegrationBackend),
 	}
 
+	envelope, err := testEnvelope("testdata/attestation.json")
+	require.NoError(s.T(), err)
+
+	// Simulate SBOM download
+	s.casClient.On("Download", mock.Anything, "secret-name", mock.Anything, mock.Anything).
+		Return(nil).Run(func(args mock.Arguments) {
+		buf := bytes.NewBuffer([]byte("SBOM Content"))
+		_, err := io.Copy(args.Get(2).(io.Writer), buf)
+		s.NoError(err)
+	})
+
+	err = s.dispatcher.loadInputs(context.TODO(), queue, envelope, "secret-name")
+	assert.NoError(s.T(), err)
+	require.Len(s.T(), queue, 3)
+
+	// OCI integration has no materials
+	assert.Equal(s.T(), "OCI_INTEGRATION", queue[0].plugin.Describe().ID)
+	assert.Len(s.T(), queue[0].materials, 0)
+
+	// Container integration has container image information
+	dispathItem, materials := queue[1], queue[1].materials
+	assert.Equal(s.T(), "CONTAINER_INTEGRATION", dispathItem.plugin.Describe().ID)
+	assert.Len(s.T(), materials, 1)
+	assert.Equal(s.T(), "image", materials[0].Name)
+	assert.Equal(s.T(), "sha256:264f55a6ff9cec2f4742a9faacc033b29f65c04dd4480e71e23579d484288d61", materials[0].Hash.String())
+	assert.Equal(s.T(), "index.docker.io/bitnami/nginx", string(materials[0].Content))
+
+	// Dependency-Track integration has two sboms with the content already downloaded
+	dispathItem, materials = queue[2], queue[2].materials
+	assert.Equal(s.T(), "SBOM_INTEGRATION", dispathItem.plugin.Describe().ID)
+
+	require.Len(s.T(), materials, 2)
+	assert.Equal(s.T(), "skynet-sbom", materials[0].Name)
+	assert.Equal(s.T(), "SBOM Content", string(materials[0].Content))
+
+	assert.Equal(s.T(), "skynet2-sbom", materials[1].Name)
+	assert.Equal(s.T(), "SBOM Content", string(materials[1].Content))
+}
+
+func testEnvelope(filePath string) (*dsse.Envelope, error) {
+	var envelope dsse.Envelope
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(content, &envelope)
+	if err != nil {
+		return nil, err
+	}
+
+	return &envelope, nil
+}
+
+func (s *dispatcherTestSuite) TestInitDispatchQueue() {
 	testCasesWithError := []struct {
 		name       string
 		orgID      string
@@ -211,7 +278,10 @@ func (s *dispatcherTestSuite) SetupTest() {
 
 	// Register the integrations in the dispatcher
 	registeredIntegrations := sdk.AvailablePlugins{s.cdxIntegrationBackend, s.containerIntegrationBackend, s.ociIntegrationBackend}
-	s.dispatcher = New(s.Integration, nil, nil, mocks.NewCASClient(s.T()), registeredIntegrations, s.L)
+	l := log.NewStdLogger(os.Stdout)
+
+	s.casClient = mocks.NewCASClient(s.T())
+	s.dispatcher = New(s.Integration, nil, nil, s.casClient, registeredIntegrations, l)
 }
 
 type mockedIntegration struct {
@@ -228,4 +298,5 @@ type dispatcherTestSuite struct {
 	org, emptyOrg                                                             *biz.Organization
 	workflow, emptyWorkflow                                                   *biz.Workflow
 	dispatcher                                                                *FanOutDispatcher
+	casClient                                                                 *mocks.CASClient
 }
