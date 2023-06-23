@@ -20,6 +20,23 @@ The loading stage is when the plugin gets enabled in the Chainloop Control Plane
 - What kind of input you want your plugin to receive, materials, attestations or both.
 - Available input properties for the registration and attachment phases. These schemas will be shown to the user and will be used to validate the input.
 
+Example, excerpt from the [Dependency-Track plugin](https://github.com/chainloop-dev/chainloop/tree/main/app/controlplane/plugins/core/dependency-track/v1):
+
+```go
+base, err := sdk.NewFanOut(
+    &sdk.NewParams{
+        ID:          "dependency-track",
+        Version:     "1.2",
+        Description: "Send CycloneDX SBOMs to your Dependency-Track instance",
+        // The input schema for both registration and attachment phases
+        InputSchema: &sdk.InputSchema{
+            Registration: registrationRequest{},
+            Attachment:   attachmentRequest{},
+        },
+        // Subscribed to receive CycloneDX SBOMs in json format
+    }, sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON))
+```
+
 Once loaded, the plugin will be available to be registered on any organization and will be shown in the list of available plugins.
 
 ```console
@@ -95,9 +112,22 @@ Examples:
 
 This is the actual execution of the plugin. This is where the plugin will do its work. i.e forward the attestation/material data to a third-party API, send a notification and so on.
 
+When an attestation is received, the attestation and any materials that match the list of material types the plugin supports will be sent to the execute handler. For example, if your plugin does not specify any supported material types, it will receive only the attestation information.
+
+![execution](../../../docs/img/fanout-execute.png)
+
+On another hand, if the plugin is subscribed to for example support SBOM_CYCLONEDX_JSON, and JUNIX_XML it will receive the attestation information and both materials **on a single execution**
+
+![execution](../../../docs/img/fanout-execute-materials.png)
+
 In addition to the attestation and material data, this handler **will also have access to the outputs from the registration and attachment phases**.
 
-Examples:
+Some important notes about the execution handler:
+
+- If your plugin is subscribed to a specific material type, it will get executed on every attestation, even if such attestation does not contain any material of the supported type.
+- It's up to the plugin developer to make sure the desired material is present and handle the case when it's not.
+
+Some example use-cases:
 
 A Dependency-Track SBOM plugin will
 
