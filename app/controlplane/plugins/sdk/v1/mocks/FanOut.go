@@ -70,6 +70,20 @@ func (_m *FanOut) Execute(ctx context.Context, req *sdk.ExecutionRequest) error 
 	return r0
 }
 
+// IsSubscribedTo provides a mock function with given fields: materialType
+func (_m *FanOut) IsSubscribedTo(materialType string) bool {
+	ret := _m.Called(materialType)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(string) bool); ok {
+		r0 = rf(materialType)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
 // Register provides a mock function with given fields: ctx, req
 func (_m *FanOut) Register(ctx context.Context, req *sdk.RegistrationRequest) (*sdk.RegistrationResponse, error) {
 	ret := _m.Called(ctx, req)

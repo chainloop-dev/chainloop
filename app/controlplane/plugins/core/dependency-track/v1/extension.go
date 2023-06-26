@@ -147,51 +147,59 @@ func (i *DependencyTrack) Attach(ctx context.Context, req *sdk.AttachmentRequest
 func (i *DependencyTrack) Execute(ctx context.Context, req *sdk.ExecutionRequest) error {
 	i.Logger.Info("execution requested")
 
-	if err := validateExecuteOpts(req); err != nil {
-		return fmt.Errorf("running validation: %w", err)
+	// Iterate over all SBOMs
+	for _, sbom := range req.Input.Materials {
+		// Make sure it's an SBOM and all the required configuration has been received
+		if err := validateExecuteOpts(sbom, req.RegistrationInfo, req.AttachmentInfo); err != nil {
+			return fmt.Errorf("running validation: %w", err)
+		}
+
+		// Extract registration configuration
+		var registrationConfig *registrationConfig
+		if err := sdk.FromConfig(req.RegistrationInfo.Configuration, &registrationConfig); err != nil {
+			return errors.New("invalid registration configuration")
+		}
+
+		// Extract attachment configuration
+		var attachmentConfig *attachmentConfig
+		if err := sdk.FromConfig(req.AttachmentInfo.Configuration, &attachmentConfig); err != nil {
+			return errors.New("invalid attachment configuration")
+		}
+
+		i.Logger.Infow("msg", "Uploading SBOM",
+			"materialName", sbom.Name,
+			"host", registrationConfig.Domain,
+			"projectID", attachmentConfig.ProjectID, "projectName", attachmentConfig.ProjectName,
+			"workflowID", req.WorkflowID,
+		)
+
+		// Create an SBOM client and perform validation and upload
+		d, err := client.NewSBOMUploader(registrationConfig.Domain,
+			req.RegistrationInfo.Credentials.Password,
+			bytes.NewReader(sbom.Content),
+			attachmentConfig.ProjectID,
+			attachmentConfig.ProjectName)
+		if err != nil {
+			return fmt.Errorf("creating uploader: %w", err)
+		}
+
+		if err := d.Validate(ctx); err != nil {
+			return fmt.Errorf("validating uploader: %w", err)
+		}
+
+		if err := d.Do(ctx); err != nil {
+			return fmt.Errorf("uploading SBOM: %w", err)
+		}
+
+		i.Logger.Infow("msg", "SBOM Uploaded",
+			"materialName", sbom.Name,
+			"host", registrationConfig.Domain,
+			"projectID", attachmentConfig.ProjectID, "projectName", attachmentConfig.ProjectName,
+			"workflowID", req.WorkflowID,
+		)
 	}
 
-	// Extract registration configuration
-	var registrationConfig *registrationConfig
-	if err := sdk.FromConfig(req.RegistrationInfo.Configuration, &registrationConfig); err != nil {
-		return errors.New("invalid registration configuration")
-	}
-
-	// Extract attachment configuration
-	var attachmentConfig *attachmentConfig
-	if err := sdk.FromConfig(req.AttachmentInfo.Configuration, &attachmentConfig); err != nil {
-		return errors.New("invalid attachment configuration")
-	}
-
-	i.Logger.Infow("msg", "Uploading SBOM",
-		"host", registrationConfig.Domain,
-		"projectID", attachmentConfig.ProjectID, "projectName", attachmentConfig.ProjectName,
-		"workflowID", req.WorkflowID,
-	)
-
-	// Create an SBOM client and perform validation and upload
-	d, err := client.NewSBOMUploader(registrationConfig.Domain,
-		req.RegistrationInfo.Credentials.Password,
-		bytes.NewReader(req.Input.Material.Content),
-		attachmentConfig.ProjectID,
-		attachmentConfig.ProjectName)
-	if err != nil {
-		return fmt.Errorf("creating uploader: %w", err)
-	}
-
-	if err := d.Validate(ctx); err != nil {
-		return fmt.Errorf("validating uploader: %w", err)
-	}
-
-	if err := d.Do(ctx); err != nil {
-		return fmt.Errorf("uploading SBOM: %w", err)
-	}
-
-	i.Logger.Infow("msg", "SBOM Uploaded",
-		"host", registrationConfig.Domain,
-		"projectID", attachmentConfig.ProjectID, "projectName", attachmentConfig.ProjectName,
-		"workflowID", req.WorkflowID,
-	)
+	i.Logger.Info("execution finished")
 
 	return nil
 }
@@ -232,24 +240,24 @@ func validateAttachmentConfiguration(rc *registrationConfig, ac *attachmentReque
 	return nil
 }
 
-func validateExecuteOpts(opts *sdk.ExecutionRequest) error {
-	if opts == nil || opts.Input == nil || opts.Input.Material == nil || opts.Input.Material.Content == nil {
+func validateExecuteOpts(m *sdk.ExecuteMaterial, regConfig *sdk.RegistrationResponse, attConfig *sdk.AttachmentResponse) error {
+	if m == nil || m.Content == nil {
 		return errors.New("invalid input")
 	}
 
-	if opts.Input.Material.Type != schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON.String() {
-		return fmt.Errorf("invalid input type: %s", opts.Input.Material.Type)
+	if m.Type != schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON.String() {
+		return fmt.Errorf("invalid input type: %s", m.Type)
 	}
 
-	if opts.RegistrationInfo == nil || opts.RegistrationInfo.Configuration == nil {
+	if regConfig == nil || regConfig.Configuration == nil {
 		return errors.New("missing registration configuration")
 	}
 
-	if opts.RegistrationInfo.Credentials == nil {
+	if regConfig.Credentials == nil {
 		return errors.New("missing credentials")
 	}
 
-	if opts.AttachmentInfo == nil || opts.AttachmentInfo.Configuration == nil {
+	if attConfig == nil || attConfig.Configuration == nil {
 		return errors.New("missing attachment configuration")
 	}
 

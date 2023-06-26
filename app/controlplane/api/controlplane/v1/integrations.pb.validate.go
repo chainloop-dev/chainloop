@@ -1067,8 +1067,6 @@ func (m *PluginFanout) validate(all bool) error {
 
 	// no validation rules for AttachmentSchema
 
-	// no validation rules for SubscribedAttestation
-
 	if len(errors) > 0 {
 		return PluginFanoutMultiError(errors)
 	}

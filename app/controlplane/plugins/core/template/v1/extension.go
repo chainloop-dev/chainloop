@@ -154,55 +154,54 @@ func (i *Integration) Attach(_ context.Context, req *sdk.AttachmentRequest) (*sd
 func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) error {
 	i.Logger.Info("execution requested")
 
-	// Example of custom validation
-	if err := validateExecuteRequest(req); err != nil {
-		return fmt.Errorf("running validation: %w", err)
+	// You can receive more than one material
+	for _, sbom := range req.Input.Materials {
+		// Example of custom validation
+		if err := validateExecuteOpts(sbom, req.RegistrationInfo, req.AttachmentInfo); err != nil {
+			return fmt.Errorf("running validation: %w", err)
+		}
+
+		// Extract registration and attachment configuration if needed
+		// var registrationConfig *registrationState
+		// if err := sdk.FromConfig(req.RegistrationInfo.Configuration, &registrationConfig); err != nil {
+		//  return fmt.Errorf("invalid registration configuration %w", err)
+		// }
+
+		// // Extract attachment configuration
+		// var attachmentConfig *attachmentState
+		// if err := sdk.FromConfig(req.AttachmentInfo.Configuration, &attachmentConfig); err != nil {
+		//  return fmt.Errorf("invalid attachment configuration %w", err)
+		// }
+
+		// START CUSTOM LOGIC
+		// EO CUSTOM LOGIC
 	}
 
-	// Extract registration and attachment configuration if needed
-	// var registrationConfig *registrationState
-	// if err := sdk.FromConfig(req.RegistrationInfo.Configuration, &registrationConfig); err != nil {
-	//  return fmt.Errorf("invalid registration configuration %w", err)
-	// }
-
-	// // Extract attachment configuration
-	// var attachmentConfig *attachmentState
-	// if err := sdk.FromConfig(req.AttachmentInfo.Configuration, &attachmentConfig); err != nil {
-	//  return fmt.Errorf("invalid attachment configuration %w", err)
-	// }
-
-	// START CUSTOM LOGIC
-	// EO CUSTOM LOGIC
-
+	i.Logger.Info("execution finished")
 	return nil
 }
 
 // Validator example for the execution phase
 // In this case we expect to receive a SBOM in CycloneDX format
 // plus registration, attachment state and credentials
-func validateExecuteRequest(req *sdk.ExecutionRequest) error {
-	if req == nil || req.Input == nil {
-		return errors.New("execution input not received")
+func validateExecuteOpts(m *sdk.ExecuteMaterial, regConfig *sdk.RegistrationResponse, attConfig *sdk.AttachmentResponse) error {
+	if m == nil || m.Content == nil {
+		return errors.New("invalid input")
 	}
 
-	if req.Input.Material == nil || req.Input.Material.Content == nil {
-		return errors.New("execution input invalid, material not provided or empty content")
+	if m.Type != schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON.String() {
+		return fmt.Errorf("invalid input type: %s", m.Type)
 	}
 
-	// This is just an example of guard clause, you can remove it if you want to accept any kind of input
-	if req.Input.Material.Type != schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON.String() {
-		return fmt.Errorf("invalid input type: %s", req.Input.Material.Type)
-	}
-
-	if req.RegistrationInfo == nil || req.RegistrationInfo.Configuration == nil {
+	if regConfig == nil || regConfig.Configuration == nil {
 		return errors.New("missing registration configuration")
 	}
 
-	if req.RegistrationInfo.Credentials == nil {
+	if regConfig.Credentials == nil {
 		return errors.New("missing credentials")
 	}
 
-	if req.AttachmentInfo == nil || req.AttachmentInfo.Configuration == nil {
+	if attConfig == nil || attConfig.Configuration == nil {
 		return errors.New("missing attachment configuration")
 	}
 

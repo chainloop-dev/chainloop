@@ -60,8 +60,6 @@ export interface PluginFanout {
   attachmentSchema: Uint8Array;
   /** List of materials that the integration is subscribed to */
   subscribedMaterials: string[];
-  /** Whether the integration is subscribed to attestations */
-  subscribedAttestation: boolean;
 }
 
 export interface IntegrationsServiceListRegistrationsRequest {
@@ -637,12 +635,7 @@ export const IntegrationAvailableItem = {
 };
 
 function createBasePluginFanout(): PluginFanout {
-  return {
-    registrationSchema: new Uint8Array(),
-    attachmentSchema: new Uint8Array(),
-    subscribedMaterials: [],
-    subscribedAttestation: false,
-  };
+  return { registrationSchema: new Uint8Array(), attachmentSchema: new Uint8Array(), subscribedMaterials: [] };
 }
 
 export const PluginFanout = {
@@ -655,9 +648,6 @@ export const PluginFanout = {
     }
     for (const v of message.subscribedMaterials) {
       writer.uint32(50).string(v!);
-    }
-    if (message.subscribedAttestation === true) {
-      writer.uint32(56).bool(message.subscribedAttestation);
     }
     return writer;
   },
@@ -690,13 +680,6 @@ export const PluginFanout = {
 
           message.subscribedMaterials.push(reader.string());
           continue;
-        case 7:
-          if (tag != 56) {
-            break;
-          }
-
-          message.subscribedAttestation = reader.bool();
-          continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
         break;
@@ -715,7 +698,6 @@ export const PluginFanout = {
       subscribedMaterials: Array.isArray(object?.subscribedMaterials)
         ? object.subscribedMaterials.map((e: any) => String(e))
         : [],
-      subscribedAttestation: isSet(object.subscribedAttestation) ? Boolean(object.subscribedAttestation) : false,
     };
   },
 
@@ -734,7 +716,6 @@ export const PluginFanout = {
     } else {
       obj.subscribedMaterials = [];
     }
-    message.subscribedAttestation !== undefined && (obj.subscribedAttestation = message.subscribedAttestation);
     return obj;
   },
 
@@ -747,7 +728,6 @@ export const PluginFanout = {
     message.registrationSchema = object.registrationSchema ?? new Uint8Array();
     message.attachmentSchema = object.attachmentSchema ?? new Uint8Array();
     message.subscribedMaterials = object.subscribedMaterials?.map((e) => e) || [];
-    message.subscribedAttestation = object.subscribedAttestation ?? false;
     return message;
   },
 };

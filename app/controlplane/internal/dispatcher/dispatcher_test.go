@@ -16,7 +16,11 @@
 package dispatcher
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"io"
+	"os"
 	"testing"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -24,6 +28,8 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/mocks"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	mockedSDK "github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1/mocks"
+	"github.com/go-kratos/kratos/v2/log"
+	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
 	"github.com/stretchr/testify/assert"
@@ -33,16 +39,77 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-func (s *dispatcherTestSuite) TestCalculateDispatchQueue() {
-	integrationInfoBuilder := func(b sdk.FanOut) *integrationInfo {
-		return &integrationInfo{
-			backend:            b,
-			registrationConfig: []byte("deadbeef"),
-			attachmentConfig:   []byte("deadbeef"),
-			credentials:        nil,
-		}
+var integrationInfoBuilder = func(b sdk.FanOut) *dispatchItem {
+	return &dispatchItem{
+		plugin:             b,
+		registrationConfig: []byte("deadbeef"),
+		attachmentConfig:   []byte("deadbeef"),
+		credentials:        nil,
+	}
+}
+
+func (s *dispatcherTestSuite) TestLoadInputs() {
+	queue := dispatchQueue{
+		integrationInfoBuilder(s.ociIntegrationBackend),
+		integrationInfoBuilder(s.containerIntegrationBackend),
+		integrationInfoBuilder(s.cdxIntegrationBackend),
 	}
 
+	envelope, err := testEnvelope("testdata/attestation.json")
+	require.NoError(s.T(), err)
+
+	// Simulate SBOM download
+	s.casClient.On("Download", mock.Anything, "secret-name", mock.Anything, mock.Anything).
+		Return(nil).Run(func(args mock.Arguments) {
+		buf := bytes.NewBuffer([]byte("SBOM Content"))
+		_, err := io.Copy(args.Get(2).(io.Writer), buf)
+		s.NoError(err)
+	})
+
+	err = s.dispatcher.loadInputs(context.TODO(), queue, envelope, "secret-name")
+	assert.NoError(s.T(), err)
+	require.Len(s.T(), queue, 3)
+
+	// OCI integration has no materials
+	assert.Equal(s.T(), "OCI_INTEGRATION", queue[0].plugin.Describe().ID)
+	assert.Len(s.T(), queue[0].materials, 0)
+
+	// Container integration has container image information
+	dispathItem, materials := queue[1], queue[1].materials
+	assert.Equal(s.T(), "CONTAINER_INTEGRATION", dispathItem.plugin.Describe().ID)
+	assert.Len(s.T(), materials, 1)
+	assert.Equal(s.T(), "image", materials[0].Name)
+	assert.Equal(s.T(), "sha256:264f55a6ff9cec2f4742a9faacc033b29f65c04dd4480e71e23579d484288d61", materials[0].Hash.String())
+	assert.Equal(s.T(), "index.docker.io/bitnami/nginx", string(materials[0].Content))
+
+	// Dependency-Track integration has two sboms with the content already downloaded
+	dispathItem, materials = queue[2], queue[2].materials
+	assert.Equal(s.T(), "SBOM_INTEGRATION", dispathItem.plugin.Describe().ID)
+
+	require.Len(s.T(), materials, 2)
+	assert.Equal(s.T(), "skynet-sbom", materials[0].Name)
+	assert.Equal(s.T(), "SBOM Content", string(materials[0].Content))
+
+	assert.Equal(s.T(), "skynet2-sbom", materials[1].Name)
+	assert.Equal(s.T(), "SBOM Content", string(materials[1].Content))
+}
+
+func testEnvelope(filePath string) (*dsse.Envelope, error) {
+	var envelope dsse.Envelope
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(content, &envelope)
+	if err != nil {
+		return nil, err
+	}
+
+	return &envelope, nil
+}
+
+func (s *dispatcherTestSuite) TestInitDispatchQueue() {
 	testCasesWithError := []struct {
 		name       string
 		orgID      string
@@ -63,59 +130,45 @@ func (s *dispatcherTestSuite) TestCalculateDispatchQueue() {
 
 	for _, tc := range testCasesWithError {
 		s.Run(tc.name, func() {
-			q, err := s.dispatcher.calculateDispatchQueue(context.TODO(), tc.orgID, tc.workflowID)
+			q, err := s.dispatcher.initDispatchQueue(context.TODO(), tc.orgID, tc.workflowID)
 			assert.Error(s.T(), err)
 			assert.Nil(s.T(), q)
 		})
 	}
 
 	s.T().Run("integration does NOT have integrations", func(t *testing.T) {
-		q, err := s.dispatcher.calculateDispatchQueue(context.TODO(), s.org.ID, s.emptyWorkflow.ID.String())
+		q, err := s.dispatcher.initDispatchQueue(context.TODO(), s.org.ID, s.emptyWorkflow.ID.String())
 		require.NoError(t, err)
 		require.NotNil(t, q)
-		assert.Equal(t, make(materialsDispatch), q.materials)
-		assert.Equal(t, make(attestationDispatch, 0), q.attestations)
+		assert.Len(t, q, 0)
 	})
 
-	s.T().Run("integration does have attestation-based integrations", func(t *testing.T) {
-		wantAttestations := attestationDispatch{integrationInfoBuilder(s.ociIntegrationBackend)}
-
-		q, err := s.dispatcher.calculateDispatchQueue(context.TODO(), s.org.ID, s.workflow.ID.String())
-		require.NoError(t, err)
-
-		// Attestation integrations
-		assert.Len(t, q.attestations, 1)
-		assert.Equal(t, wantAttestations[0].backend, q.attestations[0].backend)
-		assert.Equal(t, q.attestations[0].backend.Describe().ID, "OCI_INTEGRATION")
-		assert.Equal(t, wantAttestations[0].attachmentConfig, q.attestations[0].attachmentConfig)
-	})
-
-	s.T().Run("integration does have material-based integrations", func(t *testing.T) {
-		wantMaterials := make(materialsDispatch)
-		wantMaterials[v1.CraftingSchema_Material_SBOM_CYCLONEDX_JSON] = []*integrationInfo{
-			integrationInfoBuilder(s.cdxIntegrationBackend),
+	s.T().Run("integration does have integrations", func(t *testing.T) {
+		wantAttestations := dispatchQueue{
+			integrationInfoBuilder(s.ociIntegrationBackend), integrationInfoBuilder(s.containerIntegrationBackend),
+			integrationInfoBuilder(s.cdxIntegrationBackend), integrationInfoBuilder(s.cdxIntegrationBackend),
 		}
-		q, err := s.dispatcher.calculateDispatchQueue(context.TODO(), s.org.ID, s.workflow.ID.String())
+
+		q, err := s.dispatcher.initDispatchQueue(context.TODO(), s.org.ID, s.workflow.ID.String())
 		require.NoError(t, err)
 
-		// the map has two keys
-		require.Len(t, q.materials, 2)
-		sbomQueue := q.materials[v1.CraftingSchema_Material_SBOM_CYCLONEDX_JSON]
-		// There are two integrations for SBOM material attached
-		require.Len(t, sbomQueue, 2)
-		assert.Equal(t, s.cdxIntegrationBackend, sbomQueue[0].backend)
-		assert.Equal(t, "SBOM_INTEGRATION", sbomQueue[0].backend.Describe().ID)
-		assert.Equal(t, s.cdxIntegrationBackend, sbomQueue[1].backend)
-		assert.Equal(t, "SBOM_INTEGRATION", sbomQueue[1].backend.Describe().ID)
-		assert.Equal(t, []byte("deadbeef"), sbomQueue[0].attachmentConfig)
-		assert.Equal(t, []byte("deadbeef"), sbomQueue[1].attachmentConfig)
+		// There are 4 integrations attached
+		require.Len(t, q, 4)
 
-		// and one for any material type
-		anyQueue := q.materials[v1.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED]
-		require.Len(t, anyQueue, 1)
-		assert.Equal(t, s.anyIntegrationBackend, anyQueue[0].backend)
-		assert.Equal(t, "ANY_INTEGRATION", anyQueue[0].backend.Describe().ID)
-		assert.Equal(t, []byte("deadbeef"), anyQueue[0].attachmentConfig)
+		for i, tc := range []struct{ id, subscribedMaterial string }{
+			{"OCI_INTEGRATION", ""},
+			{"CONTAINER_INTEGRATION", "CONTAINER_IMAGE"},
+			{"SBOM_INTEGRATION", "SBOM_CYCLONEDX_JSON"},
+			{"SBOM_INTEGRATION", "SBOM_CYCLONEDX_JSON"},
+		} {
+			assert.Equal(t, tc.id, q[i].plugin.Describe().ID)
+			assert.Equal(t, wantAttestations[i].plugin, q[i].plugin)
+			assert.Equal(t, wantAttestations[i].attachmentConfig, q[i].attachmentConfig)
+
+			if tc.subscribedMaterial != "" {
+				assert.True(t, q[i].plugin.IsSubscribedTo(tc.subscribedMaterial))
+			}
+		}
 	})
 }
 
@@ -173,19 +226,18 @@ func (s *dispatcherTestSuite) SetupTest() {
 	s.cdxIntegration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "", s.cdxIntegrationBackend, config)
 	require.NoError(s.T(), err)
 
-	// Any material integration
 	b, err = sdk.NewFanOut(
 		&sdk.NewParams{
-			ID:          "ANY_INTEGRATION",
+			ID:          "CONTAINER_INTEGRATION",
 			Version:     "1.0",
 			InputSchema: fanOutSchemas,
 		},
-		sdk.WithInputMaterial(v1.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED),
+		sdk.WithInputMaterial(v1.CraftingSchema_Material_CONTAINER_IMAGE),
 	)
 	require.NoError(s.T(), err)
 
-	s.anyIntegrationBackend = &mockedIntegration{FanOutPlugin: customImplementation, FanOutIntegration: b}
-	s.anyIntegration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "", s.anyIntegrationBackend, config)
+	s.containerIntegrationBackend = &mockedIntegration{FanOutPlugin: customImplementation, FanOutIntegration: b}
+	s.containerIntegration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "", s.containerIntegrationBackend, config)
 	require.NoError(s.T(), err)
 
 	// Attestation integration
@@ -195,7 +247,6 @@ func (s *dispatcherTestSuite) SetupTest() {
 			Version:     "1.0",
 			InputSchema: fanOutSchemas,
 		},
-		sdk.WithEnvelope(),
 	)
 	require.NoError(s.T(), err)
 
@@ -206,19 +257,19 @@ func (s *dispatcherTestSuite) SetupTest() {
 	// Attach all the integrations to the workflow
 	for _, i := range []struct {
 		integrationID string
-		fanout        sdk.FanOut
+		fanOut        sdk.FanOut
 	}{
 		// We attach the CDX integration twice
 		{s.cdxIntegration.ID.String(), s.cdxIntegrationBackend},
 		{s.cdxIntegration.ID.String(), s.cdxIntegrationBackend},
-		{s.anyIntegration.ID.String(), s.anyIntegrationBackend},
+		{s.containerIntegration.ID.String(), s.containerIntegrationBackend},
 		{s.ociIntegration.ID.String(), s.ociIntegrationBackend},
 	} {
 		_, err = s.Integration.AttachToWorkflow(ctx, &biz.AttachOpts{
 			OrgID:             s.org.ID,
 			IntegrationID:     i.integrationID,
 			WorkflowID:        s.workflow.ID.String(),
-			FanOutIntegration: i.fanout,
+			FanOutIntegration: i.fanOut,
 			AttachmentConfig:  config,
 		})
 
@@ -226,8 +277,11 @@ func (s *dispatcherTestSuite) SetupTest() {
 	}
 
 	// Register the integrations in the dispatcher
-	registeredIntegrations := sdk.AvailablePlugins{s.cdxIntegrationBackend, s.anyIntegrationBackend, s.ociIntegrationBackend}
-	s.dispatcher = New(s.Integration, nil, nil, mocks.NewCASClient(s.T()), registeredIntegrations, s.L)
+	registeredIntegrations := sdk.AvailablePlugins{s.cdxIntegrationBackend, s.containerIntegrationBackend, s.ociIntegrationBackend}
+	l := log.NewStdLogger(os.Stdout)
+
+	s.casClient = mocks.NewCASClient(s.T())
+	s.dispatcher = New(s.Integration, nil, nil, s.casClient, registeredIntegrations, l)
 }
 
 type mockedIntegration struct {
@@ -239,9 +293,10 @@ type mockedIntegration struct {
 type dispatcherTestSuite struct {
 	suite.Suite
 	testhelpers.UseCasesEachTestSuite
-	cdxIntegration, ociIntegration, anyIntegration                      *biz.Integration
-	cdxIntegrationBackend, ociIntegrationBackend, anyIntegrationBackend sdk.FanOut
-	org, emptyOrg                                                       *biz.Organization
-	workflow, emptyWorkflow                                             *biz.Workflow
-	dispatcher                                                          *FanOutDispatcher
+	cdxIntegration, ociIntegration, containerIntegration                      *biz.Integration
+	cdxIntegrationBackend, ociIntegrationBackend, containerIntegrationBackend sdk.FanOut
+	org, emptyOrg                                                             *biz.Organization
+	workflow, emptyWorkflow                                                   *biz.Workflow
+	dispatcher                                                                *FanOutDispatcher
+	casClient                                                                 *mocks.CASClient
 }
