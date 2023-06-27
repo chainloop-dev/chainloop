@@ -24,6 +24,8 @@ import (
 	"io"
 	"sort"
 
+	crv1 "github.com/google/go-containerregistry/pkg/v1"
+
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
@@ -135,7 +137,9 @@ type ExecuteInput struct {
 }
 
 type ExecuteAttestation struct {
-	Envelope  *dsse.Envelope
+	Envelope *dsse.Envelope
+	// Hash of the envelope
+	Hash      crv1.Hash
 	Statement *in_toto.Statement
 	Predicate chainloop.NormalizablePredicate
 }

@@ -97,8 +97,8 @@ func updateIntegrationsIndex(plugins sdk.AvailablePlugins) error {
 	// Replace the table
 	section := indexHeader + "\n\n" + indexTable + "\n"
 	// Find the content that starts with the indexHeader and contains a markdown table
-	// letters, |, _, -, \n, separators, ... are allowed between the indexHeader and the table
-	r := regexp.MustCompile(fmt.Sprintf("%s\n*[\\w|\\||\\-|\\s|\\.|_|\\[|\\]|\\(|\\)|\\/|:]*", indexHeader))
+	// letters, |, _, -, \n, separators (i.e comma, {, [, ...]}), ... are allowed between the indexHeader and the table
+	r := regexp.MustCompile(fmt.Sprintf("%s\n*[\\w|\\||\\-|\\s|\\.|_|\\,|\\[|\\]|\\(|\\)|\\/|:]*", indexHeader))
 
 	fileContent = r.ReplaceAllLiteral(fileContent, []byte(section))
 
