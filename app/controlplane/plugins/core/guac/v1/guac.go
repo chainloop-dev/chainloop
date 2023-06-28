@@ -152,14 +152,14 @@ func (i *Integration) Execute(ctx context.Context, req *sdk.ExecutionRequest) er
 		return fmt.Errorf("marshalling attestation: %w", err)
 	}
 
-	filename := uniqueFilename("attestation.json", req.Input.Attestation.Hash.Hex)
+	filename := uniqueFilename(pathPrefix, "attestation.json", req.Input.Attestation.Hash.Hex)
 	if err := uploadToBucket(ctx, bucket, filename, envelopeJSON, req.ChainloopMetadata, i.Logger); err != nil {
 		return fmt.Errorf("uploading the SBOM to the bucket: %w", err)
 	}
 
 	// 2 - Upload all the materials, in our case they are SBOMs
 	for _, sbom := range req.Input.Materials {
-		filename := uniqueFilename(sbom.Value, sbom.Hash.Hex)
+		filename := uniqueFilename(pathPrefix, sbom.Value, sbom.Hash.Hex)
 		if err := uploadToBucket(ctx, bucket, filename, sbom.Content, req.ChainloopMetadata, i.Logger); err != nil {
 			return fmt.Errorf("uploading the SBOM to the bucket: %w", err)
 		}
@@ -171,10 +171,16 @@ func (i *Integration) Execute(ctx context.Context, req *sdk.ExecutionRequest) er
 // Append the digest and the extension i.e
 // attestation-deadbeef.json
 // sbom-cyclone-dx-123-deadbeef.xml
-func uniqueFilename(filename string, digest string) string {
+func uniqueFilename(path, filename string, digest string) string {
 	// Find the file name at the end of the path without the extension
 	name := filepath.Base(strings.TrimSuffix(filename, filepath.Ext(filename)))
-	return fmt.Sprintf("%s-%s%s", name, digest, filepath.Ext(filename))
+	filename = fmt.Sprintf("%s-%s%s", name, digest, filepath.Ext(filename))
+
+	if path != "" {
+		filename = filepath.Join(path, filename)
+	}
+
+	return filename
 }
 
 // The path we use in the bucket to store the files i.e chainloop => chainloop/chainloop-deadbeef-sbom.json
@@ -182,7 +188,7 @@ const pathPrefix = "chainloop"
 
 // uploadToBucket uploads the provided content to the bucket under a deterministic, unique name (digest + filename)
 // It also sets the content type and additional metadata
-func uploadToBucket(ctx context.Context, bucket *storage.BucketHandle, fileName string, content []byte, md *sdk.ChainloopMetadata, logger *log.Helper) error {
+func uploadToBucket(ctx context.Context, bucket *storage.BucketHandle, filename string, content []byte, md *sdk.ChainloopMetadata, logger *log.Helper) error {
 	bucketInfo, err := bucket.Attrs(ctx)
 	if err != nil {
 		return fmt.Errorf("getting bucket info: %w", err)
@@ -190,15 +196,15 @@ func uploadToBucket(ctx context.Context, bucket *storage.BucketHandle, fileName 
 
 	buf := bytes.NewBuffer(content)
 	fileSize := uint64(buf.Len())
-	logger.Infow("msg", "writing to the bucket", "file", fileName, "bucket", bucketInfo.Name, "size", bytefmt.ByteSize(fileSize))
+	logger.Infow("msg", "writing to the bucket", "file", filename, "bucket", bucketInfo.Name, "size", bytefmt.ByteSize(fileSize))
 
-	w := bucket.Object(filepath.Join(pathPrefix, fileName)).NewWriter(ctx)
+	w := bucket.Object(filename).NewWriter(ctx)
 	defer w.Close()
 
 	// Set metadata and content type
 	// application/json can't be detected automatically by https://mimesniff.spec.whatwg.org/#supplied-mime-type-detection-algorithm
 	// If not set, the underlying library will try to sniff it automatically
-	if filepath.Ext(fileName) == ".json" {
+	if filepath.Ext(filename) == ".json" {
 		w.ObjectAttrs.ContentType = "application/json"
 	}
 
@@ -208,14 +214,14 @@ func uploadToBucket(ctx context.Context, bucket *storage.BucketHandle, fileName 
 		"workflowName":    md.WorkflowName,
 		"workflowProject": md.WorkflowProject,
 		"workflowRunID":   md.WorkflowRunID,
-		"filename":        fileName,
+		"filename":        filename,
 	}
 
 	if _, err := io.Copy(w, buf); err != nil {
 		return fmt.Errorf("writing to the bucket: %w", err)
 	}
 
-	logger.Infow("msg", "uploaded to the bucket", "file", fileName, "bucket", bucketInfo.Name, "size", bytefmt.ByteSize(fileSize))
+	logger.Infow("msg", "uploaded to the bucket", "file", filename, "bucket", bucketInfo.Name, "size", bytefmt.ByteSize(fileSize))
 
 	return nil
 }

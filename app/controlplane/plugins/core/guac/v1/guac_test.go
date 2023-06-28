@@ -17,7 +17,6 @@ package guac
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"testing"
 
@@ -75,7 +74,6 @@ func (s *testSuite) TestUpload() {
 	got := bucket.Object("sbom.json")
 	attrs, err := got.Attrs(context.Background())
 	require.NoError(s.T(), err)
-	fmt.Println(attrs)
 
 	// Content
 	assert.Equal(s.T(), int64(len(content)), attrs.Size)
@@ -95,16 +93,18 @@ func (s *testSuite) TestUpload() {
 
 func (s *testSuite) TestUniqueFilename() {
 	testCases := []struct {
+		path     string
 		filename string
 		expected string
 	}{
-		{"sbom.json", "sbom-deadbeef.json"},
-		{"attestation.json", "attestation-deadbeef.json"},
-		{"sbom-cyclone-dx-123.xml", "sbom-cyclone-dx-123-deadbeef.xml"},
+		{"", "sbom.json", "sbom-deadbeef.json"},
+		{"", "attestation.json", "attestation-deadbeef.json"},
+		{"", "sbom-cyclone-dx-123.xml", "sbom-cyclone-dx-123-deadbeef.xml"},
+		{"path", "attestation.json", "path/attestation-deadbeef.json"},
 	}
 
 	for _, tc := range testCases {
-		got := uniqueFilename(tc.filename, "deadbeef")
+		got := uniqueFilename(tc.path, tc.filename, "deadbeef")
 		assert.Equal(s.T(), tc.expected, got)
 	}
 }
