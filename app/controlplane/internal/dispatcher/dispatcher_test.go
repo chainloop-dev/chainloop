@@ -48,7 +48,36 @@ var integrationInfoBuilder = func(b sdk.FanOut) *dispatchItem {
 	}
 }
 
-func (s *dispatcherTestSuite) TestLoadInputs() {
+func (s *dispatcherTestSuite) TestLoadInputsEnvelope() {
+	queue := dispatchQueue{integrationInfoBuilder(s.ociIntegrationBackend)}
+	envelope, err := testEnvelope("testdata/attestation.json")
+	require.NoError(s.T(), err)
+
+	err = s.dispatcher.loadInputs(context.TODO(), queue, envelope, "secret-name")
+	assert.NoError(s.T(), err)
+
+	// Only one integration is registered
+	require.Len(s.T(), queue, 1)
+
+	// Check that the integration is the OCI one
+	dispatchItem := queue[0]
+	assert.Equal(s.T(), s.ociIntegrationBackend, dispatchItem.plugin)
+
+	got := dispatchItem.attestation
+	require.NotNil(s.T(), got)
+
+	// It contains the envelope and its hash
+	assert.Equal(s.T(), envelope, got.Envelope)
+	assert.Equal(s.T(), "33683275ee73f7f019d57b7522dfdfa1eb737b6a7c61e9c4dc2a03a48ef6e1ef", got.Hash.Hex)
+
+	// And the statement and predicate
+	assert.NotNil(s.T(), got.Statement)
+	assert.NotNil(s.T(), got.Predicate)
+	// And it contains the actual information from the envelope
+	assert.Len(s.T(), got.Predicate.GetMaterials(), 3)
+}
+
+func (s *dispatcherTestSuite) TestLoadInputsMaterials() {
 	queue := dispatchQueue{
 		integrationInfoBuilder(s.ociIntegrationBackend),
 		integrationInfoBuilder(s.containerIntegrationBackend),

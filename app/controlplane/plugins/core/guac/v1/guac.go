@@ -90,7 +90,12 @@ func (i *Integration) Register(ctx context.Context, req *sdk.RegistrationRequest
 	}
 
 	// Check that the credentials are valid and the bucket exists
-	_, err := loadBucket(ctx, request.Credentials, request.Bucket)
+	client, err := storage.NewClient(ctx, option.WithCredentialsJSON([]byte(request.Credentials)))
+	if err != nil {
+		return nil, fmt.Errorf("creating storage client: %w", err)
+	}
+
+	_, err = loadBucket(ctx, client, request.Bucket)
 	if err != nil {
 		return nil, err
 	}
@@ -130,9 +135,14 @@ func (i *Integration) Execute(ctx context.Context, req *sdk.ExecutionRequest) er
 		return fmt.Errorf("invalid registration configuration %w", err)
 	}
 
-	bucket, err := loadBucket(ctx, req.RegistrationInfo.Credentials.Password, registrationConfig.Bucket)
+	client, err := storage.NewClient(ctx, option.WithCredentialsJSON([]byte(req.RegistrationInfo.Credentials.Password)))
 	if err != nil {
 		return fmt.Errorf("creating storage client: %w", err)
+	}
+
+	bucket, err := loadBucket(ctx, client, registrationConfig.Bucket)
+	if err != nil {
+		return fmt.Errorf("loading bucket: %w", err)
 	}
 
 	// 1 - Upload the attestation
@@ -210,23 +220,14 @@ func uploadToBucket(ctx context.Context, bucket *storage.BucketHandle, fileName 
 // 1. The credentials are valid
 // 2. The bucket exists
 // 3. The credentials have write permissions
-func loadBucket(ctx context.Context, credentials, bucket string) (*storage.BucketHandle, error) {
-	if credentials == "" {
-		return nil, errors.New("no credentials provided")
-	}
-
+func loadBucket(ctx context.Context, client *storage.Client, bucket string) (*storage.BucketHandle, error) {
 	if bucket == "" {
 		return nil, errors.New("no bucket provided")
 	}
 
-	client, err := storage.NewClient(ctx, option.WithCredentialsJSON([]byte(credentials)))
-	if err != nil {
-		return nil, fmt.Errorf("creating storage client: %w", err)
-	}
-
 	// Check that the bucket exists
 	b := client.Bucket(bucket)
-	_, err = b.Attrs(ctx)
+	_, err := b.Attrs(ctx)
 	if err != nil {
 		if errors.Is(err, storage.ErrBucketNotExist) {
 			return nil, fmt.Errorf("the bucket %s does not exist", bucket)
