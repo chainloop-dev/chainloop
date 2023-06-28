@@ -97,8 +97,8 @@ func updateIntegrationsIndex(plugins sdk.AvailablePlugins) error {
 	// Replace the table
 	section := indexHeader + "\n\n" + indexTable + "\n"
 	// Find the content that starts with the indexHeader and contains a markdown table
-	// letters, |, _, -, \n, separators, ... are allowed between the indexHeader and the table
-	r := regexp.MustCompile(fmt.Sprintf("%s\n*[\\w|\\||\\-|\\s|\\.|_|\\[|\\]|\\(|\\)|\\/|:]*", indexHeader))
+	// letters, |, _, -, \n, separators (i.e comma, {, [, ...]}), ... are allowed between the indexHeader and the table
+	r := regexp.MustCompile(fmt.Sprintf("%s\n*[\\w|\\||\\-|\\s|\\.|_|\\,|\\[|\\]|\\(|\\)|\\/|:]*", indexHeader))
 
 	fileContent = r.ReplaceAllLiteral(fileContent, []byte(section))
 
@@ -173,7 +173,23 @@ func addSchemaToSection(src []byte, sectionHeader string, schema []byte) ([]byte
 		return nil, err
 	}
 
-	propertiesTable, err := renderSchemaTable(schema)
+	s, err := sdk.CompileJSONSchema(schema)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile schema: %w", err)
+	}
+
+	properties := make(sdk.SchemaPropertiesMap)
+	err = sdk.CalculatePropertiesMap(s, &properties)
+	if err != nil {
+		return nil, fmt.Errorf("failed to calculate properties map: %w", err)
+	}
+
+	// Return original content if there is no properties
+	if len(properties) == 0 {
+		return src, nil
+	}
+
+	propertiesTable, err := renderSchemaTable(properties)
 	if err != nil {
 		return nil, err
 	}
@@ -189,18 +205,7 @@ func addSchemaToSection(src []byte, sectionHeader string, schema []byte) ([]byte
 	return append(src, []byte("\n\n"+inputSection)...), nil
 }
 
-func renderSchemaTable(schemaRaw []byte) (string, error) {
-	schema, err := sdk.CompileJSONSchema(schemaRaw)
-	if err != nil {
-		return "", fmt.Errorf("failed to compile schema: %w", err)
-	}
-
-	properties := make(sdk.SchemaPropertiesMap)
-	err = sdk.CalculatePropertiesMap(schema, &properties)
-	if err != nil {
-		return "", fmt.Errorf("failed to calculate properties map: %w", err)
-	}
-
+func renderSchemaTable(properties sdk.SchemaPropertiesMap) (string, error) {
 	if len(properties) == 0 {
 		return "", nil
 	}

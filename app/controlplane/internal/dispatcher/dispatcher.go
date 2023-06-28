@@ -18,9 +18,12 @@ package dispatcher
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
+
+	crv1 "github.com/google/go-containerregistry/pkg/v1"
 
 	"github.com/cenkalti/backoff/v4"
 
@@ -184,8 +187,23 @@ func (d *FanOutDispatcher) loadInputs(ctx context.Context, queue dispatchQueue, 
 		return fmt.Errorf("extracting predicate: %w", err)
 	}
 
+	// Calculate the attestation hash
+	jsonAtt, err := json.Marshal(att)
+	if err != nil {
+		return fmt.Errorf("marshaling attestation: %w", err)
+	}
+
+	// Using this library to calculate the hash because it allows us transport the digest
+	// both the hash and the algorithm in a structured way
+	// Also, by using it we are consistent with the way we pass the hash associated to the materials to plugins downstream
+	h, _, err := crv1.SHA256(bytes.NewBuffer(jsonAtt))
+	if err != nil {
+		return fmt.Errorf("calculating attestation hash: %w", err)
+	}
+
 	var attestationInput = &sdk.ExecuteAttestation{
 		Envelope:  att,
+		Hash:      h,
 		Statement: statement,
 		Predicate: predicate,
 	}

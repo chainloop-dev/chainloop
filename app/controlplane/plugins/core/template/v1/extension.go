@@ -25,6 +25,8 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 )
 
+// Integration implements of a FanOut integration
+// See https://github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/README.md for more information
 type Integration struct {
 	*sdk.FanOutIntegration
 }
@@ -62,10 +64,6 @@ func New(l log.Logger) (sdk.FanOut, error) {
 		// You can specify the inputs this attestation will be subscribed to, materials and or attestation envelope.
 		// In this case we are subscribing to SBOM_CYCLONEDX_JSON
 		sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON),
-		// You can also subscribed to any kind of materials
-		// sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED),
-		// Or to the actual attestation
-		// sdk.WithEnvelope(),
 	)
 
 	if err != nil {
