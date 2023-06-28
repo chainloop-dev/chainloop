@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"strings"
 
 	"cloud.google.com/go/storage"
 	"code.cloudfoundry.org/bytefmt"
@@ -122,17 +123,17 @@ func (i *Integration) Attach(_ context.Context, _ *sdk.AttachmentRequest) (*sdk.
 	return &sdk.AttachmentResponse{}, nil
 }
 
-const filePrefix = "chainloop"
-
 // Execute will be instantiate when either an attestation or a material has been received
 // It's up to the plugin builder to differentiate between inputs
 func (i *Integration) Execute(ctx context.Context, req *sdk.ExecutionRequest) error {
-	i.Logger.Info("execution requested")
-
 	// Extract registration and attachment configuration if needed
 	var registrationConfig *registrationState
 	if err := sdk.FromConfig(req.RegistrationInfo.Configuration, &registrationConfig); err != nil {
 		return fmt.Errorf("invalid registration configuration %w", err)
+	}
+
+	if req.RegistrationInfo.Credentials == nil || req.RegistrationInfo.Credentials.Password == "" {
+		return errors.New("missing expected credentials")
 	}
 
 	client, err := storage.NewClient(ctx, option.WithCredentialsJSON([]byte(req.RegistrationInfo.Credentials.Password)))
@@ -151,30 +152,33 @@ func (i *Integration) Execute(ctx context.Context, req *sdk.ExecutionRequest) er
 		return fmt.Errorf("marshalling attestation: %w", err)
 	}
 
-	// chainloop-deadbeef-attestation.json
-	fileName := fmt.Sprintf("%s-%s-attestation.json", filePrefix, req.Input.Attestation.Hash.Hex)
-	if err := uploadToBucket(ctx, bucket, fileName, envelopeJSON, req.ChainloopMetadata, i.Logger); err != nil {
+	filename := uniqueFilename("attestation.json", req.Input.Attestation.Hash.Hex)
+	if err := uploadToBucket(ctx, bucket, filename, envelopeJSON, req.ChainloopMetadata, i.Logger); err != nil {
 		return fmt.Errorf("uploading the SBOM to the bucket: %w", err)
 	}
 
 	// 2 - Upload all the materials, in our case they are SBOMs
 	for _, sbom := range req.Input.Materials {
-		// Validate that in fact they are SBOMs
-		if err := validateExecuteOpts(sbom, req.RegistrationInfo, req.AttachmentInfo); err != nil {
-			i.Logger.Warnw("msg", "invalid material received", "err", err)
-			continue
-		}
-
-		// chainloop-deadbeef-sbom.json
-		fileName := fmt.Sprintf("%s-%s-%s", filePrefix, sbom.Hash.Hex, sbom.Value)
-		if err := uploadToBucket(ctx, bucket, fileName, sbom.Content, req.ChainloopMetadata, i.Logger); err != nil {
+		filename := uniqueFilename(sbom.Value, sbom.Hash.Hex)
+		if err := uploadToBucket(ctx, bucket, filename, sbom.Content, req.ChainloopMetadata, i.Logger); err != nil {
 			return fmt.Errorf("uploading the SBOM to the bucket: %w", err)
 		}
 	}
 
-	i.Logger.Info("execution finished")
 	return nil
 }
+
+// Append the digest and the extension i.e
+// attestation-deadbeef.json
+// sbom-cyclone-dx-123-deadbeef.xml
+func uniqueFilename(filename string, digest string) string {
+	// Find the file name at the end of the path without the extension
+	name := filepath.Base(strings.TrimSuffix(filename, filepath.Ext(filename)))
+	return fmt.Sprintf("%s-%s%s", name, digest, filepath.Ext(filename))
+}
+
+// The path we use in the bucket to store the files i.e chainloop => chainloop/chainloop-deadbeef-sbom.json
+const pathPrefix = "chainloop"
 
 // uploadToBucket uploads the provided content to the bucket under a deterministic, unique name (digest + filename)
 // It also sets the content type and additional metadata
@@ -188,7 +192,7 @@ func uploadToBucket(ctx context.Context, bucket *storage.BucketHandle, fileName 
 	fileSize := uint64(buf.Len())
 	logger.Infow("msg", "writing to the bucket", "file", fileName, "bucket", bucketInfo.Name, "size", bytefmt.ByteSize(fileSize))
 
-	w := bucket.Object(fileName).NewWriter(ctx)
+	w := bucket.Object(filepath.Join(pathPrefix, fileName)).NewWriter(ctx)
 	defer w.Close()
 
 	// Set metadata and content type
@@ -244,25 +248,4 @@ func loadBucket(ctx context.Context, client *storage.Client, bucket string) (*st
 	_ = testFile.Delete(ctx)
 
 	return b, nil
-}
-
-// validateExecuteOpts validates that we receive all the required options, from materials to credentials
-func validateExecuteOpts(m *sdk.ExecuteMaterial, regConfig *sdk.RegistrationResponse, _ *sdk.AttachmentResponse) error {
-	if m == nil || m.Content == nil {
-		return errors.New("invalid input")
-	}
-
-	if m.Type != schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON.String() && m.Type != schemaapi.CraftingSchema_Material_SBOM_SPDX_JSON.String() {
-		return fmt.Errorf("invalid input type: %s", m.Type)
-	}
-
-	if regConfig == nil || regConfig.Configuration == nil {
-		return errors.New("missing registration configuration")
-	}
-
-	if regConfig.Credentials == nil || regConfig.Credentials.Password == "" {
-		return errors.New("missing credentials")
-	}
-
-	return nil
 }

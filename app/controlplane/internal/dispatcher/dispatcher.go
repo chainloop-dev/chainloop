@@ -193,6 +193,9 @@ func (d *FanOutDispatcher) loadInputs(ctx context.Context, queue dispatchQueue, 
 		return fmt.Errorf("marshaling attestation: %w", err)
 	}
 
+	// Using this library to calculate the hash because it allows us transport the digest
+	// both the hash and the algorithm in a structured way
+	// Also, by using it we are consistent with the way we pass the hash associated to the materials to plugins downstream
 	h, _, err := crv1.SHA256(bytes.NewBuffer(jsonAtt))
 	if err != nil {
 		return fmt.Errorf("calculating attestation hash: %w", err)

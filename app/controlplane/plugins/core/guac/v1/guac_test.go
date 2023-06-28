@@ -93,6 +93,22 @@ func (s *testSuite) TestUpload() {
 	assert.Equal(s.T(), "application/json", attrs.ContentType)
 }
 
+func (s *testSuite) TestUniqueFilename() {
+	testCases := []struct {
+		filename string
+		expected string
+	}{
+		{"sbom.json", "sbom-deadbeef.json"},
+		{"attestation.json", "attestation-deadbeef.json"},
+		{"sbom-cyclone-dx-123.xml", "sbom-cyclone-dx-123-deadbeef.xml"},
+	}
+
+	for _, tc := range testCases {
+		got := uniqueFilename(tc.filename, "deadbeef")
+		assert.Equal(s.T(), tc.expected, got)
+	}
+}
+
 type testSuite struct {
 	suite.Suite
 	client *storage.Client
