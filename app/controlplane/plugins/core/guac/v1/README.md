@@ -2,7 +2,7 @@
 
 Graph for Understanding Artifact Composition ([GUAC](https://github.com/guacsec/guac)) aggregates software security metadata into a high fidelity graph database—normalizing entity identities and mapping standard relationships between them. Querying this graph can drive higher-level organizational outcomes such as audit, policy, risk management, and even developer assistance.
 
-This integration allows Chainloop users to automatically send attestation (DSSE envelopes / in-toto statements) and CycloneDX/SPDX Software Bill Of Materials (SBOMs) to a cloud storage bucket staging area. From there, GUAC can be configured to continuously monitor and inject that data.
+This integration allows Chainloop users to automatically send attestation (DSSE envelopes / in-toto statements) and CycloneDX/SPDX Software Bill Of Materials (SBOMs) to a cloud storage bucket staging area. From there, GUAC can be configured to continuously monitor and inject that data. Compatible with Guac v0.1.0 beta or newer.
 
 ![GUAC integration](./img/overview.png)
 
