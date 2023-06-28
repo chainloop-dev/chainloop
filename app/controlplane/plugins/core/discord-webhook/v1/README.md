@@ -51,15 +51,3 @@ chainloop integration attached add --workflow $WID --integration $IID
   ]
 }
 ```
-
-## Attachment Input Schema
-
-```json
-{
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/chainloop-dev/chainloop/app/controlplane/plugins/core/discord-webhook/v1/attachment-request",
-  "properties": {},
-  "additionalProperties": false,
-  "type": "object"
-}
-```

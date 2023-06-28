@@ -6,27 +6,35 @@ This integration allows Chainloop users to automatically send attestation (DSSE 
 
 ![GUAC integration](./img/overview.png)
 
-Currently, the integration only supports [Google Cloud Storage](https://cloud.google.com/storage) (GCS) as a storage provider.
 
 ## How to use it
 
-### Requirements
+Currently, this integration only supports [Google Cloud Storage](https://cloud.google.com/storage) (GCS) as a storage provider with more to come in the future. If you are interested in a specific provider, please [let us know](https://github.com/chainloop-dev/chainloop/issues/new)
+
+
+### Chainloop setup
+#### Using Google Cloud Platform
+
+**Prerequisites**
 
 - A Google Cloud Platform (GCP) account
 - A GCP project with a GCS bucket
 - A GCP service account with write access to the bucket. See [Creating and managing service accounts](https://cloud.google.com/iam/docs/creating-managing-service-accounts) for more information. 
 - Once create, download the service account [JSON credentials file](https://developers.google.com/workspace/guides/create-credentials#create_credentials_for_a_service_account)
 
-### Chainloop setup
+
+**Registration**
 
 To get started, you need to register the plugin in your Chainloop organization.
 
 ```sh
-$ chainloop integration registered add guac --opt bucket=[my-bucket-name] --opt credentials=[credentials-content]
+$ chainloop integration registered add guac --opt bucket=[my-bucket-name] --opt credentials=[credentials-content] --opt provider=gcs
 
-# example
-$ chainloop integration registered add guac --opt bucket=test-guac --opt credentials="$(cat ./service-account-devel.json)"   
+# Example
+$ chainloop integration registered add guac --opt bucket=test-guac --opt credentials="$(cat ./service-account-devel.json)" --opt provider=gcs
 ```
+
+**Attachment**
 
 Then, in order to use the integration, you need to attach it to a workflow by providing the IDs of the workflow and integration you just registered.
 
@@ -80,17 +88,5 @@ Refer to https://github.com/guacsec/guac documentation to learn how to setup GUA
     "bucket",
     "credentials"
   ]
-}
-```
-
-## Attachment Input Schema
-
-```json
-{
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/chainloop-dev/chainloop/app/controlplane/plugins/core/guac/v1/attachment-request",
-  "properties": {},
-  "additionalProperties": false,
-  "type": "object"
 }
 ```
