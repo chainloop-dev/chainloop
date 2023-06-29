@@ -19,7 +19,7 @@ jobs:
       packages: write # to push container images
       pull-requests: write
     env:
-      CHAINLOOP_VERSION: 0.9.1
+      CHAINLOOP_VERSION: 0.12.0
       CHAINLOOP_ROBOT_ACCOUNT: ${{ secrets.CHAINLOOP_ROBOT_ACCOUNT }}
       CONTAINER_IMAGE_CP: ghcr.io/chainloop-dev/chainloop/control-plane:${{ github.ref_name }}
       CONTAINER_IMAGE_CAS: ghcr.io/chainloop-dev/chainloop/artifact-cas:${{ github.ref_name }}
