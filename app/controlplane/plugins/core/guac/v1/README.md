@@ -8,6 +8,8 @@ Chainloop users can **automatically send signed [in-toto](https://in-toto.io/) a
 
 ## Demo
 
+You can see a demo of this integration in action in the following video:
+
 <a href="http://www.youtube.com/watch?feature=player_embedded&v=XEeMeyC9ZJs" target="_blank">
   <img src="http://img.youtube.com/vi/XEeMeyC9ZJs/0.jpg" alt="Use Guac with Chainloop" width="100%" height="500" border="10" />
 </a>
