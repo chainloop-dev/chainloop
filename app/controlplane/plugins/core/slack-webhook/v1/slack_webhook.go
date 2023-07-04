@@ -41,9 +41,6 @@ type registrationRequest struct {
 
 type attachmentRequest struct{}
 
-// 2 - Configuration state
-type registrationState struct{}
-
 func New(l log.Logger) (sdk.FanOut, error) {
 	base, err := sdk.NewFanOut(
 		&sdk.NewParams{
@@ -78,14 +75,7 @@ func (i *Integration) Register(_ context.Context, req *sdk.RegistrationRequest) 
 		return nil, fmt.Errorf("error validating a webhook: %w", err)
 	}
 
-	// Configuration State
-	config, err := sdk.ToConfig(&registrationState{})
-	if err != nil {
-		return nil, fmt.Errorf("marshalling configuration: %w", err)
-	}
-
 	return &sdk.RegistrationResponse{
-		Configuration: config,
 		// We treat the webhook URL as a sensitive field so we store it in the credentials storage
 		Credentials: &sdk.Credentials{Password: request.WebhookURL},
 	}, nil
@@ -104,11 +94,6 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 
 	if err := validateExecuteRequest(req); err != nil {
 		return fmt.Errorf("running validation: %w", err)
-	}
-
-	var config *registrationState
-	if err := sdk.FromConfig(req.RegistrationInfo.Configuration, &config); err != nil {
-		return fmt.Errorf("invalid registration config: %w", err)
 	}
 
 	attestationJSON, err := json.MarshalIndent(req.Input.Attestation.Statement, "", "  ")
@@ -172,7 +157,7 @@ func validateExecuteRequest(req *sdk.ExecutionRequest) error {
 		return errors.New("execution input invalid, envelope is nil")
 	}
 
-	if req.RegistrationInfo == nil || req.RegistrationInfo.Configuration == nil {
+	if req.RegistrationInfo == nil {
 		return errors.New("missing registration configuration")
 	}
 
