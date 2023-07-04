@@ -147,7 +147,7 @@ func (i *Integration) Attach(_ context.Context, req *sdk.AttachmentRequest) (*sd
 	return response, nil
 }
 
-// Execute will be instantiate when either an attestation or a material has been received
+// Execute will be instantiated when either an attestation or a material has been received
 // It's up to the plugin builder to differentiate between inputs
 func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) error {
 	i.Logger.Info("execution requested")
