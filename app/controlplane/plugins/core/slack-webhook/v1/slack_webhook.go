@@ -148,6 +148,7 @@ func executeWebhook(webhookURL, msgContent string) error {
 
 	requestBody := bytes.NewReader(jsonPayload)
 
+	// #nosec G107 - we are using a constant API URL that is not user input at this stage
 	r, err := http.Post(webhookURL, "application/json", requestBody)
 	if err != nil {
 		return fmt.Errorf("error making request: %w", err)
