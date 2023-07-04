@@ -102,6 +102,7 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 	}
 
 	metadata := req.ChainloopMetadata
+	// I was not able to make backticks work in the template
 	a := fmt.Sprintf("\n```\n%s\n```\n", string(attestationJSON))
 	tplData := &templateContent{
 		WorkflowID:      metadata.WorkflowID,
