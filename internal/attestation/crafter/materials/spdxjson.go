@@ -23,8 +23,9 @@ import (
 	api "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
+	"github.com/spdx/tools-golang/json"
+
 	"github.com/rs/zerolog"
-	spdx "github.com/spdx/tools-golang/jsonloader"
 )
 
 type SPDXJSONCrafter struct {
@@ -51,7 +52,7 @@ func (i *SPDXJSONCrafter) Craft(ctx context.Context, filePath string) (*api.Atte
 	defer f.Close()
 
 	// Decode the file to check it's a valid SPDX BOM
-	_, err = spdx.Load2_2(f)
+	_, err = json.Read(f)
 	if err != nil {
 		i.logger.Debug().Err(err).Msg("error decoding file")
 		return nil, fmt.Errorf("invalid spdx sbom file: %w", ErrInvalidMaterialType)
