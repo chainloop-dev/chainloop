@@ -23,11 +23,12 @@ import (
 	"testing"
 	"time"
 
-	// Requuired for the database waitFor strategy
+	// Required for the database waitFor strategy
 	_ "github.com/lib/pq"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	creds "github.com/chainloop-dev/chainloop/internal/credentials/mocks"
@@ -45,8 +46,9 @@ import (
 // NOTE: It connects to a real database
 type TestingUseCases struct {
 	// Misc
-	DB *TestDatabase
-	L  log.Logger
+	DB   *TestDatabase
+	Data *data.Data
+	L    log.Logger
 
 	// Use cases
 	Membership             *biz.MembershipUseCase
@@ -100,6 +102,9 @@ func NewTestingUseCases(t *testing.T, opts ...NewTestingUCOpt) *TestingUseCases 
 		CasRobotAccountPrivateKeyPath: "./testdata/test-key.ec.pem",
 	}, newArgs.integrations)
 	assert.NoError(t, err)
+
+	// Run DB migrations for testing
+	require.NoError(t, testData.Data.SchemaLoad())
 
 	return testData
 }
