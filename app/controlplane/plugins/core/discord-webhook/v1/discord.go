@@ -97,7 +97,7 @@ func (i *Integration) Register(_ context.Context, req *sdk.RegistrationRequest) 
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("invalid webhook URL")
+		return nil, fmt.Errorf("invalid webhook URL, status: %s", resp.Status)
 	}
 
 	var webHookInfo webhookResponse
