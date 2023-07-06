@@ -29,12 +29,6 @@ func (orc *OCIRepositoryCreate) SetRepo(s string) *OCIRepositoryCreate {
 	return orc
 }
 
-// SetProvider sets the "provider" field.
-func (orc *OCIRepositoryCreate) SetProvider(s string) *OCIRepositoryCreate {
-	orc.mutation.SetProvider(s)
-	return orc
-}
-
 // SetSecretName sets the "secret_name" field.
 func (orc *OCIRepositoryCreate) SetSecretName(s string) *OCIRepositoryCreate {
 	orc.mutation.SetSecretName(s)
@@ -166,9 +160,6 @@ func (orc *OCIRepositoryCreate) check() error {
 	if _, ok := orc.mutation.Repo(); !ok {
 		return &ValidationError{Name: "repo", err: errors.New(`ent: missing required field "OCIRepository.repo"`)}
 	}
-	if _, ok := orc.mutation.Provider(); !ok {
-		return &ValidationError{Name: "provider", err: errors.New(`ent: missing required field "OCIRepository.provider"`)}
-	}
 	if _, ok := orc.mutation.SecretName(); !ok {
 		return &ValidationError{Name: "secret_name", err: errors.New(`ent: missing required field "OCIRepository.secret_name"`)}
 	}
@@ -227,10 +218,6 @@ func (orc *OCIRepositoryCreate) createSpec() (*OCIRepository, *sqlgraph.CreateSp
 	if value, ok := orc.mutation.Repo(); ok {
 		_spec.SetField(ocirepository.FieldRepo, field.TypeString, value)
 		_node.Repo = value
-	}
-	if value, ok := orc.mutation.Provider(); ok {
-		_spec.SetField(ocirepository.FieldProvider, field.TypeString, value)
-		_node.Provider = value
 	}
 	if value, ok := orc.mutation.SecretName(); ok {
 		_spec.SetField(ocirepository.FieldSecretName, field.TypeString, value)

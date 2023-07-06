@@ -22,8 +22,6 @@ type OCIRepository struct {
 	ID uuid.UUID `json:"id,omitempty"`
 	// Repo holds the value of the "repo" field.
 	Repo string `json:"repo,omitempty"`
-	// Provider holds the value of the "provider" field.
-	Provider string `json:"provider,omitempty"`
 	// SecretName holds the value of the "secret_name" field.
 	SecretName string `json:"secret_name,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -66,7 +64,7 @@ func (*OCIRepository) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case ocirepository.FieldRepo, ocirepository.FieldProvider, ocirepository.FieldSecretName, ocirepository.FieldValidationStatus:
+		case ocirepository.FieldRepo, ocirepository.FieldSecretName, ocirepository.FieldValidationStatus:
 			values[i] = new(sql.NullString)
 		case ocirepository.FieldCreatedAt, ocirepository.FieldValidatedAt:
 			values[i] = new(sql.NullTime)
@@ -100,12 +98,6 @@ func (or *OCIRepository) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field repo", values[i])
 			} else if value.Valid {
 				or.Repo = value.String
-			}
-		case ocirepository.FieldProvider:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field provider", values[i])
-			} else if value.Valid {
-				or.Provider = value.String
 			}
 		case ocirepository.FieldSecretName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -181,9 +173,6 @@ func (or *OCIRepository) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v, ", or.ID))
 	builder.WriteString("repo=")
 	builder.WriteString(or.Repo)
-	builder.WriteString(", ")
-	builder.WriteString("provider=")
-	builder.WriteString(or.Provider)
 	builder.WriteString(", ")
 	builder.WriteString("secret_name=")
 	builder.WriteString(or.SecretName)

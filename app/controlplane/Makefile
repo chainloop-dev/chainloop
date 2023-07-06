@@ -20,8 +20,22 @@ build:
 
 .PHONY: run
 # run
-run:
+run: migration_apply
 	go run ./cmd/... --conf ./configs
+
+local_migrations_dir = file://internal/data/ent/migrate/migrations
+local_db = postgres://postgres:@localhost:5432/controlplane?sslmode=disable
+
+.PHONY: migration_apply
+# run migrations against local db
+migration_apply:
+	atlas migrate status --dir ${local_migrations_dir} --url ${local_db}
+	atlas migrate apply --dir ${local_migrations_dir} --url ${local_db}
+
+.PHONY: migration_new
+# generate new migration if needed from the current ent schema
+migration_new:
+	atlas migrate diff --dir ${local_migrations_dir} --to "ent://internal/data/ent/schema" --dev-url "docker://postgres/15/test?search_path=public"
 
 .PHONY: test
 # All tests, both unit and integration

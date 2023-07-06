@@ -37,12 +37,6 @@ func (oru *OCIRepositoryUpdate) SetRepo(s string) *OCIRepositoryUpdate {
 	return oru
 }
 
-// SetProvider sets the "provider" field.
-func (oru *OCIRepositoryUpdate) SetProvider(s string) *OCIRepositoryUpdate {
-	oru.mutation.SetProvider(s)
-	return oru
-}
-
 // SetSecretName sets the "secret_name" field.
 func (oru *OCIRepositoryUpdate) SetSecretName(s string) *OCIRepositoryUpdate {
 	oru.mutation.SetSecretName(s)
@@ -154,9 +148,6 @@ func (oru *OCIRepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) 
 	if value, ok := oru.mutation.Repo(); ok {
 		_spec.SetField(ocirepository.FieldRepo, field.TypeString, value)
 	}
-	if value, ok := oru.mutation.Provider(); ok {
-		_spec.SetField(ocirepository.FieldProvider, field.TypeString, value)
-	}
 	if value, ok := oru.mutation.SecretName(); ok {
 		_spec.SetField(ocirepository.FieldSecretName, field.TypeString, value)
 	}
@@ -218,12 +209,6 @@ type OCIRepositoryUpdateOne struct {
 // SetRepo sets the "repo" field.
 func (oruo *OCIRepositoryUpdateOne) SetRepo(s string) *OCIRepositoryUpdateOne {
 	oruo.mutation.SetRepo(s)
-	return oruo
-}
-
-// SetProvider sets the "provider" field.
-func (oruo *OCIRepositoryUpdateOne) SetProvider(s string) *OCIRepositoryUpdateOne {
-	oruo.mutation.SetProvider(s)
 	return oruo
 }
 
@@ -367,9 +352,6 @@ func (oruo *OCIRepositoryUpdateOne) sqlSave(ctx context.Context) (_node *OCIRepo
 	}
 	if value, ok := oruo.mutation.Repo(); ok {
 		_spec.SetField(ocirepository.FieldRepo, field.TypeString, value)
-	}
-	if value, ok := oruo.mutation.Provider(); ok {
-		_spec.SetField(ocirepository.FieldProvider, field.TypeString, value)
 	}
 	if value, ok := oruo.mutation.SecretName(); ok {
 		_spec.SetField(ocirepository.FieldSecretName, field.TypeString, value)

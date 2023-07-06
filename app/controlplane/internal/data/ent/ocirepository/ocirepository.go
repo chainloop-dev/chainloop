@@ -19,8 +19,6 @@ const (
 	FieldID = "id"
 	// FieldRepo holds the string denoting the repo field in the database.
 	FieldRepo = "repo"
-	// FieldProvider holds the string denoting the provider field in the database.
-	FieldProvider = "provider"
 	// FieldSecretName holds the string denoting the secret_name field in the database.
 	FieldSecretName = "secret_name"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -46,7 +44,6 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldRepo,
-	FieldProvider,
 	FieldSecretName,
 	FieldCreatedAt,
 	FieldValidationStatus,
@@ -106,11 +103,6 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 // ByRepo orders the results by the repo field.
 func ByRepo(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRepo, opts...).ToFunc()
-}
-
-// ByProvider orders the results by the provider field.
-func ByProvider(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldProvider, opts...).ToFunc()
 }
 
 // BySecretName orders the results by the secret_name field.
