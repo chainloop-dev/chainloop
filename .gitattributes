@@ -1,3 +1,6 @@
 app/controlplane/api/gen/frontend/** linguist-generated=true
 app/controlplane/internal/data/ent/** linguist-generated=true
+app/controlplane/internal/data/ent/migrate/** linguist-generated=false
+app/controlplane/internal/data/ent/migrate/** linguist-detectable=true
+app/controlplane/internal/data/ent/schema/* linguist-generated=false
 app/controlplane/internal/data/ent/schema/* linguist-detectable=true
