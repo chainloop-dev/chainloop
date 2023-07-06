@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
@@ -28,6 +29,7 @@ type RobotAccount struct {
 	// The values are being populated by the RobotAccountQuery when eager-loading is set.
 	Edges                  RobotAccountEdges `json:"edges"`
 	workflow_robotaccounts *uuid.UUID
+	selectValues           sql.SelectValues
 }
 
 // RobotAccountEdges holds the relations/edges for other nodes in the graph.
@@ -77,7 +79,7 @@ func (*RobotAccount) scanValues(columns []string) ([]any, error) {
 		case robotaccount.ForeignKeys[0]: // workflow_robotaccounts
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type RobotAccount", columns[i])
+			values[i] = new(sql.UnknownType)
 		}
 	}
 	return values, nil
@@ -122,9 +124,17 @@ func (ra *RobotAccount) assignValues(columns []string, values []any) error {
 				ra.workflow_robotaccounts = new(uuid.UUID)
 				*ra.workflow_robotaccounts = *value.S.(*uuid.UUID)
 			}
+		default:
+			ra.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
+}
+
+// Value returns the ent.Value that was dynamically selected and assigned to the RobotAccount.
+// This includes values selected through modifiers, order, etc.
+func (ra *RobotAccount) Value(name string) (ent.Value, error) {
+	return ra.selectValues.Get(name)
 }
 
 // QueryWorkflow queries the "workflow" edge of the RobotAccount entity.

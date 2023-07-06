@@ -25,7 +25,7 @@ import (
 type OrganizationQuery struct {
 	config
 	ctx                   *QueryContext
-	order                 []OrderFunc
+	order                 []organization.OrderOption
 	inters                []Interceptor
 	predicates            []predicate.Organization
 	withMemberships       *MembershipQuery
@@ -64,7 +64,7 @@ func (oq *OrganizationQuery) Unique(unique bool) *OrganizationQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (oq *OrganizationQuery) Order(o ...OrderFunc) *OrganizationQuery {
+func (oq *OrganizationQuery) Order(o ...organization.OrderOption) *OrganizationQuery {
 	oq.order = append(oq.order, o...)
 	return oq
 }
@@ -368,7 +368,7 @@ func (oq *OrganizationQuery) Clone() *OrganizationQuery {
 	return &OrganizationQuery{
 		config:                oq.config,
 		ctx:                   oq.ctx.Clone(),
-		order:                 append([]OrderFunc{}, oq.order...),
+		order:                 append([]organization.OrderOption{}, oq.order...),
 		inters:                append([]Interceptor{}, oq.inters...),
 		predicates:            append([]predicate.Organization{}, oq.predicates...),
 		withMemberships:       oq.withMemberships.Clone(),
@@ -593,7 +593,7 @@ func (oq *OrganizationQuery) loadMemberships(ctx context.Context, query *Members
 	}
 	query.withFKs = true
 	query.Where(predicate.Membership(func(s *sql.Selector) {
-		s.Where(sql.InValues(organization.MembershipsColumn, fks...))
+		s.Where(sql.InValues(s.C(organization.MembershipsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -606,7 +606,7 @@ func (oq *OrganizationQuery) loadMemberships(ctx context.Context, query *Members
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "organization_memberships" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "organization_memberships" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -624,7 +624,7 @@ func (oq *OrganizationQuery) loadWorkflowContracts(ctx context.Context, query *W
 	}
 	query.withFKs = true
 	query.Where(predicate.WorkflowContract(func(s *sql.Selector) {
-		s.Where(sql.InValues(organization.WorkflowContractsColumn, fks...))
+		s.Where(sql.InValues(s.C(organization.WorkflowContractsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -637,7 +637,7 @@ func (oq *OrganizationQuery) loadWorkflowContracts(ctx context.Context, query *W
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "organization_workflow_contracts" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "organization_workflow_contracts" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -655,7 +655,7 @@ func (oq *OrganizationQuery) loadWorkflows(ctx context.Context, query *WorkflowQ
 	}
 	query.withFKs = true
 	query.Where(predicate.Workflow(func(s *sql.Selector) {
-		s.Where(sql.InValues(organization.WorkflowsColumn, fks...))
+		s.Where(sql.InValues(s.C(organization.WorkflowsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -668,7 +668,7 @@ func (oq *OrganizationQuery) loadWorkflows(ctx context.Context, query *WorkflowQ
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "organization_id" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "organization_id" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -686,7 +686,7 @@ func (oq *OrganizationQuery) loadOciRepositories(ctx context.Context, query *OCI
 	}
 	query.withFKs = true
 	query.Where(predicate.OCIRepository(func(s *sql.Selector) {
-		s.Where(sql.InValues(organization.OciRepositoriesColumn, fks...))
+		s.Where(sql.InValues(s.C(organization.OciRepositoriesColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -699,7 +699,7 @@ func (oq *OrganizationQuery) loadOciRepositories(ctx context.Context, query *OCI
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "organization_oci_repositories" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "organization_oci_repositories" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -717,7 +717,7 @@ func (oq *OrganizationQuery) loadIntegrations(ctx context.Context, query *Integr
 	}
 	query.withFKs = true
 	query.Where(predicate.Integration(func(s *sql.Selector) {
-		s.Where(sql.InValues(organization.IntegrationsColumn, fks...))
+		s.Where(sql.InValues(s.C(organization.IntegrationsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -730,7 +730,7 @@ func (oq *OrganizationQuery) loadIntegrations(ctx context.Context, query *Integr
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "organization_integrations" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "organization_integrations" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

@@ -445,11 +445,7 @@ func HasRobotaccounts() predicate.Workflow {
 // HasRobotaccountsWith applies the HasEdge predicate on the "robotaccounts" edge with a given conditions (other predicates).
 func HasRobotaccountsWith(preds ...predicate.RobotAccount) predicate.Workflow {
 	return predicate.Workflow(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(RobotaccountsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, RobotaccountsTable, RobotaccountsColumn),
-		)
+		step := newRobotaccountsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -472,11 +468,7 @@ func HasWorkflowruns() predicate.Workflow {
 // HasWorkflowrunsWith applies the HasEdge predicate on the "workflowruns" edge with a given conditions (other predicates).
 func HasWorkflowrunsWith(preds ...predicate.WorkflowRun) predicate.Workflow {
 	return predicate.Workflow(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(WorkflowrunsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, WorkflowrunsTable, WorkflowrunsColumn),
-		)
+		step := newWorkflowrunsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -499,11 +491,7 @@ func HasOrganization() predicate.Workflow {
 // HasOrganizationWith applies the HasEdge predicate on the "organization" edge with a given conditions (other predicates).
 func HasOrganizationWith(preds ...predicate.Organization) predicate.Workflow {
 	return predicate.Workflow(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(OrganizationInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, OrganizationTable, OrganizationColumn),
-		)
+		step := newOrganizationStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -526,11 +514,7 @@ func HasContract() predicate.Workflow {
 // HasContractWith applies the HasEdge predicate on the "contract" edge with a given conditions (other predicates).
 func HasContractWith(preds ...predicate.WorkflowContract) predicate.Workflow {
 	return predicate.Workflow(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(ContractInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, ContractTable, ContractColumn),
-		)
+		step := newContractStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -553,11 +537,7 @@ func HasIntegrationAttachments() predicate.Workflow {
 // HasIntegrationAttachmentsWith applies the HasEdge predicate on the "integration_attachments" edge with a given conditions (other predicates).
 func HasIntegrationAttachmentsWith(preds ...predicate.IntegrationAttachment) predicate.Workflow {
 	return predicate.Workflow(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(IntegrationAttachmentsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, IntegrationAttachmentsTable, IntegrationAttachmentsColumn),
-		)
+		step := newIntegrationAttachmentsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

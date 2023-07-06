@@ -16,7 +16,6 @@
 package data
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"time"
@@ -25,7 +24,6 @@ import (
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
-	"entgo.io/ent/dialect/sql/schema"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent"
@@ -96,12 +94,8 @@ func initSQLDatabase(c *conf.Data_Database, log *log.Helper) (*ent.Client, error
 	drv := entsql.OpenDB(dialect.Postgres, db)
 	client := ent.NewClient(ent.Driver(drv))
 
-	// Run DB migration
-	if err := client.Schema.Create(context.Background(),
-		schema.WithAtlas(true)); err != nil {
-		return nil, fmt.Errorf("error performing the schema change: %w", err)
-	}
-
+	// NOTE: We do not run migrations automatically anymore
+	// Instead we leverage atlas cli to run migrations
 	return client, nil
 }
 

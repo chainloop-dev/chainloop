@@ -22,7 +22,7 @@ import (
 type WorkflowRunQuery struct {
 	config
 	ctx                 *QueryContext
-	order               []OrderFunc
+	order               []workflowrun.OrderOption
 	inters              []Interceptor
 	predicates          []predicate.WorkflowRun
 	withWorkflow        *WorkflowQuery
@@ -60,7 +60,7 @@ func (wrq *WorkflowRunQuery) Unique(unique bool) *WorkflowRunQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (wrq *WorkflowRunQuery) Order(o ...OrderFunc) *WorkflowRunQuery {
+func (wrq *WorkflowRunQuery) Order(o ...workflowrun.OrderOption) *WorkflowRunQuery {
 	wrq.order = append(wrq.order, o...)
 	return wrq
 }
@@ -320,7 +320,7 @@ func (wrq *WorkflowRunQuery) Clone() *WorkflowRunQuery {
 	return &WorkflowRunQuery{
 		config:              wrq.config,
 		ctx:                 wrq.ctx.Clone(),
-		order:               append([]OrderFunc{}, wrq.order...),
+		order:               append([]workflowrun.OrderOption{}, wrq.order...),
 		inters:              append([]Interceptor{}, wrq.inters...),
 		predicates:          append([]predicate.WorkflowRun{}, wrq.predicates...),
 		withWorkflow:        wrq.withWorkflow.Clone(),

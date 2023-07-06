@@ -2044,6 +2044,7 @@ type OCIRepositoryMutation struct {
 	typ                 string
 	id                  *uuid.UUID
 	repo                *string
+	provider            *string
 	secret_name         *string
 	created_at          *time.Time
 	validation_status   *biz.OCIRepoValidationStatus
@@ -2194,6 +2195,42 @@ func (m *OCIRepositoryMutation) OldRepo(ctx context.Context) (v string, err erro
 // ResetRepo resets all changes to the "repo" field.
 func (m *OCIRepositoryMutation) ResetRepo() {
 	m.repo = nil
+}
+
+// SetProvider sets the "provider" field.
+func (m *OCIRepositoryMutation) SetProvider(s string) {
+	m.provider = &s
+}
+
+// Provider returns the value of the "provider" field in the mutation.
+func (m *OCIRepositoryMutation) Provider() (r string, exists bool) {
+	v := m.provider
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProvider returns the old "provider" field's value of the OCIRepository entity.
+// If the OCIRepository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OCIRepositoryMutation) OldProvider(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProvider is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProvider requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProvider: %w", err)
+	}
+	return oldValue.Provider, nil
+}
+
+// ResetProvider resets all changes to the "provider" field.
+func (m *OCIRepositoryMutation) ResetProvider() {
+	m.provider = nil
 }
 
 // SetSecretName sets the "secret_name" field.
@@ -2413,9 +2450,12 @@ func (m *OCIRepositoryMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *OCIRepositoryMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
 	if m.repo != nil {
 		fields = append(fields, ocirepository.FieldRepo)
+	}
+	if m.provider != nil {
+		fields = append(fields, ocirepository.FieldProvider)
 	}
 	if m.secret_name != nil {
 		fields = append(fields, ocirepository.FieldSecretName)
@@ -2439,6 +2479,8 @@ func (m *OCIRepositoryMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case ocirepository.FieldRepo:
 		return m.Repo()
+	case ocirepository.FieldProvider:
+		return m.Provider()
 	case ocirepository.FieldSecretName:
 		return m.SecretName()
 	case ocirepository.FieldCreatedAt:
@@ -2458,6 +2500,8 @@ func (m *OCIRepositoryMutation) OldField(ctx context.Context, name string) (ent.
 	switch name {
 	case ocirepository.FieldRepo:
 		return m.OldRepo(ctx)
+	case ocirepository.FieldProvider:
+		return m.OldProvider(ctx)
 	case ocirepository.FieldSecretName:
 		return m.OldSecretName(ctx)
 	case ocirepository.FieldCreatedAt:
@@ -2481,6 +2525,13 @@ func (m *OCIRepositoryMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetRepo(v)
+		return nil
+	case ocirepository.FieldProvider:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProvider(v)
 		return nil
 	case ocirepository.FieldSecretName:
 		v, ok := value.(string)
@@ -2561,6 +2612,9 @@ func (m *OCIRepositoryMutation) ResetField(name string) error {
 	switch name {
 	case ocirepository.FieldRepo:
 		m.ResetRepo()
+		return nil
+	case ocirepository.FieldProvider:
+		m.ResetProvider()
 		return nil
 	case ocirepository.FieldSecretName:
 		m.ResetSecretName()

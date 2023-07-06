@@ -113,7 +113,7 @@ func (rac *RobotAccountCreate) Mutation() *RobotAccountMutation {
 // Save creates the RobotAccount in the database.
 func (rac *RobotAccountCreate) Save(ctx context.Context) (*RobotAccount, error) {
 	rac.defaults()
-	return withHooks[*RobotAccount, RobotAccountMutation](ctx, rac.sqlSave, rac.mutation, rac.hooks)
+	return withHooks(ctx, rac.sqlSave, rac.mutation, rac.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -213,10 +213,7 @@ func (rac *RobotAccountCreate) createSpec() (*RobotAccount, *sqlgraph.CreateSpec
 			Columns: []string{robotaccount.WorkflowColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflow.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -233,10 +230,7 @@ func (rac *RobotAccountCreate) createSpec() (*RobotAccount, *sqlgraph.CreateSpec
 			Columns: []string{robotaccount.WorkflowrunsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflowrun.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -271,8 +265,8 @@ func (racb *RobotAccountCreateBulk) Save(ctx context.Context) ([]*RobotAccount, 
 					return nil, err
 				}
 				builder.mutation = mutation
-				nodes[i], specs[i] = builder.createSpec()
 				var err error
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, racb.builders[i+1].mutation)
 				} else {

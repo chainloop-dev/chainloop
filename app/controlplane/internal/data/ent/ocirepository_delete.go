@@ -27,7 +27,7 @@ func (ord *OCIRepositoryDelete) Where(ps ...predicate.OCIRepository) *OCIReposit
 
 // Exec executes the deletion query and returns how many vertices were deleted.
 func (ord *OCIRepositoryDelete) Exec(ctx context.Context) (int, error) {
-	return withHooks[int, OCIRepositoryMutation](ctx, ord.sqlExec, ord.mutation, ord.hooks)
+	return withHooks(ctx, ord.sqlExec, ord.mutation, ord.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.

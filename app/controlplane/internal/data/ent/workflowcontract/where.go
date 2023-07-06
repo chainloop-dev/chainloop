@@ -240,11 +240,7 @@ func HasVersions() predicate.WorkflowContract {
 // HasVersionsWith applies the HasEdge predicate on the "versions" edge with a given conditions (other predicates).
 func HasVersionsWith(preds ...predicate.WorkflowContractVersion) predicate.WorkflowContract {
 	return predicate.WorkflowContract(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(VersionsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, VersionsTable, VersionsColumn),
-		)
+		step := newVersionsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -267,11 +263,7 @@ func HasOrganization() predicate.WorkflowContract {
 // HasOrganizationWith applies the HasEdge predicate on the "organization" edge with a given conditions (other predicates).
 func HasOrganizationWith(preds ...predicate.Organization) predicate.WorkflowContract {
 	return predicate.WorkflowContract(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(OrganizationInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, OrganizationTable, OrganizationColumn),
-		)
+		step := newOrganizationStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -294,11 +286,7 @@ func HasWorkflows() predicate.WorkflowContract {
 // HasWorkflowsWith applies the HasEdge predicate on the "workflows" edge with a given conditions (other predicates).
 func HasWorkflowsWith(preds ...predicate.Workflow) predicate.WorkflowContract {
 	return predicate.WorkflowContract(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(WorkflowsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, WorkflowsTable, WorkflowsColumn),
-		)
+		step := newWorkflowsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

@@ -21,7 +21,7 @@ import (
 type MembershipQuery struct {
 	config
 	ctx              *QueryContext
-	order            []OrderFunc
+	order            []membership.OrderOption
 	inters           []Interceptor
 	predicates       []predicate.Membership
 	withOrganization *OrganizationQuery
@@ -58,7 +58,7 @@ func (mq *MembershipQuery) Unique(unique bool) *MembershipQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (mq *MembershipQuery) Order(o ...OrderFunc) *MembershipQuery {
+func (mq *MembershipQuery) Order(o ...membership.OrderOption) *MembershipQuery {
 	mq.order = append(mq.order, o...)
 	return mq
 }
@@ -296,7 +296,7 @@ func (mq *MembershipQuery) Clone() *MembershipQuery {
 	return &MembershipQuery{
 		config:           mq.config,
 		ctx:              mq.ctx.Clone(),
-		order:            append([]OrderFunc{}, mq.order...),
+		order:            append([]membership.OrderOption{}, mq.order...),
 		inters:           append([]Interceptor{}, mq.inters...),
 		predicates:       append([]predicate.Membership{}, mq.predicates...),
 		withOrganization: mq.withOrganization.Clone(),

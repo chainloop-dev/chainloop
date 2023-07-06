@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
@@ -36,6 +37,7 @@ type Workflow struct {
 	Edges             WorkflowEdges `json:"edges"`
 	organization_id   *uuid.UUID
 	workflow_contract *uuid.UUID
+	selectValues      sql.SelectValues
 }
 
 // WorkflowEdges holds the relations/edges for other nodes in the graph.
@@ -126,7 +128,7 @@ func (*Workflow) scanValues(columns []string) ([]any, error) {
 		case workflow.ForeignKeys[1]: // workflow_contract
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type Workflow", columns[i])
+			values[i] = new(sql.UnknownType)
 		}
 	}
 	return values, nil
@@ -196,9 +198,17 @@ func (w *Workflow) assignValues(columns []string, values []any) error {
 				w.workflow_contract = new(uuid.UUID)
 				*w.workflow_contract = *value.S.(*uuid.UUID)
 			}
+		default:
+			w.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
+}
+
+// Value returns the ent.Value that was dynamically selected and assigned to the Workflow.
+// This includes values selected through modifiers, order, etc.
+func (w *Workflow) Value(name string) (ent.Value, error) {
+	return w.selectValues.Get(name)
 }
 
 // QueryRobotaccounts queries the "robotaccounts" edge of the Workflow entity.

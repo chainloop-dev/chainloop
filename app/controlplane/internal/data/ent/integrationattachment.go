@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integration"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integrationattachment"
@@ -30,6 +31,7 @@ type IntegrationAttachment struct {
 	Edges                              IntegrationAttachmentEdges `json:"edges"`
 	integration_attachment_integration *uuid.UUID
 	integration_attachment_workflow    *uuid.UUID
+	selectValues                       sql.SelectValues
 }
 
 // IntegrationAttachmentEdges holds the relations/edges for other nodes in the graph.
@@ -85,7 +87,7 @@ func (*IntegrationAttachment) scanValues(columns []string) ([]any, error) {
 		case integrationattachment.ForeignKeys[1]: // integration_attachment_workflow
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type IntegrationAttachment", columns[i])
+			values[i] = new(sql.UnknownType)
 		}
 	}
 	return values, nil
@@ -137,9 +139,17 @@ func (ia *IntegrationAttachment) assignValues(columns []string, values []any) er
 				ia.integration_attachment_workflow = new(uuid.UUID)
 				*ia.integration_attachment_workflow = *value.S.(*uuid.UUID)
 			}
+		default:
+			ia.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
+}
+
+// Value returns the ent.Value that was dynamically selected and assigned to the IntegrationAttachment.
+// This includes values selected through modifiers, order, etc.
+func (ia *IntegrationAttachment) Value(name string) (ent.Value, error) {
+	return ia.selectValues.Get(name)
 }
 
 // QueryIntegration queries the "integration" edge of the IntegrationAttachment entity.

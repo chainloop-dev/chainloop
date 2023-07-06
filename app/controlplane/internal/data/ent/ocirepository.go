@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/ocirepository"
@@ -21,6 +22,8 @@ type OCIRepository struct {
 	ID uuid.UUID `json:"id,omitempty"`
 	// Repo holds the value of the "repo" field.
 	Repo string `json:"repo,omitempty"`
+	// Provider holds the value of the "provider" field.
+	Provider string `json:"provider,omitempty"`
 	// SecretName holds the value of the "secret_name" field.
 	SecretName string `json:"secret_name,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -33,6 +36,7 @@ type OCIRepository struct {
 	// The values are being populated by the OCIRepositoryQuery when eager-loading is set.
 	Edges                         OCIRepositoryEdges `json:"edges"`
 	organization_oci_repositories *uuid.UUID
+	selectValues                  sql.SelectValues
 }
 
 // OCIRepositoryEdges holds the relations/edges for other nodes in the graph.
@@ -62,7 +66,7 @@ func (*OCIRepository) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case ocirepository.FieldRepo, ocirepository.FieldSecretName, ocirepository.FieldValidationStatus:
+		case ocirepository.FieldRepo, ocirepository.FieldProvider, ocirepository.FieldSecretName, ocirepository.FieldValidationStatus:
 			values[i] = new(sql.NullString)
 		case ocirepository.FieldCreatedAt, ocirepository.FieldValidatedAt:
 			values[i] = new(sql.NullTime)
@@ -71,7 +75,7 @@ func (*OCIRepository) scanValues(columns []string) ([]any, error) {
 		case ocirepository.ForeignKeys[0]: // organization_oci_repositories
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type OCIRepository", columns[i])
+			values[i] = new(sql.UnknownType)
 		}
 	}
 	return values, nil
@@ -96,6 +100,12 @@ func (or *OCIRepository) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field repo", values[i])
 			} else if value.Valid {
 				or.Repo = value.String
+			}
+		case ocirepository.FieldProvider:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field provider", values[i])
+			} else if value.Valid {
+				or.Provider = value.String
 			}
 		case ocirepository.FieldSecretName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -128,9 +138,17 @@ func (or *OCIRepository) assignValues(columns []string, values []any) error {
 				or.organization_oci_repositories = new(uuid.UUID)
 				*or.organization_oci_repositories = *value.S.(*uuid.UUID)
 			}
+		default:
+			or.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
+}
+
+// Value returns the ent.Value that was dynamically selected and assigned to the OCIRepository.
+// This includes values selected through modifiers, order, etc.
+func (or *OCIRepository) Value(name string) (ent.Value, error) {
+	return or.selectValues.Get(name)
 }
 
 // QueryOrganization queries the "organization" edge of the OCIRepository entity.
@@ -163,6 +181,9 @@ func (or *OCIRepository) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v, ", or.ID))
 	builder.WriteString("repo=")
 	builder.WriteString(or.Repo)
+	builder.WriteString(", ")
+	builder.WriteString("provider=")
+	builder.WriteString(or.Provider)
 	builder.WriteString(", ")
 	builder.WriteString("secret_name=")
 	builder.WriteString(or.SecretName)

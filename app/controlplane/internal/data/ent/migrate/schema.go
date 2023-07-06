@@ -102,6 +102,7 @@ var (
 	OciRepositoriesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "repo", Type: field.TypeString},
+		{Name: "provider", Type: field.TypeString},
 		{Name: "secret_name", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "validation_status", Type: field.TypeEnum, Enums: []string{"OK", "Invalid"}, Default: "OK"},
@@ -116,7 +117,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "oci_repositories_organizations_oci_repositories",
-				Columns:    []*schema.Column{OciRepositoriesColumns[6]},
+				Columns:    []*schema.Column{OciRepositoriesColumns[7]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},

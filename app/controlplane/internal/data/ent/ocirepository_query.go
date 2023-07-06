@@ -20,7 +20,7 @@ import (
 type OCIRepositoryQuery struct {
 	config
 	ctx              *QueryContext
-	order            []OrderFunc
+	order            []ocirepository.OrderOption
 	inters           []Interceptor
 	predicates       []predicate.OCIRepository
 	withOrganization *OrganizationQuery
@@ -56,7 +56,7 @@ func (orq *OCIRepositoryQuery) Unique(unique bool) *OCIRepositoryQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (orq *OCIRepositoryQuery) Order(o ...OrderFunc) *OCIRepositoryQuery {
+func (orq *OCIRepositoryQuery) Order(o ...ocirepository.OrderOption) *OCIRepositoryQuery {
 	orq.order = append(orq.order, o...)
 	return orq
 }
@@ -272,7 +272,7 @@ func (orq *OCIRepositoryQuery) Clone() *OCIRepositoryQuery {
 	return &OCIRepositoryQuery{
 		config:           orq.config,
 		ctx:              orq.ctx.Clone(),
-		order:            append([]OrderFunc{}, orq.order...),
+		order:            append([]ocirepository.OrderOption{}, orq.order...),
 		inters:           append([]Interceptor{}, orq.inters...),
 		predicates:       append([]predicate.OCIRepository{}, orq.predicates...),
 		withOrganization: orq.withOrganization.Clone(),

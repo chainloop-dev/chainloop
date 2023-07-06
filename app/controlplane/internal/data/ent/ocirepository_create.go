@@ -29,6 +29,12 @@ func (orc *OCIRepositoryCreate) SetRepo(s string) *OCIRepositoryCreate {
 	return orc
 }
 
+// SetProvider sets the "provider" field.
+func (orc *OCIRepositoryCreate) SetProvider(s string) *OCIRepositoryCreate {
+	orc.mutation.SetProvider(s)
+	return orc
+}
+
 // SetSecretName sets the "secret_name" field.
 func (orc *OCIRepositoryCreate) SetSecretName(s string) *OCIRepositoryCreate {
 	orc.mutation.SetSecretName(s)
@@ -110,7 +116,7 @@ func (orc *OCIRepositoryCreate) Mutation() *OCIRepositoryMutation {
 // Save creates the OCIRepository in the database.
 func (orc *OCIRepositoryCreate) Save(ctx context.Context) (*OCIRepository, error) {
 	orc.defaults()
-	return withHooks[*OCIRepository, OCIRepositoryMutation](ctx, orc.sqlSave, orc.mutation, orc.hooks)
+	return withHooks(ctx, orc.sqlSave, orc.mutation, orc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -159,6 +165,9 @@ func (orc *OCIRepositoryCreate) defaults() {
 func (orc *OCIRepositoryCreate) check() error {
 	if _, ok := orc.mutation.Repo(); !ok {
 		return &ValidationError{Name: "repo", err: errors.New(`ent: missing required field "OCIRepository.repo"`)}
+	}
+	if _, ok := orc.mutation.Provider(); !ok {
+		return &ValidationError{Name: "provider", err: errors.New(`ent: missing required field "OCIRepository.provider"`)}
 	}
 	if _, ok := orc.mutation.SecretName(); !ok {
 		return &ValidationError{Name: "secret_name", err: errors.New(`ent: missing required field "OCIRepository.secret_name"`)}
@@ -219,6 +228,10 @@ func (orc *OCIRepositoryCreate) createSpec() (*OCIRepository, *sqlgraph.CreateSp
 		_spec.SetField(ocirepository.FieldRepo, field.TypeString, value)
 		_node.Repo = value
 	}
+	if value, ok := orc.mutation.Provider(); ok {
+		_spec.SetField(ocirepository.FieldProvider, field.TypeString, value)
+		_node.Provider = value
+	}
 	if value, ok := orc.mutation.SecretName(); ok {
 		_spec.SetField(ocirepository.FieldSecretName, field.TypeString, value)
 		_node.SecretName = value
@@ -243,10 +256,7 @@ func (orc *OCIRepositoryCreate) createSpec() (*OCIRepository, *sqlgraph.CreateSp
 			Columns: []string{ocirepository.OrganizationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: organization.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -282,8 +292,8 @@ func (orcb *OCIRepositoryCreateBulk) Save(ctx context.Context) ([]*OCIRepository
 					return nil, err
 				}
 				builder.mutation = mutation
-				nodes[i], specs[i] = builder.createSpec()
 				var err error
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, orcb.builders[i+1].mutation)
 				} else {

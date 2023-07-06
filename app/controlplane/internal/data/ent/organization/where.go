@@ -185,11 +185,7 @@ func HasMemberships() predicate.Organization {
 // HasMembershipsWith applies the HasEdge predicate on the "memberships" edge with a given conditions (other predicates).
 func HasMembershipsWith(preds ...predicate.Membership) predicate.Organization {
 	return predicate.Organization(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(MembershipsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, MembershipsTable, MembershipsColumn),
-		)
+		step := newMembershipsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -212,11 +208,7 @@ func HasWorkflowContracts() predicate.Organization {
 // HasWorkflowContractsWith applies the HasEdge predicate on the "workflow_contracts" edge with a given conditions (other predicates).
 func HasWorkflowContractsWith(preds ...predicate.WorkflowContract) predicate.Organization {
 	return predicate.Organization(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(WorkflowContractsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, WorkflowContractsTable, WorkflowContractsColumn),
-		)
+		step := newWorkflowContractsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -239,11 +231,7 @@ func HasWorkflows() predicate.Organization {
 // HasWorkflowsWith applies the HasEdge predicate on the "workflows" edge with a given conditions (other predicates).
 func HasWorkflowsWith(preds ...predicate.Workflow) predicate.Organization {
 	return predicate.Organization(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(WorkflowsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, WorkflowsTable, WorkflowsColumn),
-		)
+		step := newWorkflowsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -266,11 +254,7 @@ func HasOciRepositories() predicate.Organization {
 // HasOciRepositoriesWith applies the HasEdge predicate on the "oci_repositories" edge with a given conditions (other predicates).
 func HasOciRepositoriesWith(preds ...predicate.OCIRepository) predicate.Organization {
 	return predicate.Organization(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(OciRepositoriesInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, OciRepositoriesTable, OciRepositoriesColumn),
-		)
+		step := newOciRepositoriesStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -293,11 +277,7 @@ func HasIntegrations() predicate.Organization {
 // HasIntegrationsWith applies the HasEdge predicate on the "integrations" edge with a given conditions (other predicates).
 func HasIntegrationsWith(preds ...predicate.Integration) predicate.Organization {
 	return predicate.Organization(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(IntegrationsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, IntegrationsTable, IntegrationsColumn),
-		)
+		step := newIntegrationsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

@@ -205,11 +205,7 @@ func HasContract() predicate.WorkflowContractVersion {
 // HasContractWith applies the HasEdge predicate on the "contract" edge with a given conditions (other predicates).
 func HasContractWith(preds ...predicate.WorkflowContract) predicate.WorkflowContractVersion {
 	return predicate.WorkflowContractVersion(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(ContractInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, ContractTable, ContractColumn),
-		)
+		step := newContractStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

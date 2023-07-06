@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/google/uuid"
@@ -23,7 +24,8 @@ type Organization struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the OrganizationQuery when eager-loading is set.
-	Edges OrganizationEdges `json:"edges"`
+	Edges        OrganizationEdges `json:"edges"`
+	selectValues sql.SelectValues
 }
 
 // OrganizationEdges holds the relations/edges for other nodes in the graph.
@@ -100,7 +102,7 @@ func (*Organization) scanValues(columns []string) ([]any, error) {
 		case organization.FieldID:
 			values[i] = new(uuid.UUID)
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type Organization", columns[i])
+			values[i] = new(sql.UnknownType)
 		}
 	}
 	return values, nil
@@ -132,9 +134,17 @@ func (o *Organization) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				o.CreatedAt = value.Time
 			}
+		default:
+			o.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
+}
+
+// Value returns the ent.Value that was dynamically selected and assigned to the Organization.
+// This includes values selected through modifiers, order, etc.
+func (o *Organization) Value(name string) (ent.Value, error) {
+	return o.selectValues.Get(name)
 }
 
 // QueryMemberships queries the "memberships" edge of the Organization entity.

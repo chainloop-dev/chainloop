@@ -65,11 +65,11 @@ func init() {
 	ocirepositoryFields := schema.OCIRepository{}.Fields()
 	_ = ocirepositoryFields
 	// ocirepositoryDescCreatedAt is the schema descriptor for created_at field.
-	ocirepositoryDescCreatedAt := ocirepositoryFields[3].Descriptor()
+	ocirepositoryDescCreatedAt := ocirepositoryFields[4].Descriptor()
 	// ocirepository.DefaultCreatedAt holds the default value on creation for the created_at field.
 	ocirepository.DefaultCreatedAt = ocirepositoryDescCreatedAt.Default.(func() time.Time)
 	// ocirepositoryDescValidatedAt is the schema descriptor for validated_at field.
-	ocirepositoryDescValidatedAt := ocirepositoryFields[5].Descriptor()
+	ocirepositoryDescValidatedAt := ocirepositoryFields[6].Descriptor()
 	// ocirepository.DefaultValidatedAt holds the default value on creation for the validated_at field.
 	ocirepository.DefaultValidatedAt = ocirepositoryDescValidatedAt.Default.(func() time.Time)
 	// ocirepositoryDescID is the schema descriptor for id field.

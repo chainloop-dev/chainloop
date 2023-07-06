@@ -129,7 +129,7 @@ func (wcc *WorkflowContractCreate) Mutation() *WorkflowContractMutation {
 // Save creates the WorkflowContract in the database.
 func (wcc *WorkflowContractCreate) Save(ctx context.Context) (*WorkflowContract, error) {
 	wcc.defaults()
-	return withHooks[*WorkflowContract, WorkflowContractMutation](ctx, wcc.sqlSave, wcc.mutation, wcc.hooks)
+	return withHooks(ctx, wcc.sqlSave, wcc.mutation, wcc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -229,10 +229,7 @@ func (wcc *WorkflowContractCreate) createSpec() (*WorkflowContract, *sqlgraph.Cr
 			Columns: []string{workflowcontract.VersionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflowcontractversion.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflowcontractversion.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -248,10 +245,7 @@ func (wcc *WorkflowContractCreate) createSpec() (*WorkflowContract, *sqlgraph.Cr
 			Columns: []string{workflowcontract.OrganizationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: organization.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -268,10 +262,7 @@ func (wcc *WorkflowContractCreate) createSpec() (*WorkflowContract, *sqlgraph.Cr
 			Columns: []string{workflowcontract.WorkflowsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflow.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -306,8 +297,8 @@ func (wccb *WorkflowContractCreateBulk) Save(ctx context.Context) ([]*WorkflowCo
 					return nil, err
 				}
 				builder.mutation = mutation
-				nodes[i], specs[i] = builder.createSpec()
 				var err error
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, wccb.builders[i+1].mutation)
 				} else {

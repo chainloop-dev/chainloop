@@ -22,7 +22,7 @@ import (
 type IntegrationQuery struct {
 	config
 	ctx              *QueryContext
-	order            []OrderFunc
+	order            []integration.OrderOption
 	inters           []Interceptor
 	predicates       []predicate.Integration
 	withAttachments  *IntegrationAttachmentQuery
@@ -59,7 +59,7 @@ func (iq *IntegrationQuery) Unique(unique bool) *IntegrationQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (iq *IntegrationQuery) Order(o ...OrderFunc) *IntegrationQuery {
+func (iq *IntegrationQuery) Order(o ...integration.OrderOption) *IntegrationQuery {
 	iq.order = append(iq.order, o...)
 	return iq
 }
@@ -297,7 +297,7 @@ func (iq *IntegrationQuery) Clone() *IntegrationQuery {
 	return &IntegrationQuery{
 		config:           iq.config,
 		ctx:              iq.ctx.Clone(),
-		order:            append([]OrderFunc{}, iq.order...),
+		order:            append([]integration.OrderOption{}, iq.order...),
 		inters:           append([]Interceptor{}, iq.inters...),
 		predicates:       append([]predicate.Integration{}, iq.predicates...),
 		withAttachments:  iq.withAttachments.Clone(),
@@ -466,7 +466,7 @@ func (iq *IntegrationQuery) loadAttachments(ctx context.Context, query *Integrat
 	}
 	query.withFKs = true
 	query.Where(predicate.IntegrationAttachment(func(s *sql.Selector) {
-		s.Where(sql.InValues(integration.AttachmentsColumn, fks...))
+		s.Where(sql.InValues(s.C(integration.AttachmentsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -479,7 +479,7 @@ func (iq *IntegrationQuery) loadAttachments(ctx context.Context, query *Integrat
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "integration_attachment_integration" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "integration_attachment_integration" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

@@ -97,7 +97,7 @@ func (wcvc *WorkflowContractVersionCreate) Mutation() *WorkflowContractVersionMu
 // Save creates the WorkflowContractVersion in the database.
 func (wcvc *WorkflowContractVersionCreate) Save(ctx context.Context) (*WorkflowContractVersion, error) {
 	wcvc.defaults()
-	return withHooks[*WorkflowContractVersion, WorkflowContractVersionMutation](ctx, wcvc.sqlSave, wcvc.mutation, wcvc.hooks)
+	return withHooks(ctx, wcvc.sqlSave, wcvc.mutation, wcvc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -209,10 +209,7 @@ func (wcvc *WorkflowContractVersionCreate) createSpec() (*WorkflowContractVersio
 			Columns: []string{workflowcontractversion.ContractColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflowcontract.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflowcontract.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -248,8 +245,8 @@ func (wcvcb *WorkflowContractVersionCreateBulk) Save(ctx context.Context) ([]*Wo
 					return nil, err
 				}
 				builder.mutation = mutation
-				nodes[i], specs[i] = builder.createSpec()
 				var err error
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, wcvcb.builders[i+1].mutation)
 				} else {

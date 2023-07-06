@@ -22,7 +22,7 @@ import (
 type RobotAccountQuery struct {
 	config
 	ctx              *QueryContext
-	order            []OrderFunc
+	order            []robotaccount.OrderOption
 	inters           []Interceptor
 	predicates       []predicate.RobotAccount
 	withWorkflow     *WorkflowQuery
@@ -59,7 +59,7 @@ func (raq *RobotAccountQuery) Unique(unique bool) *RobotAccountQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (raq *RobotAccountQuery) Order(o ...OrderFunc) *RobotAccountQuery {
+func (raq *RobotAccountQuery) Order(o ...robotaccount.OrderOption) *RobotAccountQuery {
 	raq.order = append(raq.order, o...)
 	return raq
 }
@@ -297,7 +297,7 @@ func (raq *RobotAccountQuery) Clone() *RobotAccountQuery {
 	return &RobotAccountQuery{
 		config:           raq.config,
 		ctx:              raq.ctx.Clone(),
-		order:            append([]OrderFunc{}, raq.order...),
+		order:            append([]robotaccount.OrderOption{}, raq.order...),
 		inters:           append([]Interceptor{}, raq.inters...),
 		predicates:       append([]predicate.RobotAccount{}, raq.predicates...),
 		withWorkflow:     raq.withWorkflow.Clone(),
@@ -498,7 +498,7 @@ func (raq *RobotAccountQuery) loadWorkflowruns(ctx context.Context, query *Workf
 	}
 	query.withFKs = true
 	query.Where(predicate.WorkflowRun(func(s *sql.Selector) {
-		s.Where(sql.InValues(robotaccount.WorkflowrunsColumn, fks...))
+		s.Where(sql.InValues(s.C(robotaccount.WorkflowrunsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -511,7 +511,7 @@ func (raq *RobotAccountQuery) loadWorkflowruns(ctx context.Context, query *Workf
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "robot_account_workflowruns" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "robot_account_workflowruns" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

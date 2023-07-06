@@ -25,7 +25,7 @@ import (
 type WorkflowQuery struct {
 	config
 	ctx                        *QueryContext
-	order                      []OrderFunc
+	order                      []workflow.OrderOption
 	inters                     []Interceptor
 	predicates                 []predicate.Workflow
 	withRobotaccounts          *RobotAccountQuery
@@ -65,7 +65,7 @@ func (wq *WorkflowQuery) Unique(unique bool) *WorkflowQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (wq *WorkflowQuery) Order(o ...OrderFunc) *WorkflowQuery {
+func (wq *WorkflowQuery) Order(o ...workflow.OrderOption) *WorkflowQuery {
 	wq.order = append(wq.order, o...)
 	return wq
 }
@@ -369,7 +369,7 @@ func (wq *WorkflowQuery) Clone() *WorkflowQuery {
 	return &WorkflowQuery{
 		config:                     wq.config,
 		ctx:                        wq.ctx.Clone(),
-		order:                      append([]OrderFunc{}, wq.order...),
+		order:                      append([]workflow.OrderOption{}, wq.order...),
 		inters:                     append([]Interceptor{}, wq.inters...),
 		predicates:                 append([]predicate.Workflow{}, wq.predicates...),
 		withRobotaccounts:          wq.withRobotaccounts.Clone(),
@@ -599,7 +599,7 @@ func (wq *WorkflowQuery) loadRobotaccounts(ctx context.Context, query *RobotAcco
 	}
 	query.withFKs = true
 	query.Where(predicate.RobotAccount(func(s *sql.Selector) {
-		s.Where(sql.InValues(workflow.RobotaccountsColumn, fks...))
+		s.Where(sql.InValues(s.C(workflow.RobotaccountsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -612,7 +612,7 @@ func (wq *WorkflowQuery) loadRobotaccounts(ctx context.Context, query *RobotAcco
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "workflow_robotaccounts" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "workflow_robotaccounts" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -630,7 +630,7 @@ func (wq *WorkflowQuery) loadWorkflowruns(ctx context.Context, query *WorkflowRu
 	}
 	query.withFKs = true
 	query.Where(predicate.WorkflowRun(func(s *sql.Selector) {
-		s.Where(sql.InValues(workflow.WorkflowrunsColumn, fks...))
+		s.Where(sql.InValues(s.C(workflow.WorkflowrunsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -643,7 +643,7 @@ func (wq *WorkflowQuery) loadWorkflowruns(ctx context.Context, query *WorkflowRu
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "workflow_workflowruns" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "workflow_workflowruns" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -725,7 +725,7 @@ func (wq *WorkflowQuery) loadIntegrationAttachments(ctx context.Context, query *
 	}
 	query.withFKs = true
 	query.Where(predicate.IntegrationAttachment(func(s *sql.Selector) {
-		s.Where(sql.InValues(workflow.IntegrationAttachmentsColumn, fks...))
+		s.Where(sql.InValues(s.C(workflow.IntegrationAttachmentsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -738,7 +738,7 @@ func (wq *WorkflowQuery) loadIntegrationAttachments(ctx context.Context, query *
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "integration_attachment_workflow" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "integration_attachment_workflow" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

@@ -27,7 +27,7 @@ func (wrd *WorkflowRunDelete) Where(ps ...predicate.WorkflowRun) *WorkflowRunDel
 
 // Exec executes the deletion query and returns how many vertices were deleted.
 func (wrd *WorkflowRunDelete) Exec(ctx context.Context) (int, error) {
-	return withHooks[int, WorkflowRunMutation](ctx, wrd.sqlExec, wrd.mutation, wrd.hooks)
+	return withHooks(ctx, wrd.sqlExec, wrd.mutation, wrd.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.

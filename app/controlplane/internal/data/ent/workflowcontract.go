@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowcontract"
@@ -28,6 +29,7 @@ type WorkflowContract struct {
 	// The values are being populated by the WorkflowContractQuery when eager-loading is set.
 	Edges                           WorkflowContractEdges `json:"edges"`
 	organization_workflow_contracts *uuid.UUID
+	selectValues                    sql.SelectValues
 }
 
 // WorkflowContractEdges holds the relations/edges for other nodes in the graph.
@@ -88,7 +90,7 @@ func (*WorkflowContract) scanValues(columns []string) ([]any, error) {
 		case workflowcontract.ForeignKeys[0]: // organization_workflow_contracts
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type WorkflowContract", columns[i])
+			values[i] = new(sql.UnknownType)
 		}
 	}
 	return values, nil
@@ -133,9 +135,17 @@ func (wc *WorkflowContract) assignValues(columns []string, values []any) error {
 				wc.organization_workflow_contracts = new(uuid.UUID)
 				*wc.organization_workflow_contracts = *value.S.(*uuid.UUID)
 			}
+		default:
+			wc.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
+}
+
+// Value returns the ent.Value that was dynamically selected and assigned to the WorkflowContract.
+// This includes values selected through modifiers, order, etc.
+func (wc *WorkflowContract) Value(name string) (ent.Value, error) {
+	return wc.selectValues.Get(name)
 }
 
 // QueryVersions queries the "versions" edge of the WorkflowContract entity.

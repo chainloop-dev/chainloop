@@ -21,7 +21,7 @@ import (
 type IntegrationAttachmentQuery struct {
 	config
 	ctx             *QueryContext
-	order           []OrderFunc
+	order           []integrationattachment.OrderOption
 	inters          []Interceptor
 	predicates      []predicate.IntegrationAttachment
 	withIntegration *IntegrationQuery
@@ -58,7 +58,7 @@ func (iaq *IntegrationAttachmentQuery) Unique(unique bool) *IntegrationAttachmen
 }
 
 // Order specifies how the records should be ordered.
-func (iaq *IntegrationAttachmentQuery) Order(o ...OrderFunc) *IntegrationAttachmentQuery {
+func (iaq *IntegrationAttachmentQuery) Order(o ...integrationattachment.OrderOption) *IntegrationAttachmentQuery {
 	iaq.order = append(iaq.order, o...)
 	return iaq
 }
@@ -296,7 +296,7 @@ func (iaq *IntegrationAttachmentQuery) Clone() *IntegrationAttachmentQuery {
 	return &IntegrationAttachmentQuery{
 		config:          iaq.config,
 		ctx:             iaq.ctx.Clone(),
-		order:           append([]OrderFunc{}, iaq.order...),
+		order:           append([]integrationattachment.OrderOption{}, iaq.order...),
 		inters:          append([]Interceptor{}, iaq.inters...),
 		predicates:      append([]predicate.IntegrationAttachment{}, iaq.predicates...),
 		withIntegration: iaq.withIntegration.Clone(),

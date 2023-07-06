@@ -225,11 +225,7 @@ func HasIntegration() predicate.IntegrationAttachment {
 // HasIntegrationWith applies the HasEdge predicate on the "integration" edge with a given conditions (other predicates).
 func HasIntegrationWith(preds ...predicate.Integration) predicate.IntegrationAttachment {
 	return predicate.IntegrationAttachment(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(IntegrationInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, IntegrationTable, IntegrationColumn),
-		)
+		step := newIntegrationStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -252,11 +248,7 @@ func HasWorkflow() predicate.IntegrationAttachment {
 // HasWorkflowWith applies the HasEdge predicate on the "workflow" edge with a given conditions (other predicates).
 func HasWorkflowWith(preds ...predicate.Workflow) predicate.IntegrationAttachment {
 	return predicate.IntegrationAttachment(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(WorkflowInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, WorkflowTable, WorkflowColumn),
-		)
+		step := newWorkflowStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

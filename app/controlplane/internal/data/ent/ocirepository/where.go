@@ -62,6 +62,11 @@ func Repo(v string) predicate.OCIRepository {
 	return predicate.OCIRepository(sql.FieldEQ(FieldRepo, v))
 }
 
+// Provider applies equality check predicate on the "provider" field. It's identical to ProviderEQ.
+func Provider(v string) predicate.OCIRepository {
+	return predicate.OCIRepository(sql.FieldEQ(FieldProvider, v))
+}
+
 // SecretName applies equality check predicate on the "secret_name" field. It's identical to SecretNameEQ.
 func SecretName(v string) predicate.OCIRepository {
 	return predicate.OCIRepository(sql.FieldEQ(FieldSecretName, v))
@@ -140,6 +145,71 @@ func RepoEqualFold(v string) predicate.OCIRepository {
 // RepoContainsFold applies the ContainsFold predicate on the "repo" field.
 func RepoContainsFold(v string) predicate.OCIRepository {
 	return predicate.OCIRepository(sql.FieldContainsFold(FieldRepo, v))
+}
+
+// ProviderEQ applies the EQ predicate on the "provider" field.
+func ProviderEQ(v string) predicate.OCIRepository {
+	return predicate.OCIRepository(sql.FieldEQ(FieldProvider, v))
+}
+
+// ProviderNEQ applies the NEQ predicate on the "provider" field.
+func ProviderNEQ(v string) predicate.OCIRepository {
+	return predicate.OCIRepository(sql.FieldNEQ(FieldProvider, v))
+}
+
+// ProviderIn applies the In predicate on the "provider" field.
+func ProviderIn(vs ...string) predicate.OCIRepository {
+	return predicate.OCIRepository(sql.FieldIn(FieldProvider, vs...))
+}
+
+// ProviderNotIn applies the NotIn predicate on the "provider" field.
+func ProviderNotIn(vs ...string) predicate.OCIRepository {
+	return predicate.OCIRepository(sql.FieldNotIn(FieldProvider, vs...))
+}
+
+// ProviderGT applies the GT predicate on the "provider" field.
+func ProviderGT(v string) predicate.OCIRepository {
+	return predicate.OCIRepository(sql.FieldGT(FieldProvider, v))
+}
+
+// ProviderGTE applies the GTE predicate on the "provider" field.
+func ProviderGTE(v string) predicate.OCIRepository {
+	return predicate.OCIRepository(sql.FieldGTE(FieldProvider, v))
+}
+
+// ProviderLT applies the LT predicate on the "provider" field.
+func ProviderLT(v string) predicate.OCIRepository {
+	return predicate.OCIRepository(sql.FieldLT(FieldProvider, v))
+}
+
+// ProviderLTE applies the LTE predicate on the "provider" field.
+func ProviderLTE(v string) predicate.OCIRepository {
+	return predicate.OCIRepository(sql.FieldLTE(FieldProvider, v))
+}
+
+// ProviderContains applies the Contains predicate on the "provider" field.
+func ProviderContains(v string) predicate.OCIRepository {
+	return predicate.OCIRepository(sql.FieldContains(FieldProvider, v))
+}
+
+// ProviderHasPrefix applies the HasPrefix predicate on the "provider" field.
+func ProviderHasPrefix(v string) predicate.OCIRepository {
+	return predicate.OCIRepository(sql.FieldHasPrefix(FieldProvider, v))
+}
+
+// ProviderHasSuffix applies the HasSuffix predicate on the "provider" field.
+func ProviderHasSuffix(v string) predicate.OCIRepository {
+	return predicate.OCIRepository(sql.FieldHasSuffix(FieldProvider, v))
+}
+
+// ProviderEqualFold applies the EqualFold predicate on the "provider" field.
+func ProviderEqualFold(v string) predicate.OCIRepository {
+	return predicate.OCIRepository(sql.FieldEqualFold(FieldProvider, v))
+}
+
+// ProviderContainsFold applies the ContainsFold predicate on the "provider" field.
+func ProviderContainsFold(v string) predicate.OCIRepository {
+	return predicate.OCIRepository(sql.FieldContainsFold(FieldProvider, v))
 }
 
 // SecretNameEQ applies the EQ predicate on the "secret_name" field.
@@ -331,11 +401,7 @@ func HasOrganization() predicate.OCIRepository {
 // HasOrganizationWith applies the HasEdge predicate on the "organization" edge with a given conditions (other predicates).
 func HasOrganizationWith(preds ...predicate.Organization) predicate.OCIRepository {
 	return predicate.OCIRepository(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(OrganizationInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, OrganizationTable, OrganizationColumn),
-		)
+		step := newOrganizationStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

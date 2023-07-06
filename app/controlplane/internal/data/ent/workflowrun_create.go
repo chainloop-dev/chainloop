@@ -195,7 +195,7 @@ func (wrc *WorkflowRunCreate) Mutation() *WorkflowRunMutation {
 // Save creates the WorkflowRun in the database.
 func (wrc *WorkflowRunCreate) Save(ctx context.Context) (*WorkflowRun, error) {
 	wrc.defaults()
-	return withHooks[*WorkflowRun, WorkflowRunMutation](ctx, wrc.sqlSave, wrc.mutation, wrc.hooks)
+	return withHooks(ctx, wrc.sqlSave, wrc.mutation, wrc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -320,10 +320,7 @@ func (wrc *WorkflowRunCreate) createSpec() (*WorkflowRun, *sqlgraph.CreateSpec) 
 			Columns: []string{workflowrun.WorkflowColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflow.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -340,10 +337,7 @@ func (wrc *WorkflowRunCreate) createSpec() (*WorkflowRun, *sqlgraph.CreateSpec) 
 			Columns: []string{workflowrun.RobotaccountColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: robotaccount.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(robotaccount.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -360,10 +354,7 @@ func (wrc *WorkflowRunCreate) createSpec() (*WorkflowRun, *sqlgraph.CreateSpec) 
 			Columns: []string{workflowrun.ContractVersionColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflowcontractversion.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflowcontractversion.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -399,8 +390,8 @@ func (wrcb *WorkflowRunCreateBulk) Save(ctx context.Context) ([]*WorkflowRun, er
 					return nil, err
 				}
 				builder.mutation = mutation
-				nodes[i], specs[i] = builder.createSpec()
 				var err error
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, wrcb.builders[i+1].mutation)
 				} else {

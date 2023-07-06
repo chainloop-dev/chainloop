@@ -101,7 +101,7 @@ func (iac *IntegrationAttachmentCreate) Mutation() *IntegrationAttachmentMutatio
 // Save creates the IntegrationAttachment in the database.
 func (iac *IntegrationAttachmentCreate) Save(ctx context.Context) (*IntegrationAttachment, error) {
 	iac.defaults()
-	return withHooks[*IntegrationAttachment, IntegrationAttachmentMutation](ctx, iac.sqlSave, iac.mutation, iac.hooks)
+	return withHooks(ctx, iac.sqlSave, iac.mutation, iac.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -204,10 +204,7 @@ func (iac *IntegrationAttachmentCreate) createSpec() (*IntegrationAttachment, *s
 			Columns: []string{integrationattachment.IntegrationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: integration.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(integration.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -224,10 +221,7 @@ func (iac *IntegrationAttachmentCreate) createSpec() (*IntegrationAttachment, *s
 			Columns: []string{integrationattachment.WorkflowColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflow.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -263,8 +257,8 @@ func (iacb *IntegrationAttachmentCreateBulk) Save(ctx context.Context) ([]*Integ
 					return nil, err
 				}
 				builder.mutation = mutation
-				nodes[i], specs[i] = builder.createSpec()
 				var err error
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, iacb.builders[i+1].mutation)
 				} else {
