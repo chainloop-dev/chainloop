@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/google/uuid"
 )
@@ -112,4 +114,84 @@ func StateValidator(s biz.WorkflowRunStatus) error {
 	default:
 		return fmt.Errorf("workflowrun: invalid enum value for state field: %q", s)
 	}
+}
+
+// OrderOption defines the ordering options for the WorkflowRun queries.
+type OrderOption func(*sql.Selector)
+
+// ByID orders the results by the id field.
+func ByID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByCreatedAt orders the results by the created_at field.
+func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
+}
+
+// ByFinishedAt orders the results by the finished_at field.
+func ByFinishedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldFinishedAt, opts...).ToFunc()
+}
+
+// ByState orders the results by the state field.
+func ByState(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldState, opts...).ToFunc()
+}
+
+// ByReason orders the results by the reason field.
+func ByReason(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReason, opts...).ToFunc()
+}
+
+// ByRunURL orders the results by the run_url field.
+func ByRunURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRunURL, opts...).ToFunc()
+}
+
+// ByRunnerType orders the results by the runner_type field.
+func ByRunnerType(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRunnerType, opts...).ToFunc()
+}
+
+// ByWorkflowField orders the results by workflow field.
+func ByWorkflowField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newWorkflowStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByRobotaccountField orders the results by robotaccount field.
+func ByRobotaccountField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRobotaccountStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByContractVersionField orders the results by contract_version field.
+func ByContractVersionField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newContractVersionStep(), sql.OrderByField(field, opts...))
+	}
+}
+func newWorkflowStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(WorkflowInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, WorkflowTable, WorkflowColumn),
+	)
+}
+func newRobotaccountStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RobotaccountInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, RobotaccountTable, RobotaccountColumn),
+	)
+}
+func newContractVersionStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ContractVersionInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, ContractVersionTable, ContractVersionColumn),
+	)
 }

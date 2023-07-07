@@ -23,7 +23,7 @@ import (
 type WorkflowContractQuery struct {
 	config
 	ctx              *QueryContext
-	order            []OrderFunc
+	order            []workflowcontract.OrderOption
 	inters           []Interceptor
 	predicates       []predicate.WorkflowContract
 	withVersions     *WorkflowContractVersionQuery
@@ -61,7 +61,7 @@ func (wcq *WorkflowContractQuery) Unique(unique bool) *WorkflowContractQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (wcq *WorkflowContractQuery) Order(o ...OrderFunc) *WorkflowContractQuery {
+func (wcq *WorkflowContractQuery) Order(o ...workflowcontract.OrderOption) *WorkflowContractQuery {
 	wcq.order = append(wcq.order, o...)
 	return wcq
 }
@@ -321,7 +321,7 @@ func (wcq *WorkflowContractQuery) Clone() *WorkflowContractQuery {
 	return &WorkflowContractQuery{
 		config:           wcq.config,
 		ctx:              wcq.ctx.Clone(),
-		order:            append([]OrderFunc{}, wcq.order...),
+		order:            append([]workflowcontract.OrderOption{}, wcq.order...),
 		inters:           append([]Interceptor{}, wcq.inters...),
 		predicates:       append([]predicate.WorkflowContract{}, wcq.predicates...),
 		withVersions:     wcq.withVersions.Clone(),
@@ -510,7 +510,7 @@ func (wcq *WorkflowContractQuery) loadVersions(ctx context.Context, query *Workf
 	}
 	query.withFKs = true
 	query.Where(predicate.WorkflowContractVersion(func(s *sql.Selector) {
-		s.Where(sql.InValues(workflowcontract.VersionsColumn, fks...))
+		s.Where(sql.InValues(s.C(workflowcontract.VersionsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -523,7 +523,7 @@ func (wcq *WorkflowContractQuery) loadVersions(ctx context.Context, query *Workf
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "workflow_contract_versions" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "workflow_contract_versions" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -573,7 +573,7 @@ func (wcq *WorkflowContractQuery) loadWorkflows(ctx context.Context, query *Work
 	}
 	query.withFKs = true
 	query.Where(predicate.Workflow(func(s *sql.Selector) {
-		s.Where(sql.InValues(workflowcontract.WorkflowsColumn, fks...))
+		s.Where(sql.InValues(s.C(workflowcontract.WorkflowsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -586,7 +586,7 @@ func (wcq *WorkflowContractQuery) loadWorkflows(ctx context.Context, query *Work
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "workflow_contract" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "workflow_contract" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

@@ -143,7 +143,7 @@ func (iu *IntegrationUpdate) ClearOrganization() *IntegrationUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (iu *IntegrationUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks[int, IntegrationMutation](ctx, iu.sqlSave, iu.mutation, iu.hooks)
+	return withHooks(ctx, iu.sqlSave, iu.mutation, iu.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -214,10 +214,7 @@ func (iu *IntegrationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{integration.AttachmentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: integrationattachment.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(integrationattachment.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -230,10 +227,7 @@ func (iu *IntegrationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{integration.AttachmentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: integrationattachment.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(integrationattachment.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -249,10 +243,7 @@ func (iu *IntegrationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{integration.AttachmentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: integrationattachment.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(integrationattachment.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -268,10 +259,7 @@ func (iu *IntegrationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{integration.OrganizationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: organization.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -284,10 +272,7 @@ func (iu *IntegrationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{integration.OrganizationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: organization.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -440,7 +425,7 @@ func (iuo *IntegrationUpdateOne) Select(field string, fields ...string) *Integra
 
 // Save executes the query and returns the updated Integration entity.
 func (iuo *IntegrationUpdateOne) Save(ctx context.Context) (*Integration, error) {
-	return withHooks[*Integration, IntegrationMutation](ctx, iuo.sqlSave, iuo.mutation, iuo.hooks)
+	return withHooks(ctx, iuo.sqlSave, iuo.mutation, iuo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -528,10 +513,7 @@ func (iuo *IntegrationUpdateOne) sqlSave(ctx context.Context) (_node *Integratio
 			Columns: []string{integration.AttachmentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: integrationattachment.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(integrationattachment.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -544,10 +526,7 @@ func (iuo *IntegrationUpdateOne) sqlSave(ctx context.Context) (_node *Integratio
 			Columns: []string{integration.AttachmentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: integrationattachment.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(integrationattachment.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -563,10 +542,7 @@ func (iuo *IntegrationUpdateOne) sqlSave(ctx context.Context) (_node *Integratio
 			Columns: []string{integration.AttachmentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: integrationattachment.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(integrationattachment.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -582,10 +558,7 @@ func (iuo *IntegrationUpdateOne) sqlSave(ctx context.Context) (_node *Integratio
 			Columns: []string{integration.OrganizationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: organization.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -598,10 +571,7 @@ func (iuo *IntegrationUpdateOne) sqlSave(ctx context.Context) (_node *Integratio
 			Columns: []string{integration.OrganizationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: organization.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/secretmanager v1.11.0
 	code.cloudfoundry.org/bytefmt v0.0.0-20211005130812-5bb3c17173e5
 	cuelang.org/go v0.5.0
-	entgo.io/ent v0.11.9
+	entgo.io/ent v0.12.3
 	github.com/CycloneDX/cyclonedx-go v0.7.0
 	github.com/adrg/xdg v0.4.0
 	github.com/aws/aws-sdk-go-v2 v1.18.0
@@ -39,7 +39,6 @@ require (
 	github.com/hedwigz/entviz v0.0.0-20221011080911-9d47f6f1d818
 	github.com/improbable-eng/grpc-web v0.15.0
 	github.com/in-toto/in-toto-golang v0.9.0
-	github.com/jackc/pgx/v4 v4.18.1
 	github.com/jedib0t/go-pretty/v6 v6.4.6
 	github.com/joshdk/go-junit v1.0.0
 	github.com/lib/pq v1.10.9
@@ -71,6 +70,7 @@ require (
 require (
 	cloud.google.com/go/storage v1.30.1
 	github.com/invopop/jsonschema v0.7.0
+	github.com/jackc/pgx/v5 v5.4.1
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20230530153820-e85fd2cbaebc
 	google.golang.org/genproto/googleapis/bytestream v0.0.0-20230530153820-e85fd2cbaebc
@@ -85,7 +85,7 @@ require (
 )
 
 require (
-	ariga.io/atlas v0.9.1 // indirect
+	ariga.io/atlas v0.10.2-0.20230427182402-87a07dfb83bf // indirect
 	cloud.google.com/go v0.110.2 // indirect
 	cloud.google.com/go/compute v1.19.3 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
@@ -178,13 +178,8 @@ require (
 	github.com/iancoleman/orderedmap v0.0.0-20190318233801-ac98e3ecb4b0 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
-	github.com/jackc/pgconn v1.14.0 // indirect
-	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
-	github.com/jackc/pgproto3/v2 v2.3.2 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
-	github.com/jackc/pgtype v1.14.0 // indirect
 	github.com/jedisct1/go-minisign v0.0.0-20211028175153-1c139d1cc84b // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -253,7 +248,7 @@ require (
 	golang.org/x/sys v0.8.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	golang.org/x/tools v0.8.0 // indirect
+	golang.org/x/tools v0.8.1-0.20230428195545-5283a0178901 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230530153820-e85fd2cbaebc // indirect

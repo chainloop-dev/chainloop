@@ -27,7 +27,7 @@ func (iad *IntegrationAttachmentDelete) Where(ps ...predicate.IntegrationAttachm
 
 // Exec executes the deletion query and returns how many vertices were deleted.
 func (iad *IntegrationAttachmentDelete) Exec(ctx context.Context) (int, error) {
-	return withHooks[int, IntegrationAttachmentMutation](ctx, iad.sqlExec, iad.mutation, iad.hooks)
+	return withHooks(ctx, iad.sqlExec, iad.mutation, iad.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.

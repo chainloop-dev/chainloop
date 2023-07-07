@@ -104,7 +104,7 @@ func (iau *IntegrationAttachmentUpdate) ClearWorkflow() *IntegrationAttachmentUp
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (iau *IntegrationAttachmentUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks[int, IntegrationAttachmentMutation](ctx, iau.sqlSave, iau.mutation, iau.hooks)
+	return withHooks(ctx, iau.sqlSave, iau.mutation, iau.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -172,10 +172,7 @@ func (iau *IntegrationAttachmentUpdate) sqlSave(ctx context.Context) (n int, err
 			Columns: []string{integrationattachment.IntegrationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: integration.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(integration.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -188,10 +185,7 @@ func (iau *IntegrationAttachmentUpdate) sqlSave(ctx context.Context) (n int, err
 			Columns: []string{integrationattachment.IntegrationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: integration.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(integration.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -207,10 +201,7 @@ func (iau *IntegrationAttachmentUpdate) sqlSave(ctx context.Context) (n int, err
 			Columns: []string{integrationattachment.WorkflowColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflow.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -223,10 +214,7 @@ func (iau *IntegrationAttachmentUpdate) sqlSave(ctx context.Context) (n int, err
 			Columns: []string{integrationattachment.WorkflowColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflow.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -340,7 +328,7 @@ func (iauo *IntegrationAttachmentUpdateOne) Select(field string, fields ...strin
 
 // Save executes the query and returns the updated IntegrationAttachment entity.
 func (iauo *IntegrationAttachmentUpdateOne) Save(ctx context.Context) (*IntegrationAttachment, error) {
-	return withHooks[*IntegrationAttachment, IntegrationAttachmentMutation](ctx, iauo.sqlSave, iauo.mutation, iauo.hooks)
+	return withHooks(ctx, iauo.sqlSave, iauo.mutation, iauo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -425,10 +413,7 @@ func (iauo *IntegrationAttachmentUpdateOne) sqlSave(ctx context.Context) (_node 
 			Columns: []string{integrationattachment.IntegrationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: integration.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(integration.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -441,10 +426,7 @@ func (iauo *IntegrationAttachmentUpdateOne) sqlSave(ctx context.Context) (_node 
 			Columns: []string{integrationattachment.IntegrationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: integration.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(integration.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -460,10 +442,7 @@ func (iauo *IntegrationAttachmentUpdateOne) sqlSave(ctx context.Context) (_node 
 			Columns: []string{integrationattachment.WorkflowColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflow.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -476,10 +455,7 @@ func (iauo *IntegrationAttachmentUpdateOne) sqlSave(ctx context.Context) (_node 
 			Columns: []string{integrationattachment.WorkflowColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflow.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

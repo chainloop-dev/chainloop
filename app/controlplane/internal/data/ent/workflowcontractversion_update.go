@@ -61,7 +61,7 @@ func (wcvu *WorkflowContractVersionUpdate) ClearContract() *WorkflowContractVers
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (wcvu *WorkflowContractVersionUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks[int, WorkflowContractVersionMutation](ctx, wcvu.sqlSave, wcvu.mutation, wcvu.hooks)
+	return withHooks(ctx, wcvu.sqlSave, wcvu.mutation, wcvu.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -103,10 +103,7 @@ func (wcvu *WorkflowContractVersionUpdate) sqlSave(ctx context.Context) (n int, 
 			Columns: []string{workflowcontractversion.ContractColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflowcontract.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflowcontract.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -119,10 +116,7 @@ func (wcvu *WorkflowContractVersionUpdate) sqlSave(ctx context.Context) (n int, 
 			Columns: []string{workflowcontractversion.ContractColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflowcontract.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflowcontract.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -195,7 +189,7 @@ func (wcvuo *WorkflowContractVersionUpdateOne) Select(field string, fields ...st
 
 // Save executes the query and returns the updated WorkflowContractVersion entity.
 func (wcvuo *WorkflowContractVersionUpdateOne) Save(ctx context.Context) (*WorkflowContractVersion, error) {
-	return withHooks[*WorkflowContractVersion, WorkflowContractVersionMutation](ctx, wcvuo.sqlSave, wcvuo.mutation, wcvuo.hooks)
+	return withHooks(ctx, wcvuo.sqlSave, wcvuo.mutation, wcvuo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -254,10 +248,7 @@ func (wcvuo *WorkflowContractVersionUpdateOne) sqlSave(ctx context.Context) (_no
 			Columns: []string{workflowcontractversion.ContractColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflowcontract.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflowcontract.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -270,10 +261,7 @@ func (wcvuo *WorkflowContractVersionUpdateOne) sqlSave(ctx context.Context) (_no
 			Columns: []string{workflowcontractversion.ContractColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflowcontract.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflowcontract.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

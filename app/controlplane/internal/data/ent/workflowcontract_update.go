@@ -162,7 +162,7 @@ func (wcu *WorkflowContractUpdate) RemoveWorkflows(w ...*Workflow) *WorkflowCont
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (wcu *WorkflowContractUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks[int, WorkflowContractMutation](ctx, wcu.sqlSave, wcu.mutation, wcu.hooks)
+	return withHooks(ctx, wcu.sqlSave, wcu.mutation, wcu.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -213,10 +213,7 @@ func (wcu *WorkflowContractUpdate) sqlSave(ctx context.Context) (n int, err erro
 			Columns: []string{workflowcontract.VersionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflowcontractversion.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflowcontractversion.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -229,10 +226,7 @@ func (wcu *WorkflowContractUpdate) sqlSave(ctx context.Context) (n int, err erro
 			Columns: []string{workflowcontract.VersionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflowcontractversion.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflowcontractversion.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -248,10 +242,7 @@ func (wcu *WorkflowContractUpdate) sqlSave(ctx context.Context) (n int, err erro
 			Columns: []string{workflowcontract.VersionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflowcontractversion.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflowcontractversion.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -267,10 +258,7 @@ func (wcu *WorkflowContractUpdate) sqlSave(ctx context.Context) (n int, err erro
 			Columns: []string{workflowcontract.OrganizationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: organization.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -283,10 +271,7 @@ func (wcu *WorkflowContractUpdate) sqlSave(ctx context.Context) (n int, err erro
 			Columns: []string{workflowcontract.OrganizationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: organization.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -302,10 +287,7 @@ func (wcu *WorkflowContractUpdate) sqlSave(ctx context.Context) (n int, err erro
 			Columns: []string{workflowcontract.WorkflowsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflow.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -318,10 +300,7 @@ func (wcu *WorkflowContractUpdate) sqlSave(ctx context.Context) (n int, err erro
 			Columns: []string{workflowcontract.WorkflowsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflow.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -337,10 +316,7 @@ func (wcu *WorkflowContractUpdate) sqlSave(ctx context.Context) (n int, err erro
 			Columns: []string{workflowcontract.WorkflowsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflow.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -511,7 +487,7 @@ func (wcuo *WorkflowContractUpdateOne) Select(field string, fields ...string) *W
 
 // Save executes the query and returns the updated WorkflowContract entity.
 func (wcuo *WorkflowContractUpdateOne) Save(ctx context.Context) (*WorkflowContract, error) {
-	return withHooks[*WorkflowContract, WorkflowContractMutation](ctx, wcuo.sqlSave, wcuo.mutation, wcuo.hooks)
+	return withHooks(ctx, wcuo.sqlSave, wcuo.mutation, wcuo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -579,10 +555,7 @@ func (wcuo *WorkflowContractUpdateOne) sqlSave(ctx context.Context) (_node *Work
 			Columns: []string{workflowcontract.VersionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflowcontractversion.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflowcontractversion.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -595,10 +568,7 @@ func (wcuo *WorkflowContractUpdateOne) sqlSave(ctx context.Context) (_node *Work
 			Columns: []string{workflowcontract.VersionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflowcontractversion.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflowcontractversion.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -614,10 +584,7 @@ func (wcuo *WorkflowContractUpdateOne) sqlSave(ctx context.Context) (_node *Work
 			Columns: []string{workflowcontract.VersionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflowcontractversion.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflowcontractversion.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -633,10 +600,7 @@ func (wcuo *WorkflowContractUpdateOne) sqlSave(ctx context.Context) (_node *Work
 			Columns: []string{workflowcontract.OrganizationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: organization.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -649,10 +613,7 @@ func (wcuo *WorkflowContractUpdateOne) sqlSave(ctx context.Context) (_node *Work
 			Columns: []string{workflowcontract.OrganizationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: organization.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -668,10 +629,7 @@ func (wcuo *WorkflowContractUpdateOne) sqlSave(ctx context.Context) (_node *Work
 			Columns: []string{workflowcontract.WorkflowsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflow.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -684,10 +642,7 @@ func (wcuo *WorkflowContractUpdateOne) sqlSave(ctx context.Context) (_node *Work
 			Columns: []string{workflowcontract.WorkflowsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflow.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -703,10 +658,7 @@ func (wcuo *WorkflowContractUpdateOne) sqlSave(ctx context.Context) (_node *Work
 			Columns: []string{workflowcontract.WorkflowsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflow.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/membership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
@@ -30,6 +31,7 @@ type Membership struct {
 	Edges                    MembershipEdges `json:"edges"`
 	organization_memberships *uuid.UUID
 	user_memberships         *uuid.UUID
+	selectValues             sql.SelectValues
 }
 
 // MembershipEdges holds the relations/edges for other nodes in the graph.
@@ -85,7 +87,7 @@ func (*Membership) scanValues(columns []string) ([]any, error) {
 		case membership.ForeignKeys[1]: // user_memberships
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type Membership", columns[i])
+			values[i] = new(sql.UnknownType)
 		}
 	}
 	return values, nil
@@ -137,9 +139,17 @@ func (m *Membership) assignValues(columns []string, values []any) error {
 				m.user_memberships = new(uuid.UUID)
 				*m.user_memberships = *value.S.(*uuid.UUID)
 			}
+		default:
+			m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
+}
+
+// Value returns the ent.Value that was dynamically selected and assigned to the Membership.
+// This includes values selected through modifiers, order, etc.
+func (m *Membership) Value(name string) (ent.Value, error) {
+	return m.selectValues.Get(name)
 }
 
 // QueryOrganization queries the "organization" edge of the Membership entity.

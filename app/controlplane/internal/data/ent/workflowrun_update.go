@@ -222,7 +222,7 @@ func (wru *WorkflowRunUpdate) ClearContractVersion() *WorkflowRunUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (wru *WorkflowRunUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks[int, WorkflowRunMutation](ctx, wru.sqlSave, wru.mutation, wru.hooks)
+	return withHooks(ctx, wru.sqlSave, wru.mutation, wru.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -310,10 +310,7 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{workflowrun.WorkflowColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflow.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -326,10 +323,7 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{workflowrun.WorkflowColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflow.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -345,10 +339,7 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{workflowrun.RobotaccountColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: robotaccount.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(robotaccount.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -361,10 +352,7 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{workflowrun.RobotaccountColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: robotaccount.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(robotaccount.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -380,10 +368,7 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{workflowrun.ContractVersionColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflowcontractversion.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflowcontractversion.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -396,10 +381,7 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{workflowrun.ContractVersionColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflowcontractversion.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflowcontractversion.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -628,7 +610,7 @@ func (wruo *WorkflowRunUpdateOne) Select(field string, fields ...string) *Workfl
 
 // Save executes the query and returns the updated WorkflowRun entity.
 func (wruo *WorkflowRunUpdateOne) Save(ctx context.Context) (*WorkflowRun, error) {
-	return withHooks[*WorkflowRun, WorkflowRunMutation](ctx, wruo.sqlSave, wruo.mutation, wruo.hooks)
+	return withHooks(ctx, wruo.sqlSave, wruo.mutation, wruo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -733,10 +715,7 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 			Columns: []string{workflowrun.WorkflowColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflow.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -749,10 +728,7 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 			Columns: []string{workflowrun.WorkflowColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflow.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -768,10 +744,7 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 			Columns: []string{workflowrun.RobotaccountColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: robotaccount.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(robotaccount.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -784,10 +757,7 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 			Columns: []string{workflowrun.RobotaccountColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: robotaccount.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(robotaccount.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -803,10 +773,7 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 			Columns: []string{workflowrun.ContractVersionColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflowcontractversion.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflowcontractversion.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -819,10 +786,7 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 			Columns: []string{workflowrun.ContractVersionColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflowcontractversion.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflowcontractversion.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

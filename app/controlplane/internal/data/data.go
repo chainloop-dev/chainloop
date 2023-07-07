@@ -25,7 +25,6 @@ import (
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
-	"entgo.io/ent/dialect/sql/schema"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent"
@@ -35,7 +34,7 @@ import (
 	"github.com/google/wire"
 
 	// Load PGX driver
-	_ "github.com/jackc/pgx/v4/stdlib"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 // ProviderSet is data providers.
@@ -57,6 +56,13 @@ var ProviderSet = wire.NewSet(
 // Data .
 type Data struct {
 	db *ent.Client
+}
+
+// Load DB schema
+// NOTE: this is different than running migrations
+// this method is used to load the schema into the DB for TESTING!
+func (data *Data) SchemaLoad() error {
+	return data.db.Schema.Create(context.Background())
 }
 
 // NewData .
@@ -96,11 +102,8 @@ func initSQLDatabase(c *conf.Data_Database, log *log.Helper) (*ent.Client, error
 	drv := entsql.OpenDB(dialect.Postgres, db)
 	client := ent.NewClient(ent.Driver(drv))
 
-	// Run DB migration
-	if err := client.Schema.Create(context.Background(), schema.WithDropColumn(true)); err != nil {
-		return nil, fmt.Errorf("error performing the schema change: %w", err)
-	}
-
+	// NOTE: We do not run migrations automatically anymore
+	// Instead we leverage atlas cli to run migrations
 	return client, nil
 }
 

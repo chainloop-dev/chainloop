@@ -234,7 +234,7 @@ func (ou *OrganizationUpdate) RemoveIntegrations(i ...*Integration) *Organizatio
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (ou *OrganizationUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks[int, OrganizationMutation](ctx, ou.sqlSave, ou.mutation, ou.hooks)
+	return withHooks(ctx, ou.sqlSave, ou.mutation, ou.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -279,10 +279,7 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{organization.MembershipsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: membership.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -295,10 +292,7 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{organization.MembershipsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: membership.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -314,10 +308,7 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{organization.MembershipsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: membership.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -333,10 +324,7 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{organization.WorkflowContractsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflowcontract.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflowcontract.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -349,10 +337,7 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{organization.WorkflowContractsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflowcontract.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflowcontract.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -368,10 +353,7 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{organization.WorkflowContractsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflowcontract.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflowcontract.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -387,10 +369,7 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{organization.WorkflowsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflow.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -403,10 +382,7 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{organization.WorkflowsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflow.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -422,10 +398,7 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{organization.WorkflowsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflow.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -441,10 +414,7 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{organization.OciRepositoriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: ocirepository.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(ocirepository.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -457,10 +427,7 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{organization.OciRepositoriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: ocirepository.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(ocirepository.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -476,10 +443,7 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{organization.OciRepositoriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: ocirepository.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(ocirepository.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -495,10 +459,7 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{organization.IntegrationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: integration.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(integration.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -511,10 +472,7 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{organization.IntegrationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: integration.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(integration.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -530,10 +488,7 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{organization.IntegrationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: integration.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(integration.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -775,7 +730,7 @@ func (ouo *OrganizationUpdateOne) Select(field string, fields ...string) *Organi
 
 // Save executes the query and returns the updated Organization entity.
 func (ouo *OrganizationUpdateOne) Save(ctx context.Context) (*Organization, error) {
-	return withHooks[*Organization, OrganizationMutation](ctx, ouo.sqlSave, ouo.mutation, ouo.hooks)
+	return withHooks(ctx, ouo.sqlSave, ouo.mutation, ouo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -837,10 +792,7 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 			Columns: []string{organization.MembershipsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: membership.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -853,10 +805,7 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 			Columns: []string{organization.MembershipsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: membership.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -872,10 +821,7 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 			Columns: []string{organization.MembershipsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: membership.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -891,10 +837,7 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 			Columns: []string{organization.WorkflowContractsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflowcontract.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflowcontract.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -907,10 +850,7 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 			Columns: []string{organization.WorkflowContractsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflowcontract.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflowcontract.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -926,10 +866,7 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 			Columns: []string{organization.WorkflowContractsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflowcontract.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflowcontract.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -945,10 +882,7 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 			Columns: []string{organization.WorkflowsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflow.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -961,10 +895,7 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 			Columns: []string{organization.WorkflowsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflow.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -980,10 +911,7 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 			Columns: []string{organization.WorkflowsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflow.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -999,10 +927,7 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 			Columns: []string{organization.OciRepositoriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: ocirepository.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(ocirepository.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1015,10 +940,7 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 			Columns: []string{organization.OciRepositoriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: ocirepository.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(ocirepository.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1034,10 +956,7 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 			Columns: []string{organization.OciRepositoriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: ocirepository.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(ocirepository.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1053,10 +972,7 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 			Columns: []string{organization.IntegrationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: integration.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(integration.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1069,10 +985,7 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 			Columns: []string{organization.IntegrationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: integration.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(integration.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1088,10 +1001,7 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 			Columns: []string{organization.IntegrationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: integration.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(integration.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

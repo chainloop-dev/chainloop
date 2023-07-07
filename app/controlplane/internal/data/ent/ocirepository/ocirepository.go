@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/google/uuid"
 )
@@ -88,4 +90,51 @@ func ValidationStatusValidator(vs biz.OCIRepoValidationStatus) error {
 	default:
 		return fmt.Errorf("ocirepository: invalid enum value for validation_status field: %q", vs)
 	}
+}
+
+// OrderOption defines the ordering options for the OCIRepository queries.
+type OrderOption func(*sql.Selector)
+
+// ByID orders the results by the id field.
+func ByID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByRepo orders the results by the repo field.
+func ByRepo(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRepo, opts...).ToFunc()
+}
+
+// BySecretName orders the results by the secret_name field.
+func BySecretName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSecretName, opts...).ToFunc()
+}
+
+// ByCreatedAt orders the results by the created_at field.
+func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
+}
+
+// ByValidationStatus orders the results by the validation_status field.
+func ByValidationStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldValidationStatus, opts...).ToFunc()
+}
+
+// ByValidatedAt orders the results by the validated_at field.
+func ByValidatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldValidatedAt, opts...).ToFunc()
+}
+
+// ByOrganizationField orders the results by organization field.
+func ByOrganizationField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newOrganizationStep(), sql.OrderByField(field, opts...))
+	}
+}
+func newOrganizationStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(OrganizationInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, OrganizationTable, OrganizationColumn),
+	)
 }

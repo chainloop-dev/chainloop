@@ -70,6 +70,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	robotAccountUseCase := biz.NewRootAccountUseCase(robotAccountRepo, workflowRepo, auth, logger)
 	testingUseCases := &TestingUseCases{
 		DB:                     testDatabase,
+		Data:                   dataData,
 		L:                      logger,
 		Membership:             membershipUseCase,
 		OCIRepo:                ociRepositoryUseCase,

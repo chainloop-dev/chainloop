@@ -12,7 +12,7 @@ init:
 	go install github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@latest
 	go install github.com/google/wire/cmd/wire@latest
 	go install github.com/vektra/mockery/v2@v2.20.0
-	go install entgo.io/ent/cmd/ent@v0.11.4
+	go install ariga.io/atlas/cmd/atlas@v0.12.0
 	go install github.com/bufbuild/buf/cmd/buf@v1.10.0
 
 .PHONY: api

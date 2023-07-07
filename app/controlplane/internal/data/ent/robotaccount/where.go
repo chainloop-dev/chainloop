@@ -240,11 +240,7 @@ func HasWorkflow() predicate.RobotAccount {
 // HasWorkflowWith applies the HasEdge predicate on the "workflow" edge with a given conditions (other predicates).
 func HasWorkflowWith(preds ...predicate.Workflow) predicate.RobotAccount {
 	return predicate.RobotAccount(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(WorkflowInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, WorkflowTable, WorkflowColumn),
-		)
+		step := newWorkflowStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -267,11 +263,7 @@ func HasWorkflowruns() predicate.RobotAccount {
 // HasWorkflowrunsWith applies the HasEdge predicate on the "workflowruns" edge with a given conditions (other predicates).
 func HasWorkflowrunsWith(preds ...predicate.WorkflowRun) predicate.RobotAccount {
 	return predicate.RobotAccount(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(WorkflowrunsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, WorkflowrunsTable, WorkflowrunsColumn),
-		)
+		step := newWorkflowrunsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

@@ -191,7 +191,7 @@ func (wc *WorkflowCreate) Mutation() *WorkflowMutation {
 // Save creates the Workflow in the database.
 func (wc *WorkflowCreate) Save(ctx context.Context) (*Workflow, error) {
 	wc.defaults()
-	return withHooks[*Workflow, WorkflowMutation](ctx, wc.sqlSave, wc.mutation, wc.hooks)
+	return withHooks(ctx, wc.sqlSave, wc.mutation, wc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -316,10 +316,7 @@ func (wc *WorkflowCreate) createSpec() (*Workflow, *sqlgraph.CreateSpec) {
 			Columns: []string{workflow.RobotaccountsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: robotaccount.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(robotaccount.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -335,10 +332,7 @@ func (wc *WorkflowCreate) createSpec() (*Workflow, *sqlgraph.CreateSpec) {
 			Columns: []string{workflow.WorkflowrunsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflowrun.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -354,10 +348,7 @@ func (wc *WorkflowCreate) createSpec() (*Workflow, *sqlgraph.CreateSpec) {
 			Columns: []string{workflow.OrganizationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: organization.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -374,10 +365,7 @@ func (wc *WorkflowCreate) createSpec() (*Workflow, *sqlgraph.CreateSpec) {
 			Columns: []string{workflow.ContractColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: workflowcontract.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(workflowcontract.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -394,10 +382,7 @@ func (wc *WorkflowCreate) createSpec() (*Workflow, *sqlgraph.CreateSpec) {
 			Columns: []string{workflow.IntegrationAttachmentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: integrationattachment.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(integrationattachment.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -432,8 +417,8 @@ func (wcb *WorkflowCreateBulk) Save(ctx context.Context) ([]*Workflow, error) {
 					return nil, err
 				}
 				builder.mutation = mutation
-				nodes[i], specs[i] = builder.createSpec()
 				var err error
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, wcb.builders[i+1].mutation)
 				} else {

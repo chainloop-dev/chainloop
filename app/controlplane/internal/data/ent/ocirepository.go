@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/ocirepository"
@@ -33,6 +34,7 @@ type OCIRepository struct {
 	// The values are being populated by the OCIRepositoryQuery when eager-loading is set.
 	Edges                         OCIRepositoryEdges `json:"edges"`
 	organization_oci_repositories *uuid.UUID
+	selectValues                  sql.SelectValues
 }
 
 // OCIRepositoryEdges holds the relations/edges for other nodes in the graph.
@@ -71,7 +73,7 @@ func (*OCIRepository) scanValues(columns []string) ([]any, error) {
 		case ocirepository.ForeignKeys[0]: // organization_oci_repositories
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type OCIRepository", columns[i])
+			values[i] = new(sql.UnknownType)
 		}
 	}
 	return values, nil
@@ -128,9 +130,17 @@ func (or *OCIRepository) assignValues(columns []string, values []any) error {
 				or.organization_oci_repositories = new(uuid.UUID)
 				*or.organization_oci_repositories = *value.S.(*uuid.UUID)
 			}
+		default:
+			or.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
+}
+
+// Value returns the ent.Value that was dynamically selected and assigned to the OCIRepository.
+// This includes values selected through modifiers, order, etc.
+func (or *OCIRepository) Value(name string) (ent.Value, error) {
+	return or.selectValues.Get(name)
 }
 
 // QueryOrganization queries the "organization" edge of the OCIRepository entity.

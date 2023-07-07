@@ -110,7 +110,7 @@ func (orc *OCIRepositoryCreate) Mutation() *OCIRepositoryMutation {
 // Save creates the OCIRepository in the database.
 func (orc *OCIRepositoryCreate) Save(ctx context.Context) (*OCIRepository, error) {
 	orc.defaults()
-	return withHooks[*OCIRepository, OCIRepositoryMutation](ctx, orc.sqlSave, orc.mutation, orc.hooks)
+	return withHooks(ctx, orc.sqlSave, orc.mutation, orc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -243,10 +243,7 @@ func (orc *OCIRepositoryCreate) createSpec() (*OCIRepository, *sqlgraph.CreateSp
 			Columns: []string{ocirepository.OrganizationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: organization.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -282,8 +279,8 @@ func (orcb *OCIRepositoryCreateBulk) Save(ctx context.Context) ([]*OCIRepository
 					return nil, err
 				}
 				builder.mutation = mutation
-				nodes[i], specs[i] = builder.createSpec()
 				var err error
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, orcb.builders[i+1].mutation)
 				} else {

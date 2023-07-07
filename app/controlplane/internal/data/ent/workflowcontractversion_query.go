@@ -20,7 +20,7 @@ import (
 type WorkflowContractVersionQuery struct {
 	config
 	ctx          *QueryContext
-	order        []OrderFunc
+	order        []workflowcontractversion.OrderOption
 	inters       []Interceptor
 	predicates   []predicate.WorkflowContractVersion
 	withContract *WorkflowContractQuery
@@ -56,7 +56,7 @@ func (wcvq *WorkflowContractVersionQuery) Unique(unique bool) *WorkflowContractV
 }
 
 // Order specifies how the records should be ordered.
-func (wcvq *WorkflowContractVersionQuery) Order(o ...OrderFunc) *WorkflowContractVersionQuery {
+func (wcvq *WorkflowContractVersionQuery) Order(o ...workflowcontractversion.OrderOption) *WorkflowContractVersionQuery {
 	wcvq.order = append(wcvq.order, o...)
 	return wcvq
 }
@@ -272,7 +272,7 @@ func (wcvq *WorkflowContractVersionQuery) Clone() *WorkflowContractVersionQuery 
 	return &WorkflowContractVersionQuery{
 		config:       wcvq.config,
 		ctx:          wcvq.ctx.Clone(),
-		order:        append([]OrderFunc{}, wcvq.order...),
+		order:        append([]workflowcontractversion.OrderOption{}, wcvq.order...),
 		inters:       append([]Interceptor{}, wcvq.inters...),
 		predicates:   append([]predicate.WorkflowContractVersion{}, wcvq.predicates...),
 		withContract: wcvq.withContract.Clone(),

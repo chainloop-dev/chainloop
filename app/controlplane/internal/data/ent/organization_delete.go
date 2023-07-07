@@ -27,7 +27,7 @@ func (od *OrganizationDelete) Where(ps ...predicate.Organization) *OrganizationD
 
 // Exec executes the deletion query and returns how many vertices were deleted.
 func (od *OrganizationDelete) Exec(ctx context.Context) (int, error) {
-	return withHooks[int, OrganizationMutation](ctx, od.sqlExec, od.mutation, od.hooks)
+	return withHooks(ctx, od.sqlExec, od.mutation, od.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.

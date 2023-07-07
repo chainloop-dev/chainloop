@@ -331,11 +331,7 @@ func HasOrganization() predicate.OCIRepository {
 // HasOrganizationWith applies the HasEdge predicate on the "organization" edge with a given conditions (other predicates).
 func HasOrganizationWith(preds ...predicate.Organization) predicate.OCIRepository {
 	return predicate.OCIRepository(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(OrganizationInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, OrganizationTable, OrganizationColumn),
-		)
+		step := newOrganizationStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

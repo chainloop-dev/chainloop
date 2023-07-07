@@ -5,6 +5,8 @@ package robotaccount
 import (
 	"time"
 
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/google/uuid"
 )
 
@@ -76,3 +78,61 @@ var (
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
+
+// OrderOption defines the ordering options for the RobotAccount queries.
+type OrderOption func(*sql.Selector)
+
+// ByID orders the results by the id field.
+func ByID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByName orders the results by the name field.
+func ByName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldName, opts...).ToFunc()
+}
+
+// ByCreatedAt orders the results by the created_at field.
+func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
+}
+
+// ByRevokedAt orders the results by the revoked_at field.
+func ByRevokedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRevokedAt, opts...).ToFunc()
+}
+
+// ByWorkflowField orders the results by workflow field.
+func ByWorkflowField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newWorkflowStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByWorkflowrunsCount orders the results by workflowruns count.
+func ByWorkflowrunsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newWorkflowrunsStep(), opts...)
+	}
+}
+
+// ByWorkflowruns orders the results by workflowruns terms.
+func ByWorkflowruns(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newWorkflowrunsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+func newWorkflowStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(WorkflowInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, WorkflowTable, WorkflowColumn),
+	)
+}
+func newWorkflowrunsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(WorkflowrunsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, WorkflowrunsTable, WorkflowrunsColumn),
+	)
+}

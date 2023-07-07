@@ -95,7 +95,7 @@ func (oru *OCIRepositoryUpdate) ClearOrganization() *OCIRepositoryUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (oru *OCIRepositoryUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks[int, OCIRepositoryMutation](ctx, oru.sqlSave, oru.mutation, oru.hooks)
+	return withHooks(ctx, oru.sqlSave, oru.mutation, oru.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -165,10 +165,7 @@ func (oru *OCIRepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) 
 			Columns: []string{ocirepository.OrganizationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: organization.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -181,10 +178,7 @@ func (oru *OCIRepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) 
 			Columns: []string{ocirepository.OrganizationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: organization.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -289,7 +283,7 @@ func (oruo *OCIRepositoryUpdateOne) Select(field string, fields ...string) *OCIR
 
 // Save executes the query and returns the updated OCIRepository entity.
 func (oruo *OCIRepositoryUpdateOne) Save(ctx context.Context) (*OCIRepository, error) {
-	return withHooks[*OCIRepository, OCIRepositoryMutation](ctx, oruo.sqlSave, oruo.mutation, oruo.hooks)
+	return withHooks(ctx, oruo.sqlSave, oruo.mutation, oruo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -376,10 +370,7 @@ func (oruo *OCIRepositoryUpdateOne) sqlSave(ctx context.Context) (_node *OCIRepo
 			Columns: []string{ocirepository.OrganizationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: organization.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -392,10 +383,7 @@ func (oruo *OCIRepositoryUpdateOne) sqlSave(ctx context.Context) (_node *OCIRepo
 			Columns: []string{ocirepository.OrganizationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: organization.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

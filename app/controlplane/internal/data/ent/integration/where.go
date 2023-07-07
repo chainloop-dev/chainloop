@@ -445,11 +445,7 @@ func HasAttachments() predicate.Integration {
 // HasAttachmentsWith applies the HasEdge predicate on the "attachments" edge with a given conditions (other predicates).
 func HasAttachmentsWith(preds ...predicate.IntegrationAttachment) predicate.Integration {
 	return predicate.Integration(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(AttachmentsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, AttachmentsTable, AttachmentsColumn),
-		)
+		step := newAttachmentsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -472,11 +468,7 @@ func HasOrganization() predicate.Integration {
 // HasOrganizationWith applies the HasEdge predicate on the "organization" edge with a given conditions (other predicates).
 func HasOrganizationWith(preds ...predicate.Organization) predicate.Integration {
 	return predicate.Integration(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(OrganizationInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, OrganizationTable, OrganizationColumn),
-		)
+		step := newOrganizationStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

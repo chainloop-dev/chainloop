@@ -27,7 +27,7 @@ func (rad *RobotAccountDelete) Where(ps ...predicate.RobotAccount) *RobotAccount
 
 // Exec executes the deletion query and returns how many vertices were deleted.
 func (rad *RobotAccountDelete) Exec(ctx context.Context) (int, error) {
-	return withHooks[int, RobotAccountMutation](ctx, rad.sqlExec, rad.mutation, rad.hooks)
+	return withHooks(ctx, rad.sqlExec, rad.mutation, rad.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.

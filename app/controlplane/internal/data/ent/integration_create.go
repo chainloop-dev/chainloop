@@ -131,7 +131,7 @@ func (ic *IntegrationCreate) Mutation() *IntegrationMutation {
 // Save creates the Integration in the database.
 func (ic *IntegrationCreate) Save(ctx context.Context) (*Integration, error) {
 	ic.defaults()
-	return withHooks[*Integration, IntegrationMutation](ctx, ic.sqlSave, ic.mutation, ic.hooks)
+	return withHooks(ctx, ic.sqlSave, ic.mutation, ic.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -249,10 +249,7 @@ func (ic *IntegrationCreate) createSpec() (*Integration, *sqlgraph.CreateSpec) {
 			Columns: []string{integration.AttachmentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: integrationattachment.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(integrationattachment.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -268,10 +265,7 @@ func (ic *IntegrationCreate) createSpec() (*Integration, *sqlgraph.CreateSpec) {
 			Columns: []string{integration.OrganizationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: organization.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -307,8 +301,8 @@ func (icb *IntegrationCreateBulk) Save(ctx context.Context) ([]*Integration, err
 					return nil, err
 				}
 				builder.mutation = mutation
-				nodes[i], specs[i] = builder.createSpec()
 				var err error
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, icb.builders[i+1].mutation)
 				} else {

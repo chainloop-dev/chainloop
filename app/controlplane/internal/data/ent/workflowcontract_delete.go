@@ -27,7 +27,7 @@ func (wcd *WorkflowContractDelete) Where(ps ...predicate.WorkflowContract) *Work
 
 // Exec executes the deletion query and returns how many vertices were deleted.
 func (wcd *WorkflowContractDelete) Exec(ctx context.Context) (int, error) {
-	return withHooks[int, WorkflowContractMutation](ctx, wcd.sqlExec, wcd.mutation, wcd.hooks)
+	return withHooks(ctx, wcd.sqlExec, wcd.mutation, wcd.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.

@@ -5,6 +5,8 @@ package workflow
 import (
 	"time"
 
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/google/uuid"
 )
 
@@ -115,3 +117,132 @@ var (
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
+
+// OrderOption defines the ordering options for the Workflow queries.
+type OrderOption func(*sql.Selector)
+
+// ByID orders the results by the id field.
+func ByID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByName orders the results by the name field.
+func ByName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldName, opts...).ToFunc()
+}
+
+// ByProject orders the results by the project field.
+func ByProject(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldProject, opts...).ToFunc()
+}
+
+// ByTeam orders the results by the team field.
+func ByTeam(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTeam, opts...).ToFunc()
+}
+
+// ByRunsCount orders the results by the runs_count field.
+func ByRunsCount(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRunsCount, opts...).ToFunc()
+}
+
+// ByCreatedAt orders the results by the created_at field.
+func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
+}
+
+// ByDeletedAt orders the results by the deleted_at field.
+func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDeletedAt, opts...).ToFunc()
+}
+
+// ByRobotaccountsCount orders the results by robotaccounts count.
+func ByRobotaccountsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRobotaccountsStep(), opts...)
+	}
+}
+
+// ByRobotaccounts orders the results by robotaccounts terms.
+func ByRobotaccounts(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRobotaccountsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByWorkflowrunsCount orders the results by workflowruns count.
+func ByWorkflowrunsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newWorkflowrunsStep(), opts...)
+	}
+}
+
+// ByWorkflowruns orders the results by workflowruns terms.
+func ByWorkflowruns(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newWorkflowrunsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByOrganizationField orders the results by organization field.
+func ByOrganizationField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newOrganizationStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByContractField orders the results by contract field.
+func ByContractField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newContractStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByIntegrationAttachmentsCount orders the results by integration_attachments count.
+func ByIntegrationAttachmentsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newIntegrationAttachmentsStep(), opts...)
+	}
+}
+
+// ByIntegrationAttachments orders the results by integration_attachments terms.
+func ByIntegrationAttachments(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newIntegrationAttachmentsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+func newRobotaccountsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RobotaccountsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RobotaccountsTable, RobotaccountsColumn),
+	)
+}
+func newWorkflowrunsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(WorkflowrunsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, WorkflowrunsTable, WorkflowrunsColumn),
+	)
+}
+func newOrganizationStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(OrganizationInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, OrganizationTable, OrganizationColumn),
+	)
+}
+func newContractStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ContractInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, ContractTable, ContractColumn),
+	)
+}
+func newIntegrationAttachmentsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(IntegrationAttachmentsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, true, IntegrationAttachmentsTable, IntegrationAttachmentsColumn),
+	)
+}
