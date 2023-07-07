@@ -16,22 +16,26 @@
 package action
 
 import (
+	"context"
 	"errors"
 
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
-	"google.golang.org/grpc"
+	"github.com/chainloop-dev/chainloop/internal/grpcconn"
 )
 
 type AttestationAddOpts struct {
 	*ActionsOpts
-	ArtifactsCASConn *grpc.ClientConn
+	CASURI             string
+	ConnectionInsecure bool
 }
 
 type AttestationAdd struct {
 	*ActionsOpts
-	c                *crafter.Crafter
-	artifactsCASConn *grpc.ClientConn
+	c                  *crafter.Crafter
+	casURI             string
+	connectionInsecure bool
 }
 
 func NewAttestationAdd(cfg *AttestationAddOpts) *AttestationAdd {
@@ -39,9 +43,10 @@ func NewAttestationAdd(cfg *AttestationAddOpts) *AttestationAdd {
 		ActionsOpts: cfg.ActionsOpts,
 		c: crafter.NewCrafter(
 			crafter.WithLogger(&cfg.Logger),
-			crafter.WithUploader(casclient.New(cfg.ArtifactsCASConn, casclient.WithLogger(cfg.Logger))),
+			// crafter.WithUploader(casclient.New(cfg.ArtifactsCASConn, casclient.WithLogger(cfg.Logger))),
 		),
-		artifactsCASConn: cfg.ArtifactsCASConn,
+		casURI:             cfg.CASURI,
+		connectionInsecure: cfg.ConnectionInsecure,
 	}
 }
 
@@ -57,7 +62,24 @@ func (action *AttestationAdd) Run(k, v string) error {
 		return err
 	}
 
-	if err := action.c.AddMaterial(k, v); err != nil {
+	// Get upload creds and set up CAS client
+	client := pb.NewAttestationServiceClient(action.CPConnection)
+	creds, err := client.GetUploadCreds(context.Background(),
+		&pb.AttestationServiceGetUploadCredsRequest{
+			WorkflowRunId: action.c.CraftingState.GetAttestation().GetWorkflow().GetWorkflowRunId(),
+		},
+	)
+	if err != nil {
+		return err
+	}
+	artifactCASConn, err := grpcconn.New(action.casURI, creds.Result.Token, action.connectionInsecure)
+	if err != nil {
+		return err
+	}
+	defer artifactCASConn.Close()
+
+	cc := casclient.New(artifactCASConn, casclient.WithLogger(action.Logger))
+	if err := action.c.AddMaterial(k, v, cc); err != nil {
 		action.Logger.Err(err).Msg("adding material")
 		return err
 	}

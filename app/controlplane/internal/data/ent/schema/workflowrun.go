@@ -49,6 +49,7 @@ func (WorkflowRun) Fields() []ent.Field {
 		field.String("run_url").Optional(),
 		field.String("runner_type").Optional(),
 		field.JSON("attestation", &dsse.Envelope{}).Optional(),
+		field.JSON("cas_backend_refs", []*biz.CASBackendRef{}).Optional(),
 	}
 }
 

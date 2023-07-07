@@ -31,6 +31,8 @@ const (
 	FieldRunnerType = "runner_type"
 	// FieldAttestation holds the string denoting the attestation field in the database.
 	FieldAttestation = "attestation"
+	// FieldCasBackendRefs holds the string denoting the cas_backend_refs field in the database.
+	FieldCasBackendRefs = "cas_backend_refs"
 	// EdgeWorkflow holds the string denoting the workflow edge name in mutations.
 	EdgeWorkflow = "workflow"
 	// EdgeRobotaccount holds the string denoting the robotaccount edge name in mutations.
@@ -72,6 +74,7 @@ var Columns = []string{
 	FieldRunURL,
 	FieldRunnerType,
 	FieldAttestation,
+	FieldCasBackendRefs,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "workflow_runs"

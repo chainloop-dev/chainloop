@@ -6884,6 +6884,8 @@ type WorkflowRunMutation struct {
 	run_url                 *string
 	runner_type             *string
 	attestation             **dsse.Envelope
+	cas_backend_refs        *[]*biz.CASBackendRef
+	appendcas_backend_refs  []*biz.CASBackendRef
 	clearedFields           map[string]struct{}
 	workflow                *uuid.UUID
 	clearedworkflow         bool
@@ -7317,6 +7319,71 @@ func (m *WorkflowRunMutation) ResetAttestation() {
 	delete(m.clearedFields, workflowrun.FieldAttestation)
 }
 
+// SetCasBackendRefs sets the "cas_backend_refs" field.
+func (m *WorkflowRunMutation) SetCasBackendRefs(bbr []*biz.CASBackendRef) {
+	m.cas_backend_refs = &bbr
+	m.appendcas_backend_refs = nil
+}
+
+// CasBackendRefs returns the value of the "cas_backend_refs" field in the mutation.
+func (m *WorkflowRunMutation) CasBackendRefs() (r []*biz.CASBackendRef, exists bool) {
+	v := m.cas_backend_refs
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCasBackendRefs returns the old "cas_backend_refs" field's value of the WorkflowRun entity.
+// If the WorkflowRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowRunMutation) OldCasBackendRefs(ctx context.Context) (v []*biz.CASBackendRef, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCasBackendRefs is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCasBackendRefs requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCasBackendRefs: %w", err)
+	}
+	return oldValue.CasBackendRefs, nil
+}
+
+// AppendCasBackendRefs adds bbr to the "cas_backend_refs" field.
+func (m *WorkflowRunMutation) AppendCasBackendRefs(bbr []*biz.CASBackendRef) {
+	m.appendcas_backend_refs = append(m.appendcas_backend_refs, bbr...)
+}
+
+// AppendedCasBackendRefs returns the list of values that were appended to the "cas_backend_refs" field in this mutation.
+func (m *WorkflowRunMutation) AppendedCasBackendRefs() ([]*biz.CASBackendRef, bool) {
+	if len(m.appendcas_backend_refs) == 0 {
+		return nil, false
+	}
+	return m.appendcas_backend_refs, true
+}
+
+// ClearCasBackendRefs clears the value of the "cas_backend_refs" field.
+func (m *WorkflowRunMutation) ClearCasBackendRefs() {
+	m.cas_backend_refs = nil
+	m.appendcas_backend_refs = nil
+	m.clearedFields[workflowrun.FieldCasBackendRefs] = struct{}{}
+}
+
+// CasBackendRefsCleared returns if the "cas_backend_refs" field was cleared in this mutation.
+func (m *WorkflowRunMutation) CasBackendRefsCleared() bool {
+	_, ok := m.clearedFields[workflowrun.FieldCasBackendRefs]
+	return ok
+}
+
+// ResetCasBackendRefs resets all changes to the "cas_backend_refs" field.
+func (m *WorkflowRunMutation) ResetCasBackendRefs() {
+	m.cas_backend_refs = nil
+	m.appendcas_backend_refs = nil
+	delete(m.clearedFields, workflowrun.FieldCasBackendRefs)
+}
+
 // SetWorkflowID sets the "workflow" edge to the Workflow entity by id.
 func (m *WorkflowRunMutation) SetWorkflowID(id uuid.UUID) {
 	m.workflow = &id
@@ -7468,7 +7535,7 @@ func (m *WorkflowRunMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *WorkflowRunMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 8)
 	if m.created_at != nil {
 		fields = append(fields, workflowrun.FieldCreatedAt)
 	}
@@ -7489,6 +7556,9 @@ func (m *WorkflowRunMutation) Fields() []string {
 	}
 	if m.attestation != nil {
 		fields = append(fields, workflowrun.FieldAttestation)
+	}
+	if m.cas_backend_refs != nil {
+		fields = append(fields, workflowrun.FieldCasBackendRefs)
 	}
 	return fields
 }
@@ -7512,6 +7582,8 @@ func (m *WorkflowRunMutation) Field(name string) (ent.Value, bool) {
 		return m.RunnerType()
 	case workflowrun.FieldAttestation:
 		return m.Attestation()
+	case workflowrun.FieldCasBackendRefs:
+		return m.CasBackendRefs()
 	}
 	return nil, false
 }
@@ -7535,6 +7607,8 @@ func (m *WorkflowRunMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldRunnerType(ctx)
 	case workflowrun.FieldAttestation:
 		return m.OldAttestation(ctx)
+	case workflowrun.FieldCasBackendRefs:
+		return m.OldCasBackendRefs(ctx)
 	}
 	return nil, fmt.Errorf("unknown WorkflowRun field %s", name)
 }
@@ -7593,6 +7667,13 @@ func (m *WorkflowRunMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetAttestation(v)
 		return nil
+	case workflowrun.FieldCasBackendRefs:
+		v, ok := value.([]*biz.CASBackendRef)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCasBackendRefs(v)
+		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun field %s", name)
 }
@@ -7638,6 +7719,9 @@ func (m *WorkflowRunMutation) ClearedFields() []string {
 	if m.FieldCleared(workflowrun.FieldAttestation) {
 		fields = append(fields, workflowrun.FieldAttestation)
 	}
+	if m.FieldCleared(workflowrun.FieldCasBackendRefs) {
+		fields = append(fields, workflowrun.FieldCasBackendRefs)
+	}
 	return fields
 }
 
@@ -7667,6 +7751,9 @@ func (m *WorkflowRunMutation) ClearField(name string) error {
 	case workflowrun.FieldAttestation:
 		m.ClearAttestation()
 		return nil
+	case workflowrun.FieldCasBackendRefs:
+		m.ClearCasBackendRefs()
+		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun nullable field %s", name)
 }
@@ -7695,6 +7782,9 @@ func (m *WorkflowRunMutation) ResetField(name string) error {
 		return nil
 	case workflowrun.FieldAttestation:
 		m.ResetAttestation()
+		return nil
+	case workflowrun.FieldCasBackendRefs:
+		m.ResetCasBackendRefs()
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun field %s", name)

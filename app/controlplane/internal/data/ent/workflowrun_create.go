@@ -116,6 +116,12 @@ func (wrc *WorkflowRunCreate) SetAttestation(d *dsse.Envelope) *WorkflowRunCreat
 	return wrc
 }
 
+// SetCasBackendRefs sets the "cas_backend_refs" field.
+func (wrc *WorkflowRunCreate) SetCasBackendRefs(bbr []*biz.CASBackendRef) *WorkflowRunCreate {
+	wrc.mutation.SetCasBackendRefs(bbr)
+	return wrc
+}
+
 // SetID sets the "id" field.
 func (wrc *WorkflowRunCreate) SetID(u uuid.UUID) *WorkflowRunCreate {
 	wrc.mutation.SetID(u)
@@ -311,6 +317,10 @@ func (wrc *WorkflowRunCreate) createSpec() (*WorkflowRun, *sqlgraph.CreateSpec) 
 	if value, ok := wrc.mutation.Attestation(); ok {
 		_spec.SetField(workflowrun.FieldAttestation, field.TypeJSON, value)
 		_node.Attestation = value
+	}
+	if value, ok := wrc.mutation.CasBackendRefs(); ok {
+		_spec.SetField(workflowrun.FieldCasBackendRefs, field.TypeJSON, value)
+		_node.CasBackendRefs = value
 	}
 	if nodes := wrc.mutation.WorkflowIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

@@ -113,7 +113,10 @@ message WorkflowRunServiceViewResponse {
 }
 
 
-message AttestationServiceGetUploadCredsRequest {}
+message AttestationServiceGetUploadCredsRequest {
+  string workflow_run_id = 1;
+}
+
 message AttestationServiceGetUploadCredsResponse {
   Result result = 1;
   

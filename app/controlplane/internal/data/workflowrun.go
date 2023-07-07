@@ -46,13 +46,14 @@ func NewWorkflowRunRepo(data *Data, logger log.Logger) biz.WorkflowRunRepo {
 	}
 }
 
-func (r *WorkflowRunRepo) Create(ctx context.Context, workflowID, robotaccountID, schemaVersionID uuid.UUID, runURL, runnerType string) (*biz.WorkflowRun, error) {
+func (r *WorkflowRunRepo) Create(ctx context.Context, workflowID, robotaccountID, schemaVersionID uuid.UUID, runURL, runnerType string, casRefs []*biz.CASBackendRef) (*biz.WorkflowRun, error) {
 	p, err := r.data.db.WorkflowRun.Create().
 		SetRobotaccountID(robotaccountID).
 		SetWorkflowID(workflowID).
 		SetContractVersionID(schemaVersionID).
 		SetRunURL(runURL).
 		SetRunnerType(runnerType).
+		SetCasBackendRefs(casRefs).
 		Save(ctx)
 	if err != nil {
 		return nil, err
@@ -183,13 +184,14 @@ func (r *WorkflowRunRepo) Expire(ctx context.Context, id uuid.UUID) error {
 
 func entWrToBizWr(wr *ent.WorkflowRun) *biz.WorkflowRun {
 	r := &biz.WorkflowRun{
-		ID:         wr.ID,
-		CreatedAt:  toTimePtr(wr.CreatedAt),
-		FinishedAt: toTimePtr(wr.FinishedAt),
-		State:      string(wr.State),
-		Reason:     wr.Reason,
-		RunURL:     wr.RunURL,
-		RunnerType: wr.RunnerType,
+		ID:             wr.ID,
+		CreatedAt:      toTimePtr(wr.CreatedAt),
+		FinishedAt:     toTimePtr(wr.FinishedAt),
+		State:          string(wr.State),
+		Reason:         wr.Reason,
+		RunURL:         wr.RunURL,
+		RunnerType:     wr.RunnerType,
+		CASBackendRefs: wr.CasBackendRefs,
 	}
 
 	if wr.Attestation != nil {

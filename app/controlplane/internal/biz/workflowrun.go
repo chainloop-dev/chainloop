@@ -36,7 +36,17 @@ type WorkflowRun struct {
 	RunURL, RunnerType    string
 	ContractVersionID     uuid.UUID
 	Attestation           *Attestation
+	CASBackendRefs        []*CASBackendRef
 }
+
+type CASBackendRef struct {
+	// Backend type, i.e "s3", "gcs", "oci", etc
+	Backend string
+	// Reference to the secret where the credentials to instantiate the backend are stored
+	SecretRef string
+}
+
+const CASBackendOCI = "oci"
 
 type Attestation struct {
 	Envelope *dsse.Envelope
@@ -58,7 +68,7 @@ const (
 )
 
 type WorkflowRunRepo interface {
-	Create(ctx context.Context, workflowID, robotaccountID, contractVersion uuid.UUID, runURL, runnerType string) (*WorkflowRun, error)
+	Create(ctx context.Context, workflowID, robotaccountID, contractVersion uuid.UUID, runURL, runnerType string, casRefs []*CASBackendRef) (*WorkflowRun, error)
 	FindByID(ctx context.Context, ID uuid.UUID) (*WorkflowRun, error)
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*WorkflowRun, error)
 	MarkAsFinished(ctx context.Context, ID uuid.UUID, status WorkflowRunStatus, reason string) error
@@ -152,6 +162,7 @@ type WorkflowRunCreateOpts struct {
 	ContractRevisionUUID       uuid.UUID
 	RunnerRunURL               string
 	RunnerType                 string
+	CASRefs                    []*CASBackendRef
 }
 
 // Create will add a new WorkflowRun, associate it to a schemaVersion and increment the counter in the associated workflow
@@ -166,7 +177,7 @@ func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreat
 		return nil, err
 	}
 
-	run, err := uc.wfRunRepo.Create(ctx, workflowUUID, robotaccountUUID, opts.ContractRevisionUUID, opts.RunnerRunURL, opts.RunnerType)
+	run, err := uc.wfRunRepo.Create(ctx, workflowUUID, robotaccountUUID, opts.ContractRevisionUUID, opts.RunnerRunURL, opts.RunnerType, opts.CASRefs)
 	if err != nil {
 		return nil, err
 	}

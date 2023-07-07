@@ -437,6 +437,16 @@ func AttestationNotNil() predicate.WorkflowRun {
 	return predicate.WorkflowRun(sql.FieldNotNull(FieldAttestation))
 }
 
+// CasBackendRefsIsNil applies the IsNil predicate on the "cas_backend_refs" field.
+func CasBackendRefsIsNil() predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldIsNull(FieldCasBackendRefs))
+}
+
+// CasBackendRefsNotNil applies the NotNil predicate on the "cas_backend_refs" field.
+func CasBackendRefsNotNil() predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNotNull(FieldCasBackendRefs))
+}
+
 // HasWorkflow applies the HasEdge predicate on the "workflow" edge.
 func HasWorkflow() predicate.WorkflowRun {
 	return predicate.WorkflowRun(func(s *sql.Selector) {

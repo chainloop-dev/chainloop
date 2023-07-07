@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
@@ -137,6 +138,24 @@ func (wru *WorkflowRunUpdate) SetAttestation(d *dsse.Envelope) *WorkflowRunUpdat
 // ClearAttestation clears the value of the "attestation" field.
 func (wru *WorkflowRunUpdate) ClearAttestation() *WorkflowRunUpdate {
 	wru.mutation.ClearAttestation()
+	return wru
+}
+
+// SetCasBackendRefs sets the "cas_backend_refs" field.
+func (wru *WorkflowRunUpdate) SetCasBackendRefs(bbr []*biz.CASBackendRef) *WorkflowRunUpdate {
+	wru.mutation.SetCasBackendRefs(bbr)
+	return wru
+}
+
+// AppendCasBackendRefs appends bbr to the "cas_backend_refs" field.
+func (wru *WorkflowRunUpdate) AppendCasBackendRefs(bbr []*biz.CASBackendRef) *WorkflowRunUpdate {
+	wru.mutation.AppendCasBackendRefs(bbr)
+	return wru
+}
+
+// ClearCasBackendRefs clears the value of the "cas_backend_refs" field.
+func (wru *WorkflowRunUpdate) ClearCasBackendRefs() *WorkflowRunUpdate {
+	wru.mutation.ClearCasBackendRefs()
 	return wru
 }
 
@@ -301,6 +320,17 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if wru.mutation.AttestationCleared() {
 		_spec.ClearField(workflowrun.FieldAttestation, field.TypeJSON)
+	}
+	if value, ok := wru.mutation.CasBackendRefs(); ok {
+		_spec.SetField(workflowrun.FieldCasBackendRefs, field.TypeJSON, value)
+	}
+	if value, ok := wru.mutation.AppendedCasBackendRefs(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, workflowrun.FieldCasBackendRefs, value)
+		})
+	}
+	if wru.mutation.CasBackendRefsCleared() {
+		_spec.ClearField(workflowrun.FieldCasBackendRefs, field.TypeJSON)
 	}
 	if wru.mutation.WorkflowCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -515,6 +545,24 @@ func (wruo *WorkflowRunUpdateOne) ClearAttestation() *WorkflowRunUpdateOne {
 	return wruo
 }
 
+// SetCasBackendRefs sets the "cas_backend_refs" field.
+func (wruo *WorkflowRunUpdateOne) SetCasBackendRefs(bbr []*biz.CASBackendRef) *WorkflowRunUpdateOne {
+	wruo.mutation.SetCasBackendRefs(bbr)
+	return wruo
+}
+
+// AppendCasBackendRefs appends bbr to the "cas_backend_refs" field.
+func (wruo *WorkflowRunUpdateOne) AppendCasBackendRefs(bbr []*biz.CASBackendRef) *WorkflowRunUpdateOne {
+	wruo.mutation.AppendCasBackendRefs(bbr)
+	return wruo
+}
+
+// ClearCasBackendRefs clears the value of the "cas_backend_refs" field.
+func (wruo *WorkflowRunUpdateOne) ClearCasBackendRefs() *WorkflowRunUpdateOne {
+	wruo.mutation.ClearCasBackendRefs()
+	return wruo
+}
+
 // SetWorkflowID sets the "workflow" edge to the Workflow entity by ID.
 func (wruo *WorkflowRunUpdateOne) SetWorkflowID(id uuid.UUID) *WorkflowRunUpdateOne {
 	wruo.mutation.SetWorkflowID(id)
@@ -706,6 +754,17 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 	}
 	if wruo.mutation.AttestationCleared() {
 		_spec.ClearField(workflowrun.FieldAttestation, field.TypeJSON)
+	}
+	if value, ok := wruo.mutation.CasBackendRefs(); ok {
+		_spec.SetField(workflowrun.FieldCasBackendRefs, field.TypeJSON, value)
+	}
+	if value, ok := wruo.mutation.AppendedCasBackendRefs(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, workflowrun.FieldCasBackendRefs, value)
+		})
+	}
+	if wruo.mutation.CasBackendRefsCleared() {
+		_spec.ClearField(workflowrun.FieldCasBackendRefs, field.TypeJSON)
 	}
 	if wruo.mutation.WorkflowCleared() {
 		edge := &sqlgraph.EdgeSpec{
