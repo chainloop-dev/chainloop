@@ -72,13 +72,18 @@ make api
 
 ### Update Application data model
 
-We use [ent](https://entgo.io) as database Object Relational Mapping (ORM).
+We use [ent](https://entgo.io) as database Object Relational Mapping (ORM) and [atlas versioned migrations](https://entgo.io/docs/versioned-migrations) to manage the database schema changes.
 
-The way a change in the data model is as follows
+The way you can make a change in the data model is
 
+**Update the schema**
 - Add a new/update an existing entity via a schema update. Schemas can be found at `internal/data/ent/schema`
 - Generate the code changes associated with that schema change. `make generate`
-- Restarting the control plane will cause the schema change to be automatically migrated.
+- Generate a new versioned migration `make migration_new`. This will create a new migration file at `internal/data/ent/migrate/migrations 
+
+**Apply the schema change in development DB**
+- `make migration_apply` will apply the migration to the development database
+- Restart the control plane
 
 ### Update configuration schema
 
