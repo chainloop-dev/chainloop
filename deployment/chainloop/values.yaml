@@ -30,14 +30,14 @@ sentry:
 
 ## Location where to store sensitive data. If development.true? and no overrides provided, the setup will connect to a development instance of Vault
 secretsBackend:
-  ## @param secretsBackend.backend Secrets backend type ("vault" or "awsSecretManager") 
+  ## @param secretsBackend.backend Secrets backend type ("vault", "awsSecretManager" or "gcpSecretManager") 
   ##
   backend: "vault" # "awsSecretManager"
   ## @param secretsBackend.secretPrefix Prefix that will be pre-pended to all secrets in the storage backend
   ##
   secretPrefix: "chainloop"
 
-  # Either vault or AWS secret manager enabled at the same time
+  # Either vault, AWS secret manager or GCP secret manager enabled at the same time
   ## @extra secretsBackend.vault.address Vault address
   ## @extra secretsBackend.vault.token Vault authentication token
   ##
@@ -53,6 +53,13 @@ secretsBackend:
   #   accessKey: ""
   #   secretKey: ""
   #   region: ""
+
+  ## @extra secretsBackend.gcpSecretManager.projectId GCP Project ID
+  ## @extra secretsBackend.gcpSecretManager.authKey GCP Auth Key
+  ##
+  # gcpSecretManager:
+  #   projectId: ""
+  #   authKey: ""
 
 ## @section Authentication
 ##
