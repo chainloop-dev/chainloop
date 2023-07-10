@@ -79,6 +79,7 @@ awsSecretManager:
     secretKey: {{ required "secret key required" .awsSecretManager.secretKey | quote }}
 
 {{- else if eq .backend "gcpSecretManager" }}
+gcpSecretManager:
   secretPrefix: {{ required "secret prefix required" .secretPrefix | quote }}
   projectId: {{ required "project id required" .gcpSecretManager.projectId | quote }}
   authKey: {{ required "auth key required" .gcpSecretManager.authKey | quote }}
