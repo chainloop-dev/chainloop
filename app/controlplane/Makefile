@@ -1,13 +1,13 @@
-VERSION=$(shell git describe --tags --always)
+include ../../common.mk
 
 .PHONY: config
 # generate config proto bindings
-config:
+config: check-buf-tool
 	cd ./internal/conf && buf generate
 
 .PHONY: api
 # generate api proto bindings
-api:
+api: check-buf-tool
 	cd ./api && buf generate
 
 .PHONY: build
@@ -28,13 +28,13 @@ local_db = postgres://postgres:@localhost:5432/controlplane?sslmode=disable
 
 .PHONY: migration_apply
 # run migrations against local db
-migration_apply:
+migration_apply: check-atlas-tool
 	atlas migrate status --dir ${local_migrations_dir} --url ${local_db}
 	atlas migrate apply --dir ${local_migrations_dir} --url ${local_db}
 
 .PHONY: migration_new
 # generate new migration if needed from the current ent schema
-migration_new:
+migration_new: check-atlas-tool
 	atlas migrate diff --dir ${local_migrations_dir} --to "ent://internal/data/ent/schema" --dev-url "docker://postgres/15/test?search_path=public"
 
 .PHONY: test
@@ -49,14 +49,14 @@ test-unit:
 
 .PHONY: lint
 # lint
-lint:
+lint: check-golangci-lint-tool check-buf-tool
 	buf lint api
 	buf lint internal/conf
 	golangci-lint run
 
 .PHONY: generate
 # generate proto bindings, wire injectors, and ent models
-generate: api config
+generate: check-wire-tool api config
 	go generate ./...
 
 .PHONY: all
@@ -69,22 +69,3 @@ all:
 # Visualize data model
 visualize-data-model:
 	xdg-open internal/data/ent/schema-viz.html
-
-# show help
-help:
-	@echo ''
-	@echo 'Usage:'
-	@echo ' make [target]'
-	@echo ''
-	@echo 'Targets:'
-	@awk '/^[a-zA-Z\-_0-9]+:/ { \
-	helpMessage = match(lastLine, /^# (.*)/); \
-		if (helpMessage) { \
-			helpCommand = substr($$1, 0, index($$1, ":")-1); \
-			helpMessage = substr(lastLine, RSTART + 2, RLENGTH); \
-			printf "\033[36m%-22s\033[0m %s\n", helpCommand,helpMessage; \
-		} \
-	} \
-	{ lastLine = $$0 }' $(MAKEFILE_LIST)
-
-.DEFAULT_GOAL := help
