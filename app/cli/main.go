@@ -38,7 +38,7 @@ func main() {
 	}
 }
 
-// handle predefinided errors and handle types so we can tailor the experience
+// handle predefined errors and handle types so we can tailor the experience
 func errorInfo(err error, logger zerolog.Logger) (string, int) {
 	var msg string
 	exitCode := 1

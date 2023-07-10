@@ -21,6 +21,7 @@ import (
 	v1 "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
+	"github.com/go-openapi/errors"
 )
 
 type ResourceService struct {
@@ -41,13 +42,15 @@ func (s *ResourceService) Describe(ctx context.Context, req *v1.ResourceServiceD
 		return nil, err
 	}
 
-	backend, err := s.backendP.FromCredentials(ctx, info.StoredSecretID)
+	b, err := s.backendP.FromCredentials(ctx, info.StoredSecretID)
 	if err != nil {
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}
 
-	res, err := backend.Describe(ctx, req.Digest)
-	if err != nil {
+	res, err := b.Describe(ctx, req.Digest)
+	if err != nil && backend.IsNotFound(err) {
+		return nil, errors.NotFound("not found", err.Error())
+	} else if err != nil {
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}
 
