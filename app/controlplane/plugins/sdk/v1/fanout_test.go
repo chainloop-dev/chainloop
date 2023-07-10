@@ -116,7 +116,8 @@ func TestFindByID(t *testing.T) {
 	want2 := mocks.NewFanOut(t)
 	want2.On("Describe").Return(&sdk.IntegrationInfo{ID: "id2"})
 
-	var available sdk.AvailablePlugins = []sdk.FanOut{want, want2}
+	var available sdk.AvailablePlugins = []*sdk.FanOutP{{FanOut: want}, {FanOut: want2}}
+
 	got, err := available.FindByID("id")
 	assert.NoError(t, err)
 	assert.Equal(t, want.Describe().ID, got.Describe().ID)

@@ -165,14 +165,14 @@ func (s *dispatcherTestSuite) TestInitDispatchQueue() {
 		})
 	}
 
-	s.T().Run("integration does NOT have integrations", func(t *testing.T) {
+	s.T().Run("workflow does NOT have integrations", func(t *testing.T) {
 		q, err := s.dispatcher.initDispatchQueue(context.TODO(), s.org.ID, s.emptyWorkflow.ID.String())
 		require.NoError(t, err)
 		require.NotNil(t, q)
 		assert.Len(t, q, 0)
 	})
 
-	s.T().Run("integration does have integrations", func(t *testing.T) {
+	s.T().Run("workflow does have integrations", func(t *testing.T) {
 		wantAttestations := dispatchQueue{
 			integrationInfoBuilder(s.ociIntegrationBackend), integrationInfoBuilder(s.containerIntegrationBackend),
 			integrationInfoBuilder(s.cdxIntegrationBackend), integrationInfoBuilder(s.cdxIntegrationBackend),
@@ -191,7 +191,6 @@ func (s *dispatcherTestSuite) TestInitDispatchQueue() {
 			{"SBOM_INTEGRATION", "SBOM_CYCLONEDX_JSON"},
 		} {
 			assert.Equal(t, tc.id, q[i].plugin.Describe().ID)
-			assert.Equal(t, wantAttestations[i].plugin, q[i].plugin)
 			assert.Equal(t, wantAttestations[i].attachmentConfig, q[i].attachmentConfig)
 
 			if tc.subscribedMaterial != "" {
@@ -306,8 +305,12 @@ func (s *dispatcherTestSuite) SetupTest() {
 	}
 
 	// Register the integrations in the dispatcher
-	registeredIntegrations := sdk.AvailablePlugins{s.cdxIntegrationBackend, s.containerIntegrationBackend, s.ociIntegrationBackend}
-	l := log.NewStdLogger(os.Stdout)
+	registeredIntegrations := sdk.AvailablePlugins{
+		&sdk.FanOutP{FanOut: s.cdxIntegrationBackend},
+		&sdk.FanOutP{FanOut: s.containerIntegrationBackend},
+		&sdk.FanOutP{FanOut: s.ociIntegrationBackend},
+	}
+	l := log.NewStdLogger(io.Discard)
 
 	s.casClient = mocks.NewCASClient(s.T())
 	s.dispatcher = New(s.Integration, nil, nil, s.casClient, registeredIntegrations, l)

@@ -79,9 +79,9 @@ func WithCredsReaderWriter(rw credentials.ReaderWriter) NewTestingUCOpt {
 func WithRegisteredIntegration(i sdk.FanOut) NewTestingUCOpt {
 	return func(tu *newTestingOpts) {
 		if tu.integrations == nil {
-			tu.integrations = []sdk.FanOut{i}
+			tu.integrations = []*sdk.FanOutP{{FanOut: i}}
 		} else {
-			tu.integrations = append(tu.integrations, i)
+			tu.integrations = append(tu.integrations, &sdk.FanOutP{FanOut: i})
 		}
 	}
 }

@@ -2,7 +2,14 @@ FROM golang:1.20 AS builder
 
 FROM scratch
 
-COPY ./control-plane /
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+
+COPY ./control-plane /
+# Add plugins here
+# NOTE: they are built by go-releaser in the builds section
+# Make sure to update it acordingly if you add more plugins
+COPY ./chainloop-plugin-discord-webhook /plugins/
+# tmp is required for the plugins to run
+COPY --from=builder /tmp /tmp
 
 ENTRYPOINT [ "/control-plane", "--conf", "/data/conf"]

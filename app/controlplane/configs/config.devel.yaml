@@ -13,6 +13,9 @@ server:
     # We have some slow operations such as verifying an OCI registry
     timeout: 10s
 
+# Directory where the plugins are located
+# NOTE: plugins have the form of chainloop-plugin-<name>
+plugins_dir: "./plugins/bin"
 # Local CAS server for development
 cas_server:
   grpc:

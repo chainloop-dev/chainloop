@@ -27,9 +27,11 @@ message Bootstrap {
   Auth auth = 3;
   Observability observability = 4;
   credentials.v1.Credentials credentials_service = 5;
-
   // CAS Server endpoint
   CASServer cas_server = 6;
+  // Plugins directory
+  // NOTE: plugins have the form of chainloop-plugin-<name>
+  string plugins_dir = 7;
 
   message Observability {
     Sentry sentry = 1;
