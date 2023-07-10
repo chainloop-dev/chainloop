@@ -35,10 +35,10 @@ func TestEntOCIRepoTo(t *testing.T) {
 
 	tests := []struct {
 		input  *ent.OCIRepository
-		output *biz.OCIRepository
+		output *biz.CASBackend
 	}{
 		{nil, nil},
-		{testRepo, &biz.OCIRepository{
+		{testRepo, &biz.CASBackend{
 			ID:         testRepo.ID.String(),
 			Repo:       testRepo.Repo,
 			SecretName: testRepo.SecretName,

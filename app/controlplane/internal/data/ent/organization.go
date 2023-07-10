@@ -37,7 +37,7 @@ type OrganizationEdges struct {
 	// Workflows holds the value of the workflows edge.
 	Workflows []*Workflow `json:"workflows,omitempty"`
 	// OciRepositories holds the value of the oci_repositories edge.
-	OciRepositories []*OCIRepository `json:"oci_repositories,omitempty"`
+	OciRepositories []*CASBackend `json:"oci_repositories,omitempty"`
 	// Integrations holds the value of the integrations edge.
 	Integrations []*Integration `json:"integrations,omitempty"`
 	// loadedTypes holds the information for reporting if a
@@ -74,7 +74,7 @@ func (e OrganizationEdges) WorkflowsOrErr() ([]*Workflow, error) {
 
 // OciRepositoriesOrErr returns the OciRepositories value or an error if the edge
 // was not loaded in eager-loading.
-func (e OrganizationEdges) OciRepositoriesOrErr() ([]*OCIRepository, error) {
+func (e OrganizationEdges) OciRepositoriesOrErr() ([]*CASBackend, error) {
 	if e.loadedTypes[3] {
 		return e.OciRepositories, nil
 	}
@@ -163,7 +163,7 @@ func (o *Organization) QueryWorkflows() *WorkflowQuery {
 }
 
 // QueryOciRepositories queries the "oci_repositories" edge of the Organization entity.
-func (o *Organization) QueryOciRepositories() *OCIRepositoryQuery {
+func (o *Organization) QueryOciRepositories() *CASBackendQuery {
 	return NewOrganizationClient(o.config).QueryOciRepositories(o)
 }
 

@@ -62,7 +62,7 @@ func CheckOrgRequirements(uc biz.OCIRepositoryReader) middleware.Middleware {
 }
 
 // validateRepoIfNeeded will re-run a validation and return the updated repository
-func validateRepo(ctx context.Context, uc biz.OCIRepositoryReader, repo *biz.OCIRepository) (*biz.OCIRepository, error) {
+func validateRepo(ctx context.Context, uc biz.OCIRepositoryReader, repo *biz.CASBackend) (*biz.CASBackend, error) {
 	// re-run the validation
 	if err := uc.PerformValidation(ctx, repo.ID); err != nil {
 		return nil, fmt.Errorf("performing validation: %w", err)
@@ -81,7 +81,7 @@ const validationTimeOffset = 5 * time.Minute
 
 // Since this check happens synchronously on every request it has a big performance impact
 // that's why we run it only in refresh windows
-func shouldRevalidate(repo *biz.OCIRepository) bool {
+func shouldRevalidate(repo *biz.CASBackend) bool {
 	// If the validation is currently failed we want to make sure we re-validate
 	if repo.ValidationStatus == biz.OCIRepoValidationFailed {
 		return true

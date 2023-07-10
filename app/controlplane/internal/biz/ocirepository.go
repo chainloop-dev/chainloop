@@ -29,7 +29,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type OCIRepository struct {
+type CASBackend struct {
 	ID, Repo, SecretName   string
 	CreatedAt, ValidatedAt *time.Time
 	OrganizationID         string
@@ -50,29 +50,29 @@ type OCIRepoUpdateOpts struct {
 	ID uuid.UUID
 }
 
-type OCIRepositoryRepo interface {
-	FindMainRepo(ctx context.Context, orgID uuid.UUID) (*OCIRepository, error)
-	FindByID(ctx context.Context, ID uuid.UUID) (*OCIRepository, error)
+type CASBackendRepo interface {
+	FindMainRepo(ctx context.Context, orgID uuid.UUID) (*CASBackend, error)
+	FindByID(ctx context.Context, ID uuid.UUID) (*CASBackend, error)
 	UpdateValidationStatus(ctx context.Context, ID uuid.UUID, status OCIRepoValidationStatus) error
-	Create(context.Context, *OCIRepoCreateOpts) (*OCIRepository, error)
-	Update(context.Context, *OCIRepoUpdateOpts) (*OCIRepository, error)
+	Create(context.Context, *OCIRepoCreateOpts) (*CASBackend, error)
+	Update(context.Context, *OCIRepoUpdateOpts) (*CASBackend, error)
 	Delete(ctx context.Context, ID uuid.UUID) error
 }
 
 type OCIRepositoryReader interface {
-	FindMainRepo(ctx context.Context, orgID string) (*OCIRepository, error)
-	FindByID(ctx context.Context, ID string) (*OCIRepository, error)
+	FindMainRepo(ctx context.Context, orgID string) (*CASBackend, error)
+	FindByID(ctx context.Context, ID string) (*CASBackend, error)
 	PerformValidation(ctx context.Context, ID string) error
 }
 
 type OCIRepositoryUseCase struct {
-	repo               OCIRepositoryRepo
+	repo               CASBackendRepo
 	logger             *log.Helper
 	credsRW            credentials.ReaderWriter
 	ociBackendProvider backend.Provider
 }
 
-func NewOCIRepositoryUseCase(repo OCIRepositoryRepo, credsRW credentials.ReaderWriter, p backend.Provider, l log.Logger) *OCIRepositoryUseCase {
+func NewOCIRepositoryUseCase(repo CASBackendRepo, credsRW credentials.ReaderWriter, p backend.Provider, l log.Logger) *OCIRepositoryUseCase {
 	if l == nil {
 		l = log.NewStdLogger(io.Discard)
 	}
@@ -82,7 +82,7 @@ func NewOCIRepositoryUseCase(repo OCIRepositoryRepo, credsRW credentials.ReaderW
 
 var ErrAlreadyRepoInOrg = errors.New("there is already an OCI repository associated with this organization")
 
-func (uc *OCIRepositoryUseCase) FindMainRepo(ctx context.Context, orgID string) (*OCIRepository, error) {
+func (uc *OCIRepositoryUseCase) FindMainRepo(ctx context.Context, orgID string) (*CASBackend, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -91,7 +91,7 @@ func (uc *OCIRepositoryUseCase) FindMainRepo(ctx context.Context, orgID string) 
 	return uc.repo.FindMainRepo(ctx, orgUUID)
 }
 
-func (uc *OCIRepositoryUseCase) FindByID(ctx context.Context, id string) (*OCIRepository, error) {
+func (uc *OCIRepositoryUseCase) FindByID(ctx context.Context, id string) (*CASBackend, error) {
 	repoUUID, err := uuid.Parse(id)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -107,7 +107,7 @@ func (uc *OCIRepositoryUseCase) FindByID(ctx context.Context, id string) (*OCIRe
 	return repo, nil
 }
 
-func (uc *OCIRepositoryUseCase) CreateOrUpdate(ctx context.Context, orgID, repoURL, username, password string) (*OCIRepository, error) {
+func (uc *OCIRepositoryUseCase) CreateOrUpdate(ctx context.Context, orgID, repoURL, username, password string) (*CASBackend, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)

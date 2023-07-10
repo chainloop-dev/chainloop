@@ -53,10 +53,10 @@ const (
 	// WorkflowsColumn is the table column denoting the workflows relation/edge.
 	WorkflowsColumn = "organization_id"
 	// OciRepositoriesTable is the table that holds the oci_repositories relation/edge.
-	OciRepositoriesTable = "oci_repositories"
-	// OciRepositoriesInverseTable is the table name for the OCIRepository entity.
-	// It exists in this package in order to avoid circular dependency with the "ocirepository" package.
-	OciRepositoriesInverseTable = "oci_repositories"
+	OciRepositoriesTable = "cas_backends"
+	// OciRepositoriesInverseTable is the table name for the CASBackend entity.
+	// It exists in this package in order to avoid circular dependency with the "casbackend" package.
+	OciRepositoriesInverseTable = "cas_backends"
 	// OciRepositoriesColumn is the table column denoting the oci_repositories relation/edge.
 	OciRepositoriesColumn = "organization_oci_repositories"
 	// IntegrationsTable is the table that holds the integrations relation/edge.

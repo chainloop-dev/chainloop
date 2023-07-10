@@ -31,7 +31,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	membershipRepo := data.NewMembershipRepo(dataData, logger)
 	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, logger)
 	organizationRepo := data.NewOrganizationRepo(dataData, logger)
-	ociRepositoryRepo := data.NewOCIRepositoryRepo(dataData, logger)
+	ociRepositoryRepo := data.NewCASBackendRepo(dataData, logger)
 	backendProvider := oci.NewBackendProvider(readerWriter)
 	ociRepositoryUseCase := biz.NewOCIRepositoryUseCase(ociRepositoryRepo, readerWriter, backendProvider, logger)
 	integrationRepo := data.NewIntegrationRepo(dataData, logger)

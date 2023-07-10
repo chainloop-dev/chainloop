@@ -15,10 +15,10 @@ import (
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integration"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integrationattachment"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/membership"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/ocirepository"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/user"
@@ -33,14 +33,14 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// CASBackend is the client for interacting with the CASBackend builders.
+	CASBackend *CASBackendClient
 	// Integration is the client for interacting with the Integration builders.
 	Integration *IntegrationClient
 	// IntegrationAttachment is the client for interacting with the IntegrationAttachment builders.
 	IntegrationAttachment *IntegrationAttachmentClient
 	// Membership is the client for interacting with the Membership builders.
 	Membership *MembershipClient
-	// OCIRepository is the client for interacting with the OCIRepository builders.
-	OCIRepository *OCIRepositoryClient
 	// Organization is the client for interacting with the Organization builders.
 	Organization *OrganizationClient
 	// RobotAccount is the client for interacting with the RobotAccount builders.
@@ -68,10 +68,10 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.CASBackend = NewCASBackendClient(c.config)
 	c.Integration = NewIntegrationClient(c.config)
 	c.IntegrationAttachment = NewIntegrationAttachmentClient(c.config)
 	c.Membership = NewMembershipClient(c.config)
-	c.OCIRepository = NewOCIRepositoryClient(c.config)
 	c.Organization = NewOrganizationClient(c.config)
 	c.RobotAccount = NewRobotAccountClient(c.config)
 	c.User = NewUserClient(c.config)
@@ -161,10 +161,10 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	return &Tx{
 		ctx:                     ctx,
 		config:                  cfg,
+		CASBackend:              NewCASBackendClient(cfg),
 		Integration:             NewIntegrationClient(cfg),
 		IntegrationAttachment:   NewIntegrationAttachmentClient(cfg),
 		Membership:              NewMembershipClient(cfg),
-		OCIRepository:           NewOCIRepositoryClient(cfg),
 		Organization:            NewOrganizationClient(cfg),
 		RobotAccount:            NewRobotAccountClient(cfg),
 		User:                    NewUserClient(cfg),
@@ -191,10 +191,10 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		ctx:                     ctx,
 		config:                  cfg,
+		CASBackend:              NewCASBackendClient(cfg),
 		Integration:             NewIntegrationClient(cfg),
 		IntegrationAttachment:   NewIntegrationAttachmentClient(cfg),
 		Membership:              NewMembershipClient(cfg),
-		OCIRepository:           NewOCIRepositoryClient(cfg),
 		Organization:            NewOrganizationClient(cfg),
 		RobotAccount:            NewRobotAccountClient(cfg),
 		User:                    NewUserClient(cfg),
@@ -208,7 +208,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		Integration.
+//		CASBackend.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -231,7 +231,7 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Integration, c.IntegrationAttachment, c.Membership, c.OCIRepository,
+		c.CASBackend, c.Integration, c.IntegrationAttachment, c.Membership,
 		c.Organization, c.RobotAccount, c.User, c.Workflow, c.WorkflowContract,
 		c.WorkflowContractVersion, c.WorkflowRun,
 	} {
@@ -243,7 +243,7 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Integration, c.IntegrationAttachment, c.Membership, c.OCIRepository,
+		c.CASBackend, c.Integration, c.IntegrationAttachment, c.Membership,
 		c.Organization, c.RobotAccount, c.User, c.Workflow, c.WorkflowContract,
 		c.WorkflowContractVersion, c.WorkflowRun,
 	} {
@@ -254,14 +254,14 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
+	case *CASBackendMutation:
+		return c.CASBackend.mutate(ctx, m)
 	case *IntegrationMutation:
 		return c.Integration.mutate(ctx, m)
 	case *IntegrationAttachmentMutation:
 		return c.IntegrationAttachment.mutate(ctx, m)
 	case *MembershipMutation:
 		return c.Membership.mutate(ctx, m)
-	case *OCIRepositoryMutation:
-		return c.OCIRepository.mutate(ctx, m)
 	case *OrganizationMutation:
 		return c.Organization.mutate(ctx, m)
 	case *RobotAccountMutation:
@@ -278,6 +278,140 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.WorkflowRun.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
+	}
+}
+
+// CASBackendClient is a client for the CASBackend schema.
+type CASBackendClient struct {
+	config
+}
+
+// NewCASBackendClient returns a client for the CASBackend from the given config.
+func NewCASBackendClient(c config) *CASBackendClient {
+	return &CASBackendClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `casbackend.Hooks(f(g(h())))`.
+func (c *CASBackendClient) Use(hooks ...Hook) {
+	c.hooks.CASBackend = append(c.hooks.CASBackend, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `casbackend.Intercept(f(g(h())))`.
+func (c *CASBackendClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CASBackend = append(c.inters.CASBackend, interceptors...)
+}
+
+// Create returns a builder for creating a CASBackend entity.
+func (c *CASBackendClient) Create() *CASBackendCreate {
+	mutation := newCASBackendMutation(c.config, OpCreate)
+	return &CASBackendCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CASBackend entities.
+func (c *CASBackendClient) CreateBulk(builders ...*CASBackendCreate) *CASBackendCreateBulk {
+	return &CASBackendCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CASBackend.
+func (c *CASBackendClient) Update() *CASBackendUpdate {
+	mutation := newCASBackendMutation(c.config, OpUpdate)
+	return &CASBackendUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CASBackendClient) UpdateOne(cb *CASBackend) *CASBackendUpdateOne {
+	mutation := newCASBackendMutation(c.config, OpUpdateOne, withCASBackend(cb))
+	return &CASBackendUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *CASBackendClient) UpdateOneID(id uuid.UUID) *CASBackendUpdateOne {
+	mutation := newCASBackendMutation(c.config, OpUpdateOne, withCASBackendID(id))
+	return &CASBackendUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CASBackend.
+func (c *CASBackendClient) Delete() *CASBackendDelete {
+	mutation := newCASBackendMutation(c.config, OpDelete)
+	return &CASBackendDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CASBackendClient) DeleteOne(cb *CASBackend) *CASBackendDeleteOne {
+	return c.DeleteOneID(cb.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *CASBackendClient) DeleteOneID(id uuid.UUID) *CASBackendDeleteOne {
+	builder := c.Delete().Where(casbackend.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &CASBackendDeleteOne{builder}
+}
+
+// Query returns a query builder for CASBackend.
+func (c *CASBackendClient) Query() *CASBackendQuery {
+	return &CASBackendQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCASBackend},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CASBackend entity by its id.
+func (c *CASBackendClient) Get(ctx context.Context, id uuid.UUID) (*CASBackend, error) {
+	return c.Query().Where(casbackend.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CASBackendClient) GetX(ctx context.Context, id uuid.UUID) *CASBackend {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryOrganization queries the organization edge of a CASBackend.
+func (c *CASBackendClient) QueryOrganization(cb *CASBackend) *OrganizationQuery {
+	query := (&OrganizationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := cb.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(casbackend.Table, casbackend.FieldID, id),
+			sqlgraph.To(organization.Table, organization.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, casbackend.OrganizationTable, casbackend.OrganizationColumn),
+		)
+		fromV = sqlgraph.Neighbors(cb.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CASBackendClient) Hooks() []Hook {
+	return c.hooks.CASBackend
+}
+
+// Interceptors returns the client interceptors.
+func (c *CASBackendClient) Interceptors() []Interceptor {
+	return c.inters.CASBackend
+}
+
+func (c *CASBackendClient) mutate(ctx context.Context, m *CASBackendMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CASBackendCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CASBackendUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CASBackendUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CASBackendDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CASBackend mutation op: %q", m.Op())
 	}
 }
 
@@ -731,140 +865,6 @@ func (c *MembershipClient) mutate(ctx context.Context, m *MembershipMutation) (V
 	}
 }
 
-// OCIRepositoryClient is a client for the OCIRepository schema.
-type OCIRepositoryClient struct {
-	config
-}
-
-// NewOCIRepositoryClient returns a client for the OCIRepository from the given config.
-func NewOCIRepositoryClient(c config) *OCIRepositoryClient {
-	return &OCIRepositoryClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `ocirepository.Hooks(f(g(h())))`.
-func (c *OCIRepositoryClient) Use(hooks ...Hook) {
-	c.hooks.OCIRepository = append(c.hooks.OCIRepository, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `ocirepository.Intercept(f(g(h())))`.
-func (c *OCIRepositoryClient) Intercept(interceptors ...Interceptor) {
-	c.inters.OCIRepository = append(c.inters.OCIRepository, interceptors...)
-}
-
-// Create returns a builder for creating a OCIRepository entity.
-func (c *OCIRepositoryClient) Create() *OCIRepositoryCreate {
-	mutation := newOCIRepositoryMutation(c.config, OpCreate)
-	return &OCIRepositoryCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of OCIRepository entities.
-func (c *OCIRepositoryClient) CreateBulk(builders ...*OCIRepositoryCreate) *OCIRepositoryCreateBulk {
-	return &OCIRepositoryCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for OCIRepository.
-func (c *OCIRepositoryClient) Update() *OCIRepositoryUpdate {
-	mutation := newOCIRepositoryMutation(c.config, OpUpdate)
-	return &OCIRepositoryUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *OCIRepositoryClient) UpdateOne(or *OCIRepository) *OCIRepositoryUpdateOne {
-	mutation := newOCIRepositoryMutation(c.config, OpUpdateOne, withOCIRepository(or))
-	return &OCIRepositoryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *OCIRepositoryClient) UpdateOneID(id uuid.UUID) *OCIRepositoryUpdateOne {
-	mutation := newOCIRepositoryMutation(c.config, OpUpdateOne, withOCIRepositoryID(id))
-	return &OCIRepositoryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for OCIRepository.
-func (c *OCIRepositoryClient) Delete() *OCIRepositoryDelete {
-	mutation := newOCIRepositoryMutation(c.config, OpDelete)
-	return &OCIRepositoryDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *OCIRepositoryClient) DeleteOne(or *OCIRepository) *OCIRepositoryDeleteOne {
-	return c.DeleteOneID(or.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *OCIRepositoryClient) DeleteOneID(id uuid.UUID) *OCIRepositoryDeleteOne {
-	builder := c.Delete().Where(ocirepository.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &OCIRepositoryDeleteOne{builder}
-}
-
-// Query returns a query builder for OCIRepository.
-func (c *OCIRepositoryClient) Query() *OCIRepositoryQuery {
-	return &OCIRepositoryQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeOCIRepository},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a OCIRepository entity by its id.
-func (c *OCIRepositoryClient) Get(ctx context.Context, id uuid.UUID) (*OCIRepository, error) {
-	return c.Query().Where(ocirepository.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *OCIRepositoryClient) GetX(ctx context.Context, id uuid.UUID) *OCIRepository {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryOrganization queries the organization edge of a OCIRepository.
-func (c *OCIRepositoryClient) QueryOrganization(or *OCIRepository) *OrganizationQuery {
-	query := (&OrganizationClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := or.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(ocirepository.Table, ocirepository.FieldID, id),
-			sqlgraph.To(organization.Table, organization.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, ocirepository.OrganizationTable, ocirepository.OrganizationColumn),
-		)
-		fromV = sqlgraph.Neighbors(or.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *OCIRepositoryClient) Hooks() []Hook {
-	return c.hooks.OCIRepository
-}
-
-// Interceptors returns the client interceptors.
-func (c *OCIRepositoryClient) Interceptors() []Interceptor {
-	return c.inters.OCIRepository
-}
-
-func (c *OCIRepositoryClient) mutate(ctx context.Context, m *OCIRepositoryMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&OCIRepositoryCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&OCIRepositoryUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&OCIRepositoryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&OCIRepositoryDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown OCIRepository mutation op: %q", m.Op())
-	}
-}
-
 // OrganizationClient is a client for the Organization schema.
 type OrganizationClient struct {
 	config
@@ -1007,13 +1007,13 @@ func (c *OrganizationClient) QueryWorkflows(o *Organization) *WorkflowQuery {
 }
 
 // QueryOciRepositories queries the oci_repositories edge of a Organization.
-func (c *OrganizationClient) QueryOciRepositories(o *Organization) *OCIRepositoryQuery {
-	query := (&OCIRepositoryClient{config: c.config}).Query()
+func (c *OrganizationClient) QueryOciRepositories(o *Organization) *CASBackendQuery {
+	query := (&CASBackendClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := o.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(organization.Table, organization.FieldID, id),
-			sqlgraph.To(ocirepository.Table, ocirepository.FieldID),
+			sqlgraph.To(casbackend.Table, casbackend.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, organization.OciRepositoriesTable, organization.OciRepositoriesColumn),
 		)
 		fromV = sqlgraph.Neighbors(o.driver.Dialect(), step)
@@ -2014,12 +2014,12 @@ func (c *WorkflowRunClient) mutate(ctx context.Context, m *WorkflowRunMutation) 
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Integration, IntegrationAttachment, Membership, OCIRepository, Organization,
+		CASBackend, Integration, IntegrationAttachment, Membership, Organization,
 		RobotAccount, User, Workflow, WorkflowContract, WorkflowContractVersion,
 		WorkflowRun []ent.Hook
 	}
 	inters struct {
-		Integration, IntegrationAttachment, Membership, OCIRepository, Organization,
+		CASBackend, Integration, IntegrationAttachment, Membership, Organization,
 		RobotAccount, User, Workflow, WorkflowContract, WorkflowContractVersion,
 		WorkflowRun []ent.Interceptor
 	}

@@ -63,7 +63,7 @@ func (s *ociRepositoryTestSuite) TestFindMainRepoFound() {
 	assert := assert.New(s.T())
 
 	ctx := context.Background()
-	wantRepo := &biz.OCIRepository{}
+	wantRepo := &biz.CASBackend{}
 	s.repo.On("FindMainRepo", ctx, s.validUUID).Return(wantRepo, nil)
 
 	repo, err := s.useCase.FindMainRepo(ctx, s.validUUID.String())
@@ -82,7 +82,7 @@ func (s *ociRepositoryTestSuite) TestSaveMainRepoAlreadyExist() {
 	assert := assert.New(s.T())
 	const repoName, username, password = "repo", "username", "pass"
 
-	r := &biz.OCIRepository{ID: s.validUUID.String()}
+	r := &biz.CASBackend{ID: s.validUUID.String()}
 	ctx := context.Background()
 	s.repo.On("FindMainRepo", ctx, s.validUUID).Return(r, nil)
 	s.credsRW.On("SaveCredentials", ctx, s.validUUID.String(), mock.Anything).Return("secret-key", nil)
@@ -107,7 +107,7 @@ func (s *ociRepositoryTestSuite) TestSaveMainRepoOk() {
 	s.repo.On("FindMainRepo", ctx, s.validUUID).Return(nil, nil)
 	s.credsRW.On("SaveCredentials", ctx, s.validUUID.String(), mock.Anything).Return("secret-key", nil)
 
-	newRepo := &biz.OCIRepository{}
+	newRepo := &biz.CASBackend{}
 	s.repo.On("Create", ctx, &biz.OCIRepoCreateOpts{
 		OrgID: s.validUUID,
 		OCIRepoOpts: &biz.OCIRepoOpts{
@@ -123,7 +123,7 @@ func (s *ociRepositoryTestSuite) TestSaveMainRepoOk() {
 func (s *ociRepositoryTestSuite) TestPerformValidation() {
 	assert := assert.New(s.T())
 	t := s.T()
-	validRepo := &biz.OCIRepository{ID: s.validUUID.String(), ValidationStatus: biz.OCIRepoValidationOK}
+	validRepo := &biz.CASBackend{ID: s.validUUID.String(), ValidationStatus: biz.OCIRepoValidationOK}
 
 	t.Run("invalid uuid", func(t *testing.T) {
 		err := s.useCase.PerformValidation(context.Background(), s.invalidUUID)

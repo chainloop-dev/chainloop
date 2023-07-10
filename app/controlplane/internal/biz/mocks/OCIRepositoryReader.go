@@ -32,19 +32,19 @@ type OCIRepositoryReader struct {
 }
 
 // FindByID provides a mock function with given fields: ctx, ID
-func (_m *OCIRepositoryReader) FindByID(ctx context.Context, ID string) (*biz.OCIRepository, error) {
+func (_m *OCIRepositoryReader) FindByID(ctx context.Context, ID string) (*biz.CASBackend, error) {
 	ret := _m.Called(ctx, ID)
 
-	var r0 *biz.OCIRepository
+	var r0 *biz.CASBackend
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (*biz.OCIRepository, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string) (*biz.CASBackend, error)); ok {
 		return rf(ctx, ID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) *biz.OCIRepository); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string) *biz.CASBackend); ok {
 		r0 = rf(ctx, ID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*biz.OCIRepository)
+			r0 = ret.Get(0).(*biz.CASBackend)
 		}
 	}
 
@@ -58,19 +58,19 @@ func (_m *OCIRepositoryReader) FindByID(ctx context.Context, ID string) (*biz.OC
 }
 
 // FindMainRepo provides a mock function with given fields: ctx, orgID
-func (_m *OCIRepositoryReader) FindMainRepo(ctx context.Context, orgID string) (*biz.OCIRepository, error) {
+func (_m *OCIRepositoryReader) FindMainRepo(ctx context.Context, orgID string) (*biz.CASBackend, error) {
 	ret := _m.Called(ctx, orgID)
 
-	var r0 *biz.OCIRepository
+	var r0 *biz.CASBackend
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (*biz.OCIRepository, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string) (*biz.CASBackend, error)); ok {
 		return rf(ctx, orgID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) *biz.OCIRepository); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string) *biz.CASBackend); ok {
 		r0 = rf(ctx, orgID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*biz.OCIRepository)
+			r0 = ret.Get(0).(*biz.CASBackend)
 		}
 	}
 

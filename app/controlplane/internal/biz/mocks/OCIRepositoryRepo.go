@@ -33,19 +33,19 @@ type OCIRepositoryRepo struct {
 }
 
 // Create provides a mock function with given fields: _a0, _a1
-func (_m *OCIRepositoryRepo) Create(_a0 context.Context, _a1 *biz.OCIRepoCreateOpts) (*biz.OCIRepository, error) {
+func (_m *OCIRepositoryRepo) Create(_a0 context.Context, _a1 *biz.OCIRepoCreateOpts) (*biz.CASBackend, error) {
 	ret := _m.Called(_a0, _a1)
 
-	var r0 *biz.OCIRepository
+	var r0 *biz.CASBackend
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, *biz.OCIRepoCreateOpts) (*biz.OCIRepository, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *biz.OCIRepoCreateOpts) (*biz.CASBackend, error)); ok {
 		return rf(_a0, _a1)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, *biz.OCIRepoCreateOpts) *biz.OCIRepository); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *biz.OCIRepoCreateOpts) *biz.CASBackend); ok {
 		r0 = rf(_a0, _a1)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*biz.OCIRepository)
+			r0 = ret.Get(0).(*biz.CASBackend)
 		}
 	}
 
@@ -73,19 +73,19 @@ func (_m *OCIRepositoryRepo) Delete(ctx context.Context, ID uuid.UUID) error {
 }
 
 // FindByID provides a mock function with given fields: ctx, ID
-func (_m *OCIRepositoryRepo) FindByID(ctx context.Context, ID uuid.UUID) (*biz.OCIRepository, error) {
+func (_m *OCIRepositoryRepo) FindByID(ctx context.Context, ID uuid.UUID) (*biz.CASBackend, error) {
 	ret := _m.Called(ctx, ID)
 
-	var r0 *biz.OCIRepository
+	var r0 *biz.CASBackend
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (*biz.OCIRepository, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (*biz.CASBackend, error)); ok {
 		return rf(ctx, ID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) *biz.OCIRepository); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) *biz.CASBackend); ok {
 		r0 = rf(ctx, ID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*biz.OCIRepository)
+			r0 = ret.Get(0).(*biz.CASBackend)
 		}
 	}
 
@@ -99,19 +99,19 @@ func (_m *OCIRepositoryRepo) FindByID(ctx context.Context, ID uuid.UUID) (*biz.O
 }
 
 // FindMainRepo provides a mock function with given fields: ctx, orgID
-func (_m *OCIRepositoryRepo) FindMainRepo(ctx context.Context, orgID uuid.UUID) (*biz.OCIRepository, error) {
+func (_m *OCIRepositoryRepo) FindMainRepo(ctx context.Context, orgID uuid.UUID) (*biz.CASBackend, error) {
 	ret := _m.Called(ctx, orgID)
 
-	var r0 *biz.OCIRepository
+	var r0 *biz.CASBackend
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (*biz.OCIRepository, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (*biz.CASBackend, error)); ok {
 		return rf(ctx, orgID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) *biz.OCIRepository); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) *biz.CASBackend); ok {
 		r0 = rf(ctx, orgID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*biz.OCIRepository)
+			r0 = ret.Get(0).(*biz.CASBackend)
 		}
 	}
 
@@ -125,19 +125,19 @@ func (_m *OCIRepositoryRepo) FindMainRepo(ctx context.Context, orgID uuid.UUID) 
 }
 
 // Update provides a mock function with given fields: _a0, _a1
-func (_m *OCIRepositoryRepo) Update(_a0 context.Context, _a1 *biz.OCIRepoUpdateOpts) (*biz.OCIRepository, error) {
+func (_m *OCIRepositoryRepo) Update(_a0 context.Context, _a1 *biz.OCIRepoUpdateOpts) (*biz.CASBackend, error) {
 	ret := _m.Called(_a0, _a1)
 
-	var r0 *biz.OCIRepository
+	var r0 *biz.CASBackend
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, *biz.OCIRepoUpdateOpts) (*biz.OCIRepository, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *biz.OCIRepoUpdateOpts) (*biz.CASBackend, error)); ok {
 		return rf(_a0, _a1)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, *biz.OCIRepoUpdateOpts) *biz.OCIRepository); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *biz.OCIRepoUpdateOpts) *biz.CASBackend); ok {
 		r0 = rf(_a0, _a1)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*biz.OCIRepository)
+			r0 = ret.Get(0).(*biz.CASBackend)
 		}
 	}
 

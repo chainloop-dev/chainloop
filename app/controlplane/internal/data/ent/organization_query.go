@@ -11,9 +11,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integration"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/membership"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/ocirepository"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
@@ -31,7 +31,7 @@ type OrganizationQuery struct {
 	withMemberships       *MembershipQuery
 	withWorkflowContracts *WorkflowContractQuery
 	withWorkflows         *WorkflowQuery
-	withOciRepositories   *OCIRepositoryQuery
+	withOciRepositories   *CASBackendQuery
 	withIntegrations      *IntegrationQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -136,8 +136,8 @@ func (oq *OrganizationQuery) QueryWorkflows() *WorkflowQuery {
 }
 
 // QueryOciRepositories chains the current query on the "oci_repositories" edge.
-func (oq *OrganizationQuery) QueryOciRepositories() *OCIRepositoryQuery {
-	query := (&OCIRepositoryClient{config: oq.config}).Query()
+func (oq *OrganizationQuery) QueryOciRepositories() *CASBackendQuery {
+	query := (&CASBackendClient{config: oq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := oq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -148,7 +148,7 @@ func (oq *OrganizationQuery) QueryOciRepositories() *OCIRepositoryQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(organization.Table, organization.FieldID, selector),
-			sqlgraph.To(ocirepository.Table, ocirepository.FieldID),
+			sqlgraph.To(casbackend.Table, casbackend.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, organization.OciRepositoriesTable, organization.OciRepositoriesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(oq.driver.Dialect(), step)
@@ -417,8 +417,8 @@ func (oq *OrganizationQuery) WithWorkflows(opts ...func(*WorkflowQuery)) *Organi
 
 // WithOciRepositories tells the query-builder to eager-load the nodes that are connected to
 // the "oci_repositories" edge. The optional arguments are used to configure the query builder of the edge.
-func (oq *OrganizationQuery) WithOciRepositories(opts ...func(*OCIRepositoryQuery)) *OrganizationQuery {
-	query := (&OCIRepositoryClient{config: oq.config}).Query()
+func (oq *OrganizationQuery) WithOciRepositories(opts ...func(*CASBackendQuery)) *OrganizationQuery {
+	query := (&CASBackendClient{config: oq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -566,8 +566,8 @@ func (oq *OrganizationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	}
 	if query := oq.withOciRepositories; query != nil {
 		if err := oq.loadOciRepositories(ctx, query, nodes,
-			func(n *Organization) { n.Edges.OciRepositories = []*OCIRepository{} },
-			func(n *Organization, e *OCIRepository) { n.Edges.OciRepositories = append(n.Edges.OciRepositories, e) }); err != nil {
+			func(n *Organization) { n.Edges.OciRepositories = []*CASBackend{} },
+			func(n *Organization, e *CASBackend) { n.Edges.OciRepositories = append(n.Edges.OciRepositories, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -674,7 +674,7 @@ func (oq *OrganizationQuery) loadWorkflows(ctx context.Context, query *WorkflowQ
 	}
 	return nil
 }
-func (oq *OrganizationQuery) loadOciRepositories(ctx context.Context, query *OCIRepositoryQuery, nodes []*Organization, init func(*Organization), assign func(*Organization, *OCIRepository)) error {
+func (oq *OrganizationQuery) loadOciRepositories(ctx context.Context, query *CASBackendQuery, nodes []*Organization, init func(*Organization), assign func(*Organization, *CASBackend)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*Organization)
 	for i := range nodes {
@@ -685,7 +685,7 @@ func (oq *OrganizationQuery) loadOciRepositories(ctx context.Context, query *OCI
 		}
 	}
 	query.withFKs = true
-	query.Where(predicate.OCIRepository(func(s *sql.Selector) {
+	query.Where(predicate.CASBackend(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(organization.OciRepositoriesColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)

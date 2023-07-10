@@ -10,9 +10,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integration"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/membership"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/ocirepository"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
@@ -92,17 +92,17 @@ func (ou *OrganizationUpdate) AddWorkflows(w ...*Workflow) *OrganizationUpdate {
 	return ou.AddWorkflowIDs(ids...)
 }
 
-// AddOciRepositoryIDs adds the "oci_repositories" edge to the OCIRepository entity by IDs.
+// AddOciRepositoryIDs adds the "oci_repositories" edge to the CASBackend entity by IDs.
 func (ou *OrganizationUpdate) AddOciRepositoryIDs(ids ...uuid.UUID) *OrganizationUpdate {
 	ou.mutation.AddOciRepositoryIDs(ids...)
 	return ou
 }
 
-// AddOciRepositories adds the "oci_repositories" edges to the OCIRepository entity.
-func (ou *OrganizationUpdate) AddOciRepositories(o ...*OCIRepository) *OrganizationUpdate {
-	ids := make([]uuid.UUID, len(o))
-	for i := range o {
-		ids[i] = o[i].ID
+// AddOciRepositories adds the "oci_repositories" edges to the CASBackend entity.
+func (ou *OrganizationUpdate) AddOciRepositories(c ...*CASBackend) *OrganizationUpdate {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
 	}
 	return ou.AddOciRepositoryIDs(ids...)
 }
@@ -190,23 +190,23 @@ func (ou *OrganizationUpdate) RemoveWorkflows(w ...*Workflow) *OrganizationUpdat
 	return ou.RemoveWorkflowIDs(ids...)
 }
 
-// ClearOciRepositories clears all "oci_repositories" edges to the OCIRepository entity.
+// ClearOciRepositories clears all "oci_repositories" edges to the CASBackend entity.
 func (ou *OrganizationUpdate) ClearOciRepositories() *OrganizationUpdate {
 	ou.mutation.ClearOciRepositories()
 	return ou
 }
 
-// RemoveOciRepositoryIDs removes the "oci_repositories" edge to OCIRepository entities by IDs.
+// RemoveOciRepositoryIDs removes the "oci_repositories" edge to CASBackend entities by IDs.
 func (ou *OrganizationUpdate) RemoveOciRepositoryIDs(ids ...uuid.UUID) *OrganizationUpdate {
 	ou.mutation.RemoveOciRepositoryIDs(ids...)
 	return ou
 }
 
-// RemoveOciRepositories removes "oci_repositories" edges to OCIRepository entities.
-func (ou *OrganizationUpdate) RemoveOciRepositories(o ...*OCIRepository) *OrganizationUpdate {
-	ids := make([]uuid.UUID, len(o))
-	for i := range o {
-		ids[i] = o[i].ID
+// RemoveOciRepositories removes "oci_repositories" edges to CASBackend entities.
+func (ou *OrganizationUpdate) RemoveOciRepositories(c ...*CASBackend) *OrganizationUpdate {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
 	}
 	return ou.RemoveOciRepositoryIDs(ids...)
 }
@@ -414,7 +414,7 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{organization.OciRepositoriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ocirepository.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(casbackend.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -427,7 +427,7 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{organization.OciRepositoriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ocirepository.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(casbackend.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -443,7 +443,7 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{organization.OciRepositoriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ocirepository.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(casbackend.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -575,17 +575,17 @@ func (ouo *OrganizationUpdateOne) AddWorkflows(w ...*Workflow) *OrganizationUpda
 	return ouo.AddWorkflowIDs(ids...)
 }
 
-// AddOciRepositoryIDs adds the "oci_repositories" edge to the OCIRepository entity by IDs.
+// AddOciRepositoryIDs adds the "oci_repositories" edge to the CASBackend entity by IDs.
 func (ouo *OrganizationUpdateOne) AddOciRepositoryIDs(ids ...uuid.UUID) *OrganizationUpdateOne {
 	ouo.mutation.AddOciRepositoryIDs(ids...)
 	return ouo
 }
 
-// AddOciRepositories adds the "oci_repositories" edges to the OCIRepository entity.
-func (ouo *OrganizationUpdateOne) AddOciRepositories(o ...*OCIRepository) *OrganizationUpdateOne {
-	ids := make([]uuid.UUID, len(o))
-	for i := range o {
-		ids[i] = o[i].ID
+// AddOciRepositories adds the "oci_repositories" edges to the CASBackend entity.
+func (ouo *OrganizationUpdateOne) AddOciRepositories(c ...*CASBackend) *OrganizationUpdateOne {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
 	}
 	return ouo.AddOciRepositoryIDs(ids...)
 }
@@ -673,23 +673,23 @@ func (ouo *OrganizationUpdateOne) RemoveWorkflows(w ...*Workflow) *OrganizationU
 	return ouo.RemoveWorkflowIDs(ids...)
 }
 
-// ClearOciRepositories clears all "oci_repositories" edges to the OCIRepository entity.
+// ClearOciRepositories clears all "oci_repositories" edges to the CASBackend entity.
 func (ouo *OrganizationUpdateOne) ClearOciRepositories() *OrganizationUpdateOne {
 	ouo.mutation.ClearOciRepositories()
 	return ouo
 }
 
-// RemoveOciRepositoryIDs removes the "oci_repositories" edge to OCIRepository entities by IDs.
+// RemoveOciRepositoryIDs removes the "oci_repositories" edge to CASBackend entities by IDs.
 func (ouo *OrganizationUpdateOne) RemoveOciRepositoryIDs(ids ...uuid.UUID) *OrganizationUpdateOne {
 	ouo.mutation.RemoveOciRepositoryIDs(ids...)
 	return ouo
 }
 
-// RemoveOciRepositories removes "oci_repositories" edges to OCIRepository entities.
-func (ouo *OrganizationUpdateOne) RemoveOciRepositories(o ...*OCIRepository) *OrganizationUpdateOne {
-	ids := make([]uuid.UUID, len(o))
-	for i := range o {
-		ids[i] = o[i].ID
+// RemoveOciRepositories removes "oci_repositories" edges to CASBackend entities.
+func (ouo *OrganizationUpdateOne) RemoveOciRepositories(c ...*CASBackend) *OrganizationUpdateOne {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
 	}
 	return ouo.RemoveOciRepositoryIDs(ids...)
 }
@@ -927,7 +927,7 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 			Columns: []string{organization.OciRepositoriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ocirepository.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(casbackend.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -940,7 +940,7 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 			Columns: []string{organization.OciRepositoriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ocirepository.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(casbackend.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -956,7 +956,7 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 			Columns: []string{organization.OciRepositoriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ocirepository.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(casbackend.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

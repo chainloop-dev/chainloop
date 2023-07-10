@@ -75,7 +75,7 @@ func (s *OCIRepositoryService) Save(ctx context.Context, req *pb.OCIRepositorySe
 	return &pb.OCIRepositoryServiceSaveResponse{}, nil
 }
 
-func bizOCIRepoToPb(repo *biz.OCIRepository) *pb.OCIRepositoryItem {
+func bizOCIRepoToPb(repo *biz.CASBackend) *pb.OCIRepositoryItem {
 	r := &pb.OCIRepositoryItem{
 		Id: repo.ID, Repo: repo.Repo, CreatedAt: timestamppb.New(*repo.CreatedAt),
 	}

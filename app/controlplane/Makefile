@@ -37,6 +37,10 @@ migration_apply: check-atlas-tool
 migration_new: check-atlas-tool
 	atlas migrate diff --dir ${local_migrations_dir} --to "ent://internal/data/ent/schema" --dev-url "docker://postgres/15/test?search_path=public"
 
+.PHONY: migration_hash
+migration_hash: check-atlas-tool
+	atlas migrate hash --dir ${local_migrations_dir}
+
 .PHONY: test
 # All tests, both unit and integration
 test: 

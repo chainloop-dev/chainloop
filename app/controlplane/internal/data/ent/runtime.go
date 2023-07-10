@@ -5,10 +5,10 @@ package ent
 import (
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integration"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integrationattachment"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/membership"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/ocirepository"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/schema"
@@ -24,6 +24,20 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	casbackendFields := schema.CASBackend{}.Fields()
+	_ = casbackendFields
+	// casbackendDescCreatedAt is the schema descriptor for created_at field.
+	casbackendDescCreatedAt := casbackendFields[3].Descriptor()
+	// casbackend.DefaultCreatedAt holds the default value on creation for the created_at field.
+	casbackend.DefaultCreatedAt = casbackendDescCreatedAt.Default.(func() time.Time)
+	// casbackendDescValidatedAt is the schema descriptor for validated_at field.
+	casbackendDescValidatedAt := casbackendFields[5].Descriptor()
+	// casbackend.DefaultValidatedAt holds the default value on creation for the validated_at field.
+	casbackend.DefaultValidatedAt = casbackendDescValidatedAt.Default.(func() time.Time)
+	// casbackendDescID is the schema descriptor for id field.
+	casbackendDescID := casbackendFields[0].Descriptor()
+	// casbackend.DefaultID holds the default value on creation for the id field.
+	casbackend.DefaultID = casbackendDescID.Default.(func() uuid.UUID)
 	integrationFields := schema.Integration{}.Fields()
 	_ = integrationFields
 	// integrationDescCreatedAt is the schema descriptor for created_at field.
@@ -62,20 +76,6 @@ func init() {
 	membershipDescID := membershipFields[0].Descriptor()
 	// membership.DefaultID holds the default value on creation for the id field.
 	membership.DefaultID = membershipDescID.Default.(func() uuid.UUID)
-	ocirepositoryFields := schema.OCIRepository{}.Fields()
-	_ = ocirepositoryFields
-	// ocirepositoryDescCreatedAt is the schema descriptor for created_at field.
-	ocirepositoryDescCreatedAt := ocirepositoryFields[3].Descriptor()
-	// ocirepository.DefaultCreatedAt holds the default value on creation for the created_at field.
-	ocirepository.DefaultCreatedAt = ocirepositoryDescCreatedAt.Default.(func() time.Time)
-	// ocirepositoryDescValidatedAt is the schema descriptor for validated_at field.
-	ocirepositoryDescValidatedAt := ocirepositoryFields[5].Descriptor()
-	// ocirepository.DefaultValidatedAt holds the default value on creation for the validated_at field.
-	ocirepository.DefaultValidatedAt = ocirepositoryDescValidatedAt.Default.(func() time.Time)
-	// ocirepositoryDescID is the schema descriptor for id field.
-	ocirepositoryDescID := ocirepositoryFields[0].Descriptor()
-	// ocirepository.DefaultID holds the default value on creation for the id field.
-	ocirepository.DefaultID = ocirepositoryDescID.Default.(func() uuid.UUID)
 	organizationFields := schema.Organization{}.Fields()
 	_ = organizationFields
 	// organizationDescName is the schema descriptor for name field.

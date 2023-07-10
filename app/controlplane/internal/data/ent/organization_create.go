@@ -10,9 +10,9 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integration"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/membership"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/ocirepository"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowcontract"
@@ -113,17 +113,17 @@ func (oc *OrganizationCreate) AddWorkflows(w ...*Workflow) *OrganizationCreate {
 	return oc.AddWorkflowIDs(ids...)
 }
 
-// AddOciRepositoryIDs adds the "oci_repositories" edge to the OCIRepository entity by IDs.
+// AddOciRepositoryIDs adds the "oci_repositories" edge to the CASBackend entity by IDs.
 func (oc *OrganizationCreate) AddOciRepositoryIDs(ids ...uuid.UUID) *OrganizationCreate {
 	oc.mutation.AddOciRepositoryIDs(ids...)
 	return oc
 }
 
-// AddOciRepositories adds the "oci_repositories" edges to the OCIRepository entity.
-func (oc *OrganizationCreate) AddOciRepositories(o ...*OCIRepository) *OrganizationCreate {
-	ids := make([]uuid.UUID, len(o))
-	for i := range o {
-		ids[i] = o[i].ID
+// AddOciRepositories adds the "oci_repositories" edges to the CASBackend entity.
+func (oc *OrganizationCreate) AddOciRepositories(c ...*CASBackend) *OrganizationCreate {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
 	}
 	return oc.AddOciRepositoryIDs(ids...)
 }
@@ -299,7 +299,7 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 			Columns: []string{organization.OciRepositoriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ocirepository.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(casbackend.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

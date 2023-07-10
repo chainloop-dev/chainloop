@@ -62,7 +62,7 @@ func TestShouldRevalidate(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			repo := &biz.OCIRepository{
+			repo := &biz.CASBackend{
 				ValidationStatus: tc.repoStatus,
 				ValidatedAt:      &tc.repoValidatedAt,
 			}
@@ -75,7 +75,7 @@ func TestShouldRevalidate(t *testing.T) {
 func TestValidateRepo(t *testing.T) {
 	ctx := context.Background()
 	assert := assert.New(t)
-	repo := &biz.OCIRepository{ID: uuid.NewString(), ValidatedAt: toTimePtr(time.Now())}
+	repo := &biz.CASBackend{ID: uuid.NewString(), ValidatedAt: toTimePtr(time.Now())}
 
 	t.Run("validation error", func(t *testing.T) {
 		useCase := mocks.NewOCIRepositoryReader(t)
@@ -89,7 +89,7 @@ func TestValidateRepo(t *testing.T) {
 		useCase := mocks.NewOCIRepositoryReader(t)
 		useCase.On("PerformValidation", ctx, repo.ID).Return(nil)
 
-		want := &biz.OCIRepository{ID: repo.ID, ValidatedAt: toTimePtr(time.Now())}
+		want := &biz.CASBackend{ID: repo.ID, ValidatedAt: toTimePtr(time.Now())}
 		useCase.On("FindByID", ctx, repo.ID).Return(want, nil)
 		got, err := validateRepo(ctx, useCase, repo)
 		assert.NoError(err)

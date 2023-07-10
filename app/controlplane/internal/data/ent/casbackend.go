@@ -10,13 +10,13 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/ocirepository"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/google/uuid"
 )
 
-// OCIRepository is the model entity for the OCIRepository schema.
-type OCIRepository struct {
+// CASBackend is the model entity for the CASBackend schema.
+type CASBackend struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
@@ -33,14 +33,14 @@ type OCIRepository struct {
 	// Provider holds the value of the "provider" field.
 	Provider string `json:"provider,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
-	// The values are being populated by the OCIRepositoryQuery when eager-loading is set.
-	Edges                         OCIRepositoryEdges `json:"edges"`
+	// The values are being populated by the CASBackendQuery when eager-loading is set.
+	Edges                         CASBackendEdges `json:"edges"`
 	organization_oci_repositories *uuid.UUID
 	selectValues                  sql.SelectValues
 }
 
-// OCIRepositoryEdges holds the relations/edges for other nodes in the graph.
-type OCIRepositoryEdges struct {
+// CASBackendEdges holds the relations/edges for other nodes in the graph.
+type CASBackendEdges struct {
 	// Organization holds the value of the organization edge.
 	Organization *Organization `json:"organization,omitempty"`
 	// loadedTypes holds the information for reporting if a
@@ -50,7 +50,7 @@ type OCIRepositoryEdges struct {
 
 // OrganizationOrErr returns the Organization value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e OCIRepositoryEdges) OrganizationOrErr() (*Organization, error) {
+func (e CASBackendEdges) OrganizationOrErr() (*Organization, error) {
 	if e.loadedTypes[0] {
 		if e.Organization == nil {
 			// Edge was loaded but was not found.
@@ -62,17 +62,17 @@ func (e OCIRepositoryEdges) OrganizationOrErr() (*Organization, error) {
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
-func (*OCIRepository) scanValues(columns []string) ([]any, error) {
+func (*CASBackend) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case ocirepository.FieldRepo, ocirepository.FieldSecretName, ocirepository.FieldValidationStatus, ocirepository.FieldProvider:
+		case casbackend.FieldRepo, casbackend.FieldSecretName, casbackend.FieldValidationStatus, casbackend.FieldProvider:
 			values[i] = new(sql.NullString)
-		case ocirepository.FieldCreatedAt, ocirepository.FieldValidatedAt:
+		case casbackend.FieldCreatedAt, casbackend.FieldValidatedAt:
 			values[i] = new(sql.NullTime)
-		case ocirepository.FieldID:
+		case casbackend.FieldID:
 			values[i] = new(uuid.UUID)
-		case ocirepository.ForeignKeys[0]: // organization_oci_repositories
+		case casbackend.ForeignKeys[0]: // organization_oci_repositories
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			values[i] = new(sql.UnknownType)
@@ -82,123 +82,123 @@ func (*OCIRepository) scanValues(columns []string) ([]any, error) {
 }
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
-// to the OCIRepository fields.
-func (or *OCIRepository) assignValues(columns []string, values []any) error {
+// to the CASBackend fields.
+func (cb *CASBackend) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
 	for i := range columns {
 		switch columns[i] {
-		case ocirepository.FieldID:
+		case casbackend.FieldID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				or.ID = *value
+				cb.ID = *value
 			}
-		case ocirepository.FieldRepo:
+		case casbackend.FieldRepo:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field repo", values[i])
 			} else if value.Valid {
-				or.Repo = value.String
+				cb.Repo = value.String
 			}
-		case ocirepository.FieldSecretName:
+		case casbackend.FieldSecretName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field secret_name", values[i])
 			} else if value.Valid {
-				or.SecretName = value.String
+				cb.SecretName = value.String
 			}
-		case ocirepository.FieldCreatedAt:
+		case casbackend.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				or.CreatedAt = value.Time
+				cb.CreatedAt = value.Time
 			}
-		case ocirepository.FieldValidationStatus:
+		case casbackend.FieldValidationStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field validation_status", values[i])
 			} else if value.Valid {
-				or.ValidationStatus = biz.OCIRepoValidationStatus(value.String)
+				cb.ValidationStatus = biz.OCIRepoValidationStatus(value.String)
 			}
-		case ocirepository.FieldValidatedAt:
+		case casbackend.FieldValidatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field validated_at", values[i])
 			} else if value.Valid {
-				or.ValidatedAt = value.Time
+				cb.ValidatedAt = value.Time
 			}
-		case ocirepository.FieldProvider:
+		case casbackend.FieldProvider:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field provider", values[i])
 			} else if value.Valid {
-				or.Provider = value.String
+				cb.Provider = value.String
 			}
-		case ocirepository.ForeignKeys[0]:
+		case casbackend.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field organization_oci_repositories", values[i])
 			} else if value.Valid {
-				or.organization_oci_repositories = new(uuid.UUID)
-				*or.organization_oci_repositories = *value.S.(*uuid.UUID)
+				cb.organization_oci_repositories = new(uuid.UUID)
+				*cb.organization_oci_repositories = *value.S.(*uuid.UUID)
 			}
 		default:
-			or.selectValues.Set(columns[i], values[i])
+			cb.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
 }
 
-// Value returns the ent.Value that was dynamically selected and assigned to the OCIRepository.
+// Value returns the ent.Value that was dynamically selected and assigned to the CASBackend.
 // This includes values selected through modifiers, order, etc.
-func (or *OCIRepository) Value(name string) (ent.Value, error) {
-	return or.selectValues.Get(name)
+func (cb *CASBackend) Value(name string) (ent.Value, error) {
+	return cb.selectValues.Get(name)
 }
 
-// QueryOrganization queries the "organization" edge of the OCIRepository entity.
-func (or *OCIRepository) QueryOrganization() *OrganizationQuery {
-	return NewOCIRepositoryClient(or.config).QueryOrganization(or)
+// QueryOrganization queries the "organization" edge of the CASBackend entity.
+func (cb *CASBackend) QueryOrganization() *OrganizationQuery {
+	return NewCASBackendClient(cb.config).QueryOrganization(cb)
 }
 
-// Update returns a builder for updating this OCIRepository.
-// Note that you need to call OCIRepository.Unwrap() before calling this method if this OCIRepository
+// Update returns a builder for updating this CASBackend.
+// Note that you need to call CASBackend.Unwrap() before calling this method if this CASBackend
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (or *OCIRepository) Update() *OCIRepositoryUpdateOne {
-	return NewOCIRepositoryClient(or.config).UpdateOne(or)
+func (cb *CASBackend) Update() *CASBackendUpdateOne {
+	return NewCASBackendClient(cb.config).UpdateOne(cb)
 }
 
-// Unwrap unwraps the OCIRepository entity that was returned from a transaction after it was closed,
+// Unwrap unwraps the CASBackend entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (or *OCIRepository) Unwrap() *OCIRepository {
-	_tx, ok := or.config.driver.(*txDriver)
+func (cb *CASBackend) Unwrap() *CASBackend {
+	_tx, ok := cb.config.driver.(*txDriver)
 	if !ok {
-		panic("ent: OCIRepository is not a transactional entity")
+		panic("ent: CASBackend is not a transactional entity")
 	}
-	or.config.driver = _tx.drv
-	return or
+	cb.config.driver = _tx.drv
+	return cb
 }
 
 // String implements the fmt.Stringer.
-func (or *OCIRepository) String() string {
+func (cb *CASBackend) String() string {
 	var builder strings.Builder
-	builder.WriteString("OCIRepository(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", or.ID))
+	builder.WriteString("CASBackend(")
+	builder.WriteString(fmt.Sprintf("id=%v, ", cb.ID))
 	builder.WriteString("repo=")
-	builder.WriteString(or.Repo)
+	builder.WriteString(cb.Repo)
 	builder.WriteString(", ")
 	builder.WriteString("secret_name=")
-	builder.WriteString(or.SecretName)
+	builder.WriteString(cb.SecretName)
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
-	builder.WriteString(or.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(cb.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("validation_status=")
-	builder.WriteString(fmt.Sprintf("%v", or.ValidationStatus))
+	builder.WriteString(fmt.Sprintf("%v", cb.ValidationStatus))
 	builder.WriteString(", ")
 	builder.WriteString("validated_at=")
-	builder.WriteString(or.ValidatedAt.Format(time.ANSIC))
+	builder.WriteString(cb.ValidatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("provider=")
-	builder.WriteString(or.Provider)
+	builder.WriteString(cb.Provider)
 	builder.WriteByte(')')
 	return builder.String()
 }
 
-// OCIRepositories is a parsable slice of OCIRepository.
-type OCIRepositories []*OCIRepository
+// CASBackends is a parsable slice of CASBackend.
+type CASBackends []*CASBackend

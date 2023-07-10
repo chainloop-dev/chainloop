@@ -12,10 +12,10 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integration"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integrationattachment"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/membership"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/ocirepository"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/robotaccount"
@@ -37,10 +37,10 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
+	TypeCASBackend              = "CASBackend"
 	TypeIntegration             = "Integration"
 	TypeIntegrationAttachment   = "IntegrationAttachment"
 	TypeMembership              = "Membership"
-	TypeOCIRepository           = "OCIRepository"
 	TypeOrganization            = "Organization"
 	TypeRobotAccount            = "RobotAccount"
 	TypeUser                    = "User"
@@ -49,6 +49,697 @@ const (
 	TypeWorkflowContractVersion = "WorkflowContractVersion"
 	TypeWorkflowRun             = "WorkflowRun"
 )
+
+// CASBackendMutation represents an operation that mutates the CASBackend nodes in the graph.
+type CASBackendMutation struct {
+	config
+	op                  Op
+	typ                 string
+	id                  *uuid.UUID
+	repo                *string
+	secret_name         *string
+	created_at          *time.Time
+	validation_status   *biz.OCIRepoValidationStatus
+	validated_at        *time.Time
+	provider            *string
+	clearedFields       map[string]struct{}
+	organization        *uuid.UUID
+	clearedorganization bool
+	done                bool
+	oldValue            func(context.Context) (*CASBackend, error)
+	predicates          []predicate.CASBackend
+}
+
+var _ ent.Mutation = (*CASBackendMutation)(nil)
+
+// casbackendOption allows management of the mutation configuration using functional options.
+type casbackendOption func(*CASBackendMutation)
+
+// newCASBackendMutation creates new mutation for the CASBackend entity.
+func newCASBackendMutation(c config, op Op, opts ...casbackendOption) *CASBackendMutation {
+	m := &CASBackendMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeCASBackend,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withCASBackendID sets the ID field of the mutation.
+func withCASBackendID(id uuid.UUID) casbackendOption {
+	return func(m *CASBackendMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *CASBackend
+		)
+		m.oldValue = func(ctx context.Context) (*CASBackend, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().CASBackend.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withCASBackend sets the old CASBackend of the mutation.
+func withCASBackend(node *CASBackend) casbackendOption {
+	return func(m *CASBackendMutation) {
+		m.oldValue = func(context.Context) (*CASBackend, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m CASBackendMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m CASBackendMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of CASBackend entities.
+func (m *CASBackendMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *CASBackendMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *CASBackendMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().CASBackend.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetRepo sets the "repo" field.
+func (m *CASBackendMutation) SetRepo(s string) {
+	m.repo = &s
+}
+
+// Repo returns the value of the "repo" field in the mutation.
+func (m *CASBackendMutation) Repo() (r string, exists bool) {
+	v := m.repo
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRepo returns the old "repo" field's value of the CASBackend entity.
+// If the CASBackend object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CASBackendMutation) OldRepo(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRepo is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRepo requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRepo: %w", err)
+	}
+	return oldValue.Repo, nil
+}
+
+// ResetRepo resets all changes to the "repo" field.
+func (m *CASBackendMutation) ResetRepo() {
+	m.repo = nil
+}
+
+// SetSecretName sets the "secret_name" field.
+func (m *CASBackendMutation) SetSecretName(s string) {
+	m.secret_name = &s
+}
+
+// SecretName returns the value of the "secret_name" field in the mutation.
+func (m *CASBackendMutation) SecretName() (r string, exists bool) {
+	v := m.secret_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSecretName returns the old "secret_name" field's value of the CASBackend entity.
+// If the CASBackend object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CASBackendMutation) OldSecretName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSecretName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSecretName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSecretName: %w", err)
+	}
+	return oldValue.SecretName, nil
+}
+
+// ResetSecretName resets all changes to the "secret_name" field.
+func (m *CASBackendMutation) ResetSecretName() {
+	m.secret_name = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *CASBackendMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *CASBackendMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the CASBackend entity.
+// If the CASBackend object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CASBackendMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *CASBackendMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetValidationStatus sets the "validation_status" field.
+func (m *CASBackendMutation) SetValidationStatus(brvs biz.OCIRepoValidationStatus) {
+	m.validation_status = &brvs
+}
+
+// ValidationStatus returns the value of the "validation_status" field in the mutation.
+func (m *CASBackendMutation) ValidationStatus() (r biz.OCIRepoValidationStatus, exists bool) {
+	v := m.validation_status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldValidationStatus returns the old "validation_status" field's value of the CASBackend entity.
+// If the CASBackend object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CASBackendMutation) OldValidationStatus(ctx context.Context) (v biz.OCIRepoValidationStatus, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldValidationStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldValidationStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldValidationStatus: %w", err)
+	}
+	return oldValue.ValidationStatus, nil
+}
+
+// ResetValidationStatus resets all changes to the "validation_status" field.
+func (m *CASBackendMutation) ResetValidationStatus() {
+	m.validation_status = nil
+}
+
+// SetValidatedAt sets the "validated_at" field.
+func (m *CASBackendMutation) SetValidatedAt(t time.Time) {
+	m.validated_at = &t
+}
+
+// ValidatedAt returns the value of the "validated_at" field in the mutation.
+func (m *CASBackendMutation) ValidatedAt() (r time.Time, exists bool) {
+	v := m.validated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldValidatedAt returns the old "validated_at" field's value of the CASBackend entity.
+// If the CASBackend object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CASBackendMutation) OldValidatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldValidatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldValidatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldValidatedAt: %w", err)
+	}
+	return oldValue.ValidatedAt, nil
+}
+
+// ResetValidatedAt resets all changes to the "validated_at" field.
+func (m *CASBackendMutation) ResetValidatedAt() {
+	m.validated_at = nil
+}
+
+// SetProvider sets the "provider" field.
+func (m *CASBackendMutation) SetProvider(s string) {
+	m.provider = &s
+}
+
+// Provider returns the value of the "provider" field in the mutation.
+func (m *CASBackendMutation) Provider() (r string, exists bool) {
+	v := m.provider
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProvider returns the old "provider" field's value of the CASBackend entity.
+// If the CASBackend object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CASBackendMutation) OldProvider(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProvider is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProvider requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProvider: %w", err)
+	}
+	return oldValue.Provider, nil
+}
+
+// ClearProvider clears the value of the "provider" field.
+func (m *CASBackendMutation) ClearProvider() {
+	m.provider = nil
+	m.clearedFields[casbackend.FieldProvider] = struct{}{}
+}
+
+// ProviderCleared returns if the "provider" field was cleared in this mutation.
+func (m *CASBackendMutation) ProviderCleared() bool {
+	_, ok := m.clearedFields[casbackend.FieldProvider]
+	return ok
+}
+
+// ResetProvider resets all changes to the "provider" field.
+func (m *CASBackendMutation) ResetProvider() {
+	m.provider = nil
+	delete(m.clearedFields, casbackend.FieldProvider)
+}
+
+// SetOrganizationID sets the "organization" edge to the Organization entity by id.
+func (m *CASBackendMutation) SetOrganizationID(id uuid.UUID) {
+	m.organization = &id
+}
+
+// ClearOrganization clears the "organization" edge to the Organization entity.
+func (m *CASBackendMutation) ClearOrganization() {
+	m.clearedorganization = true
+}
+
+// OrganizationCleared reports if the "organization" edge to the Organization entity was cleared.
+func (m *CASBackendMutation) OrganizationCleared() bool {
+	return m.clearedorganization
+}
+
+// OrganizationID returns the "organization" edge ID in the mutation.
+func (m *CASBackendMutation) OrganizationID() (id uuid.UUID, exists bool) {
+	if m.organization != nil {
+		return *m.organization, true
+	}
+	return
+}
+
+// OrganizationIDs returns the "organization" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OrganizationID instead. It exists only for internal usage by the builders.
+func (m *CASBackendMutation) OrganizationIDs() (ids []uuid.UUID) {
+	if id := m.organization; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOrganization resets all changes to the "organization" edge.
+func (m *CASBackendMutation) ResetOrganization() {
+	m.organization = nil
+	m.clearedorganization = false
+}
+
+// Where appends a list predicates to the CASBackendMutation builder.
+func (m *CASBackendMutation) Where(ps ...predicate.CASBackend) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the CASBackendMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *CASBackendMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.CASBackend, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *CASBackendMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *CASBackendMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (CASBackend).
+func (m *CASBackendMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *CASBackendMutation) Fields() []string {
+	fields := make([]string, 0, 6)
+	if m.repo != nil {
+		fields = append(fields, casbackend.FieldRepo)
+	}
+	if m.secret_name != nil {
+		fields = append(fields, casbackend.FieldSecretName)
+	}
+	if m.created_at != nil {
+		fields = append(fields, casbackend.FieldCreatedAt)
+	}
+	if m.validation_status != nil {
+		fields = append(fields, casbackend.FieldValidationStatus)
+	}
+	if m.validated_at != nil {
+		fields = append(fields, casbackend.FieldValidatedAt)
+	}
+	if m.provider != nil {
+		fields = append(fields, casbackend.FieldProvider)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *CASBackendMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case casbackend.FieldRepo:
+		return m.Repo()
+	case casbackend.FieldSecretName:
+		return m.SecretName()
+	case casbackend.FieldCreatedAt:
+		return m.CreatedAt()
+	case casbackend.FieldValidationStatus:
+		return m.ValidationStatus()
+	case casbackend.FieldValidatedAt:
+		return m.ValidatedAt()
+	case casbackend.FieldProvider:
+		return m.Provider()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *CASBackendMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case casbackend.FieldRepo:
+		return m.OldRepo(ctx)
+	case casbackend.FieldSecretName:
+		return m.OldSecretName(ctx)
+	case casbackend.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case casbackend.FieldValidationStatus:
+		return m.OldValidationStatus(ctx)
+	case casbackend.FieldValidatedAt:
+		return m.OldValidatedAt(ctx)
+	case casbackend.FieldProvider:
+		return m.OldProvider(ctx)
+	}
+	return nil, fmt.Errorf("unknown CASBackend field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CASBackendMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case casbackend.FieldRepo:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRepo(v)
+		return nil
+	case casbackend.FieldSecretName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSecretName(v)
+		return nil
+	case casbackend.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case casbackend.FieldValidationStatus:
+		v, ok := value.(biz.OCIRepoValidationStatus)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetValidationStatus(v)
+		return nil
+	case casbackend.FieldValidatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetValidatedAt(v)
+		return nil
+	case casbackend.FieldProvider:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProvider(v)
+		return nil
+	}
+	return fmt.Errorf("unknown CASBackend field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *CASBackendMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *CASBackendMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CASBackendMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown CASBackend numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *CASBackendMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(casbackend.FieldProvider) {
+		fields = append(fields, casbackend.FieldProvider)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *CASBackendMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *CASBackendMutation) ClearField(name string) error {
+	switch name {
+	case casbackend.FieldProvider:
+		m.ClearProvider()
+		return nil
+	}
+	return fmt.Errorf("unknown CASBackend nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *CASBackendMutation) ResetField(name string) error {
+	switch name {
+	case casbackend.FieldRepo:
+		m.ResetRepo()
+		return nil
+	case casbackend.FieldSecretName:
+		m.ResetSecretName()
+		return nil
+	case casbackend.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case casbackend.FieldValidationStatus:
+		m.ResetValidationStatus()
+		return nil
+	case casbackend.FieldValidatedAt:
+		m.ResetValidatedAt()
+		return nil
+	case casbackend.FieldProvider:
+		m.ResetProvider()
+		return nil
+	}
+	return fmt.Errorf("unknown CASBackend field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *CASBackendMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.organization != nil {
+		edges = append(edges, casbackend.EdgeOrganization)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *CASBackendMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case casbackend.EdgeOrganization:
+		if id := m.organization; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *CASBackendMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *CASBackendMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *CASBackendMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedorganization {
+		edges = append(edges, casbackend.EdgeOrganization)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *CASBackendMutation) EdgeCleared(name string) bool {
+	switch name {
+	case casbackend.EdgeOrganization:
+		return m.clearedorganization
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *CASBackendMutation) ClearEdge(name string) error {
+	switch name {
+	case casbackend.EdgeOrganization:
+		m.ClearOrganization()
+		return nil
+	}
+	return fmt.Errorf("unknown CASBackend unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *CASBackendMutation) ResetEdge(name string) error {
+	switch name {
+	case casbackend.EdgeOrganization:
+		m.ResetOrganization()
+		return nil
+	}
+	return fmt.Errorf("unknown CASBackend edge %s", name)
+}
 
 // IntegrationMutation represents an operation that mutates the Integration nodes in the graph.
 type IntegrationMutation struct {
@@ -2037,697 +2728,6 @@ func (m *MembershipMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown Membership edge %s", name)
 }
 
-// OCIRepositoryMutation represents an operation that mutates the OCIRepository nodes in the graph.
-type OCIRepositoryMutation struct {
-	config
-	op                  Op
-	typ                 string
-	id                  *uuid.UUID
-	repo                *string
-	secret_name         *string
-	created_at          *time.Time
-	validation_status   *biz.OCIRepoValidationStatus
-	validated_at        *time.Time
-	provider            *string
-	clearedFields       map[string]struct{}
-	organization        *uuid.UUID
-	clearedorganization bool
-	done                bool
-	oldValue            func(context.Context) (*OCIRepository, error)
-	predicates          []predicate.OCIRepository
-}
-
-var _ ent.Mutation = (*OCIRepositoryMutation)(nil)
-
-// ocirepositoryOption allows management of the mutation configuration using functional options.
-type ocirepositoryOption func(*OCIRepositoryMutation)
-
-// newOCIRepositoryMutation creates new mutation for the OCIRepository entity.
-func newOCIRepositoryMutation(c config, op Op, opts ...ocirepositoryOption) *OCIRepositoryMutation {
-	m := &OCIRepositoryMutation{
-		config:        c,
-		op:            op,
-		typ:           TypeOCIRepository,
-		clearedFields: make(map[string]struct{}),
-	}
-	for _, opt := range opts {
-		opt(m)
-	}
-	return m
-}
-
-// withOCIRepositoryID sets the ID field of the mutation.
-func withOCIRepositoryID(id uuid.UUID) ocirepositoryOption {
-	return func(m *OCIRepositoryMutation) {
-		var (
-			err   error
-			once  sync.Once
-			value *OCIRepository
-		)
-		m.oldValue = func(ctx context.Context) (*OCIRepository, error) {
-			once.Do(func() {
-				if m.done {
-					err = errors.New("querying old values post mutation is not allowed")
-				} else {
-					value, err = m.Client().OCIRepository.Get(ctx, id)
-				}
-			})
-			return value, err
-		}
-		m.id = &id
-	}
-}
-
-// withOCIRepository sets the old OCIRepository of the mutation.
-func withOCIRepository(node *OCIRepository) ocirepositoryOption {
-	return func(m *OCIRepositoryMutation) {
-		m.oldValue = func(context.Context) (*OCIRepository, error) {
-			return node, nil
-		}
-		m.id = &node.ID
-	}
-}
-
-// Client returns a new `ent.Client` from the mutation. If the mutation was
-// executed in a transaction (ent.Tx), a transactional client is returned.
-func (m OCIRepositoryMutation) Client() *Client {
-	client := &Client{config: m.config}
-	client.init()
-	return client
-}
-
-// Tx returns an `ent.Tx` for mutations that were executed in transactions;
-// it returns an error otherwise.
-func (m OCIRepositoryMutation) Tx() (*Tx, error) {
-	if _, ok := m.driver.(*txDriver); !ok {
-		return nil, errors.New("ent: mutation is not running in a transaction")
-	}
-	tx := &Tx{config: m.config}
-	tx.init()
-	return tx, nil
-}
-
-// SetID sets the value of the id field. Note that this
-// operation is only accepted on creation of OCIRepository entities.
-func (m *OCIRepositoryMutation) SetID(id uuid.UUID) {
-	m.id = &id
-}
-
-// ID returns the ID value in the mutation. Note that the ID is only available
-// if it was provided to the builder or after it was returned from the database.
-func (m *OCIRepositoryMutation) ID() (id uuid.UUID, exists bool) {
-	if m.id == nil {
-		return
-	}
-	return *m.id, true
-}
-
-// IDs queries the database and returns the entity ids that match the mutation's predicate.
-// That means, if the mutation is applied within a transaction with an isolation level such
-// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
-// or updated by the mutation.
-func (m *OCIRepositoryMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
-	switch {
-	case m.op.Is(OpUpdateOne | OpDeleteOne):
-		id, exists := m.ID()
-		if exists {
-			return []uuid.UUID{id}, nil
-		}
-		fallthrough
-	case m.op.Is(OpUpdate | OpDelete):
-		return m.Client().OCIRepository.Query().Where(m.predicates...).IDs(ctx)
-	default:
-		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
-	}
-}
-
-// SetRepo sets the "repo" field.
-func (m *OCIRepositoryMutation) SetRepo(s string) {
-	m.repo = &s
-}
-
-// Repo returns the value of the "repo" field in the mutation.
-func (m *OCIRepositoryMutation) Repo() (r string, exists bool) {
-	v := m.repo
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldRepo returns the old "repo" field's value of the OCIRepository entity.
-// If the OCIRepository object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *OCIRepositoryMutation) OldRepo(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldRepo is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldRepo requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldRepo: %w", err)
-	}
-	return oldValue.Repo, nil
-}
-
-// ResetRepo resets all changes to the "repo" field.
-func (m *OCIRepositoryMutation) ResetRepo() {
-	m.repo = nil
-}
-
-// SetSecretName sets the "secret_name" field.
-func (m *OCIRepositoryMutation) SetSecretName(s string) {
-	m.secret_name = &s
-}
-
-// SecretName returns the value of the "secret_name" field in the mutation.
-func (m *OCIRepositoryMutation) SecretName() (r string, exists bool) {
-	v := m.secret_name
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldSecretName returns the old "secret_name" field's value of the OCIRepository entity.
-// If the OCIRepository object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *OCIRepositoryMutation) OldSecretName(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldSecretName is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldSecretName requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldSecretName: %w", err)
-	}
-	return oldValue.SecretName, nil
-}
-
-// ResetSecretName resets all changes to the "secret_name" field.
-func (m *OCIRepositoryMutation) ResetSecretName() {
-	m.secret_name = nil
-}
-
-// SetCreatedAt sets the "created_at" field.
-func (m *OCIRepositoryMutation) SetCreatedAt(t time.Time) {
-	m.created_at = &t
-}
-
-// CreatedAt returns the value of the "created_at" field in the mutation.
-func (m *OCIRepositoryMutation) CreatedAt() (r time.Time, exists bool) {
-	v := m.created_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldCreatedAt returns the old "created_at" field's value of the OCIRepository entity.
-// If the OCIRepository object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *OCIRepositoryMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
-	}
-	return oldValue.CreatedAt, nil
-}
-
-// ResetCreatedAt resets all changes to the "created_at" field.
-func (m *OCIRepositoryMutation) ResetCreatedAt() {
-	m.created_at = nil
-}
-
-// SetValidationStatus sets the "validation_status" field.
-func (m *OCIRepositoryMutation) SetValidationStatus(brvs biz.OCIRepoValidationStatus) {
-	m.validation_status = &brvs
-}
-
-// ValidationStatus returns the value of the "validation_status" field in the mutation.
-func (m *OCIRepositoryMutation) ValidationStatus() (r biz.OCIRepoValidationStatus, exists bool) {
-	v := m.validation_status
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldValidationStatus returns the old "validation_status" field's value of the OCIRepository entity.
-// If the OCIRepository object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *OCIRepositoryMutation) OldValidationStatus(ctx context.Context) (v biz.OCIRepoValidationStatus, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldValidationStatus is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldValidationStatus requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldValidationStatus: %w", err)
-	}
-	return oldValue.ValidationStatus, nil
-}
-
-// ResetValidationStatus resets all changes to the "validation_status" field.
-func (m *OCIRepositoryMutation) ResetValidationStatus() {
-	m.validation_status = nil
-}
-
-// SetValidatedAt sets the "validated_at" field.
-func (m *OCIRepositoryMutation) SetValidatedAt(t time.Time) {
-	m.validated_at = &t
-}
-
-// ValidatedAt returns the value of the "validated_at" field in the mutation.
-func (m *OCIRepositoryMutation) ValidatedAt() (r time.Time, exists bool) {
-	v := m.validated_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldValidatedAt returns the old "validated_at" field's value of the OCIRepository entity.
-// If the OCIRepository object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *OCIRepositoryMutation) OldValidatedAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldValidatedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldValidatedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldValidatedAt: %w", err)
-	}
-	return oldValue.ValidatedAt, nil
-}
-
-// ResetValidatedAt resets all changes to the "validated_at" field.
-func (m *OCIRepositoryMutation) ResetValidatedAt() {
-	m.validated_at = nil
-}
-
-// SetProvider sets the "provider" field.
-func (m *OCIRepositoryMutation) SetProvider(s string) {
-	m.provider = &s
-}
-
-// Provider returns the value of the "provider" field in the mutation.
-func (m *OCIRepositoryMutation) Provider() (r string, exists bool) {
-	v := m.provider
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldProvider returns the old "provider" field's value of the OCIRepository entity.
-// If the OCIRepository object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *OCIRepositoryMutation) OldProvider(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldProvider is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldProvider requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldProvider: %w", err)
-	}
-	return oldValue.Provider, nil
-}
-
-// ClearProvider clears the value of the "provider" field.
-func (m *OCIRepositoryMutation) ClearProvider() {
-	m.provider = nil
-	m.clearedFields[ocirepository.FieldProvider] = struct{}{}
-}
-
-// ProviderCleared returns if the "provider" field was cleared in this mutation.
-func (m *OCIRepositoryMutation) ProviderCleared() bool {
-	_, ok := m.clearedFields[ocirepository.FieldProvider]
-	return ok
-}
-
-// ResetProvider resets all changes to the "provider" field.
-func (m *OCIRepositoryMutation) ResetProvider() {
-	m.provider = nil
-	delete(m.clearedFields, ocirepository.FieldProvider)
-}
-
-// SetOrganizationID sets the "organization" edge to the Organization entity by id.
-func (m *OCIRepositoryMutation) SetOrganizationID(id uuid.UUID) {
-	m.organization = &id
-}
-
-// ClearOrganization clears the "organization" edge to the Organization entity.
-func (m *OCIRepositoryMutation) ClearOrganization() {
-	m.clearedorganization = true
-}
-
-// OrganizationCleared reports if the "organization" edge to the Organization entity was cleared.
-func (m *OCIRepositoryMutation) OrganizationCleared() bool {
-	return m.clearedorganization
-}
-
-// OrganizationID returns the "organization" edge ID in the mutation.
-func (m *OCIRepositoryMutation) OrganizationID() (id uuid.UUID, exists bool) {
-	if m.organization != nil {
-		return *m.organization, true
-	}
-	return
-}
-
-// OrganizationIDs returns the "organization" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// OrganizationID instead. It exists only for internal usage by the builders.
-func (m *OCIRepositoryMutation) OrganizationIDs() (ids []uuid.UUID) {
-	if id := m.organization; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetOrganization resets all changes to the "organization" edge.
-func (m *OCIRepositoryMutation) ResetOrganization() {
-	m.organization = nil
-	m.clearedorganization = false
-}
-
-// Where appends a list predicates to the OCIRepositoryMutation builder.
-func (m *OCIRepositoryMutation) Where(ps ...predicate.OCIRepository) {
-	m.predicates = append(m.predicates, ps...)
-}
-
-// WhereP appends storage-level predicates to the OCIRepositoryMutation builder. Using this method,
-// users can use type-assertion to append predicates that do not depend on any generated package.
-func (m *OCIRepositoryMutation) WhereP(ps ...func(*sql.Selector)) {
-	p := make([]predicate.OCIRepository, len(ps))
-	for i := range ps {
-		p[i] = ps[i]
-	}
-	m.Where(p...)
-}
-
-// Op returns the operation name.
-func (m *OCIRepositoryMutation) Op() Op {
-	return m.op
-}
-
-// SetOp allows setting the mutation operation.
-func (m *OCIRepositoryMutation) SetOp(op Op) {
-	m.op = op
-}
-
-// Type returns the node type of this mutation (OCIRepository).
-func (m *OCIRepositoryMutation) Type() string {
-	return m.typ
-}
-
-// Fields returns all fields that were changed during this mutation. Note that in
-// order to get all numeric fields that were incremented/decremented, call
-// AddedFields().
-func (m *OCIRepositoryMutation) Fields() []string {
-	fields := make([]string, 0, 6)
-	if m.repo != nil {
-		fields = append(fields, ocirepository.FieldRepo)
-	}
-	if m.secret_name != nil {
-		fields = append(fields, ocirepository.FieldSecretName)
-	}
-	if m.created_at != nil {
-		fields = append(fields, ocirepository.FieldCreatedAt)
-	}
-	if m.validation_status != nil {
-		fields = append(fields, ocirepository.FieldValidationStatus)
-	}
-	if m.validated_at != nil {
-		fields = append(fields, ocirepository.FieldValidatedAt)
-	}
-	if m.provider != nil {
-		fields = append(fields, ocirepository.FieldProvider)
-	}
-	return fields
-}
-
-// Field returns the value of a field with the given name. The second boolean
-// return value indicates that this field was not set, or was not defined in the
-// schema.
-func (m *OCIRepositoryMutation) Field(name string) (ent.Value, bool) {
-	switch name {
-	case ocirepository.FieldRepo:
-		return m.Repo()
-	case ocirepository.FieldSecretName:
-		return m.SecretName()
-	case ocirepository.FieldCreatedAt:
-		return m.CreatedAt()
-	case ocirepository.FieldValidationStatus:
-		return m.ValidationStatus()
-	case ocirepository.FieldValidatedAt:
-		return m.ValidatedAt()
-	case ocirepository.FieldProvider:
-		return m.Provider()
-	}
-	return nil, false
-}
-
-// OldField returns the old value of the field from the database. An error is
-// returned if the mutation operation is not UpdateOne, or the query to the
-// database failed.
-func (m *OCIRepositoryMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
-	switch name {
-	case ocirepository.FieldRepo:
-		return m.OldRepo(ctx)
-	case ocirepository.FieldSecretName:
-		return m.OldSecretName(ctx)
-	case ocirepository.FieldCreatedAt:
-		return m.OldCreatedAt(ctx)
-	case ocirepository.FieldValidationStatus:
-		return m.OldValidationStatus(ctx)
-	case ocirepository.FieldValidatedAt:
-		return m.OldValidatedAt(ctx)
-	case ocirepository.FieldProvider:
-		return m.OldProvider(ctx)
-	}
-	return nil, fmt.Errorf("unknown OCIRepository field %s", name)
-}
-
-// SetField sets the value of a field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *OCIRepositoryMutation) SetField(name string, value ent.Value) error {
-	switch name {
-	case ocirepository.FieldRepo:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetRepo(v)
-		return nil
-	case ocirepository.FieldSecretName:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetSecretName(v)
-		return nil
-	case ocirepository.FieldCreatedAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetCreatedAt(v)
-		return nil
-	case ocirepository.FieldValidationStatus:
-		v, ok := value.(biz.OCIRepoValidationStatus)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetValidationStatus(v)
-		return nil
-	case ocirepository.FieldValidatedAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetValidatedAt(v)
-		return nil
-	case ocirepository.FieldProvider:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetProvider(v)
-		return nil
-	}
-	return fmt.Errorf("unknown OCIRepository field %s", name)
-}
-
-// AddedFields returns all numeric fields that were incremented/decremented during
-// this mutation.
-func (m *OCIRepositoryMutation) AddedFields() []string {
-	return nil
-}
-
-// AddedField returns the numeric value that was incremented/decremented on a field
-// with the given name. The second boolean return value indicates that this field
-// was not set, or was not defined in the schema.
-func (m *OCIRepositoryMutation) AddedField(name string) (ent.Value, bool) {
-	return nil, false
-}
-
-// AddField adds the value to the field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *OCIRepositoryMutation) AddField(name string, value ent.Value) error {
-	switch name {
-	}
-	return fmt.Errorf("unknown OCIRepository numeric field %s", name)
-}
-
-// ClearedFields returns all nullable fields that were cleared during this
-// mutation.
-func (m *OCIRepositoryMutation) ClearedFields() []string {
-	var fields []string
-	if m.FieldCleared(ocirepository.FieldProvider) {
-		fields = append(fields, ocirepository.FieldProvider)
-	}
-	return fields
-}
-
-// FieldCleared returns a boolean indicating if a field with the given name was
-// cleared in this mutation.
-func (m *OCIRepositoryMutation) FieldCleared(name string) bool {
-	_, ok := m.clearedFields[name]
-	return ok
-}
-
-// ClearField clears the value of the field with the given name. It returns an
-// error if the field is not defined in the schema.
-func (m *OCIRepositoryMutation) ClearField(name string) error {
-	switch name {
-	case ocirepository.FieldProvider:
-		m.ClearProvider()
-		return nil
-	}
-	return fmt.Errorf("unknown OCIRepository nullable field %s", name)
-}
-
-// ResetField resets all changes in the mutation for the field with the given name.
-// It returns an error if the field is not defined in the schema.
-func (m *OCIRepositoryMutation) ResetField(name string) error {
-	switch name {
-	case ocirepository.FieldRepo:
-		m.ResetRepo()
-		return nil
-	case ocirepository.FieldSecretName:
-		m.ResetSecretName()
-		return nil
-	case ocirepository.FieldCreatedAt:
-		m.ResetCreatedAt()
-		return nil
-	case ocirepository.FieldValidationStatus:
-		m.ResetValidationStatus()
-		return nil
-	case ocirepository.FieldValidatedAt:
-		m.ResetValidatedAt()
-		return nil
-	case ocirepository.FieldProvider:
-		m.ResetProvider()
-		return nil
-	}
-	return fmt.Errorf("unknown OCIRepository field %s", name)
-}
-
-// AddedEdges returns all edge names that were set/added in this mutation.
-func (m *OCIRepositoryMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.organization != nil {
-		edges = append(edges, ocirepository.EdgeOrganization)
-	}
-	return edges
-}
-
-// AddedIDs returns all IDs (to other nodes) that were added for the given edge
-// name in this mutation.
-func (m *OCIRepositoryMutation) AddedIDs(name string) []ent.Value {
-	switch name {
-	case ocirepository.EdgeOrganization:
-		if id := m.organization; id != nil {
-			return []ent.Value{*id}
-		}
-	}
-	return nil
-}
-
-// RemovedEdges returns all edge names that were removed in this mutation.
-func (m *OCIRepositoryMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
-	return edges
-}
-
-// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
-// the given name in this mutation.
-func (m *OCIRepositoryMutation) RemovedIDs(name string) []ent.Value {
-	return nil
-}
-
-// ClearedEdges returns all edge names that were cleared in this mutation.
-func (m *OCIRepositoryMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.clearedorganization {
-		edges = append(edges, ocirepository.EdgeOrganization)
-	}
-	return edges
-}
-
-// EdgeCleared returns a boolean which indicates if the edge with the given name
-// was cleared in this mutation.
-func (m *OCIRepositoryMutation) EdgeCleared(name string) bool {
-	switch name {
-	case ocirepository.EdgeOrganization:
-		return m.clearedorganization
-	}
-	return false
-}
-
-// ClearEdge clears the value of the edge with the given name. It returns an error
-// if that edge is not defined in the schema.
-func (m *OCIRepositoryMutation) ClearEdge(name string) error {
-	switch name {
-	case ocirepository.EdgeOrganization:
-		m.ClearOrganization()
-		return nil
-	}
-	return fmt.Errorf("unknown OCIRepository unique edge %s", name)
-}
-
-// ResetEdge resets all changes to the edge with the given name in this mutation.
-// It returns an error if the edge is not defined in the schema.
-func (m *OCIRepositoryMutation) ResetEdge(name string) error {
-	switch name {
-	case ocirepository.EdgeOrganization:
-		m.ResetOrganization()
-		return nil
-	}
-	return fmt.Errorf("unknown OCIRepository edge %s", name)
-}
-
 // OrganizationMutation represents an operation that mutates the Organization nodes in the graph.
 type OrganizationMutation struct {
 	config
@@ -3095,7 +3095,7 @@ func (m *OrganizationMutation) ResetWorkflows() {
 	m.removedworkflows = nil
 }
 
-// AddOciRepositoryIDs adds the "oci_repositories" edge to the OCIRepository entity by ids.
+// AddOciRepositoryIDs adds the "oci_repositories" edge to the CASBackend entity by ids.
 func (m *OrganizationMutation) AddOciRepositoryIDs(ids ...uuid.UUID) {
 	if m.oci_repositories == nil {
 		m.oci_repositories = make(map[uuid.UUID]struct{})
@@ -3105,17 +3105,17 @@ func (m *OrganizationMutation) AddOciRepositoryIDs(ids ...uuid.UUID) {
 	}
 }
 
-// ClearOciRepositories clears the "oci_repositories" edge to the OCIRepository entity.
+// ClearOciRepositories clears the "oci_repositories" edge to the CASBackend entity.
 func (m *OrganizationMutation) ClearOciRepositories() {
 	m.clearedoci_repositories = true
 }
 
-// OciRepositoriesCleared reports if the "oci_repositories" edge to the OCIRepository entity was cleared.
+// OciRepositoriesCleared reports if the "oci_repositories" edge to the CASBackend entity was cleared.
 func (m *OrganizationMutation) OciRepositoriesCleared() bool {
 	return m.clearedoci_repositories
 }
 
-// RemoveOciRepositoryIDs removes the "oci_repositories" edge to the OCIRepository entity by IDs.
+// RemoveOciRepositoryIDs removes the "oci_repositories" edge to the CASBackend entity by IDs.
 func (m *OrganizationMutation) RemoveOciRepositoryIDs(ids ...uuid.UUID) {
 	if m.removedoci_repositories == nil {
 		m.removedoci_repositories = make(map[uuid.UUID]struct{})
@@ -3126,7 +3126,7 @@ func (m *OrganizationMutation) RemoveOciRepositoryIDs(ids ...uuid.UUID) {
 	}
 }
 
-// RemovedOciRepositories returns the removed IDs of the "oci_repositories" edge to the OCIRepository entity.
+// RemovedOciRepositories returns the removed IDs of the "oci_repositories" edge to the CASBackend entity.
 func (m *OrganizationMutation) RemovedOciRepositoriesIDs() (ids []uuid.UUID) {
 	for id := range m.removedoci_repositories {
 		ids = append(ids, id)

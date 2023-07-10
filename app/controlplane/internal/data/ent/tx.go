@@ -12,14 +12,14 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
+	// CASBackend is the client for interacting with the CASBackend builders.
+	CASBackend *CASBackendClient
 	// Integration is the client for interacting with the Integration builders.
 	Integration *IntegrationClient
 	// IntegrationAttachment is the client for interacting with the IntegrationAttachment builders.
 	IntegrationAttachment *IntegrationAttachmentClient
 	// Membership is the client for interacting with the Membership builders.
 	Membership *MembershipClient
-	// OCIRepository is the client for interacting with the OCIRepository builders.
-	OCIRepository *OCIRepositoryClient
 	// Organization is the client for interacting with the Organization builders.
 	Organization *OrganizationClient
 	// RobotAccount is the client for interacting with the RobotAccount builders.
@@ -165,10 +165,10 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
+	tx.CASBackend = NewCASBackendClient(tx.config)
 	tx.Integration = NewIntegrationClient(tx.config)
 	tx.IntegrationAttachment = NewIntegrationAttachmentClient(tx.config)
 	tx.Membership = NewMembershipClient(tx.config)
-	tx.OCIRepository = NewOCIRepositoryClient(tx.config)
 	tx.Organization = NewOrganizationClient(tx.config)
 	tx.RobotAccount = NewRobotAccountClient(tx.config)
 	tx.User = NewUserClient(tx.config)
@@ -185,7 +185,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: Integration.QueryXXX(), the query will be executed
+// applies a query, for example: CASBackend.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.

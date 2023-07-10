@@ -33,7 +33,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	}
 	membershipRepo := data.NewMembershipRepo(dataData, logger)
 	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, logger)
-	ociRepositoryRepo := data.NewOCIRepositoryRepo(dataData, logger)
+	ociRepositoryRepo := data.NewCASBackendRepo(dataData, logger)
 	backendProvider := oci.NewBackendProvider(readerWriter)
 	ociRepositoryUseCase := biz.NewOCIRepositoryUseCase(ociRepositoryRepo, readerWriter, backendProvider, logger)
 	integrationRepo := data.NewIntegrationRepo(dataData, logger)

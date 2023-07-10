@@ -51,7 +51,7 @@ func (Organization) Edges() []ent.Edge {
 		edge.To("memberships", Membership.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 		edge.To("workflow_contracts", WorkflowContract.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 		edge.To("workflows", Workflow.Type).StorageKey(edge.Column("organization_id")).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
-		edge.To("oci_repositories", OCIRepository.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
+		edge.To("oci_repositories", CASBackend.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 		edge.To("integrations", Integration.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 	}
 }

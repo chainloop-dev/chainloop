@@ -26,13 +26,13 @@ import (
 	"github.com/google/uuid"
 )
 
-// OCIRepository holds the schema definition for the OCIRepository entity.
-type OCIRepository struct {
+// CASBackend holds the schema definition for the CASBackend entity.
+type CASBackend struct {
 	ent.Schema
 }
 
 // Fields of the OCIRepository.
-func (OCIRepository) Fields() []ent.Field {
+func (CASBackend) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),
 		field.String("repo"),
@@ -51,7 +51,7 @@ func (OCIRepository) Fields() []ent.Field {
 }
 
 // Edges of the OCIRepository.
-func (OCIRepository) Edges() []ent.Edge {
+func (CASBackend) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("organization", Organization.Type).Ref("oci_repositories").Unique().Required(),
 	}

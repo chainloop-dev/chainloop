@@ -252,7 +252,7 @@ func HasOciRepositories() predicate.Organization {
 }
 
 // HasOciRepositoriesWith applies the HasEdge predicate on the "oci_repositories" edge with a given conditions (other predicates).
-func HasOciRepositoriesWith(preds ...predicate.OCIRepository) predicate.Organization {
+func HasOciRepositoriesWith(preds ...predicate.CASBackend) predicate.Organization {
 	return predicate.Organization(func(s *sql.Selector) {
 		step := newOciRepositoriesStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
