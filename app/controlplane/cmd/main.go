@@ -26,6 +26,8 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/server"
+	"github.com/chainloop-dev/chainloop/app/controlplane/plugins"
+	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	credsConfig "github.com/chainloop-dev/chainloop/internal/credentials/api/credentials/v1"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 
@@ -54,7 +56,7 @@ func init() {
 	flag.StringVar(&flagconf, "conf", "../configs", "config path, eg: -conf config.yaml")
 }
 
-func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTPMetricsServer, expirer *biz.WorkflowRunExpirerUseCase) *app {
+func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTPMetricsServer, expirer *biz.WorkflowRunExpirerUseCase, plugins sdk.AvailablePlugins) *app {
 	return &app{
 		kratos.New(
 			kratos.ID(id),
@@ -63,7 +65,7 @@ func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTP
 			kratos.Metadata(map[string]string{}),
 			kratos.Logger(logger),
 			kratos.Server(gs, hs, ms),
-		), expirer}
+		), expirer, plugins}
 }
 
 func main() {
@@ -72,7 +74,7 @@ func main() {
 		config.WithSource(
 			file.NewSource(flagconf),
 			// Load environments variables prefixed with CP_
-			// NOTE: They get resolved withouth the prefix, i.e CP_DB_HOST -> DB_HOST
+			// NOTE: They get resolved without the prefix, i.e CP_DB_HOST -> DB_HOST
 			env.NewSource("CP_"),
 		),
 	)
@@ -105,7 +107,15 @@ func main() {
 		panic(err)
 	}
 
-	app, cleanup, err := wireApp(&bc, credsWriter, logger)
+	// Load plugins
+	availablePlugins, err := plugins.Load(bc.GetPluginsDir(), logger)
+	if err != nil {
+		panic(err)
+	}
+	// Kill plugins processes on exit
+	defer availablePlugins.Cleanup()
+
+	app, cleanup, err := wireApp(&bc, credsWriter, logger, availablePlugins)
 	if err != nil {
 		panic(err)
 	}
@@ -127,7 +137,8 @@ func main() {
 type app struct {
 	*kratos.App
 	// Periodic job that expires unfinished attestation processes older than a given threshold
-	runsExpirer *biz.WorkflowRunExpirerUseCase
+	runsExpirer      *biz.WorkflowRunExpirerUseCase
+	availablePlugins sdk.AvailablePlugins
 }
 
 func filterSensitiveArgs(_ log.Level, keyvals ...interface{}) bool {

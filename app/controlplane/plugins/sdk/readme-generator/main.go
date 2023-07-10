@@ -42,7 +42,7 @@ var integrationsIndexPath string
 func mainE() error {
 	l := log.NewStdLogger(os.Stdout)
 
-	plugins, err := plugins.Load(l)
+	plugins, err := plugins.Load("", l)
 	if err != nil {
 		return fmt.Errorf("failed to load plugins: %w", err)
 	}

@@ -1,0 +1,131 @@
+//
+// Copyright 2023 The Chainloop Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package api;
+
+option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1/plugin/api;api";
+
+service FanoutService {
+  // Core / Shared
+  rpc Describe(DescribeRequest) returns (DescribeResponse);
+  rpc ValidateRegistration(ValidateRegistrationRequest) returns (ValidateRegistrationResponse);
+  rpc ValidateAttachment(ValidateAttachmentRequest) returns (ValidateAttachmentResponse);
+  rpc String(StringRequest) returns (StringResponse);
+  rpc IsSubscribedTo(IsSubscribedToRequest) returns (IsSubscribedToResponse);
+
+  // per-plugin
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  rpc Attach(AttachRequest) returns (AttachResponse);
+  rpc Execute(ExecuteRequest) returns (ExecuteResponse);
+}
+
+message DescribeRequest {}
+
+message DescribeResponse {
+  string id = 1;
+  string version = 2;
+  string description = 3;
+  bytes registration_json_schema = 4;
+  bytes attachment_json_schema = 5;
+  repeated string subscribed_materials = 6;
+}
+
+message ValidateRegistrationRequest {
+  bytes json_payload = 1;
+}
+
+message ValidateRegistrationResponse {
+  bool valid = 1;
+  string error = 2;
+}
+
+message ValidateAttachmentRequest {
+  bytes json_payload = 1;
+}
+
+message ValidateAttachmentResponse {
+  bool valid = 1;
+  string error = 2;
+}
+
+message StringRequest {}
+message StringResponse {
+  string value = 1;
+}
+
+message RegisterRequest {
+  bytes payload = 1;
+}
+
+message RegisterResponse {
+  bytes configuration = 1;
+  Credentials credentials = 2;
+
+  message Credentials {
+    string url = 1;
+    string username = 2;
+    string password = 3;
+  }
+}
+
+message AttachRequest {
+  bytes payload = 1;
+  RegisterResponse registration_info = 2;
+}
+
+message AttachResponse {
+  bytes configuration = 1;
+}
+
+message ExecuteRequest {
+  // Previous outputs
+  RegisterResponse registration_info = 1;
+  AttachResponse attachment_info = 2;
+
+  // Inputs
+  bytes envelope = 3;
+  repeated NormalizedMaterial materials = 4;
+
+  // Chainloop metadata
+  Metadata metadata = 5;
+
+  message NormalizedMaterial {
+    bytes content = 1;
+    string name = 2;
+    string type = 3;
+    string value = 4;
+    string hash = 5;
+    bool uploaded_to_cas = 6;
+  }
+
+  message Metadata {
+    string workflow_id = 1;
+    string workflow_name = 2;
+    string workflow_project = 3;
+    string workflow_run_id = 4;
+  }
+}
+
+message ExecuteResponse {}
+
+message IsSubscribedToRequest {
+  string material_type = 1;
+}
+
+message IsSubscribedToResponse {
+  bool subscribed = 1;
+}

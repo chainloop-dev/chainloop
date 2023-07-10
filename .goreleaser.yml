@@ -28,6 +28,16 @@ builds:
       - darwin_arm64
       - linux_amd64
       - linux_arm64
+  # Plugins build
+  # NOTE: On the event of a new plugin added to the project you need to
+  # 1 - Add the plugins binary to be built in this section
+  # 2 - Add the plugin ID to the allow-list in the dockers.IDs section
+  # 3 - Update the Dockerfile.goreleaser
+  - binary: chainloop-plugin-discord-webhook
+    id: chainloop-plugin-discord-webhook
+    main: ./app/controlplane/plugins/core/discord-webhook/v1/cmd
+    targets:
+      - linux_amd64
 archives:
   - builds:
       - cli
@@ -62,6 +72,7 @@ dockers:
   - dockerfile: app/controlplane/Dockerfile.goreleaser
     ids:
       - control-plane
+      - chainloop-plugin-discord-webhook
     image_templates:
       - "ghcr.io/chainloop-dev/chainloop/control-plane:{{ .Tag }}"
       - "ghcr.io/chainloop-dev/chainloop/control-plane:latest"
