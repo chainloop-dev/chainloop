@@ -4,6 +4,7 @@ materials: [
 	{type: "ARTIFACT", name: "cli-linux-amd64", output:           true},
 	{type: "ARTIFACT", name: "control-plane-linux-amd64", output: true},
 	{type: "ARTIFACT", name: "artifact-cas-linux-amd64", output:  true},
+	{type: "ARTIFACT", name: "chainloop-plugin-discord-webhook-linux-amd64"},
 	// Container images
 	{type: "CONTAINER_IMAGE", name: "control-plane-image", output: true},
 	{type: "CONTAINER_IMAGE", name: "artifact-cas-image", output:  true},
