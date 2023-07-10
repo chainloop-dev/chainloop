@@ -46,6 +46,7 @@ func (OCIRepository) Fields() []ent.Field {
 			Default(string(biz.OCIRepoValidationOK)),
 		field.Time("validated_at").Default(time.Now).
 			Annotations(&entsql.Annotation{Default: "CURRENT_TIMESTAMP"}),
+		field.String("provider").Optional(),
 	}
 }
 

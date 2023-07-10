@@ -106,6 +106,7 @@ var (
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "validation_status", Type: field.TypeEnum, Enums: []string{"OK", "Invalid"}, Default: "OK"},
 		{Name: "validated_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "provider", Type: field.TypeString, Nullable: true},
 		{Name: "organization_oci_repositories", Type: field.TypeUUID},
 	}
 	// OciRepositoriesTable holds the schema information for the "oci_repositories" table.
@@ -116,7 +117,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "oci_repositories_organizations_oci_repositories",
-				Columns:    []*schema.Column{OciRepositoriesColumns[6]},
+				Columns:    []*schema.Column{OciRepositoriesColumns[7]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},

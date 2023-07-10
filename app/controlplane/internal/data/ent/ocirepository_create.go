@@ -77,6 +77,20 @@ func (orc *OCIRepositoryCreate) SetNillableValidatedAt(t *time.Time) *OCIReposit
 	return orc
 }
 
+// SetProvider sets the "provider" field.
+func (orc *OCIRepositoryCreate) SetProvider(s string) *OCIRepositoryCreate {
+	orc.mutation.SetProvider(s)
+	return orc
+}
+
+// SetNillableProvider sets the "provider" field if the given value is not nil.
+func (orc *OCIRepositoryCreate) SetNillableProvider(s *string) *OCIRepositoryCreate {
+	if s != nil {
+		orc.SetProvider(*s)
+	}
+	return orc
+}
+
 // SetID sets the "id" field.
 func (orc *OCIRepositoryCreate) SetID(u uuid.UUID) *OCIRepositoryCreate {
 	orc.mutation.SetID(u)
@@ -234,6 +248,10 @@ func (orc *OCIRepositoryCreate) createSpec() (*OCIRepository, *sqlgraph.CreateSp
 	if value, ok := orc.mutation.ValidatedAt(); ok {
 		_spec.SetField(ocirepository.FieldValidatedAt, field.TypeTime, value)
 		_node.ValidatedAt = value
+	}
+	if value, ok := orc.mutation.Provider(); ok {
+		_spec.SetField(ocirepository.FieldProvider, field.TypeString, value)
+		_node.Provider = value
 	}
 	if nodes := orc.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

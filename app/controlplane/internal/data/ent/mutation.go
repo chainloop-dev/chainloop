@@ -2048,6 +2048,7 @@ type OCIRepositoryMutation struct {
 	created_at          *time.Time
 	validation_status   *biz.OCIRepoValidationStatus
 	validated_at        *time.Time
+	provider            *string
 	clearedFields       map[string]struct{}
 	organization        *uuid.UUID
 	clearedorganization bool
@@ -2340,6 +2341,55 @@ func (m *OCIRepositoryMutation) ResetValidatedAt() {
 	m.validated_at = nil
 }
 
+// SetProvider sets the "provider" field.
+func (m *OCIRepositoryMutation) SetProvider(s string) {
+	m.provider = &s
+}
+
+// Provider returns the value of the "provider" field in the mutation.
+func (m *OCIRepositoryMutation) Provider() (r string, exists bool) {
+	v := m.provider
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProvider returns the old "provider" field's value of the OCIRepository entity.
+// If the OCIRepository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OCIRepositoryMutation) OldProvider(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProvider is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProvider requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProvider: %w", err)
+	}
+	return oldValue.Provider, nil
+}
+
+// ClearProvider clears the value of the "provider" field.
+func (m *OCIRepositoryMutation) ClearProvider() {
+	m.provider = nil
+	m.clearedFields[ocirepository.FieldProvider] = struct{}{}
+}
+
+// ProviderCleared returns if the "provider" field was cleared in this mutation.
+func (m *OCIRepositoryMutation) ProviderCleared() bool {
+	_, ok := m.clearedFields[ocirepository.FieldProvider]
+	return ok
+}
+
+// ResetProvider resets all changes to the "provider" field.
+func (m *OCIRepositoryMutation) ResetProvider() {
+	m.provider = nil
+	delete(m.clearedFields, ocirepository.FieldProvider)
+}
+
 // SetOrganizationID sets the "organization" edge to the Organization entity by id.
 func (m *OCIRepositoryMutation) SetOrganizationID(id uuid.UUID) {
 	m.organization = &id
@@ -2413,7 +2463,7 @@ func (m *OCIRepositoryMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *OCIRepositoryMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
 	if m.repo != nil {
 		fields = append(fields, ocirepository.FieldRepo)
 	}
@@ -2428,6 +2478,9 @@ func (m *OCIRepositoryMutation) Fields() []string {
 	}
 	if m.validated_at != nil {
 		fields = append(fields, ocirepository.FieldValidatedAt)
+	}
+	if m.provider != nil {
+		fields = append(fields, ocirepository.FieldProvider)
 	}
 	return fields
 }
@@ -2447,6 +2500,8 @@ func (m *OCIRepositoryMutation) Field(name string) (ent.Value, bool) {
 		return m.ValidationStatus()
 	case ocirepository.FieldValidatedAt:
 		return m.ValidatedAt()
+	case ocirepository.FieldProvider:
+		return m.Provider()
 	}
 	return nil, false
 }
@@ -2466,6 +2521,8 @@ func (m *OCIRepositoryMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldValidationStatus(ctx)
 	case ocirepository.FieldValidatedAt:
 		return m.OldValidatedAt(ctx)
+	case ocirepository.FieldProvider:
+		return m.OldProvider(ctx)
 	}
 	return nil, fmt.Errorf("unknown OCIRepository field %s", name)
 }
@@ -2510,6 +2567,13 @@ func (m *OCIRepositoryMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetValidatedAt(v)
 		return nil
+	case ocirepository.FieldProvider:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProvider(v)
+		return nil
 	}
 	return fmt.Errorf("unknown OCIRepository field %s", name)
 }
@@ -2539,7 +2603,11 @@ func (m *OCIRepositoryMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *OCIRepositoryMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(ocirepository.FieldProvider) {
+		fields = append(fields, ocirepository.FieldProvider)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -2552,6 +2620,11 @@ func (m *OCIRepositoryMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *OCIRepositoryMutation) ClearField(name string) error {
+	switch name {
+	case ocirepository.FieldProvider:
+		m.ClearProvider()
+		return nil
+	}
 	return fmt.Errorf("unknown OCIRepository nullable field %s", name)
 }
 
@@ -2573,6 +2646,9 @@ func (m *OCIRepositoryMutation) ResetField(name string) error {
 		return nil
 	case ocirepository.FieldValidatedAt:
 		m.ResetValidatedAt()
+		return nil
+	case ocirepository.FieldProvider:
+		m.ResetProvider()
 		return nil
 	}
 	return fmt.Errorf("unknown OCIRepository field %s", name)

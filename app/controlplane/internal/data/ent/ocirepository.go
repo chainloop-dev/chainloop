@@ -30,6 +30,8 @@ type OCIRepository struct {
 	ValidationStatus biz.OCIRepoValidationStatus `json:"validation_status,omitempty"`
 	// ValidatedAt holds the value of the "validated_at" field.
 	ValidatedAt time.Time `json:"validated_at,omitempty"`
+	// Provider holds the value of the "provider" field.
+	Provider string `json:"provider,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the OCIRepositoryQuery when eager-loading is set.
 	Edges                         OCIRepositoryEdges `json:"edges"`
@@ -64,7 +66,7 @@ func (*OCIRepository) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case ocirepository.FieldRepo, ocirepository.FieldSecretName, ocirepository.FieldValidationStatus:
+		case ocirepository.FieldRepo, ocirepository.FieldSecretName, ocirepository.FieldValidationStatus, ocirepository.FieldProvider:
 			values[i] = new(sql.NullString)
 		case ocirepository.FieldCreatedAt, ocirepository.FieldValidatedAt:
 			values[i] = new(sql.NullTime)
@@ -122,6 +124,12 @@ func (or *OCIRepository) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field validated_at", values[i])
 			} else if value.Valid {
 				or.ValidatedAt = value.Time
+			}
+		case ocirepository.FieldProvider:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field provider", values[i])
+			} else if value.Valid {
+				or.Provider = value.String
 			}
 		case ocirepository.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -185,6 +193,9 @@ func (or *OCIRepository) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("validated_at=")
 	builder.WriteString(or.ValidatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("provider=")
+	builder.WriteString(or.Provider)
 	builder.WriteByte(')')
 	return builder.String()
 }

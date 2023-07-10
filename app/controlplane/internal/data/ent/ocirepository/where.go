@@ -77,6 +77,11 @@ func ValidatedAt(v time.Time) predicate.OCIRepository {
 	return predicate.OCIRepository(sql.FieldEQ(FieldValidatedAt, v))
 }
 
+// Provider applies equality check predicate on the "provider" field. It's identical to ProviderEQ.
+func Provider(v string) predicate.OCIRepository {
+	return predicate.OCIRepository(sql.FieldEQ(FieldProvider, v))
+}
+
 // RepoEQ applies the EQ predicate on the "repo" field.
 func RepoEQ(v string) predicate.OCIRepository {
 	return predicate.OCIRepository(sql.FieldEQ(FieldRepo, v))
@@ -315,6 +320,81 @@ func ValidatedAtLT(v time.Time) predicate.OCIRepository {
 // ValidatedAtLTE applies the LTE predicate on the "validated_at" field.
 func ValidatedAtLTE(v time.Time) predicate.OCIRepository {
 	return predicate.OCIRepository(sql.FieldLTE(FieldValidatedAt, v))
+}
+
+// ProviderEQ applies the EQ predicate on the "provider" field.
+func ProviderEQ(v string) predicate.OCIRepository {
+	return predicate.OCIRepository(sql.FieldEQ(FieldProvider, v))
+}
+
+// ProviderNEQ applies the NEQ predicate on the "provider" field.
+func ProviderNEQ(v string) predicate.OCIRepository {
+	return predicate.OCIRepository(sql.FieldNEQ(FieldProvider, v))
+}
+
+// ProviderIn applies the In predicate on the "provider" field.
+func ProviderIn(vs ...string) predicate.OCIRepository {
+	return predicate.OCIRepository(sql.FieldIn(FieldProvider, vs...))
+}
+
+// ProviderNotIn applies the NotIn predicate on the "provider" field.
+func ProviderNotIn(vs ...string) predicate.OCIRepository {
+	return predicate.OCIRepository(sql.FieldNotIn(FieldProvider, vs...))
+}
+
+// ProviderGT applies the GT predicate on the "provider" field.
+func ProviderGT(v string) predicate.OCIRepository {
+	return predicate.OCIRepository(sql.FieldGT(FieldProvider, v))
+}
+
+// ProviderGTE applies the GTE predicate on the "provider" field.
+func ProviderGTE(v string) predicate.OCIRepository {
+	return predicate.OCIRepository(sql.FieldGTE(FieldProvider, v))
+}
+
+// ProviderLT applies the LT predicate on the "provider" field.
+func ProviderLT(v string) predicate.OCIRepository {
+	return predicate.OCIRepository(sql.FieldLT(FieldProvider, v))
+}
+
+// ProviderLTE applies the LTE predicate on the "provider" field.
+func ProviderLTE(v string) predicate.OCIRepository {
+	return predicate.OCIRepository(sql.FieldLTE(FieldProvider, v))
+}
+
+// ProviderContains applies the Contains predicate on the "provider" field.
+func ProviderContains(v string) predicate.OCIRepository {
+	return predicate.OCIRepository(sql.FieldContains(FieldProvider, v))
+}
+
+// ProviderHasPrefix applies the HasPrefix predicate on the "provider" field.
+func ProviderHasPrefix(v string) predicate.OCIRepository {
+	return predicate.OCIRepository(sql.FieldHasPrefix(FieldProvider, v))
+}
+
+// ProviderHasSuffix applies the HasSuffix predicate on the "provider" field.
+func ProviderHasSuffix(v string) predicate.OCIRepository {
+	return predicate.OCIRepository(sql.FieldHasSuffix(FieldProvider, v))
+}
+
+// ProviderIsNil applies the IsNil predicate on the "provider" field.
+func ProviderIsNil() predicate.OCIRepository {
+	return predicate.OCIRepository(sql.FieldIsNull(FieldProvider))
+}
+
+// ProviderNotNil applies the NotNil predicate on the "provider" field.
+func ProviderNotNil() predicate.OCIRepository {
+	return predicate.OCIRepository(sql.FieldNotNull(FieldProvider))
+}
+
+// ProviderEqualFold applies the EqualFold predicate on the "provider" field.
+func ProviderEqualFold(v string) predicate.OCIRepository {
+	return predicate.OCIRepository(sql.FieldEqualFold(FieldProvider, v))
+}
+
+// ProviderContainsFold applies the ContainsFold predicate on the "provider" field.
+func ProviderContainsFold(v string) predicate.OCIRepository {
+	return predicate.OCIRepository(sql.FieldContainsFold(FieldProvider, v))
 }
 
 // HasOrganization applies the HasEdge predicate on the "organization" edge.

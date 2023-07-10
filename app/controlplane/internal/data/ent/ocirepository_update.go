@@ -71,6 +71,26 @@ func (oru *OCIRepositoryUpdate) SetNillableValidatedAt(t *time.Time) *OCIReposit
 	return oru
 }
 
+// SetProvider sets the "provider" field.
+func (oru *OCIRepositoryUpdate) SetProvider(s string) *OCIRepositoryUpdate {
+	oru.mutation.SetProvider(s)
+	return oru
+}
+
+// SetNillableProvider sets the "provider" field if the given value is not nil.
+func (oru *OCIRepositoryUpdate) SetNillableProvider(s *string) *OCIRepositoryUpdate {
+	if s != nil {
+		oru.SetProvider(*s)
+	}
+	return oru
+}
+
+// ClearProvider clears the value of the "provider" field.
+func (oru *OCIRepositoryUpdate) ClearProvider() *OCIRepositoryUpdate {
+	oru.mutation.ClearProvider()
+	return oru
+}
+
 // SetOrganizationID sets the "organization" edge to the Organization entity by ID.
 func (oru *OCIRepositoryUpdate) SetOrganizationID(id uuid.UUID) *OCIRepositoryUpdate {
 	oru.mutation.SetOrganizationID(id)
@@ -156,6 +176,12 @@ func (oru *OCIRepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) 
 	}
 	if value, ok := oru.mutation.ValidatedAt(); ok {
 		_spec.SetField(ocirepository.FieldValidatedAt, field.TypeTime, value)
+	}
+	if value, ok := oru.mutation.Provider(); ok {
+		_spec.SetField(ocirepository.FieldProvider, field.TypeString, value)
+	}
+	if oru.mutation.ProviderCleared() {
+		_spec.ClearField(ocirepository.FieldProvider, field.TypeString)
 	}
 	if oru.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -243,6 +269,26 @@ func (oruo *OCIRepositoryUpdateOne) SetNillableValidatedAt(t *time.Time) *OCIRep
 	if t != nil {
 		oruo.SetValidatedAt(*t)
 	}
+	return oruo
+}
+
+// SetProvider sets the "provider" field.
+func (oruo *OCIRepositoryUpdateOne) SetProvider(s string) *OCIRepositoryUpdateOne {
+	oruo.mutation.SetProvider(s)
+	return oruo
+}
+
+// SetNillableProvider sets the "provider" field if the given value is not nil.
+func (oruo *OCIRepositoryUpdateOne) SetNillableProvider(s *string) *OCIRepositoryUpdateOne {
+	if s != nil {
+		oruo.SetProvider(*s)
+	}
+	return oruo
+}
+
+// ClearProvider clears the value of the "provider" field.
+func (oruo *OCIRepositoryUpdateOne) ClearProvider() *OCIRepositoryUpdateOne {
+	oruo.mutation.ClearProvider()
 	return oruo
 }
 
@@ -361,6 +407,12 @@ func (oruo *OCIRepositoryUpdateOne) sqlSave(ctx context.Context) (_node *OCIRepo
 	}
 	if value, ok := oruo.mutation.ValidatedAt(); ok {
 		_spec.SetField(ocirepository.FieldValidatedAt, field.TypeTime, value)
+	}
+	if value, ok := oruo.mutation.Provider(); ok {
+		_spec.SetField(ocirepository.FieldProvider, field.TypeString, value)
+	}
+	if oruo.mutation.ProviderCleared() {
+		_spec.ClearField(ocirepository.FieldProvider, field.TypeString)
 	}
 	if oruo.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{

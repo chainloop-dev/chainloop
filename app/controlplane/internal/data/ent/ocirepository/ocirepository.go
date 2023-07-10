@@ -27,6 +27,8 @@ const (
 	FieldValidationStatus = "validation_status"
 	// FieldValidatedAt holds the string denoting the validated_at field in the database.
 	FieldValidatedAt = "validated_at"
+	// FieldProvider holds the string denoting the provider field in the database.
+	FieldProvider = "provider"
 	// EdgeOrganization holds the string denoting the organization edge name in mutations.
 	EdgeOrganization = "organization"
 	// Table holds the table name of the ocirepository in the database.
@@ -48,6 +50,7 @@ var Columns = []string{
 	FieldCreatedAt,
 	FieldValidationStatus,
 	FieldValidatedAt,
+	FieldProvider,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "oci_repositories"
@@ -123,6 +126,11 @@ func ByValidationStatus(opts ...sql.OrderTermOption) OrderOption {
 // ByValidatedAt orders the results by the validated_at field.
 func ByValidatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldValidatedAt, opts...).ToFunc()
+}
+
+// ByProvider orders the results by the provider field.
+func ByProvider(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldProvider, opts...).ToFunc()
 }
 
 // ByOrganizationField orders the results by organization field.
