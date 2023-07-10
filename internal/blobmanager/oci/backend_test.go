@@ -181,7 +181,7 @@ func (s *testSuite) TestDescribe() {
 			name:    "not found",
 			digest:  "deadbeef",
 			wantErr: true,
-			errMsg:  "Unknown name",
+			errMsg:  "not found",
 		},
 		{
 			name:   "valid image",

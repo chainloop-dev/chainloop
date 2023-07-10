@@ -29,12 +29,14 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/empty"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 	"github.com/google/go-containerregistry/pkg/v1/static"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 
 	pb "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
+	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
 )
 
 type Backend struct {
@@ -185,6 +187,11 @@ func (b *Backend) Describe(_ context.Context, digest string) (*pb.CASResource, e
 
 	img, err := remote.Image(ref, remote.WithAuthFromKeychain(b.keychain))
 	if err != nil {
+		var e *transport.Error
+		if errors.As(err, &e) && e.StatusCode == http.StatusNotFound {
+			return nil, backend.NewErrNotFound("image")
+		}
+
 		return nil, fmt.Errorf("getting image: %w", err)
 	}
 
@@ -197,7 +204,7 @@ func (b *Backend) Describe(_ context.Context, digest string) (*pb.CASResource, e
 		return nil, fmt.Errorf("extracting manifest: %w", err)
 	}
 
-	// Valirate image already checked that the manifest has exactly one layer
+	// Validate image already checked that the manifest has exactly one layer
 	size := manifest.Layers[0].Size
 
 	filename, ok := manifest.Annotations[ocispec.AnnotationTitle]

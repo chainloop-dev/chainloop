@@ -27,7 +27,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/server"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
-	"github.com/chainloop-dev/chainloop/app/controlplane/plugins"
+	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
 	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
@@ -35,7 +35,7 @@ import (
 	"github.com/google/wire"
 )
 
-func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger) (*app, func(), error) {
+func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.AvailablePlugins) (*app, func(), error) {
 	panic(
 		wire.Build(
 			wire.Bind(new(credentials.Reader), new(credentials.ReaderWriter)),
@@ -49,7 +49,6 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger) (*app, func(
 			serviceOpts,
 			wire.Value([]biz.CASClientOpts{}),
 			wire.FieldsOf(new(*conf.Bootstrap), "Server", "Auth", "Data", "CasServer"),
-			plugins.Load,
 			dispatcher.New,
 			newApp,
 		),

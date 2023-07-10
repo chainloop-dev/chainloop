@@ -243,7 +243,12 @@ func validateInputs(c *FanOutIntegration) error {
 }
 
 // List of loaded integrations
-type AvailablePlugins []FanOut
+type AvailablePlugins []*FanOutP
+type FanOutP struct {
+	FanOut
+	DisposeFunc func()
+}
+
 type FanOutFactory = func(l log.Logger) (FanOut, error)
 
 // FindByID returns the integration with the given ID from the list of available integrations
@@ -256,6 +261,14 @@ func (i AvailablePlugins) FindByID(id string) (FanOut, error) {
 	}
 
 	return nil, fmt.Errorf("integration %q not found", id)
+}
+
+func (i AvailablePlugins) Cleanup() {
+	for _, plugin := range i {
+		if plugin.DisposeFunc != nil {
+			plugin.DisposeFunc()
+		}
+	}
 }
 
 type IntegrationInfo struct {

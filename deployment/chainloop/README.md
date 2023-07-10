@@ -385,6 +385,7 @@ chainloop config save \
 | `controlplane.replicaCount`     | Number of replicas                                                                  | `2`                                             |
 | `controlplane.image.repository` | FQDN uri for the image                                                              | `ghcr.io/chainloop-dev/chainloop/control-plane` |
 | `controlplane.image.tag`        | Image tag (immutable tags are recommended). If no set chart.appVersion will be used |                                                 |
+| `controlplane.pluginsDir`       | Directory where to look for plugins                                                 | `/plugins`                                      |
 
 ### Control Plane Database
 

@@ -231,6 +231,8 @@ func (m *Bootstrap) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for PluginsDir
+
 	if len(errors) > 0 {
 		return BootstrapMultiError(errors)
 	}

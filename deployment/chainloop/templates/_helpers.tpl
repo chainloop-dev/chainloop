@@ -133,14 +133,23 @@ Chainloop Controlplane Chart fullname
 {{- define "chainloop.controlplane.name" -}}
 {{- printf "%s-%s" (include "common.names.name" .) "controlplane" | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
-{{/*
 
+{{/*
 Common labels
 */}}
 {{- define "chainloop.controlplane.labels" -}}
 {{- include "common.labels.standard" . }}
 app.kubernetes.io/part-of: chainloop
 app.kubernetes.io/component: controlplane
+{{- end }}
+
+{{/*
+Migration labels
+*/}}
+{{- define "chainloop.controlplane.migration.labels" -}}
+{{- include "common.labels.standard" . }}
+app.kubernetes.io/part-of: chainloop
+app.kubernetes.io/component: controlplane-migration
 {{- end }}
 
 {{/*
@@ -167,6 +176,13 @@ Return the Postgresql connection string
 */}}
 {{- define "controlplane.database.connection_string" -}}
 {{- printf "postgresql://%s:%s@%s:%s/%s" (include "controlplane.database.user" .) (include "controlplane.database.escapedPassword" .) (include "controlplane.database.host" .) (include "controlplane.database.port" .) (include "controlplane.database.name" .) }}
+{{- end -}}
+
+{{/*
+Return the Postgresql connection string for Atlas migration
+*/}}
+{{- define "controlplane.database.atlas_connection_string" -}}
+{{- printf "postgres://%s:%s@%s:%s/%s?sslmode=disable" (include "controlplane.database.user" .) (include "controlplane.database.escapedPassword" .) (include "controlplane.database.host" .) (include "controlplane.database.port" .) (include "controlplane.database.name" .) }}
 {{- end -}}
 
 {{/*

@@ -1,0 +1,12 @@
+version: v1
+breaking:
+  use:
+    - FILE
+lint:
+  use:
+    - DEFAULT
+  ignore_only:
+    PACKAGE_VERSION_SUFFIX:
+      - ./fanout.proto
+    PACKAGE_DIRECTORY_MATCH:
+      - ./fanout.proto
