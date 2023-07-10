@@ -96,6 +96,9 @@ controlplane:
     # Overrides the image tag whose default is the chart appVersion.
     # tag: latest
 
+  ## @param controlplane.pluginsDir Directory where to look for plugins
+  pluginsDir: /plugins
+
   # Database migration
   ## @skip controlplane.migration
   migration:
