@@ -80,9 +80,11 @@ spec:
             {{- toYaml .Values.controlplane.resources | nindent 12 }}
           volumeMounts:
             - name: config
-              mountPath: "/data/conf"
+              mountPath: /data/conf
+            - name: tmp
+              mountPath: /tmp
             - name: jwt-cas-private-key
-              mountPath: "/tmp"
+              mountPath: /secrets
       volumes:
         - name: config
           projected:
@@ -91,6 +93,9 @@ spec:
                 name: {{ include "chainloop.controlplane.fullname" . }}
             - configMap:
                name: {{ include "chainloop.controlplane.fullname" . }}
+        # required for the plugins to store the socket files
+        - name: tmp
+          emptyDir: {}
         - name: jwt-cas-private-key
           secret:
             secretName: {{ include "chainloop.controlplane.fullname" . }}-jwt-cas

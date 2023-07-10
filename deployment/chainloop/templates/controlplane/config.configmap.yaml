@@ -28,3 +28,4 @@ data:
       grpc:
         addr: {{ printf "%s-api:%.0f" (include "chainloop.cas.fullname" .) .Values.cas.serviceAPI.port }}
       insecure: true
+    plugins_dir: {{ .Values.controlplane.pluginsDir }}
