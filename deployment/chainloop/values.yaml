@@ -96,6 +96,14 @@ controlplane:
     # Overrides the image tag whose default is the chart appVersion.
     # tag: latest
 
+  # Database migration
+  ## @skip controlplane.migration
+  migration:
+    image:
+      repository: ghcr.io/chainloop-dev/chainloop/control-plane-migrations
+      # Overrides the image tag whose default is the chart appVersion.
+    # tag: latest
+
   ## @skip controlplane.serviceAccount
   serviceAccount:
     # Specifies whether a service account should be created

@@ -76,9 +76,8 @@ dockers:
     image_templates:
       - "ghcr.io/chainloop-dev/chainloop/control-plane:{{ .Tag }}"
       - "ghcr.io/chainloop-dev/chainloop/control-plane:latest"
+  # Container image meant to perform migrations on the database at deployment time
   - dockerfile: app/controlplane/Dockerfile.migrations
-    ids:
-      - control-plane
     extra_files:
       - app/controlplane/internal/data/ent/migrate/migrations
     image_templates:
