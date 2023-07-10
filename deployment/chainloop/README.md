@@ -96,6 +96,7 @@ helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
     # Open ID Connect (OIDC)
     # ...
     # Secrets backend
+    --set secretsBackend.backend=gcpSecretManager \
     --set secretsBackend.gcpSecretManager.projectId=[GCP Project ID] \
     --set secretsBackend.gcpSecretManager.authKey=[GCP Auth KEY] \
     # Server Auth KeyPair
