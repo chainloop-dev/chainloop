@@ -43,8 +43,8 @@ The default deployment mode relies on external dependencies to be available in a
 
 The Helm Chart in this mode includes
 
-- Chainloop [Controlplane](../../app/controlplane) 
-- Chainloop [Artifact proxy](../../app/artifact-cas) 
+- Chainloop [Controlplane](https://github.com/chainloop-dev/chainloop/tree/main/app/controlplane)
+- Chainloop [Artifact proxy](https://github.com/chainloop-dev/chainloop/tree/main/app/artifact-cas)
 - A PostgreSQL dependency enabled by default
 
 During installation, you'll need to provide
@@ -132,8 +132,8 @@ To provide an easy way to give Chainloop a try, this Helm Chart has an **opt-in 
 
 The Helm Chart in this mode includes
 
-- Chainloop [Controlplane](../../app/controlplane) 
-- Chainloop [Artifact proxy](../../app/artifact-cas) 
+- Chainloop [Controlplane](https://github.com/chainloop-dev/chainloop/tree/main/app/controlplane)
+- Chainloop [Artifact proxy](https://github.com/chainloop-dev/chainloop/tree/main/app/artifact-cas)
 - A PostgreSQL dependency enabled by default
 - **A pre-configured Hashicorp Vault instance running in development mode (unsealed, in-memory, insecure)**
 
