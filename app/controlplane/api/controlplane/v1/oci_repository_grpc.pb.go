@@ -41,6 +41,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type OCIRepositoryServiceClient interface {
+	// Deprecated: Do not use.
 	// Save the OCI repository overriding the existing one (for now)
 	Save(ctx context.Context, in *OCIRepositoryServiceSaveRequest, opts ...grpc.CallOption) (*OCIRepositoryServiceSaveResponse, error)
 }
@@ -53,6 +54,7 @@ func NewOCIRepositoryServiceClient(cc grpc.ClientConnInterface) OCIRepositorySer
 	return &oCIRepositoryServiceClient{cc}
 }
 
+// Deprecated: Do not use.
 func (c *oCIRepositoryServiceClient) Save(ctx context.Context, in *OCIRepositoryServiceSaveRequest, opts ...grpc.CallOption) (*OCIRepositoryServiceSaveResponse, error) {
 	out := new(OCIRepositoryServiceSaveResponse)
 	err := c.cc.Invoke(ctx, OCIRepositoryService_Save_FullMethodName, in, out, opts...)
@@ -66,6 +68,7 @@ func (c *oCIRepositoryServiceClient) Save(ctx context.Context, in *OCIRepository
 // All implementations must embed UnimplementedOCIRepositoryServiceServer
 // for forward compatibility
 type OCIRepositoryServiceServer interface {
+	// Deprecated: Do not use.
 	// Save the OCI repository overriding the existing one (for now)
 	Save(context.Context, *OCIRepositoryServiceSaveRequest) (*OCIRepositoryServiceSaveResponse, error)
 	mustEmbedUnimplementedOCIRepositoryServiceServer()
