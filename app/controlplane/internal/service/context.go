@@ -51,7 +51,7 @@ func (s *ContextService) Current(ctx context.Context, _ *pb.ContextServiceCurren
 		CurrentOrg: bizOrgToPb((*biz.Organization)(currentOrg)),
 	}
 
-	repo, err := s.uc.FindMainBackend(ctx, currentOrg.ID)
+	repo, err := s.uc.FindDefaultBackend(ctx, currentOrg.ID)
 	if err != nil {
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}

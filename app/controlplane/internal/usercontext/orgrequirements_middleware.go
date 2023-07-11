@@ -36,7 +36,7 @@ func CheckOrgRequirements(uc biz.CASBackendReader) middleware.Middleware {
 			}
 
 			// 1 - Figure out main repository for this organization
-			repo, err := uc.FindMainBackend(ctx, org.ID)
+			repo, err := uc.FindDefaultBackend(ctx, org.ID)
 			if err != nil {
 				return nil, fmt.Errorf("checking for repositories in the org: %w", err)
 			} else if repo == nil {
@@ -52,7 +52,7 @@ func CheckOrgRequirements(uc biz.CASBackendReader) middleware.Middleware {
 			}
 
 			// 2 - compare the status
-			if repo.ValidationStatus != biz.OCIRepoValidationOK {
+			if repo.ValidationStatus != biz.CASBackendValidationOK {
 				return nil, v1.ErrorOciRepositoryErrorReasonInvalid("your OCI repository can't be reached")
 			}
 
@@ -83,7 +83,7 @@ const validationTimeOffset = 5 * time.Minute
 // that's why we run it only in refresh windows
 func shouldRevalidate(repo *biz.CASBackend) bool {
 	// If the validation is currently failed we want to make sure we re-validate
-	if repo.ValidationStatus == biz.OCIRepoValidationFailed {
+	if repo.ValidationStatus == biz.CASBackendValidationFailed {
 		return true
 	}
 

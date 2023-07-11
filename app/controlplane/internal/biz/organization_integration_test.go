@@ -66,7 +66,7 @@ func (s *OrgIntegrationTestSuite) TestDeleteOrg() {
 		assert.NoError(err)
 		assert.Empty(integrations)
 
-		ociRepo, err := s.CASBackendRepo.FindMainBackend(ctx, s.org.ID)
+		ociRepo, err := s.CASBackendRepo.FindDefaultBackend(ctx, s.org.ID)
 		assert.NoError(err)
 		assert.Nil(ociRepo)
 
@@ -140,7 +140,7 @@ func (s *OrgIntegrationTestSuite) SetupTest() {
 	assert.NoError(err)
 	assert.Len(integrations, 1)
 
-	ociRepo, err := s.CASBackendRepo.FindMainBackend(ctx, s.org.ID)
+	ociRepo, err := s.CASBackendRepo.FindDefaultBackend(ctx, s.org.ID)
 	assert.NoError(err)
 	assert.NotNil(ociRepo)
 

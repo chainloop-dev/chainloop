@@ -18,15 +18,15 @@ type CASBackendRepo struct {
 }
 
 // Create provides a mock function with given fields: _a0, _a1
-func (_m *CASBackendRepo) Create(_a0 context.Context, _a1 *biz.OCIRepoCreateOpts) (*biz.CASBackend, error) {
+func (_m *CASBackendRepo) Create(_a0 context.Context, _a1 *biz.CASBackendCreateOpts) (*biz.CASBackend, error) {
 	ret := _m.Called(_a0, _a1)
 
 	var r0 *biz.CASBackend
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, *biz.OCIRepoCreateOpts) (*biz.CASBackend, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *biz.CASBackendCreateOpts) (*biz.CASBackend, error)); ok {
 		return rf(_a0, _a1)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, *biz.OCIRepoCreateOpts) *biz.CASBackend); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *biz.CASBackendCreateOpts) *biz.CASBackend); ok {
 		r0 = rf(_a0, _a1)
 	} else {
 		if ret.Get(0) != nil {
@@ -34,7 +34,7 @@ func (_m *CASBackendRepo) Create(_a0 context.Context, _a1 *biz.OCIRepoCreateOpts
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, *biz.OCIRepoCreateOpts) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *biz.CASBackendCreateOpts) error); ok {
 		r1 = rf(_a0, _a1)
 	} else {
 		r1 = ret.Error(1)
@@ -83,8 +83,8 @@ func (_m *CASBackendRepo) FindByID(ctx context.Context, ID uuid.UUID) (*biz.CASB
 	return r0, r1
 }
 
-// FindMainBackend provides a mock function with given fields: ctx, orgID
-func (_m *CASBackendRepo) FindMainBackend(ctx context.Context, orgID uuid.UUID) (*biz.CASBackend, error) {
+// FindDefaultBackend provides a mock function with given fields: ctx, orgID
+func (_m *CASBackendRepo) FindDefaultBackend(ctx context.Context, orgID uuid.UUID) (*biz.CASBackend, error) {
 	ret := _m.Called(ctx, orgID)
 
 	var r0 *biz.CASBackend
@@ -110,15 +110,15 @@ func (_m *CASBackendRepo) FindMainBackend(ctx context.Context, orgID uuid.UUID) 
 }
 
 // Update provides a mock function with given fields: _a0, _a1
-func (_m *CASBackendRepo) Update(_a0 context.Context, _a1 *biz.OCIRepoUpdateOpts) (*biz.CASBackend, error) {
+func (_m *CASBackendRepo) Update(_a0 context.Context, _a1 *biz.CASBackendUpdateOpts) (*biz.CASBackend, error) {
 	ret := _m.Called(_a0, _a1)
 
 	var r0 *biz.CASBackend
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, *biz.OCIRepoUpdateOpts) (*biz.CASBackend, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *biz.CASBackendUpdateOpts) (*biz.CASBackend, error)); ok {
 		return rf(_a0, _a1)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, *biz.OCIRepoUpdateOpts) *biz.CASBackend); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *biz.CASBackendUpdateOpts) *biz.CASBackend); ok {
 		r0 = rf(_a0, _a1)
 	} else {
 		if ret.Get(0) != nil {
@@ -126,7 +126,7 @@ func (_m *CASBackendRepo) Update(_a0 context.Context, _a1 *biz.OCIRepoUpdateOpts
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, *biz.OCIRepoUpdateOpts) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *biz.CASBackendUpdateOpts) error); ok {
 		r1 = rf(_a0, _a1)
 	} else {
 		r1 = ret.Error(1)

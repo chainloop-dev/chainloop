@@ -42,7 +42,7 @@ func (CASBackend) Fields() []ent.Field {
 			Annotations(&entsql.Annotation{Default: "CURRENT_TIMESTAMP"}),
 		field.Enum("validation_status").
 			GoType(biz.CASBackendValidationStatus("")).
-			Default(string(biz.OCIRepoValidationOK)),
+			Default(string(biz.CASBackendValidationOK)),
 		field.Time("validated_at").Default(time.Now).
 			Annotations(&entsql.Annotation{Default: "CURRENT_TIMESTAMP"}),
 		field.Enum("provider").GoType(biz.CASBackendProvider("")),

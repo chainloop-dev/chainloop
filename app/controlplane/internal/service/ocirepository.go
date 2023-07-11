@@ -82,9 +82,9 @@ func bizOCIRepoToPb(repo *biz.CASBackend) *pb.OCIRepositoryItem {
 	}
 
 	switch repo.ValidationStatus {
-	case biz.OCIRepoValidationOK:
+	case biz.CASBackendValidationOK:
 		r.ValidationStatus = pb.OCIRepositoryItem_VALIDATION_STATUS_OK
-	case biz.OCIRepoValidationFailed:
+	case biz.CASBackendValidationFailed:
 		r.ValidationStatus = pb.OCIRepositoryItem_VALIDATION_STATUS_INVALID
 	}
 

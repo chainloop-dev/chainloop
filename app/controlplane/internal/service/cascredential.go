@@ -58,7 +58,7 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 	}
 
 	// Get repository to provide the secret name
-	repo, err := s.ociUC.FindMainBackend(ctx, currentOrg.ID)
+	repo, err := s.ociUC.FindDefaultBackend(ctx, currentOrg.ID)
 	if err != nil {
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}

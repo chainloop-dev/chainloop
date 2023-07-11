@@ -41,8 +41,8 @@ func (_m *CASBackendReader) FindByID(ctx context.Context, ID string) (*biz.CASBa
 	return r0, r1
 }
 
-// FindMainBackend provides a mock function with given fields: ctx, orgID
-func (_m *CASBackendReader) FindMainBackend(ctx context.Context, orgID string) (*biz.CASBackend, error) {
+// FindDefaultBackend provides a mock function with given fields: ctx, orgID
+func (_m *CASBackendReader) FindDefaultBackend(ctx context.Context, orgID string) (*biz.CASBackend, error) {
 	ret := _m.Called(ctx, orgID)
 
 	var r0 *biz.CASBackend

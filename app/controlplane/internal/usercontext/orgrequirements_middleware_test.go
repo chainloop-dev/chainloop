@@ -36,25 +36,25 @@ func TestShouldRevalidate(t *testing.T) {
 	}{
 		{
 			name:            "should revalidate if status is not ok and new",
-			repoStatus:      biz.OCIRepoValidationFailed,
+			repoStatus:      biz.CASBackendValidationFailed,
 			repoValidatedAt: time.Now(),
 			expected:        true,
 		},
 		{
 			name:            "should revalidate if status is not ok and old",
-			repoStatus:      biz.OCIRepoValidationFailed,
+			repoStatus:      biz.CASBackendValidationFailed,
 			repoValidatedAt: time.Now().Add(-2 * validationTimeOffset),
 			expected:        true,
 		},
 		{
 			name:            "should revalidate if status is ok but validated at is too old",
-			repoStatus:      biz.OCIRepoValidationOK,
+			repoStatus:      biz.CASBackendValidationOK,
 			repoValidatedAt: time.Now().Add(-2 * validationTimeOffset),
 			expected:        true,
 		},
 		{
 			name:            "should not revalidate if status is ok and validated at is recent",
-			repoStatus:      biz.OCIRepoValidationOK,
+			repoStatus:      biz.CASBackendValidationOK,
 			repoValidatedAt: time.Now().Add(-(validationTimeOffset - time.Second)),
 			expected:        false,
 		},

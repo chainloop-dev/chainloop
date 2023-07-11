@@ -38,9 +38,8 @@ func NewCASBackendRepo(data *Data, logger log.Logger) biz.CASBackendRepo {
 	}
 }
 
-func (r *CASBackendRepo) FindMainBackend(ctx context.Context, orgID uuid.UUID) (*biz.CASBackend, error) {
-	backend, err := orgScopedQuery(r.data.db, orgID).
-		QueryCasBackends().Only(ctx)
+func (r *CASBackendRepo) FindDefaultBackend(ctx context.Context, orgID uuid.UUID) (*biz.CASBackend, error) {
+	backend, err := orgScopedQuery(r.data.db, orgID).QueryCasBackends().Where(casbackend.Default(true)).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	}
@@ -48,10 +47,10 @@ func (r *CASBackendRepo) FindMainBackend(ctx context.Context, orgID uuid.UUID) (
 	return entCASBackendToBiz(backend), nil
 }
 
-func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.OCIRepoCreateOpts) (*biz.CASBackend, error) {
+func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateOpts) (*biz.CASBackend, error) {
 	backend, err := r.data.db.CASBackend.Create().
 		SetOrganizationID(opts.OrgID).
-		SetName(opts.Repository).
+		SetName(opts.Name).
 		SetProvider(opts.Provider).
 		SetDefault(opts.Default).
 		SetSecretName(opts.SecretName).
@@ -63,9 +62,9 @@ func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.OCIRepoCreateOpts
 	return entCASBackendToBiz(backend), nil
 }
 
-func (r *CASBackendRepo) Update(ctx context.Context, opts *biz.OCIRepoUpdateOpts) (*biz.CASBackend, error) {
+func (r *CASBackendRepo) Update(ctx context.Context, opts *biz.CASBackendUpdateOpts) (*biz.CASBackend, error) {
 	backend, err := r.data.db.CASBackend.UpdateOneID(opts.ID).
-		SetName(opts.Repository).
+		SetName(opts.Name).
 		SetProvider(opts.Provider).
 		SetDefault(opts.Default).
 		SetSecretName(opts.SecretName).
@@ -115,6 +114,7 @@ func entCASBackendToBiz(backend *ent.CASBackend) *biz.CASBackend {
 		ValidatedAt:      toTimePtr(backend.ValidatedAt),
 		ValidationStatus: backend.ValidationStatus,
 		Provider:         backend.Provider,
+		Default:          backend.Default,
 	}
 
 	if org := backend.Edges.Organization; org != nil {

@@ -41,34 +41,34 @@ type casBackendTestSuite struct {
 	backendProvider *blobM.Provider
 }
 
-func (s *casBackendTestSuite) TestFindMainBackendErr() {
-	repo, err := s.useCase.FindMainBackend(context.Background(), s.invalidUUID)
+func (s *casBackendTestSuite) TestFindDefaultBackendErr() {
+	repo, err := s.useCase.FindDefaultBackend(context.Background(), s.invalidUUID)
 	assert.True(s.T(), biz.IsErrInvalidUUID(err))
 	assert.Nil(s.T(), repo)
 }
 
-func (s *casBackendTestSuite) TestFindMainBackendNotFound() {
+func (s *casBackendTestSuite) TestFindDefaultBackendNotFound() {
 	assert := assert.New(s.T())
 
 	// Not found
 	ctx := context.Background()
-	s.repo.On("FindMainBackend", ctx, s.validUUID).Return(nil, nil)
+	s.repo.On("FindDefaultBackend", ctx, s.validUUID).Return(nil, nil)
 
-	repo, err := s.useCase.FindMainBackend(ctx, s.validUUID.String())
+	repo, err := s.useCase.FindDefaultBackend(ctx, s.validUUID.String())
 	assert.NoError(err)
 	assert.Nil(repo)
 }
 
-func (s *casBackendTestSuite) TestFindMainBackendFound() {
+func (s *casBackendTestSuite) TestFindDefaultBackendFound() {
 	assert := assert.New(s.T())
 
 	ctx := context.Background()
-	wantRepo := &biz.CASBackend{}
-	s.repo.On("FindMainBackend", ctx, s.validUUID).Return(wantRepo, nil)
+	wantBackend := &biz.CASBackend{}
+	s.repo.On("FindDefaultBackend", ctx, s.validUUID).Return(wantBackend, nil)
 
-	repo, err := s.useCase.FindMainBackend(ctx, s.validUUID.String())
+	backend, err := s.useCase.FindDefaultBackend(ctx, s.validUUID.String())
 	assert.NoError(err)
-	assert.Equal(repo, wantRepo)
+	assert.Equal(backend, wantBackend)
 }
 
 func (s *casBackendTestSuite) TestSaveInvalidUUID() {
@@ -78,18 +78,18 @@ func (s *casBackendTestSuite) TestSaveInvalidUUID() {
 }
 
 // If a repo exists it will get updated
-func (s *casBackendTestSuite) TestSaveMainRepoAlreadyExist() {
+func (s *casBackendTestSuite) TestSaveDefaultBackendAlreadyExist() {
 	assert := assert.New(s.T())
 	const repoName, username, password = "repo", "username", "pass"
 
 	r := &biz.CASBackend{ID: s.validUUID.String()}
 	ctx := context.Background()
-	s.repo.On("FindMainBackend", ctx, s.validUUID).Return(r, nil)
+	s.repo.On("FindDefaultBackend", ctx, s.validUUID).Return(r, nil)
 	s.credsRW.On("SaveCredentials", ctx, s.validUUID.String(), mock.Anything).Return("secret-key", nil)
-	s.repo.On("Update", ctx, &biz.OCIRepoUpdateOpts{
+	s.repo.On("Update", ctx, &biz.CASBackendUpdateOpts{
 		ID: s.validUUID,
-		OCIRepoOpts: &biz.OCIRepoOpts{
-			Repository: repoName, Username: username, Password: password, SecretName: "secret-key",
+		CASBackendOpts: &biz.CASBackendOpts{
+			Name: repoName, Username: username, Password: password, SecretName: "secret-key", Default: true, Provider: biz.CASBackendOCI,
 		},
 	}).Return(r, nil)
 
@@ -98,20 +98,20 @@ func (s *casBackendTestSuite) TestSaveMainRepoAlreadyExist() {
 	assert.Equal(gotRepo, r)
 }
 
-func (s *casBackendTestSuite) TestSaveMainRepoOk() {
+func (s *casBackendTestSuite) TestSaveDefaultBackendOk() {
 	assert := assert.New(s.T())
 
 	ctx := context.Background()
 	const repo, username, password = "repo", "username", "pass"
 
-	s.repo.On("FindMainBackend", ctx, s.validUUID).Return(nil, nil)
+	s.repo.On("FindDefaultBackend", ctx, s.validUUID).Return(nil, nil)
 	s.credsRW.On("SaveCredentials", ctx, s.validUUID.String(), mock.Anything).Return("secret-key", nil)
 
 	newRepo := &biz.CASBackend{}
-	s.repo.On("Create", ctx, &biz.OCIRepoCreateOpts{
+	s.repo.On("Create", ctx, &biz.CASBackendCreateOpts{
 		OrgID: s.validUUID,
-		OCIRepoOpts: &biz.OCIRepoOpts{
-			Repository: repo, Username: username, Password: password, SecretName: "secret-key",
+		CASBackendOpts: &biz.CASBackendOpts{
+			Name: repo, Username: username, Password: password, SecretName: "secret-key", Default: true, Provider: biz.CASBackendOCI,
 		},
 	}).Return(newRepo, nil)
 
@@ -123,7 +123,7 @@ func (s *casBackendTestSuite) TestSaveMainRepoOk() {
 func (s *casBackendTestSuite) TestPerformValidation() {
 	assert := assert.New(s.T())
 	t := s.T()
-	validRepo := &biz.CASBackend{ID: s.validUUID.String(), ValidationStatus: biz.OCIRepoValidationOK}
+	validRepo := &biz.CASBackend{ID: s.validUUID.String(), ValidationStatus: biz.CASBackendValidationOK, Provider: biz.CASBackendOCI}
 
 	t.Run("invalid uuid", func(t *testing.T) {
 		err := s.useCase.PerformValidation(context.Background(), s.invalidUUID)
@@ -137,9 +137,9 @@ func (s *casBackendTestSuite) TestPerformValidation() {
 		s.resetMock()
 	})
 
-	t.Run("credentials missing, set validation status => invalid", func(t *testing.T) {
+	t.Run("proper provider credentials missing, set validation status => invalid", func(t *testing.T) {
 		s.repo.On("FindByID", mock.Anything, s.validUUID).Return(validRepo, nil)
-		s.repo.On("UpdateValidationStatus", mock.Anything, s.validUUID, biz.OCIRepoValidationFailed).Return(nil)
+		s.repo.On("UpdateValidationStatus", mock.Anything, s.validUUID, biz.CASBackendValidationFailed).Return(nil)
 		s.backendProvider.On("FromCredentials", mock.Anything, mock.Anything).Return(nil, credentials.ErrNotFound)
 		err := s.useCase.PerformValidation(context.Background(), s.validUUID.String())
 		assert.NoError(err)
@@ -150,7 +150,7 @@ func (s *casBackendTestSuite) TestPerformValidation() {
 		b := blobM.NewUploaderDownloader(t)
 
 		s.repo.On("FindByID", mock.Anything, s.validUUID).Return(validRepo, nil)
-		s.repo.On("UpdateValidationStatus", mock.Anything, s.validUUID, biz.OCIRepoValidationFailed).Return(nil)
+		s.repo.On("UpdateValidationStatus", mock.Anything, s.validUUID, biz.CASBackendValidationFailed).Return(nil)
 		s.backendProvider.On("FromCredentials", mock.Anything, mock.Anything).Return(b, nil)
 		b.On("CheckWritePermissions", mock.Anything).Return(errors.New("invalid credentials"))
 
@@ -163,7 +163,7 @@ func (s *casBackendTestSuite) TestPerformValidation() {
 		b := blobM.NewUploaderDownloader(t)
 
 		s.repo.On("FindByID", mock.Anything, s.validUUID).Return(validRepo, nil)
-		s.repo.On("UpdateValidationStatus", mock.Anything, s.validUUID, biz.OCIRepoValidationOK).Return(nil)
+		s.repo.On("UpdateValidationStatus", mock.Anything, s.validUUID, biz.CASBackendValidationOK).Return(nil)
 		s.backendProvider.On("FromCredentials", mock.Anything, mock.Anything).Return(b, nil)
 		b.On("CheckWritePermissions", mock.Anything).Return(nil)
 
@@ -174,7 +174,7 @@ func (s *casBackendTestSuite) TestPerformValidation() {
 }
 
 // Run all the tests
-func TestOCIRepository(t *testing.T) {
+func TestCASBackend(t *testing.T) {
 	suite.Run(t, new(casBackendTestSuite))
 }
 
@@ -190,5 +190,5 @@ func (s *casBackendTestSuite) SetupTest() {
 	s.repo = bizMocks.NewCASBackendRepo(s.T())
 	s.credsRW = credentialsM.NewReaderWriter(s.T())
 	s.backendProvider = blobM.NewProvider(s.T())
-	s.useCase = biz.NewOCIRepositoryUseCase(s.repo, s.credsRW, s.backendProvider, nil)
+	s.useCase = biz.NewCASBackendUseCase(s.repo, s.credsRW, s.backendProvider, nil)
 }

@@ -32,6 +32,7 @@ func TestEntCASBackendTo(t *testing.T) {
 		Provider:   "test-provider",
 		SecretName: "test-secret",
 		CreatedAt:  time.Now(),
+		Default:    true,
 	}
 
 	tests := []struct {
@@ -45,6 +46,7 @@ func TestEntCASBackendTo(t *testing.T) {
 			SecretName: testRepo.SecretName,
 			CreatedAt:  toTimePtr(testRepo.CreatedAt),
 			Provider:   testRepo.Provider,
+			Default:    true,
 		}},
 	}
 

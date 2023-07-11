@@ -17,7 +17,6 @@ package biz
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -37,8 +36,8 @@ const (
 
 type CASBackendValidationStatus string
 
-var OCIRepoValidationOK CASBackendValidationStatus = "OK"
-var OCIRepoValidationFailed CASBackendValidationStatus = "Invalid"
+var CASBackendValidationOK CASBackendValidationStatus = "OK"
+var CASBackendValidationFailed CASBackendValidationStatus = "Invalid"
 
 type CASBackend struct {
 	ID, Name, SecretName   string
@@ -47,35 +46,37 @@ type CASBackend struct {
 	ValidationStatus       CASBackendValidationStatus
 	// OCI, S3, ...
 	Provider CASBackendProvider
+	// Wether this is the default cas backend for the organization
+	Default bool
 }
 
-type OCIRepoOpts struct {
-	Repository, Username, Password, SecretName string
-	Provider                                   CASBackendProvider
-	Default                                    bool
+type CASBackendOpts struct {
+	Name, Username, Password, SecretName string
+	Provider                             CASBackendProvider
+	Default                              bool
 }
 
-type OCIRepoCreateOpts struct {
-	*OCIRepoOpts
+type CASBackendCreateOpts struct {
+	*CASBackendOpts
 	OrgID uuid.UUID
 }
 
-type OCIRepoUpdateOpts struct {
-	*OCIRepoOpts
+type CASBackendUpdateOpts struct {
+	*CASBackendOpts
 	ID uuid.UUID
 }
 
 type CASBackendRepo interface {
-	FindMainBackend(ctx context.Context, orgID uuid.UUID) (*CASBackend, error)
+	FindDefaultBackend(ctx context.Context, orgID uuid.UUID) (*CASBackend, error)
 	FindByID(ctx context.Context, ID uuid.UUID) (*CASBackend, error)
 	UpdateValidationStatus(ctx context.Context, ID uuid.UUID, status CASBackendValidationStatus) error
-	Create(context.Context, *OCIRepoCreateOpts) (*CASBackend, error)
-	Update(context.Context, *OCIRepoUpdateOpts) (*CASBackend, error)
+	Create(context.Context, *CASBackendCreateOpts) (*CASBackend, error)
+	Update(context.Context, *CASBackendUpdateOpts) (*CASBackend, error)
 	Delete(ctx context.Context, ID uuid.UUID) error
 }
 
 type CASBackendReader interface {
-	FindMainBackend(ctx context.Context, orgID string) (*CASBackend, error)
+	FindDefaultBackend(ctx context.Context, orgID string) (*CASBackend, error)
 	FindByID(ctx context.Context, ID string) (*CASBackend, error)
 	PerformValidation(ctx context.Context, ID string) error
 }
@@ -87,51 +88,49 @@ type CASBackendUseCase struct {
 	ociBackendProvider backend.Provider
 }
 
-func NewOCIRepositoryUseCase(repo CASBackendRepo, credsRW credentials.ReaderWriter, p backend.Provider, l log.Logger) *CASBackendUseCase {
+func NewCASBackendUseCase(repo CASBackendRepo, credsRW credentials.ReaderWriter, p backend.Provider, l log.Logger) *CASBackendUseCase {
 	if l == nil {
 		l = log.NewStdLogger(io.Discard)
 	}
 
-	return &CASBackendUseCase{repo, servicelogger.ScopedHelper(l, "biz/ocirepository"), credsRW, p}
+	return &CASBackendUseCase{repo, servicelogger.ScopedHelper(l, "biz/CASBackend"), credsRW, p}
 }
 
-var ErrAlreadyRepoInOrg = errors.New("there is already an OCI repository associated with this organization")
-
-func (uc *CASBackendUseCase) FindMainBackend(ctx context.Context, orgID string) (*CASBackend, error) {
+func (uc *CASBackendUseCase) FindDefaultBackend(ctx context.Context, orgID string) (*CASBackend, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	return uc.repo.FindMainBackend(ctx, orgUUID)
+	return uc.repo.FindDefaultBackend(ctx, orgUUID)
 }
 
 func (uc *CASBackendUseCase) FindByID(ctx context.Context, id string) (*CASBackend, error) {
-	repoUUID, err := uuid.Parse(id)
+	backendUUID, err := uuid.Parse(id)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	repo, err := uc.repo.FindByID(ctx, repoUUID)
+	backend, err := uc.repo.FindByID(ctx, backendUUID)
 	if err != nil {
 		return nil, err
-	} else if repo == nil {
-		return nil, NewErrNotFound("OCI repository")
+	} else if backend == nil {
+		return nil, NewErrNotFound("CAS Backend")
 	}
 
-	return repo, nil
+	return backend, nil
 }
 
 // TODO(miguel): we need to think about the update mechanism and add some guardrails
 // for example, we might only allow updating credentials but not the repository itself or the provider
-func (uc *CASBackendUseCase) CreateOrUpdate(ctx context.Context, orgID, repoURL, username, password string, provider CASBackendProvider, defaultB bool) (*CASBackend, error) {
+func (uc *CASBackendUseCase) CreateOrUpdate(ctx context.Context, orgID, name, username, password string, provider CASBackendProvider, defaultB bool) (*CASBackend, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
 	}
 
 	// Validate and store the secret in the external secrets manager
-	creds := &credentials.OCIKeypair{Repo: repoURL, Username: username, Password: password}
+	creds := &credentials.OCIKeypair{Repo: name, Username: username, Password: password}
 	if err := creds.Validate(); err != nil {
 		return nil, NewErrValidation(err)
 	}
@@ -143,64 +142,63 @@ func (uc *CASBackendUseCase) CreateOrUpdate(ctx context.Context, orgID, repoURL,
 
 	// Check if it already exists, if it does we update it
 	// We do not support more than one repository per organization yet
-	repo, err := uc.repo.FindMainBackend(ctx, orgUUID)
+	backend, err := uc.repo.FindDefaultBackend(ctx, orgUUID)
 	if err != nil {
-		return nil, fmt.Errorf("checking for existing repositories: %w", err)
+		return nil, fmt.Errorf("checking for existing CAS backends: %w", err)
 	}
 
-	if repo != nil {
-		repoUUID, err := uuid.Parse(repo.ID)
+	if backend != nil {
+		backendUUID, err := uuid.Parse(backend.ID)
 		if err != nil {
 			return nil, NewErrInvalidUUID(err)
 		}
 
-		return uc.repo.Update(ctx, &OCIRepoUpdateOpts{
-			OCIRepoOpts: &OCIRepoOpts{
-				Repository: repoURL, Username: username, Password: password, SecretName: secretName, Provider: provider, Default: defaultB,
+		return uc.repo.Update(ctx, &CASBackendUpdateOpts{
+			CASBackendOpts: &CASBackendOpts{
+				Name: name, Username: username, Password: password, SecretName: secretName, Provider: provider, Default: defaultB,
 			},
-			ID: repoUUID,
+			ID: backendUUID,
 		})
 	}
 
-	return uc.repo.Create(ctx, &OCIRepoCreateOpts{
+	return uc.repo.Create(ctx, &CASBackendCreateOpts{
 		OrgID: orgUUID,
-		OCIRepoOpts: &OCIRepoOpts{
-			Repository: repoURL, Username: username, Password: password, SecretName: secretName, Provider: provider,
+		CASBackendOpts: &CASBackendOpts{
+			Name: name, Username: username, Password: password, SecretName: secretName, Provider: provider,
 			Default: defaultB,
 		},
 	})
 }
 
-// Delete will delete the secret in the external secrets manager
-// and the repository in the database
+// Delete will delete the secret in the external secrets manager and the CAS backend from the database
 func (uc *CASBackendUseCase) Delete(ctx context.Context, id string) error {
-	uc.logger.Infow("msg", "deleting OCI repository", "ID", id)
+	uc.logger.Infow("msg", "deleting CAS Backend", "ID", id)
 
-	repoUUID, err := uuid.Parse(id)
+	backendUUID, err := uuid.Parse(id)
 	if err != nil {
 		return NewErrInvalidUUID(err)
 	}
 
-	repo, err := uc.repo.FindByID(ctx, repoUUID)
+	backend, err := uc.repo.FindByID(ctx, backendUUID)
 	if err != nil {
 		return err
-	} else if repo == nil {
-		return NewErrNotFound("OCI repository")
+	} else if backend == nil {
+		return NewErrNotFound("CAS Backend")
 	}
 
-	uc.logger.Infow("msg", "deleting OCI repository external secrets", "ID", id, "secretName", repo.SecretName)
+	uc.logger.Infow("msg", "deleting CAS backend external secrets", "ID", id, "secretName", backend.SecretName)
 	// Delete the secret in the external secrets manager
-	if err := uc.credsRW.DeleteCredentials(ctx, repo.SecretName); err != nil {
+	if err := uc.credsRW.DeleteCredentials(ctx, backend.SecretName); err != nil {
 		return fmt.Errorf("deleting the credentials: %w", err)
 	}
 
-	uc.logger.Infow("msg", "OCI repository deleted", "ID", id)
-	return uc.repo.Delete(ctx, repoUUID)
+	uc.logger.Infow("msg", "CAS Backend deleted", "ID", id)
+	return uc.repo.Delete(ctx, backendUUID)
 }
 
 // Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues
 func (CASBackendValidationStatus) Values() (kinds []string) {
-	for _, s := range []CASBackendValidationStatus{OCIRepoValidationOK, OCIRepoValidationFailed} {
+	for _, s := range []CASBackendValidationStatus{CASBackendValidationOK, CASBackendValidationFailed} {
 		kinds = append(kinds, string(s))
 	}
 
@@ -209,19 +207,26 @@ func (CASBackendValidationStatus) Values() (kinds []string) {
 
 // Validate that the repository is valid and reachable
 // TODO: run this process periodically in the background
+// TODO: we need to support other kinds of repositories this is for the OCI type
 func (uc *CASBackendUseCase) PerformValidation(ctx context.Context, id string) (err error) {
-	validationStatus := OCIRepoValidationFailed
+	validationStatus := CASBackendValidationFailed
 
-	repoUUID, err := uuid.Parse(id)
+	backendUUID, err := uuid.Parse(id)
 	if err != nil {
 		return NewErrInvalidUUID(err)
 	}
 
-	repo, err := uc.repo.FindByID(ctx, repoUUID)
+	backend, err := uc.repo.FindByID(ctx, backendUUID)
 	if err != nil {
 		return err
-	} else if repo == nil {
-		return NewErrNotFound("OCI repository")
+	} else if backend == nil {
+		return NewErrNotFound("CAS Backend")
+	}
+
+	// Currently this code is just for OCI repositories
+	if backend.Provider != CASBackendOCI {
+		uc.logger.Warnw("msg", "validation not supported for this provider", "ID", id, "provider", backend.Provider)
+		return nil
 	}
 
 	defer func() {
@@ -232,13 +237,13 @@ func (uc *CASBackendUseCase) PerformValidation(ctx context.Context, id string) (
 
 		// Update the validation status
 		uc.logger.Infow("msg", "updating validation status", "ID", id, "status", validationStatus)
-		if err := uc.repo.UpdateValidationStatus(ctx, repoUUID, validationStatus); err != nil {
+		if err := uc.repo.UpdateValidationStatus(ctx, backendUUID, validationStatus); err != nil {
 			uc.logger.Errorw("msg", "updating validation status", "ID", id, "error", err)
 		}
 	}()
 
 	// 1 - Retrieve the credentials from the external secrets manager
-	b, err := uc.ociBackendProvider.FromCredentials(ctx, repo.SecretName)
+	b, err := uc.ociBackendProvider.FromCredentials(ctx, backend.SecretName)
 	if err != nil {
 		uc.logger.Infow("msg", "credentials not found or invalid", "ID", id)
 		return nil
@@ -251,7 +256,7 @@ func (uc *CASBackendUseCase) PerformValidation(ctx context.Context, id string) (
 	}
 
 	// If everything went well, update the validation status to OK
-	validationStatus = OCIRepoValidationOK
+	validationStatus = CASBackendValidationOK
 	uc.logger.Infow("msg", "validation OK", "ID", id)
 
 	return nil
