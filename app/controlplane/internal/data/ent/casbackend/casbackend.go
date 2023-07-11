@@ -29,6 +29,8 @@ const (
 	FieldValidatedAt = "validated_at"
 	// FieldProvider holds the string denoting the provider field in the database.
 	FieldProvider = "provider"
+	// FieldDefault holds the string denoting the default field in the database.
+	FieldDefault = "default"
 	// EdgeOrganization holds the string denoting the organization edge name in mutations.
 	EdgeOrganization = "organization"
 	// Table holds the table name of the casbackend in the database.
@@ -51,6 +53,7 @@ var Columns = []string{
 	FieldValidationStatus,
 	FieldValidatedAt,
 	FieldProvider,
+	FieldDefault,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "cas_backends"
@@ -79,6 +82,8 @@ var (
 	DefaultCreatedAt func() time.Time
 	// DefaultValidatedAt holds the default value on creation for the "validated_at" field.
 	DefaultValidatedAt func() time.Time
+	// DefaultDefault holds the default value on creation for the "default" field.
+	DefaultDefault bool
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -141,6 +146,11 @@ func ByValidatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByProvider orders the results by the provider field.
 func ByProvider(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldProvider, opts...).ToFunc()
+}
+
+// ByDefault orders the results by the default field.
+func ByDefault(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDefault, opts...).ToFunc()
 }
 
 // ByOrganizationField orders the results by organization field.

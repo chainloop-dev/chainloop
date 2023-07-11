@@ -62,6 +62,7 @@ type CASBackendMutation struct {
 	validation_status   *biz.CASBackendValidationStatus
 	validated_at        *time.Time
 	provider            *biz.CASBackendProvider
+	_default            *bool
 	clearedFields       map[string]struct{}
 	organization        *uuid.UUID
 	clearedorganization bool
@@ -390,6 +391,42 @@ func (m *CASBackendMutation) ResetProvider() {
 	m.provider = nil
 }
 
+// SetDefault sets the "default" field.
+func (m *CASBackendMutation) SetDefault(b bool) {
+	m._default = &b
+}
+
+// Default returns the value of the "default" field in the mutation.
+func (m *CASBackendMutation) Default() (r bool, exists bool) {
+	v := m._default
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDefault returns the old "default" field's value of the CASBackend entity.
+// If the CASBackend object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CASBackendMutation) OldDefault(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDefault is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDefault requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDefault: %w", err)
+	}
+	return oldValue.Default, nil
+}
+
+// ResetDefault resets all changes to the "default" field.
+func (m *CASBackendMutation) ResetDefault() {
+	m._default = nil
+}
+
 // SetOrganizationID sets the "organization" edge to the Organization entity by id.
 func (m *CASBackendMutation) SetOrganizationID(id uuid.UUID) {
 	m.organization = &id
@@ -463,7 +500,7 @@ func (m *CASBackendMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CASBackendMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 7)
 	if m.name != nil {
 		fields = append(fields, casbackend.FieldName)
 	}
@@ -481,6 +518,9 @@ func (m *CASBackendMutation) Fields() []string {
 	}
 	if m.provider != nil {
 		fields = append(fields, casbackend.FieldProvider)
+	}
+	if m._default != nil {
+		fields = append(fields, casbackend.FieldDefault)
 	}
 	return fields
 }
@@ -502,6 +542,8 @@ func (m *CASBackendMutation) Field(name string) (ent.Value, bool) {
 		return m.ValidatedAt()
 	case casbackend.FieldProvider:
 		return m.Provider()
+	case casbackend.FieldDefault:
+		return m.Default()
 	}
 	return nil, false
 }
@@ -523,6 +565,8 @@ func (m *CASBackendMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldValidatedAt(ctx)
 	case casbackend.FieldProvider:
 		return m.OldProvider(ctx)
+	case casbackend.FieldDefault:
+		return m.OldDefault(ctx)
 	}
 	return nil, fmt.Errorf("unknown CASBackend field %s", name)
 }
@@ -573,6 +617,13 @@ func (m *CASBackendMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetProvider(v)
+		return nil
+	case casbackend.FieldDefault:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDefault(v)
 		return nil
 	}
 	return fmt.Errorf("unknown CASBackend field %s", name)
@@ -640,6 +691,9 @@ func (m *CASBackendMutation) ResetField(name string) error {
 		return nil
 	case casbackend.FieldProvider:
 		m.ResetProvider()
+		return nil
+	case casbackend.FieldDefault:
+		m.ResetDefault()
 		return nil
 	}
 	return fmt.Errorf("unknown CASBackend field %s", name)

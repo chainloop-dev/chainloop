@@ -53,6 +53,7 @@ func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.OCIRepoCreateOpts
 		SetOrganizationID(opts.OrgID).
 		SetName(opts.Repository).
 		SetProvider(opts.Provider).
+		SetDefault(opts.Default).
 		SetSecretName(opts.SecretName).
 		Save(ctx)
 	if err != nil {
@@ -66,6 +67,7 @@ func (r *CASBackendRepo) Update(ctx context.Context, opts *biz.OCIRepoUpdateOpts
 	backend, err := r.data.db.CASBackend.UpdateOneID(opts.ID).
 		SetName(opts.Repository).
 		SetProvider(opts.Provider).
+		SetDefault(opts.Default).
 		SetSecretName(opts.SecretName).
 		Save(ctx)
 	if err != nil {

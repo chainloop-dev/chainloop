@@ -83,6 +83,20 @@ func (cbc *CASBackendCreate) SetProvider(bbp biz.CASBackendProvider) *CASBackend
 	return cbc
 }
 
+// SetDefault sets the "default" field.
+func (cbc *CASBackendCreate) SetDefault(b bool) *CASBackendCreate {
+	cbc.mutation.SetDefault(b)
+	return cbc
+}
+
+// SetNillableDefault sets the "default" field if the given value is not nil.
+func (cbc *CASBackendCreate) SetNillableDefault(b *bool) *CASBackendCreate {
+	if b != nil {
+		cbc.SetDefault(*b)
+	}
+	return cbc
+}
+
 // SetID sets the "id" field.
 func (cbc *CASBackendCreate) SetID(u uuid.UUID) *CASBackendCreate {
 	cbc.mutation.SetID(u)
@@ -155,6 +169,10 @@ func (cbc *CASBackendCreate) defaults() {
 		v := casbackend.DefaultValidatedAt()
 		cbc.mutation.SetValidatedAt(v)
 	}
+	if _, ok := cbc.mutation.Default(); !ok {
+		v := casbackend.DefaultDefault
+		cbc.mutation.SetDefault(v)
+	}
 	if _, ok := cbc.mutation.ID(); !ok {
 		v := casbackend.DefaultID()
 		cbc.mutation.SetID(v)
@@ -190,6 +208,9 @@ func (cbc *CASBackendCreate) check() error {
 		if err := casbackend.ProviderValidator(v); err != nil {
 			return &ValidationError{Name: "provider", err: fmt.Errorf(`ent: validator failed for field "CASBackend.provider": %w`, err)}
 		}
+	}
+	if _, ok := cbc.mutation.Default(); !ok {
+		return &ValidationError{Name: "default", err: errors.New(`ent: missing required field "CASBackend.default"`)}
 	}
 	if _, ok := cbc.mutation.OrganizationID(); !ok {
 		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "CASBackend.organization"`)}
@@ -252,6 +273,10 @@ func (cbc *CASBackendCreate) createSpec() (*CASBackend, *sqlgraph.CreateSpec) {
 	if value, ok := cbc.mutation.Provider(); ok {
 		_spec.SetField(casbackend.FieldProvider, field.TypeEnum, value)
 		_node.Provider = value
+	}
+	if value, ok := cbc.mutation.Default(); ok {
+		_spec.SetField(casbackend.FieldDefault, field.TypeBool, value)
+		_node.Default = value
 	}
 	if nodes := cbc.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

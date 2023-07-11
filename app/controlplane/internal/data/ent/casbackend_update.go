@@ -77,6 +77,20 @@ func (cbu *CASBackendUpdate) SetProvider(bbp biz.CASBackendProvider) *CASBackend
 	return cbu
 }
 
+// SetDefault sets the "default" field.
+func (cbu *CASBackendUpdate) SetDefault(b bool) *CASBackendUpdate {
+	cbu.mutation.SetDefault(b)
+	return cbu
+}
+
+// SetNillableDefault sets the "default" field if the given value is not nil.
+func (cbu *CASBackendUpdate) SetNillableDefault(b *bool) *CASBackendUpdate {
+	if b != nil {
+		cbu.SetDefault(*b)
+	}
+	return cbu
+}
+
 // SetOrganizationID sets the "organization" edge to the Organization entity by ID.
 func (cbu *CASBackendUpdate) SetOrganizationID(id uuid.UUID) *CASBackendUpdate {
 	cbu.mutation.SetOrganizationID(id)
@@ -171,6 +185,9 @@ func (cbu *CASBackendUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := cbu.mutation.Provider(); ok {
 		_spec.SetField(casbackend.FieldProvider, field.TypeEnum, value)
 	}
+	if value, ok := cbu.mutation.Default(); ok {
+		_spec.SetField(casbackend.FieldDefault, field.TypeBool, value)
+	}
 	if cbu.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -263,6 +280,20 @@ func (cbuo *CASBackendUpdateOne) SetNillableValidatedAt(t *time.Time) *CASBacken
 // SetProvider sets the "provider" field.
 func (cbuo *CASBackendUpdateOne) SetProvider(bbp biz.CASBackendProvider) *CASBackendUpdateOne {
 	cbuo.mutation.SetProvider(bbp)
+	return cbuo
+}
+
+// SetDefault sets the "default" field.
+func (cbuo *CASBackendUpdateOne) SetDefault(b bool) *CASBackendUpdateOne {
+	cbuo.mutation.SetDefault(b)
+	return cbuo
+}
+
+// SetNillableDefault sets the "default" field if the given value is not nil.
+func (cbuo *CASBackendUpdateOne) SetNillableDefault(b *bool) *CASBackendUpdateOne {
+	if b != nil {
+		cbuo.SetDefault(*b)
+	}
 	return cbuo
 }
 
@@ -389,6 +420,9 @@ func (cbuo *CASBackendUpdateOne) sqlSave(ctx context.Context) (_node *CASBackend
 	}
 	if value, ok := cbuo.mutation.Provider(); ok {
 		_spec.SetField(casbackend.FieldProvider, field.TypeEnum, value)
+	}
+	if value, ok := cbuo.mutation.Default(); ok {
+		_spec.SetField(casbackend.FieldDefault, field.TypeBool, value)
 	}
 	if cbuo.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{

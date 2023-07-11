@@ -52,6 +52,7 @@ type CASBackend struct {
 type OCIRepoOpts struct {
 	Repository, Username, Password, SecretName string
 	Provider                                   CASBackendProvider
+	Default                                    bool
 }
 
 type OCIRepoCreateOpts struct {
@@ -123,7 +124,7 @@ func (uc *CASBackendUseCase) FindByID(ctx context.Context, id string) (*CASBacke
 
 // TODO(miguel): we need to think about the update mechanism and add some guardrails
 // for example, we might only allow updating credentials but not the repository itself or the provider
-func (uc *CASBackendUseCase) CreateOrUpdate(ctx context.Context, orgID, repoURL, username, password string, provider CASBackendProvider) (*CASBackend, error) {
+func (uc *CASBackendUseCase) CreateOrUpdate(ctx context.Context, orgID, repoURL, username, password string, provider CASBackendProvider, defaultB bool) (*CASBackend, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -155,7 +156,7 @@ func (uc *CASBackendUseCase) CreateOrUpdate(ctx context.Context, orgID, repoURL,
 
 		return uc.repo.Update(ctx, &OCIRepoUpdateOpts{
 			OCIRepoOpts: &OCIRepoOpts{
-				Repository: repoURL, Username: username, Password: password, SecretName: secretName, Provider: provider,
+				Repository: repoURL, Username: username, Password: password, SecretName: secretName, Provider: provider, Default: defaultB,
 			},
 			ID: repoUUID,
 		})
@@ -165,6 +166,7 @@ func (uc *CASBackendUseCase) CreateOrUpdate(ctx context.Context, orgID, repoURL,
 		OrgID: orgUUID,
 		OCIRepoOpts: &OCIRepoOpts{
 			Repository: repoURL, Username: username, Password: password, SecretName: secretName, Provider: provider,
+			Default: defaultB,
 		},
 	})
 }

@@ -32,6 +32,8 @@ type CASBackend struct {
 	ValidatedAt time.Time `json:"validated_at,omitempty"`
 	// Provider holds the value of the "provider" field.
 	Provider biz.CASBackendProvider `json:"provider,omitempty"`
+	// Default holds the value of the "default" field.
+	Default bool `json:"default,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the CASBackendQuery when eager-loading is set.
 	Edges                     CASBackendEdges `json:"edges"`
@@ -66,6 +68,8 @@ func (*CASBackend) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case casbackend.FieldDefault:
+			values[i] = new(sql.NullBool)
 		case casbackend.FieldName, casbackend.FieldSecretName, casbackend.FieldValidationStatus, casbackend.FieldProvider:
 			values[i] = new(sql.NullString)
 		case casbackend.FieldCreatedAt, casbackend.FieldValidatedAt:
@@ -130,6 +134,12 @@ func (cb *CASBackend) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field provider", values[i])
 			} else if value.Valid {
 				cb.Provider = biz.CASBackendProvider(value.String)
+			}
+		case casbackend.FieldDefault:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field default", values[i])
+			} else if value.Valid {
+				cb.Default = value.Bool
 			}
 		case casbackend.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -196,6 +206,9 @@ func (cb *CASBackend) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("provider=")
 	builder.WriteString(fmt.Sprintf("%v", cb.Provider))
+	builder.WriteString(", ")
+	builder.WriteString("default=")
+	builder.WriteString(fmt.Sprintf("%v", cb.Default))
 	builder.WriteByte(')')
 	return builder.String()
 }

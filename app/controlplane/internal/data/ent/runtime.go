@@ -34,6 +34,10 @@ func init() {
 	casbackendDescValidatedAt := casbackendFields[5].Descriptor()
 	// casbackend.DefaultValidatedAt holds the default value on creation for the validated_at field.
 	casbackend.DefaultValidatedAt = casbackendDescValidatedAt.Default.(func() time.Time)
+	// casbackendDescDefault is the schema descriptor for default field.
+	casbackendDescDefault := casbackendFields[7].Descriptor()
+	// casbackend.DefaultDefault holds the default value on creation for the default field.
+	casbackend.DefaultDefault = casbackendDescDefault.Default.(bool)
 	// casbackendDescID is the schema descriptor for id field.
 	casbackendDescID := casbackendFields[0].Descriptor()
 	// casbackend.DefaultID holds the default value on creation for the id field.

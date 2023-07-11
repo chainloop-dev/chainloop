@@ -46,6 +46,7 @@ func (CASBackend) Fields() []ent.Field {
 		field.Time("validated_at").Default(time.Now).
 			Annotations(&entsql.Annotation{Default: "CURRENT_TIMESTAMP"}),
 		field.Enum("provider").GoType(biz.CASBackendProvider("")),
+		field.Bool("default").Default(false),
 	}
 }
 

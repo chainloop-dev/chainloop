@@ -128,7 +128,7 @@ func (s *OrgIntegrationTestSuite) SetupTest() {
 	assert.NoError(err)
 
 	// OCI repository
-	_, err = s.CASBackendRepo.CreateOrUpdate(ctx, s.org.ID, "repo", "username", "pass", biz.CASBackendOCI)
+	_, err = s.CASBackendRepo.CreateOrUpdate(ctx, s.org.ID, "repo", "username", "pass", biz.CASBackendOCI, true)
 	assert.NoError(err)
 
 	// Workflow + contract

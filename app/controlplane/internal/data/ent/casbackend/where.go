@@ -77,6 +77,11 @@ func ValidatedAt(v time.Time) predicate.CASBackend {
 	return predicate.CASBackend(sql.FieldEQ(FieldValidatedAt, v))
 }
 
+// Default applies equality check predicate on the "default" field. It's identical to DefaultEQ.
+func Default(v bool) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldEQ(FieldDefault, v))
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.CASBackend {
 	return predicate.CASBackend(sql.FieldEQ(FieldName, v))
@@ -345,6 +350,16 @@ func ProviderNotIn(vs ...biz.CASBackendProvider) predicate.CASBackend {
 		v[i] = vs[i]
 	}
 	return predicate.CASBackend(sql.FieldNotIn(FieldProvider, v...))
+}
+
+// DefaultEQ applies the EQ predicate on the "default" field.
+func DefaultEQ(v bool) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldEQ(FieldDefault, v))
+}
+
+// DefaultNEQ applies the NEQ predicate on the "default" field.
+func DefaultNEQ(v bool) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldNEQ(FieldDefault, v))
 }
 
 // HasOrganization applies the HasEdge predicate on the "organization" edge.
