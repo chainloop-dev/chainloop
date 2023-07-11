@@ -112,7 +112,7 @@ func entCASBackendToBiz(backend *ent.CASBackend) *biz.CASBackend {
 		CreatedAt:        toTimePtr(backend.CreatedAt),
 		ValidatedAt:      toTimePtr(backend.ValidatedAt),
 		ValidationStatus: backend.ValidationStatus,
-		Provider:         biz.CASBackendProvider(backend.Provider),
+		Provider:         backend.Provider,
 	}
 
 	if org := backend.Edges.Organization; org != nil {

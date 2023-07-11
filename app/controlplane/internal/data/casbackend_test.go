@@ -44,7 +44,7 @@ func TestEntCASBackendTo(t *testing.T) {
 			Name:       testRepo.Name,
 			SecretName: testRepo.SecretName,
 			CreatedAt:  toTimePtr(testRepo.CreatedAt),
-			Provider:   biz.CASBackendProvider(testRepo.Provider),
+			Provider:   testRepo.Provider,
 		}},
 	}
 
