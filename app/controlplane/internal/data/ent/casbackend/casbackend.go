@@ -95,8 +95,6 @@ func ValidationStatusValidator(vs biz.CASBackendValidationStatus) error {
 	}
 }
 
-const DefaultProvider biz.CASBackendProvider = "OCI"
-
 // ProviderValidator is a validator for the "provider" field enum values. It is called by the builders before save.
 func ProviderValidator(pr biz.CASBackendProvider) error {
 	switch pr {

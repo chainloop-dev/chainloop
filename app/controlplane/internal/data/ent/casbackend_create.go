@@ -83,14 +83,6 @@ func (cbc *CASBackendCreate) SetProvider(bbp biz.CASBackendProvider) *CASBackend
 	return cbc
 }
 
-// SetNillableProvider sets the "provider" field if the given value is not nil.
-func (cbc *CASBackendCreate) SetNillableProvider(bbp *biz.CASBackendProvider) *CASBackendCreate {
-	if bbp != nil {
-		cbc.SetProvider(*bbp)
-	}
-	return cbc
-}
-
 // SetID sets the "id" field.
 func (cbc *CASBackendCreate) SetID(u uuid.UUID) *CASBackendCreate {
 	cbc.mutation.SetID(u)
@@ -162,10 +154,6 @@ func (cbc *CASBackendCreate) defaults() {
 	if _, ok := cbc.mutation.ValidatedAt(); !ok {
 		v := casbackend.DefaultValidatedAt()
 		cbc.mutation.SetValidatedAt(v)
-	}
-	if _, ok := cbc.mutation.Provider(); !ok {
-		v := casbackend.DefaultProvider
-		cbc.mutation.SetProvider(v)
 	}
 	if _, ok := cbc.mutation.ID(); !ok {
 		v := casbackend.DefaultID()

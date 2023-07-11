@@ -1,1 +1,0 @@
-UPDATE "cas_backends" SET provider = 'OCI';

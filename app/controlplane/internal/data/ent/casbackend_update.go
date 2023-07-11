@@ -77,14 +77,6 @@ func (cbu *CASBackendUpdate) SetProvider(bbp biz.CASBackendProvider) *CASBackend
 	return cbu
 }
 
-// SetNillableProvider sets the "provider" field if the given value is not nil.
-func (cbu *CASBackendUpdate) SetNillableProvider(bbp *biz.CASBackendProvider) *CASBackendUpdate {
-	if bbp != nil {
-		cbu.SetProvider(*bbp)
-	}
-	return cbu
-}
-
 // SetOrganizationID sets the "organization" edge to the Organization entity by ID.
 func (cbu *CASBackendUpdate) SetOrganizationID(id uuid.UUID) *CASBackendUpdate {
 	cbu.mutation.SetOrganizationID(id)
@@ -271,14 +263,6 @@ func (cbuo *CASBackendUpdateOne) SetNillableValidatedAt(t *time.Time) *CASBacken
 // SetProvider sets the "provider" field.
 func (cbuo *CASBackendUpdateOne) SetProvider(bbp biz.CASBackendProvider) *CASBackendUpdateOne {
 	cbuo.mutation.SetProvider(bbp)
-	return cbuo
-}
-
-// SetNillableProvider sets the "provider" field if the given value is not nil.
-func (cbuo *CASBackendUpdateOne) SetNillableProvider(bbp *biz.CASBackendProvider) *CASBackendUpdateOne {
-	if bbp != nil {
-		cbuo.SetProvider(*bbp)
-	}
 	return cbuo
 }
 

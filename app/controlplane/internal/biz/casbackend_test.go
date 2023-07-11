@@ -72,7 +72,7 @@ func (s *casBackendTestSuite) TestFindMainBackendFound() {
 }
 
 func (s *casBackendTestSuite) TestSaveInvalidUUID() {
-	repo, err := s.useCase.CreateOrUpdate(context.Background(), s.invalidUUID, "", "", "")
+	repo, err := s.useCase.CreateOrUpdate(context.Background(), s.invalidUUID, "", "", "", biz.CASBackendOCI)
 	assert.True(s.T(), biz.IsErrInvalidUUID(err))
 	assert.Nil(s.T(), repo)
 }
@@ -93,7 +93,7 @@ func (s *casBackendTestSuite) TestSaveMainRepoAlreadyExist() {
 		},
 	}).Return(r, nil)
 
-	gotRepo, err := s.useCase.CreateOrUpdate(ctx, s.validUUID.String(), repoName, username, password)
+	gotRepo, err := s.useCase.CreateOrUpdate(ctx, s.validUUID.String(), repoName, username, password, biz.CASBackendOCI)
 	assert.NoError(err)
 	assert.Equal(gotRepo, r)
 }
@@ -115,7 +115,7 @@ func (s *casBackendTestSuite) TestSaveMainRepoOk() {
 		},
 	}).Return(newRepo, nil)
 
-	gotRepo, err := s.useCase.CreateOrUpdate(ctx, s.validUUID.String(), repo, username, password)
+	gotRepo, err := s.useCase.CreateOrUpdate(ctx, s.validUUID.String(), repo, username, password, biz.CASBackendOCI)
 	assert.NoError(err)
 	assert.Equal(gotRepo, newRepo)
 }

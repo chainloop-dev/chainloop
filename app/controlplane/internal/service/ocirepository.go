@@ -67,7 +67,7 @@ func (s *OCIRepositoryService) Save(ctx context.Context, req *pb.OCIRepositorySe
 		return nil, errors.BadRequest("wrong credentials", "the provided registry credentials are invalid")
 	}
 
-	_, err = s.uc.CreateOrUpdate(ctx, currentOrg.ID, req.Repository, username, password)
+	_, err = s.uc.CreateOrUpdate(ctx, currentOrg.ID, req.Repository, username, password, biz.CASBackendOCI)
 	if err != nil {
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}

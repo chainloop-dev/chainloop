@@ -16,7 +16,7 @@ var (
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "validation_status", Type: field.TypeEnum, Enums: []string{"OK", "Invalid"}, Default: "OK"},
 		{Name: "validated_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
-		{Name: "provider", Type: field.TypeEnum, Enums: []string{"OCI"}, Default: "OCI"},
+		{Name: "provider", Type: field.TypeEnum, Enums: []string{"OCI"}},
 		{Name: "organization_cas_backends", Type: field.TypeUUID},
 	}
 	// CasBackendsTable holds the schema information for the "cas_backends" table.
