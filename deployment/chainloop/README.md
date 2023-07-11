@@ -82,6 +82,7 @@ helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
     # Open ID Connect (OIDC)
     # ...
     # Secrets backend
+    --set secretsBackend.backend=awsSecretManager \
     --set secretsBackend.awsSecretManager.accessKey=[AWS ACCESS KEY ID] \
     --set secretsBackend.awsSecretManager.secretKey=[AWS SECRET KEY] \
     --set secretsBackend.awsSecretManager.region=[AWS region]\
@@ -359,17 +360,17 @@ chainloop config save \
 
 ### Secrets Backend
 
-| Name                                        | Description                                                           | Value       |
-| ------------------------------------------- | --------------------------------------------------------------------- | ----------- |
-| `secretsBackend.backend`                    | Secrets backend type ("vault", "awsSecretManager", "gcpSecretManager")| `vault`     |
-| `secretsBackend.secretPrefix`               | Prefix that will be pre-pended to all secrets in the storage backend  | `chainloop` |
-| `secretsBackend.vault.address`              | Vault address                                                         |             |
-| `secretsBackend.vault.token`                | Vault authentication token                                            |             |
-| `secretsBackend.awsSecretManager.accessKey` | AWS Access KEY ID                                                     |             |
-| `secretsBackend.awsSecretManager.secretKey` | AWS Secret Key                                                        |             |
-| `secretsBackend.awsSecretManager.region`    | AWS Secret Manager Region                                             |             |
-| `secretsBackend.gcpSecretManager.projectId` | GCP Project ID                                                        |             |
-| `secretsBackend.gcpSecretManager.authKey`   | GCP Auth Key                                                          |             |
+| Name                                        | Description                                                               | Value       |
+| ------------------------------------------- | ------------------------------------------------------------------------- | ----------- |
+| `secretsBackend.backend`                    | Secrets backend type ("vault", "awsSecretManager" or "gcpSecretManager")  | `vault`     |
+| `secretsBackend.secretPrefix`               | Prefix that will be pre-pended to all secrets in the storage backend      | `chainloop` |
+| `secretsBackend.vault.address`              | Vault address                                                             |             |
+| `secretsBackend.vault.token`                | Vault authentication token                                                |             |
+| `secretsBackend.awsSecretManager.accessKey` | AWS Access KEY ID                                                         |             |
+| `secretsBackend.awsSecretManager.secretKey` | AWS Secret Key                                                            |             |
+| `secretsBackend.awsSecretManager.region`    | AWS Secret Manager Region                                                 |             |
+| `secretsBackend.gcpSecretManager.projectId` | GCP Project ID                                                            |             |
+| `secretsBackend.gcpSecretManager.authKey`   | GCP Auth Key                                                              |             |
 
 ### Authentication
 
