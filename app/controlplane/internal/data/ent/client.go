@@ -1006,15 +1006,15 @@ func (c *OrganizationClient) QueryWorkflows(o *Organization) *WorkflowQuery {
 	return query
 }
 
-// QueryOciRepositories queries the oci_repositories edge of a Organization.
-func (c *OrganizationClient) QueryOciRepositories(o *Organization) *CASBackendQuery {
+// QueryCasBackends queries the cas_backends edge of a Organization.
+func (c *OrganizationClient) QueryCasBackends(o *Organization) *CASBackendQuery {
 	query := (&CASBackendClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := o.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(organization.Table, organization.FieldID, id),
 			sqlgraph.To(casbackend.Table, casbackend.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, organization.OciRepositoriesTable, organization.OciRepositoriesColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, organization.CasBackendsTable, organization.CasBackendsColumn),
 		)
 		fromV = sqlgraph.Neighbors(o.driver.Dialect(), step)
 		return fromV, nil

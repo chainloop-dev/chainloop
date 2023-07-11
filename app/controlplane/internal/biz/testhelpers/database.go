@@ -52,7 +52,7 @@ type TestingUseCases struct {
 
 	// Use cases
 	Membership             *biz.MembershipUseCase
-	OCIRepo                *biz.OCIRepositoryUseCase
+	CASBackendRepo         *biz.CASBackendUseCase
 	Integration            *biz.IntegrationUseCase
 	Organization           *biz.OrganizationUseCase
 	WorkflowContract       *biz.WorkflowContractUseCase

@@ -31,10 +31,10 @@ type OCIRepositoryService struct {
 	pb.UnimplementedOCIRepositoryServiceServer
 	*service
 
-	uc *biz.OCIRepositoryUseCase
+	uc *biz.CASBackendUseCase
 }
 
-func NewOCIRepositoryService(uc *biz.OCIRepositoryUseCase, opts ...NewOpt) *OCIRepositoryService {
+func NewOCIRepositoryService(uc *biz.CASBackendUseCase, opts ...NewOpt) *OCIRepositoryService {
 	return &OCIRepositoryService{
 		service: newService(opts...),
 		uc:      uc,
@@ -77,7 +77,7 @@ func (s *OCIRepositoryService) Save(ctx context.Context, req *pb.OCIRepositorySe
 
 func bizOCIRepoToPb(repo *biz.CASBackend) *pb.OCIRepositoryItem {
 	r := &pb.OCIRepositoryItem{
-		Id: repo.ID, Repo: repo.Repo, CreatedAt: timestamppb.New(*repo.CreatedAt),
+		Id: repo.ID, Repo: repo.Name, CreatedAt: timestamppb.New(*repo.CreatedAt),
 	}
 
 	switch repo.ValidationStatus {

@@ -29,11 +29,24 @@ import (
 	"github.com/google/uuid"
 )
 
+type CASBackendProvider string
+
+const (
+	CASBackendOCI CASBackendProvider = "OCI"
+)
+
+type CASBackendValidationStatus string
+
+var OCIRepoValidationOK CASBackendValidationStatus = "OK"
+var OCIRepoValidationFailed CASBackendValidationStatus = "Invalid"
+
 type CASBackend struct {
-	ID, Repo, SecretName   string
+	ID, Name, SecretName   string
 	CreatedAt, ValidatedAt *time.Time
 	OrganizationID         string
-	ValidationStatus       OCIRepoValidationStatus
+	ValidationStatus       CASBackendValidationStatus
+	// OCI, S3, ...
+	Provider CASBackendProvider
 }
 
 type OCIRepoOpts struct {
@@ -51,47 +64,47 @@ type OCIRepoUpdateOpts struct {
 }
 
 type CASBackendRepo interface {
-	FindMainRepo(ctx context.Context, orgID uuid.UUID) (*CASBackend, error)
+	FindMainBackend(ctx context.Context, orgID uuid.UUID) (*CASBackend, error)
 	FindByID(ctx context.Context, ID uuid.UUID) (*CASBackend, error)
-	UpdateValidationStatus(ctx context.Context, ID uuid.UUID, status OCIRepoValidationStatus) error
+	UpdateValidationStatus(ctx context.Context, ID uuid.UUID, status CASBackendValidationStatus) error
 	Create(context.Context, *OCIRepoCreateOpts) (*CASBackend, error)
 	Update(context.Context, *OCIRepoUpdateOpts) (*CASBackend, error)
 	Delete(ctx context.Context, ID uuid.UUID) error
 }
 
-type OCIRepositoryReader interface {
-	FindMainRepo(ctx context.Context, orgID string) (*CASBackend, error)
+type CASBackendReader interface {
+	FindMainBackend(ctx context.Context, orgID string) (*CASBackend, error)
 	FindByID(ctx context.Context, ID string) (*CASBackend, error)
 	PerformValidation(ctx context.Context, ID string) error
 }
 
-type OCIRepositoryUseCase struct {
+type CASBackendUseCase struct {
 	repo               CASBackendRepo
 	logger             *log.Helper
 	credsRW            credentials.ReaderWriter
 	ociBackendProvider backend.Provider
 }
 
-func NewOCIRepositoryUseCase(repo CASBackendRepo, credsRW credentials.ReaderWriter, p backend.Provider, l log.Logger) *OCIRepositoryUseCase {
+func NewOCIRepositoryUseCase(repo CASBackendRepo, credsRW credentials.ReaderWriter, p backend.Provider, l log.Logger) *CASBackendUseCase {
 	if l == nil {
 		l = log.NewStdLogger(io.Discard)
 	}
 
-	return &OCIRepositoryUseCase{repo, servicelogger.ScopedHelper(l, "biz/ocirepository"), credsRW, p}
+	return &CASBackendUseCase{repo, servicelogger.ScopedHelper(l, "biz/ocirepository"), credsRW, p}
 }
 
 var ErrAlreadyRepoInOrg = errors.New("there is already an OCI repository associated with this organization")
 
-func (uc *OCIRepositoryUseCase) FindMainRepo(ctx context.Context, orgID string) (*CASBackend, error) {
+func (uc *CASBackendUseCase) FindMainBackend(ctx context.Context, orgID string) (*CASBackend, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	return uc.repo.FindMainRepo(ctx, orgUUID)
+	return uc.repo.FindMainBackend(ctx, orgUUID)
 }
 
-func (uc *OCIRepositoryUseCase) FindByID(ctx context.Context, id string) (*CASBackend, error) {
+func (uc *CASBackendUseCase) FindByID(ctx context.Context, id string) (*CASBackend, error) {
 	repoUUID, err := uuid.Parse(id)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -107,7 +120,7 @@ func (uc *OCIRepositoryUseCase) FindByID(ctx context.Context, id string) (*CASBa
 	return repo, nil
 }
 
-func (uc *OCIRepositoryUseCase) CreateOrUpdate(ctx context.Context, orgID, repoURL, username, password string) (*CASBackend, error) {
+func (uc *CASBackendUseCase) CreateOrUpdate(ctx context.Context, orgID, repoURL, username, password string) (*CASBackend, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -126,7 +139,7 @@ func (uc *OCIRepositoryUseCase) CreateOrUpdate(ctx context.Context, orgID, repoU
 
 	// Check if it already exists, if it does we update it
 	// We do not support more than one repository per organization yet
-	repo, err := uc.repo.FindMainRepo(ctx, orgUUID)
+	repo, err := uc.repo.FindMainBackend(ctx, orgUUID)
 	if err != nil {
 		return nil, fmt.Errorf("checking for existing repositories: %w", err)
 	}
@@ -155,7 +168,7 @@ func (uc *OCIRepositoryUseCase) CreateOrUpdate(ctx context.Context, orgID, repoU
 
 // Delete will delete the secret in the external secrets manager
 // and the repository in the database
-func (uc *OCIRepositoryUseCase) Delete(ctx context.Context, id string) error {
+func (uc *CASBackendUseCase) Delete(ctx context.Context, id string) error {
 	uc.logger.Infow("msg", "deleting OCI repository", "ID", id)
 
 	repoUUID, err := uuid.Parse(id)
@@ -180,14 +193,9 @@ func (uc *OCIRepositoryUseCase) Delete(ctx context.Context, id string) error {
 	return uc.repo.Delete(ctx, repoUUID)
 }
 
-type OCIRepoValidationStatus string
-
-var OCIRepoValidationOK OCIRepoValidationStatus = "OK"
-var OCIRepoValidationFailed OCIRepoValidationStatus = "Invalid"
-
 // Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues
-func (OCIRepoValidationStatus) Values() (kinds []string) {
-	for _, s := range []OCIRepoValidationStatus{OCIRepoValidationOK, OCIRepoValidationFailed} {
+func (CASBackendValidationStatus) Values() (kinds []string) {
+	for _, s := range []CASBackendValidationStatus{OCIRepoValidationOK, OCIRepoValidationFailed} {
 		kinds = append(kinds, string(s))
 	}
 
@@ -196,7 +204,7 @@ func (OCIRepoValidationStatus) Values() (kinds []string) {
 
 // Validate that the repository is valid and reachable
 // TODO: run this process periodically in the background
-func (uc *OCIRepositoryUseCase) PerformValidation(ctx context.Context, id string) (err error) {
+func (uc *CASBackendUseCase) PerformValidation(ctx context.Context, id string) (err error) {
 	validationStatus := OCIRepoValidationFailed
 
 	repoUUID, err := uuid.Parse(id)
@@ -242,4 +250,13 @@ func (uc *OCIRepositoryUseCase) PerformValidation(ctx context.Context, id string
 	uc.logger.Infow("msg", "validation OK", "ID", id)
 
 	return nil
+}
+
+// Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues
+func (CASBackendProvider) Values() (kinds []string) {
+	for _, s := range []CASBackendProvider{CASBackendOCI} {
+		kinds = append(kinds, string(s))
+	}
+
+	return
 }

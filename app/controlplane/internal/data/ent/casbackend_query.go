@@ -299,12 +299,12 @@ func (cbq *CASBackendQuery) WithOrganization(opts ...func(*OrganizationQuery)) *
 // Example:
 //
 //	var v []struct {
-//		Repo string `json:"repo,omitempty"`
+//		Name string `json:"name,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.CASBackend.Query().
-//		GroupBy(casbackend.FieldRepo).
+//		GroupBy(casbackend.FieldName).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (cbq *CASBackendQuery) GroupBy(field string, fields ...string) *CASBackendGroupBy {
@@ -322,11 +322,11 @@ func (cbq *CASBackendQuery) GroupBy(field string, fields ...string) *CASBackendG
 // Example:
 //
 //	var v []struct {
-//		Repo string `json:"repo,omitempty"`
+//		Name string `json:"name,omitempty"`
 //	}
 //
 //	client.CASBackend.Query().
-//		Select(casbackend.FieldRepo).
+//		Select(casbackend.FieldName).
 //		Scan(ctx, &v)
 func (cbq *CASBackendQuery) Select(fields ...string) *CASBackendSelect {
 	cbq.ctx.Fields = append(cbq.ctx.Fields, fields...)
@@ -413,10 +413,10 @@ func (cbq *CASBackendQuery) loadOrganization(ctx context.Context, query *Organiz
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*CASBackend)
 	for i := range nodes {
-		if nodes[i].organization_oci_repositories == nil {
+		if nodes[i].organization_cas_backends == nil {
 			continue
 		}
-		fk := *nodes[i].organization_oci_repositories
+		fk := *nodes[i].organization_cas_backends
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -433,7 +433,7 @@ func (cbq *CASBackendQuery) loadOrganization(ctx context.Context, query *Organiz
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "organization_oci_repositories" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "organization_cas_backends" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)

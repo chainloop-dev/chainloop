@@ -31,28 +31,26 @@ type CASBackend struct {
 	ent.Schema
 }
 
-// Fields of the OCIRepository.
 func (CASBackend) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),
-		field.String("repo"),
+		field.String("name"),
 		field.String("secret_name"),
 		field.Time("created_at").
 			Default(time.Now).
 			Immutable().
 			Annotations(&entsql.Annotation{Default: "CURRENT_TIMESTAMP"}),
 		field.Enum("validation_status").
-			GoType(biz.OCIRepoValidationStatus("")).
+			GoType(biz.CASBackendValidationStatus("")).
 			Default(string(biz.OCIRepoValidationOK)),
 		field.Time("validated_at").Default(time.Now).
 			Annotations(&entsql.Annotation{Default: "CURRENT_TIMESTAMP"}),
-		field.String("provider").Optional(),
+		field.Enum("provider").GoType(biz.CASBackendProvider("")).Default(string(biz.CASBackendOCI)),
 	}
 }
 
-// Edges of the OCIRepository.
 func (CASBackend) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("organization", Organization.Type).Ref("oci_repositories").Unique().Required(),
+		edge.From("organization", Organization.Type).Ref("cas_backends").Unique().Required(),
 	}
 }

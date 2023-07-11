@@ -240,21 +240,21 @@ func HasWorkflowsWith(preds ...predicate.Workflow) predicate.Organization {
 	})
 }
 
-// HasOciRepositories applies the HasEdge predicate on the "oci_repositories" edge.
-func HasOciRepositories() predicate.Organization {
+// HasCasBackends applies the HasEdge predicate on the "cas_backends" edge.
+func HasCasBackends() predicate.Organization {
 	return predicate.Organization(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, OciRepositoriesTable, OciRepositoriesColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, CasBackendsTable, CasBackendsColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasOciRepositoriesWith applies the HasEdge predicate on the "oci_repositories" edge with a given conditions (other predicates).
-func HasOciRepositoriesWith(preds ...predicate.CASBackend) predicate.Organization {
+// HasCasBackendsWith applies the HasEdge predicate on the "cas_backends" edge with a given conditions (other predicates).
+func HasCasBackendsWith(preds ...predicate.CASBackend) predicate.Organization {
 	return predicate.Organization(func(s *sql.Selector) {
-		step := newOciRepositoriesStep()
+		step := newCasBackendsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

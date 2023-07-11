@@ -25,29 +25,31 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEntOCIRepoTo(t *testing.T) {
-	testRepo := &ent.OCIRepository{
+func TestEntCASBackendTo(t *testing.T) {
+	testRepo := &ent.CASBackend{
 		ID:         uuid.New(),
-		Repo:       "test-repo",
+		Name:       "test-repo",
+		Provider:   "test-provider",
 		SecretName: "test-secret",
 		CreatedAt:  time.Now(),
 	}
 
 	tests := []struct {
-		input  *ent.OCIRepository
+		input  *ent.CASBackend
 		output *biz.CASBackend
 	}{
 		{nil, nil},
 		{testRepo, &biz.CASBackend{
 			ID:         testRepo.ID.String(),
-			Repo:       testRepo.Repo,
+			Name:       testRepo.Name,
 			SecretName: testRepo.SecretName,
 			CreatedAt:  toTimePtr(testRepo.CreatedAt),
+			Provider:   biz.CASBackendProvider(testRepo.Provider),
 		}},
 	}
 
 	for _, tc := range tests {
-		got := entOCIRepoToBiz(tc.input)
+		got := entCASBackendToBiz(tc.input)
 		assert.Equal(t, tc.output, got)
 	}
 }

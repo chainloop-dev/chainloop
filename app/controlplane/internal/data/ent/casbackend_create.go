@@ -23,9 +23,9 @@ type CASBackendCreate struct {
 	hooks    []Hook
 }
 
-// SetRepo sets the "repo" field.
-func (cbc *CASBackendCreate) SetRepo(s string) *CASBackendCreate {
-	cbc.mutation.SetRepo(s)
+// SetName sets the "name" field.
+func (cbc *CASBackendCreate) SetName(s string) *CASBackendCreate {
+	cbc.mutation.SetName(s)
 	return cbc
 }
 
@@ -50,15 +50,15 @@ func (cbc *CASBackendCreate) SetNillableCreatedAt(t *time.Time) *CASBackendCreat
 }
 
 // SetValidationStatus sets the "validation_status" field.
-func (cbc *CASBackendCreate) SetValidationStatus(brvs biz.OCIRepoValidationStatus) *CASBackendCreate {
-	cbc.mutation.SetValidationStatus(brvs)
+func (cbc *CASBackendCreate) SetValidationStatus(bbvs biz.CASBackendValidationStatus) *CASBackendCreate {
+	cbc.mutation.SetValidationStatus(bbvs)
 	return cbc
 }
 
 // SetNillableValidationStatus sets the "validation_status" field if the given value is not nil.
-func (cbc *CASBackendCreate) SetNillableValidationStatus(brvs *biz.OCIRepoValidationStatus) *CASBackendCreate {
-	if brvs != nil {
-		cbc.SetValidationStatus(*brvs)
+func (cbc *CASBackendCreate) SetNillableValidationStatus(bbvs *biz.CASBackendValidationStatus) *CASBackendCreate {
+	if bbvs != nil {
+		cbc.SetValidationStatus(*bbvs)
 	}
 	return cbc
 }
@@ -78,15 +78,15 @@ func (cbc *CASBackendCreate) SetNillableValidatedAt(t *time.Time) *CASBackendCre
 }
 
 // SetProvider sets the "provider" field.
-func (cbc *CASBackendCreate) SetProvider(s string) *CASBackendCreate {
-	cbc.mutation.SetProvider(s)
+func (cbc *CASBackendCreate) SetProvider(bbp biz.CASBackendProvider) *CASBackendCreate {
+	cbc.mutation.SetProvider(bbp)
 	return cbc
 }
 
 // SetNillableProvider sets the "provider" field if the given value is not nil.
-func (cbc *CASBackendCreate) SetNillableProvider(s *string) *CASBackendCreate {
-	if s != nil {
-		cbc.SetProvider(*s)
+func (cbc *CASBackendCreate) SetNillableProvider(bbp *biz.CASBackendProvider) *CASBackendCreate {
+	if bbp != nil {
+		cbc.SetProvider(*bbp)
 	}
 	return cbc
 }
@@ -163,6 +163,10 @@ func (cbc *CASBackendCreate) defaults() {
 		v := casbackend.DefaultValidatedAt()
 		cbc.mutation.SetValidatedAt(v)
 	}
+	if _, ok := cbc.mutation.Provider(); !ok {
+		v := casbackend.DefaultProvider
+		cbc.mutation.SetProvider(v)
+	}
 	if _, ok := cbc.mutation.ID(); !ok {
 		v := casbackend.DefaultID()
 		cbc.mutation.SetID(v)
@@ -171,8 +175,8 @@ func (cbc *CASBackendCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (cbc *CASBackendCreate) check() error {
-	if _, ok := cbc.mutation.Repo(); !ok {
-		return &ValidationError{Name: "repo", err: errors.New(`ent: missing required field "CASBackend.repo"`)}
+	if _, ok := cbc.mutation.Name(); !ok {
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "CASBackend.name"`)}
 	}
 	if _, ok := cbc.mutation.SecretName(); !ok {
 		return &ValidationError{Name: "secret_name", err: errors.New(`ent: missing required field "CASBackend.secret_name"`)}
@@ -190,6 +194,14 @@ func (cbc *CASBackendCreate) check() error {
 	}
 	if _, ok := cbc.mutation.ValidatedAt(); !ok {
 		return &ValidationError{Name: "validated_at", err: errors.New(`ent: missing required field "CASBackend.validated_at"`)}
+	}
+	if _, ok := cbc.mutation.Provider(); !ok {
+		return &ValidationError{Name: "provider", err: errors.New(`ent: missing required field "CASBackend.provider"`)}
+	}
+	if v, ok := cbc.mutation.Provider(); ok {
+		if err := casbackend.ProviderValidator(v); err != nil {
+			return &ValidationError{Name: "provider", err: fmt.Errorf(`ent: validator failed for field "CASBackend.provider": %w`, err)}
+		}
 	}
 	if _, ok := cbc.mutation.OrganizationID(); !ok {
 		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "CASBackend.organization"`)}
@@ -229,9 +241,9 @@ func (cbc *CASBackendCreate) createSpec() (*CASBackend, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := cbc.mutation.Repo(); ok {
-		_spec.SetField(casbackend.FieldRepo, field.TypeString, value)
-		_node.Repo = value
+	if value, ok := cbc.mutation.Name(); ok {
+		_spec.SetField(casbackend.FieldName, field.TypeString, value)
+		_node.Name = value
 	}
 	if value, ok := cbc.mutation.SecretName(); ok {
 		_spec.SetField(casbackend.FieldSecretName, field.TypeString, value)
@@ -250,7 +262,7 @@ func (cbc *CASBackendCreate) createSpec() (*CASBackend, *sqlgraph.CreateSpec) {
 		_node.ValidatedAt = value
 	}
 	if value, ok := cbc.mutation.Provider(); ok {
-		_spec.SetField(casbackend.FieldProvider, field.TypeString, value)
+		_spec.SetField(casbackend.FieldProvider, field.TypeEnum, value)
 		_node.Provider = value
 	}
 	if nodes := cbc.mutation.OrganizationIDs(); len(nodes) > 0 {
@@ -267,7 +279,7 @@ func (cbc *CASBackendCreate) createSpec() (*CASBackend, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.organization_oci_repositories = &nodes[0]
+		_node.organization_cas_backends = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

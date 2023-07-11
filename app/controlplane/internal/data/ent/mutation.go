@@ -56,12 +56,12 @@ type CASBackendMutation struct {
 	op                  Op
 	typ                 string
 	id                  *uuid.UUID
-	repo                *string
+	name                *string
 	secret_name         *string
 	created_at          *time.Time
-	validation_status   *biz.OCIRepoValidationStatus
+	validation_status   *biz.CASBackendValidationStatus
 	validated_at        *time.Time
-	provider            *string
+	provider            *biz.CASBackendProvider
 	clearedFields       map[string]struct{}
 	organization        *uuid.UUID
 	clearedorganization bool
@@ -174,40 +174,40 @@ func (m *CASBackendMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
 	}
 }
 
-// SetRepo sets the "repo" field.
-func (m *CASBackendMutation) SetRepo(s string) {
-	m.repo = &s
+// SetName sets the "name" field.
+func (m *CASBackendMutation) SetName(s string) {
+	m.name = &s
 }
 
-// Repo returns the value of the "repo" field in the mutation.
-func (m *CASBackendMutation) Repo() (r string, exists bool) {
-	v := m.repo
+// Name returns the value of the "name" field in the mutation.
+func (m *CASBackendMutation) Name() (r string, exists bool) {
+	v := m.name
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldRepo returns the old "repo" field's value of the CASBackend entity.
+// OldName returns the old "name" field's value of the CASBackend entity.
 // If the CASBackend object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CASBackendMutation) OldRepo(ctx context.Context) (v string, err error) {
+func (m *CASBackendMutation) OldName(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldRepo is only allowed on UpdateOne operations")
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldRepo requires an ID field in the mutation")
+		return v, errors.New("OldName requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldRepo: %w", err)
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
 	}
-	return oldValue.Repo, nil
+	return oldValue.Name, nil
 }
 
-// ResetRepo resets all changes to the "repo" field.
-func (m *CASBackendMutation) ResetRepo() {
-	m.repo = nil
+// ResetName resets all changes to the "name" field.
+func (m *CASBackendMutation) ResetName() {
+	m.name = nil
 }
 
 // SetSecretName sets the "secret_name" field.
@@ -283,12 +283,12 @@ func (m *CASBackendMutation) ResetCreatedAt() {
 }
 
 // SetValidationStatus sets the "validation_status" field.
-func (m *CASBackendMutation) SetValidationStatus(brvs biz.OCIRepoValidationStatus) {
-	m.validation_status = &brvs
+func (m *CASBackendMutation) SetValidationStatus(bbvs biz.CASBackendValidationStatus) {
+	m.validation_status = &bbvs
 }
 
 // ValidationStatus returns the value of the "validation_status" field in the mutation.
-func (m *CASBackendMutation) ValidationStatus() (r biz.OCIRepoValidationStatus, exists bool) {
+func (m *CASBackendMutation) ValidationStatus() (r biz.CASBackendValidationStatus, exists bool) {
 	v := m.validation_status
 	if v == nil {
 		return
@@ -299,7 +299,7 @@ func (m *CASBackendMutation) ValidationStatus() (r biz.OCIRepoValidationStatus, 
 // OldValidationStatus returns the old "validation_status" field's value of the CASBackend entity.
 // If the CASBackend object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CASBackendMutation) OldValidationStatus(ctx context.Context) (v biz.OCIRepoValidationStatus, err error) {
+func (m *CASBackendMutation) OldValidationStatus(ctx context.Context) (v biz.CASBackendValidationStatus, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldValidationStatus is only allowed on UpdateOne operations")
 	}
@@ -355,12 +355,12 @@ func (m *CASBackendMutation) ResetValidatedAt() {
 }
 
 // SetProvider sets the "provider" field.
-func (m *CASBackendMutation) SetProvider(s string) {
-	m.provider = &s
+func (m *CASBackendMutation) SetProvider(bbp biz.CASBackendProvider) {
+	m.provider = &bbp
 }
 
 // Provider returns the value of the "provider" field in the mutation.
-func (m *CASBackendMutation) Provider() (r string, exists bool) {
+func (m *CASBackendMutation) Provider() (r biz.CASBackendProvider, exists bool) {
 	v := m.provider
 	if v == nil {
 		return
@@ -371,7 +371,7 @@ func (m *CASBackendMutation) Provider() (r string, exists bool) {
 // OldProvider returns the old "provider" field's value of the CASBackend entity.
 // If the CASBackend object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CASBackendMutation) OldProvider(ctx context.Context) (v string, err error) {
+func (m *CASBackendMutation) OldProvider(ctx context.Context) (v biz.CASBackendProvider, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldProvider is only allowed on UpdateOne operations")
 	}
@@ -385,22 +385,9 @@ func (m *CASBackendMutation) OldProvider(ctx context.Context) (v string, err err
 	return oldValue.Provider, nil
 }
 
-// ClearProvider clears the value of the "provider" field.
-func (m *CASBackendMutation) ClearProvider() {
-	m.provider = nil
-	m.clearedFields[casbackend.FieldProvider] = struct{}{}
-}
-
-// ProviderCleared returns if the "provider" field was cleared in this mutation.
-func (m *CASBackendMutation) ProviderCleared() bool {
-	_, ok := m.clearedFields[casbackend.FieldProvider]
-	return ok
-}
-
 // ResetProvider resets all changes to the "provider" field.
 func (m *CASBackendMutation) ResetProvider() {
 	m.provider = nil
-	delete(m.clearedFields, casbackend.FieldProvider)
 }
 
 // SetOrganizationID sets the "organization" edge to the Organization entity by id.
@@ -477,8 +464,8 @@ func (m *CASBackendMutation) Type() string {
 // AddedFields().
 func (m *CASBackendMutation) Fields() []string {
 	fields := make([]string, 0, 6)
-	if m.repo != nil {
-		fields = append(fields, casbackend.FieldRepo)
+	if m.name != nil {
+		fields = append(fields, casbackend.FieldName)
 	}
 	if m.secret_name != nil {
 		fields = append(fields, casbackend.FieldSecretName)
@@ -503,8 +490,8 @@ func (m *CASBackendMutation) Fields() []string {
 // schema.
 func (m *CASBackendMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case casbackend.FieldRepo:
-		return m.Repo()
+	case casbackend.FieldName:
+		return m.Name()
 	case casbackend.FieldSecretName:
 		return m.SecretName()
 	case casbackend.FieldCreatedAt:
@@ -524,8 +511,8 @@ func (m *CASBackendMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *CASBackendMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case casbackend.FieldRepo:
-		return m.OldRepo(ctx)
+	case casbackend.FieldName:
+		return m.OldName(ctx)
 	case casbackend.FieldSecretName:
 		return m.OldSecretName(ctx)
 	case casbackend.FieldCreatedAt:
@@ -545,12 +532,12 @@ func (m *CASBackendMutation) OldField(ctx context.Context, name string) (ent.Val
 // type.
 func (m *CASBackendMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case casbackend.FieldRepo:
+	case casbackend.FieldName:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetRepo(v)
+		m.SetName(v)
 		return nil
 	case casbackend.FieldSecretName:
 		v, ok := value.(string)
@@ -567,7 +554,7 @@ func (m *CASBackendMutation) SetField(name string, value ent.Value) error {
 		m.SetCreatedAt(v)
 		return nil
 	case casbackend.FieldValidationStatus:
-		v, ok := value.(biz.OCIRepoValidationStatus)
+		v, ok := value.(biz.CASBackendValidationStatus)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -581,7 +568,7 @@ func (m *CASBackendMutation) SetField(name string, value ent.Value) error {
 		m.SetValidatedAt(v)
 		return nil
 	case casbackend.FieldProvider:
-		v, ok := value.(string)
+		v, ok := value.(biz.CASBackendProvider)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -616,11 +603,7 @@ func (m *CASBackendMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *CASBackendMutation) ClearedFields() []string {
-	var fields []string
-	if m.FieldCleared(casbackend.FieldProvider) {
-		fields = append(fields, casbackend.FieldProvider)
-	}
-	return fields
+	return nil
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -633,11 +616,6 @@ func (m *CASBackendMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *CASBackendMutation) ClearField(name string) error {
-	switch name {
-	case casbackend.FieldProvider:
-		m.ClearProvider()
-		return nil
-	}
 	return fmt.Errorf("unknown CASBackend nullable field %s", name)
 }
 
@@ -645,8 +623,8 @@ func (m *CASBackendMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *CASBackendMutation) ResetField(name string) error {
 	switch name {
-	case casbackend.FieldRepo:
-		m.ResetRepo()
+	case casbackend.FieldName:
+		m.ResetName()
 		return nil
 	case casbackend.FieldSecretName:
 		m.ResetSecretName()
@@ -2746,9 +2724,9 @@ type OrganizationMutation struct {
 	workflows                 map[uuid.UUID]struct{}
 	removedworkflows          map[uuid.UUID]struct{}
 	clearedworkflows          bool
-	oci_repositories          map[uuid.UUID]struct{}
-	removedoci_repositories   map[uuid.UUID]struct{}
-	clearedoci_repositories   bool
+	cas_backends              map[uuid.UUID]struct{}
+	removedcas_backends       map[uuid.UUID]struct{}
+	clearedcas_backends       bool
 	integrations              map[uuid.UUID]struct{}
 	removedintegrations       map[uuid.UUID]struct{}
 	clearedintegrations       bool
@@ -3095,58 +3073,58 @@ func (m *OrganizationMutation) ResetWorkflows() {
 	m.removedworkflows = nil
 }
 
-// AddOciRepositoryIDs adds the "oci_repositories" edge to the CASBackend entity by ids.
-func (m *OrganizationMutation) AddOciRepositoryIDs(ids ...uuid.UUID) {
-	if m.oci_repositories == nil {
-		m.oci_repositories = make(map[uuid.UUID]struct{})
+// AddCasBackendIDs adds the "cas_backends" edge to the CASBackend entity by ids.
+func (m *OrganizationMutation) AddCasBackendIDs(ids ...uuid.UUID) {
+	if m.cas_backends == nil {
+		m.cas_backends = make(map[uuid.UUID]struct{})
 	}
 	for i := range ids {
-		m.oci_repositories[ids[i]] = struct{}{}
+		m.cas_backends[ids[i]] = struct{}{}
 	}
 }
 
-// ClearOciRepositories clears the "oci_repositories" edge to the CASBackend entity.
-func (m *OrganizationMutation) ClearOciRepositories() {
-	m.clearedoci_repositories = true
+// ClearCasBackends clears the "cas_backends" edge to the CASBackend entity.
+func (m *OrganizationMutation) ClearCasBackends() {
+	m.clearedcas_backends = true
 }
 
-// OciRepositoriesCleared reports if the "oci_repositories" edge to the CASBackend entity was cleared.
-func (m *OrganizationMutation) OciRepositoriesCleared() bool {
-	return m.clearedoci_repositories
+// CasBackendsCleared reports if the "cas_backends" edge to the CASBackend entity was cleared.
+func (m *OrganizationMutation) CasBackendsCleared() bool {
+	return m.clearedcas_backends
 }
 
-// RemoveOciRepositoryIDs removes the "oci_repositories" edge to the CASBackend entity by IDs.
-func (m *OrganizationMutation) RemoveOciRepositoryIDs(ids ...uuid.UUID) {
-	if m.removedoci_repositories == nil {
-		m.removedoci_repositories = make(map[uuid.UUID]struct{})
+// RemoveCasBackendIDs removes the "cas_backends" edge to the CASBackend entity by IDs.
+func (m *OrganizationMutation) RemoveCasBackendIDs(ids ...uuid.UUID) {
+	if m.removedcas_backends == nil {
+		m.removedcas_backends = make(map[uuid.UUID]struct{})
 	}
 	for i := range ids {
-		delete(m.oci_repositories, ids[i])
-		m.removedoci_repositories[ids[i]] = struct{}{}
+		delete(m.cas_backends, ids[i])
+		m.removedcas_backends[ids[i]] = struct{}{}
 	}
 }
 
-// RemovedOciRepositories returns the removed IDs of the "oci_repositories" edge to the CASBackend entity.
-func (m *OrganizationMutation) RemovedOciRepositoriesIDs() (ids []uuid.UUID) {
-	for id := range m.removedoci_repositories {
+// RemovedCasBackends returns the removed IDs of the "cas_backends" edge to the CASBackend entity.
+func (m *OrganizationMutation) RemovedCasBackendsIDs() (ids []uuid.UUID) {
+	for id := range m.removedcas_backends {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// OciRepositoriesIDs returns the "oci_repositories" edge IDs in the mutation.
-func (m *OrganizationMutation) OciRepositoriesIDs() (ids []uuid.UUID) {
-	for id := range m.oci_repositories {
+// CasBackendsIDs returns the "cas_backends" edge IDs in the mutation.
+func (m *OrganizationMutation) CasBackendsIDs() (ids []uuid.UUID) {
+	for id := range m.cas_backends {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// ResetOciRepositories resets all changes to the "oci_repositories" edge.
-func (m *OrganizationMutation) ResetOciRepositories() {
-	m.oci_repositories = nil
-	m.clearedoci_repositories = false
-	m.removedoci_repositories = nil
+// ResetCasBackends resets all changes to the "cas_backends" edge.
+func (m *OrganizationMutation) ResetCasBackends() {
+	m.cas_backends = nil
+	m.clearedcas_backends = false
+	m.removedcas_backends = nil
 }
 
 // AddIntegrationIDs adds the "integrations" edge to the Integration entity by ids.
@@ -3363,8 +3341,8 @@ func (m *OrganizationMutation) AddedEdges() []string {
 	if m.workflows != nil {
 		edges = append(edges, organization.EdgeWorkflows)
 	}
-	if m.oci_repositories != nil {
-		edges = append(edges, organization.EdgeOciRepositories)
+	if m.cas_backends != nil {
+		edges = append(edges, organization.EdgeCasBackends)
 	}
 	if m.integrations != nil {
 		edges = append(edges, organization.EdgeIntegrations)
@@ -3394,9 +3372,9 @@ func (m *OrganizationMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case organization.EdgeOciRepositories:
-		ids := make([]ent.Value, 0, len(m.oci_repositories))
-		for id := range m.oci_repositories {
+	case organization.EdgeCasBackends:
+		ids := make([]ent.Value, 0, len(m.cas_backends))
+		for id := range m.cas_backends {
 			ids = append(ids, id)
 		}
 		return ids
@@ -3422,8 +3400,8 @@ func (m *OrganizationMutation) RemovedEdges() []string {
 	if m.removedworkflows != nil {
 		edges = append(edges, organization.EdgeWorkflows)
 	}
-	if m.removedoci_repositories != nil {
-		edges = append(edges, organization.EdgeOciRepositories)
+	if m.removedcas_backends != nil {
+		edges = append(edges, organization.EdgeCasBackends)
 	}
 	if m.removedintegrations != nil {
 		edges = append(edges, organization.EdgeIntegrations)
@@ -3453,9 +3431,9 @@ func (m *OrganizationMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case organization.EdgeOciRepositories:
-		ids := make([]ent.Value, 0, len(m.removedoci_repositories))
-		for id := range m.removedoci_repositories {
+	case organization.EdgeCasBackends:
+		ids := make([]ent.Value, 0, len(m.removedcas_backends))
+		for id := range m.removedcas_backends {
 			ids = append(ids, id)
 		}
 		return ids
@@ -3481,8 +3459,8 @@ func (m *OrganizationMutation) ClearedEdges() []string {
 	if m.clearedworkflows {
 		edges = append(edges, organization.EdgeWorkflows)
 	}
-	if m.clearedoci_repositories {
-		edges = append(edges, organization.EdgeOciRepositories)
+	if m.clearedcas_backends {
+		edges = append(edges, organization.EdgeCasBackends)
 	}
 	if m.clearedintegrations {
 		edges = append(edges, organization.EdgeIntegrations)
@@ -3500,8 +3478,8 @@ func (m *OrganizationMutation) EdgeCleared(name string) bool {
 		return m.clearedworkflow_contracts
 	case organization.EdgeWorkflows:
 		return m.clearedworkflows
-	case organization.EdgeOciRepositories:
-		return m.clearedoci_repositories
+	case organization.EdgeCasBackends:
+		return m.clearedcas_backends
 	case organization.EdgeIntegrations:
 		return m.clearedintegrations
 	}
@@ -3529,8 +3507,8 @@ func (m *OrganizationMutation) ResetEdge(name string) error {
 	case organization.EdgeWorkflows:
 		m.ResetWorkflows()
 		return nil
-	case organization.EdgeOciRepositories:
-		m.ResetOciRepositories()
+	case organization.EdgeCasBackends:
+		m.ResetCasBackends()
 		return nil
 	case organization.EdgeIntegrations:
 		m.ResetIntegrations()

@@ -11,13 +11,13 @@ var (
 	// CasBackendsColumns holds the columns for the "cas_backends" table.
 	CasBackendsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "repo", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
 		{Name: "secret_name", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "validation_status", Type: field.TypeEnum, Enums: []string{"OK", "Invalid"}, Default: "OK"},
 		{Name: "validated_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
-		{Name: "provider", Type: field.TypeString, Nullable: true},
-		{Name: "organization_oci_repositories", Type: field.TypeUUID},
+		{Name: "provider", Type: field.TypeEnum, Enums: []string{"OCI"}, Default: "OCI"},
+		{Name: "organization_cas_backends", Type: field.TypeUUID},
 	}
 	// CasBackendsTable holds the schema information for the "cas_backends" table.
 	CasBackendsTable = &schema.Table{
@@ -26,7 +26,7 @@ var (
 		PrimaryKey: []*schema.Column{CasBackendsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "cas_backends_organizations_oci_repositories",
+				Symbol:     "cas_backends_organizations_cas_backends",
 				Columns:    []*schema.Column{CasBackendsColumns[7]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,

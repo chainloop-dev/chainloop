@@ -41,7 +41,7 @@ type AttestationService struct {
 	wrUseCase               *biz.WorkflowRunUseCase
 	workflowUseCase         *biz.WorkflowUseCase
 	workflowContractUseCase *biz.WorkflowContractUseCase
-	ociUC                   *biz.OCIRepositoryUseCase
+	ociUC                   *biz.CASBackendUseCase
 	credsReader             credentials.Reader
 	integrationUseCase      *biz.IntegrationUseCase
 	integrationDispatcher   *dispatcher.FanOutDispatcher
@@ -52,7 +52,7 @@ type NewAttestationServiceOpts struct {
 	WorkflowRunUC      *biz.WorkflowRunUseCase
 	WorkflowUC         *biz.WorkflowUseCase
 	WorkflowContractUC *biz.WorkflowContractUseCase
-	OCIUC              *biz.OCIRepositoryUseCase
+	OCIUC              *biz.CASBackendUseCase
 	CredsReader        credentials.Reader
 	IntegrationUseCase *biz.IntegrationUseCase
 	CasCredsUseCase    *biz.CASCredentialsUseCase
@@ -168,7 +168,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	}
 
 	// find the CAS oci credentials so the dispatcher can download the materials if needed
-	repo, err := s.ociUC.FindMainRepo(context.Background(), robotAccount.OrgID)
+	repo, err := s.ociUC.FindMainBackend(context.Background(), robotAccount.OrgID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find main repository: %w", err)
 	}
@@ -227,7 +227,7 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, _ *cpAPI.Attest
 		return nil, errors.NotFound("not found", "workflow not found")
 	}
 
-	repo, err := s.ociUC.FindMainRepo(ctx, wf.OrgID.String())
+	repo, err := s.ociUC.FindMainBackend(ctx, wf.OrgID.String())
 	if err != nil {
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}

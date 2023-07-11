@@ -38,39 +38,39 @@ func NewCASBackendRepo(data *Data, logger log.Logger) biz.CASBackendRepo {
 	}
 }
 
-func (r *CASBackendRepo) FindMainRepo(ctx context.Context, orgID uuid.UUID) (*biz.CASBackend, error) {
+func (r *CASBackendRepo) FindMainBackend(ctx context.Context, orgID uuid.UUID) (*biz.CASBackend, error) {
 	backend, err := orgScopedQuery(r.data.db, orgID).
-		QueryOciRepositories().Only(ctx)
+		QueryCasBackends().Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	}
 
-	return entOCIRepoToBiz(backend), nil
+	return entCASBackendToBiz(backend), nil
 }
 
 func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.OCIRepoCreateOpts) (*biz.CASBackend, error) {
 	backend, err := r.data.db.CASBackend.Create().
 		SetOrganizationID(opts.OrgID).
-		SetRepo(opts.Repository).
+		SetName(opts.Repository).
 		SetSecretName(opts.SecretName).
 		Save(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return entOCIRepoToBiz(backend), nil
+	return entCASBackendToBiz(backend), nil
 }
 
 func (r *CASBackendRepo) Update(ctx context.Context, opts *biz.OCIRepoUpdateOpts) (*biz.CASBackend, error) {
 	backend, err := r.data.db.CASBackend.UpdateOneID(opts.ID).
-		SetRepo(opts.Repository).
+		SetName(opts.Repository).
 		SetSecretName(opts.SecretName).
 		Save(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return entOCIRepoToBiz(backend), nil
+	return entCASBackendToBiz(backend), nil
 }
 
 // FindByID finds a CAS backend by ID in the given organization.
@@ -83,7 +83,7 @@ func (r *CASBackendRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.CASBa
 		return nil, nil
 	}
 
-	return entOCIRepoToBiz(backend), nil
+	return entCASBackendToBiz(backend), nil
 }
 
 func (r *CASBackendRepo) Delete(ctx context.Context, id uuid.UUID) error {
@@ -91,25 +91,26 @@ func (r *CASBackendRepo) Delete(ctx context.Context, id uuid.UUID) error {
 }
 
 // UpdateValidationStatus updates the validation status of an OCI repository
-func (r *CASBackendRepo) UpdateValidationStatus(ctx context.Context, id uuid.UUID, status biz.OCIRepoValidationStatus) error {
+func (r *CASBackendRepo) UpdateValidationStatus(ctx context.Context, id uuid.UUID, status biz.CASBackendValidationStatus) error {
 	return r.data.db.CASBackend.UpdateOneID(id).
 		SetValidationStatus(status).
 		SetValidatedAt(time.Now()).
 		Exec(ctx)
 }
 
-func entOCIRepoToBiz(backend *ent.CASBackend) *biz.CASBackend {
+func entCASBackendToBiz(backend *ent.CASBackend) *biz.CASBackend {
 	if backend == nil {
 		return nil
 	}
 
 	r := &biz.CASBackend{
 		ID:               backend.ID.String(),
-		Repo:             backend.Repo,
+		Name:             backend.Name,
 		SecretName:       backend.SecretName,
 		CreatedAt:        toTimePtr(backend.CreatedAt),
 		ValidatedAt:      toTimePtr(backend.ValidatedAt),
 		ValidationStatus: backend.ValidationStatus,
+		Provider:         biz.CASBackendProvider(backend.Provider),
 	}
 
 	if org := backend.Edges.Organization; org != nil {

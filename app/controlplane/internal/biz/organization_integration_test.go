@@ -66,7 +66,7 @@ func (s *OrgIntegrationTestSuite) TestDeleteOrg() {
 		assert.NoError(err)
 		assert.Empty(integrations)
 
-		ociRepo, err := s.OCIRepo.FindMainRepo(ctx, s.org.ID)
+		ociRepo, err := s.CASBackendRepo.FindMainBackend(ctx, s.org.ID)
 		assert.NoError(err)
 		assert.Nil(ociRepo)
 
@@ -128,7 +128,7 @@ func (s *OrgIntegrationTestSuite) SetupTest() {
 	assert.NoError(err)
 
 	// OCI repository
-	_, err = s.OCIRepo.CreateOrUpdate(ctx, s.org.ID, "repo", "username", "pass")
+	_, err = s.CASBackendRepo.CreateOrUpdate(ctx, s.org.ID, "repo", "username", "pass")
 	assert.NoError(err)
 
 	// Workflow + contract
@@ -140,7 +140,7 @@ func (s *OrgIntegrationTestSuite) SetupTest() {
 	assert.NoError(err)
 	assert.Len(integrations, 1)
 
-	ociRepo, err := s.OCIRepo.FindMainRepo(ctx, s.org.ID)
+	ociRepo, err := s.CASBackendRepo.FindMainBackend(ctx, s.org.ID)
 	assert.NoError(err)
 	assert.NotNil(ociRepo)
 

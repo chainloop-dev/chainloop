@@ -31,60 +31,60 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type ociRepositoryTestSuite struct {
+type casBackendTestSuite struct {
 	suite.Suite
 	validUUID       uuid.UUID
 	invalidUUID     string
-	useCase         *biz.OCIRepositoryUseCase
-	repo            *bizMocks.OCIRepositoryRepo
+	useCase         *biz.CASBackendUseCase
+	repo            *bizMocks.CASBackendRepo
 	credsRW         *credentialsM.ReaderWriter
 	backendProvider *blobM.Provider
 }
 
-func (s *ociRepositoryTestSuite) TestFindMainRepoErr() {
-	repo, err := s.useCase.FindMainRepo(context.Background(), s.invalidUUID)
+func (s *casBackendTestSuite) TestFindMainBackendErr() {
+	repo, err := s.useCase.FindMainBackend(context.Background(), s.invalidUUID)
 	assert.True(s.T(), biz.IsErrInvalidUUID(err))
 	assert.Nil(s.T(), repo)
 }
 
-func (s *ociRepositoryTestSuite) TestFindMainRepoNotFound() {
+func (s *casBackendTestSuite) TestFindMainBackendNotFound() {
 	assert := assert.New(s.T())
 
 	// Not found
 	ctx := context.Background()
-	s.repo.On("FindMainRepo", ctx, s.validUUID).Return(nil, nil)
+	s.repo.On("FindMainBackend", ctx, s.validUUID).Return(nil, nil)
 
-	repo, err := s.useCase.FindMainRepo(ctx, s.validUUID.String())
+	repo, err := s.useCase.FindMainBackend(ctx, s.validUUID.String())
 	assert.NoError(err)
 	assert.Nil(repo)
 }
 
-func (s *ociRepositoryTestSuite) TestFindMainRepoFound() {
+func (s *casBackendTestSuite) TestFindMainBackendFound() {
 	assert := assert.New(s.T())
 
 	ctx := context.Background()
 	wantRepo := &biz.CASBackend{}
-	s.repo.On("FindMainRepo", ctx, s.validUUID).Return(wantRepo, nil)
+	s.repo.On("FindMainBackend", ctx, s.validUUID).Return(wantRepo, nil)
 
-	repo, err := s.useCase.FindMainRepo(ctx, s.validUUID.String())
+	repo, err := s.useCase.FindMainBackend(ctx, s.validUUID.String())
 	assert.NoError(err)
 	assert.Equal(repo, wantRepo)
 }
 
-func (s *ociRepositoryTestSuite) TestSaveInvalidUUID() {
+func (s *casBackendTestSuite) TestSaveInvalidUUID() {
 	repo, err := s.useCase.CreateOrUpdate(context.Background(), s.invalidUUID, "", "", "")
 	assert.True(s.T(), biz.IsErrInvalidUUID(err))
 	assert.Nil(s.T(), repo)
 }
 
 // If a repo exists it will get updated
-func (s *ociRepositoryTestSuite) TestSaveMainRepoAlreadyExist() {
+func (s *casBackendTestSuite) TestSaveMainRepoAlreadyExist() {
 	assert := assert.New(s.T())
 	const repoName, username, password = "repo", "username", "pass"
 
 	r := &biz.CASBackend{ID: s.validUUID.String()}
 	ctx := context.Background()
-	s.repo.On("FindMainRepo", ctx, s.validUUID).Return(r, nil)
+	s.repo.On("FindMainBackend", ctx, s.validUUID).Return(r, nil)
 	s.credsRW.On("SaveCredentials", ctx, s.validUUID.String(), mock.Anything).Return("secret-key", nil)
 	s.repo.On("Update", ctx, &biz.OCIRepoUpdateOpts{
 		ID: s.validUUID,
@@ -98,13 +98,13 @@ func (s *ociRepositoryTestSuite) TestSaveMainRepoAlreadyExist() {
 	assert.Equal(gotRepo, r)
 }
 
-func (s *ociRepositoryTestSuite) TestSaveMainRepoOk() {
+func (s *casBackendTestSuite) TestSaveMainRepoOk() {
 	assert := assert.New(s.T())
 
 	ctx := context.Background()
 	const repo, username, password = "repo", "username", "pass"
 
-	s.repo.On("FindMainRepo", ctx, s.validUUID).Return(nil, nil)
+	s.repo.On("FindMainBackend", ctx, s.validUUID).Return(nil, nil)
 	s.credsRW.On("SaveCredentials", ctx, s.validUUID.String(), mock.Anything).Return("secret-key", nil)
 
 	newRepo := &biz.CASBackend{}
@@ -120,7 +120,7 @@ func (s *ociRepositoryTestSuite) TestSaveMainRepoOk() {
 	assert.Equal(gotRepo, newRepo)
 }
 
-func (s *ociRepositoryTestSuite) TestPerformValidation() {
+func (s *casBackendTestSuite) TestPerformValidation() {
 	assert := assert.New(s.T())
 	t := s.T()
 	validRepo := &biz.CASBackend{ID: s.validUUID.String(), ValidationStatus: biz.OCIRepoValidationOK}
@@ -175,19 +175,19 @@ func (s *ociRepositoryTestSuite) TestPerformValidation() {
 
 // Run all the tests
 func TestOCIRepository(t *testing.T) {
-	suite.Run(t, new(ociRepositoryTestSuite))
+	suite.Run(t, new(casBackendTestSuite))
 }
 
-func (s *ociRepositoryTestSuite) resetMock() {
+func (s *casBackendTestSuite) resetMock() {
 	s.repo.Mock = mock.Mock{}
 	s.credsRW.Mock = mock.Mock{}
 	s.backendProvider.Mock = mock.Mock{}
 }
 
-func (s *ociRepositoryTestSuite) SetupTest() {
+func (s *casBackendTestSuite) SetupTest() {
 	s.validUUID = uuid.New()
 	s.invalidUUID = "deadbeef"
-	s.repo = bizMocks.NewOCIRepositoryRepo(s.T())
+	s.repo = bizMocks.NewCASBackendRepo(s.T())
 	s.credsRW = credentialsM.NewReaderWriter(s.T())
 	s.backendProvider = blobM.NewProvider(s.T())
 	s.useCase = biz.NewOCIRepositoryUseCase(s.repo, s.credsRW, s.backendProvider, nil)

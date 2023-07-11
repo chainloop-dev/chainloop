@@ -31,9 +31,9 @@ func (cbu *CASBackendUpdate) Where(ps ...predicate.CASBackend) *CASBackendUpdate
 	return cbu
 }
 
-// SetRepo sets the "repo" field.
-func (cbu *CASBackendUpdate) SetRepo(s string) *CASBackendUpdate {
-	cbu.mutation.SetRepo(s)
+// SetName sets the "name" field.
+func (cbu *CASBackendUpdate) SetName(s string) *CASBackendUpdate {
+	cbu.mutation.SetName(s)
 	return cbu
 }
 
@@ -44,15 +44,15 @@ func (cbu *CASBackendUpdate) SetSecretName(s string) *CASBackendUpdate {
 }
 
 // SetValidationStatus sets the "validation_status" field.
-func (cbu *CASBackendUpdate) SetValidationStatus(brvs biz.OCIRepoValidationStatus) *CASBackendUpdate {
-	cbu.mutation.SetValidationStatus(brvs)
+func (cbu *CASBackendUpdate) SetValidationStatus(bbvs biz.CASBackendValidationStatus) *CASBackendUpdate {
+	cbu.mutation.SetValidationStatus(bbvs)
 	return cbu
 }
 
 // SetNillableValidationStatus sets the "validation_status" field if the given value is not nil.
-func (cbu *CASBackendUpdate) SetNillableValidationStatus(brvs *biz.OCIRepoValidationStatus) *CASBackendUpdate {
-	if brvs != nil {
-		cbu.SetValidationStatus(*brvs)
+func (cbu *CASBackendUpdate) SetNillableValidationStatus(bbvs *biz.CASBackendValidationStatus) *CASBackendUpdate {
+	if bbvs != nil {
+		cbu.SetValidationStatus(*bbvs)
 	}
 	return cbu
 }
@@ -72,22 +72,16 @@ func (cbu *CASBackendUpdate) SetNillableValidatedAt(t *time.Time) *CASBackendUpd
 }
 
 // SetProvider sets the "provider" field.
-func (cbu *CASBackendUpdate) SetProvider(s string) *CASBackendUpdate {
-	cbu.mutation.SetProvider(s)
+func (cbu *CASBackendUpdate) SetProvider(bbp biz.CASBackendProvider) *CASBackendUpdate {
+	cbu.mutation.SetProvider(bbp)
 	return cbu
 }
 
 // SetNillableProvider sets the "provider" field if the given value is not nil.
-func (cbu *CASBackendUpdate) SetNillableProvider(s *string) *CASBackendUpdate {
-	if s != nil {
-		cbu.SetProvider(*s)
+func (cbu *CASBackendUpdate) SetNillableProvider(bbp *biz.CASBackendProvider) *CASBackendUpdate {
+	if bbp != nil {
+		cbu.SetProvider(*bbp)
 	}
-	return cbu
-}
-
-// ClearProvider clears the value of the "provider" field.
-func (cbu *CASBackendUpdate) ClearProvider() *CASBackendUpdate {
-	cbu.mutation.ClearProvider()
 	return cbu
 }
 
@@ -147,6 +141,11 @@ func (cbu *CASBackendUpdate) check() error {
 			return &ValidationError{Name: "validation_status", err: fmt.Errorf(`ent: validator failed for field "CASBackend.validation_status": %w`, err)}
 		}
 	}
+	if v, ok := cbu.mutation.Provider(); ok {
+		if err := casbackend.ProviderValidator(v); err != nil {
+			return &ValidationError{Name: "provider", err: fmt.Errorf(`ent: validator failed for field "CASBackend.provider": %w`, err)}
+		}
+	}
 	if _, ok := cbu.mutation.OrganizationID(); cbu.mutation.OrganizationCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "CASBackend.organization"`)
 	}
@@ -165,8 +164,8 @@ func (cbu *CASBackendUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := cbu.mutation.Repo(); ok {
-		_spec.SetField(casbackend.FieldRepo, field.TypeString, value)
+	if value, ok := cbu.mutation.Name(); ok {
+		_spec.SetField(casbackend.FieldName, field.TypeString, value)
 	}
 	if value, ok := cbu.mutation.SecretName(); ok {
 		_spec.SetField(casbackend.FieldSecretName, field.TypeString, value)
@@ -178,10 +177,7 @@ func (cbu *CASBackendUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.SetField(casbackend.FieldValidatedAt, field.TypeTime, value)
 	}
 	if value, ok := cbu.mutation.Provider(); ok {
-		_spec.SetField(casbackend.FieldProvider, field.TypeString, value)
-	}
-	if cbu.mutation.ProviderCleared() {
-		_spec.ClearField(casbackend.FieldProvider, field.TypeString)
+		_spec.SetField(casbackend.FieldProvider, field.TypeEnum, value)
 	}
 	if cbu.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -232,9 +228,9 @@ type CASBackendUpdateOne struct {
 	mutation *CASBackendMutation
 }
 
-// SetRepo sets the "repo" field.
-func (cbuo *CASBackendUpdateOne) SetRepo(s string) *CASBackendUpdateOne {
-	cbuo.mutation.SetRepo(s)
+// SetName sets the "name" field.
+func (cbuo *CASBackendUpdateOne) SetName(s string) *CASBackendUpdateOne {
+	cbuo.mutation.SetName(s)
 	return cbuo
 }
 
@@ -245,15 +241,15 @@ func (cbuo *CASBackendUpdateOne) SetSecretName(s string) *CASBackendUpdateOne {
 }
 
 // SetValidationStatus sets the "validation_status" field.
-func (cbuo *CASBackendUpdateOne) SetValidationStatus(brvs biz.OCIRepoValidationStatus) *CASBackendUpdateOne {
-	cbuo.mutation.SetValidationStatus(brvs)
+func (cbuo *CASBackendUpdateOne) SetValidationStatus(bbvs biz.CASBackendValidationStatus) *CASBackendUpdateOne {
+	cbuo.mutation.SetValidationStatus(bbvs)
 	return cbuo
 }
 
 // SetNillableValidationStatus sets the "validation_status" field if the given value is not nil.
-func (cbuo *CASBackendUpdateOne) SetNillableValidationStatus(brvs *biz.OCIRepoValidationStatus) *CASBackendUpdateOne {
-	if brvs != nil {
-		cbuo.SetValidationStatus(*brvs)
+func (cbuo *CASBackendUpdateOne) SetNillableValidationStatus(bbvs *biz.CASBackendValidationStatus) *CASBackendUpdateOne {
+	if bbvs != nil {
+		cbuo.SetValidationStatus(*bbvs)
 	}
 	return cbuo
 }
@@ -273,22 +269,16 @@ func (cbuo *CASBackendUpdateOne) SetNillableValidatedAt(t *time.Time) *CASBacken
 }
 
 // SetProvider sets the "provider" field.
-func (cbuo *CASBackendUpdateOne) SetProvider(s string) *CASBackendUpdateOne {
-	cbuo.mutation.SetProvider(s)
+func (cbuo *CASBackendUpdateOne) SetProvider(bbp biz.CASBackendProvider) *CASBackendUpdateOne {
+	cbuo.mutation.SetProvider(bbp)
 	return cbuo
 }
 
 // SetNillableProvider sets the "provider" field if the given value is not nil.
-func (cbuo *CASBackendUpdateOne) SetNillableProvider(s *string) *CASBackendUpdateOne {
-	if s != nil {
-		cbuo.SetProvider(*s)
+func (cbuo *CASBackendUpdateOne) SetNillableProvider(bbp *biz.CASBackendProvider) *CASBackendUpdateOne {
+	if bbp != nil {
+		cbuo.SetProvider(*bbp)
 	}
-	return cbuo
-}
-
-// ClearProvider clears the value of the "provider" field.
-func (cbuo *CASBackendUpdateOne) ClearProvider() *CASBackendUpdateOne {
-	cbuo.mutation.ClearProvider()
 	return cbuo
 }
 
@@ -361,6 +351,11 @@ func (cbuo *CASBackendUpdateOne) check() error {
 			return &ValidationError{Name: "validation_status", err: fmt.Errorf(`ent: validator failed for field "CASBackend.validation_status": %w`, err)}
 		}
 	}
+	if v, ok := cbuo.mutation.Provider(); ok {
+		if err := casbackend.ProviderValidator(v); err != nil {
+			return &ValidationError{Name: "provider", err: fmt.Errorf(`ent: validator failed for field "CASBackend.provider": %w`, err)}
+		}
+	}
 	if _, ok := cbuo.mutation.OrganizationID(); cbuo.mutation.OrganizationCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "CASBackend.organization"`)
 	}
@@ -396,8 +391,8 @@ func (cbuo *CASBackendUpdateOne) sqlSave(ctx context.Context) (_node *CASBackend
 			}
 		}
 	}
-	if value, ok := cbuo.mutation.Repo(); ok {
-		_spec.SetField(casbackend.FieldRepo, field.TypeString, value)
+	if value, ok := cbuo.mutation.Name(); ok {
+		_spec.SetField(casbackend.FieldName, field.TypeString, value)
 	}
 	if value, ok := cbuo.mutation.SecretName(); ok {
 		_spec.SetField(casbackend.FieldSecretName, field.TypeString, value)
@@ -409,10 +404,7 @@ func (cbuo *CASBackendUpdateOne) sqlSave(ctx context.Context) (_node *CASBackend
 		_spec.SetField(casbackend.FieldValidatedAt, field.TypeTime, value)
 	}
 	if value, ok := cbuo.mutation.Provider(); ok {
-		_spec.SetField(casbackend.FieldProvider, field.TypeString, value)
-	}
-	if cbuo.mutation.ProviderCleared() {
-		_spec.ClearField(casbackend.FieldProvider, field.TypeString)
+		_spec.SetField(casbackend.FieldProvider, field.TypeEnum, value)
 	}
 	if cbuo.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{

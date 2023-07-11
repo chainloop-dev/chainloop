@@ -26,7 +26,7 @@ import (
 	"github.com/go-kratos/kratos/v2/middleware"
 )
 
-func CheckOrgRequirements(uc biz.OCIRepositoryReader) middleware.Middleware {
+func CheckOrgRequirements(uc biz.CASBackendReader) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			org := CurrentOrg(ctx)
@@ -36,7 +36,7 @@ func CheckOrgRequirements(uc biz.OCIRepositoryReader) middleware.Middleware {
 			}
 
 			// 1 - Figure out main repository for this organization
-			repo, err := uc.FindMainRepo(ctx, org.ID)
+			repo, err := uc.FindMainBackend(ctx, org.ID)
 			if err != nil {
 				return nil, fmt.Errorf("checking for repositories in the org: %w", err)
 			} else if repo == nil {
@@ -62,7 +62,7 @@ func CheckOrgRequirements(uc biz.OCIRepositoryReader) middleware.Middleware {
 }
 
 // validateRepoIfNeeded will re-run a validation and return the updated repository
-func validateRepo(ctx context.Context, uc biz.OCIRepositoryReader, repo *biz.CASBackend) (*biz.CASBackend, error) {
+func validateRepo(ctx context.Context, uc biz.CASBackendReader, repo *biz.CASBackend) (*biz.CASBackend, error) {
 	// re-run the validation
 	if err := uc.PerformValidation(ctx, repo.ID); err != nil {
 		return nil, fmt.Errorf("performing validation: %w", err)

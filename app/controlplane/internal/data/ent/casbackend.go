@@ -20,23 +20,23 @@ type CASBackend struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
-	// Repo holds the value of the "repo" field.
-	Repo string `json:"repo,omitempty"`
+	// Name holds the value of the "name" field.
+	Name string `json:"name,omitempty"`
 	// SecretName holds the value of the "secret_name" field.
 	SecretName string `json:"secret_name,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// ValidationStatus holds the value of the "validation_status" field.
-	ValidationStatus biz.OCIRepoValidationStatus `json:"validation_status,omitempty"`
+	ValidationStatus biz.CASBackendValidationStatus `json:"validation_status,omitempty"`
 	// ValidatedAt holds the value of the "validated_at" field.
 	ValidatedAt time.Time `json:"validated_at,omitempty"`
 	// Provider holds the value of the "provider" field.
-	Provider string `json:"provider,omitempty"`
+	Provider biz.CASBackendProvider `json:"provider,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the CASBackendQuery when eager-loading is set.
-	Edges                         CASBackendEdges `json:"edges"`
-	organization_oci_repositories *uuid.UUID
-	selectValues                  sql.SelectValues
+	Edges                     CASBackendEdges `json:"edges"`
+	organization_cas_backends *uuid.UUID
+	selectValues              sql.SelectValues
 }
 
 // CASBackendEdges holds the relations/edges for other nodes in the graph.
@@ -66,13 +66,13 @@ func (*CASBackend) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case casbackend.FieldRepo, casbackend.FieldSecretName, casbackend.FieldValidationStatus, casbackend.FieldProvider:
+		case casbackend.FieldName, casbackend.FieldSecretName, casbackend.FieldValidationStatus, casbackend.FieldProvider:
 			values[i] = new(sql.NullString)
 		case casbackend.FieldCreatedAt, casbackend.FieldValidatedAt:
 			values[i] = new(sql.NullTime)
 		case casbackend.FieldID:
 			values[i] = new(uuid.UUID)
-		case casbackend.ForeignKeys[0]: // organization_oci_repositories
+		case casbackend.ForeignKeys[0]: // organization_cas_backends
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			values[i] = new(sql.UnknownType)
@@ -95,11 +95,11 @@ func (cb *CASBackend) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				cb.ID = *value
 			}
-		case casbackend.FieldRepo:
+		case casbackend.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field repo", values[i])
+				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
-				cb.Repo = value.String
+				cb.Name = value.String
 			}
 		case casbackend.FieldSecretName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -117,7 +117,7 @@ func (cb *CASBackend) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field validation_status", values[i])
 			} else if value.Valid {
-				cb.ValidationStatus = biz.OCIRepoValidationStatus(value.String)
+				cb.ValidationStatus = biz.CASBackendValidationStatus(value.String)
 			}
 		case casbackend.FieldValidatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -129,14 +129,14 @@ func (cb *CASBackend) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field provider", values[i])
 			} else if value.Valid {
-				cb.Provider = value.String
+				cb.Provider = biz.CASBackendProvider(value.String)
 			}
 		case casbackend.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
-				return fmt.Errorf("unexpected type %T for field organization_oci_repositories", values[i])
+				return fmt.Errorf("unexpected type %T for field organization_cas_backends", values[i])
 			} else if value.Valid {
-				cb.organization_oci_repositories = new(uuid.UUID)
-				*cb.organization_oci_repositories = *value.S.(*uuid.UUID)
+				cb.organization_cas_backends = new(uuid.UUID)
+				*cb.organization_cas_backends = *value.S.(*uuid.UUID)
 			}
 		default:
 			cb.selectValues.Set(columns[i], values[i])
@@ -179,8 +179,8 @@ func (cb *CASBackend) String() string {
 	var builder strings.Builder
 	builder.WriteString("CASBackend(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", cb.ID))
-	builder.WriteString("repo=")
-	builder.WriteString(cb.Repo)
+	builder.WriteString("name=")
+	builder.WriteString(cb.Name)
 	builder.WriteString(", ")
 	builder.WriteString("secret_name=")
 	builder.WriteString(cb.SecretName)
@@ -195,7 +195,7 @@ func (cb *CASBackend) String() string {
 	builder.WriteString(cb.ValidatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("provider=")
-	builder.WriteString(cb.Provider)
+	builder.WriteString(fmt.Sprintf("%v", cb.Provider))
 	builder.WriteByte(')')
 	return builder.String()
 }

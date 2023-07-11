@@ -30,7 +30,7 @@ import (
 func TestShouldRevalidate(t *testing.T) {
 	testCases := []struct {
 		name            string
-		repoStatus      biz.OCIRepoValidationStatus
+		repoStatus      biz.CASBackendValidationStatus
 		repoValidatedAt time.Time
 		expected        bool
 	}{
@@ -78,7 +78,7 @@ func TestValidateRepo(t *testing.T) {
 	repo := &biz.CASBackend{ID: uuid.NewString(), ValidatedAt: toTimePtr(time.Now())}
 
 	t.Run("validation error", func(t *testing.T) {
-		useCase := mocks.NewOCIRepositoryReader(t)
+		useCase := mocks.NewCASBackendReader(t)
 		useCase.On("PerformValidation", ctx, repo.ID).Return(errors.New("validation error"))
 		got, err := validateRepo(ctx, useCase, repo)
 		assert.Error(err)
@@ -86,7 +86,7 @@ func TestValidateRepo(t *testing.T) {
 	})
 
 	t.Run("validation ok, returns updated repo", func(t *testing.T) {
-		useCase := mocks.NewOCIRepositoryReader(t)
+		useCase := mocks.NewCASBackendReader(t)
 		useCase.On("PerformValidation", ctx, repo.ID).Return(nil)
 
 		want := &biz.CASBackend{ID: repo.ID, ValidatedAt: toTimePtr(time.Now())}

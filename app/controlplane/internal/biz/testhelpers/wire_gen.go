@@ -33,9 +33,9 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	}
 	membershipRepo := data.NewMembershipRepo(dataData, logger)
 	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, logger)
-	ociRepositoryRepo := data.NewCASBackendRepo(dataData, logger)
+	casBackendRepo := data.NewCASBackendRepo(dataData, logger)
 	backendProvider := oci.NewBackendProvider(readerWriter)
-	ociRepositoryUseCase := biz.NewOCIRepositoryUseCase(ociRepositoryRepo, readerWriter, backendProvider, logger)
+	ociRepositoryUseCase := biz.NewOCIRepositoryUseCase(casBackendRepo, readerWriter, backendProvider, logger)
 	integrationRepo := data.NewIntegrationRepo(dataData, logger)
 	integrationAttachmentRepo := data.NewIntegrationAttachmentRepo(dataData, logger)
 	workflowRepo := data.NewWorkflowRepo(dataData, logger)
@@ -73,7 +73,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		Data:                   dataData,
 		L:                      logger,
 		Membership:             membershipUseCase,
-		OCIRepo:                ociRepositoryUseCase,
+		CASBackendRepo:                ociRepositoryUseCase,
 		Integration:            integrationUseCase,
 		Organization:           organizationUseCase,
 		WorkflowContract:       workflowContractUseCase,

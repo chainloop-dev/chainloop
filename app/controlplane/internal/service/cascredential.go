@@ -31,10 +31,10 @@ type CASCredentialsService struct {
 	pb.UnimplementedCASCredentialsServiceServer
 
 	casUC *biz.CASCredentialsUseCase
-	ociUC *biz.OCIRepositoryUseCase
+	ociUC *biz.CASBackendUseCase
 }
 
-func NewCASCredentialsService(casUC *biz.CASCredentialsUseCase, ociUC *biz.OCIRepositoryUseCase, opts ...NewOpt) *CASCredentialsService {
+func NewCASCredentialsService(casUC *biz.CASCredentialsUseCase, ociUC *biz.CASBackendUseCase, opts ...NewOpt) *CASCredentialsService {
 	return &CASCredentialsService{
 		service: newService(opts...),
 		casUC:   casUC,
@@ -58,7 +58,7 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 	}
 
 	// Get repository to provide the secret name
-	repo, err := s.ociUC.FindMainRepo(ctx, currentOrg.ID)
+	repo, err := s.ociUC.FindMainBackend(ctx, currentOrg.ID)
 	if err != nil {
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}
