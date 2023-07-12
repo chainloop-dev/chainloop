@@ -31,10 +31,10 @@ type OCIRepositoryService struct {
 	pb.UnimplementedOCIRepositoryServiceServer
 	*service
 
-	uc *biz.OCIRepositoryUseCase
+	uc *biz.CASBackendUseCase
 }
 
-func NewOCIRepositoryService(uc *biz.OCIRepositoryUseCase, opts ...NewOpt) *OCIRepositoryService {
+func NewOCIRepositoryService(uc *biz.CASBackendUseCase, opts ...NewOpt) *OCIRepositoryService {
 	return &OCIRepositoryService{
 		service: newService(opts...),
 		uc:      uc,
@@ -67,7 +67,8 @@ func (s *OCIRepositoryService) Save(ctx context.Context, req *pb.OCIRepositorySe
 		return nil, errors.BadRequest("wrong credentials", "the provided registry credentials are invalid")
 	}
 
-	_, err = s.uc.CreateOrUpdate(ctx, currentOrg.ID, req.Repository, username, password)
+	// For now we only support one backend which is set as default
+	_, err = s.uc.CreateOrUpdate(ctx, currentOrg.ID, req.Repository, username, password, biz.CASBackendOCI, true)
 	if err != nil {
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}
@@ -75,15 +76,15 @@ func (s *OCIRepositoryService) Save(ctx context.Context, req *pb.OCIRepositorySe
 	return &pb.OCIRepositoryServiceSaveResponse{}, nil
 }
 
-func bizOCIRepoToPb(repo *biz.OCIRepository) *pb.OCIRepositoryItem {
+func bizOCIRepoToPb(repo *biz.CASBackend) *pb.OCIRepositoryItem {
 	r := &pb.OCIRepositoryItem{
-		Id: repo.ID, Repo: repo.Repo, CreatedAt: timestamppb.New(*repo.CreatedAt),
+		Id: repo.ID, Repo: repo.Name, CreatedAt: timestamppb.New(*repo.CreatedAt),
 	}
 
 	switch repo.ValidationStatus {
-	case biz.OCIRepoValidationOK:
+	case biz.CASBackendValidationOK:
 		r.ValidationStatus = pb.OCIRepositoryItem_VALIDATION_STATUS_OK
-	case biz.OCIRepoValidationFailed:
+	case biz.CASBackendValidationFailed:
 		r.ValidationStatus = pb.OCIRepositoryItem_VALIDATION_STATUS_INVALID
 	}
 

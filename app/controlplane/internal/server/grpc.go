@@ -45,17 +45,17 @@ import (
 
 type Opts struct {
 	// UseCases
-	UserUseCase          *biz.UserUseCase
-	RobotAccountUseCase  *biz.RobotAccountUseCase
-	OCIRepositoryUseCase *biz.OCIRepositoryUseCase
-	CASClientUseCase     *biz.CASClientUseCase
-	IntegrationUseCase   *biz.IntegrationUseCase
+	UserUseCase         *biz.UserUseCase
+	RobotAccountUseCase *biz.RobotAccountUseCase
+	CASBackendUseCase   *biz.CASBackendUseCase
+	CASClientUseCase    *biz.CASClientUseCase
+	IntegrationUseCase  *biz.IntegrationUseCase
 	// Services
 	WorkflowSvc         *service.WorkflowService
 	AuthSvc             *service.AuthService
 	RobotAccountSvc     *service.RobotAccountService
 	WorkflowRunSvc      *service.WorkflowRunService
-	AttesstationSvc     *service.AttestationService
+	AttestationSvc      *service.AttestationService
 	WorkflowContractSvc *service.WorkflowContractService
 	ContextSvc          *service.ContextService
 	CASCredsSvc         *service.CASCredentialsService
@@ -92,7 +92,7 @@ func NewGRPCServer(opts *Opts) *grpc.Server {
 	v1.RegisterStatusServiceServer(srv, service.NewStatusService(opts.AuthSvc.AuthURLs.Login, Version, opts.CASClientUseCase))
 	v1.RegisterRobotAccountServiceServer(srv, opts.RobotAccountSvc)
 	v1.RegisterWorkflowRunServiceServer(srv, opts.WorkflowRunSvc)
-	v1.RegisterAttestationServiceServer(srv, opts.AttesstationSvc)
+	v1.RegisterAttestationServiceServer(srv, opts.AttestationSvc)
 	v1.RegisterWorkflowContractServiceServer(srv, opts.WorkflowContractSvc)
 	v1.RegisterCASCredentialsServiceServer(srv, opts.CASCredsSvc)
 	v1.RegisterOCIRepositoryServiceServer(srv, opts.OCIRepositorySvc)
@@ -137,7 +137,7 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 			// 3 - Make sure its account is fully functional
 			selector.Server(
 				usercontext.CheckUserInAllowList(opts.AuthConfig.AllowList),
-				usercontext.CheckOrgRequirements(opts.OCIRepositoryUseCase),
+				usercontext.CheckOrgRequirements(opts.CASBackendUseCase),
 			).Match(requireFullyConfiguredOrgMatcher()).Build(),
 		).Match(requireCurrentUserMatcher()).Build(),
 	)

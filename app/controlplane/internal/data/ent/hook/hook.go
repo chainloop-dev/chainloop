@@ -9,6 +9,18 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent"
 )
 
+// The CASBackendFunc type is an adapter to allow the use of ordinary
+// function as CASBackend mutator.
+type CASBackendFunc func(context.Context, *ent.CASBackendMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CASBackendFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CASBackendMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CASBackendMutation", m)
+}
+
 // The IntegrationFunc type is an adapter to allow the use of ordinary
 // function as Integration mutator.
 type IntegrationFunc func(context.Context, *ent.IntegrationMutation) (ent.Value, error)
@@ -43,18 +55,6 @@ func (f MembershipFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, 
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MembershipMutation", m)
-}
-
-// The OCIRepositoryFunc type is an adapter to allow the use of ordinary
-// function as OCIRepository mutator.
-type OCIRepositoryFunc func(context.Context, *ent.OCIRepositoryMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f OCIRepositoryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.OCIRepositoryMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.OCIRepositoryMutation", m)
 }
 
 // The OrganizationFunc type is an adapter to allow the use of ordinary

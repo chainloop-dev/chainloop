@@ -26,32 +26,32 @@ import (
 	"github.com/google/uuid"
 )
 
-// OCIRepository holds the schema definition for the OCIRepository entity.
-type OCIRepository struct {
+// CASBackend holds the schema definition for the CASBackend entity.
+type CASBackend struct {
 	ent.Schema
 }
 
-// Fields of the OCIRepository.
-func (OCIRepository) Fields() []ent.Field {
+func (CASBackend) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),
-		field.String("repo"),
+		field.String("name"),
 		field.String("secret_name"),
 		field.Time("created_at").
 			Default(time.Now).
 			Immutable().
 			Annotations(&entsql.Annotation{Default: "CURRENT_TIMESTAMP"}),
 		field.Enum("validation_status").
-			GoType(biz.OCIRepoValidationStatus("")).
-			Default(string(biz.OCIRepoValidationOK)),
+			GoType(biz.CASBackendValidationStatus("")).
+			Default(string(biz.CASBackendValidationOK)),
 		field.Time("validated_at").Default(time.Now).
 			Annotations(&entsql.Annotation{Default: "CURRENT_TIMESTAMP"}),
+		field.Enum("provider").GoType(biz.CASBackendProvider("")),
+		field.Bool("default").Default(false),
 	}
 }
 
-// Edges of the OCIRepository.
-func (OCIRepository) Edges() []ent.Edge {
+func (CASBackend) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("organization", Organization.Type).Ref("oci_repositories").Unique().Required(),
+		edge.From("organization", Organization.Type).Ref("cas_backends").Unique().Required(),
 	}
 }

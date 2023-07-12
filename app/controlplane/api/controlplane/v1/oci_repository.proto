@@ -23,7 +23,11 @@ import "errors/v1/errors.proto";
 
 service OCIRepositoryService {
 	// Save the OCI repository overriding the existing one (for now)
-	rpc Save (OCIRepositoryServiceSaveRequest) returns (OCIRepositoryServiceSaveResponse);
+	rpc Save (OCIRepositoryServiceSaveRequest) returns (OCIRepositoryServiceSaveResponse) {
+		// Will get replaced by CASBackends API endpoint
+		// We are maintaining this for compatibility reasons with old CLIs
+		option deprecated = true;
+	}
 }
 
 message OCIRepositoryServiceSaveRequest {

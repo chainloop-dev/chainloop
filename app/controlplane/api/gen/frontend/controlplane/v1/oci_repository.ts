@@ -86,21 +86,21 @@ export const OCIRepositoryServiceSaveRequest = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.repository = reader.string();
           continue;
         case 2:
-          if (tag != 18) {
+          if (tag !== 18) {
             break;
           }
 
           message.keyPair = OCIRepositoryServiceSaveRequest_Keypair.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -162,21 +162,21 @@ export const OCIRepositoryServiceSaveRequest_Keypair = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.username = reader.string();
           continue;
         case 2:
-          if (tag != 18) {
+          if (tag !== 18) {
             break;
           }
 
           message.password = reader.string();
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -231,7 +231,7 @@ export const OCIRepositoryServiceSaveResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -263,7 +263,11 @@ export const OCIRepositoryServiceSaveResponse = {
 };
 
 export interface OCIRepositoryService {
-  /** Save the OCI repository overriding the existing one (for now) */
+  /**
+   * Save the OCI repository overriding the existing one (for now)
+   *
+   * @deprecated
+   */
   Save(
     request: DeepPartial<OCIRepositoryServiceSaveRequest>,
     metadata?: grpc.Metadata,

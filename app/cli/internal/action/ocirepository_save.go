@@ -36,6 +36,8 @@ type NewOCIRepositorySaveOpts struct {
 func (action *OCIRepositorySave) Run(opts *NewOCIRepositorySaveOpts) error {
 	client := pb.NewOCIRepositoryServiceClient(action.cfg.CPConnection)
 
+	// Disable SA1019: client.Save is deprecated: Do not use. Save the OCI repository overriding the existing one (for now) (staticcheck)
+	//nolint:staticcheck
 	_, err := client.Save(context.Background(), &pb.OCIRepositoryServiceSaveRequest{
 		Repository: opts.Repo,
 		// We currently only support raw keypairs, which does not include AWS keyparis

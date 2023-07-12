@@ -36,17 +36,17 @@ type OrganizationRepo interface {
 }
 
 type OrganizationUseCase struct {
-	orgRepo       OrganizationRepo
-	logger        *log.Helper
-	ociUseCase    *OCIRepositoryUseCase
-	integrationUC *IntegrationUseCase
+	orgRepo           OrganizationRepo
+	logger            *log.Helper
+	casBackendUseCase *CASBackendUseCase
+	integrationUC     *IntegrationUseCase
 }
 
-func NewOrganizationUseCase(repo OrganizationRepo, repoUC *OCIRepositoryUseCase, iUC *IntegrationUseCase, logger log.Logger) *OrganizationUseCase {
+func NewOrganizationUseCase(repo OrganizationRepo, repoUC *CASBackendUseCase, iUC *IntegrationUseCase, logger log.Logger) *OrganizationUseCase {
 	return &OrganizationUseCase{orgRepo: repo,
-		logger:        log.NewHelper(logger),
-		ociUseCase:    repoUC,
-		integrationUC: iUC,
+		logger:            log.NewHelper(logger),
+		casBackendUseCase: repoUC,
+		integrationUC:     iUC,
 	}
 }
 
@@ -103,7 +103,7 @@ func (uc *OrganizationUseCase) Delete(ctx context.Context, id string) error {
 
 	// Delete the associated repository
 	// Currently there is only one repository per organization
-	ociRepository, err := uc.ociUseCase.FindMainRepo(ctx, org.ID)
+	ociRepository, err := uc.casBackendUseCase.FindDefaultBackend(ctx, org.ID)
 	if err != nil {
 		return err
 	}
@@ -111,7 +111,7 @@ func (uc *OrganizationUseCase) Delete(ctx context.Context, id string) error {
 	if ociRepository != nil {
 		// We make sure to call the OCI repository use case to delete the repository
 		// including the external secret
-		if err := uc.ociUseCase.Delete(ctx, ociRepository.ID); err != nil {
+		if err := uc.casBackendUseCase.Delete(ctx, ociRepository.ID); err != nil {
 			return err
 		}
 	}

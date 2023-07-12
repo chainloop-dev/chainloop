@@ -30,31 +30,31 @@ import (
 func TestShouldRevalidate(t *testing.T) {
 	testCases := []struct {
 		name            string
-		repoStatus      biz.OCIRepoValidationStatus
+		repoStatus      biz.CASBackendValidationStatus
 		repoValidatedAt time.Time
 		expected        bool
 	}{
 		{
 			name:            "should revalidate if status is not ok and new",
-			repoStatus:      biz.OCIRepoValidationFailed,
+			repoStatus:      biz.CASBackendValidationFailed,
 			repoValidatedAt: time.Now(),
 			expected:        true,
 		},
 		{
 			name:            "should revalidate if status is not ok and old",
-			repoStatus:      biz.OCIRepoValidationFailed,
+			repoStatus:      biz.CASBackendValidationFailed,
 			repoValidatedAt: time.Now().Add(-2 * validationTimeOffset),
 			expected:        true,
 		},
 		{
 			name:            "should revalidate if status is ok but validated at is too old",
-			repoStatus:      biz.OCIRepoValidationOK,
+			repoStatus:      biz.CASBackendValidationOK,
 			repoValidatedAt: time.Now().Add(-2 * validationTimeOffset),
 			expected:        true,
 		},
 		{
 			name:            "should not revalidate if status is ok and validated at is recent",
-			repoStatus:      biz.OCIRepoValidationOK,
+			repoStatus:      biz.CASBackendValidationOK,
 			repoValidatedAt: time.Now().Add(-(validationTimeOffset - time.Second)),
 			expected:        false,
 		},
@@ -62,7 +62,7 @@ func TestShouldRevalidate(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			repo := &biz.OCIRepository{
+			repo := &biz.CASBackend{
 				ValidationStatus: tc.repoStatus,
 				ValidatedAt:      &tc.repoValidatedAt,
 			}
@@ -75,10 +75,10 @@ func TestShouldRevalidate(t *testing.T) {
 func TestValidateRepo(t *testing.T) {
 	ctx := context.Background()
 	assert := assert.New(t)
-	repo := &biz.OCIRepository{ID: uuid.NewString(), ValidatedAt: toTimePtr(time.Now())}
+	repo := &biz.CASBackend{ID: uuid.NewString(), ValidatedAt: toTimePtr(time.Now())}
 
 	t.Run("validation error", func(t *testing.T) {
-		useCase := mocks.NewOCIRepositoryReader(t)
+		useCase := mocks.NewCASBackendReader(t)
 		useCase.On("PerformValidation", ctx, repo.ID).Return(errors.New("validation error"))
 		got, err := validateRepo(ctx, useCase, repo)
 		assert.Error(err)
@@ -86,10 +86,10 @@ func TestValidateRepo(t *testing.T) {
 	})
 
 	t.Run("validation ok, returns updated repo", func(t *testing.T) {
-		useCase := mocks.NewOCIRepositoryReader(t)
+		useCase := mocks.NewCASBackendReader(t)
 		useCase.On("PerformValidation", ctx, repo.ID).Return(nil)
 
-		want := &biz.OCIRepository{ID: repo.ID, ValidatedAt: toTimePtr(time.Now())}
+		want := &biz.CASBackend{ID: repo.ID, ValidatedAt: toTimePtr(time.Now())}
 		useCase.On("FindByID", ctx, repo.ID).Return(want, nil)
 		got, err := validateRepo(ctx, useCase, repo)
 		assert.NoError(err)

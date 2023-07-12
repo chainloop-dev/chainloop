@@ -10,9 +10,9 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integration"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/membership"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/ocirepository"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowcontract"
@@ -113,19 +113,19 @@ func (oc *OrganizationCreate) AddWorkflows(w ...*Workflow) *OrganizationCreate {
 	return oc.AddWorkflowIDs(ids...)
 }
 
-// AddOciRepositoryIDs adds the "oci_repositories" edge to the OCIRepository entity by IDs.
-func (oc *OrganizationCreate) AddOciRepositoryIDs(ids ...uuid.UUID) *OrganizationCreate {
-	oc.mutation.AddOciRepositoryIDs(ids...)
+// AddCasBackendIDs adds the "cas_backends" edge to the CASBackend entity by IDs.
+func (oc *OrganizationCreate) AddCasBackendIDs(ids ...uuid.UUID) *OrganizationCreate {
+	oc.mutation.AddCasBackendIDs(ids...)
 	return oc
 }
 
-// AddOciRepositories adds the "oci_repositories" edges to the OCIRepository entity.
-func (oc *OrganizationCreate) AddOciRepositories(o ...*OCIRepository) *OrganizationCreate {
-	ids := make([]uuid.UUID, len(o))
-	for i := range o {
-		ids[i] = o[i].ID
+// AddCasBackends adds the "cas_backends" edges to the CASBackend entity.
+func (oc *OrganizationCreate) AddCasBackends(c ...*CASBackend) *OrganizationCreate {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
 	}
-	return oc.AddOciRepositoryIDs(ids...)
+	return oc.AddCasBackendIDs(ids...)
 }
 
 // AddIntegrationIDs adds the "integrations" edge to the Integration entity by IDs.
@@ -291,15 +291,15 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := oc.mutation.OciRepositoriesIDs(); len(nodes) > 0 {
+	if nodes := oc.mutation.CasBackendsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   organization.OciRepositoriesTable,
-			Columns: []string{organization.OciRepositoriesColumn},
+			Table:   organization.CasBackendsTable,
+			Columns: []string{organization.CasBackendsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ocirepository.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(casbackend.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

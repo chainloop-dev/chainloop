@@ -26,7 +26,7 @@ import (
 	"github.com/go-kratos/kratos/v2/middleware"
 )
 
-func CheckOrgRequirements(uc biz.OCIRepositoryReader) middleware.Middleware {
+func CheckOrgRequirements(uc biz.CASBackendReader) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			org := CurrentOrg(ctx)
@@ -36,7 +36,7 @@ func CheckOrgRequirements(uc biz.OCIRepositoryReader) middleware.Middleware {
 			}
 
 			// 1 - Figure out main repository for this organization
-			repo, err := uc.FindMainRepo(ctx, org.ID)
+			repo, err := uc.FindDefaultBackend(ctx, org.ID)
 			if err != nil {
 				return nil, fmt.Errorf("checking for repositories in the org: %w", err)
 			} else if repo == nil {
@@ -52,7 +52,7 @@ func CheckOrgRequirements(uc biz.OCIRepositoryReader) middleware.Middleware {
 			}
 
 			// 2 - compare the status
-			if repo.ValidationStatus != biz.OCIRepoValidationOK {
+			if repo.ValidationStatus != biz.CASBackendValidationOK {
 				return nil, v1.ErrorOciRepositoryErrorReasonInvalid("your OCI repository can't be reached")
 			}
 
@@ -62,7 +62,7 @@ func CheckOrgRequirements(uc biz.OCIRepositoryReader) middleware.Middleware {
 }
 
 // validateRepoIfNeeded will re-run a validation and return the updated repository
-func validateRepo(ctx context.Context, uc biz.OCIRepositoryReader, repo *biz.OCIRepository) (*biz.OCIRepository, error) {
+func validateRepo(ctx context.Context, uc biz.CASBackendReader, repo *biz.CASBackend) (*biz.CASBackend, error) {
 	// re-run the validation
 	if err := uc.PerformValidation(ctx, repo.ID); err != nil {
 		return nil, fmt.Errorf("performing validation: %w", err)
@@ -81,9 +81,9 @@ const validationTimeOffset = 5 * time.Minute
 
 // Since this check happens synchronously on every request it has a big performance impact
 // that's why we run it only in refresh windows
-func shouldRevalidate(repo *biz.OCIRepository) bool {
+func shouldRevalidate(repo *biz.CASBackend) bool {
 	// If the validation is currently failed we want to make sure we re-validate
-	if repo.ValidationStatus == biz.OCIRepoValidationFailed {
+	if repo.ValidationStatus == biz.CASBackendValidationFailed {
 		return true
 	}
 

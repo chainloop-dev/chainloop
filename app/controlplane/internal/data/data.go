@@ -46,7 +46,7 @@ var ProviderSet = wire.NewSet(
 	NewWorkflowRunRepo,
 	NewOrganizationRepo,
 	NewWorkflowContractRepo,
-	NewOCIRepositoryRepo,
+	NewCASBackendRepo,
 	NewOrgMetricsRepo,
 	NewIntegrationRepo,
 	NewIntegrationAttachmentRepo,

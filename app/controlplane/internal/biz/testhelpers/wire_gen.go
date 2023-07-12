@@ -33,9 +33,9 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	}
 	membershipRepo := data.NewMembershipRepo(dataData, logger)
 	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, logger)
-	ociRepositoryRepo := data.NewOCIRepositoryRepo(dataData, logger)
+	casBackendRepo := data.NewCASBackendRepo(dataData, logger)
 	backendProvider := oci.NewBackendProvider(readerWriter)
-	ociRepositoryUseCase := biz.NewOCIRepositoryUseCase(ociRepositoryRepo, readerWriter, backendProvider, logger)
+	casBackendUseCase := biz.NewCASBackendUseCase(casBackendRepo, readerWriter, backendProvider, logger)
 	integrationRepo := data.NewIntegrationRepo(dataData, logger)
 	integrationAttachmentRepo := data.NewIntegrationAttachmentRepo(dataData, logger)
 	workflowRepo := data.NewWorkflowRepo(dataData, logger)
@@ -48,7 +48,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	}
 	integrationUseCase := biz.NewIntegrationUseCase(newIntegrationUseCaseOpts)
 	organizationRepo := data.NewOrganizationRepo(dataData, logger)
-	organizationUseCase := biz.NewOrganizationUseCase(organizationRepo, ociRepositoryUseCase, integrationUseCase, logger)
+	organizationUseCase := biz.NewOrganizationUseCase(organizationRepo, casBackendUseCase, integrationUseCase, logger)
 	workflowContractRepo := data.NewWorkflowContractRepo(dataData, logger)
 	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, logger)
 	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, workflowContractUseCase, logger)
@@ -73,7 +73,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		Data:                   dataData,
 		L:                      logger,
 		Membership:             membershipUseCase,
-		OCIRepo:                ociRepositoryUseCase,
+		CASBackendRepo:         casBackendUseCase,
 		Integration:            integrationUseCase,
 		Organization:           organizationUseCase,
 		WorkflowContract:       workflowContractUseCase,

@@ -25,8 +25,8 @@ const (
 	EdgeWorkflowContracts = "workflow_contracts"
 	// EdgeWorkflows holds the string denoting the workflows edge name in mutations.
 	EdgeWorkflows = "workflows"
-	// EdgeOciRepositories holds the string denoting the oci_repositories edge name in mutations.
-	EdgeOciRepositories = "oci_repositories"
+	// EdgeCasBackends holds the string denoting the cas_backends edge name in mutations.
+	EdgeCasBackends = "cas_backends"
 	// EdgeIntegrations holds the string denoting the integrations edge name in mutations.
 	EdgeIntegrations = "integrations"
 	// Table holds the table name of the organization in the database.
@@ -52,13 +52,13 @@ const (
 	WorkflowsInverseTable = "workflows"
 	// WorkflowsColumn is the table column denoting the workflows relation/edge.
 	WorkflowsColumn = "organization_id"
-	// OciRepositoriesTable is the table that holds the oci_repositories relation/edge.
-	OciRepositoriesTable = "oci_repositories"
-	// OciRepositoriesInverseTable is the table name for the OCIRepository entity.
-	// It exists in this package in order to avoid circular dependency with the "ocirepository" package.
-	OciRepositoriesInverseTable = "oci_repositories"
-	// OciRepositoriesColumn is the table column denoting the oci_repositories relation/edge.
-	OciRepositoriesColumn = "organization_oci_repositories"
+	// CasBackendsTable is the table that holds the cas_backends relation/edge.
+	CasBackendsTable = "cas_backends"
+	// CasBackendsInverseTable is the table name for the CASBackend entity.
+	// It exists in this package in order to avoid circular dependency with the "casbackend" package.
+	CasBackendsInverseTable = "cas_backends"
+	// CasBackendsColumn is the table column denoting the cas_backends relation/edge.
+	CasBackendsColumn = "organization_cas_backends"
 	// IntegrationsTable is the table that holds the integrations relation/edge.
 	IntegrationsTable = "integrations"
 	// IntegrationsInverseTable is the table name for the Integration entity.
@@ -154,17 +154,17 @@ func ByWorkflows(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
-// ByOciRepositoriesCount orders the results by oci_repositories count.
-func ByOciRepositoriesCount(opts ...sql.OrderTermOption) OrderOption {
+// ByCasBackendsCount orders the results by cas_backends count.
+func ByCasBackendsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newOciRepositoriesStep(), opts...)
+		sqlgraph.OrderByNeighborsCount(s, newCasBackendsStep(), opts...)
 	}
 }
 
-// ByOciRepositories orders the results by oci_repositories terms.
-func ByOciRepositories(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+// ByCasBackends orders the results by cas_backends terms.
+func ByCasBackends(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newOciRepositoriesStep(), append([]sql.OrderTerm{term}, terms...)...)
+		sqlgraph.OrderByNeighborTerms(s, newCasBackendsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
@@ -202,11 +202,11 @@ func newWorkflowsStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.O2M, false, WorkflowsTable, WorkflowsColumn),
 	)
 }
-func newOciRepositoriesStep() *sqlgraph.Step {
+func newCasBackendsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(OciRepositoriesInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, OciRepositoriesTable, OciRepositoriesColumn),
+		sqlgraph.To(CasBackendsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, CasBackendsTable, CasBackendsColumn),
 	)
 }
 func newIntegrationsStep() *sqlgraph.Step {

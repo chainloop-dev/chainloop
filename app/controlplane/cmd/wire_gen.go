@@ -31,9 +31,9 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	membershipRepo := data.NewMembershipRepo(dataData, logger)
 	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, logger)
 	organizationRepo := data.NewOrganizationRepo(dataData, logger)
-	ociRepositoryRepo := data.NewOCIRepositoryRepo(dataData, logger)
+	casBackendRepo := data.NewCASBackendRepo(dataData, logger)
 	backendProvider := oci.NewBackendProvider(readerWriter)
-	ociRepositoryUseCase := biz.NewOCIRepositoryUseCase(ociRepositoryRepo, readerWriter, backendProvider, logger)
+	casBackendUseCase := biz.NewCASBackendUseCase(casBackendRepo, readerWriter, backendProvider, logger)
 	integrationRepo := data.NewIntegrationRepo(dataData, logger)
 	integrationAttachmentRepo := data.NewIntegrationAttachmentRepo(dataData, logger)
 	workflowRepo := data.NewWorkflowRepo(dataData, logger)
@@ -45,7 +45,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		Logger:  logger,
 	}
 	integrationUseCase := biz.NewIntegrationUseCase(newIntegrationUseCaseOpts)
-	organizationUseCase := biz.NewOrganizationUseCase(organizationRepo, ociRepositoryUseCase, integrationUseCase, logger)
+	organizationUseCase := biz.NewOrganizationUseCase(organizationRepo, casBackendUseCase, integrationUseCase, logger)
 	newUserUseCaseParams := &biz.NewUserUseCaseParams{
 		UserRepo:            userRepo,
 		MembershipUseCase:   membershipUseCase,
@@ -95,7 +95,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		WorkflowRunUC:      workflowRunUseCase,
 		WorkflowUC:         workflowUseCase,
 		WorkflowContractUC: workflowContractUseCase,
-		OCIUC:              ociRepositoryUseCase,
+		OCIUC:              casBackendUseCase,
 		CredsReader:        readerWriter,
 		IntegrationUseCase: integrationUseCase,
 		CasCredsUseCase:    casCredentialsUseCase,
@@ -104,8 +104,8 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	attestationService := service.NewAttestationService(newAttestationServiceOpts)
 	workflowContractService := service.NewWorkflowSchemaService(workflowContractUseCase, v2...)
-	contextService := service.NewContextService(ociRepositoryUseCase, v2...)
-	casCredentialsService := service.NewCASCredentialsService(casCredentialsUseCase, ociRepositoryUseCase, v2...)
+	contextService := service.NewContextService(casBackendUseCase, v2...)
+	casCredentialsService := service.NewCASCredentialsService(casCredentialsUseCase, casBackendUseCase, v2...)
 	orgMetricsRepo := data.NewOrgMetricsRepo(dataData, logger)
 	orgMetricsUseCase, err := biz.NewOrgMetricsUseCase(orgMetricsRepo, logger)
 	if err != nil {
@@ -113,31 +113,31 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		return nil, nil, err
 	}
 	orgMetricsService := service.NewOrgMetricsService(orgMetricsUseCase, v2...)
-	ociRepositoryService := service.NewOCIRepositoryService(ociRepositoryUseCase, v2...)
+	ociRepositoryService := service.NewOCIRepositoryService(casBackendUseCase, v2...)
 	integrationsService := service.NewIntegrationsService(integrationUseCase, workflowUseCase, availablePlugins, v2...)
 	organizationService := service.NewOrganizationService(membershipUseCase, v2...)
 	opts := &server.Opts{
-		UserUseCase:          userUseCase,
-		RobotAccountUseCase:  robotAccountUseCase,
-		OCIRepositoryUseCase: ociRepositoryUseCase,
-		CASClientUseCase:     casClientUseCase,
-		IntegrationUseCase:   integrationUseCase,
-		WorkflowSvc:          workflowService,
-		AuthSvc:              authService,
-		RobotAccountSvc:      robotAccountService,
-		WorkflowRunSvc:       workflowRunService,
-		AttesstationSvc:      attestationService,
-		WorkflowContractSvc:  workflowContractService,
-		ContextSvc:           contextService,
-		CASCredsSvc:          casCredentialsService,
-		OrgMetricsSvc:        orgMetricsService,
-		OCIRepositorySvc:     ociRepositoryService,
-		IntegrationsSvc:      integrationsService,
-		OrganizationSvc:      organizationService,
-		Logger:               logger,
-		ServerConfig:         confServer,
-		AuthConfig:           auth,
-		Credentials:          readerWriter,
+		UserUseCase:         userUseCase,
+		RobotAccountUseCase: robotAccountUseCase,
+		CASBackendUseCase:   casBackendUseCase,
+		CASClientUseCase:    casClientUseCase,
+		IntegrationUseCase:  integrationUseCase,
+		WorkflowSvc:         workflowService,
+		AuthSvc:             authService,
+		RobotAccountSvc:     robotAccountService,
+		WorkflowRunSvc:      workflowRunService,
+		AttestationSvc:      attestationService,
+		WorkflowContractSvc: workflowContractService,
+		ContextSvc:          contextService,
+		CASCredsSvc:         casCredentialsService,
+		OrgMetricsSvc:       orgMetricsService,
+		OCIRepositorySvc:    ociRepositoryService,
+		IntegrationsSvc:     integrationsService,
+		OrganizationSvc:     organizationService,
+		Logger:              logger,
+		ServerConfig:        confServer,
+		AuthConfig:          auth,
+		Credentials:         readerWriter,
 	}
 	grpcServer := server.NewGRPCServer(opts)
 	httpServer, err := server.NewHTTPServer(opts, grpcServer)

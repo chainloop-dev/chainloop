@@ -149,14 +149,14 @@ export const AttestationServiceGetContractRequest = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 8) {
+          if (tag !== 8) {
             break;
           }
 
           message.contractRevision = reader.int32();
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -209,14 +209,14 @@ export const AttestationServiceGetContractResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.result = AttestationServiceGetContractResponse_Result.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -277,21 +277,21 @@ export const AttestationServiceGetContractResponse_Result = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.workflow = WorkflowItem.decode(reader, reader.uint32());
           continue;
         case 2:
-          if (tag != 18) {
+          if (tag !== 18) {
             break;
           }
 
           message.contract = WorkflowContractVersionItem.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -358,21 +358,21 @@ export const AttestationServiceInitRequest = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 8) {
+          if (tag !== 8) {
             break;
           }
 
           message.contractRevision = reader.int32();
           continue;
         case 2:
-          if (tag != 18) {
+          if (tag !== 18) {
             break;
           }
 
           message.jobUrl = reader.string();
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -428,14 +428,14 @@ export const AttestationServiceInitResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.result = AttestationServiceInitResponse_Result.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -489,14 +489,14 @@ export const AttestationServiceInitResponse_Result = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 2:
-          if (tag != 18) {
+          if (tag !== 18) {
             break;
           }
 
           message.workflowRun = WorkflowRunItem.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -533,7 +533,7 @@ export const AttestationServiceInitResponse_Result = {
 };
 
 function createBaseAttestationServiceStoreRequest(): AttestationServiceStoreRequest {
-  return { attestation: new Uint8Array(), workflowRunId: "" };
+  return { attestation: new Uint8Array(0), workflowRunId: "" };
 }
 
 export const AttestationServiceStoreRequest = {
@@ -555,21 +555,21 @@ export const AttestationServiceStoreRequest = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.attestation = reader.bytes();
           continue;
         case 2:
-          if (tag != 18) {
+          if (tag !== 18) {
             break;
           }
 
           message.workflowRunId = reader.string();
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -579,7 +579,7 @@ export const AttestationServiceStoreRequest = {
 
   fromJSON(object: any): AttestationServiceStoreRequest {
     return {
-      attestation: isSet(object.attestation) ? bytesFromBase64(object.attestation) : new Uint8Array(),
+      attestation: isSet(object.attestation) ? bytesFromBase64(object.attestation) : new Uint8Array(0),
       workflowRunId: isSet(object.workflowRunId) ? String(object.workflowRunId) : "",
     };
   },
@@ -587,7 +587,7 @@ export const AttestationServiceStoreRequest = {
   toJSON(message: AttestationServiceStoreRequest): unknown {
     const obj: any = {};
     message.attestation !== undefined &&
-      (obj.attestation = base64FromBytes(message.attestation !== undefined ? message.attestation : new Uint8Array()));
+      (obj.attestation = base64FromBytes(message.attestation !== undefined ? message.attestation : new Uint8Array(0)));
     message.workflowRunId !== undefined && (obj.workflowRunId = message.workflowRunId);
     return obj;
   },
@@ -600,7 +600,7 @@ export const AttestationServiceStoreRequest = {
     object: I,
   ): AttestationServiceStoreRequest {
     const message = createBaseAttestationServiceStoreRequest();
-    message.attestation = object.attestation ?? new Uint8Array();
+    message.attestation = object.attestation ?? new Uint8Array(0);
     message.workflowRunId = object.workflowRunId ?? "";
     return message;
   },
@@ -623,7 +623,7 @@ export const AttestationServiceStoreResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -676,28 +676,28 @@ export const AttestationServiceCancelRequest = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.workflowRunId = reader.string();
           continue;
         case 2:
-          if (tag != 16) {
+          if (tag !== 16) {
             break;
           }
 
           message.trigger = reader.int32() as any;
           continue;
         case 3:
-          if (tag != 26) {
+          if (tag !== 26) {
             break;
           }
 
           message.reason = reader.string();
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -753,7 +753,7 @@ export const AttestationServiceCancelResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -807,21 +807,21 @@ export const WorkflowRunServiceListRequest = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.workflowId = reader.string();
           continue;
         case 2:
-          if (tag != 18) {
+          if (tag !== 18) {
             break;
           }
 
           message.pagination = PaginationRequest.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -883,21 +883,21 @@ export const WorkflowRunServiceListResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.result.push(WorkflowRunItem.decode(reader, reader.uint32()));
           continue;
         case 2:
-          if (tag != 18) {
+          if (tag !== 18) {
             break;
           }
 
           message.pagination = PaginationResponse.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -960,14 +960,14 @@ export const WorkflowRunServiceViewRequest = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.id = reader.string();
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1018,14 +1018,14 @@ export const WorkflowRunServiceViewResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.result = WorkflowRunServiceViewResponse_Result.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1082,21 +1082,21 @@ export const WorkflowRunServiceViewResponse_Result = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.workflowRun = WorkflowRunItem.decode(reader, reader.uint32());
           continue;
         case 2:
-          if (tag != 18) {
+          if (tag !== 18) {
             break;
           }
 
           message.attestation = AttestationItem.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1157,7 +1157,7 @@ export const AttestationServiceGetUploadCredsRequest = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1208,14 +1208,14 @@ export const AttestationServiceGetUploadCredsResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.result = AttestationServiceGetUploadCredsResponse_Result.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1280,14 +1280,14 @@ export const AttestationServiceGetUploadCredsResponse_Result = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 2:
-          if (tag != 18) {
+          if (tag !== 18) {
             break;
           }
 
           message.token = reader.string();
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);

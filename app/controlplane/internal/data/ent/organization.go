@@ -36,8 +36,8 @@ type OrganizationEdges struct {
 	WorkflowContracts []*WorkflowContract `json:"workflow_contracts,omitempty"`
 	// Workflows holds the value of the workflows edge.
 	Workflows []*Workflow `json:"workflows,omitempty"`
-	// OciRepositories holds the value of the oci_repositories edge.
-	OciRepositories []*OCIRepository `json:"oci_repositories,omitempty"`
+	// CasBackends holds the value of the cas_backends edge.
+	CasBackends []*CASBackend `json:"cas_backends,omitempty"`
 	// Integrations holds the value of the integrations edge.
 	Integrations []*Integration `json:"integrations,omitempty"`
 	// loadedTypes holds the information for reporting if a
@@ -72,13 +72,13 @@ func (e OrganizationEdges) WorkflowsOrErr() ([]*Workflow, error) {
 	return nil, &NotLoadedError{edge: "workflows"}
 }
 
-// OciRepositoriesOrErr returns the OciRepositories value or an error if the edge
+// CasBackendsOrErr returns the CasBackends value or an error if the edge
 // was not loaded in eager-loading.
-func (e OrganizationEdges) OciRepositoriesOrErr() ([]*OCIRepository, error) {
+func (e OrganizationEdges) CasBackendsOrErr() ([]*CASBackend, error) {
 	if e.loadedTypes[3] {
-		return e.OciRepositories, nil
+		return e.CasBackends, nil
 	}
-	return nil, &NotLoadedError{edge: "oci_repositories"}
+	return nil, &NotLoadedError{edge: "cas_backends"}
 }
 
 // IntegrationsOrErr returns the Integrations value or an error if the edge
@@ -162,9 +162,9 @@ func (o *Organization) QueryWorkflows() *WorkflowQuery {
 	return NewOrganizationClient(o.config).QueryWorkflows(o)
 }
 
-// QueryOciRepositories queries the "oci_repositories" edge of the Organization entity.
-func (o *Organization) QueryOciRepositories() *OCIRepositoryQuery {
-	return NewOrganizationClient(o.config).QueryOciRepositories(o)
+// QueryCasBackends queries the "cas_backends" edge of the Organization entity.
+func (o *Organization) QueryCasBackends() *CASBackendQuery {
+	return NewOrganizationClient(o.config).QueryCasBackends(o)
 }
 
 // QueryIntegrations queries the "integrations" edge of the Organization entity.

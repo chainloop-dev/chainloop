@@ -145,28 +145,28 @@ export const IntegrationsServiceRegisterRequest = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.pluginId = reader.string();
           continue;
         case 3:
-          if (tag != 26) {
+          if (tag !== 26) {
             break;
           }
 
           message.config = Struct.unwrap(Struct.decode(reader, reader.uint32()));
           continue;
         case 4:
-          if (tag != 34) {
+          if (tag !== 34) {
             break;
           }
 
           message.description = reader.string();
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -227,14 +227,14 @@ export const IntegrationsServiceRegisterResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.result = RegisteredIntegrationItem.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -296,28 +296,28 @@ export const IntegrationsServiceAttachRequest = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.workflowId = reader.string();
           continue;
         case 2:
-          if (tag != 18) {
+          if (tag !== 18) {
             break;
           }
 
           message.integrationId = reader.string();
           continue;
         case 4:
-          if (tag != 34) {
+          if (tag !== 34) {
             break;
           }
 
           message.config = Struct.unwrap(Struct.decode(reader, reader.uint32()));
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -378,14 +378,14 @@ export const IntegrationsServiceAttachResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.result = IntegrationAttachmentItem.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -438,7 +438,7 @@ export const IntegrationsServiceListAvailableRequest = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -489,14 +489,14 @@ export const IntegrationsServiceListAvailableResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.result.push(IntegrationAvailableItem.decode(reader, reader.uint32()));
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -564,35 +564,35 @@ export const IntegrationAvailableItem = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.id = reader.string();
           continue;
         case 2:
-          if (tag != 18) {
+          if (tag !== 18) {
             break;
           }
 
           message.version = reader.string();
           continue;
         case 3:
-          if (tag != 26) {
+          if (tag !== 26) {
             break;
           }
 
           message.description = reader.string();
           continue;
         case 4:
-          if (tag != 34) {
+          if (tag !== 34) {
             break;
           }
 
           message.fanout = PluginFanout.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -635,7 +635,7 @@ export const IntegrationAvailableItem = {
 };
 
 function createBasePluginFanout(): PluginFanout {
-  return { registrationSchema: new Uint8Array(), attachmentSchema: new Uint8Array(), subscribedMaterials: [] };
+  return { registrationSchema: new Uint8Array(0), attachmentSchema: new Uint8Array(0), subscribedMaterials: [] };
 }
 
 export const PluginFanout = {
@@ -660,28 +660,28 @@ export const PluginFanout = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 4:
-          if (tag != 34) {
+          if (tag !== 34) {
             break;
           }
 
           message.registrationSchema = reader.bytes();
           continue;
         case 5:
-          if (tag != 42) {
+          if (tag !== 42) {
             break;
           }
 
           message.attachmentSchema = reader.bytes();
           continue;
         case 6:
-          if (tag != 50) {
+          if (tag !== 50) {
             break;
           }
 
           message.subscribedMaterials.push(reader.string());
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -693,8 +693,8 @@ export const PluginFanout = {
     return {
       registrationSchema: isSet(object.registrationSchema)
         ? bytesFromBase64(object.registrationSchema)
-        : new Uint8Array(),
-      attachmentSchema: isSet(object.attachmentSchema) ? bytesFromBase64(object.attachmentSchema) : new Uint8Array(),
+        : new Uint8Array(0),
+      attachmentSchema: isSet(object.attachmentSchema) ? bytesFromBase64(object.attachmentSchema) : new Uint8Array(0),
       subscribedMaterials: Array.isArray(object?.subscribedMaterials)
         ? object.subscribedMaterials.map((e: any) => String(e))
         : [],
@@ -705,11 +705,11 @@ export const PluginFanout = {
     const obj: any = {};
     message.registrationSchema !== undefined &&
       (obj.registrationSchema = base64FromBytes(
-        message.registrationSchema !== undefined ? message.registrationSchema : new Uint8Array(),
+        message.registrationSchema !== undefined ? message.registrationSchema : new Uint8Array(0),
       ));
     message.attachmentSchema !== undefined &&
       (obj.attachmentSchema = base64FromBytes(
-        message.attachmentSchema !== undefined ? message.attachmentSchema : new Uint8Array(),
+        message.attachmentSchema !== undefined ? message.attachmentSchema : new Uint8Array(0),
       ));
     if (message.subscribedMaterials) {
       obj.subscribedMaterials = message.subscribedMaterials.map((e) => e);
@@ -725,8 +725,8 @@ export const PluginFanout = {
 
   fromPartial<I extends Exact<DeepPartial<PluginFanout>, I>>(object: I): PluginFanout {
     const message = createBasePluginFanout();
-    message.registrationSchema = object.registrationSchema ?? new Uint8Array();
-    message.attachmentSchema = object.attachmentSchema ?? new Uint8Array();
+    message.registrationSchema = object.registrationSchema ?? new Uint8Array(0);
+    message.attachmentSchema = object.attachmentSchema ?? new Uint8Array(0);
     message.subscribedMaterials = object.subscribedMaterials?.map((e) => e) || [];
     return message;
   },
@@ -749,7 +749,7 @@ export const IntegrationsServiceListRegistrationsRequest = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -800,14 +800,14 @@ export const IntegrationsServiceListRegistrationsResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.result.push(RegisteredIntegrationItem.decode(reader, reader.uint32()));
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -869,14 +869,14 @@ export const IntegrationsServiceDescribeRegistrationRequest = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.id = reader.string();
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -932,14 +932,14 @@ export const IntegrationsServiceDescribeRegistrationResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.result = RegisteredIntegrationItem.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -995,14 +995,14 @@ export const IntegrationsServiceDetachRequest = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.id = reader.string();
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1052,7 +1052,7 @@ export const IntegrationsServiceDetachResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1103,14 +1103,14 @@ export const ListAttachmentsRequest = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.workflowId = reader.string();
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1159,14 +1159,14 @@ export const ListAttachmentsResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.result.push(IntegrationAttachmentItem.decode(reader, reader.uint32()));
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1202,7 +1202,7 @@ export const ListAttachmentsResponse = {
 };
 
 function createBaseRegisteredIntegrationItem(): RegisteredIntegrationItem {
-  return { id: "", kind: "", description: "", createdAt: undefined, config: new Uint8Array() };
+  return { id: "", kind: "", description: "", createdAt: undefined, config: new Uint8Array(0) };
 }
 
 export const RegisteredIntegrationItem = {
@@ -1233,42 +1233,42 @@ export const RegisteredIntegrationItem = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.id = reader.string();
           continue;
         case 2:
-          if (tag != 18) {
+          if (tag !== 18) {
             break;
           }
 
           message.kind = reader.string();
           continue;
         case 4:
-          if (tag != 34) {
+          if (tag !== 34) {
             break;
           }
 
           message.description = reader.string();
           continue;
         case 3:
-          if (tag != 26) {
+          if (tag !== 26) {
             break;
           }
 
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 5:
-          if (tag != 42) {
+          if (tag !== 42) {
             break;
           }
 
           message.config = reader.bytes();
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1282,7 +1282,7 @@ export const RegisteredIntegrationItem = {
       kind: isSet(object.kind) ? String(object.kind) : "",
       description: isSet(object.description) ? String(object.description) : "",
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
-      config: isSet(object.config) ? bytesFromBase64(object.config) : new Uint8Array(),
+      config: isSet(object.config) ? bytesFromBase64(object.config) : new Uint8Array(0),
     };
   },
 
@@ -1293,7 +1293,7 @@ export const RegisteredIntegrationItem = {
     message.description !== undefined && (obj.description = message.description);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
     message.config !== undefined &&
-      (obj.config = base64FromBytes(message.config !== undefined ? message.config : new Uint8Array()));
+      (obj.config = base64FromBytes(message.config !== undefined ? message.config : new Uint8Array(0)));
     return obj;
   },
 
@@ -1307,13 +1307,13 @@ export const RegisteredIntegrationItem = {
     message.kind = object.kind ?? "";
     message.description = object.description ?? "";
     message.createdAt = object.createdAt ?? undefined;
-    message.config = object.config ?? new Uint8Array();
+    message.config = object.config ?? new Uint8Array(0);
     return message;
   },
 };
 
 function createBaseIntegrationAttachmentItem(): IntegrationAttachmentItem {
-  return { id: "", createdAt: undefined, config: new Uint8Array(), integration: undefined, workflow: undefined };
+  return { id: "", createdAt: undefined, config: new Uint8Array(0), integration: undefined, workflow: undefined };
 }
 
 export const IntegrationAttachmentItem = {
@@ -1344,42 +1344,42 @@ export const IntegrationAttachmentItem = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.id = reader.string();
           continue;
         case 2:
-          if (tag != 18) {
+          if (tag !== 18) {
             break;
           }
 
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 3:
-          if (tag != 26) {
+          if (tag !== 26) {
             break;
           }
 
           message.config = reader.bytes();
           continue;
         case 4:
-          if (tag != 34) {
+          if (tag !== 34) {
             break;
           }
 
           message.integration = RegisteredIntegrationItem.decode(reader, reader.uint32());
           continue;
         case 5:
-          if (tag != 42) {
+          if (tag !== 42) {
             break;
           }
 
           message.workflow = WorkflowItem.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1391,7 +1391,7 @@ export const IntegrationAttachmentItem = {
     return {
       id: isSet(object.id) ? String(object.id) : "",
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
-      config: isSet(object.config) ? bytesFromBase64(object.config) : new Uint8Array(),
+      config: isSet(object.config) ? bytesFromBase64(object.config) : new Uint8Array(0),
       integration: isSet(object.integration) ? RegisteredIntegrationItem.fromJSON(object.integration) : undefined,
       workflow: isSet(object.workflow) ? WorkflowItem.fromJSON(object.workflow) : undefined,
     };
@@ -1402,7 +1402,7 @@ export const IntegrationAttachmentItem = {
     message.id !== undefined && (obj.id = message.id);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
     message.config !== undefined &&
-      (obj.config = base64FromBytes(message.config !== undefined ? message.config : new Uint8Array()));
+      (obj.config = base64FromBytes(message.config !== undefined ? message.config : new Uint8Array(0)));
     message.integration !== undefined &&
       (obj.integration = message.integration ? RegisteredIntegrationItem.toJSON(message.integration) : undefined);
     message.workflow !== undefined &&
@@ -1418,7 +1418,7 @@ export const IntegrationAttachmentItem = {
     const message = createBaseIntegrationAttachmentItem();
     message.id = object.id ?? "";
     message.createdAt = object.createdAt ?? undefined;
-    message.config = object.config ?? new Uint8Array();
+    message.config = object.config ?? new Uint8Array(0);
     message.integration = (object.integration !== undefined && object.integration !== null)
       ? RegisteredIntegrationItem.fromPartial(object.integration)
       : undefined;
@@ -1449,14 +1449,14 @@ export const IntegrationsServiceDeregisterRequest = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.id = reader.string();
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1506,7 +1506,7 @@ export const IntegrationsServiceDeregisterResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -2006,8 +2006,8 @@ function toTimestamp(date: Date): Timestamp {
 }
 
 function fromTimestamp(t: Timestamp): Date {
-  let millis = t.seconds * 1_000;
-  millis += t.nanos / 1_000_000;
+  let millis = (t.seconds || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
   return new Date(millis);
 }
 

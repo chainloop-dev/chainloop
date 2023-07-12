@@ -11,9 +11,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integration"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/membership"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/ocirepository"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
@@ -31,7 +31,7 @@ type OrganizationQuery struct {
 	withMemberships       *MembershipQuery
 	withWorkflowContracts *WorkflowContractQuery
 	withWorkflows         *WorkflowQuery
-	withOciRepositories   *OCIRepositoryQuery
+	withCasBackends       *CASBackendQuery
 	withIntegrations      *IntegrationQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -135,9 +135,9 @@ func (oq *OrganizationQuery) QueryWorkflows() *WorkflowQuery {
 	return query
 }
 
-// QueryOciRepositories chains the current query on the "oci_repositories" edge.
-func (oq *OrganizationQuery) QueryOciRepositories() *OCIRepositoryQuery {
-	query := (&OCIRepositoryClient{config: oq.config}).Query()
+// QueryCasBackends chains the current query on the "cas_backends" edge.
+func (oq *OrganizationQuery) QueryCasBackends() *CASBackendQuery {
+	query := (&CASBackendClient{config: oq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := oq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -148,8 +148,8 @@ func (oq *OrganizationQuery) QueryOciRepositories() *OCIRepositoryQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(organization.Table, organization.FieldID, selector),
-			sqlgraph.To(ocirepository.Table, ocirepository.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, organization.OciRepositoriesTable, organization.OciRepositoriesColumn),
+			sqlgraph.To(casbackend.Table, casbackend.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, organization.CasBackendsTable, organization.CasBackendsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(oq.driver.Dialect(), step)
 		return fromU, nil
@@ -374,7 +374,7 @@ func (oq *OrganizationQuery) Clone() *OrganizationQuery {
 		withMemberships:       oq.withMemberships.Clone(),
 		withWorkflowContracts: oq.withWorkflowContracts.Clone(),
 		withWorkflows:         oq.withWorkflows.Clone(),
-		withOciRepositories:   oq.withOciRepositories.Clone(),
+		withCasBackends:       oq.withCasBackends.Clone(),
 		withIntegrations:      oq.withIntegrations.Clone(),
 		// clone intermediate query.
 		sql:  oq.sql.Clone(),
@@ -415,14 +415,14 @@ func (oq *OrganizationQuery) WithWorkflows(opts ...func(*WorkflowQuery)) *Organi
 	return oq
 }
 
-// WithOciRepositories tells the query-builder to eager-load the nodes that are connected to
-// the "oci_repositories" edge. The optional arguments are used to configure the query builder of the edge.
-func (oq *OrganizationQuery) WithOciRepositories(opts ...func(*OCIRepositoryQuery)) *OrganizationQuery {
-	query := (&OCIRepositoryClient{config: oq.config}).Query()
+// WithCasBackends tells the query-builder to eager-load the nodes that are connected to
+// the "cas_backends" edge. The optional arguments are used to configure the query builder of the edge.
+func (oq *OrganizationQuery) WithCasBackends(opts ...func(*CASBackendQuery)) *OrganizationQuery {
+	query := (&CASBackendClient{config: oq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	oq.withOciRepositories = query
+	oq.withCasBackends = query
 	return oq
 }
 
@@ -519,7 +519,7 @@ func (oq *OrganizationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 			oq.withMemberships != nil,
 			oq.withWorkflowContracts != nil,
 			oq.withWorkflows != nil,
-			oq.withOciRepositories != nil,
+			oq.withCasBackends != nil,
 			oq.withIntegrations != nil,
 		}
 	)
@@ -564,10 +564,10 @@ func (oq *OrganizationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 			return nil, err
 		}
 	}
-	if query := oq.withOciRepositories; query != nil {
-		if err := oq.loadOciRepositories(ctx, query, nodes,
-			func(n *Organization) { n.Edges.OciRepositories = []*OCIRepository{} },
-			func(n *Organization, e *OCIRepository) { n.Edges.OciRepositories = append(n.Edges.OciRepositories, e) }); err != nil {
+	if query := oq.withCasBackends; query != nil {
+		if err := oq.loadCasBackends(ctx, query, nodes,
+			func(n *Organization) { n.Edges.CasBackends = []*CASBackend{} },
+			func(n *Organization, e *CASBackend) { n.Edges.CasBackends = append(n.Edges.CasBackends, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -674,7 +674,7 @@ func (oq *OrganizationQuery) loadWorkflows(ctx context.Context, query *WorkflowQ
 	}
 	return nil
 }
-func (oq *OrganizationQuery) loadOciRepositories(ctx context.Context, query *OCIRepositoryQuery, nodes []*Organization, init func(*Organization), assign func(*Organization, *OCIRepository)) error {
+func (oq *OrganizationQuery) loadCasBackends(ctx context.Context, query *CASBackendQuery, nodes []*Organization, init func(*Organization), assign func(*Organization, *CASBackend)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*Organization)
 	for i := range nodes {
@@ -685,21 +685,21 @@ func (oq *OrganizationQuery) loadOciRepositories(ctx context.Context, query *OCI
 		}
 	}
 	query.withFKs = true
-	query.Where(predicate.OCIRepository(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(organization.OciRepositoriesColumn), fks...))
+	query.Where(predicate.CASBackend(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(organization.CasBackendsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.organization_oci_repositories
+		fk := n.organization_cas_backends
 		if fk == nil {
-			return fmt.Errorf(`foreign-key "organization_oci_repositories" is nil for node %v`, n.ID)
+			return fmt.Errorf(`foreign-key "organization_cas_backends" is nil for node %v`, n.ID)
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "organization_oci_repositories" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "organization_cas_backends" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
