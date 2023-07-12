@@ -125,6 +125,6 @@ func (s *workflowRunIntegrationTestSuite) SetupTest() {
 	s.contractVersion, err = s.WorkflowContract.Describe(ctx, s.org.ID, s.workflow.ContractID.String(), 0)
 	assert.NoError(err)
 
-	s.casBackend, err = s.CASBackendRepo.CreateOrUpdate(ctx, s.org.ID, "repo", "username", "pass", biz.CASBackendOCI, true)
+	s.casBackend, err = s.CASBackend.CreateOrUpdate(ctx, s.org.ID, "repo", "username", "pass", biz.CASBackendOCI, true)
 	assert.NoError(err)
 }

@@ -73,7 +73,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		Data:                   dataData,
 		L:                      logger,
 		Membership:             membershipUseCase,
-		CASBackendRepo:         casBackendUseCase,
+		CASBackend:             casBackendUseCase,
 		Integration:            integrationUseCase,
 		Organization:           organizationUseCase,
 		WorkflowContract:       workflowContractUseCase,

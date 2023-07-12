@@ -52,7 +52,7 @@ type TestingUseCases struct {
 
 	// Use cases
 	Membership             *biz.MembershipUseCase
-	CASBackendRepo         *biz.CASBackendUseCase
+	CASBackend             *biz.CASBackendUseCase
 	Integration            *biz.IntegrationUseCase
 	Organization           *biz.OrganizationUseCase
 	WorkflowContract       *biz.WorkflowContractUseCase
