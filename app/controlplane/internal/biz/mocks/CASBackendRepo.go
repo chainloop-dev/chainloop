@@ -109,6 +109,32 @@ func (_m *CASBackendRepo) FindDefaultBackend(ctx context.Context, orgID uuid.UUI
 	return r0, r1
 }
 
+// List provides a mock function with given fields: ctx, orgID
+func (_m *CASBackendRepo) List(ctx context.Context, orgID uuid.UUID) ([]*biz.CASBackend, error) {
+	ret := _m.Called(ctx, orgID)
+
+	var r0 []*biz.CASBackend
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]*biz.CASBackend, error)); ok {
+		return rf(ctx, orgID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) []*biz.CASBackend); ok {
+		r0 = rf(ctx, orgID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*biz.CASBackend)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = rf(ctx, orgID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // Update provides a mock function with given fields: _a0, _a1
 func (_m *CASBackendRepo) Update(_a0 context.Context, _a1 *biz.CASBackendUpdateOpts) (*biz.CASBackend, error) {
 	ret := _m.Called(_a0, _a1)

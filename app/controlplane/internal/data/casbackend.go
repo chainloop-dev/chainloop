@@ -45,7 +45,7 @@ func (r *CASBackendRepo) List(ctx context.Context, orgID uuid.UUID) ([]*biz.CASB
 		return nil, fmt.Errorf("failed to list cas backends: %w", err)
 	}
 
-	var res []*biz.CASBackend
+	res := make([]*biz.CASBackend, 0, len(backends))
 	for _, backend := range backends {
 		res = append(res, entCASBackendToBiz(backend))
 	}
