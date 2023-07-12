@@ -36,6 +36,7 @@ type WorkflowRun struct {
 	RunURL, RunnerType    string
 	ContractVersionID     uuid.UUID
 	Attestation           *Attestation
+	CASBackends           []*CASBackend
 }
 
 type Attestation struct {
@@ -58,7 +59,7 @@ const (
 )
 
 type WorkflowRunRepo interface {
-	Create(ctx context.Context, workflowID, robotaccountID, contractVersion uuid.UUID, runURL, runnerType string) (*WorkflowRun, error)
+	Create(ctx context.Context, workflowID, robotaccountID, contractVersion uuid.UUID, runURL, runnerType string, casBackends []uuid.UUID) (*WorkflowRun, error)
 	FindByID(ctx context.Context, ID uuid.UUID) (*WorkflowRun, error)
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*WorkflowRun, error)
 	MarkAsFinished(ctx context.Context, ID uuid.UUID, status WorkflowRunStatus, reason string) error
@@ -152,6 +153,7 @@ type WorkflowRunCreateOpts struct {
 	ContractRevisionUUID       uuid.UUID
 	RunnerRunURL               string
 	RunnerType                 string
+	CASBackendID               uuid.UUID
 }
 
 // Create will add a new WorkflowRun, associate it to a schemaVersion and increment the counter in the associated workflow
@@ -166,7 +168,10 @@ func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreat
 		return nil, err
 	}
 
-	run, err := uc.wfRunRepo.Create(ctx, workflowUUID, robotaccountUUID, opts.ContractRevisionUUID, opts.RunnerRunURL, opts.RunnerType)
+	// For now we only associate the workflow run to one backend.
+	// This might change in the future so we prepare the data layer to support an array of associated backends
+	backends := []uuid.UUID{opts.CASBackendID}
+	run, err := uc.wfRunRepo.Create(ctx, workflowUUID, robotaccountUUID, opts.ContractRevisionUUID, opts.RunnerRunURL, opts.RunnerType, backends)
 	if err != nil {
 		return nil, err
 	}

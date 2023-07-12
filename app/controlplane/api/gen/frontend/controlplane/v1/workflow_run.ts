@@ -119,6 +119,7 @@ export interface WorkflowRunServiceViewResponse_Result {
 }
 
 export interface AttestationServiceGetUploadCredsRequest {
+  workflowRunId: string;
 }
 
 export interface AttestationServiceGetUploadCredsResponse {
@@ -1141,11 +1142,14 @@ export const WorkflowRunServiceViewResponse_Result = {
 };
 
 function createBaseAttestationServiceGetUploadCredsRequest(): AttestationServiceGetUploadCredsRequest {
-  return {};
+  return { workflowRunId: "" };
 }
 
 export const AttestationServiceGetUploadCredsRequest = {
-  encode(_: AttestationServiceGetUploadCredsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+  encode(message: AttestationServiceGetUploadCredsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.workflowRunId !== "") {
+      writer.uint32(10).string(message.workflowRunId);
+    }
     return writer;
   },
 
@@ -1156,6 +1160,13 @@ export const AttestationServiceGetUploadCredsRequest = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.workflowRunId = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1165,12 +1176,13 @@ export const AttestationServiceGetUploadCredsRequest = {
     return message;
   },
 
-  fromJSON(_: any): AttestationServiceGetUploadCredsRequest {
-    return {};
+  fromJSON(object: any): AttestationServiceGetUploadCredsRequest {
+    return { workflowRunId: isSet(object.workflowRunId) ? String(object.workflowRunId) : "" };
   },
 
-  toJSON(_: AttestationServiceGetUploadCredsRequest): unknown {
+  toJSON(message: AttestationServiceGetUploadCredsRequest): unknown {
     const obj: any = {};
+    message.workflowRunId !== undefined && (obj.workflowRunId = message.workflowRunId);
     return obj;
   },
 
@@ -1181,9 +1193,10 @@ export const AttestationServiceGetUploadCredsRequest = {
   },
 
   fromPartial<I extends Exact<DeepPartial<AttestationServiceGetUploadCredsRequest>, I>>(
-    _: I,
+    object: I,
   ): AttestationServiceGetUploadCredsRequest {
     const message = createBaseAttestationServiceGetUploadCredsRequest();
+    message.workflowRunId = object.workflowRunId ?? "";
     return message;
   },
 };

@@ -298,6 +298,31 @@ var (
 			},
 		},
 	}
+	// WorkflowRunCasBackendsColumns holds the columns for the "workflow_run_cas_backends" table.
+	WorkflowRunCasBackendsColumns = []*schema.Column{
+		{Name: "workflow_run_id", Type: field.TypeUUID},
+		{Name: "cas_backend_id", Type: field.TypeUUID},
+	}
+	// WorkflowRunCasBackendsTable holds the schema information for the "workflow_run_cas_backends" table.
+	WorkflowRunCasBackendsTable = &schema.Table{
+		Name:       "workflow_run_cas_backends",
+		Columns:    WorkflowRunCasBackendsColumns,
+		PrimaryKey: []*schema.Column{WorkflowRunCasBackendsColumns[0], WorkflowRunCasBackendsColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "workflow_run_cas_backends_workflow_run_id",
+				Columns:    []*schema.Column{WorkflowRunCasBackendsColumns[0]},
+				RefColumns: []*schema.Column{WorkflowRunsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "workflow_run_cas_backends_cas_backend_id",
+				Columns:    []*schema.Column{WorkflowRunCasBackendsColumns[1]},
+				RefColumns: []*schema.Column{CasBackendsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		CasBackendsTable,
@@ -311,6 +336,7 @@ var (
 		WorkflowContractsTable,
 		WorkflowContractVersionsTable,
 		WorkflowRunsTable,
+		WorkflowRunCasBackendsTable,
 	}
 )
 
@@ -329,4 +355,6 @@ func init() {
 	WorkflowRunsTable.ForeignKeys[0].RefTable = RobotAccountsTable
 	WorkflowRunsTable.ForeignKeys[1].RefTable = WorkflowsTable
 	WorkflowRunsTable.ForeignKeys[2].RefTable = WorkflowContractVersionsTable
+	WorkflowRunCasBackendsTable.ForeignKeys[0].RefTable = WorkflowRunsTable
+	WorkflowRunCasBackendsTable.ForeignKeys[1].RefTable = CasBackendsTable
 }

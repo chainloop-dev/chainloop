@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowrun"
 	"github.com/google/uuid"
 )
 
@@ -24,6 +26,7 @@ type CASBackendQuery struct {
 	inters           []Interceptor
 	predicates       []predicate.CASBackend
 	withOrganization *OrganizationQuery
+	withWorkflowRun  *WorkflowRunQuery
 	withFKs          bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -76,6 +79,28 @@ func (cbq *CASBackendQuery) QueryOrganization() *OrganizationQuery {
 			sqlgraph.From(casbackend.Table, casbackend.FieldID, selector),
 			sqlgraph.To(organization.Table, organization.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, casbackend.OrganizationTable, casbackend.OrganizationColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(cbq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryWorkflowRun chains the current query on the "workflow_run" edge.
+func (cbq *CASBackendQuery) QueryWorkflowRun() *WorkflowRunQuery {
+	query := (&WorkflowRunClient{config: cbq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := cbq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := cbq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(casbackend.Table, casbackend.FieldID, selector),
+			sqlgraph.To(workflowrun.Table, workflowrun.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, casbackend.WorkflowRunTable, casbackend.WorkflowRunPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(cbq.driver.Dialect(), step)
 		return fromU, nil
@@ -276,6 +301,7 @@ func (cbq *CASBackendQuery) Clone() *CASBackendQuery {
 		inters:           append([]Interceptor{}, cbq.inters...),
 		predicates:       append([]predicate.CASBackend{}, cbq.predicates...),
 		withOrganization: cbq.withOrganization.Clone(),
+		withWorkflowRun:  cbq.withWorkflowRun.Clone(),
 		// clone intermediate query.
 		sql:  cbq.sql.Clone(),
 		path: cbq.path,
@@ -290,6 +316,17 @@ func (cbq *CASBackendQuery) WithOrganization(opts ...func(*OrganizationQuery)) *
 		opt(query)
 	}
 	cbq.withOrganization = query
+	return cbq
+}
+
+// WithWorkflowRun tells the query-builder to eager-load the nodes that are connected to
+// the "workflow_run" edge. The optional arguments are used to configure the query builder of the edge.
+func (cbq *CASBackendQuery) WithWorkflowRun(opts ...func(*WorkflowRunQuery)) *CASBackendQuery {
+	query := (&WorkflowRunClient{config: cbq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	cbq.withWorkflowRun = query
 	return cbq
 }
 
@@ -372,8 +409,9 @@ func (cbq *CASBackendQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 		nodes       = []*CASBackend{}
 		withFKs     = cbq.withFKs
 		_spec       = cbq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			cbq.withOrganization != nil,
+			cbq.withWorkflowRun != nil,
 		}
 	)
 	if cbq.withOrganization != nil {
@@ -403,6 +441,13 @@ func (cbq *CASBackendQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 	if query := cbq.withOrganization; query != nil {
 		if err := cbq.loadOrganization(ctx, query, nodes, nil,
 			func(n *CASBackend, e *Organization) { n.Edges.Organization = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := cbq.withWorkflowRun; query != nil {
+		if err := cbq.loadWorkflowRun(ctx, query, nodes,
+			func(n *CASBackend) { n.Edges.WorkflowRun = []*WorkflowRun{} },
+			func(n *CASBackend, e *WorkflowRun) { n.Edges.WorkflowRun = append(n.Edges.WorkflowRun, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -437,6 +482,67 @@ func (cbq *CASBackendQuery) loadOrganization(ctx context.Context, query *Organiz
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (cbq *CASBackendQuery) loadWorkflowRun(ctx context.Context, query *WorkflowRunQuery, nodes []*CASBackend, init func(*CASBackend), assign func(*CASBackend, *WorkflowRun)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*CASBackend)
+	nids := make(map[uuid.UUID]map[*CASBackend]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(casbackend.WorkflowRunTable)
+		s.Join(joinT).On(s.C(workflowrun.FieldID), joinT.C(casbackend.WorkflowRunPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(casbackend.WorkflowRunPrimaryKey[1]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(casbackend.WorkflowRunPrimaryKey[1]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*CASBackend]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*WorkflowRun](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "workflow_run" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
 		}
 	}
 	return nil

@@ -41,7 +41,7 @@ func TestEntCASBackendTo(t *testing.T) {
 	}{
 		{nil, nil},
 		{testRepo, &biz.CASBackend{
-			ID:         testRepo.ID.String(),
+			ID:         testRepo.ID,
 			Name:       testRepo.Name,
 			SecretName: testRepo.SecretName,
 			CreatedAt:  toTimePtr(testRepo.CreatedAt),

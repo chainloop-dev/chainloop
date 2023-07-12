@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
@@ -197,6 +198,21 @@ func (wru *WorkflowRunUpdate) SetContractVersion(w *WorkflowContractVersion) *Wo
 	return wru.SetContractVersionID(w.ID)
 }
 
+// AddCasBackendIDs adds the "cas_backends" edge to the CASBackend entity by IDs.
+func (wru *WorkflowRunUpdate) AddCasBackendIDs(ids ...uuid.UUID) *WorkflowRunUpdate {
+	wru.mutation.AddCasBackendIDs(ids...)
+	return wru
+}
+
+// AddCasBackends adds the "cas_backends" edges to the CASBackend entity.
+func (wru *WorkflowRunUpdate) AddCasBackends(c ...*CASBackend) *WorkflowRunUpdate {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return wru.AddCasBackendIDs(ids...)
+}
+
 // Mutation returns the WorkflowRunMutation object of the builder.
 func (wru *WorkflowRunUpdate) Mutation() *WorkflowRunMutation {
 	return wru.mutation
@@ -218,6 +234,27 @@ func (wru *WorkflowRunUpdate) ClearRobotaccount() *WorkflowRunUpdate {
 func (wru *WorkflowRunUpdate) ClearContractVersion() *WorkflowRunUpdate {
 	wru.mutation.ClearContractVersion()
 	return wru
+}
+
+// ClearCasBackends clears all "cas_backends" edges to the CASBackend entity.
+func (wru *WorkflowRunUpdate) ClearCasBackends() *WorkflowRunUpdate {
+	wru.mutation.ClearCasBackends()
+	return wru
+}
+
+// RemoveCasBackendIDs removes the "cas_backends" edge to CASBackend entities by IDs.
+func (wru *WorkflowRunUpdate) RemoveCasBackendIDs(ids ...uuid.UUID) *WorkflowRunUpdate {
+	wru.mutation.RemoveCasBackendIDs(ids...)
+	return wru
+}
+
+// RemoveCasBackends removes "cas_backends" edges to CASBackend entities.
+func (wru *WorkflowRunUpdate) RemoveCasBackends(c ...*CASBackend) *WorkflowRunUpdate {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return wru.RemoveCasBackendIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -382,6 +419,51 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(workflowcontractversion.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if wru.mutation.CasBackendsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   workflowrun.CasBackendsTable,
+			Columns: workflowrun.CasBackendsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(casbackend.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := wru.mutation.RemovedCasBackendsIDs(); len(nodes) > 0 && !wru.mutation.CasBackendsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   workflowrun.CasBackendsTable,
+			Columns: workflowrun.CasBackendsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(casbackend.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := wru.mutation.CasBackendsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   workflowrun.CasBackendsTable,
+			Columns: workflowrun.CasBackendsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(casbackend.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -572,6 +654,21 @@ func (wruo *WorkflowRunUpdateOne) SetContractVersion(w *WorkflowContractVersion)
 	return wruo.SetContractVersionID(w.ID)
 }
 
+// AddCasBackendIDs adds the "cas_backends" edge to the CASBackend entity by IDs.
+func (wruo *WorkflowRunUpdateOne) AddCasBackendIDs(ids ...uuid.UUID) *WorkflowRunUpdateOne {
+	wruo.mutation.AddCasBackendIDs(ids...)
+	return wruo
+}
+
+// AddCasBackends adds the "cas_backends" edges to the CASBackend entity.
+func (wruo *WorkflowRunUpdateOne) AddCasBackends(c ...*CASBackend) *WorkflowRunUpdateOne {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return wruo.AddCasBackendIDs(ids...)
+}
+
 // Mutation returns the WorkflowRunMutation object of the builder.
 func (wruo *WorkflowRunUpdateOne) Mutation() *WorkflowRunMutation {
 	return wruo.mutation
@@ -593,6 +690,27 @@ func (wruo *WorkflowRunUpdateOne) ClearRobotaccount() *WorkflowRunUpdateOne {
 func (wruo *WorkflowRunUpdateOne) ClearContractVersion() *WorkflowRunUpdateOne {
 	wruo.mutation.ClearContractVersion()
 	return wruo
+}
+
+// ClearCasBackends clears all "cas_backends" edges to the CASBackend entity.
+func (wruo *WorkflowRunUpdateOne) ClearCasBackends() *WorkflowRunUpdateOne {
+	wruo.mutation.ClearCasBackends()
+	return wruo
+}
+
+// RemoveCasBackendIDs removes the "cas_backends" edge to CASBackend entities by IDs.
+func (wruo *WorkflowRunUpdateOne) RemoveCasBackendIDs(ids ...uuid.UUID) *WorkflowRunUpdateOne {
+	wruo.mutation.RemoveCasBackendIDs(ids...)
+	return wruo
+}
+
+// RemoveCasBackends removes "cas_backends" edges to CASBackend entities.
+func (wruo *WorkflowRunUpdateOne) RemoveCasBackends(c ...*CASBackend) *WorkflowRunUpdateOne {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return wruo.RemoveCasBackendIDs(ids...)
 }
 
 // Where appends a list predicates to the WorkflowRunUpdate builder.
@@ -787,6 +905,51 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(workflowcontractversion.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if wruo.mutation.CasBackendsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   workflowrun.CasBackendsTable,
+			Columns: workflowrun.CasBackendsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(casbackend.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := wruo.mutation.RemovedCasBackendsIDs(); len(nodes) > 0 && !wruo.mutation.CasBackendsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   workflowrun.CasBackendsTable,
+			Columns: workflowrun.CasBackendsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(casbackend.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := wruo.mutation.CasBackendsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   workflowrun.CasBackendsTable,
+			Columns: workflowrun.CasBackendsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(casbackend.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

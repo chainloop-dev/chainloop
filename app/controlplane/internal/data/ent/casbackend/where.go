@@ -385,6 +385,29 @@ func HasOrganizationWith(preds ...predicate.Organization) predicate.CASBackend {
 	})
 }
 
+// HasWorkflowRun applies the HasEdge predicate on the "workflow_run" edge.
+func HasWorkflowRun() predicate.CASBackend {
+	return predicate.CASBackend(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, WorkflowRunTable, WorkflowRunPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasWorkflowRunWith applies the HasEdge predicate on the "workflow_run" edge with a given conditions (other predicates).
+func HasWorkflowRunWith(preds ...predicate.WorkflowRun) predicate.CASBackend {
+	return predicate.CASBackend(func(s *sql.Selector) {
+		step := newWorkflowRunStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.CASBackend) predicate.CASBackend {
 	return predicate.CASBackend(func(s *sql.Selector) {

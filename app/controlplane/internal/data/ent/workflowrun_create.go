@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowcontractversion"
@@ -187,6 +188,21 @@ func (wrc *WorkflowRunCreate) SetContractVersion(w *WorkflowContractVersion) *Wo
 	return wrc.SetContractVersionID(w.ID)
 }
 
+// AddCasBackendIDs adds the "cas_backends" edge to the CASBackend entity by IDs.
+func (wrc *WorkflowRunCreate) AddCasBackendIDs(ids ...uuid.UUID) *WorkflowRunCreate {
+	wrc.mutation.AddCasBackendIDs(ids...)
+	return wrc
+}
+
+// AddCasBackends adds the "cas_backends" edges to the CASBackend entity.
+func (wrc *WorkflowRunCreate) AddCasBackends(c ...*CASBackend) *WorkflowRunCreate {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return wrc.AddCasBackendIDs(ids...)
+}
+
 // Mutation returns the WorkflowRunMutation object of the builder.
 func (wrc *WorkflowRunCreate) Mutation() *WorkflowRunMutation {
 	return wrc.mutation
@@ -361,6 +377,22 @@ func (wrc *WorkflowRunCreate) createSpec() (*WorkflowRun, *sqlgraph.CreateSpec) 
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.workflow_run_contract_version = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := wrc.mutation.CasBackendsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   workflowrun.CasBackendsTable,
+			Columns: workflowrun.CasBackendsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(casbackend.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

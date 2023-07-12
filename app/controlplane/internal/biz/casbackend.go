@@ -40,7 +40,8 @@ var CASBackendValidationOK CASBackendValidationStatus = "OK"
 var CASBackendValidationFailed CASBackendValidationStatus = "Invalid"
 
 type CASBackend struct {
-	ID, Name, SecretName   string
+	ID                     uuid.UUID
+	Name, SecretName       string
 	CreatedAt, ValidatedAt *time.Time
 	OrganizationID         string
 	ValidationStatus       CASBackendValidationStatus
@@ -148,16 +149,11 @@ func (uc *CASBackendUseCase) CreateOrUpdate(ctx context.Context, orgID, name, us
 	}
 
 	if backend != nil {
-		backendUUID, err := uuid.Parse(backend.ID)
-		if err != nil {
-			return nil, NewErrInvalidUUID(err)
-		}
-
 		return uc.repo.Update(ctx, &CASBackendUpdateOpts{
 			CASBackendOpts: &CASBackendOpts{
 				Name: name, Username: username, Password: password, SecretName: secretName, Provider: provider, Default: defaultB,
 			},
-			ID: backendUUID,
+			ID: backend.ID,
 		})
 	}
 

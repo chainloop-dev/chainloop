@@ -66,6 +66,9 @@ type CASBackendMutation struct {
 	clearedFields       map[string]struct{}
 	organization        *uuid.UUID
 	clearedorganization bool
+	workflow_run        map[uuid.UUID]struct{}
+	removedworkflow_run map[uuid.UUID]struct{}
+	clearedworkflow_run bool
 	done                bool
 	oldValue            func(context.Context) (*CASBackend, error)
 	predicates          []predicate.CASBackend
@@ -466,6 +469,60 @@ func (m *CASBackendMutation) ResetOrganization() {
 	m.clearedorganization = false
 }
 
+// AddWorkflowRunIDs adds the "workflow_run" edge to the WorkflowRun entity by ids.
+func (m *CASBackendMutation) AddWorkflowRunIDs(ids ...uuid.UUID) {
+	if m.workflow_run == nil {
+		m.workflow_run = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.workflow_run[ids[i]] = struct{}{}
+	}
+}
+
+// ClearWorkflowRun clears the "workflow_run" edge to the WorkflowRun entity.
+func (m *CASBackendMutation) ClearWorkflowRun() {
+	m.clearedworkflow_run = true
+}
+
+// WorkflowRunCleared reports if the "workflow_run" edge to the WorkflowRun entity was cleared.
+func (m *CASBackendMutation) WorkflowRunCleared() bool {
+	return m.clearedworkflow_run
+}
+
+// RemoveWorkflowRunIDs removes the "workflow_run" edge to the WorkflowRun entity by IDs.
+func (m *CASBackendMutation) RemoveWorkflowRunIDs(ids ...uuid.UUID) {
+	if m.removedworkflow_run == nil {
+		m.removedworkflow_run = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.workflow_run, ids[i])
+		m.removedworkflow_run[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedWorkflowRun returns the removed IDs of the "workflow_run" edge to the WorkflowRun entity.
+func (m *CASBackendMutation) RemovedWorkflowRunIDs() (ids []uuid.UUID) {
+	for id := range m.removedworkflow_run {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// WorkflowRunIDs returns the "workflow_run" edge IDs in the mutation.
+func (m *CASBackendMutation) WorkflowRunIDs() (ids []uuid.UUID) {
+	for id := range m.workflow_run {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetWorkflowRun resets all changes to the "workflow_run" edge.
+func (m *CASBackendMutation) ResetWorkflowRun() {
+	m.workflow_run = nil
+	m.clearedworkflow_run = false
+	m.removedworkflow_run = nil
+}
+
 // Where appends a list predicates to the CASBackendMutation builder.
 func (m *CASBackendMutation) Where(ps ...predicate.CASBackend) {
 	m.predicates = append(m.predicates, ps...)
@@ -701,9 +758,12 @@ func (m *CASBackendMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *CASBackendMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.organization != nil {
 		edges = append(edges, casbackend.EdgeOrganization)
+	}
+	if m.workflow_run != nil {
+		edges = append(edges, casbackend.EdgeWorkflowRun)
 	}
 	return edges
 }
@@ -716,27 +776,47 @@ func (m *CASBackendMutation) AddedIDs(name string) []ent.Value {
 		if id := m.organization; id != nil {
 			return []ent.Value{*id}
 		}
+	case casbackend.EdgeWorkflowRun:
+		ids := make([]ent.Value, 0, len(m.workflow_run))
+		for id := range m.workflow_run {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *CASBackendMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
+	if m.removedworkflow_run != nil {
+		edges = append(edges, casbackend.EdgeWorkflowRun)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *CASBackendMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case casbackend.EdgeWorkflowRun:
+		ids := make([]ent.Value, 0, len(m.removedworkflow_run))
+		for id := range m.removedworkflow_run {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *CASBackendMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedorganization {
 		edges = append(edges, casbackend.EdgeOrganization)
+	}
+	if m.clearedworkflow_run {
+		edges = append(edges, casbackend.EdgeWorkflowRun)
 	}
 	return edges
 }
@@ -747,6 +827,8 @@ func (m *CASBackendMutation) EdgeCleared(name string) bool {
 	switch name {
 	case casbackend.EdgeOrganization:
 		return m.clearedorganization
+	case casbackend.EdgeWorkflowRun:
+		return m.clearedworkflow_run
 	}
 	return false
 }
@@ -768,6 +850,9 @@ func (m *CASBackendMutation) ResetEdge(name string) error {
 	switch name {
 	case casbackend.EdgeOrganization:
 		m.ResetOrganization()
+		return nil
+	case casbackend.EdgeWorkflowRun:
+		m.ResetWorkflowRun()
 		return nil
 	}
 	return fmt.Errorf("unknown CASBackend edge %s", name)
@@ -6999,6 +7084,9 @@ type WorkflowRunMutation struct {
 	clearedrobotaccount     bool
 	contract_version        *uuid.UUID
 	clearedcontract_version bool
+	cas_backends            map[uuid.UUID]struct{}
+	removedcas_backends     map[uuid.UUID]struct{}
+	clearedcas_backends     bool
 	done                    bool
 	oldValue                func(context.Context) (*WorkflowRun, error)
 	predicates              []predicate.WorkflowRun
@@ -7542,6 +7630,60 @@ func (m *WorkflowRunMutation) ResetContractVersion() {
 	m.clearedcontract_version = false
 }
 
+// AddCasBackendIDs adds the "cas_backends" edge to the CASBackend entity by ids.
+func (m *WorkflowRunMutation) AddCasBackendIDs(ids ...uuid.UUID) {
+	if m.cas_backends == nil {
+		m.cas_backends = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.cas_backends[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCasBackends clears the "cas_backends" edge to the CASBackend entity.
+func (m *WorkflowRunMutation) ClearCasBackends() {
+	m.clearedcas_backends = true
+}
+
+// CasBackendsCleared reports if the "cas_backends" edge to the CASBackend entity was cleared.
+func (m *WorkflowRunMutation) CasBackendsCleared() bool {
+	return m.clearedcas_backends
+}
+
+// RemoveCasBackendIDs removes the "cas_backends" edge to the CASBackend entity by IDs.
+func (m *WorkflowRunMutation) RemoveCasBackendIDs(ids ...uuid.UUID) {
+	if m.removedcas_backends == nil {
+		m.removedcas_backends = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.cas_backends, ids[i])
+		m.removedcas_backends[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCasBackends returns the removed IDs of the "cas_backends" edge to the CASBackend entity.
+func (m *WorkflowRunMutation) RemovedCasBackendsIDs() (ids []uuid.UUID) {
+	for id := range m.removedcas_backends {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CasBackendsIDs returns the "cas_backends" edge IDs in the mutation.
+func (m *WorkflowRunMutation) CasBackendsIDs() (ids []uuid.UUID) {
+	for id := range m.cas_backends {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCasBackends resets all changes to the "cas_backends" edge.
+func (m *WorkflowRunMutation) ResetCasBackends() {
+	m.cas_backends = nil
+	m.clearedcas_backends = false
+	m.removedcas_backends = nil
+}
+
 // Where appends a list predicates to the WorkflowRunMutation builder.
 func (m *WorkflowRunMutation) Where(ps ...predicate.WorkflowRun) {
 	m.predicates = append(m.predicates, ps...)
@@ -7810,7 +7952,7 @@ func (m *WorkflowRunMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *WorkflowRunMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.workflow != nil {
 		edges = append(edges, workflowrun.EdgeWorkflow)
 	}
@@ -7819,6 +7961,9 @@ func (m *WorkflowRunMutation) AddedEdges() []string {
 	}
 	if m.contract_version != nil {
 		edges = append(edges, workflowrun.EdgeContractVersion)
+	}
+	if m.cas_backends != nil {
+		edges = append(edges, workflowrun.EdgeCasBackends)
 	}
 	return edges
 }
@@ -7839,25 +7984,42 @@ func (m *WorkflowRunMutation) AddedIDs(name string) []ent.Value {
 		if id := m.contract_version; id != nil {
 			return []ent.Value{*id}
 		}
+	case workflowrun.EdgeCasBackends:
+		ids := make([]ent.Value, 0, len(m.cas_backends))
+		for id := range m.cas_backends {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *WorkflowRunMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
+	if m.removedcas_backends != nil {
+		edges = append(edges, workflowrun.EdgeCasBackends)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *WorkflowRunMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case workflowrun.EdgeCasBackends:
+		ids := make([]ent.Value, 0, len(m.removedcas_backends))
+		for id := range m.removedcas_backends {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *WorkflowRunMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.clearedworkflow {
 		edges = append(edges, workflowrun.EdgeWorkflow)
 	}
@@ -7866,6 +8028,9 @@ func (m *WorkflowRunMutation) ClearedEdges() []string {
 	}
 	if m.clearedcontract_version {
 		edges = append(edges, workflowrun.EdgeContractVersion)
+	}
+	if m.clearedcas_backends {
+		edges = append(edges, workflowrun.EdgeCasBackends)
 	}
 	return edges
 }
@@ -7880,6 +8045,8 @@ func (m *WorkflowRunMutation) EdgeCleared(name string) bool {
 		return m.clearedrobotaccount
 	case workflowrun.EdgeContractVersion:
 		return m.clearedcontract_version
+	case workflowrun.EdgeCasBackends:
+		return m.clearedcas_backends
 	}
 	return false
 }
@@ -7913,6 +8080,9 @@ func (m *WorkflowRunMutation) ResetEdge(name string) error {
 		return nil
 	case workflowrun.EdgeContractVersion:
 		m.ResetContractVersion()
+		return nil
+	case workflowrun.EdgeCasBackends:
+		m.ResetCasBackends()
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun edge %s", name)

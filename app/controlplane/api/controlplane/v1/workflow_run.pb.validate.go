@@ -1561,6 +1561,8 @@ func (m *AttestationServiceGetUploadCredsRequest) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for WorkflowRunId
+
 	if len(errors) > 0 {
 		return AttestationServiceGetUploadCredsRequestMultiError(errors)
 	}

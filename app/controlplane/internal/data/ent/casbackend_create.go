@@ -13,6 +13,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowrun"
 	"github.com/google/uuid"
 )
 
@@ -122,6 +123,21 @@ func (cbc *CASBackendCreate) SetOrganization(o *Organization) *CASBackendCreate 
 	return cbc.SetOrganizationID(o.ID)
 }
 
+// AddWorkflowRunIDs adds the "workflow_run" edge to the WorkflowRun entity by IDs.
+func (cbc *CASBackendCreate) AddWorkflowRunIDs(ids ...uuid.UUID) *CASBackendCreate {
+	cbc.mutation.AddWorkflowRunIDs(ids...)
+	return cbc
+}
+
+// AddWorkflowRun adds the "workflow_run" edges to the WorkflowRun entity.
+func (cbc *CASBackendCreate) AddWorkflowRun(w ...*WorkflowRun) *CASBackendCreate {
+	ids := make([]uuid.UUID, len(w))
+	for i := range w {
+		ids[i] = w[i].ID
+	}
+	return cbc.AddWorkflowRunIDs(ids...)
+}
+
 // Mutation returns the CASBackendMutation object of the builder.
 func (cbc *CASBackendCreate) Mutation() *CASBackendMutation {
 	return cbc.mutation
@@ -215,6 +231,9 @@ func (cbc *CASBackendCreate) check() error {
 	if _, ok := cbc.mutation.OrganizationID(); !ok {
 		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "CASBackend.organization"`)}
 	}
+	if len(cbc.mutation.WorkflowRunIDs()) == 0 {
+		return &ValidationError{Name: "workflow_run", err: errors.New(`ent: missing required edge "CASBackend.workflow_run"`)}
+	}
 	return nil
 }
 
@@ -293,6 +312,22 @@ func (cbc *CASBackendCreate) createSpec() (*CASBackend, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.organization_cas_backends = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := cbc.mutation.WorkflowRunIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   casbackend.WorkflowRunTable,
+			Columns: casbackend.WorkflowRunPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

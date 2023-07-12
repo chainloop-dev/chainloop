@@ -62,6 +62,8 @@ func (WorkflowRun) Edges() []ent.Edge {
 			Ref("workflowruns").
 			Unique(),
 		edge.To("contract_version", WorkflowContractVersion.Type).Unique().Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
+		// A WorkflowRun can have multiple CASBackends associated to it
+		edge.To("cas_backends", CASBackend.Type),
 	}
 }
 

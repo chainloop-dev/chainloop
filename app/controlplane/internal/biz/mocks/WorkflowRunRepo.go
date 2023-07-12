@@ -23,25 +23,25 @@ type WorkflowRunRepo struct {
 	mock.Mock
 }
 
-// Create provides a mock function with given fields: ctx, workflowID, robotaccountID, contractVersion, runURL, runnerType
-func (_m *WorkflowRunRepo) Create(ctx context.Context, workflowID uuid.UUID, robotaccountID uuid.UUID, contractVersion uuid.UUID, runURL string, runnerType string) (*biz.WorkflowRun, error) {
-	ret := _m.Called(ctx, workflowID, robotaccountID, contractVersion, runURL, runnerType)
+// Create provides a mock function with given fields: ctx, workflowID, robotaccountID, contractVersion, runURL, runnerType, casBackends
+func (_m *WorkflowRunRepo) Create(ctx context.Context, workflowID uuid.UUID, robotaccountID uuid.UUID, contractVersion uuid.UUID, runURL string, runnerType string, casBackends []uuid.UUID) (*biz.WorkflowRun, error) {
+	ret := _m.Called(ctx, workflowID, robotaccountID, contractVersion, runURL, runnerType, casBackends)
 
 	var r0 *biz.WorkflowRun
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, string, string) (*biz.WorkflowRun, error)); ok {
-		return rf(ctx, workflowID, robotaccountID, contractVersion, runURL, runnerType)
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, string, string, []uuid.UUID) (*biz.WorkflowRun, error)); ok {
+		return rf(ctx, workflowID, robotaccountID, contractVersion, runURL, runnerType, casBackends)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, string, string) *biz.WorkflowRun); ok {
-		r0 = rf(ctx, workflowID, robotaccountID, contractVersion, runURL, runnerType)
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, string, string, []uuid.UUID) *biz.WorkflowRun); ok {
+		r0 = rf(ctx, workflowID, robotaccountID, contractVersion, runURL, runnerType, casBackends)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*biz.WorkflowRun)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, string, string) error); ok {
-		r1 = rf(ctx, workflowID, robotaccountID, contractVersion, runURL, runnerType)
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, string, string, []uuid.UUID) error); ok {
+		r1 = rf(ctx, workflowID, robotaccountID, contractVersion, runURL, runnerType, casBackends)
 	} else {
 		r1 = ret.Error(1)
 	}

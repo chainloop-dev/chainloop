@@ -82,7 +82,7 @@ func (s *casBackendTestSuite) TestSaveDefaultBackendAlreadyExist() {
 	assert := assert.New(s.T())
 	const repoName, username, password = "repo", "username", "pass"
 
-	r := &biz.CASBackend{ID: s.validUUID.String()}
+	r := &biz.CASBackend{ID: s.validUUID}
 	ctx := context.Background()
 	s.repo.On("FindDefaultBackend", ctx, s.validUUID).Return(r, nil)
 	s.credsRW.On("SaveCredentials", ctx, s.validUUID.String(), mock.Anything).Return("secret-key", nil)
@@ -123,7 +123,7 @@ func (s *casBackendTestSuite) TestSaveDefaultBackendOk() {
 func (s *casBackendTestSuite) TestPerformValidation() {
 	assert := assert.New(s.T())
 	t := s.T()
-	validRepo := &biz.CASBackend{ID: s.validUUID.String(), ValidationStatus: biz.CASBackendValidationOK, Provider: biz.CASBackendOCI}
+	validRepo := &biz.CASBackend{ID: s.validUUID, ValidationStatus: biz.CASBackendValidationOK, Provider: biz.CASBackendOCI}
 
 	t.Run("invalid uuid", func(t *testing.T) {
 		err := s.useCase.PerformValidation(context.Background(), s.invalidUUID)

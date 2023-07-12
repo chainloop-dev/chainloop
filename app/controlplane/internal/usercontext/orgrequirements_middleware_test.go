@@ -75,7 +75,7 @@ func TestShouldRevalidate(t *testing.T) {
 func TestValidateRepo(t *testing.T) {
 	ctx := context.Background()
 	assert := assert.New(t)
-	repo := &biz.CASBackend{ID: uuid.NewString(), ValidatedAt: toTimePtr(time.Now())}
+	repo := &biz.CASBackend{ID: uuid.New(), ValidatedAt: toTimePtr(time.Now())}
 
 	t.Run("validation error", func(t *testing.T) {
 		useCase := mocks.NewCASBackendReader(t)

@@ -28,7 +28,7 @@ local_db = postgres://postgres:@localhost:5432/controlplane?sslmode=disable
 
 .PHONY: migration_apply
 # run migrations against local db
-migration_apply: check-atlas-tool
+migration_apply: check-atlas-tool migration_hash
 	atlas migrate status --dir ${local_migrations_dir} --url ${local_db}
 	atlas migrate apply --dir ${local_migrations_dir} --url ${local_db}
 
