@@ -54,6 +54,6 @@ func (CASBackend) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("organization", Organization.Type).Ref("cas_backends").Unique().Required(),
 		// WorkflowRuns might be associated with multiple CASBackends
-		edge.From("workflow_run", WorkflowRun.Type).Ref("cas_backends").Required(),
+		edge.From("workflow_run", WorkflowRun.Type).Ref("cas_backends"),
 	}
 }

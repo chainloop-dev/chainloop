@@ -17,6 +17,7 @@ package biz
 
 import (
 	"context"
+	"errors"
 	"io"
 	"time"
 
@@ -32,7 +33,6 @@ type WorkflowRun struct {
 	State, Reason         string
 	CreatedAt, FinishedAt *time.Time
 	Workflow              *Workflow
-	AttestationID         uuid.UUID
 	RunURL, RunnerType    string
 	ContractVersionID     uuid.UUID
 	Attestation           *Attestation
@@ -166,6 +166,10 @@ func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreat
 	robotaccountUUID, err := uuid.Parse(opts.RobotaccountID)
 	if err != nil {
 		return nil, err
+	}
+
+	if opts.CASBackendID == uuid.Nil {
+		return nil, errors.New("CASBackendID cannot be nil")
 	}
 
 	// For now we only associate the workflow run to one backend.

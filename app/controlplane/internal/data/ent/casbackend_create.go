@@ -231,9 +231,6 @@ func (cbc *CASBackendCreate) check() error {
 	if _, ok := cbc.mutation.OrganizationID(); !ok {
 		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "CASBackend.organization"`)}
 	}
-	if len(cbc.mutation.WorkflowRunIDs()) == 0 {
-		return &ValidationError{Name: "workflow_run", err: errors.New(`ent: missing required edge "CASBackend.workflow_run"`)}
-	}
 	return nil
 }
 

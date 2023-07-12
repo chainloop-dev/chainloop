@@ -79,7 +79,7 @@ func TestValidateRepo(t *testing.T) {
 
 	t.Run("validation error", func(t *testing.T) {
 		useCase := mocks.NewCASBackendReader(t)
-		useCase.On("PerformValidation", ctx, repo.ID).Return(errors.New("validation error"))
+		useCase.On("PerformValidation", ctx, repo.ID.String()).Return(errors.New("validation error"))
 		got, err := validateRepo(ctx, useCase, repo)
 		assert.Error(err)
 		assert.Nil(got)
@@ -87,10 +87,10 @@ func TestValidateRepo(t *testing.T) {
 
 	t.Run("validation ok, returns updated repo", func(t *testing.T) {
 		useCase := mocks.NewCASBackendReader(t)
-		useCase.On("PerformValidation", ctx, repo.ID).Return(nil)
+		useCase.On("PerformValidation", ctx, repo.ID.String()).Return(nil)
 
 		want := &biz.CASBackend{ID: repo.ID, ValidatedAt: toTimePtr(time.Now())}
-		useCase.On("FindByID", ctx, repo.ID).Return(want, nil)
+		useCase.On("FindByID", ctx, repo.ID.String()).Return(want, nil)
 		got, err := validateRepo(ctx, useCase, repo)
 		assert.NoError(err)
 		assert.Equal(want, got)
