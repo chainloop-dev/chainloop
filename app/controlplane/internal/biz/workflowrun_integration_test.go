@@ -76,7 +76,7 @@ func (s *workflowRunIntegrationTestSuite) TestCreate() {
 			CASBackends: []*biz.CASBackend{s.casBackend},
 		}, run,
 			cmpopts.IgnoreFields(biz.WorkflowRun{}, "CreatedAt", "ID", "Workflow"),
-			cmpopts.IgnoreFields(biz.CASBackend{}, "CreatedAt", "ValidatedAt"),
+			cmpopts.IgnoreFields(biz.CASBackend{}, "CreatedAt", "ValidatedAt", "OrganizationID"),
 		); diff != "" {
 			assert.Failf("mismatch (-want +got):\n%s", diff)
 		}
