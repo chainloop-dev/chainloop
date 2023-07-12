@@ -17,6 +17,7 @@ package data
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
@@ -36,6 +37,20 @@ func NewCASBackendRepo(data *Data, logger log.Logger) biz.CASBackendRepo {
 		data: data,
 		log:  log.NewHelper(logger),
 	}
+}
+
+func (r *CASBackendRepo) List(ctx context.Context, orgID uuid.UUID) ([]*biz.CASBackend, error) {
+	backends, err := orgScopedQuery(r.data.db, orgID).QueryCasBackends().All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list cas backends: %w", err)
+	}
+
+	var res []*biz.CASBackend
+	for _, backend := range backends {
+		res = append(res, entCASBackendToBiz(backend))
+	}
+
+	return res, nil
 }
 
 func (r *CASBackendRepo) FindDefaultBackend(ctx context.Context, orgID uuid.UUID) (*biz.CASBackend, error) {

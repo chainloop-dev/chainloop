@@ -125,6 +125,7 @@ export interface Org {
   createdAt?: Date;
 }
 
+/** @deprecated */
 export interface OCIRepositoryItem {
   id: string;
   repo: string;
@@ -166,6 +167,57 @@ export function oCIRepositoryItem_ValidationStatusToJSON(object: OCIRepositoryIt
     case OCIRepositoryItem_ValidationStatus.VALIDATION_STATUS_INVALID:
       return "VALIDATION_STATUS_INVALID";
     case OCIRepositoryItem_ValidationStatus.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export interface CASBackendItem {
+  id: string;
+  name: string;
+  createdAt?: Date;
+  validatedAt?: Date;
+  validationStatus: CASBackendItem_ValidationStatus;
+  /** OCI, S3, ... */
+  provider: string;
+  /** Wether it's the default backend in the organization */
+  default: boolean;
+}
+
+export enum CASBackendItem_ValidationStatus {
+  VALIDATION_STATUS_UNSPECIFIED = 0,
+  VALIDATION_STATUS_OK = 1,
+  VALIDATION_STATUS_INVALID = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function cASBackendItem_ValidationStatusFromJSON(object: any): CASBackendItem_ValidationStatus {
+  switch (object) {
+    case 0:
+    case "VALIDATION_STATUS_UNSPECIFIED":
+      return CASBackendItem_ValidationStatus.VALIDATION_STATUS_UNSPECIFIED;
+    case 1:
+    case "VALIDATION_STATUS_OK":
+      return CASBackendItem_ValidationStatus.VALIDATION_STATUS_OK;
+    case 2:
+    case "VALIDATION_STATUS_INVALID":
+      return CASBackendItem_ValidationStatus.VALIDATION_STATUS_INVALID;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return CASBackendItem_ValidationStatus.UNRECOGNIZED;
+  }
+}
+
+export function cASBackendItem_ValidationStatusToJSON(object: CASBackendItem_ValidationStatus): string {
+  switch (object) {
+    case CASBackendItem_ValidationStatus.VALIDATION_STATUS_UNSPECIFIED:
+      return "VALIDATION_STATUS_UNSPECIFIED";
+    case CASBackendItem_ValidationStatus.VALIDATION_STATUS_OK:
+      return "VALIDATION_STATUS_OK";
+    case CASBackendItem_ValidationStatus.VALIDATION_STATUS_INVALID:
+      return "VALIDATION_STATUS_INVALID";
+    case CASBackendItem_ValidationStatus.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
@@ -1376,6 +1428,153 @@ export const OCIRepositoryItem = {
     message.repo = object.repo ?? "";
     message.createdAt = object.createdAt ?? undefined;
     message.validationStatus = object.validationStatus ?? 0;
+    return message;
+  },
+};
+
+function createBaseCASBackendItem(): CASBackendItem {
+  return {
+    id: "",
+    name: "",
+    createdAt: undefined,
+    validatedAt: undefined,
+    validationStatus: 0,
+    provider: "",
+    default: false,
+  };
+}
+
+export const CASBackendItem = {
+  encode(message: CASBackendItem, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.name !== "") {
+      writer.uint32(18).string(message.name);
+    }
+    if (message.createdAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(26).fork()).ldelim();
+    }
+    if (message.validatedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.validatedAt), writer.uint32(34).fork()).ldelim();
+    }
+    if (message.validationStatus !== 0) {
+      writer.uint32(40).int32(message.validationStatus);
+    }
+    if (message.provider !== "") {
+      writer.uint32(50).string(message.provider);
+    }
+    if (message.default === true) {
+      writer.uint32(56).bool(message.default);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CASBackendItem {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCASBackendItem();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.validatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.validationStatus = reader.int32() as any;
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.provider = reader.string();
+          continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.default = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CASBackendItem {
+    return {
+      id: isSet(object.id) ? String(object.id) : "",
+      name: isSet(object.name) ? String(object.name) : "",
+      createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
+      validatedAt: isSet(object.validatedAt) ? fromJsonTimestamp(object.validatedAt) : undefined,
+      validationStatus: isSet(object.validationStatus)
+        ? cASBackendItem_ValidationStatusFromJSON(object.validationStatus)
+        : 0,
+      provider: isSet(object.provider) ? String(object.provider) : "",
+      default: isSet(object.default) ? Boolean(object.default) : false,
+    };
+  },
+
+  toJSON(message: CASBackendItem): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    message.name !== undefined && (obj.name = message.name);
+    message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
+    message.validatedAt !== undefined && (obj.validatedAt = message.validatedAt.toISOString());
+    message.validationStatus !== undefined &&
+      (obj.validationStatus = cASBackendItem_ValidationStatusToJSON(message.validationStatus));
+    message.provider !== undefined && (obj.provider = message.provider);
+    message.default !== undefined && (obj.default = message.default);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CASBackendItem>, I>>(base?: I): CASBackendItem {
+    return CASBackendItem.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<CASBackendItem>, I>>(object: I): CASBackendItem {
+    const message = createBaseCASBackendItem();
+    message.id = object.id ?? "";
+    message.name = object.name ?? "";
+    message.createdAt = object.createdAt ?? undefined;
+    message.validatedAt = object.validatedAt ?? undefined;
+    message.validationStatus = object.validationStatus ?? 0;
+    message.provider = object.provider ?? "";
+    message.default = object.default ?? false;
     return message;
   },
 };

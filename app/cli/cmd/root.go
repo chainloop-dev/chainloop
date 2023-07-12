@@ -107,7 +107,10 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 	rootCmd.PersistentFlags().BoolVar(&flagDebug, "debug", false, "Enable debug/verbose logging mode")
 	rootCmd.PersistentFlags().StringVarP(&flagOutputFormat, "output", "o", "table", "Output format, valid options are json and table")
 
-	rootCmd.AddCommand(newWorkflowCmd(), newAuthCmd(), NewVersionCmd(), newAttestationCmd(), newArtifactCmd(), newConfigCmd(), newIntegrationCmd(), newOrganizationCmd())
+	rootCmd.AddCommand(newWorkflowCmd(), newAuthCmd(), NewVersionCmd(),
+		newAttestationCmd(), newArtifactCmd(), newConfigCmd(),
+		newIntegrationCmd(), newOrganizationCmd(), newCASBackendCmd(),
+	)
 
 	return rootCmd
 }

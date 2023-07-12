@@ -63,6 +63,7 @@ type Opts struct {
 	OCIRepositorySvc    *service.OCIRepositoryService
 	IntegrationsSvc     *service.IntegrationsService
 	OrganizationSvc     *service.OrganizationService
+	CASBackendSvc       *service.CASBackendService
 	// Utils
 	Logger       log.Logger
 	ServerConfig *conf.Server
@@ -101,6 +102,7 @@ func NewGRPCServer(opts *Opts) *grpc.Server {
 	v1.RegisterIntegrationsServiceServer(srv, opts.IntegrationsSvc)
 	v1.RegisterOrganizationServiceServer(srv, opts.OrganizationSvc)
 	v1.RegisterAuthServiceServer(srv, opts.AuthSvc)
+	v1.RegisterCASBackendServiceServer(srv, opts.CASBackendSvc)
 
 	// Register Prometheus metrics
 	grpc_prometheus.Register(srv.Server)

@@ -133,6 +133,55 @@ func (OCIRepositoryItem_ValidationStatus) EnumDescriptor() ([]byte, []int) {
 	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{8, 0}
 }
 
+type CASBackendItem_ValidationStatus int32
+
+const (
+	CASBackendItem_VALIDATION_STATUS_UNSPECIFIED CASBackendItem_ValidationStatus = 0
+	CASBackendItem_VALIDATION_STATUS_OK          CASBackendItem_ValidationStatus = 1
+	CASBackendItem_VALIDATION_STATUS_INVALID     CASBackendItem_ValidationStatus = 2
+)
+
+// Enum value maps for CASBackendItem_ValidationStatus.
+var (
+	CASBackendItem_ValidationStatus_name = map[int32]string{
+		0: "VALIDATION_STATUS_UNSPECIFIED",
+		1: "VALIDATION_STATUS_OK",
+		2: "VALIDATION_STATUS_INVALID",
+	}
+	CASBackendItem_ValidationStatus_value = map[string]int32{
+		"VALIDATION_STATUS_UNSPECIFIED": 0,
+		"VALIDATION_STATUS_OK":          1,
+		"VALIDATION_STATUS_INVALID":     2,
+	}
+)
+
+func (x CASBackendItem_ValidationStatus) Enum() *CASBackendItem_ValidationStatus {
+	p := new(CASBackendItem_ValidationStatus)
+	*p = x
+	return p
+}
+
+func (x CASBackendItem_ValidationStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (CASBackendItem_ValidationStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_controlplane_v1_response_messages_proto_enumTypes[2].Descriptor()
+}
+
+func (CASBackendItem_ValidationStatus) Type() protoreflect.EnumType {
+	return &file_controlplane_v1_response_messages_proto_enumTypes[2]
+}
+
+func (x CASBackendItem_ValidationStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use CASBackendItem_ValidationStatus.Descriptor instead.
+func (CASBackendItem_ValidationStatus) EnumDescriptor() ([]byte, []int) {
+	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{9, 0}
+}
+
 type WorkflowItem struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -805,6 +854,7 @@ func (x *Org) GetCreatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+// Deprecated: Marked as deprecated in controlplane/v1/response_messages.proto.
 type OCIRepositoryItem struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -876,6 +926,103 @@ func (x *OCIRepositoryItem) GetValidationStatus() OCIRepositoryItem_ValidationSt
 	return OCIRepositoryItem_VALIDATION_STATUS_UNSPECIFIED
 }
 
+type CASBackendItem struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id               string                          `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name             string                          `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	CreatedAt        *timestamppb.Timestamp          `protobuf:"bytes,3,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	ValidatedAt      *timestamppb.Timestamp          `protobuf:"bytes,4,opt,name=validated_at,json=validatedAt,proto3" json:"validated_at,omitempty"`
+	ValidationStatus CASBackendItem_ValidationStatus `protobuf:"varint,5,opt,name=validation_status,json=validationStatus,proto3,enum=controlplane.v1.CASBackendItem_ValidationStatus" json:"validation_status,omitempty"`
+	// OCI, S3, ...
+	Provider string `protobuf:"bytes,6,opt,name=provider,proto3" json:"provider,omitempty"`
+	// Wether it's the default backend in the organization
+	Default bool `protobuf:"varint,7,opt,name=default,proto3" json:"default,omitempty"`
+}
+
+func (x *CASBackendItem) Reset() {
+	*x = CASBackendItem{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_controlplane_v1_response_messages_proto_msgTypes[9]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *CASBackendItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CASBackendItem) ProtoMessage() {}
+
+func (x *CASBackendItem) ProtoReflect() protoreflect.Message {
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[9]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CASBackendItem.ProtoReflect.Descriptor instead.
+func (*CASBackendItem) Descriptor() ([]byte, []int) {
+	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *CASBackendItem) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *CASBackendItem) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CASBackendItem) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *CASBackendItem) GetValidatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ValidatedAt
+	}
+	return nil
+}
+
+func (x *CASBackendItem) GetValidationStatus() CASBackendItem_ValidationStatus {
+	if x != nil {
+		return x.ValidationStatus
+	}
+	return CASBackendItem_VALIDATION_STATUS_UNSPECIFIED
+}
+
+func (x *CASBackendItem) GetProvider() string {
+	if x != nil {
+		return x.Provider
+	}
+	return ""
+}
+
+func (x *CASBackendItem) GetDefault() bool {
+	if x != nil {
+		return x.Default
+	}
+	return false
+}
+
 type AttestationItem_EnvVariable struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -888,7 +1035,7 @@ type AttestationItem_EnvVariable struct {
 func (x *AttestationItem_EnvVariable) Reset() {
 	*x = AttestationItem_EnvVariable{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_controlplane_v1_response_messages_proto_msgTypes[9]
+		mi := &file_controlplane_v1_response_messages_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -901,7 +1048,7 @@ func (x *AttestationItem_EnvVariable) String() string {
 func (*AttestationItem_EnvVariable) ProtoMessage() {}
 
 func (x *AttestationItem_EnvVariable) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[9]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -945,7 +1092,7 @@ type AttestationItem_Material struct {
 func (x *AttestationItem_Material) Reset() {
 	*x = AttestationItem_Material{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_controlplane_v1_response_messages_proto_msgTypes[10]
+		mi := &file_controlplane_v1_response_messages_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -958,7 +1105,7 @@ func (x *AttestationItem_Material) String() string {
 func (*AttestationItem_Material) ProtoMessage() {}
 
 func (x *AttestationItem_Material) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[10]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1131,7 +1278,7 @@ var file_controlplane_v1_response_messages_proto_rawDesc = []byte{
 	0x74, 0x65, 0x64, 0x5f, 0x61, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67,
 	0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54,
 	0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x09, 0x63, 0x72, 0x65, 0x61, 0x74, 0x65,
-	0x64, 0x41, 0x74, 0x22, 0xc4, 0x02, 0x0a, 0x11, 0x4f, 0x43, 0x49, 0x52, 0x65, 0x70, 0x6f, 0x73,
+	0x64, 0x41, 0x74, 0x22, 0xc8, 0x02, 0x0a, 0x11, 0x4f, 0x43, 0x49, 0x52, 0x65, 0x70, 0x6f, 0x73,
 	0x69, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x74, 0x65, 0x6d, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18,
 	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x72, 0x65, 0x70,
 	0x6f, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x72, 0x65, 0x70, 0x6f, 0x12, 0x39, 0x0a,
@@ -1151,19 +1298,46 @@ var file_controlplane_v1_response_messages_proto_rawDesc = []byte{
 	0x00, 0x12, 0x18, 0x0a, 0x14, 0x56, 0x41, 0x4c, 0x49, 0x44, 0x41, 0x54, 0x49, 0x4f, 0x4e, 0x5f,
 	0x53, 0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x4f, 0x4b, 0x10, 0x01, 0x12, 0x1d, 0x0a, 0x19, 0x56,
 	0x41, 0x4c, 0x49, 0x44, 0x41, 0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53,
-	0x5f, 0x49, 0x4e, 0x56, 0x41, 0x4c, 0x49, 0x44, 0x10, 0x02, 0x2a, 0x60, 0x0a, 0x0e, 0x41, 0x6c,
-	0x6c, 0x6f, 0x77, 0x4c, 0x69, 0x73, 0x74, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x12, 0x20, 0x0a, 0x1c,
-	0x41, 0x4c, 0x4c, 0x4f, 0x57, 0x5f, 0x4c, 0x49, 0x53, 0x54, 0x5f, 0x45, 0x52, 0x52, 0x4f, 0x52,
-	0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x26,
-	0x0a, 0x1c, 0x41, 0x4c, 0x4c, 0x4f, 0x57, 0x5f, 0x4c, 0x49, 0x53, 0x54, 0x5f, 0x45, 0x52, 0x52,
-	0x4f, 0x52, 0x5f, 0x4e, 0x4f, 0x54, 0x5f, 0x49, 0x4e, 0x5f, 0x4c, 0x49, 0x53, 0x54, 0x10, 0x01,
-	0x1a, 0x04, 0xb0, 0x45, 0x93, 0x03, 0x1a, 0x04, 0xa8, 0x45, 0xf4, 0x03, 0x42, 0x4c, 0x5a, 0x4a,
-	0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x63, 0x68, 0x61, 0x69, 0x6e,
-	0x6c, 0x6f, 0x6f, 0x70, 0x2d, 0x64, 0x65, 0x76, 0x2f, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x6c, 0x6f,
-	0x6f, 0x70, 0x2f, 0x61, 0x70, 0x70, 0x2f, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x70, 0x6c,
-	0x61, 0x6e, 0x65, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x70,
-	0x6c, 0x61, 0x6e, 0x65, 0x2f, 0x76, 0x31, 0x3b, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x33,
+	0x5f, 0x49, 0x4e, 0x56, 0x41, 0x4c, 0x49, 0x44, 0x10, 0x02, 0x3a, 0x02, 0x18, 0x01, 0x22, 0xb3,
+	0x03, 0x0a, 0x0e, 0x43, 0x41, 0x53, 0x42, 0x61, 0x63, 0x6b, 0x65, 0x6e, 0x64, 0x49, 0x74, 0x65,
+	0x6d, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69,
+	0x64, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x39, 0x0a, 0x0a, 0x63, 0x72, 0x65, 0x61, 0x74, 0x65, 0x64,
+	0x5f, 0x61, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67,
+	0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65,
+	0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x09, 0x63, 0x72, 0x65, 0x61, 0x74, 0x65, 0x64, 0x41, 0x74,
+	0x12, 0x3d, 0x0a, 0x0c, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x65, 0x64, 0x5f, 0x61, 0x74,
+	0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61,
+	0x6d, 0x70, 0x52, 0x0b, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x65, 0x64, 0x41, 0x74, 0x12,
+	0x5d, 0x0a, 0x11, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x73, 0x74,
+	0x61, 0x74, 0x75, 0x73, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x30, 0x2e, 0x63, 0x6f, 0x6e,
+	0x74, 0x72, 0x6f, 0x6c, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x41, 0x53,
+	0x42, 0x61, 0x63, 0x6b, 0x65, 0x6e, 0x64, 0x49, 0x74, 0x65, 0x6d, 0x2e, 0x56, 0x61, 0x6c, 0x69,
+	0x64, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x52, 0x10, 0x76, 0x61,
+	0x6c, 0x69, 0x64, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x1a,
+	0x0a, 0x08, 0x70, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x18, 0x06, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x08, 0x70, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x12, 0x18, 0x0a, 0x07, 0x64, 0x65,
+	0x66, 0x61, 0x75, 0x6c, 0x74, 0x18, 0x07, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x64, 0x65, 0x66,
+	0x61, 0x75, 0x6c, 0x74, 0x22, 0x6e, 0x0a, 0x10, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x69,
+	0x6f, 0x6e, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x21, 0x0a, 0x1d, 0x56, 0x41, 0x4c, 0x49,
+	0x44, 0x41, 0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x55, 0x4e,
+	0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x18, 0x0a, 0x14, 0x56,
+	0x41, 0x4c, 0x49, 0x44, 0x41, 0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53,
+	0x5f, 0x4f, 0x4b, 0x10, 0x01, 0x12, 0x1d, 0x0a, 0x19, 0x56, 0x41, 0x4c, 0x49, 0x44, 0x41, 0x54,
+	0x49, 0x4f, 0x4e, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x49, 0x4e, 0x56, 0x41, 0x4c,
+	0x49, 0x44, 0x10, 0x02, 0x2a, 0x60, 0x0a, 0x0e, 0x41, 0x6c, 0x6c, 0x6f, 0x77, 0x4c, 0x69, 0x73,
+	0x74, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x12, 0x20, 0x0a, 0x1c, 0x41, 0x4c, 0x4c, 0x4f, 0x57, 0x5f,
+	0x4c, 0x49, 0x53, 0x54, 0x5f, 0x45, 0x52, 0x52, 0x4f, 0x52, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45,
+	0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x26, 0x0a, 0x1c, 0x41, 0x4c, 0x4c, 0x4f,
+	0x57, 0x5f, 0x4c, 0x49, 0x53, 0x54, 0x5f, 0x45, 0x52, 0x52, 0x4f, 0x52, 0x5f, 0x4e, 0x4f, 0x54,
+	0x5f, 0x49, 0x4e, 0x5f, 0x4c, 0x49, 0x53, 0x54, 0x10, 0x01, 0x1a, 0x04, 0xb0, 0x45, 0x93, 0x03,
+	0x1a, 0x04, 0xa8, 0x45, 0xf4, 0x03, 0x42, 0x4c, 0x5a, 0x4a, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62,
+	0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x6c, 0x6f, 0x6f, 0x70, 0x2d, 0x64,
+	0x65, 0x76, 0x2f, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x6c, 0x6f, 0x6f, 0x70, 0x2f, 0x61, 0x70, 0x70,
+	0x2f, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2f, 0x61, 0x70,
+	0x69, 0x2f, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2f, 0x76,
+	0x31, 0x3b, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1178,52 +1352,57 @@ func file_controlplane_v1_response_messages_proto_rawDescGZIP() []byte {
 	return file_controlplane_v1_response_messages_proto_rawDescData
 }
 
-var file_controlplane_v1_response_messages_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_controlplane_v1_response_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_controlplane_v1_response_messages_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_controlplane_v1_response_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_controlplane_v1_response_messages_proto_goTypes = []interface{}{
 	(AllowListError)(0),                      // 0: controlplane.v1.AllowListError
 	(OCIRepositoryItem_ValidationStatus)(0),  // 1: controlplane.v1.OCIRepositoryItem.ValidationStatus
-	(*WorkflowItem)(nil),                     // 2: controlplane.v1.WorkflowItem
-	(*WorkflowRunItem)(nil),                  // 3: controlplane.v1.WorkflowRunItem
-	(*AttestationItem)(nil),                  // 4: controlplane.v1.AttestationItem
-	(*WorkflowContractItem)(nil),             // 5: controlplane.v1.WorkflowContractItem
-	(*WorkflowContractVersionItem)(nil),      // 6: controlplane.v1.WorkflowContractVersionItem
-	(*User)(nil),                             // 7: controlplane.v1.User
-	(*OrgMembershipItem)(nil),                // 8: controlplane.v1.OrgMembershipItem
-	(*Org)(nil),                              // 9: controlplane.v1.Org
-	(*OCIRepositoryItem)(nil),                // 10: controlplane.v1.OCIRepositoryItem
-	(*AttestationItem_EnvVariable)(nil),      // 11: controlplane.v1.AttestationItem.EnvVariable
-	(*AttestationItem_Material)(nil),         // 12: controlplane.v1.AttestationItem.Material
-	(*timestamppb.Timestamp)(nil),            // 13: google.protobuf.Timestamp
-	(v1.CraftingSchema_Runner_RunnerType)(0), // 14: workflowcontract.v1.CraftingSchema.Runner.RunnerType
-	(*v1.CraftingSchema)(nil),                // 15: workflowcontract.v1.CraftingSchema
+	(CASBackendItem_ValidationStatus)(0),     // 2: controlplane.v1.CASBackendItem.ValidationStatus
+	(*WorkflowItem)(nil),                     // 3: controlplane.v1.WorkflowItem
+	(*WorkflowRunItem)(nil),                  // 4: controlplane.v1.WorkflowRunItem
+	(*AttestationItem)(nil),                  // 5: controlplane.v1.AttestationItem
+	(*WorkflowContractItem)(nil),             // 6: controlplane.v1.WorkflowContractItem
+	(*WorkflowContractVersionItem)(nil),      // 7: controlplane.v1.WorkflowContractVersionItem
+	(*User)(nil),                             // 8: controlplane.v1.User
+	(*OrgMembershipItem)(nil),                // 9: controlplane.v1.OrgMembershipItem
+	(*Org)(nil),                              // 10: controlplane.v1.Org
+	(*OCIRepositoryItem)(nil),                // 11: controlplane.v1.OCIRepositoryItem
+	(*CASBackendItem)(nil),                   // 12: controlplane.v1.CASBackendItem
+	(*AttestationItem_EnvVariable)(nil),      // 13: controlplane.v1.AttestationItem.EnvVariable
+	(*AttestationItem_Material)(nil),         // 14: controlplane.v1.AttestationItem.Material
+	(*timestamppb.Timestamp)(nil),            // 15: google.protobuf.Timestamp
+	(v1.CraftingSchema_Runner_RunnerType)(0), // 16: workflowcontract.v1.CraftingSchema.Runner.RunnerType
+	(*v1.CraftingSchema)(nil),                // 17: workflowcontract.v1.CraftingSchema
 }
 var file_controlplane_v1_response_messages_proto_depIdxs = []int32{
-	13, // 0: controlplane.v1.WorkflowItem.created_at:type_name -> google.protobuf.Timestamp
-	3,  // 1: controlplane.v1.WorkflowItem.last_run:type_name -> controlplane.v1.WorkflowRunItem
-	13, // 2: controlplane.v1.WorkflowRunItem.created_at:type_name -> google.protobuf.Timestamp
-	13, // 3: controlplane.v1.WorkflowRunItem.finished_at:type_name -> google.protobuf.Timestamp
-	2,  // 4: controlplane.v1.WorkflowRunItem.workflow:type_name -> controlplane.v1.WorkflowItem
-	14, // 5: controlplane.v1.WorkflowRunItem.runner_type:type_name -> workflowcontract.v1.CraftingSchema.Runner.RunnerType
-	6,  // 6: controlplane.v1.WorkflowRunItem.contract_version:type_name -> controlplane.v1.WorkflowContractVersionItem
-	13, // 7: controlplane.v1.AttestationItem.created_at:type_name -> google.protobuf.Timestamp
-	11, // 8: controlplane.v1.AttestationItem.env_vars:type_name -> controlplane.v1.AttestationItem.EnvVariable
-	12, // 9: controlplane.v1.AttestationItem.materials:type_name -> controlplane.v1.AttestationItem.Material
-	13, // 10: controlplane.v1.WorkflowContractItem.created_at:type_name -> google.protobuf.Timestamp
-	13, // 11: controlplane.v1.WorkflowContractVersionItem.created_at:type_name -> google.protobuf.Timestamp
-	15, // 12: controlplane.v1.WorkflowContractVersionItem.v1:type_name -> workflowcontract.v1.CraftingSchema
-	13, // 13: controlplane.v1.User.created_at:type_name -> google.protobuf.Timestamp
-	9,  // 14: controlplane.v1.OrgMembershipItem.org:type_name -> controlplane.v1.Org
-	13, // 15: controlplane.v1.OrgMembershipItem.created_at:type_name -> google.protobuf.Timestamp
-	13, // 16: controlplane.v1.OrgMembershipItem.updated_at:type_name -> google.protobuf.Timestamp
-	13, // 17: controlplane.v1.Org.created_at:type_name -> google.protobuf.Timestamp
-	13, // 18: controlplane.v1.OCIRepositoryItem.created_at:type_name -> google.protobuf.Timestamp
+	15, // 0: controlplane.v1.WorkflowItem.created_at:type_name -> google.protobuf.Timestamp
+	4,  // 1: controlplane.v1.WorkflowItem.last_run:type_name -> controlplane.v1.WorkflowRunItem
+	15, // 2: controlplane.v1.WorkflowRunItem.created_at:type_name -> google.protobuf.Timestamp
+	15, // 3: controlplane.v1.WorkflowRunItem.finished_at:type_name -> google.protobuf.Timestamp
+	3,  // 4: controlplane.v1.WorkflowRunItem.workflow:type_name -> controlplane.v1.WorkflowItem
+	16, // 5: controlplane.v1.WorkflowRunItem.runner_type:type_name -> workflowcontract.v1.CraftingSchema.Runner.RunnerType
+	7,  // 6: controlplane.v1.WorkflowRunItem.contract_version:type_name -> controlplane.v1.WorkflowContractVersionItem
+	15, // 7: controlplane.v1.AttestationItem.created_at:type_name -> google.protobuf.Timestamp
+	13, // 8: controlplane.v1.AttestationItem.env_vars:type_name -> controlplane.v1.AttestationItem.EnvVariable
+	14, // 9: controlplane.v1.AttestationItem.materials:type_name -> controlplane.v1.AttestationItem.Material
+	15, // 10: controlplane.v1.WorkflowContractItem.created_at:type_name -> google.protobuf.Timestamp
+	15, // 11: controlplane.v1.WorkflowContractVersionItem.created_at:type_name -> google.protobuf.Timestamp
+	17, // 12: controlplane.v1.WorkflowContractVersionItem.v1:type_name -> workflowcontract.v1.CraftingSchema
+	15, // 13: controlplane.v1.User.created_at:type_name -> google.protobuf.Timestamp
+	10, // 14: controlplane.v1.OrgMembershipItem.org:type_name -> controlplane.v1.Org
+	15, // 15: controlplane.v1.OrgMembershipItem.created_at:type_name -> google.protobuf.Timestamp
+	15, // 16: controlplane.v1.OrgMembershipItem.updated_at:type_name -> google.protobuf.Timestamp
+	15, // 17: controlplane.v1.Org.created_at:type_name -> google.protobuf.Timestamp
+	15, // 18: controlplane.v1.OCIRepositoryItem.created_at:type_name -> google.protobuf.Timestamp
 	1,  // 19: controlplane.v1.OCIRepositoryItem.validation_status:type_name -> controlplane.v1.OCIRepositoryItem.ValidationStatus
-	20, // [20:20] is the sub-list for method output_type
-	20, // [20:20] is the sub-list for method input_type
-	20, // [20:20] is the sub-list for extension type_name
-	20, // [20:20] is the sub-list for extension extendee
-	0,  // [0:20] is the sub-list for field type_name
+	15, // 20: controlplane.v1.CASBackendItem.created_at:type_name -> google.protobuf.Timestamp
+	15, // 21: controlplane.v1.CASBackendItem.validated_at:type_name -> google.protobuf.Timestamp
+	2,  // 22: controlplane.v1.CASBackendItem.validation_status:type_name -> controlplane.v1.CASBackendItem.ValidationStatus
+	23, // [23:23] is the sub-list for method output_type
+	23, // [23:23] is the sub-list for method input_type
+	23, // [23:23] is the sub-list for extension type_name
+	23, // [23:23] is the sub-list for extension extendee
+	0,  // [0:23] is the sub-list for field type_name
 }
 
 func init() { file_controlplane_v1_response_messages_proto_init() }
@@ -1341,7 +1520,7 @@ func file_controlplane_v1_response_messages_proto_init() {
 			}
 		}
 		file_controlplane_v1_response_messages_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*AttestationItem_EnvVariable); i {
+			switch v := v.(*CASBackendItem); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1353,6 +1532,18 @@ func file_controlplane_v1_response_messages_proto_init() {
 			}
 		}
 		file_controlplane_v1_response_messages_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*AttestationItem_EnvVariable); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_controlplane_v1_response_messages_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*AttestationItem_Material); i {
 			case 0:
 				return &v.state
@@ -1373,8 +1564,8 @@ func file_controlplane_v1_response_messages_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_controlplane_v1_response_messages_proto_rawDesc,
-			NumEnums:      2,
-			NumMessages:   11,
+			NumEnums:      3,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

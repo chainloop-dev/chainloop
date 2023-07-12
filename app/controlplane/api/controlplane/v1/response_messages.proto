@@ -110,10 +110,30 @@ message Org {
 }
 
 message OCIRepositoryItem {
+  option deprecated = true; // in favor of CASBackendItem
+
   string id = 1;
   string repo = 2;
   google.protobuf.Timestamp created_at = 3;
   ValidationStatus validation_status = 4;
+
+  enum ValidationStatus {
+    VALIDATION_STATUS_UNSPECIFIED = 0;
+    VALIDATION_STATUS_OK = 1;
+    VALIDATION_STATUS_INVALID = 2;
+  }
+}
+
+message CASBackendItem {
+  string id = 1;
+  string name = 2;
+  google.protobuf.Timestamp created_at = 3;
+  google.protobuf.Timestamp validated_at = 4;
+  ValidationStatus validation_status = 5;
+  // OCI, S3, ...
+  string provider = 6;
+  // Wether it's the default backend in the organization
+  bool default = 7;
 
   enum ValidationStatus {
     VALIDATION_STATUS_UNSPECIFIED = 0;

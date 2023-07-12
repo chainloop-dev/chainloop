@@ -57,3 +57,18 @@ linters-settings:
       - ^print.*$
       - '^t\.Error.*$(# forbid t.Error in favor of using testify\.)?'
       - '^t\.Fatal.*$(# forbid t.Fatal in favor of using testify\.)?'
+  staticcheck:
+    # SAxxxx checks in https://staticcheck.io/docs/configuration/options/#checks
+    # Disable deprecation checks, note that we need to deprecate it because golangci-lint doesn't support
+    # setting a non-error exit code on info severity (setup below)
+    # https://github.com/golangci/golangci-lint/issues/1981
+    checks: ["all", "-SA1019"]
+severity:
+  default-severity: error
+  # NOTE: this still makes the CLI exit with 1 hence the fact that we disabled the rule above as well
+  # https://github.com/golangci/golangci-lint/issues/1981
+  rules:
+    - linters:
+        - staticcheck
+      text: "SA1019:"
+      severity: info

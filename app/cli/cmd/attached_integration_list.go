@@ -45,12 +45,14 @@ func newAttachedIntegrationListCmd() *cobra.Command {
 }
 
 func attachedIntegrationListTableOutput(attachments []*action.AttachedIntegrationItem) error {
-	if len(attachments) == 0 {
-		fmt.Println("there are no integration attached")
+	switch n := len(attachments); {
+	case n == 0:
+		fmt.Println("there are no integrations attached")
 		return nil
+	case n > 1:
+		fmt.Println("Integrations attached to workflows")
 	}
 
-	fmt.Println("Integrations attached to workflows")
 	t := newTableWriter()
 	t.AppendHeader(table.Row{"ID", "Kind", "Config", "Attached At", "Workflow"})
 	for _, attachment := range attachments {

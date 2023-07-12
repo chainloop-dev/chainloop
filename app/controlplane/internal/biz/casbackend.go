@@ -70,6 +70,7 @@ type CASBackendUpdateOpts struct {
 type CASBackendRepo interface {
 	FindDefaultBackend(ctx context.Context, orgID uuid.UUID) (*CASBackend, error)
 	FindByID(ctx context.Context, ID uuid.UUID) (*CASBackend, error)
+	List(ctx context.Context, orgID uuid.UUID) ([]*CASBackend, error)
 	UpdateValidationStatus(ctx context.Context, ID uuid.UUID, status CASBackendValidationStatus) error
 	Create(context.Context, *CASBackendCreateOpts) (*CASBackend, error)
 	Update(context.Context, *CASBackendUpdateOpts) (*CASBackend, error)
@@ -95,6 +96,15 @@ func NewCASBackendUseCase(repo CASBackendRepo, credsRW credentials.ReaderWriter,
 	}
 
 	return &CASBackendUseCase{repo, servicelogger.ScopedHelper(l, "biz/CASBackend"), credsRW, p}
+}
+
+func (uc *CASBackendUseCase) List(ctx context.Context, orgID string) ([]*CASBackend, error) {
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return nil, err
+	}
+
+	return uc.repo.List(ctx, orgUUID)
 }
 
 func (uc *CASBackendUseCase) FindDefaultBackend(ctx context.Context, orgID string) (*CASBackend, error) {

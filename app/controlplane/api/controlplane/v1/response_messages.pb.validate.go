@@ -1546,6 +1546,174 @@ var _ interface {
 	ErrorName() string
 } = OCIRepositoryItemValidationError{}
 
+// Validate checks the field values on CASBackendItem with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *CASBackendItem) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CASBackendItem with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in CASBackendItemMultiError,
+// or nil if none found.
+func (m *CASBackendItem) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CASBackendItem) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Id
+
+	// no validation rules for Name
+
+	if all {
+		switch v := interface{}(m.GetCreatedAt()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CASBackendItemValidationError{
+					field:  "CreatedAt",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CASBackendItemValidationError{
+					field:  "CreatedAt",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetCreatedAt()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CASBackendItemValidationError{
+				field:  "CreatedAt",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetValidatedAt()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CASBackendItemValidationError{
+					field:  "ValidatedAt",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CASBackendItemValidationError{
+					field:  "ValidatedAt",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetValidatedAt()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CASBackendItemValidationError{
+				field:  "ValidatedAt",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for ValidationStatus
+
+	// no validation rules for Provider
+
+	// no validation rules for Default
+
+	if len(errors) > 0 {
+		return CASBackendItemMultiError(errors)
+	}
+
+	return nil
+}
+
+// CASBackendItemMultiError is an error wrapping multiple validation errors
+// returned by CASBackendItem.ValidateAll() if the designated constraints
+// aren't met.
+type CASBackendItemMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CASBackendItemMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CASBackendItemMultiError) AllErrors() []error { return m }
+
+// CASBackendItemValidationError is the validation error returned by
+// CASBackendItem.Validate if the designated constraints aren't met.
+type CASBackendItemValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CASBackendItemValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CASBackendItemValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CASBackendItemValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CASBackendItemValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CASBackendItemValidationError) ErrorName() string { return "CASBackendItemValidationError" }
+
+// Error satisfies the builtin error interface
+func (e CASBackendItemValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCASBackendItem.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CASBackendItemValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CASBackendItemValidationError{}
+
 // Validate checks the field values on AttestationItem_EnvVariable with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
