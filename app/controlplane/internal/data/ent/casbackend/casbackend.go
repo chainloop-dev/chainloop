@@ -33,6 +33,8 @@ const (
 	FieldDefault = "default"
 	// EdgeOrganization holds the string denoting the organization edge name in mutations.
 	EdgeOrganization = "organization"
+	// EdgeWorkflowRun holds the string denoting the workflow_run edge name in mutations.
+	EdgeWorkflowRun = "workflow_run"
 	// Table holds the table name of the casbackend in the database.
 	Table = "cas_backends"
 	// OrganizationTable is the table that holds the organization relation/edge.
@@ -42,6 +44,11 @@ const (
 	OrganizationInverseTable = "organizations"
 	// OrganizationColumn is the table column denoting the organization relation/edge.
 	OrganizationColumn = "organization_cas_backends"
+	// WorkflowRunTable is the table that holds the workflow_run relation/edge. The primary key declared below.
+	WorkflowRunTable = "workflow_run_cas_backends"
+	// WorkflowRunInverseTable is the table name for the WorkflowRun entity.
+	// It exists in this package in order to avoid circular dependency with the "workflowrun" package.
+	WorkflowRunInverseTable = "workflow_runs"
 )
 
 // Columns holds all SQL columns for casbackend fields.
@@ -61,6 +68,12 @@ var Columns = []string{
 var ForeignKeys = []string{
 	"organization_cas_backends",
 }
+
+var (
+	// WorkflowRunPrimaryKey and WorkflowRunColumn2 are the table columns denoting the
+	// primary key for the workflow_run relation (M2M).
+	WorkflowRunPrimaryKey = []string{"workflow_run_id", "cas_backend_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
@@ -159,10 +172,31 @@ func ByOrganizationField(field string, opts ...sql.OrderTermOption) OrderOption 
 		sqlgraph.OrderByNeighborTerms(s, newOrganizationStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByWorkflowRunCount orders the results by workflow_run count.
+func ByWorkflowRunCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newWorkflowRunStep(), opts...)
+	}
+}
+
+// ByWorkflowRun orders the results by workflow_run terms.
+func ByWorkflowRun(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newWorkflowRunStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newOrganizationStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(OrganizationInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, OrganizationTable, OrganizationColumn),
+	)
+}
+func newWorkflowRunStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(WorkflowRunInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, true, WorkflowRunTable, WorkflowRunPrimaryKey...),
 	)
 }

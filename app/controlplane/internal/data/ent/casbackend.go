@@ -45,9 +45,11 @@ type CASBackend struct {
 type CASBackendEdges struct {
 	// Organization holds the value of the organization edge.
 	Organization *Organization `json:"organization,omitempty"`
+	// WorkflowRun holds the value of the workflow_run edge.
+	WorkflowRun []*WorkflowRun `json:"workflow_run,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // OrganizationOrErr returns the Organization value or an error if the edge
@@ -61,6 +63,15 @@ func (e CASBackendEdges) OrganizationOrErr() (*Organization, error) {
 		return e.Organization, nil
 	}
 	return nil, &NotLoadedError{edge: "organization"}
+}
+
+// WorkflowRunOrErr returns the WorkflowRun value or an error if the edge
+// was not loaded in eager-loading.
+func (e CASBackendEdges) WorkflowRunOrErr() ([]*WorkflowRun, error) {
+	if e.loadedTypes[1] {
+		return e.WorkflowRun, nil
+	}
+	return nil, &NotLoadedError{edge: "workflow_run"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -164,6 +175,11 @@ func (cb *CASBackend) Value(name string) (ent.Value, error) {
 // QueryOrganization queries the "organization" edge of the CASBackend entity.
 func (cb *CASBackend) QueryOrganization() *OrganizationQuery {
 	return NewCASBackendClient(cb.config).QueryOrganization(cb)
+}
+
+// QueryWorkflowRun queries the "workflow_run" edge of the CASBackend entity.
+func (cb *CASBackend) QueryWorkflowRun() *WorkflowRunQuery {
+	return NewCASBackendClient(cb.config).QueryWorkflowRun(cb)
 }
 
 // Update returns a builder for updating this CASBackend.

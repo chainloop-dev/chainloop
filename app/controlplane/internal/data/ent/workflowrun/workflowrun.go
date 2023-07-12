@@ -37,6 +37,8 @@ const (
 	EdgeRobotaccount = "robotaccount"
 	// EdgeContractVersion holds the string denoting the contract_version edge name in mutations.
 	EdgeContractVersion = "contract_version"
+	// EdgeCasBackends holds the string denoting the cas_backends edge name in mutations.
+	EdgeCasBackends = "cas_backends"
 	// Table holds the table name of the workflowrun in the database.
 	Table = "workflow_runs"
 	// WorkflowTable is the table that holds the workflow relation/edge.
@@ -60,6 +62,11 @@ const (
 	ContractVersionInverseTable = "workflow_contract_versions"
 	// ContractVersionColumn is the table column denoting the contract_version relation/edge.
 	ContractVersionColumn = "workflow_run_contract_version"
+	// CasBackendsTable is the table that holds the cas_backends relation/edge. The primary key declared below.
+	CasBackendsTable = "workflow_run_cas_backends"
+	// CasBackendsInverseTable is the table name for the CASBackend entity.
+	// It exists in this package in order to avoid circular dependency with the "casbackend" package.
+	CasBackendsInverseTable = "cas_backends"
 )
 
 // Columns holds all SQL columns for workflowrun fields.
@@ -81,6 +88,12 @@ var ForeignKeys = []string{
 	"workflow_workflowruns",
 	"workflow_run_contract_version",
 }
+
+var (
+	// CasBackendsPrimaryKey and CasBackendsColumn2 are the table columns denoting the
+	// primary key for the cas_backends relation (M2M).
+	CasBackendsPrimaryKey = []string{"workflow_run_id", "cas_backend_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
@@ -174,6 +187,20 @@ func ByContractVersionField(field string, opts ...sql.OrderTermOption) OrderOpti
 		sqlgraph.OrderByNeighborTerms(s, newContractVersionStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByCasBackendsCount orders the results by cas_backends count.
+func ByCasBackendsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newCasBackendsStep(), opts...)
+	}
+}
+
+// ByCasBackends orders the results by cas_backends terms.
+func ByCasBackends(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCasBackendsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newWorkflowStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -193,5 +220,12 @@ func newContractVersionStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ContractVersionInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, false, ContractVersionTable, ContractVersionColumn),
+	)
+}
+func newCasBackendsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CasBackendsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, false, CasBackendsTable, CasBackendsPrimaryKey...),
 	)
 }

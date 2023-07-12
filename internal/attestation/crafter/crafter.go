@@ -41,19 +41,12 @@ type Crafter struct {
 	logger        *zerolog.Logger
 	statePath     string
 	CraftingState *api.CraftingState
-	uploader      casclient.Uploader
 	Runner        supportedRunner
 }
 
 var ErrAttestationStateNotLoaded = errors.New("crafting state not loaded")
 
 type NewOpt func(c *Crafter)
-
-func WithUploader(uploader casclient.Uploader) NewOpt {
-	return func(c *Crafter) {
-		c.uploader = uploader
-	}
-}
 
 // where to store the attestation state file
 func WithStatePath(path string) NewOpt {
@@ -333,7 +326,7 @@ func notResolvedVars(resolved map[string]string, wantList []string) []string {
 }
 
 // Inject material to attestation state
-func (c *Crafter) AddMaterial(key, value string) error {
+func (c *Crafter) AddMaterial(key, value string, uploader casclient.Uploader) error {
 	if err := c.requireStateLoaded(); err != nil {
 		return err
 	}
@@ -356,7 +349,7 @@ func (c *Crafter) AddMaterial(key, value string) error {
 	}
 
 	// 3 - Craft resulting material
-	mt, err := materials.Craft(context.Background(), m, value, c.uploader, c.logger)
+	mt, err := materials.Craft(context.Background(), m, value, uploader, c.logger)
 	if err != nil {
 		return err
 	}

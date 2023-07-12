@@ -506,6 +506,29 @@ func HasContractVersionWith(preds ...predicate.WorkflowContractVersion) predicat
 	})
 }
 
+// HasCasBackends applies the HasEdge predicate on the "cas_backends" edge.
+func HasCasBackends() predicate.WorkflowRun {
+	return predicate.WorkflowRun(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, CasBackendsTable, CasBackendsPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCasBackendsWith applies the HasEdge predicate on the "cas_backends" edge with a given conditions (other predicates).
+func HasCasBackendsWith(preds ...predicate.CASBackend) predicate.WorkflowRun {
+	return predicate.WorkflowRun(func(s *sql.Selector) {
+		step := newCasBackendsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.WorkflowRun) predicate.WorkflowRun {
 	return predicate.WorkflowRun(func(s *sql.Selector) {

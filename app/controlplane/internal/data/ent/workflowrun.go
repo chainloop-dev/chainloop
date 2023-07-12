@@ -55,9 +55,11 @@ type WorkflowRunEdges struct {
 	Robotaccount *RobotAccount `json:"robotaccount,omitempty"`
 	// ContractVersion holds the value of the contract_version edge.
 	ContractVersion *WorkflowContractVersion `json:"contract_version,omitempty"`
+	// CasBackends holds the value of the cas_backends edge.
+	CasBackends []*CASBackend `json:"cas_backends,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 }
 
 // WorkflowOrErr returns the Workflow value or an error if the edge
@@ -97,6 +99,15 @@ func (e WorkflowRunEdges) ContractVersionOrErr() (*WorkflowContractVersion, erro
 		return e.ContractVersion, nil
 	}
 	return nil, &NotLoadedError{edge: "contract_version"}
+}
+
+// CasBackendsOrErr returns the CasBackends value or an error if the edge
+// was not loaded in eager-loading.
+func (e WorkflowRunEdges) CasBackendsOrErr() ([]*CASBackend, error) {
+	if e.loadedTypes[3] {
+		return e.CasBackends, nil
+	}
+	return nil, &NotLoadedError{edge: "cas_backends"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -230,6 +241,11 @@ func (wr *WorkflowRun) QueryRobotaccount() *RobotAccountQuery {
 // QueryContractVersion queries the "contract_version" edge of the WorkflowRun entity.
 func (wr *WorkflowRun) QueryContractVersion() *WorkflowContractVersionQuery {
 	return NewWorkflowRunClient(wr.config).QueryContractVersion(wr)
+}
+
+// QueryCasBackends queries the "cas_backends" edge of the WorkflowRun entity.
+func (wr *WorkflowRun) QueryCasBackends() *CASBackendQuery {
+	return NewWorkflowRunClient(wr.config).QueryCasBackends(wr)
 }
 
 // Update returns a builder for updating this WorkflowRun.

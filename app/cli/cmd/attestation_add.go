@@ -16,7 +16,6 @@
 package cmd
 
 import (
-	"context"
 	"errors"
 
 	"github.com/spf13/cobra"
@@ -24,8 +23,6 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
-	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	"github.com/chainloop-dev/chainloop/internal/grpcconn"
 )
 
 func newAttestationAddCmd() *cobra.Command {
@@ -38,27 +35,13 @@ func newAttestationAddCmd() *cobra.Command {
 		Annotations: map[string]string{
 			useWorkflowRobotAccount: "true",
 		},
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			var err error
-
-			// Retrieve temporary credentials for uploading
-			// TODO: only do it for artifact uploads
-			client := pb.NewAttestationServiceClient(actionOpts.CPConnection)
-			resp, err := client.GetUploadCreds(context.Background(), &pb.AttestationServiceGetUploadCredsRequest{})
-			if err != nil {
-				return newGracefulError(err)
-			}
-
-			artifactCASConn, err = grpcconn.New(viper.GetString(confOptions.CASAPI.viperKey), resp.Result.Token, flagInsecure)
-			if err != nil {
-				return newGracefulError(err)
-			}
-
-			return nil
-		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			a := action.NewAttestationAdd(
-				&action.AttestationAddOpts{ActionsOpts: actionOpts, ArtifactsCASConn: artifactCASConn},
+				&action.AttestationAddOpts{
+					ActionsOpts:        actionOpts,
+					CASURI:             viper.GetString(confOptions.CASAPI.viperKey),
+					ConnectionInsecure: flagInsecure,
+				},
 			)
 
 			err := a.Run(name, value)

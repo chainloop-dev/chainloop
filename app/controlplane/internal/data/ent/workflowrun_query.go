@@ -4,12 +4,14 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
@@ -28,6 +30,7 @@ type WorkflowRunQuery struct {
 	withWorkflow        *WorkflowQuery
 	withRobotaccount    *RobotAccountQuery
 	withContractVersion *WorkflowContractVersionQuery
+	withCasBackends     *CASBackendQuery
 	withFKs             bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -124,6 +127,28 @@ func (wrq *WorkflowRunQuery) QueryContractVersion() *WorkflowContractVersionQuer
 			sqlgraph.From(workflowrun.Table, workflowrun.FieldID, selector),
 			sqlgraph.To(workflowcontractversion.Table, workflowcontractversion.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, workflowrun.ContractVersionTable, workflowrun.ContractVersionColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(wrq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCasBackends chains the current query on the "cas_backends" edge.
+func (wrq *WorkflowRunQuery) QueryCasBackends() *CASBackendQuery {
+	query := (&CASBackendClient{config: wrq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := wrq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := wrq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(workflowrun.Table, workflowrun.FieldID, selector),
+			sqlgraph.To(casbackend.Table, casbackend.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, workflowrun.CasBackendsTable, workflowrun.CasBackendsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(wrq.driver.Dialect(), step)
 		return fromU, nil
@@ -326,6 +351,7 @@ func (wrq *WorkflowRunQuery) Clone() *WorkflowRunQuery {
 		withWorkflow:        wrq.withWorkflow.Clone(),
 		withRobotaccount:    wrq.withRobotaccount.Clone(),
 		withContractVersion: wrq.withContractVersion.Clone(),
+		withCasBackends:     wrq.withCasBackends.Clone(),
 		// clone intermediate query.
 		sql:  wrq.sql.Clone(),
 		path: wrq.path,
@@ -362,6 +388,17 @@ func (wrq *WorkflowRunQuery) WithContractVersion(opts ...func(*WorkflowContractV
 		opt(query)
 	}
 	wrq.withContractVersion = query
+	return wrq
+}
+
+// WithCasBackends tells the query-builder to eager-load the nodes that are connected to
+// the "cas_backends" edge. The optional arguments are used to configure the query builder of the edge.
+func (wrq *WorkflowRunQuery) WithCasBackends(opts ...func(*CASBackendQuery)) *WorkflowRunQuery {
+	query := (&CASBackendClient{config: wrq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	wrq.withCasBackends = query
 	return wrq
 }
 
@@ -444,10 +481,11 @@ func (wrq *WorkflowRunQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 		nodes       = []*WorkflowRun{}
 		withFKs     = wrq.withFKs
 		_spec       = wrq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			wrq.withWorkflow != nil,
 			wrq.withRobotaccount != nil,
 			wrq.withContractVersion != nil,
+			wrq.withCasBackends != nil,
 		}
 	)
 	if wrq.withWorkflow != nil || wrq.withRobotaccount != nil || wrq.withContractVersion != nil {
@@ -489,6 +527,13 @@ func (wrq *WorkflowRunQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	if query := wrq.withContractVersion; query != nil {
 		if err := wrq.loadContractVersion(ctx, query, nodes, nil,
 			func(n *WorkflowRun, e *WorkflowContractVersion) { n.Edges.ContractVersion = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := wrq.withCasBackends; query != nil {
+		if err := wrq.loadCasBackends(ctx, query, nodes,
+			func(n *WorkflowRun) { n.Edges.CasBackends = []*CASBackend{} },
+			func(n *WorkflowRun, e *CASBackend) { n.Edges.CasBackends = append(n.Edges.CasBackends, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -587,6 +632,67 @@ func (wrq *WorkflowRunQuery) loadContractVersion(ctx context.Context, query *Wor
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (wrq *WorkflowRunQuery) loadCasBackends(ctx context.Context, query *CASBackendQuery, nodes []*WorkflowRun, init func(*WorkflowRun), assign func(*WorkflowRun, *CASBackend)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*WorkflowRun)
+	nids := make(map[uuid.UUID]map[*WorkflowRun]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(workflowrun.CasBackendsTable)
+		s.Join(joinT).On(s.C(casbackend.FieldID), joinT.C(workflowrun.CasBackendsPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(workflowrun.CasBackendsPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(workflowrun.CasBackendsPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*WorkflowRun]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*CASBackend](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "cas_backends" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
 		}
 	}
 	return nil

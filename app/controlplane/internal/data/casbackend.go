@@ -107,7 +107,7 @@ func entCASBackendToBiz(backend *ent.CASBackend) *biz.CASBackend {
 	}
 
 	r := &biz.CASBackend{
-		ID:               backend.ID.String(),
+		ID:               backend.ID,
 		Name:             backend.Name,
 		SecretName:       backend.SecretName,
 		CreatedAt:        toTimePtr(backend.CreatedAt),

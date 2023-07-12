@@ -46,13 +46,14 @@ func NewWorkflowRunRepo(data *Data, logger log.Logger) biz.WorkflowRunRepo {
 	}
 }
 
-func (r *WorkflowRunRepo) Create(ctx context.Context, workflowID, robotaccountID, schemaVersionID uuid.UUID, runURL, runnerType string) (*biz.WorkflowRun, error) {
+func (r *WorkflowRunRepo) Create(ctx context.Context, workflowID, robotaccountID, schemaVersionID uuid.UUID, runURL, runnerType string, backends []uuid.UUID) (*biz.WorkflowRun, error) {
 	p, err := r.data.db.WorkflowRun.Create().
 		SetRobotaccountID(robotaccountID).
 		SetWorkflowID(workflowID).
 		SetContractVersionID(schemaVersionID).
 		SetRunURL(runURL).
 		SetRunnerType(runnerType).
+		AddCasBackendIDs(backends...).
 		Save(ctx)
 	if err != nil {
 		return nil, err
@@ -63,7 +64,7 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, workflowID, robotaccountID
 
 func (r *WorkflowRunRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.WorkflowRun, error) {
 	run, err := r.data.db.WorkflowRun.Query().
-		Where(workflowrun.ID(id)).WithWorkflow().WithContractVersion().Only(ctx)
+		Where(workflowrun.ID(id)).WithWorkflow().WithContractVersion().WithCasBackends().Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	} else if run == nil {
@@ -77,7 +78,7 @@ func (r *WorkflowRunRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID
 	run, err := orgScopedQuery(r.data.db, orgID).
 		QueryWorkflows().
 		QueryWorkflowruns().Where(workflowrun.ID(id)).
-		WithWorkflow().WithContractVersion().
+		WithWorkflow().WithContractVersion().WithCasBackends().
 		Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
@@ -183,13 +184,14 @@ func (r *WorkflowRunRepo) Expire(ctx context.Context, id uuid.UUID) error {
 
 func entWrToBizWr(wr *ent.WorkflowRun) *biz.WorkflowRun {
 	r := &biz.WorkflowRun{
-		ID:         wr.ID,
-		CreatedAt:  toTimePtr(wr.CreatedAt),
-		FinishedAt: toTimePtr(wr.FinishedAt),
-		State:      string(wr.State),
-		Reason:     wr.Reason,
-		RunURL:     wr.RunURL,
-		RunnerType: wr.RunnerType,
+		ID:          wr.ID,
+		CreatedAt:   toTimePtr(wr.CreatedAt),
+		FinishedAt:  toTimePtr(wr.FinishedAt),
+		State:       string(wr.State),
+		Reason:      wr.Reason,
+		RunURL:      wr.RunURL,
+		RunnerType:  wr.RunnerType,
+		CASBackends: make([]*biz.CASBackend, 0),
 	}
 
 	if wr.Attestation != nil {
@@ -204,6 +206,12 @@ func entWrToBizWr(wr *ent.WorkflowRun) *biz.WorkflowRun {
 
 	if wf := wr.Edges.Workflow; wf != nil {
 		r.Workflow = entWFToBizWF(wf, nil)
+	}
+
+	if backends := wr.Edges.CasBackends; backends != nil {
+		for _, b := range backends {
+			r.CASBackends = append(r.CASBackends, entCASBackendToBiz(b))
+		}
 	}
 
 	return r

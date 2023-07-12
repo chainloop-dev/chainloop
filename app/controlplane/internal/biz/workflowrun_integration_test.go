@@ -21,9 +21,14 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
+	"github.com/chainloop-dev/chainloop/internal/credentials"
+	creds "github.com/chainloop-dev/chainloop/internal/credentials/mocks"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -39,24 +44,9 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 		assert.True(biz.IsNotFound(err))
 	})
 
-	s.T().Run("valid workflowrun", func(t *testing.T) {
-		org, err := s.Organization.Create(ctx, "testing org")
-		assert.NoError(err)
-
-		// Workflow
-		wf, err := s.Workflow.Create(ctx, &biz.CreateOpts{Name: "test workflow", OrgID: org.ID})
-		assert.NoError(err)
-
-		// Robot account
-		ra, err := s.RobotAccount.Create(ctx, "name", org.ID, wf.ID.String())
-		assert.NoError(err)
-
-		// Find contract revision
-		contractVersion, err := s.WorkflowContract.Describe(ctx, org.ID, wf.ContractID.String(), 0)
-		assert.NoError(err)
-
+	s.T().Run("valid workflowRun", func(t *testing.T) {
 		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
-			WorkflowID: wf.ID.String(), RobotaccountID: ra.ID.String(), ContractRevisionUUID: contractVersion.Version.ID,
+			WorkflowID: s.workflow.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevisionUUID: s.contractVersion.Version.ID, CASBackendID: s.casBackend.ID,
 		})
 		assert.NoError(err)
 
@@ -64,9 +54,32 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 		assert.NoError(err)
 
 		// Retrieve attestation ref from storage and compare
-		r, err := s.WorkflowRun.View(ctx, org.ID, run.ID.String())
+		r, err := s.WorkflowRun.View(ctx, s.org.ID, run.ID.String())
 		assert.NoError(err)
 		assert.Equal(r.Attestation, &biz.Attestation{Envelope: validEnvelope})
+	})
+}
+
+func (s *workflowRunIntegrationTestSuite) TestCreate() {
+	assert := assert.New(s.T())
+	ctx := context.Background()
+
+	s.T().Run("valid workflowRun", func(t *testing.T) {
+		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflow.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevisionUUID: s.contractVersion.Version.ID, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL",
+		})
+		assert.NoError(err)
+		if diff := cmp.Diff(&biz.WorkflowRun{
+			RunnerType: "runnerType", RunURL: "runURL", State: string(biz.WorkflowRunInitialized), ContractVersionID: s.contractVersion.Version.ID,
+			Workflow:    s.workflow,
+			CASBackends: []*biz.CASBackend{s.casBackend},
+		}, run,
+			cmpopts.IgnoreFields(biz.WorkflowRun{}, "CreatedAt", "ID", "Workflow"),
+			cmpopts.IgnoreFields(biz.CASBackend{}, "CreatedAt", "ValidatedAt"),
+		); diff != "" {
+			assert.Failf("mismatch (-want +got):\n%s", diff)
+		}
 	})
 }
 
@@ -78,4 +91,40 @@ func TestWorkflowRunUseCase(t *testing.T) {
 // Utility struct to hold the test suite
 type workflowRunIntegrationTestSuite struct {
 	testhelpers.UseCasesEachTestSuite
+	org             *biz.Organization
+	casBackend      *biz.CASBackend
+	workflow        *biz.Workflow
+	robotAccount    *biz.RobotAccount
+	contractVersion *biz.WorkflowContractWithVersion
+}
+
+func (s *workflowRunIntegrationTestSuite) SetupTest() {
+	var err error
+	assert := assert.New(s.T())
+	ctx := context.Background()
+	// OCI repository credentials
+	credsWriter := creds.NewReaderWriter(s.T())
+	credsWriter.On(
+		"SaveCredentials", ctx, mock.Anything, &credentials.OCIKeypair{Repo: "repo", Username: "username", Password: "pass"},
+	).Return("stored-OCI-secret", nil)
+
+	s.TestingUseCases = testhelpers.NewTestingUseCases(s.T(), testhelpers.WithCredsReaderWriter(credsWriter))
+
+	s.org, err = s.Organization.Create(ctx, "testing org")
+	assert.NoError(err)
+
+	// Workflow
+	s.workflow, err = s.Workflow.Create(ctx, &biz.CreateOpts{Name: "test workflow", OrgID: s.org.ID})
+	assert.NoError(err)
+
+	// Robot account
+	s.robotAccount, err = s.RobotAccount.Create(ctx, "name", s.org.ID, s.workflow.ID.String())
+	assert.NoError(err)
+
+	// Find contract revision
+	s.contractVersion, err = s.WorkflowContract.Describe(ctx, s.org.ID, s.workflow.ContractID.String(), 0)
+	assert.NoError(err)
+
+	s.casBackend, err = s.CASBackendRepo.CreateOrUpdate(ctx, s.org.ID, "repo", "username", "pass", biz.CASBackendOCI, true)
+	assert.NoError(err)
 }

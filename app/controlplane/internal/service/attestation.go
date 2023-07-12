@@ -41,7 +41,7 @@ type AttestationService struct {
 	wrUseCase               *biz.WorkflowRunUseCase
 	workflowUseCase         *biz.WorkflowUseCase
 	workflowContractUseCase *biz.WorkflowContractUseCase
-	ociUC                   *biz.CASBackendUseCase
+	casUC                   *biz.CASBackendUseCase
 	credsReader             credentials.Reader
 	integrationUseCase      *biz.IntegrationUseCase
 	integrationDispatcher   *dispatcher.FanOutDispatcher
@@ -66,7 +66,7 @@ func NewAttestationService(opts *NewAttestationServiceOpts) *AttestationService 
 		wrUseCase:               opts.WorkflowRunUC,
 		workflowUseCase:         opts.WorkflowUC,
 		workflowContractUseCase: opts.WorkflowContractUC,
-		ociUC:                   opts.OCIUC,
+		casUC:                   opts.OCIUC,
 		credsReader:             opts.CredsReader,
 		integrationUseCase:      opts.IntegrationUseCase,
 		casCredsUseCase:         opts.CasCredsUseCase,
@@ -118,12 +118,21 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		return nil, errors.NotFound("not found", "contract not found")
 	}
 
+	// find the default CAS backend to associate the workflow
+	backend, err := s.casUC.FindDefaultBackend(context.Background(), robotAccount.OrgID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find default CAS backend: %w", err)
+	} else if backend == nil {
+		return nil, errors.NotFound("not found", "default CAS backend not found")
+	}
+
 	// Create workflowRun
 	opts := &biz.WorkflowRunCreateOpts{
 		WorkflowID: robotAccount.WorkflowID, RobotaccountID: robotAccount.ID,
 		ContractRevisionUUID: contractVersion.Version.ID,
 		RunnerRunURL:         req.GetJobUrl(),
 		RunnerType:           contractVersion.Version.BodyV1.GetRunner().GetType().String(),
+		CASBackendID:         backend.ID,
 	}
 	run, err := s.wrUseCase.Create(ctx, opts)
 	if err != nil {
@@ -167,16 +176,24 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}
 
-	// find the CAS oci credentials so the dispatcher can download the materials if needed
-	repo, err := s.ociUC.FindDefaultBackend(context.Background(), robotAccount.OrgID)
+	wRun, err := s.wrUseCase.View(ctx, robotAccount.OrgID, req.WorkflowRunId)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find main repository: %w", err)
+		return nil, sl.LogAndMaskErr(err, s.log)
+	} else if wRun == nil {
+		return nil, errors.NotFound("not found", "workflow run not found")
 	}
+
+	if len(wRun.CASBackends) == 0 {
+		return nil, errors.NotFound("not found", "workflow run has no CAS backend")
+	}
+
+	// We currently only support one backend per workflowRun
+	secretName := wRun.CASBackends[0].SecretName
 
 	// Run integrations dispatcher
 	go func() {
 		if err := s.integrationDispatcher.Run(context.TODO(), &dispatcher.RunOpts{
-			Envelope: envelope, OrgID: robotAccount.OrgID, WorkflowID: robotAccount.WorkflowID, DownloadSecretName: repo.SecretName, WorkflowRunID: req.WorkflowRunId,
+			Envelope: envelope, OrgID: robotAccount.OrgID, WorkflowID: robotAccount.WorkflowID, DownloadSecretName: secretName, WorkflowRunID: req.WorkflowRunId,
 		}); err != nil {
 			_ = sl.LogAndMaskErr(err, s.log)
 		}
@@ -215,7 +232,7 @@ func (s *AttestationService) Cancel(ctx context.Context, req *cpAPI.AttestationS
 
 // There is another endpoint to get credentials via casCredentialsService.Get
 // This one is kept since it leverages robot-accounts in the context of a workflow
-func (s *AttestationService) GetUploadCreds(ctx context.Context, _ *cpAPI.AttestationServiceGetUploadCredsRequest) (*cpAPI.AttestationServiceGetUploadCredsResponse, error) {
+func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.AttestationServiceGetUploadCredsRequest) (*cpAPI.AttestationServiceGetUploadCredsResponse, error) {
 	robotAccount := usercontext.CurrentRobotAccount(ctx)
 	if robotAccount == nil {
 		return nil, errors.NotFound("not found", "robot account not found")
@@ -227,15 +244,38 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, _ *cpAPI.Attest
 		return nil, errors.NotFound("not found", "workflow not found")
 	}
 
-	repo, err := s.ociUC.FindDefaultBackend(ctx, wf.OrgID.String())
-	if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
-	}
-	if repo == nil {
-		return nil, errors.NotFound("not found", "main repository not found")
+	// Find the CAS backend associated with this workflowRun, that's the one that will be used to upload the materials
+	// NOTE: currently we only support one backend per workflowRun but this will change in the future
+	var secretName string
+	// DEPRECATED: if no workflow run is provided, we use the default repository
+	// Maintained for compatibility reasons with older versions of the CLI
+	if req.WorkflowRunId == "" {
+		s.log.Warn("DEPRECATED: using main repository to get upload creds")
+		repo, err := s.casUC.FindDefaultBackend(ctx, wf.OrgID.String())
+		if err != nil {
+			return nil, sl.LogAndMaskErr(err, s.log)
+		} else if repo == nil {
+			return nil, errors.NotFound("not found", "main repository not found")
+		}
+	} else {
+		// This is the new mode, where the CAS backend ref is stored in the workflow run since initialization
+		wRun, err := s.wrUseCase.View(ctx, robotAccount.OrgID, req.WorkflowRunId)
+		if err != nil {
+			return nil, sl.LogAndMaskErr(err, s.log)
+		} else if wRun == nil {
+			return nil, errors.NotFound("not found", "workflow run not found")
+		}
+
+		if len(wRun.CASBackends) == 0 {
+			return nil, errors.NotFound("not found", "workflow run has no CAS backend")
+		}
+
+		s.log.Infow("msg", "generating upload credentials for CAS backend", "ID", wRun.CASBackends[0].ID, "name", wRun.CASBackends[0].Name, "workflowRun", req.WorkflowRunId)
+
+		secretName = wRun.CASBackends[0].SecretName
 	}
 
-	t, err := s.casCredsUseCase.GenerateTemporaryCredentials(repo.SecretName, casJWT.Uploader)
+	t, err := s.casCredsUseCase.GenerateTemporaryCredentials(secretName, casJWT.Uploader)
 	if err != nil {
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}

@@ -111,7 +111,7 @@ func (uc *OrganizationUseCase) Delete(ctx context.Context, id string) error {
 	if ociRepository != nil {
 		// We make sure to call the OCI repository use case to delete the repository
 		// including the external secret
-		if err := uc.casBackendUseCase.Delete(ctx, ociRepository.ID); err != nil {
+		if err := uc.casBackendUseCase.Delete(ctx, ociRepository.ID.String()); err != nil {
 			return err
 		}
 	}

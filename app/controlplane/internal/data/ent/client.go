@@ -390,6 +390,22 @@ func (c *CASBackendClient) QueryOrganization(cb *CASBackend) *OrganizationQuery 
 	return query
 }
 
+// QueryWorkflowRun queries the workflow_run edge of a CASBackend.
+func (c *CASBackendClient) QueryWorkflowRun(cb *CASBackend) *WorkflowRunQuery {
+	query := (&WorkflowRunClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := cb.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(casbackend.Table, casbackend.FieldID, id),
+			sqlgraph.To(workflowrun.Table, workflowrun.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, casbackend.WorkflowRunTable, casbackend.WorkflowRunPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(cb.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *CASBackendClient) Hooks() []Hook {
 	return c.hooks.CASBackend
@@ -1979,6 +1995,22 @@ func (c *WorkflowRunClient) QueryContractVersion(wr *WorkflowRun) *WorkflowContr
 			sqlgraph.From(workflowrun.Table, workflowrun.FieldID, id),
 			sqlgraph.To(workflowcontractversion.Table, workflowcontractversion.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, workflowrun.ContractVersionTable, workflowrun.ContractVersionColumn),
+		)
+		fromV = sqlgraph.Neighbors(wr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCasBackends queries the cas_backends edge of a WorkflowRun.
+func (c *WorkflowRunClient) QueryCasBackends(wr *WorkflowRun) *CASBackendQuery {
+	query := (&CASBackendClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := wr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(workflowrun.Table, workflowrun.FieldID, id),
+			sqlgraph.To(casbackend.Table, casbackend.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, workflowrun.CasBackendsTable, workflowrun.CasBackendsPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(wr.driver.Dialect(), step)
 		return fromV, nil

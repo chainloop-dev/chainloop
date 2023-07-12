@@ -15,6 +15,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowrun"
 	"github.com/google/uuid"
 )
 
@@ -102,6 +103,21 @@ func (cbu *CASBackendUpdate) SetOrganization(o *Organization) *CASBackendUpdate 
 	return cbu.SetOrganizationID(o.ID)
 }
 
+// AddWorkflowRunIDs adds the "workflow_run" edge to the WorkflowRun entity by IDs.
+func (cbu *CASBackendUpdate) AddWorkflowRunIDs(ids ...uuid.UUID) *CASBackendUpdate {
+	cbu.mutation.AddWorkflowRunIDs(ids...)
+	return cbu
+}
+
+// AddWorkflowRun adds the "workflow_run" edges to the WorkflowRun entity.
+func (cbu *CASBackendUpdate) AddWorkflowRun(w ...*WorkflowRun) *CASBackendUpdate {
+	ids := make([]uuid.UUID, len(w))
+	for i := range w {
+		ids[i] = w[i].ID
+	}
+	return cbu.AddWorkflowRunIDs(ids...)
+}
+
 // Mutation returns the CASBackendMutation object of the builder.
 func (cbu *CASBackendUpdate) Mutation() *CASBackendMutation {
 	return cbu.mutation
@@ -111,6 +127,27 @@ func (cbu *CASBackendUpdate) Mutation() *CASBackendMutation {
 func (cbu *CASBackendUpdate) ClearOrganization() *CASBackendUpdate {
 	cbu.mutation.ClearOrganization()
 	return cbu
+}
+
+// ClearWorkflowRun clears all "workflow_run" edges to the WorkflowRun entity.
+func (cbu *CASBackendUpdate) ClearWorkflowRun() *CASBackendUpdate {
+	cbu.mutation.ClearWorkflowRun()
+	return cbu
+}
+
+// RemoveWorkflowRunIDs removes the "workflow_run" edge to WorkflowRun entities by IDs.
+func (cbu *CASBackendUpdate) RemoveWorkflowRunIDs(ids ...uuid.UUID) *CASBackendUpdate {
+	cbu.mutation.RemoveWorkflowRunIDs(ids...)
+	return cbu
+}
+
+// RemoveWorkflowRun removes "workflow_run" edges to WorkflowRun entities.
+func (cbu *CASBackendUpdate) RemoveWorkflowRun(w ...*WorkflowRun) *CASBackendUpdate {
+	ids := make([]uuid.UUID, len(w))
+	for i := range w {
+		ids[i] = w[i].ID
+	}
+	return cbu.RemoveWorkflowRunIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -217,6 +254,51 @@ func (cbu *CASBackendUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if cbu.mutation.WorkflowRunCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   casbackend.WorkflowRunTable,
+			Columns: casbackend.WorkflowRunPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cbu.mutation.RemovedWorkflowRunIDs(); len(nodes) > 0 && !cbu.mutation.WorkflowRunCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   casbackend.WorkflowRunTable,
+			Columns: casbackend.WorkflowRunPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cbu.mutation.WorkflowRunIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   casbackend.WorkflowRunTable,
+			Columns: casbackend.WorkflowRunPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, cbu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{casbackend.Label}
@@ -308,6 +390,21 @@ func (cbuo *CASBackendUpdateOne) SetOrganization(o *Organization) *CASBackendUpd
 	return cbuo.SetOrganizationID(o.ID)
 }
 
+// AddWorkflowRunIDs adds the "workflow_run" edge to the WorkflowRun entity by IDs.
+func (cbuo *CASBackendUpdateOne) AddWorkflowRunIDs(ids ...uuid.UUID) *CASBackendUpdateOne {
+	cbuo.mutation.AddWorkflowRunIDs(ids...)
+	return cbuo
+}
+
+// AddWorkflowRun adds the "workflow_run" edges to the WorkflowRun entity.
+func (cbuo *CASBackendUpdateOne) AddWorkflowRun(w ...*WorkflowRun) *CASBackendUpdateOne {
+	ids := make([]uuid.UUID, len(w))
+	for i := range w {
+		ids[i] = w[i].ID
+	}
+	return cbuo.AddWorkflowRunIDs(ids...)
+}
+
 // Mutation returns the CASBackendMutation object of the builder.
 func (cbuo *CASBackendUpdateOne) Mutation() *CASBackendMutation {
 	return cbuo.mutation
@@ -317,6 +414,27 @@ func (cbuo *CASBackendUpdateOne) Mutation() *CASBackendMutation {
 func (cbuo *CASBackendUpdateOne) ClearOrganization() *CASBackendUpdateOne {
 	cbuo.mutation.ClearOrganization()
 	return cbuo
+}
+
+// ClearWorkflowRun clears all "workflow_run" edges to the WorkflowRun entity.
+func (cbuo *CASBackendUpdateOne) ClearWorkflowRun() *CASBackendUpdateOne {
+	cbuo.mutation.ClearWorkflowRun()
+	return cbuo
+}
+
+// RemoveWorkflowRunIDs removes the "workflow_run" edge to WorkflowRun entities by IDs.
+func (cbuo *CASBackendUpdateOne) RemoveWorkflowRunIDs(ids ...uuid.UUID) *CASBackendUpdateOne {
+	cbuo.mutation.RemoveWorkflowRunIDs(ids...)
+	return cbuo
+}
+
+// RemoveWorkflowRun removes "workflow_run" edges to WorkflowRun entities.
+func (cbuo *CASBackendUpdateOne) RemoveWorkflowRun(w ...*WorkflowRun) *CASBackendUpdateOne {
+	ids := make([]uuid.UUID, len(w))
+	for i := range w {
+		ids[i] = w[i].ID
+	}
+	return cbuo.RemoveWorkflowRunIDs(ids...)
 }
 
 // Where appends a list predicates to the CASBackendUpdate builder.
@@ -446,6 +564,51 @@ func (cbuo *CASBackendUpdateOne) sqlSave(ctx context.Context) (_node *CASBackend
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if cbuo.mutation.WorkflowRunCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   casbackend.WorkflowRunTable,
+			Columns: casbackend.WorkflowRunPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cbuo.mutation.RemovedWorkflowRunIDs(); len(nodes) > 0 && !cbuo.mutation.WorkflowRunCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   casbackend.WorkflowRunTable,
+			Columns: casbackend.WorkflowRunPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cbuo.mutation.WorkflowRunIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   casbackend.WorkflowRunTable,
+			Columns: casbackend.WorkflowRunPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

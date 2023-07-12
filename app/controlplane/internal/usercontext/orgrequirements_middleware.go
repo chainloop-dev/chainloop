@@ -64,12 +64,12 @@ func CheckOrgRequirements(uc biz.CASBackendReader) middleware.Middleware {
 // validateRepoIfNeeded will re-run a validation and return the updated repository
 func validateRepo(ctx context.Context, uc biz.CASBackendReader, repo *biz.CASBackend) (*biz.CASBackend, error) {
 	// re-run the validation
-	if err := uc.PerformValidation(ctx, repo.ID); err != nil {
+	if err := uc.PerformValidation(ctx, repo.ID.String()); err != nil {
 		return nil, fmt.Errorf("performing validation: %w", err)
 	}
 
 	// Reload repository to get the updated validation status
-	repo, err := uc.FindByID(ctx, repo.ID)
+	repo, err := uc.FindByID(ctx, repo.ID.String())
 	if err != nil {
 		return nil, fmt.Errorf("reloading repository: %w", err)
 	}
