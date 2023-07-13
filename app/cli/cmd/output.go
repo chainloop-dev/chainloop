@@ -42,7 +42,8 @@ type tabulatedData interface {
 		[]*action.RegisteredIntegrationItem |
 		[]*action.AvailableIntegrationItem |
 		[]*action.AttachedIntegrationItem |
-		[]*action.MembershipItem
+		[]*action.MembershipItem |
+		[]*action.CASBackendItem
 }
 
 var ErrOutputFormatNotImplemented = errors.New("format not implemented")

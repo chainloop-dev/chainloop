@@ -47,13 +47,6 @@ type ConfigContextItemOCIRepo struct {
 	ValidationStatus ValidationStatus
 }
 
-type ValidationStatus string
-
-const (
-	Valid   ValidationStatus = "valid"
-	Invalid ValidationStatus = "invalid"
-)
-
 func (action *ConfigCurrentContext) Run() (*ConfigContextItem, error) {
 	client := pb.NewContextServiceClient(action.cfg.CPConnection)
 	resp, err := client.Current(context.Background(), &pb.ContextServiceCurrentRequest{})

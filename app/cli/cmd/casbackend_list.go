@@ -17,7 +17,6 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
@@ -25,41 +24,48 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newRegisteredIntegrationListCmd() *cobra.Command {
+func newCASBackendListCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "list",
 		Aliases: []string{"ls"},
-		Short:   "List registered integrations",
+		Short:   "List CAS Backends from your organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewRegisteredIntegrationList(actionOpts).Run()
+			res, err := action.NewCASBackendList(actionOpts).Run()
 			if err != nil {
 				return err
 			}
 
-			return encodeOutput(res, registeredIntegrationListTableOutput)
+			return encodeOutput(res, casBackendListTableOutput)
 		},
 	}
 
+	cmd.Flags().BoolVar(&full, "full", false, "show the full output")
 	return cmd
 }
 
-func registeredIntegrationListTableOutput(items []*action.RegisteredIntegrationItem) error {
-	switch n := len(items); {
-	case n == 0:
-		fmt.Println("there are no third party integrations configured in your organization yet")
+func casBackendListTableOutput(backends []*action.CASBackendItem) error {
+	if len(backends) == 0 {
+		fmt.Println("there are no cas backends associated")
 		return nil
-	case n > 1:
-		fmt.Println("Integrations registered and configured in your organization")
 	}
 
 	t := newTableWriter()
-	t.AppendHeader(table.Row{"ID", "Description", "Kind", "Config", "Created At"})
-	for _, i := range items {
-		var options []string
-		for k, v := range i.Config {
-			options = append(options, fmt.Sprintf("%s: %v", k, v))
+	header := table.Row{"ID", "Name", "Provider", "Default"}
+	if full {
+		header = append(header, "Validation Status", "Created At", "Validated At")
+	}
+
+	t.AppendHeader(header)
+	for _, b := range backends {
+		r := table.Row{b.ID, b.Name, b.Provider, b.Default}
+		if full {
+			r = append(r, b.ValidationStatus,
+				b.CreatedAt.Format(time.RFC822),
+				b.ValidatedAt.Format(time.RFC822),
+			)
 		}
-		t.AppendRow(table.Row{i.ID, i.Description, i.Kind, strings.Join(options, "\n"), i.CreatedAt.Format(time.RFC822)})
+
+		t.AppendRow(r)
 		t.AppendSeparator()
 	}
 

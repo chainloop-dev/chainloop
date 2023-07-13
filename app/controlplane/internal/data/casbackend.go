@@ -17,6 +17,7 @@ package data
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
@@ -36,6 +37,20 @@ func NewCASBackendRepo(data *Data, logger log.Logger) biz.CASBackendRepo {
 		data: data,
 		log:  log.NewHelper(logger),
 	}
+}
+
+func (r *CASBackendRepo) List(ctx context.Context, orgID uuid.UUID) ([]*biz.CASBackend, error) {
+	backends, err := orgScopedQuery(r.data.db, orgID).QueryCasBackends().WithOrganization().All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list cas backends: %w", err)
+	}
+
+	res := make([]*biz.CASBackend, 0, len(backends))
+	for _, backend := range backends {
+		res = append(res, entCASBackendToBiz(backend))
+	}
+
+	return res, nil
 }
 
 func (r *CASBackendRepo) FindDefaultBackend(ctx context.Context, orgID uuid.UUID) (*biz.CASBackend, error) {
@@ -59,7 +74,8 @@ func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateO
 		return nil, err
 	}
 
-	return entCASBackendToBiz(backend), nil
+	// Return the backend from the DB to have consistent timestamp data
+	return r.FindByID(ctx, backend.ID)
 }
 
 func (r *CASBackendRepo) Update(ctx context.Context, opts *biz.CASBackendUpdateOpts) (*biz.CASBackend, error) {
@@ -73,7 +89,7 @@ func (r *CASBackendRepo) Update(ctx context.Context, opts *biz.CASBackendUpdateO
 		return nil, err
 	}
 
-	return entCASBackendToBiz(backend), nil
+	return r.FindByID(ctx, backend.ID)
 }
 
 // FindByID finds a CAS backend by ID in the given organization.

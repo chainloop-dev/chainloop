@@ -116,6 +116,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	ociRepositoryService := service.NewOCIRepositoryService(casBackendUseCase, v2...)
 	integrationsService := service.NewIntegrationsService(integrationUseCase, workflowUseCase, availablePlugins, v2...)
 	organizationService := service.NewOrganizationService(membershipUseCase, v2...)
+	casBackendService := service.NewCASBackendService(casBackendUseCase, v2...)
 	opts := &server.Opts{
 		UserUseCase:         userUseCase,
 		RobotAccountUseCase: robotAccountUseCase,
@@ -134,6 +135,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		OCIRepositorySvc:    ociRepositoryService,
 		IntegrationsSvc:     integrationsService,
 		OrganizationSvc:     organizationService,
+		CASBackendSvc:       casBackendService,
 		Logger:              logger,
 		ServerConfig:        confServer,
 		AuthConfig:          auth,
