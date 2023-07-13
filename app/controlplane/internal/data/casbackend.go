@@ -107,11 +107,18 @@ func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateO
 }
 
 func (r *CASBackendRepo) Update(ctx context.Context, opts *biz.CASBackendUpdateOpts) (*biz.CASBackend, error) {
-	backend, err := r.data.db.CASBackend.UpdateOneID(opts.ID).
-		SetDescription(opts.Description).
-		SetDefault(opts.Default).
-		SetSecretName(opts.SecretName).
-		Save(ctx)
+	updateChain := r.data.db.CASBackend.UpdateOneID(opts.ID).SetDefault(opts.Default)
+	// If description is provided we set it
+	if opts.Description != "" {
+		updateChain = updateChain.SetDescription(opts.Description)
+	}
+
+	// If secretName is provided we set it
+	if opts.SecretName != "" {
+		updateChain = updateChain.SetSecretName(opts.SecretName)
+	}
+
+	backend, err := updateChain.Save(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -119,10 +126,23 @@ func (r *CASBackendRepo) Update(ctx context.Context, opts *biz.CASBackendUpdateO
 	return r.FindByID(ctx, backend.ID)
 }
 
-// FindByID finds a CAS backend by ID in the given organization.
+// FindByID finds a CAS backend by ID
 // If not found, returns nil and no error
 func (r *CASBackendRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.CASBackend, error) {
 	backend, err := r.data.db.CASBackend.Query().WithOrganization().Where(casbackend.ID(id)).Only(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, err
+	} else if backend == nil {
+		return nil, nil
+	}
+
+	return entCASBackendToBiz(backend), nil
+}
+
+// FindByIDInOrg finds a CAS backend by ID in the given organization.
+// If not found, returns nil and no error
+func (r *CASBackendRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID) (*biz.CASBackend, error) {
+	backend, err := orgScopedQuery(r.data.db, orgID).QueryCasBackends().WithOrganization().Where(casbackend.ID(id)).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	} else if backend == nil {

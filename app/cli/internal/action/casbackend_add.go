@@ -23,34 +23,33 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-type CASBackendAddOCI struct {
+type CASBackendAdd struct {
 	cfg *ActionsOpts
 }
 
-type NewCASBackendOCIAddOpts struct {
-	Repo, Username, Password string
-	Description              string
-	Default                  bool
+type NewCASBackendAddOpts struct {
+	Location    string
+	Provider    string
+	Description string
+	Default     bool
+	Credentials map[string]any
 }
 
-func NewCASBackendAddOCI(cfg *ActionsOpts) *CASBackendAddOCI {
-	return &CASBackendAddOCI{cfg}
+func NewCASBackendAdd(cfg *ActionsOpts) *CASBackendAdd {
+	return &CASBackendAdd{cfg}
 }
 
-func (action *CASBackendAddOCI) Run(opts *NewCASBackendOCIAddOpts) (*CASBackendItem, error) {
+func (action *CASBackendAdd) Run(opts *NewCASBackendAddOpts) (*CASBackendItem, error) {
 	// Custom configuration for OCI
-	credentials, err := structpb.NewStruct(map[string]any{
-		"username": opts.Username,
-		"password": opts.Password,
-	})
+	credentials, err := structpb.NewStruct(opts.Credentials)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse arguments: %w", err)
 	}
 
 	client := pb.NewCASBackendServiceClient(action.cfg.CPConnection)
 	resp, err := client.Create(context.Background(), &pb.CASBackendServiceCreateRequest{
-		Location:    opts.Repo,
-		Provider:    "OCI",
+		Location:    opts.Location,
+		Provider:    opts.Provider,
 		Description: opts.Description,
 		Default:     opts.Default,
 		Credentials: credentials,

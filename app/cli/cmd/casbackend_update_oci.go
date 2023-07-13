@@ -23,11 +23,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newCASBackendAddOCICmd() *cobra.Command {
-	var repo, username, password string
+func newCASBackendUpdateOCICmd() *cobra.Command {
+	var backendID, username, password string
 	cmd := &cobra.Command{
 		Use:   "oci",
-		Short: "Register a OCI CAS Backend",
+		Short: "Update a OCI CAS Backend description, credentials or default status",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// If we are setting the default, we list existing CAS backends
 			// and ask the user to confirm the rewrite
@@ -37,8 +37,16 @@ func newCASBackendAddOCICmd() *cobra.Command {
 			description, err := cmd.Flags().GetString("description")
 			cobra.CheckErr(err)
 
+			// If we are overriding the default we ask for confirmation
 			if isDefault {
-				if confirmed, err := confirmDefaultCASBackendOverride(actionOpts, ""); err != nil {
+				if confirmed, err := confirmDefaultCASBackendOverride(actionOpts, backendID); err != nil {
+					return err
+				} else if !confirmed {
+					log.Info("Aborting...")
+					return nil
+				}
+			} else { // If we are removing the default we ask for confirmation too
+				if confirmed, err := confirmDefaultCASBackendRemoval(actionOpts, backendID); err != nil {
 					return err
 				} else if !confirmed {
 					log.Info("Aborting...")
@@ -46,9 +54,9 @@ func newCASBackendAddOCICmd() *cobra.Command {
 				}
 			}
 
-			opts := &action.NewCASBackendAddOpts{
-				Location: repo, Description: description,
-				Provider: "OCI",
+			opts := &action.NewCASBackendUpdateOpts{
+				ID:          backendID,
+				Description: description,
 				Credentials: map[string]any{
 					"username": username,
 					"password": password,
@@ -56,7 +64,11 @@ func newCASBackendAddOCICmd() *cobra.Command {
 				Default: isDefault,
 			}
 
-			res, err := action.NewCASBackendAdd(actionOpts).Run(opts)
+			if username == "" && password == "" {
+				opts.Credentials = nil
+			}
+
+			res, err := action.NewCASBackendUpdate(actionOpts).Run(opts)
 			if err != nil {
 				return err
 			} else if res == nil {
@@ -67,48 +79,38 @@ func newCASBackendAddOCICmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&repo, "repo", "", "FQDN repository name, including path")
-	err := cmd.MarkFlagRequired("repo")
+	cmd.Flags().StringVar(&backendID, "id", "", "CAS Backend ID")
+	err := cmd.MarkFlagRequired("id")
 	cobra.CheckErr(err)
 
 	cmd.Flags().StringVarP(&username, "username", "u", "", "registry username")
-	err = cmd.MarkFlagRequired("username")
-	cobra.CheckErr(err)
 
 	cmd.Flags().StringVarP(&password, "password", "p", "", "registry password")
-	err = cmd.MarkFlagRequired("password")
-	cobra.CheckErr(err)
 	return cmd
 }
 
-// confirmDefaultCASBackendOverride asks the user to confirm the override of the default CAS backend
-// in the event that there is one already set and its not the same as the one we are setting
-func confirmDefaultCASBackendOverride(actionOpts *action.ActionsOpts, id string) (bool, error) {
+// If we are removing the default we confirm too
+func confirmDefaultCASBackendRemoval(actionOpts *action.ActionsOpts, id string) (bool, error) {
 	// get existing backends
 	backends, err := action.NewCASBackendList(actionOpts).Run()
 	if err != nil {
 		return false, fmt.Errorf("failed to list existing CAS backends: %w", err)
 	}
 
-	// Find the default
-	var defaultB *action.CASBackendItem
 	for _, b := range backends {
-		if b.Default {
-			defaultB = b
-			break
+		// We are removing ourselves as the default, ask the user to confirm
+		if b.Default && b.ID == id {
+			// Ask the user to confirm the override
+			fmt.Println("This is the default CAS backend and your are setting default=false.\nPlease confirm to continue y/N: ")
+			var gotChallenge string
+			fmt.Scanln(&gotChallenge)
+
+			// If the user does not confirm, we are done
+			if gotChallenge != "y" && gotChallenge != "Y" {
+				return false, nil
+			}
 		}
 	}
 
-	// If there is none or there is but it's the same as the one we are setting, we are ok
-	if defaultB == nil || (id != "" && id == defaultB.ID) {
-		return true, nil
-	}
-
-	// Ask the user to confirm the override
-	fmt.Println("There is already a default CAS backend in your organization.\nPlease confirm to override y/N: ")
-	var gotChallenge string
-	fmt.Scanln(&gotChallenge)
-
-	// If the user does not confirm, we are done
-	return gotChallenge == "y" || gotChallenge == "Y", nil
+	return true, nil
 }

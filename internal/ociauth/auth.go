@@ -68,7 +68,7 @@ func (repo *Credentials) Authorization() (*authn.AuthConfig, error) {
 // They include a username, password and a valid (RFC 3986 URI authority) serverName
 func validateOCICredentials(c *Credentials) (authn.Keychain, error) {
 	if c.username == "" || c.password == "" || c.server == "" {
-		return nil, errors.New("OCI credentials require an username, password and a server name")
+		return nil, errors.New("OCI credentials require a username, password and a server name")
 	}
 
 	// name.NewRepository parses incorrectly URIs with schemas
