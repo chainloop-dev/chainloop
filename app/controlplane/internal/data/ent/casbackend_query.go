@@ -336,12 +336,12 @@ func (cbq *CASBackendQuery) WithWorkflowRun(opts ...func(*WorkflowRunQuery)) *CA
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		Location string `json:"location,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.CASBackend.Query().
-//		GroupBy(casbackend.FieldName).
+//		GroupBy(casbackend.FieldLocation).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (cbq *CASBackendQuery) GroupBy(field string, fields ...string) *CASBackendGroupBy {
@@ -359,11 +359,11 @@ func (cbq *CASBackendQuery) GroupBy(field string, fields ...string) *CASBackendG
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		Location string `json:"location,omitempty"`
 //	}
 //
 //	client.CASBackend.Query().
-//		Select(casbackend.FieldName).
+//		Select(casbackend.FieldLocation).
 //		Scan(ctx, &v)
 func (cbq *CASBackendQuery) Select(fields ...string) *CASBackendSelect {
 	cbq.ctx.Fields = append(cbq.ctx.Fields, fields...)

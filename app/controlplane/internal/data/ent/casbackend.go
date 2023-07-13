@@ -20,8 +20,12 @@ type CASBackend struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
-	// Name holds the value of the "name" field.
-	Name string `json:"name,omitempty"`
+	// Location holds the value of the "location" field.
+	Location string `json:"location,omitempty"`
+	// Provider holds the value of the "provider" field.
+	Provider biz.CASBackendProvider `json:"provider,omitempty"`
+	// Description holds the value of the "description" field.
+	Description string `json:"description,omitempty"`
 	// SecretName holds the value of the "secret_name" field.
 	SecretName string `json:"secret_name,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -30,8 +34,6 @@ type CASBackend struct {
 	ValidationStatus biz.CASBackendValidationStatus `json:"validation_status,omitempty"`
 	// ValidatedAt holds the value of the "validated_at" field.
 	ValidatedAt time.Time `json:"validated_at,omitempty"`
-	// Provider holds the value of the "provider" field.
-	Provider biz.CASBackendProvider `json:"provider,omitempty"`
 	// Default holds the value of the "default" field.
 	Default bool `json:"default,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -81,7 +83,7 @@ func (*CASBackend) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case casbackend.FieldDefault:
 			values[i] = new(sql.NullBool)
-		case casbackend.FieldName, casbackend.FieldSecretName, casbackend.FieldValidationStatus, casbackend.FieldProvider:
+		case casbackend.FieldLocation, casbackend.FieldProvider, casbackend.FieldDescription, casbackend.FieldSecretName, casbackend.FieldValidationStatus:
 			values[i] = new(sql.NullString)
 		case casbackend.FieldCreatedAt, casbackend.FieldValidatedAt:
 			values[i] = new(sql.NullTime)
@@ -110,11 +112,23 @@ func (cb *CASBackend) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				cb.ID = *value
 			}
-		case casbackend.FieldName:
+		case casbackend.FieldLocation:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field name", values[i])
+				return fmt.Errorf("unexpected type %T for field location", values[i])
 			} else if value.Valid {
-				cb.Name = value.String
+				cb.Location = value.String
+			}
+		case casbackend.FieldProvider:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field provider", values[i])
+			} else if value.Valid {
+				cb.Provider = biz.CASBackendProvider(value.String)
+			}
+		case casbackend.FieldDescription:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field description", values[i])
+			} else if value.Valid {
+				cb.Description = value.String
 			}
 		case casbackend.FieldSecretName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -139,12 +153,6 @@ func (cb *CASBackend) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field validated_at", values[i])
 			} else if value.Valid {
 				cb.ValidatedAt = value.Time
-			}
-		case casbackend.FieldProvider:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field provider", values[i])
-			} else if value.Valid {
-				cb.Provider = biz.CASBackendProvider(value.String)
 			}
 		case casbackend.FieldDefault:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -205,8 +213,14 @@ func (cb *CASBackend) String() string {
 	var builder strings.Builder
 	builder.WriteString("CASBackend(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", cb.ID))
-	builder.WriteString("name=")
-	builder.WriteString(cb.Name)
+	builder.WriteString("location=")
+	builder.WriteString(cb.Location)
+	builder.WriteString(", ")
+	builder.WriteString("provider=")
+	builder.WriteString(fmt.Sprintf("%v", cb.Provider))
+	builder.WriteString(", ")
+	builder.WriteString("description=")
+	builder.WriteString(cb.Description)
 	builder.WriteString(", ")
 	builder.WriteString("secret_name=")
 	builder.WriteString(cb.SecretName)
@@ -219,9 +233,6 @@ func (cb *CASBackend) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("validated_at=")
 	builder.WriteString(cb.ValidatedAt.Format(time.ANSIC))
-	builder.WriteString(", ")
-	builder.WriteString("provider=")
-	builder.WriteString(fmt.Sprintf("%v", cb.Provider))
 	builder.WriteString(", ")
 	builder.WriteString("default=")
 	builder.WriteString(fmt.Sprintf("%v", cb.Default))

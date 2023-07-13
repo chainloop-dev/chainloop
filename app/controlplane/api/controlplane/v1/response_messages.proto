@@ -126,14 +126,16 @@ message OCIRepositoryItem {
 
 message CASBackendItem {
   string id = 1;
-  string name = 2;
-  google.protobuf.Timestamp created_at = 3;
-  google.protobuf.Timestamp validated_at = 4;
-  ValidationStatus validation_status = 5;
+  // e.g. myregistry.io/myrepo s3 bucket and so on
+  string location = 2;
+  string description = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp validated_at = 5;
+  ValidationStatus validation_status = 6;
   // OCI, S3, ...
-  string provider = 6;
+  string provider = 7;
   // Wether it's the default backend in the organization
-  bool default = 7;
+  bool default = 8;
 
   enum ValidationStatus {
     VALIDATION_STATUS_UNSPECIFIED = 0;

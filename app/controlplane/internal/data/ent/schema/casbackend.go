@@ -34,7 +34,11 @@ type CASBackend struct {
 func (CASBackend) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),
-		field.String("name"),
+		// NOTE: neither the location nor the provider can be updated
+		// CAS backend location, i.e S3 bucket name, OCI repository name
+		field.String("location").Immutable(),
+		field.Enum("provider").GoType(biz.CASBackendProvider("")).Immutable(),
+		field.String("description").Optional(),
 		field.String("secret_name"),
 		field.Time("created_at").
 			Default(time.Now).
@@ -45,7 +49,6 @@ func (CASBackend) Fields() []ent.Field {
 			Default(string(biz.CASBackendValidationOK)),
 		field.Time("validated_at").Default(time.Now).
 			Annotations(&entsql.Annotation{Default: "CURRENT_TIMESTAMP"}),
-		field.Enum("provider").GoType(biz.CASBackendProvider("")),
 		field.Bool("default").Default(false),
 	}
 }

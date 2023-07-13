@@ -11,12 +11,13 @@ var (
 	// CasBackendsColumns holds the columns for the "cas_backends" table.
 	CasBackendsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "name", Type: field.TypeString},
+		{Name: "location", Type: field.TypeString},
+		{Name: "provider", Type: field.TypeEnum, Enums: []string{"OCI"}},
+		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "secret_name", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "validation_status", Type: field.TypeEnum, Enums: []string{"OK", "Invalid"}, Default: "OK"},
 		{Name: "validated_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
-		{Name: "provider", Type: field.TypeEnum, Enums: []string{"OCI"}},
 		{Name: "default", Type: field.TypeBool, Default: false},
 		{Name: "organization_cas_backends", Type: field.TypeUUID},
 	}
@@ -28,7 +29,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "cas_backends_organizations_cas_backends",
-				Columns:    []*schema.Column{CasBackendsColumns[8]},
+				Columns:    []*schema.Column{CasBackendsColumns[9]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},

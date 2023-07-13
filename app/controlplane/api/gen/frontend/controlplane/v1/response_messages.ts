@@ -174,7 +174,9 @@ export function oCIRepositoryItem_ValidationStatusToJSON(object: OCIRepositoryIt
 
 export interface CASBackendItem {
   id: string;
-  name: string;
+  /** e.g. myregistry.io/myrepo s3 bucket and so on */
+  location: string;
+  description: string;
   createdAt?: Date;
   validatedAt?: Date;
   validationStatus: CASBackendItem_ValidationStatus;
@@ -1435,7 +1437,8 @@ export const OCIRepositoryItem = {
 function createBaseCASBackendItem(): CASBackendItem {
   return {
     id: "",
-    name: "",
+    location: "",
+    description: "",
     createdAt: undefined,
     validatedAt: undefined,
     validationStatus: 0,
@@ -1449,23 +1452,26 @@ export const CASBackendItem = {
     if (message.id !== "") {
       writer.uint32(10).string(message.id);
     }
-    if (message.name !== "") {
-      writer.uint32(18).string(message.name);
+    if (message.location !== "") {
+      writer.uint32(18).string(message.location);
+    }
+    if (message.description !== "") {
+      writer.uint32(26).string(message.description);
     }
     if (message.createdAt !== undefined) {
-      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(26).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(34).fork()).ldelim();
     }
     if (message.validatedAt !== undefined) {
-      Timestamp.encode(toTimestamp(message.validatedAt), writer.uint32(34).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.validatedAt), writer.uint32(42).fork()).ldelim();
     }
     if (message.validationStatus !== 0) {
-      writer.uint32(40).int32(message.validationStatus);
+      writer.uint32(48).int32(message.validationStatus);
     }
     if (message.provider !== "") {
-      writer.uint32(50).string(message.provider);
+      writer.uint32(58).string(message.provider);
     }
     if (message.default === true) {
-      writer.uint32(56).bool(message.default);
+      writer.uint32(64).bool(message.default);
     }
     return writer;
   },
@@ -1489,38 +1495,45 @@ export const CASBackendItem = {
             break;
           }
 
-          message.name = reader.string();
+          message.location = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
             break;
           }
 
-          message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.description = reader.string();
           continue;
         case 4:
           if (tag !== 34) {
             break;
           }
 
-          message.validatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 5:
-          if (tag !== 40) {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.validatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 6:
+          if (tag !== 48) {
             break;
           }
 
           message.validationStatus = reader.int32() as any;
           continue;
-        case 6:
-          if (tag !== 50) {
+        case 7:
+          if (tag !== 58) {
             break;
           }
 
           message.provider = reader.string();
           continue;
-        case 7:
-          if (tag !== 56) {
+        case 8:
+          if (tag !== 64) {
             break;
           }
 
@@ -1538,7 +1551,8 @@ export const CASBackendItem = {
   fromJSON(object: any): CASBackendItem {
     return {
       id: isSet(object.id) ? String(object.id) : "",
-      name: isSet(object.name) ? String(object.name) : "",
+      location: isSet(object.location) ? String(object.location) : "",
+      description: isSet(object.description) ? String(object.description) : "",
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
       validatedAt: isSet(object.validatedAt) ? fromJsonTimestamp(object.validatedAt) : undefined,
       validationStatus: isSet(object.validationStatus)
@@ -1552,7 +1566,8 @@ export const CASBackendItem = {
   toJSON(message: CASBackendItem): unknown {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
-    message.name !== undefined && (obj.name = message.name);
+    message.location !== undefined && (obj.location = message.location);
+    message.description !== undefined && (obj.description = message.description);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
     message.validatedAt !== undefined && (obj.validatedAt = message.validatedAt.toISOString());
     message.validationStatus !== undefined &&
@@ -1569,7 +1584,8 @@ export const CASBackendItem = {
   fromPartial<I extends Exact<DeepPartial<CASBackendItem>, I>>(object: I): CASBackendItem {
     const message = createBaseCASBackendItem();
     message.id = object.id ?? "";
-    message.name = object.name ?? "";
+    message.location = object.location ?? "";
+    message.description = object.description ?? "";
     message.createdAt = object.createdAt ?? undefined;
     message.validatedAt = object.validatedAt ?? undefined;
     message.validationStatus = object.validationStatus ?? 0;

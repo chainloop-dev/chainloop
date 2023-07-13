@@ -25,6 +25,19 @@ func newCASBackendCmd() *cobra.Command {
 		Short: "Operations on Artifact CAS backends",
 	}
 
-	cmd.AddCommand(newCASBackendListCmd())
+	cmd.AddCommand(newCASBackendListCmd(), newCASBackendAddCmd())
+	return cmd
+}
+
+func newCASBackendAddCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "add",
+		Short: "Add a new Artifact CAS backend",
+	}
+
+	cmd.PersistentFlags().Bool("default", false, "set the backend as default in your organization")
+	cmd.PersistentFlags().String("description", "", "descriptive information for this registration")
+
+	cmd.AddCommand(newCASBackendAddOCICmd())
 	return cmd
 }

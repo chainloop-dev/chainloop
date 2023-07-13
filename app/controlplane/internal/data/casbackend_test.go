@@ -27,12 +27,13 @@ import (
 
 func TestEntCASBackendTo(t *testing.T) {
 	testRepo := &ent.CASBackend{
-		ID:         uuid.New(),
-		Name:       "test-repo",
-		Provider:   "test-provider",
-		SecretName: "test-secret",
-		CreatedAt:  time.Now(),
-		Default:    true,
+		ID:          uuid.New(),
+		Location:    "test-repo",
+		Provider:    "test-provider",
+		SecretName:  "test-secret",
+		Description: "test-description",
+		CreatedAt:   time.Now(),
+		Default:     true,
 	}
 
 	tests := []struct {
@@ -41,12 +42,13 @@ func TestEntCASBackendTo(t *testing.T) {
 	}{
 		{nil, nil},
 		{testRepo, &biz.CASBackend{
-			ID:         testRepo.ID,
-			Name:       testRepo.Name,
-			SecretName: testRepo.SecretName,
-			CreatedAt:  toTimePtr(testRepo.CreatedAt),
-			Provider:   testRepo.Provider,
-			Default:    true,
+			ID:          testRepo.ID,
+			Location:    testRepo.Location,
+			SecretName:  testRepo.SecretName,
+			Description: testRepo.Description,
+			CreatedAt:   toTimePtr(testRepo.CreatedAt),
+			Provider:    testRepo.Provider,
+			Default:     true,
 		}},
 	}
 

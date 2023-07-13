@@ -78,7 +78,7 @@ func (s *OCIRepositoryService) Save(ctx context.Context, req *pb.OCIRepositorySe
 
 func bizOCIRepoToPb(repo *biz.CASBackend) *pb.OCIRepositoryItem {
 	r := &pb.OCIRepositoryItem{
-		Id: repo.ID.String(), Repo: repo.Name, CreatedAt: timestamppb.New(*repo.CreatedAt),
+		Id: repo.ID.String(), Repo: repo.Location, CreatedAt: timestamppb.New(*repo.CreatedAt),
 	}
 
 	switch repo.ValidationStatus {

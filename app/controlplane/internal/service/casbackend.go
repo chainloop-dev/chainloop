@@ -21,6 +21,7 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
+	"github.com/go-kratos/kratos/v2/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -57,16 +58,42 @@ func (s *CASBackendService) List(ctx context.Context, _ *pb.CASBackendServiceLis
 	return &pb.CASBackendServiceListResponse{Result: res}, nil
 }
 
-func bizOCASBackendToPb(repo *biz.CASBackend) *pb.CASBackendItem {
-	r := &pb.CASBackendItem{
-		Id: repo.ID.String(), Name: repo.Name,
-		CreatedAt:   timestamppb.New(*repo.CreatedAt),
-		ValidatedAt: timestamppb.New(*repo.ValidatedAt),
-		Provider:    string(repo.Provider),
-		Default:     repo.Default,
+func (s *CASBackendService) Create(ctx context.Context, req *pb.CASBackendServiceCreateRequest) (*pb.CASBackendServiceCreateResponse, error) {
+	_, currentOrg, err := loadCurrentUserAndOrg(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	switch repo.ValidationStatus {
+	if err := req.ValidateAll(); err != nil {
+		return nil, errors.BadRequest("invalid config", err.Error())
+	}
+
+	credsJSON, err := req.Credentials.MarshalJSON()
+	if err != nil {
+		return nil, errors.BadRequest("invalid config", "config is invalid")
+	}
+
+	// For now we only support one backend which is set as default
+	res, err := s.uc.Create(ctx, currentOrg.ID, req.Location, req.Description, biz.CASBackendOCI, credsJSON, req.Default)
+	if err != nil && biz.IsErrValidation(err) {
+		return nil, errors.BadRequest("invalid CAS backend", err.Error())
+	} else if err != nil {
+		return nil, sl.LogAndMaskErr(err, s.log)
+	}
+
+	return &pb.CASBackendServiceCreateResponse{Result: bizOCASBackendToPb(res)}, nil
+}
+
+func bizOCASBackendToPb(in *biz.CASBackend) *pb.CASBackendItem {
+	r := &pb.CASBackendItem{
+		Id: in.ID.String(), Location: in.Location, Description: in.Description,
+		CreatedAt:   timestamppb.New(*in.CreatedAt),
+		ValidatedAt: timestamppb.New(*in.ValidatedAt),
+		Provider:    string(in.Provider),
+		Default:     in.Default,
+	}
+
+	switch in.ValidationStatus {
 	case biz.CASBackendValidationOK:
 		r.ValidationStatus = pb.CASBackendItem_VALIDATION_STATUS_OK
 	case biz.CASBackendValidationFailed:

@@ -24,9 +24,29 @@ type CASBackendCreate struct {
 	hooks    []Hook
 }
 
-// SetName sets the "name" field.
-func (cbc *CASBackendCreate) SetName(s string) *CASBackendCreate {
-	cbc.mutation.SetName(s)
+// SetLocation sets the "location" field.
+func (cbc *CASBackendCreate) SetLocation(s string) *CASBackendCreate {
+	cbc.mutation.SetLocation(s)
+	return cbc
+}
+
+// SetProvider sets the "provider" field.
+func (cbc *CASBackendCreate) SetProvider(bbp biz.CASBackendProvider) *CASBackendCreate {
+	cbc.mutation.SetProvider(bbp)
+	return cbc
+}
+
+// SetDescription sets the "description" field.
+func (cbc *CASBackendCreate) SetDescription(s string) *CASBackendCreate {
+	cbc.mutation.SetDescription(s)
+	return cbc
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (cbc *CASBackendCreate) SetNillableDescription(s *string) *CASBackendCreate {
+	if s != nil {
+		cbc.SetDescription(*s)
+	}
 	return cbc
 }
 
@@ -75,12 +95,6 @@ func (cbc *CASBackendCreate) SetNillableValidatedAt(t *time.Time) *CASBackendCre
 	if t != nil {
 		cbc.SetValidatedAt(*t)
 	}
-	return cbc
-}
-
-// SetProvider sets the "provider" field.
-func (cbc *CASBackendCreate) SetProvider(bbp biz.CASBackendProvider) *CASBackendCreate {
-	cbc.mutation.SetProvider(bbp)
 	return cbc
 }
 
@@ -197,8 +211,16 @@ func (cbc *CASBackendCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (cbc *CASBackendCreate) check() error {
-	if _, ok := cbc.mutation.Name(); !ok {
-		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "CASBackend.name"`)}
+	if _, ok := cbc.mutation.Location(); !ok {
+		return &ValidationError{Name: "location", err: errors.New(`ent: missing required field "CASBackend.location"`)}
+	}
+	if _, ok := cbc.mutation.Provider(); !ok {
+		return &ValidationError{Name: "provider", err: errors.New(`ent: missing required field "CASBackend.provider"`)}
+	}
+	if v, ok := cbc.mutation.Provider(); ok {
+		if err := casbackend.ProviderValidator(v); err != nil {
+			return &ValidationError{Name: "provider", err: fmt.Errorf(`ent: validator failed for field "CASBackend.provider": %w`, err)}
+		}
 	}
 	if _, ok := cbc.mutation.SecretName(); !ok {
 		return &ValidationError{Name: "secret_name", err: errors.New(`ent: missing required field "CASBackend.secret_name"`)}
@@ -216,14 +238,6 @@ func (cbc *CASBackendCreate) check() error {
 	}
 	if _, ok := cbc.mutation.ValidatedAt(); !ok {
 		return &ValidationError{Name: "validated_at", err: errors.New(`ent: missing required field "CASBackend.validated_at"`)}
-	}
-	if _, ok := cbc.mutation.Provider(); !ok {
-		return &ValidationError{Name: "provider", err: errors.New(`ent: missing required field "CASBackend.provider"`)}
-	}
-	if v, ok := cbc.mutation.Provider(); ok {
-		if err := casbackend.ProviderValidator(v); err != nil {
-			return &ValidationError{Name: "provider", err: fmt.Errorf(`ent: validator failed for field "CASBackend.provider": %w`, err)}
-		}
 	}
 	if _, ok := cbc.mutation.Default(); !ok {
 		return &ValidationError{Name: "default", err: errors.New(`ent: missing required field "CASBackend.default"`)}
@@ -266,9 +280,17 @@ func (cbc *CASBackendCreate) createSpec() (*CASBackend, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := cbc.mutation.Name(); ok {
-		_spec.SetField(casbackend.FieldName, field.TypeString, value)
-		_node.Name = value
+	if value, ok := cbc.mutation.Location(); ok {
+		_spec.SetField(casbackend.FieldLocation, field.TypeString, value)
+		_node.Location = value
+	}
+	if value, ok := cbc.mutation.Provider(); ok {
+		_spec.SetField(casbackend.FieldProvider, field.TypeEnum, value)
+		_node.Provider = value
+	}
+	if value, ok := cbc.mutation.Description(); ok {
+		_spec.SetField(casbackend.FieldDescription, field.TypeString, value)
+		_node.Description = value
 	}
 	if value, ok := cbc.mutation.SecretName(); ok {
 		_spec.SetField(casbackend.FieldSecretName, field.TypeString, value)
@@ -285,10 +307,6 @@ func (cbc *CASBackendCreate) createSpec() (*CASBackend, *sqlgraph.CreateSpec) {
 	if value, ok := cbc.mutation.ValidatedAt(); ok {
 		_spec.SetField(casbackend.FieldValidatedAt, field.TypeTime, value)
 		_node.ValidatedAt = value
-	}
-	if value, ok := cbc.mutation.Provider(); ok {
-		_spec.SetField(casbackend.FieldProvider, field.TypeEnum, value)
-		_node.Provider = value
 	}
 	if value, ok := cbc.mutation.Default(); ok {
 		_spec.SetField(casbackend.FieldDefault, field.TypeBool, value)

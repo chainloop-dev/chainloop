@@ -56,12 +56,13 @@ type CASBackendMutation struct {
 	op                  Op
 	typ                 string
 	id                  *uuid.UUID
-	name                *string
+	location            *string
+	provider            *biz.CASBackendProvider
+	description         *string
 	secret_name         *string
 	created_at          *time.Time
 	validation_status   *biz.CASBackendValidationStatus
 	validated_at        *time.Time
-	provider            *biz.CASBackendProvider
 	_default            *bool
 	clearedFields       map[string]struct{}
 	organization        *uuid.UUID
@@ -178,40 +179,125 @@ func (m *CASBackendMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
 	}
 }
 
-// SetName sets the "name" field.
-func (m *CASBackendMutation) SetName(s string) {
-	m.name = &s
+// SetLocation sets the "location" field.
+func (m *CASBackendMutation) SetLocation(s string) {
+	m.location = &s
 }
 
-// Name returns the value of the "name" field in the mutation.
-func (m *CASBackendMutation) Name() (r string, exists bool) {
-	v := m.name
+// Location returns the value of the "location" field in the mutation.
+func (m *CASBackendMutation) Location() (r string, exists bool) {
+	v := m.location
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldName returns the old "name" field's value of the CASBackend entity.
+// OldLocation returns the old "location" field's value of the CASBackend entity.
 // If the CASBackend object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CASBackendMutation) OldName(ctx context.Context) (v string, err error) {
+func (m *CASBackendMutation) OldLocation(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldName is only allowed on UpdateOne operations")
+		return v, errors.New("OldLocation is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldName requires an ID field in the mutation")
+		return v, errors.New("OldLocation requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldName: %w", err)
+		return v, fmt.Errorf("querying old value for OldLocation: %w", err)
 	}
-	return oldValue.Name, nil
+	return oldValue.Location, nil
 }
 
-// ResetName resets all changes to the "name" field.
-func (m *CASBackendMutation) ResetName() {
-	m.name = nil
+// ResetLocation resets all changes to the "location" field.
+func (m *CASBackendMutation) ResetLocation() {
+	m.location = nil
+}
+
+// SetProvider sets the "provider" field.
+func (m *CASBackendMutation) SetProvider(bbp biz.CASBackendProvider) {
+	m.provider = &bbp
+}
+
+// Provider returns the value of the "provider" field in the mutation.
+func (m *CASBackendMutation) Provider() (r biz.CASBackendProvider, exists bool) {
+	v := m.provider
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProvider returns the old "provider" field's value of the CASBackend entity.
+// If the CASBackend object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CASBackendMutation) OldProvider(ctx context.Context) (v biz.CASBackendProvider, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProvider is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProvider requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProvider: %w", err)
+	}
+	return oldValue.Provider, nil
+}
+
+// ResetProvider resets all changes to the "provider" field.
+func (m *CASBackendMutation) ResetProvider() {
+	m.provider = nil
+}
+
+// SetDescription sets the "description" field.
+func (m *CASBackendMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *CASBackendMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the CASBackend entity.
+// If the CASBackend object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CASBackendMutation) OldDescription(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of the "description" field.
+func (m *CASBackendMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[casbackend.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *CASBackendMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[casbackend.FieldDescription]
+	return ok
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *CASBackendMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, casbackend.FieldDescription)
 }
 
 // SetSecretName sets the "secret_name" field.
@@ -356,42 +442,6 @@ func (m *CASBackendMutation) OldValidatedAt(ctx context.Context) (v time.Time, e
 // ResetValidatedAt resets all changes to the "validated_at" field.
 func (m *CASBackendMutation) ResetValidatedAt() {
 	m.validated_at = nil
-}
-
-// SetProvider sets the "provider" field.
-func (m *CASBackendMutation) SetProvider(bbp biz.CASBackendProvider) {
-	m.provider = &bbp
-}
-
-// Provider returns the value of the "provider" field in the mutation.
-func (m *CASBackendMutation) Provider() (r biz.CASBackendProvider, exists bool) {
-	v := m.provider
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldProvider returns the old "provider" field's value of the CASBackend entity.
-// If the CASBackend object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CASBackendMutation) OldProvider(ctx context.Context) (v biz.CASBackendProvider, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldProvider is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldProvider requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldProvider: %w", err)
-	}
-	return oldValue.Provider, nil
-}
-
-// ResetProvider resets all changes to the "provider" field.
-func (m *CASBackendMutation) ResetProvider() {
-	m.provider = nil
 }
 
 // SetDefault sets the "default" field.
@@ -557,9 +607,15 @@ func (m *CASBackendMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CASBackendMutation) Fields() []string {
-	fields := make([]string, 0, 7)
-	if m.name != nil {
-		fields = append(fields, casbackend.FieldName)
+	fields := make([]string, 0, 8)
+	if m.location != nil {
+		fields = append(fields, casbackend.FieldLocation)
+	}
+	if m.provider != nil {
+		fields = append(fields, casbackend.FieldProvider)
+	}
+	if m.description != nil {
+		fields = append(fields, casbackend.FieldDescription)
 	}
 	if m.secret_name != nil {
 		fields = append(fields, casbackend.FieldSecretName)
@@ -573,9 +629,6 @@ func (m *CASBackendMutation) Fields() []string {
 	if m.validated_at != nil {
 		fields = append(fields, casbackend.FieldValidatedAt)
 	}
-	if m.provider != nil {
-		fields = append(fields, casbackend.FieldProvider)
-	}
 	if m._default != nil {
 		fields = append(fields, casbackend.FieldDefault)
 	}
@@ -587,8 +640,12 @@ func (m *CASBackendMutation) Fields() []string {
 // schema.
 func (m *CASBackendMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case casbackend.FieldName:
-		return m.Name()
+	case casbackend.FieldLocation:
+		return m.Location()
+	case casbackend.FieldProvider:
+		return m.Provider()
+	case casbackend.FieldDescription:
+		return m.Description()
 	case casbackend.FieldSecretName:
 		return m.SecretName()
 	case casbackend.FieldCreatedAt:
@@ -597,8 +654,6 @@ func (m *CASBackendMutation) Field(name string) (ent.Value, bool) {
 		return m.ValidationStatus()
 	case casbackend.FieldValidatedAt:
 		return m.ValidatedAt()
-	case casbackend.FieldProvider:
-		return m.Provider()
 	case casbackend.FieldDefault:
 		return m.Default()
 	}
@@ -610,8 +665,12 @@ func (m *CASBackendMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *CASBackendMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case casbackend.FieldName:
-		return m.OldName(ctx)
+	case casbackend.FieldLocation:
+		return m.OldLocation(ctx)
+	case casbackend.FieldProvider:
+		return m.OldProvider(ctx)
+	case casbackend.FieldDescription:
+		return m.OldDescription(ctx)
 	case casbackend.FieldSecretName:
 		return m.OldSecretName(ctx)
 	case casbackend.FieldCreatedAt:
@@ -620,8 +679,6 @@ func (m *CASBackendMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldValidationStatus(ctx)
 	case casbackend.FieldValidatedAt:
 		return m.OldValidatedAt(ctx)
-	case casbackend.FieldProvider:
-		return m.OldProvider(ctx)
 	case casbackend.FieldDefault:
 		return m.OldDefault(ctx)
 	}
@@ -633,12 +690,26 @@ func (m *CASBackendMutation) OldField(ctx context.Context, name string) (ent.Val
 // type.
 func (m *CASBackendMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case casbackend.FieldName:
+	case casbackend.FieldLocation:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetName(v)
+		m.SetLocation(v)
+		return nil
+	case casbackend.FieldProvider:
+		v, ok := value.(biz.CASBackendProvider)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProvider(v)
+		return nil
+	case casbackend.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
 		return nil
 	case casbackend.FieldSecretName:
 		v, ok := value.(string)
@@ -667,13 +738,6 @@ func (m *CASBackendMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetValidatedAt(v)
-		return nil
-	case casbackend.FieldProvider:
-		v, ok := value.(biz.CASBackendProvider)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetProvider(v)
 		return nil
 	case casbackend.FieldDefault:
 		v, ok := value.(bool)
@@ -711,7 +775,11 @@ func (m *CASBackendMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *CASBackendMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(casbackend.FieldDescription) {
+		fields = append(fields, casbackend.FieldDescription)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -724,6 +792,11 @@ func (m *CASBackendMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *CASBackendMutation) ClearField(name string) error {
+	switch name {
+	case casbackend.FieldDescription:
+		m.ClearDescription()
+		return nil
+	}
 	return fmt.Errorf("unknown CASBackend nullable field %s", name)
 }
 
@@ -731,8 +804,14 @@ func (m *CASBackendMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *CASBackendMutation) ResetField(name string) error {
 	switch name {
-	case casbackend.FieldName:
-		m.ResetName()
+	case casbackend.FieldLocation:
+		m.ResetLocation()
+		return nil
+	case casbackend.FieldProvider:
+		m.ResetProvider()
+		return nil
+	case casbackend.FieldDescription:
+		m.ResetDescription()
 		return nil
 	case casbackend.FieldSecretName:
 		m.ResetSecretName()
@@ -745,9 +824,6 @@ func (m *CASBackendMutation) ResetField(name string) error {
 		return nil
 	case casbackend.FieldValidatedAt:
 		m.ResetValidatedAt()
-		return nil
-	case casbackend.FieldProvider:
-		m.ResetProvider()
 		return nil
 	case casbackend.FieldDefault:
 		m.ResetDefault()

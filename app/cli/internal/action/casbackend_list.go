@@ -28,7 +28,8 @@ type CASBackendList struct {
 
 type CASBackendItem struct {
 	ID               string           `json:"id"`
-	Name             string           `json:"name"`
+	Location         string           `json:"location"`
+	Description      string           `json:"description"`
 	Provider         string           `json:"provider"`
 	Default          bool             `json:"default"`
 	ValidationStatus ValidationStatus `json:"validationStatus"`
@@ -70,7 +71,8 @@ func pbCASBackendItemToAction(in *pb.CASBackendItem) *CASBackendItem {
 
 	b := &CASBackendItem{
 		ID:          in.Id,
-		Name:        in.Name,
+		Location:    in.Location,
+		Description: in.Description,
 		Provider:    in.Provider,
 		Default:     in.Default,
 		CreatedAt:   toTimePtr(in.CreatedAt.AsTime()),
