@@ -21,6 +21,7 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
+	"github.com/go-kratos/kratos/v2/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -55,6 +56,20 @@ func (s *CASBackendService) List(ctx context.Context, _ *pb.CASBackendServiceLis
 	}
 
 	return &pb.CASBackendServiceListResponse{Result: res}, nil
+}
+
+func (s *CASBackendService) Create(ctx context.Context, req *pb.CASBackendServiceCreateRequest) (*pb.CASBackendServiceCreateResponse, error) {
+	_, _, err := loadCurrentUserAndOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if req.Provider != string(biz.CASBackendOCI) {
+		return nil, errors.BadRequest("invalid provider", "only OCI is supported")
+	}
+
+	// TODO
+	return &pb.CASBackendServiceCreateResponse{Result: nil}, nil
 }
 
 func bizOCASBackendToPb(repo *biz.CASBackend) *pb.CASBackendItem {

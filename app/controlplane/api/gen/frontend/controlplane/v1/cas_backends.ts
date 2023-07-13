@@ -2,6 +2,7 @@
 import { grpc } from "@improbable-eng/grpc-web";
 import { BrowserHeaders } from "browser-headers";
 import _m0 from "protobufjs/minimal";
+import { Struct } from "../../google/protobuf/struct";
 import { CASBackendItem } from "./response_messages";
 
 export const protobufPackage = "controlplane.v1";
@@ -11,6 +12,21 @@ export interface CASBackendServiceListRequest {
 
 export interface CASBackendServiceListResponse {
   result: CASBackendItem[];
+}
+
+export interface CASBackendServiceCreateRequest {
+  /** Descriptive name */
+  name: string;
+  /** Type of the backend, OCI, S3, ... */
+  provider: string;
+  /** Set as default in your organization */
+  default: boolean;
+  /** Arbitrary configuration for the integration */
+  config?: { [key: string]: any };
+}
+
+export interface CASBackendServiceCreateResponse {
+  result?: CASBackendItem;
 }
 
 function createBaseCASBackendServiceListRequest(): CASBackendServiceListRequest {
@@ -119,11 +135,174 @@ export const CASBackendServiceListResponse = {
   },
 };
 
+function createBaseCASBackendServiceCreateRequest(): CASBackendServiceCreateRequest {
+  return { name: "", provider: "", default: false, config: undefined };
+}
+
+export const CASBackendServiceCreateRequest = {
+  encode(message: CASBackendServiceCreateRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.provider !== "") {
+      writer.uint32(18).string(message.provider);
+    }
+    if (message.default === true) {
+      writer.uint32(24).bool(message.default);
+    }
+    if (message.config !== undefined) {
+      Struct.encode(Struct.wrap(message.config), writer.uint32(34).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CASBackendServiceCreateRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCASBackendServiceCreateRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.provider = reader.string();
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.default = reader.bool();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.config = Struct.unwrap(Struct.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CASBackendServiceCreateRequest {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      provider: isSet(object.provider) ? String(object.provider) : "",
+      default: isSet(object.default) ? Boolean(object.default) : false,
+      config: isObject(object.config) ? object.config : undefined,
+    };
+  },
+
+  toJSON(message: CASBackendServiceCreateRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.provider !== undefined && (obj.provider = message.provider);
+    message.default !== undefined && (obj.default = message.default);
+    message.config !== undefined && (obj.config = message.config);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CASBackendServiceCreateRequest>, I>>(base?: I): CASBackendServiceCreateRequest {
+    return CASBackendServiceCreateRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<CASBackendServiceCreateRequest>, I>>(
+    object: I,
+  ): CASBackendServiceCreateRequest {
+    const message = createBaseCASBackendServiceCreateRequest();
+    message.name = object.name ?? "";
+    message.provider = object.provider ?? "";
+    message.default = object.default ?? false;
+    message.config = object.config ?? undefined;
+    return message;
+  },
+};
+
+function createBaseCASBackendServiceCreateResponse(): CASBackendServiceCreateResponse {
+  return { result: undefined };
+}
+
+export const CASBackendServiceCreateResponse = {
+  encode(message: CASBackendServiceCreateResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.result !== undefined) {
+      CASBackendItem.encode(message.result, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CASBackendServiceCreateResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCASBackendServiceCreateResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.result = CASBackendItem.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CASBackendServiceCreateResponse {
+    return { result: isSet(object.result) ? CASBackendItem.fromJSON(object.result) : undefined };
+  },
+
+  toJSON(message: CASBackendServiceCreateResponse): unknown {
+    const obj: any = {};
+    message.result !== undefined && (obj.result = message.result ? CASBackendItem.toJSON(message.result) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CASBackendServiceCreateResponse>, I>>(base?: I): CASBackendServiceCreateResponse {
+    return CASBackendServiceCreateResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<CASBackendServiceCreateResponse>, I>>(
+    object: I,
+  ): CASBackendServiceCreateResponse {
+    const message = createBaseCASBackendServiceCreateResponse();
+    message.result = (object.result !== undefined && object.result !== null)
+      ? CASBackendItem.fromPartial(object.result)
+      : undefined;
+    return message;
+  },
+};
+
 export interface CASBackendService {
   List(
     request: DeepPartial<CASBackendServiceListRequest>,
     metadata?: grpc.Metadata,
   ): Promise<CASBackendServiceListResponse>;
+  Create(
+    request: DeepPartial<CASBackendServiceCreateRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<CASBackendServiceCreateResponse>;
 }
 
 export class CASBackendServiceClientImpl implements CASBackendService {
@@ -132,6 +311,7 @@ export class CASBackendServiceClientImpl implements CASBackendService {
   constructor(rpc: Rpc) {
     this.rpc = rpc;
     this.List = this.List.bind(this);
+    this.Create = this.Create.bind(this);
   }
 
   List(
@@ -139,6 +319,13 @@ export class CASBackendServiceClientImpl implements CASBackendService {
     metadata?: grpc.Metadata,
   ): Promise<CASBackendServiceListResponse> {
     return this.rpc.unary(CASBackendServiceListDesc, CASBackendServiceListRequest.fromPartial(request), metadata);
+  }
+
+  Create(
+    request: DeepPartial<CASBackendServiceCreateRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<CASBackendServiceCreateResponse> {
+    return this.rpc.unary(CASBackendServiceCreateDesc, CASBackendServiceCreateRequest.fromPartial(request), metadata);
   }
 }
 
@@ -157,6 +344,29 @@ export const CASBackendServiceListDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = CASBackendServiceListResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const CASBackendServiceCreateDesc: UnaryMethodDefinitionish = {
+  methodName: "Create",
+  service: CASBackendServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return CASBackendServiceCreateRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = CASBackendServiceCreateResponse.decode(data);
       return {
         ...value,
         toObject() {
@@ -264,6 +474,14 @@ export type DeepPartial<T> = T extends Builtin ? T
 type KeysOfUnion<T> = T extends T ? keyof T : never;
 export type Exact<P, I extends P> = P extends Builtin ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+
+function isObject(value: any): boolean {
+  return typeof value === "object" && value !== null;
+}
+
+function isSet(value: any): boolean {
+  return value !== null && value !== undefined;
+}
 
 export class GrpcWebError extends tsProtoGlobalThis.Error {
   constructor(message: string, public code: grpc.Code, public metadata: grpc.Metadata) {

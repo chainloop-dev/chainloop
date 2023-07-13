@@ -20,13 +20,31 @@ package controlplane.v1;
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
 import "controlplane/v1/response_messages.proto";
+import "validate/validate.proto";
+import "google/protobuf/struct.proto";
 
 service CASBackendService {
 	rpc List (CASBackendServiceListRequest) returns (CASBackendServiceListResponse);
+	rpc Create (CASBackendServiceCreateRequest) returns (CASBackendServiceCreateResponse);
 }
 
 message CASBackendServiceListRequest {}
 
 message CASBackendServiceListResponse {
   repeated CASBackendItem result = 1;
+}
+
+message CASBackendServiceCreateRequest {
+	// Descriptive name
+	string name = 1;
+  // Type of the backend, OCI, S3, ...
+	string provider = 2 [(validate.rules).string.min_len = 1];
+  // Set as default in your organization
+	bool default = 3;
+	// Arbitrary configuration for the integration
+	google.protobuf.Struct config = 4 [(validate.rules).message.required = true];
+}
+
+message CASBackendServiceCreateResponse {
+  CASBackendItem result = 1;
 }
