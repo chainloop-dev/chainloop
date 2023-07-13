@@ -47,6 +47,9 @@ builds:
     main: ./app/controlplane/plugins/core/discord-webhook/v1/cmd
     targets:
       - linux_amd64
+    hooks:
+      post:
+        - upx "{{ .Path }}"
 archives:
   - builds:
       - cli
