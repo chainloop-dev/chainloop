@@ -17,8 +17,12 @@ const (
 	Label = "cas_backend"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldName holds the string denoting the name field in the database.
-	FieldName = "name"
+	// FieldLocation holds the string denoting the location field in the database.
+	FieldLocation = "location"
+	// FieldProvider holds the string denoting the provider field in the database.
+	FieldProvider = "provider"
+	// FieldDescription holds the string denoting the description field in the database.
+	FieldDescription = "description"
 	// FieldSecretName holds the string denoting the secret_name field in the database.
 	FieldSecretName = "secret_name"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -27,8 +31,6 @@ const (
 	FieldValidationStatus = "validation_status"
 	// FieldValidatedAt holds the string denoting the validated_at field in the database.
 	FieldValidatedAt = "validated_at"
-	// FieldProvider holds the string denoting the provider field in the database.
-	FieldProvider = "provider"
 	// FieldDefault holds the string denoting the default field in the database.
 	FieldDefault = "default"
 	// EdgeOrganization holds the string denoting the organization edge name in mutations.
@@ -54,12 +56,13 @@ const (
 // Columns holds all SQL columns for casbackend fields.
 var Columns = []string{
 	FieldID,
-	FieldName,
+	FieldLocation,
+	FieldProvider,
+	FieldDescription,
 	FieldSecretName,
 	FieldCreatedAt,
 	FieldValidationStatus,
 	FieldValidatedAt,
-	FieldProvider,
 	FieldDefault,
 }
 
@@ -101,6 +104,16 @@ var (
 	DefaultID func() uuid.UUID
 )
 
+// ProviderValidator is a validator for the "provider" field enum values. It is called by the builders before save.
+func ProviderValidator(pr biz.CASBackendProvider) error {
+	switch pr {
+	case "OCI":
+		return nil
+	default:
+		return fmt.Errorf("casbackend: invalid enum value for provider field: %q", pr)
+	}
+}
+
 const DefaultValidationStatus biz.CASBackendValidationStatus = "OK"
 
 // ValidationStatusValidator is a validator for the "validation_status" field enum values. It is called by the builders before save.
@@ -113,16 +126,6 @@ func ValidationStatusValidator(vs biz.CASBackendValidationStatus) error {
 	}
 }
 
-// ProviderValidator is a validator for the "provider" field enum values. It is called by the builders before save.
-func ProviderValidator(pr biz.CASBackendProvider) error {
-	switch pr {
-	case "OCI":
-		return nil
-	default:
-		return fmt.Errorf("casbackend: invalid enum value for provider field: %q", pr)
-	}
-}
-
 // OrderOption defines the ordering options for the CASBackend queries.
 type OrderOption func(*sql.Selector)
 
@@ -131,9 +134,19 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
-// ByName orders the results by the name field.
-func ByName(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldName, opts...).ToFunc()
+// ByLocation orders the results by the location field.
+func ByLocation(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLocation, opts...).ToFunc()
+}
+
+// ByProvider orders the results by the provider field.
+func ByProvider(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldProvider, opts...).ToFunc()
+}
+
+// ByDescription orders the results by the description field.
+func ByDescription(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDescription, opts...).ToFunc()
 }
 
 // BySecretName orders the results by the secret_name field.
@@ -154,11 +167,6 @@ func ByValidationStatus(opts ...sql.OrderTermOption) OrderOption {
 // ByValidatedAt orders the results by the validated_at field.
 func ByValidatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldValidatedAt, opts...).ToFunc()
-}
-
-// ByProvider orders the results by the provider field.
-func ByProvider(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldProvider, opts...).ToFunc()
 }
 
 // ByDefault orders the results by the default field.

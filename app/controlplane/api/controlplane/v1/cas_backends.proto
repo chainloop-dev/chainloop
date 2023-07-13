@@ -35,14 +35,16 @@ message CASBackendServiceListResponse {
 }
 
 message CASBackendServiceCreateRequest {
-	// Descriptive name
-	string name = 1;
-  // Type of the backend, OCI, S3, ...
+	// Location, e.g. bucket name, OCI bucket name, ...
+	string location = 1 [(validate.rules).string.min_len = 1];
+	// Type of the backend, OCI, S3, ...
 	string provider = 2 [(validate.rules).string.min_len = 1];
+	// Descriptive name
+	string description = 3;
   // Set as default in your organization
-	bool default = 3;
+	bool default = 4;
 	// Arbitrary configuration for the integration
-	google.protobuf.Struct config = 4 [(validate.rules).message.required = true];
+	google.protobuf.Struct credentials = 5 [(validate.rules).message.required = true];
 }
 
 message CASBackendServiceCreateResponse {

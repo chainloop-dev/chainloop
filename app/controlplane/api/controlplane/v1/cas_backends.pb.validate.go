@@ -297,7 +297,16 @@ func (m *CASBackendServiceCreateRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Name
+	if utf8.RuneCountInString(m.GetLocation()) < 1 {
+		err := CASBackendServiceCreateRequestValidationError{
+			field:  "Location",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if utf8.RuneCountInString(m.GetProvider()) < 1 {
 		err := CASBackendServiceCreateRequestValidationError{
@@ -310,11 +319,13 @@ func (m *CASBackendServiceCreateRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for Description
+
 	// no validation rules for Default
 
-	if m.GetConfig() == nil {
+	if m.GetCredentials() == nil {
 		err := CASBackendServiceCreateRequestValidationError{
-			field:  "Config",
+			field:  "Credentials",
 			reason: "value is required",
 		}
 		if !all {
@@ -324,11 +335,11 @@ func (m *CASBackendServiceCreateRequest) validate(all bool) error {
 	}
 
 	if all {
-		switch v := interface{}(m.GetConfig()).(type) {
+		switch v := interface{}(m.GetCredentials()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, CASBackendServiceCreateRequestValidationError{
-					field:  "Config",
+					field:  "Credentials",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -336,16 +347,16 @@ func (m *CASBackendServiceCreateRequest) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, CASBackendServiceCreateRequestValidationError{
-					field:  "Config",
+					field:  "Credentials",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetConfig()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetCredentials()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return CASBackendServiceCreateRequestValidationError{
-				field:  "Config",
+				field:  "Credentials",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}

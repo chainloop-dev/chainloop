@@ -270,7 +270,7 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 			return nil, errors.NotFound("not found", "workflow run has no CAS backend")
 		}
 
-		s.log.Infow("msg", "generating upload credentials for CAS backend", "ID", wRun.CASBackends[0].ID, "name", wRun.CASBackends[0].Name, "workflowRun", req.WorkflowRunId)
+		s.log.Infow("msg", "generating upload credentials for CAS backend", "ID", wRun.CASBackends[0].ID, "name", wRun.CASBackends[0].Location, "workflowRun", req.WorkflowRunId)
 
 		secretName = wRun.CASBackends[0].SecretName
 	}

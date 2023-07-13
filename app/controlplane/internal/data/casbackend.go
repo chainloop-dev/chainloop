@@ -87,7 +87,8 @@ func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateO
 	// 2 - create the new backend and set it as default if needed
 	backend, err := tx.CASBackend.Create().
 		SetOrganizationID(opts.OrgID).
-		SetName(opts.Name).
+		SetLocation(opts.Location).
+		SetDescription(opts.Description).
 		SetProvider(opts.Provider).
 		SetDefault(opts.Default).
 		SetSecretName(opts.SecretName).
@@ -107,8 +108,7 @@ func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateO
 
 func (r *CASBackendRepo) Update(ctx context.Context, opts *biz.CASBackendUpdateOpts) (*biz.CASBackend, error) {
 	backend, err := r.data.db.CASBackend.UpdateOneID(opts.ID).
-		SetName(opts.Name).
-		SetProvider(opts.Provider).
+		SetDescription(opts.Description).
 		SetDefault(opts.Default).
 		SetSecretName(opts.SecretName).
 		Save(ctx)
@@ -151,7 +151,8 @@ func entCASBackendToBiz(backend *ent.CASBackend) *biz.CASBackend {
 
 	r := &biz.CASBackend{
 		ID:               backend.ID,
-		Name:             backend.Name,
+		Location:         backend.Location,
+		Description:      backend.Description,
 		SecretName:       backend.SecretName,
 		CreatedAt:        toTimePtr(backend.CreatedAt),
 		ValidatedAt:      toTimePtr(backend.ValidatedAt),

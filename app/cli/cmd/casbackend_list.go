@@ -50,14 +50,14 @@ func casBackendListTableOutput(backends []*action.CASBackendItem) error {
 	}
 
 	t := newTableWriter()
-	header := table.Row{"ID", "Backend", "Provider", "Default"}
+	header := table.Row{"ID", "Location", "Provider", "Description", "Default"}
 	if full {
 		header = append(header, "Validation Status", "Created At", "Validated At")
 	}
 
 	t.AppendHeader(header)
 	for _, b := range backends {
-		r := table.Row{b.ID, b.Name, b.Provider, b.Default}
+		r := table.Row{b.ID, b.Location, b.Provider, b.Description, b.Default}
 		if full {
 			r = append(r, b.ValidationStatus,
 				b.CreatedAt.Format(time.RFC822),

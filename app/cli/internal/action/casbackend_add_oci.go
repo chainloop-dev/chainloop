@@ -28,8 +28,8 @@ type CASBackendAddOCI struct {
 }
 
 type NewCASBackendOCIAddOpts struct {
-	Name                     string
 	Repo, Username, Password string
+	Description              string
 	Default                  bool
 }
 
@@ -39,8 +39,7 @@ func NewCASBackendAddOCI(cfg *ActionsOpts) *CASBackendAddOCI {
 
 func (action *CASBackendAddOCI) Run(opts *NewCASBackendOCIAddOpts) (*CASBackendItem, error) {
 	// Custom configuration for OCI
-	config, err := structpb.NewStruct(map[string]any{
-		"repo":     opts.Repo,
+	credentials, err := structpb.NewStruct(map[string]any{
 		"username": opts.Username,
 		"password": opts.Password,
 	})
@@ -50,10 +49,11 @@ func (action *CASBackendAddOCI) Run(opts *NewCASBackendOCIAddOpts) (*CASBackendI
 
 	client := pb.NewCASBackendServiceClient(action.cfg.CPConnection)
 	resp, err := client.Create(context.Background(), &pb.CASBackendServiceCreateRequest{
-		Name:     opts.Name,
-		Provider: "OCI",
-		Default:  opts.Default,
-		Config:   config,
+		Location:    opts.Repo,
+		Provider:    "OCI",
+		Description: opts.Description,
+		Default:     opts.Default,
+		Credentials: credentials,
 	})
 	if err != nil {
 		return nil, err

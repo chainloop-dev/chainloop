@@ -64,17 +64,17 @@ func (s *CASBackendService) Create(ctx context.Context, req *pb.CASBackendServic
 		return nil, err
 	}
 
-	if req.Config == nil {
-		return nil, errors.BadRequest("invalid config", "config is required")
+	if err := req.ValidateAll(); err != nil {
+		return nil, errors.BadRequest("invalid config", err.Error())
 	}
 
-	fields, err := req.Config.MarshalJSON()
+	credsJSON, err := req.Credentials.MarshalJSON()
 	if err != nil {
 		return nil, errors.BadRequest("invalid config", "config is invalid")
 	}
 
 	// For now we only support one backend which is set as default
-	res, err := s.uc.Create(ctx, currentOrg.ID, req.Name, biz.CASBackendOCI, fields, req.Default)
+	res, err := s.uc.Create(ctx, currentOrg.ID, req.Location, req.Description, biz.CASBackendOCI, credsJSON, req.Default)
 	if err != nil && biz.IsErrValidation(err) {
 		return nil, errors.BadRequest("invalid CAS backend", err.Error())
 	} else if err != nil {
@@ -84,16 +84,16 @@ func (s *CASBackendService) Create(ctx context.Context, req *pb.CASBackendServic
 	return &pb.CASBackendServiceCreateResponse{Result: bizOCASBackendToPb(res)}, nil
 }
 
-func bizOCASBackendToPb(repo *biz.CASBackend) *pb.CASBackendItem {
+func bizOCASBackendToPb(in *biz.CASBackend) *pb.CASBackendItem {
 	r := &pb.CASBackendItem{
-		Id: repo.ID.String(), Name: repo.Name,
-		CreatedAt:   timestamppb.New(*repo.CreatedAt),
-		ValidatedAt: timestamppb.New(*repo.ValidatedAt),
-		Provider:    string(repo.Provider),
-		Default:     repo.Default,
+		Id: in.ID.String(), Location: in.Location, Description: in.Description,
+		CreatedAt:   timestamppb.New(*in.CreatedAt),
+		ValidatedAt: timestamppb.New(*in.ValidatedAt),
+		Provider:    string(in.Provider),
+		Default:     in.Default,
 	}
 
-	switch repo.ValidationStatus {
+	switch in.ValidationStatus {
 	case biz.CASBackendValidationOK:
 		r.ValidationStatus = pb.CASBackendItem_VALIDATION_STATUS_OK
 	case biz.CASBackendValidationFailed:

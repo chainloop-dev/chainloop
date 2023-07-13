@@ -57,9 +57,14 @@ func IDLTE(id uuid.UUID) predicate.CASBackend {
 	return predicate.CASBackend(sql.FieldLTE(FieldID, id))
 }
 
-// Name applies equality check predicate on the "name" field. It's identical to NameEQ.
-func Name(v string) predicate.CASBackend {
-	return predicate.CASBackend(sql.FieldEQ(FieldName, v))
+// Location applies equality check predicate on the "location" field. It's identical to LocationEQ.
+func Location(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldEQ(FieldLocation, v))
+}
+
+// Description applies equality check predicate on the "description" field. It's identical to DescriptionEQ.
+func Description(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldEQ(FieldDescription, v))
 }
 
 // SecretName applies equality check predicate on the "secret_name" field. It's identical to SecretNameEQ.
@@ -82,69 +87,174 @@ func Default(v bool) predicate.CASBackend {
 	return predicate.CASBackend(sql.FieldEQ(FieldDefault, v))
 }
 
-// NameEQ applies the EQ predicate on the "name" field.
-func NameEQ(v string) predicate.CASBackend {
-	return predicate.CASBackend(sql.FieldEQ(FieldName, v))
+// LocationEQ applies the EQ predicate on the "location" field.
+func LocationEQ(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldEQ(FieldLocation, v))
 }
 
-// NameNEQ applies the NEQ predicate on the "name" field.
-func NameNEQ(v string) predicate.CASBackend {
-	return predicate.CASBackend(sql.FieldNEQ(FieldName, v))
+// LocationNEQ applies the NEQ predicate on the "location" field.
+func LocationNEQ(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldNEQ(FieldLocation, v))
 }
 
-// NameIn applies the In predicate on the "name" field.
-func NameIn(vs ...string) predicate.CASBackend {
-	return predicate.CASBackend(sql.FieldIn(FieldName, vs...))
+// LocationIn applies the In predicate on the "location" field.
+func LocationIn(vs ...string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldIn(FieldLocation, vs...))
 }
 
-// NameNotIn applies the NotIn predicate on the "name" field.
-func NameNotIn(vs ...string) predicate.CASBackend {
-	return predicate.CASBackend(sql.FieldNotIn(FieldName, vs...))
+// LocationNotIn applies the NotIn predicate on the "location" field.
+func LocationNotIn(vs ...string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldNotIn(FieldLocation, vs...))
 }
 
-// NameGT applies the GT predicate on the "name" field.
-func NameGT(v string) predicate.CASBackend {
-	return predicate.CASBackend(sql.FieldGT(FieldName, v))
+// LocationGT applies the GT predicate on the "location" field.
+func LocationGT(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldGT(FieldLocation, v))
 }
 
-// NameGTE applies the GTE predicate on the "name" field.
-func NameGTE(v string) predicate.CASBackend {
-	return predicate.CASBackend(sql.FieldGTE(FieldName, v))
+// LocationGTE applies the GTE predicate on the "location" field.
+func LocationGTE(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldGTE(FieldLocation, v))
 }
 
-// NameLT applies the LT predicate on the "name" field.
-func NameLT(v string) predicate.CASBackend {
-	return predicate.CASBackend(sql.FieldLT(FieldName, v))
+// LocationLT applies the LT predicate on the "location" field.
+func LocationLT(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldLT(FieldLocation, v))
 }
 
-// NameLTE applies the LTE predicate on the "name" field.
-func NameLTE(v string) predicate.CASBackend {
-	return predicate.CASBackend(sql.FieldLTE(FieldName, v))
+// LocationLTE applies the LTE predicate on the "location" field.
+func LocationLTE(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldLTE(FieldLocation, v))
 }
 
-// NameContains applies the Contains predicate on the "name" field.
-func NameContains(v string) predicate.CASBackend {
-	return predicate.CASBackend(sql.FieldContains(FieldName, v))
+// LocationContains applies the Contains predicate on the "location" field.
+func LocationContains(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldContains(FieldLocation, v))
 }
 
-// NameHasPrefix applies the HasPrefix predicate on the "name" field.
-func NameHasPrefix(v string) predicate.CASBackend {
-	return predicate.CASBackend(sql.FieldHasPrefix(FieldName, v))
+// LocationHasPrefix applies the HasPrefix predicate on the "location" field.
+func LocationHasPrefix(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldHasPrefix(FieldLocation, v))
 }
 
-// NameHasSuffix applies the HasSuffix predicate on the "name" field.
-func NameHasSuffix(v string) predicate.CASBackend {
-	return predicate.CASBackend(sql.FieldHasSuffix(FieldName, v))
+// LocationHasSuffix applies the HasSuffix predicate on the "location" field.
+func LocationHasSuffix(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldHasSuffix(FieldLocation, v))
 }
 
-// NameEqualFold applies the EqualFold predicate on the "name" field.
-func NameEqualFold(v string) predicate.CASBackend {
-	return predicate.CASBackend(sql.FieldEqualFold(FieldName, v))
+// LocationEqualFold applies the EqualFold predicate on the "location" field.
+func LocationEqualFold(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldEqualFold(FieldLocation, v))
 }
 
-// NameContainsFold applies the ContainsFold predicate on the "name" field.
-func NameContainsFold(v string) predicate.CASBackend {
-	return predicate.CASBackend(sql.FieldContainsFold(FieldName, v))
+// LocationContainsFold applies the ContainsFold predicate on the "location" field.
+func LocationContainsFold(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldContainsFold(FieldLocation, v))
+}
+
+// ProviderEQ applies the EQ predicate on the "provider" field.
+func ProviderEQ(v biz.CASBackendProvider) predicate.CASBackend {
+	vc := v
+	return predicate.CASBackend(sql.FieldEQ(FieldProvider, vc))
+}
+
+// ProviderNEQ applies the NEQ predicate on the "provider" field.
+func ProviderNEQ(v biz.CASBackendProvider) predicate.CASBackend {
+	vc := v
+	return predicate.CASBackend(sql.FieldNEQ(FieldProvider, vc))
+}
+
+// ProviderIn applies the In predicate on the "provider" field.
+func ProviderIn(vs ...biz.CASBackendProvider) predicate.CASBackend {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.CASBackend(sql.FieldIn(FieldProvider, v...))
+}
+
+// ProviderNotIn applies the NotIn predicate on the "provider" field.
+func ProviderNotIn(vs ...biz.CASBackendProvider) predicate.CASBackend {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.CASBackend(sql.FieldNotIn(FieldProvider, v...))
+}
+
+// DescriptionEQ applies the EQ predicate on the "description" field.
+func DescriptionEQ(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldEQ(FieldDescription, v))
+}
+
+// DescriptionNEQ applies the NEQ predicate on the "description" field.
+func DescriptionNEQ(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldNEQ(FieldDescription, v))
+}
+
+// DescriptionIn applies the In predicate on the "description" field.
+func DescriptionIn(vs ...string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldIn(FieldDescription, vs...))
+}
+
+// DescriptionNotIn applies the NotIn predicate on the "description" field.
+func DescriptionNotIn(vs ...string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldNotIn(FieldDescription, vs...))
+}
+
+// DescriptionGT applies the GT predicate on the "description" field.
+func DescriptionGT(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldGT(FieldDescription, v))
+}
+
+// DescriptionGTE applies the GTE predicate on the "description" field.
+func DescriptionGTE(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldGTE(FieldDescription, v))
+}
+
+// DescriptionLT applies the LT predicate on the "description" field.
+func DescriptionLT(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldLT(FieldDescription, v))
+}
+
+// DescriptionLTE applies the LTE predicate on the "description" field.
+func DescriptionLTE(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldLTE(FieldDescription, v))
+}
+
+// DescriptionContains applies the Contains predicate on the "description" field.
+func DescriptionContains(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldContains(FieldDescription, v))
+}
+
+// DescriptionHasPrefix applies the HasPrefix predicate on the "description" field.
+func DescriptionHasPrefix(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldHasPrefix(FieldDescription, v))
+}
+
+// DescriptionHasSuffix applies the HasSuffix predicate on the "description" field.
+func DescriptionHasSuffix(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldHasSuffix(FieldDescription, v))
+}
+
+// DescriptionIsNil applies the IsNil predicate on the "description" field.
+func DescriptionIsNil() predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldIsNull(FieldDescription))
+}
+
+// DescriptionNotNil applies the NotNil predicate on the "description" field.
+func DescriptionNotNil() predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldNotNull(FieldDescription))
+}
+
+// DescriptionEqualFold applies the EqualFold predicate on the "description" field.
+func DescriptionEqualFold(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldEqualFold(FieldDescription, v))
+}
+
+// DescriptionContainsFold applies the ContainsFold predicate on the "description" field.
+func DescriptionContainsFold(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldContainsFold(FieldDescription, v))
 }
 
 // SecretNameEQ applies the EQ predicate on the "secret_name" field.
@@ -320,36 +430,6 @@ func ValidatedAtLT(v time.Time) predicate.CASBackend {
 // ValidatedAtLTE applies the LTE predicate on the "validated_at" field.
 func ValidatedAtLTE(v time.Time) predicate.CASBackend {
 	return predicate.CASBackend(sql.FieldLTE(FieldValidatedAt, v))
-}
-
-// ProviderEQ applies the EQ predicate on the "provider" field.
-func ProviderEQ(v biz.CASBackendProvider) predicate.CASBackend {
-	vc := v
-	return predicate.CASBackend(sql.FieldEQ(FieldProvider, vc))
-}
-
-// ProviderNEQ applies the NEQ predicate on the "provider" field.
-func ProviderNEQ(v biz.CASBackendProvider) predicate.CASBackend {
-	vc := v
-	return predicate.CASBackend(sql.FieldNEQ(FieldProvider, vc))
-}
-
-// ProviderIn applies the In predicate on the "provider" field.
-func ProviderIn(vs ...biz.CASBackendProvider) predicate.CASBackend {
-	v := make([]any, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.CASBackend(sql.FieldIn(FieldProvider, v...))
-}
-
-// ProviderNotIn applies the NotIn predicate on the "provider" field.
-func ProviderNotIn(vs ...biz.CASBackendProvider) predicate.CASBackend {
-	v := make([]any, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.CASBackend(sql.FieldNotIn(FieldProvider, v...))
 }
 
 // DefaultEQ applies the EQ predicate on the "default" field.

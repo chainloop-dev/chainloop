@@ -44,14 +44,8 @@ func newCASBackendAddOCICmd() *cobra.Command {
 				}
 			}
 
-			name := repo
-			// The backend description contains the repository information and the optionally provided description
-			if description != "" {
-				name = fmt.Sprintf("%s\n%s", name, description)
-			}
-
 			opts := &action.NewCASBackendOCIAddOpts{
-				Repo: repo, Username: username, Password: password, Default: isDefault, Name: name,
+				Repo: repo, Username: username, Password: password, Default: isDefault, Description: description,
 			}
 
 			res, err := action.NewCASBackendAddOCI(actionOpts).Run(opts)

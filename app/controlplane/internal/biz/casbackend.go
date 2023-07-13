@@ -44,11 +44,11 @@ var CASBackendValidationOK CASBackendValidationStatus = "OK"
 var CASBackendValidationFailed CASBackendValidationStatus = "Invalid"
 
 type CASBackend struct {
-	ID                     uuid.UUID
-	Name, SecretName       string
-	CreatedAt, ValidatedAt *time.Time
-	OrganizationID         string
-	ValidationStatus       CASBackendValidationStatus
+	ID                                uuid.UUID
+	Location, Description, SecretName string
+	CreatedAt, ValidatedAt            *time.Time
+	OrganizationID                    string
+	ValidationStatus                  CASBackendValidationStatus
 	// OCI, S3, ...
 	Provider CASBackendProvider
 	// Wether this is the default cas backend for the organization
@@ -56,9 +56,9 @@ type CASBackend struct {
 }
 
 type CASBackendOpts struct {
-	Name, SecretName string
-	Provider         CASBackendProvider
-	Default          bool
+	Location, SecretName, Description string
+	Provider                          CASBackendProvider
+	Default                           bool
 }
 
 type CASBackendCreateOpts struct {
@@ -136,7 +136,7 @@ func (uc *CASBackendUseCase) FindByID(ctx context.Context, id string) (*CASBacke
 	return backend, nil
 }
 
-func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name string, provider CASBackendProvider, configJSON []byte, defaultB bool) (*CASBackend, error) {
+func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, location, description string, provider CASBackendProvider, configJSON []byte, defaultB bool) (*CASBackend, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -151,7 +151,6 @@ func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name string, pro
 	var ociConfig = struct {
 		Password string `json:"password"`
 		Username string `json:"username"`
-		Repo     string `json:"repo"`
 	}{}
 
 	if err := json.Unmarshal(configJSON, &ociConfig); err != nil {
@@ -159,13 +158,13 @@ func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name string, pro
 	}
 
 	// Create and validate credentials
-	k, err := ociauth.NewCredentials(ociConfig.Repo, ociConfig.Username, ociConfig.Password)
+	k, err := ociauth.NewCredentials(location, ociConfig.Username, ociConfig.Password)
 	if err != nil {
 		return nil, NewErrValidation(err)
 	}
 
 	// Check credentials
-	b, err := oci.NewBackend(ociConfig.Repo, &oci.RegistryOptions{Keychain: k})
+	b, err := oci.NewBackend(location, &oci.RegistryOptions{Keychain: k})
 	if err != nil {
 		return nil, fmt.Errorf("checking credentials: %w", err)
 	}
@@ -175,7 +174,7 @@ func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name string, pro
 	}
 
 	// Validate and store the secret in the external secrets manager
-	creds := &credentials.OCIKeypair{Repo: ociConfig.Repo, Username: ociConfig.Username, Password: ociConfig.Password}
+	creds := &credentials.OCIKeypair{Repo: location, Username: ociConfig.Username, Password: ociConfig.Password}
 	if err := creds.Validate(); err != nil {
 		return nil, NewErrValidation(err)
 	}
@@ -188,7 +187,8 @@ func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name string, pro
 	return uc.repo.Create(ctx, &CASBackendCreateOpts{
 		OrgID: orgUUID,
 		CASBackendOpts: &CASBackendOpts{
-			Name: name, SecretName: secretName, Provider: provider, Default: defaultB,
+			Location: location, SecretName: secretName, Provider: provider, Default: defaultB,
+			Description: description,
 		},
 	})
 }
@@ -222,7 +222,7 @@ func (uc *CASBackendUseCase) CreateOrUpdate(ctx context.Context, orgID, name, us
 	if backend != nil {
 		return uc.repo.Update(ctx, &CASBackendUpdateOpts{
 			CASBackendOpts: &CASBackendOpts{
-				Name: name, SecretName: secretName, Provider: provider, Default: defaultB,
+				Location: name, SecretName: secretName, Provider: provider, Default: defaultB,
 			},
 			ID: backend.ID,
 		})
@@ -231,7 +231,7 @@ func (uc *CASBackendUseCase) CreateOrUpdate(ctx context.Context, orgID, name, us
 	return uc.repo.Create(ctx, &CASBackendCreateOpts{
 		OrgID: orgUUID,
 		CASBackendOpts: &CASBackendOpts{
-			Name: name, SecretName: secretName, Provider: provider,
+			Location: name, SecretName: secretName, Provider: provider,
 			Default: defaultB,
 		},
 	})

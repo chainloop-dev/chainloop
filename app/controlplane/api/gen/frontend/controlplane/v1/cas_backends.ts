@@ -15,14 +15,16 @@ export interface CASBackendServiceListResponse {
 }
 
 export interface CASBackendServiceCreateRequest {
-  /** Descriptive name */
-  name: string;
+  /** Location, e.g. bucket name, OCI bucket name, ... */
+  location: string;
   /** Type of the backend, OCI, S3, ... */
   provider: string;
+  /** Descriptive name */
+  description: string;
   /** Set as default in your organization */
   default: boolean;
   /** Arbitrary configuration for the integration */
-  config?: { [key: string]: any };
+  credentials?: { [key: string]: any };
 }
 
 export interface CASBackendServiceCreateResponse {
@@ -136,22 +138,25 @@ export const CASBackendServiceListResponse = {
 };
 
 function createBaseCASBackendServiceCreateRequest(): CASBackendServiceCreateRequest {
-  return { name: "", provider: "", default: false, config: undefined };
+  return { location: "", provider: "", description: "", default: false, credentials: undefined };
 }
 
 export const CASBackendServiceCreateRequest = {
   encode(message: CASBackendServiceCreateRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
+    if (message.location !== "") {
+      writer.uint32(10).string(message.location);
     }
     if (message.provider !== "") {
       writer.uint32(18).string(message.provider);
     }
-    if (message.default === true) {
-      writer.uint32(24).bool(message.default);
+    if (message.description !== "") {
+      writer.uint32(26).string(message.description);
     }
-    if (message.config !== undefined) {
-      Struct.encode(Struct.wrap(message.config), writer.uint32(34).fork()).ldelim();
+    if (message.default === true) {
+      writer.uint32(32).bool(message.default);
+    }
+    if (message.credentials !== undefined) {
+      Struct.encode(Struct.wrap(message.credentials), writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -168,7 +173,7 @@ export const CASBackendServiceCreateRequest = {
             break;
           }
 
-          message.name = reader.string();
+          message.location = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
@@ -178,18 +183,25 @@ export const CASBackendServiceCreateRequest = {
           message.provider = reader.string();
           continue;
         case 3:
-          if (tag !== 24) {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+        case 4:
+          if (tag !== 32) {
             break;
           }
 
           message.default = reader.bool();
           continue;
-        case 4:
-          if (tag !== 34) {
+        case 5:
+          if (tag !== 42) {
             break;
           }
 
-          message.config = Struct.unwrap(Struct.decode(reader, reader.uint32()));
+          message.credentials = Struct.unwrap(Struct.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -202,19 +214,21 @@ export const CASBackendServiceCreateRequest = {
 
   fromJSON(object: any): CASBackendServiceCreateRequest {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
+      location: isSet(object.location) ? String(object.location) : "",
       provider: isSet(object.provider) ? String(object.provider) : "",
+      description: isSet(object.description) ? String(object.description) : "",
       default: isSet(object.default) ? Boolean(object.default) : false,
-      config: isObject(object.config) ? object.config : undefined,
+      credentials: isObject(object.credentials) ? object.credentials : undefined,
     };
   },
 
   toJSON(message: CASBackendServiceCreateRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    message.location !== undefined && (obj.location = message.location);
     message.provider !== undefined && (obj.provider = message.provider);
+    message.description !== undefined && (obj.description = message.description);
     message.default !== undefined && (obj.default = message.default);
-    message.config !== undefined && (obj.config = message.config);
+    message.credentials !== undefined && (obj.credentials = message.credentials);
     return obj;
   },
 
@@ -226,10 +240,11 @@ export const CASBackendServiceCreateRequest = {
     object: I,
   ): CASBackendServiceCreateRequest {
     const message = createBaseCASBackendServiceCreateRequest();
-    message.name = object.name ?? "";
+    message.location = object.location ?? "";
     message.provider = object.provider ?? "";
+    message.description = object.description ?? "";
     message.default = object.default ?? false;
-    message.config = object.config ?? undefined;
+    message.credentials = object.credentials ?? undefined;
     return message;
   },
 };
