@@ -17,12 +17,16 @@ package biz
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"time"
 
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
+	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
+	"github.com/chainloop-dev/chainloop/internal/ociauth"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
@@ -52,9 +56,9 @@ type CASBackend struct {
 }
 
 type CASBackendOpts struct {
-	Name, Username, Password, SecretName string
-	Provider                             CASBackendProvider
-	Default                              bool
+	Name, SecretName string
+	Provider         CASBackendProvider
+	Default          bool
 }
 
 type CASBackendCreateOpts struct {
@@ -132,6 +136,63 @@ func (uc *CASBackendUseCase) FindByID(ctx context.Context, id string) (*CASBacke
 	return backend, nil
 }
 
+func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name string, provider CASBackendProvider, configJSON []byte, defaultB bool) (*CASBackend, error) {
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	// TODO: (miguel) this logic (marshalling from struct + validation) will be moved to the actual backend implementation
+	// This endpoint will support other backends in the future
+	if provider != CASBackendOCI {
+		return nil, NewErrValidation(errors.New("unsupported provider"))
+	}
+
+	var ociConfig = struct {
+		Password string `json:"password"`
+		Username string `json:"username"`
+		Repo     string `json:"repo"`
+	}{}
+
+	if err := json.Unmarshal(configJSON, &ociConfig); err != nil {
+		return nil, NewErrValidation(err)
+	}
+
+	// Create and validate credentials
+	k, err := ociauth.NewCredentials(ociConfig.Repo, ociConfig.Username, ociConfig.Password)
+	if err != nil {
+		return nil, NewErrValidation(err)
+	}
+
+	// Check credentials
+	b, err := oci.NewBackend(ociConfig.Repo, &oci.RegistryOptions{Keychain: k})
+	if err != nil {
+		return nil, fmt.Errorf("checking credentials: %w", err)
+	}
+
+	if err := b.CheckWritePermissions(context.TODO()); err != nil {
+		return nil, NewErrValidation(fmt.Errorf("wrong credentials: %w", err))
+	}
+
+	// Validate and store the secret in the external secrets manager
+	creds := &credentials.OCIKeypair{Repo: ociConfig.Repo, Username: ociConfig.Username, Password: ociConfig.Password}
+	if err := creds.Validate(); err != nil {
+		return nil, NewErrValidation(err)
+	}
+
+	secretName, err := uc.credsRW.SaveCredentials(ctx, orgID, creds)
+	if err != nil {
+		return nil, fmt.Errorf("storing the credentials: %w", err)
+	}
+
+	return uc.repo.Create(ctx, &CASBackendCreateOpts{
+		OrgID: orgUUID,
+		CASBackendOpts: &CASBackendOpts{
+			Name: name, SecretName: secretName, Provider: provider, Default: defaultB,
+		},
+	})
+}
+
 // TODO(miguel): we need to think about the update mechanism and add some guardrails
 // for example, we might only allow updating credentials but not the repository itself or the provider
 func (uc *CASBackendUseCase) CreateOrUpdate(ctx context.Context, orgID, name, username, password string, provider CASBackendProvider, defaultB bool) (*CASBackend, error) {
@@ -161,7 +222,7 @@ func (uc *CASBackendUseCase) CreateOrUpdate(ctx context.Context, orgID, name, us
 	if backend != nil {
 		return uc.repo.Update(ctx, &CASBackendUpdateOpts{
 			CASBackendOpts: &CASBackendOpts{
-				Name: name, Username: username, Password: password, SecretName: secretName, Provider: provider, Default: defaultB,
+				Name: name, SecretName: secretName, Provider: provider, Default: defaultB,
 			},
 			ID: backend.ID,
 		})
@@ -170,7 +231,7 @@ func (uc *CASBackendUseCase) CreateOrUpdate(ctx context.Context, orgID, name, us
 	return uc.repo.Create(ctx, &CASBackendCreateOpts{
 		OrgID: orgUUID,
 		CASBackendOpts: &CASBackendOpts{
-			Name: name, Username: username, Password: password, SecretName: secretName, Provider: provider,
+			Name: name, SecretName: secretName, Provider: provider,
 			Default: defaultB,
 		},
 	})

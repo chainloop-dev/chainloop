@@ -23,6 +23,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casbackend"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
@@ -40,7 +41,9 @@ func NewCASBackendRepo(data *Data, logger log.Logger) biz.CASBackendRepo {
 }
 
 func (r *CASBackendRepo) List(ctx context.Context, orgID uuid.UUID) ([]*biz.CASBackend, error) {
-	backends, err := orgScopedQuery(r.data.db, orgID).QueryCasBackends().WithOrganization().All(ctx)
+	backends, err := orgScopedQuery(r.data.db, orgID).QueryCasBackends().WithOrganization().
+		Order(ent.Desc(casbackend.FieldCreatedAt)).
+		All(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list cas backends: %w", err)
 	}
@@ -62,8 +65,27 @@ func (r *CASBackendRepo) FindDefaultBackend(ctx context.Context, orgID uuid.UUID
 	return entCASBackendToBiz(backend), nil
 }
 
+// Create creates a new CAS backend in the given organization
+// If it's set as default, it will unset the previous default backend
 func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateOpts) (*biz.CASBackend, error) {
-	backend, err := r.data.db.CASBackend.Create().
+	tx, err := r.data.db.Tx(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create transaction: %w", err)
+	}
+
+	// 1 - unset default backend for all the other backends in the org
+	if opts.Default {
+		if err := tx.CASBackend.Update().
+			Where(casbackend.HasOrganizationWith(organization.ID(opts.OrgID))).
+			Where(casbackend.Default(true)).
+			SetDefault(false).
+			Exec(ctx); err != nil {
+			return nil, fmt.Errorf("failed to clear previous default backend: %w", err)
+		}
+	}
+
+	// 2 - create the new backend and set it as default if needed
+	backend, err := tx.CASBackend.Create().
 		SetOrganizationID(opts.OrgID).
 		SetName(opts.Name).
 		SetProvider(opts.Provider).
@@ -71,10 +93,15 @@ func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateO
 		SetSecretName(opts.SecretName).
 		Save(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create backend: %w", err)
 	}
 
-	// Return the backend from the DB to have consistent timestamp data
+	// 3 - commit the transaction
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	// Return the backend from the DB to have consistent marshalled object
 	return r.FindByID(ctx, backend.ID)
 }
 

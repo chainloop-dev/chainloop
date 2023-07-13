@@ -28,6 +28,7 @@ type CASBackendAddOCI struct {
 }
 
 type NewCASBackendOCIAddOpts struct {
+	Name                     string
 	Repo, Username, Password string
 	Default                  bool
 }
@@ -49,7 +50,7 @@ func (action *CASBackendAddOCI) Run(opts *NewCASBackendOCIAddOpts) (*CASBackendI
 
 	client := pb.NewCASBackendServiceClient(action.cfg.CPConnection)
 	resp, err := client.Create(context.Background(), &pb.CASBackendServiceCreateRequest{
-		Name:     opts.Repo,
+		Name:     opts.Name,
 		Provider: "OCI",
 		Default:  opts.Default,
 		Config:   config,

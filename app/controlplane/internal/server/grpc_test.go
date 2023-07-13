@@ -51,6 +51,8 @@ func TestRequireFullyConfiguredOrgMatcher(t *testing.T) {
 		{"/controlplane.v1.OCIRepositoryService/Save", false},
 		{"/controlplane.v1.OrganizationService/ListMemberships", false},
 		{"/controlplane.v1.OrganizationService/SetCurrent", false},
+		{"/controlplane.v1.CASBackendService/List", false},
+		{"/controlplane.v1.CASBackendService/Add", false},
 	}
 
 	matchFunc := requireFullyConfiguredOrgMatcher()

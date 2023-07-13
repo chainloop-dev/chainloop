@@ -59,17 +59,29 @@ func (s *CASBackendService) List(ctx context.Context, _ *pb.CASBackendServiceLis
 }
 
 func (s *CASBackendService) Create(ctx context.Context, req *pb.CASBackendServiceCreateRequest) (*pb.CASBackendServiceCreateResponse, error) {
-	_, _, err := loadCurrentUserAndOrg(ctx)
+	_, currentOrg, err := loadCurrentUserAndOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	if req.Provider != string(biz.CASBackendOCI) {
-		return nil, errors.BadRequest("invalid provider", "only OCI is supported")
+	if req.Config == nil {
+		return nil, errors.BadRequest("invalid config", "config is required")
 	}
 
-	// TODO
-	return &pb.CASBackendServiceCreateResponse{Result: nil}, nil
+	fields, err := req.Config.MarshalJSON()
+	if err != nil {
+		return nil, errors.BadRequest("invalid config", "config is invalid")
+	}
+
+	// For now we only support one backend which is set as default
+	res, err := s.uc.Create(ctx, currentOrg.ID, req.Name, biz.CASBackendOCI, fields, req.Default)
+	if err != nil && biz.IsErrValidation(err) {
+		return nil, errors.BadRequest("invalid CAS backend", err.Error())
+	} else if err != nil {
+		return nil, sl.LogAndMaskErr(err, s.log)
+	}
+
+	return &pb.CASBackendServiceCreateResponse{Result: bizOCASBackendToPb(res)}, nil
 }
 
 func bizOCASBackendToPb(repo *biz.CASBackend) *pb.CASBackendItem {
