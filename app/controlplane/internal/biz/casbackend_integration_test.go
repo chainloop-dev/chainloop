@@ -27,6 +27,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -146,6 +147,39 @@ func (s *CASBackendIntegrationTestSuite) TestUpdate() {
 		assert.Equal("new-secret", defaultB.SecretName)
 		assert.True(defaultB.Default)
 	})
+}
+
+func (s *CASBackendIntegrationTestSuite) TestSoftDelete() {
+	assert := assert.New(s.T())
+	ctx := context.TODO()
+
+	backends, err := s.TestingUseCases.CASBackend.List(ctx, s.orgTwo.ID)
+	assert.NoError(err)
+	// There are two backends
+	require.Len(s.T(), backends, 2)
+
+	// We are going to delete the default one
+	toDelete := backends[1].ID
+	assert.True(backends[1].Default)
+
+	// Delete it
+	err = s.TestingUseCases.CASBackend.SoftDelete(ctx, s.orgTwo.ID, toDelete.String())
+	assert.NoError(err)
+
+	// there is one left
+	backends, err = s.TestingUseCases.CASBackend.List(ctx, s.orgTwo.ID)
+	assert.NoError(err)
+	// There is one backend
+	require.Len(s.T(), backends, 1)
+	assert.Equal(backends[0].ID, s.casBackend3.ID)
+
+	// the deleted one can not be found by ID either
+	_, err = s.TestingUseCases.CASBackend.FindByIDInOrg(ctx, s.orgTwo.ID, toDelete.String())
+	assert.ErrorAs(err, &biz.ErrNotFound{})
+
+	// the deleted one can not be found by as default
+	_, err = s.TestingUseCases.CASBackend.FindDefaultBackend(ctx, s.orgTwo.ID)
+	assert.ErrorAs(err, &biz.ErrNotFound{})
 }
 
 func (s *CASBackendIntegrationTestSuite) TestList() {

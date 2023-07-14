@@ -120,9 +120,9 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 
 	// find the default CAS backend to associate the workflow
 	backend, err := s.casUC.FindDefaultBackend(context.Background(), robotAccount.OrgID)
-	if err != nil {
+	if err != nil && !biz.IsNotFound(err) {
 		return nil, fmt.Errorf("failed to find default CAS backend: %w", err)
-	} else if backend == nil {
+	} else if err != nil {
 		return nil, errors.NotFound("not found", "default CAS backend not found")
 	}
 
@@ -252,7 +252,7 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 	if req.WorkflowRunId == "" {
 		s.log.Warn("DEPRECATED: using main repository to get upload creds")
 		repo, err := s.casUC.FindDefaultBackend(ctx, wf.OrgID.String())
-		if err != nil {
+		if err != nil && !biz.IsNotFound(err) {
 			return nil, sl.LogAndMaskErr(err, s.log)
 		} else if repo == nil {
 			return nil, errors.NotFound("not found", "main repository not found")

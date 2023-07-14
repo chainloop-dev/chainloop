@@ -67,8 +67,8 @@ func (s *OrgIntegrationTestSuite) TestDeleteOrg() {
 		assert.Empty(integrations)
 
 		ociRepo, err := s.CASBackend.FindDefaultBackend(ctx, s.org.ID)
-		assert.NoError(err)
 		assert.Nil(ociRepo)
+		assert.ErrorAs(err, &biz.ErrNotFound{})
 
 		workflows, err := s.Workflow.List(ctx, s.org.ID)
 		assert.NoError(err)

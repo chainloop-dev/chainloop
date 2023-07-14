@@ -116,7 +116,14 @@ func (uc *CASBackendUseCase) FindDefaultBackend(ctx context.Context, orgID strin
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	return uc.repo.FindDefaultBackend(ctx, orgUUID)
+	backend, err := uc.repo.FindDefaultBackend(ctx, orgUUID)
+	if err != nil {
+		return nil, err
+	} else if backend == nil {
+		return nil, NewErrNotFound("CAS Backend")
+	}
+
+	return backend, nil
 }
 
 func (uc *CASBackendUseCase) FindByIDInOrg(ctx context.Context, orgID, id string) (*CASBackend, error) {
