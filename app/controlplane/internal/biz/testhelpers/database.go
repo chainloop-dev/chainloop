@@ -30,6 +30,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
+	backends "github.com/chainloop-dev/chainloop/internal/blobmanager"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	creds "github.com/chainloop-dev/chainloop/internal/credentials/mocks"
 	robotaccount "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
@@ -66,6 +67,7 @@ type TestingUseCases struct {
 type newTestingOpts struct {
 	credsReaderWriter credentials.ReaderWriter
 	integrations      sdk.AvailablePlugins
+	providers         backends.Providers
 }
 
 type NewTestingUCOpt func(*newTestingOpts)
@@ -88,7 +90,7 @@ func WithRegisteredIntegration(i sdk.FanOut) NewTestingUCOpt {
 
 func NewTestingUseCases(t *testing.T, opts ...NewTestingUCOpt) *TestingUseCases {
 	// default args
-	newArgs := &newTestingOpts{credsReaderWriter: creds.NewReaderWriter(t), integrations: make(sdk.AvailablePlugins, 0)}
+	newArgs := &newTestingOpts{credsReaderWriter: creds.NewReaderWriter(t), integrations: make(sdk.AvailablePlugins, 0), providers: make(backends.Providers)}
 
 	// Overrides
 	for _, opt := range opts {
@@ -100,7 +102,7 @@ func NewTestingUseCases(t *testing.T, opts ...NewTestingUCOpt) *TestingUseCases 
 	testData, _, err := WireTestData(db, t, log, newArgs.credsReaderWriter, &robotaccount.Builder{}, &conf.Auth{
 		GeneratedJwsHmacSecret:        "test",
 		CasRobotAccountPrivateKeyPath: "./testdata/test-key.ec.pem",
-	}, newArgs.integrations)
+	}, newArgs.integrations, newArgs.providers)
 	assert.NoError(t, err)
 
 	// Run DB migrations for testing

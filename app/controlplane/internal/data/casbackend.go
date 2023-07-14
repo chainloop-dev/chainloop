@@ -58,7 +58,7 @@ func (r *CASBackendRepo) List(ctx context.Context, orgID uuid.UUID) ([]*biz.CASB
 }
 
 func (r *CASBackendRepo) FindDefaultBackend(ctx context.Context, orgID uuid.UUID) (*biz.CASBackend, error) {
-	backend, err := orgScopedQuery(r.data.db, orgID).QueryCasBackends().
+	backend, err := orgScopedQuery(r.data.db, orgID).QueryCasBackends().WithOrganization().
 		Where(casbackend.Default(true), casbackend.DeletedAtIsNil()).
 		Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {

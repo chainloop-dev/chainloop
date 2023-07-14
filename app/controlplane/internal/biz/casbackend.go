@@ -17,6 +17,7 @@ package biz
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"time"
@@ -86,18 +87,18 @@ type CASBackendReader interface {
 }
 
 type CASBackendUseCase struct {
-	repo               CASBackendRepo
-	logger             *log.Helper
-	credsRW            credentials.ReaderWriter
-	ociBackendProvider backend.Provider
+	repo      CASBackendRepo
+	logger    *log.Helper
+	credsRW   credentials.ReaderWriter
+	providers backend.Providers
 }
 
-func NewCASBackendUseCase(repo CASBackendRepo, credsRW credentials.ReaderWriter, p backend.Provider, l log.Logger) *CASBackendUseCase {
+func NewCASBackendUseCase(repo CASBackendRepo, credsRW credentials.ReaderWriter, providers backend.Providers, l log.Logger) *CASBackendUseCase {
 	if l == nil {
 		l = log.NewStdLogger(io.Discard)
 	}
 
-	return &CASBackendUseCase{repo, servicelogger.ScopedHelper(l, "biz/CASBackend"), credsRW, p}
+	return &CASBackendUseCase{repo, servicelogger.ScopedHelper(l, "biz/CASBackend"), credsRW, providers}
 }
 
 func (uc *CASBackendUseCase) List(ctx context.Context, orgID string) ([]*CASBackend, error) {
@@ -195,8 +196,6 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id, description 
 	})
 }
 
-// TODO(miguel): we need to think about the update mechanism and add some guardrails
-// for example, we might only allow updating credentials but not the repository itself or the provider
 // Deprecated: use Create and update methods separately instead
 func (uc *CASBackendUseCase) CreateOrUpdate(ctx context.Context, orgID, name, username, password string, provider CASBackendProvider, defaultB bool) (*CASBackend, error) {
 	orgUUID, err := uuid.Parse(orgID)
@@ -301,8 +300,6 @@ func (CASBackendValidationStatus) Values() (kinds []string) {
 }
 
 // Validate that the repository is valid and reachable
-// TODO: run this process periodically in the background
-// TODO: we need to support other kinds of repositories this is for the OCI type
 func (uc *CASBackendUseCase) PerformValidation(ctx context.Context, id string) (err error) {
 	validationStatus := CASBackendValidationFailed
 
@@ -318,10 +315,9 @@ func (uc *CASBackendUseCase) PerformValidation(ctx context.Context, id string) (
 		return NewErrNotFound("CAS Backend")
 	}
 
-	// Currently this code is just for OCI repositories
-	if backend.Provider != CASBackendOCI {
-		uc.logger.Warnw("msg", "validation not supported for this provider", "ID", id, "provider", backend.Provider)
-		return nil
+	provider, ok := uc.providers[string(backend.Provider)]
+	if !ok {
+		return fmt.Errorf("CAS backend provider not found: %s", backend.Provider)
 	}
 
 	defer func() {
@@ -338,16 +334,20 @@ func (uc *CASBackendUseCase) PerformValidation(ctx context.Context, id string) (
 	}()
 
 	// 1 - Retrieve the credentials from the external secrets manager
-	b, err := uc.ociBackendProvider.FromCredentials(ctx, backend.SecretName)
-	if err != nil {
-		uc.logger.Infow("msg", "credentials not found or invalid", "ID", id)
-		return nil
+	var creds any
+	if err := uc.credsRW.ReadCredentials(ctx, backend.SecretName, &creds); err != nil {
+		return fmt.Errorf("retrieving credentials: %w", err)
 	}
 
-	// 2 - Perform a write validation
-	if err = b.CheckWritePermissions(context.TODO()); err != nil {
-		uc.logger.Infow("msg", "permissions validation failed", "ID", id)
-		return nil
+	credsJSON, err := json.Marshal(creds)
+	if err != nil {
+		return fmt.Errorf("marshalling credentials: %w", err)
+	}
+
+	// 2 - run validation
+	_, err = provider.ValidateAndExtractCredentials(backend.Location, credsJSON)
+	if err != nil {
+		return fmt.Errorf("validating credentials: %w", err)
 	}
 
 	// If everything went well, update the validation status to OK
