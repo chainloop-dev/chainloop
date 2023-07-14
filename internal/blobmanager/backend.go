@@ -46,3 +46,7 @@ type Downloader interface {
 type Provider interface {
 	FromCredentials(ctx context.Context, secretName string) (UploaderDownloader, error)
 }
+
+type Validator interface {
+	ValidateAndExtractCredentials(location string, credsJSON []byte) (any, error)
+}

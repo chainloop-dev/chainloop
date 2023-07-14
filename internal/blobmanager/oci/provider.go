@@ -17,6 +17,7 @@ package oci
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
@@ -50,4 +51,35 @@ func (p *BackendProvider) FromCredentials(ctx context.Context, secretName string
 	}
 
 	return NewBackend(creds.Repo, &RegistryOptions{Keychain: k})
+}
+
+func (p *BackendProvider) ValidateAndExtractCredentials(location string, credsJSON []byte) (any, error) {
+	var creds credentials.OCIKeypair
+	if err := json.Unmarshal(credsJSON, &creds); err != nil {
+		return nil, fmt.Errorf("unmarshaling credentials: %w", err)
+	}
+
+	// We are currently storing the repo location in the secret as well
+	creds.Repo = location
+	if err := creds.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid credentials: %w", err)
+	}
+
+	// Create and validate credentials
+	k, err := ociauth.NewCredentials(location, creds.Username, creds.Password)
+	if err != nil {
+		return nil, fmt.Errorf("creating credentials: %w", err)
+	}
+
+	// Check credentials
+	b, err := NewBackend(location, &RegistryOptions{Keychain: k})
+	if err != nil {
+		return nil, fmt.Errorf("checking credentials: %w", err)
+	}
+
+	if err := b.CheckWritePermissions(context.TODO()); err != nil {
+		return nil, fmt.Errorf("checking write permissions: %w", err)
+	}
+
+	return creds, nil
 }

@@ -69,7 +69,7 @@ func validateRepo(ctx context.Context, uc biz.CASBackendReader, repo *biz.CASBac
 	}
 
 	// Reload repository to get the updated validation status
-	repo, err := uc.FindByID(ctx, repo.ID.String())
+	repo, err := uc.FindByIDInOrg(ctx, repo.OrganizationID, repo.ID.String())
 	if err != nil {
 		return nil, fmt.Errorf("reloading repository: %w", err)
 	}
