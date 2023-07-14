@@ -25,7 +25,7 @@ func newCASBackendCmd() *cobra.Command {
 		Short: "Operations on Artifact CAS backends",
 	}
 
-	cmd.AddCommand(newCASBackendListCmd(), newCASBackendAddCmd())
+	cmd.AddCommand(newCASBackendListCmd(), newCASBackendAddCmd(), newCASBackendUpdateCmd())
 	return cmd
 }
 
@@ -39,5 +39,18 @@ func newCASBackendAddCmd() *cobra.Command {
 	cmd.PersistentFlags().String("description", "", "descriptive information for this registration")
 
 	cmd.AddCommand(newCASBackendAddOCICmd())
+	return cmd
+}
+
+func newCASBackendUpdateCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "update",
+		Short: "Update a CAS backend description, credentials or default status",
+	}
+
+	cmd.PersistentFlags().Bool("default", false, "set the backend as default in your organization")
+	cmd.PersistentFlags().String("description", "", "descriptive information for this registration")
+
+	cmd.AddCommand(newCASBackendUpdateOCICmd())
 	return cmd
 }

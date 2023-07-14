@@ -35,6 +35,9 @@ var (
 	_ = sort.Sort
 )
 
+// define the regex for a UUID once up-front
+var _cas_backends_uuidPattern = regexp.MustCompile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+
 // Validate checks the field values on CASBackendServiceListRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -575,3 +578,291 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = CASBackendServiceCreateResponseValidationError{}
+
+// Validate checks the field values on CASBackendServiceUpdateRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CASBackendServiceUpdateRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CASBackendServiceUpdateRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// CASBackendServiceUpdateRequestMultiError, or nil if none found.
+func (m *CASBackendServiceUpdateRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CASBackendServiceUpdateRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if err := m._validateUuid(m.GetId()); err != nil {
+		err = CASBackendServiceUpdateRequestValidationError{
+			field:  "Id",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Description
+
+	// no validation rules for Default
+
+	if all {
+		switch v := interface{}(m.GetCredentials()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CASBackendServiceUpdateRequestValidationError{
+					field:  "Credentials",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CASBackendServiceUpdateRequestValidationError{
+					field:  "Credentials",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetCredentials()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CASBackendServiceUpdateRequestValidationError{
+				field:  "Credentials",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return CASBackendServiceUpdateRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *CASBackendServiceUpdateRequest) _validateUuid(uuid string) error {
+	if matched := _cas_backends_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
+	}
+
+	return nil
+}
+
+// CASBackendServiceUpdateRequestMultiError is an error wrapping multiple
+// validation errors returned by CASBackendServiceUpdateRequest.ValidateAll()
+// if the designated constraints aren't met.
+type CASBackendServiceUpdateRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CASBackendServiceUpdateRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CASBackendServiceUpdateRequestMultiError) AllErrors() []error { return m }
+
+// CASBackendServiceUpdateRequestValidationError is the validation error
+// returned by CASBackendServiceUpdateRequest.Validate if the designated
+// constraints aren't met.
+type CASBackendServiceUpdateRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CASBackendServiceUpdateRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CASBackendServiceUpdateRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CASBackendServiceUpdateRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CASBackendServiceUpdateRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CASBackendServiceUpdateRequestValidationError) ErrorName() string {
+	return "CASBackendServiceUpdateRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CASBackendServiceUpdateRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCASBackendServiceUpdateRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CASBackendServiceUpdateRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CASBackendServiceUpdateRequestValidationError{}
+
+// Validate checks the field values on CASBackendServiceUpdateResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CASBackendServiceUpdateResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CASBackendServiceUpdateResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// CASBackendServiceUpdateResponseMultiError, or nil if none found.
+func (m *CASBackendServiceUpdateResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CASBackendServiceUpdateResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetResult()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CASBackendServiceUpdateResponseValidationError{
+					field:  "Result",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CASBackendServiceUpdateResponseValidationError{
+					field:  "Result",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetResult()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CASBackendServiceUpdateResponseValidationError{
+				field:  "Result",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return CASBackendServiceUpdateResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// CASBackendServiceUpdateResponseMultiError is an error wrapping multiple
+// validation errors returned by CASBackendServiceUpdateResponse.ValidateAll()
+// if the designated constraints aren't met.
+type CASBackendServiceUpdateResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CASBackendServiceUpdateResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CASBackendServiceUpdateResponseMultiError) AllErrors() []error { return m }
+
+// CASBackendServiceUpdateResponseValidationError is the validation error
+// returned by CASBackendServiceUpdateResponse.Validate if the designated
+// constraints aren't met.
+type CASBackendServiceUpdateResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CASBackendServiceUpdateResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CASBackendServiceUpdateResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CASBackendServiceUpdateResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CASBackendServiceUpdateResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CASBackendServiceUpdateResponseValidationError) ErrorName() string {
+	return "CASBackendServiceUpdateResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CASBackendServiceUpdateResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCASBackendServiceUpdateResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CASBackendServiceUpdateResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CASBackendServiceUpdateResponseValidationError{}

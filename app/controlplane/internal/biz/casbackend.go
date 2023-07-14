@@ -74,6 +74,7 @@ type CASBackendUpdateOpts struct {
 type CASBackendRepo interface {
 	FindDefaultBackend(ctx context.Context, orgID uuid.UUID) (*CASBackend, error)
 	FindByID(ctx context.Context, ID uuid.UUID) (*CASBackend, error)
+	FindByIDInOrg(ctx context.Context, OrgID, ID uuid.UUID) (*CASBackend, error)
 	List(ctx context.Context, orgID uuid.UUID) ([]*CASBackend, error)
 	UpdateValidationStatus(ctx context.Context, ID uuid.UUID, status CASBackendValidationStatus) error
 	Create(context.Context, *CASBackendCreateOpts) (*CASBackend, error)
@@ -136,12 +137,7 @@ func (uc *CASBackendUseCase) FindByID(ctx context.Context, id string) (*CASBacke
 	return backend, nil
 }
 
-func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, location, description string, provider CASBackendProvider, configJSON []byte, defaultB bool) (*CASBackend, error) {
-	orgUUID, err := uuid.Parse(orgID)
-	if err != nil {
-		return nil, NewErrInvalidUUID(err)
-	}
-
+func validateAndExtractCredentials(provider CASBackendProvider, location string, credsJSON []byte) (any, error) {
 	// TODO: (miguel) this logic (marshalling from struct + validation) will be moved to the actual backend implementation
 	// This endpoint will support other backends in the future
 	if provider != CASBackendOCI {
@@ -153,7 +149,7 @@ func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, location, descri
 		Username string `json:"username"`
 	}{}
 
-	if err := json.Unmarshal(configJSON, &ociConfig); err != nil {
+	if err := json.Unmarshal(credsJSON, &ociConfig); err != nil {
 		return nil, NewErrValidation(err)
 	}
 
@@ -179,6 +175,21 @@ func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, location, descri
 		return nil, NewErrValidation(err)
 	}
 
+	return creds, nil
+}
+
+func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, location, description string, provider CASBackendProvider, credsJSON []byte, defaultB bool) (*CASBackend, error) {
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	// Validate and store the secret in the external secrets manager
+	creds, err := validateAndExtractCredentials(provider, location, credsJSON)
+	if err != nil {
+		return nil, NewErrValidation(err)
+	}
+
 	secretName, err := uc.credsRW.SaveCredentials(ctx, orgID, creds)
 	if err != nil {
 		return nil, fmt.Errorf("storing the credentials: %w", err)
@@ -193,8 +204,51 @@ func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, location, descri
 	})
 }
 
+// Update will update credentials, description or default status
+func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id, description string, credsJSON []byte, defaultB bool) (*CASBackend, error) {
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	uuid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	repo, err := uc.repo.FindByIDInOrg(ctx, orgUUID, uuid)
+	if err != nil {
+		return nil, err
+	} else if repo == nil {
+		return nil, NewErrNotFound("CAS Backend")
+	}
+
+	var secretName string
+	// We want to rotate credentials
+	if credsJSON != nil {
+		// Validate and store the secret in the external secrets manager
+		creds, err := validateAndExtractCredentials(repo.Provider, repo.Location, credsJSON)
+		if err != nil {
+			return nil, NewErrValidation(err)
+		}
+
+		secretName, err = uc.credsRW.SaveCredentials(ctx, orgID, creds)
+		if err != nil {
+			return nil, fmt.Errorf("storing the credentials: %w", err)
+		}
+	}
+
+	return uc.repo.Update(ctx, &CASBackendUpdateOpts{
+		ID: uuid,
+		CASBackendOpts: &CASBackendOpts{
+			SecretName: secretName, Default: defaultB, Description: description,
+		},
+	})
+}
+
 // TODO(miguel): we need to think about the update mechanism and add some guardrails
 // for example, we might only allow updating credentials but not the repository itself or the provider
+// Deprecated: use Create and update methods separately instead
 func (uc *CASBackendUseCase) CreateOrUpdate(ctx context.Context, orgID, name, username, password string, provider CASBackendProvider, defaultB bool) (*CASBackend, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {

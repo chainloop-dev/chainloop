@@ -31,6 +31,27 @@ export interface CASBackendServiceCreateResponse {
   result?: CASBackendItem;
 }
 
+/**
+ * Update a CAS backend is limited to
+ * - description
+ * - set is as default
+ * - rotate credentials
+ */
+export interface CASBackendServiceUpdateRequest {
+  /** UUID of the workflow to attach */
+  id: string;
+  /** Descriptive name */
+  description: string;
+  /** Set as default in your organization */
+  default: boolean;
+  /** Credentials, useful for rotation */
+  credentials?: { [key: string]: any };
+}
+
+export interface CASBackendServiceUpdateResponse {
+  result?: CASBackendItem;
+}
+
 function createBaseCASBackendServiceListRequest(): CASBackendServiceListRequest {
   return {};
 }
@@ -309,6 +330,165 @@ export const CASBackendServiceCreateResponse = {
   },
 };
 
+function createBaseCASBackendServiceUpdateRequest(): CASBackendServiceUpdateRequest {
+  return { id: "", description: "", default: false, credentials: undefined };
+}
+
+export const CASBackendServiceUpdateRequest = {
+  encode(message: CASBackendServiceUpdateRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.description !== "") {
+      writer.uint32(18).string(message.description);
+    }
+    if (message.default === true) {
+      writer.uint32(24).bool(message.default);
+    }
+    if (message.credentials !== undefined) {
+      Struct.encode(Struct.wrap(message.credentials), writer.uint32(34).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CASBackendServiceUpdateRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCASBackendServiceUpdateRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.default = reader.bool();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.credentials = Struct.unwrap(Struct.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CASBackendServiceUpdateRequest {
+    return {
+      id: isSet(object.id) ? String(object.id) : "",
+      description: isSet(object.description) ? String(object.description) : "",
+      default: isSet(object.default) ? Boolean(object.default) : false,
+      credentials: isObject(object.credentials) ? object.credentials : undefined,
+    };
+  },
+
+  toJSON(message: CASBackendServiceUpdateRequest): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    message.description !== undefined && (obj.description = message.description);
+    message.default !== undefined && (obj.default = message.default);
+    message.credentials !== undefined && (obj.credentials = message.credentials);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CASBackendServiceUpdateRequest>, I>>(base?: I): CASBackendServiceUpdateRequest {
+    return CASBackendServiceUpdateRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<CASBackendServiceUpdateRequest>, I>>(
+    object: I,
+  ): CASBackendServiceUpdateRequest {
+    const message = createBaseCASBackendServiceUpdateRequest();
+    message.id = object.id ?? "";
+    message.description = object.description ?? "";
+    message.default = object.default ?? false;
+    message.credentials = object.credentials ?? undefined;
+    return message;
+  },
+};
+
+function createBaseCASBackendServiceUpdateResponse(): CASBackendServiceUpdateResponse {
+  return { result: undefined };
+}
+
+export const CASBackendServiceUpdateResponse = {
+  encode(message: CASBackendServiceUpdateResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.result !== undefined) {
+      CASBackendItem.encode(message.result, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CASBackendServiceUpdateResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCASBackendServiceUpdateResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.result = CASBackendItem.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CASBackendServiceUpdateResponse {
+    return { result: isSet(object.result) ? CASBackendItem.fromJSON(object.result) : undefined };
+  },
+
+  toJSON(message: CASBackendServiceUpdateResponse): unknown {
+    const obj: any = {};
+    message.result !== undefined && (obj.result = message.result ? CASBackendItem.toJSON(message.result) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CASBackendServiceUpdateResponse>, I>>(base?: I): CASBackendServiceUpdateResponse {
+    return CASBackendServiceUpdateResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<CASBackendServiceUpdateResponse>, I>>(
+    object: I,
+  ): CASBackendServiceUpdateResponse {
+    const message = createBaseCASBackendServiceUpdateResponse();
+    message.result = (object.result !== undefined && object.result !== null)
+      ? CASBackendItem.fromPartial(object.result)
+      : undefined;
+    return message;
+  },
+};
+
 export interface CASBackendService {
   List(
     request: DeepPartial<CASBackendServiceListRequest>,
@@ -318,6 +498,10 @@ export interface CASBackendService {
     request: DeepPartial<CASBackendServiceCreateRequest>,
     metadata?: grpc.Metadata,
   ): Promise<CASBackendServiceCreateResponse>;
+  Update(
+    request: DeepPartial<CASBackendServiceUpdateRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<CASBackendServiceUpdateResponse>;
 }
 
 export class CASBackendServiceClientImpl implements CASBackendService {
@@ -327,6 +511,7 @@ export class CASBackendServiceClientImpl implements CASBackendService {
     this.rpc = rpc;
     this.List = this.List.bind(this);
     this.Create = this.Create.bind(this);
+    this.Update = this.Update.bind(this);
   }
 
   List(
@@ -341,6 +526,13 @@ export class CASBackendServiceClientImpl implements CASBackendService {
     metadata?: grpc.Metadata,
   ): Promise<CASBackendServiceCreateResponse> {
     return this.rpc.unary(CASBackendServiceCreateDesc, CASBackendServiceCreateRequest.fromPartial(request), metadata);
+  }
+
+  Update(
+    request: DeepPartial<CASBackendServiceUpdateRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<CASBackendServiceUpdateResponse> {
+    return this.rpc.unary(CASBackendServiceUpdateDesc, CASBackendServiceUpdateRequest.fromPartial(request), metadata);
   }
 }
 
@@ -382,6 +574,29 @@ export const CASBackendServiceCreateDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = CASBackendServiceCreateResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const CASBackendServiceUpdateDesc: UnaryMethodDefinitionish = {
+  methodName: "Update",
+  service: CASBackendServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return CASBackendServiceUpdateRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = CASBackendServiceUpdateResponse.decode(data);
       return {
         ...value,
         toObject() {

@@ -83,6 +83,32 @@ func (_m *CASBackendRepo) FindByID(ctx context.Context, ID uuid.UUID) (*biz.CASB
 	return r0, r1
 }
 
+// FindByIDInOrg provides a mock function with given fields: ctx, OrgID, ID
+func (_m *CASBackendRepo) FindByIDInOrg(ctx context.Context, OrgID uuid.UUID, ID uuid.UUID) (*biz.CASBackend, error) {
+	ret := _m.Called(ctx, OrgID, ID)
+
+	var r0 *biz.CASBackend
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) (*biz.CASBackend, error)); ok {
+		return rf(ctx, OrgID, ID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) *biz.CASBackend); ok {
+		r0 = rf(ctx, OrgID, ID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*biz.CASBackend)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
+		r1 = rf(ctx, OrgID, ID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // FindDefaultBackend provides a mock function with given fields: ctx, orgID
 func (_m *CASBackendRepo) FindDefaultBackend(ctx context.Context, orgID uuid.UUID) (*biz.CASBackend, error) {
 	ret := _m.Called(ctx, orgID)

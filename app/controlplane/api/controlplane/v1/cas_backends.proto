@@ -26,6 +26,7 @@ import "google/protobuf/struct.proto";
 service CASBackendService {
 	rpc List (CASBackendServiceListRequest) returns (CASBackendServiceListResponse);
 	rpc Create (CASBackendServiceCreateRequest) returns (CASBackendServiceCreateResponse);
+	rpc Update (CASBackendServiceUpdateRequest) returns (CASBackendServiceUpdateResponse);
 }
 
 message CASBackendServiceListRequest {}
@@ -41,12 +42,31 @@ message CASBackendServiceCreateRequest {
 	string provider = 2 [(validate.rules).string.min_len = 1];
 	// Descriptive name
 	string description = 3;
-  // Set as default in your organization
+	// Set as default in your organization
 	bool default = 4;
 	// Arbitrary configuration for the integration
 	google.protobuf.Struct credentials = 5 [(validate.rules).message.required = true];
 }
 
 message CASBackendServiceCreateResponse {
+  CASBackendItem result = 1;
+}
+
+// Update a CAS backend is limited to 
+// - description
+// - set is as default
+// - rotate credentials
+message CASBackendServiceUpdateRequest {
+	// UUID of the workflow to attach
+	string id = 1 [(validate.rules).string.uuid = true];
+	// Descriptive name
+	string description = 2;
+	// Set as default in your organization
+	bool default = 3;
+	// Credentials, useful for rotation
+	google.protobuf.Struct credentials = 4;
+}
+
+message CASBackendServiceUpdateResponse {
   CASBackendItem result = 1;
 }

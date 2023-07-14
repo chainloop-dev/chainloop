@@ -64,10 +64,6 @@ func (s *CASBackendService) Create(ctx context.Context, req *pb.CASBackendServic
 		return nil, err
 	}
 
-	if err := req.ValidateAll(); err != nil {
-		return nil, errors.BadRequest("invalid config", err.Error())
-	}
-
 	credsJSON, err := req.Credentials.MarshalJSON()
 	if err != nil {
 		return nil, errors.BadRequest("invalid config", "config is invalid")
@@ -82,6 +78,35 @@ func (s *CASBackendService) Create(ctx context.Context, req *pb.CASBackendServic
 	}
 
 	return &pb.CASBackendServiceCreateResponse{Result: bizOCASBackendToPb(res)}, nil
+}
+
+func (s *CASBackendService) Update(ctx context.Context, req *pb.CASBackendServiceUpdateRequest) (*pb.CASBackendServiceUpdateResponse, error) {
+	_, currentOrg, err := loadCurrentUserAndOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var credsJSON []byte
+	if req.Credentials != nil {
+		credsJSON, err = req.Credentials.MarshalJSON()
+		if err != nil {
+			return nil, errors.BadRequest("invalid config", "config is invalid")
+		}
+	}
+
+	// For now we only support one backend which is set as default
+	res, err := s.uc.Update(ctx, currentOrg.ID, req.Id, req.Description, credsJSON, req.Default)
+
+	switch {
+	case err != nil && biz.IsErrValidation(err):
+		return nil, errors.BadRequest("invalid CAS backend", err.Error())
+	case err != nil && biz.IsNotFound(err):
+		return nil, errors.NotFound("CAS backend not found", err.Error())
+	case err != nil:
+		return nil, sl.LogAndMaskErr(err, s.log)
+	}
+
+	return &pb.CASBackendServiceUpdateResponse{Result: bizOCASBackendToPb(res)}, nil
 }
 
 func bizOCASBackendToPb(in *biz.CASBackend) *pb.CASBackendItem {

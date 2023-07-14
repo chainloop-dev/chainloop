@@ -36,6 +36,7 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	CASBackendService_List_FullMethodName   = "/controlplane.v1.CASBackendService/List"
 	CASBackendService_Create_FullMethodName = "/controlplane.v1.CASBackendService/Create"
+	CASBackendService_Update_FullMethodName = "/controlplane.v1.CASBackendService/Update"
 )
 
 // CASBackendServiceClient is the client API for CASBackendService service.
@@ -44,6 +45,7 @@ const (
 type CASBackendServiceClient interface {
 	List(ctx context.Context, in *CASBackendServiceListRequest, opts ...grpc.CallOption) (*CASBackendServiceListResponse, error)
 	Create(ctx context.Context, in *CASBackendServiceCreateRequest, opts ...grpc.CallOption) (*CASBackendServiceCreateResponse, error)
+	Update(ctx context.Context, in *CASBackendServiceUpdateRequest, opts ...grpc.CallOption) (*CASBackendServiceUpdateResponse, error)
 }
 
 type cASBackendServiceClient struct {
@@ -72,12 +74,22 @@ func (c *cASBackendServiceClient) Create(ctx context.Context, in *CASBackendServ
 	return out, nil
 }
 
+func (c *cASBackendServiceClient) Update(ctx context.Context, in *CASBackendServiceUpdateRequest, opts ...grpc.CallOption) (*CASBackendServiceUpdateResponse, error) {
+	out := new(CASBackendServiceUpdateResponse)
+	err := c.cc.Invoke(ctx, CASBackendService_Update_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CASBackendServiceServer is the server API for CASBackendService service.
 // All implementations must embed UnimplementedCASBackendServiceServer
 // for forward compatibility
 type CASBackendServiceServer interface {
 	List(context.Context, *CASBackendServiceListRequest) (*CASBackendServiceListResponse, error)
 	Create(context.Context, *CASBackendServiceCreateRequest) (*CASBackendServiceCreateResponse, error)
+	Update(context.Context, *CASBackendServiceUpdateRequest) (*CASBackendServiceUpdateResponse, error)
 	mustEmbedUnimplementedCASBackendServiceServer()
 }
 
@@ -90,6 +102,9 @@ func (UnimplementedCASBackendServiceServer) List(context.Context, *CASBackendSer
 }
 func (UnimplementedCASBackendServiceServer) Create(context.Context, *CASBackendServiceCreateRequest) (*CASBackendServiceCreateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
+}
+func (UnimplementedCASBackendServiceServer) Update(context.Context, *CASBackendServiceUpdateRequest) (*CASBackendServiceUpdateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
 }
 func (UnimplementedCASBackendServiceServer) mustEmbedUnimplementedCASBackendServiceServer() {}
 
@@ -140,6 +155,24 @@ func _CASBackendService_Create_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CASBackendService_Update_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CASBackendServiceUpdateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CASBackendServiceServer).Update(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CASBackendService_Update_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CASBackendServiceServer).Update(ctx, req.(*CASBackendServiceUpdateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CASBackendService_ServiceDesc is the grpc.ServiceDesc for CASBackendService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -154,6 +187,10 @@ var CASBackendService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Create",
 			Handler:    _CASBackendService_Create_Handler,
+		},
+		{
+			MethodName: "Update",
+			Handler:    _CASBackendService_Update_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
