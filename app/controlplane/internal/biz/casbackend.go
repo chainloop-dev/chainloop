@@ -53,6 +53,7 @@ type CASBackend struct {
 }
 
 type CASBackendOpts struct {
+	OrgID                             uuid.UUID
 	Location, SecretName, Description string
 	Provider                          CASBackendProvider
 	Default                           bool
@@ -60,7 +61,6 @@ type CASBackendOpts struct {
 
 type CASBackendCreateOpts struct {
 	*CASBackendOpts
-	OrgID uuid.UUID
 }
 
 type CASBackendUpdateOpts struct {
@@ -152,10 +152,10 @@ func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, location, descri
 	}
 
 	return uc.repo.Create(ctx, &CASBackendCreateOpts{
-		OrgID: orgUUID,
 		CASBackendOpts: &CASBackendOpts{
 			Location: location, SecretName: secretName, Provider: provider, Default: defaultB,
 			Description: description,
+			OrgID:       orgUUID,
 		},
 	})
 }
@@ -191,7 +191,7 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id, description 
 	return uc.repo.Update(ctx, &CASBackendUpdateOpts{
 		ID: uuid,
 		CASBackendOpts: &CASBackendOpts{
-			SecretName: secretName, Default: defaultB, Description: description,
+			SecretName: secretName, Default: defaultB, Description: description, OrgID: orgUUID,
 		},
 	})
 }
@@ -231,10 +231,10 @@ func (uc *CASBackendUseCase) CreateOrUpdate(ctx context.Context, orgID, name, us
 	}
 
 	return uc.repo.Create(ctx, &CASBackendCreateOpts{
-		OrgID: orgUUID,
 		CASBackendOpts: &CASBackendOpts{
 			Location: name, SecretName: secretName, Provider: provider,
 			Default: defaultB,
+			OrgID:   orgUUID,
 		},
 	})
 }

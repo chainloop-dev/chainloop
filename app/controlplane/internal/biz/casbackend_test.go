@@ -110,8 +110,8 @@ func (s *casBackendTestSuite) TestSaveDefaultBackendOk() {
 
 	newRepo := &biz.CASBackend{}
 	s.repo.On("Create", ctx, &biz.CASBackendCreateOpts{
-		OrgID: s.validUUID,
 		CASBackendOpts: &biz.CASBackendOpts{
+			OrgID:    s.validUUID,
 			Location: repo, SecretName: "secret-key", Default: true, Provider: biz.CASBackendOCI,
 		},
 	}).Return(newRepo, nil)
