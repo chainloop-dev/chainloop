@@ -28,9 +28,6 @@ jobs:
           cache: true
           cache-dependency-path: go.sum
 
-      - name: Test-upx
-        run: upx --version
-
       - name: Go Module tidy check
         run: |
           go mod tidy
