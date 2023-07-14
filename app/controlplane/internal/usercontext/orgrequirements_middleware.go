@@ -37,23 +37,23 @@ func CheckOrgRequirements(uc biz.CASBackendReader) middleware.Middleware {
 
 			// 1 - Figure out main repository for this organization
 			repo, err := uc.FindDefaultBackend(ctx, org.ID)
-			if err != nil {
-				return nil, fmt.Errorf("checking for repositories in the org: %w", err)
+			if err != nil && !biz.IsNotFound(err) {
+				return nil, fmt.Errorf("checking for CAS backends in the org: %w", err)
 			} else if repo == nil {
-				return nil, v1.ErrorOciRepositoryErrorReasonRequired("your organization does not have an OCI repository configured yet")
+				return nil, v1.ErrorOciRepositoryErrorReasonRequired("your organization does not have an CAS Backend configured yet")
 			}
 
 			// 2 - Perform a validation if needed
 			if shouldRevalidate(repo) {
-				repo, err = validateRepo(ctx, uc, repo)
+				repo, err = validateCASBackend(ctx, uc, repo)
 				if err != nil {
-					return nil, fmt.Errorf("validating repository: %w", err)
+					return nil, fmt.Errorf("validating CAS backend: %w", err)
 				}
 			}
 
 			// 2 - compare the status
 			if repo.ValidationStatus != biz.CASBackendValidationOK {
-				return nil, v1.ErrorOciRepositoryErrorReasonInvalid("your OCI repository can't be reached")
+				return nil, v1.ErrorOciRepositoryErrorReasonInvalid("your CAS backend can't be reached")
 			}
 
 			return handler(ctx, req)
@@ -62,16 +62,16 @@ func CheckOrgRequirements(uc biz.CASBackendReader) middleware.Middleware {
 }
 
 // validateRepoIfNeeded will re-run a validation and return the updated repository
-func validateRepo(ctx context.Context, uc biz.CASBackendReader, repo *biz.CASBackend) (*biz.CASBackend, error) {
+func validateCASBackend(ctx context.Context, uc biz.CASBackendReader, repo *biz.CASBackend) (*biz.CASBackend, error) {
 	// re-run the validation
 	if err := uc.PerformValidation(ctx, repo.ID.String()); err != nil {
 		return nil, fmt.Errorf("performing validation: %w", err)
 	}
 
 	// Reload repository to get the updated validation status
-	repo, err := uc.FindByID(ctx, repo.ID.String())
+	repo, err := uc.FindByIDInOrg(ctx, repo.OrganizationID.String(), repo.ID.String())
 	if err != nil {
-		return nil, fmt.Errorf("reloading repository: %w", err)
+		return nil, fmt.Errorf("reloading CAS backend: %w", err)
 	}
 
 	return repo, nil

@@ -20,6 +20,7 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -29,13 +30,15 @@ type CASBackendService struct {
 	pb.UnimplementedCASBackendServiceServer
 	*service
 
-	uc *biz.CASBackendUseCase
+	uc        *biz.CASBackendUseCase
+	providers backend.Providers
 }
 
-func NewCASBackendService(uc *biz.CASBackendUseCase, opts ...NewOpt) *CASBackendService {
+func NewCASBackendService(uc *biz.CASBackendUseCase, providers backend.Providers, opts ...NewOpt) *CASBackendService {
 	return &CASBackendService{
-		service: newService(opts...),
-		uc:      uc,
+		service:   newService(opts...),
+		uc:        uc,
+		providers: providers,
 	}
 }
 
@@ -64,13 +67,24 @@ func (s *CASBackendService) Create(ctx context.Context, req *pb.CASBackendServic
 		return nil, err
 	}
 
+	backendP, ok := s.providers[req.Provider]
+	if !ok {
+		return nil, errors.BadRequest("invalid CAS backend", "invalid CAS backend")
+	}
+
 	credsJSON, err := req.Credentials.MarshalJSON()
 	if err != nil {
 		return nil, errors.BadRequest("invalid config", "config is invalid")
 	}
 
+	// Validate and extract the credentials so they can be stored in the next step
+	creds, err := backendP.ValidateAndExtractCredentials(req.Location, credsJSON)
+	if err != nil {
+		return nil, errors.BadRequest("invalid config", err.Error())
+	}
+
 	// For now we only support one backend which is set as default
-	res, err := s.uc.Create(ctx, currentOrg.ID, req.Location, req.Description, biz.CASBackendOCI, credsJSON, req.Default)
+	res, err := s.uc.Create(ctx, currentOrg.ID, req.Location, req.Description, biz.CASBackendOCI, creds, req.Default)
 	if err != nil && biz.IsErrValidation(err) {
 		return nil, errors.BadRequest("invalid CAS backend", err.Error())
 	} else if err != nil {
@@ -86,17 +100,37 @@ func (s *CASBackendService) Update(ctx context.Context, req *pb.CASBackendServic
 		return nil, err
 	}
 
-	var credsJSON []byte
+	// find the backend to update
+	backend, err := s.uc.FindByIDInOrg(ctx, currentOrg.ID, req.Id)
+	if err != nil && biz.IsNotFound(err) {
+		return nil, errors.NotFound("CAS backend", "not found")
+	} else if err != nil {
+		return nil, sl.LogAndMaskErr(err, s.log)
+	}
+
+	// if we are updating credentials we need to validate them
+	// to do so we load a backend provider and call ValidateAndExtractCredentials
+	var creds any
 	if req.Credentials != nil {
-		credsJSON, err = req.Credentials.MarshalJSON()
+		backendP, ok := s.providers[string(backend.Provider)]
+		if !ok {
+			return nil, errors.BadRequest("invalid CAS backend", "invalid CAS backend")
+		}
+
+		credsJSON, err := req.Credentials.MarshalJSON()
 		if err != nil {
 			return nil, errors.BadRequest("invalid config", "config is invalid")
+		}
+
+		// Validate and extract the credentials so they can be stored in the next step
+		creds, err = backendP.ValidateAndExtractCredentials(backend.Location, credsJSON)
+		if err != nil {
+			return nil, errors.BadRequest("invalid config", err.Error())
 		}
 	}
 
 	// For now we only support one backend which is set as default
-	res, err := s.uc.Update(ctx, currentOrg.ID, req.Id, req.Description, credsJSON, req.Default)
-
+	res, err := s.uc.Update(ctx, currentOrg.ID, req.Id, req.Description, creds, req.Default)
 	switch {
 	case err != nil && biz.IsErrValidation(err):
 		return nil, errors.BadRequest("invalid CAS backend", err.Error())

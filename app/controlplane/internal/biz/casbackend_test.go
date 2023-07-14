@@ -22,6 +22,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	bizMocks "github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/mocks"
+	backends "github.com/chainloop-dev/chainloop/internal/blobmanager"
 	blobM "github.com/chainloop-dev/chainloop/internal/blobmanager/mocks"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	credentialsM "github.com/chainloop-dev/chainloop/internal/credentials/mocks"
@@ -55,7 +56,7 @@ func (s *casBackendTestSuite) TestFindDefaultBackendNotFound() {
 	s.repo.On("FindDefaultBackend", ctx, s.validUUID).Return(nil, nil)
 
 	repo, err := s.useCase.FindDefaultBackend(ctx, s.validUUID.String())
-	assert.NoError(err)
+	assert.ErrorAs(err, &biz.ErrNotFound{})
 	assert.Nil(repo)
 }
 
@@ -109,8 +110,8 @@ func (s *casBackendTestSuite) TestSaveDefaultBackendOk() {
 
 	newRepo := &biz.CASBackend{}
 	s.repo.On("Create", ctx, &biz.CASBackendCreateOpts{
-		OrgID: s.validUUID,
 		CASBackendOpts: &biz.CASBackendOpts{
+			OrgID:    s.validUUID,
 			Location: repo, SecretName: "secret-key", Default: true, Provider: biz.CASBackendOCI,
 		},
 	}).Return(newRepo, nil)
@@ -140,19 +141,18 @@ func (s *casBackendTestSuite) TestPerformValidation() {
 	t.Run("proper provider credentials missing, set validation status => invalid", func(t *testing.T) {
 		s.repo.On("FindByID", mock.Anything, s.validUUID).Return(validRepo, nil)
 		s.repo.On("UpdateValidationStatus", mock.Anything, s.validUUID, biz.CASBackendValidationFailed).Return(nil)
-		s.backendProvider.On("FromCredentials", mock.Anything, mock.Anything).Return(nil, credentials.ErrNotFound)
+
+		s.credsRW.On("ReadCredentials", mock.Anything, mock.Anything, mock.Anything).Return(credentials.ErrNotFound)
 		err := s.useCase.PerformValidation(context.Background(), s.validUUID.String())
 		assert.NoError(err)
 		s.resetMock()
 	})
 
 	t.Run("invalid credentials, set validation status => invalid", func(t *testing.T) {
-		b := blobM.NewUploaderDownloader(t)
-
 		s.repo.On("FindByID", mock.Anything, s.validUUID).Return(validRepo, nil)
 		s.repo.On("UpdateValidationStatus", mock.Anything, s.validUUID, biz.CASBackendValidationFailed).Return(nil)
-		s.backendProvider.On("FromCredentials", mock.Anything, mock.Anything).Return(b, nil)
-		b.On("CheckWritePermissions", mock.Anything).Return(errors.New("invalid credentials"))
+		s.credsRW.On("ReadCredentials", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+		s.backendProvider.On("ValidateAndExtractCredentials", validRepo.Location, mock.Anything).Return(nil, errors.New("invalid credentials"))
 
 		err := s.useCase.PerformValidation(context.Background(), s.validUUID.String())
 		assert.NoError(err)
@@ -160,12 +160,10 @@ func (s *casBackendTestSuite) TestPerformValidation() {
 	})
 
 	t.Run("valid credentials, set validation status => ok", func(t *testing.T) {
-		b := blobM.NewUploaderDownloader(t)
-
 		s.repo.On("FindByID", mock.Anything, s.validUUID).Return(validRepo, nil)
 		s.repo.On("UpdateValidationStatus", mock.Anything, s.validUUID, biz.CASBackendValidationOK).Return(nil)
-		s.backendProvider.On("FromCredentials", mock.Anything, mock.Anything).Return(b, nil)
-		b.On("CheckWritePermissions", mock.Anything).Return(nil)
+		s.credsRW.On("ReadCredentials", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+		s.backendProvider.On("ValidateAndExtractCredentials", validRepo.Location, mock.Anything).Return(nil, nil)
 
 		err := s.useCase.PerformValidation(context.Background(), s.validUUID.String())
 		assert.NoError(err)
@@ -190,5 +188,9 @@ func (s *casBackendTestSuite) SetupTest() {
 	s.repo = bizMocks.NewCASBackendRepo(s.T())
 	s.credsRW = credentialsM.NewReaderWriter(s.T())
 	s.backendProvider = blobM.NewProvider(s.T())
-	s.useCase = biz.NewCASBackendUseCase(s.repo, s.credsRW, s.backendProvider, nil)
+	s.useCase = biz.NewCASBackendUseCase(s.repo, s.credsRW,
+		backends.Providers{
+			"OCI": s.backendProvider,
+		}, nil,
+	)
 }

@@ -25,8 +25,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
-	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
-	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
+	backends "github.com/chainloop-dev/chainloop/internal/blobmanager"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	robotaccount "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	"github.com/go-kratos/kratos/v2/log"
@@ -35,14 +34,11 @@ import (
 )
 
 // wireTestData init testing data
-func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWriter, *robotaccount.Builder, *conf.Auth, sdk.AvailablePlugins) (*TestingUseCases, func(), error) {
+func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWriter, *robotaccount.Builder, *conf.Auth, sdk.AvailablePlugins, backends.Providers) (*TestingUseCases, func(), error) {
 	panic(
 		wire.Build(
 			data.ProviderSet,
 			biz.ProviderSet,
-			wire.Bind(new(backend.Provider), new(*oci.BackendProvider)),
-			wire.Bind(new(credentials.Reader), new(credentials.ReaderWriter)),
-			oci.NewBackendProvider,
 			wire.Struct(new(TestingUseCases), "*"),
 			newConfData,
 		),

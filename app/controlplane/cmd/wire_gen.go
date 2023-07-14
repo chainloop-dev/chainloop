@@ -14,7 +14,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/server"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
-	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	"github.com/go-kratos/kratos/v2/log"
 )
@@ -32,8 +31,8 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, logger)
 	organizationRepo := data.NewOrganizationRepo(dataData, logger)
 	casBackendRepo := data.NewCASBackendRepo(dataData, logger)
-	backendProvider := oci.NewBackendProvider(readerWriter)
-	casBackendUseCase := biz.NewCASBackendUseCase(casBackendRepo, readerWriter, backendProvider, logger)
+	providers := loadCASBackendProviders(readerWriter)
+	casBackendUseCase := biz.NewCASBackendUseCase(casBackendRepo, readerWriter, providers, logger)
 	integrationRepo := data.NewIntegrationRepo(dataData, logger)
 	integrationAttachmentRepo := data.NewIntegrationAttachmentRepo(dataData, logger)
 	workflowRepo := data.NewWorkflowRepo(dataData, logger)
@@ -116,7 +115,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	ociRepositoryService := service.NewOCIRepositoryService(casBackendUseCase, v2...)
 	integrationsService := service.NewIntegrationsService(integrationUseCase, workflowUseCase, availablePlugins, v2...)
 	organizationService := service.NewOrganizationService(membershipUseCase, v2...)
-	casBackendService := service.NewCASBackendService(casBackendUseCase, v2...)
+	casBackendService := service.NewCASBackendService(casBackendUseCase, providers, v2...)
 	opts := &server.Opts{
 		UserUseCase:         userUseCase,
 		RobotAccountUseCase: robotAccountUseCase,

@@ -104,7 +104,7 @@ func (uc *OrganizationUseCase) Delete(ctx context.Context, id string) error {
 	// Delete the associated repository
 	// Currently there is only one repository per organization
 	ociRepository, err := uc.casBackendUseCase.FindDefaultBackend(ctx, org.ID)
-	if err != nil {
+	if err != nil && !IsNotFound(err) {
 		return err
 	}
 

@@ -11,7 +11,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
-	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
+	"github.com/chainloop-dev/chainloop/internal/blobmanager"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	"github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	"github.com/go-kratos/kratos/v2/log"
@@ -25,7 +25,7 @@ import (
 // Injectors from wire.go:
 
 // wireTestData init testing data
-func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, readerWriter credentials.ReaderWriter, builder *robotaccount.Builder, auth *conf.Auth, availablePlugins sdk.AvailablePlugins) (*TestingUseCases, func(), error) {
+func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, readerWriter credentials.ReaderWriter, builder *robotaccount.Builder, auth *conf.Auth, availablePlugins sdk.AvailablePlugins, providers backend.Providers) (*TestingUseCases, func(), error) {
 	confData := newConfData(testDatabase, t)
 	dataData, cleanup, err := data.NewData(confData, logger)
 	if err != nil {
@@ -34,8 +34,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	membershipRepo := data.NewMembershipRepo(dataData, logger)
 	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, logger)
 	casBackendRepo := data.NewCASBackendRepo(dataData, logger)
-	backendProvider := oci.NewBackendProvider(readerWriter)
-	casBackendUseCase := biz.NewCASBackendUseCase(casBackendRepo, readerWriter, backendProvider, logger)
+	casBackendUseCase := biz.NewCASBackendUseCase(casBackendRepo, readerWriter, providers, logger)
 	integrationRepo := data.NewIntegrationRepo(dataData, logger)
 	integrationAttachmentRepo := data.NewIntegrationAttachmentRepo(dataData, logger)
 	workflowRepo := data.NewWorkflowRepo(dataData, logger)

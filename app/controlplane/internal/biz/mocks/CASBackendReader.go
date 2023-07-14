@@ -15,25 +15,25 @@ type CASBackendReader struct {
 	mock.Mock
 }
 
-// FindByID provides a mock function with given fields: ctx, ID
-func (_m *CASBackendReader) FindByID(ctx context.Context, ID string) (*biz.CASBackend, error) {
-	ret := _m.Called(ctx, ID)
+// FindByIDInOrg provides a mock function with given fields: ctx, OrgID, ID
+func (_m *CASBackendReader) FindByIDInOrg(ctx context.Context, OrgID string, ID string) (*biz.CASBackend, error) {
+	ret := _m.Called(ctx, OrgID, ID)
 
 	var r0 *biz.CASBackend
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (*biz.CASBackend, error)); ok {
-		return rf(ctx, ID)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*biz.CASBackend, error)); ok {
+		return rf(ctx, OrgID, ID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) *biz.CASBackend); ok {
-		r0 = rf(ctx, ID)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) *biz.CASBackend); ok {
+		r0 = rf(ctx, OrgID, ID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*biz.CASBackend)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, ID)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, OrgID, ID)
 	} else {
 		r1 = ret.Error(1)
 	}

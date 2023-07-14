@@ -58,7 +58,7 @@ func (r *CASBackendRepo) List(ctx context.Context, orgID uuid.UUID) ([]*biz.CASB
 }
 
 func (r *CASBackendRepo) FindDefaultBackend(ctx context.Context, orgID uuid.UUID) (*biz.CASBackend, error) {
-	backend, err := orgScopedQuery(r.data.db, orgID).QueryCasBackends().
+	backend, err := orgScopedQuery(r.data.db, orgID).QueryCasBackends().WithOrganization().
 		Where(casbackend.Default(true), casbackend.DeletedAtIsNil()).
 		Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
@@ -110,7 +110,24 @@ func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateO
 }
 
 func (r *CASBackendRepo) Update(ctx context.Context, opts *biz.CASBackendUpdateOpts) (*biz.CASBackend, error) {
-	updateChain := r.data.db.CASBackend.UpdateOneID(opts.ID).SetDefault(opts.Default)
+	tx, err := r.data.db.Tx(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create transaction: %w", err)
+	}
+
+	// 1 - unset default backend for all the other backends in the org
+	if opts.Default {
+		if err := tx.CASBackend.Update().
+			Where(casbackend.HasOrganizationWith(organization.ID(opts.OrgID))).
+			Where(casbackend.Default(true)).
+			SetDefault(false).
+			Exec(ctx); err != nil {
+			return nil, fmt.Errorf("failed to clear previous default backend: %w", err)
+		}
+	}
+
+	// 2 - Chain the list of updates
+	updateChain := tx.CASBackend.UpdateOneID(opts.ID).SetDefault(opts.Default)
 	// If description is provided we set it
 	if opts.Description != "" {
 		updateChain = updateChain.SetDescription(opts.Description)
@@ -124,6 +141,11 @@ func (r *CASBackendRepo) Update(ctx context.Context, opts *biz.CASBackendUpdateO
 	backend, err := updateChain.Save(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	// 3 - commit the transaction
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return r.FindByID(ctx, backend.ID)
@@ -193,7 +215,7 @@ func entCASBackendToBiz(backend *ent.CASBackend) *biz.CASBackend {
 	}
 
 	if org := backend.Edges.Organization; org != nil {
-		r.OrganizationID = org.ID.String()
+		r.OrganizationID = org.ID
 	}
 
 	return r

@@ -28,8 +28,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/server"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
-	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
-	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
@@ -42,10 +40,9 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.Availabl
 			server.ProviderSet,
 			data.ProviderSet,
 			biz.ProviderSet,
+			loadCASBackendProviders,
 			service.ProviderSet,
-			wire.Bind(new(backend.Provider), new(*oci.BackendProvider)),
 			wire.Bind(new(biz.CASClient), new(*biz.CASClientUseCase)),
-			oci.NewBackendProvider,
 			serviceOpts,
 			wire.Value([]biz.CASClientOpts{}),
 			wire.FieldsOf(new(*conf.Bootstrap), "Server", "Auth", "Data", "CasServer"),

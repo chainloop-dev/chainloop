@@ -28,6 +28,9 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/server"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
+	backends "github.com/chainloop-dev/chainloop/internal/blobmanager"
+	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
+	"github.com/chainloop-dev/chainloop/internal/credentials"
 	credsConfig "github.com/chainloop-dev/chainloop/internal/credentials/api/credentials/v1"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 
@@ -164,6 +167,15 @@ func maskArgs(keyvals []interface{}) {
 		if keyvals[i] == "args" {
 			keyvals[i+1] = "***"
 		}
+	}
+}
+
+func loadCASBackendProviders(creader credentials.Reader) backends.Providers {
+	// Initialize CAS backend providers
+	// For now we only have OCI as a backend provider
+	p := oci.NewBackendProvider(creader)
+	return backends.Providers{
+		p.ID(): p,
 	}
 }
 

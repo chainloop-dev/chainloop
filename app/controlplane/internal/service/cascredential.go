@@ -59,11 +59,9 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 
 	// Get repository to provide the secret name
 	repo, err := s.ociUC.FindDefaultBackend(ctx, currentOrg.ID)
-	if err != nil {
+	if err != nil && !biz.IsNotFound(err) {
 		return nil, sl.LogAndMaskErr(err, s.log)
-	}
-
-	if repo == nil {
+	} else if repo == nil {
 		return nil, errors.NotFound("not found", "main repository not found")
 	}
 
