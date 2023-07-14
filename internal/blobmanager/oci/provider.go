@@ -35,6 +35,10 @@ func NewBackendProvider(cReader credentials.Reader) *BackendProvider {
 	return &BackendProvider{cReader: cReader}
 }
 
+func (p *BackendProvider) ID() string {
+	return "OCI"
+}
+
 func (p *BackendProvider) FromCredentials(ctx context.Context, secretName string) (backend.UploaderDownloader, error) {
 	creds := &credentials.OCIKeypair{}
 	if err := p.cReader.ReadCredentials(ctx, secretName, creds); err != nil {

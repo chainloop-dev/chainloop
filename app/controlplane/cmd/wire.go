@@ -42,6 +42,7 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.Availabl
 			server.ProviderSet,
 			data.ProviderSet,
 			biz.ProviderSet,
+			loadCASBackendProviders,
 			service.ProviderSet,
 			wire.Bind(new(backend.Provider), new(*oci.BackendProvider)),
 			wire.Bind(new(biz.CASClient), new(*biz.CASClientUseCase)),

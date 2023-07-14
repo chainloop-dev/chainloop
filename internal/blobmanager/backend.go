@@ -44,9 +44,12 @@ type Downloader interface {
 
 // Provider is an interface that allows to create a backend from a secret
 type Provider interface {
+	// Provider identifier
+	ID() string
+	// retrieve a downloader/uploader from a secret
 	FromCredentials(ctx context.Context, secretName string) (UploaderDownloader, error)
-}
-
-type Validator interface {
+	// validate and extract credentials from raw json
 	ValidateAndExtractCredentials(location string, credsJSON []byte) (any, error)
 }
+
+type Providers map[string]Provider

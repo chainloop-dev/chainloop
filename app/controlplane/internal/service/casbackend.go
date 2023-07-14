@@ -21,35 +21,25 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
-	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-type backendProviders map[biz.CASBackendProvider]backend.Validator
-
 type CASBackendService struct {
 	pb.UnimplementedCASBackendServiceServer
 	*service
 
-	uc                        *biz.CASBackendUseCase
-	availableBackendProviders backendProviders
+	uc        *biz.CASBackendUseCase
+	providers backend.Providers
 }
 
-func NewCASBackendService(uc *biz.CASBackendUseCase, opts ...NewOpt) *CASBackendService {
-	s := &CASBackendService{
-		service: newService(opts...),
-		uc:      uc,
+func NewCASBackendService(uc *biz.CASBackendUseCase, providers backend.Providers, opts ...NewOpt) *CASBackendService {
+	return &CASBackendService{
+		service:   newService(opts...),
+		uc:        uc,
+		providers: providers,
 	}
-
-	// hardcoded list of available cas providers
-	// TODO: add to application initialization
-	s.availableBackendProviders = backendProviders{
-		biz.CASBackendOCI: oci.NewBackendProvider(nil),
-	}
-
-	return s
 }
 
 func (s *CASBackendService) List(ctx context.Context, _ *pb.CASBackendServiceListRequest) (*pb.CASBackendServiceListResponse, error) {
@@ -77,7 +67,7 @@ func (s *CASBackendService) Create(ctx context.Context, req *pb.CASBackendServic
 		return nil, err
 	}
 
-	backendP, ok := s.availableBackendProviders[biz.CASBackendProvider(req.Provider)]
+	backendP, ok := s.providers[req.Provider]
 	if !ok {
 		return nil, errors.BadRequest("invalid CAS backend", "invalid CAS backend")
 	}
@@ -122,7 +112,7 @@ func (s *CASBackendService) Update(ctx context.Context, req *pb.CASBackendServic
 	// to do so we load a backend provider and call ValidateAndExtractCredentials
 	var creds any
 	if req.Credentials != nil {
-		backendP, ok := s.availableBackendProviders[backend.Provider]
+		backendP, ok := s.providers[string(backend.Provider)]
 		if !ok {
 			return nil, errors.BadRequest("invalid CAS backend", "invalid CAS backend")
 		}
