@@ -56,7 +56,7 @@ func (s *casBackendTestSuite) TestFindDefaultBackendNotFound() {
 	s.repo.On("FindDefaultBackend", ctx, s.validUUID).Return(nil, nil)
 
 	repo, err := s.useCase.FindDefaultBackend(ctx, s.validUUID.String())
-	assert.NoError(err)
+	assert.ErrorAs(err, &biz.ErrNotFound{})
 	assert.Nil(repo)
 }
 
