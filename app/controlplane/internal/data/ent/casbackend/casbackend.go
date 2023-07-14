@@ -33,6 +33,8 @@ const (
 	FieldValidatedAt = "validated_at"
 	// FieldDefault holds the string denoting the default field in the database.
 	FieldDefault = "default"
+	// FieldDeletedAt holds the string denoting the deleted_at field in the database.
+	FieldDeletedAt = "deleted_at"
 	// EdgeOrganization holds the string denoting the organization edge name in mutations.
 	EdgeOrganization = "organization"
 	// EdgeWorkflowRun holds the string denoting the workflow_run edge name in mutations.
@@ -64,6 +66,7 @@ var Columns = []string{
 	FieldValidationStatus,
 	FieldValidatedAt,
 	FieldDefault,
+	FieldDeletedAt,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "cas_backends"
@@ -172,6 +175,11 @@ func ByValidatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByDefault orders the results by the default field.
 func ByDefault(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDefault, opts...).ToFunc()
+}
+
+// ByDeletedAt orders the results by the deleted_at field.
+func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDeletedAt, opts...).ToFunc()
 }
 
 // ByOrganizationField orders the results by organization field.

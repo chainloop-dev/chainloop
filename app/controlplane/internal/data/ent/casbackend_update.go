@@ -100,6 +100,26 @@ func (cbu *CASBackendUpdate) SetNillableDefault(b *bool) *CASBackendUpdate {
 	return cbu
 }
 
+// SetDeletedAt sets the "deleted_at" field.
+func (cbu *CASBackendUpdate) SetDeletedAt(t time.Time) *CASBackendUpdate {
+	cbu.mutation.SetDeletedAt(t)
+	return cbu
+}
+
+// SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
+func (cbu *CASBackendUpdate) SetNillableDeletedAt(t *time.Time) *CASBackendUpdate {
+	if t != nil {
+		cbu.SetDeletedAt(*t)
+	}
+	return cbu
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (cbu *CASBackendUpdate) ClearDeletedAt() *CASBackendUpdate {
+	cbu.mutation.ClearDeletedAt()
+	return cbu
+}
+
 // SetOrganizationID sets the "organization" edge to the Organization entity by ID.
 func (cbu *CASBackendUpdate) SetOrganizationID(id uuid.UUID) *CASBackendUpdate {
 	cbu.mutation.SetOrganizationID(id)
@@ -227,6 +247,12 @@ func (cbu *CASBackendUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := cbu.mutation.Default(); ok {
 		_spec.SetField(casbackend.FieldDefault, field.TypeBool, value)
+	}
+	if value, ok := cbu.mutation.DeletedAt(); ok {
+		_spec.SetField(casbackend.FieldDeletedAt, field.TypeTime, value)
+	}
+	if cbu.mutation.DeletedAtCleared() {
+		_spec.ClearField(casbackend.FieldDeletedAt, field.TypeTime)
 	}
 	if cbu.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -390,6 +416,26 @@ func (cbuo *CASBackendUpdateOne) SetNillableDefault(b *bool) *CASBackendUpdateOn
 	return cbuo
 }
 
+// SetDeletedAt sets the "deleted_at" field.
+func (cbuo *CASBackendUpdateOne) SetDeletedAt(t time.Time) *CASBackendUpdateOne {
+	cbuo.mutation.SetDeletedAt(t)
+	return cbuo
+}
+
+// SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
+func (cbuo *CASBackendUpdateOne) SetNillableDeletedAt(t *time.Time) *CASBackendUpdateOne {
+	if t != nil {
+		cbuo.SetDeletedAt(*t)
+	}
+	return cbuo
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (cbuo *CASBackendUpdateOne) ClearDeletedAt() *CASBackendUpdateOne {
+	cbuo.mutation.ClearDeletedAt()
+	return cbuo
+}
+
 // SetOrganizationID sets the "organization" edge to the Organization entity by ID.
 func (cbuo *CASBackendUpdateOne) SetOrganizationID(id uuid.UUID) *CASBackendUpdateOne {
 	cbuo.mutation.SetOrganizationID(id)
@@ -547,6 +593,12 @@ func (cbuo *CASBackendUpdateOne) sqlSave(ctx context.Context) (_node *CASBackend
 	}
 	if value, ok := cbuo.mutation.Default(); ok {
 		_spec.SetField(casbackend.FieldDefault, field.TypeBool, value)
+	}
+	if value, ok := cbuo.mutation.DeletedAt(); ok {
+		_spec.SetField(casbackend.FieldDeletedAt, field.TypeTime, value)
+	}
+	if cbuo.mutation.DeletedAtCleared() {
+		_spec.ClearField(casbackend.FieldDeletedAt, field.TypeTime)
 	}
 	if cbuo.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{

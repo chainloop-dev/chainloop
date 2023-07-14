@@ -87,6 +87,11 @@ func Default(v bool) predicate.CASBackend {
 	return predicate.CASBackend(sql.FieldEQ(FieldDefault, v))
 }
 
+// DeletedAt applies equality check predicate on the "deleted_at" field. It's identical to DeletedAtEQ.
+func DeletedAt(v time.Time) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldEQ(FieldDeletedAt, v))
+}
+
 // LocationEQ applies the EQ predicate on the "location" field.
 func LocationEQ(v string) predicate.CASBackend {
 	return predicate.CASBackend(sql.FieldEQ(FieldLocation, v))
@@ -440,6 +445,56 @@ func DefaultEQ(v bool) predicate.CASBackend {
 // DefaultNEQ applies the NEQ predicate on the "default" field.
 func DefaultNEQ(v bool) predicate.CASBackend {
 	return predicate.CASBackend(sql.FieldNEQ(FieldDefault, v))
+}
+
+// DeletedAtEQ applies the EQ predicate on the "deleted_at" field.
+func DeletedAtEQ(v time.Time) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldEQ(FieldDeletedAt, v))
+}
+
+// DeletedAtNEQ applies the NEQ predicate on the "deleted_at" field.
+func DeletedAtNEQ(v time.Time) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldNEQ(FieldDeletedAt, v))
+}
+
+// DeletedAtIn applies the In predicate on the "deleted_at" field.
+func DeletedAtIn(vs ...time.Time) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldIn(FieldDeletedAt, vs...))
+}
+
+// DeletedAtNotIn applies the NotIn predicate on the "deleted_at" field.
+func DeletedAtNotIn(vs ...time.Time) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldNotIn(FieldDeletedAt, vs...))
+}
+
+// DeletedAtGT applies the GT predicate on the "deleted_at" field.
+func DeletedAtGT(v time.Time) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldGT(FieldDeletedAt, v))
+}
+
+// DeletedAtGTE applies the GTE predicate on the "deleted_at" field.
+func DeletedAtGTE(v time.Time) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldGTE(FieldDeletedAt, v))
+}
+
+// DeletedAtLT applies the LT predicate on the "deleted_at" field.
+func DeletedAtLT(v time.Time) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldLT(FieldDeletedAt, v))
+}
+
+// DeletedAtLTE applies the LTE predicate on the "deleted_at" field.
+func DeletedAtLTE(v time.Time) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldLTE(FieldDeletedAt, v))
+}
+
+// DeletedAtIsNil applies the IsNil predicate on the "deleted_at" field.
+func DeletedAtIsNil() predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldIsNull(FieldDeletedAt))
+}
+
+// DeletedAtNotNil applies the NotNil predicate on the "deleted_at" field.
+func DeletedAtNotNil() predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldNotNull(FieldDeletedAt))
 }
 
 // HasOrganization applies the HasEdge predicate on the "organization" edge.

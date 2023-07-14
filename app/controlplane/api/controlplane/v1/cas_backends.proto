@@ -27,6 +27,7 @@ service CASBackendService {
 	rpc List (CASBackendServiceListRequest) returns (CASBackendServiceListResponse);
 	rpc Create (CASBackendServiceCreateRequest) returns (CASBackendServiceCreateResponse);
 	rpc Update (CASBackendServiceUpdateRequest) returns (CASBackendServiceUpdateResponse);
+	rpc Delete (CASBackendServiceDeleteRequest) returns (CASBackendServiceDeleteResponse);
 }
 
 message CASBackendServiceListRequest {}
@@ -70,3 +71,9 @@ message CASBackendServiceUpdateRequest {
 message CASBackendServiceUpdateResponse {
   CASBackendItem result = 1;
 }
+
+message CASBackendServiceDeleteRequest {
+  string id = 1 [(validate.rules).string.uuid = true];
+}
+
+message CASBackendServiceDeleteResponse {}

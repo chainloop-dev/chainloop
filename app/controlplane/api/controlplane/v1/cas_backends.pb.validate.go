@@ -866,3 +866,229 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = CASBackendServiceUpdateResponseValidationError{}
+
+// Validate checks the field values on CASBackendServiceDeleteRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CASBackendServiceDeleteRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CASBackendServiceDeleteRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// CASBackendServiceDeleteRequestMultiError, or nil if none found.
+func (m *CASBackendServiceDeleteRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CASBackendServiceDeleteRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if err := m._validateUuid(m.GetId()); err != nil {
+		err = CASBackendServiceDeleteRequestValidationError{
+			field:  "Id",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return CASBackendServiceDeleteRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *CASBackendServiceDeleteRequest) _validateUuid(uuid string) error {
+	if matched := _cas_backends_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
+	}
+
+	return nil
+}
+
+// CASBackendServiceDeleteRequestMultiError is an error wrapping multiple
+// validation errors returned by CASBackendServiceDeleteRequest.ValidateAll()
+// if the designated constraints aren't met.
+type CASBackendServiceDeleteRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CASBackendServiceDeleteRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CASBackendServiceDeleteRequestMultiError) AllErrors() []error { return m }
+
+// CASBackendServiceDeleteRequestValidationError is the validation error
+// returned by CASBackendServiceDeleteRequest.Validate if the designated
+// constraints aren't met.
+type CASBackendServiceDeleteRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CASBackendServiceDeleteRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CASBackendServiceDeleteRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CASBackendServiceDeleteRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CASBackendServiceDeleteRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CASBackendServiceDeleteRequestValidationError) ErrorName() string {
+	return "CASBackendServiceDeleteRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CASBackendServiceDeleteRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCASBackendServiceDeleteRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CASBackendServiceDeleteRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CASBackendServiceDeleteRequestValidationError{}
+
+// Validate checks the field values on CASBackendServiceDeleteResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CASBackendServiceDeleteResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CASBackendServiceDeleteResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// CASBackendServiceDeleteResponseMultiError, or nil if none found.
+func (m *CASBackendServiceDeleteResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CASBackendServiceDeleteResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return CASBackendServiceDeleteResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// CASBackendServiceDeleteResponseMultiError is an error wrapping multiple
+// validation errors returned by CASBackendServiceDeleteResponse.ValidateAll()
+// if the designated constraints aren't met.
+type CASBackendServiceDeleteResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CASBackendServiceDeleteResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CASBackendServiceDeleteResponseMultiError) AllErrors() []error { return m }
+
+// CASBackendServiceDeleteResponseValidationError is the validation error
+// returned by CASBackendServiceDeleteResponse.Validate if the designated
+// constraints aren't met.
+type CASBackendServiceDeleteResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CASBackendServiceDeleteResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CASBackendServiceDeleteResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CASBackendServiceDeleteResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CASBackendServiceDeleteResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CASBackendServiceDeleteResponseValidationError) ErrorName() string {
+	return "CASBackendServiceDeleteResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CASBackendServiceDeleteResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCASBackendServiceDeleteResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CASBackendServiceDeleteResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CASBackendServiceDeleteResponseValidationError{}

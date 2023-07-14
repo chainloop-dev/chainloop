@@ -37,6 +37,7 @@ const (
 	CASBackendService_List_FullMethodName   = "/controlplane.v1.CASBackendService/List"
 	CASBackendService_Create_FullMethodName = "/controlplane.v1.CASBackendService/Create"
 	CASBackendService_Update_FullMethodName = "/controlplane.v1.CASBackendService/Update"
+	CASBackendService_Delete_FullMethodName = "/controlplane.v1.CASBackendService/Delete"
 )
 
 // CASBackendServiceClient is the client API for CASBackendService service.
@@ -46,6 +47,7 @@ type CASBackendServiceClient interface {
 	List(ctx context.Context, in *CASBackendServiceListRequest, opts ...grpc.CallOption) (*CASBackendServiceListResponse, error)
 	Create(ctx context.Context, in *CASBackendServiceCreateRequest, opts ...grpc.CallOption) (*CASBackendServiceCreateResponse, error)
 	Update(ctx context.Context, in *CASBackendServiceUpdateRequest, opts ...grpc.CallOption) (*CASBackendServiceUpdateResponse, error)
+	Delete(ctx context.Context, in *CASBackendServiceDeleteRequest, opts ...grpc.CallOption) (*CASBackendServiceDeleteResponse, error)
 }
 
 type cASBackendServiceClient struct {
@@ -83,6 +85,15 @@ func (c *cASBackendServiceClient) Update(ctx context.Context, in *CASBackendServ
 	return out, nil
 }
 
+func (c *cASBackendServiceClient) Delete(ctx context.Context, in *CASBackendServiceDeleteRequest, opts ...grpc.CallOption) (*CASBackendServiceDeleteResponse, error) {
+	out := new(CASBackendServiceDeleteResponse)
+	err := c.cc.Invoke(ctx, CASBackendService_Delete_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CASBackendServiceServer is the server API for CASBackendService service.
 // All implementations must embed UnimplementedCASBackendServiceServer
 // for forward compatibility
@@ -90,6 +101,7 @@ type CASBackendServiceServer interface {
 	List(context.Context, *CASBackendServiceListRequest) (*CASBackendServiceListResponse, error)
 	Create(context.Context, *CASBackendServiceCreateRequest) (*CASBackendServiceCreateResponse, error)
 	Update(context.Context, *CASBackendServiceUpdateRequest) (*CASBackendServiceUpdateResponse, error)
+	Delete(context.Context, *CASBackendServiceDeleteRequest) (*CASBackendServiceDeleteResponse, error)
 	mustEmbedUnimplementedCASBackendServiceServer()
 }
 
@@ -105,6 +117,9 @@ func (UnimplementedCASBackendServiceServer) Create(context.Context, *CASBackendS
 }
 func (UnimplementedCASBackendServiceServer) Update(context.Context, *CASBackendServiceUpdateRequest) (*CASBackendServiceUpdateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
+}
+func (UnimplementedCASBackendServiceServer) Delete(context.Context, *CASBackendServiceDeleteRequest) (*CASBackendServiceDeleteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
 }
 func (UnimplementedCASBackendServiceServer) mustEmbedUnimplementedCASBackendServiceServer() {}
 
@@ -173,6 +188,24 @@ func _CASBackendService_Update_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CASBackendService_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CASBackendServiceDeleteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CASBackendServiceServer).Delete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CASBackendService_Delete_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CASBackendServiceServer).Delete(ctx, req.(*CASBackendServiceDeleteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CASBackendService_ServiceDesc is the grpc.ServiceDesc for CASBackendService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -191,6 +224,10 @@ var CASBackendService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Update",
 			Handler:    _CASBackendService_Update_Handler,
+		},
+		{
+			MethodName: "Delete",
+			Handler:    _CASBackendService_Delete_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
