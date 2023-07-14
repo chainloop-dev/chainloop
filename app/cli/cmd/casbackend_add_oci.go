@@ -16,8 +16,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/spf13/cobra"
@@ -79,36 +77,4 @@ func newCASBackendAddOCICmd() *cobra.Command {
 	err = cmd.MarkFlagRequired("password")
 	cobra.CheckErr(err)
 	return cmd
-}
-
-// confirmDefaultCASBackendOverride asks the user to confirm the override of the default CAS backend
-// in the event that there is one already set and its not the same as the one we are setting
-func confirmDefaultCASBackendOverride(actionOpts *action.ActionsOpts, id string) (bool, error) {
-	// get existing backends
-	backends, err := action.NewCASBackendList(actionOpts).Run()
-	if err != nil {
-		return false, fmt.Errorf("failed to list existing CAS backends: %w", err)
-	}
-
-	// Find the default
-	var defaultB *action.CASBackendItem
-	for _, b := range backends {
-		if b.Default {
-			defaultB = b
-			break
-		}
-	}
-
-	// If there is none or there is but it's the same as the one we are setting, we are ok
-	if defaultB == nil || (id != "" && id == defaultB.ID) {
-		return true, nil
-	}
-
-	// Ask the user to confirm the override
-	fmt.Println("There is already a default CAS backend in your organization.\nPlease confirm to override y/N: ")
-	var gotChallenge string
-	fmt.Scanln(&gotChallenge)
-
-	// If the user does not confirm, we are done
-	return gotChallenge == "y" || gotChallenge == "Y", nil
 }

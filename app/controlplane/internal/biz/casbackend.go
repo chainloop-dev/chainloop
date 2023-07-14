@@ -80,6 +80,7 @@ type CASBackendRepo interface {
 	Create(context.Context, *CASBackendCreateOpts) (*CASBackend, error)
 	Update(context.Context, *CASBackendUpdateOpts) (*CASBackend, error)
 	Delete(ctx context.Context, ID uuid.UUID) error
+	SoftDelete(ctx context.Context, ID uuid.UUID) error
 }
 
 type CASBackendReader interface {
@@ -291,7 +292,32 @@ func (uc *CASBackendUseCase) CreateOrUpdate(ctx context.Context, orgID, name, us
 	})
 }
 
+// SoftDelete will mark the cas backend as deleted but will not delete the secret in the external secrets manager
+// We keep it so it can be restored or referenced in the future while trying to download an asset
+func (uc *CASBackendUseCase) SoftDelete(ctx context.Context, orgID, id string) error {
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return NewErrInvalidUUID(err)
+	}
+
+	backendUUID, err := uuid.Parse(id)
+	if err != nil {
+		return NewErrInvalidUUID(err)
+	}
+
+	// Make sure the repo exists in the organization
+	repo, err := uc.repo.FindByIDInOrg(ctx, orgUUID, backendUUID)
+	if err != nil {
+		return err
+	} else if repo == nil {
+		return NewErrNotFound("CAS Backend")
+	}
+
+	return uc.repo.SoftDelete(ctx, backendUUID)
+}
+
 // Delete will delete the secret in the external secrets manager and the CAS backend from the database
+// This method is used during user off-boarding
 func (uc *CASBackendUseCase) Delete(ctx context.Context, id string) error {
 	uc.logger.Infow("msg", "deleting CAS Backend", "ID", id)
 

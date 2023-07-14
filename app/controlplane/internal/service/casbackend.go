@@ -109,6 +109,25 @@ func (s *CASBackendService) Update(ctx context.Context, req *pb.CASBackendServic
 	return &pb.CASBackendServiceUpdateResponse{Result: bizOCASBackendToPb(res)}, nil
 }
 
+// Delete the CAS backend
+func (s *CASBackendService) Delete(ctx context.Context, req *pb.CASBackendServiceDeleteRequest) (*pb.CASBackendServiceDeleteResponse, error) {
+	_, currentOrg, err := loadCurrentUserAndOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// In fact we soft-delete the backend instead
+	if err := s.uc.SoftDelete(ctx, currentOrg.ID, req.Id); err != nil {
+		if biz.IsNotFound(err) {
+			return nil, errors.NotFound("CAS backend not found", err.Error())
+		}
+
+		return nil, sl.LogAndMaskErr(err, s.log)
+	}
+
+	return &pb.CASBackendServiceDeleteResponse{}, nil
+}
+
 func bizOCASBackendToPb(in *biz.CASBackend) *pb.CASBackendItem {
 	r := &pb.CASBackendItem{
 		Id: in.ID.String(), Location: in.Location, Description: in.Description,

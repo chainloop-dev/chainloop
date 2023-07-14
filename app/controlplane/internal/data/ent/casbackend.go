@@ -36,6 +36,8 @@ type CASBackend struct {
 	ValidatedAt time.Time `json:"validated_at,omitempty"`
 	// Default holds the value of the "default" field.
 	Default bool `json:"default,omitempty"`
+	// DeletedAt holds the value of the "deleted_at" field.
+	DeletedAt time.Time `json:"deleted_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the CASBackendQuery when eager-loading is set.
 	Edges                     CASBackendEdges `json:"edges"`
@@ -85,7 +87,7 @@ func (*CASBackend) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case casbackend.FieldLocation, casbackend.FieldProvider, casbackend.FieldDescription, casbackend.FieldSecretName, casbackend.FieldValidationStatus:
 			values[i] = new(sql.NullString)
-		case casbackend.FieldCreatedAt, casbackend.FieldValidatedAt:
+		case casbackend.FieldCreatedAt, casbackend.FieldValidatedAt, casbackend.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
 		case casbackend.FieldID:
 			values[i] = new(uuid.UUID)
@@ -159,6 +161,12 @@ func (cb *CASBackend) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field default", values[i])
 			} else if value.Valid {
 				cb.Default = value.Bool
+			}
+		case casbackend.FieldDeletedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field deleted_at", values[i])
+			} else if value.Valid {
+				cb.DeletedAt = value.Time
 			}
 		case casbackend.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -236,6 +244,9 @@ func (cb *CASBackend) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("default=")
 	builder.WriteString(fmt.Sprintf("%v", cb.Default))
+	builder.WriteString(", ")
+	builder.WriteString("deleted_at=")
+	builder.WriteString(cb.DeletedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

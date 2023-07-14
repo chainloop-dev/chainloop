@@ -112,6 +112,20 @@ func (cbc *CASBackendCreate) SetNillableDefault(b *bool) *CASBackendCreate {
 	return cbc
 }
 
+// SetDeletedAt sets the "deleted_at" field.
+func (cbc *CASBackendCreate) SetDeletedAt(t time.Time) *CASBackendCreate {
+	cbc.mutation.SetDeletedAt(t)
+	return cbc
+}
+
+// SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
+func (cbc *CASBackendCreate) SetNillableDeletedAt(t *time.Time) *CASBackendCreate {
+	if t != nil {
+		cbc.SetDeletedAt(*t)
+	}
+	return cbc
+}
+
 // SetID sets the "id" field.
 func (cbc *CASBackendCreate) SetID(u uuid.UUID) *CASBackendCreate {
 	cbc.mutation.SetID(u)
@@ -311,6 +325,10 @@ func (cbc *CASBackendCreate) createSpec() (*CASBackend, *sqlgraph.CreateSpec) {
 	if value, ok := cbc.mutation.Default(); ok {
 		_spec.SetField(casbackend.FieldDefault, field.TypeBool, value)
 		_node.Default = value
+	}
+	if value, ok := cbc.mutation.DeletedAt(); ok {
+		_spec.SetField(casbackend.FieldDeletedAt, field.TypeTime, value)
+		_node.DeletedAt = value
 	}
 	if nodes := cbc.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

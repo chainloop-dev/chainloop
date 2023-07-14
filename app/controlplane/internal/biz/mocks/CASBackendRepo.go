@@ -161,6 +161,20 @@ func (_m *CASBackendRepo) List(ctx context.Context, orgID uuid.UUID) ([]*biz.CAS
 	return r0, r1
 }
 
+// SoftDelete provides a mock function with given fields: ctx, ID
+func (_m *CASBackendRepo) SoftDelete(ctx context.Context, ID uuid.UUID) error {
+	ret := _m.Called(ctx, ID)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
+		r0 = rf(ctx, ID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Update provides a mock function with given fields: _a0, _a1
 func (_m *CASBackendRepo) Update(_a0 context.Context, _a1 *biz.CASBackendUpdateOpts) (*biz.CASBackend, error) {
 	ret := _m.Called(_a0, _a1)

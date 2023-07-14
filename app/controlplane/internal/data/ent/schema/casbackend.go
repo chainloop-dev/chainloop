@@ -50,6 +50,7 @@ func (CASBackend) Fields() []ent.Field {
 		field.Time("validated_at").Default(time.Now).
 			Annotations(&entsql.Annotation{Default: "CURRENT_TIMESTAMP"}),
 		field.Bool("default").Default(false),
+		field.Time("deleted_at").Optional(),
 	}
 }
 

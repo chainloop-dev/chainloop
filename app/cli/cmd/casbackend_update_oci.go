@@ -16,8 +16,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/spf13/cobra"
@@ -45,8 +43,9 @@ func newCASBackendUpdateOCICmd() *cobra.Command {
 					log.Info("Aborting...")
 					return nil
 				}
-			} else { // If we are removing the default we ask for confirmation too
-				if confirmed, err := confirmDefaultCASBackendRemoval(actionOpts, backendID); err != nil {
+			} else {
+				// If we are removing the default we ask for confirmation too
+				if confirmed, err := confirmDefaultCASBackendUnset(backendID, "You are setting the default CAS backend to false", actionOpts); err != nil {
 					return err
 				} else if !confirmed {
 					log.Info("Aborting...")
@@ -87,30 +86,4 @@ func newCASBackendUpdateOCICmd() *cobra.Command {
 
 	cmd.Flags().StringVarP(&password, "password", "p", "", "registry password")
 	return cmd
-}
-
-// If we are removing the default we confirm too
-func confirmDefaultCASBackendRemoval(actionOpts *action.ActionsOpts, id string) (bool, error) {
-	// get existing backends
-	backends, err := action.NewCASBackendList(actionOpts).Run()
-	if err != nil {
-		return false, fmt.Errorf("failed to list existing CAS backends: %w", err)
-	}
-
-	for _, b := range backends {
-		// We are removing ourselves as the default, ask the user to confirm
-		if b.Default && b.ID == id {
-			// Ask the user to confirm the override
-			fmt.Println("This is the default CAS backend and your are setting default=false.\nPlease confirm to continue y/N: ")
-			var gotChallenge string
-			fmt.Scanln(&gotChallenge)
-
-			// If the user does not confirm, we are done
-			if gotChallenge != "y" && gotChallenge != "Y" {
-				return false, nil
-			}
-		}
-	}
-
-	return true, nil
 }

@@ -52,6 +52,13 @@ export interface CASBackendServiceUpdateResponse {
   result?: CASBackendItem;
 }
 
+export interface CASBackendServiceDeleteRequest {
+  id: string;
+}
+
+export interface CASBackendServiceDeleteResponse {
+}
+
 function createBaseCASBackendServiceListRequest(): CASBackendServiceListRequest {
   return {};
 }
@@ -489,6 +496,108 @@ export const CASBackendServiceUpdateResponse = {
   },
 };
 
+function createBaseCASBackendServiceDeleteRequest(): CASBackendServiceDeleteRequest {
+  return { id: "" };
+}
+
+export const CASBackendServiceDeleteRequest = {
+  encode(message: CASBackendServiceDeleteRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CASBackendServiceDeleteRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCASBackendServiceDeleteRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CASBackendServiceDeleteRequest {
+    return { id: isSet(object.id) ? String(object.id) : "" };
+  },
+
+  toJSON(message: CASBackendServiceDeleteRequest): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CASBackendServiceDeleteRequest>, I>>(base?: I): CASBackendServiceDeleteRequest {
+    return CASBackendServiceDeleteRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<CASBackendServiceDeleteRequest>, I>>(
+    object: I,
+  ): CASBackendServiceDeleteRequest {
+    const message = createBaseCASBackendServiceDeleteRequest();
+    message.id = object.id ?? "";
+    return message;
+  },
+};
+
+function createBaseCASBackendServiceDeleteResponse(): CASBackendServiceDeleteResponse {
+  return {};
+}
+
+export const CASBackendServiceDeleteResponse = {
+  encode(_: CASBackendServiceDeleteResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CASBackendServiceDeleteResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCASBackendServiceDeleteResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): CASBackendServiceDeleteResponse {
+    return {};
+  },
+
+  toJSON(_: CASBackendServiceDeleteResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CASBackendServiceDeleteResponse>, I>>(base?: I): CASBackendServiceDeleteResponse {
+    return CASBackendServiceDeleteResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<CASBackendServiceDeleteResponse>, I>>(_: I): CASBackendServiceDeleteResponse {
+    const message = createBaseCASBackendServiceDeleteResponse();
+    return message;
+  },
+};
+
 export interface CASBackendService {
   List(
     request: DeepPartial<CASBackendServiceListRequest>,
@@ -502,6 +611,10 @@ export interface CASBackendService {
     request: DeepPartial<CASBackendServiceUpdateRequest>,
     metadata?: grpc.Metadata,
   ): Promise<CASBackendServiceUpdateResponse>;
+  Delete(
+    request: DeepPartial<CASBackendServiceDeleteRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<CASBackendServiceDeleteResponse>;
 }
 
 export class CASBackendServiceClientImpl implements CASBackendService {
@@ -512,6 +625,7 @@ export class CASBackendServiceClientImpl implements CASBackendService {
     this.List = this.List.bind(this);
     this.Create = this.Create.bind(this);
     this.Update = this.Update.bind(this);
+    this.Delete = this.Delete.bind(this);
   }
 
   List(
@@ -533,6 +647,13 @@ export class CASBackendServiceClientImpl implements CASBackendService {
     metadata?: grpc.Metadata,
   ): Promise<CASBackendServiceUpdateResponse> {
     return this.rpc.unary(CASBackendServiceUpdateDesc, CASBackendServiceUpdateRequest.fromPartial(request), metadata);
+  }
+
+  Delete(
+    request: DeepPartial<CASBackendServiceDeleteRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<CASBackendServiceDeleteResponse> {
+    return this.rpc.unary(CASBackendServiceDeleteDesc, CASBackendServiceDeleteRequest.fromPartial(request), metadata);
   }
 }
 
@@ -597,6 +718,29 @@ export const CASBackendServiceUpdateDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = CASBackendServiceUpdateResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const CASBackendServiceDeleteDesc: UnaryMethodDefinitionish = {
+  methodName: "Delete",
+  service: CASBackendServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return CASBackendServiceDeleteRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = CASBackendServiceDeleteResponse.decode(data);
       return {
         ...value,
         toObject() {

@@ -64,6 +64,7 @@ type CASBackendMutation struct {
 	validation_status   *biz.CASBackendValidationStatus
 	validated_at        *time.Time
 	_default            *bool
+	deleted_at          *time.Time
 	clearedFields       map[string]struct{}
 	organization        *uuid.UUID
 	clearedorganization bool
@@ -480,6 +481,55 @@ func (m *CASBackendMutation) ResetDefault() {
 	m._default = nil
 }
 
+// SetDeletedAt sets the "deleted_at" field.
+func (m *CASBackendMutation) SetDeletedAt(t time.Time) {
+	m.deleted_at = &t
+}
+
+// DeletedAt returns the value of the "deleted_at" field in the mutation.
+func (m *CASBackendMutation) DeletedAt() (r time.Time, exists bool) {
+	v := m.deleted_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeletedAt returns the old "deleted_at" field's value of the CASBackend entity.
+// If the CASBackend object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CASBackendMutation) OldDeletedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDeletedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDeletedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeletedAt: %w", err)
+	}
+	return oldValue.DeletedAt, nil
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (m *CASBackendMutation) ClearDeletedAt() {
+	m.deleted_at = nil
+	m.clearedFields[casbackend.FieldDeletedAt] = struct{}{}
+}
+
+// DeletedAtCleared returns if the "deleted_at" field was cleared in this mutation.
+func (m *CASBackendMutation) DeletedAtCleared() bool {
+	_, ok := m.clearedFields[casbackend.FieldDeletedAt]
+	return ok
+}
+
+// ResetDeletedAt resets all changes to the "deleted_at" field.
+func (m *CASBackendMutation) ResetDeletedAt() {
+	m.deleted_at = nil
+	delete(m.clearedFields, casbackend.FieldDeletedAt)
+}
+
 // SetOrganizationID sets the "organization" edge to the Organization entity by id.
 func (m *CASBackendMutation) SetOrganizationID(id uuid.UUID) {
 	m.organization = &id
@@ -607,7 +657,7 @@ func (m *CASBackendMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CASBackendMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 9)
 	if m.location != nil {
 		fields = append(fields, casbackend.FieldLocation)
 	}
@@ -631,6 +681,9 @@ func (m *CASBackendMutation) Fields() []string {
 	}
 	if m._default != nil {
 		fields = append(fields, casbackend.FieldDefault)
+	}
+	if m.deleted_at != nil {
+		fields = append(fields, casbackend.FieldDeletedAt)
 	}
 	return fields
 }
@@ -656,6 +709,8 @@ func (m *CASBackendMutation) Field(name string) (ent.Value, bool) {
 		return m.ValidatedAt()
 	case casbackend.FieldDefault:
 		return m.Default()
+	case casbackend.FieldDeletedAt:
+		return m.DeletedAt()
 	}
 	return nil, false
 }
@@ -681,6 +736,8 @@ func (m *CASBackendMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldValidatedAt(ctx)
 	case casbackend.FieldDefault:
 		return m.OldDefault(ctx)
+	case casbackend.FieldDeletedAt:
+		return m.OldDeletedAt(ctx)
 	}
 	return nil, fmt.Errorf("unknown CASBackend field %s", name)
 }
@@ -746,6 +803,13 @@ func (m *CASBackendMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDefault(v)
 		return nil
+	case casbackend.FieldDeletedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDeletedAt(v)
+		return nil
 	}
 	return fmt.Errorf("unknown CASBackend field %s", name)
 }
@@ -779,6 +843,9 @@ func (m *CASBackendMutation) ClearedFields() []string {
 	if m.FieldCleared(casbackend.FieldDescription) {
 		fields = append(fields, casbackend.FieldDescription)
 	}
+	if m.FieldCleared(casbackend.FieldDeletedAt) {
+		fields = append(fields, casbackend.FieldDeletedAt)
+	}
 	return fields
 }
 
@@ -795,6 +862,9 @@ func (m *CASBackendMutation) ClearField(name string) error {
 	switch name {
 	case casbackend.FieldDescription:
 		m.ClearDescription()
+		return nil
+	case casbackend.FieldDeletedAt:
+		m.ClearDeletedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown CASBackend nullable field %s", name)
@@ -827,6 +897,9 @@ func (m *CASBackendMutation) ResetField(name string) error {
 		return nil
 	case casbackend.FieldDefault:
 		m.ResetDefault()
+		return nil
+	case casbackend.FieldDeletedAt:
+		m.ResetDeletedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown CASBackend field %s", name)
