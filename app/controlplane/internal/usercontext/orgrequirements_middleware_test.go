@@ -72,15 +72,15 @@ func TestShouldRevalidate(t *testing.T) {
 	}
 }
 
-func TestValidateRepo(t *testing.T) {
+func TestValidateCASBackend(t *testing.T) {
 	ctx := context.Background()
 	assert := assert.New(t)
-	repo := &biz.CASBackend{ID: uuid.New(), ValidatedAt: toTimePtr(time.Now())}
+	repo := &biz.CASBackend{ID: uuid.New(), OrganizationID: uuid.New(), ValidatedAt: toTimePtr(time.Now())}
 
 	t.Run("validation error", func(t *testing.T) {
 		useCase := mocks.NewCASBackendReader(t)
 		useCase.On("PerformValidation", ctx, repo.ID.String()).Return(errors.New("validation error"))
-		got, err := validateRepo(ctx, useCase, repo)
+		got, err := validateCASBackend(ctx, useCase, repo)
 		assert.Error(err)
 		assert.Nil(got)
 	})
@@ -90,8 +90,8 @@ func TestValidateRepo(t *testing.T) {
 		useCase.On("PerformValidation", ctx, repo.ID.String()).Return(nil)
 
 		want := &biz.CASBackend{ID: repo.ID, ValidatedAt: toTimePtr(time.Now())}
-		useCase.On("FindByID", ctx, repo.ID.String()).Return(want, nil)
-		got, err := validateRepo(ctx, useCase, repo)
+		useCase.On("FindByIDInOrg", ctx, repo.OrganizationID.String(), repo.ID.String()).Return(want, nil)
+		got, err := validateCASBackend(ctx, useCase, repo)
 		assert.NoError(err)
 		assert.Equal(want, got)
 	})

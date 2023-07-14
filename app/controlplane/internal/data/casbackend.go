@@ -193,7 +193,7 @@ func entCASBackendToBiz(backend *ent.CASBackend) *biz.CASBackend {
 	}
 
 	if org := backend.Edges.Organization; org != nil {
-		r.OrganizationID = org.ID.String()
+		r.OrganizationID = org.ID
 	}
 
 	return r

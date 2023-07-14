@@ -31,6 +31,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	backends "github.com/chainloop-dev/chainloop/internal/blobmanager"
+	backendsm "github.com/chainloop-dev/chainloop/internal/blobmanager/mocks"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	creds "github.com/chainloop-dev/chainloop/internal/credentials/mocks"
 	robotaccount "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
@@ -90,7 +91,12 @@ func WithRegisteredIntegration(i sdk.FanOut) NewTestingUCOpt {
 
 func NewTestingUseCases(t *testing.T, opts ...NewTestingUCOpt) *TestingUseCases {
 	// default args
-	newArgs := &newTestingOpts{credsReaderWriter: creds.NewReaderWriter(t), integrations: make(sdk.AvailablePlugins, 0), providers: make(backends.Providers)}
+	newArgs := &newTestingOpts{credsReaderWriter: creds.NewReaderWriter(t),
+		integrations: make(sdk.AvailablePlugins, 0),
+		providers: backends.Providers{
+			"OCI": backendsm.NewProvider(t),
+		},
+	}
 
 	// Overrides
 	for _, opt := range opts {

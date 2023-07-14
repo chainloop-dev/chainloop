@@ -44,7 +44,7 @@ type CASBackend struct {
 	ID                                uuid.UUID
 	Location, Description, SecretName string
 	CreatedAt, ValidatedAt            *time.Time
-	OrganizationID                    string
+	OrganizationID                    uuid.UUID
 	ValidationStatus                  CASBackendValidationStatus
 	// OCI, S3, ...
 	Provider CASBackendProvider
@@ -336,18 +336,21 @@ func (uc *CASBackendUseCase) PerformValidation(ctx context.Context, id string) (
 	// 1 - Retrieve the credentials from the external secrets manager
 	var creds any
 	if err := uc.credsRW.ReadCredentials(ctx, backend.SecretName, &creds); err != nil {
-		return fmt.Errorf("retrieving credentials: %w", err)
+		uc.logger.Infow("msg", "credentials not found or invalid", "ID", id)
+		return nil
 	}
 
 	credsJSON, err := json.Marshal(creds)
 	if err != nil {
-		return fmt.Errorf("marshalling credentials: %w", err)
+		uc.logger.Infow("msg", "credentials invalid", "ID", id)
+		return nil
 	}
 
 	// 2 - run validation
 	_, err = provider.ValidateAndExtractCredentials(backend.Location, credsJSON)
 	if err != nil {
-		return fmt.Errorf("validating credentials: %w", err)
+		uc.logger.Infow("msg", "permissions validation failed", "ID", id)
+		return nil
 	}
 
 	// If everything went well, update the validation status to OK
