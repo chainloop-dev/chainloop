@@ -10,6 +10,9 @@ builds:
       - -X main.Version={{ .Version }}
     targets:
       - linux_amd64
+    hooks:
+      post:
+        - upx "{{ .Path }}"
   - binary: artifact-cas
     id: artifact-cas
     main: ./app/artifact-cas/cmd
@@ -18,6 +21,9 @@ builds:
       - -X main.Version={{ .Version }}
     targets:
       - linux_amd64
+    hooks:
+      post:
+        - upx "{{ .Path }}"
   - binary: chainloop
     id: cli
     main: ./app/cli
@@ -28,6 +34,9 @@ builds:
       - darwin_arm64
       - linux_amd64
       - linux_arm64
+    hooks:
+      post:
+        - upx "{{ .Path }}"
   # Plugins build
   # NOTE: On the event of a new plugin added to the project you need to
   # 1 - Add the plugins binary to be built in this section
@@ -38,6 +47,9 @@ builds:
     main: ./app/controlplane/plugins/core/discord-webhook/v1/cmd
     targets:
       - linux_amd64
+    hooks:
+      post:
+        - upx "{{ .Path }}"
 archives:
   - builds:
       - cli
