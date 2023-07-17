@@ -69,7 +69,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	v2 := serviceOpts(logger)
 	workflowService := service.NewWorkflowService(workflowUseCase, v2...)
 	confServer := bootstrap.Server
-	authService, err := service.NewAuthService(userUseCase, organizationUseCase, membershipUseCase, auth, confServer, v2...)
+	authService, err := service.NewAuthService(userUseCase, organizationUseCase, membershipUseCase, casBackendUseCase, auth, confServer, v2...)
 	if err != nil {
 		cleanup()
 		return nil, nil, err

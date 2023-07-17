@@ -18,6 +18,7 @@ package biz
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -33,6 +34,8 @@ type CASBackendProvider string
 
 const (
 	CASBackendOCI CASBackendProvider = "OCI"
+	// Inline, embedded CAS backend
+	CASBackendInline CASBackendProvider = "INLINE"
 )
 
 type CASBackendValidationStatus string
@@ -147,6 +150,21 @@ func (uc *CASBackendUseCase) FindByIDInOrg(ctx context.Context, orgID, id string
 	return backend, nil
 }
 
+func (uc *CASBackendUseCase) CreateInlineFallbackBackend(ctx context.Context, orgID string) (*CASBackend, error) {
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	return uc.repo.Create(ctx, &CASBackendCreateOpts{
+		CASBackendOpts: &CASBackendOpts{
+			Provider: CASBackendInline, Default: true,
+			Description: "Embed artifacts content in the attestation",
+			OrgID:       orgUUID,
+		},
+	})
+}
+
 func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, location, description string, provider CASBackendProvider, creds any, defaultB bool) (*CASBackend, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
@@ -179,11 +197,15 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id, description 
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	repo, err := uc.repo.FindByIDInOrg(ctx, orgUUID, uuid)
+	backend, err := uc.repo.FindByIDInOrg(ctx, orgUUID, uuid)
 	if err != nil {
 		return nil, err
-	} else if repo == nil {
+	} else if backend == nil {
 		return nil, NewErrNotFound("CAS Backend")
+	}
+
+	if backend.Provider == CASBackendInline {
+		return nil, NewErrValidation(errors.New("can't delete inline CAS backend"))
 	}
 
 	var secretName string
@@ -259,12 +281,16 @@ func (uc *CASBackendUseCase) SoftDelete(ctx context.Context, orgID, id string) e
 		return NewErrInvalidUUID(err)
 	}
 
-	// Make sure the repo exists in the organization
-	repo, err := uc.repo.FindByIDInOrg(ctx, orgUUID, backendUUID)
+	// Make sure the backend exists in the organization
+	backend, err := uc.repo.FindByIDInOrg(ctx, orgUUID, backendUUID)
 	if err != nil {
 		return err
-	} else if repo == nil {
+	} else if backend == nil {
 		return NewErrNotFound("CAS Backend")
+	}
+
+	if backend.Provider == CASBackendInline {
+		return NewErrValidation(errors.New("can't delete inline CAS backend"))
 	}
 
 	return uc.repo.SoftDelete(ctx, backendUUID)
@@ -322,6 +348,11 @@ func (uc *CASBackendUseCase) PerformValidation(ctx context.Context, id string) (
 		return NewErrNotFound("CAS Backend")
 	}
 
+	if backend.Provider == CASBackendInline {
+		// Inline CAS backend does not need validation
+		return
+	}
+
 	provider, ok := uc.providers[string(backend.Provider)]
 	if !ok {
 		return fmt.Errorf("CAS backend provider not found: %s", backend.Provider)
@@ -369,7 +400,7 @@ func (uc *CASBackendUseCase) PerformValidation(ctx context.Context, id string) (
 
 // Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues
 func (CASBackendProvider) Values() (kinds []string) {
-	for _, s := range []CASBackendProvider{CASBackendOCI} {
+	for _, s := range []CASBackendProvider{CASBackendOCI, CASBackendInline} {
 		kinds = append(kinds, string(s))
 	}
 
