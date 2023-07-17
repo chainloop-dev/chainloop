@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	"code.cloudfoundry.org/bytefmt"
 	attestationApi "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	contractAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/materials"
@@ -95,5 +96,62 @@ func TestArtifactCraft(t *testing.T) {
 	// The result includes the digest reference
 	assert.Equal(got.GetArtifact(), &attestationApi.Attestation_Material_Artifact{
 		Id: "test", Digest: "sha256:54181dfe59340b318253e59f7695f547c5c10d071cb75001170a389061349918", Name: "simple.txt",
+	})
+}
+
+func TestArtifactCraftInline(t *testing.T) {
+	assert := assert.New(t)
+	schema := &contractAPI.CraftingSchema_Material{
+		Name: "test",
+		Type: contractAPI.CraftingSchema_Material_ARTIFACT,
+	}
+	l := zerolog.Nop()
+
+	t.Run("inline without size limit", func(t *testing.T) {
+		backend := &casclient.CASBackend{}
+
+		crafter, err := materials.NewArtifactCrafter(schema, backend, &l)
+		require.NoError(t, err)
+
+		got, err := crafter.Craft(context.TODO(), "./testdata/simple.txt")
+		assert.NoError(err)
+		assertMaterial(t, got)
+	})
+
+	t.Run("backend with size limit", func(t *testing.T) {
+		backend := &casclient.CASBackend{
+			MaxSize: 100 * bytefmt.BYTE,
+		}
+
+		crafter, err := materials.NewArtifactCrafter(schema, backend, &l)
+		require.NoError(t, err)
+
+		got, err := crafter.Craft(context.TODO(), "./testdata/simple.txt")
+		assert.NoError(err)
+		assertMaterial(t, got)
+	})
+
+	t.Run("backend with size limit too small", func(t *testing.T) {
+		backend := &casclient.CASBackend{
+			MaxSize: bytefmt.BYTE,
+		}
+
+		crafter, err := materials.NewArtifactCrafter(schema, backend, &l)
+		require.NoError(t, err)
+
+		_, err = crafter.Craft(context.TODO(), "./testdata/simple.txt")
+		assert.Error(err)
+	})
+}
+
+func assertMaterial(t *testing.T, got *attestationApi.Attestation_Material) {
+	assert := assert.New(t)
+	// Not uploaded to CAS
+	assert.False(got.UploadedToCas)
+	// The result includes the digest and inline content
+	assert.Equal(got.GetArtifact(), &attestationApi.Attestation_Material_Artifact{
+		Id: "test", Digest: "sha256:54181dfe59340b318253e59f7695f547c5c10d071cb75001170a389061349918", Name: "simple.txt",
+		// Inline content
+		Content: []byte("txt file"),
 	})
 }
