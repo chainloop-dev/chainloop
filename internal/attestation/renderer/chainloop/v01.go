@@ -125,12 +125,12 @@ func outputChainloopMaterials(att *v1.Attestation, onlyOutput bool) []*Provenanc
 
 		material := &ProvenanceM{}
 		if artifactType == schemaapi.CraftingSchema_Material_STRING {
-			material.StringVal = nMaterial.Value
+			material.StringVal = nMaterial.Name
 		} else if nMaterial.Digest != "" {
 			parts := strings.Split(nMaterial.Digest, ":")
 			material.SLSA = &SLSACommonProvenanceMaterial{
 				&slsacommon.ProvenanceMaterial{
-					URI: nMaterial.Value,
+					URI: nMaterial.Name,
 					Digest: map[string]string{
 						parts[0]: parts[1],
 					},

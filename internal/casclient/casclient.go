@@ -52,6 +52,14 @@ type DownloaderUploader interface {
 	Uploader
 }
 
+type CASBackend struct {
+	Uploader Uploader
+	// Max number of bytes this backend can store per artifact
+	MaxSize int64
+	// CAS backend name
+	Name string
+}
+
 type ProgressStatusChan chan (*UpDownStatus)
 type Client struct {
 	conn   *grpc.ClientConn

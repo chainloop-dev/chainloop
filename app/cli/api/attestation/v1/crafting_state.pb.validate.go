@@ -1154,6 +1154,8 @@ func (m *Attestation_Material_Artifact) validate(all bool) error {
 
 	// no validation rules for IsSubject
 
+	// no validation rules for Content
+
 	if len(errors) > 0 {
 		return Attestation_Material_ArtifactMultiError(errors)
 	}

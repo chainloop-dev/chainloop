@@ -18,11 +18,16 @@ package materials
 import (
 	"context"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"os"
 	"time"
 
+	"code.cloudfoundry.org/bytefmt"
 	api "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
+	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -38,34 +43,98 @@ type crafterCommon struct {
 
 // uploadAndCraft uploads the artifact to CAS and crafts the material
 // this function is used by all the uploadable artifacts crafters (SBOMs, JUnit, and more in the future)
-func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Material, uploader casclient.Uploader, artifactPath string) (*api.Attestation_Material, error) {
-	result, err := uploader.UploadFile(ctx, artifactPath)
+func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, artifactPath string, l *zerolog.Logger) (*api.Attestation_Material, error) {
+	// 1 - Check the file can be stored in the provided CAS backend
+	result, err := fileStats(artifactPath)
 	if err != nil {
-		return nil, fmt.Errorf("uploading material: %w", err)
+		return nil, fmt.Errorf("getting file stats: %w", err)
+	}
+	defer result.r.Close()
+
+	l.Debug().Str("filename", result.filename).Str("digest", result.digest).Str("path", artifactPath).
+		Str("size", bytefmt.ByteSize(uint64(result.size))).
+		Str("max_size", bytefmt.ByteSize(uint64(backend.MaxSize))).
+		Str("backend", backend.Name).Msg("crafting file")
+
+	if result.size > backend.MaxSize {
+		return nil, fmt.Errorf("file too big to be processed by the %s CAS backend: %s > %s", backend.Name, bytefmt.ByteSize(uint64(result.size)), bytefmt.ByteSize(uint64(backend.MaxSize)))
 	}
 
-	res := &api.Attestation_Material{
-		AddedAt:       timestamppb.New(time.Now()),
-		MaterialType:  input.Type,
-		UploadedToCas: true,
+	material := &api.Attestation_Material{
+		AddedAt:      timestamppb.New(time.Now()),
+		MaterialType: input.Type,
 		M: &api.Attestation_Material_Artifact_{
 			Artifact: &api.Attestation_Material_Artifact{
 				Id:        input.Name,
-				Name:      result.Filename,
-				Digest:    result.Digest,
+				Name:      result.filename,
+				Digest:    result.digest,
 				IsSubject: input.Output,
 			},
 		},
 	}
 
-	return res, nil
+	// 2 - Upload the file to CAS
+	if backend.Uploader != nil {
+		l.Debug().Str("backend", backend.Name).Msg("uploading")
+
+		_, err = backend.Uploader.UploadFile(ctx, artifactPath)
+		if err != nil {
+			return nil, fmt.Errorf("uploading material: %w", err)
+		}
+
+		material.UploadedToCas = true
+	} else {
+		l.Debug().Str("backend", backend.Name).Msg("storing inline")
+		// or store it inline if no uploader is provided
+		content, err := ioutil.ReadAll(result.r)
+		if err != nil {
+			return nil, fmt.Errorf("reading file: %w", err)
+		}
+
+		material.GetArtifact().Content = content
+	}
+
+	return material, nil
+}
+
+type fileInfo struct {
+	filename, digest string
+	size             int64
+	r                io.ReadCloser
+}
+
+// Returns the sha256 hash of the file, its size and an error
+func fileStats(filepath string) (*fileInfo, error) {
+	stat, err := os.Stat(filepath)
+	if err != nil {
+		return nil, err
+	}
+
+	f, err := os.Open(filepath)
+	if err != nil {
+		return nil, fmt.Errorf("can't open file to upload: %w", err)
+	}
+
+	hash, _, err := cr_v1.SHA256(f)
+	if err != nil {
+		return nil, fmt.Errorf("generating digest: %w", err)
+	}
+
+	// Since we have already iterated on the file to calculate the digest
+	// we need to rewind the file pointer
+	_, err = f.Seek(0, io.SeekStart)
+	if err != nil {
+		return nil, fmt.Errorf("rewinding file pointer: %w", err)
+	}
+
+	return &fileInfo{filename: stat.Name(), digest: hash.String(), size: stat.Size(), r: f}, nil
 }
 
 type Craftable interface {
 	Craft(ctx context.Context, value string) (*api.Attestation_Material, error)
 }
 
-func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Material, value string, uploader casclient.Uploader, logger *zerolog.Logger) (*api.Attestation_Material, error) {
+func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Material, value string, casBackend *casclient.CASBackend, logger *zerolog.Logger) (*api.Attestation_Material, error) {
 	var crafter Craftable
 	var err error
 
@@ -75,13 +144,13 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 	case schemaapi.CraftingSchema_Material_CONTAINER_IMAGE:
 		crafter, err = NewOCIImageCrafter(materialSchema, logger)
 	case schemaapi.CraftingSchema_Material_ARTIFACT:
-		crafter, err = NewArtifactCrafter(materialSchema, uploader, logger)
+		crafter, err = NewArtifactCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON:
-		crafter, err = NewCyclonedxJSONCrafter(materialSchema, uploader, logger)
+		crafter, err = NewCyclonedxJSONCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_SBOM_SPDX_JSON:
-		crafter, err = NewSPDXJSONCrafter(materialSchema, uploader, logger)
+		crafter, err = NewSPDXJSONCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_JUNIT_XML:
-		crafter, err = NewJUnitXMLCrafter(materialSchema, uploader, logger)
+		crafter, err = NewJUnitXMLCrafter(materialSchema, casBackend, logger)
 	default:
 		return nil, fmt.Errorf("material of type %q not supported yet", materialSchema.Type)
 	}

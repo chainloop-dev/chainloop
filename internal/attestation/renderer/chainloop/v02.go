@@ -115,7 +115,7 @@ func outputMaterials(att *v1.Attestation, onlyOutput bool) []*slsa_v1.ResourceDe
 
 		material := &slsa_v1.ResourceDescriptor{}
 		if artifactType == schemaapi.CraftingSchema_Material_STRING {
-			material.Content = []byte(nMaterial.Value)
+			material.Content = nMaterial.Content
 		}
 
 		if digest := nMaterial.Digest; digest != "" {
@@ -123,7 +123,8 @@ func outputMaterials(att *v1.Attestation, onlyOutput bool) []*slsa_v1.ResourceDe
 			material.Digest = map[string]string{
 				parts[0]: parts[1],
 			}
-			material.Name = nMaterial.Value
+			material.Name = nMaterial.Name
+			material.Content = nMaterial.Content
 		}
 
 		material.Annotations = map[string]interface{}{

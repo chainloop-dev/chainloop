@@ -29,17 +29,17 @@ import (
 )
 
 type SPDXJSONCrafter struct {
-	uploader casclient.Uploader
 	*crafterCommon
+	backend *casclient.CASBackend
 }
 
-func NewSPDXJSONCrafter(materialSchema *schemaapi.CraftingSchema_Material, uploader casclient.Uploader, l *zerolog.Logger) (*SPDXJSONCrafter, error) {
+func NewSPDXJSONCrafter(materialSchema *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, l *zerolog.Logger) (*SPDXJSONCrafter, error) {
 	if materialSchema.Type != schemaapi.CraftingSchema_Material_SBOM_SPDX_JSON {
 		return nil, fmt.Errorf("material type is not spdx json")
 	}
 
 	return &SPDXJSONCrafter{
-		uploader:      uploader,
+		backend:       backend,
 		crafterCommon: &crafterCommon{logger: l, input: materialSchema},
 	}, nil
 }
@@ -58,5 +58,5 @@ func (i *SPDXJSONCrafter) Craft(ctx context.Context, filePath string) (*api.Atte
 		return nil, fmt.Errorf("invalid spdx sbom file: %w", ErrInvalidMaterialType)
 	}
 
-	return uploadAndCraft(ctx, i.input, i.uploader, filePath)
+	return uploadAndCraft(ctx, i.input, i.backend, filePath, i.logger)
 }

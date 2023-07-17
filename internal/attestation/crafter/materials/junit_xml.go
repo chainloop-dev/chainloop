@@ -32,15 +32,15 @@ import (
 
 type JUnitXMLCrafter struct {
 	*crafterCommon
-	uploader casclient.Uploader
+	backend *casclient.CASBackend
 }
 
-func NewJUnitXMLCrafter(schema *schemaapi.CraftingSchema_Material, uploader casclient.Uploader, l *zerolog.Logger) (*JUnitXMLCrafter, error) {
+func NewJUnitXMLCrafter(schema *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, l *zerolog.Logger) (*JUnitXMLCrafter, error) {
 	if schema.Type != schemaapi.CraftingSchema_Material_JUNIT_XML {
 		return nil, fmt.Errorf("material type is not JUnit XML")
 	}
 	craftCommon := &crafterCommon{logger: l, input: schema}
-	return &JUnitXMLCrafter{uploader: uploader, crafterCommon: craftCommon}, nil
+	return &JUnitXMLCrafter{backend: backend, crafterCommon: craftCommon}, nil
 }
 
 func (i *JUnitXMLCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
@@ -48,7 +48,7 @@ func (i *JUnitXMLCrafter) Craft(ctx context.Context, filePath string) (*api.Atte
 		return nil, err
 	}
 
-	return uploadAndCraft(ctx, i.input, i.uploader, filePath)
+	return uploadAndCraft(ctx, i.input, i.backend, filePath, i.logger)
 }
 
 func (i *JUnitXMLCrafter) validate(filePath string) error {

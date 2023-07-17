@@ -20,21 +20,22 @@ import (
 )
 
 type NormalizedMaterialOutput struct {
-	Value, Digest string
-	IsOutput      bool
+	Name, Digest string
+	IsOutput     bool
+	Content      []byte
 }
 
 func (m *Attestation_Material) NormalizedOutput() *NormalizedMaterialOutput {
 	switch m.MaterialType {
 	case schemaapi.CraftingSchema_Material_ARTIFACT, schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON, schemaapi.CraftingSchema_Material_SBOM_SPDX_JSON:
 		a := m.GetArtifact()
-		return &NormalizedMaterialOutput{a.Name, a.Digest, a.IsSubject}
+		return &NormalizedMaterialOutput{a.Name, a.Digest, a.IsSubject, a.Content}
 	case schemaapi.CraftingSchema_Material_CONTAINER_IMAGE:
 		a := m.GetContainerImage()
-		return &NormalizedMaterialOutput{a.Name, a.Digest, a.IsSubject}
+		return &NormalizedMaterialOutput{a.Name, a.Digest, a.IsSubject, nil}
 	case schemaapi.CraftingSchema_Material_STRING:
 		a := m.GetString_()
-		return &NormalizedMaterialOutput{Value: a.Value}
+		return &NormalizedMaterialOutput{Content: []byte(a.Value)}
 	}
 
 	return nil

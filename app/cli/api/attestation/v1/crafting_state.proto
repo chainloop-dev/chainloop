@@ -65,6 +65,9 @@ message Attestation {
             // which also has annotated the fileName
             string digest = 3 [(validate.rules).string.min_len = 1];
             bool is_subject = 4;
+            // Inline content of the artifact. 
+            // This is optional and is used for small artifacts that can be stored inline in the attestation
+            bytes content = 5;
         }
     }
 

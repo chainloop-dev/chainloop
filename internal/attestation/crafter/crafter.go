@@ -326,7 +326,7 @@ func notResolvedVars(resolved map[string]string, wantList []string) []string {
 }
 
 // Inject material to attestation state
-func (c *Crafter) AddMaterial(key, value string, uploader casclient.Uploader) error {
+func (c *Crafter) AddMaterial(key, value string, casBackend *casclient.CASBackend) error {
 	if err := c.requireStateLoaded(); err != nil {
 		return err
 	}
@@ -349,7 +349,7 @@ func (c *Crafter) AddMaterial(key, value string, uploader casclient.Uploader) er
 	}
 
 	// 3 - Craft resulting material
-	mt, err := materials.Craft(context.Background(), m, value, uploader, c.logger)
+	mt, err := materials.Craft(context.Background(), m, value, casBackend, c.logger)
 	if err != nil {
 		return err
 	}
