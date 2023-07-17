@@ -43,6 +43,9 @@ message Attestation {
 
         // Whether the material has been uploaded to the CAS
         bool uploaded_to_cas = 7;
+        // If the material content has been injected inline in the attestation
+        // leveraging a form of inline CAS 
+        bool inline_cas = 8;
 
         message KeyVal {
             string id = 1 [(validate.rules).string.min_len = 1];

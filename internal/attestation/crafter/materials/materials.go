@@ -92,6 +92,7 @@ func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Materia
 			return nil, fmt.Errorf("reading file: %w", err)
 		}
 
+		material.InlineCas = true
 		material.GetArtifact().Content = content
 	}
 

@@ -90,6 +90,7 @@ func (r *RendererV02) Header() (*in_toto.StatementHeader, error) {
 const AnnotationMaterialType = "chainloop.material.type"
 const AnnotationMaterialName = "chainloop.material.name"
 const AnnotationMaterialCAS = "chainloop.material.cas"
+const AnnotationMaterialInlineCAS = "chainloop.material.cas.inline"
 
 func outputMaterials(att *v1.Attestation, onlyOutput bool) []*slsa_v1.ResourceDescriptor {
 	// Sort material keys to stabilize output
@@ -134,6 +135,8 @@ func outputMaterials(att *v1.Attestation, onlyOutput bool) []*slsa_v1.ResourceDe
 
 		if mdef.UploadedToCas {
 			material.Annotations[AnnotationMaterialCAS] = true
+		} else if mdef.InlineCas {
+			material.Annotations[AnnotationMaterialInlineCAS] = true
 		}
 
 		res = append(res, material)
@@ -196,15 +199,32 @@ func normalizeMaterial(material *slsa_v1.ResourceDescriptor) (*NormalizedMateria
 	}
 
 	m.Hash = &crv1.Hash{Algorithm: "sha256", Hex: d}
+	// material.Name in a container image is the path to the image
+	// in an artifact type or derivative means the name of the file
 	if material.Name == "" {
 		return nil, fmt.Errorf("material name not found")
 	}
+
+	// In the case of container images for example the value is in the name field
+	m.Value = material.Name
 
 	if v, ok := material.Annotations[AnnotationMaterialCAS]; ok && v.(bool) {
 		m.UploadedToCAS = true
 	}
 
-	m.Value = material.Name
+	if v, ok := material.Annotations[AnnotationMaterialInlineCAS]; ok && v.(bool) {
+		m.EmbeddedInline = true
+	}
+
+	// In the case of an artifact type or derivative the filename is set and the inline content if any
+	if m.EmbeddedInline || m.UploadedToCAS {
+		m.Filename = material.Name
+		m.Value = ""
+	}
+
+	if m.EmbeddedInline {
+		m.Value = string(material.Content)
+	}
 
 	return m, nil
 }

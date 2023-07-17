@@ -45,12 +45,16 @@ type NormalizedMaterial struct {
 	Name string
 	// Type of the Material
 	Type string
-	// Either the fileName or the actual string content
+	// filename of the artifact that was either uploaded or injected inline in "value"
+	Filename string
+	// Inline content for an artifact or string material
 	Value string
 	// Hash of the Material
 	Hash *crv1.Hash
 	// Whether the Material was uploaded and available for download from CAS
 	UploadedToCAS bool
+	// Whether the Material was embedded inline in the attestation
+	EmbeddedInline bool
 }
 
 type ProvenancePredicateCommon struct {
