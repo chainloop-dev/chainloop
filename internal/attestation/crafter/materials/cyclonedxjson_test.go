@@ -109,7 +109,8 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 					}, nil)
 			}
 
-			crafter, err := materials.NewCyclonedxJSONCrafter(schema, uploader, &l)
+			backend := &casclient.CASBackend{Uploader: uploader}
+			crafter, err := materials.NewCyclonedxJSONCrafter(schema, backend, &l)
 			require.NoError(t, err)
 
 			got, err := crafter.Craft(context.TODO(), tc.filePath)
@@ -125,7 +126,7 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 
 			// The result includes the digest reference
 			assert.Equal(got.GetArtifact(), &attestationApi.Attestation_Material_Artifact{
-				Id: "test", Digest: "deadbeef", Name: "sbom.cyclonedx.json",
+				Id: "test", Digest: "sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c", Name: "sbom.cyclonedx.json",
 			})
 		})
 	}

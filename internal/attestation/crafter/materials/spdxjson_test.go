@@ -110,7 +110,8 @@ func TestSPDXJSONCraft(t *testing.T) {
 					}, nil)
 			}
 
-			crafter, err := materials.NewSPDXJSONCrafter(schema, uploader, &l)
+			backend := &casclient.CASBackend{Uploader: uploader}
+			crafter, err := materials.NewSPDXJSONCrafter(schema, backend, &l)
 			require.NoError(t, err)
 
 			got, err := crafter.Craft(context.TODO(), tc.filePath)
@@ -126,7 +127,7 @@ func TestSPDXJSONCraft(t *testing.T) {
 
 			// // The result includes the digest reference
 			assert.Equal(got.GetArtifact(), &attestationApi.Attestation_Material_Artifact{
-				Id: "test", Digest: "deadbeef", Name: "sbom.spdx.json",
+				Id: "test", Digest: "sha256:fe2636fb6c698a29a315278b762b2000efd5959afe776ee4f79f1ed523365a33", Name: "sbom.spdx.json",
 			})
 		})
 	}

@@ -75,16 +75,18 @@ func TestArtifactCraft(t *testing.T) {
 
 	// Mock uploader
 	uploader := mUploader.NewUploader(t)
-	uploader.On("UploadFile", context.TODO(), "file.txt").
+	uploader.On("UploadFile", context.TODO(), "./testdata/simple.txt").
 		Return(&casclient.UpDownStatus{
 			Digest:   "deadbeef",
-			Filename: "file.txt",
+			Filename: "simple.txt",
 		}, nil)
 
-	crafter, err := materials.NewArtifactCrafter(schema, uploader, &l)
+	backend := &casclient.CASBackend{Uploader: uploader}
+
+	crafter, err := materials.NewArtifactCrafter(schema, backend, &l)
 	require.NoError(t, err)
 
-	got, err := crafter.Craft(context.TODO(), "file.txt")
+	got, err := crafter.Craft(context.TODO(), "./testdata/simple.txt")
 	assert.NoError(err)
 	assert.Equal(contractAPI.CraftingSchema_Material_ARTIFACT.String(), got.MaterialType.String())
 	assert.True(got.UploadedToCas)
@@ -92,6 +94,6 @@ func TestArtifactCraft(t *testing.T) {
 
 	// The result includes the digest reference
 	assert.Equal(got.GetArtifact(), &attestationApi.Attestation_Material_Artifact{
-		Id: "test", Digest: "deadbeef", Name: "file.txt",
+		Id: "test", Digest: "sha256:54181dfe59340b318253e59f7695f547c5c10d071cb75001170a389061349918", Name: "simple.txt",
 	})
 }
