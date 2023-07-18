@@ -126,6 +126,20 @@ func (cbc *CASBackendCreate) SetNillableDeletedAt(t *time.Time) *CASBackendCreat
 	return cbc
 }
 
+// SetFallback sets the "fallback" field.
+func (cbc *CASBackendCreate) SetFallback(b bool) *CASBackendCreate {
+	cbc.mutation.SetFallback(b)
+	return cbc
+}
+
+// SetNillableFallback sets the "fallback" field if the given value is not nil.
+func (cbc *CASBackendCreate) SetNillableFallback(b *bool) *CASBackendCreate {
+	if b != nil {
+		cbc.SetFallback(*b)
+	}
+	return cbc
+}
+
 // SetID sets the "id" field.
 func (cbc *CASBackendCreate) SetID(u uuid.UUID) *CASBackendCreate {
 	cbc.mutation.SetID(u)
@@ -217,6 +231,10 @@ func (cbc *CASBackendCreate) defaults() {
 		v := casbackend.DefaultDefault
 		cbc.mutation.SetDefault(v)
 	}
+	if _, ok := cbc.mutation.Fallback(); !ok {
+		v := casbackend.DefaultFallback
+		cbc.mutation.SetFallback(v)
+	}
 	if _, ok := cbc.mutation.ID(); !ok {
 		v := casbackend.DefaultID()
 		cbc.mutation.SetID(v)
@@ -255,6 +273,9 @@ func (cbc *CASBackendCreate) check() error {
 	}
 	if _, ok := cbc.mutation.Default(); !ok {
 		return &ValidationError{Name: "default", err: errors.New(`ent: missing required field "CASBackend.default"`)}
+	}
+	if _, ok := cbc.mutation.Fallback(); !ok {
+		return &ValidationError{Name: "fallback", err: errors.New(`ent: missing required field "CASBackend.fallback"`)}
 	}
 	if _, ok := cbc.mutation.OrganizationID(); !ok {
 		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "CASBackend.organization"`)}
@@ -329,6 +350,10 @@ func (cbc *CASBackendCreate) createSpec() (*CASBackend, *sqlgraph.CreateSpec) {
 	if value, ok := cbc.mutation.DeletedAt(); ok {
 		_spec.SetField(casbackend.FieldDeletedAt, field.TypeTime, value)
 		_node.DeletedAt = value
+	}
+	if value, ok := cbc.mutation.Fallback(); ok {
+		_spec.SetField(casbackend.FieldFallback, field.TypeBool, value)
+		_node.Fallback = value
 	}
 	if nodes := cbc.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

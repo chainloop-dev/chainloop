@@ -51,6 +51,8 @@ func (CASBackend) Fields() []ent.Field {
 			Annotations(&entsql.Annotation{Default: "CURRENT_TIMESTAMP"}),
 		field.Bool("default").Default(false),
 		field.Time("deleted_at").Optional(),
+		// fallback, main cas backend. If true, this backend will be used as a fallback and cannot be deleted
+		field.Bool("fallback").Default(false).Immutable(),
 	}
 }
 

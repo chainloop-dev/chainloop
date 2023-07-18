@@ -122,5 +122,6 @@ message AttestationServiceGetUploadCredsResponse {
   
   message Result {
     string token = 2;
+    CASBackendItem backend	 = 3;
   }
 }

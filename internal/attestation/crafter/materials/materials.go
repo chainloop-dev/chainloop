@@ -58,7 +58,7 @@ func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Materia
 
 	// If there is a max size set and the file is bigger than that, return an error
 	if backend.MaxSize > 0 && result.size > backend.MaxSize {
-		return nil, fmt.Errorf("file too big to be processed by the %s CAS backend: %s > %s", backend.Name, bytefmt.ByteSize(uint64(result.size)), bytefmt.ByteSize(uint64(backend.MaxSize)))
+		return nil, fmt.Errorf("this file is too big for the %s CAS backend, please contact your administrator: fileSize=%s, maxSize=%s", backend.Name, bytefmt.ByteSize(uint64(result.size)), bytefmt.ByteSize(uint64(backend.MaxSize)))
 	}
 
 	material := &api.Attestation_Material{

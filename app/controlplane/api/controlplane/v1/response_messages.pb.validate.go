@@ -1638,6 +1638,37 @@ func (m *CASBackendItem) validate(all bool) error {
 
 	// no validation rules for Default
 
+	if all {
+		switch v := interface{}(m.GetLimits()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CASBackendItemValidationError{
+					field:  "Limits",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CASBackendItemValidationError{
+					field:  "Limits",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetLimits()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CASBackendItemValidationError{
+				field:  "Limits",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for IsInline
+
 	if len(errors) > 0 {
 		return CASBackendItemMultiError(errors)
 	}
@@ -1930,3 +1961,107 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = AttestationItem_MaterialValidationError{}
+
+// Validate checks the field values on CASBackendItem_Limits with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CASBackendItem_Limits) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CASBackendItem_Limits with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CASBackendItem_LimitsMultiError, or nil if none found.
+func (m *CASBackendItem_Limits) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CASBackendItem_Limits) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for MaxBytes
+
+	if len(errors) > 0 {
+		return CASBackendItem_LimitsMultiError(errors)
+	}
+
+	return nil
+}
+
+// CASBackendItem_LimitsMultiError is an error wrapping multiple validation
+// errors returned by CASBackendItem_Limits.ValidateAll() if the designated
+// constraints aren't met.
+type CASBackendItem_LimitsMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CASBackendItem_LimitsMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CASBackendItem_LimitsMultiError) AllErrors() []error { return m }
+
+// CASBackendItem_LimitsValidationError is the validation error returned by
+// CASBackendItem_Limits.Validate if the designated constraints aren't met.
+type CASBackendItem_LimitsValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CASBackendItem_LimitsValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CASBackendItem_LimitsValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CASBackendItem_LimitsValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CASBackendItem_LimitsValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CASBackendItem_LimitsValidationError) ErrorName() string {
+	return "CASBackendItem_LimitsValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CASBackendItem_LimitsValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCASBackendItem_Limits.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CASBackendItem_LimitsValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CASBackendItem_LimitsValidationError{}

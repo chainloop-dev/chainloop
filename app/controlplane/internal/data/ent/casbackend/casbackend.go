@@ -35,6 +35,8 @@ const (
 	FieldDefault = "default"
 	// FieldDeletedAt holds the string denoting the deleted_at field in the database.
 	FieldDeletedAt = "deleted_at"
+	// FieldFallback holds the string denoting the fallback field in the database.
+	FieldFallback = "fallback"
 	// EdgeOrganization holds the string denoting the organization edge name in mutations.
 	EdgeOrganization = "organization"
 	// EdgeWorkflowRun holds the string denoting the workflow_run edge name in mutations.
@@ -67,6 +69,7 @@ var Columns = []string{
 	FieldValidatedAt,
 	FieldDefault,
 	FieldDeletedAt,
+	FieldFallback,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "cas_backends"
@@ -103,6 +106,8 @@ var (
 	DefaultValidatedAt func() time.Time
 	// DefaultDefault holds the default value on creation for the "default" field.
 	DefaultDefault bool
+	// DefaultFallback holds the default value on creation for the "fallback" field.
+	DefaultFallback bool
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -110,7 +115,7 @@ var (
 // ProviderValidator is a validator for the "provider" field enum values. It is called by the builders before save.
 func ProviderValidator(pr biz.CASBackendProvider) error {
 	switch pr {
-	case "OCI":
+	case "OCI", "INLINE":
 		return nil
 	default:
 		return fmt.Errorf("casbackend: invalid enum value for provider field: %q", pr)
@@ -180,6 +185,11 @@ func ByDefault(opts ...sql.OrderTermOption) OrderOption {
 // ByDeletedAt orders the results by the deleted_at field.
 func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDeletedAt, opts...).ToFunc()
+}
+
+// ByFallback orders the results by the fallback field.
+func ByFallback(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldFallback, opts...).ToFunc()
 }
 
 // ByOrganizationField orders the results by organization field.

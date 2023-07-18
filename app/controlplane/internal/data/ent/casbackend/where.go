@@ -92,6 +92,11 @@ func DeletedAt(v time.Time) predicate.CASBackend {
 	return predicate.CASBackend(sql.FieldEQ(FieldDeletedAt, v))
 }
 
+// Fallback applies equality check predicate on the "fallback" field. It's identical to FallbackEQ.
+func Fallback(v bool) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldEQ(FieldFallback, v))
+}
+
 // LocationEQ applies the EQ predicate on the "location" field.
 func LocationEQ(v string) predicate.CASBackend {
 	return predicate.CASBackend(sql.FieldEQ(FieldLocation, v))
@@ -495,6 +500,16 @@ func DeletedAtIsNil() predicate.CASBackend {
 // DeletedAtNotNil applies the NotNil predicate on the "deleted_at" field.
 func DeletedAtNotNil() predicate.CASBackend {
 	return predicate.CASBackend(sql.FieldNotNull(FieldDeletedAt))
+}
+
+// FallbackEQ applies the EQ predicate on the "fallback" field.
+func FallbackEQ(v bool) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldEQ(FieldFallback, v))
+}
+
+// FallbackNEQ applies the NEQ predicate on the "fallback" field.
+func FallbackNEQ(v bool) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldNEQ(FieldFallback, v))
 }
 
 // HasOrganization applies the HasEdge predicate on the "organization" edge.

@@ -65,6 +65,7 @@ type CASBackendMutation struct {
 	validated_at        *time.Time
 	_default            *bool
 	deleted_at          *time.Time
+	fallback            *bool
 	clearedFields       map[string]struct{}
 	organization        *uuid.UUID
 	clearedorganization bool
@@ -530,6 +531,42 @@ func (m *CASBackendMutation) ResetDeletedAt() {
 	delete(m.clearedFields, casbackend.FieldDeletedAt)
 }
 
+// SetFallback sets the "fallback" field.
+func (m *CASBackendMutation) SetFallback(b bool) {
+	m.fallback = &b
+}
+
+// Fallback returns the value of the "fallback" field in the mutation.
+func (m *CASBackendMutation) Fallback() (r bool, exists bool) {
+	v := m.fallback
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFallback returns the old "fallback" field's value of the CASBackend entity.
+// If the CASBackend object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CASBackendMutation) OldFallback(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFallback is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFallback requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFallback: %w", err)
+	}
+	return oldValue.Fallback, nil
+}
+
+// ResetFallback resets all changes to the "fallback" field.
+func (m *CASBackendMutation) ResetFallback() {
+	m.fallback = nil
+}
+
 // SetOrganizationID sets the "organization" edge to the Organization entity by id.
 func (m *CASBackendMutation) SetOrganizationID(id uuid.UUID) {
 	m.organization = &id
@@ -657,7 +694,7 @@ func (m *CASBackendMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CASBackendMutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 10)
 	if m.location != nil {
 		fields = append(fields, casbackend.FieldLocation)
 	}
@@ -685,6 +722,9 @@ func (m *CASBackendMutation) Fields() []string {
 	if m.deleted_at != nil {
 		fields = append(fields, casbackend.FieldDeletedAt)
 	}
+	if m.fallback != nil {
+		fields = append(fields, casbackend.FieldFallback)
+	}
 	return fields
 }
 
@@ -711,6 +751,8 @@ func (m *CASBackendMutation) Field(name string) (ent.Value, bool) {
 		return m.Default()
 	case casbackend.FieldDeletedAt:
 		return m.DeletedAt()
+	case casbackend.FieldFallback:
+		return m.Fallback()
 	}
 	return nil, false
 }
@@ -738,6 +780,8 @@ func (m *CASBackendMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldDefault(ctx)
 	case casbackend.FieldDeletedAt:
 		return m.OldDeletedAt(ctx)
+	case casbackend.FieldFallback:
+		return m.OldFallback(ctx)
 	}
 	return nil, fmt.Errorf("unknown CASBackend field %s", name)
 }
@@ -809,6 +853,13 @@ func (m *CASBackendMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDeletedAt(v)
+		return nil
+	case casbackend.FieldFallback:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFallback(v)
 		return nil
 	}
 	return fmt.Errorf("unknown CASBackend field %s", name)
@@ -900,6 +951,9 @@ func (m *CASBackendMutation) ResetField(name string) error {
 		return nil
 	case casbackend.FieldDeletedAt:
 		m.ResetDeletedAt()
+		return nil
+	case casbackend.FieldFallback:
+		m.ResetFallback()
 		return nil
 	}
 	return fmt.Errorf("unknown CASBackend field %s", name)

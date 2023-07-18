@@ -71,6 +71,7 @@ require (
 	cloud.google.com/go/storage v1.30.1
 	github.com/invopop/jsonschema v0.7.0
 	github.com/jackc/pgx/v5 v5.4.1
+	github.com/muesli/reflow v0.3.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20230530153820-e85fd2cbaebc
 	google.golang.org/genproto/googleapis/bytestream v0.0.0-20230530153820-e85fd2cbaebc

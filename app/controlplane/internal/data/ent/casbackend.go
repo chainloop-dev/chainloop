@@ -38,6 +38,8 @@ type CASBackend struct {
 	Default bool `json:"default,omitempty"`
 	// DeletedAt holds the value of the "deleted_at" field.
 	DeletedAt time.Time `json:"deleted_at,omitempty"`
+	// Fallback holds the value of the "fallback" field.
+	Fallback bool `json:"fallback,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the CASBackendQuery when eager-loading is set.
 	Edges                     CASBackendEdges `json:"edges"`
@@ -83,7 +85,7 @@ func (*CASBackend) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case casbackend.FieldDefault:
+		case casbackend.FieldDefault, casbackend.FieldFallback:
 			values[i] = new(sql.NullBool)
 		case casbackend.FieldLocation, casbackend.FieldProvider, casbackend.FieldDescription, casbackend.FieldSecretName, casbackend.FieldValidationStatus:
 			values[i] = new(sql.NullString)
@@ -168,6 +170,12 @@ func (cb *CASBackend) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				cb.DeletedAt = value.Time
 			}
+		case casbackend.FieldFallback:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field fallback", values[i])
+			} else if value.Valid {
+				cb.Fallback = value.Bool
+			}
 		case casbackend.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field organization_cas_backends", values[i])
@@ -247,6 +255,9 @@ func (cb *CASBackend) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("deleted_at=")
 	builder.WriteString(cb.DeletedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("fallback=")
+	builder.WriteString(fmt.Sprintf("%v", cb.Fallback))
 	builder.WriteByte(')')
 	return builder.String()
 }

@@ -3,7 +3,13 @@ import { grpc } from "@improbable-eng/grpc-web";
 import { BrowserHeaders } from "browser-headers";
 import _m0 from "protobufjs/minimal";
 import { PaginationRequest, PaginationResponse } from "./pagination";
-import { AttestationItem, WorkflowContractVersionItem, WorkflowItem, WorkflowRunItem } from "./response_messages";
+import {
+  AttestationItem,
+  CASBackendItem,
+  WorkflowContractVersionItem,
+  WorkflowItem,
+  WorkflowRunItem,
+} from "./response_messages";
 
 export const protobufPackage = "controlplane.v1";
 
@@ -128,6 +134,7 @@ export interface AttestationServiceGetUploadCredsResponse {
 
 export interface AttestationServiceGetUploadCredsResponse_Result {
   token: string;
+  backend?: CASBackendItem;
 }
 
 function createBaseAttestationServiceGetContractRequest(): AttestationServiceGetContractRequest {
@@ -1271,7 +1278,7 @@ export const AttestationServiceGetUploadCredsResponse = {
 };
 
 function createBaseAttestationServiceGetUploadCredsResponse_Result(): AttestationServiceGetUploadCredsResponse_Result {
-  return { token: "" };
+  return { token: "", backend: undefined };
 }
 
 export const AttestationServiceGetUploadCredsResponse_Result = {
@@ -1281,6 +1288,9 @@ export const AttestationServiceGetUploadCredsResponse_Result = {
   ): _m0.Writer {
     if (message.token !== "") {
       writer.uint32(18).string(message.token);
+    }
+    if (message.backend !== undefined) {
+      CASBackendItem.encode(message.backend, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -1299,6 +1309,13 @@ export const AttestationServiceGetUploadCredsResponse_Result = {
 
           message.token = reader.string();
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.backend = CASBackendItem.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1309,12 +1326,17 @@ export const AttestationServiceGetUploadCredsResponse_Result = {
   },
 
   fromJSON(object: any): AttestationServiceGetUploadCredsResponse_Result {
-    return { token: isSet(object.token) ? String(object.token) : "" };
+    return {
+      token: isSet(object.token) ? String(object.token) : "",
+      backend: isSet(object.backend) ? CASBackendItem.fromJSON(object.backend) : undefined,
+    };
   },
 
   toJSON(message: AttestationServiceGetUploadCredsResponse_Result): unknown {
     const obj: any = {};
     message.token !== undefined && (obj.token = message.token);
+    message.backend !== undefined &&
+      (obj.backend = message.backend ? CASBackendItem.toJSON(message.backend) : undefined);
     return obj;
   },
 
@@ -1329,6 +1351,9 @@ export const AttestationServiceGetUploadCredsResponse_Result = {
   ): AttestationServiceGetUploadCredsResponse_Result {
     const message = createBaseAttestationServiceGetUploadCredsResponse_Result();
     message.token = object.token ?? "";
+    message.backend = (object.backend !== undefined && object.backend !== null)
+      ? CASBackendItem.fromPartial(object.backend)
+      : undefined;
     return message;
   },
 };

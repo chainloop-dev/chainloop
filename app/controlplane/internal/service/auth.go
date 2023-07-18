@@ -59,11 +59,12 @@ type AuthService struct {
 	authConfig        *conf.Auth
 	userUseCase       *biz.UserUseCase
 	orgUseCase        *biz.OrganizationUseCase
+	casBackendUseCase *biz.CASBackendUseCase
 	membershipUseCase *biz.MembershipUseCase
 	AuthURLs          *AuthURLs
 }
 
-func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC *biz.MembershipUseCase, authConfig *conf.Auth, serverConfig *conf.Server, opts ...NewOpt) (*AuthService, error) {
+func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC *biz.MembershipUseCase, cbUC *biz.CASBackendUseCase, authConfig *conf.Auth, serverConfig *conf.Server, opts ...NewOpt) (*AuthService, error) {
 	oidcConfig := authConfig.GetOidc()
 	if oidcConfig == nil {
 		return nil, errors.New("oauth configuration missing")
@@ -88,6 +89,7 @@ func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC
 		authConfig:        authConfig,
 		AuthURLs:          authURLs,
 		membershipUseCase: mUC,
+		casBackendUseCase: cbUC,
 	}, nil
 }
 
@@ -189,19 +191,38 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) (
 		return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
 	}
 
-	if len(memberships) == 0 {
+	var currentOrg *biz.Organization
+	for _, m := range memberships {
+		if m.Current {
+			currentOrg = m.Org
+			break
+		}
+	}
+
+	// If there is not, we create it and associate the user to it
+	if currentOrg == nil {
 		// Create an org
-		org, err := svc.orgUseCase.Create(ctx, "")
+		currentOrg, err = svc.orgUseCase.Create(ctx, "")
 		if err != nil {
 			return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
 		}
 
 		// Create membership
-		if _, err := svc.membershipUseCase.Create(ctx, org.ID, u.ID, true); err != nil {
+		if _, err := svc.membershipUseCase.Create(ctx, currentOrg.ID, u.ID, true); err != nil {
 			return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
 		}
 
-		svc.log.Infow("msg", "new user associated to an org", "org_id", org.ID, "user_id", u.ID)
+		svc.log.Infow("msg", "new user associated to an org", "org_id", currentOrg.ID, "user_id", u.ID)
+	}
+
+	// Create a default inline CAS backend if none exists
+	backend, err := svc.casBackendUseCase.FindFallbackBackend(ctx, currentOrg.ID)
+	if err != nil && !biz.IsNotFound(err) {
+		return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
+	} else if backend == nil {
+		if _, err := svc.casBackendUseCase.CreateInlineFallbackBackend(ctx, currentOrg.ID); err != nil {
+			return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
+		}
 	}
 
 	// Generate user token

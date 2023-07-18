@@ -57,9 +57,22 @@ func (r *CASBackendRepo) List(ctx context.Context, orgID uuid.UUID) ([]*biz.CASB
 	return res, nil
 }
 
+// FindDefaultBackend finds the CAS backend that's set as default for the given organization
 func (r *CASBackendRepo) FindDefaultBackend(ctx context.Context, orgID uuid.UUID) (*biz.CASBackend, error) {
 	backend, err := orgScopedQuery(r.data.db, orgID).QueryCasBackends().WithOrganization().
 		Where(casbackend.Default(true), casbackend.DeletedAtIsNil()).
+		Only(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, err
+	}
+
+	return entCASBackendToBiz(backend), nil
+}
+
+// FindFallbackBackend finds the CAS backend that's set as fallback for the given organization
+func (r *CASBackendRepo) FindFallbackBackend(ctx context.Context, orgID uuid.UUID) (*biz.CASBackend, error) {
+	backend, err := orgScopedQuery(r.data.db, orgID).QueryCasBackends().WithOrganization().
+		Where(casbackend.Fallback(true), casbackend.DeletedAtIsNil()).
 		Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
@@ -92,6 +105,7 @@ func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateO
 		SetOrganizationID(opts.OrgID).
 		SetLocation(opts.Location).
 		SetDescription(opts.Description).
+		SetFallback(opts.Fallback).
 		SetProvider(opts.Provider).
 		SetDefault(opts.Default).
 		SetSecretName(opts.SecretName).
@@ -202,6 +216,15 @@ func entCASBackendToBiz(backend *ent.CASBackend) *biz.CASBackend {
 		return nil
 	}
 
+	limits := &biz.CASBackendLimits{
+		MaxBytes: biz.CASBackendDefaultMaxBytes,
+	}
+
+	inline := backend.Provider == biz.CASBackendInline
+	if inline {
+		limits.MaxBytes = biz.CASBackendInlineDefaultMaxBytes
+	}
+
 	r := &biz.CASBackend{
 		ID:               backend.ID,
 		Location:         backend.Location,
@@ -212,6 +235,9 @@ func entCASBackendToBiz(backend *ent.CASBackend) *biz.CASBackend {
 		ValidationStatus: backend.ValidationStatus,
 		Provider:         backend.Provider,
 		Default:          backend.Default,
+		Inline:           inline,
+		Limits:           limits,
+		Fallback:         backend.Fallback,
 	}
 
 	if org := backend.Edges.Organization; org != nil {

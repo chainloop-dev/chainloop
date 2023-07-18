@@ -83,7 +83,7 @@ func (s *casBackendTestSuite) TestSaveDefaultBackendAlreadyExist() {
 	assert := assert.New(s.T())
 	const repoName, username, password = "repo", "username", "pass"
 
-	r := &biz.CASBackend{ID: s.validUUID}
+	r := &biz.CASBackend{ID: s.validUUID, Provider: biz.CASBackendOCI}
 	ctx := context.Background()
 	s.repo.On("FindDefaultBackend", ctx, s.validUUID).Return(r, nil)
 	s.credsRW.On("SaveCredentials", ctx, s.validUUID.String(), mock.Anything).Return("secret-key", nil)
