@@ -1,4 +1,5 @@
 /* eslint-disable */
+import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Timestamp } from "../../google/protobuf/timestamp";
 import {
@@ -184,6 +185,13 @@ export interface CASBackendItem {
   provider: string;
   /** Wether it's the default backend in the organization */
   default: boolean;
+  /** Limits for this backend */
+  limits?: CASBackendItem_Limits;
+  /**
+   * Is it an inline backend?
+   * inline means that the content is stored in the attestation itself
+   */
+  isInline: boolean;
 }
 
 export enum CASBackendItem_ValidationStatus {
@@ -223,6 +231,11 @@ export function cASBackendItem_ValidationStatusToJSON(object: CASBackendItem_Val
     default:
       return "UNRECOGNIZED";
   }
+}
+
+export interface CASBackendItem_Limits {
+  /** Max number of bytes allowed to be stored in this backend */
+  maxBytes: number;
 }
 
 function createBaseWorkflowItem(): WorkflowItem {
@@ -1444,6 +1457,8 @@ function createBaseCASBackendItem(): CASBackendItem {
     validationStatus: 0,
     provider: "",
     default: false,
+    limits: undefined,
+    isInline: false,
   };
 }
 
@@ -1472,6 +1487,12 @@ export const CASBackendItem = {
     }
     if (message.default === true) {
       writer.uint32(64).bool(message.default);
+    }
+    if (message.limits !== undefined) {
+      CASBackendItem_Limits.encode(message.limits, writer.uint32(74).fork()).ldelim();
+    }
+    if (message.isInline === true) {
+      writer.uint32(80).bool(message.isInline);
     }
     return writer;
   },
@@ -1539,6 +1560,20 @@ export const CASBackendItem = {
 
           message.default = reader.bool();
           continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.limits = CASBackendItem_Limits.decode(reader, reader.uint32());
+          continue;
+        case 10:
+          if (tag !== 80) {
+            break;
+          }
+
+          message.isInline = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1560,6 +1595,8 @@ export const CASBackendItem = {
         : 0,
       provider: isSet(object.provider) ? String(object.provider) : "",
       default: isSet(object.default) ? Boolean(object.default) : false,
+      limits: isSet(object.limits) ? CASBackendItem_Limits.fromJSON(object.limits) : undefined,
+      isInline: isSet(object.isInline) ? Boolean(object.isInline) : false,
     };
   },
 
@@ -1574,6 +1611,9 @@ export const CASBackendItem = {
       (obj.validationStatus = cASBackendItem_ValidationStatusToJSON(message.validationStatus));
     message.provider !== undefined && (obj.provider = message.provider);
     message.default !== undefined && (obj.default = message.default);
+    message.limits !== undefined &&
+      (obj.limits = message.limits ? CASBackendItem_Limits.toJSON(message.limits) : undefined);
+    message.isInline !== undefined && (obj.isInline = message.isInline);
     return obj;
   },
 
@@ -1591,6 +1631,66 @@ export const CASBackendItem = {
     message.validationStatus = object.validationStatus ?? 0;
     message.provider = object.provider ?? "";
     message.default = object.default ?? false;
+    message.limits = (object.limits !== undefined && object.limits !== null)
+      ? CASBackendItem_Limits.fromPartial(object.limits)
+      : undefined;
+    message.isInline = object.isInline ?? false;
+    return message;
+  },
+};
+
+function createBaseCASBackendItem_Limits(): CASBackendItem_Limits {
+  return { maxBytes: 0 };
+}
+
+export const CASBackendItem_Limits = {
+  encode(message: CASBackendItem_Limits, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.maxBytes !== 0) {
+      writer.uint32(8).int64(message.maxBytes);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CASBackendItem_Limits {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCASBackendItem_Limits();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.maxBytes = longToNumber(reader.int64() as Long);
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CASBackendItem_Limits {
+    return { maxBytes: isSet(object.maxBytes) ? Number(object.maxBytes) : 0 };
+  },
+
+  toJSON(message: CASBackendItem_Limits): unknown {
+    const obj: any = {};
+    message.maxBytes !== undefined && (obj.maxBytes = Math.round(message.maxBytes));
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CASBackendItem_Limits>, I>>(base?: I): CASBackendItem_Limits {
+    return CASBackendItem_Limits.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<CASBackendItem_Limits>, I>>(object: I): CASBackendItem_Limits {
+    const message = createBaseCASBackendItem_Limits();
+    message.maxBytes = object.maxBytes ?? 0;
     return message;
   },
 };
@@ -1670,6 +1770,18 @@ function fromJsonTimestamp(o: any): Date {
   } else {
     return fromTimestamp(Timestamp.fromJSON(o));
   }
+}
+
+function longToNumber(long: Long): number {
+  if (long.gt(Number.MAX_SAFE_INTEGER)) {
+    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
+  }
+  return long.toNumber();
+}
+
+if (_m0.util.Long !== Long) {
+  _m0.util.Long = Long as any;
+  _m0.configure();
 }
 
 function isSet(value: any): boolean {

@@ -27,15 +27,22 @@ type CASBackendList struct {
 }
 
 type CASBackendItem struct {
-	ID               string           `json:"id"`
-	Location         string           `json:"location"`
-	Description      string           `json:"description"`
-	Provider         string           `json:"provider"`
-	Default          bool             `json:"default"`
-	ValidationStatus ValidationStatus `json:"validationStatus"`
+	ID               string            `json:"id"`
+	Location         string            `json:"location"`
+	Description      string            `json:"description"`
+	Provider         string            `json:"provider"`
+	Default          bool              `json:"default"`
+	Inline           bool              `json:"inline"`
+	Limits           *CASBackendLimits `json:"limits"`
+	ValidationStatus ValidationStatus  `json:"validationStatus"`
 
 	CreatedAt   *time.Time `json:"createdAt"`
 	ValidatedAt *time.Time `json:"validatedAt"`
+}
+
+type CASBackendLimits struct {
+	// Max number of bytes allowed to be stored in this backend
+	MaxBytes int64
 }
 
 type ValidationStatus string
@@ -77,6 +84,13 @@ func pbCASBackendItemToAction(in *pb.CASBackendItem) *CASBackendItem {
 		Default:     in.Default,
 		CreatedAt:   toTimePtr(in.CreatedAt.AsTime()),
 		ValidatedAt: toTimePtr(in.ValidatedAt.AsTime()),
+		Inline:      in.IsInline,
+	}
+
+	if in.Limits != nil {
+		b.Limits = &CASBackendLimits{
+			MaxBytes: in.Limits.MaxBytes,
+		}
 	}
 
 	switch in.GetValidationStatus() {

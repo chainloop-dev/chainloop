@@ -157,6 +157,13 @@ func bizOCASBackendToPb(in *biz.CASBackend) *pb.CASBackendItem {
 		ValidatedAt: timestamppb.New(*in.ValidatedAt),
 		Provider:    string(in.Provider),
 		Default:     in.Default,
+		IsInline:    in.Inline,
+	}
+
+	if in.Limits != nil {
+		r.Limits = &pb.CASBackendItem_Limits{
+			MaxBytes: in.Limits.MaxBytes,
+		}
 	}
 
 	switch in.ValidationStatus {

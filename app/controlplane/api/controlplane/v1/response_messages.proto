@@ -136,6 +136,16 @@ message CASBackendItem {
   string provider = 7;
   // Wether it's the default backend in the organization
   bool default = 8;
+  // Limits for this backend
+  Limits limits = 9;
+  // Is it an inline backend?
+  // inline means that the content is stored in the attestation itself
+  bool is_inline = 10;
+
+  message Limits {
+    // Max number of bytes allowed to be stored in this backend
+    int64 max_bytes = 1;
+  }
 
   enum ValidationStatus {
     VALIDATION_STATUS_UNSPECIFIED = 0;

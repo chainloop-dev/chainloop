@@ -202,6 +202,11 @@ func entCASBackendToBiz(backend *ent.CASBackend) *biz.CASBackend {
 		return nil
 	}
 
+	limits, ok := biz.CASBackendLimitsMap[backend.Provider]
+	if !ok {
+		limits = &biz.CASBackendLimits{}
+	}
+
 	r := &biz.CASBackend{
 		ID:               backend.ID,
 		Location:         backend.Location,
@@ -212,6 +217,8 @@ func entCASBackendToBiz(backend *ent.CASBackend) *biz.CASBackend {
 		ValidationStatus: backend.ValidationStatus,
 		Provider:         backend.Provider,
 		Default:          backend.Default,
+		Inline:           backend.Provider == biz.CASBackendInline,
+		Limits:           limits,
 	}
 
 	if org := backend.Edges.Organization; org != nil {

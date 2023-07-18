@@ -38,6 +38,11 @@ const (
 	CASBackendInline CASBackendProvider = "INLINE"
 )
 
+var CASBackendLimitsMap = map[CASBackendProvider]*CASBackendLimits{
+	CASBackendOCI:    {MaxBytes: 100 * 1024 * 1024}, // 100MB
+	CASBackendInline: {MaxBytes: 500 * 1024},        // 500KB
+}
+
 type CASBackendValidationStatus string
 
 var CASBackendValidationOK CASBackendValidationStatus = "OK"
@@ -51,8 +56,16 @@ type CASBackend struct {
 	ValidationStatus                  CASBackendValidationStatus
 	// OCI, S3, ...
 	Provider CASBackendProvider
-	// Wether this is the default cas backend for the organization
+	// Whether this is the default cas backend for the organization
 	Default bool
+	// it's a inline backend, the artifacts are embedded in the attestation
+	Inline bool
+	Limits *CASBackendLimits
+}
+
+type CASBackendLimits struct {
+	// Max number of bytes allowed to be stored in this backend
+	MaxBytes int64
 }
 
 type CASBackendOpts struct {
