@@ -81,7 +81,21 @@ func (action *AttestationAdd) Run(k, v string) error {
 
 	cc := casclient.New(artifactCASConn, casclient.WithLogger(action.Logger))
 
-	if err := action.c.AddMaterial(k, v, cc); err != nil {
+	// // TODO: retrieve this information from backend
+	backend := &casclient.CASBackend{
+		Uploader: cc,
+		Name:     "OCI",
+		// 100MB max size
+		MaxSize: 100 * 1024 * 1024,
+	}
+
+	// backend := &casclient.CASBackend{
+	// 	Name: "INLINE",
+	// 	// 500KB max size
+	// 	MaxSize: 500 * 1024,
+	// }
+
+	if err := action.c.AddMaterial(k, v, backend); err != nil {
 		action.Logger.Err(err).Msg("adding material")
 		return err
 	}

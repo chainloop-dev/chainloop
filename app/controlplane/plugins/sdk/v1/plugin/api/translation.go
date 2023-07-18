@@ -132,6 +132,7 @@ func MaterialSDKToProto(in *sdk.ExecuteMaterial) *ExecuteRequest_NormalizedMater
 		Name:          in.Name,
 		Type:          in.Type,
 		Value:         in.Value,
+		FileName:      in.Filename,
 		Hash:          in.Hash.String(),
 		UploadedToCas: in.UploadedToCAS,
 	}
@@ -150,6 +151,7 @@ func MaterialProtoToSDK(in *ExecuteRequest_NormalizedMaterial) *sdk.ExecuteMater
 			Name:          in.Name,
 			Type:          in.Type,
 			Value:         in.Value,
+			Filename:      in.FileName,
 			UploadedToCAS: in.UploadedToCas,
 			Hash:          &hash,
 		},

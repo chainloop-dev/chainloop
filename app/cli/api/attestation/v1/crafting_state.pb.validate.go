@@ -624,6 +624,8 @@ func (m *Attestation_Material) validate(all bool) error {
 
 	// no validation rules for UploadedToCas
 
+	// no validation rules for InlineCas
+
 	switch v := m.M.(type) {
 	case *Attestation_Material_String_:
 		if v == nil {
@@ -1153,6 +1155,8 @@ func (m *Attestation_Material_Artifact) validate(all bool) error {
 	}
 
 	// no validation rules for IsSubject
+
+	// no validation rules for Content
 
 	if len(errors) > 0 {
 		return Attestation_Material_ArtifactMultiError(errors)

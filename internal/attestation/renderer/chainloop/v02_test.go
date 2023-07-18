@@ -159,9 +159,32 @@ func TestNormalizeMaterial(t *testing.T) {
 			want: &NormalizedMaterial{
 				Name:          "foo",
 				Type:          "ARTIFACT",
-				Value:         "artifact.tgz",
+				Filename:      "artifact.tgz",
 				Hash:          &crv1.Hash{Algorithm: "sha256", Hex: "deadbeef"},
 				UploadedToCAS: true,
+			},
+		},
+		{
+			name: "valid artifact material, inline content",
+			input: &slsa_v1.ResourceDescriptor{
+				Annotations: map[string]interface{}{
+					"chainloop.material.name":       "foo",
+					"chainloop.material.type":       "ARTIFACT",
+					"chainloop.material.cas.inline": true,
+				},
+				Digest: map[string]string{
+					"sha256": "deadbeef",
+				},
+				Name:    "artifact.tgz",
+				Content: []byte("this is an inline material"),
+			},
+			want: &NormalizedMaterial{
+				Name:           "foo",
+				Type:           "ARTIFACT",
+				Filename:       "artifact.tgz",
+				Value:          "this is an inline material",
+				Hash:           &crv1.Hash{Algorithm: "sha256", Hex: "deadbeef"},
+				EmbeddedInline: true,
 			},
 		},
 		{

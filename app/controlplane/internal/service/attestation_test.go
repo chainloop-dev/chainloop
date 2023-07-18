@@ -44,6 +44,12 @@ func TestExtractMaterials(t *testing.T) {
 					Value: "bar",
 					Hash:  &crv1.Hash{Algorithm: "sha256", Hex: "deadbeef"},
 				},
+				{
+					Name:  "image",
+					Type:  "CONTAINER_IMAGE",
+					Value: "docker.io/nginx",
+					Hash:  &crv1.Hash{Algorithm: "sha256", Hex: "deadbeef"},
+				},
 			},
 			want: []*cpAPI.AttestationItem_Material{
 				{
@@ -56,14 +62,20 @@ func TestExtractMaterials(t *testing.T) {
 					Type:  "ARTIFACT",
 					Value: "bar@sha256:deadbeef",
 				},
+				{
+					Name:  "image",
+					Type:  "CONTAINER_IMAGE",
+					Value: "docker.io/nginx@sha256:deadbeef",
+				},
 			},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := extractMaterials(tc.input)
-			assert.Equal(t, got, tc.want)
+			got, err := extractMaterials(tc.input)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.want, got)
 		})
 	}
 }

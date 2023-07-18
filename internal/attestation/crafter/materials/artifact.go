@@ -27,19 +27,19 @@ import (
 
 type ArtifactCrafter struct {
 	*crafterCommon
-	uploader casclient.Uploader
+	backend *casclient.CASBackend
 }
 
-func NewArtifactCrafter(schema *schemaapi.CraftingSchema_Material, uploader casclient.Uploader, l *zerolog.Logger) (*ArtifactCrafter, error) {
+func NewArtifactCrafter(schema *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, l *zerolog.Logger) (*ArtifactCrafter, error) {
 	if schema.Type != schemaapi.CraftingSchema_Material_ARTIFACT {
 		return nil, fmt.Errorf("material type is not artifact")
 	}
 
 	craftCommon := &crafterCommon{logger: l, input: schema}
-	return &ArtifactCrafter{uploader: uploader, crafterCommon: craftCommon}, nil
+	return &ArtifactCrafter{backend: backend, crafterCommon: craftCommon}, nil
 }
 
 // Craft will calculate the digest of the artifact, simulate an upload and return the material definition
 func (i *ArtifactCrafter) Craft(ctx context.Context, artifactPath string) (*api.Attestation_Material, error) {
-	return uploadAndCraft(ctx, i.input, i.uploader, artifactPath)
+	return uploadAndCraft(ctx, i.input, i.backend, artifactPath, i.logger)
 }

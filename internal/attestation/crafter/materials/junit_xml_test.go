@@ -111,7 +111,8 @@ func TestJUnitXMLCraft(t *testing.T) {
 					}, nil)
 			}
 
-			crafter, err := materials.NewJUnitXMLCrafter(schema, uploader, &l)
+			backend := &casclient.CASBackend{Uploader: uploader}
+			crafter, err := materials.NewJUnitXMLCrafter(schema, backend, &l)
 			require.NoError(t, err)
 
 			got, err := crafter.Craft(context.TODO(), tc.filePath)
@@ -127,7 +128,7 @@ func TestJUnitXMLCraft(t *testing.T) {
 
 			// The result includes the digest reference
 			assert.Equal(got.GetArtifact(), &attestationApi.Attestation_Material_Artifact{
-				Id: "test", Digest: "deadbeef", Name: "test.xml",
+				Id: "test", Digest: "sha256:e9c941b25c06d8bd98205122cbc827504c6d03d37b7f4afd7ed03b3eeec789e2", Name: "junit.xml",
 			})
 		})
 	}

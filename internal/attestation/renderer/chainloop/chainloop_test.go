@@ -63,8 +63,9 @@ func TestExtractPredicate(t *testing.T) {
 			materials: []*NormalizedMaterial{
 				{
 					Name: "binary", Type: "ARTIFACT",
-					Value: "main.go",
-					Hash:  &crv1.Hash{Algorithm: "sha256", Hex: "8fce0203a4efaac3b08ee3ad769233039faa762a3da0777c45b315f398f0c150"},
+					Filename:      "main.go",
+					Hash:          &crv1.Hash{Algorithm: "sha256", Hex: "8fce0203a4efaac3b08ee3ad769233039faa762a3da0777c45b315f398f0c150"},
+					UploadedToCAS: true,
 				},
 				{
 					Name: "image", Type: "CONTAINER_IMAGE",
@@ -73,8 +74,16 @@ func TestExtractPredicate(t *testing.T) {
 				},
 				{
 					Name: "sbom", Type: "SBOM_CYCLONEDX_JSON",
-					Value: "sbom.cyclonedx.json",
-					Hash:  &crv1.Hash{Algorithm: "sha256", Hex: "16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c"},
+					Filename:      "sbom.cyclonedx.json",
+					Hash:          &crv1.Hash{Algorithm: "sha256", Hex: "16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c"},
+					UploadedToCAS: true,
+				},
+				{
+					Name: "sbom", Type: "SBOM_CYCLONEDX_JSON",
+					Filename:       "inline-sbom.json",
+					Hash:           &crv1.Hash{Algorithm: "sha256", Hex: "16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c"},
+					EmbeddedInline: true,
+					Value:          "hello inline!",
 				},
 				{
 					Name: "stringvar", Type: "STRING",

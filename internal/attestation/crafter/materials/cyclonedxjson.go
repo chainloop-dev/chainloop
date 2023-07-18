@@ -28,17 +28,17 @@ import (
 )
 
 type CyclonedxJSONCrafter struct {
-	uploader casclient.Uploader
+	backend *casclient.CASBackend
 	*crafterCommon
 }
 
-func NewCyclonedxJSONCrafter(materialSchema *schemaapi.CraftingSchema_Material, uploader casclient.Uploader, l *zerolog.Logger) (*CyclonedxJSONCrafter, error) {
+func NewCyclonedxJSONCrafter(materialSchema *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, l *zerolog.Logger) (*CyclonedxJSONCrafter, error) {
 	if materialSchema.Type != schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON {
 		return nil, fmt.Errorf("material type is not cyclonedx json")
 	}
 
 	return &CyclonedxJSONCrafter{
-		uploader:      uploader,
+		backend:       backend,
 		crafterCommon: &crafterCommon{logger: l, input: materialSchema},
 	}, nil
 }
@@ -62,5 +62,5 @@ func (i *CyclonedxJSONCrafter) Craft(ctx context.Context, filePath string) (*api
 		return nil, fmt.Errorf("invalid cyclonedx sbom file: %w", ErrInvalidMaterialType)
 	}
 
-	return uploadAndCraft(ctx, i.input, i.uploader, filePath)
+	return uploadAndCraft(ctx, i.input, i.backend, filePath, i.logger)
 }

@@ -298,10 +298,15 @@ func bizAttestationToPb(att *biz.Attestation) (*cpAPI.AttestationItem, error) {
 		return nil, fmt.Errorf("error extracting predicate from attestation: %w", err)
 	}
 
+	materials, err := extractMaterials(predicate.GetMaterials())
+	if err != nil {
+		return nil, fmt.Errorf("error extracting materials from attestation: %w", err)
+	}
+
 	return &cpAPI.AttestationItem{
 		Envelope:  encodedAttestation,
 		EnvVars:   extractEnvVariables(predicate.GetEnvVars()),
-		Materials: extractMaterials(predicate.GetMaterials()),
+		Materials: materials,
 	}, nil
 }
 
@@ -319,18 +324,23 @@ func extractEnvVariables(in map[string]string) []*cpAPI.AttestationItem_EnvVaria
 	return res
 }
 
-func extractMaterials(in []*chainloop.NormalizedMaterial) []*cpAPI.AttestationItem_Material {
+func extractMaterials(in []*chainloop.NormalizedMaterial) ([]*cpAPI.AttestationItem_Material, error) {
 	res := make([]*cpAPI.AttestationItem_Material, 0, len(in))
 	for _, m := range in {
 		// Initialize simply with the value
 		displayValue := m.Value
 		// Override if there is a hash attached
 		if m.Hash != nil {
-			displayValue = fmt.Sprintf("%s@%s", m.Value, m.Hash)
+			name := m.Value
+			if m.EmbeddedInline || m.UploadedToCAS {
+				name = m.Filename
+			}
+
+			displayValue = fmt.Sprintf("%s@%s", name, m.Hash)
 		}
 
 		res = append(res, &cpAPI.AttestationItem_Material{Name: m.Name, Value: displayValue, Type: m.Type})
 	}
 
-	return res
+	return res, nil
 }

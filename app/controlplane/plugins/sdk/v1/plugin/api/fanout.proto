@@ -110,6 +110,7 @@ message ExecuteRequest {
     string value = 4;
     string hash = 5;
     bool uploaded_to_cas = 6;
+    string file_name = 7;
   }
 
   message Metadata {

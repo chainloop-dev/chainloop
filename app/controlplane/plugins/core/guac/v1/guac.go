@@ -159,7 +159,7 @@ func (i *Integration) Execute(ctx context.Context, req *sdk.ExecutionRequest) er
 
 	// 2 - Upload all the materials, in our case they are SBOMs
 	for _, sbom := range req.Input.Materials {
-		filename := uniqueFilename(pathPrefix, sbom.Value, sbom.Hash.Hex)
+		filename := uniqueFilename(pathPrefix, sbom.Filename, sbom.Hash.Hex)
 		if err := uploadToBucket(ctx, bucket, filename, sbom.Content, req.ChainloopMetadata, i.Logger); err != nil {
 			return fmt.Errorf("uploading the SBOM to the bucket: %w", err)
 		}
