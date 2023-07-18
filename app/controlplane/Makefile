@@ -60,7 +60,7 @@ lint: check-golangci-lint-tool check-buf-tool
 
 .PHONY: generate
 # generate proto bindings, wire injectors, and ent models
-generate: check-wire-tool api config
+generate: check-wire-tool api config migration_new
 	go generate ./...
 
 .PHONY: all

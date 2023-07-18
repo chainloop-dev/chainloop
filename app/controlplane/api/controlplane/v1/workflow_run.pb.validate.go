@@ -2268,6 +2268,35 @@ func (m *AttestationServiceGetUploadCredsResponse_Result) validate(all bool) err
 
 	// no validation rules for Token
 
+	if all {
+		switch v := interface{}(m.GetBackend()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AttestationServiceGetUploadCredsResponse_ResultValidationError{
+					field:  "Backend",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AttestationServiceGetUploadCredsResponse_ResultValidationError{
+					field:  "Backend",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetBackend()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AttestationServiceGetUploadCredsResponse_ResultValidationError{
+				field:  "Backend",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return AttestationServiceGetUploadCredsResponse_ResultMultiError(errors)
 	}
