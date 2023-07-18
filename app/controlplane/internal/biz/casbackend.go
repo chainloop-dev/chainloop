@@ -159,8 +159,40 @@ func (uc *CASBackendUseCase) CreateInlineFallbackBackend(ctx context.Context, or
 	return uc.repo.Create(ctx, &CASBackendCreateOpts{
 		CASBackendOpts: &CASBackendOpts{
 			Provider: CASBackendInline, Default: true,
-			Description: "Embed artifacts content in the attestation",
+			Description: "Embed artifacts content in the attestation (fallback)",
 			OrgID:       orgUUID,
+		},
+	})
+}
+
+// Find inline backend and set is default status
+func (uc *CASBackendUseCase) SetInlineBackendDefault(ctx context.Context, orgID string, defaultB bool) (*CASBackend, error) {
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	backends, err := uc.repo.List(ctx, orgUUID)
+	if err != nil {
+		return nil, err
+	}
+
+	var backend *CASBackend
+	for _, b := range backends {
+		if b.Provider == CASBackendInline {
+			backend = b
+			break
+		}
+	}
+
+	if backend == nil {
+		return nil, NewErrNotFound("Inline CAS Backend")
+	}
+
+	return uc.repo.Update(ctx, &CASBackendUpdateOpts{
+		ID: backend.ID,
+		CASBackendOpts: &CASBackendOpts{
+			Default: defaultB,
 		},
 	})
 }
@@ -204,10 +236,6 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id, description 
 		return nil, NewErrNotFound("CAS Backend")
 	}
 
-	if backend.Provider == CASBackendInline {
-		return nil, NewErrValidation(errors.New("can't delete inline CAS backend"))
-	}
-
 	var secretName string
 	// We want to rotate credentials
 	if creds != nil {
@@ -217,12 +245,24 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id, description 
 		}
 	}
 
-	return uc.repo.Update(ctx, &CASBackendUpdateOpts{
+	r, err := uc.repo.Update(ctx, &CASBackendUpdateOpts{
 		ID: uuid,
 		CASBackendOpts: &CASBackendOpts{
 			SecretName: secretName, Default: defaultB, Description: description, OrgID: orgUUID,
 		},
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	// if we removed the default backend status, we set the inline as default
+	if !defaultB && backend.Provider != CASBackendInline {
+		if _, err := uc.SetInlineBackendDefault(ctx, orgID, true); err != nil {
+			return nil, err
+		}
+	}
+
+	return r, nil
 }
 
 // Deprecated: use Create and update methods separately instead
@@ -291,6 +331,10 @@ func (uc *CASBackendUseCase) SoftDelete(ctx context.Context, orgID, id string) e
 
 	if backend.Provider == CASBackendInline {
 		return NewErrValidation(errors.New("can't delete inline CAS backend"))
+	}
+
+	if _, err := uc.SetInlineBackendDefault(ctx, orgID, true); err != nil {
+		return err
 	}
 
 	return uc.repo.SoftDelete(ctx, backendUUID)

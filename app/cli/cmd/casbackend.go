@@ -54,7 +54,7 @@ func newCASBackendUpdateCmd() *cobra.Command {
 	cmd.PersistentFlags().Bool("default", false, "set the backend as default in your organization")
 	cmd.PersistentFlags().String("description", "", "descriptive information for this registration")
 
-	cmd.AddCommand(newCASBackendUpdateOCICmd())
+	cmd.AddCommand(newCASBackendUpdateOCICmd(), newCASBackendUpdateInlineCmd())
 	return cmd
 }
 
