@@ -18,6 +18,7 @@ package action
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
@@ -63,7 +64,7 @@ func (action *AttestationAdd) Run(k, v string) error {
 		return err
 	}
 
-	// Get upload creds for the current attestation and set up CAS client
+	// Get upload creds and CASbackend for the current attestation and set up CAS client
 	client := pb.NewAttestationServiceClient(action.CPConnection)
 	creds, err := client.GetUploadCreds(context.Background(),
 		&pb.AttestationServiceGetUploadCredsRequest{
@@ -73,29 +74,31 @@ func (action *AttestationAdd) Run(k, v string) error {
 	if err != nil {
 		return err
 	}
-	artifactCASConn, err := grpcconn.New(action.casURI, creds.Result.Token, action.connectionInsecure)
-	if err != nil {
-		return err
-	}
-	defer artifactCASConn.Close()
 
-	cc := casclient.New(artifactCASConn, casclient.WithLogger(action.Logger))
-
-	// // TODO: retrieve this information from backend
-	backend := &casclient.CASBackend{
-		Uploader: cc,
-		Name:     "OCI",
-		// 100MB max size
-		MaxSize: 100 * 1024 * 1024,
+	b := creds.GetResult().GetBackend()
+	if b == nil {
+		return fmt.Errorf("no backend found in upload creds")
 	}
 
-	// backend := &casclient.CASBackend{
-	// 	Name: "INLINE",
-	// 	// 500KB max size
-	// 	MaxSize: 500 * 1024,
-	// }
+	// Define CASbackend information based on the API response
+	casBackend := &casclient.CASBackend{
+		Name:    b.Provider,
+		MaxSize: b.GetLimits().MaxBytes,
+	}
 
-	if err := action.c.AddMaterial(k, v, backend); err != nil {
+	// Some CASBackends will actually upload information to the CAS server
+	// in such case we need to set up a connection
+	if !b.IsInline && creds.Result.Token != "" {
+		artifactCASConn, err := grpcconn.New(action.casURI, creds.Result.Token, action.connectionInsecure)
+		if err != nil {
+			return err
+		}
+		defer artifactCASConn.Close()
+
+		casBackend.Uploader = casclient.New(artifactCASConn, casclient.WithLogger(action.Logger))
+	}
+
+	if err := action.c.AddMaterial(k, v, casBackend); err != nil {
 		action.Logger.Err(err).Msg("adding material")
 		return err
 	}

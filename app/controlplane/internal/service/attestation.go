@@ -246,15 +246,16 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 
 	// Find the CAS backend associated with this workflowRun, that's the one that will be used to upload the materials
 	// NOTE: currently we only support one backend per workflowRun but this will change in the future
-	var secretName string
+
 	// DEPRECATED: if no workflow run is provided, we use the default repository
 	// Maintained for compatibility reasons with older versions of the CLI
+	var backend *biz.CASBackend
 	if req.WorkflowRunId == "" {
 		s.log.Warn("DEPRECATED: using main repository to get upload creds")
-		repo, err := s.casUC.FindDefaultBackend(ctx, wf.OrgID.String())
+		backend, err = s.casUC.FindDefaultBackend(ctx, wf.OrgID.String())
 		if err != nil && !biz.IsNotFound(err) {
 			return nil, sl.LogAndMaskErr(err, s.log)
-		} else if repo == nil {
+		} else if backend == nil {
 			return nil, errors.NotFound("not found", "main repository not found")
 		}
 	} else {
@@ -272,15 +273,21 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 
 		s.log.Infow("msg", "generating upload credentials for CAS backend", "ID", wRun.CASBackends[0].ID, "name", wRun.CASBackends[0].Location, "workflowRun", req.WorkflowRunId)
 
-		secretName = wRun.CASBackends[0].SecretName
+		backend = wRun.CASBackends[0]
 	}
 
-	t, err := s.casCredsUseCase.GenerateTemporaryCredentials(secretName, casJWT.Uploader)
-	if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+	// Return the backend information and associated credentials (if applicable)
+	resp := &cpAPI.AttestationServiceGetUploadCredsResponse_Result{Backend: bizOCASBackendToPb(backend)}
+	if backend.SecretName != "" {
+		t, err := s.casCredsUseCase.GenerateTemporaryCredentials(backend.SecretName, casJWT.Uploader)
+		if err != nil {
+			return nil, sl.LogAndMaskErr(err, s.log)
+		}
+
+		resp.Token = t
 	}
 
-	return &cpAPI.AttestationServiceGetUploadCredsResponse{Result: &cpAPI.AttestationServiceGetUploadCredsResponse_Result{Token: t}}, nil
+	return &cpAPI.AttestationServiceGetUploadCredsResponse{Result: resp}, nil
 }
 
 func bizAttestationToPb(att *biz.Attestation) (*cpAPI.AttestationItem, error) {
