@@ -87,6 +87,7 @@ type CASBackendUpdateOpts struct {
 
 type CASBackendRepo interface {
 	FindDefaultBackend(ctx context.Context, orgID uuid.UUID) (*CASBackend, error)
+	FindFallbackBackend(ctx context.Context, orgID uuid.UUID) (*CASBackend, error)
 	FindByID(ctx context.Context, ID uuid.UUID) (*CASBackend, error)
 	FindByIDInOrg(ctx context.Context, OrgID, ID uuid.UUID) (*CASBackend, error)
 	List(ctx context.Context, orgID uuid.UUID) ([]*CASBackend, error)
@@ -164,6 +165,22 @@ func (uc *CASBackendUseCase) FindByIDInOrg(ctx context.Context, orgID, id string
 	return backend, nil
 }
 
+func (uc *CASBackendUseCase) FindFallbackBackend(ctx context.Context, orgID string) (*CASBackend, error) {
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	backend, err := uc.repo.FindFallbackBackend(ctx, orgUUID)
+	if err != nil {
+		return nil, err
+	} else if backend == nil {
+		return nil, NewErrNotFound("CAS Backend")
+	}
+
+	return backend, nil
+}
+
 func (uc *CASBackendUseCase) CreateInlineFallbackBackend(ctx context.Context, orgID string) (*CASBackend, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
@@ -178,6 +195,24 @@ func (uc *CASBackendUseCase) CreateInlineFallbackBackend(ctx context.Context, or
 			OrgID:       orgUUID,
 		},
 	})
+}
+
+// Set fallback backend as default
+func (uc *CASBackendUseCase) defaultFallbackBackend(ctx context.Context, orgID string) (*CASBackend, error) {
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	backend, err := uc.repo.FindFallbackBackend(ctx, orgUUID)
+	if err != nil {
+		return nil, err
+	} else if backend == nil {
+		// If there is no fallback backend, we skip the update
+		return nil, nil
+	}
+
+	return uc.repo.Update(ctx, &CASBackendUpdateOpts{ID: backend.ID, CASBackendOpts: &CASBackendOpts{Default: true}})
 }
 
 func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, location, description string, provider CASBackendProvider, creds any, defaultB bool) (*CASBackend, error) {
@@ -212,10 +247,10 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id, description 
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	backend, err := uc.repo.FindByIDInOrg(ctx, orgUUID, uuid)
+	before, err := uc.repo.FindByIDInOrg(ctx, orgUUID, uuid)
 	if err != nil {
 		return nil, err
-	} else if backend == nil {
+	} else if before == nil {
 		return nil, NewErrNotFound("CAS Backend")
 	}
 
@@ -228,7 +263,7 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id, description 
 		}
 	}
 
-	r, err := uc.repo.Update(ctx, &CASBackendUpdateOpts{
+	after, err := uc.repo.Update(ctx, &CASBackendUpdateOpts{
 		ID: uuid,
 		CASBackendOpts: &CASBackendOpts{
 			SecretName: secretName, Default: defaultB, Description: description, OrgID: orgUUID,
@@ -238,7 +273,14 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id, description 
 		return nil, err
 	}
 
-	return r, nil
+	// If we just updated the backend from default=true => default=false, we need to set up the fallback as default
+	if before.Default && !after.Default {
+		if _, err := uc.defaultFallbackBackend(ctx, orgID); err != nil {
+			return nil, fmt.Errorf("setting the fallback backend as default: %w", err)
+		}
+	}
+
+	return after, nil
 }
 
 // Deprecated: use Create and update methods separately instead
@@ -309,7 +351,18 @@ func (uc *CASBackendUseCase) SoftDelete(ctx context.Context, orgID, id string) e
 		return NewErrValidation(errors.New("can't delete the fallback CAS backend"))
 	}
 
-	return uc.repo.SoftDelete(ctx, backendUUID)
+	if err := uc.repo.SoftDelete(ctx, backendUUID); err != nil {
+		return err
+	}
+
+	// If we just deleted the default backend, we need to set up the fallback as default
+	if backend.Default {
+		if _, err := uc.defaultFallbackBackend(ctx, orgID); err != nil {
+			return fmt.Errorf("setting the fallback backend as default: %w", err)
+		}
+	}
+
+	return nil
 }
 
 // Delete will delete the secret in the external secrets manager and the CAS backend from the database

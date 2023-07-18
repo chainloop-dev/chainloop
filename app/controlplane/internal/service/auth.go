@@ -216,12 +216,10 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) (
 	}
 
 	// Create a default inline CAS backend if none exists
-	backend, err := svc.casBackendUseCase.FindDefaultBackend(ctx, currentOrg.ID)
+	backend, err := svc.casBackendUseCase.FindFallbackBackend(ctx, currentOrg.ID)
 	if err != nil && !biz.IsNotFound(err) {
 		return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
-	}
-
-	if backend == nil {
+	} else if backend == nil {
 		if _, err := svc.casBackendUseCase.CreateInlineFallbackBackend(ctx, currentOrg.ID); err != nil {
 			return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
 		}

@@ -57,9 +57,22 @@ func (r *CASBackendRepo) List(ctx context.Context, orgID uuid.UUID) ([]*biz.CASB
 	return res, nil
 }
 
+// FindDefaultBackend finds the CAS backend that's set as default for the given organization
 func (r *CASBackendRepo) FindDefaultBackend(ctx context.Context, orgID uuid.UUID) (*biz.CASBackend, error) {
 	backend, err := orgScopedQuery(r.data.db, orgID).QueryCasBackends().WithOrganization().
 		Where(casbackend.Default(true), casbackend.DeletedAtIsNil()).
+		Only(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, err
+	}
+
+	return entCASBackendToBiz(backend), nil
+}
+
+// FindFallbackBackend finds the CAS backend that's set as fallback for the given organization
+func (r *CASBackendRepo) FindFallbackBackend(ctx context.Context, orgID uuid.UUID) (*biz.CASBackend, error) {
+	backend, err := orgScopedQuery(r.data.db, orgID).QueryCasBackends().WithOrganization().
+		Where(casbackend.Fallback(true), casbackend.DeletedAtIsNil()).
 		Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
