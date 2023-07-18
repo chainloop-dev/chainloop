@@ -35,8 +35,8 @@ const (
 	FieldDefault = "default"
 	// FieldDeletedAt holds the string denoting the deleted_at field in the database.
 	FieldDeletedAt = "deleted_at"
-	// FieldInline holds the string denoting the inline field in the database.
-	FieldInline = "inline"
+	// FieldFallback holds the string denoting the fallback field in the database.
+	FieldFallback = "fallback"
 	// EdgeOrganization holds the string denoting the organization edge name in mutations.
 	EdgeOrganization = "organization"
 	// EdgeWorkflowRun holds the string denoting the workflow_run edge name in mutations.
@@ -69,7 +69,7 @@ var Columns = []string{
 	FieldValidatedAt,
 	FieldDefault,
 	FieldDeletedAt,
-	FieldInline,
+	FieldFallback,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "cas_backends"
@@ -106,8 +106,8 @@ var (
 	DefaultValidatedAt func() time.Time
 	// DefaultDefault holds the default value on creation for the "default" field.
 	DefaultDefault bool
-	// DefaultInline holds the default value on creation for the "inline" field.
-	DefaultInline bool
+	// DefaultFallback holds the default value on creation for the "fallback" field.
+	DefaultFallback bool
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -187,9 +187,9 @@ func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDeletedAt, opts...).ToFunc()
 }
 
-// ByInline orders the results by the inline field.
-func ByInline(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldInline, opts...).ToFunc()
+// ByFallback orders the results by the fallback field.
+func ByFallback(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldFallback, opts...).ToFunc()
 }
 
 // ByOrganizationField orders the results by organization field.

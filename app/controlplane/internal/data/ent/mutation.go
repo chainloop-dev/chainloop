@@ -65,7 +65,7 @@ type CASBackendMutation struct {
 	validated_at        *time.Time
 	_default            *bool
 	deleted_at          *time.Time
-	inline              *bool
+	fallback            *bool
 	clearedFields       map[string]struct{}
 	organization        *uuid.UUID
 	clearedorganization bool
@@ -531,40 +531,40 @@ func (m *CASBackendMutation) ResetDeletedAt() {
 	delete(m.clearedFields, casbackend.FieldDeletedAt)
 }
 
-// SetInline sets the "inline" field.
-func (m *CASBackendMutation) SetInline(b bool) {
-	m.inline = &b
+// SetFallback sets the "fallback" field.
+func (m *CASBackendMutation) SetFallback(b bool) {
+	m.fallback = &b
 }
 
-// Inline returns the value of the "inline" field in the mutation.
-func (m *CASBackendMutation) Inline() (r bool, exists bool) {
-	v := m.inline
+// Fallback returns the value of the "fallback" field in the mutation.
+func (m *CASBackendMutation) Fallback() (r bool, exists bool) {
+	v := m.fallback
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldInline returns the old "inline" field's value of the CASBackend entity.
+// OldFallback returns the old "fallback" field's value of the CASBackend entity.
 // If the CASBackend object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CASBackendMutation) OldInline(ctx context.Context) (v bool, err error) {
+func (m *CASBackendMutation) OldFallback(ctx context.Context) (v bool, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldInline is only allowed on UpdateOne operations")
+		return v, errors.New("OldFallback is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldInline requires an ID field in the mutation")
+		return v, errors.New("OldFallback requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldInline: %w", err)
+		return v, fmt.Errorf("querying old value for OldFallback: %w", err)
 	}
-	return oldValue.Inline, nil
+	return oldValue.Fallback, nil
 }
 
-// ResetInline resets all changes to the "inline" field.
-func (m *CASBackendMutation) ResetInline() {
-	m.inline = nil
+// ResetFallback resets all changes to the "fallback" field.
+func (m *CASBackendMutation) ResetFallback() {
+	m.fallback = nil
 }
 
 // SetOrganizationID sets the "organization" edge to the Organization entity by id.
@@ -722,8 +722,8 @@ func (m *CASBackendMutation) Fields() []string {
 	if m.deleted_at != nil {
 		fields = append(fields, casbackend.FieldDeletedAt)
 	}
-	if m.inline != nil {
-		fields = append(fields, casbackend.FieldInline)
+	if m.fallback != nil {
+		fields = append(fields, casbackend.FieldFallback)
 	}
 	return fields
 }
@@ -751,8 +751,8 @@ func (m *CASBackendMutation) Field(name string) (ent.Value, bool) {
 		return m.Default()
 	case casbackend.FieldDeletedAt:
 		return m.DeletedAt()
-	case casbackend.FieldInline:
-		return m.Inline()
+	case casbackend.FieldFallback:
+		return m.Fallback()
 	}
 	return nil, false
 }
@@ -780,8 +780,8 @@ func (m *CASBackendMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldDefault(ctx)
 	case casbackend.FieldDeletedAt:
 		return m.OldDeletedAt(ctx)
-	case casbackend.FieldInline:
-		return m.OldInline(ctx)
+	case casbackend.FieldFallback:
+		return m.OldFallback(ctx)
 	}
 	return nil, fmt.Errorf("unknown CASBackend field %s", name)
 }
@@ -854,12 +854,12 @@ func (m *CASBackendMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDeletedAt(v)
 		return nil
-	case casbackend.FieldInline:
+	case casbackend.FieldFallback:
 		v, ok := value.(bool)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetInline(v)
+		m.SetFallback(v)
 		return nil
 	}
 	return fmt.Errorf("unknown CASBackend field %s", name)
@@ -952,8 +952,8 @@ func (m *CASBackendMutation) ResetField(name string) error {
 	case casbackend.FieldDeletedAt:
 		m.ResetDeletedAt()
 		return nil
-	case casbackend.FieldInline:
-		m.ResetInline()
+	case casbackend.FieldFallback:
+		m.ResetFallback()
 		return nil
 	}
 	return fmt.Errorf("unknown CASBackend field %s", name)

@@ -34,11 +34,13 @@ func TestEntCASBackendTo(t *testing.T) {
 		Description: "test-description",
 		CreatedAt:   time.Now(),
 		Default:     true,
-		Inline:      false,
 	}
 
 	testBackendInline := testBackend
-	testBackendInline.Inline = true
+	testBackendInline.Provider = "INLINE"
+
+	testBackendFallback := testBackend
+	testBackendFallback.Fallback = true
 
 	tests := []struct {
 		input  *ent.CASBackend
@@ -63,11 +65,24 @@ func TestEntCASBackendTo(t *testing.T) {
 			SecretName:  testBackend.SecretName,
 			Description: testBackend.Description,
 			CreatedAt:   toTimePtr(testBackend.CreatedAt),
-			Provider:    testBackend.Provider,
+			Provider:    "INLINE",
 			Default:     true,
 			Inline:      true,
 			Limits: &biz.CASBackendLimits{
 				MaxBytes: biz.CASBackendInlineDefaultMaxBytes,
+			},
+		}},
+		{&testBackendFallback, &biz.CASBackend{
+			ID:          testBackend.ID,
+			Location:    testBackend.Location,
+			SecretName:  testBackend.SecretName,
+			Description: testBackend.Description,
+			CreatedAt:   toTimePtr(testBackend.CreatedAt),
+			Provider:    testBackend.Provider,
+			Default:     true,
+			Fallback:    true,
+			Limits: &biz.CASBackendLimits{
+				MaxBytes: biz.CASBackendDefaultMaxBytes,
 			},
 		}},
 	}

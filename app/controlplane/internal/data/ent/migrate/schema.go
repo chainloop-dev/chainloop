@@ -20,7 +20,7 @@ var (
 		{Name: "validated_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "default", Type: field.TypeBool, Default: false},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
-		{Name: "inline", Type: field.TypeBool, Default: false},
+		{Name: "fallback", Type: field.TypeBool, Default: false},
 		{Name: "organization_cas_backends", Type: field.TypeUUID},
 	}
 	// CasBackendsTable holds the schema information for the "cas_backends" table.

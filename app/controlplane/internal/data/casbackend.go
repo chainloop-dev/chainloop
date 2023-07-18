@@ -92,7 +92,7 @@ func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateO
 		SetOrganizationID(opts.OrgID).
 		SetLocation(opts.Location).
 		SetDescription(opts.Description).
-		SetInline(opts.Inline).
+		SetFallback(opts.Fallback).
 		SetProvider(opts.Provider).
 		SetDefault(opts.Default).
 		SetSecretName(opts.SecretName).
@@ -207,7 +207,8 @@ func entCASBackendToBiz(backend *ent.CASBackend) *biz.CASBackend {
 		MaxBytes: biz.CASBackendDefaultMaxBytes,
 	}
 
-	if backend.Inline {
+	inline := backend.Provider == biz.CASBackendInline
+	if inline {
 		limits.MaxBytes = biz.CASBackendInlineDefaultMaxBytes
 	}
 
@@ -221,8 +222,9 @@ func entCASBackendToBiz(backend *ent.CASBackend) *biz.CASBackend {
 		ValidationStatus: backend.ValidationStatus,
 		Provider:         backend.Provider,
 		Default:          backend.Default,
-		Inline:           backend.Inline,
+		Inline:           inline,
 		Limits:           limits,
+		Fallback:         backend.Fallback,
 	}
 
 	if org := backend.Edges.Organization; org != nil {

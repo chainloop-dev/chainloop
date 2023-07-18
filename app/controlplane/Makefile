@@ -34,7 +34,7 @@ migration_apply: check-atlas-tool migration_hash
 
 .PHONY: migration_new
 # generate new migration if needed from the current ent schema
-migration_new: check-atlas-tool
+migration_new: check-atlas-tool migration_hash
 	atlas migrate diff --dir ${local_migrations_dir} --to "ent://internal/data/ent/schema" --dev-url "docker://postgres/15/test?search_path=public"
 
 .PHONY: migration_hash

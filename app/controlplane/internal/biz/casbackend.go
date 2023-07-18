@@ -57,6 +57,9 @@ type CASBackend struct {
 	Default bool
 	// it's a inline backend, the artifacts are embedded in the attestation
 	Inline bool
+	// It's a fallback backend, it cannot be deleted
+	Fallback bool
+
 	Limits *CASBackendLimits
 }
 
@@ -74,7 +77,7 @@ type CASBackendOpts struct {
 
 type CASBackendCreateOpts struct {
 	*CASBackendOpts
-	Inline bool
+	Fallback bool
 }
 
 type CASBackendUpdateOpts struct {
@@ -168,7 +171,7 @@ func (uc *CASBackendUseCase) CreateInlineFallbackBackend(ctx context.Context, or
 	}
 
 	return uc.repo.Create(ctx, &CASBackendCreateOpts{
-		Inline: true,
+		Fallback: true,
 		CASBackendOpts: &CASBackendOpts{
 			Provider: CASBackendInline, Default: true,
 			Description: "Embed artifacts content in the attestation (fallback)",
@@ -302,8 +305,8 @@ func (uc *CASBackendUseCase) SoftDelete(ctx context.Context, orgID, id string) e
 		return NewErrNotFound("CAS Backend")
 	}
 
-	if backend.Provider == CASBackendInline {
-		return NewErrValidation(errors.New("can't delete inline CAS backend"))
+	if backend.Fallback {
+		return NewErrValidation(errors.New("can't delete the fallback CAS backend"))
 	}
 
 	return uc.repo.SoftDelete(ctx, backendUUID)
