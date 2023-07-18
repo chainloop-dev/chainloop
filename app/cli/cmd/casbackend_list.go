@@ -22,6 +22,7 @@ import (
 	"code.cloudfoundry.org/bytefmt"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/muesli/reflow/wrap"
 	"github.com/spf13/cobra"
 )
 
@@ -63,7 +64,7 @@ func casBackendListTableOutput(backends []*action.CASBackendItem) error {
 			limits = fmt.Sprintf("MaxSize: %s", bytefmt.ByteSize(uint64(b.Limits.MaxBytes)))
 		}
 
-		r := table.Row{b.ID, b.Location, b.Provider, b.Description, limits, b.Default}
+		r := table.Row{b.ID, wrap.String(b.Location, 35), b.Provider, wrap.String(b.Description, 35), limits, b.Default}
 		if full {
 			r = append(r, b.ValidationStatus,
 				b.CreatedAt.Format(time.RFC822),
