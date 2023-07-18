@@ -99,8 +99,7 @@ func (action *AttestationAdd) Run(k, v string) error {
 	}
 
 	if err := action.c.AddMaterial(k, v, casBackend); err != nil {
-		action.Logger.Err(err).Msg("adding material")
-		return err
+		return fmt.Errorf("adding material: %w", err)
 	}
 
 	return nil
