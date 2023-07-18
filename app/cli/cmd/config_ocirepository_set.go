@@ -24,8 +24,9 @@ func newOCIRepositoryCreateCmd() *cobra.Command {
 	var repo, username, password string
 
 	cmd := &cobra.Command{
-		Use:   "set-oci-repo",
-		Short: "Set the OCI repository associated with your current org",
+		Use:        "set-oci-repo",
+		Deprecated: "use 'chainloop cas-backend' instead",
+		Short:      "Set the OCI repository associated with your current org",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts := &action.NewOCIRepositorySaveOpts{
 				Repo: repo, Username: username, Password: password,
