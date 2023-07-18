@@ -308,7 +308,7 @@ func (uc *CASBackendUseCase) CreateOrUpdate(ctx context.Context, orgID, name, us
 		return nil, fmt.Errorf("checking for existing CAS backends: %w", err)
 	}
 
-	if backend != nil {
+	if backend != nil && backend.Provider == provider {
 		return uc.repo.Update(ctx, &CASBackendUpdateOpts{
 			CASBackendOpts: &CASBackendOpts{
 				Location: name, SecretName: secretName, Provider: provider, Default: defaultB,
