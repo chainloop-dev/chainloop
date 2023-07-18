@@ -35,6 +35,8 @@ const (
 	FieldDefault = "default"
 	// FieldDeletedAt holds the string denoting the deleted_at field in the database.
 	FieldDeletedAt = "deleted_at"
+	// FieldInline holds the string denoting the inline field in the database.
+	FieldInline = "inline"
 	// EdgeOrganization holds the string denoting the organization edge name in mutations.
 	EdgeOrganization = "organization"
 	// EdgeWorkflowRun holds the string denoting the workflow_run edge name in mutations.
@@ -67,6 +69,7 @@ var Columns = []string{
 	FieldValidatedAt,
 	FieldDefault,
 	FieldDeletedAt,
+	FieldInline,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "cas_backends"
@@ -103,6 +106,8 @@ var (
 	DefaultValidatedAt func() time.Time
 	// DefaultDefault holds the default value on creation for the "default" field.
 	DefaultDefault bool
+	// DefaultInline holds the default value on creation for the "inline" field.
+	DefaultInline bool
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -180,6 +185,11 @@ func ByDefault(opts ...sql.OrderTermOption) OrderOption {
 // ByDeletedAt orders the results by the deleted_at field.
 func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDeletedAt, opts...).ToFunc()
+}
+
+// ByInline orders the results by the inline field.
+func ByInline(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldInline, opts...).ToFunc()
 }
 
 // ByOrganizationField orders the results by organization field.

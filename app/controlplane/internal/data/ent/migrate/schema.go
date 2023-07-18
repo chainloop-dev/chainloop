@@ -20,6 +20,7 @@ var (
 		{Name: "validated_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "default", Type: field.TypeBool, Default: false},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "inline", Type: field.TypeBool, Default: false},
 		{Name: "organization_cas_backends", Type: field.TypeUUID},
 	}
 	// CasBackendsTable holds the schema information for the "cas_backends" table.
@@ -30,7 +31,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "cas_backends_organizations_cas_backends",
-				Columns:    []*schema.Column{CasBackendsColumns[10]},
+				Columns:    []*schema.Column{CasBackendsColumns[11]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},

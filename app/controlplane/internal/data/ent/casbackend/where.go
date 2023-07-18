@@ -92,6 +92,11 @@ func DeletedAt(v time.Time) predicate.CASBackend {
 	return predicate.CASBackend(sql.FieldEQ(FieldDeletedAt, v))
 }
 
+// Inline applies equality check predicate on the "inline" field. It's identical to InlineEQ.
+func Inline(v bool) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldEQ(FieldInline, v))
+}
+
 // LocationEQ applies the EQ predicate on the "location" field.
 func LocationEQ(v string) predicate.CASBackend {
 	return predicate.CASBackend(sql.FieldEQ(FieldLocation, v))
@@ -495,6 +500,16 @@ func DeletedAtIsNil() predicate.CASBackend {
 // DeletedAtNotNil applies the NotNil predicate on the "deleted_at" field.
 func DeletedAtNotNil() predicate.CASBackend {
 	return predicate.CASBackend(sql.FieldNotNull(FieldDeletedAt))
+}
+
+// InlineEQ applies the EQ predicate on the "inline" field.
+func InlineEQ(v bool) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldEQ(FieldInline, v))
+}
+
+// InlineNEQ applies the NEQ predicate on the "inline" field.
+func InlineNEQ(v bool) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldNEQ(FieldInline, v))
 }
 
 // HasOrganization applies the HasEdge predicate on the "organization" edge.

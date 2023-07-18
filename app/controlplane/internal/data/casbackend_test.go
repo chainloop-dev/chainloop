@@ -26,7 +26,7 @@ import (
 )
 
 func TestEntCASBackendTo(t *testing.T) {
-	testRepo := &ent.CASBackend{
+	testBackend := ent.CASBackend{
 		ID:          uuid.New(),
 		Location:    "test-repo",
 		Provider:    "test-provider",
@@ -34,21 +34,41 @@ func TestEntCASBackendTo(t *testing.T) {
 		Description: "test-description",
 		CreatedAt:   time.Now(),
 		Default:     true,
+		Inline:      false,
 	}
+
+	testBackendInline := testBackend
+	testBackendInline.Inline = true
 
 	tests := []struct {
 		input  *ent.CASBackend
 		output *biz.CASBackend
 	}{
 		{nil, nil},
-		{testRepo, &biz.CASBackend{
-			ID:          testRepo.ID,
-			Location:    testRepo.Location,
-			SecretName:  testRepo.SecretName,
-			Description: testRepo.Description,
-			CreatedAt:   toTimePtr(testRepo.CreatedAt),
-			Provider:    testRepo.Provider,
+		{&testBackend, &biz.CASBackend{
+			ID:          testBackend.ID,
+			Location:    testBackend.Location,
+			SecretName:  testBackend.SecretName,
+			Description: testBackend.Description,
+			CreatedAt:   toTimePtr(testBackend.CreatedAt),
+			Provider:    testBackend.Provider,
 			Default:     true,
+			Limits: &biz.CASBackendLimits{
+				MaxBytes: biz.CASBackendDefaultMaxBytes,
+			},
+		}},
+		{&testBackendInline, &biz.CASBackend{
+			ID:          testBackend.ID,
+			Location:    testBackend.Location,
+			SecretName:  testBackend.SecretName,
+			Description: testBackend.Description,
+			CreatedAt:   toTimePtr(testBackend.CreatedAt),
+			Provider:    testBackend.Provider,
+			Default:     true,
+			Inline:      true,
+			Limits: &biz.CASBackendLimits{
+				MaxBytes: biz.CASBackendInlineDefaultMaxBytes,
+			},
 		}},
 	}
 

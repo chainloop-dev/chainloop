@@ -51,6 +51,8 @@ func (CASBackend) Fields() []ent.Field {
 			Annotations(&entsql.Annotation{Default: "CURRENT_TIMESTAMP"}),
 		field.Bool("default").Default(false),
 		field.Time("deleted_at").Optional(),
+		// Inline cas backend is a cas backend which content is stored in the attestation
+		field.Bool("inline").Default(false).Immutable(),
 	}
 }
 

@@ -38,6 +38,10 @@ func init() {
 	casbackendDescDefault := casbackendFields[8].Descriptor()
 	// casbackend.DefaultDefault holds the default value on creation for the default field.
 	casbackend.DefaultDefault = casbackendDescDefault.Default.(bool)
+	// casbackendDescInline is the schema descriptor for inline field.
+	casbackendDescInline := casbackendFields[10].Descriptor()
+	// casbackend.DefaultInline holds the default value on creation for the inline field.
+	casbackend.DefaultInline = casbackendDescInline.Default.(bool)
 	// casbackendDescID is the schema descriptor for id field.
 	casbackendDescID := casbackendFields[0].Descriptor()
 	// casbackend.DefaultID holds the default value on creation for the id field.

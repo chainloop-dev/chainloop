@@ -57,6 +57,30 @@ func (s *CASBackendIntegrationTestSuite) TestCreate() {
 			Provider:         backendType,
 			ValidationStatus: "OK",
 			Default:          true,
+			Inline:           false,
+			Limits: &biz.CASBackendLimits{
+				MaxBytes: 104857600,
+			},
+		}, b,
+			cmpopts.IgnoreFields(biz.CASBackend{}, "CreatedAt", "ID", "ValidatedAt", "OrganizationID"),
+		); diff != "" {
+			assert.Failf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	s.Run("create inline", func() {
+		b, err := s.CASBackend.CreateInlineFallbackBackend(context.TODO(), orgID)
+		assert.NoError(err)
+
+		if diff := cmp.Diff(&biz.CASBackend{
+			Description:      "Embed artifacts content in the attestation (fallback)",
+			Provider:         biz.CASBackendInline,
+			Default:          true,
+			Inline:           true,
+			ValidationStatus: "OK",
+			Limits: &biz.CASBackendLimits{
+				MaxBytes: 512000,
+			},
 		}, b,
 			cmpopts.IgnoreFields(biz.CASBackend{}, "CreatedAt", "ID", "ValidatedAt", "OrganizationID"),
 		); diff != "" {
