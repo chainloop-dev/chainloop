@@ -96,25 +96,15 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 		return fmt.Errorf("running validation: %w", err)
 	}
 
-	attestationJSON, err := json.MarshalIndent(req.Input.Attestation.Statement, "", "  ")
+	summary, err := sdk.SummaryTable(req)
 	if err != nil {
-		return fmt.Errorf("error marshaling JSON: %w", err)
+		return fmt.Errorf("error summarizing the request: %w", err)
 	}
 
-	metadata := req.ChainloopMetadata
-	// I was not able to make backticks work in the template
-	a := fmt.Sprintf("\n```\n%s\n```\n", string(attestationJSON))
-	tplData := &templateContent{
-		WorkflowID:      metadata.Workflow.ID,
-		WorkflowName:    metadata.Workflow.Name,
-		WorkflowProject: metadata.Workflow.Project,
-		WorkflowRunID:   metadata.WorkflowRun.ID,
-		RunnerLink:      req.Input.Attestation.Predicate.GetRunLink(),
-		Attestation:     a,
-	}
-
+	msg := fmt.Sprintf("\nNew attestation received!```\n%s\n```\n", summary)
 	webhookURL := req.RegistrationInfo.Credentials.Password
-	if err := executeWebhook(webhookURL, renderContent(tplData)); err != nil {
+
+	if err := executeWebhook(webhookURL, msg); err != nil {
 		return fmt.Errorf("error executing webhook: %w", err)
 	}
 

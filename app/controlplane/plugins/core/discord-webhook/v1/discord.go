@@ -140,10 +140,13 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 		return fmt.Errorf("invalid registration config: %w", err)
 	}
 
+	summary, err := sdk.SummaryTable(req)
+	if err != nil {
+		return fmt.Errorf("generating summary table: %w", err)
+	}
+
 	webhookURL := req.RegistrationInfo.Credentials.Password
-	if err := executeWebhook(webhookURL, config.Username,
-		sdk.SummaryTable(req),
-		"New Attestation Received"); err != nil {
+	if err := executeWebhook(webhookURL, config.Username, []byte(summary), "New Attestation Received"); err != nil {
 		return fmt.Errorf("error executing webhook: %w", err)
 	}
 

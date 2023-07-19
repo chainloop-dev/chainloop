@@ -16,22 +16,74 @@
 package sdk
 
 import (
-	"bytes"
 	"fmt"
+	"sort"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/jedib0t/go-pretty/v6/table"
 )
 
-func SummaryTable(req *ExecutionRequest) []byte {
-	buffer := bytes.NewBuffer(nil)
+type renderer struct {
+	render func(t table.Writer) string
+	format string
+}
 
+type RenderOpt func(r *renderer) error
+
+func WithFormat(format string) RenderOpt {
+	return func(r *renderer) error {
+		switch format {
+		case "text":
+			r.render = func(t table.Writer) string {
+				return t.Render()
+			}
+		case "markdown":
+			r.render = func(t table.Writer) string {
+				return t.RenderMarkdown()
+			}
+		case "html":
+			r.render = func(t table.Writer) string {
+				return t.RenderHTML()
+			}
+		default:
+			return fmt.Errorf("unsupported format %s", format)
+		}
+
+		r.format = format
+		return nil
+	}
+}
+
+func newRenderer(opts ...RenderOpt) (*renderer, error) {
+	r := &renderer{
+		render: func(t table.Writer) string {
+			return t.Render()
+		}, format: "text",
+	}
+
+	for _, opt := range opts {
+		if err := opt(r); err != nil {
+			return nil, err
+		}
+	}
+
+	return r, nil
+}
+
+func (r *renderer) summaryTable(m *ChainloopMetadata, predicate chainloop.NormalizablePredicate) (string, error) {
 	tw := table.NewWriter()
 	tw.SetStyle(table.StyleLight)
-	tw.SetOutputMirror(buffer)
+
+	if m == nil || m.Workflow == nil {
+		return "", fmt.Errorf("workflow metadata is missing")
+	}
+
+	if predicate == nil {
+		return "", fmt.Errorf("predicate is nil")
+	}
 
 	tw.SetTitle("Workflow")
-	m := req.ChainloopMetadata
 	tw.AppendRow(table.Row{"ID", m.Workflow.ID})
 	tw.AppendRow(table.Row{"Name", m.Workflow.Name})
 	tw.AppendRow(table.Row{"Team", m.Workflow.Team})
@@ -39,6 +91,10 @@ func SummaryTable(req *ExecutionRequest) []byte {
 	tw.AppendSeparator()
 
 	wr := m.WorkflowRun
+	if wr == nil {
+		return "", fmt.Errorf("workflow run metadata is missing")
+	}
+
 	tw.AppendRow(table.Row{"Workflow Run"})
 	tw.AppendSeparator()
 	tw.AppendRow(table.Row{"ID", wr.ID})
@@ -47,15 +103,13 @@ func SummaryTable(req *ExecutionRequest) []byte {
 	tw.AppendRow(table.Row{"State", wr.State})
 	tw.AppendRow(table.Row{"Runner Link", wr.RunURL})
 
-	var result = tw.Render()
+	var result = r.render(tw)
 
-	predicate := req.Input.Attestation.Predicate
 	// Materials
 	materials := predicate.GetMaterials()
 	if len(materials) > 0 {
 		mt := table.NewWriter()
 		mt.SetStyle(table.StyleLight)
-		mt.SetOutputMirror(buffer)
 
 		mt.SetTitle("Materials")
 		mt.AppendHeader(table.Row{"Name", "Type", "Value"})
@@ -77,7 +131,7 @@ func SummaryTable(req *ExecutionRequest) []byte {
 			mt.AppendRow(row)
 		}
 
-		result += "\n" + mt.Render()
+		result += "\n" + r.render(mt)
 	}
 
 	// Env variables
@@ -85,19 +139,37 @@ func SummaryTable(req *ExecutionRequest) []byte {
 	if len(envVars) > 0 {
 		mt := table.NewWriter()
 		mt.SetStyle(table.StyleLight)
-		mt.SetOutputMirror(buffer)
 		mt.SetTitle("Environment Variables")
 
 		header := table.Row{"Name", "Value"}
 		mt.AppendHeader(header)
-		for k, v := range envVars {
+
+		// sort env vars by name
+		var keys []string
+		for k := range envVars {
+			keys = append(keys, k)
+		}
+
+		sort.Strings(keys)
+
+		for _, k := range keys {
+			v := envVars[k]
 			mt.AppendRow(table.Row{k, v})
 		}
 
-		result += "\n" + mt.Render()
+		result += "\n" + r.render(mt)
 	}
 
-	result += fmt.Sprintf("\n\nGet full Attestation\n\n- chainloop workflow run describe --id %s -o statement", wr.ID)
+	result += fmt.Sprintf("\n\nGet Full Attestation\n\n$ chainloop workflow run describe --id %s -o statement", wr.ID)
 
-	return []byte(result)
+	return result, nil
+}
+
+func SummaryTable(req *ExecutionRequest, opts ...RenderOpt) (string, error) {
+	renderer, err := newRenderer(opts...)
+	if err != nil {
+		return "", err
+	}
+
+	return renderer.summaryTable(req.ChainloopMetadata, req.Input.Attestation.Predicate)
 }
