@@ -50,6 +50,22 @@ builds:
     hooks:
       post:
         - upx "{{ .Path }}"
+  - binary: chainloop-plugin-smtp
+    id: chainloop-plugin-smtp
+    main: ./app/controlplane/plugins/core/smtp/v1/cmd
+    targets:
+      - linux_amd64
+    hooks:
+      post:
+        - upx "{{ .Path }}"
+  - binary: chainloop-plugin-dependency-track
+    id: chainloop-plugin-dependency-track
+    main: ./app/controlplane/plugins/core/dependency-track/v1/cmd
+    targets:
+      - linux_amd64
+    hooks:
+      post:
+        - upx "{{ .Path }}"
 archives:
   - builds:
       - cli
@@ -85,6 +101,8 @@ dockers:
     ids:
       - control-plane
       - chainloop-plugin-discord-webhook
+      - chainloop-plugin-smtp
+      - chainloop-plugin-dependency-track
     image_templates:
       - "ghcr.io/chainloop-dev/chainloop/control-plane:{{ .Tag }}"
       - "ghcr.io/chainloop-dev/chainloop/control-plane:latest"

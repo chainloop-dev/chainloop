@@ -9,6 +9,8 @@ COPY ./control-plane /
 # NOTE: they are built by go-releaser in the builds section
 # Make sure to update it acordingly if you add more plugins
 COPY ./chainloop-plugin-discord-webhook /plugins/
+COPY ./chainloop-plugin-dependency-track /plugins/
+COPY ./chainloop-plugin-smtp /plugins/
 # tmp is required for the plugins to run
 COPY --from=builder /tmp /tmp
 
