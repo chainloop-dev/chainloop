@@ -105,10 +105,10 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 	// I was not able to make backticks work in the template
 	a := fmt.Sprintf("\n```\n%s\n```\n", string(attestationJSON))
 	tplData := &templateContent{
-		WorkflowID:      metadata.WorkflowID,
-		WorkflowName:    metadata.WorkflowName,
-		WorkflowRunID:   metadata.WorkflowRunID,
-		WorkflowProject: metadata.WorkflowProject,
+		WorkflowID:      metadata.Workflow.ID,
+		WorkflowName:    metadata.Workflow.Name,
+		WorkflowProject: metadata.Workflow.Project,
+		WorkflowRunID:   metadata.WorkflowRun.ID,
 		RunnerLink:      req.Input.Attestation.Predicate.GetRunLink(),
 		Attestation:     a,
 	}

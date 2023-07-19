@@ -170,7 +170,7 @@ func (i *DependencyTrack) Execute(ctx context.Context, req *sdk.ExecutionRequest
 			"materialName", sbom.Name,
 			"host", registrationConfig.Domain,
 			"projectID", attachmentConfig.ProjectID, "projectName", attachmentConfig.ProjectName,
-			"workflowID", req.WorkflowID,
+			"workflowID", req.Workflow.ID,
 		)
 
 		// Create an SBOM client and perform validation and upload
@@ -195,7 +195,7 @@ func (i *DependencyTrack) Execute(ctx context.Context, req *sdk.ExecutionRequest
 			"materialName", sbom.Name,
 			"host", registrationConfig.Domain,
 			"projectID", attachmentConfig.ProjectID, "projectName", attachmentConfig.ProjectName,
-			"workflowID", req.WorkflowID,
+			"workflowID", req.Workflow.ID,
 		)
 	}
 

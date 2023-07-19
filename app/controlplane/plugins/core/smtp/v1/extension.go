@@ -145,7 +145,7 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 	i.Logger.Info("execution requested")
 
 	if err := validateExecuteRequest(req); err != nil {
-		return fmt.Errorf("running validation for workflow id %s: %w", req.WorkflowID, err)
+		return fmt.Errorf("running validation for workflow id %s: %w", req.Workflow.ID, err)
 	}
 
 	var rc *registrationState
@@ -176,7 +176,7 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 
 This email has been delivered via integration %s version %s.
 	`
-	body := fmt.Sprintf(tpl, req.WorkflowID, jsonBytes, i.Describe().ID, i.Describe().Version)
+	body := fmt.Sprintf(tpl, req.Workflow.ID, jsonBytes, i.Describe().ID, i.Describe().Version)
 	err = sendEmail(host, port, user, password, from, to, ac.CC, subject, body)
 	if err != nil {
 		return fmt.Errorf("sending an email: %w", err)

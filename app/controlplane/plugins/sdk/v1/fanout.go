@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"time"
 
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
 
@@ -114,11 +115,21 @@ type AttachmentResponse struct {
 }
 
 type ChainloopMetadata struct {
-	WorkflowID      string
-	WorkflowName    string
-	WorkflowProject string
+	Workflow    *ChainloopMetadataWorkflow
+	WorkflowRun *ChainloopMetadataWorkflowRun
+}
 
-	WorkflowRunID string
+type ChainloopMetadataWorkflowRun struct {
+	ID         string
+	State      string
+	StartedAt  time.Time
+	FinishedAt time.Time
+	RunnerType string
+	RunURL     string
+}
+
+type ChainloopMetadataWorkflow struct {
+	ID, Name, Team, Project string
 }
 
 // ExecutionRequest is the request to execute the integration

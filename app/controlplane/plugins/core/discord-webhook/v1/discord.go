@@ -24,8 +24,6 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-	"strings"
-	"text/template"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/go-kratos/kratos/v2/log"
@@ -142,22 +140,10 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 		return fmt.Errorf("invalid registration config: %w", err)
 	}
 
-	attestationJSON, err := json.MarshalIndent(req.Input.Attestation.Statement, "", "  ")
-	if err != nil {
-		return fmt.Errorf("error marshaling JSON: %w", err)
-	}
-
-	metadata := req.ChainloopMetadata
-	tplData := &templateContent{
-		WorkflowID:      metadata.WorkflowID,
-		WorkflowName:    metadata.WorkflowName,
-		WorkflowRunID:   metadata.WorkflowRunID,
-		WorkflowProject: metadata.WorkflowProject,
-		RunnerLink:      req.Input.Attestation.Predicate.GetRunLink(),
-	}
-
 	webhookURL := req.RegistrationInfo.Credentials.Password
-	if err := executeWebhook(webhookURL, config.Username, attestationJSON, renderContent(tplData)); err != nil {
+	if err := executeWebhook(webhookURL, config.Username,
+		sdk.SummaryTable(req),
+		"New Attestation Received"); err != nil {
 		return fmt.Errorf("error executing webhook: %w", err)
 	}
 
@@ -183,7 +169,7 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 // --boundary
 // Content-Disposition: form-data; name="files[0]"; filename="statement.json"
 // --boundary
-func executeWebhook(webhookURL, usernameOverride string, jsonStatement []byte, msgContent string) error {
+func executeWebhook(webhookURL, usernameOverride string, statement []byte, msgContent string) error {
 	var b bytes.Buffer
 	multipartWriter := multipart.NewWriter(&b)
 
@@ -194,7 +180,7 @@ func executeWebhook(webhookURL, usernameOverride string, jsonStatement []byte, m
 		Attachments: []payloadAttachment{
 			{
 				ID:       0,
-				Filename: "attestation.json",
+				Filename: "statement.txt",
 			},
 		},
 	}
@@ -214,12 +200,12 @@ func executeWebhook(webhookURL, usernameOverride string, jsonStatement []byte, m
 	}
 
 	// attach attestation JSON
-	attachmentWriter, err := multipartWriter.CreateFormFile("files[0]", "statement.json")
+	attachmentWriter, err := multipartWriter.CreateFormFile("files[0]", "statement.txt")
 	if err != nil {
 		return fmt.Errorf("creating attachment form field: %w", err)
 	}
 
-	if _, err := attachmentWriter.Write(jsonStatement); err != nil {
+	if _, err := attachmentWriter.Write(statement); err != nil {
 		return fmt.Errorf("writing attachment form field: %w", err)
 	}
 
@@ -271,27 +257,3 @@ func validateExecuteRequest(req *sdk.ExecutionRequest) error {
 
 	return nil
 }
-
-type templateContent struct {
-	WorkflowID, WorkflowName, WorkflowProject, WorkflowRunID, RunnerLink string
-}
-
-func renderContent(metadata *templateContent) string {
-	t := template.Must(template.New("content").Parse(msgTemplate))
-
-	var b bytes.Buffer
-	if err := t.Execute(&b, metadata); err != nil {
-		return ""
-	}
-
-	return strings.Trim(b.String(), "\n")
-}
-
-const msgTemplate = `
-New attestation received!
-- Workflow: {{.WorkflowProject}}/{{.WorkflowName}}
-- Workflow Run: {{.WorkflowRunID}}
-{{- if .RunnerLink }}
-- Link to runner: {{.RunnerLink}}
-{{end}}
-`

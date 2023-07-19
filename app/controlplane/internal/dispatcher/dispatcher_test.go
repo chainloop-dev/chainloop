@@ -313,7 +313,7 @@ func (s *dispatcherTestSuite) SetupTest() {
 	l := log.NewStdLogger(io.Discard)
 
 	s.casClient = mocks.NewCASClient(s.T())
-	s.dispatcher = New(s.Integration, nil, nil, s.casClient, registeredIntegrations, l)
+	s.dispatcher = New(s.Integration, nil, nil, nil, s.casClient, registeredIntegrations, l)
 }
 
 type mockedIntegration struct {
