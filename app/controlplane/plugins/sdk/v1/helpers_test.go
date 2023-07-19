@@ -59,6 +59,11 @@ func (s *helperTestSuite) TestSummaryTable() {
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
 			renderer, err := newRenderer(tc.renderOpts...)
+			if tc.hasError {
+				require.Error(t, err)
+				return
+			}
+
 			require.NoError(t, err)
 			want, err := os.ReadFile(tc.outputPath)
 			require.NoError(t, err)
