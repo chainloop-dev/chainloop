@@ -56,10 +56,14 @@ func (s *testSuite) TestUpload() {
 	var content = []byte("test")
 	const fileName = "sbom.json"
 	metadata := &sdk.ChainloopMetadata{
-		WorkflowID:      "wid",
-		WorkflowRunID:   "wid",
-		WorkflowName:    "name",
-		WorkflowProject: "project",
+		Workflow: &sdk.ChainloopMetadataWorkflow{
+			ID:      "wid",
+			Name:    "name",
+			Project: "project",
+		},
+		WorkflowRun: &sdk.ChainloopMetadataWorkflowRun{
+			ID: "wid",
+		},
 	}
 
 	// Perform the upload

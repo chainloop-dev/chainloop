@@ -39,6 +39,7 @@ import (
 type FanOutDispatcher struct {
 	integrationUC       *biz.IntegrationUseCase
 	wfUC                *biz.WorkflowUseCase
+	wfRunUC             *biz.WorkflowRunUseCase
 	credentialsProvider credentials.ReaderWriter
 	casClient           biz.CASClient
 	log                 *log.Helper
@@ -46,8 +47,8 @@ type FanOutDispatcher struct {
 	loaded              sdk.AvailablePlugins
 }
 
-func New(integrationUC *biz.IntegrationUseCase, wfUC *biz.WorkflowUseCase, creds credentials.ReaderWriter, c biz.CASClient, registered sdk.AvailablePlugins, l log.Logger) *FanOutDispatcher {
-	return &FanOutDispatcher{integrationUC, wfUC, creds, c, servicelogger.ScopedHelper(l, "fanout-dispatcher"), l, registered}
+func New(integrationUC *biz.IntegrationUseCase, wfUC *biz.WorkflowUseCase, wfRunUC *biz.WorkflowRunUseCase, creds credentials.ReaderWriter, c biz.CASClient, registered sdk.AvailablePlugins, l log.Logger) *FanOutDispatcher {
+	return &FanOutDispatcher{integrationUC, wfUC, wfRunUC, creds, c, servicelogger.ScopedHelper(l, "fanout-dispatcher"), l, registered}
 }
 
 // Dispatch item is a plugin instance + resolved inputs that gets hydrated
@@ -101,11 +102,28 @@ func (d *FanOutDispatcher) Run(ctx context.Context, opts *RunOpts) error {
 		return fmt.Errorf("workflow not found")
 	}
 
+	wfRun, err := d.wfRunUC.View(ctx, opts.OrgID, opts.WorkflowRunID)
+	if err != nil {
+		return fmt.Errorf("finding workflow: %w", err)
+	} else if wfRun == nil {
+		return fmt.Errorf("workflowRun not found")
+	}
+
 	workflowMetadata := &sdk.ChainloopMetadata{
-		WorkflowID:      opts.WorkflowID,
-		WorkflowRunID:   opts.WorkflowRunID,
-		WorkflowName:    wf.Name,
-		WorkflowProject: wf.Project,
+		Workflow: &sdk.ChainloopMetadataWorkflow{
+			ID:      opts.WorkflowID,
+			Name:    wf.Name,
+			Project: wf.Project,
+			Team:    wf.Team,
+		},
+		WorkflowRun: &sdk.ChainloopMetadataWorkflowRun{
+			ID:         opts.WorkflowRunID,
+			State:      wfRun.State,
+			StartedAt:  *wfRun.CreatedAt,
+			FinishedAt: *wfRun.FinishedAt,
+			RunnerType: wfRun.RunnerType,
+			RunURL:     wfRun.RunURL,
+		},
 	}
 
 	// Dispatch the integrations

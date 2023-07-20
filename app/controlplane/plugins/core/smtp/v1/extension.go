@@ -17,7 +17,6 @@ package smtp
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	nsmtp "net/smtp"
@@ -145,7 +144,7 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 	i.Logger.Info("execution requested")
 
 	if err := validateExecuteRequest(req); err != nil {
-		return fmt.Errorf("running validation for workflow id %s: %w", req.WorkflowID, err)
+		return fmt.Errorf("running validation for workflow id %s: %w", req.Workflow.ID, err)
 	}
 
 	var rc *registrationState
@@ -158,27 +157,16 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 		return errors.New("invalid attachment configuration")
 	}
 
-	// marshal the statement
-	jsonBytes, err := json.MarshalIndent(req.Input.Attestation.Statement, "", "  ")
+	summary, err := sdk.SummaryTable(req)
 	if err != nil {
-		return fmt.Errorf("error marshaling JSON: %w", err)
+		return fmt.Errorf("generating summary table: %w", err)
 	}
 
 	// send the email
 	to, from, user, password, host, port := rc.To, rc.From, rc.User, req.RegistrationInfo.Credentials.Password, rc.Host, rc.Port
 	subject := "[chainloop] New workflow run finished successfully!"
-	tpl := `A new workflow run finished successfully!
-
-# Workflow: %s
-
-# in-toto statement:
-	%s
-
-This email has been delivered via integration %s version %s.
-	`
-	body := fmt.Sprintf(tpl, req.WorkflowID, jsonBytes, i.Describe().ID, i.Describe().Version)
-	err = sendEmail(host, port, user, password, from, to, ac.CC, subject, body)
-	if err != nil {
+	if err := sendEmail(host, port, user, password, from, to, ac.CC, subject,
+		"<pre>"+summary+"</pre>"); err != nil {
 		return fmt.Errorf("sending an email: %w", err)
 	}
 
@@ -209,6 +197,7 @@ func sendEmail(host string, port string, user, password, from, to, cc, subject, 
 	message := "From: " + from + "\n" +
 		"To: " + to + "\n" +
 		"CC: " + cc + "\n" +
+		"MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n" +
 		"Subject: " + subject + "\n\n" +
 		body
 

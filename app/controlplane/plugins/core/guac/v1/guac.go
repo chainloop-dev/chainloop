@@ -210,10 +210,10 @@ func uploadToBucket(ctx context.Context, bucket *storage.BucketHandle, filename 
 
 	w.ObjectAttrs.Metadata = map[string]string{
 		"author":          "chainloop",
-		"workflowID":      md.WorkflowID,
-		"workflowName":    md.WorkflowName,
-		"workflowProject": md.WorkflowProject,
-		"workflowRunID":   md.WorkflowRunID,
+		"workflowID":      md.Workflow.ID,
+		"workflowName":    md.Workflow.Name,
+		"workflowProject": md.Workflow.Project,
+		"workflowRunID":   md.WorkflowRun.ID,
 		"filename":        filename,
 	}
 

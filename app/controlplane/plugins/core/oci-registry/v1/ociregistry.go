@@ -175,7 +175,7 @@ func (i *Integration) Execute(ctx context.Context, req *sdk.ExecutionRequest) er
 		return fmt.Errorf("creating OCI backend %w", err)
 	}
 
-	i.Logger.Infow("msg", "Uploading attestation", "repo", registrationConfig.Repository, "workflowID", req.WorkflowID)
+	i.Logger.Infow("msg", "Uploading attestation", "repo", registrationConfig.Repository, "workflowID", req.Workflow.ID)
 
 	// Perform the upload of the json marshalled attestation
 	jsonContent, err := json.Marshal(req.Input.Attestation.Envelope)
@@ -193,7 +193,7 @@ func (i *Integration) Execute(ctx context.Context, req *sdk.ExecutionRequest) er
 		return fmt.Errorf("uploading the attestation: %w", err)
 	}
 
-	i.Logger.Infow("msg", "Attestation uploaded", "repo", registrationConfig.Repository, "workflowID", req.WorkflowID)
+	i.Logger.Infow("msg", "Attestation uploaded", "repo", registrationConfig.Repository, "workflowID", req.Workflow.ID)
 
 	return nil
 }

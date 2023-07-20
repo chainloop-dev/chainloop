@@ -24,6 +24,7 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
 	status "google.golang.org/grpc/status"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func DescribeProtoToSDK(pd *DescribeResponse) (*sdk.IntegrationInfo, error) {
@@ -109,21 +110,51 @@ func AttachProtoToSDK(in *AttachResponse) (*sdk.AttachmentResponse, error) {
 }
 
 func MetadataSDKToProto(in *sdk.ChainloopMetadata) *ExecuteRequest_Metadata {
-	return &ExecuteRequest_Metadata{
-		WorkflowId:      in.WorkflowID,
-		WorkflowName:    in.WorkflowName,
-		WorkflowProject: in.WorkflowProject,
-		WorkflowRunId:   in.WorkflowRunID,
+	res := &ExecuteRequest_Metadata{
+		Workflow: &ExecuteRequest_Metadata_Workflow{
+			Id:      in.Workflow.ID,
+			Name:    in.Workflow.Name,
+			Project: in.Workflow.Project,
+			Team:    in.Workflow.Team,
+		},
+		WorkflowRun: &ExecuteRequest_Metadata_WorkflowRun{
+			Id:         in.WorkflowRun.ID,
+			State:      in.WorkflowRun.State,
+			RunnerType: in.WorkflowRun.RunnerType,
+			RunUrl:     in.WorkflowRun.RunURL,
+			StartedAt:  timestamppb.New(in.WorkflowRun.StartedAt),
+		},
 	}
+
+	if !in.WorkflowRun.FinishedAt.IsZero() {
+		res.WorkflowRun.FinishedAt = timestamppb.New(in.WorkflowRun.FinishedAt)
+	}
+
+	return res
 }
 
 func MetadataProtoToSDK(in *ExecuteRequest_Metadata) *sdk.ChainloopMetadata {
-	return &sdk.ChainloopMetadata{
-		WorkflowID:      in.WorkflowId,
-		WorkflowName:    in.WorkflowName,
-		WorkflowProject: in.WorkflowProject,
-		WorkflowRunID:   in.WorkflowRunId,
+	res := &sdk.ChainloopMetadata{
+		Workflow: &sdk.ChainloopMetadataWorkflow{
+			ID:      in.Workflow.Id,
+			Name:    in.Workflow.Name,
+			Project: in.Workflow.Project,
+			Team:    in.Workflow.Team,
+		},
+		WorkflowRun: &sdk.ChainloopMetadataWorkflowRun{
+			ID:         in.WorkflowRun.Id,
+			State:      in.WorkflowRun.State,
+			RunnerType: in.WorkflowRun.RunnerType,
+			RunURL:     in.WorkflowRun.RunUrl,
+			StartedAt:  in.WorkflowRun.StartedAt.AsTime(),
+		},
 	}
+
+	if in.WorkflowRun.FinishedAt != nil {
+		res.WorkflowRun.FinishedAt = in.WorkflowRun.FinishedAt.AsTime()
+	}
+
+	return res
 }
 
 func MaterialSDKToProto(in *sdk.ExecuteMaterial) *ExecuteRequest_NormalizedMaterial {

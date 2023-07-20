@@ -8,6 +8,7 @@ config: check-buf-tool
 .PHONY: api
 # generate api proto bindings
 api: check-buf-tool
+	cd ./plugins/sdk/v1/plugin/api && buf generate
 	cd ./api && buf generate
 
 .PHONY: build

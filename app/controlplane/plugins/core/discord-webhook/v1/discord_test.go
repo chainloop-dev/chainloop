@@ -86,46 +86,6 @@ func TestValidateRegistrationInput(t *testing.T) {
 	}
 }
 
-func TestRenderContent(t *testing.T) {
-	testCases := []struct {
-		name     string
-		input    *templateContent
-		expected string
-	}{
-		{
-			name: "all fields",
-			input: &templateContent{
-				WorkflowRunID:   "deadbeef",
-				WorkflowName:    "test",
-				WorkflowProject: "project",
-				RunnerLink:      "http://runner.io",
-			},
-			expected: `New attestation received!
-- Workflow: project/test
-- Workflow Run: deadbeef
-- Link to runner: http://runner.io`,
-		},
-		{
-			name: "no runner link",
-			input: &templateContent{
-				WorkflowRunID:   "deadbeef",
-				WorkflowName:    "test",
-				WorkflowProject: "project",
-			},
-			expected: `New attestation received!
-- Workflow: project/test
-- Workflow Run: deadbeef`,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			actual := renderContent(tc.input)
-			assert.Equal(t, tc.expected, actual)
-		})
-	}
-}
-
 func TestNewIntegration(t *testing.T) {
 	_, err := New(nil)
 	assert.NoError(t, err)
