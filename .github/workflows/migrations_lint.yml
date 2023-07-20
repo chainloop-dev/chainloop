@@ -37,6 +37,6 @@ jobs:
           fetch-depth: 0
       - uses: ariga/atlas-action@v0
         with:
-          dir: path/to/migrations
+          dir: app/controlplane/internal/data/ent/migrate/migrations
           dir-format: atlas 
           dev-url: postgres://postgres:pass@localhost:5430/test?sslmode=disable
