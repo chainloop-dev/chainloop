@@ -89,10 +89,5 @@ func WorkflowListTableOutput(workflows []*action.WorkflowItem) error {
 	}
 	t.Render()
 
-	// Print the Robot Account Token if there is only one workflow and it has a Robot Account Token
-	if len(workflows) == 1 && workflows[0].RobotAccountKey != "" {
-		fmt.Printf("\nThis is automatically generated Robot Account Token (ID: %s). Save the following token since it will not printed again: \n\n %s\n\n", workflows[0].RobotAccountID, workflows[0].RobotAccountKey)
-	}
-
 	return nil
 }

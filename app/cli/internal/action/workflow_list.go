@@ -28,16 +28,20 @@ type WorkflowList struct {
 }
 
 type WorkflowItem struct {
-	Name            string           `json:"name"`
-	ID              string           `json:"id"`
-	Team            string           `json:"team"`
-	Project         string           `json:"project,omitempty"`
-	CreatedAt       *time.Time       `json:"createdAt"`
-	RunsCount       int32            `json:"runsCount"`
-	ContractID      string           `json:"contractID,omitempty"`
-	LastRun         *WorkflowRunItem `json:"lastRun,omitempty"`
-	RobotAccountID  string           `json:"robotAccountID,omitempty"`
-	RobotAccountKey string           `json:"robotAccountKey,omitempty"`
+	Name       string           `json:"name"`
+	ID         string           `json:"id"`
+	Team       string           `json:"team"`
+	Project    string           `json:"project,omitempty"`
+	CreatedAt  *time.Time       `json:"createdAt"`
+	RunsCount  int32            `json:"runsCount"`
+	ContractID string           `json:"contractID,omitempty"`
+	LastRun    *WorkflowRunItem `json:"lastRun,omitempty"`
+}
+
+type WorkflowItemWithRobotAccount struct {
+	*WorkflowItem
+	RobotAccountID  string `json:"robotAccountID,omitempty"`
+	RobotAccountKey string `json:"robotAccountKey,omitempty"`
 }
 
 func NewWorkflowList(cfg *ActionsOpts) *WorkflowList {
