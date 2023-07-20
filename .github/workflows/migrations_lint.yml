@@ -1,0 +1,42 @@
+# This action is used for linting migration directories using the atlas migrate lint command.
+# Runs diagnostics on the selected changes:
+# - Ensure the migration history can be replayed from any point at time.
+# - Protect from unexpected history changes when concurrent migrations are written to the migration directory by multiple team members. Read more about the consistency checks in the section below.
+# - Detect whether destructive or irreversible changes have been made or whether they are dependent on tables'
+# contents and can cause a migration failure.
+# https://atlasgo.io/integrations/github-actions
+
+name: Atlas CI Controlplane DB Migrations
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    paths:
+      - 'app/controlplane/internal/data/ent/migrate/migrations/'
+jobs:
+  lint:
+    services:
+      # Spin up a postgres:10 container to be used as the dev-database for analysis.
+      postgres15:
+        image: postgres:15
+        env:
+          POSTGRES_DB: test
+          POSTGRES_PASSWORD: pass
+        ports:
+          - 5430:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3.0.1
+        with:
+          fetch-depth: 0
+      - uses: ariga/atlas-action@v0
+        with:
+          dir: path/to/migrations
+          dir-format: atlas 
+          dev-url: postgres://postgres:pass@localhost:5430/test?sslmode=disable
