@@ -12,8 +12,8 @@ on:
     branches:
       - main
   pull_request:
-    paths:
-      - 'app/controlplane/internal/data/ent/migrate/migrations/'
+    # paths:
+    #   - 'app/controlplane/internal/data/ent/migrate/migrations/'
 jobs:
   lint:
     services:
