@@ -14,10 +14,10 @@ on:
   pull_request:
     # paths:
     #   - 'app/controlplane/internal/data/ent/migrate/migrations/'
-permissions:
-  pull-requests: write
 jobs:
   lint:
+    permissions:
+      pull-requests: write
     services:
       # Spin up a postgres:10 container to be used as the dev-database for analysis.
       postgres15:
