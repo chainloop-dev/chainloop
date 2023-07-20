@@ -14,6 +14,8 @@ on:
   pull_request:
     # paths:
     #   - 'app/controlplane/internal/data/ent/migrate/migrations/'
+permissions:
+  pull-requests: write
 jobs:
   lint:
     services:
