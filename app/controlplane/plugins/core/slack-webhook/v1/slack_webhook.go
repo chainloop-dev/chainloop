@@ -101,7 +101,7 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 		return fmt.Errorf("error summarizing the request: %w", err)
 	}
 
-	msg := fmt.Sprintf("\nNew attestation received!```\n%s\n```\n", summary)
+	msg := fmt.Sprintf("\nNew attestation received!\n```\n%s\n```\n", summary)
 	webhookURL := req.RegistrationInfo.Credentials.Password
 
 	if err := executeWebhook(webhookURL, msg); err != nil {
