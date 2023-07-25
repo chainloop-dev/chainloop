@@ -182,7 +182,8 @@ Return the Postgresql connection string
 Return the Postgresql connection string for Atlas migration
 */}}
 {{- define "controlplane.database.atlas_connection_string" -}}
-{{- printf "postgres://%s:%s@%s:%s/%s?sslmode=disable" (include "controlplane.database.user" .) (include "controlplane.database.escapedPassword" .) (include "controlplane.database.host" .) (include "controlplane.database.port" .) (include "controlplane.database.name" .) }}
+{{- $connStr := printf "postgres://%s:%s@%s:%s/%s" (include "controlplane.database.user" .) (include "controlplane.database.escapedPassword" .) (include "controlplane.database.host" .) (include "controlplane.database.port" .) (include "controlplane.database.name" .) }}
+{{- .Values.controlplane.migration.ssl | ternary $connStr (printf "%s?sslmode=disable" $connStr) }}
 {{- end -}}
 
 {{/*

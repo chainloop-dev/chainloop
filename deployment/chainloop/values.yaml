@@ -113,6 +113,8 @@ controlplane:
       repository: ghcr.io/chainloop-dev/chainloop/control-plane-migrations
       # Overrides the image tag whose default is the chart appVersion.
     # tag: latest
+    # Run the migration job forcing SSL, required in AWS RDS for PostgreSQL 15
+    ssl: false
 
   ## @skip controlplane.serviceAccount
   serviceAccount:
