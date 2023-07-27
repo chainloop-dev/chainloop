@@ -58,14 +58,19 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 	}
 
 	// Get repository to provide the secret name
-	repo, err := s.ociUC.FindDefaultBackend(ctx, currentOrg.ID)
+	backend, err := s.ociUC.FindDefaultBackend(ctx, currentOrg.ID)
 	if err != nil && !biz.IsNotFound(err) {
 		return nil, sl.LogAndMaskErr(err, s.log)
-	} else if repo == nil {
+	} else if backend == nil {
 		return nil, errors.NotFound("not found", "main repository not found")
 	}
 
-	t, err := s.casUC.GenerateTemporaryCredentials(repo.SecretName, role)
+	// If we want to upload an artifact but we have selected an inline backend we fail
+	if backend.Provider == biz.CASBackendInline {
+		return nil, errors.BadRequest("invalid argument", "cannot upload or download artifacts from an inline CAS backend")
+	}
+
+	t, err := s.casUC.GenerateTemporaryCredentials(backend.SecretName, role)
 	if err != nil {
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}
