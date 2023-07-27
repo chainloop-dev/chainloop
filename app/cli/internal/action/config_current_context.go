@@ -33,18 +33,12 @@ func NewConfigCurrentContext(cfg *ActionsOpts) *ConfigCurrentContext {
 type ConfigContextItem struct {
 	CurrentUser       *ConfigContextItemUser
 	CurrentOrg        *OrgItem
-	CurrentCASBackend *ConfigContextItemCASBackend
+	CurrentCASBackend *CASBackendItem
 }
 
 type ConfigContextItemUser struct {
 	ID, Email string
 	CreatedAt *time.Time
-}
-
-type ConfigContextItemCASBackend struct {
-	ID, Location     string
-	CreatedAt        *time.Time
-	ValidationStatus ValidationStatus
 }
 
 func (action *ConfigCurrentContext) Run() (*ConfigContextItem, error) {
@@ -56,29 +50,13 @@ func (action *ConfigCurrentContext) Run() (*ConfigContextItem, error) {
 
 	res := resp.GetResult()
 
-	item := &ConfigContextItem{
+	return &ConfigContextItem{
 		CurrentUser: &ConfigContextItemUser{
 			ID:        res.GetCurrentUser().Id,
 			Email:     res.GetCurrentUser().Email,
 			CreatedAt: toTimePtr(res.GetCurrentUser().CreatedAt.AsTime()),
 		},
-		CurrentOrg: pbOrgItemToAction(res.GetCurrentOrg()),
-	}
-
-	backend := res.GetCurrentCasBackend()
-	if backend != nil {
-		r := &ConfigContextItemCASBackend{
-			ID: backend.GetId(), Location: backend.GetLocation(), CreatedAt: toTimePtr(backend.GetCreatedAt().AsTime()),
-		}
-
-		switch backend.GetValidationStatus() {
-		case pb.CASBackendItem_VALIDATION_STATUS_OK:
-			r.ValidationStatus = Valid
-		case pb.CASBackendItem_VALIDATION_STATUS_INVALID:
-			r.ValidationStatus = Invalid
-		}
-
-		item.CurrentCASBackend = r
-	}
-	return item, nil
+		CurrentOrg:        pbOrgItemToAction(res.GetCurrentOrg()),
+		CurrentCASBackend: pbCASBackendItemToAction(res.GetCurrentCasBackend()),
+	}, nil
 }

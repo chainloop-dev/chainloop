@@ -50,7 +50,7 @@ func contextTableOutput(config *action.ConfigContextItem) error {
 	backend := config.CurrentCASBackend
 	if backend != nil {
 		gt.AppendSeparator()
-		gt.AppendRow(table.Row{"Default CAS Backend", fmt.Sprintf("%s (status=%q)", backend.Location, backend.ValidationStatus)})
+		gt.AppendRow(table.Row{"Default CAS Backend", fmt.Sprintf("%s (provider=%s, status=%q)", backend.Location, backend.Provider, backend.ValidationStatus)})
 	}
 
 	gt.Render()
