@@ -112,7 +112,6 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		return nil, nil, err
 	}
 	orgMetricsService := service.NewOrgMetricsService(orgMetricsUseCase, v2...)
-	ociRepositoryService := service.NewOCIRepositoryService(casBackendUseCase, v2...)
 	integrationsService := service.NewIntegrationsService(integrationUseCase, workflowUseCase, availablePlugins, v2...)
 	organizationService := service.NewOrganizationService(membershipUseCase, v2...)
 	casBackendService := service.NewCASBackendService(casBackendUseCase, providers, v2...)
@@ -131,7 +130,6 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		ContextSvc:          contextService,
 		CASCredsSvc:         casCredentialsService,
 		OrgMetricsSvc:       orgMetricsService,
-		OCIRepositorySvc:    ociRepositoryService,
 		IntegrationsSvc:     integrationsService,
 		OrganizationSvc:     organizationService,
 		CASBackendSvc:       casBackendService,

@@ -35,7 +35,6 @@ var ProviderSet = wire.NewSet(
 	NewAttestationService,
 	NewWorkflowSchemaService,
 	NewCASCredentialsService,
-	NewOCIRepositoryService,
 	NewContextService,
 	NewOrgMetricsService,
 	NewIntegrationsService,

@@ -22,6 +22,7 @@ option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/con
 import "controlplane/v1/response_messages.proto";
 import "validate/validate.proto";
 import "google/protobuf/struct.proto";
+import "errors/v1/errors.proto";
 
 service CASBackendService {
 	rpc List (CASBackendServiceListRequest) returns (CASBackendServiceListResponse);
@@ -77,3 +78,12 @@ message CASBackendServiceDeleteRequest {
 }
 
 message CASBackendServiceDeleteResponse {}
+
+enum CASBackendErrorReason {
+  option (errors.v1.default_code) = 500;
+  CAS_BACKEND_ERROR_REASON_UNSPECIFIED = 0;
+  CAS_BACKEND_ERROR_REASON_REQUIRED = 1 [(errors.v1.code) = 403];
+  // The repository does not seem to be operational
+  // a previous validation has failed
+  CAS_BACKEND_ERROR_REASON_INVALID = 2 [(errors.v1.code) = 403];
+}

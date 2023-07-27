@@ -109,21 +109,6 @@ message Org {
   google.protobuf.Timestamp created_at = 3;
 }
 
-message OCIRepositoryItem {
-  option deprecated = true; // in favor of CASBackendItem
-
-  string id = 1;
-  string repo = 2;
-  google.protobuf.Timestamp created_at = 3;
-  ValidationStatus validation_status = 4;
-
-  enum ValidationStatus {
-    VALIDATION_STATUS_UNSPECIFIED = 0;
-    VALIDATION_STATUS_OK = 1;
-    VALIDATION_STATUS_INVALID = 2;
-  }
-}
-
 message CASBackendItem {
   string id = 1;
   // e.g. myregistry.io/myrepo s3 bucket and so on

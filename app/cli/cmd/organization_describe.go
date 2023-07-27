@@ -47,10 +47,10 @@ func contextTableOutput(config *action.ConfigContextItem) error {
 	gt.AppendRow(table.Row{"Logged in as", config.CurrentUser.Email})
 	gt.AppendSeparator()
 	gt.AppendRow(table.Row{"Organization", config.CurrentOrg.Name})
-	repo := config.CurrentOCIRepo
-	if repo != nil {
+	backend := config.CurrentCASBackend
+	if backend != nil {
 		gt.AppendSeparator()
-		gt.AppendRow(table.Row{"OCI repository", fmt.Sprintf("%s (status=%q)", repo.Repo, repo.ValidationStatus)})
+		gt.AppendRow(table.Row{"Default CAS Backend", fmt.Sprintf("%s (status=%q)", backend.Location, backend.ValidationStatus)})
 	}
 
 	gt.Render()

@@ -31,9 +31,9 @@ func NewConfigCurrentContext(cfg *ActionsOpts) *ConfigCurrentContext {
 }
 
 type ConfigContextItem struct {
-	CurrentUser    *ConfigContextItemUser
-	CurrentOrg     *OrgItem
-	CurrentOCIRepo *ConfigContextItemOCIRepo
+	CurrentUser       *ConfigContextItemUser
+	CurrentOrg        *OrgItem
+	CurrentCASBackend *ConfigContextItemCASBackend
 }
 
 type ConfigContextItemUser struct {
@@ -41,8 +41,8 @@ type ConfigContextItemUser struct {
 	CreatedAt *time.Time
 }
 
-type ConfigContextItemOCIRepo struct {
-	ID, Repo         string
+type ConfigContextItemCASBackend struct {
+	ID, Location     string
 	CreatedAt        *time.Time
 	ValidationStatus ValidationStatus
 }
@@ -65,20 +65,20 @@ func (action *ConfigCurrentContext) Run() (*ConfigContextItem, error) {
 		CurrentOrg: pbOrgItemToAction(res.GetCurrentOrg()),
 	}
 
-	repo := res.GetCurrentOciRepo()
-	if repo != nil {
-		r := &ConfigContextItemOCIRepo{
-			ID: repo.GetId(), Repo: repo.GetRepo(), CreatedAt: toTimePtr(repo.GetCreatedAt().AsTime()),
+	backend := res.GetCurrentCasBackend()
+	if backend != nil {
+		r := &ConfigContextItemCASBackend{
+			ID: backend.GetId(), Location: backend.GetLocation(), CreatedAt: toTimePtr(backend.GetCreatedAt().AsTime()),
 		}
 
-		switch repo.GetValidationStatus() {
-		case pb.OCIRepositoryItem_VALIDATION_STATUS_OK:
+		switch backend.GetValidationStatus() {
+		case pb.CASBackendItem_VALIDATION_STATUS_OK:
 			r.ValidationStatus = Valid
-		case pb.OCIRepositoryItem_VALIDATION_STATUS_INVALID:
+		case pb.CASBackendItem_VALIDATION_STATUS_INVALID:
 			r.ValidationStatus = Invalid
 		}
 
-		item.CurrentOCIRepo = r
+		item.CurrentCASBackend = r
 	}
 	return item, nil
 }

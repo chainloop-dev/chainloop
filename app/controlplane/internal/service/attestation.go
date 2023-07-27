@@ -277,7 +277,7 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 	}
 
 	// Return the backend information and associated credentials (if applicable)
-	resp := &cpAPI.AttestationServiceGetUploadCredsResponse_Result{Backend: bizOCASBackendToPb(backend)}
+	resp := &cpAPI.AttestationServiceGetUploadCredsResponse_Result{Backend: bizCASBackendToPb(backend)}
 	if backend.SecretName != "" {
 		t, err := s.casCredsUseCase.GenerateTemporaryCredentials(backend.SecretName, casJWT.Uploader)
 		if err != nil {

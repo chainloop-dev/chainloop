@@ -51,13 +51,13 @@ func (s *ContextService) Current(ctx context.Context, _ *pb.ContextServiceCurren
 		CurrentOrg: bizOrgToPb((*biz.Organization)(currentOrg)),
 	}
 
-	repo, err := s.uc.FindDefaultBackend(ctx, currentOrg.ID)
+	backend, err := s.uc.FindDefaultBackend(ctx, currentOrg.ID)
 	if err != nil && !biz.IsNotFound(err) {
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}
 
-	if repo != nil {
-		res.CurrentOciRepo = bizOCIRepoToPb(repo)
+	if backend != nil {
+		res.CurrentCasBackend = bizCASBackendToPb(backend)
 	}
 
 	return &pb.ContextServiceCurrentResponse{

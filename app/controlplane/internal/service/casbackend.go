@@ -56,7 +56,7 @@ func (s *CASBackendService) List(ctx context.Context, _ *pb.CASBackendServiceLis
 
 	res := []*pb.CASBackendItem{}
 	for _, backend := range backends {
-		res = append(res, bizOCASBackendToPb(backend))
+		res = append(res, bizCASBackendToPb(backend))
 	}
 
 	return &pb.CASBackendServiceListResponse{Result: res}, nil
@@ -90,7 +90,7 @@ func (s *CASBackendService) Create(ctx context.Context, req *pb.CASBackendServic
 		return nil, handleErr(err, s.log)
 	}
 
-	return &pb.CASBackendServiceCreateResponse{Result: bizOCASBackendToPb(res)}, nil
+	return &pb.CASBackendServiceCreateResponse{Result: bizCASBackendToPb(res)}, nil
 }
 
 func (s *CASBackendService) Update(ctx context.Context, req *pb.CASBackendServiceUpdateRequest) (*pb.CASBackendServiceUpdateResponse, error) {
@@ -132,7 +132,7 @@ func (s *CASBackendService) Update(ctx context.Context, req *pb.CASBackendServic
 		return nil, handleErr(err, s.log)
 	}
 
-	return &pb.CASBackendServiceUpdateResponse{Result: bizOCASBackendToPb(res)}, nil
+	return &pb.CASBackendServiceUpdateResponse{Result: bizCASBackendToPb(res)}, nil
 }
 
 // Delete the CAS backend
@@ -150,7 +150,7 @@ func (s *CASBackendService) Delete(ctx context.Context, req *pb.CASBackendServic
 	return &pb.CASBackendServiceDeleteResponse{}, nil
 }
 
-func bizOCASBackendToPb(in *biz.CASBackend) *pb.CASBackendItem {
+func bizCASBackendToPb(in *biz.CASBackend) *pb.CASBackendItem {
 	r := &pb.CASBackendItem{
 		Id: in.ID.String(), Location: in.Location, Description: in.Description,
 		CreatedAt:   timestamppb.New(*in.CreatedAt),

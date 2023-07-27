@@ -40,7 +40,7 @@ func CheckOrgRequirements(uc biz.CASBackendReader) middleware.Middleware {
 			if err != nil && !biz.IsNotFound(err) {
 				return nil, fmt.Errorf("checking for CAS backends in the org: %w", err)
 			} else if repo == nil {
-				return nil, v1.ErrorOciRepositoryErrorReasonRequired("your organization does not have an CAS Backend configured yet")
+				return nil, v1.ErrorCasBackendErrorReasonRequired("your organization does not have an CAS Backend configured yet")
 			}
 
 			// 2 - Perform a validation if needed
@@ -53,7 +53,7 @@ func CheckOrgRequirements(uc biz.CASBackendReader) middleware.Middleware {
 
 			// 2 - compare the status
 			if repo.ValidationStatus != biz.CASBackendValidationOK {
-				return nil, v1.ErrorOciRepositoryErrorReasonInvalid("your CAS backend can't be reached")
+				return nil, v1.ErrorCasBackendErrorReasonInvalid("your CAS backend can't be reached")
 			}
 
 			return handler(ctx, req)

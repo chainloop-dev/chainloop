@@ -2,7 +2,7 @@
 import { grpc } from "@improbable-eng/grpc-web";
 import { BrowserHeaders } from "browser-headers";
 import _m0 from "protobufjs/minimal";
-import { OCIRepositoryItem, Org, User } from "./response_messages";
+import { CASBackendItem, Org, User } from "./response_messages";
 
 export const protobufPackage = "controlplane.v1";
 
@@ -16,7 +16,7 @@ export interface ContextServiceCurrentResponse {
 export interface ContextServiceCurrentResponse_Result {
   currentUser?: User;
   currentOrg?: Org;
-  currentOciRepo?: OCIRepositoryItem;
+  currentCasBackend?: CASBackendItem;
 }
 
 function createBaseContextServiceCurrentRequest(): ContextServiceCurrentRequest {
@@ -125,7 +125,7 @@ export const ContextServiceCurrentResponse = {
 };
 
 function createBaseContextServiceCurrentResponse_Result(): ContextServiceCurrentResponse_Result {
-  return { currentUser: undefined, currentOrg: undefined, currentOciRepo: undefined };
+  return { currentUser: undefined, currentOrg: undefined, currentCasBackend: undefined };
 }
 
 export const ContextServiceCurrentResponse_Result = {
@@ -136,8 +136,8 @@ export const ContextServiceCurrentResponse_Result = {
     if (message.currentOrg !== undefined) {
       Org.encode(message.currentOrg, writer.uint32(18).fork()).ldelim();
     }
-    if (message.currentOciRepo !== undefined) {
-      OCIRepositoryItem.encode(message.currentOciRepo, writer.uint32(26).fork()).ldelim();
+    if (message.currentCasBackend !== undefined) {
+      CASBackendItem.encode(message.currentCasBackend, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -168,7 +168,7 @@ export const ContextServiceCurrentResponse_Result = {
             break;
           }
 
-          message.currentOciRepo = OCIRepositoryItem.decode(reader, reader.uint32());
+          message.currentCasBackend = CASBackendItem.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -183,7 +183,9 @@ export const ContextServiceCurrentResponse_Result = {
     return {
       currentUser: isSet(object.currentUser) ? User.fromJSON(object.currentUser) : undefined,
       currentOrg: isSet(object.currentOrg) ? Org.fromJSON(object.currentOrg) : undefined,
-      currentOciRepo: isSet(object.currentOciRepo) ? OCIRepositoryItem.fromJSON(object.currentOciRepo) : undefined,
+      currentCasBackend: isSet(object.currentCasBackend)
+        ? CASBackendItem.fromJSON(object.currentCasBackend)
+        : undefined,
     };
   },
 
@@ -193,8 +195,10 @@ export const ContextServiceCurrentResponse_Result = {
       (obj.currentUser = message.currentUser ? User.toJSON(message.currentUser) : undefined);
     message.currentOrg !== undefined &&
       (obj.currentOrg = message.currentOrg ? Org.toJSON(message.currentOrg) : undefined);
-    message.currentOciRepo !== undefined &&
-      (obj.currentOciRepo = message.currentOciRepo ? OCIRepositoryItem.toJSON(message.currentOciRepo) : undefined);
+    message.currentCasBackend !== undefined &&
+      (obj.currentCasBackend = message.currentCasBackend
+        ? CASBackendItem.toJSON(message.currentCasBackend)
+        : undefined);
     return obj;
   },
 
@@ -214,8 +218,8 @@ export const ContextServiceCurrentResponse_Result = {
     message.currentOrg = (object.currentOrg !== undefined && object.currentOrg !== null)
       ? Org.fromPartial(object.currentOrg)
       : undefined;
-    message.currentOciRepo = (object.currentOciRepo !== undefined && object.currentOciRepo !== null)
-      ? OCIRepositoryItem.fromPartial(object.currentOciRepo)
+    message.currentCasBackend = (object.currentCasBackend !== undefined && object.currentCasBackend !== null)
+      ? CASBackendItem.fromPartial(object.currentCasBackend)
       : undefined;
     return message;
   },
