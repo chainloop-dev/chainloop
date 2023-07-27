@@ -115,6 +115,8 @@ func humanizedRunnerType(in v1.CraftingSchema_Runner_RunnerType) string {
 		return "GitHub"
 	case *v1.CraftingSchema_Runner_GITLAB_PIPELINE.Enum():
 		return "GitLab"
+	case *v1.CraftingSchema_Runner_AZURE_DEVOPS_PIPELINE.Enum():
+		return "Azure DevOps Pipeline"
 	default:
 		return "Unspecified"
 	}
