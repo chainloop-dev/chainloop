@@ -7,6 +7,49 @@ import { CASBackendItem } from "./response_messages";
 
 export const protobufPackage = "controlplane.v1";
 
+export enum CASBackendErrorReason {
+  CAS_BACKEND_ERROR_REASON_UNSPECIFIED = 0,
+  CAS_BACKEND_ERROR_REASON_REQUIRED = 1,
+  /**
+   * CAS_BACKEND_ERROR_REASON_INVALID - The repository does not seem to be operational
+   * a previous validation has failed
+   */
+  CAS_BACKEND_ERROR_REASON_INVALID = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function cASBackendErrorReasonFromJSON(object: any): CASBackendErrorReason {
+  switch (object) {
+    case 0:
+    case "CAS_BACKEND_ERROR_REASON_UNSPECIFIED":
+      return CASBackendErrorReason.CAS_BACKEND_ERROR_REASON_UNSPECIFIED;
+    case 1:
+    case "CAS_BACKEND_ERROR_REASON_REQUIRED":
+      return CASBackendErrorReason.CAS_BACKEND_ERROR_REASON_REQUIRED;
+    case 2:
+    case "CAS_BACKEND_ERROR_REASON_INVALID":
+      return CASBackendErrorReason.CAS_BACKEND_ERROR_REASON_INVALID;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return CASBackendErrorReason.UNRECOGNIZED;
+  }
+}
+
+export function cASBackendErrorReasonToJSON(object: CASBackendErrorReason): string {
+  switch (object) {
+    case CASBackendErrorReason.CAS_BACKEND_ERROR_REASON_UNSPECIFIED:
+      return "CAS_BACKEND_ERROR_REASON_UNSPECIFIED";
+    case CASBackendErrorReason.CAS_BACKEND_ERROR_REASON_REQUIRED:
+      return "CAS_BACKEND_ERROR_REASON_REQUIRED";
+    case CASBackendErrorReason.CAS_BACKEND_ERROR_REASON_INVALID:
+      return "CAS_BACKEND_ERROR_REASON_INVALID";
+    case CASBackendErrorReason.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export interface CASBackendServiceListRequest {
 }
 

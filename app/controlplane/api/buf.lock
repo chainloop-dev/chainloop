@@ -8,4 +8,8 @@ deps:
   - remote: buf.build
     owner: googleapis
     repository: googleapis
-    commit: d1263fe26f8e430a967dc22a4d0cad18
+    commit: cc916c31859748a68fd229a3c8d7a2e8
+  - remote: buf.build
+    owner: kratos-go
+    repository: kratos
+    commit: e1d52e944e3845c6862a566db322432d

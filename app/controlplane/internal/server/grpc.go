@@ -60,7 +60,6 @@ type Opts struct {
 	ContextSvc          *service.ContextService
 	CASCredsSvc         *service.CASCredentialsService
 	OrgMetricsSvc       *service.OrgMetricsService
-	OCIRepositorySvc    *service.OCIRepositoryService
 	IntegrationsSvc     *service.IntegrationsService
 	OrganizationSvc     *service.OrganizationService
 	CASBackendSvc       *service.CASBackendService
@@ -96,7 +95,6 @@ func NewGRPCServer(opts *Opts) *grpc.Server {
 	v1.RegisterAttestationServiceServer(srv, opts.AttestationSvc)
 	v1.RegisterWorkflowContractServiceServer(srv, opts.WorkflowContractSvc)
 	v1.RegisterCASCredentialsServiceServer(srv, opts.CASCredsSvc)
-	v1.RegisterOCIRepositoryServiceServer(srv, opts.OCIRepositorySvc)
 	v1.RegisterContextServiceServer(srv, opts.ContextSvc)
 	v1.RegisterOrgMetricsServiceServer(srv, opts.OrgMetricsSvc)
 	v1.RegisterIntegrationsServiceServer(srv, opts.IntegrationsSvc)

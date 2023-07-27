@@ -54,9 +54,9 @@ func errorInfo(err error, logger zerolog.Logger) (string, int) {
 
 	// Make overrides
 	switch {
-	case v1.IsOciRepositoryErrorReasonRequired(err):
+	case v1.IsCasBackendErrorReasonRequired(err):
 		msg = "you need to enable a CAS backend first. Refer to `chainloop cas-backend` command or contact your administrator."
-	case v1.IsOciRepositoryErrorReasonInvalid(err):
+	case v1.IsCasBackendErrorReasonInvalid(err):
 		msg = "the CAS backend you provided is invalid. Refer to `chainloop cas-backend update` command or contact your administrator."
 	case v1.IsAllowListErrorNotInList(err):
 		msg = "your user is not part of the private beta yet. You can request access at https://docs.chainloop.dev/getting-started/private-beta"

@@ -21,7 +21,7 @@ option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/con
 
 import "google/protobuf/timestamp.proto";
 import "workflowcontract/v1/crafting_schema.proto";
-import "errors/v1/errors.proto";
+import "errors/errors.proto";
 
 message WorkflowItem {
   string id = 1;
@@ -109,21 +109,6 @@ message Org {
   google.protobuf.Timestamp created_at = 3;
 }
 
-message OCIRepositoryItem {
-  option deprecated = true; // in favor of CASBackendItem
-
-  string id = 1;
-  string repo = 2;
-  google.protobuf.Timestamp created_at = 3;
-  ValidationStatus validation_status = 4;
-
-  enum ValidationStatus {
-    VALIDATION_STATUS_UNSPECIFIED = 0;
-    VALIDATION_STATUS_OK = 1;
-    VALIDATION_STATUS_INVALID = 2;
-  }
-}
-
 message CASBackendItem {
   string id = 1;
   // e.g. myregistry.io/myrepo s3 bucket and so on
@@ -155,7 +140,7 @@ message CASBackendItem {
 }
 
 enum AllowListError {
-  option (errors.v1.default_code) = 500;
+  option (errors.default_code) = 500;
   ALLOW_LIST_ERROR_UNSPECIFIED = 0;
-  ALLOW_LIST_ERROR_NOT_IN_LIST = 1 [(errors.v1.code) = 403];
+  ALLOW_LIST_ERROR_NOT_IN_LIST = 1 [(errors.code) = 403];
 }

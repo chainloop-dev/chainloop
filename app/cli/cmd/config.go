@@ -49,6 +49,6 @@ func newConfigCmd() *cobra.Command {
 		Short: "Configure this client",
 	}
 
-	cmd.AddCommand(newOCIRepositoryCreateCmd(), newConfigSaveCmd(), newConfigViewCmd(), newConfigResetCmd())
+	cmd.AddCommand(newConfigSaveCmd(), newConfigViewCmd(), newConfigResetCmd())
 	return cmd
 }

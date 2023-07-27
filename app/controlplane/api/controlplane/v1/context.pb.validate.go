@@ -352,11 +352,11 @@ func (m *ContextServiceCurrentResponse_Result) validate(all bool) error {
 	}
 
 	if all {
-		switch v := interface{}(m.GetCurrentOciRepo()).(type) {
+		switch v := interface{}(m.GetCurrentCasBackend()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, ContextServiceCurrentResponse_ResultValidationError{
-					field:  "CurrentOciRepo",
+					field:  "CurrentCasBackend",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -364,16 +364,16 @@ func (m *ContextServiceCurrentResponse_Result) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, ContextServiceCurrentResponse_ResultValidationError{
-					field:  "CurrentOciRepo",
+					field:  "CurrentCasBackend",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetCurrentOciRepo()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetCurrentCasBackend()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return ContextServiceCurrentResponse_ResultValidationError{
-				field:  "CurrentOciRepo",
+				field:  "CurrentCasBackend",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
