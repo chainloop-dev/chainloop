@@ -20,6 +20,7 @@ import (
 	"time"
 
 	v1 "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
+	pbc "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
 )
 
@@ -37,11 +38,11 @@ type AttestationStatusResult struct {
 	WorkflowMeta  *AttestationStatusWorkflowMeta
 	Materials     []AttestationStatusResultMaterial
 	EnvVars       map[string]string
-	RunnerContext *AttestaionResultRunnerContext
+	RunnerContext *AttestationResultRunnerContext
 	DryRun        bool
 }
 
-type AttestaionResultRunnerContext struct {
+type AttestationResultRunnerContext struct {
 	EnvVars            map[string]string
 	JobURL, RunnerType string
 }
@@ -51,7 +52,7 @@ type AttestationStatusWorkflowMeta struct {
 }
 
 type AttestationStatusResultMaterial struct {
-	Name, Type, Value       string
+	*Material
 	Set, IsOutput, Required bool
 }
 
@@ -93,12 +94,19 @@ func (action *AttestationStatus) Run() (*AttestationStatusResult, error) {
 	// Materials
 	for _, m := range c.CraftingState.InputSchema.Materials {
 		materialResult := &AttestationStatusResultMaterial{
-			Name: m.Name, Type: m.Type.String(), IsOutput: m.Output, Required: !m.Optional,
+			Material: &Material{
+				Name: m.Name, Type: m.Type.String(),
+				Annotations: pbAnnotationsToAction(m.Annotations),
+			},
+			IsOutput: m.Output, Required: !m.Optional,
 		}
 
+		// If it has been added already we load the value
 		if cm, found := c.CraftingState.Attestation.Materials[m.Name]; found {
+			if err := setMaterialValue(cm, materialResult.Material); err != nil {
+				return nil, err
+			}
 			materialResult.Set = true
-			materialResult.Value = getMaterialSetValue(cm)
 		}
 
 		res.Materials = append(res.Materials, *materialResult)
@@ -114,7 +122,7 @@ func (action *AttestationStatus) Run() (*AttestationStatusResult, error) {
 	}
 
 	res.EnvVars = envVars
-	res.RunnerContext = &AttestaionResultRunnerContext{
+	res.RunnerContext = &AttestationResultRunnerContext{
 		EnvVars:    c.Runner.ResolveEnvVars(),
 		RunnerType: att.RunnerType.String(),
 		JobURL:     att.RunnerUrl,
@@ -123,15 +131,33 @@ func (action *AttestationStatus) Run() (*AttestationStatusResult, error) {
 	return res, nil
 }
 
-func getMaterialSetValue(w *v1.Attestation_Material) string {
-	switch m := w.GetM().(type) {
-	case *v1.Attestation_Material_String_:
-		return m.String_.GetValue()
-	case *v1.Attestation_Material_ContainerImage_:
-		return fmt.Sprintf("%s@%s", m.ContainerImage.GetName(), m.ContainerImage.GetDigest())
-	case *v1.Attestation_Material_Artifact_:
-		return fmt.Sprintf("%s@%s", m.Artifact.GetName(), m.Artifact.GetDigest())
+func pbAnnotationsToAction(in []*pbc.Annotation) []*Annotation {
+	res := make([]*Annotation, 0, len(in))
+
+	for _, a := range in {
+		res = append(res, &Annotation{
+			Name:  a.GetName(),
+			Value: a.GetValue(),
+		})
 	}
 
-	return ""
+	return res
+
+}
+
+func setMaterialValue(w *v1.Attestation_Material, o *Material) error {
+	switch m := w.GetM().(type) {
+	case *v1.Attestation_Material_String_:
+		o.Value = m.String_.GetValue()
+	case *v1.Attestation_Material_ContainerImage_:
+		o.Value = m.ContainerImage.GetName()
+		o.Hash = m.ContainerImage.GetDigest()
+	case *v1.Attestation_Material_Artifact_:
+		o.Value = m.Artifact.GetName()
+		o.Hash = m.Artifact.GetDigest()
+	default:
+		return fmt.Errorf("unknown material type: %T", m)
+	}
+
+	return nil
 }
