@@ -39,6 +39,15 @@ func TestExtractMaterials(t *testing.T) {
 					Value: "bar",
 				},
 				{
+					Name:  "with_annotations",
+					Type:  "STRING",
+					Value: "bar",
+					Annotations: map[string]string{
+						"foo": "bar",
+						"bar": "baz",
+					},
+				},
+				{
 					Name:  "foo",
 					Type:  "ARTIFACT",
 					Value: "bar",
@@ -58,14 +67,25 @@ func TestExtractMaterials(t *testing.T) {
 					Value: "bar",
 				},
 				{
+					Name:  "with_annotations",
+					Type:  "STRING",
+					Value: "bar",
+					Annotations: map[string]string{
+						"foo": "bar",
+						"bar": "baz",
+					},
+				},
+				{
 					Name:  "foo",
 					Type:  "ARTIFACT",
-					Value: "bar@sha256:deadbeef",
+					Value: "bar",
+					Hash:  "sha256:deadbeef",
 				},
 				{
 					Name:  "image",
 					Type:  "CONTAINER_IMAGE",
-					Value: "docker.io/nginx@sha256:deadbeef",
+					Value: "docker.io/nginx",
+					Hash:  "sha256:deadbeef",
 				},
 			},
 		},
