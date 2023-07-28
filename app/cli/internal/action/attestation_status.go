@@ -142,7 +142,6 @@ func pbAnnotationsToAction(in []*pbc.Annotation) []*Annotation {
 	}
 
 	return res
-
 }
 
 func setMaterialValue(w *v1.Attestation_Material, o *Material) error {
