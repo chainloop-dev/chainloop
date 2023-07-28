@@ -3,7 +3,5 @@ materials:
   - name: "string"
     type: "STRING"
     annotations:
-      - name: "with-default-val"
+      - name: "withDefaultVal"
         value: "val1"
-      - name: "without-default-val"
-        value: "boom"
