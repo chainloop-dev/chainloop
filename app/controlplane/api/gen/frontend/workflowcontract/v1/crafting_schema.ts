@@ -137,7 +137,7 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
 }
 
 export interface Annotation {
-  /** Single word optionally separated with _ or - */
+  /** Single word optionally separated with _ */
   name: string;
   /**
    * TODO: This value is required for now, but this behavior will chance once we allow

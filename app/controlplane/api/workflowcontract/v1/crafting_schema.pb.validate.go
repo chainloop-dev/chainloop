@@ -234,7 +234,7 @@ func (m *Annotation) validate(all bool) error {
 	if !_Annotation_Name_Pattern.MatchString(m.GetName()) {
 		err := AnnotationValidationError{
 			field:  "Name",
-			reason: "value does not match regex pattern \"^[\\\\w|-]+$\"",
+			reason: "value does not match regex pattern \"^[\\\\w]+$\"",
 		}
 		if !all {
 			return err
@@ -330,7 +330,7 @@ var _ interface {
 	ErrorName() string
 } = AnnotationValidationError{}
 
-var _Annotation_Name_Pattern = regexp.MustCompile("^[\\w|-]+$")
+var _Annotation_Name_Pattern = regexp.MustCompile("^[\\w]+$")
 
 // Validate checks the field values on CraftingSchema_Runner with the rules
 // defined in the proto definition for this message. If any rules are
