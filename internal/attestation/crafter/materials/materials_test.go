@@ -52,5 +52,4 @@ func TestCraft(t *testing.T) {
 	assert.WithinDuration(time.Now(), got.AddedAt.AsTime(), 5*time.Second)
 	// Annotations
 	assert.Equal(map[string]string{"test": "test"}, got.Annotations)
-
 }

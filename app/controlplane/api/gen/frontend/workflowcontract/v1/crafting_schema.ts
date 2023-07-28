@@ -140,6 +140,8 @@ export interface Annotation {
   /** Single word optionally separated with _ or - */
   name: string;
   /**
+   * TODO: This value is required for now, but this behavior will chance once we allow
+   * The user to set the value during attestation
    * The value can be set in the contract or during the attestation process
    * that's why its value is optional
    */
