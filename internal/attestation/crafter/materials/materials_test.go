@@ -18,6 +18,7 @@ package materials_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	attestationApi "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	contractAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -26,57 +27,30 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewStringCrafter(t *testing.T) {
-	testCases := []struct {
-		name    string
-		input   *contractAPI.CraftingSchema_Material
-		wantErr bool
-	}{
-		{
-			name: "happy path",
-			input: &contractAPI.CraftingSchema_Material{
-				Name: "test",
-				Type: contractAPI.CraftingSchema_Material_STRING,
-			},
-		},
-		{
-			name: "wrong type",
-			input: &contractAPI.CraftingSchema_Material{
-				Name: "test",
-				Type: contractAPI.CraftingSchema_Material_CONTAINER_IMAGE,
-			},
-			wantErr: true,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			_, err := materials.NewStringCrafter(tc.input)
-			if tc.wantErr {
-				assert.Error(t, err)
-				return
-			}
-
-			assert.NoError(t, err)
-		})
-	}
-}
-
-func TestStringCraft(t *testing.T) {
+func TestCraft(t *testing.T) {
 	assert := assert.New(t)
 	schema := &contractAPI.CraftingSchema_Material{
 		Name: "test",
 		Type: contractAPI.CraftingSchema_Material_STRING,
+		Annotations: []*contractAPI.Annotation{
+			{
+				Name:  "test",
+				Value: "test",
+			},
+		},
 	}
 
-	crafter, err := materials.NewStringCrafter(schema)
+	got, err := materials.Craft(context.TODO(), schema, "test-value", nil, nil)
 	require.NoError(t, err)
-
-	got, err := crafter.Craft(context.TODO(), "value")
-	assert.NoError(err)
 	assert.Equal(contractAPI.CraftingSchema_Material_STRING, got.MaterialType)
 	assert.False(got.UploadedToCas)
 	assert.Equal(got.GetString_(), &attestationApi.Attestation_Material_KeyVal{
-		Id: "test", Value: "value",
+		Id: "test", Value: "test-value",
 	})
+
+	// Timestamp
+	assert.WithinDuration(time.Now(), got.AddedAt.AsTime(), 5*time.Second)
+	// Annotations
+	assert.Equal(map[string]string{"test": "test"}, got.Annotations)
+
 }
