@@ -1747,6 +1747,8 @@ func (m *AttestationItem_Material) validate(all bool) error {
 
 	// no validation rules for Annotations
 
+	// no validation rules for Hash
+
 	if len(errors) > 0 {
 		return AttestationItem_MaterialMultiError(errors)
 	}

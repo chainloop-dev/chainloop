@@ -52,8 +52,10 @@ type WorkflowRunAttestationItem struct {
 }
 
 type Material struct {
-	Name        string        `json:"name"`
+	Name string `json:"name"`
+	// filename, container image name, string value, ...
 	Value       string        `json:"value"`
+	Hash        string        `json:"hash"`
 	Type        string        `json:"type"`
 	Annotations []*Annotation `json:"annotations,omitempty"`
 }
@@ -146,6 +148,7 @@ func materialPBToAction(in *pb.AttestationItem_Material) *Material {
 		Name:  in.Name,
 		Value: in.Value,
 		Type:  in.Type,
+		Hash:  in.Hash,
 	}
 
 	// append annotations sorted

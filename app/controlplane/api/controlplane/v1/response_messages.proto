@@ -65,10 +65,12 @@ message AttestationItem {
 
   message Material {
     string name = 1; 
+    // This might be the raw value, the container image name, the filename and so on
     string value = 2; 
     // Material type, i.e ARTIFACT
     string type = 3; 
     map<string, string> annotations = 4;
+    string hash = 5; 
   }
 }
 

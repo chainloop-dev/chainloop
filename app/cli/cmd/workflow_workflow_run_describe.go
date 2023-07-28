@@ -139,6 +139,10 @@ func predicateV1Table(att *action.WorkflowRunAttestationItem) {
 			mt.AppendRow(table.Row{"Name", m.Name})
 			mt.AppendRow(table.Row{"Type", m.Type})
 			mt.AppendRow(table.Row{"Value", wrap.String(m.Value, 100)})
+			if m.Hash != "" {
+				mt.AppendRow(table.Row{"Digest", m.Hash})
+			}
+
 			if len(m.Annotations) > 0 {
 				mt.AppendRow(table.Row{"Annotations", "------"})
 				for _, a := range m.Annotations {

@@ -85,10 +85,12 @@ export interface AttestationItem_EnvVariable {
 
 export interface AttestationItem_Material {
   name: string;
+  /** This might be the raw value, the container image name, the filename and so on */
   value: string;
   /** Material type, i.e ARTIFACT */
   type: string;
   annotations: { [key: string]: string };
+  hash: string;
 }
 
 export interface AttestationItem_Material_AnnotationsEntry {
@@ -734,7 +736,7 @@ export const AttestationItem_EnvVariable = {
 };
 
 function createBaseAttestationItem_Material(): AttestationItem_Material {
-  return { name: "", value: "", type: "", annotations: {} };
+  return { name: "", value: "", type: "", annotations: {}, hash: "" };
 }
 
 export const AttestationItem_Material = {
@@ -751,6 +753,9 @@ export const AttestationItem_Material = {
     Object.entries(message.annotations).forEach(([key, value]) => {
       AttestationItem_Material_AnnotationsEntry.encode({ key: key as any, value }, writer.uint32(34).fork()).ldelim();
     });
+    if (message.hash !== "") {
+      writer.uint32(42).string(message.hash);
+    }
     return writer;
   },
 
@@ -792,6 +797,13 @@ export const AttestationItem_Material = {
             message.annotations[entry4.key] = entry4.value;
           }
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.hash = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -812,6 +824,7 @@ export const AttestationItem_Material = {
           return acc;
         }, {})
         : {},
+      hash: isSet(object.hash) ? String(object.hash) : "",
     };
   },
 
@@ -826,6 +839,7 @@ export const AttestationItem_Material = {
         obj.annotations[k] = v;
       });
     }
+    message.hash !== undefined && (obj.hash = message.hash);
     return obj;
   },
 
@@ -847,6 +861,7 @@ export const AttestationItem_Material = {
       },
       {},
     );
+    message.hash = object.hash ?? "";
     return message;
   },
 };

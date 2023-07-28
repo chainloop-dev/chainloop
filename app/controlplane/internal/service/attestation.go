@@ -334,24 +334,23 @@ func extractEnvVariables(in map[string]string) []*cpAPI.AttestationItem_EnvVaria
 func extractMaterials(in []*chainloop.NormalizedMaterial) ([]*cpAPI.AttestationItem_Material, error) {
 	res := make([]*cpAPI.AttestationItem_Material, 0, len(in))
 	for _, m := range in {
-		// Initialize simply with the value
-		displayValue := m.Value
-		// Override if there is a hash attached
-		if m.Hash != nil {
-			name := m.Value
-			if m.EmbeddedInline || m.UploadedToCAS {
-				name = m.Filename
-			}
-
-			displayValue = fmt.Sprintf("%s@%s", name, m.Hash)
-		}
-
-		res = append(res, &cpAPI.AttestationItem_Material{
+		materialItem := &cpAPI.AttestationItem_Material{
 			Name:        m.Name,
-			Value:       displayValue,
 			Type:        m.Type,
 			Annotations: m.Annotations,
-		})
+			Value:       m.Value,
+		}
+
+		if m.Hash != nil {
+			materialItem.Hash = m.Hash.String()
+		}
+
+		// Override the value for the filename of the item uploaded
+		if m.EmbeddedInline || m.UploadedToCAS {
+			materialItem.Value = m.Filename
+		}
+
+		res = append(res, materialItem)
 	}
 
 	return res, nil
