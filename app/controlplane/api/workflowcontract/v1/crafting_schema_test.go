@@ -91,5 +91,4 @@ func TestValidateAnnotations(t *testing.T) {
 			assert.NoError(t, err)
 		})
 	}
-
 }
