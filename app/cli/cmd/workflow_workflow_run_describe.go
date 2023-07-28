@@ -24,6 +24,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
+	"github.com/muesli/reflow/wrap"
 	"github.com/spf13/cobra"
 )
 
@@ -134,12 +135,17 @@ func predicateV1Table(att *action.WorkflowRunAttestationItem) {
 		mt := newTableWriter()
 		mt.SetTitle("Materials")
 
-		header := table.Row{"Name", "Type", "Value"}
-		mt.AppendHeader(header)
-
 		for _, m := range materials {
-			row := table.Row{m.Name, m.Type, m.Value}
-			mt.AppendRow(row)
+			mt.AppendRow(table.Row{"Name", m.Name})
+			mt.AppendRow(table.Row{"Type", m.Type})
+			mt.AppendRow(table.Row{"Value", wrap.String(m.Value, 100)})
+			if len(m.Annotations) > 0 {
+				mt.AppendRow(table.Row{"Annotations", "------"})
+				for _, a := range m.Annotations {
+					mt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", a.Name, a.Value)})
+				}
+			}
+			mt.AppendSeparator()
 		}
 
 		mt.Render()

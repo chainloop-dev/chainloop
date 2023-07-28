@@ -68,6 +68,7 @@ message AttestationItem {
     string value = 2; 
     // Material type, i.e ARTIFACT
     string type = 3; 
+    map<string, string> annotations = 4;
   }
 }
 

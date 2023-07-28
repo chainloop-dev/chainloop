@@ -46,6 +46,9 @@ message CraftingSchema {
         bool optional = 3;
         // If a material is set as output it will get added to the subject in the statement
         bool output = 4;
+        // List of annotations that can be used to add metadata to the material
+        // this metadata can be used later on by the integrations engine to filter and interpolate data
+        repeated Annotation annotations = 5;
 
         enum MaterialType {
             MATERIAL_TYPE_UNSPECIFIED = 0;
@@ -60,3 +63,9 @@ message CraftingSchema {
     }
 }
 
+message Annotation {
+    string name = 1 [(validate.rules).string.pattern = "^[\\w|-]+$"]; // Single word optionally separated with _ or -
+    // The value can be set in the contract or during the attestation process
+    // that's why its value is optional
+    string value = 2;
+}

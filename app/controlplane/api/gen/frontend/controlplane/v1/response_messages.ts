@@ -88,6 +88,12 @@ export interface AttestationItem_Material {
   value: string;
   /** Material type, i.e ARTIFACT */
   type: string;
+  annotations: { [key: string]: string };
+}
+
+export interface AttestationItem_Material_AnnotationsEntry {
+  key: string;
+  value: string;
 }
 
 export interface WorkflowContractItem {
@@ -728,7 +734,7 @@ export const AttestationItem_EnvVariable = {
 };
 
 function createBaseAttestationItem_Material(): AttestationItem_Material {
-  return { name: "", value: "", type: "" };
+  return { name: "", value: "", type: "", annotations: {} };
 }
 
 export const AttestationItem_Material = {
@@ -742,6 +748,9 @@ export const AttestationItem_Material = {
     if (message.type !== "") {
       writer.uint32(26).string(message.type);
     }
+    Object.entries(message.annotations).forEach(([key, value]) => {
+      AttestationItem_Material_AnnotationsEntry.encode({ key: key as any, value }, writer.uint32(34).fork()).ldelim();
+    });
     return writer;
   },
 
@@ -773,6 +782,16 @@ export const AttestationItem_Material = {
 
           message.type = reader.string();
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          const entry4 = AttestationItem_Material_AnnotationsEntry.decode(reader, reader.uint32());
+          if (entry4.value !== undefined) {
+            message.annotations[entry4.key] = entry4.value;
+          }
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -787,6 +806,12 @@ export const AttestationItem_Material = {
       name: isSet(object.name) ? String(object.name) : "",
       value: isSet(object.value) ? String(object.value) : "",
       type: isSet(object.type) ? String(object.type) : "",
+      annotations: isObject(object.annotations)
+        ? Object.entries(object.annotations).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+          acc[key] = String(value);
+          return acc;
+        }, {})
+        : {},
     };
   },
 
@@ -795,6 +820,12 @@ export const AttestationItem_Material = {
     message.name !== undefined && (obj.name = message.name);
     message.value !== undefined && (obj.value = message.value);
     message.type !== undefined && (obj.type = message.type);
+    obj.annotations = {};
+    if (message.annotations) {
+      Object.entries(message.annotations).forEach(([k, v]) => {
+        obj.annotations[k] = v;
+      });
+    }
     return obj;
   },
 
@@ -807,6 +838,87 @@ export const AttestationItem_Material = {
     message.name = object.name ?? "";
     message.value = object.value ?? "";
     message.type = object.type ?? "";
+    message.annotations = Object.entries(object.annotations ?? {}).reduce<{ [key: string]: string }>(
+      (acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key] = String(value);
+        }
+        return acc;
+      },
+      {},
+    );
+    return message;
+  },
+};
+
+function createBaseAttestationItem_Material_AnnotationsEntry(): AttestationItem_Material_AnnotationsEntry {
+  return { key: "", value: "" };
+}
+
+export const AttestationItem_Material_AnnotationsEntry = {
+  encode(message: AttestationItem_Material_AnnotationsEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AttestationItem_Material_AnnotationsEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAttestationItem_Material_AnnotationsEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AttestationItem_Material_AnnotationsEntry {
+    return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? String(object.value) : "" };
+  },
+
+  toJSON(message: AttestationItem_Material_AnnotationsEntry): unknown {
+    const obj: any = {};
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AttestationItem_Material_AnnotationsEntry>, I>>(
+    base?: I,
+  ): AttestationItem_Material_AnnotationsEntry {
+    return AttestationItem_Material_AnnotationsEntry.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<AttestationItem_Material_AnnotationsEntry>, I>>(
+    object: I,
+  ): AttestationItem_Material_AnnotationsEntry {
+    const message = createBaseAttestationItem_Material_AnnotationsEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
     return message;
   },
 };
@@ -1635,6 +1747,10 @@ function longToNumber(long: Long): number {
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();
+}
+
+function isObject(value: any): boolean {
+  return typeof value === "object" && value !== null;
 }
 
 function isSet(value: any): boolean {

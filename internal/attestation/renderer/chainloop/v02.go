@@ -87,10 +87,16 @@ func (r *RendererV02) Header() (*in_toto.StatementHeader, error) {
 	}, nil
 }
 
-const AnnotationMaterialType = "chainloop.material.type"
-const AnnotationMaterialName = "chainloop.material.name"
-const AnnotationMaterialCAS = "chainloop.material.cas"
-const AnnotationMaterialInlineCAS = "chainloop.material.cas.inline"
+const builtInAnnotationPrefix = "chainloop."
+
+var AnnotationMaterialType = builtInAnnotation("material.type")
+var AnnotationMaterialName = builtInAnnotation("material.name")
+var AnnotationMaterialCAS = builtInAnnotation("material.cas")
+var AnnotationMaterialInlineCAS = builtInAnnotation("material.cas.inline")
+
+func builtInAnnotation(name string) string {
+	return fmt.Sprintf("%s%s", builtInAnnotationPrefix, name)
+}
 
 func outputMaterials(att *v1.Attestation, onlyOutput bool) []*slsa_v1.ResourceDescriptor {
 	// Sort material keys to stabilize output
@@ -128,9 +134,18 @@ func outputMaterials(att *v1.Attestation, onlyOutput bool) []*slsa_v1.ResourceDe
 			material.Content = nMaterial.Content
 		}
 
+		// Required, built-in annotations
 		material.Annotations = map[string]interface{}{
 			AnnotationMaterialType: artifactType.String(),
 			AnnotationMaterialName: mdefName,
+		}
+
+		// Custom annotations, it does not override the built-in ones
+		for k, v := range mdef.Annotations {
+			_, ok := material.Annotations[k]
+			if !ok {
+				material.Annotations[k] = v
+			}
 		}
 
 		if mdef.UploadedToCas {
@@ -163,6 +178,18 @@ func (p *ProvenancePredicateV02) GetMaterials() []*NormalizedMaterial {
 // Translate a ResourceDescriptor to a NormalizedMaterial
 func normalizeMaterial(material *slsa_v1.ResourceDescriptor) (*NormalizedMaterial, error) {
 	m := &NormalizedMaterial{}
+
+	// Set custom annotations
+	m.Annotations = make(map[string]string)
+	for k, v := range material.Annotations {
+		// if the annotation key doesn't start with chainloop.
+		// we set it as a custom annotation
+		if strings.HasPrefix(k, builtInAnnotationPrefix) {
+			continue
+		}
+
+		m.Annotations[k] = v.(string)
+	}
 
 	mType, ok := material.Annotations[AnnotationMaterialType]
 	if !ok {

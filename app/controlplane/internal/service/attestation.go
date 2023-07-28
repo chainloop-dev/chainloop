@@ -346,7 +346,12 @@ func extractMaterials(in []*chainloop.NormalizedMaterial) ([]*cpAPI.AttestationI
 			displayValue = fmt.Sprintf("%s@%s", name, m.Hash)
 		}
 
-		res = append(res, &cpAPI.AttestationItem_Material{Name: m.Name, Value: displayValue, Type: m.Type})
+		res = append(res, &cpAPI.AttestationItem_Material{
+			Name:        m.Name,
+			Value:       displayValue,
+			Type:        m.Type,
+			Annotations: m.Annotations,
+		})
 	}
 
 	return res, nil

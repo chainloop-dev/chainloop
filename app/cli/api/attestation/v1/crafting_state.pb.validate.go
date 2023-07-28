@@ -626,6 +626,34 @@ func (m *Attestation_Material) validate(all bool) error {
 
 	// no validation rules for InlineCas
 
+	{
+		sorted_keys := make([]string, len(m.GetAnnotations()))
+		i := 0
+		for key := range m.GetAnnotations() {
+			sorted_keys[i] = key
+			i++
+		}
+		sort.Slice(sorted_keys, func(i, j int) bool { return sorted_keys[i] < sorted_keys[j] })
+		for _, key := range sorted_keys {
+			val := m.GetAnnotations()[key]
+			_ = val
+
+			// no validation rules for Annotations[key]
+
+			if utf8.RuneCountInString(val) < 1 {
+				err := Attestation_MaterialValidationError{
+					field:  fmt.Sprintf("Annotations[%v]", key),
+					reason: "value length must be at least 1 runes",
+				}
+				if !all {
+					return err
+				}
+				errors = append(errors, err)
+			}
+
+		}
+	}
+
 	switch v := m.M.(type) {
 	case *Attestation_Material_String_:
 		if v == nil {
