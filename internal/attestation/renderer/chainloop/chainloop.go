@@ -55,6 +55,8 @@ type NormalizedMaterial struct {
 	UploadedToCAS bool
 	// Whether the Material was embedded inline in the attestation
 	EmbeddedInline bool
+	// Custom annotations
+	Annotations map[string]string
 }
 
 type ProvenancePredicateCommon struct {

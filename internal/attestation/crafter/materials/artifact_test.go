@@ -18,7 +18,6 @@ package materials_test
 import (
 	"context"
 	"testing"
-	"time"
 
 	"code.cloudfoundry.org/bytefmt"
 	attestationApi "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
@@ -91,7 +90,6 @@ func TestArtifactCraft(t *testing.T) {
 	assert.NoError(err)
 	assert.Equal(contractAPI.CraftingSchema_Material_ARTIFACT.String(), got.MaterialType.String())
 	assert.True(got.UploadedToCas)
-	assert.WithinDuration(time.Now(), got.AddedAt.AsTime(), 5*time.Second)
 
 	// The result includes the digest reference
 	assert.Equal(got.GetArtifact(), &attestationApi.Attestation_Material_Artifact{

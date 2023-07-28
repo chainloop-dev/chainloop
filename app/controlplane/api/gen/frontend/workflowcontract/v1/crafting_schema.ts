@@ -65,6 +65,11 @@ export interface CraftingSchema_Material {
   optional: boolean;
   /** If a material is set as output it will get added to the subject in the statement */
   output: boolean;
+  /**
+   * List of annotations that can be used to add metadata to the material
+   * this metadata can be used later on by the integrations engine to filter and interpolate data
+   */
+  annotations: Annotation[];
 }
 
 export enum CraftingSchema_Material_MaterialType {
@@ -129,6 +134,18 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
     default:
       return "UNRECOGNIZED";
   }
+}
+
+export interface Annotation {
+  /** Single word optionally separated with _ */
+  name: string;
+  /**
+   * TODO: This value is required for now, but this behavior will chance once we allow
+   * The user to set the value during attestation
+   * The value can be set in the contract or during the attestation process
+   * that's why its value is optional
+   */
+  value: string;
 }
 
 function createBaseCraftingSchema(): CraftingSchema {
@@ -298,7 +315,7 @@ export const CraftingSchema_Runner = {
 };
 
 function createBaseCraftingSchema_Material(): CraftingSchema_Material {
-  return { type: 0, name: "", optional: false, output: false };
+  return { type: 0, name: "", optional: false, output: false, annotations: [] };
 }
 
 export const CraftingSchema_Material = {
@@ -314,6 +331,9 @@ export const CraftingSchema_Material = {
     }
     if (message.output === true) {
       writer.uint32(32).bool(message.output);
+    }
+    for (const v of message.annotations) {
+      Annotation.encode(v!, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -353,6 +373,13 @@ export const CraftingSchema_Material = {
 
           message.output = reader.bool();
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.annotations.push(Annotation.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -368,6 +395,7 @@ export const CraftingSchema_Material = {
       name: isSet(object.name) ? String(object.name) : "",
       optional: isSet(object.optional) ? Boolean(object.optional) : false,
       output: isSet(object.output) ? Boolean(object.output) : false,
+      annotations: Array.isArray(object?.annotations) ? object.annotations.map((e: any) => Annotation.fromJSON(e)) : [],
     };
   },
 
@@ -377,6 +405,11 @@ export const CraftingSchema_Material = {
     message.name !== undefined && (obj.name = message.name);
     message.optional !== undefined && (obj.optional = message.optional);
     message.output !== undefined && (obj.output = message.output);
+    if (message.annotations) {
+      obj.annotations = message.annotations.map((e) => e ? Annotation.toJSON(e) : undefined);
+    } else {
+      obj.annotations = [];
+    }
     return obj;
   },
 
@@ -390,6 +423,78 @@ export const CraftingSchema_Material = {
     message.name = object.name ?? "";
     message.optional = object.optional ?? false;
     message.output = object.output ?? false;
+    message.annotations = object.annotations?.map((e) => Annotation.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseAnnotation(): Annotation {
+  return { name: "", value: "" };
+}
+
+export const Annotation = {
+  encode(message: Annotation, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Annotation {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAnnotation();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Annotation {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      value: isSet(object.value) ? String(object.value) : "",
+    };
+  },
+
+  toJSON(message: Annotation): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.value !== undefined && (obj.value = message.value);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Annotation>, I>>(base?: I): Annotation {
+    return Annotation.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<Annotation>, I>>(object: I): Annotation {
+    const message = createBaseAnnotation();
+    message.name = object.name ?? "";
+    message.value = object.value ?? "";
     return message;
   },
 };

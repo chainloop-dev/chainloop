@@ -68,6 +68,12 @@ func (s *crafterSuite) TestInit() {
 			wantErr:          false,
 			dryRun:           true,
 		},
+		{
+			name:             "with annotations",
+			contractPath:     "testdata/contracts/with_material_annotations.yaml",
+			workflowMetadata: s.workflowMetadata,
+			dryRun:           true,
+		},
 	}
 
 	for _, tc := range testCases {

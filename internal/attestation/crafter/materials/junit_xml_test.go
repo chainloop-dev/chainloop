@@ -19,7 +19,6 @@ package materials_test
 import (
 	"context"
 	"testing"
-	"time"
 
 	attestationApi "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	contractAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -124,7 +123,6 @@ func TestJUnitXMLCraft(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(contractAPI.CraftingSchema_Material_JUNIT_XML.String(), got.MaterialType.String())
 			assert.True(got.UploadedToCas)
-			assert.WithinDuration(time.Now(), got.AddedAt.AsTime(), 5*time.Second)
 
 			// The result includes the digest reference
 			assert.Equal(got.GetArtifact(), &attestationApi.Attestation_Material_Artifact{

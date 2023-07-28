@@ -1,0 +1,7 @@
+schemaVersion: "v1"
+materials:
+  - name: "string"
+    type: "STRING"
+    annotations:
+      - name: "withDefaultVal"
+        value: "val1"

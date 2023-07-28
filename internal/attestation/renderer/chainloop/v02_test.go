@@ -84,6 +84,8 @@ func TestRenderV02(t *testing.T) {
 }
 
 func TestNormalizeMaterial(t *testing.T) {
+	var emptyMap = make(map[string]string)
+
 	testCases := []struct {
 		name    string
 		input   *slsa_v1.ResourceDescriptor
@@ -128,9 +130,10 @@ func TestNormalizeMaterial(t *testing.T) {
 				Content: []byte("bar"),
 			},
 			want: &NormalizedMaterial{
-				Name:  "foo",
-				Type:  "STRING",
-				Value: "bar",
+				Name:        "foo",
+				Type:        "STRING",
+				Value:       "bar",
+				Annotations: emptyMap,
 			},
 		},
 		{
@@ -162,6 +165,31 @@ func TestNormalizeMaterial(t *testing.T) {
 				Filename:      "artifact.tgz",
 				Hash:          &crv1.Hash{Algorithm: "sha256", Hex: "deadbeef"},
 				UploadedToCAS: true,
+				Annotations:   emptyMap,
+			},
+		},
+		{
+			name: "valid artifact material with annotations",
+			input: &slsa_v1.ResourceDescriptor{
+				Annotations: map[string]interface{}{
+					"chainloop.material.name": "foo",
+					"chainloop.material.type": "ARTIFACT",
+					"chainloop.material.cas":  true,
+					"foo":                     "bar",
+					"bar":                     "baz",
+				},
+				Digest: map[string]string{
+					"sha256": "deadbeef",
+				},
+				Name: "artifact.tgz",
+			},
+			want: &NormalizedMaterial{
+				Name:          "foo",
+				Type:          "ARTIFACT",
+				Filename:      "artifact.tgz",
+				Hash:          &crv1.Hash{Algorithm: "sha256", Hex: "deadbeef"},
+				UploadedToCAS: true,
+				Annotations:   map[string]string{"foo": "bar", "bar": "baz"},
 			},
 		},
 		{
@@ -185,6 +213,7 @@ func TestNormalizeMaterial(t *testing.T) {
 				Value:          "this is an inline material",
 				Hash:           &crv1.Hash{Algorithm: "sha256", Hex: "deadbeef"},
 				EmbeddedInline: true,
+				Annotations:    emptyMap,
 			},
 		},
 		{

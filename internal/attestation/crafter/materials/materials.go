@@ -62,7 +62,6 @@ func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Materia
 	}
 
 	material := &api.Attestation_Material{
-		AddedAt:      timestamppb.New(time.Now()),
 		MaterialType: input.Type,
 		M: &api.Attestation_Material_Artifact_{
 			Artifact: &api.Attestation_Material_Artifact{
@@ -140,6 +139,10 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 	var crafter Craftable
 	var err error
 
+	if err := materialSchema.ValidateAll(); err != nil {
+		return nil, fmt.Errorf("validating material: %w", err)
+	}
+
 	switch materialSchema.Type {
 	case schemaapi.CraftingSchema_Material_STRING:
 		crafter, err = NewStringCrafter(materialSchema)
@@ -161,5 +164,17 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 		return nil, err
 	}
 
-	return crafter.Craft(ctx, value)
+	m, err := crafter.Craft(ctx, value)
+	if err != nil {
+		return nil, fmt.Errorf("crafting material: %w", err)
+	}
+
+	m.AddedAt = timestamppb.New(time.Now())
+	m.Annotations = make(map[string]string)
+
+	for _, annotation := range materialSchema.Annotations {
+		m.Annotations[annotation.Name] = annotation.Value
+	}
+
+	return m, nil
 }

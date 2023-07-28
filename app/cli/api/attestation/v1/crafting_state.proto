@@ -47,6 +47,9 @@ message Attestation {
         // leveraging a form of inline CAS 
         bool inline_cas = 8;
 
+        // Annotations for the material
+        map<string, string> annotations = 9 [(validate.rules).map.values.string.min_len = 1];
+
         message KeyVal {
             string id = 1 [(validate.rules).string.min_len = 1];
             string value = 2 [(validate.rules).string.min_len = 1];

@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
@@ -51,12 +52,20 @@ type WorkflowRunAttestationItem struct {
 }
 
 type Material struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
-	Type  string `json:"type"`
+	Name string `json:"name"`
+	// filename, container image name, string value, ...
+	Value       string        `json:"value"`
+	Hash        string        `json:"hash"`
+	Type        string        `json:"type"`
+	Annotations []*Annotation `json:"annotations,omitempty"`
 }
 
 type EnvVar struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+type Annotation struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
@@ -120,7 +129,7 @@ func (action *WorkflowRunDescribe) Run(runID string, verify bool, publicKey stri
 
 	materials := make([]*Material, 0, len(attestation.GetMaterials()))
 	for _, v := range attestation.GetMaterials() {
-		materials = append(materials, &Material{Name: v.Name, Value: v.Value, Type: v.Type})
+		materials = append(materials, materialPBToAction(v))
 	}
 
 	item.Attestation = &WorkflowRunAttestationItem{
@@ -132,6 +141,30 @@ func (action *WorkflowRunDescribe) Run(runID string, verify bool, publicKey stri
 	}
 
 	return item, nil
+}
+
+func materialPBToAction(in *pb.AttestationItem_Material) *Material {
+	m := &Material{
+		Name:  in.Name,
+		Value: in.Value,
+		Type:  in.Type,
+		Hash:  in.Hash,
+	}
+
+	// append annotations sorted
+	if in.Annotations != nil {
+		keys := make([]string, 0, len(in.Annotations))
+		for k := range in.Annotations {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+
+		for _, k := range keys {
+			m.Annotations = append(m.Annotations, &Annotation{Name: k, Value: in.Annotations[k]})
+		}
+	}
+
+	return m
 }
 
 func verifyEnvelope(ctx context.Context, e *dsse.Envelope, publicKey string) error {

@@ -18,11 +18,9 @@ package materials
 import (
 	"context"
 	"fmt"
-	"time"
 
 	api "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type StringCrafter struct {
@@ -41,7 +39,6 @@ func NewStringCrafter(materialSchema *schemaapi.CraftingSchema_Material) (*Strin
 
 func (i *StringCrafter) Craft(_ context.Context, value string) (*api.Attestation_Material, error) {
 	return &api.Attestation_Material{
-		AddedAt:      timestamppb.New(time.Now()),
 		MaterialType: i.input.Type,
 		M: &api.Attestation_Material_String_{
 			String_: &api.Attestation_Material_KeyVal{

@@ -18,7 +18,6 @@ package materials
 import (
 	"context"
 	"fmt"
-	"time"
 
 	api "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -26,7 +25,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/rs/zerolog"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type OCIImageCrafter struct {
@@ -62,7 +60,6 @@ func (i *OCIImageCrafter) Craft(_ context.Context, imageRef string) (*api.Attest
 	i.logger.Debug().Str("name", repoName).Str("digest", remoteRef.DigestStr()).Msg("container image resolved")
 
 	return &api.Attestation_Material{
-		AddedAt:      timestamppb.New(time.Now()),
 		MaterialType: i.input.Type,
 		M: &api.Attestation_Material_ContainerImage_{
 			ContainerImage: &api.Attestation_Material_ContainerImage{
