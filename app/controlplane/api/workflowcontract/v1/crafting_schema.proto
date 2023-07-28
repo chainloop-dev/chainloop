@@ -65,7 +65,6 @@ message CraftingSchema {
 
 message Annotation {
     string name = 1 [(validate.rules).string.pattern = "^[\\w]+$"]; // Single word optionally separated with _
-    // TODO: This value is required for now, but this behavior will change once we allow
-    // the user to set the value during attestation
-    string value = 2 [(validate.rules).string.min_len = 1];
+    // This value can be set in the contract or provided during the attestation
+    string value = 2;
 }

@@ -54,7 +54,7 @@ func NewAttestationAdd(cfg *AttestationAddOpts) *AttestationAdd {
 
 var ErrAttestationNotInitialized = errors.New("attestation not yet initialized")
 
-func (action *AttestationAdd) Run(k, v string) error {
+func (action *AttestationAdd) Run(k, v string, annotations map[string]string) error {
 	if initialized := action.c.AlreadyInitialized(); !initialized {
 		return ErrAttestationNotInitialized
 	}
@@ -98,7 +98,7 @@ func (action *AttestationAdd) Run(k, v string) error {
 		casBackend.Uploader = casclient.New(artifactCASConn, casclient.WithLogger(action.Logger))
 	}
 
-	if err := action.c.AddMaterial(k, v, casBackend); err != nil {
+	if err := action.c.AddMaterial(k, v, casBackend, annotations); err != nil {
 		return fmt.Errorf("adding material: %w", err)
 	}
 

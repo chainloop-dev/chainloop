@@ -326,7 +326,7 @@ func notResolvedVars(resolved map[string]string, wantList []string) []string {
 }
 
 // Inject material to attestation state
-func (c *Crafter) AddMaterial(key, value string, casBackend *casclient.CASBackend) error {
+func (c *Crafter) AddMaterial(key, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string) error {
 	if err := c.requireStateLoaded(); err != nil {
 		return err
 	}
@@ -354,11 +354,40 @@ func (c *Crafter) AddMaterial(key, value string, casBackend *casclient.CASBacken
 		return err
 	}
 
+	// 4 - Populate annotations from the ones provided at runtime
+	// a) we do not allow overriding values that come from the contract
+	// b) we do not allow adding annotations that are not defined in the contract
+	for kr, vr := range runtimeAnnotations {
+		// If the annotation is not defined in the material we fail
+		if v, found := mt.Annotations[kr]; !found {
+			return fmt.Errorf("annotation %q not found in material %q", kr, key)
+		} else if v == "" {
+			// Set it only if it's not set
+			mt.Annotations[kr] = vr
+		} else {
+			// NOTE: we do not allow overriding values that come from the contract
+			c.logger.Info().Str("key", key).Str("annotation", kr).Msg("annotation can't be changed, skipping")
+		}
+	}
+
+	// Make sure all the annotation values are now set
+	// This is in fact validated below but by manually checking we can provide a better error message
+	for k, v := range mt.Annotations {
+		var missingAnnotations []string
+		if v == "" {
+			missingAnnotations = append(missingAnnotations, k)
+		}
+
+		if len(missingAnnotations) > 0 {
+			return fmt.Errorf("annotations %q not provided", missingAnnotations)
+		}
+	}
+
 	if err := mt.Validate(); err != nil {
 		return fmt.Errorf("validation error: %w", err)
 	}
 
-	// 4 - Attach it to state
+	// 5 - Attach it to state
 	if mt != nil {
 		if c.CraftingState.Attestation.Materials == nil {
 			c.CraftingState.Attestation.Materials = map[string]*api.Attestation_Material{key: mt}
@@ -366,7 +395,7 @@ func (c *Crafter) AddMaterial(key, value string, casBackend *casclient.CASBacken
 		c.CraftingState.Attestation.Materials[key] = mt
 	}
 
-	// 5 - Persist state
+	// 6 - Persist state
 	if err := persistCraftingState(c.CraftingState, c.statePath); err != nil {
 		return err
 	}
