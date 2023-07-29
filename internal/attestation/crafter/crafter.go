@@ -379,7 +379,7 @@ func (c *Crafter) AddMaterial(key, value string, casBackend *casclient.CASBacken
 		}
 
 		if len(missingAnnotations) > 0 {
-			return fmt.Errorf("annotations %q not provided", missingAnnotations)
+			return fmt.Errorf("annotations %q required for material %q", missingAnnotations, key)
 		}
 	}
 
