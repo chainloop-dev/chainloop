@@ -21,6 +21,7 @@ import (
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
+	"github.com/muesli/reflow/wrap"
 	"github.com/spf13/cobra"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
@@ -126,25 +127,33 @@ func materialsTable(status *action.AttestationStatusResult) error {
 	mt := newTableWriter()
 	mt.SetTitle("Materials")
 
-	header := table.Row{"Name", "Type", "Set", "Required", "Is output"}
-	if full {
-		header = append(header, "Value")
-	}
-
-	mt.AppendHeader(header)
 	for _, m := range status.Materials {
-		row := table.Row{m.Name, m.Type, hBool(m.Set), hBool(m.Required)}
-		var outputInfo string
+		mt.AppendRow(table.Row{"Name", m.Name})
+		mt.AppendRow(table.Row{"Type", m.Type})
+		mt.AppendRow(table.Row{"Set", hBool(m.Set)})
+		mt.AppendRow(table.Row{"Required", hBool(m.Required)})
 		if m.IsOutput {
-			outputInfo = "x"
+			mt.AppendRow(table.Row{"Is output", "Yes"})
 		}
 
-		row = append(row, outputInfo)
 		if full {
-			row = append(row, m.Value)
+			if m.Value != "" {
+				mt.AppendRow(table.Row{"Value", wrap.String(m.Value, 100)})
+			}
+
+			if m.Hash != "" {
+				mt.AppendRow(table.Row{"Digest", m.Hash})
+			}
 		}
 
-		mt.AppendRow(row)
+		if len(m.Annotations) > 0 {
+			mt.AppendRow(table.Row{"Annotations", "------"})
+			for _, a := range m.Annotations {
+				mt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", a.Name, a.Value)})
+			}
+		}
+
+		mt.AppendSeparator()
 	}
 	mt.Render()
 
