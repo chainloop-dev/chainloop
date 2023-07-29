@@ -17,6 +17,8 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -28,6 +30,7 @@ import (
 func newAttestationAddCmd() *cobra.Command {
 	var name, value string
 	var artifactCASConn *grpc.ClientConn
+	var annotationsFlag []string
 
 	cmd := &cobra.Command{
 		Use:   "add",
@@ -44,7 +47,17 @@ func newAttestationAddCmd() *cobra.Command {
 				},
 			)
 
-			err := a.Run(name, value)
+			// Extract annotations
+			var annotations = make(map[string]string)
+			for _, annotation := range annotationsFlag {
+				kv := strings.SplitN(annotation, "=", 2)
+				if len(kv) != 2 {
+					return fmt.Errorf("invalid annotation %q, the format must be key=value", annotation)
+				}
+				annotations[kv[0]] = kv[1]
+			}
+
+			err := a.Run(name, value, annotations)
 			if err != nil {
 				if errors.Is(err, action.ErrAttestationNotInitialized) {
 					return err
@@ -67,11 +80,12 @@ func newAttestationAddCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&name, "name", "", "name of the material to be recorded")
-	cmd.Flags().StringVar(&value, "value", "", "value to be recorded")
 	err := cmd.MarkFlagRequired("name")
 	cobra.CheckErr(err)
+	cmd.Flags().StringVar(&value, "value", "", "value to be recorded")
 	err = cmd.MarkFlagRequired("value")
 	cobra.CheckErr(err)
+	cmd.Flags().StringSliceVar(&annotationsFlag, "annotation", nil, "additional annotation in the format of key=value")
 
 	return cmd
 }

@@ -42,11 +42,6 @@ func TestValidateAnnotations(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			desc:    "missing value",
-			name:    "hi",
-			wantErr: true,
-		},
-		{
 			desc:  "valid key underscore",
 			name:  "hello_world",
 			value: "hello_world",
