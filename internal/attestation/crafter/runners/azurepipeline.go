@@ -21,16 +21,16 @@ import (
 	"path"
 )
 
-type AzureDevopsPipeline struct{}
+type AzurePipeline struct{}
 
-const AzureDevopsPipelineID = "azure-devops-pipeline"
+const AzurePipelineID = "azure-pipeline"
 
-func NewAzureDevopsPipeline() *AzureDevopsPipeline {
-	return &AzureDevopsPipeline{}
+func NewAzurePipeline() *AzurePipeline {
+	return &AzurePipeline{}
 }
 
-// Figure out if we are in a AzureDevops Pipeline job or not
-func (r *AzureDevopsPipeline) CheckEnv() bool {
+// Figure out if we are in a Azure Pipeline job or not
+func (r *AzurePipeline) CheckEnv() bool {
 	for _, varName := range []string{"TF_BUILD", "BUILD_BUILDURI"} {
 		if os.Getenv(varName) == "" {
 			return false
@@ -40,7 +40,7 @@ func (r *AzureDevopsPipeline) CheckEnv() bool {
 	return true
 }
 
-func (r *AzureDevopsPipeline) ListEnvVars() []string {
+func (r *AzurePipeline) ListEnvVars() []string {
 	return []string{
 		"BUILD_REQUESTEDFOREMAIL",
 		"BUILD_REQUESTEDFOR",
@@ -55,15 +55,15 @@ func (r *AzureDevopsPipeline) ListEnvVars() []string {
 	}
 }
 
-func (r *AzureDevopsPipeline) ResolveEnvVars() map[string]string {
+func (r *AzurePipeline) ResolveEnvVars() map[string]string {
 	return resolveEnvVars(r.ListEnvVars())
 }
 
-func (r *AzureDevopsPipeline) String() string {
-	return AzureDevopsPipelineID
+func (r *AzurePipeline) String() string {
+	return AzurePipelineID
 }
 
-func (r *AzureDevopsPipeline) RunURI() (url string) {
+func (r *AzurePipeline) RunURI() (url string) {
 	teamFoundationServerURI := os.Getenv("SYSTEM_TEAMFOUNDATIONSERVERURI")
 	definitionName := os.Getenv("SYSTEM_DEFINITIONNAME")
 	buildID := os.Getenv("BUILD_BUILDID")

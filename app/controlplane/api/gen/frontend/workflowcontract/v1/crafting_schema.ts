@@ -23,7 +23,7 @@ export enum CraftingSchema_Runner_RunnerType {
   RUNNER_TYPE_UNSPECIFIED = 0,
   GITHUB_ACTION = 1,
   GITLAB_PIPELINE = 2,
-  AZURE_DEVOPS_PIPELINE = 3,
+  AZURE_PIPELINE = 3,
   UNRECOGNIZED = -1,
 }
 
@@ -39,8 +39,8 @@ export function craftingSchema_Runner_RunnerTypeFromJSON(object: any): CraftingS
     case "GITLAB_PIPELINE":
       return CraftingSchema_Runner_RunnerType.GITLAB_PIPELINE;
     case 3:
-    case "AZURE_DEVOPS_PIPELINE":
-      return CraftingSchema_Runner_RunnerType.AZURE_DEVOPS_PIPELINE;
+    case "AZURE_PIPELINE":
+      return CraftingSchema_Runner_RunnerType.AZURE_PIPELINE;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -56,8 +56,8 @@ export function craftingSchema_Runner_RunnerTypeToJSON(object: CraftingSchema_Ru
       return "GITHUB_ACTION";
     case CraftingSchema_Runner_RunnerType.GITLAB_PIPELINE:
       return "GITLAB_PIPELINE";
-    case CraftingSchema_Runner_RunnerType.AZURE_DEVOPS_PIPELINE:
-      return "AZURE_DEVOPS_PIPELINE";
+    case CraftingSchema_Runner_RunnerType.AZURE_PIPELINE:
+      return "AZURE_PIPELINE";
     case CraftingSchema_Runner_RunnerType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

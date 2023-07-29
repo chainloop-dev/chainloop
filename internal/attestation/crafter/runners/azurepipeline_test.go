@@ -23,12 +23,12 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type azureDevopsPipelineSuite struct {
+type azurePipelineSuite struct {
 	suite.Suite
-	runner *AzureDevopsPipeline
+	runner *AzurePipeline
 }
 
-func (s *azureDevopsPipelineSuite) TestCheckEnv() {
+func (s *azurePipelineSuite) TestCheckEnv() {
 	testCases := []struct {
 		name string
 		env  map[string]string
@@ -77,7 +77,7 @@ func (s *azureDevopsPipelineSuite) TestCheckEnv() {
 	}
 }
 
-func (s *azureDevopsPipelineSuite) TestListEnvVars() {
+func (s *azurePipelineSuite) TestListEnvVars() {
 	assert.Equal(s.T(), []string{
 		"BUILD_REQUESTEDFOREMAIL",
 		"BUILD_REQUESTEDFOR",
@@ -92,7 +92,7 @@ func (s *azureDevopsPipelineSuite) TestListEnvVars() {
 	}, s.runner.ListEnvVars())
 }
 
-func (s *azureDevopsPipelineSuite) TestResolveEnvVars() {
+func (s *azurePipelineSuite) TestResolveEnvVars() {
 	s.Equal(map[string]string{
 		"AGENT_VERSION":           "3.220.5",
 		"BUILD_BUILDID":           "6",
@@ -107,17 +107,17 @@ func (s *azureDevopsPipelineSuite) TestResolveEnvVars() {
 	}, s.runner.ResolveEnvVars())
 }
 
-func (s *azureDevopsPipelineSuite) TestRunURI() {
+func (s *azurePipelineSuite) TestRunURI() {
 	s.Equal("https://dev.azure.com/chainloop-test/chainloop-tests/_build/results?buildId=6&j=12f1170f-0000-0000-20dd-22fc7dff55f9&view=logs", s.runner.RunURI())
 }
 
-func (s *azureDevopsPipelineSuite) TestRunnerName() {
-	s.Equal("azure-devops-pipeline", s.runner.String())
+func (s *azurePipelineSuite) TestRunnerName() {
+	s.Equal("azure-pipeline", s.runner.String())
 }
 
 // Run before each test
-func (s *azureDevopsPipelineSuite) SetupTest() {
-	s.runner = NewAzureDevopsPipeline()
+func (s *azurePipelineSuite) SetupTest() {
+	s.runner = NewAzurePipeline()
 	t := s.T()
 	t.Setenv("TF_BUILD", "True")
 	t.Setenv("BUILD_REPOSITORY_ID", "5e5bf8eb-0000-0000-801b-0a5bc4b4011a")
@@ -147,6 +147,6 @@ func (s *azureDevopsPipelineSuite) SetupTest() {
 }
 
 // Run the tests
-func TestAzureDevopsPipelineRunner(t *testing.T) {
-	suite.Run(t, new(azureDevopsPipelineSuite))
+func TestAzurePipelineRunner(t *testing.T) {
+	suite.Run(t, new(azurePipelineSuite))
 }
