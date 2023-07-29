@@ -37,6 +37,7 @@ message CraftingSchema {
             RUNNER_TYPE_UNSPECIFIED = 0;
             GITHUB_ACTION = 1;
             GITLAB_PIPELINE = 2;
+            AZURE_PIPELINE = 3;
         } 
     }
 
