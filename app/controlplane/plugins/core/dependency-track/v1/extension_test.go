@@ -77,6 +77,80 @@ func TestValidateRegistrationInput(t *testing.T) {
 	}
 }
 
+func TestResolveProjectName(t *testing.T) {
+	testCases := []struct {
+		name        string
+		projectName string
+		wantErr     bool
+		want        string
+	}{
+		{
+			name:        "no interpolation",
+			projectName: "hi",
+			want:        "hi",
+			wantErr:     false,
+		},
+		{
+			name:        "no interpolation",
+			projectName: "{.Hello}",
+			want:        "{.Hello}",
+			wantErr:     false,
+		},
+		{
+			name:        "nope",
+			projectName: "{.Hello",
+			want:        "{.Hello",
+			wantErr:     false,
+		},
+		{
+			name:        "invalid template",
+			projectName: "{{.Hello",
+			wantErr:     true,
+		},
+		{
+			name:        "interpolated key",
+			projectName: "{{.Material.Annotations.Hello}}",
+			want:        "hola",
+		},
+		{
+			name:        "interpolated string",
+			projectName: "{{.Material.Annotations.Hello}}-project",
+			want:        "hola-project",
+		},
+		{
+			name:        "non-existing",
+			projectName: "{{.Material.Annotations.noVal}}",
+			want:        "",
+			wantErr:     true,
+		},
+		{
+			name:        "non-existing-case",
+			projectName: "{{.Material.Annotations.hello}}",
+			wantErr:     true,
+		},
+	}
+
+	data := map[string]string{
+		"Hello": "hola",
+		"World": "mundo",
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var err error
+			got, err := resolveProjectName(tc.projectName, data)
+			if tc.wantErr {
+				assert.Error(t, err)
+				return
+			} else {
+				assert.NoError(t, err)
+			}
+
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
 func TestValidateAttachmentInput(t *testing.T) {
 	testCases := []struct {
 		name   string
