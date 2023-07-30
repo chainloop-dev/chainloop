@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"text/template"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/core/dependency-track/v1/client"
@@ -63,7 +64,7 @@ func New(l log.Logger) (sdk.FanOut, error) {
 	base, err := sdk.NewFanOut(
 		&sdk.NewParams{
 			ID:          "dependency-track",
-			Version:     "1.2",
+			Version:     "1.3",
 			Description: description,
 			Logger:      l,
 			InputSchema: &sdk.InputSchema{
@@ -143,65 +144,115 @@ func (i *DependencyTrack) Attach(ctx context.Context, req *sdk.AttachmentRequest
 	return &sdk.AttachmentResponse{Configuration: rawConfig}, nil
 }
 
-// Send the SBOM to the configured Dependency Track instance
+// Send the SBOMs to the configured Dependency Track instance
 func (i *DependencyTrack) Execute(ctx context.Context, req *sdk.ExecutionRequest) error {
-	i.Logger.Info("execution requested")
-
+	var errs error
 	// Iterate over all SBOMs
 	for _, sbom := range req.Input.Materials {
-		// Make sure it's an SBOM and all the required configuration has been received
-		if err := validateExecuteOpts(sbom, req.RegistrationInfo, req.AttachmentInfo); err != nil {
-			return fmt.Errorf("running validation: %w", err)
+		if err := doExecute(ctx, req, sbom, i.Logger); err != nil {
+			errs = errors.Join(errs, err)
+			continue
 		}
-
-		// Extract registration configuration
-		var registrationConfig *registrationConfig
-		if err := sdk.FromConfig(req.RegistrationInfo.Configuration, &registrationConfig); err != nil {
-			return errors.New("invalid registration configuration")
-		}
-
-		// Extract attachment configuration
-		var attachmentConfig *attachmentConfig
-		if err := sdk.FromConfig(req.AttachmentInfo.Configuration, &attachmentConfig); err != nil {
-			return errors.New("invalid attachment configuration")
-		}
-
-		i.Logger.Infow("msg", "Uploading SBOM",
-			"materialName", sbom.Name,
-			"host", registrationConfig.Domain,
-			"projectID", attachmentConfig.ProjectID, "projectName", attachmentConfig.ProjectName,
-			"workflowID", req.Workflow.ID,
-		)
-
-		// Create an SBOM client and perform validation and upload
-		d, err := client.NewSBOMUploader(registrationConfig.Domain,
-			req.RegistrationInfo.Credentials.Password,
-			bytes.NewReader(sbom.Content),
-			attachmentConfig.ProjectID,
-			attachmentConfig.ProjectName)
-		if err != nil {
-			return fmt.Errorf("creating uploader: %w", err)
-		}
-
-		if err := d.Validate(ctx); err != nil {
-			return fmt.Errorf("validating uploader: %w", err)
-		}
-
-		if err := d.Do(ctx); err != nil {
-			return fmt.Errorf("uploading SBOM: %w", err)
-		}
-
-		i.Logger.Infow("msg", "SBOM Uploaded",
-			"materialName", sbom.Name,
-			"host", registrationConfig.Domain,
-			"projectID", attachmentConfig.ProjectID, "projectName", attachmentConfig.ProjectName,
-			"workflowID", req.Workflow.ID,
-		)
 	}
 
-	i.Logger.Info("execution finished")
+	if errs != nil {
+		return fmt.Errorf("executing: %w", errs)
+	}
 
 	return nil
+}
+
+func doExecute(ctx context.Context, req *sdk.ExecutionRequest, sbom *sdk.ExecuteMaterial, l *log.Helper) error {
+	l.Info("execution requested")
+
+	// Make sure it's an SBOM and all the required configuration has been received
+	if err := validateExecuteOpts(sbom, req.RegistrationInfo, req.AttachmentInfo); err != nil {
+		return fmt.Errorf("running validation: %w", err)
+	}
+
+	// Extract registration configuration
+	var registrationConfig *registrationConfig
+	if err := sdk.FromConfig(req.RegistrationInfo.Configuration, &registrationConfig); err != nil {
+		return errors.New("invalid registration configuration")
+	}
+
+	// Extract attachment configuration
+	var attachmentConfig *attachmentConfig
+	if err := sdk.FromConfig(req.AttachmentInfo.Configuration, &attachmentConfig); err != nil {
+		return errors.New("invalid attachment configuration")
+	}
+
+	projectName, err := resolveProjectName(attachmentConfig.ProjectName, sbom.Annotations)
+	if err != nil {
+		// If we can't find the annotation for example, we skip the SBOM
+		l.Infow("msg", "failed to resolve project name, SKIPPING", "err", err, "materialName", sbom.Name)
+		return nil
+	}
+
+	l.Infow("msg", "Uploading SBOM",
+		"materialName", sbom.Name,
+		"host", registrationConfig.Domain,
+		"projectID", attachmentConfig.ProjectID, "projectName", projectName,
+		"workflowID", req.Workflow.ID,
+	)
+
+	// Create an SBOM client and perform validation and upload
+	d, err := client.NewSBOMUploader(registrationConfig.Domain,
+		req.RegistrationInfo.Credentials.Password,
+		bytes.NewReader(sbom.Content),
+		attachmentConfig.ProjectID,
+		projectName)
+	if err != nil {
+		return fmt.Errorf("creating uploader: %w", err)
+	}
+
+	if err := d.Validate(ctx); err != nil {
+		return fmt.Errorf("validating uploader: %w", err)
+	}
+
+	if err := d.Do(ctx); err != nil {
+		return fmt.Errorf("uploading SBOM: %w", err)
+	}
+
+	l.Infow("msg", "SBOM Uploaded",
+		"materialName", sbom.Name,
+		"host", registrationConfig.Domain,
+		"projectID", attachmentConfig.ProjectID, "projectName", projectName,
+		"workflowID", req.Workflow.ID,
+	)
+
+	l.Info("execution finished")
+
+	return nil
+}
+
+type interpolationContext struct {
+	Material *interpolationContextMaterial
+}
+type interpolationContextMaterial struct {
+	Annotations map[string]string
+}
+
+// Resolve the project name template.
+// We currently support the following template variables:
+// - material.annotations.<key>
+// For example, project-name => {{ material.annotations.my_annotation }}
+func resolveProjectName(projectNameTpl string, annotations map[string]string) (string, error) {
+	data := interpolationContext{&interpolationContextMaterial{annotations}}
+
+	// The project name can contain template variables, useful to include annotations for example
+	// We do fail if the key can't be found
+	tpl, err := template.New("projectName").Option("missingkey=error").Parse(projectNameTpl)
+	if err != nil {
+		return "", fmt.Errorf("invalid project name: %w", err)
+	}
+
+	buf := bytes.NewBuffer(nil)
+	if err := tpl.Execute(buf, data); err != nil {
+		return "", fmt.Errorf("executing template: %w", err)
+	}
+
+	return buf.String(), nil
 }
 
 // i.e we want to attach to a dependency track integration and we are proving the right attachment options
@@ -229,8 +280,15 @@ func validateAttachmentConfiguration(rc *registrationConfig, ac *attachmentReque
 		return errors.New("invalid configuration")
 	}
 
-	if ac.ProjectName != "" && !rc.AllowAutoCreate {
-		return errors.New("auto creation of projects is not supported in this integration")
+	if ac.ProjectName != "" {
+		if !rc.AllowAutoCreate {
+			return errors.New("auto creation of projects is not supported in this integration")
+		}
+
+		// The project name can contain template variables, useful to include annotations for example
+		if _, err := template.New("projectName").Parse(ac.ProjectName); err != nil {
+			return fmt.Errorf("invalid project name: %w", err)
+		}
 	}
 
 	if ac.ProjectID == "" && ac.ProjectName == "" {
