@@ -142,10 +142,9 @@ func TestResolveProjectName(t *testing.T) {
 			if tc.wantErr {
 				assert.Error(t, err)
 				return
-			} else {
-				assert.NoError(t, err)
 			}
 
+			assert.NoError(t, err)
 			assert.Equal(t, tc.want, got)
 		})
 	}
