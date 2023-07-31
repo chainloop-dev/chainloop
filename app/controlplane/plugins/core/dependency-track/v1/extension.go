@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"text/template"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -236,6 +237,17 @@ type annotations struct {
 	Annotations map[string]string
 }
 
+// Make annotations keys case insensitive
+// that way you can define templates such as {{ material.annotations.myAnnotation }} or {{ material.annotations.MyAnnotation }} and they will both work
+func toCaseInsensitive(in map[string]string) map[string]string {
+	for k, v := range in {
+		in[strings.Title(k)] = v
+		in[strings.ToLower(k)] = v
+	}
+
+	return in
+}
+
 // Resolve the project name template.
 // We currently support the following template variables:
 // - {{ .Attestation.Annotations.<key> }} for global annotations
@@ -243,8 +255,8 @@ type annotations struct {
 // For example, project-name => {{ material.annotations.my_annotation }}
 func resolveProjectName(projectNameTpl string, attAnnotations, sbomAnnotations map[string]string) (string, error) {
 	data := &interpolationContext{
-		Material:    &annotations{sbomAnnotations},
-		Attestation: &annotations{attAnnotations},
+		Material:    &annotations{toCaseInsensitive(sbomAnnotations)},
+		Attestation: &annotations{toCaseInsensitive(attAnnotations)},
 	}
 
 	// The project name can contain template variables, useful to include annotations for example

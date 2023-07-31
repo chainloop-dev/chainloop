@@ -124,9 +124,9 @@ func TestResolveProjectName(t *testing.T) {
 			wantErr:     true,
 		},
 		{
-			name:        "non-existing-case",
+			name:        "lower case",
 			projectName: "{{.Material.Annotations.hello}}",
-			wantErr:     true,
+			want:        "hola",
 		},
 		{
 			name:        "interpolated string global",
@@ -137,6 +137,11 @@ func TestResolveProjectName(t *testing.T) {
 			name:        "interpolated combination global",
 			projectName: "project-{{.Material.Annotations.Hello}}-{{.Attestation.Annotations.version}}",
 			want:        "project-hola-1.2.3",
+		},
+		{
+			name:        "uppercase",
+			projectName: "{{.Attestation.Annotations.Version}}",
+			want:        "1.2.3",
 		},
 	}
 
