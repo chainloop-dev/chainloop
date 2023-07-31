@@ -182,7 +182,9 @@ func doExecute(ctx context.Context, req *sdk.ExecutionRequest, sbom *sdk.Execute
 		return errors.New("invalid attachment configuration")
 	}
 
-	projectName, err := resolveProjectName(attachmentConfig.ProjectName, sbom.Annotations)
+	// Calculate the project name based on the template
+
+	projectName, err := resolveProjectName(attachmentConfig.ProjectName, req.Input.Attestation.Predicate.GetAnnotations(), sbom.Annotations)
 	if err != nil {
 		// If we can't find the annotation for example, we skip the SBOM
 		l.Infow("msg", "failed to resolve project name, SKIPPING", "err", err, "materialName", sbom.Name)
@@ -227,18 +229,23 @@ func doExecute(ctx context.Context, req *sdk.ExecutionRequest, sbom *sdk.Execute
 }
 
 type interpolationContext struct {
-	Material *interpolationContextMaterial
+	Material    *annotations
+	Attestation *annotations
 }
-type interpolationContextMaterial struct {
+type annotations struct {
 	Annotations map[string]string
 }
 
 // Resolve the project name template.
 // We currently support the following template variables:
-// - material.annotations.<key>
+// - {{ .Attestation.Annotations.<key> }} for global annotations
+// - {{ .Material.Annotations.<key> }}  for material annotations
 // For example, project-name => {{ material.annotations.my_annotation }}
-func resolveProjectName(projectNameTpl string, annotations map[string]string) (string, error) {
-	data := interpolationContext{&interpolationContextMaterial{annotations}}
+func resolveProjectName(projectNameTpl string, attAnnotations, sbomAnnotations map[string]string) (string, error) {
+	data := &interpolationContext{
+		Material:    &annotations{sbomAnnotations},
+		Attestation: &annotations{attAnnotations},
+	}
 
 	// The project name can contain template variables, useful to include annotations for example
 	// We do fail if the key can't be found

@@ -35,6 +35,7 @@ const builderIDFmt = "chainloop.dev/cli/%s@%s"
 
 // NormalizablePredicate represents a common interface of how to extract materials and env vars
 type NormalizablePredicate interface {
+	GetAnnotations() map[string]string
 	GetEnvVars() map[string]string
 	GetMaterials() []*NormalizedMaterial
 	GetRunLink() string
@@ -194,4 +195,8 @@ func (p *ProvenancePredicateCommon) GetEnvVars() map[string]string {
 
 func (p *ProvenancePredicateCommon) GetRunLink() string {
 	return p.RunnerURL
+}
+
+func (p *ProvenancePredicateCommon) GetAnnotations() map[string]string {
+	return p.Annotations
 }

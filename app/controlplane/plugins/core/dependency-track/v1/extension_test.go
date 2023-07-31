@@ -128,17 +128,31 @@ func TestResolveProjectName(t *testing.T) {
 			projectName: "{{.Material.Annotations.hello}}",
 			wantErr:     true,
 		},
+		{
+			name:        "interpolated string global",
+			projectName: "project-{{.Attestation.Annotations.version}}",
+			want:        "project-1.2.3",
+		},
+		{
+			name:        "interpolated combination global",
+			projectName: "project-{{.Material.Annotations.Hello}}-{{.Attestation.Annotations.version}}",
+			want:        "project-hola-1.2.3",
+		},
 	}
 
-	data := map[string]string{
+	sbomAnnotation := map[string]string{
 		"Hello": "hola",
 		"World": "mundo",
+	}
+
+	attAnnotation := map[string]string{
+		"version": "1.2.3",
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			var err error
-			got, err := resolveProjectName(tc.projectName, data)
+			got, err := resolveProjectName(tc.projectName, attAnnotation, sbomAnnotation)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return
