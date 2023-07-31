@@ -25,10 +25,11 @@ import (
 
 func newAttestationPushCmd() *cobra.Command {
 	var pkPath string
+	var annotationsFlag []string
 	cmd := &cobra.Command{
 		Use:   "push",
 		Short: "generate and push the attestation to the control plane",
-		Example: `  chainloop attestation push --key <key path>|<env://VAR_NAME> --token [robot-account-token]
+		Example: `  chainloop attestation push --key <key path>|<env://VAR_NAME> --token [robot-account-token] --annotation key=value,key2=val2
 
   # sign the resulting attestation using a cosign key present in the filesystem and stdin for the passphrase
   # NOTE that the --token flag can be replaced by having the CHAINLOOP_ROBOT_ACCOUNT env variable
@@ -39,7 +40,12 @@ func newAttestationPushCmd() *cobra.Command {
 
   # The passphrase can be retrieved from a well-known environment variable
   export CHAINLOOP_SIGNING_PASSWORD="my cosign key passphrase"
-  chainloop attestation push --key cosign.key`,
+  chainloop attestation push --key cosign.key
+  
+  # You can provide values for the annotations that have previously defined in the contract for example 
+  chainloop attestation push --annotation key=value --annotation key2=value2
+  # Or alternatively
+  chainloop attestation push --annotation key=value,key2=value2`,
 		Annotations: map[string]string{
 			useWorkflowRobotAccount: "true",
 		},
@@ -59,7 +65,12 @@ func newAttestationPushCmd() *cobra.Command {
 				ActionsOpts: actionOpts, KeyPath: pkPath, CLIVersion: info.Version, CLIDigest: info.Digest,
 			})
 
-			res, err := a.Run()
+			annotations, err := extractAnnotations(annotationsFlag)
+			if err != nil {
+				return err
+			}
+
+			res, err := a.Run(annotations)
 			if err != nil {
 				if errors.Is(err, action.ErrAttestationNotInitialized) {
 					return err
@@ -73,6 +84,7 @@ func newAttestationPushCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&pkPath, "key", "k", "", "reference (path or env variable name) to the cosign private key that will be used to sign the attestation")
+	cmd.Flags().StringSliceVar(&annotationsFlag, "annotation", nil, "additional annotation in the format of key=value")
 
 	return cmd
 }

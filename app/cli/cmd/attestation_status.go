@@ -69,6 +69,18 @@ func attestationStatusTableOutput(status *action.AttestationStatusResult) error 
 		gt.AppendRow(table.Row{"Runner Type", status.RunnerContext.RunnerType})
 		gt.AppendRow(table.Row{"Runner URL", status.RunnerContext.JobURL})
 	}
+
+	if len(status.Annotations) > 0 {
+		gt.AppendRow(table.Row{"Annotations", "------"})
+		for _, a := range status.Annotations {
+			value := a.Value
+			if value == "" {
+				value = "[NOT SET]"
+			}
+			gt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", a.Name, value)})
+		}
+	}
+
 	gt.Render()
 
 	if err := materialsTable(status); err != nil {
@@ -149,7 +161,12 @@ func materialsTable(status *action.AttestationStatusResult) error {
 		if len(m.Annotations) > 0 {
 			mt.AppendRow(table.Row{"Annotations", "------"})
 			for _, a := range m.Annotations {
-				mt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", a.Name, a.Value)})
+				value := a.Value
+				if value == "" {
+					value = "[NOT SET]"
+				}
+
+				mt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", a.Name, value)})
 			}
 		}
 

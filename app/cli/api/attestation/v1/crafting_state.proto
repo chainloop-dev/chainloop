@@ -30,6 +30,8 @@ message Attestation {
     WorkflowMetadata workflow = 3 [(validate.rules).message.required = true];
 
     map<string, Material> materials = 4; 
+    // Annotations for the attestation
+    map<string, string> annotations = 5 [(validate.rules).map.values.string.min_len = 1];
 
     message Material {
         oneof m {

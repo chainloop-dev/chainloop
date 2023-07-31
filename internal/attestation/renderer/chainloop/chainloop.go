@@ -66,6 +66,8 @@ type ProvenancePredicateCommon struct {
 	Env        map[string]string             `json:"env,omitempty"`
 	RunnerType string                        `json:"runnerType"`
 	RunnerURL  string                        `json:"runnerURL,omitempty"`
+	// Custom annotations
+	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
 type Metadata struct {
@@ -95,12 +97,13 @@ type RendererCommon struct {
 
 func predicateCommon(builderInfo *builderInfo, att *v1.Attestation) *ProvenancePredicateCommon {
 	return &ProvenancePredicateCommon{
-		BuildType:  chainloopBuildType,
-		Builder:    &slsacommon.ProvenanceBuilder{ID: fmt.Sprintf(builderIDFmt, builderInfo.version, builderInfo.digest)},
-		Metadata:   getChainloopMeta(att),
-		Env:        att.EnvVars,
-		RunnerType: att.GetRunnerType().String(),
-		RunnerURL:  att.GetRunnerUrl(),
+		BuildType:   chainloopBuildType,
+		Builder:     &slsacommon.ProvenanceBuilder{ID: fmt.Sprintf(builderIDFmt, builderInfo.version, builderInfo.digest)},
+		Metadata:    getChainloopMeta(att),
+		Env:         att.EnvVars,
+		RunnerType:  att.GetRunnerType().String(),
+		RunnerURL:   att.GetRunnerUrl(),
+		Annotations: att.Annotations,
 	}
 }
 

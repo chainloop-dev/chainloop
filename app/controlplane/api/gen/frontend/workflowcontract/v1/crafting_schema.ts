@@ -13,6 +13,12 @@ export interface CraftingSchema {
   materials: CraftingSchema_Material[];
   envAllowList: string[];
   runner?: CraftingSchema_Runner;
+  /**
+   * List of annotations that can be used to add metadata to the attestation
+   * this metadata can be used later on by the integrations engine to filter and interpolate data
+   * It works in addition to the annotations defined in the materials and the runner
+   */
+  annotations: Annotation[];
 }
 
 export interface CraftingSchema_Runner {
@@ -150,7 +156,7 @@ export interface Annotation {
 }
 
 function createBaseCraftingSchema(): CraftingSchema {
-  return { schemaVersion: "", materials: [], envAllowList: [], runner: undefined };
+  return { schemaVersion: "", materials: [], envAllowList: [], runner: undefined, annotations: [] };
 }
 
 export const CraftingSchema = {
@@ -166,6 +172,9 @@ export const CraftingSchema = {
     }
     if (message.runner !== undefined) {
       CraftingSchema_Runner.encode(message.runner, writer.uint32(34).fork()).ldelim();
+    }
+    for (const v of message.annotations) {
+      Annotation.encode(v!, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -205,6 +214,13 @@ export const CraftingSchema = {
 
           message.runner = CraftingSchema_Runner.decode(reader, reader.uint32());
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.annotations.push(Annotation.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -222,6 +238,7 @@ export const CraftingSchema = {
         : [],
       envAllowList: Array.isArray(object?.envAllowList) ? object.envAllowList.map((e: any) => String(e)) : [],
       runner: isSet(object.runner) ? CraftingSchema_Runner.fromJSON(object.runner) : undefined,
+      annotations: Array.isArray(object?.annotations) ? object.annotations.map((e: any) => Annotation.fromJSON(e)) : [],
     };
   },
 
@@ -240,6 +257,11 @@ export const CraftingSchema = {
     }
     message.runner !== undefined &&
       (obj.runner = message.runner ? CraftingSchema_Runner.toJSON(message.runner) : undefined);
+    if (message.annotations) {
+      obj.annotations = message.annotations.map((e) => e ? Annotation.toJSON(e) : undefined);
+    } else {
+      obj.annotations = [];
+    }
     return obj;
   },
 
@@ -255,6 +277,7 @@ export const CraftingSchema = {
     message.runner = (object.runner !== undefined && object.runner !== null)
       ? CraftingSchema_Runner.fromPartial(object.runner)
       : undefined;
+    message.annotations = object.annotations?.map((e) => Annotation.fromPartial(e)) || [];
     return message;
   },
 };

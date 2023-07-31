@@ -187,6 +187,34 @@ func (m *Attestation) validate(all bool) error {
 		}
 	}
 
+	{
+		sorted_keys := make([]string, len(m.GetAnnotations()))
+		i := 0
+		for key := range m.GetAnnotations() {
+			sorted_keys[i] = key
+			i++
+		}
+		sort.Slice(sorted_keys, func(i, j int) bool { return sorted_keys[i] < sorted_keys[j] })
+		for _, key := range sorted_keys {
+			val := m.GetAnnotations()[key]
+			_ = val
+
+			// no validation rules for Annotations[key]
+
+			if utf8.RuneCountInString(val) < 1 {
+				err := AttestationValidationError{
+					field:  fmt.Sprintf("Annotations[%v]", key),
+					reason: "value length must be at least 1 runes",
+				}
+				if !all {
+					return err
+				}
+				errors = append(errors, err)
+			}
+
+		}
+	}
+
 	// no validation rules for EnvVars
 
 	// no validation rules for RunnerUrl
