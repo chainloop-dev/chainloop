@@ -18,6 +18,7 @@ package action
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
@@ -48,7 +49,7 @@ func NewAttestationPush(cfg *AttestationPushOpts) *AttestationPush {
 }
 
 // TODO: Return defined type
-func (action *AttestationPush) Run() (interface{}, error) {
+func (action *AttestationPush) Run(runtimeAnnotations map[string]string) (interface{}, error) {
 	if initialized := action.c.AlreadyInitialized(); !initialized {
 		return nil, ErrAttestationNotInitialized
 	}
@@ -57,6 +58,31 @@ func (action *AttestationPush) Run() (interface{}, error) {
 		action.Logger.Err(err).Msg("loading existing attestation")
 		return nil, err
 	}
+
+	// Annotations
+	craftedAnnotations := make(map[string]string, 0)
+	// 1 - Set annotations that come from the contract
+	for _, v := range action.c.CraftingState.InputSchema.GetAnnotations() {
+		craftedAnnotations[v.Name] = v.Value
+	}
+
+	// 2 - Populate annotation values from the ones provided at runtime
+	// a) we do not allow overriding values that come from the contract
+	// b) we do not allow adding annotations that are not defined in the contract
+	for kr, vr := range runtimeAnnotations {
+		// If the annotation is not defined in the material we fail
+		if v, found := craftedAnnotations[kr]; !found {
+			return nil, fmt.Errorf("annotation %q not found", kr)
+		} else if v == "" {
+			// Set it only if it's not set
+			craftedAnnotations[kr] = vr
+		} else {
+			// NOTE: we do not allow overriding values that come from the contract
+			action.Logger.Info().Str("annotation", kr).Msg("annotation can't be changed, skipping")
+		}
+	}
+	// Set the annotations
+	action.c.CraftingState.Attestation.Annotations = craftedAnnotations
 
 	if err := action.c.ValidateAttestation(); err != nil {
 		return nil, err

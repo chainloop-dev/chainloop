@@ -18,6 +18,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -48,4 +49,19 @@ func newAttestationCmd() *cobra.Command {
 	cmd.AddCommand(newAttestationInitCmd(), newAttestationAddCmd(), newAttestationStatusCmd(), newAttestationPushCmd(), newAttestationResetCmd())
 
 	return cmd
+}
+
+// extractAnnotations extracts the annotations from the flag and returns a map
+// the expected input format is key=value
+func extractAnnotations(annotationsFlag []string) (map[string]string, error) {
+	var annotations = make(map[string]string)
+	for _, annotation := range annotationsFlag {
+		kv := strings.Split(annotation, "=")
+		if len(kv) != 2 {
+			return nil, fmt.Errorf("invalid annotation %q, the format must be key=value", annotation)
+		}
+		annotations[kv[0]] = kv[1]
+	}
+
+	return annotations, nil
 }

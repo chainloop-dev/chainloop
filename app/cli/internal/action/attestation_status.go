@@ -40,6 +40,7 @@ type AttestationStatusResult struct {
 	EnvVars       map[string]string
 	RunnerContext *AttestationResultRunnerContext
 	DryRun        bool
+	Annotations   []*Annotation
 }
 
 type AttestationResultRunnerContext struct {
@@ -89,6 +90,7 @@ func (action *AttestationStatus) Run() (*AttestationStatusResult, error) {
 		},
 		InitializedAt: toTimePtr(att.InitializedAt.AsTime()),
 		DryRun:        c.CraftingState.DryRun,
+		Annotations:   pbAnnotationsToAction(c.CraftingState.InputSchema.GetAnnotations()),
 	}
 
 	// Materials

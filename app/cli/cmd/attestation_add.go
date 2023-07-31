@@ -17,8 +17,6 @@ package cmd
 
 import (
 	"errors"
-	"fmt"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -48,17 +46,12 @@ func newAttestationAddCmd() *cobra.Command {
 			)
 
 			// Extract annotations
-			var annotations = make(map[string]string)
-			for _, annotation := range annotationsFlag {
-				kv := strings.SplitN(annotation, "=", 2)
-				if len(kv) != 2 {
-					return fmt.Errorf("invalid annotation %q, the format must be key=value", annotation)
-				}
-				annotations[kv[0]] = kv[1]
+			annotations, err := extractAnnotations(annotationsFlag)
+			if err != nil {
+				return err
 			}
 
-			err := a.Run(name, value, annotations)
-			if err != nil {
+			if err := a.Run(name, value, annotations); err != nil {
 				if errors.Is(err, action.ErrAttestationNotInitialized) {
 					return err
 				}

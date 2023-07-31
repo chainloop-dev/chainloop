@@ -29,6 +29,10 @@ message CraftingSchema {
     repeated Material materials = 2;
     repeated string env_allow_list = 3;
     Runner runner = 4;
+    // List of annotations that can be used to add metadata to the attestation
+    // this metadata can be used later on by the integrations engine to filter and interpolate data
+    // It works in addition to the annotations defined in the materials and the runner
+    repeated Annotation annotations = 5;
 
     message Runner {
         RunnerType type = 1 [(validate.rules).enum = {not_in: [0]}];
