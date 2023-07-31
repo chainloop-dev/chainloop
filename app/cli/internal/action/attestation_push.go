@@ -81,6 +81,19 @@ func (action *AttestationPush) Run(runtimeAnnotations map[string]string) (interf
 			action.Logger.Info().Str("annotation", kr).Msg("annotation can't be changed, skipping")
 		}
 	}
+
+	// Make sure all the annotation values are now set
+	// This is in fact validated below but by manually checking we can provide a better error message
+	for k, v := range craftedAnnotations {
+		var missingAnnotations []string
+		if v == "" {
+			missingAnnotations = append(missingAnnotations, k)
+		}
+
+		if len(missingAnnotations) > 0 {
+			return nil, fmt.Errorf("annotations %q required", missingAnnotations)
+		}
+	}
 	// Set the annotations
 	action.c.CraftingState.Attestation.Annotations = craftedAnnotations
 
