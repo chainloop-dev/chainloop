@@ -12,6 +12,7 @@ jobs:
       packages: write
       pull-requests: write
     steps:
+      - uses: actions/checkout@v3
       - name: Bump Chart Version
         run: .github/workflows/utils/bump-chart-version.sh deployment/chainloop ${{ github.ref_name }}
 
