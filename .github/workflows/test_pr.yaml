@@ -1,15 +1,12 @@
 name: Test PR issue
 
 on:
-  push:
-    tags:
-      - "v*.*.*"
+  pull_request:
 
 jobs:
   release:
     name: Test PR
     runs-on: ubuntu-latest
-    if: github.ref_type == 'tag' # Guard to make sure we are releasing once
     permissions:
       contents: write
       packages: write
