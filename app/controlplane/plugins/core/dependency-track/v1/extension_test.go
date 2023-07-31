@@ -113,6 +113,11 @@ func TestResolveProjectName(t *testing.T) {
 			want:        "hola",
 		},
 		{
+			name:        "lower case",
+			projectName: "{{.Material.Annotations.hello}}",
+			want:        "hola",
+		},
+		{
 			name:        "interpolated string",
 			projectName: "{{.Material.Annotations.Hello}}-project",
 			want:        "hola-project",
@@ -122,11 +127,6 @@ func TestResolveProjectName(t *testing.T) {
 			projectName: "{{.Material.Annotations.noVal}}",
 			want:        "",
 			wantErr:     true,
-		},
-		{
-			name:        "lower case",
-			projectName: "{{.Material.Annotations.hello}}",
-			want:        "hola",
 		},
 		{
 			name:        "interpolated string global",
@@ -139,15 +139,15 @@ func TestResolveProjectName(t *testing.T) {
 			want:        "project-hola-1.2.3",
 		},
 		{
-			name:        "uppercase",
+			name:        "uppercase global",
 			projectName: "{{.Attestation.Annotations.Version}}",
 			want:        "1.2.3",
 		},
 	}
 
 	sbomAnnotation := map[string]string{
-		"Hello": "hola",
-		"World": "mundo",
+		"hello": "hola",
+		"world": "mundo",
 	}
 
 	attAnnotation := map[string]string{

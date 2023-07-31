@@ -242,7 +242,6 @@ type annotations struct {
 func toCaseInsensitive(in map[string]string) map[string]string {
 	for k, v := range in {
 		in[strings.Title(k)] = v
-		in[strings.ToLower(k)] = v
 	}
 
 	return in
