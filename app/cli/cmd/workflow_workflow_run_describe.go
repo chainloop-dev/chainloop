@@ -121,6 +121,12 @@ func workflowRunDescribeTableOutput(run *action.WorkflowRunItemFull) error {
 		color = text.FgHiGreen
 	}
 	gt.AppendRow(table.Row{"Verified", color.Sprint(run.Verified)})
+	if len(att.Annotations) > 0 {
+		gt.AppendRow(table.Row{"Annotations", "------"})
+		for _, a := range att.Annotations {
+			gt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", a.Name, a.Value)})
+		}
+	}
 	gt.Render()
 
 	predicateV1Table(att)

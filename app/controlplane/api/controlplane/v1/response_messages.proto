@@ -57,6 +57,7 @@ message AttestationItem {
   // denormalized envelope/statement content
   repeated EnvVariable env_vars = 4;
   repeated Material materials = 5;
+  map<string, string> annotations = 6;
 
   message EnvVariable {
     string name = 1; 

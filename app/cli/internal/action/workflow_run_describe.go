@@ -43,12 +43,13 @@ type WorkflowRunItemFull struct {
 }
 
 type WorkflowRunAttestationItem struct {
-	ID        string         `json:"id"`
-	CreatedAt *time.Time     `json:"createdAt"`
-	Envelope  *dsse.Envelope `json:"envelope"`
-	statement *in_toto.Statement
-	Materials []*Material `json:"materials,omitempty"`
-	EnvVars   []*EnvVar   `json:"envvars,omitempty"`
+	ID          string         `json:"id"`
+	CreatedAt   *time.Time     `json:"createdAt"`
+	Envelope    *dsse.Envelope `json:"envelope"`
+	statement   *in_toto.Statement
+	Materials   []*Material   `json:"materials,omitempty"`
+	EnvVars     []*EnvVar     `json:"envvars,omitempty"`
+	Annotations []*Annotation `json:"annotations,omitempty"`
 }
 
 type Material struct {
@@ -132,12 +133,26 @@ func (action *WorkflowRunDescribe) Run(runID string, verify bool, publicKey stri
 		materials = append(materials, materialPBToAction(v))
 	}
 
+	keys := make([]string, 0, len(attestation.GetAnnotations()))
+	for k := range attestation.GetAnnotations() {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	annotations := make([]*Annotation, 0, len(attestation.GetAnnotations()))
+	for _, k := range keys {
+		annotations = append(annotations, &Annotation{
+			Name: k, Value: attestation.GetAnnotations()[k],
+		})
+	}
+
 	item.Attestation = &WorkflowRunAttestationItem{
 		ID: attestation.Id, CreatedAt: toTimePtr(attestation.CreatedAt.AsTime()),
-		Envelope:  envelope,
-		statement: statement,
-		EnvVars:   envVars,
-		Materials: materials,
+		Envelope:    envelope,
+		statement:   statement,
+		EnvVars:     envVars,
+		Materials:   materials,
+		Annotations: annotations,
 	}
 
 	return item, nil

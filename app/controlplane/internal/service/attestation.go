@@ -311,9 +311,10 @@ func bizAttestationToPb(att *biz.Attestation) (*cpAPI.AttestationItem, error) {
 	}
 
 	return &cpAPI.AttestationItem{
-		Envelope:  encodedAttestation,
-		EnvVars:   extractEnvVariables(predicate.GetEnvVars()),
-		Materials: materials,
+		Envelope:    encodedAttestation,
+		EnvVars:     extractEnvVariables(predicate.GetEnvVars()),
+		Materials:   materials,
+		Annotations: predicate.GetAnnotations(),
 	}, nil
 }
 
