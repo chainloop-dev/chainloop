@@ -1,0 +1,33 @@
+name: Test PR issue
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  release:
+    name: Test PR
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref_type == 'tag' # Guard to make sure we are releasing once
+    permissions:
+      contents: write
+      packages: write
+      pull-requests: write
+    steps:
+      - name: Bump Chart Version
+        run: .github/workflows/utils/bump-chart-version.sh deployment/chainloop ${{ github.ref_name }}
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          commit-message: Bump Chart Version ${{ github.ref_name }}
+          signoff: true
+          base: main
+          title: Bump Helm Chart Version => ${{ github.ref_name }}
+          body: |
+            A new Chainloop release is available! Bumping Helm Chart reference to ${{ github.ref_name }}
+          labels: |
+            automated
+            helm
