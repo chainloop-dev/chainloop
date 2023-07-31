@@ -1,7 +1,9 @@
 name: Test PR issue
 
 on:
-  pull_request:
+  push:
+    branches:
+      - fix-pr
 
 jobs:
   release:
