@@ -9,7 +9,23 @@ materials: [
 	{type: "CONTAINER_IMAGE", name: "control-plane-image", output: true},
 	{type: "CONTAINER_IMAGE", name: "artifact-cas-image", output:  true},
 	// SBOMS for those container images
-	{type: "SBOM_CYCLONEDX_JSON", name: "sbom-control-plane"},
-	{type: "SBOM_CYCLONEDX_JSON", name: "sbom-artifact-cas"},
+	{
+		type: "SBOM_CYCLONEDX_JSON", name: "sbom-control-plane"
+		annotations: [
+			{
+				name:  "component"
+				value: "control-plane"
+			},
+		]
+	},
+	{
+		type: "SBOM_CYCLONEDX_JSON", name: "sbom-artifact-cas"
+		annotations: [
+			{
+				name:  "component"
+				value: "cas"
+			},
+		]
+	},
 ]
 runner: type: "GITHUB_ACTION"
