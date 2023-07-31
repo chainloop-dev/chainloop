@@ -8,7 +8,6 @@ on:
 jobs:
   release:
     name: Test PR
-    needs: test
     runs-on: ubuntu-latest
     if: github.ref_type == 'tag' # Guard to make sure we are releasing once
     permissions:
