@@ -26,8 +26,9 @@ import (
 )
 
 type renderer struct {
-	render func(t table.Writer) string
-	format string
+	render  func(t table.Writer) string
+	format  string
+	maxSize int
 }
 
 type RenderOpt func(r *renderer) error
@@ -52,6 +53,13 @@ func WithFormat(format string) RenderOpt {
 		}
 
 		r.format = format
+		return nil
+	}
+}
+
+func WithMaxSize(max int) RenderOpt {
+	return func(r *renderer) error {
+		r.maxSize = max
 		return nil
 	}
 }
@@ -182,9 +190,33 @@ func (r *renderer) summaryTable(m *ChainloopMetadata, predicate chainloop.Normal
 		result += "\n" + r.render(mt)
 	}
 
-	result += fmt.Sprintf("\n\nGet Full Attestation\n\n$ chainloop workflow run describe --id %s -o statement", wr.ID)
+	footer := fmt.Sprintf("\n\nGet Full Attestation\n\n$ chainloop workflow run describe --id %s -o statement", wr.ID)
+
+	// Truncate the text if it's too long to be displayed, the footer will be kept
+	if r.maxSize > 0 {
+		result = truncateText(result, r.maxSize-len(footer))
+	}
+
+	result += footer
 
 	return result, nil
+}
+
+// Truncate returns the first n runes of s.
+func truncateText(s string, n int) string {
+	truncatedPrefix := "... (truncated)"
+	n -= len(truncatedPrefix)
+
+	if len(s) <= n {
+		return s
+	}
+	for i := range s {
+		if n == 0 {
+			return s[:i] + truncatedPrefix
+		}
+		n--
+	}
+	return s
 }
 
 func SummaryTable(req *ExecutionRequest, opts ...RenderOpt) (string, error) {

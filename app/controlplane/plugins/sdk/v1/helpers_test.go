@@ -42,6 +42,12 @@ func (s *helperTestSuite) TestSummaryTable() {
 			outputPath: "testdata/attestations/full.txt",
 		},
 		{
+			name:       "truncated text",
+			inputPath:  "testdata/attestations/full.json",
+			renderOpts: []RenderOpt{WithMaxSize(2000)},
+			outputPath: "testdata/attestations/truncated.txt",
+		},
+		{
 			name:       "full markdown",
 			inputPath:  "testdata/attestations/full.json",
 			renderOpts: []RenderOpt{WithFormat("markdown")},
