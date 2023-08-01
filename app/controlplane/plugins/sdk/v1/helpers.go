@@ -22,6 +22,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/muesli/reflow/wrap"
 )
 
 type renderer struct {
@@ -102,6 +103,18 @@ func (r *renderer) summaryTable(m *ChainloopMetadata, predicate chainloop.Normal
 	tw.AppendRow(table.Row{"Finished At", wr.FinishedAt.Format(time.RFC822)})
 	tw.AppendRow(table.Row{"State", wr.State})
 	tw.AppendRow(table.Row{"Runner Link", wr.RunURL})
+	if annotations := predicate.GetAnnotations(); len(annotations) > 0 {
+		keys := make([]string, 0, len(annotations))
+		for k := range annotations {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+
+		tw.AppendRow(table.Row{"Annotations", "------"})
+		for _, k := range keys {
+			tw.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", k, annotations[k])})
+		}
+	}
 
 	var result = r.render(tw)
 
@@ -112,23 +125,32 @@ func (r *renderer) summaryTable(m *ChainloopMetadata, predicate chainloop.Normal
 		mt.SetStyle(table.StyleLight)
 
 		mt.SetTitle("Materials")
-		mt.AppendHeader(table.Row{"Name", "Type", "Value"})
-
 		for _, m := range materials {
-			// Initialize simply with the value
-			displayValue := m.Value
-			// Override if there is a hash attached
+			mt.AppendRow(table.Row{"Name", m.Name})
+			mt.AppendRow(table.Row{"Type", m.Type})
+			value := m.Value
+			// Override the value for the filename of the item uploaded
+			if m.EmbeddedInline || m.UploadedToCAS {
+				value = m.Filename
+			}
+			mt.AppendRow(table.Row{"Value", wrap.String(value, 100)})
 			if m.Hash != nil {
-				name := m.Value
-				if m.EmbeddedInline || m.UploadedToCAS {
-					name = m.Filename
-				}
-
-				displayValue = fmt.Sprintf("%s@%s", name, m.Hash)
+				mt.AppendRow(table.Row{"Digest", m.Hash.Hex})
 			}
 
-			row := table.Row{m.Name, m.Type, displayValue}
-			mt.AppendRow(row)
+			if annotations := m.Annotations; len(annotations) > 0 {
+				keys := make([]string, 0, len(annotations))
+				for k := range annotations {
+					keys = append(keys, k)
+				}
+				sort.Strings(keys)
+
+				mt.AppendRow(table.Row{"Annotations", "------"})
+				for _, k := range keys {
+					mt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", k, annotations[k])})
+				}
+			}
+			mt.AppendSeparator()
 		}
 
 		result += "\n" + r.render(mt)
