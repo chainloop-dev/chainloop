@@ -16,18 +16,26 @@
 package server
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/service"
+	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
+	jwt "github.com/golang-jwt/jwt/v4"
+
+	nhttp "net/http"
 
 	api "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 	"github.com/go-kratos/kratos/v2/log"
+	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/go-kratos/kratos/v2/middleware/logging"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	"github.com/go-kratos/kratos/v2/transport/http"
 )
 
 // NewHTTPServer new a HTTP server.
-func NewHTTPServer(c *conf.Server, logger log.Logger) *http.Server {
+func NewHTTPServer(c *conf.Server, authConf *conf.Auth, downloadSvc *service.DownloadService, logger log.Logger) (*http.Server, error) {
 	var opts = []http.ServerOption{
 		http.Middleware(
 			recovery.Recovery(),
@@ -43,8 +51,40 @@ func NewHTTPServer(c *conf.Server, logger log.Logger) *http.Server {
 	if c.Http.Timeout != nil {
 		opts = append(opts, http.Timeout(c.Http.Timeout.AsDuration()))
 	}
+	// Load the key on initialization instead of on every request
+	// TODO: implement jwks endpoint
+	rawKey, err := os.ReadFile(authConf.RobotAccountPublicKeyPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load public key: %w", err)
+	}
+
 	srv := http.NewServer(opts...)
 
+	srv.Handle(service.DownloadPath, authFromQueryMiddleware(loadPublicKey(rawKey), casJWT.SigningMethod, downloadSvc))
 	api.RegisterStatusServiceHTTPServer(srv, service.NewStatusService(Version))
-	return srv
+	return srv, nil
+}
+
+func authFromQueryMiddleware(keyFunc jwt.Keyfunc, signingMethod jwt.SigningMethod, next nhttp.Handler) nhttp.Handler {
+	return nhttp.HandlerFunc(func(w http.ResponseWriter, r *nhttp.Request) {
+		token := r.URL.Query().Get("t")
+		if token == "" {
+			nhttp.Error(w, "missing token", nhttp.StatusUnauthorized)
+			return
+		}
+
+		claims, err := extractToken(token, keyFunc, signingMethod)
+		if err != nil {
+			// return unauthorized
+			nhttp.Error(w, "invalid token", nhttp.StatusUnauthorized)
+			return
+		}
+
+		// Attach the claims to the context
+		ctx := jwtMiddleware.NewContext(r.Context(), claims)
+		r = r.WithContext(ctx)
+
+		// Run the next handler
+		next.ServeHTTP(w, r)
+	})
 }

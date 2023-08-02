@@ -38,6 +38,7 @@ func (c *Client) Download(ctx context.Context, w io.Writer, digest string) error
 	defer cancel()
 
 	// Open the stream to start reading chunks
+	// TODO: send the full hash, not just the hex portion
 	reader, err := bytestream.NewByteStreamClient(c.conn).Read(ctx, &bytestream.ReadRequest{ResourceName: h.Hex})
 	if err != nil {
 		return fmt.Errorf("creating the gRPC client: %w", err)

@@ -130,39 +130,48 @@ func jwtAuthFunc(keyFunc jwt.Keyfunc, signingMethod jwt.SigningMethod) grpc_auth
 			return nil, err
 		}
 
-		var tokenInfo *jwt.Token
-		claims := &casJWT.Claims{}
-
-		tokenInfo, err = jwt.ParseWithClaims(token, claims, keyFunc)
+		claims, err := extractToken(token, keyFunc, signingMethod)
 		if err != nil {
-			var ve *jwt.ValidationError
-			if !errors.As(err, &ve) {
-				return nil, errors.Unauthorized("UNAUTHORIZED", err.Error())
-			}
-
-			if ve.Errors&jwt.ValidationErrorMalformed != 0 {
-				return nil, jwtMiddleware.ErrTokenInvalid
-			}
-
-			if ve.Errors&(jwt.ValidationErrorExpired) != 0 {
-				return nil, jwtMiddleware.ErrTokenExpired
-			}
-
-			if ve.Errors&(jwt.ValidationErrorNotValidYet) != 0 {
-				return nil, jwtMiddleware.ErrTokenExpired
-			}
-
 			return nil, err
 		}
 
-		if !tokenInfo.Valid {
+		return jwtMiddleware.NewContext(ctx, claims), nil
+	}
+}
+
+func extractToken(token string, keyFunc jwt.Keyfunc, signingMethod jwt.SigningMethod) (*casJWT.Claims, error) {
+	var tokenInfo *jwt.Token
+	claims := &casJWT.Claims{}
+
+	tokenInfo, err := jwt.ParseWithClaims(token, claims, keyFunc)
+	if err != nil {
+		var ve *jwt.ValidationError
+		if !errors.As(err, &ve) {
+			return nil, errors.Unauthorized("UNAUTHORIZED", err.Error())
+		}
+
+		if ve.Errors&jwt.ValidationErrorMalformed != 0 {
 			return nil, jwtMiddleware.ErrTokenInvalid
 		}
 
-		if tokenInfo.Method != signingMethod {
-			return nil, jwtMiddleware.ErrUnSupportSigningMethod
+		if ve.Errors&(jwt.ValidationErrorExpired) != 0 {
+			return nil, jwtMiddleware.ErrTokenExpired
 		}
 
-		return jwtMiddleware.NewContext(ctx, tokenInfo.Claims), nil
+		if ve.Errors&(jwt.ValidationErrorNotValidYet) != 0 {
+			return nil, jwtMiddleware.ErrTokenExpired
+		}
+
+		return nil, err
 	}
+
+	if !tokenInfo.Valid {
+		return nil, jwtMiddleware.ErrTokenInvalid
+	}
+
+	if tokenInfo.Method != signingMethod {
+		return nil, jwtMiddleware.ErrUnSupportSigningMethod
+	}
+
+	return claims, nil
 }
