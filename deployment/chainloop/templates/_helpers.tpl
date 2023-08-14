@@ -82,7 +82,10 @@ awsSecretManager:
 gcpSecretManager:
   secretPrefix: {{ required "secret prefix required" .secretPrefix | quote }}
   projectId: {{ required "project id required" .gcpSecretManager.projectId | quote }}
-  authKey: {{ required "auth key required" .gcpSecretManager.authKey | quote }}
+  serviceAccountKey: "/gcp-secrets/serviceAccountKey.json"
+  {{- if eq .gcpSecretManager.serviceAccountKey "" }}
+  {{- fail ".Values.secretsBackend.gcpSecretManager.serviceAccountKey not set" }}
+  {{- end }}
 
 {{- end }}
 {{- end }}

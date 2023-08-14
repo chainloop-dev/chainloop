@@ -55,11 +55,11 @@ secretsBackend:
   #   region: ""
 
   ## @extra secretsBackend.gcpSecretManager.projectId GCP Project ID
-  ## @extra secretsBackend.gcpSecretManager.authKey GCP Auth Key
+  ## @extra secretsBackend.gcpSecretManager.serviceAccountKey GCP Auth Key
   ##
   # gcpSecretManager:
   #   projectId: ""
-  #   authKey: ""
+  #   serviceAccountKey: ""
 
 ## @section Authentication
 ##

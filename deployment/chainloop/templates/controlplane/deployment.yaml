@@ -85,6 +85,10 @@ spec:
               mountPath: /tmp
             - name: jwt-cas-private-key
               mountPath: /secrets
+            {{- if eq "gcpSecretManager" .Values.secretsBackend.backend  }}
+            - name: gcp-secretmanager-serviceaccountkey
+              mountPath: /gcp-secrets
+            {{- end }}
       volumes:
         - name: config
           projected:
@@ -99,3 +103,8 @@ spec:
         - name: jwt-cas-private-key
           secret:
             secretName: {{ include "chainloop.controlplane.fullname" . }}-jwt-cas
+        {{- if eq "gcpSecretManager" .Values.secretsBackend.backend  }}
+        - name: gcp-secretmanager-serviceaccountkey
+          secret:
+            secretName: {{ include "chainloop.controlplane.fullname" . }}-gcp-secretmanager-serviceaccountkey
+        {{- end }}
