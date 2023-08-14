@@ -27,7 +27,6 @@ import (
 
 type renderer struct {
 	render  func(t table.Writer) string
-	format  string
 	maxSize int
 }
 
@@ -52,7 +51,6 @@ func WithFormat(format string) RenderOpt {
 			return fmt.Errorf("unsupported format %s", format)
 		}
 
-		r.format = format
 		return nil
 	}
 }
@@ -68,7 +66,7 @@ func newRenderer(opts ...RenderOpt) (*renderer, error) {
 	r := &renderer{
 		render: func(t table.Writer) string {
 			return t.Render()
-		}, format: "text",
+		},
 	}
 
 	for _, opt := range opts {
