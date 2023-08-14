@@ -99,7 +99,7 @@ helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
     # Secrets backend
     --set secretsBackend.backend=gcpSecretManager \
     --set secretsBackend.gcpSecretManager.projectId=[GCP Project ID] \
-    --set secretsBackend.gcpSecretManager.authKey=[GCP Auth KEY] \
+    --set secretsBackend.gcpSecretManager.serviceAccountKey=[GCP Auth KEY] \
     # Server Auth KeyPair
     # ...
 ```
@@ -317,7 +317,7 @@ secretsBackend:
     backend: gcpSecretManager
     gcpSecretManager:
         projectId: [PROJECT_ID]
-        authKey: [KEY]
+        serviceAccountKey: [KEY]
 ```
 
 ### Send exceptions to Sentry
@@ -370,7 +370,7 @@ chainloop config save \
 | `secretsBackend.awsSecretManager.secretKey` | AWS Secret Key                                                            |             |
 | `secretsBackend.awsSecretManager.region`    | AWS Secret Manager Region                                                 |             |
 | `secretsBackend.gcpSecretManager.projectId` | GCP Project ID                                                            |             |
-| `secretsBackend.gcpSecretManager.authKey`   | GCP Auth Key                                                              |             |
+| `secretsBackend.gcpSecretManager.serviceAccountKey`   | GCP Auth Key                                                              |             |
 
 ### Authentication
 
