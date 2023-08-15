@@ -96,7 +96,9 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 		return fmt.Errorf("running validation: %w", err)
 	}
 
-	summary, err := sdk.SummaryTable(req)
+	// 4000 is the max size of a Slack message
+	// if the message is larger than that, we will truncate it
+	summary, err := sdk.SummaryTable(req, sdk.WithMaxSize(4000))
 	if err != nil {
 		return fmt.Errorf("error summarizing the request: %w", err)
 	}
