@@ -2,7 +2,12 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ include "chainloop.controlplane.fullname" . }}
-  labels: {{- include "chainloop.controlplane.labels" . | nindent 4 }}
+  labels:
+    {{- include "chainloop.controlplane.labels" . | nindent 4 }}
+  {{- with .Values.controlplane.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   type: {{ .Values.controlplane.service.type }}
   ports:

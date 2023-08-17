@@ -175,6 +175,8 @@ controlplane:
     ## @extra controlplane.service.nodePorts.http Node port for HTTP. NOTE: choose port between <30000-32767>
     # nodePorts:
     #   http: "30800"
+    annotations: {}
+      ## @skip controlplane.service.annotations
 
   serviceAPI:
     ## @param controlplane.serviceAPI.type Service type
