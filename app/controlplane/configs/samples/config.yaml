@@ -1,3 +1,9 @@
+server:
+  grpc:
+    tls_config:
+      certificate: "./configs/tls/server.crt"
+      private_key: "./configs/tls/server.key"
+
 auth:
   # Development credentials for the SSO authentication roundtrip
   oauth:

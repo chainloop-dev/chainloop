@@ -43,10 +43,16 @@ message Server {
     string addr = 2;
     google.protobuf.Duration timeout = 3;
   }
+  message TLS {
+    // path to certificate and private key
+    string certificate = 1;
+    string private_key = 2;
+  }
   message GRPC {
     string network = 1;
     string addr = 2;
     google.protobuf.Duration timeout = 3;
+    TLS tls_config = 4;
   }
   // Regular HTTP endpoint
   HTTP http = 1;

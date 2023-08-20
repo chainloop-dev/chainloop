@@ -9,6 +9,9 @@ server:
   grpc:
     addr: 0.0.0.0:9001
     timeout: 1s
+    tls_config:
+      certificate: "./configs/tls/server.crt"
+      private_key: "./configs/tls/server.key"
   http_metrics:
     addr: 0.0.0.0:5001
 

@@ -17,6 +17,7 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"regexp"
 
@@ -72,7 +73,7 @@ type Opts struct {
 }
 
 // NewGRPCServer new a gRPC server.
-func NewGRPCServer(opts *Opts) *grpc.Server {
+func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
 	var serverOpts = []grpc.ServerOption{
 		grpc.Middleware(craftMiddleware(opts)...),
 		grpc.UnaryInterceptor(grpc_prometheus.UnaryServerInterceptor),
@@ -86,6 +87,20 @@ func NewGRPCServer(opts *Opts) *grpc.Server {
 	}
 	if v := opts.ServerConfig.Grpc.Timeout; v != nil {
 		serverOpts = append(serverOpts, grpc.Timeout(v.AsDuration()))
+	}
+	if tlsConf := opts.ServerConfig.Grpc.GetTlsConfig(); tlsConf != nil {
+		cert := tlsConf.GetCertificate()
+		privKey := tlsConf.GetPrivateKey()
+		if cert != "" && privKey != "" {
+			cert, err := tls.LoadX509KeyPair(cert, privKey)
+			if err != nil {
+				return nil, fmt.Errorf("loading gRPC server TLS certificate: %w", err)
+			}
+			serverOpts = append(serverOpts, grpc.TLSConfig(&tls.Config{
+				Certificates: []tls.Certificate{cert},
+				MinVersion:   tls.VersionTLS12, // gosec complains about insecure minimum version we use default value
+			}))
+		}
 	}
 
 	srv := grpc.NewServer(serverOpts...)
@@ -107,7 +122,7 @@ func NewGRPCServer(opts *Opts) *grpc.Server {
 	// Register Prometheus metrics
 	grpc_prometheus.Register(srv.Server)
 
-	return srv
+	return srv, nil
 }
 
 func craftMiddleware(opts *Opts) []middleware.Middleware {

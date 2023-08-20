@@ -63,10 +63,16 @@ message Server {
     google.protobuf.Duration timeout = 5;
   }
 
+  message TLS {
+    // path to certificate and private key
+    string certificate = 1;
+    string private_key = 2;
+  }
   message GRPC {
     string network = 1;
     string addr = 2 [(validate.rules).string.min_len = 1];
     google.protobuf.Duration timeout = 3;
+    TLS tls_config = 4;
   }
 
   HTTP http = 1;
