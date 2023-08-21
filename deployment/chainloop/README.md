@@ -360,17 +360,17 @@ chainloop config save \
 
 ### Secrets Backend
 
-| Name                                        | Description                                                               | Value       |
-| ------------------------------------------- | ------------------------------------------------------------------------- | ----------- |
-| `secretsBackend.backend`                    | Secrets backend type ("vault", "awsSecretManager" or "gcpSecretManager")  | `vault`     |
-| `secretsBackend.secretPrefix`               | Prefix that will be pre-pended to all secrets in the storage backend      | `chainloop` |
-| `secretsBackend.vault.address`              | Vault address                                                             |             |
-| `secretsBackend.vault.token`                | Vault authentication token                                                |             |
-| `secretsBackend.awsSecretManager.accessKey` | AWS Access KEY ID                                                         |             |
-| `secretsBackend.awsSecretManager.secretKey` | AWS Secret Key                                                            |             |
-| `secretsBackend.awsSecretManager.region`    | AWS Secret Manager Region                                                 |             |
-| `secretsBackend.gcpSecretManager.projectId` | GCP Project ID                                                            |             |
-| `secretsBackend.gcpSecretManager.serviceAccountKey`   | GCP Auth Key                                                              |             |
+| Name                                                | Description                                                               | Value       |
+| --------------------------------------------------- | ------------------------------------------------------------------------- | ----------- |
+| `secretsBackend.backend`                            | Secrets backend type ("vault", "awsSecretManager" or "gcpSecretManager")  | `vault`     |
+| `secretsBackend.secretPrefix`                       | Prefix that will be pre-pended to all secrets in the storage backend      | `chainloop` |
+| `secretsBackend.vault.address`                      | Vault address                                                             |             |
+| `secretsBackend.vault.token`                        | Vault authentication token                                                |             |
+| `secretsBackend.awsSecretManager.accessKey`         | AWS Access KEY ID                                                         |             |
+| `secretsBackend.awsSecretManager.secretKey`         | AWS Secret Key                                                            |             |
+| `secretsBackend.awsSecretManager.region`            | AWS Secret Manager Region                                                 |             |
+| `secretsBackend.gcpSecretManager.projectId`         | GCP Project ID                                                            |             |
+| `secretsBackend.gcpSecretManager.serviceAccountKey` | GCP Auth Key                                                              |             |
 
 ### Authentication
 
@@ -477,14 +477,31 @@ chainloop config save \
 
 | Name                              | Description                                                                                                                      | Value                    |
 | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| `cas.service.type`                | Service type                                                                                                                     | `ClusterIP`              |
+| `cas.service.port`                | Service port                                                                                                                     | `80`                     |
+| `cas.service.targetPort`          | Service target Port                                                                                                              | `http`                   |
+| `cas.service.nodePorts.http`      | Node port for HTTP. NOTE: choose port between <30000-32767>                                                                      |                          |
 | `cas.serviceAPI.type`             | Service type                                                                                                                     | `ClusterIP`              |
 | `cas.serviceAPI.port`             | Service port                                                                                                                     | `80`                     |
 | `cas.serviceAPI.targetPort`       | Service target Port                                                                                                              | `grpc`                   |
 | `cas.serviceAPI.annotations`      | Service annotations                                                                                                              |                          |
 | `cas.serviceAPI.nodePorts.http`   | Node port for HTTP. NOTE: choose port between <30000-32767>                                                                      |                          |
+| `cas.ingress.enabled`             | Enable ingress record generation for %%MAIN_CONTAINER_NAME%%                                                                     | `false`                  |
+| `cas.ingress.pathType`            | Ingress path type                                                                                                                | `ImplementationSpecific` |
+| `cas.ingress.hostname`            | Default host for the ingress record                                                                                              | `cas.dev.local`          |
+| `cas.ingress.ingressClassName`    | IngressClass that will be be used to implement the Ingress (Kubernetes 1.18+)                                                    | `""`                     |
+| `cas.ingress.path`                | Default path for the ingress record                                                                                              | `/`                      |
+| `cas.ingress.annotations`         | Additional annotations for the Ingress resource. To enable certificate autogeneration, place here your cert-manager annotations. | `{}`                     |
+| `cas.ingress.tls`                 | Enable TLS configuration for the host defined at `controlplane.ingress.hostname` parameter                                       | `false`                  |
+| `cas.ingress.selfSigned`          | Create a TLS secret for this ingress record using self-signed certificates generated by Helm                                     | `false`                  |
+| `cas.ingress.extraHosts`          | An array with additional hostname(s) to be covered with the ingress record                                                       | `[]`                     |
+| `cas.ingress.extraPaths`          | An array with additional arbitrary paths that may need to be added to the ingress under the main host                            | `[]`                     |
+| `cas.ingress.extraTls`            | TLS configuration for additional hostname(s) to be covered with this ingress record                                              | `[]`                     |
+| `cas.ingress.secrets`             | Custom TLS certificates as secrets                                                                                               | `[]`                     |
+| `cas.ingress.extraRules`          | Additional rules to be covered with this ingress record                                                                          | `[]`                     |
 | `cas.ingressAPI.enabled`          | Enable ingress record generation for %%MAIN_CONTAINER_NAME%%                                                                     | `false`                  |
 | `cas.ingressAPI.pathType`         | Ingress path type                                                                                                                | `ImplementationSpecific` |
-| `cas.ingressAPI.hostname`         | Default host for the ingress record                                                                                              | `api.cp.dev.local`       |
+| `cas.ingressAPI.hostname`         | Default host for the ingress record                                                                                              | `api.cas.dev.local`      |
 | `cas.ingressAPI.ingressClassName` | IngressClass that will be be used to implement the Ingress (Kubernetes 1.18+)                                                    | `""`                     |
 | `cas.ingressAPI.path`             | Default path for the ingress record                                                                                              | `/`                      |
 | `cas.ingressAPI.annotations`      | Additional annotations for the Ingress resource. To enable certificate autogeneration, place here your cert-manager annotations. |                          |
