@@ -1,10 +1,5 @@
 include ../../common.mk
 
-.PHONY: config
-# generate config proto bindings
-config: check-buf-tool
-	cd ./internal/conf && buf generate
-
 .PHONY: api
 # generate api proto bindings
 api: check-buf-tool
@@ -56,7 +51,6 @@ test-unit:
 # lint
 lint: check-golangci-lint-tool check-buf-tool
 	buf lint api
-	buf lint internal/conf
 	golangci-lint run
 
 .PHONY: generate

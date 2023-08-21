@@ -25,9 +25,9 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/conf/v1"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/user"
 	authenticator "github.com/chainloop-dev/chainloop/app/controlplane/internal/oidcauthenticator"

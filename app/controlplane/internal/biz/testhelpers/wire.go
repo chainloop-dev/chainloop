@@ -21,8 +21,10 @@
 package testhelpers
 
 import (
+	"testing"
+
+	"github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/conf/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	backends "github.com/chainloop-dev/chainloop/internal/blobmanager"
@@ -30,7 +32,6 @@ import (
 	robotaccount "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
-	"testing"
 )
 
 // wireTestData init testing data

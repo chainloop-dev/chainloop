@@ -89,12 +89,12 @@ The way you can make a change in the data model is
 
 The service runtime configuration is implemented by using [kratos built-in config module](https://go-kratos.dev/en/docs/component/config/).
 
-Meaning that the configuration schema is defined at `internal/conf/conf.proto`.
+The configuration schema is defined at `api/conf.proto`.
 
 To regenerate it run:
 
 ```
-make config
+make api
 ```
 
 ### Update dependency injection

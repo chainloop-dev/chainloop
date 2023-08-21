@@ -15,7 +15,8 @@
 
 syntax = "proto3";
 
-option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf;conf";
+package controlplane.conf.v1;
+option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/conf/v1;conf";
 
 import "google/protobuf/duration.proto";
 import "validate/validate.proto";

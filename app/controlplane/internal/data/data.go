@@ -26,7 +26,7 @@ import (
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
+	"github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/conf/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/go-kratos/kratos/v2/log"

@@ -18,7 +18,7 @@ package biz
 import (
 	"time"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
+	"github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/conf/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt"
 	robotaccount "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 )

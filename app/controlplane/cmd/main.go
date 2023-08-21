@@ -23,8 +23,8 @@ import (
 	"github.com/getsentry/sentry-go"
 	flag "github.com/spf13/pflag"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/conf/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/server"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"

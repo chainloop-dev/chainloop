@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
+	"github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/conf/v1"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
 	"github.com/chainloop-dev/chainloop/internal/grpcconn"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
