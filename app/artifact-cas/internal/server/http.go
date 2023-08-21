@@ -51,9 +51,16 @@ func NewHTTPServer(c *conf.Server, authConf *conf.Auth, downloadSvc *service.Dow
 	if c.Http.Timeout != nil {
 		opts = append(opts, http.Timeout(c.Http.Timeout.AsDuration()))
 	}
+
 	// Load the key on initialization instead of on every request
 	// TODO: implement jwks endpoint
-	rawKey, err := os.ReadFile(authConf.RobotAccountPublicKeyPath)
+	publicKeyPath := authConf.GetPublicKeyPath()
+	if publicKeyPath == "" {
+		// Maintain backwards compatibility
+		publicKeyPath = authConf.RobotAccountPublicKeyPath
+	}
+
+	rawKey, err := os.ReadFile(publicKeyPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load public key: %w", err)
 	}
@@ -73,7 +80,7 @@ func authFromQueryMiddleware(keyFunc jwt.Keyfunc, signingMethod jwt.SigningMetho
 			return
 		}
 
-		claims, err := extractToken(token, keyFunc, signingMethod)
+		claims, err := verifyAndMarshalJWT(token, keyFunc, signingMethod)
 		if err != nil {
 			// return unauthorized
 			nhttp.Error(w, "invalid token", nhttp.StatusUnauthorized)

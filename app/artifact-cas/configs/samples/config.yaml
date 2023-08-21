@@ -1,6 +1,6 @@
 # Example config file
 auth:
-  robot_account_public_key_path: "./configs/devkeys/cas.public.pem"
+  public_key_path: "./configs/devkeys/cas.public.pem"
 
 server:
   http:

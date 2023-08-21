@@ -44,11 +44,17 @@ import (
 // NewGRPCServer new a gRPC server.
 func NewGRPCServer(c *conf.Server, authConf *conf.Auth, byteService *service.ByteStreamService, rSvc *service.ResourceService, logger log.Logger) (*grpc.Server, error) {
 	log := log.NewHelper(logger)
-	log.Debugw("msg", "loading public key from file", "file", authConf.RobotAccountPublicKeyPath)
-
 	// Load the key on initialization instead of on every request
 	// TODO: implement jwks endpoint
-	rawKey, err := os.ReadFile(authConf.RobotAccountPublicKeyPath)
+	publicKeyPath := authConf.GetPublicKeyPath()
+	if publicKeyPath == "" {
+		// Maintain backwards compatibility
+		publicKeyPath = authConf.RobotAccountPublicKeyPath
+	}
+
+	log.Debugw("msg", "loading public key from file", "file", publicKeyPath)
+
+	rawKey, err := os.ReadFile(publicKeyPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load public key: %w", err)
 	}
@@ -130,7 +136,7 @@ func jwtAuthFunc(keyFunc jwt.Keyfunc, signingMethod jwt.SigningMethod) grpc_auth
 			return nil, err
 		}
 
-		claims, err := extractToken(token, keyFunc, signingMethod)
+		claims, err := verifyAndMarshalJWT(token, keyFunc, signingMethod)
 		if err != nil {
 			return nil, err
 		}
@@ -139,7 +145,8 @@ func jwtAuthFunc(keyFunc jwt.Keyfunc, signingMethod jwt.SigningMethod) grpc_auth
 	}
 }
 
-func extractToken(token string, keyFunc jwt.Keyfunc, signingMethod jwt.SigningMethod) (*casJWT.Claims, error) {
+// verifyAndMarshalJWT verifies the token and returns the claims
+func verifyAndMarshalJWT(token string, keyFunc jwt.Keyfunc, signingMethod jwt.SigningMethod) (*casJWT.Claims, error) {
 	var tokenInfo *jwt.Token
 	claims := &casJWT.Claims{}
 
