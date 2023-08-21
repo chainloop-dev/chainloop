@@ -59,5 +59,7 @@ message Server {
 message Auth {
   // Public key used to verify the received JWT token
   // This token in the context of chainloop has been crafted by the controlplane
-  string robot_account_public_key_path = 1;
+  string robot_account_public_key_path = 1 [deprecated = true];
+  // Public key used to verify the received JWT token
+  string public_key_path = 2;
 }

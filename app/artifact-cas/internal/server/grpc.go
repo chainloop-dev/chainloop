@@ -44,11 +44,17 @@ import (
 // NewGRPCServer new a gRPC server.
 func NewGRPCServer(c *conf.Server, authConf *conf.Auth, byteService *service.ByteStreamService, rSvc *service.ResourceService, logger log.Logger) (*grpc.Server, error) {
 	log := log.NewHelper(logger)
-	log.Debugw("msg", "loading public key from file", "file", authConf.RobotAccountPublicKeyPath)
-
 	// Load the key on initialization instead of on every request
 	// TODO: implement jwks endpoint
-	rawKey, err := os.ReadFile(authConf.RobotAccountPublicKeyPath)
+	publicKeyPath := authConf.GetPublicKeyPath()
+	if publicKeyPath == "" {
+		// Maintain backwards compatibility
+		publicKeyPath = authConf.RobotAccountPublicKeyPath
+	}
+
+	log.Debugw("msg", "loading public key from file", "file", publicKeyPath)
+
+	rawKey, err := os.ReadFile(publicKeyPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load public key: %w", err)
 	}
@@ -130,39 +136,49 @@ func jwtAuthFunc(keyFunc jwt.Keyfunc, signingMethod jwt.SigningMethod) grpc_auth
 			return nil, err
 		}
 
-		var tokenInfo *jwt.Token
-		claims := &casJWT.Claims{}
-
-		tokenInfo, err = jwt.ParseWithClaims(token, claims, keyFunc)
+		claims, err := verifyAndMarshalJWT(token, keyFunc, signingMethod)
 		if err != nil {
-			var ve *jwt.ValidationError
-			if !errors.As(err, &ve) {
-				return nil, errors.Unauthorized("UNAUTHORIZED", err.Error())
-			}
-
-			if ve.Errors&jwt.ValidationErrorMalformed != 0 {
-				return nil, jwtMiddleware.ErrTokenInvalid
-			}
-
-			if ve.Errors&(jwt.ValidationErrorExpired) != 0 {
-				return nil, jwtMiddleware.ErrTokenExpired
-			}
-
-			if ve.Errors&(jwt.ValidationErrorNotValidYet) != 0 {
-				return nil, jwtMiddleware.ErrTokenExpired
-			}
-
 			return nil, err
 		}
 
-		if !tokenInfo.Valid {
+		return jwtMiddleware.NewContext(ctx, claims), nil
+	}
+}
+
+// verifyAndMarshalJWT verifies the token and returns the claims
+func verifyAndMarshalJWT(token string, keyFunc jwt.Keyfunc, signingMethod jwt.SigningMethod) (*casJWT.Claims, error) {
+	var tokenInfo *jwt.Token
+	claims := &casJWT.Claims{}
+
+	tokenInfo, err := jwt.ParseWithClaims(token, claims, keyFunc)
+	if err != nil {
+		var ve *jwt.ValidationError
+		if !errors.As(err, &ve) {
+			return nil, errors.Unauthorized("UNAUTHORIZED", err.Error())
+		}
+
+		if ve.Errors&jwt.ValidationErrorMalformed != 0 {
 			return nil, jwtMiddleware.ErrTokenInvalid
 		}
 
-		if tokenInfo.Method != signingMethod {
-			return nil, jwtMiddleware.ErrUnSupportSigningMethod
+		if ve.Errors&(jwt.ValidationErrorExpired) != 0 {
+			return nil, jwtMiddleware.ErrTokenExpired
 		}
 
-		return jwtMiddleware.NewContext(ctx, tokenInfo.Claims), nil
+		if ve.Errors&(jwt.ValidationErrorNotValidYet) != 0 {
+			return nil, jwtMiddleware.ErrTokenExpired
+		}
+
+		return nil, err
 	}
+
+	if !tokenInfo.Valid {
+		return nil, jwtMiddleware.ErrTokenInvalid
+	}
+
+	if tokenInfo.Method != signingMethod {
+		return nil, jwtMiddleware.ErrUnSupportSigningMethod
+	}
+
+	return claims, nil
 }

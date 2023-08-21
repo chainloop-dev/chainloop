@@ -28,7 +28,7 @@ import (
 )
 
 // ProviderSet is service providers.
-var ProviderSet = wire.NewSet(NewByteStreamService, NewResourceService)
+var ProviderSet = wire.NewSet(NewByteStreamService, NewResourceService, NewDownloadService)
 
 type commonService struct {
 	log      *log.Helper

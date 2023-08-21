@@ -19,4 +19,4 @@ credentials_service:
     token: ${VAULT_TOKEN:notasecret}
 
 auth:
-  robot_account_public_key_path: "../../devel/devkeys/cas.pub"
+  public_key_path: "../../devel/devkeys/cas.pub"

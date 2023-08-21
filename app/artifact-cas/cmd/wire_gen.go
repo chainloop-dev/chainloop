@@ -32,7 +32,11 @@ func wireApp(confServer *conf.Server, auth *conf.Auth, reader credentials.Reader
 	if err != nil {
 		return nil, nil, err
 	}
-	httpServer := server.NewHTTPServer(confServer, logger)
+	downloadService := service.NewDownloadService(backendProvider, v...)
+	httpServer, err := server.NewHTTPServer(confServer, auth, downloadService, logger)
+	if err != nil {
+		return nil, nil, err
+	}
 	httpMetricsServer, err := server.NewHTTPMetricsServer(confServer)
 	if err != nil {
 		return nil, nil, err
