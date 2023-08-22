@@ -20,7 +20,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	cpAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
@@ -46,6 +48,7 @@ type AttestationService struct {
 	integrationUseCase      *biz.IntegrationUseCase
 	integrationDispatcher   *dispatcher.FanOutDispatcher
 	casCredsUseCase         *biz.CASCredentialsUseCase
+	attestationUseCase      *biz.AttestationUseCase
 }
 
 type NewAttestationServiceOpts struct {
@@ -56,6 +59,7 @@ type NewAttestationServiceOpts struct {
 	CredsReader        credentials.Reader
 	IntegrationUseCase *biz.IntegrationUseCase
 	CasCredsUseCase    *biz.CASCredentialsUseCase
+	AttestationUC      *biz.AttestationUseCase
 	FanoutDispatcher   *dispatcher.FanOutDispatcher
 	Opts               []NewOpt
 }
@@ -71,6 +75,7 @@ func NewAttestationService(opts *NewAttestationServiceOpts) *AttestationService 
 		integrationUseCase:      opts.IntegrationUseCase,
 		casCredsUseCase:         opts.CasCredsUseCase,
 		integrationDispatcher:   opts.FanoutDispatcher,
+		attestationUseCase:      opts.AttestationUC,
 	}
 }
 
@@ -188,7 +193,31 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	}
 
 	// We currently only support one backend per workflowRun
-	secretName := wRun.CASBackends[0].SecretName
+	casBackend := wRun.CASBackends[0]
+
+	// If we have an external CAS backend, we will push there the attestation
+	if !casBackend.Inline {
+		b := backoff.NewExponentialBackOff()
+		b.MaxElapsedTime = 1 * time.Minute
+		err := backoff.Retry(
+			func() error {
+				// reset context
+				ctx := context.Background()
+				d, err := s.attestationUseCase.UploadToCAS(ctx, envelope, casBackend.SecretName, req.WorkflowRunId)
+				if err != nil {
+					return err
+				}
+
+				s.log.Infow("msg", "attestation uploaded to CAS", "digest", d, "runID", req.WorkflowRunId)
+				return nil
+			}, b)
+
+		if err != nil {
+			_ = sl.LogAndMaskErr(err, s.log)
+		}
+	}
+
+	secretName := casBackend.SecretName
 
 	// Run integrations dispatcher
 	go func() {
