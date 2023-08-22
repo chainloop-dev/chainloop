@@ -282,7 +282,7 @@ func crafCallbackURL(callback, userToken string) (string, error) {
 func extractUserInfoFromToken(ctx context.Context, svc *AuthService, r *http.Request) (*upstreamOIDCclaims, *errorWithCode) {
 	cookieState, err := r.Cookie(cookieOauthStateName)
 	if err != nil {
-		return nil, &errorWithCode{http.StatusUnauthorized, err}
+		return nil, &errorWithCode{http.StatusUnauthorized, fmt.Errorf("retrieving cookie %s: %w", cookieOauthStateName, err)}
 	}
 
 	if r.URL.Query().Get("state") != cookieState.Value {

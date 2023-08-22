@@ -20,12 +20,9 @@ package controlplane.v1;
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
 import "validate/validate.proto";
-import "controlplane/v1/response_messages.proto";
-import "controlplane/v1/pagination.proto";
-import "google/api/annotations.proto";
 
-service ArtifactService {
-  // Retrieve the URL to download an artifact in CAS
+service CASRedirectService {
+	// Retrieve the URL to download an artifact in CAS
 	rpc GetDownloadURL (GetDownloadURLRequest) returns (GetDownloadURLResponse);
 }
 

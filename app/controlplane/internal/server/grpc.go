@@ -63,7 +63,7 @@ type Opts struct {
 	IntegrationsSvc     *service.IntegrationsService
 	OrganizationSvc     *service.OrganizationService
 	CASBackendSvc       *service.CASBackendService
-	ArtifactSvc         *service.ArtifactService
+	ArtifactSvc         *service.CASRedirectService
 	// Utils
 	Logger       log.Logger
 	ServerConfig *conf.Server
@@ -102,7 +102,6 @@ func NewGRPCServer(opts *Opts) *grpc.Server {
 	v1.RegisterOrganizationServiceServer(srv, opts.OrganizationSvc)
 	v1.RegisterAuthServiceServer(srv, opts.AuthSvc)
 	v1.RegisterCASBackendServiceServer(srv, opts.CASBackendSvc)
-	v1.RegisterArtifactServiceServer(srv, opts.ArtifactSvc)
 
 	// Register Prometheus metrics
 	grpc_prometheus.Register(srv.Server)
@@ -170,7 +169,7 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 // If we should load the user
 func requireCurrentUserMatcher() selector.MatchFunc {
 	// Skip authentication on the status grpc service
-	const skipRegexp = "(controlplane.v1.AttestationService/.*|controlplane.v1.StatusService/.*|controlplane.v1.ArtifactService/DownloadRedirect)"
+	const skipRegexp = "(controlplane.v1.AttestationService/.*|controlplane.v1.StatusService/.*)"
 
 	return func(ctx context.Context, operation string) bool {
 		r := regexp.MustCompile(skipRegexp)

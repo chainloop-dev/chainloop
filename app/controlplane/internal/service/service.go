@@ -39,7 +39,7 @@ var ProviderSet = wire.NewSet(
 	NewOrgMetricsService,
 	NewIntegrationsService,
 	NewCASBackendService,
-	NewArtifactService,
+	NewCASRedirectService,
 	NewOrganizationService,
 	wire.Struct(new(NewWorkflowRunServiceOpts), "*"),
 	wire.Struct(new(NewAttestationServiceOpts), "*"),
