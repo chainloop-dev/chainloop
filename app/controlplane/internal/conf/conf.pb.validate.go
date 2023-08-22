@@ -948,6 +948,8 @@ func (m *Bootstrap_CASServer) validate(all bool) error {
 
 	// no validation rules for Insecure
 
+	// no validation rules for DownloadUrl
+
 	if len(errors) > 0 {
 		return Bootstrap_CASServerMultiError(errors)
 	}

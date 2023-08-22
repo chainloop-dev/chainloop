@@ -42,10 +42,14 @@ message Bootstrap {
   }
 
   message CASServer {
+    // CAS server GRPC endpoint
     Server.GRPC grpc = 1 [(validate.rules).message.required = true];
-    // insecure is used to disable TLS handshake
-    // Only use for development purposes!
+    // insecure is used to connect to the CAS server in development
     bool insecure = 2;
+    // CAS server external http(s) download endpoint
+    // In the form of [scheme]://[host]/path i.e https://cas.chainloop.dev/download
+    // https://github.com/chainloop-dev/chainloop/blob/126f47b6c0803eac844b8e3e1a21d582f00e4dc6/app/artifact-cas/internal/service/download.go#L34
+    string download_url = 3;
   }
 }
 

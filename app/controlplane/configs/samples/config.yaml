@@ -14,7 +14,10 @@ auth:
 
 # CAS server where the controlplane will push artifacts to
 cas_server:
-  addr: 0.0.0.0:9001
+  grpc:
+    addr: 0.0.0.0:9001
+  # Where to redirect the user to download artifacts from the CAS
+  download_url: http://0.0.0.0:8001/download
 
 # Where to store credentials such as OCI registries or third party integrations secrets
 credentials_service:
