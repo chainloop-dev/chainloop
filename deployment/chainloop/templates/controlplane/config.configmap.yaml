@@ -17,7 +17,7 @@ data:
     server:
       http:
         addr: 0.0.0.0:8000
-        timeout: 1s
+        timeout: 10s
         external_url: {{ include "chainloop.controlplane.external_url" . }}
       http_metrics:
         addr: 0.0.0.0:5000
@@ -28,4 +28,5 @@ data:
       grpc:
         addr: {{ printf "%s-api:%.0f" (include "chainloop.cas.fullname" .) .Values.cas.serviceAPI.port }}
       insecure: true
+      download_url: {{ include "chainloop.cas.external_url" . }}/download
     plugins_dir: {{ .Values.controlplane.pluginsDir }}
