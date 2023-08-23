@@ -28,4 +28,5 @@ data:
       grpc:
         addr: {{ printf "%s-api:%.0f" (include "chainloop.cas.fullname" .) .Values.cas.serviceAPI.port }}
       insecure: true
+      download_url: {{ include "chainloop.cas.external_url" . }}/download
     plugins_dir: {{ .Values.controlplane.pluginsDir }}

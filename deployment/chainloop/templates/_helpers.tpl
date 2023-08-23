@@ -100,24 +100,6 @@ null
 {{- end -}}
 
 {{/*
-Figure out the external URL the controlplane can be reached at
-This endpoint is used for the CLI to know where to go for log in
-NOTE: Load balancer service type is not supported
-*/}}
-{{- define "chainloop.controlplane.external_url" -}}
-{{- $service := .Values.controlplane.service }}
-{{- $ingress := .Values.controlplane.ingress }}
-
-{{- if (and $ingress $ingress.enabled $ingress.hostname) }}
-{{- printf "%s://%s" (ternary "https" "http" $ingress.tls ) $ingress.hostname }}
-{{- else if (and (eq $service.type "NodePort") $service.nodePorts (not (empty $service.nodePorts.http))) }}
-{{- printf "http://localhost:%s" $service.nodePorts.http }}
-{{- else -}}
-null
-{{- end -}}
-{{- end -}}
-
-{{/*
 ##############################################################################
 Controlplane helpers
 ##############################################################################
@@ -269,6 +251,24 @@ Return the Postgresql user
 {{- end -}}
 
 {{/*
+Figure out the external URL the controlplane can be reached at
+This endpoint is used for the CLI to know where to go for log in
+NOTE: Load balancer service type is not supported
+*/}}
+{{- define "chainloop.controlplane.external_url" -}}
+{{- $service := .Values.controlplane.service }}
+{{- $ingress := .Values.controlplane.ingress }}
+
+{{- if (and $ingress $ingress.enabled $ingress.hostname) }}
+{{- printf "%s://%s" (ternary "https" "http" $ingress.tls ) $ingress.hostname }}
+{{- else if (and (eq $service.type "NodePort") $service.nodePorts (not (empty $service.nodePorts.http))) }}
+{{- printf "http://localhost:%s" $service.nodePorts.http }}
+{{- else -}}
+null
+{{- end -}}
+{{- end -}}
+
+{{/*
 ##############################################################################
 CAS Helpers
 ##############################################################################
@@ -316,3 +316,19 @@ Create the name of the service account to use
 {{- default "default" .Values.cas.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+External URL the CAS can be reached at
+This endpoint is used for the cas to redirect downloads
+NOTE: Load balancer service type is not supported
+*/}}
+{{- define "chainloop.cas.external_url" -}}
+{{- $service := .Values.cas.service }}
+{{- $ingress := .Values.cas.ingress }}
+
+{{- if (and $ingress $ingress.enabled $ingress.hostname) }}
+{{- printf "%s://%s" (ternary "https" "http" $ingress.tls ) $ingress.hostname }}
+{{- else if (and (eq $service.type "NodePort") $service.nodePorts (not (empty $service.nodePorts.http))) }}
+{{- printf "http://localhost:%s" $service.nodePorts.http }}
+{{- end -}}
+{{- end -}}
