@@ -19,13 +19,13 @@ require (
 	github.com/coreos/go-oidc/v3 v3.5.0
 	github.com/docker/distribution v2.8.2+incompatible
 	github.com/docker/go-connections v0.4.0
-	github.com/envoyproxy/protoc-gen-validate v0.10.0
+	github.com/envoyproxy/protoc-gen-validate v0.10.1
 	github.com/getsentry/sentry-go v0.17.0
 	github.com/go-kratos/kratos/contrib/log/zap/v2 v2.0.0-20230113095809-bebea0c103a8
 	// Currently fixed to a non-release because we need this fix
 	// https://github.com/go-kratos/kratos/commit/4a56b5669defa65e595301a8ad9dcc49496cc11c
 	// to be present so we can upgrade some other dependencies such as grpc
-	github.com/go-kratos/kratos/v2 v2.6.3-0.20230509063647-4a56b5669def
+	github.com/go-kratos/kratos/v2 v2.7.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/go-containerregistry v0.14.1-0.20230409045903-ed5c185df419
@@ -59,11 +59,11 @@ require (
 	go.uber.org/zap v1.24.0
 	golang.org/x/exp v0.0.0-20230321023759-10a507213a29
 	golang.org/x/oauth2 v0.8.0
-	golang.org/x/term v0.8.0
+	golang.org/x/term v0.9.0
 	google.golang.org/api v0.125.0
-	google.golang.org/genproto v0.0.0-20230530153820-e85fd2cbaebc // indirect
-	google.golang.org/grpc v1.55.0
-	google.golang.org/protobuf v1.30.0
+	google.golang.org/genproto v0.0.0-20230629202037-9506855d4529 // indirect
+	google.golang.org/grpc v1.56.1
+	google.golang.org/protobuf v1.31.0
 	sigs.k8s.io/yaml v1.3.0
 )
 
@@ -73,7 +73,7 @@ require (
 	github.com/jackc/pgx/v5 v5.4.1
 	github.com/muesli/reflow v0.3.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20230530153820-e85fd2cbaebc
+	google.golang.org/genproto/googleapis/api v0.0.0-20230629202037-9506855d4529
 	google.golang.org/genproto/googleapis/bytestream v0.0.0-20230530153820-e85fd2cbaebc
 )
 
@@ -89,6 +89,7 @@ require (
 	github.com/mitchellh/go-testing-interface v1.0.0 // indirect
 	github.com/oklog/run v1.0.0 // indirect
 	github.com/pkg/xattr v0.4.9 // indirect
+	go.opentelemetry.io/otel/metric v1.16.0 // indirect
 )
 
 require (
@@ -184,7 +185,7 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hashicorp/hcl/v2 v2.13.0 // indirect
 	github.com/iancoleman/orderedmap v0.0.0-20190318233801-ac98e3ecb4b0 // indirect
-	github.com/imdario/mergo v0.3.12 // indirect
+	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
@@ -245,21 +246,21 @@ require (
 	github.com/zclconf/go-cty v1.8.0 // indirect
 	go.mongodb.org/mongo-driver v1.11.3 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/otel v1.14.0 // indirect
-	go.opentelemetry.io/otel/trace v1.14.0 // indirect
+	go.opentelemetry.io/otel v1.16.0 // indirect
+	go.opentelemetry.io/otel/trace v1.16.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
-	golang.org/x/crypto v0.9.0 // indirect
+	golang.org/x/crypto v0.10.0 // indirect
 	golang.org/x/mod v0.10.0 // indirect
-	golang.org/x/net v0.10.0 // indirect
-	golang.org/x/sync v0.2.0 // indirect
-	golang.org/x/sys v0.8.0 // indirect
-	golang.org/x/text v0.9.0 // indirect
+	golang.org/x/net v0.11.0 // indirect
+	golang.org/x/sync v0.3.0 // indirect
+	golang.org/x/sys v0.10.0 // indirect
+	golang.org/x/text v0.11.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.8.1-0.20230428195545-5283a0178901 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230530153820-e85fd2cbaebc // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230629202037-9506855d4529 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
