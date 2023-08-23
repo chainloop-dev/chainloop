@@ -5,7 +5,7 @@
 server:
   http:
     addr: 0.0.0.0:8000
-    timeout: 1s
+    timeout: 10s
   http_metrics:
     addr: 0.0.0.0:0
   grpc:
@@ -21,6 +21,7 @@ cas_server:
   grpc:
     addr: 0.0.0.0:9001
   insecure: true
+  download_url: http://0.0.0.0:8001/download
 
 credentials_service:
   vault:

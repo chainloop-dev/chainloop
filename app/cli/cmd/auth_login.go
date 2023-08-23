@@ -29,6 +29,7 @@ import (
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/internal/oauth"
 	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -70,7 +71,8 @@ func interactiveAuth() error {
 	}
 	// Append local callback URL
 	q := serverLoginURL.Query()
-	q.Set("callback", callbackURL.String())
+	q.Set(oauth.QueryParamCallback, callbackURL.String())
+	q.Set(oauth.QueryParamLongLived, "true")
 	serverLoginURL.RawQuery = q.Encode()
 
 	err = openbrowser(serverLoginURL.String())

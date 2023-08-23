@@ -31,6 +31,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/user"
 	authenticator "github.com/chainloop-dev/chainloop/app/controlplane/internal/oidcauthenticator"
+	"github.com/chainloop-dev/chainloop/internal/oauth"
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"golang.org/x/oauth2"
 )
@@ -38,13 +39,21 @@ import (
 // The authentication process does the following
 // 1 - Authenticate against a valid OIDC provider, currently only Google is supported
 // 2 - Generate a chainloop signed JWT to be sent to the client
-const cookieOauthStateName string = "oauthState"
+const (
+	// Cookie names
+	cookieOauthStateName = "oauthState"
+	cookieCallback       = "oauthCallback"
+	cookieLongLived      = "longLived"
 
-// Deprecated: This is a legacy cookie name, it will be removed in a future release
-const cookieCLICallback string = "oauthCLICallback"
-const cookieCallback string = "oauthCallback"
-const AuthLoginPath = "/auth/login"
-const AuthCallbackPath = "/auth/callback"
+	// Auth paths
+	AuthLoginPath    = "/auth/login"
+	AuthCallbackPath = "/auth/callback"
+
+	// default
+	shortLivedDuration = 10 * time.Second
+	// opt-in
+	logLivedDuration = 24 * time.Hour
+)
 
 type oauthHandler struct {
 	H   func(*AuthService, http.ResponseWriter, *http.Request) (int, error)
@@ -152,9 +161,10 @@ func loginHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) (int
 	setOauthCookie(w, cookieOauthStateName, state)
 
 	// Store the final destination where the auth token will be pushed to, i.e the CLI
-	setOauthCookie(w, cookieCallback, r.URL.Query().Get("callback"))
-	// TODO: Deprecated, latest CLI version uses the callback query param instead
-	setOauthCookie(w, cookieCLICallback, r.URL.Query().Get("cli-callback"))
+	setOauthCookie(w, cookieCallback, r.URL.Query().Get(oauth.QueryParamCallback))
+
+	// Wether the token should be short lived or not
+	setOauthCookie(w, cookieLongLived, r.URL.Query().Get(oauth.QueryParamLongLived))
 
 	url := svc.authenticator.AuthCodeURL(state)
 	http.Redirect(w, r, url, http.StatusFound)
@@ -225,8 +235,19 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) (
 		}
 	}
 
+	// Set the expiration
+	expiration := shortLivedDuration
+	longLived, err := r.Cookie(cookieLongLived)
+	if err != nil {
+		return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
+	}
+
+	if longLived.Value == "true" {
+		expiration = logLivedDuration
+	}
+
 	// Generate user token
-	userToken, err := generateUserJWT(u.ID, svc.authConfig.GeneratedJwsHmacSecret)
+	userToken, err := generateUserJWT(u.ID, svc.authConfig.GeneratedJwsHmacSecret, expiration)
 	if err != nil {
 		return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
 	}
@@ -239,15 +260,6 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) (
 	}
 
 	callbackValue := callbackURLFromCookie.Value
-	// DEPRECATED: Remove this block in the future
-	if callbackValue == "" {
-		// Fallback to previous cookie that older CLIs might be sending
-		callbackURLFromCookie, err = r.Cookie(cookieCLICallback)
-		if err != nil {
-			return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
-		}
-		callbackValue = callbackURLFromCookie.Value
-	}
 
 	// There is no callback, just render the token
 	if callbackValue == "" {
@@ -282,7 +294,7 @@ func crafCallbackURL(callback, userToken string) (string, error) {
 func extractUserInfoFromToken(ctx context.Context, svc *AuthService, r *http.Request) (*upstreamOIDCclaims, *errorWithCode) {
 	cookieState, err := r.Cookie(cookieOauthStateName)
 	if err != nil {
-		return nil, &errorWithCode{http.StatusUnauthorized, err}
+		return nil, &errorWithCode{http.StatusUnauthorized, fmt.Errorf("retrieving cookie %s: %w", cookieOauthStateName, err)}
 	}
 
 	if r.URL.Query().Get("state") != cookieState.Value {
@@ -320,9 +332,9 @@ func extractUserInfoFromToken(ctx context.Context, svc *AuthService, r *http.Req
 }
 
 // Take an upstream token from Google and generates a temporary Chainloop JWT
-func generateUserJWT(userID, passphrase string) (string, error) {
+func generateUserJWT(userID, passphrase string, expiration time.Duration) (string, error) {
 	b, err := user.NewBuilder(
-		user.WithExpiration(24*time.Hour),
+		user.WithExpiration(expiration),
 		user.WithIssuer(jwt.DefaultIssuer),
 		user.WithKeySecret(passphrase),
 	)

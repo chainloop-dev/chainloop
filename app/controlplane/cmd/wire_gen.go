@@ -117,6 +117,11 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	integrationsService := service.NewIntegrationsService(integrationUseCase, workflowUseCase, availablePlugins, v2...)
 	organizationService := service.NewOrganizationService(membershipUseCase, v2...)
 	casBackendService := service.NewCASBackendService(casBackendUseCase, providers, v2...)
+	casRedirectService, err := service.NewCASRedirectService(casBackendUseCase, casCredentialsUseCase, bootstrap_CASServer, v2...)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
 	opts := &server.Opts{
 		UserUseCase:         userUseCase,
 		RobotAccountUseCase: robotAccountUseCase,
@@ -135,6 +140,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		IntegrationsSvc:     integrationsService,
 		OrganizationSvc:     organizationService,
 		CASBackendSvc:       casBackendService,
+		CASRedirectSvc:      casRedirectService,
 		Logger:              logger,
 		ServerConfig:        confServer,
 		AuthConfig:          auth,

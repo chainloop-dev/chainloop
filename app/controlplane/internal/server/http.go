@@ -56,6 +56,9 @@ func NewHTTPServer(opts *Opts, grpcSrv *grpc.Server) (*http.Server, error) {
 		grpcweb.WithOriginFunc(func(_ string) bool { return true }),
 	)
 
+	r := httpSrv.Route("/")
+	r.GET("/download/{digest}", opts.CASRedirectSvc.HTTPDownload)
+
 	// Handle grpc-web requests or fallback
 	wrappedServer.Handler = h.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		if wrappedGrpc.IsGrpcWebRequest(req) || wrappedGrpc.IsAcceptableGrpcCorsRequest(req) {
