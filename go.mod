@@ -22,9 +22,6 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v0.10.1
 	github.com/getsentry/sentry-go v0.17.0
 	github.com/go-kratos/kratos/contrib/log/zap/v2 v2.0.0-20230113095809-bebea0c103a8
-	// Currently fixed to a non-release because we need this fix
-	// https://github.com/go-kratos/kratos/commit/4a56b5669defa65e595301a8ad9dcc49496cc11c
-	// to be present so we can upgrade some other dependencies such as grpc
 	github.com/go-kratos/kratos/v2 v2.7.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang-jwt/jwt/v4 v4.5.0
