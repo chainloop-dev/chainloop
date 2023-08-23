@@ -138,7 +138,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		IntegrationsSvc:     integrationsService,
 		OrganizationSvc:     organizationService,
 		CASBackendSvc:       casBackendService,
-		ArtifactSvc:         casRedirectService,
+		CASRedirectSvc:      casRedirectService,
 		Logger:              logger,
 		ServerConfig:        confServer,
 		AuthConfig:          auth,

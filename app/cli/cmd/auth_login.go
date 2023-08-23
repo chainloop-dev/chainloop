@@ -71,6 +71,7 @@ func interactiveAuth() error {
 	// Append local callback URL
 	q := serverLoginURL.Query()
 	q.Set("callback", callbackURL.String())
+	q.Set("long-lived", "true")
 	serverLoginURL.RawQuery = q.Encode()
 
 	err = openbrowser(serverLoginURL.String())

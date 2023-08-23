@@ -57,7 +57,7 @@ func NewHTTPServer(opts *Opts, grpcSrv *grpc.Server) (*http.Server, error) {
 	)
 
 	r := httpSrv.Route("/")
-	r.GET("/download/{digest}", opts.ArtifactSvc.HTTPDownloadRedirectHandler)
+	r.GET("/download/{digest}", opts.CASRedirectSvc.HTTPDownload)
 
 	// Handle grpc-web requests or fallback
 	wrappedServer.Handler = h.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
