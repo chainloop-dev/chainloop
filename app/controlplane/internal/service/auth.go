@@ -31,6 +31,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/user"
 	authenticator "github.com/chainloop-dev/chainloop/app/controlplane/internal/oidcauthenticator"
+	"github.com/chainloop-dev/chainloop/internal/oauth"
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"golang.org/x/oauth2"
 )
@@ -43,10 +44,6 @@ const (
 	cookieOauthStateName = "oauthState"
 	cookieCallback       = "oauthCallback"
 	cookieLongLived      = "longLived"
-
-	// URL query params
-	queryParamCallback  = "callback"
-	queryParamLongLived = "long-lived"
 
 	// Auth paths
 	AuthLoginPath    = "/auth/login"
@@ -164,10 +161,10 @@ func loginHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) (int
 	setOauthCookie(w, cookieOauthStateName, state)
 
 	// Store the final destination where the auth token will be pushed to, i.e the CLI
-	setOauthCookie(w, cookieCallback, r.URL.Query().Get(queryParamCallback))
+	setOauthCookie(w, cookieCallback, r.URL.Query().Get(oauth.QueryParamCallback))
 
 	// Wether the token should be short lived or not
-	setOauthCookie(w, cookieLongLived, r.URL.Query().Get(queryParamLongLived))
+	setOauthCookie(w, cookieLongLived, r.URL.Query().Get(oauth.QueryParamLongLived))
 
 	url := svc.authenticator.AuthCodeURL(state)
 	http.Redirect(w, r, url, http.StatusFound)

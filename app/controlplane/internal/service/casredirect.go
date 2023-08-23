@@ -25,6 +25,7 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
+	"github.com/chainloop-dev/chainloop/internal/oauth"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	kerrors "github.com/go-kratos/kratos/v2/errors"
@@ -177,9 +178,7 @@ func authenticateUser(w http.ResponseWriter, r *http.Request) (redirected bool) 
 	loginURL, _ := url.Parse(AuthLoginPath)
 	// Append local callback URL
 	q := loginURL.Query()
-	q.Set(queryParamCallback, r.URL.String())
-	// Set ephemeral to true to get a short-lived token
-	q.Set(queryParamLongLived, "true")
+	q.Set(oauth.QueryParamCallback, r.URL.String())
 	loginURL.RawQuery = q.Encode()
 
 	// Get the current user auth token and set it in the request context
