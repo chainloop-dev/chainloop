@@ -78,7 +78,7 @@ func (s *DownloadService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	info, err := b.Describe(ctx, hash.Hex)
 	if err != nil && backend.IsNotFound(err) {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		http.Error(w, "artifact not found", http.StatusNotFound)
 		return
 	} else if err != nil {
 		http.Error(w, sl.LogAndMaskErr(err, s.log).Error(), http.StatusInternalServerError)
