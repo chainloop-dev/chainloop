@@ -59,9 +59,9 @@ WBiBSPaJtz6JYk/fye4=
 
 {{- define "chainloop.credentials_service_settings" -}}
 {{- with .Values.secretsBackend }}
+secretPrefix: {{ required "secret prefix required" .secretPrefix | quote }}
 {{- if eq .backend "vault" }}
 vault:
-  secretPrefix: {{ required "secret prefix required" .secretPrefix | quote }}
   {{- if and $.Values.development (or (not .vault) not .vault.address) }}
   address: {{ printf "http://%s:8200" (include "chainloop.vault.fullname" $) | quote }}
   token: {{ $.Values.vault.server.dev.devRootToken | quote }}
@@ -72,7 +72,6 @@ vault:
 
 {{- else if eq .backend "awsSecretManager" }}
 awsSecretManager:
-  secretPrefix: {{ required "secret prefix required" .secretPrefix | quote }}
   region: {{ required "region required" .awsSecretManager.region | quote }}
   creds:
     accessKey: {{ required "access key required" .awsSecretManager.accessKey | quote }}
@@ -80,7 +79,6 @@ awsSecretManager:
 
 {{- else if eq .backend "gcpSecretManager" }}
 gcpSecretManager:
-  secretPrefix: {{ required "secret prefix required" .secretPrefix | quote }}
   projectId: {{ required "project id required" .gcpSecretManager.projectId | quote }}
   serviceAccountKey: "/gcp-secrets/serviceAccountKey.json"
   {{- if eq .gcpSecretManager.serviceAccountKey "" }}

@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v1
+package manager
 
 import (
 	"errors"
@@ -21,20 +21,14 @@ import (
 	"io"
 
 	"github.com/chainloop-dev/chainloop/internal/credentials"
+	api "github.com/chainloop-dev/chainloop/internal/credentials/api/credentials/v1"
 	"github.com/chainloop-dev/chainloop/internal/credentials/aws"
 	"github.com/chainloop-dev/chainloop/internal/credentials/gcp"
 	"github.com/chainloop-dev/chainloop/internal/credentials/vault"
 	"github.com/go-kratos/kratos/v2/log"
 )
 
-type Role int64
-
-const (
-	Reader Role = iota
-	Writer
-)
-
-func NewFromConfig(conf *Credentials, role Role, l log.Logger) (credentials.ReaderWriter, error) {
+func NewFromConfig(conf *api.Credentials, role credentials.Role, l log.Logger) (credentials.ReaderWriter, error) {
 	if l == nil {
 		l = log.NewStdLogger(io.Discard)
 	}
@@ -54,7 +48,7 @@ func NewFromConfig(conf *Credentials, role Role, l log.Logger) (credentials.Read
 	return nil, errors.New("no credentials manager configuration found")
 }
 
-func newAWSCredentialsManager(conf *Credentials_AWSSecretManager, prefix string, _ Role, l log.Logger) (*aws.Manager, error) {
+func newAWSCredentialsManager(conf *api.Credentials_AWSSecretManager, prefix string, r credentials.Role, l log.Logger) (*aws.Manager, error) {
 	if err := conf.ValidateAll(); err != nil {
 		return nil, fmt.Errorf("uncompleted configuration for AWS secret manager: %w", err)
 	}
@@ -64,6 +58,7 @@ func newAWSCredentialsManager(conf *Credentials_AWSSecretManager, prefix string,
 		AccessKey: conf.GetCreds().GetAccessKey(), SecretKey: conf.GetCreds().GetSecretKey(),
 		Logger:       l,
 		SecretPrefix: prefix,
+		Role:         r,
 	}
 
 	m, err := aws.NewManager(opts)
@@ -74,7 +69,7 @@ func newAWSCredentialsManager(conf *Credentials_AWSSecretManager, prefix string,
 	return m, nil
 }
 
-func newVaultCredentialsManager(conf *Credentials_Vault, prefix string, r Role, l log.Logger) (*vault.Manager, error) {
+func newVaultCredentialsManager(conf *api.Credentials_Vault, prefix string, r credentials.Role, l log.Logger) (*vault.Manager, error) {
 	if err := conf.ValidateAll(); err != nil {
 		return nil, fmt.Errorf("uncompleted configuration for Vault secret manager: %w", err)
 	}
@@ -83,7 +78,7 @@ func newVaultCredentialsManager(conf *Credentials_Vault, prefix string, r Role, 
 		AuthToken: conf.Token, Address: conf.Address,
 		MountPath: conf.MountPath, Logger: l,
 		SecretPrefix: prefix,
-		Role:         vault.Role(r),
+		Role:         r,
 	}
 
 	m, err := vault.NewManager(opts)
@@ -94,7 +89,7 @@ func newVaultCredentialsManager(conf *Credentials_Vault, prefix string, r Role, 
 	return m, nil
 }
 
-func newGCPCredentialsManager(conf *Credentials_GCPSecretManager, prefix string, _ Role, l log.Logger) (*gcp.Manager, error) {
+func newGCPCredentialsManager(conf *api.Credentials_GCPSecretManager, prefix string, r credentials.Role, l log.Logger) (*gcp.Manager, error) {
 	if err := conf.ValidateAll(); err != nil {
 		return nil, fmt.Errorf("uncompleted configuration for GCP secret manager: %w", err)
 	}
@@ -104,6 +99,7 @@ func newGCPCredentialsManager(conf *Credentials_GCPSecretManager, prefix string,
 		ServiceAccountKey: conf.ServiceAccountKey,
 		Logger:            l,
 		SecretPrefix:      prefix,
+		Role:              r,
 	}
 
 	m, err := gcp.NewManager(opts)

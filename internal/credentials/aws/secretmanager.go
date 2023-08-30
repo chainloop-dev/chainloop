@@ -51,6 +51,7 @@ type Manager struct {
 type NewManagerOpts struct {
 	Region, AccessKey, SecretKey, SecretPrefix string
 	Logger                                     log.Logger
+	Role                                       credentials.Role
 }
 
 func NewManager(opts *NewManagerOpts) (*Manager, error) {
@@ -64,7 +65,7 @@ func NewManager(opts *NewManagerOpts) (*Manager, error) {
 	}
 
 	logger := servicelogger.ScopedHelper(l, "credentials/aws-secrets-manager")
-	logger.Infow("msg", "configuring secrets-manager", "region", opts.Region)
+	logger.Infow("msg", "configuring secrets-manager", "region", opts.Region, "role", opts.Role, "prefix", opts.SecretPrefix)
 
 	config, err := config.LoadDefaultConfig(
 		context.TODO(),

@@ -20,11 +20,12 @@ import (
 	"os"
 	"time"
 
-	credsConfig "github.com/chainloop-dev/chainloop/internal/credentials/api/credentials/v1"
 	"github.com/getsentry/sentry-go"
 
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/server"
+	"github.com/chainloop-dev/chainloop/internal/credentials"
+	"github.com/chainloop-dev/chainloop/internal/credentials/manager"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 
 	"github.com/go-kratos/kratos/v2"
@@ -103,7 +104,7 @@ func main() {
 		panic(err)
 	}
 
-	credentialsReader, err := credsConfig.NewFromConfig(bc.GetCredentialsService(), credsConfig.Reader, logger)
+	credentialsReader, err := manager.NewFromConfig(bc.GetCredentialsService(), credentials.RoleReader, logger)
 	if err != nil {
 		panic(err)
 	}

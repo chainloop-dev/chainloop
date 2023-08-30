@@ -41,7 +41,7 @@ type Manager struct {
 type NewManagerOpts struct {
 	AuthToken, Address, MountPath, SecretPrefix string
 	Logger                                      log.Logger
-	Role                                        Role
+	Role                                        credentials.Role
 }
 
 type Role int64
@@ -53,6 +53,7 @@ const (
 
 const defaultKVMountPath = "secret"
 const healthCheckSecret = "chainloop-healthcheck"
+const healthCheckNonExisting = "chainloop-non-existing"
 
 // NewManager creates a new credentials manager that uses Hashicorp Vault as backend
 // Configured to write secrets in the KVv2 engine referenced by the provided mount path.
@@ -88,8 +89,11 @@ func NewManager(opts *NewManagerOpts) (*Manager, error) {
 
 	// Check address, token validity and mount path
 	kv := client.KVv2(mountPath)
-	// only run the validation if we are being used as a writer
-	if opts.Role != Reader {
+	if opts.Role == credentials.RoleReader {
+		if err := validateReaderClient(kv, opts.SecretPrefix); err != nil {
+			return nil, fmt.Errorf("validating client: %w", err)
+		}
+	} else {
 		if err := validateWriterClient(kv, opts.SecretPrefix); err != nil {
 			return nil, fmt.Errorf("validating client: %w", err)
 		}
@@ -109,6 +113,24 @@ func validateWriterClient(kv *vault.KVv2, pathPrefix string) error {
 
 	if err := kv.DeleteMetadata(ctx, healthCheckSecret); err != nil {
 		return fmt.Errorf("deleting health check secret: %w", err)
+	}
+
+	return nil
+}
+
+func validateReaderClient(kv *vault.KVv2, pathPrefix string) error {
+	ctx := context.Background()
+	// try to retrieve a non-existing key
+	// if we get 404 means that we have permissions to read in that path
+	keyPath := strings.Join([]string{pathPrefix, healthCheckNonExisting}, "/")
+	_, err := kv.Get(ctx, keyPath)
+	if err != nil {
+		if errors.Is(err, vault.ErrSecretNotFound) {
+			// Everything is ok
+			return nil
+		}
+
+		return err
 	}
 
 	return nil

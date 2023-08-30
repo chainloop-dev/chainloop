@@ -43,6 +43,13 @@ type Reader interface {
 	ReadCredentials(ctx context.Context, secretName string, credentials any) error
 }
 
+type Role int64
+
+const (
+	RoleReader Role = iota
+	RoleWriter
+)
+
 var ErrNotFound = errors.New("credentials not found")
 var ErrValidation = errors.New("credentials validation error")
 
