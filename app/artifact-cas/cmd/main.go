@@ -103,7 +103,7 @@ func main() {
 		panic(err)
 	}
 
-	credentialsReader, err := credsConfig.NewFromConfig(bc.GetCredentialsService(), logger)
+	credentialsReader, err := credsConfig.NewFromConfig(bc.GetCredentialsService(), credsConfig.Reader, logger)
 	if err != nil {
 		panic(err)
 	}

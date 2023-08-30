@@ -41,7 +41,15 @@ type Manager struct {
 type NewManagerOpts struct {
 	AuthToken, Address, MountPath, SecretPrefix string
 	Logger                                      log.Logger
+	Role                                        Role
 }
+
+type Role int64
+
+const (
+	Reader Role = iota
+	Writer
+)
 
 const defaultKVMountPath = "secret"
 const healthCheckSecret = "chainloop-healthcheck"
@@ -76,20 +84,23 @@ func NewManager(opts *NewManagerOpts) (*Manager, error) {
 	}
 
 	logger := servicelogger.ScopedHelper(l, "credentials/vault")
-	logger.Infow("msg", "configuring vault", "address", opts.Address, "mount_path", mountPath)
+	logger.Infow("msg", "configuring vault", "address", opts.Address, "mount_path", mountPath, "prefix", opts.SecretPrefix, "role", opts.Role)
 
 	// Check address, token validity and mount path
 	kv := client.KVv2(mountPath)
-	if err := validateClient(kv, opts.SecretPrefix); err != nil {
-		return nil, fmt.Errorf("validating client: %w", err)
+	// only run the validation if we are being used as a writer
+	if opts.Role != Reader {
+		if err := validateWriterClient(kv, opts.SecretPrefix); err != nil {
+			return nil, fmt.Errorf("validating client: %w", err)
+		}
 	}
 
 	return &Manager{kv, opts.SecretPrefix, logger}, nil
 }
 
-// validateClient checks if the client is valid by writing and deleting a secret
+// validateWriterClient checks if the client is valid by writing and deleting a secret
 // in the provided mount path.
-func validateClient(kv *vault.KVv2, pathPrefix string) error {
+func validateWriterClient(kv *vault.KVv2, pathPrefix string) error {
 	ctx := context.Background()
 	keyPath := strings.Join([]string{pathPrefix, healthCheckSecret}, "/")
 	if _, err := kv.Put(ctx, keyPath, nil); err != nil {
@@ -172,4 +183,14 @@ func mapToStruct(i map[string]interface{}, o interface{}) error {
 	}
 
 	return nil
+}
+
+func (r Role) String() string {
+	switch r {
+	case Reader:
+		return "reader"
+	case Writer:
+		return "writer"
+	}
+	return "unknown"
 }

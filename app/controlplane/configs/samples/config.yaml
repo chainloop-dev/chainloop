@@ -25,15 +25,13 @@ credentials_service:
   vault:
     address: ${VAULT_ADDRESS:http://0.0.0.0:8200}
     token: ${VAULT_TOKEN:notasecret}
-    secret_prefix: chainloop-devel
+  secret_prefix: chainloop-devel
   # aws_secret_manager:
   #   creds:
   #     access_key: not-a-key
   #     secret_key: not-a-secret
   #   region: us-east-1
-  #   secret_prefix: i-e chainloop-devel
 
   # gcp_secret_manager:
   #   project_id: 522312304548
   #   auth_key: "./configs/gcp_auth_key.json"
-  #   secret_prefix: "pre-"

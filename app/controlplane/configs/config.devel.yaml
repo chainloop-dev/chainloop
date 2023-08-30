@@ -27,7 +27,7 @@ credentials_service:
   vault:
     address: ${VAULT_ADDRESS:http://0.0.0.0:8200}
     token: ${VAULT_TOKEN:notasecret}
-    secret_prefix: chainloop-devel
+  secret_prefix: chainloop-devel
 
 data:
   database:

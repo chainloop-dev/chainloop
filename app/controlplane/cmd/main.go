@@ -105,7 +105,7 @@ func main() {
 		panic(err)
 	}
 
-	credsWriter, err := credsConfig.NewFromConfig(bc.GetCredentialsService(), logger)
+	credsWriter, err := credsConfig.NewFromConfig(bc.GetCredentialsService(), credsConfig.Writer, logger)
 	if err != nil {
 		panic(err)
 	}
