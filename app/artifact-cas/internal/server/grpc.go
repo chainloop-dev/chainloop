@@ -17,6 +17,7 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"os"
 	"regexp"
@@ -99,6 +100,21 @@ func NewGRPCServer(c *conf.Server, authConf *conf.Auth, byteService *service.Byt
 	if c.Grpc.Timeout != nil {
 		opts = append(opts, grpc.Timeout(c.Grpc.Timeout.AsDuration()))
 	}
+	if tlsConf := c.Grpc.GetTlsConfig(); tlsConf != nil {
+		cert := tlsConf.GetCertificate()
+		privKey := tlsConf.GetPrivateKey()
+		if cert != "" && privKey != "" {
+			cert, err := tls.LoadX509KeyPair(cert, privKey)
+			if err != nil {
+				return nil, fmt.Errorf("loading gRPC server TLS certificate: %w", err)
+			}
+			opts = append(opts, grpc.TLSConfig(&tls.Config{
+				Certificates: []tls.Certificate{cert},
+				MinVersion:   tls.VersionTLS12, // gosec complains about insecure minimum version we use default value
+			}))
+		}
+	}
+
 	srv := grpc.NewServer(opts...)
 
 	bytestream.RegisterByteStreamServer(srv.Server, byteService)

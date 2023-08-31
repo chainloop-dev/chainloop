@@ -146,7 +146,11 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		AuthConfig:          auth,
 		Credentials:         readerWriter,
 	}
-	grpcServer := server.NewGRPCServer(opts)
+	grpcServer, err := server.NewGRPCServer(opts)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
 	httpServer, err := server.NewHTTPServer(opts, grpcServer)
 	if err != nil {
 		cleanup()
