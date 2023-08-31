@@ -111,7 +111,7 @@ func validateWriterClient(kv *vault.KVv2, pathPrefix string) error {
 		return err
 	}
 
-	if err := kv.DeleteMetadata(ctx, healthCheckSecret); err != nil {
+	if err := kv.DeleteMetadata(ctx, keyPath); err != nil {
 		return fmt.Errorf("deleting health check secret: %w", err)
 	}
 
