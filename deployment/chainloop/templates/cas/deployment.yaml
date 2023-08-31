@@ -62,6 +62,10 @@ spec:
             - name: gcp-secretmanager-serviceaccountkey
               mountPath: /gcp-secrets
             {{- end }}
+            {{- if .Values.cas.tlsConfig.secret.name  }}
+            - name: server-certs
+              mountPath: /data/server-certs
+            {{- end }}
       volumes:
         - name: config
           projected:
@@ -73,6 +77,11 @@ spec:
         - name: jwt-public-key
           secret:
             secretName: {{ include "chainloop.cas.fullname" . }}-jwt-public-key
+        {{- if .Values.cas.tlsConfig.secret.name  }}
+        - name: server-certs
+          secret:
+            secretName: {{ .Values.cas.tlsConfig.secret.name  }}
+        {{- end }}
         {{- if eq "gcpSecretManager" .Values.secretsBackend.backend  }}
         - name: gcp-secretmanager-serviceaccountkey
           secret:
