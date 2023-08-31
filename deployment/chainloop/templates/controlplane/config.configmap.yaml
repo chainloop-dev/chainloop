@@ -24,6 +24,11 @@ data:
       grpc:
         addr: 0.0.0.0:9000
         timeout: 10s
+        {{- if .Values.controlplane.tlsConfig.secret.name  }}
+        tls_config:
+          certificate: /data/server-certs/tls.crt
+          private_key: /data/server-certs/tls.key
+        {{- end }}
     cas_server:
       grpc:
         addr: {{ printf "%s-api:%.0f" (include "chainloop.cas.fullname" .) .Values.cas.serviceAPI.port }}

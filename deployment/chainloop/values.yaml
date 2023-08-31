@@ -103,6 +103,12 @@ controlplane:
     # Overrides the image tag whose default is the chart appVersion.
     # tag: latest
 
+  ## @param controlplane.secret.name name of a secret containing TLS certificate to be used by the controlplane grpc server.
+  tlsConfig:
+    secret:
+      # the secret must contains 2 keys: tls.crt and tls.key respectively containing the certificate and private key.
+      name: ""
+
   ## @param controlplane.pluginsDir Directory where to look for plugins
   pluginsDir: /plugins
 
@@ -442,6 +448,12 @@ cas:
     repository: ghcr.io/chainloop-dev/chainloop/artifact-cas
     # Overrides the image tag whose default is the chart appVersion.
     # tag: latest
+
+  ## @param cas.tlsConfig.secret.name name of a secret containing TLS certificate to be used by the controlplane grpc server.
+  tlsConfig:
+    secret:
+      # the secret must contains 2 keys: tls.crt and tls.key respectively containing the certificate and private key.
+      name: ""
 
   ## @skip cas.serviceAccount
   serviceAccount:
