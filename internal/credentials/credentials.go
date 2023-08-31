@@ -43,13 +43,6 @@ type Reader interface {
 	ReadCredentials(ctx context.Context, secretName string, credentials any) error
 }
 
-type Role int64
-
-const (
-	RoleReader Role = iota
-	RoleWriter
-)
-
 var ErrNotFound = errors.New("credentials not found")
 var ErrValidation = errors.New("credentials validation error")
 
@@ -77,4 +70,24 @@ func (a *APICreds) Validate() error {
 		return fmt.Errorf("%w: missing key", ErrValidation)
 	}
 	return nil
+}
+
+type Role int64
+
+const (
+	RoleUnknown Role = iota
+	RoleReader
+	RoleWriter
+)
+
+// Implement string interface for Role
+func (r Role) String() string {
+	switch r {
+	case RoleReader:
+		return "reader"
+	case RoleWriter:
+		return "writer"
+	default:
+		return "unknown"
+	}
 }

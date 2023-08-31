@@ -42,6 +42,7 @@ func (s *testSuite) TestNewManager() {
 		connection    string
 		token         string
 		path          string
+		prefix        string
 		expectedError bool
 		role          credentials.Role
 	}{
@@ -49,14 +50,16 @@ func (s *testSuite) TestNewManager() {
 		{name: "missing address", token: defaultToken, expectedError: true},
 		{name: "invalid address reader", token: defaultToken, connection: "http://non-existing:5000", expectedError: true, role: credentials.RoleReader},
 		{name: "invalid address writer", token: defaultToken, connection: "http://non-existing:5000", expectedError: true},
-		{name: "invalid mount path", token: defaultToken, connection: s.connectionString, path: "non-existing", expectedError: true, role: credentials.RoleWriter},
+		{name: "invalid mount path", token: defaultToken, connection: s.connectionString, path: "non-existing", expectedError: true},
 		{name: "valid connection reader", connection: s.connectionString, token: defaultToken, role: credentials.RoleReader},
+		{name: "valid connection reader with prefix", connection: s.connectionString, token: defaultToken, role: credentials.RoleReader, prefix: "prefix"},
 		{name: "valid connection", connection: s.connectionString, token: defaultToken},
+		{name: "valid connection with prefix", connection: s.connectionString, token: defaultToken, prefix: "prefix"},
 	}
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			opts := &vault.NewManagerOpts{AuthToken: tc.token, Address: tc.connection, MountPath: tc.path, Role: tc.role}
+			opts := &vault.NewManagerOpts{AuthToken: tc.token, Address: tc.connection, MountPath: tc.path, Role: tc.role, SecretPrefix: tc.prefix}
 			_, err := vault.NewManager(opts)
 			if tc.expectedError {
 				assert.Error(err)
