@@ -13,6 +13,8 @@ server:
     addr: 0.0.0.0:5001
 
 credentials_service:
+  # We use the prefix to check that we can read from it on initialization
+  secret_prefix: chainloop-devel
   # Remember to run vault via docker compose up
   vault:
     address: ${VAULT_ADDRESS:http://0.0.0.0:8200}

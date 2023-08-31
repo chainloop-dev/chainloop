@@ -52,6 +52,7 @@ type Manager struct {
 type NewManagerOpts struct {
 	ProjectID, ServiceAccountKey, SecretPrefix string
 	Logger                                     log.Logger
+	Role                                       credentials.Role
 }
 
 func NewManager(opts *NewManagerOpts) (*Manager, error) {
@@ -65,13 +66,14 @@ func NewManager(opts *NewManagerOpts) (*Manager, error) {
 	}
 
 	logger := servicelogger.ScopedHelper(l, "credentials/gcp-secrets-manager")
-	logger.Infow("msg", "configuring gcp secrets-manager", "projectID", opts.ProjectID)
+	logger.Infow("msg", "configuring gcp secrets-manager", "projectID", opts.ProjectID, "role", opts.Role, "prefix", opts.SecretPrefix)
 
 	cli, err := secretmanager.NewClient(context.TODO(), option.WithCredentialsFile(opts.ServiceAccountKey))
 	if err != nil {
 		return nil, fmt.Errorf("error while creating the client: %w", err)
 	}
-	logger.Infow("msg", "created GCP connection", "projectID", opts.ProjectID)
+
+	logger.Infow("msg", "created GCP connection", "projectID", opts.ProjectID, "role", opts.Role, "prefix", opts.SecretPrefix)
 
 	return &Manager{
 		projectID:    opts.ProjectID,

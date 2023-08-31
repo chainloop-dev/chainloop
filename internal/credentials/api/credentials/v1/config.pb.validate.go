@@ -57,6 +57,8 @@ func (m *Credentials) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for SecretPrefix
+
 	oneofBackendPresent := false
 	switch v := m.Backend.(type) {
 	case *Credentials_AwsSecretManager:

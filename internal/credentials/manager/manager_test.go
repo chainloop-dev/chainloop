@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v1_test
+package manager_test
 
 import (
 	"context"
@@ -22,7 +22,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/internal/credentials"
 	v1 "github.com/chainloop-dev/chainloop/internal/credentials/api/credentials/v1"
+	"github.com/chainloop-dev/chainloop/internal/credentials/manager"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -43,7 +45,7 @@ var validGCPConfig = &v1.Credentials{
 	Backend: &v1.Credentials_GcpSecretManager{
 		GcpSecretManager: &v1.Credentials_GCPSecretManager{
 			ProjectId:         "project",
-			ServiceAccountKey: "../../../gcp/testdata/test_gcp_key.json",
+			ServiceAccountKey: "../gcp/testdata/test_gcp_key.json",
 		},
 	},
 }
@@ -136,7 +138,7 @@ func (s *testSuite) TestNewFromConfig() {
 			conf: &v1.Credentials{
 				Backend: &v1.Credentials_GcpSecretManager{
 					GcpSecretManager: &v1.Credentials_GCPSecretManager{
-						ServiceAccountKey: "../../../gcp/testdata/test_gcp_key.json",
+						ServiceAccountKey: "../gcp/testdata/test_gcp_key.json",
 					},
 				},
 			},
@@ -208,7 +210,7 @@ func (s *testSuite) TestNewFromConfig() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			_, err := v1.NewFromConfig(tc.conf, nil)
+			_, err := manager.NewFromConfig(tc.conf, credentials.RoleReader, nil)
 			if tc.wantErr {
 				assert.Error(s.T(), err)
 			} else {

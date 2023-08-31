@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v1
+package manager
 
 import (
 	"errors"
@@ -21,33 +21,34 @@ import (
 	"io"
 
 	"github.com/chainloop-dev/chainloop/internal/credentials"
+	api "github.com/chainloop-dev/chainloop/internal/credentials/api/credentials/v1"
 	"github.com/chainloop-dev/chainloop/internal/credentials/aws"
 	"github.com/chainloop-dev/chainloop/internal/credentials/gcp"
 	"github.com/chainloop-dev/chainloop/internal/credentials/vault"
 	"github.com/go-kratos/kratos/v2/log"
 )
 
-func NewFromConfig(conf *Credentials, l log.Logger) (credentials.ReaderWriter, error) {
+func NewFromConfig(conf *api.Credentials, role credentials.Role, l log.Logger) (credentials.ReaderWriter, error) {
 	if l == nil {
 		l = log.NewStdLogger(io.Discard)
 	}
 
 	if awsc := conf.GetAwsSecretManager(); awsc != nil {
-		return newAWSCredentialsManager(awsc, l)
+		return newAWSCredentialsManager(awsc, conf.SecretPrefix, role, l)
 	}
 
 	if gcpc := conf.GetGcpSecretManager(); gcpc != nil {
-		return newGCPCredentialsManager(gcpc, l)
+		return newGCPCredentialsManager(gcpc, conf.SecretPrefix, role, l)
 	}
 
 	if vaultc := conf.GetVault(); vaultc != nil {
-		return newVaultCredentialsManager(vaultc, l)
+		return newVaultCredentialsManager(vaultc, conf.SecretPrefix, role, l)
 	}
 
 	return nil, errors.New("no credentials manager configuration found")
 }
 
-func newAWSCredentialsManager(conf *Credentials_AWSSecretManager, l log.Logger) (*aws.Manager, error) {
+func newAWSCredentialsManager(conf *api.Credentials_AWSSecretManager, prefix string, r credentials.Role, l log.Logger) (*aws.Manager, error) {
 	if err := conf.ValidateAll(); err != nil {
 		return nil, fmt.Errorf("uncompleted configuration for AWS secret manager: %w", err)
 	}
@@ -55,7 +56,9 @@ func newAWSCredentialsManager(conf *Credentials_AWSSecretManager, l log.Logger) 
 	opts := &aws.NewManagerOpts{
 		Region:    conf.Region,
 		AccessKey: conf.GetCreds().GetAccessKey(), SecretKey: conf.GetCreds().GetSecretKey(),
-		Logger: l,
+		Logger:       l,
+		SecretPrefix: prefix,
+		Role:         r,
 	}
 
 	m, err := aws.NewManager(opts)
@@ -63,12 +66,10 @@ func newAWSCredentialsManager(conf *Credentials_AWSSecretManager, l log.Logger) 
 		return nil, fmt.Errorf("configuring the secrets manager: %w", err)
 	}
 
-	_ = l.Log(log.LevelInfo, "msg", "secrets manager configured", "backend", "AWS secret manager")
-
 	return m, nil
 }
 
-func newVaultCredentialsManager(conf *Credentials_Vault, l log.Logger) (*vault.Manager, error) {
+func newVaultCredentialsManager(conf *api.Credentials_Vault, prefix string, r credentials.Role, l log.Logger) (*vault.Manager, error) {
 	if err := conf.ValidateAll(); err != nil {
 		return nil, fmt.Errorf("uncompleted configuration for Vault secret manager: %w", err)
 	}
@@ -76,6 +77,8 @@ func newVaultCredentialsManager(conf *Credentials_Vault, l log.Logger) (*vault.M
 	opts := &vault.NewManagerOpts{
 		AuthToken: conf.Token, Address: conf.Address,
 		MountPath: conf.MountPath, Logger: l,
+		SecretPrefix: prefix,
+		Role:         r,
 	}
 
 	m, err := vault.NewManager(opts)
@@ -83,12 +86,10 @@ func newVaultCredentialsManager(conf *Credentials_Vault, l log.Logger) (*vault.M
 		return nil, fmt.Errorf("configuring vault: %w", err)
 	}
 
-	_ = l.Log(log.LevelInfo, "msg", "secrets manager configured", "backend", "Vault")
-
 	return m, nil
 }
 
-func newGCPCredentialsManager(conf *Credentials_GCPSecretManager, l log.Logger) (*gcp.Manager, error) {
+func newGCPCredentialsManager(conf *api.Credentials_GCPSecretManager, prefix string, r credentials.Role, l log.Logger) (*gcp.Manager, error) {
 	if err := conf.ValidateAll(); err != nil {
 		return nil, fmt.Errorf("uncompleted configuration for GCP secret manager: %w", err)
 	}
@@ -97,14 +98,14 @@ func newGCPCredentialsManager(conf *Credentials_GCPSecretManager, l log.Logger) 
 		ProjectID:         conf.ProjectId,
 		ServiceAccountKey: conf.ServiceAccountKey,
 		Logger:            l,
+		SecretPrefix:      prefix,
+		Role:              r,
 	}
 
 	m, err := gcp.NewManager(opts)
 	if err != nil {
 		return nil, fmt.Errorf("configuring the GCP secret manager: %w", err)
 	}
-
-	_ = l.Log(log.LevelInfo, "msg", "secrets manager configured", "backend", "GCP secret manager")
 
 	return m, nil
 }

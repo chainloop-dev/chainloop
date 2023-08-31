@@ -31,7 +31,7 @@ import (
 	backends "github.com/chainloop-dev/chainloop/internal/blobmanager"
 	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
-	credsConfig "github.com/chainloop-dev/chainloop/internal/credentials/api/credentials/v1"
+	"github.com/chainloop-dev/chainloop/internal/credentials/manager"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 
 	"github.com/go-kratos/kratos/v2"
@@ -105,7 +105,7 @@ func main() {
 		panic(err)
 	}
 
-	credsWriter, err := credsConfig.NewFromConfig(bc.GetCredentialsService(), logger)
+	credsWriter, err := manager.NewFromConfig(bc.GetCredentialsService(), credentials.RoleWriter, logger)
 	if err != nil {
 		panic(err)
 	}
