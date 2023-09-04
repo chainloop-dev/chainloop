@@ -73,10 +73,11 @@ type CASMappingLookupRef struct {
 
 // LookupCASItemsInAttestation returns a list of references to the materials that have been uploaded to CAS
 // as well as the attestation digest itself
-func (uc *CASMappingUseCase) LookupDigestsInAttestation(jsonAtt []byte) ([]*CASMappingLookupRef, error) {
-	var att *dsse.Envelope
-	if err := json.Unmarshal(jsonAtt, &att); err != nil {
-		return nil, err
+func (uc *CASMappingUseCase) LookupDigestsInAttestation(att *dsse.Envelope) ([]*CASMappingLookupRef, error) {
+	// Calculate the attestation hash
+	jsonAtt, err := json.Marshal(att)
+	if err != nil {
+		return nil, fmt.Errorf("marshaling attestation: %w", err)
 	}
 
 	// Extract the materials that have been uploaded too

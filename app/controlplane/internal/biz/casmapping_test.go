@@ -17,12 +17,14 @@ package biz_test
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	repoM "github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/mocks"
 	"github.com/google/uuid"
+	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -113,7 +115,7 @@ func (s *casMappingSuite) TestLookupDigestsInAttestation() {
 			want: []*biz.CASMappingLookupRef{
 				{
 					Name:   "attestation",
-					Digest: "sha256:63f811807585a7359882fc4e28bc8e08555d9743aa07a2965217b30ef2ba14a5",
+					Digest: "sha256:1a077137aef7ca208b80c339769d0d7eecacc2850368e56e834cda1750ce413a",
 				},
 				{
 					Name:   "skynet-sbom",
@@ -131,13 +133,13 @@ func (s *casMappingSuite) TestLookupDigestsInAttestation() {
 			want: []*biz.CASMappingLookupRef{
 				{
 					Name:   "attestation",
-					Digest: "sha256:b447f27683a88b55d529744d56c83c42fbe7d05692efaa6e5eddfadec392f812",
+					Digest: "sha256:1ad00b787214a1d09080a469390b15cdc3a751b89488da3776f432b4bbaa77d6",
 				},
 			},
 		},
 		{
 			name:    "invalid-file",
-			attPath: "testdata/attestations/invalid",
+			attPath: "testdata/attestations/invalid.json",
 			wantErr: true,
 		},
 	}
@@ -146,8 +148,10 @@ func (s *casMappingSuite) TestLookupDigestsInAttestation() {
 		s.Run(tc.name, func() {
 			attJSON, err := os.ReadFile(tc.attPath)
 			require.NoError(s.T(), err)
+			var envelope *dsse.Envelope
+			require.NoError(s.T(), json.Unmarshal(attJSON, &envelope))
 
-			got, err := s.useCase.LookupDigestsInAttestation(attJSON)
+			got, err := s.useCase.LookupDigestsInAttestation(envelope)
 			if tc.wantErr {
 				s.Error(err)
 			} else {
