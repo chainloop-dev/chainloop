@@ -68,6 +68,8 @@ func (m *CASCredentialsServiceGetRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for Digest
+
 	if len(errors) > 0 {
 		return CASCredentialsServiceGetRequestMultiError(errors)
 	}

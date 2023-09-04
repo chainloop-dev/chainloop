@@ -7,6 +7,8 @@ export const protobufPackage = "controlplane.v1";
 
 export interface CASCredentialsServiceGetRequest {
   role: CASCredentialsServiceGetRequest_Role;
+  /** during the download we need the digest to find the proper cas backend */
+  digest: string;
 }
 
 export enum CASCredentialsServiceGetRequest_Role {
@@ -57,13 +59,16 @@ export interface CASCredentialsServiceGetResponse_Result {
 }
 
 function createBaseCASCredentialsServiceGetRequest(): CASCredentialsServiceGetRequest {
-  return { role: 0 };
+  return { role: 0, digest: "" };
 }
 
 export const CASCredentialsServiceGetRequest = {
   encode(message: CASCredentialsServiceGetRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.role !== 0) {
       writer.uint32(8).int32(message.role);
+    }
+    if (message.digest !== "") {
+      writer.uint32(18).string(message.digest);
     }
     return writer;
   },
@@ -82,6 +87,13 @@ export const CASCredentialsServiceGetRequest = {
 
           message.role = reader.int32() as any;
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.digest = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -92,12 +104,16 @@ export const CASCredentialsServiceGetRequest = {
   },
 
   fromJSON(object: any): CASCredentialsServiceGetRequest {
-    return { role: isSet(object.role) ? cASCredentialsServiceGetRequest_RoleFromJSON(object.role) : 0 };
+    return {
+      role: isSet(object.role) ? cASCredentialsServiceGetRequest_RoleFromJSON(object.role) : 0,
+      digest: isSet(object.digest) ? String(object.digest) : "",
+    };
   },
 
   toJSON(message: CASCredentialsServiceGetRequest): unknown {
     const obj: any = {};
     message.role !== undefined && (obj.role = cASCredentialsServiceGetRequest_RoleToJSON(message.role));
+    message.digest !== undefined && (obj.digest = message.digest);
     return obj;
   },
 
@@ -110,6 +126,7 @@ export const CASCredentialsServiceGetRequest = {
   ): CASCredentialsServiceGetRequest {
     const message = createBaseCASCredentialsServiceGetRequest();
     message.role = object.role ?? 0;
+    message.digest = object.digest ?? "";
     return message;
   },
 };

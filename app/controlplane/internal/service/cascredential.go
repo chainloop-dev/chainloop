@@ -21,6 +21,7 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	errors "github.com/go-kratos/kratos/v2/errors"
+	kerrors "github.com/go-kratos/kratos/v2/errors"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
@@ -30,21 +31,25 @@ type CASCredentialsService struct {
 	*service
 	pb.UnimplementedCASCredentialsServiceServer
 
-	casUC *biz.CASCredentialsUseCase
-	ociUC *biz.CASBackendUseCase
+	casUC        *biz.CASCredentialsUseCase
+	casBackendUC *biz.CASBackendUseCase
+	casMappingUC *biz.CASMappingUseCase
 }
 
-func NewCASCredentialsService(casUC *biz.CASCredentialsUseCase, ociUC *biz.CASBackendUseCase, opts ...NewOpt) *CASCredentialsService {
+func NewCASCredentialsService(casUC *biz.CASCredentialsUseCase, casmUC *biz.CASMappingUseCase, casBUC *biz.CASBackendUseCase, opts ...NewOpt) *CASCredentialsService {
 	return &CASCredentialsService{
 		service: newService(opts...),
 		casUC:   casUC,
-		ociUC:   ociUC,
+		// we use the casMappingUC to find the backend to download from
+		casMappingUC: casmUC,
+		// we use the casBackendUC to find the default upload backend
+		casBackendUC: casBUC,
 	}
 }
 
 // Get will generate temporary credentials to be used against the CAS service for the current organization
 func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsServiceGetRequest) (*pb.CASCredentialsServiceGetResponse, error) {
-	_, currentOrg, err := loadCurrentUserAndOrg(ctx)
+	currentUser, currentOrg, err := loadCurrentUserAndOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -57,16 +62,33 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 		role = casJWT.Uploader
 	}
 
-	// Get repository to provide the secret name
-	backend, err := s.ociUC.FindDefaultBackend(ctx, currentOrg.ID)
+	// Load the default CAS backend, we'll use it for uploads and as fallback on downloads
+	backend, err := s.casBackendUC.FindDefaultBackend(ctx, currentOrg.ID)
 	if err != nil && !biz.IsNotFound(err) {
 		return nil, sl.LogAndMaskErr(err, s.log)
 	} else if backend == nil {
 		return nil, errors.NotFound("not found", "main repository not found")
 	}
 
-	// If we want to upload an artifact but we have selected an inline backend we fail
-	if backend.Provider == biz.CASBackendInline {
+	if role == casJWT.Downloader {
+		// Try to find the proper backend where the artifact is stored
+		mapping, err := s.casMappingUC.FindCASMappingForDownload(ctx, req.Digest, currentUser.ID)
+		// If we can't find a mapping, we'll use the default backend
+		if err != nil && !biz.IsNotFound(err) && !biz.IsErrUnauthorized(err) {
+			if biz.IsErrValidation(err) {
+				return nil, kerrors.BadRequest("invalid", err.Error())
+			}
+
+			return nil, sl.LogAndMaskErr(err, s.log)
+		}
+
+		if mapping != nil {
+			backend = mapping.CASBackend
+		}
+	}
+
+	// inline backends don't have a download URL
+	if backend.Inline {
 		return nil, errors.BadRequest("invalid argument", "cannot upload or download artifacts from an inline CAS backend")
 	}
 

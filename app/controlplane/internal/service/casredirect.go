@@ -81,7 +81,7 @@ func (s *CASRedirectService) GetDownloadURL(ctx context.Context, req *pb.GetDown
 		if biz.IsNotFound(err) || biz.IsErrUnauthorized(err) {
 			return nil, kerrors.NotFound("not found", "artifact not found")
 		} else if biz.IsErrValidation(err) {
-			return nil, kerrors.BadRequest("invalid digest", "the format must be \"sha256:[HexValue]\"")
+			return nil, kerrors.BadRequest("invalid", err.Error())
 		}
 
 		return nil, sl.LogAndMaskErr(err, s.log)
