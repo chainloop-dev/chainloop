@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
+	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/uuid"
@@ -50,7 +51,7 @@ type CASMappingUseCase struct {
 }
 
 func NewCASMappingUseCase(repo CASMappingRepo, mRepo MembershipRepo, logger log.Logger) *CASMappingUseCase {
-	return &CASMappingUseCase{repo, mRepo, log.NewHelper(logger)}
+	return &CASMappingUseCase{repo, mRepo, servicelogger.ScopedHelper(logger, "cas-mapping-usecase")}
 }
 
 func (uc *CASMappingUseCase) Create(ctx context.Context, digest string, casBackendID, workflowRunID string) (*CASMapping, error) {
@@ -72,10 +73,20 @@ func (uc *CASMappingUseCase) Create(ctx context.Context, digest string, casBacke
 	return uc.repo.Create(ctx, digest, casBackendUUID, workflowRunUUID)
 }
 
+// FindCASMappingForDownload returns the CASMapping appropriate for the given digest and user
+// This means any mapping that points to an organization which the user is member of
+// If there are multiple mappings, it will try to pick the one that points to a default backend
+// Otherwise the first one
 func (uc *CASMappingUseCase) FindCASMappingForDownload(ctx context.Context, digest string, userID string) (*CASMapping, error) {
+	uc.logger.Infow("msg", "finding cas mapping for download", "digest", digest, "user", userID)
+
 	userUUID, err := uuid.Parse(userID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
+	}
+
+	if _, err = cr_v1.NewHash(digest); err != nil {
+		return nil, NewErrValidation(fmt.Errorf("invalid digest format: %w", err))
 	}
 
 	// list all the CAS allMappings for the given digest
@@ -84,9 +95,10 @@ func (uc *CASMappingUseCase) FindCASMappingForDownload(ctx context.Context, dige
 		return nil, fmt.Errorf("failed to list cas mappings: %w", err)
 	}
 
+	uc.logger.Debugw("msg", fmt.Sprintf("found %d entries globally", len(allMappings)), "digest", digest, "user", userID)
 	// The given digest has not been uploaded to any CAS backend
 	if len(allMappings) == 0 {
-		return nil, NewErrNotFound("digest not found")
+		return nil, NewErrNotFound("digest not found in any mapping")
 	}
 
 	// filter the ones that the user has access to.
@@ -105,22 +117,29 @@ func (uc *CASMappingUseCase) FindCASMappingForDownload(ctx context.Context, dige
 		}
 	}
 
+	uc.logger.Debugw("msg", fmt.Sprintf("found %d entries for the user", len(userMappings)), "digest", digest, "user", userID)
+
 	// The user has not access to
 	if len(userMappings) == 0 {
+		uc.logger.Warnw("msg", "digest exist but user does not have access to it", "digest", digest, "user", userID)
 		return nil, NewErrUnauthorized(errors.New("unauthorized access to the artifact"))
-	} else if len(userMappings) == 1 {
-		return userMappings[0], nil
 	}
 
-	// Pick the appropriate mapping
+	// Pick the appropriate mapping from multiple ones
 	// for now it will work as follows
 	// 1 - If there is only one mapping, return it
-	// 2 - if there is more, we try to pick the one that points to a default backend
+	// 2 - if there are more than 1, we try to pick the one that points to a default backend
 	// 3 - Otherwise the first one
-	// TODO: Miguel
+	result := userMappings[0]
+	for _, mapping := range userMappings {
+		if mapping.CASBackend.Default {
+			result = mapping
+			break
+		}
+	}
 
-	// return uc.repo.Create(ctx, digest, userUUID, workflowRunUUID)
-	return nil, nil
+	uc.logger.Infow("msg", "mapping found!", "digest", digest, "user", userID, "casBackend", result.CASBackend.ID, "default", result.CASBackend.Default)
+	return result, nil
 }
 
 type CASMappingLookupRef struct {
