@@ -73,6 +73,8 @@ export interface AttestationItem {
   createdAt?: Date;
   /** encoded DSEE envelope */
   envelope: Uint8Array;
+  /** sha256sum of the envelope in json format, used as a key in the CAS backend */
+  digestInCasBackend: string;
   /** denormalized envelope/statement content */
   envVars: AttestationItem_EnvVariable[];
   materials: AttestationItem_Material[];
@@ -548,7 +550,15 @@ export const WorkflowRunItem = {
 };
 
 function createBaseAttestationItem(): AttestationItem {
-  return { id: "", createdAt: undefined, envelope: new Uint8Array(0), envVars: [], materials: [], annotations: {} };
+  return {
+    id: "",
+    createdAt: undefined,
+    envelope: new Uint8Array(0),
+    digestInCasBackend: "",
+    envVars: [],
+    materials: [],
+    annotations: {},
+  };
 }
 
 export const AttestationItem = {
@@ -561,6 +571,9 @@ export const AttestationItem = {
     }
     if (message.envelope.length !== 0) {
       writer.uint32(26).bytes(message.envelope);
+    }
+    if (message.digestInCasBackend !== "") {
+      writer.uint32(58).string(message.digestInCasBackend);
     }
     for (const v of message.envVars) {
       AttestationItem_EnvVariable.encode(v!, writer.uint32(34).fork()).ldelim();
@@ -602,6 +615,13 @@ export const AttestationItem = {
 
           message.envelope = reader.bytes();
           continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.digestInCasBackend = reader.string();
+          continue;
         case 4:
           if (tag !== 34) {
             break;
@@ -640,6 +660,7 @@ export const AttestationItem = {
       id: isSet(object.id) ? String(object.id) : "",
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
       envelope: isSet(object.envelope) ? bytesFromBase64(object.envelope) : new Uint8Array(0),
+      digestInCasBackend: isSet(object.digestInCasBackend) ? String(object.digestInCasBackend) : "",
       envVars: Array.isArray(object?.envVars)
         ? object.envVars.map((e: any) => AttestationItem_EnvVariable.fromJSON(e))
         : [],
@@ -661,6 +682,7 @@ export const AttestationItem = {
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
     message.envelope !== undefined &&
       (obj.envelope = base64FromBytes(message.envelope !== undefined ? message.envelope : new Uint8Array(0)));
+    message.digestInCasBackend !== undefined && (obj.digestInCasBackend = message.digestInCasBackend);
     if (message.envVars) {
       obj.envVars = message.envVars.map((e) => e ? AttestationItem_EnvVariable.toJSON(e) : undefined);
     } else {
@@ -689,6 +711,7 @@ export const AttestationItem = {
     message.id = object.id ?? "";
     message.createdAt = object.createdAt ?? undefined;
     message.envelope = object.envelope ?? new Uint8Array(0);
+    message.digestInCasBackend = object.digestInCasBackend ?? "";
     message.envVars = object.envVars?.map((e) => AttestationItem_EnvVariable.fromPartial(e)) || [];
     message.materials = object.materials?.map((e) => AttestationItem_Material.fromPartial(e)) || [];
     message.annotations = Object.entries(object.annotations ?? {}).reduce<{ [key: string]: string }>(

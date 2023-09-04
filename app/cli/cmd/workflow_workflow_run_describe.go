@@ -116,6 +116,7 @@ func workflowRunDescribeTableOutput(run *action.WorkflowRunItemFull) error {
 	gt.AppendRow(table.Row{"Statement"})
 	gt.AppendSeparator()
 	gt.AppendRow(table.Row{"Payload Type", att.Envelope.PayloadType})
+	gt.AppendRow(table.Row{"Digest", att.Digest})
 	color := text.FgHiRed
 	if run.Verified {
 		color = text.FgHiGreen

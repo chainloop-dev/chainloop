@@ -82,6 +82,11 @@ func RunnerType(v string) predicate.WorkflowRun {
 	return predicate.WorkflowRun(sql.FieldEQ(FieldRunnerType, v))
 }
 
+// AttestationDigest applies equality check predicate on the "attestation_digest" field. It's identical to AttestationDigestEQ.
+func AttestationDigest(v string) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldEQ(FieldAttestationDigest, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.WorkflowRun {
 	return predicate.WorkflowRun(sql.FieldEQ(FieldCreatedAt, v))
@@ -435,6 +440,81 @@ func AttestationIsNil() predicate.WorkflowRun {
 // AttestationNotNil applies the NotNil predicate on the "attestation" field.
 func AttestationNotNil() predicate.WorkflowRun {
 	return predicate.WorkflowRun(sql.FieldNotNull(FieldAttestation))
+}
+
+// AttestationDigestEQ applies the EQ predicate on the "attestation_digest" field.
+func AttestationDigestEQ(v string) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldEQ(FieldAttestationDigest, v))
+}
+
+// AttestationDigestNEQ applies the NEQ predicate on the "attestation_digest" field.
+func AttestationDigestNEQ(v string) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNEQ(FieldAttestationDigest, v))
+}
+
+// AttestationDigestIn applies the In predicate on the "attestation_digest" field.
+func AttestationDigestIn(vs ...string) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldIn(FieldAttestationDigest, vs...))
+}
+
+// AttestationDigestNotIn applies the NotIn predicate on the "attestation_digest" field.
+func AttestationDigestNotIn(vs ...string) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNotIn(FieldAttestationDigest, vs...))
+}
+
+// AttestationDigestGT applies the GT predicate on the "attestation_digest" field.
+func AttestationDigestGT(v string) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldGT(FieldAttestationDigest, v))
+}
+
+// AttestationDigestGTE applies the GTE predicate on the "attestation_digest" field.
+func AttestationDigestGTE(v string) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldGTE(FieldAttestationDigest, v))
+}
+
+// AttestationDigestLT applies the LT predicate on the "attestation_digest" field.
+func AttestationDigestLT(v string) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldLT(FieldAttestationDigest, v))
+}
+
+// AttestationDigestLTE applies the LTE predicate on the "attestation_digest" field.
+func AttestationDigestLTE(v string) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldLTE(FieldAttestationDigest, v))
+}
+
+// AttestationDigestContains applies the Contains predicate on the "attestation_digest" field.
+func AttestationDigestContains(v string) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldContains(FieldAttestationDigest, v))
+}
+
+// AttestationDigestHasPrefix applies the HasPrefix predicate on the "attestation_digest" field.
+func AttestationDigestHasPrefix(v string) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldHasPrefix(FieldAttestationDigest, v))
+}
+
+// AttestationDigestHasSuffix applies the HasSuffix predicate on the "attestation_digest" field.
+func AttestationDigestHasSuffix(v string) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldHasSuffix(FieldAttestationDigest, v))
+}
+
+// AttestationDigestIsNil applies the IsNil predicate on the "attestation_digest" field.
+func AttestationDigestIsNil() predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldIsNull(FieldAttestationDigest))
+}
+
+// AttestationDigestNotNil applies the NotNil predicate on the "attestation_digest" field.
+func AttestationDigestNotNil() predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNotNull(FieldAttestationDigest))
+}
+
+// AttestationDigestEqualFold applies the EqualFold predicate on the "attestation_digest" field.
+func AttestationDigestEqualFold(v string) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldEqualFold(FieldAttestationDigest, v))
+}
+
+// AttestationDigestContainsFold applies the ContainsFold predicate on the "attestation_digest" field.
+func AttestationDigestContainsFold(v string) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldContainsFold(FieldAttestationDigest, v))
 }
 
 // HasWorkflow applies the HasEdge predicate on the "workflow" edge.

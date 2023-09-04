@@ -38,6 +38,8 @@ type WorkflowRun struct {
 	RunnerType string `json:"runner_type,omitempty"`
 	// Attestation holds the value of the "attestation" field.
 	Attestation *dsse.Envelope `json:"attestation,omitempty"`
+	// AttestationDigest holds the value of the "attestation_digest" field.
+	AttestationDigest string `json:"attestation_digest,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the WorkflowRunQuery when eager-loading is set.
 	Edges                         WorkflowRunEdges `json:"edges"`
@@ -117,7 +119,7 @@ func (*WorkflowRun) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case workflowrun.FieldAttestation:
 			values[i] = new([]byte)
-		case workflowrun.FieldState, workflowrun.FieldReason, workflowrun.FieldRunURL, workflowrun.FieldRunnerType:
+		case workflowrun.FieldState, workflowrun.FieldReason, workflowrun.FieldRunURL, workflowrun.FieldRunnerType, workflowrun.FieldAttestationDigest:
 			values[i] = new(sql.NullString)
 		case workflowrun.FieldCreatedAt, workflowrun.FieldFinishedAt:
 			values[i] = new(sql.NullTime)
@@ -193,6 +195,12 @@ func (wr *WorkflowRun) assignValues(columns []string, values []any) error {
 				if err := json.Unmarshal(*value, &wr.Attestation); err != nil {
 					return fmt.Errorf("unmarshal field attestation: %w", err)
 				}
+			}
+		case workflowrun.FieldAttestationDigest:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field attestation_digest", values[i])
+			} else if value.Valid {
+				wr.AttestationDigest = value.String
 			}
 		case workflowrun.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -291,6 +299,9 @@ func (wr *WorkflowRun) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("attestation=")
 	builder.WriteString(fmt.Sprintf("%v", wr.Attestation))
+	builder.WriteString(", ")
+	builder.WriteString("attestation_digest=")
+	builder.WriteString(wr.AttestationDigest)
 	builder.WriteByte(')')
 	return builder.String()
 }

@@ -50,6 +50,8 @@ type WorkflowRunAttestationItem struct {
 	Materials   []*Material   `json:"materials,omitempty"`
 	EnvVars     []*EnvVar     `json:"envvars,omitempty"`
 	Annotations []*Annotation `json:"annotations,omitempty"`
+	// Digest in CAS backend
+	Digest string `json:"digest"`
 }
 
 type Material struct {
@@ -153,6 +155,7 @@ func (action *WorkflowRunDescribe) Run(runID string, verify bool, publicKey stri
 		EnvVars:     envVars,
 		Materials:   materials,
 		Annotations: annotations,
+		Digest:      attestation.DigestInCasBackend,
 	}
 
 	return item, nil
