@@ -21,7 +21,6 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	errors "github.com/go-kratos/kratos/v2/errors"
-	kerrors "github.com/go-kratos/kratos/v2/errors"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
@@ -76,7 +75,7 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 		// If we can't find a mapping, we'll use the default backend
 		if err != nil && !biz.IsNotFound(err) && !biz.IsErrUnauthorized(err) {
 			if biz.IsErrValidation(err) {
-				return nil, kerrors.BadRequest("invalid", err.Error())
+				return nil, errors.BadRequest("invalid", err.Error())
 			}
 
 			return nil, sl.LogAndMaskErr(err, s.log)

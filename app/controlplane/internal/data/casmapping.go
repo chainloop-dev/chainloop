@@ -68,7 +68,6 @@ func (r *CASMappingRepo) FindByDigest(ctx context.Context, digest string) ([]*bi
 		WithCasBackend().
 		WithOrganization().
 		WithWorkflowRun().
-		Order(ent.Desc(casmapping.FieldCreatedAt)).
 		All(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list cas mappings: %w", err)
