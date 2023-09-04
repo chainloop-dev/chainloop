@@ -23,6 +23,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/google/uuid"
 )
 
 // CASBackend holds the schema definition for the CASBackend entity.
@@ -32,6 +33,7 @@ type CASMapping struct {
 
 func (CASMapping) Fields() []ent.Field {
 	return []ent.Field{
+		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),
 		field.String("digest").Immutable(),
 		field.Time("created_at").
 			Default(time.Now).

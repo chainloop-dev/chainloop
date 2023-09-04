@@ -43,6 +43,20 @@ func (cmc *CASMappingCreate) SetNillableCreatedAt(t *time.Time) *CASMappingCreat
 	return cmc
 }
 
+// SetID sets the "id" field.
+func (cmc *CASMappingCreate) SetID(u uuid.UUID) *CASMappingCreate {
+	cmc.mutation.SetID(u)
+	return cmc
+}
+
+// SetNillableID sets the "id" field if the given value is not nil.
+func (cmc *CASMappingCreate) SetNillableID(u *uuid.UUID) *CASMappingCreate {
+	if u != nil {
+		cmc.SetID(*u)
+	}
+	return cmc
+}
+
 // SetCasBackendID sets the "cas_backend" edge to the CASBackend entity by ID.
 func (cmc *CASMappingCreate) SetCasBackendID(id uuid.UUID) *CASMappingCreate {
 	cmc.mutation.SetCasBackendID(id)
@@ -112,6 +126,10 @@ func (cmc *CASMappingCreate) defaults() {
 		v := casmapping.DefaultCreatedAt()
 		cmc.mutation.SetCreatedAt(v)
 	}
+	if _, ok := cmc.mutation.ID(); !ok {
+		v := casmapping.DefaultID()
+		cmc.mutation.SetID(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -139,8 +157,13 @@ func (cmc *CASMappingCreate) sqlSave(ctx context.Context) (*CASMapping, error) {
 		}
 		return nil, err
 	}
-	id := _spec.ID.Value.(int64)
-	_node.ID = int(id)
+	if _spec.ID.Value != nil {
+		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
+			_node.ID = *id
+		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
+			return nil, err
+		}
+	}
 	cmc.mutation.id = &_node.ID
 	cmc.mutation.done = true
 	return _node, nil
@@ -149,8 +172,12 @@ func (cmc *CASMappingCreate) sqlSave(ctx context.Context) (*CASMapping, error) {
 func (cmc *CASMappingCreate) createSpec() (*CASMapping, *sqlgraph.CreateSpec) {
 	var (
 		_node = &CASMapping{config: cmc.config}
-		_spec = sqlgraph.NewCreateSpec(casmapping.Table, sqlgraph.NewFieldSpec(casmapping.FieldID, field.TypeInt))
+		_spec = sqlgraph.NewCreateSpec(casmapping.Table, sqlgraph.NewFieldSpec(casmapping.FieldID, field.TypeUUID))
 	)
+	if id, ok := cmc.mutation.ID(); ok {
+		_node.ID = id
+		_spec.ID.Value = &id
+	}
 	if value, ok := cmc.mutation.Digest(); ok {
 		_spec.SetField(casmapping.FieldDigest, field.TypeString, value)
 		_node.Digest = value
@@ -237,10 +264,6 @@ func (cmcb *CASMappingCreateBulk) Save(ctx context.Context) ([]*CASMapping, erro
 					return nil, err
 				}
 				mutation.id = &nodes[i].ID
-				if specs[i].ID.Value != nil {
-					id := specs[i].ID.Value.(int64)
-					nodes[i].ID = int(id)
-				}
 				mutation.done = true
 				return nodes[i], nil
 			})

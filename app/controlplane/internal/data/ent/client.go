@@ -485,7 +485,7 @@ func (c *CASMappingClient) UpdateOne(cm *CASMapping) *CASMappingUpdateOne {
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *CASMappingClient) UpdateOneID(id int) *CASMappingUpdateOne {
+func (c *CASMappingClient) UpdateOneID(id uuid.UUID) *CASMappingUpdateOne {
 	mutation := newCASMappingMutation(c.config, OpUpdateOne, withCASMappingID(id))
 	return &CASMappingUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -502,7 +502,7 @@ func (c *CASMappingClient) DeleteOne(cm *CASMapping) *CASMappingDeleteOne {
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *CASMappingClient) DeleteOneID(id int) *CASMappingDeleteOne {
+func (c *CASMappingClient) DeleteOneID(id uuid.UUID) *CASMappingDeleteOne {
 	builder := c.Delete().Where(casmapping.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -519,12 +519,12 @@ func (c *CASMappingClient) Query() *CASMappingQuery {
 }
 
 // Get returns a CASMapping entity by its id.
-func (c *CASMappingClient) Get(ctx context.Context, id int) (*CASMapping, error) {
+func (c *CASMappingClient) Get(ctx context.Context, id uuid.UUID) (*CASMapping, error) {
 	return c.Query().Where(casmapping.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *CASMappingClient) GetX(ctx context.Context, id int) *CASMapping {
+func (c *CASMappingClient) GetX(ctx context.Context, id uuid.UUID) *CASMapping {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)

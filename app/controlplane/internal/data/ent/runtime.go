@@ -50,9 +50,13 @@ func init() {
 	casmappingFields := schema.CASMapping{}.Fields()
 	_ = casmappingFields
 	// casmappingDescCreatedAt is the schema descriptor for created_at field.
-	casmappingDescCreatedAt := casmappingFields[1].Descriptor()
+	casmappingDescCreatedAt := casmappingFields[2].Descriptor()
 	// casmapping.DefaultCreatedAt holds the default value on creation for the created_at field.
 	casmapping.DefaultCreatedAt = casmappingDescCreatedAt.Default.(func() time.Time)
+	// casmappingDescID is the schema descriptor for id field.
+	casmappingDescID := casmappingFields[0].Descriptor()
+	// casmapping.DefaultID holds the default value on creation for the id field.
+	casmapping.DefaultID = casmappingDescID.Default.(func() uuid.UUID)
 	integrationFields := schema.Integration{}.Fields()
 	_ = integrationFields
 	// integrationDescCreatedAt is the schema descriptor for created_at field.

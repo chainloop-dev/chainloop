@@ -39,7 +39,7 @@ var (
 	}
 	// CasMappingsColumns holds the columns for the "cas_mappings" table.
 	CasMappingsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "digest", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "cas_mapping_cas_backend", Type: field.TypeUUID},

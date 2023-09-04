@@ -96,7 +96,6 @@ func (s *casMappingSuite) TestCreate() {
 			}
 		})
 	}
-
 }
 
 type casMappingSuite struct {

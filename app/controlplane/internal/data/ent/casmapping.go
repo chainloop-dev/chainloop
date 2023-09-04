@@ -19,7 +19,7 @@ import (
 type CASMapping struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID int `json:"id,omitempty"`
+	ID uuid.UUID `json:"id,omitempty"`
 	// Digest holds the value of the "digest" field.
 	Digest string `json:"digest,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -74,12 +74,12 @@ func (*CASMapping) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case casmapping.FieldID:
-			values[i] = new(sql.NullInt64)
 		case casmapping.FieldDigest:
 			values[i] = new(sql.NullString)
 		case casmapping.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
+		case casmapping.FieldID:
+			values[i] = new(uuid.UUID)
 		case casmapping.ForeignKeys[0]: // cas_mapping_cas_backend
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case casmapping.ForeignKeys[1]: // cas_mapping_workflow_run
@@ -100,11 +100,11 @@ func (cm *CASMapping) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case casmapping.FieldID:
-			value, ok := values[i].(*sql.NullInt64)
-			if !ok {
-				return fmt.Errorf("unexpected type %T for field id", value)
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field id", values[i])
+			} else if value != nil {
+				cm.ID = *value
 			}
-			cm.ID = int(value.Int64)
 		case casmapping.FieldDigest:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field digest", values[i])

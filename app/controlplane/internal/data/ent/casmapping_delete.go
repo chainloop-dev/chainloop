@@ -40,7 +40,7 @@ func (cmd *CASMappingDelete) ExecX(ctx context.Context) int {
 }
 
 func (cmd *CASMappingDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(casmapping.Table, sqlgraph.NewFieldSpec(casmapping.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewDeleteSpec(casmapping.Table, sqlgraph.NewFieldSpec(casmapping.FieldID, field.TypeUUID))
 	if ps := cmd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

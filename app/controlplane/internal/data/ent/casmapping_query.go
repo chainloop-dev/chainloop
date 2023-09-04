@@ -131,8 +131,8 @@ func (cmq *CASMappingQuery) FirstX(ctx context.Context) *CASMapping {
 
 // FirstID returns the first CASMapping ID from the query.
 // Returns a *NotFoundError when no CASMapping ID was found.
-func (cmq *CASMappingQuery) FirstID(ctx context.Context) (id int, err error) {
-	var ids []int
+func (cmq *CASMappingQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+	var ids []uuid.UUID
 	if ids, err = cmq.Limit(1).IDs(setContextOp(ctx, cmq.ctx, "FirstID")); err != nil {
 		return
 	}
@@ -144,7 +144,7 @@ func (cmq *CASMappingQuery) FirstID(ctx context.Context) (id int, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (cmq *CASMappingQuery) FirstIDX(ctx context.Context) int {
+func (cmq *CASMappingQuery) FirstIDX(ctx context.Context) uuid.UUID {
 	id, err := cmq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -182,8 +182,8 @@ func (cmq *CASMappingQuery) OnlyX(ctx context.Context) *CASMapping {
 // OnlyID is like Only, but returns the only CASMapping ID in the query.
 // Returns a *NotSingularError when more than one CASMapping ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (cmq *CASMappingQuery) OnlyID(ctx context.Context) (id int, err error) {
-	var ids []int
+func (cmq *CASMappingQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+	var ids []uuid.UUID
 	if ids, err = cmq.Limit(2).IDs(setContextOp(ctx, cmq.ctx, "OnlyID")); err != nil {
 		return
 	}
@@ -199,7 +199,7 @@ func (cmq *CASMappingQuery) OnlyID(ctx context.Context) (id int, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (cmq *CASMappingQuery) OnlyIDX(ctx context.Context) int {
+func (cmq *CASMappingQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 	id, err := cmq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -227,7 +227,7 @@ func (cmq *CASMappingQuery) AllX(ctx context.Context) []*CASMapping {
 }
 
 // IDs executes the query and returns a list of CASMapping IDs.
-func (cmq *CASMappingQuery) IDs(ctx context.Context) (ids []int, err error) {
+func (cmq *CASMappingQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
 	if cmq.ctx.Unique == nil && cmq.path != nil {
 		cmq.Unique(true)
 	}
@@ -239,7 +239,7 @@ func (cmq *CASMappingQuery) IDs(ctx context.Context) (ids []int, err error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (cmq *CASMappingQuery) IDsX(ctx context.Context) []int {
+func (cmq *CASMappingQuery) IDsX(ctx context.Context) []uuid.UUID {
 	ids, err := cmq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -527,7 +527,7 @@ func (cmq *CASMappingQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (cmq *CASMappingQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(casmapping.Table, casmapping.Columns, sqlgraph.NewFieldSpec(casmapping.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewQuerySpec(casmapping.Table, casmapping.Columns, sqlgraph.NewFieldSpec(casmapping.FieldID, field.TypeUUID))
 	_spec.From = cmq.sql
 	if unique := cmq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

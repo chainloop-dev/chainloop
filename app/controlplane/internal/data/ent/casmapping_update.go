@@ -116,7 +116,7 @@ func (cmu *CASMappingUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := cmu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(casmapping.Table, casmapping.Columns, sqlgraph.NewFieldSpec(casmapping.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewUpdateSpec(casmapping.Table, casmapping.Columns, sqlgraph.NewFieldSpec(casmapping.FieldID, field.TypeUUID))
 	if ps := cmu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -301,7 +301,7 @@ func (cmuo *CASMappingUpdateOne) sqlSave(ctx context.Context) (_node *CASMapping
 	if err := cmuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(casmapping.Table, casmapping.Columns, sqlgraph.NewFieldSpec(casmapping.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewUpdateSpec(casmapping.Table, casmapping.Columns, sqlgraph.NewFieldSpec(casmapping.FieldID, field.TypeUUID))
 	id, ok := cmuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "CASMapping.id" for update`)}
