@@ -17,12 +17,14 @@ package biz_test
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	repoM "github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/mocks"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -93,6 +95,64 @@ func (s *casMappingSuite) TestCreate() {
 			} else {
 				s.NoError(err)
 				s.Equal(want, got)
+			}
+		})
+	}
+}
+
+func (s *casMappingSuite) TestLookupDigestsInAttestation() {
+	testCases := []struct {
+		name    string
+		attPath string
+		want    []*biz.CASMappingLookupRef
+		wantErr bool
+	}{
+		{
+			name:    "full",
+			attPath: "testdata/attestations/full.json",
+			want: []*biz.CASMappingLookupRef{
+				{
+					Name:   "attestation",
+					Digest: "sha256:63f811807585a7359882fc4e28bc8e08555d9743aa07a2965217b30ef2ba14a5",
+				},
+				{
+					Name:   "skynet-sbom",
+					Digest: "sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c",
+				},
+				{
+					Name:   "skynet2-sbom",
+					Digest: "sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c",
+				},
+			},
+		},
+		{
+			name:    "no-materials",
+			attPath: "testdata/attestations/empty.json",
+			want: []*biz.CASMappingLookupRef{
+				{
+					Name:   "attestation",
+					Digest: "sha256:b447f27683a88b55d529744d56c83c42fbe7d05692efaa6e5eddfadec392f812",
+				},
+			},
+		},
+		{
+			name:    "invalid-file",
+			attPath: "testdata/attestations/invalid",
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			attJSON, err := os.ReadFile(tc.attPath)
+			require.NoError(s.T(), err)
+
+			got, err := s.useCase.LookupDigestsInAttestation(attJSON)
+			if tc.wantErr {
+				s.Error(err)
+			} else {
+				s.NoError(err)
+				s.Equal(tc.want, got)
 			}
 		})
 	}

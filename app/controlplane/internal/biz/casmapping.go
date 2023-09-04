@@ -16,13 +16,17 @@
 package biz
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/go-kratos/kratos/v2/log"
 	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/uuid"
+	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
 
 type CASMapping struct {
@@ -61,4 +65,47 @@ func (uc *CASMappingUseCase) Create(ctx context.Context, digest string, casBacke
 	}
 
 	return uc.repo.Create(ctx, digest, casBackendUUID, workflowRunUUID)
+}
+
+type CASMappingLookupRef struct {
+	Name, Digest string
+}
+
+// LookupCASItemsInAttestation returns a list of references to the materials that have been uploaded to CAS
+// as well as the attestation digest itself
+func (uc *CASMappingUseCase) LookupDigestsInAttestation(jsonAtt []byte) ([]*CASMappingLookupRef, error) {
+	var att *dsse.Envelope
+	if err := json.Unmarshal(jsonAtt, &att); err != nil {
+		return nil, err
+	}
+
+	// Extract the materials that have been uploaded too
+	predicate, err := chainloop.ExtractPredicate(att)
+	if err != nil {
+		return nil, fmt.Errorf("extracting predicate: %w", err)
+	}
+
+	// Calculate the attestation hash
+	h, _, err := cr_v1.SHA256(bytes.NewBuffer(jsonAtt))
+	if err != nil {
+		return nil, fmt.Errorf("calculating attestation hash: %w", err)
+	}
+
+	references := []*CASMappingLookupRef{
+		{
+			Name:   "attestation",
+			Digest: h.String(),
+		},
+	}
+
+	for _, material := range predicate.GetMaterials() {
+		if material.UploadedToCAS {
+			references = append(references, &CASMappingLookupRef{
+				Name:   material.Name,
+				Digest: material.Hash.String(),
+			})
+		}
+	}
+
+	return references, nil
 }
