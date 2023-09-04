@@ -56,7 +56,7 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 		// Retrieve attestation ref from storage and compare
 		r, err := s.WorkflowRun.View(ctx, s.org.ID, run.ID.String())
 		assert.NoError(err)
-		assert.Equal(r.Attestation, &biz.Attestation{Envelope: validEnvelope})
+		assert.Equal(r.Attestation, &biz.Attestation{Envelope: validEnvelope, Digest: "sha256:f845058d865c3d4d491c9019f6afe9c543ad2cd11b31620cc512e341fb03d3d8"})
 	})
 }
 
