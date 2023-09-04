@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casmapping"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowrun"
 	"github.com/google/uuid"
@@ -20,13 +21,14 @@ import (
 // CASMappingQuery is the builder for querying CASMapping entities.
 type CASMappingQuery struct {
 	config
-	ctx             *QueryContext
-	order           []casmapping.OrderOption
-	inters          []Interceptor
-	predicates      []predicate.CASMapping
-	withCasBackend  *CASBackendQuery
-	withWorkflowRun *WorkflowRunQuery
-	withFKs         bool
+	ctx              *QueryContext
+	order            []casmapping.OrderOption
+	inters           []Interceptor
+	predicates       []predicate.CASMapping
+	withCasBackend   *CASBackendQuery
+	withWorkflowRun  *WorkflowRunQuery
+	withOrganization *OrganizationQuery
+	withFKs          bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -100,6 +102,28 @@ func (cmq *CASMappingQuery) QueryWorkflowRun() *WorkflowRunQuery {
 			sqlgraph.From(casmapping.Table, casmapping.FieldID, selector),
 			sqlgraph.To(workflowrun.Table, workflowrun.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, casmapping.WorkflowRunTable, casmapping.WorkflowRunColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(cmq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryOrganization chains the current query on the "organization" edge.
+func (cmq *CASMappingQuery) QueryOrganization() *OrganizationQuery {
+	query := (&OrganizationClient{config: cmq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := cmq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := cmq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(casmapping.Table, casmapping.FieldID, selector),
+			sqlgraph.To(organization.Table, organization.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, casmapping.OrganizationTable, casmapping.OrganizationColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(cmq.driver.Dialect(), step)
 		return fromU, nil
@@ -294,13 +318,14 @@ func (cmq *CASMappingQuery) Clone() *CASMappingQuery {
 		return nil
 	}
 	return &CASMappingQuery{
-		config:          cmq.config,
-		ctx:             cmq.ctx.Clone(),
-		order:           append([]casmapping.OrderOption{}, cmq.order...),
-		inters:          append([]Interceptor{}, cmq.inters...),
-		predicates:      append([]predicate.CASMapping{}, cmq.predicates...),
-		withCasBackend:  cmq.withCasBackend.Clone(),
-		withWorkflowRun: cmq.withWorkflowRun.Clone(),
+		config:           cmq.config,
+		ctx:              cmq.ctx.Clone(),
+		order:            append([]casmapping.OrderOption{}, cmq.order...),
+		inters:           append([]Interceptor{}, cmq.inters...),
+		predicates:       append([]predicate.CASMapping{}, cmq.predicates...),
+		withCasBackend:   cmq.withCasBackend.Clone(),
+		withWorkflowRun:  cmq.withWorkflowRun.Clone(),
+		withOrganization: cmq.withOrganization.Clone(),
 		// clone intermediate query.
 		sql:  cmq.sql.Clone(),
 		path: cmq.path,
@@ -326,6 +351,17 @@ func (cmq *CASMappingQuery) WithWorkflowRun(opts ...func(*WorkflowRunQuery)) *CA
 		opt(query)
 	}
 	cmq.withWorkflowRun = query
+	return cmq
+}
+
+// WithOrganization tells the query-builder to eager-load the nodes that are connected to
+// the "organization" edge. The optional arguments are used to configure the query builder of the edge.
+func (cmq *CASMappingQuery) WithOrganization(opts ...func(*OrganizationQuery)) *CASMappingQuery {
+	query := (&OrganizationClient{config: cmq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	cmq.withOrganization = query
 	return cmq
 }
 
@@ -408,12 +444,13 @@ func (cmq *CASMappingQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 		nodes       = []*CASMapping{}
 		withFKs     = cmq.withFKs
 		_spec       = cmq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			cmq.withCasBackend != nil,
 			cmq.withWorkflowRun != nil,
+			cmq.withOrganization != nil,
 		}
 	)
-	if cmq.withCasBackend != nil || cmq.withWorkflowRun != nil {
+	if cmq.withCasBackend != nil || cmq.withWorkflowRun != nil || cmq.withOrganization != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -446,6 +483,12 @@ func (cmq *CASMappingQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 	if query := cmq.withWorkflowRun; query != nil {
 		if err := cmq.loadWorkflowRun(ctx, query, nodes, nil,
 			func(n *CASMapping, e *WorkflowRun) { n.Edges.WorkflowRun = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := cmq.withOrganization; query != nil {
+		if err := cmq.loadOrganization(ctx, query, nodes, nil,
+			func(n *CASMapping, e *Organization) { n.Edges.Organization = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -509,6 +552,38 @@ func (cmq *CASMappingQuery) loadWorkflowRun(ctx context.Context, query *Workflow
 		nodes, ok := nodeids[n.ID]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "cas_mapping_workflow_run" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (cmq *CASMappingQuery) loadOrganization(ctx context.Context, query *OrganizationQuery, nodes []*CASMapping, init func(*CASMapping), assign func(*CASMapping, *Organization)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*CASMapping)
+	for i := range nodes {
+		if nodes[i].cas_mapping_organization == nil {
+			continue
+		}
+		fk := *nodes[i].cas_mapping_organization
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(organization.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "cas_mapping_organization" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)

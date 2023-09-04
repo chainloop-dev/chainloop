@@ -1076,6 +1076,8 @@ type CASMappingMutation struct {
 	clearedcas_backend  bool
 	workflow_run        *uuid.UUID
 	clearedworkflow_run bool
+	organization        *uuid.UUID
+	clearedorganization bool
 	done                bool
 	oldValue            func(context.Context) (*CASMapping, error)
 	predicates          []predicate.CASMapping
@@ -1335,6 +1337,45 @@ func (m *CASMappingMutation) ResetWorkflowRun() {
 	m.clearedworkflow_run = false
 }
 
+// SetOrganizationID sets the "organization" edge to the Organization entity by id.
+func (m *CASMappingMutation) SetOrganizationID(id uuid.UUID) {
+	m.organization = &id
+}
+
+// ClearOrganization clears the "organization" edge to the Organization entity.
+func (m *CASMappingMutation) ClearOrganization() {
+	m.clearedorganization = true
+}
+
+// OrganizationCleared reports if the "organization" edge to the Organization entity was cleared.
+func (m *CASMappingMutation) OrganizationCleared() bool {
+	return m.clearedorganization
+}
+
+// OrganizationID returns the "organization" edge ID in the mutation.
+func (m *CASMappingMutation) OrganizationID() (id uuid.UUID, exists bool) {
+	if m.organization != nil {
+		return *m.organization, true
+	}
+	return
+}
+
+// OrganizationIDs returns the "organization" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OrganizationID instead. It exists only for internal usage by the builders.
+func (m *CASMappingMutation) OrganizationIDs() (ids []uuid.UUID) {
+	if id := m.organization; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOrganization resets all changes to the "organization" edge.
+func (m *CASMappingMutation) ResetOrganization() {
+	m.organization = nil
+	m.clearedorganization = false
+}
+
 // Where appends a list predicates to the CASMappingMutation builder.
 func (m *CASMappingMutation) Where(ps ...predicate.CASMapping) {
 	m.predicates = append(m.predicates, ps...)
@@ -1485,12 +1526,15 @@ func (m *CASMappingMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *CASMappingMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.cas_backend != nil {
 		edges = append(edges, casmapping.EdgeCasBackend)
 	}
 	if m.workflow_run != nil {
 		edges = append(edges, casmapping.EdgeWorkflowRun)
+	}
+	if m.organization != nil {
+		edges = append(edges, casmapping.EdgeOrganization)
 	}
 	return edges
 }
@@ -1507,13 +1551,17 @@ func (m *CASMappingMutation) AddedIDs(name string) []ent.Value {
 		if id := m.workflow_run; id != nil {
 			return []ent.Value{*id}
 		}
+	case casmapping.EdgeOrganization:
+		if id := m.organization; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *CASMappingMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	return edges
 }
 
@@ -1525,12 +1573,15 @@ func (m *CASMappingMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *CASMappingMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedcas_backend {
 		edges = append(edges, casmapping.EdgeCasBackend)
 	}
 	if m.clearedworkflow_run {
 		edges = append(edges, casmapping.EdgeWorkflowRun)
+	}
+	if m.clearedorganization {
+		edges = append(edges, casmapping.EdgeOrganization)
 	}
 	return edges
 }
@@ -1543,6 +1594,8 @@ func (m *CASMappingMutation) EdgeCleared(name string) bool {
 		return m.clearedcas_backend
 	case casmapping.EdgeWorkflowRun:
 		return m.clearedworkflow_run
+	case casmapping.EdgeOrganization:
+		return m.clearedorganization
 	}
 	return false
 }
@@ -1557,6 +1610,9 @@ func (m *CASMappingMutation) ClearEdge(name string) error {
 	case casmapping.EdgeWorkflowRun:
 		m.ClearWorkflowRun()
 		return nil
+	case casmapping.EdgeOrganization:
+		m.ClearOrganization()
+		return nil
 	}
 	return fmt.Errorf("unknown CASMapping unique edge %s", name)
 }
@@ -1570,6 +1626,9 @@ func (m *CASMappingMutation) ResetEdge(name string) error {
 		return nil
 	case casmapping.EdgeWorkflowRun:
 		m.ResetWorkflowRun()
+		return nil
+	case casmapping.EdgeOrganization:
+		m.ResetOrganization()
 		return nil
 	}
 	return fmt.Errorf("unknown CASMapping edge %s", name)

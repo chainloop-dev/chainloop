@@ -44,8 +44,9 @@ func (CASMapping) Fields() []ent.Field {
 
 func (CASMapping) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("cas_backend", CASBackend.Type).Unique().Required(),
-		edge.To("workflow_run", WorkflowRun.Type).Unique(),
+		edge.To("cas_backend", CASBackend.Type).Unique().Required().Immutable(),
+		edge.To("workflow_run", WorkflowRun.Type).Unique().Immutable(),
+		edge.To("organization", Organization.Type).Unique().Required().Immutable(),
 	}
 }
 

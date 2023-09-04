@@ -87,6 +87,7 @@ func (s *casMappingIntegrationSuite) TestCreate() {
 		Digest:        validDigest,
 		CASBackendID:  s.casBackend.ID,
 		WorkflowRunID: s.workflowRun.ID,
+		OrgID:         s.casBackend.OrganizationID,
 	}
 
 	for _, tc := range testCases {

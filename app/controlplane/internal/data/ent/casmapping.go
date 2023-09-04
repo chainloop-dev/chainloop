@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casmapping"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowrun"
 	"github.com/google/uuid"
 )
@@ -29,6 +30,7 @@ type CASMapping struct {
 	Edges                    CASMappingEdges `json:"edges"`
 	cas_mapping_cas_backend  *uuid.UUID
 	cas_mapping_workflow_run *uuid.UUID
+	cas_mapping_organization *uuid.UUID
 	selectValues             sql.SelectValues
 }
 
@@ -38,9 +40,11 @@ type CASMappingEdges struct {
 	CasBackend *CASBackend `json:"cas_backend,omitempty"`
 	// WorkflowRun holds the value of the workflow_run edge.
 	WorkflowRun *WorkflowRun `json:"workflow_run,omitempty"`
+	// Organization holds the value of the organization edge.
+	Organization *Organization `json:"organization,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // CasBackendOrErr returns the CasBackend value or an error if the edge
@@ -69,6 +73,19 @@ func (e CASMappingEdges) WorkflowRunOrErr() (*WorkflowRun, error) {
 	return nil, &NotLoadedError{edge: "workflow_run"}
 }
 
+// OrganizationOrErr returns the Organization value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e CASMappingEdges) OrganizationOrErr() (*Organization, error) {
+	if e.loadedTypes[2] {
+		if e.Organization == nil {
+			// Edge was loaded but was not found.
+			return nil, &NotFoundError{label: organization.Label}
+		}
+		return e.Organization, nil
+	}
+	return nil, &NotLoadedError{edge: "organization"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*CASMapping) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -83,6 +100,8 @@ func (*CASMapping) scanValues(columns []string) ([]any, error) {
 		case casmapping.ForeignKeys[0]: // cas_mapping_cas_backend
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case casmapping.ForeignKeys[1]: // cas_mapping_workflow_run
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
+		case casmapping.ForeignKeys[2]: // cas_mapping_organization
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			values[i] = new(sql.UnknownType)
@@ -131,6 +150,13 @@ func (cm *CASMapping) assignValues(columns []string, values []any) error {
 				cm.cas_mapping_workflow_run = new(uuid.UUID)
 				*cm.cas_mapping_workflow_run = *value.S.(*uuid.UUID)
 			}
+		case casmapping.ForeignKeys[2]:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field cas_mapping_organization", values[i])
+			} else if value.Valid {
+				cm.cas_mapping_organization = new(uuid.UUID)
+				*cm.cas_mapping_organization = *value.S.(*uuid.UUID)
+			}
 		default:
 			cm.selectValues.Set(columns[i], values[i])
 		}
@@ -152,6 +178,11 @@ func (cm *CASMapping) QueryCasBackend() *CASBackendQuery {
 // QueryWorkflowRun queries the "workflow_run" edge of the CASMapping entity.
 func (cm *CASMapping) QueryWorkflowRun() *WorkflowRunQuery {
 	return NewCASMappingClient(cm.config).QueryWorkflowRun(cm)
+}
+
+// QueryOrganization queries the "organization" edge of the CASMapping entity.
+func (cm *CASMapping) QueryOrganization() *OrganizationQuery {
+	return NewCASMappingClient(cm.config).QueryOrganization(cm)
 }
 
 // Update returns a builder for updating this CASMapping.

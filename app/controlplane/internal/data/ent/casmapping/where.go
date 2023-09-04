@@ -217,6 +217,29 @@ func HasWorkflowRunWith(preds ...predicate.WorkflowRun) predicate.CASMapping {
 	})
 }
 
+// HasOrganization applies the HasEdge predicate on the "organization" edge.
+func HasOrganization() predicate.CASMapping {
+	return predicate.CASMapping(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, OrganizationTable, OrganizationColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasOrganizationWith applies the HasEdge predicate on the "organization" edge with a given conditions (other predicates).
+func HasOrganizationWith(preds ...predicate.Organization) predicate.CASMapping {
+	return predicate.CASMapping(func(s *sql.Selector) {
+		step := newOrganizationStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.CASMapping) predicate.CASMapping {
 	return predicate.CASMapping(func(s *sql.Selector) {

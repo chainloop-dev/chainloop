@@ -37,11 +37,10 @@ func (s *casMappingSuite) TestCreate() {
 	invalidDigest := "sha256:deadbeef"
 
 	testCases := []struct {
-		name          string
-		digest        string
-		casBackendID  string
-		workflowRunID string
-		wantErr       bool
+		name                        string
+		digest                      string
+		casBackendID, workflowRunID string
+		wantErr                     bool
 	}{
 		{
 			name:          "valid",
@@ -84,6 +83,7 @@ func (s *casMappingSuite) TestCreate() {
 		Digest:        validDigest,
 		CASBackendID:  validUUID,
 		WorkflowRunID: validUUID,
+		OrgID:         validUUID,
 	}
 
 	// Mock successful repo call

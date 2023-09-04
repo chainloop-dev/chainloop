@@ -27,22 +27,32 @@ import (
 )
 
 type CASMappingRepo struct {
-	data *Data
-	log  *log.Helper
+	data           *Data
+	log            *log.Helper
+	casBackendrepo biz.CASBackendRepo
 }
 
-func NewCASMappingRepo(data *Data, logger log.Logger) biz.CASMappingRepo {
+func NewCASMappingRepo(data *Data, cbRepo biz.CASBackendRepo, logger log.Logger) biz.CASMappingRepo {
 	return &CASMappingRepo{
-		data: data,
-		log:  log.NewHelper(logger),
+		data:           data,
+		log:            log.NewHelper(logger),
+		casBackendrepo: cbRepo,
 	}
 }
 
 func (r *CASMappingRepo) Create(ctx context.Context, digest string, casBackendID, workflowRunID uuid.UUID) (*biz.CASMapping, error) {
+	casBackend, err := r.casBackendrepo.FindByID(ctx, casBackendID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find cas backend: %w", err)
+	} else if casBackend == nil {
+		return nil, fmt.Errorf("cas backend not found")
+	}
+
 	mapping, err := r.data.db.CASMapping.Create().
 		SetDigest(digest).
 		SetCasBackendID(casBackendID).
 		SetWorkflowRunID(workflowRunID).
+		SetOrganizationID(casBackend.OrganizationID).
 		Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create casMapping: %w", err)
@@ -55,7 +65,7 @@ func (r *CASMappingRepo) Create(ctx context.Context, digest string, casBackendID
 // FindByID finds a CAS Mapping by ID
 // If not found, returns nil and no error
 func (r *CASMappingRepo) findByID(ctx context.Context, id uuid.UUID) (*biz.CASMapping, error) {
-	backend, err := r.data.db.CASMapping.Query().WithCasBackend().WithWorkflowRun().
+	backend, err := r.data.db.CASMapping.Query().WithCasBackend().WithWorkflowRun().WithOrganization().
 		Where(casmapping.ID(id)).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
@@ -82,11 +92,17 @@ func entCASMappingToBiz(input *ent.CASMapping) (*biz.CASMapping, error) {
 		return nil, fmt.Errorf("failed to get workflow run: %w", err)
 	}
 
+	org, err := input.Edges.OrganizationOrErr()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get organization: %w", err)
+	}
+
 	return &biz.CASMapping{
 		ID:            input.ID,
 		Digest:        input.Digest,
 		CASBackendID:  casBackend.ID,
 		WorkflowRunID: workflowRun.ID,
+		OrgID:         org.ID,
 		CreatedAt:     toTimePtr(input.CreatedAt),
 	}, nil
 }

@@ -23,6 +23,8 @@ const (
 	EdgeCasBackend = "cas_backend"
 	// EdgeWorkflowRun holds the string denoting the workflow_run edge name in mutations.
 	EdgeWorkflowRun = "workflow_run"
+	// EdgeOrganization holds the string denoting the organization edge name in mutations.
+	EdgeOrganization = "organization"
 	// Table holds the table name of the casmapping in the database.
 	Table = "cas_mappings"
 	// CasBackendTable is the table that holds the cas_backend relation/edge.
@@ -39,6 +41,13 @@ const (
 	WorkflowRunInverseTable = "workflow_runs"
 	// WorkflowRunColumn is the table column denoting the workflow_run relation/edge.
 	WorkflowRunColumn = "cas_mapping_workflow_run"
+	// OrganizationTable is the table that holds the organization relation/edge.
+	OrganizationTable = "cas_mappings"
+	// OrganizationInverseTable is the table name for the Organization entity.
+	// It exists in this package in order to avoid circular dependency with the "organization" package.
+	OrganizationInverseTable = "organizations"
+	// OrganizationColumn is the table column denoting the organization relation/edge.
+	OrganizationColumn = "cas_mapping_organization"
 )
 
 // Columns holds all SQL columns for casmapping fields.
@@ -53,6 +62,7 @@ var Columns = []string{
 var ForeignKeys = []string{
 	"cas_mapping_cas_backend",
 	"cas_mapping_workflow_run",
+	"cas_mapping_organization",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -108,6 +118,13 @@ func ByWorkflowRunField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newWorkflowRunStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByOrganizationField orders the results by organization field.
+func ByOrganizationField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newOrganizationStep(), sql.OrderByField(field, opts...))
+	}
+}
 func newCasBackendStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -120,5 +137,12 @@ func newWorkflowRunStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(WorkflowRunInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, false, WorkflowRunTable, WorkflowRunColumn),
+	)
+}
+func newOrganizationStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(OrganizationInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, OrganizationTable, OrganizationColumn),
 	)
 }

@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casmapping"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowrun"
 	"github.com/google/uuid"
 )
@@ -87,6 +88,17 @@ func (cmc *CASMappingCreate) SetWorkflowRun(w *WorkflowRun) *CASMappingCreate {
 	return cmc.SetWorkflowRunID(w.ID)
 }
 
+// SetOrganizationID sets the "organization" edge to the Organization entity by ID.
+func (cmc *CASMappingCreate) SetOrganizationID(id uuid.UUID) *CASMappingCreate {
+	cmc.mutation.SetOrganizationID(id)
+	return cmc
+}
+
+// SetOrganization sets the "organization" edge to the Organization entity.
+func (cmc *CASMappingCreate) SetOrganization(o *Organization) *CASMappingCreate {
+	return cmc.SetOrganizationID(o.ID)
+}
+
 // Mutation returns the CASMappingMutation object of the builder.
 func (cmc *CASMappingCreate) Mutation() *CASMappingMutation {
 	return cmc.mutation
@@ -142,6 +154,9 @@ func (cmc *CASMappingCreate) check() error {
 	}
 	if _, ok := cmc.mutation.CasBackendID(); !ok {
 		return &ValidationError{Name: "cas_backend", err: errors.New(`ent: missing required edge "CASMapping.cas_backend"`)}
+	}
+	if _, ok := cmc.mutation.OrganizationID(); !ok {
+		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "CASMapping.organization"`)}
 	}
 	return nil
 }
@@ -218,6 +233,23 @@ func (cmc *CASMappingCreate) createSpec() (*CASMapping, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.cas_mapping_workflow_run = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := cmc.mutation.OrganizationIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   casmapping.OrganizationTable,
+			Columns: []string{casmapping.OrganizationColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.cas_mapping_organization = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

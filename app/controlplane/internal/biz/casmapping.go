@@ -30,9 +30,9 @@ import (
 )
 
 type CASMapping struct {
-	ID, CASBackendID, WorkflowRunID uuid.UUID
-	Digest                          string
-	CreatedAt                       *time.Time
+	ID, CASBackendID, OrgID, WorkflowRunID uuid.UUID
+	Digest                                 string
+	CreatedAt                              *time.Time
 }
 
 type CASMappingRepo interface {

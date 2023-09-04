@@ -10,11 +10,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casmapping"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowrun"
-	"github.com/google/uuid"
 )
 
 // CASMappingUpdate is the builder for updating CASMapping entities.
@@ -30,51 +27,9 @@ func (cmu *CASMappingUpdate) Where(ps ...predicate.CASMapping) *CASMappingUpdate
 	return cmu
 }
 
-// SetCasBackendID sets the "cas_backend" edge to the CASBackend entity by ID.
-func (cmu *CASMappingUpdate) SetCasBackendID(id uuid.UUID) *CASMappingUpdate {
-	cmu.mutation.SetCasBackendID(id)
-	return cmu
-}
-
-// SetCasBackend sets the "cas_backend" edge to the CASBackend entity.
-func (cmu *CASMappingUpdate) SetCasBackend(c *CASBackend) *CASMappingUpdate {
-	return cmu.SetCasBackendID(c.ID)
-}
-
-// SetWorkflowRunID sets the "workflow_run" edge to the WorkflowRun entity by ID.
-func (cmu *CASMappingUpdate) SetWorkflowRunID(id uuid.UUID) *CASMappingUpdate {
-	cmu.mutation.SetWorkflowRunID(id)
-	return cmu
-}
-
-// SetNillableWorkflowRunID sets the "workflow_run" edge to the WorkflowRun entity by ID if the given value is not nil.
-func (cmu *CASMappingUpdate) SetNillableWorkflowRunID(id *uuid.UUID) *CASMappingUpdate {
-	if id != nil {
-		cmu = cmu.SetWorkflowRunID(*id)
-	}
-	return cmu
-}
-
-// SetWorkflowRun sets the "workflow_run" edge to the WorkflowRun entity.
-func (cmu *CASMappingUpdate) SetWorkflowRun(w *WorkflowRun) *CASMappingUpdate {
-	return cmu.SetWorkflowRunID(w.ID)
-}
-
 // Mutation returns the CASMappingMutation object of the builder.
 func (cmu *CASMappingUpdate) Mutation() *CASMappingMutation {
 	return cmu.mutation
-}
-
-// ClearCasBackend clears the "cas_backend" edge to the CASBackend entity.
-func (cmu *CASMappingUpdate) ClearCasBackend() *CASMappingUpdate {
-	cmu.mutation.ClearCasBackend()
-	return cmu
-}
-
-// ClearWorkflowRun clears the "workflow_run" edge to the WorkflowRun entity.
-func (cmu *CASMappingUpdate) ClearWorkflowRun() *CASMappingUpdate {
-	cmu.mutation.ClearWorkflowRun()
-	return cmu
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -109,6 +64,9 @@ func (cmu *CASMappingUpdate) check() error {
 	if _, ok := cmu.mutation.CasBackendID(); cmu.mutation.CasBackendCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "CASMapping.cas_backend"`)
 	}
+	if _, ok := cmu.mutation.OrganizationID(); cmu.mutation.OrganizationCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "CASMapping.organization"`)
+	}
 	return nil
 }
 
@@ -123,64 +81,6 @@ func (cmu *CASMappingUpdate) sqlSave(ctx context.Context) (n int, err error) {
 				ps[i](selector)
 			}
 		}
-	}
-	if cmu.mutation.CasBackendCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   casmapping.CasBackendTable,
-			Columns: []string{casmapping.CasBackendColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(casbackend.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := cmu.mutation.CasBackendIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   casmapping.CasBackendTable,
-			Columns: []string{casmapping.CasBackendColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(casbackend.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if cmu.mutation.WorkflowRunCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   casmapping.WorkflowRunTable,
-			Columns: []string{casmapping.WorkflowRunColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := cmu.mutation.WorkflowRunIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   casmapping.WorkflowRunTable,
-			Columns: []string{casmapping.WorkflowRunColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, cmu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -202,51 +102,9 @@ type CASMappingUpdateOne struct {
 	mutation *CASMappingMutation
 }
 
-// SetCasBackendID sets the "cas_backend" edge to the CASBackend entity by ID.
-func (cmuo *CASMappingUpdateOne) SetCasBackendID(id uuid.UUID) *CASMappingUpdateOne {
-	cmuo.mutation.SetCasBackendID(id)
-	return cmuo
-}
-
-// SetCasBackend sets the "cas_backend" edge to the CASBackend entity.
-func (cmuo *CASMappingUpdateOne) SetCasBackend(c *CASBackend) *CASMappingUpdateOne {
-	return cmuo.SetCasBackendID(c.ID)
-}
-
-// SetWorkflowRunID sets the "workflow_run" edge to the WorkflowRun entity by ID.
-func (cmuo *CASMappingUpdateOne) SetWorkflowRunID(id uuid.UUID) *CASMappingUpdateOne {
-	cmuo.mutation.SetWorkflowRunID(id)
-	return cmuo
-}
-
-// SetNillableWorkflowRunID sets the "workflow_run" edge to the WorkflowRun entity by ID if the given value is not nil.
-func (cmuo *CASMappingUpdateOne) SetNillableWorkflowRunID(id *uuid.UUID) *CASMappingUpdateOne {
-	if id != nil {
-		cmuo = cmuo.SetWorkflowRunID(*id)
-	}
-	return cmuo
-}
-
-// SetWorkflowRun sets the "workflow_run" edge to the WorkflowRun entity.
-func (cmuo *CASMappingUpdateOne) SetWorkflowRun(w *WorkflowRun) *CASMappingUpdateOne {
-	return cmuo.SetWorkflowRunID(w.ID)
-}
-
 // Mutation returns the CASMappingMutation object of the builder.
 func (cmuo *CASMappingUpdateOne) Mutation() *CASMappingMutation {
 	return cmuo.mutation
-}
-
-// ClearCasBackend clears the "cas_backend" edge to the CASBackend entity.
-func (cmuo *CASMappingUpdateOne) ClearCasBackend() *CASMappingUpdateOne {
-	cmuo.mutation.ClearCasBackend()
-	return cmuo
-}
-
-// ClearWorkflowRun clears the "workflow_run" edge to the WorkflowRun entity.
-func (cmuo *CASMappingUpdateOne) ClearWorkflowRun() *CASMappingUpdateOne {
-	cmuo.mutation.ClearWorkflowRun()
-	return cmuo
 }
 
 // Where appends a list predicates to the CASMappingUpdate builder.
@@ -294,6 +152,9 @@ func (cmuo *CASMappingUpdateOne) check() error {
 	if _, ok := cmuo.mutation.CasBackendID(); cmuo.mutation.CasBackendCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "CASMapping.cas_backend"`)
 	}
+	if _, ok := cmuo.mutation.OrganizationID(); cmuo.mutation.OrganizationCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "CASMapping.organization"`)
+	}
 	return nil
 }
 
@@ -325,64 +186,6 @@ func (cmuo *CASMappingUpdateOne) sqlSave(ctx context.Context) (_node *CASMapping
 				ps[i](selector)
 			}
 		}
-	}
-	if cmuo.mutation.CasBackendCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   casmapping.CasBackendTable,
-			Columns: []string{casmapping.CasBackendColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(casbackend.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := cmuo.mutation.CasBackendIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   casmapping.CasBackendTable,
-			Columns: []string{casmapping.CasBackendColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(casbackend.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if cmuo.mutation.WorkflowRunCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   casmapping.WorkflowRunTable,
-			Columns: []string{casmapping.WorkflowRunColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := cmuo.mutation.WorkflowRunIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   casmapping.WorkflowRunTable,
-			Columns: []string{casmapping.WorkflowRunColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &CASMapping{config: cmuo.config}
 	_spec.Assign = _node.assignValues

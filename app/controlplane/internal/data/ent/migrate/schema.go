@@ -44,6 +44,7 @@ var (
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "cas_mapping_cas_backend", Type: field.TypeUUID},
 		{Name: "cas_mapping_workflow_run", Type: field.TypeUUID, Nullable: true},
+		{Name: "cas_mapping_organization", Type: field.TypeUUID},
 	}
 	// CasMappingsTable holds the schema information for the "cas_mappings" table.
 	CasMappingsTable = &schema.Table{
@@ -62,6 +63,12 @@ var (
 				Columns:    []*schema.Column{CasMappingsColumns[4]},
 				RefColumns: []*schema.Column{WorkflowRunsColumns[0]},
 				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "cas_mappings_organizations_organization",
+				Columns:    []*schema.Column{CasMappingsColumns[5]},
+				RefColumns: []*schema.Column{OrganizationsColumns[0]},
+				OnDelete:   schema.NoAction,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -383,6 +390,7 @@ func init() {
 	CasBackendsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	CasMappingsTable.ForeignKeys[0].RefTable = CasBackendsTable
 	CasMappingsTable.ForeignKeys[1].RefTable = WorkflowRunsTable
+	CasMappingsTable.ForeignKeys[2].RefTable = OrganizationsTable
 	IntegrationsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	IntegrationAttachmentsTable.ForeignKeys[0].RefTable = IntegrationsTable
 	IntegrationAttachmentsTable.ForeignKeys[1].RefTable = WorkflowsTable
