@@ -37,6 +37,41 @@ var (
 			},
 		},
 	}
+	// CasMappingsColumns holds the columns for the "cas_mappings" table.
+	CasMappingsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "digest", Type: field.TypeString},
+		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "cas_mapping_cas_backend", Type: field.TypeUUID},
+		{Name: "cas_mapping_workflow_run", Type: field.TypeUUID, Nullable: true},
+	}
+	// CasMappingsTable holds the schema information for the "cas_mappings" table.
+	CasMappingsTable = &schema.Table{
+		Name:       "cas_mappings",
+		Columns:    CasMappingsColumns,
+		PrimaryKey: []*schema.Column{CasMappingsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "cas_mappings_cas_backends_cas_backend",
+				Columns:    []*schema.Column{CasMappingsColumns[3]},
+				RefColumns: []*schema.Column{CasBackendsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "cas_mappings_workflow_runs_workflow_run",
+				Columns:    []*schema.Column{CasMappingsColumns[4]},
+				RefColumns: []*schema.Column{WorkflowRunsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "casmapping_digest",
+				Unique:  false,
+				Columns: []*schema.Column{CasMappingsColumns[1]},
+			},
+		},
+	}
 	// IntegrationsColumns holds the columns for the "integrations" table.
 	IntegrationsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
@@ -329,6 +364,7 @@ var (
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		CasBackendsTable,
+		CasMappingsTable,
 		IntegrationsTable,
 		IntegrationAttachmentsTable,
 		MembershipsTable,
@@ -345,6 +381,8 @@ var (
 
 func init() {
 	CasBackendsTable.ForeignKeys[0].RefTable = OrganizationsTable
+	CasMappingsTable.ForeignKeys[0].RefTable = CasBackendsTable
+	CasMappingsTable.ForeignKeys[1].RefTable = WorkflowRunsTable
 	IntegrationsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	IntegrationAttachmentsTable.ForeignKeys[0].RefTable = IntegrationsTable
 	IntegrationAttachmentsTable.ForeignKeys[1].RefTable = WorkflowsTable

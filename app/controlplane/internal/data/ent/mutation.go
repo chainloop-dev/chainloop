@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casbackend"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casmapping"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integration"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integrationattachment"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/membership"
@@ -38,6 +39,7 @@ const (
 
 	// Node types.
 	TypeCASBackend              = "CASBackend"
+	TypeCASMapping              = "CASMapping"
 	TypeIntegration             = "Integration"
 	TypeIntegrationAttachment   = "IntegrationAttachment"
 	TypeMembership              = "Membership"
@@ -1059,6 +1061,512 @@ func (m *CASBackendMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown CASBackend edge %s", name)
+}
+
+// CASMappingMutation represents an operation that mutates the CASMapping nodes in the graph.
+type CASMappingMutation struct {
+	config
+	op                  Op
+	typ                 string
+	id                  *int
+	digest              *string
+	created_at          *time.Time
+	clearedFields       map[string]struct{}
+	cas_backend         *uuid.UUID
+	clearedcas_backend  bool
+	workflow_run        *uuid.UUID
+	clearedworkflow_run bool
+	done                bool
+	oldValue            func(context.Context) (*CASMapping, error)
+	predicates          []predicate.CASMapping
+}
+
+var _ ent.Mutation = (*CASMappingMutation)(nil)
+
+// casmappingOption allows management of the mutation configuration using functional options.
+type casmappingOption func(*CASMappingMutation)
+
+// newCASMappingMutation creates new mutation for the CASMapping entity.
+func newCASMappingMutation(c config, op Op, opts ...casmappingOption) *CASMappingMutation {
+	m := &CASMappingMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeCASMapping,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withCASMappingID sets the ID field of the mutation.
+func withCASMappingID(id int) casmappingOption {
+	return func(m *CASMappingMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *CASMapping
+		)
+		m.oldValue = func(ctx context.Context) (*CASMapping, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().CASMapping.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withCASMapping sets the old CASMapping of the mutation.
+func withCASMapping(node *CASMapping) casmappingOption {
+	return func(m *CASMappingMutation) {
+		m.oldValue = func(context.Context) (*CASMapping, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m CASMappingMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m CASMappingMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *CASMappingMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *CASMappingMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().CASMapping.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetDigest sets the "digest" field.
+func (m *CASMappingMutation) SetDigest(s string) {
+	m.digest = &s
+}
+
+// Digest returns the value of the "digest" field in the mutation.
+func (m *CASMappingMutation) Digest() (r string, exists bool) {
+	v := m.digest
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDigest returns the old "digest" field's value of the CASMapping entity.
+// If the CASMapping object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CASMappingMutation) OldDigest(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDigest is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDigest requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDigest: %w", err)
+	}
+	return oldValue.Digest, nil
+}
+
+// ResetDigest resets all changes to the "digest" field.
+func (m *CASMappingMutation) ResetDigest() {
+	m.digest = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *CASMappingMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *CASMappingMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the CASMapping entity.
+// If the CASMapping object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CASMappingMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *CASMappingMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetCasBackendID sets the "cas_backend" edge to the CASBackend entity by id.
+func (m *CASMappingMutation) SetCasBackendID(id uuid.UUID) {
+	m.cas_backend = &id
+}
+
+// ClearCasBackend clears the "cas_backend" edge to the CASBackend entity.
+func (m *CASMappingMutation) ClearCasBackend() {
+	m.clearedcas_backend = true
+}
+
+// CasBackendCleared reports if the "cas_backend" edge to the CASBackend entity was cleared.
+func (m *CASMappingMutation) CasBackendCleared() bool {
+	return m.clearedcas_backend
+}
+
+// CasBackendID returns the "cas_backend" edge ID in the mutation.
+func (m *CASMappingMutation) CasBackendID() (id uuid.UUID, exists bool) {
+	if m.cas_backend != nil {
+		return *m.cas_backend, true
+	}
+	return
+}
+
+// CasBackendIDs returns the "cas_backend" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// CasBackendID instead. It exists only for internal usage by the builders.
+func (m *CASMappingMutation) CasBackendIDs() (ids []uuid.UUID) {
+	if id := m.cas_backend; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetCasBackend resets all changes to the "cas_backend" edge.
+func (m *CASMappingMutation) ResetCasBackend() {
+	m.cas_backend = nil
+	m.clearedcas_backend = false
+}
+
+// SetWorkflowRunID sets the "workflow_run" edge to the WorkflowRun entity by id.
+func (m *CASMappingMutation) SetWorkflowRunID(id uuid.UUID) {
+	m.workflow_run = &id
+}
+
+// ClearWorkflowRun clears the "workflow_run" edge to the WorkflowRun entity.
+func (m *CASMappingMutation) ClearWorkflowRun() {
+	m.clearedworkflow_run = true
+}
+
+// WorkflowRunCleared reports if the "workflow_run" edge to the WorkflowRun entity was cleared.
+func (m *CASMappingMutation) WorkflowRunCleared() bool {
+	return m.clearedworkflow_run
+}
+
+// WorkflowRunID returns the "workflow_run" edge ID in the mutation.
+func (m *CASMappingMutation) WorkflowRunID() (id uuid.UUID, exists bool) {
+	if m.workflow_run != nil {
+		return *m.workflow_run, true
+	}
+	return
+}
+
+// WorkflowRunIDs returns the "workflow_run" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// WorkflowRunID instead. It exists only for internal usage by the builders.
+func (m *CASMappingMutation) WorkflowRunIDs() (ids []uuid.UUID) {
+	if id := m.workflow_run; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetWorkflowRun resets all changes to the "workflow_run" edge.
+func (m *CASMappingMutation) ResetWorkflowRun() {
+	m.workflow_run = nil
+	m.clearedworkflow_run = false
+}
+
+// Where appends a list predicates to the CASMappingMutation builder.
+func (m *CASMappingMutation) Where(ps ...predicate.CASMapping) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the CASMappingMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *CASMappingMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.CASMapping, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *CASMappingMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *CASMappingMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (CASMapping).
+func (m *CASMappingMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *CASMappingMutation) Fields() []string {
+	fields := make([]string, 0, 2)
+	if m.digest != nil {
+		fields = append(fields, casmapping.FieldDigest)
+	}
+	if m.created_at != nil {
+		fields = append(fields, casmapping.FieldCreatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *CASMappingMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case casmapping.FieldDigest:
+		return m.Digest()
+	case casmapping.FieldCreatedAt:
+		return m.CreatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *CASMappingMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case casmapping.FieldDigest:
+		return m.OldDigest(ctx)
+	case casmapping.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown CASMapping field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CASMappingMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case casmapping.FieldDigest:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDigest(v)
+		return nil
+	case casmapping.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown CASMapping field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *CASMappingMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *CASMappingMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CASMappingMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown CASMapping numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *CASMappingMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *CASMappingMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *CASMappingMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown CASMapping nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *CASMappingMutation) ResetField(name string) error {
+	switch name {
+	case casmapping.FieldDigest:
+		m.ResetDigest()
+		return nil
+	case casmapping.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown CASMapping field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *CASMappingMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.cas_backend != nil {
+		edges = append(edges, casmapping.EdgeCasBackend)
+	}
+	if m.workflow_run != nil {
+		edges = append(edges, casmapping.EdgeWorkflowRun)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *CASMappingMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case casmapping.EdgeCasBackend:
+		if id := m.cas_backend; id != nil {
+			return []ent.Value{*id}
+		}
+	case casmapping.EdgeWorkflowRun:
+		if id := m.workflow_run; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *CASMappingMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *CASMappingMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *CASMappingMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedcas_backend {
+		edges = append(edges, casmapping.EdgeCasBackend)
+	}
+	if m.clearedworkflow_run {
+		edges = append(edges, casmapping.EdgeWorkflowRun)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *CASMappingMutation) EdgeCleared(name string) bool {
+	switch name {
+	case casmapping.EdgeCasBackend:
+		return m.clearedcas_backend
+	case casmapping.EdgeWorkflowRun:
+		return m.clearedworkflow_run
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *CASMappingMutation) ClearEdge(name string) error {
+	switch name {
+	case casmapping.EdgeCasBackend:
+		m.ClearCasBackend()
+		return nil
+	case casmapping.EdgeWorkflowRun:
+		m.ClearWorkflowRun()
+		return nil
+	}
+	return fmt.Errorf("unknown CASMapping unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *CASMappingMutation) ResetEdge(name string) error {
+	switch name {
+	case casmapping.EdgeCasBackend:
+		m.ResetCasBackend()
+		return nil
+	case casmapping.EdgeWorkflowRun:
+		m.ResetWorkflowRun()
+		return nil
+	}
+	return fmt.Errorf("unknown CASMapping edge %s", name)
 }
 
 // IntegrationMutation represents an operation that mutates the Integration nodes in the graph.
