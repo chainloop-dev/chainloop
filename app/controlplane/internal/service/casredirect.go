@@ -74,6 +74,8 @@ func (s *CASRedirectService) GetDownloadURL(ctx context.Context, req *pb.GetDown
 		return nil, err
 	}
 
+	// 1 - Find CASMappings by digest
+
 	// Load default CAS backend in the current ORG
 	// TODO, in the future instead we will lookup the CAS backend where the artifact is stored
 	backend, err := s.casUC.FindDefaultBackend(ctx, currentOrg.ID)

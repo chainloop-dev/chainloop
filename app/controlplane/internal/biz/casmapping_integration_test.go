@@ -85,7 +85,7 @@ func (s *casMappingIntegrationSuite) TestCreate() {
 
 	want := &biz.CASMapping{
 		Digest:        validDigest,
-		CASBackendID:  s.casBackend.ID,
+		CASBackend:    &biz.CASBackend{ID: s.casBackend.ID},
 		WorkflowRunID: s.workflowRun.ID,
 		OrgID:         s.casBackend.OrganizationID,
 	}
@@ -97,9 +97,14 @@ func (s *casMappingIntegrationSuite) TestCreate() {
 				s.Error(err)
 			} else {
 				s.NoError(err)
-				if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(biz.CASMapping{}, "CreatedAt", "ID")); diff != "" {
+				if diff := cmp.Diff(want, got,
+					cmpopts.IgnoreFields(biz.CASMapping{}, "CreatedAt", "ID"),
+					cmpopts.IgnoreTypes(biz.CASBackend{}),
+				); diff != "" {
 					assert.Failf(s.T(), "mismatch (-want +got):\n%s", diff)
 				}
+
+				assert.Equal(s.T(), want.CASBackend.ID, got.CASBackend.ID)
 			}
 		})
 	}

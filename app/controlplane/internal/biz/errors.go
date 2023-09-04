@@ -67,3 +67,19 @@ func (e ErrValidation) Error() string {
 func IsErrValidation(err error) bool {
 	return errors.As(err, &ErrValidation{})
 }
+
+type ErrUnauthorized struct {
+	err error
+}
+
+func NewErrUnauthorized(err error) ErrUnauthorized {
+	return ErrUnauthorized{err}
+}
+
+func (e ErrUnauthorized) Error() string {
+	return fmt.Sprintf("authorization error: %s", e.err.Error())
+}
+
+func IsErrUnauthorized(err error) bool {
+	return errors.As(err, &ErrUnauthorized{})
+}

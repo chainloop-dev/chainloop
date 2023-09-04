@@ -81,7 +81,7 @@ func (s *casMappingSuite) TestCreate() {
 	want := &biz.CASMapping{
 		ID:            validUUID,
 		Digest:        validDigest,
-		CASBackendID:  validUUID,
+		CASBackend:    &biz.CASBackend{ID: validUUID},
 		WorkflowRunID: validUUID,
 		OrgID:         validUUID,
 	}
@@ -170,7 +170,7 @@ type casMappingSuite struct {
 
 func (s *casMappingSuite) SetupTest() {
 	s.repo = repoM.NewCASMappingRepo(s.T())
-	s.useCase = biz.NewCASMappingUseCase(s.repo, nil)
+	s.useCase = biz.NewCASMappingUseCase(s.repo, nil, nil)
 }
 
 func TestCASMapping(t *testing.T) {
