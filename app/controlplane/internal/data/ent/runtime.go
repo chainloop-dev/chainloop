@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casbackend"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casmapping"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integration"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integrationattachment"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/membership"
@@ -46,6 +47,16 @@ func init() {
 	casbackendDescID := casbackendFields[0].Descriptor()
 	// casbackend.DefaultID holds the default value on creation for the id field.
 	casbackend.DefaultID = casbackendDescID.Default.(func() uuid.UUID)
+	casmappingFields := schema.CASMapping{}.Fields()
+	_ = casmappingFields
+	// casmappingDescCreatedAt is the schema descriptor for created_at field.
+	casmappingDescCreatedAt := casmappingFields[2].Descriptor()
+	// casmapping.DefaultCreatedAt holds the default value on creation for the created_at field.
+	casmapping.DefaultCreatedAt = casmappingDescCreatedAt.Default.(func() time.Time)
+	// casmappingDescID is the schema descriptor for id field.
+	casmappingDescID := casmappingFields[0].Descriptor()
+	// casmapping.DefaultID holds the default value on creation for the id field.
+	casmapping.DefaultID = casmappingDescID.Default.(func() uuid.UUID)
 	integrationFields := schema.Integration{}.Fields()
 	_ = integrationFields
 	// integrationDescCreatedAt is the schema descriptor for created_at field.

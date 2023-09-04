@@ -33,6 +33,7 @@ var ProviderSet = wire.NewSet(
 	NewCASClientUseCase,
 	NewAttestationUseCase,
 	NewWorkflowRunExpirerUseCase,
+	NewCASMappingUseCase,
 	wire.Struct(new(NewIntegrationUseCaseOpts), "*"),
 	wire.Struct(new(NewUserUseCaseParams), "*"),
 )

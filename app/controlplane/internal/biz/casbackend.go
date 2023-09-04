@@ -419,7 +419,7 @@ func (uc *CASBackendUseCase) PerformValidation(ctx context.Context, id string) (
 
 	if backend.Provider == CASBackendInline {
 		// Inline CAS backend does not need validation
-		return
+		return nil
 	}
 
 	provider, ok := uc.providers[string(backend.Provider)]

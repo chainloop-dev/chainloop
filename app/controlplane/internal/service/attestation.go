@@ -49,6 +49,7 @@ type AttestationService struct {
 	integrationDispatcher   *dispatcher.FanOutDispatcher
 	casCredsUseCase         *biz.CASCredentialsUseCase
 	attestationUseCase      *biz.AttestationUseCase
+	casMappingUseCase       *biz.CASMappingUseCase
 }
 
 type NewAttestationServiceOpts struct {
@@ -61,6 +62,7 @@ type NewAttestationServiceOpts struct {
 	CasCredsUseCase    *biz.CASCredentialsUseCase
 	AttestationUC      *biz.AttestationUseCase
 	FanoutDispatcher   *dispatcher.FanOutDispatcher
+	CASMappingUseCase  *biz.CASMappingUseCase
 	Opts               []NewOpt
 }
 
@@ -76,6 +78,7 @@ func NewAttestationService(opts *NewAttestationServiceOpts) *AttestationService 
 		casCredsUseCase:         opts.CasCredsUseCase,
 		integrationDispatcher:   opts.FanoutDispatcher,
 		attestationUseCase:      opts.AttestationUC,
+		casMappingUseCase:       opts.CASMappingUseCase,
 	}
 }
 
@@ -214,6 +217,19 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 
 		if err != nil {
 			_ = sl.LogAndMaskErr(err, s.log)
+		}
+	}
+
+	// Store the mappings in the DB
+	references, err := s.casMappingUseCase.LookupDigestsInAttestation(envelope)
+	if err != nil {
+		return nil, sl.LogAndMaskErr(err, s.log)
+	}
+
+	for _, ref := range references {
+		s.log.Infow("msg", "creating CAS mapping", "name", ref.Name, "digest", ref.Digest, "workflowRun", req.WorkflowRunId, "casBackend", casBackend.ID.String())
+		if _, err := s.casMappingUseCase.Create(ctx, ref.Digest, casBackend.ID.String(), req.WorkflowRunId); err != nil {
+			return nil, sl.LogAndMaskErr(err, s.log)
 		}
 	}
 

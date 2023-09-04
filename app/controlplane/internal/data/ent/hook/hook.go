@@ -21,6 +21,18 @@ func (f CASBackendFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, 
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CASBackendMutation", m)
 }
 
+// The CASMappingFunc type is an adapter to allow the use of ordinary
+// function as CASMapping mutator.
+type CASMappingFunc func(context.Context, *ent.CASMappingMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CASMappingFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CASMappingMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CASMappingMutation", m)
+}
+
 // The IntegrationFunc type is an adapter to allow the use of ordinary
 // function as Integration mutator.
 type IntegrationFunc func(context.Context, *ent.IntegrationMutation) (ent.Value, error)

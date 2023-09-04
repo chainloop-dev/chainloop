@@ -16,6 +16,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casbackend"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casmapping"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integration"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integrationattachment"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/membership"
@@ -35,6 +36,8 @@ type Client struct {
 	Schema *migrate.Schema
 	// CASBackend is the client for interacting with the CASBackend builders.
 	CASBackend *CASBackendClient
+	// CASMapping is the client for interacting with the CASMapping builders.
+	CASMapping *CASMappingClient
 	// Integration is the client for interacting with the Integration builders.
 	Integration *IntegrationClient
 	// IntegrationAttachment is the client for interacting with the IntegrationAttachment builders.
@@ -69,6 +72,7 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.CASBackend = NewCASBackendClient(c.config)
+	c.CASMapping = NewCASMappingClient(c.config)
 	c.Integration = NewIntegrationClient(c.config)
 	c.IntegrationAttachment = NewIntegrationAttachmentClient(c.config)
 	c.Membership = NewMembershipClient(c.config)
@@ -162,6 +166,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ctx:                     ctx,
 		config:                  cfg,
 		CASBackend:              NewCASBackendClient(cfg),
+		CASMapping:              NewCASMappingClient(cfg),
 		Integration:             NewIntegrationClient(cfg),
 		IntegrationAttachment:   NewIntegrationAttachmentClient(cfg),
 		Membership:              NewMembershipClient(cfg),
@@ -192,6 +197,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ctx:                     ctx,
 		config:                  cfg,
 		CASBackend:              NewCASBackendClient(cfg),
+		CASMapping:              NewCASMappingClient(cfg),
 		Integration:             NewIntegrationClient(cfg),
 		IntegrationAttachment:   NewIntegrationAttachmentClient(cfg),
 		Membership:              NewMembershipClient(cfg),
@@ -231,9 +237,9 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.CASBackend, c.Integration, c.IntegrationAttachment, c.Membership,
-		c.Organization, c.RobotAccount, c.User, c.Workflow, c.WorkflowContract,
-		c.WorkflowContractVersion, c.WorkflowRun,
+		c.CASBackend, c.CASMapping, c.Integration, c.IntegrationAttachment,
+		c.Membership, c.Organization, c.RobotAccount, c.User, c.Workflow,
+		c.WorkflowContract, c.WorkflowContractVersion, c.WorkflowRun,
 	} {
 		n.Use(hooks...)
 	}
@@ -243,9 +249,9 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.CASBackend, c.Integration, c.IntegrationAttachment, c.Membership,
-		c.Organization, c.RobotAccount, c.User, c.Workflow, c.WorkflowContract,
-		c.WorkflowContractVersion, c.WorkflowRun,
+		c.CASBackend, c.CASMapping, c.Integration, c.IntegrationAttachment,
+		c.Membership, c.Organization, c.RobotAccount, c.User, c.Workflow,
+		c.WorkflowContract, c.WorkflowContractVersion, c.WorkflowRun,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -256,6 +262,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
 	case *CASBackendMutation:
 		return c.CASBackend.mutate(ctx, m)
+	case *CASMappingMutation:
+		return c.CASMapping.mutate(ctx, m)
 	case *IntegrationMutation:
 		return c.Integration.mutate(ctx, m)
 	case *IntegrationAttachmentMutation:
@@ -428,6 +436,172 @@ func (c *CASBackendClient) mutate(ctx context.Context, m *CASBackendMutation) (V
 		return (&CASBackendDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown CASBackend mutation op: %q", m.Op())
+	}
+}
+
+// CASMappingClient is a client for the CASMapping schema.
+type CASMappingClient struct {
+	config
+}
+
+// NewCASMappingClient returns a client for the CASMapping from the given config.
+func NewCASMappingClient(c config) *CASMappingClient {
+	return &CASMappingClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `casmapping.Hooks(f(g(h())))`.
+func (c *CASMappingClient) Use(hooks ...Hook) {
+	c.hooks.CASMapping = append(c.hooks.CASMapping, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `casmapping.Intercept(f(g(h())))`.
+func (c *CASMappingClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CASMapping = append(c.inters.CASMapping, interceptors...)
+}
+
+// Create returns a builder for creating a CASMapping entity.
+func (c *CASMappingClient) Create() *CASMappingCreate {
+	mutation := newCASMappingMutation(c.config, OpCreate)
+	return &CASMappingCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CASMapping entities.
+func (c *CASMappingClient) CreateBulk(builders ...*CASMappingCreate) *CASMappingCreateBulk {
+	return &CASMappingCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CASMapping.
+func (c *CASMappingClient) Update() *CASMappingUpdate {
+	mutation := newCASMappingMutation(c.config, OpUpdate)
+	return &CASMappingUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CASMappingClient) UpdateOne(cm *CASMapping) *CASMappingUpdateOne {
+	mutation := newCASMappingMutation(c.config, OpUpdateOne, withCASMapping(cm))
+	return &CASMappingUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *CASMappingClient) UpdateOneID(id uuid.UUID) *CASMappingUpdateOne {
+	mutation := newCASMappingMutation(c.config, OpUpdateOne, withCASMappingID(id))
+	return &CASMappingUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CASMapping.
+func (c *CASMappingClient) Delete() *CASMappingDelete {
+	mutation := newCASMappingMutation(c.config, OpDelete)
+	return &CASMappingDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CASMappingClient) DeleteOne(cm *CASMapping) *CASMappingDeleteOne {
+	return c.DeleteOneID(cm.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *CASMappingClient) DeleteOneID(id uuid.UUID) *CASMappingDeleteOne {
+	builder := c.Delete().Where(casmapping.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &CASMappingDeleteOne{builder}
+}
+
+// Query returns a query builder for CASMapping.
+func (c *CASMappingClient) Query() *CASMappingQuery {
+	return &CASMappingQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCASMapping},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CASMapping entity by its id.
+func (c *CASMappingClient) Get(ctx context.Context, id uuid.UUID) (*CASMapping, error) {
+	return c.Query().Where(casmapping.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CASMappingClient) GetX(ctx context.Context, id uuid.UUID) *CASMapping {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryCasBackend queries the cas_backend edge of a CASMapping.
+func (c *CASMappingClient) QueryCasBackend(cm *CASMapping) *CASBackendQuery {
+	query := (&CASBackendClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := cm.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(casmapping.Table, casmapping.FieldID, id),
+			sqlgraph.To(casbackend.Table, casbackend.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, casmapping.CasBackendTable, casmapping.CasBackendColumn),
+		)
+		fromV = sqlgraph.Neighbors(cm.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryWorkflowRun queries the workflow_run edge of a CASMapping.
+func (c *CASMappingClient) QueryWorkflowRun(cm *CASMapping) *WorkflowRunQuery {
+	query := (&WorkflowRunClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := cm.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(casmapping.Table, casmapping.FieldID, id),
+			sqlgraph.To(workflowrun.Table, workflowrun.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, casmapping.WorkflowRunTable, casmapping.WorkflowRunColumn),
+		)
+		fromV = sqlgraph.Neighbors(cm.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryOrganization queries the organization edge of a CASMapping.
+func (c *CASMappingClient) QueryOrganization(cm *CASMapping) *OrganizationQuery {
+	query := (&OrganizationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := cm.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(casmapping.Table, casmapping.FieldID, id),
+			sqlgraph.To(organization.Table, organization.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, casmapping.OrganizationTable, casmapping.OrganizationColumn),
+		)
+		fromV = sqlgraph.Neighbors(cm.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CASMappingClient) Hooks() []Hook {
+	return c.hooks.CASMapping
+}
+
+// Interceptors returns the client interceptors.
+func (c *CASMappingClient) Interceptors() []Interceptor {
+	return c.inters.CASMapping
+}
+
+func (c *CASMappingClient) mutate(ctx context.Context, m *CASMappingMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CASMappingCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CASMappingUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CASMappingUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CASMappingDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CASMapping mutation op: %q", m.Op())
 	}
 }
 
@@ -2046,13 +2220,13 @@ func (c *WorkflowRunClient) mutate(ctx context.Context, m *WorkflowRunMutation) 
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		CASBackend, Integration, IntegrationAttachment, Membership, Organization,
-		RobotAccount, User, Workflow, WorkflowContract, WorkflowContractVersion,
-		WorkflowRun []ent.Hook
+		CASBackend, CASMapping, Integration, IntegrationAttachment, Membership,
+		Organization, RobotAccount, User, Workflow, WorkflowContract,
+		WorkflowContractVersion, WorkflowRun []ent.Hook
 	}
 	inters struct {
-		CASBackend, Integration, IntegrationAttachment, Membership, Organization,
-		RobotAccount, User, Workflow, WorkflowContract, WorkflowContractVersion,
-		WorkflowRun []ent.Interceptor
+		CASBackend, CASMapping, Integration, IntegrationAttachment, Membership,
+		Organization, RobotAccount, User, Workflow, WorkflowContract,
+		WorkflowContractVersion, WorkflowRun []ent.Interceptor
 	}
 )

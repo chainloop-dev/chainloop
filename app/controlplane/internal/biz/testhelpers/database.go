@@ -63,6 +63,7 @@ type TestingUseCases struct {
 	User                   *biz.UserUseCase
 	RobotAccount           *biz.RobotAccountUseCase
 	RegisteredIntegrations sdk.AvailablePlugins
+	CASMapping             *biz.CASMappingUseCase
 }
 
 type newTestingOpts struct {
