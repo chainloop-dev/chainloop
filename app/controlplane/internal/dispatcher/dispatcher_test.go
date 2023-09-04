@@ -323,7 +323,6 @@ type mockedIntegration struct {
 
 // Utility struct to hold the test suite
 type dispatcherTestSuite struct {
-	suite.Suite
 	testhelpers.UseCasesEachTestSuite
 	cdxIntegration, ociIntegration, containerIntegration                      *biz.Integration
 	cdxIntegrationBackend, ociIntegrationBackend, containerIntegrationBackend sdk.FanOut
