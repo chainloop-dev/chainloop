@@ -92,7 +92,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	attestationUseCase := biz.NewAttestationUseCase(casClientUseCase, logger)
 	fanOutDispatcher := dispatcher.New(integrationUseCase, workflowUseCase, workflowRunUseCase, readerWriter, casClientUseCase, availablePlugins, logger)
 	casMappingRepo := data.NewCASMappingRepo(dataData, casBackendRepo, logger)
-	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, logger)
+	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipRepo, logger)
 	newAttestationServiceOpts := &service.NewAttestationServiceOpts{
 		WorkflowRunUC:      workflowRunUseCase,
 		WorkflowUC:         workflowUseCase,
@@ -109,7 +109,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	attestationService := service.NewAttestationService(newAttestationServiceOpts)
 	workflowContractService := service.NewWorkflowSchemaService(workflowContractUseCase, v2...)
 	contextService := service.NewContextService(casBackendUseCase, v2...)
-	casCredentialsService := service.NewCASCredentialsService(casCredentialsUseCase, casBackendUseCase, v2...)
+	casCredentialsService := service.NewCASCredentialsService(casCredentialsUseCase, casMappingUseCase, casBackendUseCase, v2...)
 	orgMetricsRepo := data.NewOrgMetricsRepo(dataData, logger)
 	orgMetricsUseCase, err := biz.NewOrgMetricsUseCase(orgMetricsRepo, logger)
 	if err != nil {
@@ -120,7 +120,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	integrationsService := service.NewIntegrationsService(integrationUseCase, workflowUseCase, availablePlugins, v2...)
 	organizationService := service.NewOrganizationService(membershipUseCase, v2...)
 	casBackendService := service.NewCASBackendService(casBackendUseCase, providers, v2...)
-	casRedirectService, err := service.NewCASRedirectService(casBackendUseCase, casCredentialsUseCase, bootstrap_CASServer, v2...)
+	casRedirectService, err := service.NewCASRedirectService(casMappingUseCase, casCredentialsUseCase, bootstrap_CASServer, v2...)
 	if err != nil {
 		cleanup()
 		return nil, nil, err

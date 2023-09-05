@@ -35,11 +35,12 @@ func newArtifactCmd() *cobra.Command {
 	return cmd
 }
 
-func wrappedArtifactConn(cpConn *grpc.ClientConn, role pb.CASCredentialsServiceGetRequest_Role) (*grpc.ClientConn, error) {
+func wrappedArtifactConn(cpConn *grpc.ClientConn, role pb.CASCredentialsServiceGetRequest_Role, digest string) (*grpc.ClientConn, error) {
 	// Retrieve temporary credentials for uploading
 	client := pb.NewCASCredentialsServiceClient(cpConn)
 	resp, err := client.Get(context.Background(), &pb.CASCredentialsServiceGetRequest{
-		Role: role,
+		Role:   role,
+		Digest: digest,
 	})
 	if err != nil {
 		return nil, err

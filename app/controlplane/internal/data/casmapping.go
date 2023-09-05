@@ -62,6 +62,30 @@ func (r *CASMappingRepo) Create(ctx context.Context, digest string, casBackendID
 	return r.findByID(ctx, mapping.ID)
 }
 
+func (r *CASMappingRepo) FindByDigest(ctx context.Context, digest string) ([]*biz.CASMapping, error) {
+	mappings, err := r.data.db.CASMapping.Query().
+		Where(casmapping.Digest(digest)).
+		WithCasBackend().
+		WithOrganization().
+		WithWorkflowRun().
+		All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list cas mappings: %w", err)
+	}
+
+	res := make([]*biz.CASMapping, 0, len(mappings))
+	for _, m := range mappings {
+		r, err := entCASMappingToBiz(m)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert cas mapping: %w", err)
+		}
+
+		res = append(res, r)
+	}
+
+	return res, nil
+}
+
 // FindByID finds a CAS Mapping by ID
 // If not found, returns nil and no error
 func (r *CASMappingRepo) findByID(ctx context.Context, id uuid.UUID) (*biz.CASMapping, error) {
@@ -100,7 +124,7 @@ func entCASMappingToBiz(input *ent.CASMapping) (*biz.CASMapping, error) {
 	return &biz.CASMapping{
 		ID:            input.ID,
 		Digest:        input.Digest,
-		CASBackendID:  casBackend.ID,
+		CASBackend:    entCASBackendToBiz(casBackend),
 		WorkflowRunID: workflowRun.ID,
 		OrgID:         org.ID,
 		CreatedAt:     toTimePtr(input.CreatedAt),

@@ -27,13 +27,76 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
-func (s *casMappingIntegrationSuite) TestCreate() {
-	validDigest := "sha256:3b0f04c276be095e62f3ac03b9991913c37df1fcd44548e75069adce313aba4d"
-	invalidDigest := "sha256:deadbeef"
+const (
+	validDigest   = "sha256:3b0f04c276be095e62f3ac03b9991913c37df1fcd44548e75069adce313aba4d"
+	validDigest2  = "sha256:2b0f04c276be095e62f3ac03b9991913c37df1fcd44548e75069adce313aba4d"
+	validDigest3  = "sha256:1b0f04c276be095e62f3ac03b9991913c37df1fcd44548e75069adce313aba4d"
+	invalidDigest = "sha256:deadbeef"
+)
 
+func (s *casMappingIntegrationSuite) TestCASMappingForDownload() {
+	// Let's create 3 CASMappings:
+	// 1. Digest: validDigest, CASBackend: casBackend1, WorkflowRunID: workflowRun
+	// 2. Digest: validDigest, CASBackend: casBackend2, WorkflowRunID: workflowRun
+	// 3. Digest: validDigest2, CASBackend: casBackend2, WorkflowRunID: workflowRun
+	// 4. Digest: validDigest3, CASBackend: casBackend3, WorkflowRunID: workflowRun
+	_, err := s.CASMapping.Create(context.TODO(), validDigest, s.casBackend1.ID.String(), s.workflowRun.ID.String())
+	require.NoError(s.T(), err)
+	_, err = s.CASMapping.Create(context.TODO(), validDigest, s.casBackend2.ID.String(), s.workflowRun.ID.String())
+	require.NoError(s.T(), err)
+	_, err = s.CASMapping.Create(context.TODO(), validDigest2, s.casBackend2.ID.String(), s.workflowRun.ID.String())
+	require.NoError(s.T(), err)
+	_, err = s.CASMapping.Create(context.TODO(), validDigest3, s.casBackend3.ID.String(), s.workflowRun.ID.String())
+	require.NoError(s.T(), err)
+
+	// Since the userOrg1And2 is member of org1 and org2, she should be able to download
+	// both validDigest and validDigest2 from two different orgs
+	s.Run("userOrg1And2 can download validDigest from org1", func() {
+		mapping, err := s.CASMapping.FindCASMappingForDownload(context.TODO(), validDigest, s.userOrg1And2.ID)
+		s.NoError(err)
+		s.NotNil(mapping)
+		s.Equal(s.casBackend1.ID, mapping.CASBackend.ID)
+	})
+
+	s.Run("userOrg1And2 can download validDigest2 from org2", func() {
+		mapping, err := s.CASMapping.FindCASMappingForDownload(context.TODO(), validDigest2, s.userOrg1And2.ID)
+		s.NoError(err)
+		s.NotNil(mapping)
+		s.Equal(s.casBackend2.ID, mapping.CASBackend.ID)
+	})
+
+	s.Run("userOrg1And2 can not download validDigest3 from org3", func() {
+		mapping, err := s.CASMapping.FindCASMappingForDownload(context.TODO(), validDigest3, s.userOrg1And2.ID)
+		s.Error(err)
+		s.Nil(mapping)
+	})
+
+	s.Run("userOrg2 can download validDigest2 from org2", func() {
+		mapping, err := s.CASMapping.FindCASMappingForDownload(context.TODO(), validDigest2, s.userOrg2.ID)
+		s.NoError(err)
+		s.NotNil(mapping)
+		s.Equal(s.casBackend2.ID, mapping.CASBackend.ID)
+	})
+
+	s.Run("userOrg2 can download validDigest from org2", func() {
+		mapping, err := s.CASMapping.FindCASMappingForDownload(context.TODO(), validDigest, s.userOrg2.ID)
+		s.NoError(err)
+		s.NotNil(mapping)
+		s.Equal(s.casBackend2.ID, mapping.CASBackend.ID)
+	})
+
+	s.Run("userOrg2 can not download invalidDigest", func() {
+		mapping, err := s.CASMapping.FindCASMappingForDownload(context.TODO(), invalidDigest, s.userOrg2.ID)
+		s.Error(err)
+		s.Nil(mapping)
+	})
+}
+
+func (s *casMappingIntegrationSuite) TestCreate() {
 	testCases := []struct {
 		name          string
 		digest        string
@@ -44,26 +107,26 @@ func (s *casMappingIntegrationSuite) TestCreate() {
 		{
 			name:          "valid",
 			digest:        validDigest,
-			casBackendID:  s.casBackend.ID,
+			casBackendID:  s.casBackend1.ID,
 			workflowRunID: s.workflowRun.ID,
 		},
 		{
 			name:          "created again with same digest",
 			digest:        validDigest,
-			casBackendID:  s.casBackend.ID,
+			casBackendID:  s.casBackend1.ID,
 			workflowRunID: s.workflowRun.ID,
 		},
 		{
 			name:          "invalid digest format",
 			digest:        invalidDigest,
-			casBackendID:  s.casBackend.ID,
+			casBackendID:  s.casBackend1.ID,
 			workflowRunID: s.workflowRun.ID,
 			wantErr:       true,
 		},
 		{
 			name:          "invalid digest missing prefix",
 			digest:        "3b0f04c276be095e62f3ac03b9991913c37df1fcd44548e75069adce313aba4d",
-			casBackendID:  s.casBackend.ID,
+			casBackendID:  s.casBackend1.ID,
 			workflowRunID: s.workflowRun.ID,
 			wantErr:       true,
 		},
@@ -77,7 +140,7 @@ func (s *casMappingIntegrationSuite) TestCreate() {
 		{
 			name:          "non-existing WorkflowRunID",
 			digest:        validDigest,
-			casBackendID:  s.casBackend.ID,
+			casBackendID:  s.casBackend1.ID,
 			workflowRunID: uuid.New(),
 			wantErr:       true,
 		},
@@ -85,9 +148,9 @@ func (s *casMappingIntegrationSuite) TestCreate() {
 
 	want := &biz.CASMapping{
 		Digest:        validDigest,
-		CASBackendID:  s.casBackend.ID,
+		CASBackend:    &biz.CASBackend{ID: s.casBackend1.ID},
 		WorkflowRunID: s.workflowRun.ID,
-		OrgID:         s.casBackend.OrganizationID,
+		OrgID:         s.casBackend1.OrganizationID,
 	}
 
 	for _, tc := range testCases {
@@ -97,9 +160,14 @@ func (s *casMappingIntegrationSuite) TestCreate() {
 				s.Error(err)
 			} else {
 				s.NoError(err)
-				if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(biz.CASMapping{}, "CreatedAt", "ID")); diff != "" {
+				if diff := cmp.Diff(want, got,
+					cmpopts.IgnoreFields(biz.CASMapping{}, "CreatedAt", "ID"),
+					cmpopts.IgnoreTypes(biz.CASBackend{}),
+				); diff != "" {
 					assert.Failf(s.T(), "mismatch (-want +got):\n%s", diff)
 				}
+
+				assert.Equal(s.T(), want.CASBackend.ID, got.CASBackend.ID)
 			}
 		})
 	}
@@ -107,8 +175,10 @@ func (s *casMappingIntegrationSuite) TestCreate() {
 
 type casMappingIntegrationSuite struct {
 	testhelpers.UseCasesEachTestSuite
-	casBackend  *biz.CASBackend
-	workflowRun *biz.WorkflowRun
+	casBackend1, casBackend2, casBackend3 *biz.CASBackend
+	workflowRun                           *biz.WorkflowRun
+	userOrg1And2, userOrg2                *biz.User
+	org1, org2, orgNoUsers                *biz.Organization
 }
 
 func (s *casMappingIntegrationSuite) SetupTest() {
@@ -125,28 +195,52 @@ func (s *casMappingIntegrationSuite) SetupTest() {
 	s.TestingUseCases = testhelpers.NewTestingUseCases(s.T(), testhelpers.WithCredsReaderWriter(credsWriter))
 
 	// Create casBackend in the database
-	org, err := s.Organization.Create(ctx, "testing org 1 with one backend")
+	s.org1, err = s.Organization.Create(ctx, "testing org 1 with one backend")
 	assert.NoError(err)
-	s.casBackend, err = s.CASBackend.Create(ctx, org.ID, "my-location", "backend 1 description", biz.CASBackendOCI, nil, true)
+	s.casBackend1, err = s.CASBackend.Create(ctx, s.org1.ID, "my-location", "backend 1 description", biz.CASBackendOCI, nil, true)
+	assert.NoError(err)
+	s.org2, err = s.Organization.Create(ctx, "testing org 2")
+	assert.NoError(err)
+	s.casBackend2, err = s.CASBackend.Create(ctx, s.org2.ID, "my-location", "backend 1 description", biz.CASBackendOCI, nil, true)
+	assert.NoError(err)
+	// Create casBackend associated with an org which users are not member of
+	s.orgNoUsers, err = s.Organization.Create(ctx, "org without users")
+	assert.NoError(err)
+	s.casBackend3, err = s.CASBackend.Create(ctx, s.orgNoUsers.ID, "my-location", "backend 1 description", biz.CASBackendOCI, nil, true)
 	assert.NoError(err)
 
 	// Create workflowRun in the database
 	// Workflow
-	workflow, err := s.Workflow.Create(ctx, &biz.CreateOpts{Name: "test workflow", OrgID: org.ID})
+	workflow, err := s.Workflow.Create(ctx, &biz.CreateOpts{Name: "test workflow", OrgID: s.org1.ID})
 	assert.NoError(err)
 
 	// Robot account
-	robotAccount, err := s.RobotAccount.Create(ctx, "name", org.ID, workflow.ID.String())
+	robotAccount, err := s.RobotAccount.Create(ctx, "name", s.org1.ID, workflow.ID.String())
 	assert.NoError(err)
 
 	// Find contract revision
-	contractVersion, err := s.WorkflowContract.Describe(ctx, org.ID, workflow.ContractID.String(), 0)
+	contractVersion, err := s.WorkflowContract.Describe(ctx, s.org1.ID, workflow.ContractID.String(), 0)
 	assert.NoError(err)
 
 	s.workflowRun, err = s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
-		WorkflowID: workflow.ID.String(), RobotaccountID: robotAccount.ID.String(), ContractRevisionUUID: contractVersion.Version.ID, CASBackendID: s.casBackend.ID,
+		WorkflowID: workflow.ID.String(), RobotaccountID: robotAccount.ID.String(), ContractRevisionUUID: contractVersion.Version.ID, CASBackendID: s.casBackend1.ID,
 		RunnerType: "runnerType", RunnerRunURL: "runURL",
 	})
+
+	assert.NoError(err)
+
+	// Create User
+	s.userOrg1And2, err = s.User.FindOrCreateByEmail(ctx, "foo@test.com")
+	assert.NoError(err)
+
+	s.userOrg2, err = s.User.FindOrCreateByEmail(ctx, "foo-org2@test.com")
+	assert.NoError(err)
+
+	_, err = s.Membership.Create(ctx, s.org1.ID, s.userOrg1And2.ID, false)
+	assert.NoError(err)
+	_, err = s.Membership.Create(ctx, s.org2.ID, s.userOrg1And2.ID, true)
+	assert.NoError(err)
+	_, err = s.Membership.Create(ctx, s.org2.ID, s.userOrg2.ID, true)
 	assert.NoError(err)
 }
 

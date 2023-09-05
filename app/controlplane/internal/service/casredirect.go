@@ -30,7 +30,6 @@ import (
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	kerrors "github.com/go-kratos/kratos/v2/errors"
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
-	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
 const (
@@ -47,19 +46,19 @@ type CASRedirectService struct {
 	pb.UnimplementedCASRedirectServiceServer
 	*service
 
-	casUC           *biz.CASBackendUseCase
+	casMappingUC    *biz.CASMappingUseCase
 	casCredsUseCase *biz.CASCredentialsUseCase
 	casServerConf   *conf.Bootstrap_CASServer
 }
 
-func NewCASRedirectService(casUC *biz.CASBackendUseCase, casCredsUC *biz.CASCredentialsUseCase, conf *conf.Bootstrap_CASServer, opts ...NewOpt) (*CASRedirectService, error) {
+func NewCASRedirectService(casmUC *biz.CASMappingUseCase, casCredsUC *biz.CASCredentialsUseCase, conf *conf.Bootstrap_CASServer, opts ...NewOpt) (*CASRedirectService, error) {
 	if conf == nil || conf.GetDownloadUrl() == "" {
 		return nil, errors.New("CASServer.downloadURL configuration is missing")
 	}
 
 	return &CASRedirectService{
 		service:         newService(opts...),
-		casUC:           casUC,
+		casMappingUC:    casmUC,
 		casCredsUseCase: casCredsUC,
 		casServerConf:   conf,
 	}, nil
@@ -69,29 +68,30 @@ func NewCASRedirectService(casUC *biz.CASBackendUseCase, casCredsUC *biz.CASCred
 // The URL includes a JWT token that is used to authenticate the request, this token has all the information required to validate the request
 // The result would look like "https://cas.chainloop.dev/download/sha256:[DIGEST]?t=tokenJWT
 func (s *CASRedirectService) GetDownloadURL(ctx context.Context, req *pb.GetDownloadURLRequest) (*pb.GetDownloadURLResponse, error) {
-	_, currentOrg, err := loadCurrentUserAndOrg(ctx)
+	currentUser, _, err := loadCurrentUserAndOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// Load default CAS backend in the current ORG
-	// TODO, in the future instead we will lookup the CAS backend where the artifact is stored
-	backend, err := s.casUC.FindDefaultBackend(ctx, currentOrg.ID)
-	if err != nil && !biz.IsNotFound(err) {
+	// Find the CAS backend that should be used for the download, if any
+	mapping, err := s.casMappingUC.FindCASMappingForDownload(ctx, req.Digest, currentUser.ID)
+	if err != nil {
+		// We don't want to leak the fact that the asset exists but the user does not have permissions
+		// that's why we return a generic 404 in unauthorized scenarios too
+		if biz.IsNotFound(err) || biz.IsErrUnauthorized(err) {
+			return nil, kerrors.NotFound("not found", "artifact not found")
+		} else if biz.IsErrValidation(err) {
+			return nil, kerrors.BadRequest("invalid", err.Error())
+		}
+
 		return nil, sl.LogAndMaskErr(err, s.log)
-	} else if backend == nil {
-		return nil, kerrors.NotFound("not found", "default CAS backend not found")
 	}
+
+	backend := mapping.CASBackend
 
 	// inline backends don't have a download URL
 	if backend.Inline {
-		return nil, kerrors.NotFound("not found", "default CAS backend is inline")
-	}
-
-	// parse the digest to make sure is a valid sha256 sum
-	hash, err := cr_v1.NewHash(req.Digest)
-	if err != nil {
-		return nil, kerrors.BadRequest("invalid digest", "the format must be \"sha256:[HexValue]\"")
+		return nil, kerrors.NotFound("not found", "CAS backend is inline")
 	}
 
 	// Create an URL to download the artifact from the CAS backend
@@ -101,7 +101,7 @@ func (s *CASRedirectService) GetDownloadURL(ctx context.Context, req *pb.GetDown
 	}
 
 	// 1 - append the digest /download/[digest]
-	downloadURL := downloadBase.JoinPath(hash.String())
+	downloadURL := downloadBase.JoinPath(req.Digest)
 
 	// 2- add authentication token to the query params ?t=[token]
 	if backend.SecretName != "" {
