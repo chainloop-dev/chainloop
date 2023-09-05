@@ -26,6 +26,7 @@ service WorkflowService {
 	rpc Create (WorkflowServiceCreateRequest) returns (WorkflowServiceCreateResponse);
 	rpc List (WorkflowServiceListRequest) returns (WorkflowServiceListResponse);
 	rpc Delete (WorkflowServiceDeleteRequest) returns (WorkflowServiceDeleteResponse);
+	rpc ChangeVisibility (WorkflowServiceChangeVisibilityRequest) returns (WorkflowServiceChangeVisibilityResponse);
 }
 
 message WorkflowServiceCreateRequest {
@@ -49,4 +50,16 @@ message WorkflowServiceDeleteResponse {}
 message WorkflowServiceListRequest {}
 message WorkflowServiceListResponse {
   repeated WorkflowItem result = 1;
+}
+
+message WorkflowServiceChangeVisibilityRequest {
+  string id = 1 [(validate.rules).string.uuid = true];
+  // A public workflow means that any user can
+  // - access to all its workflow runs
+  // - their attestation and materials
+  bool public = 2;
+}
+
+message WorkflowServiceChangeVisibilityResponse {
+  WorkflowItem result = 1;
 }

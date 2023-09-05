@@ -17,10 +17,13 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"io"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
+	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	errors "github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
@@ -76,4 +79,14 @@ func WithLogger(logger log.Logger) NewOpt {
 	return func(s *service) {
 		s.log = servicelogger.ScopedHelper(logger, "service")
 	}
+}
+
+func handleUseCaseErr(entity string, err error, l *log.Helper) error {
+	if biz.IsErrValidation(err) {
+		return errors.BadRequest(fmt.Sprintf("invalid %s", entity), err.Error())
+	} else if biz.IsNotFound(err) {
+		return errors.NotFound(fmt.Sprintf("%s not found", entity), err.Error())
+	}
+
+	return sl.LogAndMaskErr(err, l)
 }

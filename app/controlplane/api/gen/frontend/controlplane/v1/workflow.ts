@@ -32,6 +32,20 @@ export interface WorkflowServiceListResponse {
   result: WorkflowItem[];
 }
 
+export interface WorkflowServiceChangeVisibilityRequest {
+  id: string;
+  /**
+   * A public workflow means that any user can
+   * - access to all its workflow runs
+   * - their attestation and materials
+   */
+  public: boolean;
+}
+
+export interface WorkflowServiceChangeVisibilityResponse {
+  result?: WorkflowItem;
+}
+
 function createBaseWorkflowServiceCreateRequest(): WorkflowServiceCreateRequest {
   return { name: "", project: "", schemaId: "", team: "" };
 }
@@ -393,6 +407,143 @@ export const WorkflowServiceListResponse = {
   },
 };
 
+function createBaseWorkflowServiceChangeVisibilityRequest(): WorkflowServiceChangeVisibilityRequest {
+  return { id: "", public: false };
+}
+
+export const WorkflowServiceChangeVisibilityRequest = {
+  encode(message: WorkflowServiceChangeVisibilityRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.public === true) {
+      writer.uint32(16).bool(message.public);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): WorkflowServiceChangeVisibilityRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseWorkflowServiceChangeVisibilityRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.public = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): WorkflowServiceChangeVisibilityRequest {
+    return {
+      id: isSet(object.id) ? String(object.id) : "",
+      public: isSet(object.public) ? Boolean(object.public) : false,
+    };
+  },
+
+  toJSON(message: WorkflowServiceChangeVisibilityRequest): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    message.public !== undefined && (obj.public = message.public);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<WorkflowServiceChangeVisibilityRequest>, I>>(
+    base?: I,
+  ): WorkflowServiceChangeVisibilityRequest {
+    return WorkflowServiceChangeVisibilityRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<WorkflowServiceChangeVisibilityRequest>, I>>(
+    object: I,
+  ): WorkflowServiceChangeVisibilityRequest {
+    const message = createBaseWorkflowServiceChangeVisibilityRequest();
+    message.id = object.id ?? "";
+    message.public = object.public ?? false;
+    return message;
+  },
+};
+
+function createBaseWorkflowServiceChangeVisibilityResponse(): WorkflowServiceChangeVisibilityResponse {
+  return { result: undefined };
+}
+
+export const WorkflowServiceChangeVisibilityResponse = {
+  encode(message: WorkflowServiceChangeVisibilityResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.result !== undefined) {
+      WorkflowItem.encode(message.result, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): WorkflowServiceChangeVisibilityResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseWorkflowServiceChangeVisibilityResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.result = WorkflowItem.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): WorkflowServiceChangeVisibilityResponse {
+    return { result: isSet(object.result) ? WorkflowItem.fromJSON(object.result) : undefined };
+  },
+
+  toJSON(message: WorkflowServiceChangeVisibilityResponse): unknown {
+    const obj: any = {};
+    message.result !== undefined && (obj.result = message.result ? WorkflowItem.toJSON(message.result) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<WorkflowServiceChangeVisibilityResponse>, I>>(
+    base?: I,
+  ): WorkflowServiceChangeVisibilityResponse {
+    return WorkflowServiceChangeVisibilityResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<WorkflowServiceChangeVisibilityResponse>, I>>(
+    object: I,
+  ): WorkflowServiceChangeVisibilityResponse {
+    const message = createBaseWorkflowServiceChangeVisibilityResponse();
+    message.result = (object.result !== undefined && object.result !== null)
+      ? WorkflowItem.fromPartial(object.result)
+      : undefined;
+    return message;
+  },
+};
+
 export interface WorkflowService {
   Create(
     request: DeepPartial<WorkflowServiceCreateRequest>,
@@ -406,6 +557,10 @@ export interface WorkflowService {
     request: DeepPartial<WorkflowServiceDeleteRequest>,
     metadata?: grpc.Metadata,
   ): Promise<WorkflowServiceDeleteResponse>;
+  ChangeVisibility(
+    request: DeepPartial<WorkflowServiceChangeVisibilityRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<WorkflowServiceChangeVisibilityResponse>;
 }
 
 export class WorkflowServiceClientImpl implements WorkflowService {
@@ -416,6 +571,7 @@ export class WorkflowServiceClientImpl implements WorkflowService {
     this.Create = this.Create.bind(this);
     this.List = this.List.bind(this);
     this.Delete = this.Delete.bind(this);
+    this.ChangeVisibility = this.ChangeVisibility.bind(this);
   }
 
   Create(
@@ -437,6 +593,17 @@ export class WorkflowServiceClientImpl implements WorkflowService {
     metadata?: grpc.Metadata,
   ): Promise<WorkflowServiceDeleteResponse> {
     return this.rpc.unary(WorkflowServiceDeleteDesc, WorkflowServiceDeleteRequest.fromPartial(request), metadata);
+  }
+
+  ChangeVisibility(
+    request: DeepPartial<WorkflowServiceChangeVisibilityRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<WorkflowServiceChangeVisibilityResponse> {
+    return this.rpc.unary(
+      WorkflowServiceChangeVisibilityDesc,
+      WorkflowServiceChangeVisibilityRequest.fromPartial(request),
+      metadata,
+    );
   }
 }
 
@@ -501,6 +668,29 @@ export const WorkflowServiceDeleteDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = WorkflowServiceDeleteResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const WorkflowServiceChangeVisibilityDesc: UnaryMethodDefinitionish = {
+  methodName: "ChangeVisibility",
+  service: WorkflowServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return WorkflowServiceChangeVisibilityRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = WorkflowServiceChangeVisibilityResponse.decode(data);
       return {
         ...value,
         toObject() {

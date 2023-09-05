@@ -763,3 +763,266 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = WorkflowServiceListResponseValidationError{}
+
+// Validate checks the field values on WorkflowServiceChangeVisibilityRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *WorkflowServiceChangeVisibilityRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// WorkflowServiceChangeVisibilityRequest with the rules defined in the proto
+// definition for this message. If any rules are violated, the result is a
+// list of violation errors wrapped in
+// WorkflowServiceChangeVisibilityRequestMultiError, or nil if none found.
+func (m *WorkflowServiceChangeVisibilityRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *WorkflowServiceChangeVisibilityRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if err := m._validateUuid(m.GetId()); err != nil {
+		err = WorkflowServiceChangeVisibilityRequestValidationError{
+			field:  "Id",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Public
+
+	if len(errors) > 0 {
+		return WorkflowServiceChangeVisibilityRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *WorkflowServiceChangeVisibilityRequest) _validateUuid(uuid string) error {
+	if matched := _workflow_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
+	}
+
+	return nil
+}
+
+// WorkflowServiceChangeVisibilityRequestMultiError is an error wrapping
+// multiple validation errors returned by
+// WorkflowServiceChangeVisibilityRequest.ValidateAll() if the designated
+// constraints aren't met.
+type WorkflowServiceChangeVisibilityRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m WorkflowServiceChangeVisibilityRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m WorkflowServiceChangeVisibilityRequestMultiError) AllErrors() []error { return m }
+
+// WorkflowServiceChangeVisibilityRequestValidationError is the validation
+// error returned by WorkflowServiceChangeVisibilityRequest.Validate if the
+// designated constraints aren't met.
+type WorkflowServiceChangeVisibilityRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e WorkflowServiceChangeVisibilityRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e WorkflowServiceChangeVisibilityRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e WorkflowServiceChangeVisibilityRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e WorkflowServiceChangeVisibilityRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e WorkflowServiceChangeVisibilityRequestValidationError) ErrorName() string {
+	return "WorkflowServiceChangeVisibilityRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e WorkflowServiceChangeVisibilityRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sWorkflowServiceChangeVisibilityRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = WorkflowServiceChangeVisibilityRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = WorkflowServiceChangeVisibilityRequestValidationError{}
+
+// Validate checks the field values on WorkflowServiceChangeVisibilityResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *WorkflowServiceChangeVisibilityResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// WorkflowServiceChangeVisibilityResponse with the rules defined in the proto
+// definition for this message. If any rules are violated, the result is a
+// list of violation errors wrapped in
+// WorkflowServiceChangeVisibilityResponseMultiError, or nil if none found.
+func (m *WorkflowServiceChangeVisibilityResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *WorkflowServiceChangeVisibilityResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetResult()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, WorkflowServiceChangeVisibilityResponseValidationError{
+					field:  "Result",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, WorkflowServiceChangeVisibilityResponseValidationError{
+					field:  "Result",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetResult()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return WorkflowServiceChangeVisibilityResponseValidationError{
+				field:  "Result",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return WorkflowServiceChangeVisibilityResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// WorkflowServiceChangeVisibilityResponseMultiError is an error wrapping
+// multiple validation errors returned by
+// WorkflowServiceChangeVisibilityResponse.ValidateAll() if the designated
+// constraints aren't met.
+type WorkflowServiceChangeVisibilityResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m WorkflowServiceChangeVisibilityResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m WorkflowServiceChangeVisibilityResponseMultiError) AllErrors() []error { return m }
+
+// WorkflowServiceChangeVisibilityResponseValidationError is the validation
+// error returned by WorkflowServiceChangeVisibilityResponse.Validate if the
+// designated constraints aren't met.
+type WorkflowServiceChangeVisibilityResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e WorkflowServiceChangeVisibilityResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e WorkflowServiceChangeVisibilityResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e WorkflowServiceChangeVisibilityResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e WorkflowServiceChangeVisibilityResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e WorkflowServiceChangeVisibilityResponseValidationError) ErrorName() string {
+	return "WorkflowServiceChangeVisibilityResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e WorkflowServiceChangeVisibilityResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sWorkflowServiceChangeVisibilityResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = WorkflowServiceChangeVisibilityResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = WorkflowServiceChangeVisibilityResponseValidationError{}

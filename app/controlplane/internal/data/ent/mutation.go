@@ -5538,6 +5538,7 @@ type WorkflowMutation struct {
 	addruns_count                  *int
 	created_at                     *time.Time
 	deleted_at                     *time.Time
+	public                         *bool
 	clearedFields                  map[string]struct{}
 	robotaccounts                  map[uuid.UUID]struct{}
 	removedrobotaccounts           map[uuid.UUID]struct{}
@@ -5936,6 +5937,42 @@ func (m *WorkflowMutation) ResetDeletedAt() {
 	delete(m.clearedFields, workflow.FieldDeletedAt)
 }
 
+// SetPublic sets the "public" field.
+func (m *WorkflowMutation) SetPublic(b bool) {
+	m.public = &b
+}
+
+// Public returns the value of the "public" field in the mutation.
+func (m *WorkflowMutation) Public() (r bool, exists bool) {
+	v := m.public
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPublic returns the old "public" field's value of the Workflow entity.
+// If the Workflow object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowMutation) OldPublic(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPublic is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPublic requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPublic: %w", err)
+	}
+	return oldValue.Public, nil
+}
+
+// ResetPublic resets all changes to the "public" field.
+func (m *WorkflowMutation) ResetPublic() {
+	m.public = nil
+}
+
 // AddRobotaccountIDs adds the "robotaccounts" edge to the RobotAccount entity by ids.
 func (m *WorkflowMutation) AddRobotaccountIDs(ids ...uuid.UUID) {
 	if m.robotaccounts == nil {
@@ -6210,7 +6247,7 @@ func (m *WorkflowMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *WorkflowMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 7)
 	if m.name != nil {
 		fields = append(fields, workflow.FieldName)
 	}
@@ -6228,6 +6265,9 @@ func (m *WorkflowMutation) Fields() []string {
 	}
 	if m.deleted_at != nil {
 		fields = append(fields, workflow.FieldDeletedAt)
+	}
+	if m.public != nil {
+		fields = append(fields, workflow.FieldPublic)
 	}
 	return fields
 }
@@ -6249,6 +6289,8 @@ func (m *WorkflowMutation) Field(name string) (ent.Value, bool) {
 		return m.CreatedAt()
 	case workflow.FieldDeletedAt:
 		return m.DeletedAt()
+	case workflow.FieldPublic:
+		return m.Public()
 	}
 	return nil, false
 }
@@ -6270,6 +6312,8 @@ func (m *WorkflowMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldCreatedAt(ctx)
 	case workflow.FieldDeletedAt:
 		return m.OldDeletedAt(ctx)
+	case workflow.FieldPublic:
+		return m.OldPublic(ctx)
 	}
 	return nil, fmt.Errorf("unknown Workflow field %s", name)
 }
@@ -6320,6 +6364,13 @@ func (m *WorkflowMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDeletedAt(v)
+		return nil
+	case workflow.FieldPublic:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPublic(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Workflow field %s", name)
@@ -6423,6 +6474,9 @@ func (m *WorkflowMutation) ResetField(name string) error {
 		return nil
 	case workflow.FieldDeletedAt:
 		m.ResetDeletedAt()
+		return nil
+	case workflow.FieldPublic:
+		m.ResetPublic()
 		return nil
 	}
 	return fmt.Errorf("unknown Workflow field %s", name)

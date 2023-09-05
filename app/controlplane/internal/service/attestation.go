@@ -101,7 +101,7 @@ func (s *AttestationService) GetContract(ctx context.Context, req *cpAPI.Attesta
 	}
 
 	resp := &cpAPI.AttestationServiceGetContractResponse_Result{
-		Workflow: bizWorkFlowToPb(wf),
+		Workflow: bizWorkflowToPb(wf),
 		Contract: bizWorkFlowContractVersionToPb(contractVersion.Version),
 	}
 
@@ -148,7 +148,7 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 	}
 
 	wRun := bizWorkFlowRunToPb(run)
-	wRun.Workflow = bizWorkFlowToPb(wf)
+	wRun.Workflow = bizWorkflowToPb(wf)
 	resp := &cpAPI.AttestationServiceInitResponse_Result{
 		WorkflowRun: wRun,
 	}
