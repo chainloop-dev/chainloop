@@ -39,7 +39,7 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 	validEnvelope := &dsse.Envelope{}
 
 	s.T().Run("non existing workflowRun", func(t *testing.T) {
-		err := s.WorkflowRun.SaveAttestation(ctx, uuid.NewString(), validEnvelope)
+		err := s.WorkflowRun.SaveAttestation(ctx, uuid.NewString(), validEnvelope, validDigest)
 		assert.Error(err)
 		assert.True(biz.IsNotFound(err))
 	})
@@ -50,13 +50,28 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 		})
 		assert.NoError(err)
 
-		err = s.WorkflowRun.SaveAttestation(ctx, run.ID.String(), validEnvelope)
+		err = s.WorkflowRun.SaveAttestation(ctx, run.ID.String(), validEnvelope, validDigest)
 		assert.NoError(err)
 
 		// Retrieve attestation ref from storage and compare
 		r, err := s.WorkflowRun.View(ctx, s.org.ID, run.ID.String())
 		assert.NoError(err)
-		assert.Equal(r.Attestation, &biz.Attestation{Envelope: validEnvelope, Digest: "sha256:f845058d865c3d4d491c9019f6afe9c543ad2cd11b31620cc512e341fb03d3d8"})
+		assert.Equal(r.Attestation, &biz.Attestation{Envelope: validEnvelope, Digest: validDigest})
+	})
+
+	s.T().Run("valid workflowRun attestation not stored in CAS", func(t *testing.T) {
+		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflow.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevisionUUID: s.contractVersion.Version.ID, CASBackendID: s.casBackend.ID,
+		})
+		assert.NoError(err)
+
+		err = s.WorkflowRun.SaveAttestation(ctx, run.ID.String(), validEnvelope, "")
+		assert.NoError(err)
+
+		// Retrieve attestation ref from storage and compare
+		r, err := s.WorkflowRun.View(ctx, s.org.ID, run.ID.String())
+		assert.NoError(err)
+		assert.Equal(r.Attestation, &biz.Attestation{Envelope: validEnvelope, Digest: ""})
 	})
 }
 

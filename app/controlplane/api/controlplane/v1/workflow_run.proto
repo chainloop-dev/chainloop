@@ -72,7 +72,14 @@ message AttestationServiceStoreRequest {
   string workflow_run_id = 2 [(validate.rules).string = {min_len: 1}];
 }
 
-message AttestationServiceStoreResponse {}
+message AttestationServiceStoreResponse {
+  Result result = 1;
+  
+  message Result {
+    // attestation digest
+    string digest = 2;
+  }
+}
 
 message AttestationServiceCancelRequest {
   string workflow_run_id = 1 [(validate.rules).string = {min_len: 1}];

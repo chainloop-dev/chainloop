@@ -32,6 +32,11 @@ type AttestationPushOpts struct {
 	KeyPath, CLIVersion, CLIDigest string
 }
 
+type AttestationResult struct {
+	Digest   string         `json:"digest"`
+	Envelope *dsse.Envelope `json:"envelope"`
+}
+
 type AttestationPush struct {
 	*ActionsOpts
 	c                              *crafter.Crafter
@@ -48,8 +53,7 @@ func NewAttestationPush(cfg *AttestationPushOpts) *AttestationPush {
 	}
 }
 
-// TODO: Return defined type
-func (action *AttestationPush) Run(runtimeAnnotations map[string]string) (interface{}, error) {
+func (action *AttestationPush) Run(runtimeAnnotations map[string]string) (*AttestationResult, error) {
 	if initialized := action.c.AlreadyInitialized(); !initialized {
 		return nil, ErrAttestationNotInitialized
 	}
@@ -108,10 +112,12 @@ func (action *AttestationPush) Run(runtimeAnnotations map[string]string) (interf
 		return nil, err
 	}
 
-	res, err := renderer.Render()
+	envelope, err := renderer.Render()
 	if err != nil {
 		return nil, err
 	}
+
+	attestationResult := &AttestationResult{Envelope: envelope}
 
 	action.Logger.Debug().Msg("render completed")
 	if action.c.CraftingState.DryRun {
@@ -120,38 +126,42 @@ func (action *AttestationPush) Run(runtimeAnnotations map[string]string) (interf
 		if err := action.c.Reset(); err != nil {
 			return nil, err
 		}
-		return res, nil
+
+		return attestationResult, nil
 	}
 
-	if err := pushToControlPlane(action.ActionsOpts.CPConnection, res, action.c.CraftingState.Attestation.GetWorkflow().GetWorkflowRunId()); err != nil {
-		return nil, err
+	attestationResult.Digest, err = pushToControlPlane(action.ActionsOpts.CPConnection, envelope, action.c.CraftingState.Attestation.GetWorkflow().GetWorkflowRunId())
+	if err != nil {
+		return nil, fmt.Errorf("pushing to control plane: %w", err)
 	}
 
-	action.Logger.Info().Msg("push completed of the following payload")
+	action.Logger.Info().Msg("push completed")
 
 	// We are done, remove the existing att state
 	if err := action.c.Reset(); err != nil {
 		return nil, err
 	}
 
-	return res, nil
+	return attestationResult, nil
 }
 
-func pushToControlPlane(conn *grpc.ClientConn, envelope *dsse.Envelope, workflowRunID string) error {
+func pushToControlPlane(conn *grpc.ClientConn, envelope *dsse.Envelope, workflowRunID string) (string, error) {
 	encodedAttestation, err := encodeEnvelope(envelope)
 	if err != nil {
-		return err
+		return "", fmt.Errorf("encoding attestation: %w", err)
 	}
 
 	client := pb.NewAttestationServiceClient(conn)
-	if _, err := client.Store(context.Background(), &pb.AttestationServiceStoreRequest{
+	resp, err := client.Store(context.Background(), &pb.AttestationServiceStoreRequest{
 		Attestation:   encodedAttestation,
 		WorkflowRunId: workflowRunID,
-	}); err != nil {
-		return err
+	})
+
+	if err != nil {
+		return "", fmt.Errorf("contacting the control plane: %w", err)
 	}
 
-	return nil
+	return resp.Result.Digest, nil
 }
 
 func encodeEnvelope(e *dsse.Envelope) ([]byte, error) {

@@ -16,9 +16,7 @@
 package biz
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -28,7 +26,7 @@ import (
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 
 	"github.com/go-kratos/kratos/v2/log"
-	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/uuid"
 )
 
@@ -216,24 +214,19 @@ func (uc *WorkflowRunUseCase) MarkAsFinished(ctx context.Context, id string, sta
 	return uc.wfRunRepo.MarkAsFinished(ctx, runID, status, reason)
 }
 
-func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, envelope *dsse.Envelope) error {
+func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, envelope *dsse.Envelope, digest string) error {
 	runID, err := uuid.Parse(id)
 	if err != nil {
 		return NewErrInvalidUUID(err)
 	}
 
-	// Calculate the attestation hash of the json representation of the envelope
-	jsonAtt, err := json.Marshal(envelope)
-	if err != nil {
-		return NewErrValidation(fmt.Errorf("marshaling attestation: %w", err))
+	if digest != "" {
+		if _, err = v1.NewHash(digest); err != nil {
+			return NewErrValidation(fmt.Errorf("invalid digest format: %w", err))
+		}
 	}
 
-	h, _, err := cr_v1.SHA256(bytes.NewBuffer(jsonAtt))
-	if err != nil {
-		return fmt.Errorf("calculating attestation hash: %w", err)
-	}
-
-	return uc.wfRunRepo.SaveAttestation(ctx, runID, envelope, h.String())
+	return uc.wfRunRepo.SaveAttestation(ctx, runID, envelope, digest)
 }
 
 // List the workflowruns associated with an org and optionally filtered by a workflow
