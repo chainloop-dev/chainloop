@@ -27,6 +27,8 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldDeletedAt holds the string denoting the deleted_at field in the database.
 	FieldDeletedAt = "deleted_at"
+	// FieldPublic holds the string denoting the public field in the database.
+	FieldPublic = "public"
 	// EdgeRobotaccounts holds the string denoting the robotaccounts edge name in mutations.
 	EdgeRobotaccounts = "robotaccounts"
 	// EdgeWorkflowruns holds the string denoting the workflowruns edge name in mutations.
@@ -85,6 +87,7 @@ var Columns = []string{
 	FieldRunsCount,
 	FieldCreatedAt,
 	FieldDeletedAt,
+	FieldPublic,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "workflows"
@@ -114,6 +117,8 @@ var (
 	DefaultRunsCount int
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
+	// DefaultPublic holds the default value on creation for the "public" field.
+	DefaultPublic bool
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -154,6 +159,11 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByDeletedAt orders the results by the deleted_at field.
 func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDeletedAt, opts...).ToFunc()
+}
+
+// ByPublic orders the results by the public field.
+func ByPublic(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPublic, opts...).ToFunc()
 }
 
 // ByRobotaccountsCount orders the results by robotaccounts count.

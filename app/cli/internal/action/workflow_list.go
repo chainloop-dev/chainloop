@@ -36,6 +36,10 @@ type WorkflowItem struct {
 	RunsCount  int32            `json:"runsCount"`
 	ContractID string           `json:"contractID,omitempty"`
 	LastRun    *WorkflowRunItem `json:"lastRun,omitempty"`
+	// A public workflow means that any user can
+	// - access to all its workflow runs
+	// - their attestation and materials
+	Public bool `json:"public"`
 }
 
 type WorkflowItemWithRobotAccount struct {
@@ -73,6 +77,7 @@ func pbWorkflowItemToAction(wf *pb.WorkflowItem) *WorkflowItem {
 		Project: wf.Project, Team: wf.Team, RunsCount: wf.RunsCount,
 		ContractID: wf.ContractId,
 		LastRun:    pbWorkflowRunItemToAction(wf.LastRun),
+		Public:     wf.Public,
 	}
 
 	return res

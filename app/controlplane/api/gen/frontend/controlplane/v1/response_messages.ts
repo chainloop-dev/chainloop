@@ -53,6 +53,12 @@ export interface WorkflowItem {
   runsCount: number;
   lastRun?: WorkflowRunItem;
   contractId: string;
+  /**
+   * A public workflow means that any user can
+   * - access to all its workflow runs
+   * - their attestation and materials
+   */
+  public: boolean;
 }
 
 export interface WorkflowRunItem {
@@ -217,6 +223,7 @@ function createBaseWorkflowItem(): WorkflowItem {
     runsCount: 0,
     lastRun: undefined,
     contractId: "",
+    public: false,
   };
 }
 
@@ -245,6 +252,9 @@ export const WorkflowItem = {
     }
     if (message.contractId !== "") {
       writer.uint32(66).string(message.contractId);
+    }
+    if (message.public === true) {
+      writer.uint32(72).bool(message.public);
     }
     return writer;
   },
@@ -312,6 +322,13 @@ export const WorkflowItem = {
 
           message.contractId = reader.string();
           continue;
+        case 9:
+          if (tag !== 72) {
+            break;
+          }
+
+          message.public = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -331,6 +348,7 @@ export const WorkflowItem = {
       runsCount: isSet(object.runsCount) ? Number(object.runsCount) : 0,
       lastRun: isSet(object.lastRun) ? WorkflowRunItem.fromJSON(object.lastRun) : undefined,
       contractId: isSet(object.contractId) ? String(object.contractId) : "",
+      public: isSet(object.public) ? Boolean(object.public) : false,
     };
   },
 
@@ -345,6 +363,7 @@ export const WorkflowItem = {
     message.lastRun !== undefined &&
       (obj.lastRun = message.lastRun ? WorkflowRunItem.toJSON(message.lastRun) : undefined);
     message.contractId !== undefined && (obj.contractId = message.contractId);
+    message.public !== undefined && (obj.public = message.public);
     return obj;
   },
 
@@ -364,6 +383,7 @@ export const WorkflowItem = {
       ? WorkflowRunItem.fromPartial(object.lastRun)
       : undefined;
     message.contractId = object.contractId ?? "";
+    message.public = object.public ?? false;
     return message;
   },
 };

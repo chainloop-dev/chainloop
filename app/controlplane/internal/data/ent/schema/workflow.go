@@ -45,6 +45,8 @@ func (Workflow) Fields() []ent.Field {
 				Default: "CURRENT_TIMESTAMP",
 			}),
 		field.Time("deleted_at").Optional(),
+		// public means that the workflow runs, attestations and materials are reachable
+		field.Bool("public").Default(false),
 	}
 }
 

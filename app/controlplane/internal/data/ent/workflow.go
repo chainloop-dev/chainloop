@@ -32,6 +32,8 @@ type Workflow struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// DeletedAt holds the value of the "deleted_at" field.
 	DeletedAt time.Time `json:"deleted_at,omitempty"`
+	// Public holds the value of the "public" field.
+	Public bool `json:"public,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the WorkflowQuery when eager-loading is set.
 	Edges             WorkflowEdges `json:"edges"`
@@ -115,6 +117,8 @@ func (*Workflow) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case workflow.FieldPublic:
+			values[i] = new(sql.NullBool)
 		case workflow.FieldRunsCount:
 			values[i] = new(sql.NullInt64)
 		case workflow.FieldName, workflow.FieldProject, workflow.FieldTeam:
@@ -183,6 +187,12 @@ func (w *Workflow) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field deleted_at", values[i])
 			} else if value.Valid {
 				w.DeletedAt = value.Time
+			}
+		case workflow.FieldPublic:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field public", values[i])
+			} else if value.Valid {
+				w.Public = value.Bool
 			}
 		case workflow.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -276,6 +286,9 @@ func (w *Workflow) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("deleted_at=")
 	builder.WriteString(w.DeletedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("public=")
+	builder.WriteString(fmt.Sprintf("%v", w.Public))
 	builder.WriteByte(')')
 	return builder.String()
 }

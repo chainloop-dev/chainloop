@@ -121,6 +121,20 @@ func (wu *WorkflowUpdate) ClearDeletedAt() *WorkflowUpdate {
 	return wu
 }
 
+// SetPublic sets the "public" field.
+func (wu *WorkflowUpdate) SetPublic(b bool) *WorkflowUpdate {
+	wu.mutation.SetPublic(b)
+	return wu
+}
+
+// SetNillablePublic sets the "public" field if the given value is not nil.
+func (wu *WorkflowUpdate) SetNillablePublic(b *bool) *WorkflowUpdate {
+	if b != nil {
+		wu.SetPublic(*b)
+	}
+	return wu
+}
+
 // AddRobotaccountIDs adds the "robotaccounts" edge to the RobotAccount entity by IDs.
 func (wu *WorkflowUpdate) AddRobotaccountIDs(ids ...uuid.UUID) *WorkflowUpdate {
 	wu.mutation.AddRobotaccountIDs(ids...)
@@ -344,6 +358,9 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if wu.mutation.DeletedAtCleared() {
 		_spec.ClearField(workflow.FieldDeletedAt, field.TypeTime)
+	}
+	if value, ok := wu.mutation.Public(); ok {
+		_spec.SetField(workflow.FieldPublic, field.TypeBool, value)
 	}
 	if wu.mutation.RobotaccountsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -645,6 +662,20 @@ func (wuo *WorkflowUpdateOne) ClearDeletedAt() *WorkflowUpdateOne {
 	return wuo
 }
 
+// SetPublic sets the "public" field.
+func (wuo *WorkflowUpdateOne) SetPublic(b bool) *WorkflowUpdateOne {
+	wuo.mutation.SetPublic(b)
+	return wuo
+}
+
+// SetNillablePublic sets the "public" field if the given value is not nil.
+func (wuo *WorkflowUpdateOne) SetNillablePublic(b *bool) *WorkflowUpdateOne {
+	if b != nil {
+		wuo.SetPublic(*b)
+	}
+	return wuo
+}
+
 // AddRobotaccountIDs adds the "robotaccounts" edge to the RobotAccount entity by IDs.
 func (wuo *WorkflowUpdateOne) AddRobotaccountIDs(ids ...uuid.UUID) *WorkflowUpdateOne {
 	wuo.mutation.AddRobotaccountIDs(ids...)
@@ -898,6 +929,9 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 	}
 	if wuo.mutation.DeletedAtCleared() {
 		_spec.ClearField(workflow.FieldDeletedAt, field.TypeTime)
+	}
+	if value, ok := wuo.mutation.Public(); ok {
+		_spec.SetField(workflow.FieldPublic, field.TypeBool, value)
 	}
 	if wuo.mutation.RobotaccountsCleared() {
 		edge := &sqlgraph.EdgeSpec{

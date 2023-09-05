@@ -26,6 +26,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+const workflowEntity = "Workflow"
+
 type WorkflowService struct {
 	pb.UnimplementedWorkflowServiceServer
 	*service
@@ -59,7 +61,7 @@ func (s *WorkflowService) Create(ctx context.Context, req *pb.WorkflowServiceCre
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}
 
-	workflow := bizWorkFlowToPb(p)
+	workflow := bizWorkflowToPb(p)
 	if err := workflow.ValidateAll(); err != nil {
 		return nil, err
 	}
@@ -81,7 +83,7 @@ func (s *WorkflowService) List(ctx context.Context, _ *pb.WorkflowServiceListReq
 
 	result := make([]*pb.WorkflowItem, 0, len(workflows))
 	for _, p := range workflows {
-		result = append(result, bizWorkFlowToPb(p))
+		result = append(result, bizWorkflowToPb(p))
 	}
 
 	return &pb.WorkflowServiceListResponse{Result: result}, nil
@@ -101,10 +103,26 @@ func (s *WorkflowService) Delete(ctx context.Context, req *pb.WorkflowServiceDel
 	return &pb.WorkflowServiceDeleteResponse{}, nil
 }
 
-func bizWorkFlowToPb(wf *biz.Workflow) *pb.WorkflowItem {
+func (s *WorkflowService) ChangeVisibility(ctx context.Context, req *pb.WorkflowServiceChangeVisibilityRequest) (*pb.WorkflowServiceChangeVisibilityResponse, error) {
+	_, currentOrg, err := loadCurrentUserAndOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	wf, err := s.useCase.ChangeVisibility(ctx, currentOrg.ID, req.Id, req.Public)
+	if err != nil {
+		return nil, handleUseCaseErr(workflowEntity, err, s.log)
+	}
+
+	return &pb.WorkflowServiceChangeVisibilityResponse{
+		Result: bizWorkflowToPb(wf),
+	}, nil
+}
+
+func bizWorkflowToPb(wf *biz.Workflow) *pb.WorkflowItem {
 	item := &pb.WorkflowItem{
 		Id: wf.ID.String(), Name: wf.Name, CreatedAt: timestamppb.New(*wf.CreatedAt),
-		Project: wf.Project, Team: wf.Team, RunsCount: int32(wf.RunsCounter),
+		Project: wf.Project, Team: wf.Team, RunsCount: int32(wf.RunsCounter), Public: wf.Public,
 	}
 
 	if wf.ContractID != uuid.Nil {

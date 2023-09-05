@@ -22,6 +22,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casmapping"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
@@ -121,6 +122,16 @@ func entCASMappingToBiz(input *ent.CASMapping) (*biz.CASMapping, error) {
 		return nil, fmt.Errorf("failed to get organization: %w", err)
 	}
 
+	// calculate public flag by querying the workflow
+	// this query is not efficient since it's done for each mapping
+	// but we know that the number of mappings per workflow is small
+	workflow, err := workflowRun.QueryWorkflow().Select(workflow.FieldPublic).Only(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get workflow: %w", err)
+	} else if workflow == nil {
+		return nil, fmt.Errorf("workflow not found")
+	}
+
 	return &biz.CASMapping{
 		ID:            input.ID,
 		Digest:        input.Digest,
@@ -128,5 +139,6 @@ func entCASMappingToBiz(input *ent.CASMapping) (*biz.CASMapping, error) {
 		WorkflowRunID: workflowRun.ID,
 		OrgID:         org.ID,
 		CreatedAt:     toTimePtr(input.CreatedAt),
+		Public:        workflow.Public,
 	}, nil
 }

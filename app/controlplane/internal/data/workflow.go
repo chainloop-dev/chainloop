@@ -139,6 +139,15 @@ func (r *WorkflowRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Workflo
 	return entWFToBizWF(workflow, lastRun), nil
 }
 
+func (r *WorkflowRepo) ChangeVisibility(ctx context.Context, id uuid.UUID, public bool) (*biz.Workflow, error) {
+	workflow, err := r.data.db.Workflow.UpdateOneID(id).SetPublic(public).Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.FindByID(ctx, workflow.ID)
+}
+
 func (r *WorkflowRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
 	tx, err := r.data.db.Tx(ctx)
 	if err != nil {
@@ -162,6 +171,7 @@ func entWFToBizWF(w *ent.Workflow, r *ent.WorkflowRun) *biz.Workflow {
 	wf := &biz.Workflow{Name: w.Name, ID: w.ID,
 		CreatedAt: toTimePtr(w.CreatedAt), Team: w.Team,
 		Project: w.Project, RunsCounter: w.RunsCount,
+		Public: w.Public,
 	}
 
 	if contract := w.Edges.Contract; contract != nil {
