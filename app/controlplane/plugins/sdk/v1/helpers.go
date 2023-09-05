@@ -105,6 +105,7 @@ func (r *renderer) summaryTable(m *ChainloopMetadata, predicate chainloop.Normal
 	tw.AppendRow(table.Row{"Workflow Run"})
 	tw.AppendSeparator()
 	tw.AppendRow(table.Row{"ID", wr.ID})
+	tw.AppendRow(table.Row{"Attestation", wr.AttestationDigest})
 	tw.AppendRow(table.Row{"Started At", wr.StartedAt.Format(time.RFC822)})
 	tw.AppendRow(table.Row{"Finished At", wr.FinishedAt.Format(time.RFC822)})
 	tw.AppendRow(table.Row{"State", wr.State})
@@ -141,7 +142,7 @@ func (r *renderer) summaryTable(m *ChainloopMetadata, predicate chainloop.Normal
 			}
 			mt.AppendRow(table.Row{"Value", wrap.String(value, 100)})
 			if m.Hash != nil {
-				mt.AppendRow(table.Row{"Digest", m.Hash.Hex})
+				mt.AppendRow(table.Row{"Digest", m.Hash.String()})
 			}
 
 			if annotations := m.Annotations; len(annotations) > 0 {

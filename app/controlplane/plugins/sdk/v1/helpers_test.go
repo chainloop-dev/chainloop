@@ -102,12 +102,13 @@ func (s *helperTestSuite) SetupTest() {
 			Team:    "test-team",
 		},
 		WorkflowRun: &ChainloopMetadataWorkflowRun{
-			ID:         "beefdead",
-			State:      "success",
-			StartedAt:  date,
-			FinishedAt: date.Add(10 * time.Minute),
-			RunnerType: "github-actions",
-			RunURL:     "chainloop.dev/runner",
+			ID:                "beefdead",
+			State:             "success",
+			StartedAt:         date,
+			FinishedAt:        date.Add(10 * time.Minute),
+			RunnerType:        "github-actions",
+			RunURL:            "chainloop.dev/runner",
+			AttestationDigest: "sha256:deadbeef",
 		},
 	}
 }

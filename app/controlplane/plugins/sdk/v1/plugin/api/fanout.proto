@@ -133,6 +133,7 @@ message ExecuteRequest {
       string run_url = 4;
       google.protobuf.Timestamp started_at = 5;
       google.protobuf.Timestamp finished_at = 6;
+      string attestation_digest = 7;
     }
   }
 }

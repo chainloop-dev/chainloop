@@ -126,6 +126,10 @@ func (d *FanOutDispatcher) Run(ctx context.Context, opts *RunOpts) error {
 		},
 	}
 
+	if wfRun.Attestation != nil {
+		workflowMetadata.WorkflowRun.AttestationDigest = wfRun.Attestation.Digest
+	}
+
 	// Dispatch the integrations
 	for _, item := range queue {
 		req := generateRequest(item, workflowMetadata)

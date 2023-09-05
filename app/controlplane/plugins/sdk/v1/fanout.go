@@ -120,12 +120,13 @@ type ChainloopMetadata struct {
 }
 
 type ChainloopMetadataWorkflowRun struct {
-	ID         string
-	State      string
-	StartedAt  time.Time
-	FinishedAt time.Time
-	RunnerType string
-	RunURL     string
+	ID                string
+	State             string
+	StartedAt         time.Time
+	FinishedAt        time.Time
+	RunnerType        string
+	RunURL            string
+	AttestationDigest string
 }
 
 type ChainloopMetadataWorkflow struct {
