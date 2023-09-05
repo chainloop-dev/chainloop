@@ -159,7 +159,7 @@ func (s *CASRedirectService) HTTPDownload(ctx khttp.Context) error {
 	// the UX for the user is like the browser got stuck
 	ctx.Response().Header().Set("Refresh", "1;url="+urlResponse.Result.Url)
 	ctx.Response().WriteHeader(http.StatusFound)
-	fmt.Fprintln(ctx.Response(), "Downloading...")
+	fmt.Fprintln(ctx.Response(), "Your download will begin shortly...")
 
 	return nil
 }
