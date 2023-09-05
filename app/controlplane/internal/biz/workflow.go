@@ -31,6 +31,10 @@ type Workflow struct {
 	RunsCounter           int
 	LastRun               *WorkflowRun
 	ID, ContractID, OrgID uuid.UUID
+	// Public means that the associated workflow runs, attestations and materials
+	// are reachable by other users, regardless of their organization
+	// This field is also used to calculate if an user can download attestations/materials from the CAS
+	Public bool
 }
 
 type WorkflowRepo interface {
@@ -40,6 +44,7 @@ type WorkflowRepo interface {
 	IncRunsCounter(ctx context.Context, workflowID uuid.UUID) error
 	FindByID(ctx context.Context, workflowID uuid.UUID) (*Workflow, error)
 	SoftDelete(ctx context.Context, workflowID uuid.UUID) error
+	ChangeVisibility(ctx context.Context, workflowID uuid.UUID, public bool) (*Workflow, error)
 }
 
 type CreateOpts struct {
@@ -85,7 +90,7 @@ func (uc *WorkflowUseCase) findOrCreateContract(ctx context.Context, orgID, cont
 func (uc *WorkflowUseCase) List(ctx context.Context, orgID string) ([]*Workflow, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
-		return nil, err
+		return nil, NewErrInvalidUUID(err)
 	}
 
 	return uc.wfRepo.List(ctx, orgUUID)
@@ -94,10 +99,31 @@ func (uc *WorkflowUseCase) List(ctx context.Context, orgID string) ([]*Workflow,
 func (uc *WorkflowUseCase) IncRunsCounter(ctx context.Context, workflowID string) error {
 	workflowUUID, err := uuid.Parse(workflowID)
 	if err != nil {
-		return err
+		return NewErrInvalidUUID(err)
 	}
 
 	return uc.wfRepo.IncRunsCounter(ctx, workflowUUID)
+}
+
+func (uc *WorkflowUseCase) ChangeVisibility(ctx context.Context, orgID, workflowID string, public bool) (*Workflow, error) {
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	workflowUUID, err := uuid.Parse(workflowID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	// make sure that the workflow is for the provided org
+	if wf, err := uc.wfRepo.GetOrgScoped(ctx, orgUUID, workflowUUID); err != nil {
+		return nil, err
+	} else if wf == nil {
+		return nil, NewErrNotFound("workflow in organization")
+	}
+
+	return uc.wfRepo.ChangeVisibility(ctx, workflowUUID, public)
 }
 
 func (uc *WorkflowUseCase) FindByID(ctx context.Context, workflowID string) (*Workflow, error) {
@@ -112,12 +138,12 @@ func (uc *WorkflowUseCase) FindByID(ctx context.Context, workflowID string) (*Wo
 func (uc *WorkflowUseCase) FindByIDInOrg(ctx context.Context, orgID, workflowID string) (*Workflow, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
-		return nil, err
+		return nil, NewErrInvalidUUID(err)
 	}
 
 	workflowUUID, err := uuid.Parse(workflowID)
 	if err != nil {
-		return nil, err
+		return nil, NewErrInvalidUUID(err)
 	}
 
 	return uc.wfRepo.GetOrgScoped(ctx, orgUUID, workflowUUID)
@@ -127,12 +153,12 @@ func (uc *WorkflowUseCase) FindByIDInOrg(ctx context.Context, orgID, workflowID 
 func (uc *WorkflowUseCase) Delete(ctx context.Context, orgID, workflowID string) error {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
-		return err
+		return NewErrInvalidUUID(err)
 	}
 
 	workflowUUID, err := uuid.Parse(workflowID)
 	if err != nil {
-		return err
+		return NewErrInvalidUUID(err)
 	}
 
 	// Check that the workflow to delete belongs to the provided organization

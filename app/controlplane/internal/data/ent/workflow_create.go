@@ -102,6 +102,20 @@ func (wc *WorkflowCreate) SetNillableDeletedAt(t *time.Time) *WorkflowCreate {
 	return wc
 }
 
+// SetPublic sets the "public" field.
+func (wc *WorkflowCreate) SetPublic(b bool) *WorkflowCreate {
+	wc.mutation.SetPublic(b)
+	return wc
+}
+
+// SetNillablePublic sets the "public" field if the given value is not nil.
+func (wc *WorkflowCreate) SetNillablePublic(b *bool) *WorkflowCreate {
+	if b != nil {
+		wc.SetPublic(*b)
+	}
+	return wc
+}
+
 // SetID sets the "id" field.
 func (wc *WorkflowCreate) SetID(u uuid.UUID) *WorkflowCreate {
 	wc.mutation.SetID(u)
@@ -226,6 +240,10 @@ func (wc *WorkflowCreate) defaults() {
 		v := workflow.DefaultCreatedAt()
 		wc.mutation.SetCreatedAt(v)
 	}
+	if _, ok := wc.mutation.Public(); !ok {
+		v := workflow.DefaultPublic
+		wc.mutation.SetPublic(v)
+	}
 	if _, ok := wc.mutation.ID(); !ok {
 		v := workflow.DefaultID()
 		wc.mutation.SetID(v)
@@ -242,6 +260,9 @@ func (wc *WorkflowCreate) check() error {
 	}
 	if _, ok := wc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Workflow.created_at"`)}
+	}
+	if _, ok := wc.mutation.Public(); !ok {
+		return &ValidationError{Name: "public", err: errors.New(`ent: missing required field "Workflow.public"`)}
 	}
 	if _, ok := wc.mutation.OrganizationID(); !ok {
 		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "Workflow.organization"`)}
@@ -307,6 +328,10 @@ func (wc *WorkflowCreate) createSpec() (*Workflow, *sqlgraph.CreateSpec) {
 	if value, ok := wc.mutation.DeletedAt(); ok {
 		_spec.SetField(workflow.FieldDeletedAt, field.TypeTime, value)
 		_node.DeletedAt = value
+	}
+	if value, ok := wc.mutation.Public(); ok {
+		_spec.SetField(workflow.FieldPublic, field.TypeBool, value)
+		_node.Public = value
 	}
 	if nodes := wc.mutation.RobotaccountsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

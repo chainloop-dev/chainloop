@@ -131,6 +131,8 @@ func (m *WorkflowItem) validate(all bool) error {
 
 	// no validation rules for ContractId
 
+	// no validation rules for Public
+
 	if len(errors) > 0 {
 		return WorkflowItemMultiError(errors)
 	}

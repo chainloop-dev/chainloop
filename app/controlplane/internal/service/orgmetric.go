@@ -80,7 +80,7 @@ func (s *OrgMetricsService) TopWorkflowsByRunsCount(ctx context.Context, req *pb
 	var result = []*pb.TopWorkflowsByRunsCountResponse_TotalByStatus{}
 	for _, r := range res {
 		result = append(result, &pb.TopWorkflowsByRunsCountResponse_TotalByStatus{
-			Workflow:          bizWorkFlowToPb(r.Workflow),
+			Workflow:          bizWorkflowToPb(r.Workflow),
 			RunsTotalByStatus: r.ByStatus,
 		})
 	}

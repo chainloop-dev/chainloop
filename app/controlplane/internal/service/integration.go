@@ -261,7 +261,7 @@ func (s *IntegrationsService) bizIntegrationAttachmentToPb(ctx context.Context, 
 	if err != nil {
 		return nil, err
 	} else if wf != nil {
-		a.Workflow = bizWorkFlowToPb(wf)
+		a.Workflow = bizWorkflowToPb(wf)
 	}
 
 	return a, nil

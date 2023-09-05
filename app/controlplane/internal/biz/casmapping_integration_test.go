@@ -32,10 +32,11 @@ import (
 )
 
 const (
-	validDigest   = "sha256:3b0f04c276be095e62f3ac03b9991913c37df1fcd44548e75069adce313aba4d"
-	validDigest2  = "sha256:2b0f04c276be095e62f3ac03b9991913c37df1fcd44548e75069adce313aba4d"
-	validDigest3  = "sha256:1b0f04c276be095e62f3ac03b9991913c37df1fcd44548e75069adce313aba4d"
-	invalidDigest = "sha256:deadbeef"
+	validDigest       = "sha256:3b0f04c276be095e62f3ac03b9991913c37df1fcd44548e75069adce313aba4d"
+	validDigest2      = "sha256:2b0f04c276be095e62f3ac03b9991913c37df1fcd44548e75069adce313aba4d"
+	validDigest3      = "sha256:1b0f04c276be095e62f3ac03b9991913c37df1fcd44548e75069adce313aba4d"
+	validDigestPublic = "sha256:8b0f04c276be095e62f3ac03b9991913c37df1fcd44548e75069adce313aba4d"
+	invalidDigest     = "sha256:deadbeef"
 )
 
 func (s *casMappingIntegrationSuite) TestCASMappingForDownload() {
@@ -44,6 +45,7 @@ func (s *casMappingIntegrationSuite) TestCASMappingForDownload() {
 	// 2. Digest: validDigest, CASBackend: casBackend2, WorkflowRunID: workflowRun
 	// 3. Digest: validDigest2, CASBackend: casBackend2, WorkflowRunID: workflowRun
 	// 4. Digest: validDigest3, CASBackend: casBackend3, WorkflowRunID: workflowRun
+	// 4. Digest: validDigestPublic, CASBackend: casBackend3, WorkflowRunID: workflowRunPublic
 	_, err := s.CASMapping.Create(context.TODO(), validDigest, s.casBackend1.ID.String(), s.workflowRun.ID.String())
 	require.NoError(s.T(), err)
 	_, err = s.CASMapping.Create(context.TODO(), validDigest, s.casBackend2.ID.String(), s.workflowRun.ID.String())
@@ -51,6 +53,8 @@ func (s *casMappingIntegrationSuite) TestCASMappingForDownload() {
 	_, err = s.CASMapping.Create(context.TODO(), validDigest2, s.casBackend2.ID.String(), s.workflowRun.ID.String())
 	require.NoError(s.T(), err)
 	_, err = s.CASMapping.Create(context.TODO(), validDigest3, s.casBackend3.ID.String(), s.workflowRun.ID.String())
+	require.NoError(s.T(), err)
+	_, err = s.CASMapping.Create(context.TODO(), validDigestPublic, s.casBackend3.ID.String(), s.publicWorkflowRun.ID.String())
 	require.NoError(s.T(), err)
 
 	// Since the userOrg1And2 is member of org1 and org2, she should be able to download
@@ -75,11 +79,25 @@ func (s *casMappingIntegrationSuite) TestCASMappingForDownload() {
 		s.Nil(mapping)
 	})
 
+	s.Run("userOrg1And2 can download validDigestPublic from org3", func() {
+		mapping, err := s.CASMapping.FindCASMappingForDownload(context.TODO(), validDigestPublic, s.userOrg1And2.ID)
+		s.NoError(err)
+		s.NotNil(mapping)
+		s.Equal(s.casBackend3.ID, mapping.CASBackend.ID)
+	})
+
 	s.Run("userOrg2 can download validDigest2 from org2", func() {
 		mapping, err := s.CASMapping.FindCASMappingForDownload(context.TODO(), validDigest2, s.userOrg2.ID)
 		s.NoError(err)
 		s.NotNil(mapping)
 		s.Equal(s.casBackend2.ID, mapping.CASBackend.ID)
+	})
+
+	s.Run("userOrg2 can download validDigestPublic from org3", func() {
+		mapping, err := s.CASMapping.FindCASMappingForDownload(context.TODO(), validDigestPublic, s.userOrg2.ID)
+		s.NoError(err)
+		s.NotNil(mapping)
+		s.Equal(s.casBackend3.ID, mapping.CASBackend.ID)
 	})
 
 	s.Run("userOrg2 can download validDigest from org2", func() {
@@ -96,6 +114,91 @@ func (s *casMappingIntegrationSuite) TestCASMappingForDownload() {
 	})
 }
 
+func (s *casMappingIntegrationSuite) TestFindByDigest() {
+	// 1. Digest: validDigest, CASBackend: casBackend1, WorkflowRunID: workflowRun
+	// 2. Digest: validDigest2, CASBackend: casBackend1, WorkflowRunID: workflowRun
+	// 3. Digest: validDigest, CASBackend: casBackend2, WorkflowRunID: workflowRun
+	// 4. Digest: validDigest, CASBackend: casBackend3, WorkflowRunID: publicWorkflowRun
+	_, err := s.CASMapping.Create(context.TODO(), validDigest, s.casBackend1.ID.String(), s.workflowRun.ID.String())
+	require.NoError(s.T(), err)
+	_, err = s.CASMapping.Create(context.TODO(), validDigest2, s.casBackend1.ID.String(), s.workflowRun.ID.String())
+	require.NoError(s.T(), err)
+	_, err = s.CASMapping.Create(context.TODO(), validDigest, s.casBackend2.ID.String(), s.workflowRun.ID.String())
+	require.NoError(s.T(), err)
+	_, err = s.CASMapping.Create(context.TODO(), validDigest, s.casBackend3.ID.String(), s.publicWorkflowRun.ID.String())
+	require.NoError(s.T(), err)
+
+	testcases := []struct {
+		name    string
+		digest  string
+		want    []*biz.CASMapping
+		wantErr bool
+	}{
+		{
+			name:   "validDigest",
+			digest: validDigest,
+			want: []*biz.CASMapping{
+				{
+					Digest:        validDigest,
+					CASBackend:    &biz.CASBackend{ID: s.casBackend1.ID},
+					WorkflowRunID: s.workflowRun.ID,
+					OrgID:         s.casBackend1.OrganizationID,
+					Public:        false,
+				},
+				{
+					Digest:        validDigest,
+					CASBackend:    &biz.CASBackend{ID: s.casBackend2.ID},
+					WorkflowRunID: s.workflowRun.ID,
+					OrgID:         s.casBackend2.OrganizationID,
+					Public:        false,
+				},
+				{
+					Digest:        validDigest,
+					CASBackend:    &biz.CASBackend{ID: s.casBackend3.ID},
+					WorkflowRunID: s.publicWorkflowRun.ID,
+					OrgID:         s.casBackend3.OrganizationID,
+					Public:        true,
+				},
+			},
+		},
+		{
+			name:   "validDigest2",
+			digest: validDigest2,
+			want: []*biz.CASMapping{
+				{
+					Digest:        validDigest2,
+					CASBackend:    &biz.CASBackend{ID: s.casBackend1.ID},
+					WorkflowRunID: s.workflowRun.ID,
+					OrgID:         s.casBackend1.OrganizationID,
+					Public:        false,
+				},
+			},
+		},
+		{
+			name:   "invalidDigest",
+			digest: invalidDigest,
+			want:   []*biz.CASMapping{},
+		},
+	}
+
+	for _, tc := range testcases {
+		s.Run(tc.name, func() {
+			got, err := s.CASMapping.FindByDigest(context.Background(), tc.digest)
+			if tc.wantErr {
+				s.Error(err)
+			} else {
+				s.NoError(err)
+				if diff := cmp.Diff(tc.want, got,
+					cmpopts.IgnoreFields(biz.CASMapping{}, "CreatedAt", "ID"),
+					cmpopts.IgnoreTypes(biz.CASBackend{}),
+				); diff != "" {
+					assert.Failf(s.T(), "mismatch (-want +got):\n%s", diff)
+				}
+			}
+		})
+	}
+}
+
 func (s *casMappingIntegrationSuite) TestCreate() {
 	testCases := []struct {
 		name          string
@@ -103,6 +206,7 @@ func (s *casMappingIntegrationSuite) TestCreate() {
 		casBackendID  uuid.UUID
 		workflowRunID uuid.UUID
 		wantErr       bool
+		wantPublic    bool
 	}{
 		{
 			name:          "valid",
@@ -144,16 +248,24 @@ func (s *casMappingIntegrationSuite) TestCreate() {
 			workflowRunID: uuid.New(),
 			wantErr:       true,
 		},
-	}
-
-	want := &biz.CASMapping{
-		Digest:        validDigest,
-		CASBackend:    &biz.CASBackend{ID: s.casBackend1.ID},
-		WorkflowRunID: s.workflowRun.ID,
-		OrgID:         s.casBackend1.OrganizationID,
+		{
+			name:          "public workflowrun",
+			digest:        validDigest,
+			casBackendID:  s.casBackend1.ID,
+			workflowRunID: s.publicWorkflowRun.ID,
+			wantPublic:    true,
+		},
 	}
 
 	for _, tc := range testCases {
+		want := &biz.CASMapping{
+			Digest:        validDigest,
+			CASBackend:    &biz.CASBackend{ID: s.casBackend1.ID},
+			WorkflowRunID: tc.workflowRunID,
+			OrgID:         s.casBackend1.OrganizationID,
+			Public:        tc.wantPublic,
+		}
+
 		s.Run(tc.name, func() {
 			got, err := s.CASMapping.Create(context.TODO(), tc.digest, tc.casBackendID.String(), tc.workflowRunID.String())
 			if tc.wantErr {
@@ -176,7 +288,7 @@ func (s *casMappingIntegrationSuite) TestCreate() {
 type casMappingIntegrationSuite struct {
 	testhelpers.UseCasesEachTestSuite
 	casBackend1, casBackend2, casBackend3 *biz.CASBackend
-	workflowRun                           *biz.WorkflowRun
+	workflowRun, publicWorkflowRun        *biz.WorkflowRun
 	userOrg1And2, userOrg2                *biz.User
 	org1, org2, orgNoUsers                *biz.Organization
 }
@@ -214,6 +326,11 @@ func (s *casMappingIntegrationSuite) SetupTest() {
 	workflow, err := s.Workflow.Create(ctx, &biz.CreateOpts{Name: "test workflow", OrgID: s.org1.ID})
 	assert.NoError(err)
 
+	publicWorkflow, err := s.Workflow.Create(ctx, &biz.CreateOpts{Name: "test workflow", OrgID: s.org1.ID})
+	assert.NoError(err)
+	_, err = s.Workflow.ChangeVisibility(ctx, s.org1.ID, publicWorkflow.ID.String(), true)
+	assert.NoError(err)
+
 	// Robot account
 	robotAccount, err := s.RobotAccount.Create(ctx, "name", s.org1.ID, workflow.ID.String())
 	assert.NoError(err)
@@ -226,7 +343,12 @@ func (s *casMappingIntegrationSuite) SetupTest() {
 		WorkflowID: workflow.ID.String(), RobotaccountID: robotAccount.ID.String(), ContractRevisionUUID: contractVersion.Version.ID, CASBackendID: s.casBackend1.ID,
 		RunnerType: "runnerType", RunnerRunURL: "runURL",
 	})
+	assert.NoError(err)
 
+	s.publicWorkflowRun, err = s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+		WorkflowID: publicWorkflow.ID.String(), RobotaccountID: robotAccount.ID.String(), ContractRevisionUUID: contractVersion.Version.ID, CASBackendID: s.casBackend1.ID,
+		RunnerType: "runnerType", RunnerRunURL: "runURL",
+	})
 	assert.NoError(err)
 
 	// Create User

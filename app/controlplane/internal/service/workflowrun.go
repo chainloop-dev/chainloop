@@ -85,7 +85,7 @@ func (s *WorkflowRunService) List(ctx context.Context, req *pb.WorkflowRunServic
 	result := make([]*pb.WorkflowRunItem, 0, len(workflowRuns))
 	for _, wr := range workflowRuns {
 		wrResp := bizWorkFlowRunToPb(wr)
-		wrResp.Workflow = bizWorkFlowToPb(wr.Workflow)
+		wrResp.Workflow = bizWorkflowToPb(wr.Workflow)
 		result = append(result, wrResp)
 	}
 
@@ -122,7 +122,7 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 	}
 
 	wr := bizWorkFlowRunToPb(run)
-	wr.Workflow = bizWorkFlowToPb(run.Workflow)
+	wr.Workflow = bizWorkflowToPb(run.Workflow)
 	wr.ContractVersion = bizWorkFlowContractVersionToPb(contractVersion)
 	res := &pb.WorkflowRunServiceViewResponse_Result{
 		WorkflowRun: wr,

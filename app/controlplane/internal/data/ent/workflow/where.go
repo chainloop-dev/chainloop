@@ -86,6 +86,11 @@ func DeletedAt(v time.Time) predicate.Workflow {
 	return predicate.Workflow(sql.FieldEQ(FieldDeletedAt, v))
 }
 
+// Public applies equality check predicate on the "public" field. It's identical to PublicEQ.
+func Public(v bool) predicate.Workflow {
+	return predicate.Workflow(sql.FieldEQ(FieldPublic, v))
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.Workflow {
 	return predicate.Workflow(sql.FieldEQ(FieldName, v))
@@ -429,6 +434,16 @@ func DeletedAtIsNil() predicate.Workflow {
 // DeletedAtNotNil applies the NotNil predicate on the "deleted_at" field.
 func DeletedAtNotNil() predicate.Workflow {
 	return predicate.Workflow(sql.FieldNotNull(FieldDeletedAt))
+}
+
+// PublicEQ applies the EQ predicate on the "public" field.
+func PublicEQ(v bool) predicate.Workflow {
+	return predicate.Workflow(sql.FieldEQ(FieldPublic, v))
+}
+
+// PublicNEQ applies the NEQ predicate on the "public" field.
+func PublicNEQ(v bool) predicate.Workflow {
+	return predicate.Workflow(sql.FieldNEQ(FieldPublic, v))
 }
 
 // HasRobotaccounts applies the HasEdge predicate on the "robotaccounts" edge.

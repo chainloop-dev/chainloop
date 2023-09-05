@@ -23,9 +23,10 @@ import (
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/errors"
-	"github.com/go-kratos/kratos/v2/log"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+const casBackendEntity = "CAS Backend"
 
 type CASBackendService struct {
 	pb.UnimplementedCASBackendServiceServer
@@ -87,7 +88,7 @@ func (s *CASBackendService) Create(ctx context.Context, req *pb.CASBackendServic
 	// For now we only support one backend which is set as default
 	res, err := s.uc.Create(ctx, currentOrg.ID, req.Location, req.Description, biz.CASBackendOCI, creds, req.Default)
 	if err != nil {
-		return nil, handleErr(err, s.log)
+		return nil, handleUseCaseErr(casBackendEntity, err, s.log)
 	}
 
 	return &pb.CASBackendServiceCreateResponse{Result: bizCASBackendToPb(res)}, nil
@@ -102,7 +103,7 @@ func (s *CASBackendService) Update(ctx context.Context, req *pb.CASBackendServic
 	// find the backend to update
 	backend, err := s.uc.FindByIDInOrg(ctx, currentOrg.ID, req.Id)
 	if err != nil {
-		return nil, handleErr(err, s.log)
+		return nil, handleUseCaseErr(casBackendEntity, err, s.log)
 	}
 
 	// if we are updating credentials we need to validate them
@@ -129,7 +130,7 @@ func (s *CASBackendService) Update(ctx context.Context, req *pb.CASBackendServic
 	// For now we only support one backend which is set as default
 	res, err := s.uc.Update(ctx, currentOrg.ID, req.Id, req.Description, creds, req.Default)
 	if err != nil {
-		return nil, handleErr(err, s.log)
+		return nil, handleUseCaseErr(casBackendEntity, err, s.log)
 	}
 
 	return &pb.CASBackendServiceUpdateResponse{Result: bizCASBackendToPb(res)}, nil
@@ -144,7 +145,7 @@ func (s *CASBackendService) Delete(ctx context.Context, req *pb.CASBackendServic
 
 	// In fact we soft-delete the backend instead
 	if err := s.uc.SoftDelete(ctx, currentOrg.ID, req.Id); err != nil {
-		return nil, handleErr(err, s.log)
+		return nil, handleUseCaseErr(casBackendEntity, err, s.log)
 	}
 
 	return &pb.CASBackendServiceDeleteResponse{}, nil
@@ -174,14 +175,4 @@ func bizCASBackendToPb(in *biz.CASBackend) *pb.CASBackendItem {
 	}
 
 	return r
-}
-
-func handleErr(err error, l *log.Helper) error {
-	if biz.IsErrValidation(err) {
-		return errors.BadRequest("invalid CAS backend", err.Error())
-	} else if biz.IsNotFound(err) {
-		return errors.NotFound("CAS backend not found", err.Error())
-	}
-
-	return sl.LogAndMaskErr(err, l)
 }
