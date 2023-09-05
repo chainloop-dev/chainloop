@@ -118,11 +118,12 @@ func MetadataSDKToProto(in *sdk.ChainloopMetadata) *ExecuteRequest_Metadata {
 			Team:    in.Workflow.Team,
 		},
 		WorkflowRun: &ExecuteRequest_Metadata_WorkflowRun{
-			Id:         in.WorkflowRun.ID,
-			State:      in.WorkflowRun.State,
-			RunnerType: in.WorkflowRun.RunnerType,
-			RunUrl:     in.WorkflowRun.RunURL,
-			StartedAt:  timestamppb.New(in.WorkflowRun.StartedAt),
+			Id:                in.WorkflowRun.ID,
+			State:             in.WorkflowRun.State,
+			RunnerType:        in.WorkflowRun.RunnerType,
+			RunUrl:            in.WorkflowRun.RunURL,
+			StartedAt:         timestamppb.New(in.WorkflowRun.StartedAt),
+			AttestationDigest: in.WorkflowRun.AttestationDigest,
 		},
 	}
 
@@ -142,11 +143,12 @@ func MetadataProtoToSDK(in *ExecuteRequest_Metadata) *sdk.ChainloopMetadata {
 			Team:    in.Workflow.Team,
 		},
 		WorkflowRun: &sdk.ChainloopMetadataWorkflowRun{
-			ID:         in.WorkflowRun.Id,
-			State:      in.WorkflowRun.State,
-			RunnerType: in.WorkflowRun.RunnerType,
-			RunURL:     in.WorkflowRun.RunUrl,
-			StartedAt:  in.WorkflowRun.StartedAt.AsTime(),
+			ID:                in.WorkflowRun.Id,
+			State:             in.WorkflowRun.State,
+			RunnerType:        in.WorkflowRun.RunnerType,
+			RunURL:            in.WorkflowRun.RunUrl,
+			StartedAt:         in.WorkflowRun.StartedAt.AsTime(),
+			AttestationDigest: in.WorkflowRun.AttestationDigest,
 		},
 	}
 
