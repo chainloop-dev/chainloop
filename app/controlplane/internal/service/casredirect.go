@@ -153,7 +153,14 @@ func (s *CASRedirectService) HTTPDownload(ctx khttp.Context) error {
 	}
 
 	// perform redirect
-	http.Redirect(ctx.Response(), ctx.Request(), urlResponse.Result.Url, http.StatusTemporaryRedirect)
+	// In order ton show a redirect message in the page before the redirection,
+	// we need to use a Refresh Header instead of a vanilla redirect (via location change)
+	// We want to show a message because in some cases the download will be shown as downloadable and hence
+	// the UX for the user is like the browser got stuck
+	ctx.Response().Header().Set("Refresh", "1;url="+urlResponse.Result.Url)
+	ctx.Response().WriteHeader(http.StatusFound)
+	fmt.Fprintln(ctx.Response(), "Your download will begin shortly...")
+
 	return nil
 }
 
