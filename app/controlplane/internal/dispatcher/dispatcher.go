@@ -176,7 +176,7 @@ func (d *FanOutDispatcher) initDispatchQueue(ctx context.Context, orgID, workflo
 		creds := &sdk.Credentials{}
 		if dbIntegration.SecretName != "" {
 			if err := d.credentialsProvider.ReadCredentials(ctx, dbIntegration.SecretName, creds); err != nil {
-				d.log.Warn("msg", "error reading credentials", "err", err.Error())
+				d.log.Warnw("msg", "error reading credentials", "err", err.Error())
 				continue
 			}
 		}

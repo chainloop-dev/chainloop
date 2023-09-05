@@ -46,6 +46,12 @@ export interface AttestationServiceStoreRequest {
 }
 
 export interface AttestationServiceStoreResponse {
+  result?: AttestationServiceStoreResponse_Result;
+}
+
+export interface AttestationServiceStoreResponse_Result {
+  /** attestation digest */
+  digest: string;
 }
 
 export interface AttestationServiceCancelRequest {
@@ -615,11 +621,14 @@ export const AttestationServiceStoreRequest = {
 };
 
 function createBaseAttestationServiceStoreResponse(): AttestationServiceStoreResponse {
-  return {};
+  return { result: undefined };
 }
 
 export const AttestationServiceStoreResponse = {
-  encode(_: AttestationServiceStoreResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+  encode(message: AttestationServiceStoreResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.result !== undefined) {
+      AttestationServiceStoreResponse_Result.encode(message.result, writer.uint32(10).fork()).ldelim();
+    }
     return writer;
   },
 
@@ -630,6 +639,13 @@ export const AttestationServiceStoreResponse = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.result = AttestationServiceStoreResponse_Result.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -639,12 +655,16 @@ export const AttestationServiceStoreResponse = {
     return message;
   },
 
-  fromJSON(_: any): AttestationServiceStoreResponse {
-    return {};
+  fromJSON(object: any): AttestationServiceStoreResponse {
+    return {
+      result: isSet(object.result) ? AttestationServiceStoreResponse_Result.fromJSON(object.result) : undefined,
+    };
   },
 
-  toJSON(_: AttestationServiceStoreResponse): unknown {
+  toJSON(message: AttestationServiceStoreResponse): unknown {
     const obj: any = {};
+    message.result !== undefined &&
+      (obj.result = message.result ? AttestationServiceStoreResponse_Result.toJSON(message.result) : undefined);
     return obj;
   },
 
@@ -652,8 +672,73 @@ export const AttestationServiceStoreResponse = {
     return AttestationServiceStoreResponse.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<AttestationServiceStoreResponse>, I>>(_: I): AttestationServiceStoreResponse {
+  fromPartial<I extends Exact<DeepPartial<AttestationServiceStoreResponse>, I>>(
+    object: I,
+  ): AttestationServiceStoreResponse {
     const message = createBaseAttestationServiceStoreResponse();
+    message.result = (object.result !== undefined && object.result !== null)
+      ? AttestationServiceStoreResponse_Result.fromPartial(object.result)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseAttestationServiceStoreResponse_Result(): AttestationServiceStoreResponse_Result {
+  return { digest: "" };
+}
+
+export const AttestationServiceStoreResponse_Result = {
+  encode(message: AttestationServiceStoreResponse_Result, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.digest !== "") {
+      writer.uint32(18).string(message.digest);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AttestationServiceStoreResponse_Result {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAttestationServiceStoreResponse_Result();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.digest = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AttestationServiceStoreResponse_Result {
+    return { digest: isSet(object.digest) ? String(object.digest) : "" };
+  },
+
+  toJSON(message: AttestationServiceStoreResponse_Result): unknown {
+    const obj: any = {};
+    message.digest !== undefined && (obj.digest = message.digest);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AttestationServiceStoreResponse_Result>, I>>(
+    base?: I,
+  ): AttestationServiceStoreResponse_Result {
+    return AttestationServiceStoreResponse_Result.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<AttestationServiceStoreResponse_Result>, I>>(
+    object: I,
+  ): AttestationServiceStoreResponse_Result {
+    const message = createBaseAttestationServiceStoreResponse_Result();
+    message.digest = object.digest ?? "";
     return message;
   },
 };

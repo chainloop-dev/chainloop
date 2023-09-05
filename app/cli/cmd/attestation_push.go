@@ -79,7 +79,15 @@ func newAttestationPushCmd() *cobra.Command {
 				return newGracefulError(err)
 			}
 
-			return encodeJSON(res)
+			if err := encodeJSON(res.Envelope); err != nil {
+				return err
+			}
+
+			if res.Digest != "" {
+				cmd.Printf("\nAttestation Digest: %s\n", res.Digest)
+			}
+
+			return nil
 		},
 	}
 

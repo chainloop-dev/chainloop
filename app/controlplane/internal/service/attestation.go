@@ -175,15 +175,6 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}
 
-	// Store the attestation
-	if err := s.wrUseCase.SaveAttestation(ctx, req.WorkflowRunId, envelope); err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
-	}
-
-	if err := s.wrUseCase.MarkAsFinished(ctx, req.WorkflowRunId, biz.WorkflowRunSuccess, ""); err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
-	}
-
 	wRun, err := s.wrUseCase.View(ctx, robotAccount.OrgID, req.WorkflowRunId)
 	if err != nil {
 		return nil, sl.LogAndMaskErr(err, s.log)
@@ -199,6 +190,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	casBackend := wRun.CASBackends[0]
 
 	// If we have an external CAS backend, we will push there the attestation
+	var digestInCAS string
 	if !casBackend.Inline {
 		b := backoff.NewExponentialBackOff()
 		b.MaxElapsedTime = 1 * time.Minute
@@ -210,8 +202,8 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 				if err != nil {
 					return err
 				}
-
-				s.log.Infow("msg", "attestation uploaded to CAS", "digest", d, "runID", req.WorkflowRunId)
+				digestInCAS = d.String()
+				s.log.Infow("msg", "attestation uploaded to CAS", "digest", digestInCAS, "runID", req.WorkflowRunId)
 				return nil
 			}, b)
 
@@ -220,16 +212,23 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 		}
 	}
 
-	// Store the mappings in the DB
-	references, err := s.casMappingUseCase.LookupDigestsInAttestation(envelope)
-	if err != nil {
+	// Store the attestation including the digest in the CAS backend (if exists)
+	if err := s.wrUseCase.SaveAttestation(ctx, req.WorkflowRunId, envelope, digestInCAS); err != nil {
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}
 
-	for _, ref := range references {
-		s.log.Infow("msg", "creating CAS mapping", "name", ref.Name, "digest", ref.Digest, "workflowRun", req.WorkflowRunId, "casBackend", casBackend.ID.String())
-		if _, err := s.casMappingUseCase.Create(ctx, ref.Digest, casBackend.ID.String(), req.WorkflowRunId); err != nil {
+	if !casBackend.Inline {
+		// Store the mappings in the DB
+		references, err := s.casMappingUseCase.LookupDigestsInAttestation(envelope)
+		if err != nil {
 			return nil, sl.LogAndMaskErr(err, s.log)
+		}
+
+		for _, ref := range references {
+			s.log.Infow("msg", "creating CAS mapping", "name", ref.Name, "digest", ref.Digest, "workflowRun", req.WorkflowRunId, "casBackend", casBackend.ID.String())
+			if _, err := s.casMappingUseCase.Create(ctx, ref.Digest, casBackend.ID.String(), req.WorkflowRunId); err != nil {
+				return nil, sl.LogAndMaskErr(err, s.log)
+			}
 		}
 	}
 
@@ -244,7 +243,13 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 		}
 	}()
 
-	return &cpAPI.AttestationServiceStoreResponse{}, nil
+	if err := s.wrUseCase.MarkAsFinished(ctx, req.WorkflowRunId, biz.WorkflowRunSuccess, ""); err != nil {
+		return nil, sl.LogAndMaskErr(err, s.log)
+	}
+
+	return &cpAPI.AttestationServiceStoreResponse{
+		Result: &cpAPI.AttestationServiceStoreResponse_Result{Digest: digestInCAS},
+	}, nil
 }
 
 func (s *AttestationService) Cancel(ctx context.Context, req *cpAPI.AttestationServiceCancelRequest) (*cpAPI.AttestationServiceCancelResponse, error) {
