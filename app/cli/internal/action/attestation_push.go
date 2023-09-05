@@ -53,7 +53,6 @@ func NewAttestationPush(cfg *AttestationPushOpts) *AttestationPush {
 	}
 }
 
-// TODO: Return defined type
 func (action *AttestationPush) Run(runtimeAnnotations map[string]string) (*AttestationResult, error) {
 	if initialized := action.c.AlreadyInitialized(); !initialized {
 		return nil, ErrAttestationNotInitialized
