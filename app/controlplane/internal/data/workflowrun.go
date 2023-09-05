@@ -90,8 +90,11 @@ func (r *WorkflowRunRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID
 }
 
 // Save the attestation for a workflow run in the database
-func (r *WorkflowRunRepo) SaveAttestation(ctx context.Context, id uuid.UUID, att *dsse.Envelope) error {
-	run, err := r.data.db.WorkflowRun.UpdateOneID(id).SetAttestation(att).Save(ctx)
+func (r *WorkflowRunRepo) SaveAttestation(ctx context.Context, id uuid.UUID, att *dsse.Envelope, digest string) error {
+	run, err := r.data.db.WorkflowRun.UpdateOneID(id).
+		SetAttestation(att).
+		SetAttestationDigest(digest).
+		Save(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return err
 	} else if run == nil {
@@ -197,6 +200,7 @@ func entWrToBizWr(wr *ent.WorkflowRun) *biz.WorkflowRun {
 	if wr.Attestation != nil {
 		r.Attestation = &biz.Attestation{
 			Envelope: wr.Attestation,
+			Digest:   wr.AttestationDigest,
 		}
 	}
 

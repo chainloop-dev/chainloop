@@ -31,6 +31,8 @@ const (
 	FieldRunnerType = "runner_type"
 	// FieldAttestation holds the string denoting the attestation field in the database.
 	FieldAttestation = "attestation"
+	// FieldAttestationDigest holds the string denoting the attestation_digest field in the database.
+	FieldAttestationDigest = "attestation_digest"
 	// EdgeWorkflow holds the string denoting the workflow edge name in mutations.
 	EdgeWorkflow = "workflow"
 	// EdgeRobotaccount holds the string denoting the robotaccount edge name in mutations.
@@ -79,6 +81,7 @@ var Columns = []string{
 	FieldRunURL,
 	FieldRunnerType,
 	FieldAttestation,
+	FieldAttestationDigest,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "workflow_runs"
@@ -165,6 +168,11 @@ func ByRunURL(opts ...sql.OrderTermOption) OrderOption {
 // ByRunnerType orders the results by the runner_type field.
 func ByRunnerType(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRunnerType, opts...).ToFunc()
+}
+
+// ByAttestationDigest orders the results by the attestation_digest field.
+func ByAttestationDigest(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAttestationDigest, opts...).ToFunc()
 }
 
 // ByWorkflowField orders the results by workflow field.

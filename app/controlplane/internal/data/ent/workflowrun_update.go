@@ -141,6 +141,26 @@ func (wru *WorkflowRunUpdate) ClearAttestation() *WorkflowRunUpdate {
 	return wru
 }
 
+// SetAttestationDigest sets the "attestation_digest" field.
+func (wru *WorkflowRunUpdate) SetAttestationDigest(s string) *WorkflowRunUpdate {
+	wru.mutation.SetAttestationDigest(s)
+	return wru
+}
+
+// SetNillableAttestationDigest sets the "attestation_digest" field if the given value is not nil.
+func (wru *WorkflowRunUpdate) SetNillableAttestationDigest(s *string) *WorkflowRunUpdate {
+	if s != nil {
+		wru.SetAttestationDigest(*s)
+	}
+	return wru
+}
+
+// ClearAttestationDigest clears the value of the "attestation_digest" field.
+func (wru *WorkflowRunUpdate) ClearAttestationDigest() *WorkflowRunUpdate {
+	wru.mutation.ClearAttestationDigest()
+	return wru
+}
+
 // SetWorkflowID sets the "workflow" edge to the Workflow entity by ID.
 func (wru *WorkflowRunUpdate) SetWorkflowID(id uuid.UUID) *WorkflowRunUpdate {
 	wru.mutation.SetWorkflowID(id)
@@ -338,6 +358,12 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if wru.mutation.AttestationCleared() {
 		_spec.ClearField(workflowrun.FieldAttestation, field.TypeJSON)
+	}
+	if value, ok := wru.mutation.AttestationDigest(); ok {
+		_spec.SetField(workflowrun.FieldAttestationDigest, field.TypeString, value)
+	}
+	if wru.mutation.AttestationDigestCleared() {
+		_spec.ClearField(workflowrun.FieldAttestationDigest, field.TypeString)
 	}
 	if wru.mutation.WorkflowCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -597,6 +623,26 @@ func (wruo *WorkflowRunUpdateOne) ClearAttestation() *WorkflowRunUpdateOne {
 	return wruo
 }
 
+// SetAttestationDigest sets the "attestation_digest" field.
+func (wruo *WorkflowRunUpdateOne) SetAttestationDigest(s string) *WorkflowRunUpdateOne {
+	wruo.mutation.SetAttestationDigest(s)
+	return wruo
+}
+
+// SetNillableAttestationDigest sets the "attestation_digest" field if the given value is not nil.
+func (wruo *WorkflowRunUpdateOne) SetNillableAttestationDigest(s *string) *WorkflowRunUpdateOne {
+	if s != nil {
+		wruo.SetAttestationDigest(*s)
+	}
+	return wruo
+}
+
+// ClearAttestationDigest clears the value of the "attestation_digest" field.
+func (wruo *WorkflowRunUpdateOne) ClearAttestationDigest() *WorkflowRunUpdateOne {
+	wruo.mutation.ClearAttestationDigest()
+	return wruo
+}
+
 // SetWorkflowID sets the "workflow" edge to the Workflow entity by ID.
 func (wruo *WorkflowRunUpdateOne) SetWorkflowID(id uuid.UUID) *WorkflowRunUpdateOne {
 	wruo.mutation.SetWorkflowID(id)
@@ -824,6 +870,12 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 	}
 	if wruo.mutation.AttestationCleared() {
 		_spec.ClearField(workflowrun.FieldAttestation, field.TypeJSON)
+	}
+	if value, ok := wruo.mutation.AttestationDigest(); ok {
+		_spec.SetField(workflowrun.FieldAttestationDigest, field.TypeString, value)
+	}
+	if wruo.mutation.AttestationDigestCleared() {
+		_spec.ClearField(workflowrun.FieldAttestationDigest, field.TypeString)
 	}
 	if wruo.mutation.WorkflowCleared() {
 		edge := &sqlgraph.EdgeSpec{

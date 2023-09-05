@@ -188,13 +188,13 @@ func (_m *WorkflowRunRepo) MarkAsFinished(ctx context.Context, ID uuid.UUID, sta
 	return r0
 }
 
-// SaveAttestation provides a mock function with given fields: ctx, ID, att
-func (_m *WorkflowRunRepo) SaveAttestation(ctx context.Context, ID uuid.UUID, att *dsse.Envelope) error {
-	ret := _m.Called(ctx, ID, att)
+// SaveAttestation provides a mock function with given fields: ctx, ID, att, digest
+func (_m *WorkflowRunRepo) SaveAttestation(ctx context.Context, ID uuid.UUID, att *dsse.Envelope, digest string) error {
+	ret := _m.Called(ctx, ID, att, digest)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, *dsse.Envelope) error); ok {
-		r0 = rf(ctx, ID, att)
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, *dsse.Envelope, string) error); ok {
+		r0 = rf(ctx, ID, att, digest)
 	} else {
 		r0 = ret.Error(0)
 	}

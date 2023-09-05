@@ -489,6 +489,8 @@ func (m *AttestationItem) validate(all bool) error {
 
 	// no validation rules for Envelope
 
+	// no validation rules for DigestInCasBackend
+
 	for idx, item := range m.GetEnvVars() {
 		_, _ = idx, item
 

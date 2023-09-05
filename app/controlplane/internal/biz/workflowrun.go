@@ -16,8 +16,11 @@
 package biz
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"time"
 
@@ -25,6 +28,7 @@ import (
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 
 	"github.com/go-kratos/kratos/v2/log"
+	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/uuid"
 )
 
@@ -41,6 +45,7 @@ type WorkflowRun struct {
 
 type Attestation struct {
 	Envelope *dsse.Envelope
+	Digest   string
 }
 
 type WorkflowRunWithContract struct {
@@ -63,7 +68,7 @@ type WorkflowRunRepo interface {
 	FindByID(ctx context.Context, ID uuid.UUID) (*WorkflowRun, error)
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*WorkflowRun, error)
 	MarkAsFinished(ctx context.Context, ID uuid.UUID, status WorkflowRunStatus, reason string) error
-	SaveAttestation(ctx context.Context, ID uuid.UUID, att *dsse.Envelope) error
+	SaveAttestation(ctx context.Context, ID uuid.UUID, att *dsse.Envelope, digest string) error
 	List(ctx context.Context, orgID, workflowID uuid.UUID, p *pagination.Options) ([]*WorkflowRun, string, error)
 	// List the runs that have not finished and are older than a given time
 	ListNotFinishedOlderThan(ctx context.Context, olderThan time.Time) ([]*WorkflowRun, error)
@@ -217,7 +222,18 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, en
 		return NewErrInvalidUUID(err)
 	}
 
-	return uc.wfRunRepo.SaveAttestation(ctx, runID, envelope)
+	// Calculate the attestation hash of the json representation of the envelope
+	jsonAtt, err := json.Marshal(envelope)
+	if err != nil {
+		return NewErrValidation(fmt.Errorf("marshaling attestation: %w", err))
+	}
+
+	h, _, err := cr_v1.SHA256(bytes.NewBuffer(jsonAtt))
+	if err != nil {
+		return fmt.Errorf("calculating attestation hash: %w", err)
+	}
+
+	return uc.wfRunRepo.SaveAttestation(ctx, runID, envelope, h.String())
 }
 
 // List the workflowruns associated with an org and optionally filtered by a workflow
