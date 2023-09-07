@@ -173,14 +173,22 @@ Return the Postgresql connection string for Atlas migration
 Return the Postgresql hostname
 */}}
 {{- define "controlplane.database.host" -}}
-{{- ternary (include "chainloop.postgresql.fullname" .) .Values.controlplane.externalDatabase.host .Values.postgresql.enabled -}}
+{{- if .Values.controlplane.sqlProxy.enabled }}
+    {{- include "chainloop.sql-proxy.fullname" . -}}
+{{- else -}}
+    {{- ternary (include "chainloop.postgresql.fullname" .) .Values.controlplane.externalDatabase.host .Values.postgresql.enabled -}}
+{{- end -}}
 {{- end -}}
 
 {{/*
 Return the Postgresql port
 */}}
 {{- define "controlplane.database.port" -}}
-{{- ternary 5432 .Values.controlplane.externalDatabase.port .Values.postgresql.enabled -}}
+{{- if .Values.controlplane.sqlProxy.enabled }}
+    {{- 5432 -}}
+{{- else -}}
+    {{- ternary 5432 .Values.controlplane.externalDatabase.port .Values.postgresql.enabled -}}
+{{- end -}}
 {{- end -}}
 
 {{/*
@@ -265,6 +273,52 @@ NOTE: Load balancer service type is not supported
 null
 {{- end -}}
 {{- end -}}
+
+{{/*
+##############################################################################
+sql-proxy helpers
+##############################################################################
+*/}}
+
+{{/*
+Chainloop sql-proxy release name
+*/}}
+{{- define "chainloop.sql-proxy.fullname" -}}
+{{- printf "%s-%s" (include "common.names.fullname" .) "sql-proxy" | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Chainloop sql-proxy Chart fullname
+*/}}
+{{- define "chainloop.sql-proxy.name" -}}
+{{- printf "%s-%s" (include "common.names.name" .) "sql-proxy" | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Common labels
+*/}}
+{{- define "chainloop.sql-proxy.labels" -}}
+{{- include "common.labels.standard" . }}
+app.kubernetes.io/part-of: chainloop
+app.kubernetes.io/component: sql-proxy
+{{- end }}
+
+{{/*
+Migration labels
+*/}}
+{{- define "chainloop.sql-proxy.migration.labels" -}}
+{{- include "common.labels.standard" . }}
+app.kubernetes.io/part-of: chainloop
+app.kubernetes.io/component: sql-proxy-migration
+{{- end }}
+
+{{/*
+Selector labels
+*/}}
+{{- define "chainloop.sql-proxy.selectorLabels" -}}
+{{- include "common.labels.matchLabels" .}}
+app.kubernetes.io/component: sql-proxy
+{{- end }}
 
 {{/*
 ##############################################################################
