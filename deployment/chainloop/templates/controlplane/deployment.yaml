@@ -28,6 +28,17 @@ spec:
       serviceAccountName: {{ include "controlplane.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.controlplane.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: migrate
+          image: "{{ .Values.controlplane.migration.image.repository }}:{{ .Values.controlplane.migration.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.controlplane.image.pullPolicy }}
+          args:
+            - migrate
+            - apply
+            - --url
+            - "{{include "controlplane.database.atlas_connection_string" . }}"
+            - --dir
+            - file:///migrations
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
