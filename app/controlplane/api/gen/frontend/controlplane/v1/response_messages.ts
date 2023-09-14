@@ -105,6 +105,10 @@ export interface AttestationItem_Material {
   type: string;
   annotations: { [key: string]: string };
   hash: string;
+  /** it's been uploaded to an actual CAS backend */
+  uploadedToCas: boolean;
+  /** the content instead if inline */
+  embeddedInline: boolean;
 }
 
 export interface AttestationItem_Material_AnnotationsEntry {
@@ -891,7 +895,7 @@ export const AttestationItem_EnvVariable = {
 };
 
 function createBaseAttestationItem_Material(): AttestationItem_Material {
-  return { name: "", value: "", type: "", annotations: {}, hash: "" };
+  return { name: "", value: "", type: "", annotations: {}, hash: "", uploadedToCas: false, embeddedInline: false };
 }
 
 export const AttestationItem_Material = {
@@ -910,6 +914,12 @@ export const AttestationItem_Material = {
     });
     if (message.hash !== "") {
       writer.uint32(42).string(message.hash);
+    }
+    if (message.uploadedToCas === true) {
+      writer.uint32(48).bool(message.uploadedToCas);
+    }
+    if (message.embeddedInline === true) {
+      writer.uint32(56).bool(message.embeddedInline);
     }
     return writer;
   },
@@ -959,6 +969,20 @@ export const AttestationItem_Material = {
 
           message.hash = reader.string();
           continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.uploadedToCas = reader.bool();
+          continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.embeddedInline = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -980,6 +1004,8 @@ export const AttestationItem_Material = {
         }, {})
         : {},
       hash: isSet(object.hash) ? String(object.hash) : "",
+      uploadedToCas: isSet(object.uploadedToCas) ? Boolean(object.uploadedToCas) : false,
+      embeddedInline: isSet(object.embeddedInline) ? Boolean(object.embeddedInline) : false,
     };
   },
 
@@ -995,6 +1021,8 @@ export const AttestationItem_Material = {
       });
     }
     message.hash !== undefined && (obj.hash = message.hash);
+    message.uploadedToCas !== undefined && (obj.uploadedToCas = message.uploadedToCas);
+    message.embeddedInline !== undefined && (obj.embeddedInline = message.embeddedInline);
     return obj;
   },
 
@@ -1017,6 +1045,8 @@ export const AttestationItem_Material = {
       {},
     );
     message.hash = object.hash ?? "";
+    message.uploadedToCas = object.uploadedToCas ?? false;
+    message.embeddedInline = object.embeddedInline ?? false;
     return message;
   },
 };

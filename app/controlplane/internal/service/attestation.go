@@ -387,10 +387,12 @@ func extractMaterials(in []*chainloop.NormalizedMaterial) ([]*cpAPI.AttestationI
 	res := make([]*cpAPI.AttestationItem_Material, 0, len(in))
 	for _, m := range in {
 		materialItem := &cpAPI.AttestationItem_Material{
-			Name:        m.Name,
-			Type:        m.Type,
-			Annotations: m.Annotations,
-			Value:       m.Value,
+			Name:           m.Name,
+			Type:           m.Type,
+			Annotations:    m.Annotations,
+			Value:          m.Value,
+			UploadedToCas:  m.UploadedToCAS,
+			EmbeddedInline: m.EmbeddedInline,
 		}
 
 		if m.Hash != nil {

@@ -78,6 +78,10 @@ message AttestationItem {
     string type = 3; 
     map<string, string> annotations = 4;
     string hash = 5; 
+    // it's been uploaded to an actual CAS backend
+    bool uploaded_to_cas = 6;
+    // the content instead if inline
+    bool embedded_inline = 7;
   }
 }
 

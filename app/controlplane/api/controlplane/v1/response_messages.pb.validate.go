@@ -1755,6 +1755,10 @@ func (m *AttestationItem_Material) validate(all bool) error {
 
 	// no validation rules for Hash
 
+	// no validation rules for UploadedToCas
+
+	// no validation rules for EmbeddedInline
+
 	if len(errors) > 0 {
 		return AttestationItem_MaterialMultiError(errors)
 	}
