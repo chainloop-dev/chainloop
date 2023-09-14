@@ -65,7 +65,7 @@ func (s *WorkflowRunService) List(ctx context.Context, req *pb.WorkflowRunServic
 	if req.GetWorkflowId() != "" {
 		wf, err := s.workflowUseCase.FindByIDInOrg(ctx, currentOrg.ID, req.GetWorkflowId())
 		if err != nil {
-			return nil, sl.LogAndMaskErr(err, s.log)
+			return nil, handleUseCaseErr(workflowRunEntity, err, s.log)
 		} else if wf == nil {
 			return nil, errors.NotFound("not found", "workflow not found")
 		}
@@ -96,17 +96,26 @@ func bizCursorToPb(cursor string) *pb.PaginationResponse {
 	return &pb.PaginationResponse{NextCursor: cursor}
 }
 
+const workflowRunEntity = "Workflow Run"
+
 func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServiceViewRequest) (*pb.WorkflowRunServiceViewResponse, error) {
 	_, currentOrg, err := loadCurrentUserAndOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	run, err := s.wrUseCase.View(ctx, currentOrg.ID, req.Id)
-	if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
-	} else if run == nil {
-		return nil, errors.NotFound("not found", "workflow run not found")
+	// retrieve the workflow run either by ID or by digest
+	var run *biz.WorkflowRun
+	if req.GetId() != "" {
+		run, err = s.wrUseCase.GetByID(ctx, currentOrg.ID, req.GetId())
+		if err != nil {
+			return nil, handleUseCaseErr(workflowRunEntity, err, s.log)
+		}
+	} else if req.GetDigest() != "" {
+		run, err = s.wrUseCase.GetByDigest(ctx, currentOrg.ID, req.GetDigest())
+		if err != nil {
+			return nil, handleUseCaseErr(workflowRunEntity, err, s.log)
+		}
 	}
 
 	attestation, err := bizAttestationToPb(run.Attestation)
@@ -116,9 +125,7 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 
 	contractVersion, err := s.workflowContractUseCase.FindVersionByID(ctx, run.ContractVersionID.String())
 	if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
-	} else if contractVersion == nil {
-		return nil, errors.NotFound("not found", "contract not found")
+		return nil, handleUseCaseErr(workflowRunEntity, err, s.log)
 	}
 
 	wr := bizWorkFlowRunToPb(run)

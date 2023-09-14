@@ -26,6 +26,7 @@ import (
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 
 	"github.com/go-kratos/kratos/v2/log"
+	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/uuid"
 )
@@ -64,6 +65,7 @@ const (
 type WorkflowRunRepo interface {
 	Create(ctx context.Context, workflowID, robotaccountID, contractVersion uuid.UUID, runURL, runnerType string, casBackends []uuid.UUID) (*WorkflowRun, error)
 	FindByID(ctx context.Context, ID uuid.UUID) (*WorkflowRun, error)
+	FindByAttestationDigest(ctx context.Context, digest string) (*WorkflowRun, error)
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*WorkflowRun, error)
 	MarkAsFinished(ctx context.Context, ID uuid.UUID, status WorkflowRunStatus, reason string) error
 	SaveAttestation(ctx context.Context, ID uuid.UUID, att *dsse.Envelope, digest string) error
@@ -247,7 +249,7 @@ func (uc *WorkflowRunUseCase) List(ctx context.Context, orgID, workflowID string
 	return uc.wfRunRepo.List(ctx, orgUUID, workflowUUID, p)
 }
 
-func (uc *WorkflowRunUseCase) View(ctx context.Context, orgID, runID string) (*WorkflowRun, error) {
+func (uc *WorkflowRunUseCase) GetByID(ctx context.Context, orgID, runID string) (*WorkflowRun, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -258,7 +260,41 @@ func (uc *WorkflowRunUseCase) View(ctx context.Context, orgID, runID string) (*W
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	return uc.wfRunRepo.FindByIDInOrg(ctx, orgUUID, runUUID)
+	wfrun, err := uc.wfRunRepo.FindByID(ctx, runUUID)
+	if err != nil {
+		return nil, fmt.Errorf("finding workflow run: %w", err)
+	}
+
+	// If the workflow is public or belongs to the org we can return it
+	return workflowRunInOrgOrPublic(wfrun, orgUUID)
+}
+
+func (uc *WorkflowRunUseCase) GetByDigest(ctx context.Context, orgID, digest string) (*WorkflowRun, error) {
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	if _, err := cr_v1.NewHash(digest); err != nil {
+		return nil, NewErrValidation(fmt.Errorf("invalid digest format: %w", err))
+	}
+
+	wfrun, err := uc.wfRunRepo.FindByAttestationDigest(ctx, digest)
+	if err != nil {
+		return nil, fmt.Errorf("finding workflow run: %w", err)
+	}
+
+	// If the workflow is public or belongs to the org we can return it
+	return workflowRunInOrgOrPublic(wfrun, orgUUID)
+}
+
+// filter the workflow runs that belong to the org or are public
+func workflowRunInOrgOrPublic(wfRun *WorkflowRun, orgID uuid.UUID) (*WorkflowRun, error) {
+	if wfRun == nil || (wfRun.Workflow.OrgID != orgID && !wfRun.Workflow.Public) {
+		return nil, NewErrNotFound("workflow run")
+	}
+
+	return wfRun, nil
 }
 
 // Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues

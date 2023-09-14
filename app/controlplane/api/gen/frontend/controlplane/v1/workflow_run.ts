@@ -118,7 +118,8 @@ export interface WorkflowRunServiceListResponse {
 }
 
 export interface WorkflowRunServiceViewRequest {
-  id: string;
+  id?: string | undefined;
+  digest?: string | undefined;
 }
 
 export interface WorkflowRunServiceViewResponse {
@@ -1034,13 +1035,16 @@ export const WorkflowRunServiceListResponse = {
 };
 
 function createBaseWorkflowRunServiceViewRequest(): WorkflowRunServiceViewRequest {
-  return { id: "" };
+  return { id: undefined, digest: undefined };
 }
 
 export const WorkflowRunServiceViewRequest = {
   encode(message: WorkflowRunServiceViewRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.id !== "") {
+    if (message.id !== undefined) {
       writer.uint32(10).string(message.id);
+    }
+    if (message.digest !== undefined) {
+      writer.uint32(18).string(message.digest);
     }
     return writer;
   },
@@ -1059,6 +1063,13 @@ export const WorkflowRunServiceViewRequest = {
 
           message.id = reader.string();
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.digest = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1069,12 +1080,16 @@ export const WorkflowRunServiceViewRequest = {
   },
 
   fromJSON(object: any): WorkflowRunServiceViewRequest {
-    return { id: isSet(object.id) ? String(object.id) : "" };
+    return {
+      id: isSet(object.id) ? String(object.id) : undefined,
+      digest: isSet(object.digest) ? String(object.digest) : undefined,
+    };
   },
 
   toJSON(message: WorkflowRunServiceViewRequest): unknown {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
+    message.digest !== undefined && (obj.digest = message.digest);
     return obj;
   },
 
@@ -1086,7 +1101,8 @@ export const WorkflowRunServiceViewRequest = {
     object: I,
   ): WorkflowRunServiceViewRequest {
     const message = createBaseWorkflowRunServiceViewRequest();
-    message.id = object.id ?? "";
+    message.id = object.id ?? undefined;
+    message.digest = object.digest ?? undefined;
     return message;
   },
 };

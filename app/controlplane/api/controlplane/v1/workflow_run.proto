@@ -107,7 +107,13 @@ message WorkflowRunServiceListResponse {
 }
 
 message WorkflowRunServiceViewRequest {
-  string id = 1 [(validate.rules).string.uuid = true];
+  // It can search by either ID or digest
+  oneof ref {
+    option (validate.required) = true;
+    
+    string id = 1 [(validate.rules).string.uuid = true];
+    string digest = 2 [(validate.rules).string = {min_len: 1}];
+  }
 }
 
 message WorkflowRunServiceViewResponse {
