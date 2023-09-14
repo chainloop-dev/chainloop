@@ -145,7 +145,15 @@ func predicateV1Table(att *action.WorkflowRunAttestationItem) {
 		for _, m := range materials {
 			mt.AppendRow(table.Row{"Name", m.Name})
 			mt.AppendRow(table.Row{"Type", m.Type})
-			mt.AppendRow(table.Row{"Value", wrap.String(m.Value, 100)})
+			if m.Filename != "" {
+				mt.AppendRow(table.Row{"Filename", m.Filename})
+			}
+
+			// We do not want to show the value if it is a file
+			if !m.EmbeddedInline && m.UploadedToCAS {
+				mt.AppendRow(table.Row{"Value", wrap.String(m.Value, 100)})
+			}
+
 			if m.Hash != "" {
 				mt.AppendRow(table.Row{"Digest", m.Hash})
 			}
