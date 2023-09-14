@@ -46,7 +46,7 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 
 	s.T().Run("valid workflowRun", func(t *testing.T) {
 		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
-			WorkflowID: s.workflow.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevisionUUID: s.contractVersion.Version.ID, CASBackendID: s.casBackend.ID,
+			WorkflowID: s.workflowOrg1.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevisionUUID: s.contractVersion.Version.ID, CASBackendID: s.casBackend.ID,
 		})
 		assert.NoError(err)
 
@@ -54,14 +54,14 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 		assert.NoError(err)
 
 		// Retrieve attestation ref from storage and compare
-		r, err := s.WorkflowRun.GetByID(ctx, s.org.ID, run.ID.String())
+		r, err := s.WorkflowRun.GetByIDInOrgOrPublic(ctx, s.org.ID, run.ID.String())
 		assert.NoError(err)
 		assert.Equal(r.Attestation, &biz.Attestation{Envelope: validEnvelope, Digest: validDigest})
 	})
 
 	s.T().Run("valid workflowRun attestation not stored in CAS", func(t *testing.T) {
 		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
-			WorkflowID: s.workflow.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevisionUUID: s.contractVersion.Version.ID, CASBackendID: s.casBackend.ID,
+			WorkflowID: s.workflowOrg1.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevisionUUID: s.contractVersion.Version.ID, CASBackendID: s.casBackend.ID,
 		})
 		assert.NoError(err)
 
@@ -69,10 +69,57 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 		assert.NoError(err)
 
 		// Retrieve attestation ref from storage and compare
-		r, err := s.WorkflowRun.GetByID(ctx, s.org.ID, run.ID.String())
+		r, err := s.WorkflowRun.GetByIDInOrgOrPublic(ctx, s.org.ID, run.ID.String())
 		assert.NoError(err)
 		assert.Equal(r.Attestation, &biz.Attestation{Envelope: validEnvelope, Digest: ""})
 	})
+}
+
+func (s *workflowRunIntegrationTestSuite) TestGetByIDInOrgOrPublic() {
+	assert := assert.New(s.T())
+	ctx := context.Background()
+	testCases := []struct {
+		name    string
+		orgID   string
+		runID   string
+		wantErr bool
+	}{
+		{
+			name:    "non existing workflowRun",
+			orgID:   s.org.ID,
+			runID:   uuid.NewString(),
+			wantErr: true,
+		},
+		{
+			name:  "existing workflowRun in org1",
+			orgID: s.org.ID,
+			runID: s.runOrg1.ID.String(),
+		},
+		{
+			name:    "can't access workflowRun from other org",
+			orgID:   s.org.ID,
+			runID:   s.runOrg2.ID.String(),
+			wantErr: true,
+		},
+		{
+			name:  "can access workflowRun from other org if public",
+			orgID: s.org.ID,
+			runID: s.runOrg2Public.ID.String(),
+		},
+	}
+
+	for _, tc := range testCases {
+		s.T().Run(tc.name, func(t *testing.T) {
+			run, err := s.WorkflowRun.GetByIDInOrgOrPublic(ctx, tc.orgID, tc.runID)
+			if tc.wantErr {
+				assert.Error(err)
+				assert.True(biz.IsNotFound(err))
+			} else {
+				assert.NoError(err)
+				assert.Equal(tc.runID, run.ID.String())
+			}
+		})
+	}
 }
 
 func (s *workflowRunIntegrationTestSuite) TestCreate() {
@@ -81,13 +128,13 @@ func (s *workflowRunIntegrationTestSuite) TestCreate() {
 
 	s.T().Run("valid workflowRun", func(t *testing.T) {
 		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
-			WorkflowID: s.workflow.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevisionUUID: s.contractVersion.Version.ID, CASBackendID: s.casBackend.ID,
+			WorkflowID: s.workflowOrg1.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevisionUUID: s.contractVersion.Version.ID, CASBackendID: s.casBackend.ID,
 			RunnerType: "runnerType", RunnerRunURL: "runURL",
 		})
 		assert.NoError(err)
 		if diff := cmp.Diff(&biz.WorkflowRun{
 			RunnerType: "runnerType", RunURL: "runURL", State: string(biz.WorkflowRunInitialized), ContractVersionID: s.contractVersion.Version.ID,
-			Workflow:    s.workflow,
+			Workflow:    s.workflowOrg1,
 			CASBackends: []*biz.CASBackend{s.casBackend},
 		}, run,
 			cmpopts.IgnoreFields(biz.WorkflowRun{}, "CreatedAt", "ID", "Workflow"),
@@ -106,11 +153,12 @@ func TestWorkflowRunUseCase(t *testing.T) {
 // Utility struct to hold the test suite
 type workflowRunIntegrationTestSuite struct {
 	testhelpers.UseCasesEachTestSuite
-	org             *biz.Organization
-	casBackend      *biz.CASBackend
-	workflow        *biz.Workflow
-	robotAccount    *biz.RobotAccount
-	contractVersion *biz.WorkflowContractWithVersion
+	org, org2                                      *biz.Organization
+	casBackend                                     *biz.CASBackend
+	workflowOrg1, workflowOrg2, workflowPublicOrg2 *biz.Workflow
+	runOrg1, runOrg2, runOrg2Public                *biz.WorkflowRun
+	robotAccount                                   *biz.RobotAccount
+	contractVersion                                *biz.WorkflowContractWithVersion
 }
 
 func (s *workflowRunIntegrationTestSuite) SetupTest() {
@@ -127,19 +175,43 @@ func (s *workflowRunIntegrationTestSuite) SetupTest() {
 
 	s.org, err = s.Organization.Create(ctx, "testing org")
 	assert.NoError(err)
+	s.org2, err = s.Organization.Create(ctx, "second org")
+	assert.NoError(err)
 
 	// Workflow
-	s.workflow, err = s.Workflow.Create(ctx, &biz.CreateOpts{Name: "test workflow", OrgID: s.org.ID})
+	s.workflowOrg1, err = s.Workflow.Create(ctx, &biz.CreateOpts{Name: "test workflow", OrgID: s.org.ID})
+	assert.NoError(err)
+	s.workflowOrg2, err = s.Workflow.Create(ctx, &biz.CreateOpts{Name: "test workflow", OrgID: s.org2.ID})
+	assert.NoError(err)
+	// Public workflow
+	s.workflowPublicOrg2, err = s.Workflow.Create(ctx, &biz.CreateOpts{Name: "test public workflow", OrgID: s.org2.ID, Public: true})
 	assert.NoError(err)
 
 	// Robot account
-	s.robotAccount, err = s.RobotAccount.Create(ctx, "name", s.org.ID, s.workflow.ID.String())
+	s.robotAccount, err = s.RobotAccount.Create(ctx, "name", s.org.ID, s.workflowOrg1.ID.String())
 	assert.NoError(err)
 
 	// Find contract revision
-	s.contractVersion, err = s.WorkflowContract.Describe(ctx, s.org.ID, s.workflow.ContractID.String(), 0)
+	s.contractVersion, err = s.WorkflowContract.Describe(ctx, s.org.ID, s.workflowOrg1.ContractID.String(), 0)
 	assert.NoError(err)
 
 	s.casBackend, err = s.CASBackend.CreateOrUpdate(ctx, s.org.ID, "repo", "username", "pass", biz.CASBackendOCI, true)
+	assert.NoError(err)
+
+	// Let's create 2 runs, one in org1 and one in org2
+	s.runOrg1, err = s.WorkflowRun.Create(ctx,
+		&biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevisionUUID: s.contractVersion.Version.ID, CASBackendID: s.casBackend.ID,
+		})
+	assert.NoError(err)
+	s.runOrg2, err = s.WorkflowRun.Create(ctx,
+		&biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg2.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevisionUUID: s.contractVersion.Version.ID, CASBackendID: s.casBackend.ID,
+		})
+	assert.NoError(err)
+	s.runOrg2Public, err = s.WorkflowRun.Create(ctx,
+		&biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowPublicOrg2.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevisionUUID: s.contractVersion.Version.ID, CASBackendID: s.casBackend.ID,
+		})
 	assert.NoError(err)
 }

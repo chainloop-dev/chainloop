@@ -55,6 +55,7 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.CreateOpts) (*biz.W
 		SetName(opts.Name).
 		SetProject(opts.Project).
 		SetTeam(opts.Team).
+		SetPublic(opts.Public).
 		SetName(opts.Name).
 		SetContractID(contractUUID).
 		SetOrganizationID(orgUUID).

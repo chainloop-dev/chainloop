@@ -74,5 +74,6 @@ func (WorkflowRun) Indexes() []ent.Index {
 		index.Fields("created_at", "id"),
 		// Expiration job
 		index.Fields("created_at", "state"),
+		index.Fields("attestation_digest"),
 	}
 }

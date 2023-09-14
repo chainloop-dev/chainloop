@@ -107,12 +107,12 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 	// retrieve the workflow run either by ID or by digest
 	var run *biz.WorkflowRun
 	if req.GetId() != "" {
-		run, err = s.wrUseCase.GetByID(ctx, currentOrg.ID, req.GetId())
+		run, err = s.wrUseCase.GetByIDInOrgOrPublic(ctx, currentOrg.ID, req.GetId())
 		if err != nil {
 			return nil, handleUseCaseErr(workflowRunEntity, err, s.log)
 		}
 	} else if req.GetDigest() != "" {
-		run, err = s.wrUseCase.GetByDigest(ctx, currentOrg.ID, req.GetDigest())
+		run, err = s.wrUseCase.GetByDigestInOrgOrPublic(ctx, currentOrg.ID, req.GetDigest())
 		if err != nil {
 			return nil, handleUseCaseErr(workflowRunEntity, err, s.log)
 		}

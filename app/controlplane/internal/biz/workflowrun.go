@@ -26,7 +26,6 @@ import (
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 
 	"github.com/go-kratos/kratos/v2/log"
-	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/uuid"
 )
@@ -249,7 +248,8 @@ func (uc *WorkflowRunUseCase) List(ctx context.Context, orgID, workflowID string
 	return uc.wfRunRepo.List(ctx, orgUUID, workflowUUID, p)
 }
 
-func (uc *WorkflowRunUseCase) GetByID(ctx context.Context, orgID, runID string) (*WorkflowRun, error) {
+// Returns the workflow run with the provided ID if it belongs to the org or its public
+func (uc *WorkflowRunUseCase) GetByIDInOrgOrPublic(ctx context.Context, orgID, runID string) (*WorkflowRun, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -269,13 +269,13 @@ func (uc *WorkflowRunUseCase) GetByID(ctx context.Context, orgID, runID string) 
 	return workflowRunInOrgOrPublic(wfrun, orgUUID)
 }
 
-func (uc *WorkflowRunUseCase) GetByDigest(ctx context.Context, orgID, digest string) (*WorkflowRun, error) {
+func (uc *WorkflowRunUseCase) GetByDigestInOrgOrPublic(ctx context.Context, orgID, digest string) (*WorkflowRun, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	if _, err := cr_v1.NewHash(digest); err != nil {
+	if _, err := v1.NewHash(digest); err != nil {
 		return nil, NewErrValidation(fmt.Errorf("invalid digest format: %w", err))
 	}
 

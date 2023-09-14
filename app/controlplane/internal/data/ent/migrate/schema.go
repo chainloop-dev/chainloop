@@ -343,6 +343,11 @@ var (
 				Unique:  false,
 				Columns: []*schema.Column{WorkflowRunsColumns[1], WorkflowRunsColumns[3]},
 			},
+			{
+				Name:    "workflowrun_attestation_digest",
+				Unique:  false,
+				Columns: []*schema.Column{WorkflowRunsColumns[8]},
+			},
 		},
 	}
 	// WorkflowRunCasBackendsColumns holds the columns for the "workflow_run_cas_backends" table.
