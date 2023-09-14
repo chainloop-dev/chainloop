@@ -57,10 +57,12 @@ type WorkflowRunAttestationItem struct {
 type Material struct {
 	Name string `json:"name"`
 	// filename, container image name, string value, ...
-	Value       string        `json:"value"`
-	Hash        string        `json:"hash"`
-	Type        string        `json:"type"`
-	Annotations []*Annotation `json:"annotations,omitempty"`
+	Value          string        `json:"value"`
+	Hash           string        `json:"hash"`
+	Type           string        `json:"type"`
+	Annotations    []*Annotation `json:"annotations,omitempty"`
+	UploadedToCAS  bool          `json:"uploadedToCAS,omitempty"`
+	EmbeddedInline bool          `json:"embeddedInline,omitempty"`
 }
 
 type EnvVar struct {
@@ -163,10 +165,12 @@ func (action *WorkflowRunDescribe) Run(runID string, verify bool, publicKey stri
 
 func materialPBToAction(in *pb.AttestationItem_Material) *Material {
 	m := &Material{
-		Name:  in.Name,
-		Value: in.Value,
-		Type:  in.Type,
-		Hash:  in.Hash,
+		Name:           in.Name,
+		Value:          in.Value,
+		Type:           in.Type,
+		Hash:           in.Hash,
+		UploadedToCAS:  in.UploadedToCas,
+		EmbeddedInline: in.EmbeddedInline,
 	}
 
 	// append annotations sorted
