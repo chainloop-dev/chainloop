@@ -122,6 +122,59 @@ func (s *workflowRunIntegrationTestSuite) TestGetByIDInOrgOrPublic() {
 	}
 }
 
+func (s *workflowRunIntegrationTestSuite) TestGetByDigestInOrgOrPublic() {
+	assert := assert.New(s.T())
+	ctx := context.Background()
+	testCases := []struct {
+		name           string
+		orgID          string
+		digest         string
+		errTypeChecker func(err error) bool
+	}{
+		{
+			name:           "non existing workflowRun",
+			orgID:          s.org.ID,
+			digest:         "sha256:b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c",
+			errTypeChecker: biz.IsNotFound,
+		},
+		{
+			name:           "invalid digest",
+			orgID:          s.org.ID,
+			digest:         "b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c",
+			errTypeChecker: biz.IsErrValidation,
+		},
+		{
+			name:   "existing workflowRun in org1",
+			orgID:  s.org.ID,
+			digest: validDigest,
+		},
+		{
+			name:           "can't access workflowRun from other org",
+			orgID:          s.org.ID,
+			digest:         validDigest2,
+			errTypeChecker: biz.IsNotFound,
+		},
+		{
+			name:   "can access workflowRun from other org if public",
+			orgID:  s.org.ID,
+			digest: validDigest3,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.T().Run(tc.name, func(t *testing.T) {
+			run, err := s.WorkflowRun.GetByDigestInOrgOrPublic(ctx, tc.orgID, tc.digest)
+			if tc.errTypeChecker != nil {
+				assert.Error(err)
+				assert.True(tc.errTypeChecker(err))
+			} else {
+				assert.NoError(err)
+				assert.Equal(tc.digest, run.Attestation.Digest)
+			}
+		})
+	}
+}
+
 func (s *workflowRunIntegrationTestSuite) TestCreate() {
 	assert := assert.New(s.T())
 	ctx := context.Background()
@@ -198,20 +251,25 @@ func (s *workflowRunIntegrationTestSuite) SetupTest() {
 	s.casBackend, err = s.CASBackend.CreateOrUpdate(ctx, s.org.ID, "repo", "username", "pass", biz.CASBackendOCI, true)
 	assert.NoError(err)
 
-	// Let's create 2 runs, one in org1 and one in org2
+	// Let's create 3 runs, one in org1 and 2 in org2 (one public)
 	s.runOrg1, err = s.WorkflowRun.Create(ctx,
 		&biz.WorkflowRunCreateOpts{
 			WorkflowID: s.workflowOrg1.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevisionUUID: s.contractVersion.Version.ID, CASBackendID: s.casBackend.ID,
 		})
 	assert.NoError(err)
+	assert.NoError(s.WorkflowRun.SaveAttestation(ctx, s.runOrg1.ID.String(), &dsse.Envelope{}, validDigest))
+
 	s.runOrg2, err = s.WorkflowRun.Create(ctx,
 		&biz.WorkflowRunCreateOpts{
 			WorkflowID: s.workflowOrg2.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevisionUUID: s.contractVersion.Version.ID, CASBackendID: s.casBackend.ID,
 		})
 	assert.NoError(err)
+	assert.NoError(s.WorkflowRun.SaveAttestation(ctx, s.runOrg2.ID.String(), &dsse.Envelope{}, validDigest2))
+
 	s.runOrg2Public, err = s.WorkflowRun.Create(ctx,
 		&biz.WorkflowRunCreateOpts{
 			WorkflowID: s.workflowPublicOrg2.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevisionUUID: s.contractVersion.Version.ID, CASBackendID: s.casBackend.ID,
 		})
 	assert.NoError(err)
+	assert.NoError(s.WorkflowRun.SaveAttestation(ctx, s.runOrg2Public.ID.String(), &dsse.Envelope{}, validDigest3))
 }
