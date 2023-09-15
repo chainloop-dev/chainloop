@@ -102,7 +102,7 @@ func (d *FanOutDispatcher) Run(ctx context.Context, opts *RunOpts) error {
 		return fmt.Errorf("workflow not found")
 	}
 
-	wfRun, err := d.wfRunUC.View(ctx, opts.OrgID, opts.WorkflowRunID)
+	wfRun, err := d.wfRunUC.GetByIDInOrgOrPublic(ctx, opts.OrgID, opts.WorkflowRunID)
 	if err != nil {
 		return fmt.Errorf("finding workflow: %w", err)
 	} else if wfRun == nil {

@@ -1333,11 +1333,64 @@ func (m *WorkflowRunServiceViewRequest) validate(all bool) error {
 
 	var errors []error
 
-	if err := m._validateUuid(m.GetId()); err != nil {
-		err = WorkflowRunServiceViewRequestValidationError{
-			field:  "Id",
-			reason: "value must be a valid UUID",
-			cause:  err,
+	oneofRefPresent := false
+	switch v := m.Ref.(type) {
+	case *WorkflowRunServiceViewRequest_Id:
+		if v == nil {
+			err := WorkflowRunServiceViewRequestValidationError{
+				field:  "Ref",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		oneofRefPresent = true
+
+		if err := m._validateUuid(m.GetId()); err != nil {
+			err = WorkflowRunServiceViewRequestValidationError{
+				field:  "Id",
+				reason: "value must be a valid UUID",
+				cause:  err,
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	case *WorkflowRunServiceViewRequest_Digest:
+		if v == nil {
+			err := WorkflowRunServiceViewRequestValidationError{
+				field:  "Ref",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		oneofRefPresent = true
+
+		if utf8.RuneCountInString(m.GetDigest()) < 1 {
+			err := WorkflowRunServiceViewRequestValidationError{
+				field:  "Digest",
+				reason: "value length must be at least 1 runes",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	default:
+		_ = v // ensures v is used
+	}
+	if !oneofRefPresent {
+		err := WorkflowRunServiceViewRequestValidationError{
+			field:  "Ref",
+			reason: "value is required",
 		}
 		if !all {
 			return err

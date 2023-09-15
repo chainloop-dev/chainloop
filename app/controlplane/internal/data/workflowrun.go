@@ -62,9 +62,26 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, workflowID, robotaccountID
 	return r.FindByID(ctx, p.ID)
 }
 
+func eagerLoadWorkflowRun(client *ent.Client) *ent.WorkflowRunQuery {
+	return client.WorkflowRun.Query().
+		WithWorkflow(func(q *ent.WorkflowQuery) { q.WithOrganization() }).
+		WithContractVersion().
+		WithCasBackends()
+}
+
 func (r *WorkflowRunRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.WorkflowRun, error) {
-	run, err := r.data.db.WorkflowRun.Query().
-		Where(workflowrun.ID(id)).WithWorkflow().WithContractVersion().WithCasBackends().Only(ctx)
+	run, err := eagerLoadWorkflowRun(r.data.db).Where(workflowrun.ID(id)).Only(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, err
+	} else if run == nil {
+		return nil, nil
+	}
+
+	return entWrToBizWr(run), nil
+}
+
+func (r *WorkflowRunRepo) FindByAttestationDigest(ctx context.Context, digest string) (*biz.WorkflowRun, error) {
+	run, err := eagerLoadWorkflowRun(r.data.db).Where(workflowrun.AttestationDigest(digest)).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	} else if run == nil {

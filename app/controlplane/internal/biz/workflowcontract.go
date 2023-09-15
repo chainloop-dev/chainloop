@@ -18,6 +18,7 @@ package biz
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -152,7 +153,14 @@ func (uc *WorkflowContractUseCase) FindVersionByID(ctx context.Context, versionI
 		return nil, err
 	}
 
-	return uc.repo.FindVersionByID(ctx, versionUUID)
+	r, err := uc.repo.FindVersionByID(ctx, versionUUID)
+	if err != nil {
+		return nil, fmt.Errorf("finding contract version: %w", err)
+	} else if r == nil {
+		return nil, NewErrNotFound("contract version")
+	}
+
+	return r, nil
 }
 
 func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, contractID, name string, schema *schemav1.CraftingSchema) (*WorkflowContractWithVersion, error) {

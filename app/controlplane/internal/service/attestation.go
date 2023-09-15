@@ -175,7 +175,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}
 
-	wRun, err := s.wrUseCase.View(ctx, robotAccount.OrgID, req.WorkflowRunId)
+	wRun, err := s.wrUseCase.GetByIDInOrgOrPublic(ctx, robotAccount.OrgID, req.WorkflowRunId)
 	if err != nil {
 		return nil, sl.LogAndMaskErr(err, s.log)
 	} else if wRun == nil {
@@ -310,7 +310,7 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 		}
 	} else {
 		// This is the new mode, where the CAS backend ref is stored in the workflow run since initialization
-		wRun, err := s.wrUseCase.View(ctx, robotAccount.OrgID, req.WorkflowRunId)
+		wRun, err := s.wrUseCase.GetByIDInOrgOrPublic(ctx, robotAccount.OrgID, req.WorkflowRunId)
 		if err != nil {
 			return nil, sl.LogAndMaskErr(err, s.log)
 		} else if wRun == nil {

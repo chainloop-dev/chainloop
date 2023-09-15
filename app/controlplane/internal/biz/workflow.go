@@ -49,6 +49,9 @@ type WorkflowRepo interface {
 
 type CreateOpts struct {
 	Name, OrgID, Project, Team, ContractID string
+	// Public means that the associated workflow runs, attestations and materials
+	// are reachable by other users, regardless of their organization
+	Public bool
 }
 
 type WorkflowUseCase struct {
