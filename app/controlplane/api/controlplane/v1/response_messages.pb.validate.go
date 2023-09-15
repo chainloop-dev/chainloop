@@ -1749,6 +1749,8 @@ func (m *AttestationItem_Material) validate(all bool) error {
 
 	// no validation rules for Value
 
+	// no validation rules for Filename
+
 	// no validation rules for Type
 
 	// no validation rules for Annotations

@@ -55,10 +55,10 @@ type WorkflowRunAttestationItem struct {
 }
 
 type Material struct {
-	Name string `json:"name"`
-	// filename, container image name, string value, ...
+	Name           string        `json:"name"`
 	Value          string        `json:"value"`
 	Hash           string        `json:"hash"`
+	Filename       string        `json:"filename"`
 	Type           string        `json:"type"`
 	Annotations    []*Annotation `json:"annotations,omitempty"`
 	UploadedToCAS  bool          `json:"uploadedToCAS,omitempty"`
@@ -170,6 +170,7 @@ func materialPBToAction(in *pb.AttestationItem_Material) *Material {
 		Type:           in.Type,
 		Hash:           in.Hash,
 		UploadedToCAS:  in.UploadedToCas,
+		Filename:       in.Filename,
 		EmbeddedInline: in.EmbeddedInline,
 	}
 

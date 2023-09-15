@@ -389,6 +389,7 @@ func extractMaterials(in []*chainloop.NormalizedMaterial) ([]*cpAPI.AttestationI
 		materialItem := &cpAPI.AttestationItem_Material{
 			Name:           m.Name,
 			Type:           m.Type,
+			Filename:       m.Filename,
 			Annotations:    m.Annotations,
 			Value:          m.Value,
 			UploadedToCas:  m.UploadedToCAS,
@@ -397,11 +398,6 @@ func extractMaterials(in []*chainloop.NormalizedMaterial) ([]*cpAPI.AttestationI
 
 		if m.Hash != nil {
 			materialItem.Hash = m.Hash.String()
-		}
-
-		// Override the value for the filename of the item uploaded
-		if m.EmbeddedInline || m.UploadedToCAS {
-			materialItem.Value = m.Filename
 		}
 
 		res = append(res, materialItem)
