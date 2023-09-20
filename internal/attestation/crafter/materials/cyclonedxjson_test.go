@@ -76,7 +76,7 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 		},
 		{
 			name:     "invalid sbom format",
-			filePath: "./testdata/sbom.spdx.json",
+			filePath: "./testdata/sbom-spdx.json",
 			wantErr:  "unexpected material type",
 		},
 		{

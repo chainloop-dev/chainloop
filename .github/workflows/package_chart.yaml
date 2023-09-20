@@ -38,4 +38,3 @@ jobs:
           for pkg in chainloop*.tgz; do
             helm push ${pkg} oci://ghcr.io/chainloop-dev/charts
           done
-        

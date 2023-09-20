@@ -5,6 +5,10 @@ on:
     tags:
       - "v*.*.*"
 
+# https://github.com/ossf/scorecard/blob/7ed886f1bd917d19cb9d6ce6c10e80e81fa31c39/docs/checks.md#token-permissions
+permissions:
+  contents: read
+
 jobs:
   test:
     uses: chainloop-dev/chainloop/.github/workflows/test.yml@main
@@ -27,7 +31,7 @@ jobs:
       - name: Install Cosign
         uses: sigstore/cosign-installer@ef6a6b364bbad08abd36a5f8af60b595d12702f8 # main
         with:
-          cosign-release: 'v2.0.2'
+          cosign-release: "v2.0.2"
 
       - name: Install Chainloop
         run: |
