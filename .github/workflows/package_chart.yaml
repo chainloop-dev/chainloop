@@ -8,6 +8,9 @@ on:
     paths:
       - deployment/chainloop/**
 
+# https://github.com/ossf/scorecard/blob/7ed886f1bd917d19cb9d6ce6c10e80e81fa31c39/docs/checks.md#token-permissions
+permissions: read-all
+
 jobs:
   package:
     name: Package and push Helm Chart
@@ -35,4 +38,3 @@ jobs:
           for pkg in chainloop*.tgz; do
             helm push ${pkg} oci://ghcr.io/chainloop-dev/charts
           done
-        
