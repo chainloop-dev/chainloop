@@ -87,7 +87,7 @@ func TestSPDXJSONCraft(t *testing.T) {
 		},
 		{
 			name:     "valid artifact type",
-			filePath: "./testdata/sbom.spdx.json",
+			filePath: "./testdata/sbom-spdx.json",
 		},
 	}
 
@@ -105,7 +105,7 @@ func TestSPDXJSONCraft(t *testing.T) {
 				uploader.On("UploadFile", context.TODO(), tc.filePath).
 					Return(&casclient.UpDownStatus{
 						Digest:   "deadbeef",
-						Filename: "sbom.spdx.json",
+						Filename: "sbom-spdx.json",
 					}, nil)
 			}
 
