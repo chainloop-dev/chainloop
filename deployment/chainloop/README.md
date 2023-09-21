@@ -156,6 +156,7 @@ helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
     --set controlplane.auth.oidc.clientID=[clientID] \
     --set controlplane.auth.oidc.clientSecret=[clientSecret]
 ```
+
 ## How to guides
 
 ### Generate a ECDSA key-pair
@@ -175,13 +176,13 @@ Then, you can either provide it in a custom `values.yaml` file override
 
 ```yaml
 casJWTPrivateKey: |-
-    -----BEGIN EC PRIVATE KEY-----
-    REDACTED
-    -----END EC PRIVATE KEY-----
+  -----BEGIN EC PRIVATE KEY-----
+  REDACTED
+  -----END EC PRIVATE KEY-----
 casJWTPublicKey: |
-    -----BEGIN PUBLIC KEY-----
-    REDACTED
-    -----END PUBLIC KEY-----
+  -----BEGIN PUBLIC KEY-----
+  REDACTED
+  -----END PUBLIC KEY-----
 ```
 
 or as shown before, provide them as imperative inputs during Helm Install/Upgrade `--set casJWTPrivateKey="$(cat private.ec.key)"--set casJWTPublicKey="$(cat public.pem)"`
@@ -203,9 +204,9 @@ controlplane:
     hostname: api.cp.chainloop.dev
 
 cas:
-    ingressAPI:
-    enabled: true
-    hostname: api.cas.chainloop.dev
+  ingressAPI:
+  enabled: true
+  hostname: api.cas.chainloop.dev
 ```
 
 A complete setup that uses
@@ -223,7 +224,7 @@ controlplane:
     ingressClassName: nginx
     hostname: cp.chainloop.dev
     annotations:
-      # This depends on your configured issuer 
+      # This depends on your configured issuer
       cert-manager.io/cluster-issuer: "letsencrypt-prod"
 
   ingressAPI:
@@ -234,7 +235,7 @@ controlplane:
     annotations:
       nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
       cert-manager.io/cluster-issuer: "letsencrypt-prod"
-          
+
 cas:
   ingressAPI:
     enabled: true
@@ -262,12 +263,12 @@ postgresql:
 
 # Provide with external connection
 controlplane:
-    externalDatabase:
-        host: 1.2.3.4
-        port: 5432
-        user: chainloop
-        password: [REDACTED]
-        database: chainloop-controlplane-prod
+  externalDatabase:
+    host: 1.2.3.4
+    port: 5432
+    user: chainloop
+    password: [REDACTED]
+    database: chainloop-controlplane-prod
 ```
 
 Alternatively, if you are using [Google Cloud SQL](https://cloud.google.com/sql) and you are running Chainloop in Google Kubernetes Engine. You can connect instead via [a proxy](https://cloud.google.com/sql/docs/mysql/connect-kubernetes-engine#proxy)
@@ -281,18 +282,18 @@ postgresql:
 
 # Provide with external connection
 controlplane:
-    sqlProxy:
-        # Inject the proxy sidecar
-        enabled: true
-        ## @param controlplane.sqlProxy.connectionName Google Cloud SQL connection name
-        connectionName: "my-sql-instance"
-    # Then you'll need to configure your DB settings to use the proxy IP address
-    externalDatabase:
-        host: [proxy-sidecar-ip-address]
-        port: 5432
-        user: chainloop
-        password: [REDACTED]
-        database: chainloop-controlplane-prod
+  sqlProxy:
+    # Inject the proxy sidecar
+    enabled: true
+    ## @param controlplane.sqlProxy.connectionName Google Cloud SQL connection name
+    connectionName: "my-sql-instance"
+  # Then you'll need to configure your DB settings to use the proxy IP address
+  externalDatabase:
+    host: [proxy-sidecar-ip-address]
+    port: 5432
+    user: chainloop
+    password: [REDACTED]
+    database: chainloop-controlplane-prod
 ```
 
 ### Use AWS secret manager
@@ -301,11 +302,11 @@ You can swap the secret manager backend with the following settings
 
 ```yaml
 secretsBackend:
-    backend: awsSecretManager
-    awsSecretManager:
-        accessKey: [KEY]
-        secretKey: [SECRET]
-        region: [REGION]
+  backend: awsSecretManager
+  awsSecretManager:
+    accessKey: [KEY]
+    secretKey: [SECRET]
+    region: [REGION]
 ```
 
 ### Use GCP secret manager
@@ -314,16 +315,28 @@ You can swap the secret manager backend with the following settings
 
 ```yaml
 secretsBackend:
-    backend: gcpSecretManager
-    gcpSecretManager:
-        projectId: [PROJECT_ID]
-        serviceAccountKey: [KEY]
+  backend: gcpSecretManager
+  gcpSecretManager:
+    projectId: [PROJECT_ID]
+    serviceAccountKey: [KEY]
 ```
 
 ### Send exceptions to Sentry
 
+You can configure different sentry projects for both the controlplane and the artifact CAS
+
 ```yaml
-sentry:
+# for controlplane
+controlplane:
+  ...
+  sentry:
+    enabled: true
+    dsn: [your secret sentry project DSN URL]
+    environment: production
+# Artifact CAS
+cas:
+  ...
+  sentry:
     enabled: true
     dsn: [your secret sentry project DSN URL]
     environment: production
@@ -349,28 +362,25 @@ chainloop config save \
 
 ### Common parameters
 
-| Name                    | Description                                                                                                                                                            | Value        |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| `kubeVersion`           | Override Kubernetes version                                                                                                                                            | `""`         |
-| `development`           | Deploys Chainloop pre-configured FOR DEVELOPMENT ONLY. It includes a Vault instance in development mode and pre-configured authentication certificates and passphrases | `false`      |
-| `GKEMonitoring.enabled` | Enable GKE podMonitoring (prometheus.io scrape) to scrape the controlplane and CAS /metrics endpoints                                                                  | `false`      |
-| `sentry.enabled`        | Enable sentry.io alerting                                                                                                                                              | `false`      |
-| `sentry.dsn`            | DSN endpoint https://docs.sentry.io/product/sentry-basics/dsn-explainer/                                                                                               | `""`         |
-| `sentry.environment`    | Environment tag                                                                                                                                                        | `production` |
+| Name                    | Description                                                                                                                                                            | Value   |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| `kubeVersion`           | Override Kubernetes version                                                                                                                                            | `""`    |
+| `development`           | Deploys Chainloop pre-configured FOR DEVELOPMENT ONLY. It includes a Vault instance in development mode and pre-configured authentication certificates and passphrases | `false` |
+| `GKEMonitoring.enabled` | Enable GKE podMonitoring (prometheus.io scrape) to scrape the controlplane and CAS /metrics endpoints                                                                  | `false` |
 
 ### Secrets Backend
 
-| Name                                                | Description                                                               | Value       |
-| --------------------------------------------------- | ------------------------------------------------------------------------- | ----------- |
-| `secretsBackend.backend`                            | Secrets backend type ("vault", "awsSecretManager" or "gcpSecretManager")  | `vault`     |
-| `secretsBackend.secretPrefix`                       | Prefix that will be pre-pended to all secrets in the storage backend      | `chainloop` |
-| `secretsBackend.vault.address`                      | Vault address                                                             |             |
-| `secretsBackend.vault.token`                        | Vault authentication token                                                |             |
-| `secretsBackend.awsSecretManager.accessKey`         | AWS Access KEY ID                                                         |             |
-| `secretsBackend.awsSecretManager.secretKey`         | AWS Secret Key                                                            |             |
-| `secretsBackend.awsSecretManager.region`            | AWS Secret Manager Region                                                 |             |
-| `secretsBackend.gcpSecretManager.projectId`         | GCP Project ID                                                            |             |
-| `secretsBackend.gcpSecretManager.serviceAccountKey` | GCP Auth Key                                                              |             |
+| Name                                                | Description                                                              | Value       |
+| --------------------------------------------------- | ------------------------------------------------------------------------ | ----------- |
+| `secretsBackend.backend`                            | Secrets backend type ("vault", "awsSecretManager" or "gcpSecretManager") | `vault`     |
+| `secretsBackend.secretPrefix`                       | Prefix that will be pre-pended to all secrets in the storage backend     | `chainloop` |
+| `secretsBackend.vault.address`                      | Vault address                                                            |             |
+| `secretsBackend.vault.token`                        | Vault authentication token                                               |             |
+| `secretsBackend.awsSecretManager.accessKey`         | AWS Access KEY ID                                                        |             |
+| `secretsBackend.awsSecretManager.secretKey`         | AWS Secret Key                                                           |             |
+| `secretsBackend.awsSecretManager.region`            | AWS Secret Manager Region                                                |             |
+| `secretsBackend.gcpSecretManager.projectId`         | GCP Project ID                                                           |             |
+| `secretsBackend.gcpSecretManager.serviceAccountKey` | GCP Auth Key                                                             |             |
 
 ### Authentication
 
@@ -381,12 +391,13 @@ chainloop config save \
 
 ### Control Plane
 
-| Name                            | Description                                                                         | Value                                           |
-| ------------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------- |
-| `controlplane.replicaCount`     | Number of replicas                                                                  | `2`                                             |
-| `controlplane.image.repository` | FQDN uri for the image                                                              | `ghcr.io/chainloop-dev/chainloop/control-plane` |
-| `controlplane.image.tag`        | Image tag (immutable tags are recommended). If no set chart.appVersion will be used |                                                 |
-| `controlplane.pluginsDir`       | Directory where to look for plugins                                                 | `/plugins`                                      |
+| Name                                 | Description                                                                             | Value                                           |
+| ------------------------------------ | --------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| `controlplane.replicaCount`          | Number of replicas                                                                      | `2`                                             |
+| `controlplane.image.repository`      | FQDN uri for the image                                                                  | `ghcr.io/chainloop-dev/chainloop/control-plane` |
+| `controlplane.image.tag`             | Image tag (immutable tags are recommended). If no set chart.appVersion will be used     |                                                 |
+| `controlplane.tlsConfig.secret.name` | name of a secret containing TLS certificate to be used by the controlplane grpc server. | `""`                                            |
+| `controlplane.pluginsDir`            | Directory where to look for plugins                                                     | `/plugins`                                      |
 
 ### Control Plane Database
 
@@ -453,25 +464,29 @@ chainloop config save \
 
 ### Controlplane Misc
 
-| Name                                                         | Description                        | Value   |
-| ------------------------------------------------------------ | ---------------------------------- | ------- |
-| `controlplane.resources.limits.cpu`                          | Container resource limits CPU      | `250m`  |
-| `controlplane.resources.limits.memory`                       | Container resource limits memory   | `512Mi` |
-| `controlplane.resources.requests.cpu`                        | Container resource requests CPU    | `250m`  |
-| `controlplane.resources.requests.memory`                     | Container resource requests memory | `512Mi` |
-| `controlplane.autoscaling.enabled`                           | Enable deployment autoscaling      | `false` |
-| `controlplane.autoscaling.minReplicas`                       | Minimum number of replicas         | `1`     |
-| `controlplane.autoscaling.maxReplicas`                       | Maximum number of replicas         | `100`   |
-| `controlplane.autoscaling.targetCPUUtilizationPercentage`    | Target CPU percentage              | `80`    |
-| `controlplane.autoscaling.targetMemoryUtilizationPercentage` | Target CPU memory                  | `80`    |
+| Name                                                         | Description                                                              | Value        |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------ | ------------ |
+| `controlplane.resources.limits.cpu`                          | Container resource limits CPU                                            | `250m`       |
+| `controlplane.resources.limits.memory`                       | Container resource limits memory                                         | `512Mi`      |
+| `controlplane.resources.requests.cpu`                        | Container resource requests CPU                                          | `250m`       |
+| `controlplane.resources.requests.memory`                     | Container resource requests memory                                       | `512Mi`      |
+| `controlplane.autoscaling.enabled`                           | Enable deployment autoscaling                                            | `false`      |
+| `controlplane.autoscaling.minReplicas`                       | Minimum number of replicas                                               | `1`          |
+| `controlplane.autoscaling.maxReplicas`                       | Maximum number of replicas                                               | `100`        |
+| `controlplane.autoscaling.targetCPUUtilizationPercentage`    | Target CPU percentage                                                    | `80`         |
+| `controlplane.autoscaling.targetMemoryUtilizationPercentage` | Target CPU memory                                                        | `80`         |
+| `controlplane.sentry.enabled`                                | Enable sentry.io alerting                                                | `false`      |
+| `controlplane.sentry.dsn`                                    | DSN endpoint https://docs.sentry.io/product/sentry-basics/dsn-explainer/ | `""`         |
+| `controlplane.sentry.environment`                            | Environment tag                                                          | `production` |
 
 ### Artifact Content Addressable (CAS) API
 
-| Name                   | Description                                                                         | Value                                          |
-| ---------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------- |
-| `cas.replicaCount`     | Number of replicas                                                                  | `2`                                            |
-| `cas.image.repository` | FQDN uri for the image                                                              | `ghcr.io/chainloop-dev/chainloop/artifact-cas` |
-| `cas.image.tag`        | Image tag (immutable tags are recommended). If no set chart.appVersion will be used |                                                |
+| Name                        | Description                                                                             | Value                                          |
+| --------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| `cas.replicaCount`          | Number of replicas                                                                      | `2`                                            |
+| `cas.image.repository`      | FQDN uri for the image                                                                  | `ghcr.io/chainloop-dev/chainloop/artifact-cas` |
+| `cas.image.tag`             | Image tag (immutable tags are recommended). If no set chart.appVersion will be used     |                                                |
+| `cas.tlsConfig.secret.name` | name of a secret containing TLS certificate to be used by the controlplane grpc server. | `""`                                           |
 
 ### CAS Networking
 
@@ -515,19 +530,22 @@ chainloop config save \
 
 ### CAS Misc
 
-| Name                                                | Description                        | Value   |
-| --------------------------------------------------- | ---------------------------------- | ------- |
-| `cas.resources.limits.cpu`                          | Container resource limits CPU      | `250m`  |
-| `cas.resources.limits.memory`                       | Container resource limits memory   | `512Mi` |
-| `cas.resources.requests.cpu`                        | Container resource requests CPU    | `250m`  |
-| `cas.resources.requests.memory`                     | Container resource requests memory | `512Mi` |
-| `cas.autoscaling.enabled`                           | Enable deployment autoscaling      | `false` |
-| `cas.autoscaling.minReplicas`                       | Minimum number of replicas         | `1`     |
-| `cas.autoscaling.maxReplicas`                       | Maximum number of replicas         | `100`   |
-| `cas.autoscaling.targetCPUUtilizationPercentage`    | Target CPU percentage              | `80`    |
-| `cas.autoscaling.targetMemoryUtilizationPercentage` | Target CPU memory                  | `80`    |
+| Name                                                | Description                                                              | Value        |
+| --------------------------------------------------- | ------------------------------------------------------------------------ | ------------ |
+| `cas.resources.limits.cpu`                          | Container resource limits CPU                                            | `250m`       |
+| `cas.resources.limits.memory`                       | Container resource limits memory                                         | `512Mi`      |
+| `cas.resources.requests.cpu`                        | Container resource requests CPU                                          | `250m`       |
+| `cas.resources.requests.memory`                     | Container resource requests memory                                       | `512Mi`      |
+| `cas.autoscaling.enabled`                           | Enable deployment autoscaling                                            | `false`      |
+| `cas.autoscaling.minReplicas`                       | Minimum number of replicas                                               | `1`          |
+| `cas.autoscaling.maxReplicas`                       | Maximum number of replicas                                               | `100`        |
+| `cas.autoscaling.targetCPUUtilizationPercentage`    | Target CPU percentage                                                    | `80`         |
+| `cas.autoscaling.targetMemoryUtilizationPercentage` | Target CPU memory                                                        | `80`         |
+| `cas.sentry.enabled`                                | Enable sentry.io alerting                                                | `false`      |
+| `cas.sentry.dsn`                                    | DSN endpoint https://docs.sentry.io/product/sentry-basics/dsn-explainer/ | `""`         |
+| `cas.sentry.environment`                            | Environment tag                                                          | `production` |
 
-### Dependencies 
+### Dependencies
 
 | Name                                 | Description                                                                                            | Value          |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------ | -------------- |
@@ -539,7 +557,6 @@ chainloop config save \
 | `postgresql.auth.existingSecret`     | Name of existing secret to use for PostgreSQL credentials                                              | `""`           |
 | `vault.server.dev.enabled`           | Enable development mode (unsealed, in-memory, insecure)                                                | `true`         |
 | `vault.server.dev.devRootToken`      | Connection token                                                                                       | `notapassword` |
-
 
 ## License
 
