@@ -274,6 +274,13 @@ null
 {{- end -}}
 {{- end -}}
 
+{{- define "chainloop.sentry" -}}
+observability:
+  sentry:
+    dsn: {{ required "Sentry DSN required" .dsn | quote }}
+    environment: {{ required "Sentry environment required" .environment | quote }}
+{{- end -}}
+
 {{/*
 ##############################################################################
 sql-proxy helpers

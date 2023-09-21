@@ -17,20 +17,12 @@ development: false
 GKEMonitoring:
   enabled: false
 
-## @param sentry.enabled Enable sentry.io alerting
-## @param sentry.dsn DSN endpoint https://docs.sentry.io/product/sentry-basics/dsn-explainer/
-## @param sentry.environment Environment tag
-sentry:
-  enabled: false
-  dsn: ""
-  environment: production
-
 ## @section Secrets Backend
 ##
 
 ## Location where to store sensitive data. If development.true? and no overrides provided, the setup will connect to a development instance of Vault
 secretsBackend:
-  ## @param secretsBackend.backend Secrets backend type ("vault", "awsSecretManager" or "gcpSecretManager") 
+  ## @param secretsBackend.backend Secrets backend type ("vault", "awsSecretManager" or "gcpSecretManager")
   ##
   backend: "vault" # "awsSecretManager"
   ## @param secretsBackend.secretPrefix Prefix that will be pre-pended to all secrets in the storage backend
@@ -90,7 +82,7 @@ casJWTPublicKey: ""
 
 ## @section Control Plane
 ###################################
-##          CONTROL PLANE         #    
+##          CONTROL PLANE         #
 ###################################
 controlplane:
   ## @param controlplane.replicaCount Number of replicas
@@ -103,7 +95,7 @@ controlplane:
     # Overrides the image tag whose default is the chart appVersion.
     # tag: latest
 
-  ## @param controlplane.secret.name name of a secret containing TLS certificate to be used by the controlplane grpc server.
+  ## @param controlplane.tlsConfig.secret.name name of a secret containing TLS certificate to be used by the controlplane grpc server.
   tlsConfig:
     secret:
       # the secret must contains 2 keys: tls.crt and tls.key respectively containing the certificate and private key.
@@ -151,7 +143,7 @@ controlplane:
   sqlProxy:
     ## @param controlplane.sqlProxy.enabled Enable sidecar to connect to DB via Google Cloud SQL proxy
     enabled: false
-    ## @param controlplane.sqlProxy.connectionName Google Cloud SQL connection name 
+    ## @param controlplane.sqlProxy.connectionName Google Cloud SQL connection name
     connectionName: ""
     ## @param controlplane.sqlProxy.resources Sidecar container resources
     resources: {}
@@ -169,7 +161,7 @@ controlplane:
       url: ""
       clientID: ""
       clientSecret: ""
- 
+
   ## @section Control Plane Networking
   service:
     ## @param controlplane.service.type Service type
@@ -181,7 +173,8 @@ controlplane:
     ## @extra controlplane.service.nodePorts.http Node port for HTTP. NOTE: choose port between <30000-32767>
     # nodePorts:
     #   http: "30800"
-    annotations: {}
+    annotations:
+      {}
       ## @skip controlplane.service.annotations
 
   serviceAPI:
@@ -332,7 +325,7 @@ controlplane:
       ## @skip controlplane.ingressAPI.annotations.nginx.ingress.kubernetes.io/backend-protocol
       ## Tell Nginx Ingress Controller to expect gRPC traffic
       nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
-    
+
     ## @param controlplane.ingressAPI.tls Enable TLS configuration for the host defined at `controlplane.ingress.hostname` parameter
     ## TLS certificates will be retrieved from a TLS secret with name: `{{- printf "%s-tls" .Values.controlplane.ingress.hostname }}`
     ## You can:
@@ -433,10 +426,18 @@ controlplane:
     maxReplicas: 100
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
- 
+
+  ## @param controlplane.sentry.enabled Enable sentry.io alerting
+  ## @param controlplane.sentry.dsn DSN endpoint https://docs.sentry.io/product/sentry-basics/dsn-explainer/
+  ## @param controlplane.sentry.environment Environment tag
+  sentry:
+    enabled: false
+    dsn: ""
+    environment: production
+
 ## @section Artifact Content Addressable (CAS) API
 ##################################
-#         Artifacts CAS          #    
+#         Artifacts CAS          #
 ##################################
 cas:
   ## @param cas.replicaCount Number of replicas
@@ -476,7 +477,8 @@ cas:
     ## @extra cas.service.nodePorts.http Node port for HTTP. NOTE: choose port between <30000-32767>
     # nodePorts:
     #   http: "30800"
-    annotations: {}
+    annotations:
+      {}
       ## @skip cas.service.annotations
 
   serviceAPI:
@@ -626,13 +628,13 @@ cas:
     annotations:
       # Nginx Ingress settings
       ## @skip cas.ingressAPI.annotations.nginx.ingress.kubernetes.io/proxy-body-size
-      # Limit file uploads/downloads to 100MB. Alternatively you can disable this limitation by setting it to 0 
+      # Limit file uploads/downloads to 100MB. Alternatively you can disable this limitation by setting it to 0
       # Even though we send data in chunks of 1MB, this size refers to all the data sent during the whole streaming session
       nginx.ingress.kubernetes.io/proxy-body-size: "100m"
       ## @skip cas.ingressAPI.annotations.nginx.ingress.kubernetes.io/backend-protocol
       ## Tell Nginx Ingress Controller to expect gRPC traffic
       nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
-    
+
     ## @param cas.ingressAPI.tls Enable TLS configuration for the host defined at `controlplane.ingress.hostname` parameter
     ## TLS certificates will be retrieved from a TLS secret with name: `{{- printf "%s-tls" .Values.controlplane.ingress.hostname }}`
     ## You can:
@@ -733,10 +735,18 @@ cas:
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
 
-## @section Dependencies 
+  ## @param cas.sentry.enabled Enable sentry.io alerting
+  ## @param cas.sentry.dsn DSN endpoint https://docs.sentry.io/product/sentry-basics/dsn-explainer/
+  ## @param cas.sentry.environment Environment tag
+  sentry:
+    enabled: false
+    dsn: ""
+    environment: production
+
+## @section Dependencies
 # ##################################
-# #          Dependencies          #   
-# ##################################
+# #          Dependencies          #
+##################################
 
 ## PostgreSQL chart configuration
 ## ref: https://github.com/bitnami/charts/blob/main/bitnami/postgresql/values.yaml
@@ -754,7 +764,6 @@ postgresql:
     password: "chainlooppwd"
     database: "chainloop-cp"
     existingSecret: ""
-
 
 # Vault server running in development mode --set development=true
 # IMPORTANT: This is not meant to run in production
