@@ -314,7 +314,7 @@ func (s *CASBackendIntegrationTestSuite) SetupTest() {
 	// OCI repository credentials
 	s.credsWriter = creds.NewReaderWriter(s.T())
 	s.credsWriter.On(
-		"SaveCredentials", ctx, mock.Anything, mock.Anything,
+		"SaveCredentials", mock.Anything, mock.Anything, mock.Anything,
 	).Return("stored-OCI-secret", nil)
 
 	s.TestingUseCases = testhelpers.NewTestingUseCases(s.T(), testhelpers.WithCredsReaderWriter(s.credsWriter))
