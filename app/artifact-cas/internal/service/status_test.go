@@ -20,17 +20,24 @@ import (
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/service"
+	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
 	"github.com/stretchr/testify/assert"
 )
 
+var enabledProviders *backend.Providers = &backend.Providers{
+	"OCI": nil,
+	"GCS": nil,
+}
+
 func TestInfoz(t *testing.T) {
 	want := "v1.0.0"
-	got, err := service.NewStatusService(want).Infoz(context.Background(), nil)
+	got, err := service.NewStatusService(want, enabledProviders).Infoz(context.Background(), nil)
 	assert.NoError(t, err)
 	assert.Equal(t, want, got.Version)
+	assert.Equal(t, []string{"OCI", "GCS"}, got.Backends)
 }
 
 func TestStatusz(t *testing.T) {
-	_, err := service.NewStatusService("1.1.1").Statusz(context.Background(), nil)
+	_, err := service.NewStatusService("1.1.1", enabledProviders).Statusz(context.Background(), nil)
 	assert.NoError(t, err)
 }

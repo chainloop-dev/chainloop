@@ -12,7 +12,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/service"
 	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
-	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"
 )
 
@@ -23,17 +22,18 @@ import (
 // Injectors from wire.go:
 
 // wireApp init kratos application.
-func wireApp(confServer *conf.Server, auth *conf.Auth, reader credentials.Reader, logger log.Logger) (*kratos.App, func(), error) {
+func wireApp(confServer *conf.Server, auth *conf.Auth, reader credentials.Reader, logger log.Logger) (*app, func(), error) {
 	backendProvider := oci.NewBackendProvider(reader)
 	v := serviceOpts(logger)
 	byteStreamService := service.NewByteStreamService(backendProvider, v...)
 	resourceService := service.NewResourceService(backendProvider, v...)
-	grpcServer, err := server.NewGRPCServer(confServer, auth, byteStreamService, resourceService, logger)
+	providers := loadCASBackendProviders(reader)
+	grpcServer, err := server.NewGRPCServer(confServer, auth, byteStreamService, resourceService, providers, logger)
 	if err != nil {
 		return nil, nil, err
 	}
 	downloadService := service.NewDownloadService(backendProvider, v...)
-	httpServer, err := server.NewHTTPServer(confServer, auth, downloadService, logger)
+	httpServer, err := server.NewHTTPServer(confServer, auth, downloadService, providers, logger)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -41,8 +41,8 @@ func wireApp(confServer *conf.Server, auth *conf.Auth, reader credentials.Reader
 	if err != nil {
 		return nil, nil, err
 	}
-	app := newApp(logger, grpcServer, httpServer, httpMetricsServer)
-	return app, func() {
+	mainApp := newApp(logger, grpcServer, httpServer, httpMetricsServer, providers)
+	return mainApp, func() {
 	}, nil
 }
 

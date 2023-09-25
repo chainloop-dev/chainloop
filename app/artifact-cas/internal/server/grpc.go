@@ -25,6 +25,7 @@ import (
 	v1 "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/service"
+	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	"github.com/getsentry/sentry-go"
 	"github.com/go-kratos/kratos/v2/errors"
@@ -43,7 +44,7 @@ import (
 )
 
 // NewGRPCServer new a gRPC server.
-func NewGRPCServer(c *conf.Server, authConf *conf.Auth, byteService *service.ByteStreamService, rSvc *service.ResourceService, logger log.Logger) (*grpc.Server, error) {
+func NewGRPCServer(c *conf.Server, authConf *conf.Auth, byteService *service.ByteStreamService, rSvc *service.ResourceService, providers *backend.Providers, logger log.Logger) (*grpc.Server, error) {
 	log := log.NewHelper(logger)
 	// Load the key on initialization instead of on every request
 	// TODO: implement jwks endpoint
@@ -119,7 +120,7 @@ func NewGRPCServer(c *conf.Server, authConf *conf.Auth, byteService *service.Byt
 
 	bytestream.RegisterByteStreamServer(srv.Server, byteService)
 	v1.RegisterResourceServiceServer(srv.Server, rSvc)
-	v1.RegisterStatusServiceServer(srv.Server, service.NewStatusService(Version))
+	v1.RegisterStatusServiceServer(srv.Server, service.NewStatusService(Version, providers))
 
 	// Register and set metrics to 0
 	grpc_prometheus.Register(srv.Server)

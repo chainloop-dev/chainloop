@@ -27,19 +27,21 @@ import (
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
 	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
-	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
 )
 
 // wireApp init kratos application.
-func wireApp(*conf.Server, *conf.Auth, credentials.Reader, log.Logger) (*kratos.App, func(), error) {
+func wireApp(*conf.Server, *conf.Auth, credentials.Reader, log.Logger) (*app, func(), error) {
 	panic(
 		wire.Build(
 			server.ProviderSet,
 			service.ProviderSet,
+			// DEPRECATED
 			wire.Bind(new(backend.Provider), new(*oci.BackendProvider)),
 			oci.NewBackendProvider,
+			// EO DEPRECATED
+			loadCASBackendProviders,
 			newApp,
 			serviceOpts,
 		),

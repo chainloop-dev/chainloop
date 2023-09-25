@@ -17,34 +17,31 @@ syntax = "proto3";
 
 package cas.v1;
 
-option go_package = "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1;v1";
-
 import "google/api/annotations.proto";
 
+option go_package = "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1;v1";
+
 service StatusService {
-	rpc Infoz (InfozRequest) returns (InfozResponse) {
-		option (google.api.http) = {
-            get: "/infoz"
-        };
-	}
-	rpc Statusz (StatuszRequest) returns (StatuszResponse) {
-		option (google.api.http) = {
-            get: "/statusz"
-        };
-	}
+  rpc Infoz(InfozRequest) returns (InfozResponse) {
+    option (google.api.http) = {get: "/infoz"};
+  }
+  rpc Statusz(StatuszRequest) returns (StatuszResponse) {
+    option (google.api.http) = {get: "/statusz"};
+  }
 }
 
-message InfozRequest { }
+message InfozRequest {}
 
 message InfozResponse {
-	string version = 1;
+  string version = 1;
+  repeated string backends = 2;
 }
 
 message StatuszRequest {
-	// Parameter that can be used by readiness probes
-	// The main difference is that readiness probes will take into account that all
-	// dependent services are up and ready
-	bool readiness = 1;
+  // Parameter that can be used by readiness probes
+  // The main difference is that readiness probes will take into account that all
+  // dependent services are up and ready
+  bool readiness = 1;
 }
 
 message StatuszResponse {}

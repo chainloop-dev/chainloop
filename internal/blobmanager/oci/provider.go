@@ -35,8 +35,10 @@ func NewBackendProvider(cReader credentials.Reader) *BackendProvider {
 	return &BackendProvider{cReader: cReader}
 }
 
+const ProviderID = "OCI"
+
 func (p *BackendProvider) ID() string {
-	return "OCI"
+	return ProviderID
 }
 
 func (p *BackendProvider) FromCredentials(ctx context.Context, secretName string) (backend.UploaderDownloader, error) {

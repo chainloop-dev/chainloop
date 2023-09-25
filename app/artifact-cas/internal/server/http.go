@@ -27,6 +27,7 @@ import (
 	nhttp "net/http"
 
 	api "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
+	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
 	"github.com/go-kratos/kratos/v2/log"
 	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/go-kratos/kratos/v2/middleware/logging"
@@ -35,7 +36,7 @@ import (
 )
 
 // NewHTTPServer new a HTTP server.
-func NewHTTPServer(c *conf.Server, authConf *conf.Auth, downloadSvc *service.DownloadService, logger log.Logger) (*http.Server, error) {
+func NewHTTPServer(c *conf.Server, authConf *conf.Auth, downloadSvc *service.DownloadService, providers *backend.Providers, logger log.Logger) (*http.Server, error) {
 	var opts = []http.ServerOption{
 		http.Middleware(
 			recovery.Recovery(),
@@ -68,7 +69,7 @@ func NewHTTPServer(c *conf.Server, authConf *conf.Auth, downloadSvc *service.Dow
 	srv := http.NewServer(opts...)
 
 	srv.Handle(service.DownloadPath, authFromQueryMiddleware(loadPublicKey(rawKey), casJWT.SigningMethod, downloadSvc))
-	api.RegisterStatusServiceHTTPServer(srv, service.NewStatusService(Version))
+	api.RegisterStatusServiceHTTPServer(srv, service.NewStatusService(Version, providers))
 	return srv, nil
 }
 
