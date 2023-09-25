@@ -91,6 +91,8 @@ require (
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	github.com/nozzle/throttler v0.0.0-20180817012639-2ea982251481 // indirect
 	github.com/oklog/run v1.1.0 // indirect
+	github.com/openvex/go-vex v0.2.5 // indirect
+	github.com/package-url/packageurl-go v0.1.1 // indirect
 	github.com/pkg/xattr v0.4.9 // indirect
 	go.opentelemetry.io/otel/metric v1.17.0 // indirect
 	gopkg.in/go-jose/go-jose.v2 v2.6.1 // indirect

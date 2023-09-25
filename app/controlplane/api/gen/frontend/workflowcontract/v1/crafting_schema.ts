@@ -91,8 +91,9 @@ export enum CraftingSchema_Material_MaterialType {
   ARTIFACT = 3,
   SBOM_CYCLONEDX_JSON = 4,
   SBOM_SPDX_JSON = 5,
-  /** JUNIT_XML - SARIF = 5; */
   JUNIT_XML = 6,
+  /** OPENVEX - https://github.com/openvex/spec */
+  OPENVEX = 7,
   UNRECOGNIZED = -1,
 }
 
@@ -119,6 +120,9 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 6:
     case "JUNIT_XML":
       return CraftingSchema_Material_MaterialType.JUNIT_XML;
+    case 7:
+    case "OPENVEX":
+      return CraftingSchema_Material_MaterialType.OPENVEX;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -142,6 +146,8 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "SBOM_SPDX_JSON";
     case CraftingSchema_Material_MaterialType.JUNIT_XML:
       return "JUNIT_XML";
+    case CraftingSchema_Material_MaterialType.OPENVEX:
+      return "OPENVEX";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
