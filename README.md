@@ -118,6 +118,21 @@ SecOps are the ones in charge of defining the Workflow Contracts, setting up thi
 
 Development teams on the other hand, just need to integrate Chainloop's jargon-free [crafting tool](https://docs.chainloop.dev/getting-started/attestation-crafting) and follow the steps via a familiar DevExp to make sure they comply with the Workflow Contract defined by the SecOps team. No need to learn in-toto, signing, SLSA, OCI, APIs, nada :)
 
+## Supported Pieces of Evidence / Materials
+
+Chainloop supports the collection of the following pieces of evidence types:
+
+- [Container Image Reference](https://github.com/opencontainers/image-spec)
+- [CycloneDX SBOM](https://github.com/CycloneDX/specification)
+- [SPDX SBOM](https://spdx.dev/specifications/)
+- [CSAF VEX](https://docs.oasis-open.org/csaf/csaf/v2.0/os/csaf-v2.0-os.html)
+- [OpenVEX](https://github.com/openvex)
+- [JUnit](https://www.ibm.com/docs/en/developer-for-zos/14.1?topic=formats-junit-xml-format)
+- Generic Artifact Types
+- Key-Value metadata pairs
+
+During the attestation process, these pieces of evidence will get uploaded to the [Content Addressable Storage](https://docs.chainloop.dev/reference/operator/cas-backend/) (if applicable) and referenced in a [SLSA](https://slsa.dev) attestation.
+
 ## Documentation
 
 To learn more, please visit the Chainloop project's documentation website, https://docs.chainloop.dev where you will find a getting started guide, FAQ, examples, and more.

@@ -17,59 +17,66 @@ syntax = "proto3";
 
 package workflowcontract.v1;
 
-option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1";
-
 import "validate/validate.proto";
+
+option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1";
 
 // Schema definition provided by the user to the tool
 // that defines the schema of the workflowRun
 message CraftingSchema {
-    // Version of the schema, do not confuse with the revision of the content
-    string schema_version = 1 [(validate.rules).string.const = "v1"];
-    repeated Material materials = 2;
-    repeated string env_allow_list = 3;
-    Runner runner = 4;
-    // List of annotations that can be used to add metadata to the attestation
+  // Version of the schema, do not confuse with the revision of the content
+  string schema_version = 1 [(validate.rules).string.const = "v1"];
+  repeated Material materials = 2;
+  repeated string env_allow_list = 3;
+  Runner runner = 4;
+  // List of annotations that can be used to add metadata to the attestation
+  // this metadata can be used later on by the integrations engine to filter and interpolate data
+  // It works in addition to the annotations defined in the materials and the runner
+  repeated Annotation annotations = 5;
+
+  message Runner {
+    RunnerType type = 1 [(validate.rules).enum = {
+      not_in: [0]
+    }];
+
+    enum RunnerType {
+      RUNNER_TYPE_UNSPECIFIED = 0;
+      GITHUB_ACTION = 1;
+      GITLAB_PIPELINE = 2;
+      AZURE_PIPELINE = 3;
+    }
+  }
+
+  message Material {
+    MaterialType type = 1 [(validate.rules).enum = {
+      not_in: [0]
+    }];
+    string name = 2 [(validate.rules).string.pattern = "^[\\w|-]+$"]; // Single word optionally separated with _ or -
+    bool optional = 3;
+    // If a material is set as output it will get added to the subject in the statement
+    bool output = 4;
+    // List of annotations that can be used to add metadata to the material
     // this metadata can be used later on by the integrations engine to filter and interpolate data
-    // It works in addition to the annotations defined in the materials and the runner
     repeated Annotation annotations = 5;
 
-    message Runner {
-        RunnerType type = 1 [(validate.rules).enum = {not_in: [0]}];
-
-        enum RunnerType {
-            RUNNER_TYPE_UNSPECIFIED = 0;
-            GITHUB_ACTION = 1;
-            GITLAB_PIPELINE = 2;
-            AZURE_PIPELINE = 3;
-        } 
+    enum MaterialType {
+      MATERIAL_TYPE_UNSPECIFIED = 0;
+      STRING = 1;
+      CONTAINER_IMAGE = 2;
+      ARTIFACT = 3;
+      SBOM_CYCLONEDX_JSON = 4;
+      SBOM_SPDX_JSON = 5;
+      JUNIT_XML = 6;
+      // https://github.com/openvex/spec
+      OPENVEX = 7;
+      // https://docs.oasis-open.org/csaf/csaf/v2.0/cs03/csaf-v2.0-cs03.html
+      CSAF_VEX = 8;
     }
-
-    message Material {
-        MaterialType type = 1 [(validate.rules).enum = {not_in: [0]}];
-        string name = 2 [(validate.rules).string.pattern = "^[\\w|-]+$"]; // Single word optionally separated with _ or -
-        bool optional = 3;
-        // If a material is set as output it will get added to the subject in the statement
-        bool output = 4;
-        // List of annotations that can be used to add metadata to the material
-        // this metadata can be used later on by the integrations engine to filter and interpolate data
-        repeated Annotation annotations = 5;
-
-        enum MaterialType {
-            MATERIAL_TYPE_UNSPECIFIED = 0;
-            STRING = 1;
-            CONTAINER_IMAGE = 2;
-            ARTIFACT = 3;
-            SBOM_CYCLONEDX_JSON = 4;
-            SBOM_SPDX_JSON = 5;
-            JUNIT_XML = 6;
-            // SARIF = 5;
-        } 
-    }
+  }
 }
 
 message Annotation {
-    string name = 1 [(validate.rules).string.pattern = "^[\\w]+$"]; // Single word optionally separated with _
-    // This value can be set in the contract or provided during the attestation
-    string value = 2;
+  string name = 1 [(validate.rules).string.pattern = "^[\\w]+$"]; // Single word optionally separated with _
+  // This value can be set in the contract or provided during the attestation
+  string value = 2;
 }

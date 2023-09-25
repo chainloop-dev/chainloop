@@ -156,6 +156,10 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 		crafter, err = NewSPDXJSONCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_JUNIT_XML:
 		crafter, err = NewJUnitXMLCrafter(materialSchema, casBackend, logger)
+	case schemaapi.CraftingSchema_Material_OPENVEX:
+		crafter, err = NewOpenVEXCrafter(materialSchema, casBackend, logger)
+	case schemaapi.CraftingSchema_Material_CSAF_VEX:
+		crafter, err = NewCSAFVEXCrafter(materialSchema, casBackend, logger)
 	default:
 		return nil, fmt.Errorf("material of type %q not supported yet", materialSchema.Type)
 	}
