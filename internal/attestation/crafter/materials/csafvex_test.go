@@ -30,7 +30,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewOpenVEXCrafter(t *testing.T) {
+func TestNewCSAFVEXCrafter(t *testing.T) {
 	testCases := []struct {
 		name    string
 		input   *contractAPI.CraftingSchema_Material
@@ -39,7 +39,7 @@ func TestNewOpenVEXCrafter(t *testing.T) {
 		{
 			name: "happy path",
 			input: &contractAPI.CraftingSchema_Material{
-				Type: contractAPI.CraftingSchema_Material_OPENVEX,
+				Type: contractAPI.CraftingSchema_Material_CSAF_VEX,
 			},
 		},
 		{
@@ -53,7 +53,7 @@ func TestNewOpenVEXCrafter(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := materials.NewOpenVEXCrafter(tc.input, nil, nil)
+			_, err := materials.NewCSAFVEXCrafter(tc.input, nil, nil)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return
@@ -64,7 +64,7 @@ func TestNewOpenVEXCrafter(t *testing.T) {
 	}
 }
 
-func TestOpenVEXCraft(t *testing.T) {
+func TestCSAFVEXCraft(t *testing.T) {
 	testCases := []struct {
 		name     string
 		filePath string
@@ -78,7 +78,7 @@ func TestOpenVEXCraft(t *testing.T) {
 		{
 			name:     "invalid path",
 			filePath: "./testdata/non-existing.json",
-			wantErr:  "no such file or directory",
+			wantErr:  "unexpected material type",
 		},
 		{
 			name:     "invalid artifact type",
@@ -87,14 +87,14 @@ func TestOpenVEXCraft(t *testing.T) {
 		},
 		{
 			name:     "valid artifact type",
-			filePath: "./testdata/openvex_v0.2.0.json",
+			filePath: "./testdata/csaf_vex_v0.2.0.json",
 		},
 	}
 
 	assert := assert.New(t)
 	schema := &contractAPI.CraftingSchema_Material{
 		Name: "test",
-		Type: contractAPI.CraftingSchema_Material_OPENVEX,
+		Type: contractAPI.CraftingSchema_Material_CSAF_VEX,
 	}
 	l := zerolog.Nop()
 	for _, tc := range testCases {
@@ -105,12 +105,12 @@ func TestOpenVEXCraft(t *testing.T) {
 				uploader.On("UploadFile", context.TODO(), tc.filePath).
 					Return(&casclient.UpDownStatus{
 						Digest:   "deadbeef",
-						Filename: "openvex.json",
+						Filename: "vex.json",
 					}, nil)
 			}
 
 			backend := &casclient.CASBackend{Uploader: uploader}
-			crafter, err := materials.NewOpenVEXCrafter(schema, backend, &l)
+			crafter, err := materials.NewCSAFVEXCrafter(schema, backend, &l)
 			require.NoError(t, err)
 
 			got, err := crafter.Craft(context.TODO(), tc.filePath)
@@ -120,12 +120,12 @@ func TestOpenVEXCraft(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			assert.Equal(contractAPI.CraftingSchema_Material_OPENVEX.String(), got.MaterialType.String())
+			assert.Equal(contractAPI.CraftingSchema_Material_CSAF_VEX.String(), got.MaterialType.String())
 			assert.True(got.UploadedToCas)
 
 			// // The result includes the digest reference
 			assert.Equal(&attestationApi.Attestation_Material_Artifact{
-				Id: "test", Digest: "sha256:b4bd86d5855f94bcac0a92d3100ae7b85d050bd2e5fb9037a200e5f5f0b073a2", Name: "openvex_v0.2.0.json",
+				Id: "test", Digest: "sha256:c27087147fa040909e0ef1b522386608af545b0a163c30c9f11c3d753676fa44", Name: "csaf_vex_v0.2.0.json",
 			}, got.GetArtifact())
 		})
 	}

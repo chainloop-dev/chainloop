@@ -69,7 +69,8 @@ message CraftingSchema {
       JUNIT_XML = 6;
       // https://github.com/openvex/spec
       OPENVEX = 7;
-      // SARIF = 5;
+      // https://docs.oasis-open.org/csaf/csaf/v2.0/cs03/csaf-v2.0-cs03.html
+      CSAF_VEX = 8;
     }
   }
 }

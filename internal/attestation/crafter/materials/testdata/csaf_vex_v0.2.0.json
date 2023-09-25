@@ -1,0 +1,119 @@
+{
+  "document": {
+    "category": "csaf_vex",
+    "csaf_version": "2.0",
+    "notes": [
+      {
+        "category": "summary",
+        "text": "Example VEX document.",
+        "title": "Document Title"
+      }
+    ],
+    "publisher": {
+      "category": "vendor",
+      "name": "Example Company",
+      "namespace": "https://psirt.example.com"
+    },
+    "title": "Example VEX Document",
+    "tracking": {
+      "current_release_date": "2022-03-03T11:00:00.000Z",
+      "generator": {
+        "date": "2022-03-03T11:00:00.000Z",
+        "engine": {
+          "name": "Secvisogram",
+          "version": "1.11.0"
+        }
+      },
+      "id": "2022-EVD-UC-01-NA-001",
+      "initial_release_date": "2022-03-03T11:00:00.000Z",
+      "revision_history": [
+        {
+          "date": "2022-03-03T11:00:00.000Z",
+          "number": "1",
+          "summary": "Initial version."
+        }
+      ],
+      "status": "final",
+      "version": "1"
+    }
+  },
+  "product_tree": {
+    "branches": [
+      {
+        "branches": [
+          {
+            "product": {
+              "name": "Example Company ABC 4.2",
+              "product_id": "CSAFPID-0001",
+              "product_identification_helper": {
+                "purl": "pkg:maven/@1.3.4"
+              }
+            },
+            "branches": [
+              {
+                "category": "product_version",
+                "name": "4.2",
+                "product": {
+                  "name": "Example Company ABC 4.2",
+                  "product_id": "INTERNAL-0001",
+                  "product_identification_helper": {
+                    "purl": "pkg:golang/github.com/go-homedir@v1.1.0"
+                  }
+                }
+              },
+              {
+                "category": "product_version",
+                "name": "2.2",
+                "product": {
+                  "name": "Example Company ABC 2.2",
+                  "product_id": "INTERNAL-0002",
+                  "product_identification_helper": {
+                    "purl": "pkg:golang/github.com/go-homedir@v1.0.0"
+                  }
+                }
+              }
+            ],
+            "category": "product_name",
+            "name": "ABC"
+          }
+        ],
+        "category": "vendor",
+        "name": "Example Company"
+      }
+    ],
+    "relationships": [
+      {
+        "category": "default_component_of",
+        "full_product_name": {
+          "name": "Example Company ABC 2.2",
+          "product_id": "ABC:INTERNAL-0002"
+        },
+        "product_reference": "INTERNAL-0002",
+        "relates_to_product_reference": "ABC"
+      }
+    ]
+  },
+  "vulnerabilities": [
+    {
+      "cve": "CVE-2009-4487",
+      "notes": [
+        {
+          "category": "description",
+          "text": "nginx 0.7.64 writes data to a log file without sanitizing non-printable characters, which might allow remote attackers to modify a window's title, or possibly execute arbitrary commands or overwrite files, via an HTTP request containing an escape sequence for a terminal emulator.",
+          "title": "CVE description"
+        }
+      ],
+      "product_status": {
+        "known_not_affected": ["CSAFPID-0001"],
+        "known_affected": ["ABC:CSAFPID-0002"]
+      },
+      "threats": [
+        {
+          "category": "impact",
+          "details": "Class with vulnerable code was removed before shipping.",
+          "product_ids": ["CSAFPID-0001"]
+        }
+      ]
+    }
+  ]
+}

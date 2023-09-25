@@ -94,6 +94,8 @@ export enum CraftingSchema_Material_MaterialType {
   JUNIT_XML = 6,
   /** OPENVEX - https://github.com/openvex/spec */
   OPENVEX = 7,
+  /** CSAF_VEX - https://docs.oasis-open.org/csaf/csaf/v2.0/cs03/csaf-v2.0-cs03.html */
+  CSAF_VEX = 8,
   UNRECOGNIZED = -1,
 }
 
@@ -123,6 +125,9 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 7:
     case "OPENVEX":
       return CraftingSchema_Material_MaterialType.OPENVEX;
+    case 8:
+    case "CSAF_VEX":
+      return CraftingSchema_Material_MaterialType.CSAF_VEX;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -148,6 +153,8 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "JUNIT_XML";
     case CraftingSchema_Material_MaterialType.OPENVEX:
       return "OPENVEX";
+    case CraftingSchema_Material_MaterialType.CSAF_VEX:
+      return "CSAF_VEX";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
