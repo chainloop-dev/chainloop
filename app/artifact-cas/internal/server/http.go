@@ -36,7 +36,7 @@ import (
 )
 
 // NewHTTPServer new a HTTP server.
-func NewHTTPServer(c *conf.Server, authConf *conf.Auth, downloadSvc *service.DownloadService, providers *backend.Providers, logger log.Logger) (*http.Server, error) {
+func NewHTTPServer(c *conf.Server, authConf *conf.Auth, downloadSvc *service.DownloadService, providers backend.Providers, logger log.Logger) (*http.Server, error) {
 	var opts = []http.ServerOption{
 		http.Middleware(
 			recovery.Recovery(),

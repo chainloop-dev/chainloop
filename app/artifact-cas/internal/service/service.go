@@ -17,6 +17,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
@@ -32,7 +33,18 @@ var ProviderSet = wire.NewSet(NewByteStreamService, NewResourceService, NewDownl
 
 type commonService struct {
 	log      *log.Helper
-	backendP backend.Provider
+	backends backend.Providers
+}
+
+func (s *commonService) selectProvider(id string) (backend.Provider, error) {
+	// get the OCI provider from the map
+	p, ok := s.backends[id]
+	if !ok {
+		return nil, fmt.Errorf("provider %s not found", id)
+	}
+
+	s.log.Infow("msg", "selected provider", "provider", id)
+	return p, nil
 }
 
 type NewOpt func(s *commonService)
@@ -43,10 +55,10 @@ func WithLogger(logger log.Logger) NewOpt {
 	}
 }
 
-func newCommonService(bp backend.Provider, opts ...NewOpt) *commonService {
+func newCommonService(backends backend.Providers, opts ...NewOpt) *commonService {
 	s := &commonService{
 		log:      servicelogger.EmptyLogger(),
-		backendP: bp,
+		backends: backends,
 	}
 
 	for _, opt := range opts {

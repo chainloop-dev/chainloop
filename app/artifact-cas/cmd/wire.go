@@ -24,8 +24,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/server"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/service"
-	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
-	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
@@ -37,10 +35,6 @@ func wireApp(*conf.Server, *conf.Auth, credentials.Reader, log.Logger) (*app, fu
 		wire.Build(
 			server.ProviderSet,
 			service.ProviderSet,
-			// DEPRECATED
-			wire.Bind(new(backend.Provider), new(*oci.BackendProvider)),
-			oci.NewBackendProvider,
-			// EO DEPRECATED
 			loadCASBackendProviders,
 			newApp,
 			serviceOpts,

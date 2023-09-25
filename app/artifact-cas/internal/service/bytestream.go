@@ -26,6 +26,7 @@ import (
 
 	v1 "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
+	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	kerrors "github.com/go-kratos/kratos/v2/errors"
@@ -41,7 +42,7 @@ type ByteStreamService struct {
 	*commonService
 }
 
-func NewByteStreamService(bp backend.Provider, opts ...NewOpt) *ByteStreamService {
+func NewByteStreamService(bp backend.Providers, opts ...NewOpt) *ByteStreamService {
 	return &ByteStreamService{
 		commonService: newCommonService(bp, opts...),
 	}
@@ -70,8 +71,15 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 		return kerrors.BadRequest("resource name", err.Error())
 	}
 
+	// For now we only support OCI
+	// TODO: select per-request
+	backendProvider, err := s.selectProvider(oci.ProviderID)
+	if err != nil {
+		return kerrors.NotFound("not found", err.Error())
+	}
+
 	// Load OCI backend based on a reference stored in the token
-	backend, err := s.backendP.FromCredentials(ctx, info.StoredSecretID)
+	backend, err := backendProvider.FromCredentials(ctx, info.StoredSecretID)
 	if err != nil {
 		return sl.LogAndMaskErr(err, s.log)
 	}
@@ -142,8 +150,15 @@ func (s *ByteStreamService) Read(req *bytestream.ReadRequest, stream bytestream.
 		return kerrors.BadRequest("resource name", "empty resource name")
 	}
 
+	// For now we only support OCI
+	// TODO: select per-request
+	backendProvider, err := s.selectProvider(oci.ProviderID)
+	if err != nil {
+		return kerrors.NotFound("not found", err.Error())
+	}
+
 	// Retrieve the OCI backend from where to download the file
-	backend, err := s.backendP.FromCredentials(ctx, info.StoredSecretID)
+	backend, err := backendProvider.FromCredentials(ctx, info.StoredSecretID)
 	if err != nil {
 		return sl.LogAndMaskErr(err, s.log)
 	}

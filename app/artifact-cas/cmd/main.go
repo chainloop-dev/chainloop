@@ -60,19 +60,19 @@ func init() {
 
 type app struct {
 	*kratos.App
-	*backend.Providers
+	backend.Providers
 }
 
-func loadCASBackendProviders(creader credentials.Reader) *backend.Providers {
+func loadCASBackendProviders(creader credentials.Reader) backend.Providers {
 	// Currently only OCI is supported
 	// Here we will load the rest of providers, S3, GCS, etc
 	p := oci.NewBackendProvider(creader)
-	return &backend.Providers{
+	return backend.Providers{
 		p.ID(): p,
 	}
 }
 
-func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTPMetricsServer, providers *backend.Providers) *app {
+func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTPMetricsServer, providers backend.Providers) *app {
 	return &app{
 		kratos.New(
 			kratos.ID(id),
@@ -134,7 +134,7 @@ func main() {
 	}
 	defer cleanup()
 
-	for k, _ := range *app.Providers {
+	for k, _ := range app.Providers {
 		_ = logger.Log(log.LevelInfo, "msg", "CAS backend provider loaded", "provider", k)
 	}
 

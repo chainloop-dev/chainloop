@@ -20,6 +20,7 @@ import (
 
 	v1 "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
+	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/errors"
 )
@@ -29,7 +30,7 @@ type ResourceService struct {
 	*commonService
 }
 
-func NewResourceService(bp backend.Provider, opts ...NewOpt) *ResourceService {
+func NewResourceService(bp backend.Providers, opts ...NewOpt) *ResourceService {
 	return &ResourceService{
 		commonService: newCommonService(bp, opts...),
 	}
@@ -42,7 +43,14 @@ func (s *ResourceService) Describe(ctx context.Context, req *v1.ResourceServiceD
 		return nil, err
 	}
 
-	b, err := s.backendP.FromCredentials(ctx, info.StoredSecretID)
+	// For now we only support OCI
+	// TODO: select per-request
+	backendProvider, err := s.selectProvider(oci.ProviderID)
+	if err != nil {
+		return nil, errors.NotFound("not found", err.Error())
+	}
+
+	b, err := backendProvider.FromCredentials(ctx, info.StoredSecretID)
 	if err != nil {
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}

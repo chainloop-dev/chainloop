@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var enabledProviders *backend.Providers = &backend.Providers{
+var enabledProviders backend.Providers = backend.Providers{
 	"OCI": nil,
 	"GCS": nil,
 }

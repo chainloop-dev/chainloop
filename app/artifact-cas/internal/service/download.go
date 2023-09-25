@@ -24,6 +24,7 @@ import (
 
 	"code.cloudfoundry.org/bytefmt"
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
+	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -37,7 +38,7 @@ type DownloadService struct {
 	*commonService
 }
 
-func NewDownloadService(bp backend.Provider, opts ...NewOpt) *DownloadService {
+func NewDownloadService(bp backend.Providers, opts ...NewOpt) *DownloadService {
 	return &DownloadService{
 		commonService: newCommonService(bp, opts...),
 	}
@@ -69,8 +70,16 @@ func (s *DownloadService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// For now we only support OCI
+	// TODO: select per-request
+	backendProvider, err := s.selectProvider(oci.ProviderID)
+	if err != nil {
+		http.Error(w, "backend not found", http.StatusNotFound)
+		return
+	}
+
 	// Retrieve the CAS backend from where to download the file
-	b, err := s.backendP.FromCredentials(ctx, auth.StoredSecretID)
+	b, err := backendProvider.FromCredentials(ctx, auth.StoredSecretID)
 	if err != nil {
 		http.Error(w, sl.LogAndMaskErr(err, s.log).Error(), http.StatusInternalServerError)
 		return

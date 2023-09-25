@@ -44,7 +44,7 @@ import (
 )
 
 // NewGRPCServer new a gRPC server.
-func NewGRPCServer(c *conf.Server, authConf *conf.Auth, byteService *service.ByteStreamService, rSvc *service.ResourceService, providers *backend.Providers, logger log.Logger) (*grpc.Server, error) {
+func NewGRPCServer(c *conf.Server, authConf *conf.Auth, byteService *service.ByteStreamService, rSvc *service.ResourceService, providers backend.Providers, logger log.Logger) (*grpc.Server, error) {
 	log := log.NewHelper(logger)
 	// Load the key on initialization instead of on every request
 	// TODO: implement jwks endpoint
