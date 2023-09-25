@@ -20,7 +20,6 @@ import (
 
 	v1 "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
-	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/errors"
 )
@@ -43,9 +42,7 @@ func (s *ResourceService) Describe(ctx context.Context, req *v1.ResourceServiceD
 		return nil, err
 	}
 
-	// For now we only support OCI
-	// TODO: select per-request
-	backendProvider, err := s.selectProvider(oci.ProviderID)
+	backendProvider, err := s.selectProvider(info.BackendType)
 	if err != nil {
 		return nil, errors.NotFound("not found", err.Error())
 	}

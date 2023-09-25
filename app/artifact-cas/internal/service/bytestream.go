@@ -71,9 +71,7 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 		return kerrors.BadRequest("resource name", err.Error())
 	}
 
-	// For now we only support OCI
-	// TODO: select per-request
-	backendProvider, err := s.selectProvider(oci.ProviderID)
+	backendProvider, err := s.selectProvider(info.BackendType)
 	if err != nil {
 		return kerrors.NotFound("not found", err.Error())
 	}

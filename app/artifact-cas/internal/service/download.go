@@ -24,7 +24,6 @@ import (
 
 	"code.cloudfoundry.org/bytefmt"
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
-	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -70,9 +69,7 @@ func (s *DownloadService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// For now we only support OCI
-	// TODO: select per-request
-	backendProvider, err := s.selectProvider(oci.ProviderID)
+	backendProvider, err := s.selectProvider(auth.BackendType)
 	if err != nil {
 		http.Error(w, "backend not found", http.StatusNotFound)
 		return

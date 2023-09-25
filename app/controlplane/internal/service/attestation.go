@@ -198,7 +198,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 			func() error {
 				// reset context
 				ctx := context.Background()
-				d, err := s.attestationUseCase.UploadToCAS(ctx, envelope, casBackend.SecretName, req.WorkflowRunId)
+				d, err := s.attestationUseCase.UploadToCAS(ctx, envelope, casBackend, req.WorkflowRunId)
 				if err != nil {
 					return err
 				}
@@ -237,7 +237,10 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	// Run integrations dispatcher
 	go func() {
 		if err := s.integrationDispatcher.Run(context.TODO(), &dispatcher.RunOpts{
-			Envelope: envelope, OrgID: robotAccount.OrgID, WorkflowID: robotAccount.WorkflowID, DownloadSecretName: secretName, WorkflowRunID: req.WorkflowRunId,
+			Envelope: envelope, OrgID: robotAccount.OrgID, WorkflowID: robotAccount.WorkflowID,
+			DownloadBackendType: string(casBackend.Provider),
+			DownloadSecretName:  secretName,
+			WorkflowRunID:       req.WorkflowRunId,
 		}); err != nil {
 			_ = sl.LogAndMaskErr(err, s.log)
 		}
@@ -329,7 +332,8 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 	// Return the backend information and associated credentials (if applicable)
 	resp := &cpAPI.AttestationServiceGetUploadCredsResponse_Result{Backend: bizCASBackendToPb(backend)}
 	if backend.SecretName != "" {
-		t, err := s.casCredsUseCase.GenerateTemporaryCredentials(backend.SecretName, casJWT.Uploader)
+		ref := &biz.CASCredsOpts{BackendType: string(backend.Provider), SecretPath: backend.SecretName, Role: casJWT.Uploader}
+		t, err := s.casCredsUseCase.GenerateTemporaryCredentials(ref)
 		if err != nil {
 			return nil, sl.LogAndMaskErr(err, s.log)
 		}

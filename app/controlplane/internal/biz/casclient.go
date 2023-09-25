@@ -40,11 +40,11 @@ type CASClientUseCase struct {
 }
 
 type CASUploader interface {
-	Upload(ctx context.Context, secretID string, content io.Reader, filename, digest string) error
+	Upload(ctx context.Context, backendType, secretID string, content io.Reader, filename, digest string) error
 }
 
 type CASDownloader interface {
-	Download(ctx context.Context, secretID string, w io.Writer, digest string) error
+	Download(ctx context.Context, backendType, secretID string, w io.Writer, digest string) error
 }
 
 type CASClient interface {
@@ -97,11 +97,11 @@ func NewCASClientUseCase(credsProvider *CASCredentialsUseCase, config *conf.Boot
 }
 
 // The secretID is embedded in the JWT token and is used to identify the secret by the CAS server
-func (uc *CASClientUseCase) Upload(ctx context.Context, secretID string, content io.Reader, filename, digest string) error {
+func (uc *CASClientUseCase) Upload(ctx context.Context, backendType, secretID string, content io.Reader, filename, digest string) error {
 	uc.logger.Infow("msg", "upload initialized", "filename", filename, "digest", digest)
 
 	// client with temporary set of credentials
-	client, closeFn, err := uc.casAPIClient(secretID, casJWT.Uploader)
+	client, closeFn, err := uc.casAPIClient(&CASCredsOpts{BackendType: backendType, SecretPath: secretID, Role: casJWT.Uploader})
 	if err != nil {
 		return fmt.Errorf("failed to create cas client: %w", err)
 	}
@@ -117,10 +117,10 @@ func (uc *CASClientUseCase) Upload(ctx context.Context, secretID string, content
 	return nil
 }
 
-func (uc *CASClientUseCase) Download(ctx context.Context, secretID string, w io.Writer, digest string) error {
+func (uc *CASClientUseCase) Download(ctx context.Context, backendType, secretID string, w io.Writer, digest string) error {
 	uc.logger.Infow("msg", "download initialized", "digest", digest)
 
-	client, closeFn, err := uc.casAPIClient(secretID, casJWT.Downloader)
+	client, closeFn, err := uc.casAPIClient(&CASCredsOpts{BackendType: backendType, SecretPath: secretID, Role: casJWT.Downloader})
 	if err != nil {
 		return fmt.Errorf("failed to create cas client: %w", err)
 	}
@@ -136,8 +136,8 @@ func (uc *CASClientUseCase) Download(ctx context.Context, secretID string, w io.
 }
 
 // create a client with a temporary set of credentials for a specific operation
-func (uc *CASClientUseCase) casAPIClient(secretID string, role casJWT.Role) (casclient.DownloaderUploader, func(), error) {
-	token, err := uc.credsProvider.GenerateTemporaryCredentials(secretID, role)
+func (uc *CASClientUseCase) casAPIClient(backendRef *CASCredsOpts) (casclient.DownloaderUploader, func(), error) {
+	token, err := uc.credsProvider.GenerateTemporaryCredentials(backendRef)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to generate temporary credentials: %w", err)
 	}

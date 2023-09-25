@@ -32,11 +32,11 @@ type Builder struct {
 	issuer     string
 	expiration *time.Duration
 }
-
 type Claims struct {
 	jwt.RegisteredClaims
 	Role           Role   `json:"role"`      // either downloader or uploader
 	StoredSecretID string `json:"secret-id"` // path to the OCI secret in the vault
+	BackendType    string `json:"backend"`   // backend to use, i.e OCI
 }
 
 type Role string
@@ -102,10 +102,29 @@ func NewBuilder(opts ...NewOpt) (*Builder, error) {
 	return b, nil
 }
 
-func (ra *Builder) GenerateJWT(secretID, audience string, role Role) (string, error) {
+func (ra *Builder) GenerateJWT(backendType, secretID, audience string, role Role) (string, error) {
+	if backendType == "" {
+		return "", fmt.Errorf("backend type is required")
+	}
+
+	if secretID == "" {
+		return "", fmt.Errorf("secret id is required")
+	}
+
+	if audience == "" {
+		return "", fmt.Errorf("audience is required")
+	}
+
+	if role != Downloader && role != Uploader {
+		return "", fmt.Errorf("invalid role")
+	}
+
 	claims := &Claims{
-		Role:           role,
+		Role: role,
+		// Credentials to instantiate the backend
 		StoredSecretID: secretID,
+		// Identifier for the backend, i.e OCI
+		BackendType: backendType,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:   ra.issuer,
 			Audience: jwt.ClaimStrings{audience},

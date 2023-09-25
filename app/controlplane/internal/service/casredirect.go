@@ -105,7 +105,8 @@ func (s *CASRedirectService) GetDownloadURL(ctx context.Context, req *pb.GetDown
 
 	// 2- add authentication token to the query params ?t=[token]
 	if backend.SecretName != "" {
-		t, err := s.casCredsUseCase.GenerateTemporaryCredentials(backend.SecretName, casJWT.Downloader)
+		ref := &biz.CASCredsOpts{BackendType: string(backend.Provider), SecretPath: backend.SecretName, Role: casJWT.Downloader}
+		t, err := s.casCredsUseCase.GenerateTemporaryCredentials(ref)
 		if err != nil {
 			return nil, sl.LogAndMaskErr(err, s.log)
 		}

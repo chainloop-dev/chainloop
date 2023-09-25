@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
+	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	kerrors "github.com/go-kratos/kratos/v2/errors"
@@ -37,6 +38,13 @@ type commonService struct {
 }
 
 func (s *commonService) selectProvider(id string) (backend.Provider, error) {
+	// if no provider is specified, default to OCI
+	// this is done for backward compatibility
+	if id == "" {
+		s.log.Warn("provider not set, defaulting to OCI")
+		id = oci.ProviderID
+	}
+
 	// get the OCI provider from the map
 	p, ok := s.backends[id]
 	if !ok {
