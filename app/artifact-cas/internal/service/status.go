@@ -38,7 +38,7 @@ func (s *StatusService) Statusz(_ context.Context, _ *pb.StatuszRequest) (*pb.St
 
 func (s *StatusService) Infoz(_ context.Context, _ *pb.InfozRequest) (*pb.InfozResponse, error) {
 	var backends = make([]string, 0, len(s.providers))
-	for k, _ := range s.providers {
+	for k := range s.providers {
 		backends = append(backends, k)
 	}
 

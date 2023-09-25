@@ -26,6 +26,7 @@ import (
 	"testing"
 
 	v1 "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
+	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
 	"github.com/chainloop-dev/chainloop/internal/blobmanager/mocks"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	"github.com/go-kratos/kratos/v2/log"
@@ -275,13 +276,15 @@ func (s *bytestreamSuite) SetupTest() {
 			),
 		),
 	)
-	backendProvider := mocks.NewProvider(s.T())
+	ociBackendProvider := mocks.NewProvider(s.T())
 	ociBackend := mocks.NewUploaderDownloader(s.T())
-	backendProvider.On("FromCredentials", mock.Anything, mock.Anything).Maybe().Return(ociBackend, nil)
+	ociBackendProvider.On("FromCredentials", mock.Anything, mock.Anything).Maybe().Return(ociBackend, nil)
 
 	bytestream.RegisterByteStreamServer(
 		server,
-		NewByteStreamService(backendProvider, WithLogger(log.DefaultLogger)),
+		NewByteStreamService(backend.Providers{
+			"OCI": ociBackendProvider,
+		}, WithLogger(log.DefaultLogger)),
 	)
 	go func() {
 		_ = server.Serve(l)

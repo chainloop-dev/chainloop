@@ -134,7 +134,7 @@ func main() {
 	}
 	defer cleanup()
 
-	for k, _ := range app.Providers {
+	for k := range app.Providers {
 		_ = logger.Log(log.LevelInfo, "msg", "CAS backend provider loaded", "provider", k)
 	}
 
