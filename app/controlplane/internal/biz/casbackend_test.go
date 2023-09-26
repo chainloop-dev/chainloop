@@ -73,7 +73,7 @@ func (s *casBackendTestSuite) TestFindDefaultBackendFound() {
 }
 
 func (s *casBackendTestSuite) TestSaveInvalidUUID() {
-	repo, err := s.useCase.CreateOrUpdate(context.Background(), s.invalidUUID, "", "", "", biz.CASBackendOCI, true)
+	repo, err := s.useCase.CreateOrUpdate(context.Background(), s.invalidUUID, "", "", "", backendType, true)
 	assert.True(s.T(), biz.IsErrInvalidUUID(err))
 	assert.Nil(s.T(), repo)
 }
@@ -83,18 +83,18 @@ func (s *casBackendTestSuite) TestSaveDefaultBackendAlreadyExist() {
 	assert := assert.New(s.T())
 	const repoName, username, password = "repo", "username", "pass"
 
-	r := &biz.CASBackend{ID: s.validUUID, Provider: biz.CASBackendOCI}
+	r := &biz.CASBackend{ID: s.validUUID, Provider: backendType}
 	ctx := context.Background()
 	s.repo.On("FindDefaultBackend", ctx, s.validUUID).Return(r, nil)
 	s.credsRW.On("SaveCredentials", ctx, s.validUUID.String(), mock.Anything).Return("secret-key", nil)
 	s.repo.On("Update", ctx, &biz.CASBackendUpdateOpts{
 		ID: s.validUUID,
 		CASBackendOpts: &biz.CASBackendOpts{
-			Location: repoName, SecretName: "secret-key", Default: true, Provider: biz.CASBackendOCI,
+			Location: repoName, SecretName: "secret-key", Default: true, Provider: backendType,
 		},
 	}).Return(r, nil)
 
-	gotRepo, err := s.useCase.CreateOrUpdate(ctx, s.validUUID.String(), repoName, username, password, biz.CASBackendOCI, true)
+	gotRepo, err := s.useCase.CreateOrUpdate(ctx, s.validUUID.String(), repoName, username, password, backendType, true)
 	assert.NoError(err)
 	assert.Equal(gotRepo, r)
 }
@@ -112,11 +112,11 @@ func (s *casBackendTestSuite) TestSaveDefaultBackendOk() {
 	s.repo.On("Create", ctx, &biz.CASBackendCreateOpts{
 		CASBackendOpts: &biz.CASBackendOpts{
 			OrgID:    s.validUUID,
-			Location: repo, SecretName: "secret-key", Default: true, Provider: biz.CASBackendOCI,
+			Location: repo, SecretName: "secret-key", Default: true, Provider: backendType,
 		},
 	}).Return(newRepo, nil)
 
-	gotRepo, err := s.useCase.CreateOrUpdate(ctx, s.validUUID.String(), repo, username, password, biz.CASBackendOCI, true)
+	gotRepo, err := s.useCase.CreateOrUpdate(ctx, s.validUUID.String(), repo, username, password, backendType, true)
 	assert.NoError(err)
 	assert.Equal(gotRepo, newRepo)
 }
@@ -124,7 +124,7 @@ func (s *casBackendTestSuite) TestSaveDefaultBackendOk() {
 func (s *casBackendTestSuite) TestPerformValidation() {
 	assert := assert.New(s.T())
 	t := s.T()
-	validRepo := &biz.CASBackend{ID: s.validUUID, ValidationStatus: biz.CASBackendValidationOK, Provider: biz.CASBackendOCI}
+	validRepo := &biz.CASBackend{ID: s.validUUID, ValidationStatus: biz.CASBackendValidationOK, Provider: backendType}
 
 	t.Run("invalid uuid", func(t *testing.T) {
 		err := s.useCase.PerformValidation(context.Background(), s.invalidUUID)

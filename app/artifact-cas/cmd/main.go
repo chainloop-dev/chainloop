@@ -25,6 +25,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/server"
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
+	"github.com/chainloop-dev/chainloop/internal/blobmanager/azureblob"
 	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	"github.com/chainloop-dev/chainloop/internal/credentials/manager"
@@ -64,11 +65,12 @@ type app struct {
 }
 
 func loadCASBackendProviders(creader credentials.Reader) backend.Providers {
-	// Currently only OCI is supported
-	// Here we will load the rest of providers, S3, GCS, etc
-	p := oci.NewBackendProvider(creader)
+	// Initialize CAS backend providers
+	ociProvider := oci.NewBackendProvider(creader)
+	azureBlobProvider := azureblob.NewBackendProvider(creader)
 	return backend.Providers{
-		p.ID(): p,
+		ociProvider.ID():       ociProvider,
+		azureBlobProvider.ID(): azureBlobProvider,
 	}
 }
 

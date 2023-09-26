@@ -51,12 +51,11 @@ func (p *BackendProvider) FromCredentials(ctx context.Context, secretName string
 		return nil, fmt.Errorf("invalid credentials retrieved from storage: %w", err)
 	}
 
-	// TODO: return AzureBlob backend
-	return nil, nil
+	return NewBackend(creds)
 }
 
 func (p *BackendProvider) ValidateAndExtractCredentials(storageAccount string, credsJSON []byte) (any, error) {
-	var creds Credentials
+	var creds *Credentials
 	if err := json.Unmarshal(credsJSON, &creds); err != nil {
 		return nil, fmt.Errorf("unmarshaling credentials: %w", err)
 	}
@@ -67,23 +66,15 @@ func (p *BackendProvider) ValidateAndExtractCredentials(storageAccount string, c
 		return nil, fmt.Errorf("invalid credentials: %w", err)
 	}
 
-	// Create and validate credentials
-	// TODO: do an actual check
-	//	k, err := ociauth.NewCredentials(storageAccount, creds.Username, creds.Password)
-	//	if err != nil {
-	//		return nil, fmt.Errorf("creating credentials: %w", err)
-	//	}
-	//
-	//	// Check credentials
-	//	b, err := NewBackend(storageAccount, &RegistryOptions{Keychain: k})
-	//	if err != nil {
-	//		return nil, fmt.Errorf("checking credentials: %w", err)
-	//	}
-	//
-	//	if err := b.CheckWritePermissions(context.TODO()); err != nil {
-	//		return nil, fmt.Errorf("checking write permissions: %w", err)
-	//	}
-	//
+	b, err := NewBackend(creds)
+	if err != nil {
+		return nil, fmt.Errorf("creating backend: %w", err)
+	}
+
+	if err := b.CheckWritePermissions(context.TODO()); err != nil {
+		return nil, fmt.Errorf("checking write permissions: %w", err)
+	}
+
 	return creds, nil
 }
 

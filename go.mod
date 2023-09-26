@@ -66,6 +66,8 @@ require (
 
 require (
 	cloud.google.com/go/storage v1.32.0
+	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.3.0
+	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.1.0
 	github.com/invopop/jsonschema v0.7.0
 	github.com/jackc/pgx/v5 v5.4.3
 	github.com/muesli/reflow v0.3.0
@@ -78,6 +80,9 @@ require (
 require (
 	cloud.google.com/go/pubsub v1.33.0 // indirect
 	dario.cat/mergo v1.0.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.7.1 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/internal v1.3.0 // indirect
+	github.com/AzureAD/microsoft-authentication-library-for-go v1.0.0 // indirect
 	github.com/anchore/go-struct-converter v0.0.0-20230627203149-c72ef8859ca9 // indirect
 	github.com/cockroachdb/apd/v3 v3.2.0 // indirect
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
@@ -89,10 +94,12 @@ require (
 	github.com/gorilla/handlers v1.5.1 // indirect
 	github.com/hashicorp/go-hclog v1.5.0 // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
+	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	github.com/nozzle/throttler v0.0.0-20180817012639-2ea982251481 // indirect
 	github.com/oklog/run v1.1.0 // indirect
 	github.com/package-url/packageurl-go v0.1.1 // indirect
+	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
 	github.com/pkg/xattr v0.4.9 // indirect
 	go.opentelemetry.io/otel/metric v1.17.0 // indirect
 	gopkg.in/go-jose/go-jose.v2 v2.6.1 // indirect

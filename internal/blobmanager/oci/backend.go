@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -60,12 +59,10 @@ func WithPrefix(prefix string) NewBackendOpt {
 	}
 }
 
-const defaultPrefix = "chainloop"
-
 func NewBackend(repository string, regOpts *RegistryOptions, opts ...NewBackendOpt) (*Backend, error) {
 	b := &Backend{
 		repo:     repository,
-		prefix:   defaultPrefix,
+		prefix:   backend.DefaultPrefix,
 		keychain: regOpts.Keychain,
 	}
 
@@ -142,8 +139,6 @@ func (b *Backend) resourcePath(resourceName string) string {
 	return fmt.Sprintf("%s/%s-%s", b.repo, b.prefix, resourceName)
 }
 
-const authorAnnotation = "chainloop.dev"
-
 func craftImage(content []byte, resource *pb.CASResource) (v1.Image, error) {
 	if len(content) == 0 {
 		return nil, errors.New("content is empty")
@@ -156,23 +151,18 @@ func craftImage(content []byte, resource *pb.CASResource) (v1.Image, error) {
 	base := mutate.MediaType(empty.Image, types.OCIManifestSchema1)
 	base = mutate.ConfigMediaType(base, types.OCIConfigJSON)
 	base = mutate.Annotations(base, map[string]string{
-		ocispec.AnnotationAuthors: authorAnnotation,
+		ocispec.AnnotationAuthors: backend.AuthorAnnotation,
 		// TODO: Move this annotation to layer
 		ocispec.AnnotationTitle: resource.FileName,
 	}).(v1.Image)
 
-	layer := static.NewLayer(content, detectedMediaType(content))
+	layer := static.NewLayer(content, backend.DetectedMediaType(content))
 	img, err := mutate.Append(base, mutate.Addendum{Layer: layer})
 	if err != nil {
 		return nil, err
 	}
 
 	return img, nil
-}
-
-// Detect the media type based on the provided content
-func detectedMediaType(b []byte) types.MediaType {
-	return types.MediaType(strings.Split(http.DetectContentType(b), ";")[0])
 }
 
 func (b *Backend) Describe(_ context.Context, digest string) (*pb.CASResource, error) {
@@ -265,7 +255,7 @@ func validateImage(img v1.Image, digest string) error {
 		return fmt.Errorf("getting manifest: %w", err)
 	}
 
-	if v, ok := m.Annotations[ocispec.AnnotationAuthors]; !ok || v != authorAnnotation {
+	if v, ok := m.Annotations[ocispec.AnnotationAuthors]; !ok || v != backend.AuthorAnnotation {
 		return errors.New("image not uploaded by chainloop")
 	}
 

@@ -21,6 +21,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
+	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
 	creds "github.com/chainloop-dev/chainloop/internal/credentials/mocks"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -33,7 +34,7 @@ import (
 
 const location = "my-location"
 const description = "my-description"
-const backendType = biz.CASBackendOCI
+const backendType = oci.ProviderID
 
 func (s *CASBackendIntegrationTestSuite) TestCreate() {
 	assert := assert.New(s.T())
@@ -326,11 +327,11 @@ func (s *CASBackendIntegrationTestSuite) SetupTest() {
 	s.orgNoBackend, err = s.Organization.Create(ctx, "testing org 3, no backends")
 	assert.NoError(err)
 
-	s.casBackend1, err = s.CASBackend.Create(ctx, s.orgOne.ID, "my-location", "backend 1 description", biz.CASBackendOCI, nil, true)
+	s.casBackend1, err = s.CASBackend.Create(ctx, s.orgOne.ID, "my-location", "backend 1 description", backendType, nil, true)
 	assert.NoError(err)
-	s.casBackend2, err = s.CASBackend.Create(ctx, s.orgTwo.ID, "my-location 2", "backend 2 description", biz.CASBackendOCI, nil, true)
+	s.casBackend2, err = s.CASBackend.Create(ctx, s.orgTwo.ID, "my-location 2", "backend 2 description", backendType, nil, true)
 	assert.NoError(err)
-	s.casBackend3, err = s.CASBackend.Create(ctx, s.orgTwo.ID, "my-location 3", "backend 3 description", biz.CASBackendOCI, nil, false)
+	s.casBackend3, err = s.CASBackend.Create(ctx, s.orgTwo.ID, "my-location 3", "backend 3 description", backendType, nil, false)
 	assert.NoError(err)
 }
 

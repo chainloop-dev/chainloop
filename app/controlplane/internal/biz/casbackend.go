@@ -24,6 +24,8 @@ import (
 	"time"
 
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
+	"github.com/chainloop-dev/chainloop/internal/blobmanager/azureblob"
+	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
@@ -33,9 +35,7 @@ import (
 type CASBackendProvider string
 
 const (
-	CASBackendOCI             CASBackendProvider = "OCI"
-	CASBackendAzureBlob       CASBackendProvider = "AzureBlob"
-	CASBackendDefaultMaxBytes int64              = 100 * 1024 * 1024 // 100MB
+	CASBackendDefaultMaxBytes int64 = 100 * 1024 * 1024 // 100MB
 	// Inline, embedded CAS backend
 	CASBackendInline                CASBackendProvider = "INLINE"
 	CASBackendInlineDefaultMaxBytes int64              = 500 * 1024 // 500KB
@@ -470,7 +470,7 @@ func (uc *CASBackendUseCase) PerformValidation(ctx context.Context, id string) (
 
 // Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues
 func (CASBackendProvider) Values() (kinds []string) {
-	for _, s := range []CASBackendProvider{CASBackendOCI, CASBackendAzureBlob, CASBackendInline} {
+	for _, s := range []CASBackendProvider{azureblob.ProviderID, oci.ProviderID, CASBackendInline} {
 		kinds = append(kinds, string(s))
 	}
 
