@@ -45,7 +45,7 @@ func NewAttestationUseCase(client CASClient, logger log.Logger) *AttestationUseC
 	}
 }
 
-func (uc *AttestationUseCase) UploadToCAS(ctx context.Context, envelope *dsse.Envelope, secretID, workflowRunID string) (*cr_v1.Hash, error) {
+func (uc *AttestationUseCase) UploadToCAS(ctx context.Context, envelope *dsse.Envelope, backend *CASBackend, workflowRunID string) (*cr_v1.Hash, error) {
 	filename := fmt.Sprintf("attestation-%s.json", workflowRunID)
 	jsonContent, err := json.Marshal(envelope)
 	if err != nil {
@@ -57,7 +57,7 @@ func (uc *AttestationUseCase) UploadToCAS(ctx context.Context, envelope *dsse.En
 		return nil, fmt.Errorf("calculating the digest: %w", err)
 	}
 
-	if err := uc.CASClient.Upload(ctx, secretID, bytes.NewBuffer(jsonContent), filename, h.String()); err != nil {
+	if err := uc.CASClient.Upload(ctx, string(backend.Provider), backend.SecretName, bytes.NewBuffer(jsonContent), filename, h.String()); err != nil {
 		return nil, fmt.Errorf("uploading to CAS: %w", err)
 	}
 

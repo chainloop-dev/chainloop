@@ -64,7 +64,7 @@ func TestShouldRevalidate(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			repo := &biz.CASBackend{
 				ValidationStatus: tc.repoStatus,
-				ValidatedAt:      &tc.repoValidatedAt,
+				ValidatedAt:      toTimePtr(tc.repoValidatedAt),
 			}
 
 			assert.Equal(t, tc.expected, shouldRevalidate(repo))

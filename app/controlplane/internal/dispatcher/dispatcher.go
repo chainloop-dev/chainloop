@@ -68,11 +68,12 @@ type dispatchItem struct {
 type dispatchQueue []*dispatchItem
 
 type RunOpts struct {
-	Envelope           *dsse.Envelope
-	OrgID              string
-	WorkflowID         string
-	WorkflowRunID      string
-	DownloadSecretName string
+	Envelope            *dsse.Envelope
+	OrgID               string
+	WorkflowID          string
+	WorkflowRunID       string
+	DownloadBackendType string
+	DownloadSecretName  string
 }
 
 func (d *FanOutDispatcher) Run(ctx context.Context, opts *RunOpts) error {
@@ -90,7 +91,7 @@ func (d *FanOutDispatcher) Run(ctx context.Context, opts *RunOpts) error {
 	}
 
 	// 2. Hydrate the dispatch queue with the actual inputs
-	if err := d.loadInputs(ctx, queue, opts.Envelope, opts.DownloadSecretName); err != nil {
+	if err := d.loadInputs(ctx, queue, opts.Envelope, opts.DownloadBackendType, opts.DownloadSecretName); err != nil {
 		return fmt.Errorf("loading materials: %w", err)
 	}
 
@@ -194,7 +195,7 @@ func (d *FanOutDispatcher) initDispatchQueue(ctx context.Context, orgID, workflo
 }
 
 // Load the inputs for the dispatchItem, both materials and attestation
-func (d *FanOutDispatcher) loadInputs(ctx context.Context, queue dispatchQueue, att *dsse.Envelope, secretName string) error {
+func (d *FanOutDispatcher) loadInputs(ctx context.Context, queue dispatchQueue, att *dsse.Envelope, backendType, secretName string) error {
 	if att == nil {
 		return fmt.Errorf("attestation is nil")
 	}
@@ -249,7 +250,7 @@ func (d *FanOutDispatcher) loadInputs(ctx context.Context, queue dispatchQueue, 
 				// It's a downloadable and has not been downloaded yet
 				if !downloaded && material.Hash != nil && material.UploadedToCAS {
 					buf := bytes.NewBuffer(nil)
-					if err := d.casClient.Download(ctx, secretName, buf, material.Hash.String()); err != nil {
+					if err := d.casClient.Download(ctx, backendType, secretName, buf, material.Hash.String()); err != nil {
 						return fmt.Errorf("downloading from CAS: %w", err)
 					}
 

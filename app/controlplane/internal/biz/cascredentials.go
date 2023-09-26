@@ -43,6 +43,12 @@ func NewCASCredentialsUseCase(c *conf.Auth) (*CASCredentialsUseCase, error) {
 	return &CASCredentialsUseCase{builder}, nil
 }
 
-func (uc *CASCredentialsUseCase) GenerateTemporaryCredentials(secretID string, role robotaccount.Role) (string, error) {
-	return uc.jwtBuilder.GenerateJWT(secretID, jwt.CASAudience, role)
+type CASCredsOpts struct {
+	BackendType string // i.e OCI, S3
+	SecretPath  string // path to for example the OCI secret in the vault
+	Role        robotaccount.Role
+}
+
+func (uc *CASCredentialsUseCase) GenerateTemporaryCredentials(backendRef *CASCredsOpts) (string, error) {
+	return uc.jwtBuilder.GenerateJWT(backendRef.BackendType, backendRef.SecretPath, jwt.CASAudience, backendRef.Role)
 }

@@ -17,17 +17,20 @@ package service
 
 import (
 	"context"
+	"sort"
 
 	pb "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
+	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
 )
 
 type StatusService struct {
-	version string
+	version   string
+	providers backend.Providers
 	pb.UnimplementedStatusServiceServer
 }
 
-func NewStatusService(version string) *StatusService {
-	return &StatusService{version: version}
+func NewStatusService(version string, providers backend.Providers) *StatusService {
+	return &StatusService{version: version, providers: providers}
 }
 
 func (s *StatusService) Statusz(_ context.Context, _ *pb.StatuszRequest) (*pb.StatuszResponse, error) {
@@ -35,5 +38,12 @@ func (s *StatusService) Statusz(_ context.Context, _ *pb.StatuszRequest) (*pb.St
 }
 
 func (s *StatusService) Infoz(_ context.Context, _ *pb.InfozRequest) (*pb.InfozResponse, error) {
-	return &pb.InfozResponse{Version: s.version}, nil
+	var backends = make([]string, 0, len(s.providers))
+	for k := range s.providers {
+		backends = append(backends, k)
+	}
+
+	sort.Strings(backends)
+
+	return &pb.InfozResponse{Version: s.version, Backends: backends}, nil
 }

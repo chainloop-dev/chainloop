@@ -29,7 +29,7 @@ type ResourceService struct {
 	*commonService
 }
 
-func NewResourceService(bp backend.Provider, opts ...NewOpt) *ResourceService {
+func NewResourceService(bp backend.Providers, opts ...NewOpt) *ResourceService {
 	return &ResourceService{
 		commonService: newCommonService(bp, opts...),
 	}
@@ -42,8 +42,10 @@ func (s *ResourceService) Describe(ctx context.Context, req *v1.ResourceServiceD
 		return nil, err
 	}
 
-	b, err := s.backendP.FromCredentials(ctx, info.StoredSecretID)
-	if err != nil {
+	b, err := s.loadBackend(ctx, info.BackendType, info.StoredSecretID)
+	if err != nil && errors.IsNotFound(err) {
+		return nil, err
+	} else if err != nil {
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}
 

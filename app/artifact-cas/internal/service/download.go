@@ -26,6 +26,7 @@ import (
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
+	kerrors "github.com/go-kratos/kratos/v2/errors"
 	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/gorilla/mux"
 )
@@ -37,7 +38,7 @@ type DownloadService struct {
 	*commonService
 }
 
-func NewDownloadService(bp backend.Provider, opts ...NewOpt) *DownloadService {
+func NewDownloadService(bp backend.Providers, opts ...NewOpt) *DownloadService {
 	return &DownloadService{
 		commonService: newCommonService(bp, opts...),
 	}
@@ -69,9 +70,11 @@ func (s *DownloadService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Retrieve the CAS backend from where to download the file
-	b, err := s.backendP.FromCredentials(ctx, auth.StoredSecretID)
-	if err != nil {
+	b, err := s.loadBackend(ctx, auth.BackendType, auth.StoredSecretID)
+	if err != nil && kerrors.IsNotFound(err) {
+		http.Error(w, "backend not found", http.StatusNotFound)
+		return
+	} else if err != nil {
 		http.Error(w, sl.LogAndMaskErr(err, s.log).Error(), http.StatusInternalServerError)
 		return
 	}

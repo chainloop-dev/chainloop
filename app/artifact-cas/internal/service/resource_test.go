@@ -21,6 +21,7 @@ import (
 
 	v1 "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/service"
+	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
 	"github.com/chainloop-dev/chainloop/internal/blobmanager/mocks"
 	casjwt "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	jwtmiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
@@ -31,12 +32,10 @@ import (
 func (s *resourceSuite) TestDescribe() {
 	want := &v1.CASResource{FileName: "test.txt", Digest: "deadbeef"}
 
-	s.ociProvider.On("Describe", mock.Anything, "deadbeef").
-		Return(want, nil)
+	s.ociBackend.On("Describe", mock.Anything, "deadbeef").Return(want, nil)
+	ctx := jwtmiddleware.NewContext(context.Background(), &casjwt.Claims{StoredSecretID: "secret-id", BackendType: "backend1", Role: casjwt.Downloader})
 
-	ctx := jwtmiddleware.NewContext(context.Background(), &casjwt.Claims{StoredSecretID: "secret-id"})
-
-	svc := service.NewResourceService(s.backendProvider)
+	svc := service.NewResourceService(s.backendProviders)
 	got, err := svc.Describe(ctx, &v1.ResourceServiceDescribeRequest{
 		Digest: "deadbeef",
 	})
@@ -47,18 +46,20 @@ func (s *resourceSuite) TestDescribe() {
 
 type resourceSuite struct {
 	suite.Suite
-	ociProvider     *mocks.UploaderDownloader
-	backendProvider *mocks.Provider
+	ociBackend       *mocks.UploaderDownloader
+	backendProviders backend.Providers
 }
 
 func (s *resourceSuite) SetupTest() {
-	backendProvider := mocks.NewProvider(s.T())
-	ociProvider := mocks.NewUploaderDownloader(s.T())
-	backendProvider.On("FromCredentials", mock.Anything, "secret-id").
-		Return(ociProvider, nil)
+	ociBackendProvider := mocks.NewProvider(s.T())
+	ociBackend := mocks.NewUploaderDownloader(s.T())
+	ociBackendProvider.On("FromCredentials", mock.Anything, "secret-id").
+		Return(ociBackend, nil)
 
-	s.ociProvider = ociProvider
-	s.backendProvider = backendProvider
+	s.ociBackend = ociBackend
+	s.backendProviders = backend.Providers{
+		"backend1": ociBackendProvider,
+	}
 }
 
 // Run the tests

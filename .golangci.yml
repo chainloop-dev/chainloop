@@ -72,3 +72,7 @@ severity:
         - staticcheck
       text: "SA1019:"
       severity: info
+issues:
+  exclude-rules:
+    - path: _test\.go
+      text: "Potential hardcoded credentials"

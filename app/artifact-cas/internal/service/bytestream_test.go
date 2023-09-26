@@ -26,6 +26,7 @@ import (
 	"testing"
 
 	v1 "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
+	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
 	"github.com/chainloop-dev/chainloop/internal/blobmanager/mocks"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	"github.com/go-kratos/kratos/v2/log"
@@ -248,6 +249,7 @@ func (s *bytestreamSuite) TearDownTest() {
 }
 
 func (s *bytestreamSuite) SetupTest() {
+	const backendType = "backend-type"
 	// 1 MB buffer
 	l := bufconn.Listen(1 << 20)
 	server := grpc.NewServer(
@@ -260,7 +262,9 @@ func (s *bytestreamSuite) SetupTest() {
 						return ctx, nil
 					}
 
-					claims := &casJWT.Claims{}
+					claims := &casJWT.Claims{
+						StoredSecretID: "secret-id", BackendType: backendType,
+					}
 
 					if roles := md.Get("role"); len(roles) > 0 {
 						if roles[0] == "downloader" {
@@ -275,13 +279,15 @@ func (s *bytestreamSuite) SetupTest() {
 			),
 		),
 	)
-	backendProvider := mocks.NewProvider(s.T())
+	ociBackendProvider := mocks.NewProvider(s.T())
 	ociBackend := mocks.NewUploaderDownloader(s.T())
-	backendProvider.On("FromCredentials", mock.Anything, mock.Anything).Maybe().Return(ociBackend, nil)
+	ociBackendProvider.On("FromCredentials", mock.Anything, mock.Anything).Maybe().Return(ociBackend, nil)
 
 	bytestream.RegisterByteStreamServer(
 		server,
-		NewByteStreamService(backendProvider, WithLogger(log.DefaultLogger)),
+		NewByteStreamService(backend.Providers{
+			backendType: ociBackendProvider,
+		}, WithLogger(log.DefaultLogger)),
 	)
 	go func() {
 		_ = server.Serve(l)

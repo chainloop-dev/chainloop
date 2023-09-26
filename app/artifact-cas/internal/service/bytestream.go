@@ -41,7 +41,7 @@ type ByteStreamService struct {
 	*commonService
 }
 
-func NewByteStreamService(bp backend.Provider, opts ...NewOpt) *ByteStreamService {
+func NewByteStreamService(bp backend.Providers, opts ...NewOpt) *ByteStreamService {
 	return &ByteStreamService{
 		commonService: newCommonService(bp, opts...),
 	}
@@ -70,9 +70,10 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 		return kerrors.BadRequest("resource name", err.Error())
 	}
 
-	// Load OCI backend based on a reference stored in the token
-	backend, err := s.backendP.FromCredentials(ctx, info.StoredSecretID)
-	if err != nil {
+	backend, err := s.loadBackend(ctx, info.BackendType, info.StoredSecretID)
+	if err != nil && kerrors.IsNotFound(err) {
+		return err
+	} else if err != nil {
 		return sl.LogAndMaskErr(err, s.log)
 	}
 
@@ -142,9 +143,10 @@ func (s *ByteStreamService) Read(req *bytestream.ReadRequest, stream bytestream.
 		return kerrors.BadRequest("resource name", "empty resource name")
 	}
 
-	// Retrieve the OCI backend from where to download the file
-	backend, err := s.backendP.FromCredentials(ctx, info.StoredSecretID)
-	if err != nil {
+	backend, err := s.loadBackend(ctx, info.BackendType, info.StoredSecretID)
+	if err != nil && kerrors.IsNotFound(err) {
+		return err
+	} else if err != nil {
 		return sl.LogAndMaskErr(err, s.log)
 	}
 

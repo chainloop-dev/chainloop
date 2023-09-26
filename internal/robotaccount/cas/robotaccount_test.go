@@ -150,7 +150,7 @@ func TestGenerateJWT(t *testing.T) {
 	)
 
 	require.NoError(t, err)
-	token, err := b.GenerateJWT("secret-id", JWTAudience, Uploader)
+	token, err := b.GenerateJWT("OCI", "secret-id", JWTAudience, Uploader)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
 

@@ -17,6 +17,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
@@ -32,7 +33,25 @@ var ProviderSet = wire.NewSet(NewByteStreamService, NewResourceService, NewDownl
 
 type commonService struct {
 	log      *log.Helper
-	backendP backend.Provider
+	backends backend.Providers
+}
+
+func (s *commonService) loadBackend(ctx context.Context, providerType, secretID string) (backend.UploaderDownloader, error) {
+	// get the OCI provider from the map
+	p, ok := s.backends[providerType]
+	if !ok || p == nil {
+		return nil, kerrors.NotFound("backend provider", providerType)
+	}
+
+	s.log.Infow("msg", "selected provider", "provider", providerType)
+
+	// Retrieve the OCI backend from where to download the file
+	backend, err := p.FromCredentials(ctx, secretID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve backend: %w", err)
+	}
+
+	return backend, nil
 }
 
 type NewOpt func(s *commonService)
@@ -43,10 +62,10 @@ func WithLogger(logger log.Logger) NewOpt {
 	}
 }
 
-func newCommonService(bp backend.Provider, opts ...NewOpt) *commonService {
+func newCommonService(backends backend.Providers, opts ...NewOpt) *commonService {
 	s := &commonService{
 		log:      servicelogger.EmptyLogger(),
-		backendP: bp,
+		backends: backends,
 	}
 
 	for _, opt := range opts {
@@ -66,6 +85,18 @@ func infoFromAuth(ctx context.Context) (*casJWT.Claims, error) {
 	claims, ok := rawClaims.(*casJWT.Claims)
 	if !ok {
 		return nil, kerrors.Unauthorized("cas", "invalid authentication information")
+	}
+
+	if claims.StoredSecretID == "" {
+		return nil, kerrors.Unauthorized("cas", "missing secret reference")
+	}
+
+	if claims.BackendType == "" {
+		return nil, kerrors.Unauthorized("cas", "missing backend type")
+	}
+
+	if claims.Role != casJWT.Uploader && claims.Role != casJWT.Downloader {
+		return nil, kerrors.Unauthorized("cas", "invalid role")
 	}
 
 	return claims, nil

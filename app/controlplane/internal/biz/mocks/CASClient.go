@@ -14,27 +14,13 @@ type CASClient struct {
 	mock.Mock
 }
 
-// Configured provides a mock function with given fields:
-func (_m *CASClient) Configured() bool {
-	ret := _m.Called()
-
-	var r0 bool
-	if rf, ok := ret.Get(0).(func() bool); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-
-	return r0
-}
-
-// Download provides a mock function with given fields: ctx, secretID, w, digest
-func (_m *CASClient) Download(ctx context.Context, secretID string, w io.Writer, digest string) error {
-	ret := _m.Called(ctx, secretID, w, digest)
+// Download provides a mock function with given fields: ctx, backendType, secretID, w, digest
+func (_m *CASClient) Download(ctx context.Context, backendType string, secretID string, w io.Writer, digest string) error {
+	ret := _m.Called(ctx, backendType, secretID, w, digest)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, io.Writer, string) error); ok {
-		r0 = rf(ctx, secretID, w, digest)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, io.Writer, string) error); ok {
+		r0 = rf(ctx, backendType, secretID, w, digest)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -42,13 +28,13 @@ func (_m *CASClient) Download(ctx context.Context, secretID string, w io.Writer,
 	return r0
 }
 
-// Upload provides a mock function with given fields: ctx, secretID, content, filename, digest
-func (_m *CASClient) Upload(ctx context.Context, secretID string, content io.Reader, filename string, digest string) error {
-	ret := _m.Called(ctx, secretID, content, filename, digest)
+// Upload provides a mock function with given fields: ctx, backendType, secretID, content, filename, digest
+func (_m *CASClient) Upload(ctx context.Context, backendType string, secretID string, content io.Reader, filename string, digest string) error {
+	ret := _m.Called(ctx, backendType, secretID, content, filename, digest)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, io.Reader, string, string) error); ok {
-		r0 = rf(ctx, secretID, content, filename, digest)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, io.Reader, string, string) error); ok {
+		r0 = rf(ctx, backendType, secretID, content, filename, digest)
 	} else {
 		r0 = ret.Error(0)
 	}

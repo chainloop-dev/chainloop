@@ -24,6 +24,8 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/server"
+	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
+	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	"github.com/chainloop-dev/chainloop/internal/credentials/manager"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
@@ -56,19 +58,36 @@ func init() {
 	flag.StringVar(&flagconf, "conf", "../../configs", "config path, eg: -conf config.yaml")
 }
 
-func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTPMetricsServer) *kratos.App {
-	return kratos.New(
-		kratos.ID(id),
-		kratos.Name(Name),
-		kratos.Version(Version),
-		kratos.Metadata(map[string]string{}),
-		kratos.Logger(logger),
-		kratos.Server(
-			gs,
-			hs,
-			ms,
+type app struct {
+	*kratos.App
+	backend.Providers
+}
+
+func loadCASBackendProviders(creader credentials.Reader) backend.Providers {
+	// Currently only OCI is supported
+	// Here we will load the rest of providers, S3, GCS, etc
+	p := oci.NewBackendProvider(creader)
+	return backend.Providers{
+		p.ID(): p,
+	}
+}
+
+func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTPMetricsServer, providers backend.Providers) *app {
+	return &app{
+		kratos.New(
+			kratos.ID(id),
+			kratos.Name(Name),
+			kratos.Version(Version),
+			kratos.Metadata(map[string]string{}),
+			kratos.Logger(logger),
+			kratos.Server(
+				gs,
+				hs,
+				ms,
+			),
 		),
-	)
+		providers,
+	}
 }
 
 func main() {
@@ -114,6 +133,10 @@ func main() {
 		panic(err)
 	}
 	defer cleanup()
+
+	for k := range app.Providers {
+		_ = logger.Log(log.LevelInfo, "msg", "CAS backend provider loaded", "provider", k)
+	}
 
 	// start and wait for stop signal
 	if err := app.Run(); err != nil {
