@@ -43,10 +43,10 @@ func (s *ResourceService) Describe(ctx context.Context, req *v1.ResourceServiceD
 	}
 
 	b, err := s.loadBackend(ctx, info.BackendType, info.StoredSecretID)
-	if err != nil {
+	if err != nil && errors.IsNotFound(err) {
+		return nil, err
+	} else if err != nil {
 		return nil, sl.LogAndMaskErr(err, s.log)
-	} else if b == nil {
-		return nil, errors.NotFound("not found", err.Error())
 	}
 
 	res, err := b.Describe(ctx, req.Digest)

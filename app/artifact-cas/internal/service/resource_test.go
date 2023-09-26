@@ -33,7 +33,7 @@ func (s *resourceSuite) TestDescribe() {
 	want := &v1.CASResource{FileName: "test.txt", Digest: "deadbeef"}
 
 	s.ociBackend.On("Describe", mock.Anything, "deadbeef").Return(want, nil)
-	ctx := jwtmiddleware.NewContext(context.Background(), &casjwt.Claims{StoredSecretID: "secret-id"})
+	ctx := jwtmiddleware.NewContext(context.Background(), &casjwt.Claims{StoredSecretID: "secret-id", BackendType: "backend1", Role: casjwt.Downloader})
 
 	svc := service.NewResourceService(s.backendProviders)
 	got, err := svc.Describe(ctx, &v1.ResourceServiceDescribeRequest{
@@ -58,7 +58,7 @@ func (s *resourceSuite) SetupTest() {
 
 	s.ociBackend = ociBackend
 	s.backendProviders = backend.Providers{
-		"OCI": ociBackendProvider,
+		"backend1": ociBackendProvider,
 	}
 }
 

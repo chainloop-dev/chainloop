@@ -71,10 +71,10 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 	}
 
 	backend, err := s.loadBackend(ctx, info.BackendType, info.StoredSecretID)
-	if err != nil {
+	if err != nil && kerrors.IsNotFound(err) {
+		return err
+	} else if err != nil {
 		return sl.LogAndMaskErr(err, s.log)
-	} else if backend == nil {
-		return kerrors.NotFound("not found", err.Error())
 	}
 
 	// We check if the file already exists even before we wait for the whole buffer to be filled
@@ -144,10 +144,10 @@ func (s *ByteStreamService) Read(req *bytestream.ReadRequest, stream bytestream.
 	}
 
 	backend, err := s.loadBackend(ctx, info.BackendType, info.StoredSecretID)
-	if err != nil {
+	if err != nil && kerrors.IsNotFound(err) {
+		return err
+	} else if err != nil {
 		return sl.LogAndMaskErr(err, s.log)
-	} else if backend == nil {
-		return kerrors.NotFound("not found", err.Error())
 	}
 
 	// streamwriter will stream chunks of data to the client

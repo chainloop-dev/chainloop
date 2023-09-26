@@ -39,8 +39,8 @@ type commonService struct {
 func (s *commonService) loadBackend(ctx context.Context, providerType, secretID string) (backend.UploaderDownloader, error) {
 	// get the OCI provider from the map
 	p, ok := s.backends[providerType]
-	if !ok {
-		return nil, nil
+	if !ok || p == nil {
+		return nil, kerrors.NotFound("backend provider", providerType)
 	}
 
 	s.log.Infow("msg", "selected provider", "provider", providerType)
@@ -95,8 +95,8 @@ func infoFromAuth(ctx context.Context) (*casJWT.Claims, error) {
 		return nil, kerrors.Unauthorized("cas", "missing backend type")
 	}
 
-	if claims.Role == "" {
-		return nil, kerrors.Unauthorized("cas", "missing role")
+	if claims.Role != casJWT.Uploader && claims.Role != casJWT.Downloader {
+		return nil, kerrors.Unauthorized("cas", "invalid role")
 	}
 
 	return claims, nil
