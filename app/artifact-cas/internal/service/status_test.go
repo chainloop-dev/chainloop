@@ -27,6 +27,7 @@ import (
 var enabledProviders backend.Providers = backend.Providers{
 	"OCI": nil,
 	"GCS": nil,
+	"ABC": nil,
 }
 
 func TestInfoz(t *testing.T) {
@@ -34,7 +35,7 @@ func TestInfoz(t *testing.T) {
 	got, err := service.NewStatusService(want, enabledProviders).Infoz(context.Background(), nil)
 	assert.NoError(t, err)
 	assert.Equal(t, want, got.Version)
-	assert.Equal(t, []string{"OCI", "GCS"}, got.Backends)
+	assert.Equal(t, []string{"ABC", "GCS", "OCI"}, got.Backends)
 }
 
 func TestStatusz(t *testing.T) {

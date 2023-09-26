@@ -17,6 +17,7 @@ package service
 
 import (
 	"context"
+	"sort"
 
 	pb "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
@@ -41,6 +42,8 @@ func (s *StatusService) Infoz(_ context.Context, _ *pb.InfozRequest) (*pb.InfozR
 	for k := range s.providers {
 		backends = append(backends, k)
 	}
+
+	sort.Strings(backends)
 
 	return &pb.InfozResponse{Version: s.version, Backends: backends}, nil
 }
