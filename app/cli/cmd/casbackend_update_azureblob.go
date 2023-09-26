@@ -16,19 +16,16 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
-	"github.com/chainloop-dev/chainloop/internal/blobmanager/azureblob"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/spf13/cobra"
 )
 
-func newCASBackendAddAzureBlobStorageCmd() *cobra.Command {
-	var storageAccountName, tenantID, clientID, clientSecret, container string
+func newCASBackendUpdateAzureBlobCmd() *cobra.Command {
+	var backendID, tenantID, clientID, clientSecret string
 	cmd := &cobra.Command{
 		Use:   "azure-blob",
-		Short: "Register a Azure Blob Storage CAS Backend",
+		Short: "Update a AzureBlob CAS Backend description, credentials or default status",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// If we are setting the default, we list existing CAS backends
 			// and ask the user to confirm the rewrite
@@ -38,8 +35,17 @@ func newCASBackendAddAzureBlobStorageCmd() *cobra.Command {
 			description, err := cmd.Flags().GetString("description")
 			cobra.CheckErr(err)
 
+			// If we are overriding the default we ask for confirmation
 			if isDefault {
-				if confirmed, err := confirmDefaultCASBackendOverride(actionOpts, ""); err != nil {
+				if confirmed, err := confirmDefaultCASBackendOverride(actionOpts, backendID); err != nil {
+					return err
+				} else if !confirmed {
+					log.Info("Aborting...")
+					return nil
+				}
+			} else {
+				// If we are removing the default we ask for confirmation too
+				if confirmed, err := confirmDefaultCASBackendUnset(backendID, "You are setting the default CAS backend to false", actionOpts); err != nil {
 					return err
 				} else if !confirmed {
 					log.Info("Aborting...")
@@ -47,9 +53,8 @@ func newCASBackendAddAzureBlobStorageCmd() *cobra.Command {
 				}
 			}
 
-			opts := &action.NewCASBackendAddOpts{
-				Location:    fmt.Sprintf("%s/%s", storageAccountName, container),
-				Provider:    azureblob.ProviderID,
+			opts := &action.NewCASBackendUpdateOpts{
+				ID:          backendID,
 				Description: description,
 				Credentials: map[string]any{
 					"tenantID":     tenantID,
@@ -59,7 +64,12 @@ func newCASBackendAddAzureBlobStorageCmd() *cobra.Command {
 				Default: isDefault,
 			}
 
-			res, err := action.NewCASBackendAdd(actionOpts).Run(opts)
+			// this means that we are not updating credentials
+			if tenantID == "" && clientID == "" && clientSecret == "" {
+				opts.Credentials = nil
+			}
+
+			res, err := action.NewCASBackendUpdate(actionOpts).Run(opts)
 			if err != nil {
 				return err
 			} else if res == nil {
@@ -70,22 +80,13 @@ func newCASBackendAddAzureBlobStorageCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&storageAccountName, "storage-account", "", "Storage Account Name")
-	err := cmd.MarkFlagRequired("storage-account")
+	cmd.Flags().StringVar(&backendID, "id", "", "CAS Backend ID")
+	err := cmd.MarkFlagRequired("id")
 	cobra.CheckErr(err)
 
 	cmd.Flags().StringVar(&tenantID, "tenant", "", "Active Directory Tenant ID")
-	err = cmd.MarkFlagRequired("tenant")
-	cobra.CheckErr(err)
-
 	cmd.Flags().StringVar(&clientID, "client-id", "", "Service Principal Client ID")
-	err = cmd.MarkFlagRequired("client-id")
-	cobra.CheckErr(err)
-
 	cmd.Flags().StringVar(&clientSecret, "client-secret", "", "Service Principal Client Secret")
-	err = cmd.MarkFlagRequired("client-secret")
-	cobra.CheckErr(err)
 
-	cmd.Flags().StringVar(&container, "container", "chainloop", "Storage Container Name")
 	return cmd
 }

@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
@@ -54,14 +55,22 @@ func (p *BackendProvider) FromCredentials(ctx context.Context, secretName string
 	return NewBackend(creds)
 }
 
-func (p *BackendProvider) ValidateAndExtractCredentials(storageAccount string, credsJSON []byte) (any, error) {
+// location contains the storage account name + container name
+func (p *BackendProvider) ValidateAndExtractCredentials(location string, credsJSON []byte) (any, error) {
 	var creds *Credentials
 	if err := json.Unmarshal(credsJSON, &creds); err != nil {
 		return nil, fmt.Errorf("unmarshaling credentials: %w", err)
 	}
 
-	// We are currently storing the storageAccount in the secret as well
-	creds.StorageAccountName = storageAccount
+	parts := strings.Split(location, "/")
+	if len(parts) != 2 {
+		return nil, errors.New("invalid location: must be in the format <account>/<container>")
+	}
+
+	// Override the location in the credentials since that's something we don't allow updating
+	creds.StorageAccountName = parts[0]
+	creds.Container = parts[1]
+
 	if err := creds.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid credentials: %w", err)
 	}
@@ -81,6 +90,8 @@ func (p *BackendProvider) ValidateAndExtractCredentials(storageAccount string, c
 type Credentials struct {
 	// Storage Account Name
 	StorageAccountName string
+	// Storage Account Container (optional)
+	Container string
 	// Active Directory Tenant ID
 	TenantID string
 	// Registered application / service principal client ID

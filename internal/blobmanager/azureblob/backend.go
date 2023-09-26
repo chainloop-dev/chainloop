@@ -32,13 +32,11 @@ import (
 
 type Backend struct {
 	storageAccountName string
+	container          string
 	credentials        *azidentity.ClientSecretCredential
 }
 
 var _ backend.UploaderDownloader = (*Backend)(nil)
-var errNotImplemented = errors.New("not implemented")
-
-const defaultContainerName = "chainloop"
 
 func NewBackend(creds *Credentials) (*Backend, error) {
 	credential, err := azidentity.NewClientSecretCredential(creds.TenantID, creds.ClientID, creds.ClientSecret, nil)
@@ -46,9 +44,16 @@ func NewBackend(creds *Credentials) (*Backend, error) {
 		return nil, fmt.Errorf("failed to create Azure Service principal Credential: %w", err)
 	}
 
+	// Container name is optional
+	container := creds.Container
+	if container == "" {
+		container = "chainloop"
+	}
+
 	return &Backend{
 		storageAccountName: creds.StorageAccountName,
 		credentials:        credential,
+		container:          container,
 	}, nil
 }
 
@@ -75,7 +80,7 @@ func (b *Backend) blobClient(digest string) (*blob.Client, error) {
 }
 
 func (b *Backend) resourcePath(digest string) string {
-	return fmt.Sprintf("https://%s.blob.core.windows.net/%s/%s", b.storageAccountName, defaultContainerName, resourceName(digest))
+	return fmt.Sprintf("https://%s.blob.core.windows.net/%s/%s", b.storageAccountName, b.container, resourceName(digest))
 }
 
 func resourceName(digest string) string {
@@ -83,27 +88,18 @@ func resourceName(digest string) string {
 }
 
 // Exists check that the artifact is already present in the repository
-// TODO: make some check on its size / digest
 func (b *Backend) Exists(ctx context.Context, digest string) (bool, error) {
-	blobClient, err := b.blobClient(digest)
-	if err != nil {
-		return false, fmt.Errorf("failed to create Azure Blob Storage client: %w", err)
+	_, err := b.Describe(ctx, digest)
+	if err != nil && errors.As(err, &backend.ErrNotFound{}) {
+		return false, nil
 	}
 
-	if _, err = blobClient.GetProperties(ctx, nil); err != nil {
-		if bloberror.HasCode(err, bloberror.BlobNotFound) {
-			return false, nil
-		}
-
-		return false, fmt.Errorf("failed to get blob properties: %w", err)
-	}
-
-	return true, nil
+	return err == nil, err
 }
 
 const (
-	annotationNameAuthor = "author"
-	annotationNameTitle  = "title"
+	annotationNameAuthor   = "Author"
+	annotationNameFilename = "Filename"
 )
 
 func (b *Backend) Upload(ctx context.Context, r io.Reader, resource *pb.CASResource) error {
@@ -117,29 +113,73 @@ func (b *Backend) Upload(ctx context.Context, r io.Reader, resource *pb.CASResou
 		return fmt.Errorf("failed to create Blob storage Container: %w", err)
 	}
 
-	_, err = client.UploadStream(ctx, defaultContainerName, resourceName(resource.Digest), r, &azblob.UploadStreamOptions{
+	_, err = client.UploadStream(ctx, b.container, resourceName(resource.Digest), r, &azblob.UploadStreamOptions{
 		Metadata: map[string]*string{
-			annotationNameAuthor: to.Ptr(backend.AuthorAnnotation),
-			annotationNameTitle:  to.Ptr(resource.FileName),
+			annotationNameAuthor:   to.Ptr(backend.AuthorAnnotation),
+			annotationNameFilename: to.Ptr(resource.FileName),
 		},
 	})
 
 	return err
 }
 
-func (b *Backend) Describe(_ context.Context, digest string) (*pb.CASResource, error) {
-	return nil, errNotImplemented
+func (b *Backend) Describe(ctx context.Context, digest string) (*pb.CASResource, error) {
+	blobClient, err := b.blobClient(digest)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Azure Blob Storage client: %w", err)
+	}
+
+	properties, err := blobClient.GetProperties(ctx, nil)
+	if err != nil {
+		if bloberror.HasCode(err, bloberror.BlobNotFound) {
+			return nil, backend.NewErrNotFound("artifact")
+		}
+
+		return nil, fmt.Errorf("failed to get blob properties: %w", err)
+	}
+
+	// Check asset author is chainloop that way we can ignore files uploaded by other tools
+	// note: this is not a security mechanism, an additional check will be put in place for tamper check
+	author, ok := properties.Metadata[annotationNameAuthor]
+	if !ok || *author != backend.AuthorAnnotation {
+		return nil, errors.New("asset not uploaded by Chainloop")
+	}
+
+	fileName, ok := properties.Metadata[annotationNameFilename]
+	if !ok {
+		return nil, fmt.Errorf("couldn't find file metadata")
+	}
+
+	return &pb.CASResource{
+		FileName: *fileName,
+		Size:     *properties.ContentLength,
+	}, nil
 }
 
-func (b *Backend) Download(_ context.Context, w io.Writer, digest string) error {
-	return errNotImplemented
-}
+func (b *Backend) Download(ctx context.Context, w io.Writer, digest string) error {
+	exists, err := b.Exists(ctx, digest)
+	if err != nil {
+		return fmt.Errorf("invalid artifact: %w", err)
+	} else if !exists {
+		return backend.NewErrNotFound("artifact")
+	}
 
-func (b *Backend) createContainer(ctx context.Context, client *azblob.Client) error {
-	// Create container name
-	_, err := client.CreateContainer(ctx, defaultContainerName, nil)
-	if err != nil && !bloberror.HasCode(err, bloberror.ContainerAlreadyExists) {
-		return fmt.Errorf("failed to create Blob storage Container: %w", err)
+	client, err := b.client()
+	if err != nil {
+		return fmt.Errorf("failed to create Azure Blob Storage client: %w", err)
+	}
+
+	// Download the blob
+	downloadStream, err := client.DownloadStream(ctx, b.container, resourceName(digest), nil)
+	if err != nil {
+		return fmt.Errorf("failed to download blob: %w", err)
+	}
+
+	retryReader := downloadStream.NewRetryReader(ctx, &azblob.RetryReaderOptions{})
+	defer retryReader.Close()
+
+	if _, err := io.Copy(w, retryReader); err != nil {
+		return fmt.Errorf("failed to copy blob to writer: %w", err)
 	}
 
 	return nil
@@ -158,9 +198,19 @@ func (b *Backend) CheckWritePermissions(ctx context.Context) error {
 	}
 
 	// Touch a file
-	_, err = client.UploadBuffer(ctx, defaultContainerName, "healthCheck", nil, nil)
+	_, err = client.UploadBuffer(ctx, b.container, "healthCheck", nil, nil)
 	if err != nil {
 		return fmt.Errorf("failed write to Blob Storage: %w", err)
+	}
+
+	return nil
+}
+
+func (b *Backend) createContainer(ctx context.Context, client *azblob.Client) error {
+	// Create container name
+	_, err := client.CreateContainer(ctx, b.container, nil)
+	if err != nil && !bloberror.HasCode(err, bloberror.ContainerAlreadyExists) {
+		return fmt.Errorf("failed to create Blob storage Container: %w", err)
 	}
 
 	return nil
