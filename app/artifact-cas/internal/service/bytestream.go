@@ -113,7 +113,7 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 		return sl.LogAndMaskErr(err, s.log)
 	}
 
-	s.log.Infow("msg", "artifact received, uploading now to OCI backend", "name", req.resource.FileName, "digest", req.resource.Digest, "size", buffer.size)
+	s.log.Infow("msg", "artifact received, uploading now to backend", "name", req.resource.FileName, "digest", req.resource.Digest, "size", buffer.size)
 	if err := backend.Upload(ctx, buffer, req.resource); err != nil {
 		return sl.LogAndMaskErr(err, s.log)
 	}

@@ -21,15 +21,18 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
 	pb "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
 )
 
 type Backend struct {
-	client *azblob.Client
+	storageAccountName string
+	credentials        *azidentity.ClientSecretCredential
 }
 
 var _ backend.UploaderDownloader = (*Backend)(nil)
@@ -43,24 +46,85 @@ func NewBackend(creds *Credentials) (*Backend, error) {
 		return nil, fmt.Errorf("failed to create Azure Service principal Credential: %w", err)
 	}
 
-	url := fmt.Sprintf("https://%s.blob.core.windows.net/", creds.StorageAccountName)
-	client, err := azblob.NewClient(url, credential, nil)
+	return &Backend{
+		storageAccountName: creds.StorageAccountName,
+		credentials:        credential,
+	}, nil
+}
+
+// top level client used for creation/upload/download/listing operations
+func (b *Backend) client() (*azblob.Client, error) {
+	url := fmt.Sprintf("https://%s.blob.core.windows.net/", b.storageAccountName)
+	// Top level client
+	client, err := azblob.NewClient(url, b.credentials, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Azure Blob Storage client: %w", err)
 	}
 
-	return &Backend{client: client}, nil
+	return client, nil
 }
 
-// Exists check that the artifact is already present in the repository and it points to the
-// same image digest, meaning it has not been re-pushed/replaced
-// This method is very naive so signatures will be used in future releases
-func (b *Backend) Exists(_ context.Context, digest string) (bool, error) {
-	return false, errNotImplemented
+// blob client used for operating with a single blob
+func (b *Backend) blobClient(digest string) (*blob.Client, error) {
+	blobClient, err := blob.NewClient(b.resourcePath(digest), b.credentials, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Azure Blob Storage client: %w", err)
+	}
+
+	return blobClient, nil
 }
 
-func (b *Backend) Upload(_ context.Context, r io.Reader, resource *pb.CASResource) error {
-	return errNotImplemented
+func (b *Backend) resourcePath(digest string) string {
+	return fmt.Sprintf("https://%s.blob.core.windows.net/%s/%s", b.storageAccountName, defaultContainerName, resourceName(digest))
+}
+
+func resourceName(digest string) string {
+	return fmt.Sprintf("sha256:%s", digest)
+}
+
+// Exists check that the artifact is already present in the repository
+// TODO: make some check on its size / digest
+func (b *Backend) Exists(ctx context.Context, digest string) (bool, error) {
+	blobClient, err := b.blobClient(digest)
+	if err != nil {
+		return false, fmt.Errorf("failed to create Azure Blob Storage client: %w", err)
+	}
+
+	if _, err = blobClient.GetProperties(ctx, nil); err != nil {
+		if bloberror.HasCode(err, bloberror.BlobNotFound) {
+			return false, nil
+		}
+
+		return false, fmt.Errorf("failed to get blob properties: %w", err)
+	}
+
+	return true, nil
+}
+
+const (
+	annotationNameAuthor = "author"
+	annotationNameTitle  = "title"
+)
+
+func (b *Backend) Upload(ctx context.Context, r io.Reader, resource *pb.CASResource) error {
+	client, err := b.client()
+	if err != nil {
+		return err
+	}
+
+	// Create container name
+	if err := b.createContainer(ctx, client); err != nil {
+		return fmt.Errorf("failed to create Blob storage Container: %w", err)
+	}
+
+	_, err = client.UploadStream(ctx, defaultContainerName, resourceName(resource.Digest), r, &azblob.UploadStreamOptions{
+		Metadata: map[string]*string{
+			annotationNameAuthor: to.Ptr(backend.AuthorAnnotation),
+			annotationNameTitle:  to.Ptr(resource.FileName),
+		},
+	})
+
+	return err
 }
 
 func (b *Backend) Describe(_ context.Context, digest string) (*pb.CASResource, error) {
@@ -71,16 +135,30 @@ func (b *Backend) Download(_ context.Context, w io.Writer, digest string) error 
 	return errNotImplemented
 }
 
-// CheckWritePermissions performs an actual write to the repository to check that the credentials
-func (b *Backend) CheckWritePermissions(ctx context.Context) error {
+func (b *Backend) createContainer(ctx context.Context, client *azblob.Client) error {
 	// Create container name
-	_, err := b.client.CreateContainer(ctx, defaultContainerName, nil)
+	_, err := client.CreateContainer(ctx, defaultContainerName, nil)
 	if err != nil && !bloberror.HasCode(err, bloberror.ContainerAlreadyExists) {
 		return fmt.Errorf("failed to create Blob storage Container: %w", err)
 	}
 
+	return nil
+}
+
+// CheckWritePermissions performs an actual write to the repository to check that the credentials
+func (b *Backend) CheckWritePermissions(ctx context.Context) error {
+	client, err := b.client()
+	if err != nil {
+		return fmt.Errorf("failed to create Azure Blob Storage client: %w", err)
+	}
+
+	// Create container name
+	if err := b.createContainer(ctx, client); err != nil {
+		return fmt.Errorf("failed to create Blob storage Container: %w", err)
+	}
+
 	// Touch a file
-	_, err = b.client.UploadBuffer(ctx, defaultContainerName, "healthCheck", nil, nil)
+	_, err = client.UploadBuffer(ctx, defaultContainerName, "healthCheck", nil, nil)
 	if err != nil {
 		return fmt.Errorf("failed write to Blob Storage: %w", err)
 	}
