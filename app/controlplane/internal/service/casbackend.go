@@ -86,7 +86,7 @@ func (s *CASBackendService) Create(ctx context.Context, req *pb.CASBackendServic
 	}
 
 	// For now we only support one backend which is set as default
-	res, err := s.uc.Create(ctx, currentOrg.ID, req.Location, req.Description, biz.CASBackendOCI, creds, req.Default)
+	res, err := s.uc.Create(ctx, currentOrg.ID, req.Location, req.Description, biz.CASBackendProvider(req.Provider), creds, req.Default)
 	if err != nil {
 		return nil, handleUseCaseErr(casBackendEntity, err, s.log)
 	}

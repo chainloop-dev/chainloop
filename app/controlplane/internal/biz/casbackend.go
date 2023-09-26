@@ -34,6 +34,7 @@ type CASBackendProvider string
 
 const (
 	CASBackendOCI             CASBackendProvider = "OCI"
+	CASBackendAzureBlob       CASBackendProvider = "AzureBlob"
 	CASBackendDefaultMaxBytes int64              = 100 * 1024 * 1024 // 100MB
 	// Inline, embedded CAS backend
 	CASBackendInline                CASBackendProvider = "INLINE"
@@ -469,7 +470,7 @@ func (uc *CASBackendUseCase) PerformValidation(ctx context.Context, id string) (
 
 // Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues
 func (CASBackendProvider) Values() (kinds []string) {
-	for _, s := range []CASBackendProvider{CASBackendOCI, CASBackendInline} {
+	for _, s := range []CASBackendProvider{CASBackendOCI, CASBackendAzureBlob, CASBackendInline} {
 		kinds = append(kinds, string(s))
 	}
 
