@@ -69,16 +69,12 @@ func (s *DownloadService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	backendProvider, err := s.selectProvider(auth.BackendType)
-	if err != nil {
-		http.Error(w, "backend not found", http.StatusNotFound)
-		return
-	}
-
-	// Retrieve the CAS backend from where to download the file
-	b, err := backendProvider.FromCredentials(ctx, auth.StoredSecretID)
+	b, err := s.loadBackend(ctx, auth.BackendType, auth.StoredSecretID)
 	if err != nil {
 		http.Error(w, sl.LogAndMaskErr(err, s.log).Error(), http.StatusInternalServerError)
+		return
+	} else if b == nil {
+		http.Error(w, "backend not found", http.StatusNotFound)
 		return
 	}
 

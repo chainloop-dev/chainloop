@@ -42,14 +42,11 @@ func (s *ResourceService) Describe(ctx context.Context, req *v1.ResourceServiceD
 		return nil, err
 	}
 
-	backendProvider, err := s.selectProvider(info.BackendType)
-	if err != nil {
-		return nil, errors.NotFound("not found", err.Error())
-	}
-
-	b, err := backendProvider.FromCredentials(ctx, info.StoredSecretID)
+	b, err := s.loadBackend(ctx, info.BackendType, info.StoredSecretID)
 	if err != nil {
 		return nil, sl.LogAndMaskErr(err, s.log)
+	} else if b == nil {
+		return nil, errors.NotFound("not found", err.Error())
 	}
 
 	res, err := b.Describe(ctx, req.Digest)

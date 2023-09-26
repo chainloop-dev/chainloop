@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
-	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	kerrors "github.com/go-kratos/kratos/v2/errors"
@@ -37,22 +36,22 @@ type commonService struct {
 	backends backend.Providers
 }
 
-func (s *commonService) selectProvider(id string) (backend.Provider, error) {
-	// if no provider is specified, default to OCI
-	// this is done for backward compatibility
-	if id == "" {
-		s.log.Warn("provider not set, defaulting to OCI")
-		id = oci.ProviderID
-	}
-
+func (s *commonService) loadBackend(ctx context.Context, providerType, secretID string) (backend.UploaderDownloader, error) {
 	// get the OCI provider from the map
-	p, ok := s.backends[id]
+	p, ok := s.backends[providerType]
 	if !ok {
-		return nil, fmt.Errorf("provider %s not found", id)
+		return nil, nil
 	}
 
-	s.log.Infow("msg", "selected provider", "provider", id)
-	return p, nil
+	s.log.Infow("msg", "selected provider", "provider", providerType)
+
+	// Retrieve the OCI backend from where to download the file
+	backend, err := p.FromCredentials(ctx, secretID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve backend: %w", err)
+	}
+
+	return backend, nil
 }
 
 type NewOpt func(s *commonService)
@@ -86,6 +85,18 @@ func infoFromAuth(ctx context.Context) (*casJWT.Claims, error) {
 	claims, ok := rawClaims.(*casJWT.Claims)
 	if !ok {
 		return nil, kerrors.Unauthorized("cas", "invalid authentication information")
+	}
+
+	if claims.StoredSecretID == "" {
+		return nil, kerrors.Unauthorized("cas", "missing secret reference")
+	}
+
+	if claims.BackendType == "" {
+		return nil, kerrors.Unauthorized("cas", "missing backend type")
+	}
+
+	if claims.Role == "" {
+		return nil, kerrors.Unauthorized("cas", "missing role")
 	}
 
 	return claims, nil

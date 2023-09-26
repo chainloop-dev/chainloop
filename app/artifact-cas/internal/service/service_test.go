@@ -26,20 +26,60 @@ import (
 )
 
 func TestInfoFromAuth(t *testing.T) {
-	t.Run("no claims", func(t *testing.T) {
-		_, err := infoFromAuth(jwtm.NewContext(context.Background(), nil))
-		assert.Error(t, err)
-	})
+	testCases := []struct {
+		name string
+		// input
+		claims  jwt.Claims
+		wantErr bool
+	}{
+		{
+			name: "valid claims",
+			claims: &casJWT.Claims{
+				Role:           "test",
+				StoredSecretID: "test",
+				BackendType:    "backend-type",
+			},
+		},
+		{
+			name: "missing secretID",
+			claims: &casJWT.Claims{
+				Role:        "test",
+				BackendType: "backend-type",
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing role",
+			claims: &casJWT.Claims{
+				StoredSecretID: "test",
+				BackendType:    "backend-type",
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing backend type",
+			claims: &casJWT.Claims{
+				StoredSecretID: "test",
+				Role:           "test",
+			},
+			wantErr: true,
+		},
+	}
 
-	t.Run("invalid claims", func(t *testing.T) {
-		_, err := infoFromAuth(jwtm.NewContext(context.Background(), &jwt.RegisteredClaims{}))
-		assert.Error(t, err)
-	})
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			info, err := infoFromAuth(jwtm.NewContext(context.Background(), tc.claims))
+			if tc.wantErr {
+				assert.Error(t, err)
+				return
+			}
 
-	t.Run("valid claims", func(t *testing.T) {
-		want := &casJWT.Claims{Role: "test", StoredSecretID: "test"}
-		got, err := infoFromAuth(jwtm.NewContext(context.Background(), want))
-		assert.NoError(t, err)
-		assert.Equal(t, want, got)
-	})
+			assert.NoError(t, err)
+			assert.Equal(t, tc.claims, info)
+		})
+	}
+}
+
+func TestLoadBackend(t *testing.T) {
+	t.Fail()
 }

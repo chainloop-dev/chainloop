@@ -53,7 +53,7 @@ func (s *dispatcherTestSuite) TestLoadInputsEnvelope() {
 	envelope, err := testEnvelope("testdata/attestation.json")
 	require.NoError(s.T(), err)
 
-	err = s.dispatcher.loadInputs(context.TODO(), queue, envelope, "secret-name")
+	err = s.dispatcher.loadInputs(context.TODO(), queue, envelope, "backend-type", "secret-name")
 	assert.NoError(s.T(), err)
 
 	// Only one integration is registered
@@ -88,14 +88,14 @@ func (s *dispatcherTestSuite) TestLoadInputsMaterials() {
 	require.NoError(s.T(), err)
 
 	// Simulate SBOM download
-	s.casClient.On("Download", mock.Anything, "secret-name", mock.Anything, mock.Anything).
+	s.casClient.On("Download", mock.Anything, "backend-type", "secret-name", mock.Anything, mock.Anything).
 		Return(nil).Run(func(args mock.Arguments) {
 		buf := bytes.NewBuffer([]byte("SBOM Content"))
-		_, err := io.Copy(args.Get(2).(io.Writer), buf)
+		_, err := io.Copy(args.Get(3).(io.Writer), buf)
 		s.NoError(err)
 	})
 
-	err = s.dispatcher.loadInputs(context.TODO(), queue, envelope, "secret-name")
+	err = s.dispatcher.loadInputs(context.TODO(), queue, envelope, "backend-type", "secret-name")
 	assert.NoError(s.T(), err)
 	require.Len(s.T(), queue, 3)
 

@@ -96,7 +96,7 @@ func TestJWTAuthFunc(t *testing.T) {
 
 			b, err := robotaccount.NewBuilder(opts...)
 			require.NoError(t, err)
-			token, err := b.GenerateJWT("secret-id", tc.audience, robotaccount.Downloader)
+			token, err := b.GenerateJWT("backend-type", "secret-id", tc.audience, robotaccount.Downloader)
 			require.NoError(t, err)
 
 			// add bearer token to context
@@ -127,6 +127,7 @@ func TestJWTAuthFunc(t *testing.T) {
 				claims := infoFromAuth(ctx, t)
 				assert.NoError(t, claims.Valid())
 				assert.Equal(t, "secret-id", claims.StoredSecretID)
+				assert.Equal(t, "backend-type", claims.BackendType)
 				assert.Equal(t, robotaccount.Downloader, claims.Role)
 				assert.Equal(t, "my-issuer", claims.Issuer)
 				assert.Contains(t, claims.Audience, "artifact-cas.chainloop")

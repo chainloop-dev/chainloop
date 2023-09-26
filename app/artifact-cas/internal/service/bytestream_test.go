@@ -249,6 +249,7 @@ func (s *bytestreamSuite) TearDownTest() {
 }
 
 func (s *bytestreamSuite) SetupTest() {
+	const backendType = "backend-type"
 	// 1 MB buffer
 	l := bufconn.Listen(1 << 20)
 	server := grpc.NewServer(
@@ -261,7 +262,9 @@ func (s *bytestreamSuite) SetupTest() {
 						return ctx, nil
 					}
 
-					claims := &casJWT.Claims{}
+					claims := &casJWT.Claims{
+						StoredSecretID: "secret-id", BackendType: backendType,
+					}
 
 					if roles := md.Get("role"); len(roles) > 0 {
 						if roles[0] == "downloader" {
@@ -283,7 +286,7 @@ func (s *bytestreamSuite) SetupTest() {
 	bytestream.RegisterByteStreamServer(
 		server,
 		NewByteStreamService(backend.Providers{
-			"OCI": ociBackendProvider,
+			backendType: ociBackendProvider,
 		}, WithLogger(log.DefaultLogger)),
 	)
 	go func() {

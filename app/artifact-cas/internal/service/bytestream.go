@@ -26,7 +26,6 @@ import (
 
 	v1 "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
-	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	kerrors "github.com/go-kratos/kratos/v2/errors"
@@ -71,15 +70,11 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 		return kerrors.BadRequest("resource name", err.Error())
 	}
 
-	backendProvider, err := s.selectProvider(info.BackendType)
-	if err != nil {
-		return kerrors.NotFound("not found", err.Error())
-	}
-
-	// Load OCI backend based on a reference stored in the token
-	backend, err := backendProvider.FromCredentials(ctx, info.StoredSecretID)
+	backend, err := s.loadBackend(ctx, info.BackendType, info.StoredSecretID)
 	if err != nil {
 		return sl.LogAndMaskErr(err, s.log)
+	} else if backend == nil {
+		return kerrors.NotFound("not found", err.Error())
 	}
 
 	// We check if the file already exists even before we wait for the whole buffer to be filled
@@ -148,17 +143,11 @@ func (s *ByteStreamService) Read(req *bytestream.ReadRequest, stream bytestream.
 		return kerrors.BadRequest("resource name", "empty resource name")
 	}
 
-	// For now we only support OCI
-	// TODO: select per-request
-	backendProvider, err := s.selectProvider(oci.ProviderID)
-	if err != nil {
-		return kerrors.NotFound("not found", err.Error())
-	}
-
-	// Retrieve the OCI backend from where to download the file
-	backend, err := backendProvider.FromCredentials(ctx, info.StoredSecretID)
+	backend, err := s.loadBackend(ctx, info.BackendType, info.StoredSecretID)
 	if err != nil {
 		return sl.LogAndMaskErr(err, s.log)
+	} else if backend == nil {
+		return kerrors.NotFound("not found", err.Error())
 	}
 
 	// streamwriter will stream chunks of data to the client
