@@ -136,7 +136,7 @@ func TestNewBuilder(t *testing.T) {
 			}
 
 			if tc.expiration != 0 {
-				assert.Equal(&tc.expiration, b.expiration)
+				assert.Equal(tc.expiration, *b.expiration)
 			}
 		})
 	}

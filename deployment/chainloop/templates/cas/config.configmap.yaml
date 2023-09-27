@@ -1,9 +1,8 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "chainloop.cas.fullname" . }}
-  labels:
-    {{- include "chainloop.cas.labels" . | nindent 4 }}
+  name: { { include "chainloop.cas.fullname" . } }
+  labels: { { - include "chainloop.cas.labels" . | nindent 4 } }
 data:
   server.yaml: |
     server:
@@ -17,6 +16,6 @@ data:
           private_key: /data/server-certs/tls.key
         {{- end }}
         addr: 0.0.0.0:9000
-        timeout: 1s
+        timeout: 5s
       http_metrics:
         addr: 0.0.0.0:5000

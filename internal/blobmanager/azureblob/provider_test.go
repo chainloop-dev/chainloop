@@ -187,11 +187,9 @@ func TestExtractCreds(t *testing.T) {
 					ClientID:           "test",
 					ClientSecret:       "test",
 				}, creds)
-
 			}
 		})
 	}
-
 }
 
 func TestProviderID(t *testing.T) {

@@ -5,10 +5,12 @@
 server:
   http:
     addr: 0.0.0.0:8001
-    timeout: 1s
+    timeout: 5s
   grpc:
     addr: 0.0.0.0:9001
-    timeout: 1s
+    # Some cas backends are slow, so we need to increase the timeout
+    # for example, Azure Blob Storage describe takes more than 1 second to respond sometimes
+    timeout: 5s
   http_metrics:
     addr: 0.0.0.0:5001
 

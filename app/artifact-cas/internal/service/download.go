@@ -16,9 +16,12 @@
 package service
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -58,7 +61,7 @@ func (s *DownloadService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hash, err := cr_v1.NewHash(digest)
+	wantChecksum, err := cr_v1.NewHash(digest)
 	if err != nil {
 		http.Error(w, "invalid digest", http.StatusBadRequest)
 		return
@@ -79,7 +82,7 @@ func (s *DownloadService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	info, err := b.Describe(ctx, hash.Hex)
+	info, err := b.Describe(ctx, wantChecksum.Hex)
 	if err != nil && backend.IsNotFound(err) {
 		http.Error(w, "artifact not found", http.StatusNotFound)
 		return
@@ -88,20 +91,44 @@ func (s *DownloadService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set headers
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", info.FileName))
-	w.Header().Set("Content-Length", strconv.FormatInt(info.Size, 10))
+	s.log.Infow("msg", "download initialized", "digest", wantChecksum, "size", bytefmt.ByteSize(uint64(info.Size)))
 
-	s.log.Infow("msg", "download initialized", "digest", hash, "size", bytefmt.ByteSize(uint64(info.Size)))
+	gotChecksum := sha256.New()
+	// create temporary buffer to write to both the writer and the checksum
+	buf := bytes.NewBuffer(nil)
 
-	if err := b.Download(ctx, w, hash.Hex); err != nil {
+	// NOTE: we don't sent the file directly to the writer because we need to calculate the checksum
+	// and we want to send the file / even if partially only if the checksum matches
+	// this has a performance impact but it's the only way to ensure that the file is not corrupted
+	// and don't require client-side verification
+	mw := io.MultiWriter(buf, gotChecksum)
+	if err := b.Download(ctx, mw, wantChecksum.Hex); err != nil {
 		if errors.Is(err, context.Canceled) {
-			s.log.Infow("msg", "download canceled", "digest", hash)
+			s.log.Infow("msg", "download canceled", "digest", wantChecksum)
 			return
 		}
 
 		http.Error(w, sl.LogAndMaskErr(err, s.log).Error(), http.StatusInternalServerError)
+		return
 	}
 
-	s.log.Infow("msg", "download finished", "digest", hash, "size", bytefmt.ByteSize(uint64(info.Size)))
+	// Verify the checksum
+	if got, want := fmt.Sprintf("%x", gotChecksum.Sum(nil)), wantChecksum.Hex; got != want {
+		msg := fmt.Sprintf("checksums mismatch: got: %s, want: %s", got, want)
+		s.log.Info(msg)
+		http.Error(w, msg, http.StatusUnauthorized)
+		return
+	}
+
+	// if the buffer contains the actual data we expect we proceed with sending it to the browser
+	// Set headers
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", info.FileName))
+	w.Header().Set("Content-Length", strconv.FormatInt(info.Size, 10))
+
+	if _, err := io.Copy(w, buf); err != nil {
+		http.Error(w, sl.LogAndMaskErr(err, s.log).Error(), http.StatusInternalServerError)
+		return
+	}
+
+	s.log.Infow("msg", "download finished", "digest", wantChecksum, "size", bytefmt.ByteSize(uint64(info.Size)))
 }
