@@ -1,0 +1,313 @@
+{
+  "version": "2.1.0",
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "informationUri": "https://tfsec.dev",
+          "name": "tfsec",
+          "rules": [
+            {
+              "id": "AWS006",
+              "shortDescription": {
+                "text": "Resource 'aws_security_group_rule.my-rule' defines a fully open ingress security group rule."
+              },
+              "helpUri": "See https://tfsec.dev/docs/aws/AWS006/ for more information.",
+              "help": {
+                "markdown": "# markdown"
+              },
+              "properties": {
+                "impact": "Your port exposed to the internet",
+                "resolution": "Set a more restrictive cidr range"
+              }
+            },
+            {
+              "id": "AZU003",
+              "shortDescription": {
+                "text": "Resource 'azurerm_managed_disk.source' defines an unencrypted managed disk."
+              },
+              "helpUri": "See https://tfsec.dev/docs/azure/AZU003/ for more information.",
+              "help": {
+                "markdown": "# markdown"
+              },
+              "properties": {
+                "impact": "",
+                "resolution": ""
+              }
+            },
+            {
+              "id": "AWS025",
+              "shortDescription": {
+                "text": "Resource 'aws_api_gateway_domain_name.outdated_security_policy' defines outdated SSL/TLS policies (not using TLS_1_2)."
+              },
+              "helpUri": "See https://tfsec.dev/docs/aws/AWS025/ for more information.",
+              "help": {
+                "markdown": "# markdown"
+              },
+              "properties": {
+                "impact": "Outdated SSL policies increase exposure to known vulnerabilites",
+                "resolution": "Use the most modern TLS/SSL policies available"
+              }
+            },
+            {
+              "id": "AWS018",
+              "shortDescription": {
+                "text": "Resource 'aws_security_group_rule.my-rule' should include a description for auditing purposes."
+              },
+              "helpUri": "See https://tfsec.dev/docs/aws/AWS018/ for more information.",
+              "help": {
+                "markdown": "# markdown"
+              },
+              "properties": {
+                "impact": "Descriptions provide context for the firewall rule reasons",
+                "resolution": "Add descriptions for all security groups anf rules"
+              }
+            },
+            {
+              "id": "AWS004",
+              "shortDescription": {
+                "text": "Resource 'aws_alb_listener.my-alb-listener' uses plain HTTP instead of HTTPS."
+              },
+              "helpUri": "See https://tfsec.dev/docs/aws/AWS004/ for more information.",
+              "help": {
+                "markdown": "# markdown"
+              },
+              "properties": {
+                "impact": "Your traffic is not protected",
+                "resolution": "Switch to HTTPS to benefit from TLS security features"
+              }
+            },
+            {
+              "id": "AWS003",
+              "shortDescription": {
+                "text": "Resource 'aws_db_security_group.my-group' uses EC2 Classic. Use a VPC instead."
+              },
+              "helpUri": "See https://tfsec.dev/docs/aws/AWS003/ for more information.",
+              "help": {
+                "markdown": "# markdown"
+              },
+              "properties": {
+                "impact": "Classic resources are running in a shared environment with other customers",
+                "resolution": "Switch to VPC resources"
+              }
+            },
+            {
+              "id": "AWS092",
+              "shortDescription": {
+                "text": "Resource 'aws_dynamodb_table.bad_example' is not using KMS CMK for encryption"
+              },
+              "helpUri": "See https://tfsec.dev/docs/aws/AWS092/ for more information.",
+              "help": {
+                "markdown": "# markdown"
+              },
+              "properties": {
+                "impact": "Using AWS managed keys does not allow for fine grained control",
+                "resolution": "Enable server side encrytion with a customer managed key"
+              }
+            }
+          ]
+        }
+      },
+      "artifacts": [
+        {
+          "location": {
+            "uri": "/home/billybob/supertfsec/example/main.tf"
+          },
+          "length": -1
+        }
+      ],
+      "results": [
+        {
+          "ruleId": "AWS006",
+          "ruleIndex": 0,
+          "level": "warning",
+          "message": {
+            "text": "Resource 'aws_security_group_rule.my-rule' defines a fully open ingress security group rule."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/home/billybob/supertfsec/example/main.tf"
+                },
+                "region": {
+                  "startLine": 4,
+                  "endLine": 4
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AZU003",
+          "ruleIndex": 1,
+          "level": "error",
+          "message": {
+            "text": "Resource 'azurerm_managed_disk.source' defines an unencrypted managed disk."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/home/billybob/supertfsec/example/main.tf"
+                },
+                "region": {
+                  "startLine": 22,
+                  "endLine": 22
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS025",
+          "ruleIndex": 2,
+          "level": "error",
+          "message": {
+            "text": "Resource 'aws_api_gateway_domain_name.missing_security_policy' should include security_policy (defauls to outdated SSL/TLS policy)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/home/billybob/supertfsec/example/main.tf"
+                },
+                "region": {
+                  "startLine": 26,
+                  "endLine": 27
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS025",
+          "ruleIndex": 2,
+          "level": "error",
+          "message": {
+            "text": "Resource 'aws_api_gateway_domain_name.empty_security_policy' defines outdated SSL/TLS policies (not using TLS_1_2)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/home/billybob/supertfsec/example/main.tf"
+                },
+                "region": {
+                  "startLine": 30,
+                  "endLine": 30
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS025",
+          "ruleIndex": 2,
+          "level": "error",
+          "message": {
+            "text": "Resource 'aws_api_gateway_domain_name.outdated_security_policy' defines outdated SSL/TLS policies (not using TLS_1_2)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/home/billybob/supertfsec/example/main.tf"
+                },
+                "region": {
+                  "startLine": 34,
+                  "endLine": 34
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS018",
+          "ruleIndex": 3,
+          "level": "error",
+          "message": {
+            "text": "Resource 'aws_security_group_rule.my-rule' should include a description for auditing purposes."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/home/billybob/supertfsec/example/main.tf"
+                },
+                "region": {
+                  "startLine": 2,
+                  "endLine": 5
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS004",
+          "ruleIndex": 4,
+          "level": "error",
+          "message": {
+            "text": "Resource 'aws_alb_listener.my-alb-listener' uses plain HTTP instead of HTTPS."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/home/billybob/supertfsec/example/main.tf"
+                },
+                "region": {
+                  "startLine": 9,
+                  "endLine": 9
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS003",
+          "ruleIndex": 5,
+          "level": "error",
+          "message": {
+            "text": "Resource 'aws_db_security_group.my-group' uses EC2 Classic. Use a VPC instead."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/home/billybob/supertfsec/example/main.tf"
+                },
+                "region": {
+                  "startLine": 12,
+                  "endLine": 14
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS092",
+          "ruleIndex": 6,
+          "level": "warning",
+          "message": {
+            "text": "Resource 'aws_dynamodb_table.bad_example' is not using KMS CMK for encryption"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/home/billybob/supertfsec/example/main.tf"
+                },
+                "region": {
+                  "startLine": 41,
+                  "endLine": 56
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

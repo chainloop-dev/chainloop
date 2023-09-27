@@ -96,6 +96,11 @@ export enum CraftingSchema_Material_MaterialType {
   OPENVEX = 7,
   /** CSAF_VEX - https://docs.oasis-open.org/csaf/csaf/v2.0/cs03/csaf-v2.0-cs03.html */
   CSAF_VEX = 8,
+  /**
+   * SARIF - Static analysis output format
+   * https://github.com/microsoft/sarif-tutorials/blob/main/docs/1-Introduction.md
+   */
+  SARIF = 9,
   UNRECOGNIZED = -1,
 }
 
@@ -128,6 +133,9 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 8:
     case "CSAF_VEX":
       return CraftingSchema_Material_MaterialType.CSAF_VEX;
+    case 9:
+    case "SARIF":
+      return CraftingSchema_Material_MaterialType.SARIF;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -155,6 +163,8 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "OPENVEX";
     case CraftingSchema_Material_MaterialType.CSAF_VEX:
       return "CSAF_VEX";
+    case CraftingSchema_Material_MaterialType.SARIF:
+      return "SARIF";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
