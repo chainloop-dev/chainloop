@@ -18,8 +18,11 @@ package service
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/gob"
+	"fmt"
+	"hash"
 	"io"
 
 	"errors"
@@ -113,7 +116,7 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 		return sl.LogAndMaskErr(err, s.log)
 	}
 
-	s.log.Infow("msg", "artifact received, uploading now to OCI backend", "name", req.resource.FileName, "digest", req.resource.Digest, "size", buffer.size)
+	s.log.Infow("msg", "artifact received, uploading now to backend", "name", req.resource.FileName, "digest", req.resource.Digest, "size", buffer.size)
 	if err := backend.Upload(ctx, buffer, req.resource); err != nil {
 		return sl.LogAndMaskErr(err, s.log)
 	}
@@ -151,7 +154,7 @@ func (s *ByteStreamService) Read(req *bytestream.ReadRequest, stream bytestream.
 	}
 
 	// streamwriter will stream chunks of data to the client
-	sw := &streamWriter{stream, s.log, req.ResourceName}
+	sw := &streamWriter{stream, s.log, req.ResourceName, sha256.New()}
 	if err := backend.Download(ctx, sw, req.ResourceName); err != nil {
 		if errors.Is(err, context.Canceled) {
 			s.log.Infow("msg", "download canceled", "digest", req.ResourceName)
@@ -159,6 +162,11 @@ func (s *ByteStreamService) Read(req *bytestream.ReadRequest, stream bytestream.
 		}
 
 		return sl.LogAndMaskErr(err, s.log)
+	}
+
+	// check if the file has been tampered with and notify the client
+	if sw.GetChecksum() != req.ResourceName {
+		return kerrors.Unauthorized("checksum", fmt.Sprintf("checksum mismatch: got=%s, want=%s", sw.GetChecksum(), req.ResourceName))
 	}
 
 	s.log.Infow("msg", "download finished", "digest", req.ResourceName)
@@ -269,11 +277,24 @@ func decodeResource(b64encoded string) (*v1.CASResource, error) {
 type streamWriter struct {
 	stream bytestream.ByteStream_ReadServer
 	log    *log.Helper
-	digest string
+	// expected wantChecksum of the data being sent
+	wantChecksum string
+	// calculated gotChecksum of the data sent
+	gotChecksum hash.Hash
 }
 
 // Send the chunk of data through the bytestream
 func (sw *streamWriter) Write(data []byte) (int, error) {
-	sw.log.Debugw("msg", "sending download chunk", "digest", sw.digest, "chunkSize", len(data))
+	sw.log.Debugw("msg", "sending download chunk", "digest", sw.wantChecksum, "chunkSize", len(data))
+
+	// Update the checksum of the data being sent
+	if _, err := sw.gotChecksum.Write(data); err != nil {
+		return 0, err
+	}
 	return len(data), sw.stream.Send(&bytestream.ReadResponse{Data: data})
+}
+
+// GetChecksum retrieves the sha256 checksum of the read contents
+func (sw *streamWriter) GetChecksum() string {
+	return fmt.Sprintf("%x", sw.gotChecksum.Sum(nil))
 }

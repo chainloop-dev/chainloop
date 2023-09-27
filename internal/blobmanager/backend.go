@@ -18,8 +18,17 @@ package backend
 import (
 	"context"
 	"io"
+	"net/http"
+	"strings"
 
 	v1 "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
+	"github.com/google/go-containerregistry/pkg/v1/types"
+)
+
+const (
+	AuthorAnnotation = "chainloop.dev"
+	// Default prefix for the blobmanager
+	DefaultPrefix = "chainloop"
 )
 
 type Uploader interface {
@@ -53,3 +62,8 @@ type Provider interface {
 }
 
 type Providers map[string]Provider
+
+// Detect the media type based on the provided content
+func DetectedMediaType(b []byte) types.MediaType {
+	return types.MediaType(strings.Split(http.DetectContentType(b), ";")[0])
+}

@@ -40,7 +40,7 @@ func (s *commonService) loadBackend(ctx context.Context, providerType, secretID 
 	// get the OCI provider from the map
 	p, ok := s.backends[providerType]
 	if !ok || p == nil {
-		return nil, kerrors.NotFound("backend provider", providerType)
+		return nil, kerrors.NotFound("backend provider", fmt.Sprintf("backend %q not found", providerType))
 	}
 
 	s.log.Infow("msg", "selected provider", "provider", providerType)

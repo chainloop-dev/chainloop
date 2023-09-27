@@ -99,7 +99,7 @@ func (s *testSuite) TestNewBackend() {
 				assert.NotNil(t, got)
 				assert.Equal(t, tc.repo, got.repo)
 				if tc.prefix == "" {
-					assert.Equal(t, defaultPrefix, got.prefix)
+					assert.Equal(t, "chainloop", got.prefix)
 				} else {
 					assert.Equal(t, tc.prefix, got.prefix)
 				}

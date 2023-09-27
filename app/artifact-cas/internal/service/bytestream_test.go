@@ -201,6 +201,27 @@ func (s *bytestreamSuite) TestReadErrorDownloading() {
 }
 
 func (s *bytestreamSuite) TestDownloadOk() {
+	s.ociBackend.On("Download", mock.Anything, mock.Anything, "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9").
+		Return(nil).Run(func(args mock.Arguments) {
+		buf := bytes.NewBuffer([]byte("hello world"))
+		_, err := io.Copy(args.Get(1).(io.Writer), buf)
+		s.NoError(err)
+	})
+
+	reader, err := s.client.Read(s.downCtx, &bytestream.ReadRequest{ResourceName: "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"})
+	s.NoError(err)
+
+	// receive the data, it should contain all of it since the buffer is server side is 1MB
+	got, err := reader.Recv()
+	s.NoError(err)
+	s.Equal("hello world", string(got.Data))
+	// EOF
+	got, err = reader.Recv()
+	s.ErrorIs(err, io.EOF)
+	s.Nil(got)
+}
+
+func (s *bytestreamSuite) TestDownloadFoundMistmathedDigest() {
 	s.ociBackend.On("Download", mock.Anything, mock.Anything, "deadbeef").
 		Return(nil).Run(func(args mock.Arguments) {
 		buf := bytes.NewBuffer([]byte("hello world"))
@@ -215,9 +236,9 @@ func (s *bytestreamSuite) TestDownloadOk() {
 	got, err := reader.Recv()
 	s.NoError(err)
 	s.Equal("hello world", string(got.Data))
-	// EOF
+	// Return a mistmached digest
 	got, err = reader.Recv()
-	s.ErrorIs(err, io.EOF)
+	s.ErrorContains(err, "checksum mismatch:")
 	s.Nil(got)
 }
 

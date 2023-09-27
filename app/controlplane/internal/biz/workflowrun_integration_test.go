@@ -248,7 +248,7 @@ func (s *workflowRunIntegrationTestSuite) SetupTest() {
 	s.contractVersion, err = s.WorkflowContract.Describe(ctx, s.org.ID, s.workflowOrg1.ContractID.String(), 0)
 	assert.NoError(err)
 
-	s.casBackend, err = s.CASBackend.CreateOrUpdate(ctx, s.org.ID, "repo", "username", "pass", biz.CASBackendOCI, true)
+	s.casBackend, err = s.CASBackend.CreateOrUpdate(ctx, s.org.ID, "repo", "username", "pass", backendType, true)
 	assert.NoError(err)
 
 	// Let's create 3 runs, one in org1 and 2 in org2 (one public)
