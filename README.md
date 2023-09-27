@@ -128,6 +128,7 @@ Chainloop supports the collection of the following pieces of evidence types:
 - [SPDX SBOM](https://spdx.dev/specifications/)
 - [CSAF VEX](https://docs.oasis-open.org/csaf/csaf/v2.0/os/csaf-v2.0-os.html)
 - [OpenVEX](https://github.com/openvex)
+- [SARIF](https://docs.oasis-open.org/sarif/sarif/v2.1.0/)
 - [JUnit](https://www.ibm.com/docs/en/developer-for-zos/14.1?topic=formats-junit-xml-format)
 - Generic Artifact Types
 - Key-Value metadata pairs

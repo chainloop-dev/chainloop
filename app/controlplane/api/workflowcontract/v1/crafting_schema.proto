@@ -71,6 +71,9 @@ message CraftingSchema {
       OPENVEX = 7;
       // https://docs.oasis-open.org/csaf/csaf/v2.0/cs03/csaf-v2.0-cs03.html
       CSAF_VEX = 8;
+      // Static analysis output format
+      // https://github.com/microsoft/sarif-tutorials/blob/main/docs/1-Introduction.md
+      SARIF = 9;
     }
   }
 }
