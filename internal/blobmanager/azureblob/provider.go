@@ -56,7 +56,7 @@ func (p *BackendProvider) FromCredentials(ctx context.Context, secretName string
 }
 
 // location contains the storage account name + container name
-func (p *BackendProvider) ValidateAndExtractCredentials(location string, credsJSON []byte) (any, error) {
+func extractCreds(location string, credsJSON []byte) (*Credentials, error) {
 	var creds *Credentials
 	if err := json.Unmarshal(credsJSON, &creds); err != nil {
 		return nil, fmt.Errorf("unmarshaling credentials: %w", err)
@@ -75,6 +75,16 @@ func (p *BackendProvider) ValidateAndExtractCredentials(location string, credsJS
 		return nil, fmt.Errorf("invalid credentials: %w", err)
 	}
 
+	return creds, nil
+}
+
+func (p *BackendProvider) ValidateAndExtractCredentials(location string, credsJSON []byte) (any, error) {
+	creds, err := extractCreds(location, credsJSON)
+	if err != nil {
+		return nil, fmt.Errorf("extracting credentials: %w", err)
+	}
+
+	// Validate that the credentials are valid against the storage account
 	b, err := NewBackend(creds)
 	if err != nil {
 		return nil, fmt.Errorf("creating backend: %w", err)
@@ -90,7 +100,7 @@ func (p *BackendProvider) ValidateAndExtractCredentials(location string, credsJS
 type Credentials struct {
 	// Storage Account Name
 	StorageAccountName string
-	// Storage Account Container (optional)
+	// Storage Account Container
 	Container string
 	// Active Directory Tenant ID
 	TenantID string
@@ -118,6 +128,10 @@ func (c *Credentials) Validate() error {
 
 	if c.ClientSecret == "" {
 		return fmt.Errorf("%w: missing client secret", ErrValidation)
+	}
+
+	if c.Container == "" {
+		return fmt.Errorf("%w: missing container", ErrValidation)
 	}
 
 	return nil

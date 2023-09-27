@@ -44,16 +44,10 @@ func NewBackend(creds *Credentials) (*Backend, error) {
 		return nil, fmt.Errorf("failed to create Azure Service principal Credential: %w", err)
 	}
 
-	// Container name is optional
-	container := creds.Container
-	if container == "" {
-		container = "chainloop"
-	}
-
 	return &Backend{
 		storageAccountName: creds.StorageAccountName,
 		credentials:        credential,
-		container:          container,
+		container:          creds.Container,
 	}, nil
 }
 
