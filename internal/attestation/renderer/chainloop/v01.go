@@ -116,7 +116,10 @@ func outputChainloopMaterials(att *v1.Attestation, onlyOutput bool) []*Provenanc
 		mdef := materials[mdefName]
 
 		artifactType := mdef.MaterialType
-		nMaterial := mdef.NormalizedOutput()
+		nMaterial, err := mdef.NormalizedOutput()
+		if err != nil {
+			continue
+		}
 
 		// Skip if we are expecting to show only the materials marked as output
 		if onlyOutput && !nMaterial.IsOutput {

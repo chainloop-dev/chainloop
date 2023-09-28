@@ -16,7 +16,8 @@
 package v1
 
 import (
-	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"errors"
+	"fmt"
 )
 
 type NormalizedMaterialOutput struct {
@@ -25,18 +26,25 @@ type NormalizedMaterialOutput struct {
 	Content      []byte
 }
 
-func (m *Attestation_Material) NormalizedOutput() *NormalizedMaterialOutput {
-	switch m.MaterialType {
-	case schemaapi.CraftingSchema_Material_ARTIFACT, schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON, schemaapi.CraftingSchema_Material_SBOM_SPDX_JSON:
-		a := m.GetArtifact()
-		return &NormalizedMaterialOutput{a.Name, a.Digest, a.IsSubject, a.Content}
-	case schemaapi.CraftingSchema_Material_CONTAINER_IMAGE:
-		a := m.GetContainerImage()
-		return &NormalizedMaterialOutput{a.Name, a.Digest, a.IsSubject, nil}
-	case schemaapi.CraftingSchema_Material_STRING:
-		a := m.GetString_()
-		return &NormalizedMaterialOutput{Content: []byte(a.Value)}
+// NormalizedOutput returns a common representation of the properties of a material
+// regardless of how it's been encoded.
+// For example, it's common to have materials based on artifacts, so we want to normalize the output
+func (m *Attestation_Material) NormalizedOutput() (*NormalizedMaterialOutput, error) {
+	if m == nil {
+		return nil, errors.New("material not provided")
 	}
 
-	return nil
+	if a := m.GetContainerImage(); a != nil {
+		return &NormalizedMaterialOutput{a.Name, a.Digest, a.IsSubject, nil}, nil
+	}
+
+	if a := m.GetString_(); a != nil {
+		return &NormalizedMaterialOutput{Content: []byte(a.Value)}, nil
+	}
+
+	if a := m.GetArtifact(); a != nil {
+		return &NormalizedMaterialOutput{a.Name, a.Digest, a.IsSubject, a.Content}, nil
+	}
+
+	return nil, fmt.Errorf("unknown material: %s", m.MaterialType)
 }
