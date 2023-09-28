@@ -49,9 +49,14 @@ func NewChainloopRendererV02(att *v1.Attestation, builderVersion, builderDigest 
 }
 
 func (r *RendererV02) Predicate() (interface{}, error) {
+	normalizedMaterials, err := outputMaterials(r.att, false)
+	if err != nil {
+		return nil, fmt.Errorf("error normalizing materials: %w", err)
+	}
+
 	return ProvenancePredicateV02{
 		ProvenancePredicateCommon: predicateCommon(r.builder, r.att),
-		Materials:                 outputMaterials(r.att, false),
+		Materials:                 normalizedMaterials,
 	}, nil
 }
 
@@ -71,7 +76,12 @@ func (r *RendererV02) Header() (*in_toto.StatementHeader, error) {
 		},
 	}
 
-	for _, m := range outputMaterials(r.att, true) {
+	normalizedMaterials, err := outputMaterials(r.att, true)
+	if err != nil {
+		return nil, fmt.Errorf("error normalizing materials: %w", err)
+	}
+
+	for _, m := range normalizedMaterials {
 		if m.Digest != nil {
 			subjects = append(subjects, in_toto.Subject{
 				Name:   m.Name,
@@ -98,7 +108,7 @@ func builtInAnnotation(name string) string {
 	return fmt.Sprintf("%s%s", builtInAnnotationPrefix, name)
 }
 
-func outputMaterials(att *v1.Attestation, onlyOutput bool) []*slsa_v1.ResourceDescriptor {
+func outputMaterials(att *v1.Attestation, onlyOutput bool) ([]*slsa_v1.ResourceDescriptor, error) {
 	// Sort material keys to stabilize output
 	keys := make([]string, 0, len(att.GetMaterials()))
 	for k := range att.GetMaterials() {
@@ -113,7 +123,10 @@ func outputMaterials(att *v1.Attestation, onlyOutput bool) []*slsa_v1.ResourceDe
 		mdef := materials[mdefName]
 
 		artifactType := mdef.MaterialType
-		nMaterial := mdef.NormalizedOutput()
+		nMaterial, err := mdef.NormalizedOutput()
+		if err != nil {
+			return nil, fmt.Errorf("error normalizing material: %w", err)
+		}
 
 		// Skip if we are expecting to show only the materials marked as output
 		if onlyOutput && !nMaterial.IsOutput {
@@ -157,7 +170,7 @@ func outputMaterials(att *v1.Attestation, onlyOutput bool) []*slsa_v1.ResourceDe
 		res = append(res, material)
 	}
 
-	return res
+	return res, nil
 }
 
 // Implement NormalizablePredicate interface
