@@ -23,7 +23,6 @@ import (
 	dependencytrack "github.com/chainloop-dev/chainloop/app/controlplane/plugins/core/dependency-track/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/core/discord-webhook/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/core/guac/v1"
-	ociregistry "github.com/chainloop-dev/chainloop/app/controlplane/plugins/core/oci-registry/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/core/slack-webhook/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/core/smtp/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
@@ -68,7 +67,6 @@ func Load(pluginsDir string, l log.Logger) (plugins sdk.AvailablePlugins, err er
 	toEnableBuiltIn := []sdk.FanOutFactory{
 		dependencytrack.New,
 		smtp.New,
-		ociregistry.New,
 		discord.New,
 		guac.New,
 		slack.New,
