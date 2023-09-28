@@ -5,11 +5,13 @@
 server:
   http:
     addr: 0.0.0.0:8001
-    timeout: 5s
+    # Timeouts for http downloads
+    # grpc downloads/uploads don't require this because they don't have timeouts
+    timeout: 300s
   grpc:
     addr: 0.0.0.0:9001
-    # Some cas backends are slow, so we need to increase the timeout
-    # for example, Azure Blob Storage describe takes more than 1 second to respond sometimes
+    # Some unary RPCs are slow, so we need to increase the timeout
+    # For example, Azure Blob Storage describe takes more than 1 second to respond sometimes
     timeout: 5s
   http_metrics:
     addr: 0.0.0.0:5001
