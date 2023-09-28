@@ -91,6 +91,10 @@ func (s *DownloadService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// if the buffer contains the actual data we expect we proceed with sending it to the browser
+	// Set headers
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", info.FileName))
+	w.Header().Set("Content-Length", strconv.FormatInt(info.Size, 10))
 	s.log.Infow("msg", "download initialized", "digest", wantChecksum, "size", bytefmt.ByteSize(uint64(info.Size)))
 
 	gotChecksum := sha256.New()
@@ -119,11 +123,6 @@ func (s *DownloadService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, msg, http.StatusUnauthorized)
 		return
 	}
-
-	// if the buffer contains the actual data we expect we proceed with sending it to the browser
-	// Set headers
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", info.FileName))
-	w.Header().Set("Content-Length", strconv.FormatInt(info.Size, 10))
 
 	if _, err := io.Copy(w, buf); err != nil {
 		http.Error(w, sl.LogAndMaskErr(err, s.log).Error(), http.StatusInternalServerError)
