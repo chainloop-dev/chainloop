@@ -34,6 +34,8 @@ import (
 	kerrors "github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
 	"google.golang.org/genproto/googleapis/bytestream"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // Implements the bytestream interface
@@ -109,7 +111,7 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 
 	// Now it's time to check if the data provider has sent an error
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
+		if errors.Is(err, context.Canceled) || status.Code(err) == codes.Canceled {
 			s.log.Infow("msg", "upload canceled", "digest", req.resource.Digest, "name", req.resource.FileName)
 			return nil
 		}
@@ -192,11 +194,16 @@ func bufferStream(ctx context.Context, stream bytestream.ByteStream_WriteServer,
 		default:
 			// Extract the next chunk of data from the stream request
 			req, err := getWriteRequest(stream)
-			// There is nothing else to read or the client has marked the upload as finished
-			if errors.Is(err, io.EOF) || req.GetFinishWrite() {
+			if err != nil {
+				// If we have finished reading the stream we don't consider it a real error
+				if !errors.Is(err, io.EOF) {
+					bufferErr = err
+				}
 				return
-			} else if err != nil { // If there is any other error we return it
-				bufferErr = err
+			}
+
+			// Check if the client has finished sending data
+			if req.GetFinishWrite() {
 				return
 			}
 
