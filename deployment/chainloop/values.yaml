@@ -634,6 +634,9 @@ cas:
       ## @skip cas.ingressAPI.annotations.nginx.ingress.kubernetes.io/backend-protocol
       ## Tell Nginx Ingress Controller to expect gRPC traffic
       nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+      # Improve upload speed by adding client buffering used by http2 control-flows
+      # https://github.com/chainloop-dev/chainloop/issues/375
+      nginx.ingress.kubernetes.io/client-body-buffer-size: "3M"
 
     ## @param cas.ingressAPI.tls Enable TLS configuration for the host defined at `controlplane.ingress.hostname` parameter
     ## TLS certificates will be retrieved from a TLS secret with name: `{{- printf "%s-tls" .Values.controlplane.ingress.hostname }}`

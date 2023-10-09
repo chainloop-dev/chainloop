@@ -159,6 +159,19 @@ helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
 
 ## How to guides
 
+### CAS upload speeds are slow, what can I do?
+
+Chainloop uses gRPC streaming to perform artifact uploads. This method is susceptible to being very slow on high latency scenarios. [#375](https://github.com/chainloop-dev/chainloop/issues/375)
+
+To improve upload speeds, you need to increase [http2 flow control buffer](https://httpwg.org/specs/rfc7540.html#DisableFlowControl). This can be done in NGINX by setting the following annotation in the ingress resource.
+
+```
+# Improve upload speed by adding client buffering used by http2 control-flows
+nginx.ingress.kubernetes.io/client-body-buffer-size: "3M"
+```
+
+Note: For other reverse proxies, you'll need to find the equivalent configuration. 
+
 ### Generate a ECDSA key-pair
 
 An ECDSA key-pair is required to perform authentication between the control-plane and the Artifact CAS
