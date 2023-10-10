@@ -76,6 +76,13 @@ func (r *RendererV02) Header() (*in_toto.StatementHeader, error) {
 		},
 	}
 
+	if r.att.GetSha1Commit() != "" {
+		subjects = append(subjects, in_toto.Subject{
+			Name:   "git",
+			Digest: map[string]string{"sha1": r.att.GetSha1Commit()},
+		})
+	}
+
 	normalizedMaterials, err := outputMaterials(r.att, true)
 	if err != nil {
 		return nil, fmt.Errorf("error normalizing materials: %w", err)

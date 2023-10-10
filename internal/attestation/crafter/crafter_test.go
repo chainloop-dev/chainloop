@@ -39,12 +39,22 @@ func (s *crafterSuite) TestInit() {
 	testCases := []struct {
 		name             string
 		contractPath     string
+		workingDir       string
 		workflowMetadata *v1.WorkflowMetadata
 		wantErr          bool
+		wantRepoDigest   string
 		dryRun           bool
 	}{
 		{
-			name:             "happy path",
+			name:             "happy path inside a git repo",
+			contractPath:     "testdata/contracts/empty_generic.yaml",
+			workflowMetadata: s.workflowMetadata,
+			dryRun:           true,
+			workingDir:       "./testdata/gitresolver/valid",
+			wantRepoDigest:   "5765a751153f5fa9c5d59fc201a802fa4096f081",
+		},
+		{
+			name:             "happy path outside a git repo",
 			contractPath:     "testdata/contracts/empty_generic.yaml",
 			workflowMetadata: s.workflowMetadata,
 			dryRun:           true,
@@ -83,7 +93,7 @@ func (s *crafterSuite) TestInit() {
 
 			// Make sure that the tests context indicate that we are not in a CI
 			// this makes the github action runner context to fail
-			c, err := newInitializedCrafter(s.T(), tc.contractPath, tc.workflowMetadata, tc.dryRun)
+			c, err := newInitializedCrafter(s.T(), tc.contractPath, tc.workflowMetadata, tc.dryRun, tc.workingDir)
 			if tc.wantErr {
 				s.Error(err)
 				return
@@ -96,6 +106,7 @@ func (s *crafterSuite) TestInit() {
 				Attestation: &v1.Attestation{
 					Workflow:   tc.workflowMetadata,
 					RunnerType: contract.GetRunner().GetType(),
+					Sha1Commit: tc.wantRepoDigest,
 				},
 				DryRun: tc.dryRun,
 			}
@@ -122,14 +133,19 @@ type testingCrafter struct {
 	statePath string
 }
 
-func newInitializedCrafter(t *testing.T, contractPath string, wfMeta *v1.WorkflowMetadata, dryRun bool) (*testingCrafter, error) {
+func newInitializedCrafter(t *testing.T, contractPath string, wfMeta *v1.WorkflowMetadata, dryRun bool, workingDir string) (*testingCrafter, error) {
 	contract, err := crafter.LoadSchema(contractPath)
 	if err != nil {
 		return nil, err
 	}
 
 	statePath := fmt.Sprintf("%s/attestation.json", t.TempDir())
-	c := crafter.NewCrafter(crafter.WithStatePath(statePath))
+	opts := []crafter.NewOpt{crafter.WithStatePath(statePath)}
+	if workingDir != "" {
+		opts = append(opts, crafter.WithWorkingDirPath(workingDir))
+	}
+
+	c := crafter.NewCrafter(opts...)
 	if err = c.Init(&crafter.InitOpts{SchemaV1: contract, WfInfo: wfMeta, DryRun: dryRun}); err != nil {
 		return nil, err
 	}
@@ -313,7 +329,7 @@ func (s *crafterSuite) TestResolveEnvVars() {
 				}
 			}
 
-			c, err := newInitializedCrafter(s.T(), "testdata/contracts/with_env_vars.yaml", &v1.WorkflowMetadata{}, true)
+			c, err := newInitializedCrafter(s.T(), "testdata/contracts/with_env_vars.yaml", &v1.WorkflowMetadata{}, true, "")
 			require.NoError(s.T(), err)
 
 			err = c.ResolveEnvVars(tc.strict)

@@ -31,6 +31,8 @@ import (
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/materials"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -42,6 +44,7 @@ type Crafter struct {
 	statePath     string
 	CraftingState *api.CraftingState
 	Runner        supportedRunner
+	workingDir    string
 }
 
 var ErrAttestationStateNotLoaded = errors.New("crafting state not loaded")
@@ -61,14 +64,22 @@ func WithLogger(l *zerolog.Logger) NewOpt {
 	}
 }
 
+func WithWorkingDirPath(path string) NewOpt {
+	return func(c *Crafter) {
+		c.workingDir = path
+	}
+}
+
 // Create a completely new crafter
 func NewCrafter(opts ...NewOpt) *Crafter {
 	noopLogger := zerolog.Nop()
 	defaultStatePath := filepath.Join(os.TempDir(), "chainloop_attestation.tmp.json")
 
+	cw, _ := os.Getwd()
 	c := &Crafter{
-		logger:    &noopLogger,
-		statePath: defaultStatePath,
+		logger:     &noopLogger,
+		statePath:  defaultStatePath,
+		workingDir: cw,
 	}
 
 	for _, opt := range opts {
@@ -175,9 +186,13 @@ func LoadSchema(pathOrURI string) (*schemaapi.CraftingSchema, error) {
 // Initialize the temporary file with the content of the schema
 func (c *Crafter) initCraftingStateFile(schema *schemaapi.CraftingSchema, wf *api.WorkflowMetadata, dryRun bool, runnerType schemaapi.CraftingSchema_Runner_RunnerType, jobURL string) error {
 	// Generate Crafting state
-	state := initialCraftingState(schema, wf, dryRun, runnerType, jobURL)
+	state, err := initialCraftingState(c.workingDir, schema, wf, dryRun, runnerType, jobURL)
+	if err != nil {
+		return fmt.Errorf("initializing crafting state: %w", err)
+	}
+
 	if err := persistCraftingState(state, c.statePath); err != nil {
-		return err
+		return fmt.Errorf("failed to persist crafting state: %w", err)
 	}
 
 	c.logger.Debug().Str("path", c.statePath).Msg("created state file")
@@ -222,7 +237,45 @@ func (c *Crafter) LoadCraftingState() error {
 	return nil
 }
 
-func initialCraftingState(schema *schemaapi.CraftingSchema, wf *api.WorkflowMetadata, dryRun bool, runnerType schemaapi.CraftingSchema_Runner_RunnerType, jobURL string) *api.CraftingState {
+// Returns the current directory git commit hash if possible
+// If we are not in a git repo it will return an empty string
+func gracefulGitRepoHead(path string) (string, error) {
+	repo, err := git.PlainOpenWithOptions(path, &git.PlainOpenOptions{
+		// DO NOT walk up the directory tree until we find a git repo
+		DetectDotGit: false,
+	})
+
+	if err != nil {
+		if errors.Is(err, git.ErrRepositoryNotExists) {
+			return "", nil
+		}
+
+		return "", fmt.Errorf("opening repository: %w", err)
+	}
+
+	head, err := repo.Head()
+	if err != nil {
+		if errors.Is(err, plumbing.ErrReferenceNotFound) {
+			return "", nil
+		}
+		return "", fmt.Errorf("finding repo head: %w", err)
+	}
+
+	commit, err := repo.CommitObject(head.Hash())
+	if err != nil {
+		return "", fmt.Errorf("finding head commit: %w", err)
+	}
+
+	return commit.Hash.String(), nil
+}
+
+func initialCraftingState(cwd string, schema *schemaapi.CraftingSchema, wf *api.WorkflowMetadata, dryRun bool, runnerType schemaapi.CraftingSchema_Runner_RunnerType, jobURL string) (*api.CraftingState, error) {
+	// Get git commit hash
+	commitHash, err := gracefulGitRepoHead(cwd)
+	if err != nil {
+		return nil, fmt.Errorf("getting git commit hash: %w", err)
+	}
+
 	// Generate Crafting state
 	return &api.CraftingState{
 		InputSchema: schema,
@@ -231,9 +284,10 @@ func initialCraftingState(schema *schemaapi.CraftingSchema, wf *api.WorkflowMeta
 			Workflow:      wf,
 			RunnerType:    runnerType,
 			RunnerUrl:     jobURL,
+			Sha1Commit:    commitHash,
 		},
 		DryRun: dryRun,
-	}
+	}, nil
 }
 
 func persistCraftingState(craftState *api.CraftingState, stateFilePath string) error {
