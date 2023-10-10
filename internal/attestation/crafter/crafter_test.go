@@ -18,11 +18,13 @@ package crafter_test
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
 
 	v1 "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
+	"github.com/go-git/go-git/v5"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 
@@ -33,6 +35,8 @@ type crafterSuite struct {
 	suite.Suite
 	// initOpts
 	workflowMetadata *v1.WorkflowMetadata
+	repoPath         string
+	repoHead         string
 }
 
 func (s *crafterSuite) TestInit() {
@@ -42,7 +46,7 @@ func (s *crafterSuite) TestInit() {
 		workingDir       string
 		workflowMetadata *v1.WorkflowMetadata
 		wantErr          bool
-		wantRepoDigest   string
+		wantRepoDigest   bool
 		dryRun           bool
 	}{
 		{
@@ -50,8 +54,8 @@ func (s *crafterSuite) TestInit() {
 			contractPath:     "testdata/contracts/empty_generic.yaml",
 			workflowMetadata: s.workflowMetadata,
 			dryRun:           true,
-			workingDir:       "./testdata/gitresolver/valid",
-			wantRepoDigest:   "5765a751153f5fa9c5d59fc201a802fa4096f081",
+			workingDir:       s.repoPath,
+			wantRepoDigest:   true,
 		},
 		{
 			name:             "happy path outside a git repo",
@@ -106,9 +110,12 @@ func (s *crafterSuite) TestInit() {
 				Attestation: &v1.Attestation{
 					Workflow:   tc.workflowMetadata,
 					RunnerType: contract.GetRunner().GetType(),
-					Sha1Commit: tc.wantRepoDigest,
 				},
 				DryRun: tc.dryRun,
+			}
+
+			if tc.wantRepoDigest {
+				want.Attestation.Sha1Commit = s.repoHead
 			}
 
 			// reset to nil to easily compare them
@@ -387,6 +394,25 @@ func (s *crafterSuite) SetupTest() {
 	}
 
 	s.T().Setenv("CI", "")
+
+	s.repoPath = s.T().TempDir()
+	repo, err := git.PlainInit(s.repoPath, false)
+	require.NoError(s.T(), err)
+	wt, err := repo.Worktree()
+	require.NoError(s.T(), err)
+
+	filename := filepath.Join(s.repoPath, "example-git-file")
+	if err = os.WriteFile(filename, []byte("hello world!"), 0600); err != nil {
+		require.NoError(s.T(), err)
+	}
+
+	_, err = wt.Add("example-git-file")
+	require.NoError(s.T(), err)
+
+	h, err := wt.Commit("test commit", &git.CommitOptions{})
+	require.NoError(s.T(), err)
+
+	s.repoHead = h.String()
 }
 
 func TestSuite(t *testing.T) {

@@ -16,7 +16,6 @@
 package crafter
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -60,8 +59,6 @@ func (s *crafterUnitSuite) TestGitRepoHead() {
 				if err != nil {
 					return "", err
 				}
-
-				fmt.Println("BOOOM", h)
 
 				return h.String(), nil
 			}
