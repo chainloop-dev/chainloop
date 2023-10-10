@@ -19,8 +19,10 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -55,7 +57,13 @@ func (s *crafterUnitSuite) TestGitRepoHead() {
 					return "", err
 				}
 
-				h, err := wt.Commit("test commit", &git.CommitOptions{})
+				h, err := wt.Commit("test commit", &git.CommitOptions{
+					Author: &object.Signature{
+						Name:  "John Doe",
+						Email: "john@doe.org",
+						When:  time.Now(),
+					},
+				})
 				if err != nil {
 					return "", err
 				}

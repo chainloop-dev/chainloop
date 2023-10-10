@@ -20,11 +20,13 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	v1 "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 
@@ -409,7 +411,13 @@ func (s *crafterSuite) SetupTest() {
 	_, err = wt.Add("example-git-file")
 	require.NoError(s.T(), err)
 
-	h, err := wt.Commit("test commit", &git.CommitOptions{})
+	h, err := wt.Commit("test commit", &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  "John Doe",
+			Email: "john@doe.org",
+			When:  time.Now(),
+		},
+	})
 	require.NoError(s.T(), err)
 
 	s.repoHead = h.String()
