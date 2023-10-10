@@ -63,6 +63,7 @@ func (s *crafterSuite) TestInit() {
 			name:             "happy path outside a git repo",
 			contractPath:     "testdata/contracts/empty_generic.yaml",
 			workflowMetadata: s.workflowMetadata,
+			workingDir:       s.T().TempDir(),
 			dryRun:           true,
 		},
 		{
@@ -83,11 +84,13 @@ func (s *crafterSuite) TestInit() {
 			workflowMetadata: s.workflowMetadata,
 			wantErr:          false,
 			dryRun:           true,
+			workingDir:       s.T().TempDir(),
 		},
 		{
 			name:             "with annotations",
 			contractPath:     "testdata/contracts/with_material_annotations.yaml",
 			workflowMetadata: s.workflowMetadata,
+			workingDir:       s.T().TempDir(),
 			dryRun:           true,
 		},
 	}

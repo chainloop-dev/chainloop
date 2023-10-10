@@ -241,8 +241,8 @@ func (c *Crafter) LoadCraftingState() error {
 // If we are not in a git repo it will return an empty string
 func gracefulGitRepoHead(path string) (string, error) {
 	repo, err := git.PlainOpenWithOptions(path, &git.PlainOpenOptions{
-		// DO NOT walk up the directory tree until we find a git repo
-		DetectDotGit: false,
+		// walk up the directory tree until we find a git repo
+		DetectDotGit: true,
 	})
 
 	if err != nil {
