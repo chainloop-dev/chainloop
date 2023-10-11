@@ -69,7 +69,7 @@ func (r *RendererV02) Header() (*in_toto.StatementHeader, error) {
 	// We might don't want this and just force the existence of one material with output = true
 	subjects := []in_toto.Subject{
 		{
-			Name: fmt.Sprintf("chainloop.dev/workflow/%s", r.att.GetWorkflow().Name),
+			Name: prefixed(fmt.Sprintf("workflow.%s", r.att.GetWorkflow().Name)),
 			Digest: map[string]string{
 				"sha256": fmt.Sprintf("%x", sha256.Sum256(raw)),
 			},
@@ -78,7 +78,7 @@ func (r *RendererV02) Header() (*in_toto.StatementHeader, error) {
 
 	if r.att.GetSha1Commit() != "" {
 		subjects = append(subjects, in_toto.Subject{
-			Name:   "git",
+			Name:   subjectGitHead,
 			Digest: map[string]string{"sha1": r.att.GetSha1Commit()},
 		})
 	}
@@ -102,17 +102,6 @@ func (r *RendererV02) Header() (*in_toto.StatementHeader, error) {
 		PredicateType: r.predicateType,
 		Subject:       subjects,
 	}, nil
-}
-
-const builtInAnnotationPrefix = "chainloop."
-
-var AnnotationMaterialType = builtInAnnotation("material.type")
-var AnnotationMaterialName = builtInAnnotation("material.name")
-var AnnotationMaterialCAS = builtInAnnotation("material.cas")
-var AnnotationMaterialInlineCAS = builtInAnnotation("material.cas.inline")
-
-func builtInAnnotation(name string) string {
-	return fmt.Sprintf("%s%s", builtInAnnotationPrefix, name)
 }
 
 func outputMaterials(att *v1.Attestation, onlyOutput bool) ([]*slsa_v1.ResourceDescriptor, error) {
@@ -156,8 +145,8 @@ func outputMaterials(att *v1.Attestation, onlyOutput bool) ([]*slsa_v1.ResourceD
 
 		// Required, built-in annotations
 		material.Annotations = map[string]interface{}{
-			AnnotationMaterialType: artifactType.String(),
-			AnnotationMaterialName: mdefName,
+			annotationMaterialType: artifactType.String(),
+			annotationMaterialName: mdefName,
 		}
 
 		// Custom annotations, it does not override the built-in ones
@@ -169,9 +158,9 @@ func outputMaterials(att *v1.Attestation, onlyOutput bool) ([]*slsa_v1.ResourceD
 		}
 
 		if mdef.UploadedToCas {
-			material.Annotations[AnnotationMaterialCAS] = true
+			material.Annotations[annotationMaterialCAS] = true
 		} else if mdef.InlineCas {
-			material.Annotations[AnnotationMaterialInlineCAS] = true
+			material.Annotations[annotationMaterialInlineCAS] = true
 		}
 
 		res = append(res, material)
@@ -204,14 +193,14 @@ func normalizeMaterial(material *slsa_v1.ResourceDescriptor) (*NormalizedMateria
 	for k, v := range material.Annotations {
 		// if the annotation key doesn't start with chainloop.
 		// we set it as a custom annotation
-		if strings.HasPrefix(k, builtInAnnotationPrefix) {
+		if strings.HasPrefix(k, rendererPrefix) {
 			continue
 		}
 
 		m.Annotations[k] = v.(string)
 	}
 
-	mType, ok := material.Annotations[AnnotationMaterialType]
+	mType, ok := material.Annotations[annotationMaterialType]
 	if !ok {
 		return nil, fmt.Errorf("material type not found")
 	}
@@ -219,7 +208,7 @@ func normalizeMaterial(material *slsa_v1.ResourceDescriptor) (*NormalizedMateria
 	// Set the type
 	m.Type = mType.(string)
 
-	mName, ok := material.Annotations[AnnotationMaterialName]
+	mName, ok := material.Annotations[annotationMaterialName]
 	if !ok {
 		return nil, fmt.Errorf("material name not found")
 	}
@@ -255,11 +244,11 @@ func normalizeMaterial(material *slsa_v1.ResourceDescriptor) (*NormalizedMateria
 	// In the case of container images for example the value is in the name field
 	m.Value = material.Name
 
-	if v, ok := material.Annotations[AnnotationMaterialCAS]; ok && v.(bool) {
+	if v, ok := material.Annotations[annotationMaterialCAS]; ok && v.(bool) {
 		m.UploadedToCAS = true
 	}
 
-	if v, ok := material.Annotations[AnnotationMaterialInlineCAS]; ok && v.(bool) {
+	if v, ok := material.Annotations[annotationMaterialInlineCAS]; ok && v.(bool) {
 		m.EmbeddedInline = true
 	}
 
