@@ -3,7 +3,7 @@
   "predicateType": "chainloop.dev/attestation/v0.2",
   "subject": [
     {
-      "name": "chainloop.dev/workflow/foo",
+      "name": "chainloop.workflow.foo",
       "digest": {
         "sha256": "6cd649c6105e12a235510a585371eb69c8c9ee797d8dc80d30695828ca116b00"
       }
