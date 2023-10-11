@@ -221,6 +221,8 @@ func (m *Attestation) validate(all bool) error {
 
 	// no validation rules for RunnerType
 
+	// no validation rules for Sha1Commit
+
 	if len(errors) > 0 {
 		return AttestationMultiError(errors)
 	}

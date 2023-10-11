@@ -200,3 +200,20 @@ func (p *ProvenancePredicateCommon) GetRunLink() string {
 func (p *ProvenancePredicateCommon) GetAnnotations() map[string]string {
 	return p.Annotations
 }
+
+const (
+	rendererPrefix = "chainloop."
+	// Subject names
+	subjectGitHead = "git.head"
+)
+
+var (
+	annotationMaterialType      = prefixed("material.type")
+	annotationMaterialName      = prefixed("material.name")
+	annotationMaterialCAS       = prefixed("material.cas")
+	annotationMaterialInlineCAS = prefixed("material.cas.inline")
+)
+
+func prefixed(name string) string {
+	return fmt.Sprintf("%s%s", rendererPrefix, name)
+}
