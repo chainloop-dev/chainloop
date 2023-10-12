@@ -187,6 +187,48 @@ func (m *Credentials) validate(all bool) error {
 			}
 		}
 
+	case *Credentials_AzureKeyVault_:
+		if v == nil {
+			err := CredentialsValidationError{
+				field:  "Backend",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		oneofBackendPresent = true
+
+		if all {
+			switch v := interface{}(m.GetAzureKeyVault()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, CredentialsValidationError{
+						field:  "AzureKeyVault",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, CredentialsValidationError{
+						field:  "AzureKeyVault",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetAzureKeyVault()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return CredentialsValidationError{
+					field:  "AzureKeyVault",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	default:
 		_ = v // ensures v is used
 	}
@@ -673,6 +715,153 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = Credentials_GCPSecretManagerValidationError{}
+
+// Validate checks the field values on Credentials_AzureKeyVault with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *Credentials_AzureKeyVault) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on Credentials_AzureKeyVault with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// Credentials_AzureKeyVaultMultiError, or nil if none found.
+func (m *Credentials_AzureKeyVault) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *Credentials_AzureKeyVault) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetTenantId()) < 1 {
+		err := Credentials_AzureKeyVaultValidationError{
+			field:  "TenantId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetClientId()) < 1 {
+		err := Credentials_AzureKeyVaultValidationError{
+			field:  "ClientId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetClientSecret()) < 1 {
+		err := Credentials_AzureKeyVaultValidationError{
+			field:  "ClientSecret",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if _, err := url.Parse(m.GetVaultUri()); err != nil {
+		err = Credentials_AzureKeyVaultValidationError{
+			field:  "VaultUri",
+			reason: "value must be a valid URI",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return Credentials_AzureKeyVaultMultiError(errors)
+	}
+
+	return nil
+}
+
+// Credentials_AzureKeyVaultMultiError is an error wrapping multiple validation
+// errors returned by Credentials_AzureKeyVault.ValidateAll() if the
+// designated constraints aren't met.
+type Credentials_AzureKeyVaultMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m Credentials_AzureKeyVaultMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m Credentials_AzureKeyVaultMultiError) AllErrors() []error { return m }
+
+// Credentials_AzureKeyVaultValidationError is the validation error returned by
+// Credentials_AzureKeyVault.Validate if the designated constraints aren't met.
+type Credentials_AzureKeyVaultValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e Credentials_AzureKeyVaultValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e Credentials_AzureKeyVaultValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e Credentials_AzureKeyVaultValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e Credentials_AzureKeyVaultValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e Credentials_AzureKeyVaultValidationError) ErrorName() string {
+	return "Credentials_AzureKeyVaultValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e Credentials_AzureKeyVaultValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCredentials_AzureKeyVault.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = Credentials_AzureKeyVaultValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = Credentials_AzureKeyVaultValidationError{}
 
 // Validate checks the field values on Credentials_AWSSecretManager_Creds with
 // the rules defined in the proto definition for this message. If any rules

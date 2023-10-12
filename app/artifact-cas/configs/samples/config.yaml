@@ -33,6 +33,12 @@ credentials_service:
   #   project_id: 522312304548
   #   auth_key: "./configs/gcp_auth_key.json"
 
+  # azure_key_vault:
+  #   tenant_id: AD-tenant-id
+  #   client_id: Service Principal ID
+  #   client_secret: Service Principal Secret
+  #   vault_uri: https://myvault.vault.azure.net/
+
 observability:
   sentry:
     dsn: "http://sentryDomain"
