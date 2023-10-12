@@ -65,7 +65,7 @@ func (r *AzurePipeline) String() string {
 
 func (r *AzurePipeline) RunURI() (url string) {
 	teamFoundationServerURI := os.Getenv("SYSTEM_TEAMFOUNDATIONSERVERURI")
-	definitionName := os.Getenv("SYSTEM_DEFINITIONNAME")
+	definitionName := os.Getenv("SYSTEM_TEAMPROJECT")
 	buildID := os.Getenv("BUILD_BUILDID")
 	jobID := os.Getenv("SYSTEM_JOBID")
 
