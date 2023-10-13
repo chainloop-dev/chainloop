@@ -39,9 +39,15 @@ const (
 )
 
 type Manager struct {
-	client       *azsecrets.Client
+	client       SecretsRW
 	secretPrefix string
 	logger       *log.Helper
+}
+
+type SecretsRW interface {
+	SetSecret(ctx context.Context, secretName string, params azsecrets.SetSecretParameters, options *azsecrets.SetSecretOptions) (azsecrets.SetSecretResponse, error)
+	GetSecret(ctx context.Context, secretName string, version string, options *azsecrets.GetSecretOptions) (azsecrets.GetSecretResponse, error)
+	DeleteSecret(ctx context.Context, secretName string, options *azsecrets.DeleteSecretOptions) (azsecrets.DeleteSecretResponse, error)
 }
 
 type NewManagerOpts struct {
@@ -105,16 +111,6 @@ func NewManager(opts *NewManagerOpts) (*Manager, error) {
 		log.Fatalf("failed to create a client: %v", err)
 	}
 
-	if opts.Role == credentials.RoleReader {
-		if err := validateReaderClient(client, opts.SecretPrefix); err != nil {
-			return nil, fmt.Errorf("validating client: %w", err)
-		}
-	} else {
-		if err := validateWriterClient(client, opts.SecretPrefix); err != nil {
-			return nil, fmt.Errorf("validating client: %w", err)
-		}
-	}
-
 	logger.Infow("msg", "Azure KeyVault configured", "URI", opts.VaultURI, "role", opts.Role, "prefix", opts.SecretPrefix)
 
 	return &Manager{
@@ -166,17 +162,17 @@ func (m *Manager) DeleteCredentials(ctx context.Context, secretName string) erro
 	return nil
 }
 
-// validateWriterClient checks if the client is valid by writing and deleting a secret
+// ValidateWriterClient checks if the client is valid by writing and deleting a secret
 // in the provided mount path.
-func validateWriterClient(client *azsecrets.Client, pathPrefix string) error {
-	secretName := strings.Join([]string{pathPrefix, healthCheckSecret, uuid.New().String()}, "-")
+func ValidateWriterClient(m *Manager, pathPrefix string) error {
+	secretName := strings.Join([]string{pathPrefix, healthCheckSecret, uuid.NewString()}, "-")
 
 	ctx := context.Background()
-	if _, err := client.SetSecret(ctx, secretName, azsecrets.SetSecretParameters{Value: strPtr("")}, nil); err != nil {
+	if _, err := m.client.SetSecret(ctx, secretName, azsecrets.SetSecretParameters{Value: strPtr("")}, nil); err != nil {
 		return fmt.Errorf("failed to set secret: %w", err)
 	}
 
-	if _, err := client.DeleteSecret(ctx, secretName, nil); err != nil {
+	if _, err := m.client.DeleteSecret(ctx, secretName, nil); err != nil {
 		return fmt.Errorf("failed to delete secret: %w", err)
 	}
 
@@ -188,11 +184,11 @@ func strPtr(s string) *string {
 	return &s
 }
 
-func validateReaderClient(client *azsecrets.Client, pathPrefix string) error {
+func ValidateReaderClient(m *Manager, pathPrefix string) error {
 	// try to retrieve a non-existing key
 	// if we get 404 means that we have permissions to read in that path
-	secretName := strings.Join([]string{pathPrefix, healthCheckNonExisting}, "-")
-	_, err := client.GetSecret(context.Background(), secretName, "", nil)
+	secretName := strings.Join([]string{pathPrefix, healthCheckNonExisting, uuid.NewString()}, "-")
+	_, err := m.client.GetSecret(context.Background(), secretName, "", nil)
 	var respErr *azcore.ResponseError
 	if err != nil {
 		if errors.As(err, &respErr) && respErr.StatusCode == 404 {
@@ -203,5 +199,5 @@ func validateReaderClient(client *azsecrets.Client, pathPrefix string) error {
 		return fmt.Errorf("failed to get secret: %w", err)
 	}
 
-	return nil
+	return errors.New("expected error")
 }

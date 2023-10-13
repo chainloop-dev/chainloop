@@ -73,6 +73,16 @@ func newAzureKBManager(conf *api.Credentials_AzureKeyVault, prefix string, r cre
 		return nil, fmt.Errorf("configuring the secrets manager: %w", err)
 	}
 
+	if opts.Role == credentials.RoleReader {
+		if err := azurekv.ValidateReaderClient(m, prefix); err != nil {
+			return nil, fmt.Errorf("validating client: %w", err)
+		}
+	} else {
+		if err := azurekv.ValidateWriterClient(m, prefix); err != nil {
+			return nil, fmt.Errorf("validating client: %w", err)
+		}
+	}
+
 	return m, nil
 }
 

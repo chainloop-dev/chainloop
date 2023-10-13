@@ -17,6 +17,7 @@ package biz
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/go-kratos/kratos/v2/log"
@@ -101,18 +102,14 @@ func (uc *OrganizationUseCase) Delete(ctx context.Context, id string) error {
 		}
 	}
 
-	// Delete the associated repository
-	// Currently there is only one repository per organization
-	ociRepository, err := uc.casBackendUseCase.FindDefaultBackend(ctx, org.ID)
-	if err != nil && !IsNotFound(err) {
-		return err
+	backends, err := uc.casBackendUseCase.List(ctx, org.ID)
+	if err != nil {
+		return fmt.Errorf("failed to list backends: %w", err)
 	}
 
-	if ociRepository != nil {
-		// We make sure to call the OCI repository use case to delete the repository
-		// including the external secret
-		if err := uc.casBackendUseCase.Delete(ctx, ociRepository.ID.String()); err != nil {
-			return err
+	for _, b := range backends {
+		if err := uc.casBackendUseCase.Delete(ctx, b.ID.String()); err != nil {
+			return fmt.Errorf("failed to delete backend: %w", err)
 		}
 	}
 
