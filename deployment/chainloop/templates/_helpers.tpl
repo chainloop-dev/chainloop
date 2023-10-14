@@ -85,7 +85,7 @@ gcpSecretManager:
   {{- fail ".Values.secretsBackend.gcpSecretManager.serviceAccountKey not set" }}
   {{- end }}
 {{- else if eq .backend "azureKeyVault" }}
-azureKeyVault:
+azure_key_vault:
   tenant_id: {{ required "AD tenantID required" .azureKeyVault.tenantID | quote }}
   client_id: {{ required "Service principal ID required" .azureKeyVault.clientID | quote }}
   client_secret: {{ required "Service principal secret required" .azureKeyVault.clientSecret | quote }}
