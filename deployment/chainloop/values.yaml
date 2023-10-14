@@ -645,6 +645,7 @@ cas:
       ## @skip cas.ingressAPI.annotations.nginx.ingress.kubernetes.io/backend-protocol
       ## Tell Nginx Ingress Controller to expect gRPC traffic
       nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+      ## @skip cas.ingressAPI.annotations.nginx.ingress.kubernetes.io/client-body-buffer-size
       # Improve upload speed by adding client buffering used by http2 control-flows
       # https://github.com/chainloop-dev/chainloop/issues/375
       nginx.ingress.kubernetes.io/client-body-buffer-size: "3M"
