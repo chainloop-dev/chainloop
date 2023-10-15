@@ -13,14 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package azureblob
+package s3
 
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"strings"
 
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
@@ -36,7 +34,7 @@ func NewBackendProvider(cReader credentials.Reader) *BackendProvider {
 	return &BackendProvider{cReader: cReader}
 }
 
-const ProviderID = "AzureBlob"
+const ProviderID = "AWS-S3"
 
 func (p *BackendProvider) ID() string {
 	return ProviderID
@@ -53,29 +51,6 @@ func (p *BackendProvider) FromCredentials(ctx context.Context, secretName string
 	}
 
 	return NewBackend(creds)
-}
-
-// location contains the storage account name + container name
-func extractCreds(location string, credsJSON []byte) (*Credentials, error) {
-	var creds *Credentials
-	if err := json.Unmarshal(credsJSON, &creds); err != nil {
-		return nil, fmt.Errorf("unmarshaling credentials: %w", err)
-	}
-
-	parts := strings.Split(location, "/")
-	if len(parts) != 2 {
-		return nil, errors.New("invalid location: must be in the format <account>/<container>")
-	}
-
-	// Override the location in the credentials since that's something we don't allow updating
-	creds.StorageAccountName = parts[0]
-	creds.Container = parts[1]
-
-	if err := creds.Validate(); err != nil {
-		return nil, fmt.Errorf("invalid credentials: %w", err)
-	}
-
-	return creds, nil
 }
 
 func (p *BackendProvider) ValidateAndExtractCredentials(location string, credsJSON []byte) (any, error) {
@@ -97,39 +72,49 @@ func (p *BackendProvider) ValidateAndExtractCredentials(location string, credsJS
 	return creds, nil
 }
 
+// location contains the bucket and the path
+func extractCreds(bucketName string, credsJSON []byte) (*Credentials, error) {
+	var creds *Credentials
+	if err := json.Unmarshal(credsJSON, &creds); err != nil {
+		return nil, fmt.Errorf("unmarshaling credentials: %w", err)
+	}
+
+	creds.BucketName = bucketName
+
+	if err := creds.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid credentials: %w", err)
+	}
+
+	return creds, nil
+}
+
 type Credentials struct {
-	// Storage Account Name
-	StorageAccountName string
-	// Storage Account Container
-	Container string
-	// Active Directory Tenant ID
-	TenantID string
-	// Registered application / service principal client ID
-	ClientID string
-	// Registered application / service principal client secret
-	ClientSecret string
+	// AWS Access Key ID
+	AccessKeyID string
+	// AWS Secret Access Key
+	SecretAccessKey string
+	// Bucket name
+	BucketName string
+	// Region ID, i.e us-east-1
+	Region string
 }
 
 // Validate that the APICreds has all its properties set
 func (c *Credentials) Validate() error {
-	if c.StorageAccountName == "" {
-		return fmt.Errorf("%w: missing storage account name", backend.ErrValidation)
+	if c.AccessKeyID == "" {
+		return fmt.Errorf("%w: missing accessKeyID", backend.ErrValidation)
 	}
 
-	if c.TenantID == "" {
-		return fmt.Errorf("%w: missing tenant ID", backend.ErrValidation)
+	if c.SecretAccessKey == "" {
+		return fmt.Errorf("%w: missing secretAccessKey", backend.ErrValidation)
 	}
 
-	if c.ClientID == "" {
-		return fmt.Errorf("%w: missing client ID", backend.ErrValidation)
+	if c.BucketName == "" {
+		return fmt.Errorf("%w: missing bucket name", backend.ErrValidation)
 	}
 
-	if c.ClientSecret == "" {
-		return fmt.Errorf("%w: missing client secret", backend.ErrValidation)
-	}
-
-	if c.Container == "" {
-		return fmt.Errorf("%w: missing container", backend.ErrValidation)
+	if c.Region == "" {
+		return fmt.Errorf("%w: missing region", backend.ErrValidation)
 	}
 
 	return nil

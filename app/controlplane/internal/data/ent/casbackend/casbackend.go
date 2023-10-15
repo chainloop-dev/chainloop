@@ -115,7 +115,7 @@ var (
 // ProviderValidator is a validator for the "provider" field enum values. It is called by the builders before save.
 func ProviderValidator(pr biz.CASBackendProvider) error {
 	switch pr {
-	case "AzureBlob", "OCI", "INLINE":
+	case "AzureBlob", "OCI", "INLINE", "AWS-S3":
 		return nil
 	default:
 		return fmt.Errorf("casbackend: invalid enum value for provider field: %q", pr)

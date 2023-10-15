@@ -25,8 +25,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/server"
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
-	"github.com/chainloop-dev/chainloop/internal/blobmanager/azureblob"
-	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	"github.com/chainloop-dev/chainloop/internal/credentials/manager"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
@@ -62,16 +60,6 @@ func init() {
 type app struct {
 	*kratos.App
 	backend.Providers
-}
-
-func loadCASBackendProviders(creader credentials.Reader) backend.Providers {
-	// Initialize CAS backend providers
-	ociProvider := oci.NewBackendProvider(creader)
-	azureBlobProvider := azureblob.NewBackendProvider(creader)
-	return backend.Providers{
-		ociProvider.ID():       ociProvider,
-		azureBlobProvider.ID(): azureBlobProvider,
-	}
 }
 
 func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTPMetricsServer, providers backend.Providers) *app {
