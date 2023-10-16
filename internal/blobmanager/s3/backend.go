@@ -17,7 +17,6 @@ package s3
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
@@ -134,6 +133,7 @@ func (b *Backend) Describe(ctx context.Context, digest string) (*pb.CASResource,
 func (b *Backend) Download(ctx context.Context, w io.Writer, digest string) error {
 	downloader := s3manager.NewDownloaderWithClient(b.client)
 	// force sequential downloads so we can wrap the writer and ignore the offset
+	// Important! Do not change this value, otherwise the fakeWriterAt will not work
 	downloader.Concurrency = 1
 	output := fakeWriterAt{w}
 
@@ -148,22 +148,11 @@ func (b *Backend) Download(ctx context.Context, w io.Writer, digest string) erro
 // CheckWritePermissions performs an actual write to the repository to check that the credentials
 func (b *Backend) CheckWritePermissions(ctx context.Context) error {
 	testObject := "healthcheck"
-	testObjectData := "healthcheckdata"
-
-	// We use the sha256 hash of the test object integrity during uploads and downloads
-	hash := sha256.New()
-	if _, err := io.WriteString(hash, testObjectData); err != nil {
-		return fmt.Errorf("failed to write to hash: %w", err)
-	}
-
-	hashBytes := hash.Sum(nil)
-	hashString := base64.StdEncoding.EncodeToString(hashBytes)
 
 	input := &s3.PutObjectInput{
-		Body:           aws.ReadSeekCloser(strings.NewReader(testObjectData)),
-		Bucket:         aws.String(b.bucket),
-		Key:            aws.String(testObject),
-		ChecksumSHA256: aws.String(hashString),
+		Body:   aws.ReadSeekCloser(strings.NewReader("healthcheckdata")),
+		Bucket: aws.String(b.bucket),
+		Key:    aws.String(testObject),
 	}
 
 	// Write to the bucket
@@ -171,19 +160,14 @@ func (b *Backend) CheckWritePermissions(ctx context.Context) error {
 		return fmt.Errorf("failed to write to bucket: %w", err)
 	}
 
-	// and read the object back + validate integrity
-	resp, err := b.client.GetObjectWithContext(ctx, &s3.GetObjectInput{
-		Bucket:       aws.String(b.bucket),
-		Key:          aws.String(testObject),
-		ChecksumMode: aws.String("ENABLED"),
+	// and read the object back
+	_, err := b.client.GetObjectWithContext(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(b.bucket),
+		Key:    aws.String(testObject),
 	})
 
 	if err != nil {
 		return fmt.Errorf("failed to read from bucket: %w", err)
-	}
-
-	if resp.ChecksumSHA256 != nil && *resp.ChecksumSHA256 != hashString {
-		return fmt.Errorf("failed to validate integrity of object")
 	}
 
 	return nil
@@ -205,6 +189,9 @@ func resourceName(digest string) string {
 	return fmt.Sprintf("sha256:%s", digest)
 }
 
+// fakeWriterAt is a wrapper around io.Writer that ignores the offset
+// we have this wrapper as a compatibility bridge between the backend.Downloader and io.WriterAt
+// This is ok since we force sequential downloads with concurrency=1
 type fakeWriterAt struct {
 	w io.Writer
 }
