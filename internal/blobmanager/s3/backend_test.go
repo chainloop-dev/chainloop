@@ -16,9 +16,24 @@
 package s3
 
 import (
+	"bytes"
+	"context"
+	"crypto/sha256"
+	"fmt"
+	"os"
 	"testing"
+	"time"
 
+	pb "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
+	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
+	"github.com/docker/go-connections/nat"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func (s *testSuite) TestHexSha256ToBinaryB64() {
@@ -68,10 +83,193 @@ func (s *testSuite) TestResourceName() {
 	}
 }
 
+func (s *testSuite) TestWritePermissions() {
+	s.T().Run("invalid credentials", func(t *testing.T) {
+		s.Error(s.invalidBackend.CheckWritePermissions(context.Background()))
+	})
+
+	s.T().Run("valid credentials", func(t *testing.T) {
+		s.NoError(s.backend.CheckWritePermissions(context.Background()))
+	})
+}
+
+func (s *testSuite) TestExists() {
+	s.T().Run("doesn't exist", func(t *testing.T) {
+		found, err := s.backend.Exists(context.Background(), "aabbccddeeff")
+		s.NoError(err)
+		s.False(found)
+	})
+
+	s.T().Run("found", func(t *testing.T) {
+		found, err := s.backend.Exists(context.Background(), s.ownedObjectDigest)
+		s.NoError(err)
+		s.True(found)
+	})
+
+	s.T().Run("exists but not uploaded by chainloop", func(t *testing.T) {
+		found, err := s.backend.Exists(context.Background(), s.externalObjectDigest)
+		s.ErrorContains(err, "not uploaded by Chainloop")
+		s.False(found)
+	})
+}
+
+func (s *testSuite) TestDescribe() {
+	s.T().Run("doesn't exist", func(t *testing.T) {
+		artifact, err := s.backend.Describe(context.Background(), "aabbccddeeff")
+		s.Error(err)
+		notFoundErr := &backend.ErrNotFound{}
+		s.ErrorAs(err, &notFoundErr)
+		s.Nil(artifact)
+	})
+
+	s.T().Run("found", func(t *testing.T) {
+		artifact, err := s.backend.Describe(context.Background(), s.ownedObjectDigest)
+		s.NoError(err)
+		s.Equal("test.txt", artifact.FileName)
+		s.Equal(s.ownedObjectDigest, artifact.Digest)
+		s.Equal(int64(4), artifact.Size)
+	})
+}
+
+func (s *testSuite) TestDownload() {
+	s.T().Run("exist but not uploaded by Chainloop", func(t *testing.T) {
+		buf := bytes.NewBuffer(nil)
+		err := s.backend.Download(context.Background(), buf, s.externalObjectDigest)
+		s.Error(err)
+		notFoundErr := backend.NewErrNotFound("artifact")
+		s.ErrorAs(err, &notFoundErr)
+		s.Empty(buf)
+	})
+
+	s.T().Run("doesn't exist", func(t *testing.T) {
+		buf := bytes.NewBuffer(nil)
+		err := s.backend.Download(context.Background(), buf, "deadbeef")
+		s.Error(err)
+		notFoundErr := backend.NewErrNotFound("artifact")
+		s.ErrorAs(err, &notFoundErr)
+		s.Empty(buf)
+	})
+
+	s.T().Run("exists", func(t *testing.T) {
+		buf := bytes.NewBuffer(nil)
+		err := s.backend.Download(context.Background(), buf, s.ownedObjectDigest)
+		s.NoError(err)
+		s.Equal("test", buf.String())
+	})
+}
+
 type testSuite struct {
 	suite.Suite
+	minio                   *minioInstance
+	backend, invalidBackend *Backend
+	ownedObjectDigest       string
+	externalObjectDigest    string
 }
 
 func TestS3Backend(t *testing.T) {
 	suite.Run(t, new(testSuite))
+}
+
+func newMinioInstance(t *testing.T) *minioInstance {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	port, err := nat.NewPort("", "9000")
+	require.NoError(t, err)
+
+	req := testcontainers.ContainerRequest{
+		Image:        "minio/minio:RELEASE.2023-09-04T19-57-37Z",
+		ExposedPorts: []string{port.Port()},
+		Env: map[string]string{
+			"MINIO_ROOT_USER":     "root",
+			"MINIO_ROOT_PASSWORD": "test-password",
+		},
+		Cmd:        []string{"server", "/data"},
+		WaitingFor: wait.ForListeningPort(port).WithStartupTimeout(5 * time.Minute),
+	}
+
+	instance, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	require.NoError(t, err)
+
+	return &minioInstance{instance}
+}
+
+func (c *minioInstance) ConnectionString(t *testing.T) string {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	p, err := c.instance.MappedPort(ctx, "9000")
+	assert.NoError(t, err)
+
+	return fmt.Sprintf("0.0.0.0:%d", p.Int())
+}
+
+type minioInstance struct {
+	instance testcontainers.Container
+}
+
+func (s *testSuite) SetupSuite() {
+	if os.Getenv("SKIP_INTEGRATION") == "true" {
+		s.T().Skip()
+	}
+}
+
+// Run before each test
+const testBucket = "test-bucket"
+
+func (s *testSuite) SetupTest() {
+	s.minio = newMinioInstance(s.T())
+
+	// Create backend
+	backend, err := NewBackend(&Credentials{
+		AccessKeyID:     "root",
+		SecretAccessKey: "test-password",
+		Region:          "us-east-1",
+		BucketName:      testBucket,
+	}, WithEndpoint(fmt.Sprintf("http://%s", s.minio.ConnectionString(s.T()))), WithForcedS3PathStyle(true))
+	require.NoError(s.T(), err)
+	s.backend = backend
+
+	invalidBackend, err := NewBackend(&Credentials{
+		AccessKeyID:     "root",
+		SecretAccessKey: "wrong-password",
+		Region:          "us-east-1",
+		BucketName:      testBucket,
+	}, WithEndpoint(fmt.Sprintf("http://%s", s.minio.ConnectionString(s.T()))), WithForcedS3PathStyle(true))
+	require.NoError(s.T(), err)
+	s.invalidBackend = invalidBackend
+
+	// create bucket
+	minioClient, err := minio.New(s.minio.ConnectionString(s.T()), &minio.Options{
+		Creds: credentials.NewStaticV4("root", "test-password", ""), Secure: false,
+	})
+	require.NoError(s.T(), err)
+	require.NoError(s.T(), minioClient.MakeBucket(context.TODO(), testBucket, minio.MakeBucketOptions{}))
+
+	// upload a file
+	buf := bytes.NewBuffer([]byte("test"))
+	s.ownedObjectDigest = fmt.Sprintf("%x", sha256.Sum256(buf.Bytes()))
+	// calculate sha256 of the content in the buffer
+	err = s.backend.Upload(context.Background(), buf, &pb.CASResource{
+		Digest:   s.ownedObjectDigest,
+		FileName: "test.txt",
+	})
+	require.NoError(s.T(), err)
+
+	// upload another one but by the client directly
+	reader := bytes.NewReader([]byte("hello world"))
+	s.externalObjectDigest = "deadbeef"
+	_, err = minioClient.PutObject(context.Background(), testBucket, fmt.Sprintf("sha256:%s", s.externalObjectDigest), reader, reader.Size(),
+		minio.PutObjectOptions{})
+	require.NoError(s.T(), err)
+}
+
+func (s *testSuite) TearDownTest() {
+	if s.minio == nil {
+		return
+	}
+
+	assert.NoError(s.T(), s.minio.instance.Terminate(context.Background()))
 }

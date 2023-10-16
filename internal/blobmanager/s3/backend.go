@@ -46,9 +46,38 @@ type Backend struct {
 
 var _ backend.UploaderDownloader = (*Backend)(nil)
 
-func NewBackend(creds *Credentials) (*Backend, error) {
+type ConnOpt func(*aws.Config)
+
+// Optional endpoint configuration
+func WithEndpoint(endpoint string) ConnOpt {
+	return func(cfg *aws.Config) {
+		cfg.Endpoint = aws.String(endpoint)
+	}
+}
+
+func WithForcedS3PathStyle(force bool) ConnOpt {
+	return func(cfg *aws.Config) {
+		cfg.S3ForcePathStyle = aws.Bool(force)
+	}
+}
+
+func NewBackend(creds *Credentials, connOpts ...ConnOpt) (*Backend, error) {
+	if creds == nil {
+		return nil, errors.New("credentials cannot be nil")
+	}
+
+	if err := creds.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid credentials: %w", err)
+	}
+
 	c := credentials.NewStaticCredentials(creds.AccessKeyID, creds.SecretAccessKey, "")
-	session, err := session.NewSession(&aws.Config{Credentials: c, Region: aws.String(creds.Region)})
+	// Configure AWS session
+	cfg := &aws.Config{Credentials: c, Region: aws.String(creds.Region)}
+	for _, opt := range connOpts {
+		opt(cfg)
+	}
+
+	session, err := session.NewSession(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create AWS session: %w", err)
 	}
@@ -131,13 +160,18 @@ func (b *Backend) Describe(ctx context.Context, digest string) (*pb.CASResource,
 }
 
 func (b *Backend) Download(ctx context.Context, w io.Writer, digest string) error {
+	exists, err := b.Exists(ctx, digest)
+	if err != nil || !exists {
+		return backend.NewErrNotFound("artifact")
+	}
+
 	downloader := s3manager.NewDownloaderWithClient(b.client)
 	// force sequential downloads so we can wrap the writer and ignore the offset
 	// Important! Do not change this value, otherwise the fakeWriterAt will not work
 	downloader.Concurrency = 1
 	output := fakeWriterAt{w}
 
-	_, err := downloader.DownloadWithContext(ctx, output, &s3.GetObjectInput{
+	_, err = downloader.DownloadWithContext(ctx, output, &s3.GetObjectInput{
 		Bucket: aws.String(b.bucket),
 		Key:    aws.String(resourceName(digest)),
 	})
