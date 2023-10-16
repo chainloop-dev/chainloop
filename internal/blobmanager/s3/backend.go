@@ -19,17 +19,25 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	pb "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
+)
+
+const (
+	annotationNameAuthor   = "Author"
+	annotationNameFilename = "Filename"
 )
 
 type Backend struct {
@@ -54,19 +62,87 @@ func NewBackend(creds *Credentials) (*Backend, error) {
 
 // Exists check that the artifact is already present in the repository
 func (b *Backend) Exists(ctx context.Context, digest string) (bool, error) {
-	return false, errors.New("not implemented")
+	_, err := b.Describe(ctx, digest)
+	notFoundErr := &backend.ErrNotFound{}
+	if err != nil && errors.As(err, &notFoundErr) {
+		return false, nil
+	}
+
+	return err == nil, err
 }
 
 func (b *Backend) Upload(ctx context.Context, r io.Reader, resource *pb.CASResource) error {
-	return errors.New("not implemented")
+	uploader := s3manager.NewUploaderWithClient(b.client)
+
+	_, err := uploader.UploadWithContext(ctx, &s3manager.UploadInput{
+		Bucket: aws.String(b.bucket),
+		Key:    aws.String(resourceName(resource.Digest)),
+		Body:   r,
+		// Check that the object is uploaded correctly
+		ChecksumSHA256: aws.String(hexSha256ToBinaryB64(resource.Digest)),
+		Metadata: map[string]*string{
+			annotationNameAuthor:   aws.String(backend.AuthorAnnotation),
+			annotationNameFilename: aws.String(resource.FileName),
+		},
+	})
+
+	return err
 }
 
 func (b *Backend) Describe(ctx context.Context, digest string) (*pb.CASResource, error) {
-	return nil, errors.New("not implemented")
+	// and read the object back + validate integrity
+	resp, err := b.client.HeadObjectWithContext(ctx, &s3.HeadObjectInput{
+		Bucket:       aws.String(b.bucket),
+		Key:          aws.String(resourceName(digest)),
+		ChecksumMode: aws.String("ENABLED"),
+	})
+
+	// check error is aws error
+	var awsErr awserr.Error
+	if err != nil {
+		if errors.As(err, &awsErr) && awsErr.Code() == "NotFound" {
+			return nil, &backend.ErrNotFound{}
+		}
+
+		return nil, fmt.Errorf("failed to read from bucket: %w", err)
+	}
+
+	// Check integrity of the remote object
+	if resp.ChecksumSHA256 != nil && *resp.ChecksumSHA256 != hexSha256ToBinaryB64(digest) {
+		return nil, fmt.Errorf("failed to validate integrity of object, got=%s, want=%s", *resp.ChecksumSHA256, hexSha256ToBinaryB64(digest))
+	}
+
+	// Check asset author is Chainloop that way we can ignore files uploaded by other tools
+	// note: this is not a security mechanism, an additional check will be put in place for tamper check
+	author, ok := resp.Metadata[annotationNameAuthor]
+	if !ok || *author != backend.AuthorAnnotation {
+		return nil, errors.New("asset not uploaded by Chainloop")
+	}
+
+	fileName, ok := resp.Metadata[annotationNameFilename]
+	if !ok {
+		return nil, fmt.Errorf("couldn't find file metadata")
+	}
+
+	return &pb.CASResource{
+		FileName: *fileName,
+		Size:     *resp.ContentLength,
+		Digest:   digest,
+	}, nil
 }
 
 func (b *Backend) Download(ctx context.Context, w io.Writer, digest string) error {
-	return errors.New("not implemented")
+	downloader := s3manager.NewDownloaderWithClient(b.client)
+	// force sequential downloads so we can wrap the writer and ignore the offset
+	downloader.Concurrency = 1
+	output := fakeWriterAt{w}
+
+	_, err := downloader.DownloadWithContext(ctx, output, &s3.GetObjectInput{
+		Bucket: aws.String(b.bucket),
+		Key:    aws.String(resourceName(digest)),
+	})
+
+	return err
 }
 
 // CheckWritePermissions performs an actual write to the repository to check that the credentials
@@ -82,7 +158,6 @@ func (b *Backend) CheckWritePermissions(ctx context.Context) error {
 
 	hashBytes := hash.Sum(nil)
 	hashString := base64.StdEncoding.EncodeToString(hashBytes)
-	fmt.Println(hashString)
 
 	input := &s3.PutObjectInput{
 		Body:           aws.ReadSeekCloser(strings.NewReader(testObjectData)),
@@ -112,4 +187,29 @@ func (b *Backend) CheckWritePermissions(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// decode the hex string into a []byte slice.
+// base64 encode the result
+func hexSha256ToBinaryB64(hexString string) string {
+	// Decode the hex string into a []byte slice.
+	decoded, err := hex.DecodeString(hexString)
+	if err != nil {
+		return ""
+	}
+
+	return base64.StdEncoding.EncodeToString(decoded)
+}
+
+func resourceName(digest string) string {
+	return fmt.Sprintf("sha256:%s", digest)
+}
+
+type fakeWriterAt struct {
+	w io.Writer
+}
+
+func (fw fakeWriterAt) WriteAt(p []byte, _ int64) (n int, err error) {
+	// ignore 'offset' because we forced sequential downloads
+	return fw.w.Write(p)
 }
