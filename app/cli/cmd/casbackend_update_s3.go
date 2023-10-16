@@ -84,8 +84,8 @@ func newCASBackendUpdateAWSS3Cmd() *cobra.Command {
 	err := cmd.MarkFlagRequired("id")
 	cobra.CheckErr(err)
 
-	cmd.Flags().StringVar(&accessKeyID, "key-id", "", "AWS Access Key ID")
-	cmd.Flags().StringVar(&secretAccessKey, "key-secret", "", "AWS Secret Access Key")
+	cmd.Flags().StringVar(&accessKeyID, "access-key-id", "", "AWS Access Key ID")
+	cmd.Flags().StringVar(&secretAccessKey, "secret-access-key", "", "AWS Secret Access Key")
 	cmd.Flags().StringVar(&region, "region", "", "AWS region for the bucket")
 
 	return cmd
