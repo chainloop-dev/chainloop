@@ -383,17 +383,21 @@ chainloop config save \
 
 ### Secrets Backend
 
-| Name                                                | Description                                                              | Value       |
-| --------------------------------------------------- | ------------------------------------------------------------------------ | ----------- |
-| `secretsBackend.backend`                            | Secrets backend type ("vault", "awsSecretManager" or "gcpSecretManager") | `vault`     |
-| `secretsBackend.secretPrefix`                       | Prefix that will be pre-pended to all secrets in the storage backend     | `chainloop` |
-| `secretsBackend.vault.address`                      | Vault address                                                            |             |
-| `secretsBackend.vault.token`                        | Vault authentication token                                               |             |
-| `secretsBackend.awsSecretManager.accessKey`         | AWS Access KEY ID                                                        |             |
-| `secretsBackend.awsSecretManager.secretKey`         | AWS Secret Key                                                           |             |
-| `secretsBackend.awsSecretManager.region`            | AWS Secret Manager Region                                                |             |
-| `secretsBackend.gcpSecretManager.projectId`         | GCP Project ID                                                           |             |
-| `secretsBackend.gcpSecretManager.serviceAccountKey` | GCP Auth Key                                                             |             |
+| Name                                                | Description                                                                               | Value       |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------- | ----------- |
+| `secretsBackend.backend`                            | Secrets backend type ("vault", "awsSecretManager" or "gcpSecretManager", "azureKeyVault") | `vault`     |
+| `secretsBackend.secretPrefix`                       | Prefix that will be pre-pended to all secrets in the storage backend                      | `chainloop` |
+| `secretsBackend.vault.address`                      | Vault address                                                                             |             |
+| `secretsBackend.vault.token`                        | Vault authentication token                                                                |             |
+| `secretsBackend.awsSecretManager.accessKey`         | AWS Access KEY ID                                                                         |             |
+| `secretsBackend.awsSecretManager.secretKey`         | AWS Secret Key                                                                            |             |
+| `secretsBackend.awsSecretManager.region`            | AWS Secret Manager Region                                                                 |             |
+| `secretsBackend.gcpSecretManager.projectId`         | GCP Project ID                                                                            |             |
+| `secretsBackend.gcpSecretManager.serviceAccountKey` | GCP Auth Key                                                                              |             |
+| `secretsBackend.azureKeyVault.tenantID`             | Active Directory Tenant ID                                                                |             |
+| `secretsBackend.azureKeyVault.clientID`             | Registered application / service principal client ID                                      |             |
+| `secretsBackend.azureKeyVault.clientSecret`         | Service principal client secret                                                           |             |
+| `secretsBackend.azureKeyVault.vaultURI`             | Azure Key Vault URL                                                                       |             |
 
 ### Authentication
 

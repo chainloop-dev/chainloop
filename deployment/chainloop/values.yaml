@@ -22,9 +22,9 @@ GKEMonitoring:
 
 ## Location where to store sensitive data. If development.true? and no overrides provided, the setup will connect to a development instance of Vault
 secretsBackend:
-  ## @param secretsBackend.backend Secrets backend type ("vault", "awsSecretManager" or "gcpSecretManager")
+  ## @param secretsBackend.backend Secrets backend type ("vault", "awsSecretManager" or "gcpSecretManager", "azureKeyVault")
   ##
-  backend: "vault" # "awsSecretManager"
+  backend: "vault" # "awsSecretManager | gcpSecretManager | azureKeyVault"
   ## @param secretsBackend.secretPrefix Prefix that will be pre-pended to all secrets in the storage backend
   ##
   secretPrefix: "chainloop"
@@ -52,6 +52,17 @@ secretsBackend:
   # gcpSecretManager:
   #   projectId: ""
   #   serviceAccountKey: ""
+
+  ## @extra secretsBackend.azureKeyVault.tenantID Active Directory Tenant ID
+  ## @extra secretsBackend.azureKeyVault.clientID Registered application / service principal client ID
+  ## @extra secretsBackend.azureKeyVault.clientSecret Service principal client secret
+  ## @extra secretsBackend.azureKeyVault.vaultURI Azure Key Vault URL
+  ##
+  # azureKeyVault:
+  #   tenantID: ""
+  #   clientID: ""
+  #   clientSecret: ""
+  #   vaultURI: ""
 
 ## @section Authentication
 ##
@@ -634,6 +645,7 @@ cas:
       ## @skip cas.ingressAPI.annotations.nginx.ingress.kubernetes.io/backend-protocol
       ## Tell Nginx Ingress Controller to expect gRPC traffic
       nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+      ## @skip cas.ingressAPI.annotations.nginx.ingress.kubernetes.io/client-body-buffer-size
       # Improve upload speed by adding client buffering used by http2 control-flows
       # https://github.com/chainloop-dev/chainloop/issues/375
       nginx.ingress.kubernetes.io/client-body-buffer-size: "3M"
