@@ -386,7 +386,7 @@ func (uc *CASBackendUseCase) Delete(ctx context.Context, id string) error {
 	uc.logger.Infow("msg", "deleting CAS backend external secrets", "ID", id, "secretName", backend.SecretName)
 	// Delete the secret in the external secrets manager
 	if err := uc.credsRW.DeleteCredentials(ctx, backend.SecretName); err != nil {
-		return fmt.Errorf("deleting the credentials: %w", err)
+		uc.logger.Errorw("msg", "deleting CAS backend external secrets", "ID", id, "secretName", backend.SecretName, "error", err)
 	}
 
 	uc.logger.Infow("msg", "CAS Backend deleted", "ID", id)

@@ -61,6 +61,42 @@ func validVaultConfig(s *testSuite) *v1.Credentials {
 	}
 }
 
+func (s *testSuite) TestNewAzureManagerFromConfig() {
+	testCases := []struct {
+		name          string
+		tenantID      string
+		clientID      string
+		clientSecret  string
+		vaultURI      string
+		Role          credentials.Role
+		expectedError bool
+	}{
+		{name: "missing tenantID", tenantID: "", clientID: "clientID", clientSecret: "clientSecret", vaultURI: "vaultURI", Role: credentials.RoleReader, expectedError: true},
+		{name: "missing clientID", tenantID: "tenantID", clientID: "", clientSecret: "clientSecret", vaultURI: "vaultURI", Role: credentials.RoleReader, expectedError: true},
+		{name: "missing clientSecret", tenantID: "tenantID", clientID: "clientID", clientSecret: "", vaultURI: "vaultURI", Role: credentials.RoleReader, expectedError: true},
+		{name: "missing vaultURI", tenantID: "tenantID", clientID: "clientID", clientSecret: "clientSecret", vaultURI: "", Role: credentials.RoleReader, expectedError: true},
+	}
+
+	for _, tc := range testCases {
+		s.T().Run(tc.name, func(t *testing.T) {
+			conf := &v1.Credentials{
+				Backend: &v1.Credentials_AzureKeyVault_{
+					AzureKeyVault: &v1.Credentials_AzureKeyVault{
+						TenantId: tc.tenantID, ClientId: tc.clientID, ClientSecret: tc.clientSecret, VaultUri: tc.vaultURI,
+					},
+				},
+			}
+
+			_, err := manager.NewFromConfig(conf, tc.Role, nil)
+			if tc.expectedError {
+				assert.Error(s.T(), err)
+			} else {
+				assert.NoError(s.T(), err)
+			}
+		})
+	}
+}
+
 func (s *testSuite) TestNewFromConfig() {
 	testCases := []struct {
 		name    string

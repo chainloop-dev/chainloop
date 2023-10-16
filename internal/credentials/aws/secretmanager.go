@@ -31,7 +31,7 @@ import (
 	"github.com/aws/smithy-go"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
-	"github.com/docker/distribution/uuid"
+	"github.com/google/uuid"
 
 	"github.com/go-kratos/kratos/v2/log"
 )
@@ -87,7 +87,7 @@ func NewManager(opts *NewManagerOpts) (*Manager, error) {
 // Save Credentials, this is a generic function that can be used to save any type of credentials
 // as long as they can be passed to json.Marshal
 func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any) (string, error) {
-	secretName := strings.Join([]string{m.secretPrefix, orgID, uuid.Generate().String()}, "/")
+	secretName := strings.Join([]string{m.secretPrefix, orgID, uuid.New().String()}, "/")
 
 	// Store the credentials as json key pairs
 	c, err := json.Marshal(creds)

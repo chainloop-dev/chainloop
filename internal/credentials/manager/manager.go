@@ -23,6 +23,7 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	api "github.com/chainloop-dev/chainloop/internal/credentials/api/credentials/v1"
 	"github.com/chainloop-dev/chainloop/internal/credentials/aws"
+	"github.com/chainloop-dev/chainloop/internal/credentials/azurekv"
 	"github.com/chainloop-dev/chainloop/internal/credentials/gcp"
 	"github.com/chainloop-dev/chainloop/internal/credentials/vault"
 	"github.com/go-kratos/kratos/v2/log"
@@ -45,7 +46,44 @@ func NewFromConfig(conf *api.Credentials, role credentials.Role, l log.Logger) (
 		return newVaultCredentialsManager(vaultc, conf.SecretPrefix, role, l)
 	}
 
+	if creds := conf.GetAzureKeyVault(); creds != nil {
+		return newAzureKBManager(creds, conf.SecretPrefix, role, l)
+	}
+
 	return nil, errors.New("no credentials manager configuration found")
+}
+
+func newAzureKBManager(conf *api.Credentials_AzureKeyVault, prefix string, r credentials.Role, l log.Logger) (*azurekv.Manager, error) {
+	if err := conf.ValidateAll(); err != nil {
+		return nil, fmt.Errorf("uncompleted configuration for Azure Key Vault: %w", err)
+	}
+
+	opts := &azurekv.NewManagerOpts{
+		TenantID:     conf.GetTenantId(),
+		ClientID:     conf.GetClientId(),
+		ClientSecret: conf.GetClientSecret(),
+		VaultURI:     conf.GetVaultUri(),
+		Logger:       l,
+		SecretPrefix: prefix,
+		Role:         r,
+	}
+
+	m, err := azurekv.NewManager(opts)
+	if err != nil {
+		return nil, fmt.Errorf("configuring the secrets manager: %w", err)
+	}
+
+	if opts.Role == credentials.RoleReader {
+		if err := azurekv.ValidateReaderClient(m, prefix); err != nil {
+			return nil, fmt.Errorf("validating Azure KeyVault reader client: %w", err)
+		}
+	} else {
+		if err := azurekv.ValidateWriterClient(m, prefix); err != nil {
+			return nil, fmt.Errorf("validating Azure KeyVault writer client: %w", err)
+		}
+	}
+
+	return m, nil
 }
 
 func newAWSCredentialsManager(conf *api.Credentials_AWSSecretManager, prefix string, r credentials.Role, l log.Logger) (*aws.Manager, error) {
