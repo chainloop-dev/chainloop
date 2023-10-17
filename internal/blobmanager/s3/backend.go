@@ -91,8 +91,7 @@ func NewBackend(creds *Credentials, connOpts ...ConnOpt) (*Backend, error) {
 // Exists check that the artifact is already present in the repository
 func (b *Backend) Exists(ctx context.Context, digest string) (bool, error) {
 	_, err := b.Describe(ctx, digest)
-	notFoundErr := &backend.ErrNotFound{}
-	if err != nil && errors.As(err, &notFoundErr) {
+	if err != nil && backend.IsNotFound(err) {
 		return false, nil
 	}
 
@@ -129,7 +128,7 @@ func (b *Backend) Describe(ctx context.Context, digest string) (*pb.CASResource,
 	var awsErr awserr.Error
 	if err != nil {
 		if errors.As(err, &awsErr) && awsErr.Code() == "NotFound" {
-			return nil, &backend.ErrNotFound{}
+			return nil, backend.NewErrNotFound("artifact")
 		}
 
 		return nil, fmt.Errorf("failed to read from bucket: %w", err)

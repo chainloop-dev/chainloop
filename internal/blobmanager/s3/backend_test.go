@@ -117,8 +117,7 @@ func (s *testSuite) TestDescribe() {
 	s.T().Run("doesn't exist", func(t *testing.T) {
 		artifact, err := s.backend.Describe(context.Background(), "aabbccddeeff")
 		s.Error(err)
-		notFoundErr := &backend.ErrNotFound{}
-		s.ErrorAs(err, &notFoundErr)
+		s.True(backend.IsNotFound(err))
 		s.Nil(artifact)
 	})
 
