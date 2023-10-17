@@ -90,7 +90,7 @@ helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
     # ...
 ```
 
-or using GCP Secrets manager
+or using GCP Secret Manager
 
 ```console
 helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
