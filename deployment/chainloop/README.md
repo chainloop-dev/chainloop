@@ -104,7 +104,7 @@ helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
     # ...
 ```
 
-Or Azure KeyVault
+or Azure KeyVault
 
 ```console
 helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
