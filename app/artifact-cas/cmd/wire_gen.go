@@ -10,6 +10,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/server"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/service"
+	"github.com/chainloop-dev/chainloop/internal/blobmanager/loader"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	"github.com/go-kratos/kratos/v2/log"
 )
@@ -22,7 +23,7 @@ import (
 
 // wireApp init kratos application.
 func wireApp(confServer *conf.Server, auth *conf.Auth, reader credentials.Reader, logger log.Logger) (*app, func(), error) {
-	providers := loadCASBackendProviders(reader)
+	providers := loader.LoadProviders(reader)
 	v := serviceOpts(logger)
 	byteStreamService := service.NewByteStreamService(providers, v...)
 	resourceService := service.NewResourceService(providers, v...)

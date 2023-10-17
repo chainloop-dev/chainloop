@@ -26,6 +26,7 @@ import (
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
 	"github.com/chainloop-dev/chainloop/internal/blobmanager/azureblob"
 	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
+	"github.com/chainloop-dev/chainloop/internal/blobmanager/s3"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
@@ -470,7 +471,7 @@ func (uc *CASBackendUseCase) PerformValidation(ctx context.Context, id string) (
 
 // Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues
 func (CASBackendProvider) Values() (kinds []string) {
-	for _, s := range []CASBackendProvider{azureblob.ProviderID, oci.ProviderID, CASBackendInline} {
+	for _, s := range []CASBackendProvider{azureblob.ProviderID, oci.ProviderID, CASBackendInline, s3.ProviderID} {
 		kinds = append(kinds, string(s))
 	}
 

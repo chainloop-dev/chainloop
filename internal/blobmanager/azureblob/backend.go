@@ -84,7 +84,8 @@ func resourceName(digest string) string {
 // Exists check that the artifact is already present in the repository
 func (b *Backend) Exists(ctx context.Context, digest string) (bool, error) {
 	_, err := b.Describe(ctx, digest)
-	if err != nil && errors.As(err, &backend.ErrNotFound{}) {
+	notFoundErr := &backend.ErrNotFound{}
+	if err != nil && errors.As(err, &notFoundErr) {
 		return false, nil
 	}
 

@@ -17,6 +17,7 @@ package backend
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -50,6 +51,8 @@ type Describer interface {
 type Downloader interface {
 	Download(ctx context.Context, w io.Writer, digest string) error
 }
+
+var ErrValidation = errors.New("credentials validation error")
 
 // Provider is an interface that allows to create a backend from a secret
 type Provider interface {
