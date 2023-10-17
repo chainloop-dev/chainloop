@@ -90,7 +90,7 @@ helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
     # ...
 ```
 
-Deploy using GCP secret manager instead of Vault
+or using GCP secret manager
 
 ```console
 helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
@@ -100,6 +100,22 @@ helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
     --set secretsBackend.backend=gcpSecretManager \
     --set secretsBackend.gcpSecretManager.projectId=[GCP Project ID] \
     --set secretsBackend.gcpSecretManager.serviceAccountKey=[GCP Auth KEY] \
+    # Server Auth KeyPair
+    # ...
+```
+
+Or Azure KeyVault
+
+```console
+helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
+    # Open ID Connect (OIDC)
+    # ...
+    # Secrets backend
+    --set secretsBackend.backend=azureKeyVault \
+    --set secretsBackend.azureKeyVault.tenantID=[AD tenant ID] \
+    --set secretsBackend.azureKeyVault.clientID=[Service Principal ID] \
+    --set secretsBackend.azureKeyVault.clientSecret=[Service Principal secret] \
+    --set secretsBackend.azureKeyVault.vaultURI=[Azure KeyVault URI]
     # Server Auth KeyPair
     # ...
 ```
@@ -311,7 +327,7 @@ controlplane:
 
 ### Use AWS secret manager
 
-You can swap the secret manager backend with the following settings
+Instead of using [Hashicorp Vault](https://www.vaultproject.io/) (default), you can use [AWS Secret Manager](https://aws.amazon.com/secrets-manager/) by adding these settings in your `values.yaml` file
 
 ```yaml
 secretsBackend:
@@ -324,7 +340,7 @@ secretsBackend:
 
 ### Use GCP secret manager
 
-You can swap the secret manager backend with the following settings
+Or [Google Cloud Secret Manager](https://cloud.google.com/secret-manager) with the following settings
 
 ```yaml
 secretsBackend:
@@ -332,6 +348,21 @@ secretsBackend:
   gcpSecretManager:
     projectId: [PROJECT_ID]
     serviceAccountKey: [KEY]
+```
+
+### Use Azure KeyVault as credentials backend
+
+[Azure KeyVault](https://azure.microsoft.com/en-us/products/key-vault/) is also supported
+
+```yaml
+secretsBackend:
+  backend: azureKeyVault
+  azureKeyVault:
+    tenantID: [TENANT_ID] # Active Directory Tenant ID
+    clientID: [CLIENT_ID] # Registered application / service principal client ID
+    clientSecret: [CLIENT_SECRET] # Service principal client secret
+    vaultURI: [VAULT URI] # Azure Key Vault URL
+
 ```
 
 ### Send exceptions to Sentry

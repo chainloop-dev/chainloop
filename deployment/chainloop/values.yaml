@@ -29,7 +29,6 @@ secretsBackend:
   ##
   secretPrefix: "chainloop"
 
-  # Either vault, AWS secret manager or GCP secret manager enabled at the same time
   ## @extra secretsBackend.vault.address Vault address
   ## @extra secretsBackend.vault.token Vault authentication token
   ##
