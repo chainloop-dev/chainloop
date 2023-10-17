@@ -50,7 +50,7 @@ The Helm Chart in this mode includes
 During installation, you'll need to provide
 
 - Open ID Connect Identity Provider (IDp) settings i.e [Auth0 settings](https://auth0.com/docs/get-started/applications/application-settings#basic-information)
-- Connection settings for a secrets storage backend, either [Hashicorp Vault](https://www.vaultproject.io/) or [AWS Secret Manager](https://aws.amazon.com/secrets-manager)
+- Connection settings for a secrets storage backend, either [Hashicorp Vault](https://www.vaultproject.io/) or [AWS Secrets Manager](https://aws.amazon.com/secrets-manager)
 - ECDSA (ES512) key-pair used for Controlplane <-> CAS Authentication
 
 Instructions on how to create the ECDSA keypair can be found [here](#generate-a-ecdsa-key-pair).
@@ -75,7 +75,7 @@ helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
     --set casJWTPublicKey="$(cat public.pem)"
 ```
 
-Deploy using AWS secret manager instead of Vault
+Deploy using AWS Secrets Manager instead of Vault
 
 ```console
 helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
@@ -90,7 +90,7 @@ helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
     # ...
 ```
 
-Deploy using GCP secret manager instead of Vault
+or using GCP Secret Manager
 
 ```console
 helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
@@ -100,6 +100,22 @@ helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
     --set secretsBackend.backend=gcpSecretManager \
     --set secretsBackend.gcpSecretManager.projectId=[GCP Project ID] \
     --set secretsBackend.gcpSecretManager.serviceAccountKey=[GCP Auth KEY] \
+    # Server Auth KeyPair
+    # ...
+```
+
+or Azure KeyVault
+
+```console
+helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
+    # Open ID Connect (OIDC)
+    # ...
+    # Secrets backend
+    --set secretsBackend.backend=azureKeyVault \
+    --set secretsBackend.azureKeyVault.tenantID=[AD tenant ID] \
+    --set secretsBackend.azureKeyVault.clientID=[Service Principal ID] \
+    --set secretsBackend.azureKeyVault.clientSecret=[Service Principal secret] \
+    --set secretsBackend.azureKeyVault.vaultURI=[Azure KeyVault URI]
     # Server Auth KeyPair
     # ...
 ```
@@ -142,7 +158,7 @@ The Helm Chart in this mode includes
 During installation, you'll need to provide
 
 - Open ID Connect Identity Provider (IDp) settings i.e [Auth0 settings](https://auth0.com/docs/get-started/applications/application-settings#basic-information)
-- ~~Connection settings for a secrets storage backend, either [Hashicorp Vault](https://www.vaultproject.io/) or [AWS Secret Manager](https://aws.amazon.com/secrets-manager)~~
+- ~~Connection settings for a secrets storage backend, either [Hashicorp Vault](https://www.vaultproject.io/) or [AWS Secrets Manager](https://aws.amazon.com/secrets-manager)~~
 - ~~ECDSA (ES512) key-pair used for Controlplane <-> CAS Authentication~~
 
 #### Installation Examples
@@ -309,9 +325,9 @@ controlplane:
     database: chainloop-controlplane-prod
 ```
 
-### Use AWS secret manager
+### Use AWS secrets manager
 
-You can swap the secret manager backend with the following settings
+Instead of using [Hashicorp Vault](https://www.vaultproject.io/) (default), you can use [AWS Secrets Manager](https://aws.amazon.com/secrets-manager/) by adding these settings in your `values.yaml` file
 
 ```yaml
 secretsBackend:
@@ -324,7 +340,7 @@ secretsBackend:
 
 ### Use GCP secret manager
 
-You can swap the secret manager backend with the following settings
+Or [Google Cloud Secret Manager](https://cloud.google.com/secret-manager) with the following settings
 
 ```yaml
 secretsBackend:
@@ -332,6 +348,21 @@ secretsBackend:
   gcpSecretManager:
     projectId: [PROJECT_ID]
     serviceAccountKey: [KEY]
+```
+
+### Use Azure KeyVault
+
+[Azure KeyVault](https://azure.microsoft.com/en-us/products/key-vault/) is also supported
+
+```yaml
+secretsBackend:
+  backend: azureKeyVault
+  azureKeyVault:
+    tenantID: [TENANT_ID] # Active Directory Tenant ID
+    clientID: [CLIENT_ID] # Registered application / service principal client ID
+    clientSecret: [CLIENT_SECRET] # Service principal client secret
+    vaultURI: [VAULT URI] # Azure Key Vault URL
+
 ```
 
 ### Send exceptions to Sentry
@@ -391,7 +422,7 @@ chainloop config save \
 | `secretsBackend.vault.token`                        | Vault authentication token                                                                |             |
 | `secretsBackend.awsSecretManager.accessKey`         | AWS Access KEY ID                                                                         |             |
 | `secretsBackend.awsSecretManager.secretKey`         | AWS Secret Key                                                                            |             |
-| `secretsBackend.awsSecretManager.region`            | AWS Secret Manager Region                                                                 |             |
+| `secretsBackend.awsSecretManager.region`            | AWS Secrets Manager Region                                                                |             |
 | `secretsBackend.gcpSecretManager.projectId`         | GCP Project ID                                                                            |             |
 | `secretsBackend.gcpSecretManager.serviceAccountKey` | GCP Auth Key                                                                              |             |
 | `secretsBackend.azureKeyVault.tenantID`             | Active Directory Tenant ID                                                                |             |

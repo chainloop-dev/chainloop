@@ -19,7 +19,7 @@ To get up and running you'll need
 Chainloop requires some configuration to be in place such as
 
 - PostgreSQL 14 connection from the Control plane
-- Access to a secrets manager. Currently Hashicorp Vault and AWS secret manager are supported.
+- Access to a secrets manager. Currently Hashicorp Vault, AWS Secrets Manager, GCP Secret Manager and Azure KeyVault are supported.
 - Open ID connect (OIDC) single sign-on credentials.
 
 Luckily, you can leverage the provided docker compose file that can be found in the `devel` directory to do all the setup for you.

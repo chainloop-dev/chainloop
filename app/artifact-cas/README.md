@@ -20,7 +20,7 @@ Its structure contains the following top to down layers.
 
 ## System Dependencies
 
-The CAS proxy **has only one running dependency**. A secret storage backend to retrieve the OCI repository credentials. Currently, we support [Hashicorp Vault](https://www.vaultproject.io/), [AWS Secret Manager](https://aws.amazon.com/secrets-manager/) AND [GCP Secret Manager](https://cloud.google.com/secret-manager).
+The CAS proxy **has only one running dependency**. A secret storage backend to retrieve the OCI repository credentials. Currently, we support [Hashicorp Vault](https://www.vaultproject.io/), [AWS Secrets Manager](https://aws.amazon.com/secrets-manager/) AND [GCP Secret Manager](https://cloud.google.com/secret-manager).
 
 This secret backend is used to download OCI repository credentials (repository path + key pair) during upload/downloads. This makes the Artifact CAS multi-tenant by default since the destination OCI backend gets selected at runtime.
 

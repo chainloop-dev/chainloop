@@ -27,7 +27,6 @@ cas_server:
 
 # Where to store credentials such as OCI registries or third party integrations secrets
 credentials_service:
-  # You can use either vault or aws secret manager
   vault:
     address: ${VAULT_ADDRESS:http://0.0.0.0:8200}
     token: ${VAULT_TOKEN:notasecret}
