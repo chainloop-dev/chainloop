@@ -161,7 +161,9 @@ func (b *Backend) Describe(ctx context.Context, digest string) (*pb.CASResource,
 
 func (b *Backend) Download(ctx context.Context, w io.Writer, digest string) error {
 	exists, err := b.Exists(ctx, digest)
-	if err != nil || !exists {
+	if err != nil {
+		return err
+	} else if !exists {
 		return backend.NewErrNotFound("artifact")
 	}
 

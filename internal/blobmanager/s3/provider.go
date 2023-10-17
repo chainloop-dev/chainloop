@@ -72,7 +72,6 @@ func (p *BackendProvider) ValidateAndExtractCredentials(location string, credsJS
 	return creds, nil
 }
 
-// location contains the bucket and the path
 func extractCreds(bucketName string, credsJSON []byte) (*Credentials, error) {
 	var creds *Credentials
 	if err := json.Unmarshal(credsJSON, &creds); err != nil {

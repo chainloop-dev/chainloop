@@ -135,18 +135,14 @@ func (s *testSuite) TestDownload() {
 	s.T().Run("exist but not uploaded by Chainloop", func(t *testing.T) {
 		buf := bytes.NewBuffer(nil)
 		err := s.backend.Download(context.Background(), buf, s.externalObjectDigest)
-		s.Error(err)
-		notFoundErr := backend.NewErrNotFound("artifact")
-		s.ErrorAs(err, &notFoundErr)
+		s.ErrorContains(err, "asset not uploaded by Chainloop")
 		s.Empty(buf)
 	})
 
 	s.T().Run("doesn't exist", func(t *testing.T) {
 		buf := bytes.NewBuffer(nil)
 		err := s.backend.Download(context.Background(), buf, "deadbeef")
-		s.Error(err)
-		notFoundErr := backend.NewErrNotFound("artifact")
-		s.ErrorAs(err, &notFoundErr)
+		s.ErrorContains(err, "artifact not found")
 		s.Empty(buf)
 	})
 
@@ -156,6 +152,12 @@ func (s *testSuite) TestDownload() {
 		s.NoError(err)
 		s.Equal("test", buf.String())
 	})
+
+	s.T().Run("it's been tampered", func(t *testing.T) {
+		buf := bytes.NewBuffer(nil)
+		err := s.backend.Download(context.Background(), buf, s.tamperedObjectDigest)
+		s.ErrorContains(err, "failed to validate integrity of object")
+	})
 }
 
 type testSuite struct {
@@ -164,50 +166,11 @@ type testSuite struct {
 	backend, invalidBackend *Backend
 	ownedObjectDigest       string
 	externalObjectDigest    string
+	tamperedObjectDigest    string
 }
 
 func TestS3Backend(t *testing.T) {
 	suite.Run(t, new(testSuite))
-}
-
-func newMinioInstance(t *testing.T) *minioInstance {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-
-	port, err := nat.NewPort("", "9000")
-	require.NoError(t, err)
-
-	req := testcontainers.ContainerRequest{
-		Image:        "minio/minio:RELEASE.2023-09-04T19-57-37Z",
-		ExposedPorts: []string{port.Port()},
-		Env: map[string]string{
-			"MINIO_ROOT_USER":     "root",
-			"MINIO_ROOT_PASSWORD": "test-password",
-		},
-		Cmd:        []string{"server", "/data"},
-		WaitingFor: wait.ForListeningPort(port).WithStartupTimeout(5 * time.Minute),
-	}
-
-	instance, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	require.NoError(t, err)
-
-	return &minioInstance{instance}
-}
-
-func (c *minioInstance) ConnectionString(t *testing.T) string {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-	p, err := c.instance.MappedPort(ctx, "9000")
-	assert.NoError(t, err)
-
-	return fmt.Sprintf("0.0.0.0:%d", p.Int())
-}
-
-type minioInstance struct {
-	instance testcontainers.Container
 }
 
 func (s *testSuite) SetupSuite() {
@@ -248,19 +211,25 @@ func (s *testSuite) SetupTest() {
 	require.NoError(s.T(), err)
 	require.NoError(s.T(), minioClient.MakeBucket(context.TODO(), testBucket, minio.MakeBucketOptions{}))
 
-	// upload a file
+	// upload a valid artifact
 	buf := bytes.NewBuffer([]byte("test"))
 	s.ownedObjectDigest = fmt.Sprintf("%x", sha256.Sum256(buf.Bytes()))
 	// calculate sha256 of the content in the buffer
-	err = s.backend.Upload(context.Background(), buf, &pb.CASResource{
-		Digest:   s.ownedObjectDigest,
-		FileName: "test.txt",
+	err = s.backend.Upload(context.Background(), buf, &pb.CASResource{Digest: s.ownedObjectDigest, FileName: "test.txt"})
+	require.NoError(s.T(), err)
+
+	// Copy an existing object but reference it from somewhere else
+	s.tamperedObjectDigest = "b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c"
+	_, err = minioClient.CopyObject(context.Background(), minio.CopyDestOptions{
+		Bucket: testBucket, Object: fmt.Sprintf("sha256:%s", s.tamperedObjectDigest),
+	}, minio.CopySrcOptions{
+		Bucket: testBucket, Object: fmt.Sprintf("sha256:%s", s.ownedObjectDigest),
 	})
 	require.NoError(s.T(), err)
 
 	// upload another one but by the client directly
 	reader := bytes.NewReader([]byte("hello world"))
-	s.externalObjectDigest = "deadbeef"
+	s.externalObjectDigest = "external-deadbeef"
 	_, err = minioClient.PutObject(context.Background(), testBucket, fmt.Sprintf("sha256:%s", s.externalObjectDigest), reader, reader.Size(),
 		minio.PutObjectOptions{})
 	require.NoError(s.T(), err)
@@ -272,4 +241,44 @@ func (s *testSuite) TearDownTest() {
 	}
 
 	assert.NoError(s.T(), s.minio.instance.Terminate(context.Background()))
+}
+
+func newMinioInstance(t *testing.T) *minioInstance {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	port, err := nat.NewPort("", "9000")
+	require.NoError(t, err)
+
+	req := testcontainers.ContainerRequest{
+		Image:        "minio/minio:RELEASE.2023-09-04T19-57-37Z",
+		ExposedPorts: []string{port.Port()},
+		Env: map[string]string{
+			"MINIO_ROOT_USER":     "root",
+			"MINIO_ROOT_PASSWORD": "test-password",
+		},
+		Cmd:        []string{"server", "/data"},
+		WaitingFor: wait.ForListeningPort(port).WithStartupTimeout(5 * time.Minute),
+	}
+
+	instance, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	require.NoError(t, err)
+
+	return &minioInstance{instance}
+}
+
+func (c *minioInstance) ConnectionString(t *testing.T) string {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	p, err := c.instance.MappedPort(ctx, "9000")
+	assert.NoError(t, err)
+
+	return fmt.Sprintf("0.0.0.0:%d", p.Int())
+}
+
+type minioInstance struct {
+	instance testcontainers.Container
 }
