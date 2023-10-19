@@ -32,6 +32,7 @@ import (
 	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/go-kratos/kratos/v2/middleware/selector"
 	jwt "github.com/golang-jwt/jwt/v4"
+	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/genproto/googleapis/bytestream"
 
 	"github.com/go-kratos/kratos/v2/log"
@@ -91,6 +92,10 @@ func NewGRPCServer(c *conf.Server, authConf *conf.Auth, byteService *service.Byt
 		),
 		grpc.UnaryInterceptor(grpc_prometheus.UnaryServerInterceptor),
 	}
+
+	// Opt-in histogram metrics for the interceptor
+	// Since we track uploads / downloads we'll increase the buckets
+	grpc_prometheus.EnableHandlingTimeHistogram(grpc_prometheus.WithHistogramBuckets(prometheus.ExponentialBucketsRange(0.5, 60, 8)))
 
 	if c.Grpc.Network != "" {
 		opts = append(opts, grpc.Network(c.Grpc.Network))
