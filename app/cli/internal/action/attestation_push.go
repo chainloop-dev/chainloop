@@ -118,32 +118,31 @@ func (action *AttestationPush) Run(runtimeAnnotations map[string]string) (*Attes
 	}
 
 	attestationResult := &AttestationResult{Envelope: envelope}
+
+	action.Logger.Debug().Msg("render completed")
+	if action.c.CraftingState.DryRun {
+		action.Logger.Info().Msg("dry-run completed, push skipped")
+		// We are done, remove the existing att state
+		if err := action.c.Reset(); err != nil {
+			return nil, err
+		}
+
+		return attestationResult, nil
+	}
+
+	attestationResult.Digest, err = pushToControlPlane(action.ActionsOpts.CPConnection, envelope, action.c.CraftingState.Attestation.GetWorkflow().GetWorkflowRunId())
+	if err != nil {
+		return nil, fmt.Errorf("pushing to control plane: %w", err)
+	}
+
+	action.Logger.Info().Msg("push completed")
+
+	// We are done, remove the existing att state
+	if err := action.c.Reset(); err != nil {
+		return nil, err
+	}
+
 	return attestationResult, nil
-
-	// action.Logger.Debug().Msg("render completed")
-	// if action.c.CraftingState.DryRun {
-	// 	action.Logger.Info().Msg("dry-run completed, push skipped")
-	// 	// We are done, remove the existing att state
-	// 	if err := action.c.Reset(); err != nil {
-	// 		return nil, err
-	// 	}
-
-	// 	return attestationResult, nil
-	// }
-
-	// attestationResult.Digest, err = pushToControlPlane(action.ActionsOpts.CPConnection, envelope, action.c.CraftingState.Attestation.GetWorkflow().GetWorkflowRunId())
-	// if err != nil {
-	// 	return nil, fmt.Errorf("pushing to control plane: %w", err)
-	// }
-
-	// action.Logger.Info().Msg("push completed")
-
-	// // We are done, remove the existing att state
-	// if err := action.c.Reset(); err != nil {
-	// 	return nil, err
-	// }
-
-	// return attestationResult, nil
 }
 
 func pushToControlPlane(conn *grpc.ClientConn, envelope *dsse.Envelope, workflowRunID string) (string, error) {
