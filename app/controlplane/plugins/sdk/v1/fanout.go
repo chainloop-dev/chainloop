@@ -31,7 +31,7 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/in-toto/in-toto-golang/in_toto"
+	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/invopop/jsonschema"
 	schema_validator "github.com/santhosh-tekuri/jsonschema/v5"
 
@@ -152,7 +152,7 @@ type ExecuteAttestation struct {
 	Envelope *dsse.Envelope
 	// Hash of the envelope
 	Hash      crv1.Hash
-	Statement *in_toto.Statement
+	Statement *intoto.Statement
 	Predicate chainloop.NormalizablePredicate
 }
 

@@ -92,6 +92,7 @@ func TestExtractPredicate(t *testing.T) {
 				return
 			}
 
+			require.NoError(t, err)
 			gotVars := gotPredicate.GetEnvVars()
 			assert.Equal(t, tc.envVars, gotVars)
 

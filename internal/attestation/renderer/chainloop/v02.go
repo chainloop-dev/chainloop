@@ -25,9 +25,10 @@ import (
 	v1 "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/in-toto/in-toto-golang/in_toto"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	slsa_v1 "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v1"
+	intoto "github.com/in-toto/attestation/go/v1"
 )
 
 // Replace custom material type with https://github.com/in-toto/attestation/blob/main/spec/v1.0/resource_descriptor.md
@@ -35,7 +36,7 @@ const PredicateTypeV02 = "chainloop.dev/attestation/v0.2"
 
 type ProvenancePredicateV02 struct {
 	*ProvenancePredicateCommon
-	Materials []*slsa_v1.ResourceDescriptor `json:"materials,omitempty"`
+	Materials []*intoto.ResourceDescriptor `json:"materials,omitempty"`
 }
 
 type RendererV02 struct {
@@ -104,7 +105,7 @@ func (r *RendererV02) Header() (*in_toto.StatementHeader, error) {
 	}, nil
 }
 
-func outputMaterials(att *v1.Attestation, onlyOutput bool) ([]*slsa_v1.ResourceDescriptor, error) {
+func outputMaterials(att *v1.Attestation, onlyOutput bool) ([]*intoto.ResourceDescriptor, error) {
 	// Sort material keys to stabilize output
 	keys := make([]string, 0, len(att.GetMaterials()))
 	for k := range att.GetMaterials() {
@@ -113,7 +114,7 @@ func outputMaterials(att *v1.Attestation, onlyOutput bool) ([]*slsa_v1.ResourceD
 
 	sort.Strings(keys)
 
-	res := []*slsa_v1.ResourceDescriptor{}
+	res := []*intoto.ResourceDescriptor{}
 	materials := att.GetMaterials()
 	for _, mdefName := range keys {
 		mdef := materials[mdefName]
@@ -129,7 +130,7 @@ func outputMaterials(att *v1.Attestation, onlyOutput bool) ([]*slsa_v1.ResourceD
 			continue
 		}
 
-		material := &slsa_v1.ResourceDescriptor{}
+		material := &intoto.ResourceDescriptor{}
 		if artifactType == schemaapi.CraftingSchema_Material_STRING {
 			material.Content = nMaterial.Content
 		}
@@ -144,23 +145,28 @@ func outputMaterials(att *v1.Attestation, onlyOutput bool) ([]*slsa_v1.ResourceD
 		}
 
 		// Required, built-in annotations
-		material.Annotations = map[string]interface{}{
+		annotationsM := map[string]interface{}{
 			annotationMaterialType: artifactType.String(),
 			annotationMaterialName: mdefName,
 		}
 
 		// Custom annotations, it does not override the built-in ones
 		for k, v := range mdef.Annotations {
-			_, ok := material.Annotations[k]
+			_, ok := annotationsM[k]
 			if !ok {
-				material.Annotations[k] = v
+				annotationsM[k] = v
 			}
 		}
 
 		if mdef.UploadedToCas {
-			material.Annotations[annotationMaterialCAS] = true
+			annotationsM[annotationMaterialCAS] = true
 		} else if mdef.InlineCas {
-			material.Annotations[annotationMaterialInlineCAS] = true
+			annotationsM[annotationMaterialInlineCAS] = true
+		}
+
+		material.Annotations, err = structpb.NewStruct(annotationsM)
+		if err != nil {
+			return nil, fmt.Errorf("error creating annotations: %w", err)
 		}
 
 		res = append(res, material)
@@ -185,36 +191,37 @@ func (p *ProvenancePredicateV02) GetMaterials() []*NormalizedMaterial {
 }
 
 // Translate a ResourceDescriptor to a NormalizedMaterial
-func normalizeMaterial(material *slsa_v1.ResourceDescriptor) (*NormalizedMaterial, error) {
+func normalizeMaterial(material *intoto.ResourceDescriptor) (*NormalizedMaterial, error) {
 	m := &NormalizedMaterial{}
 
 	// Set custom annotations
 	m.Annotations = make(map[string]string)
-	for k, v := range material.Annotations {
+	mAnnotationsMap := material.Annotations.GetFields()
+	for k, v := range mAnnotationsMap {
 		// if the annotation key doesn't start with chainloop.
 		// we set it as a custom annotation
 		if strings.HasPrefix(k, rendererPrefix) {
 			continue
 		}
 
-		m.Annotations[k] = v.(string)
+		m.Annotations[k] = v.GetStringValue()
 	}
 
-	mType, ok := material.Annotations[annotationMaterialType]
+	mType, ok := mAnnotationsMap[annotationMaterialType]
 	if !ok {
 		return nil, fmt.Errorf("material type not found")
 	}
 
 	// Set the type
-	m.Type = mType.(string)
+	m.Type = mType.GetStringValue()
 
-	mName, ok := material.Annotations[annotationMaterialName]
+	mName, ok := mAnnotationsMap[annotationMaterialName]
 	if !ok {
 		return nil, fmt.Errorf("material name not found")
 	}
 
 	// Set the Material Name
-	m.Name = mName.(string)
+	m.Name = mName.GetStringValue()
 
 	// Set the Value
 	// If we have a string material, we just set the value
@@ -244,11 +251,11 @@ func normalizeMaterial(material *slsa_v1.ResourceDescriptor) (*NormalizedMateria
 	// In the case of container images for example the value is in the name field
 	m.Value = material.Name
 
-	if v, ok := material.Annotations[annotationMaterialCAS]; ok && v.(bool) {
+	if v, ok := mAnnotationsMap[annotationMaterialCAS]; ok && v.GetBoolValue() {
 		m.UploadedToCAS = true
 	}
 
-	if v, ok := material.Annotations[annotationMaterialInlineCAS]; ok && v.(bool) {
+	if v, ok := mAnnotationsMap[annotationMaterialInlineCAS]; ok && v.GetBoolValue() {
 		m.EmbeddedInline = true
 	}
 

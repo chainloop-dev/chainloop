@@ -42,6 +42,7 @@ type AttestationRenderer struct {
 	renderer       r
 }
 
+// DEPRECATED
 type r interface {
 	Header() (*in_toto.StatementHeader, error)
 	Predicate() (interface{}, error)

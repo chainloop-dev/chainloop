@@ -26,7 +26,7 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	sigs "github.com/sigstore/cosign/v2/pkg/signature"
 
-	"github.com/in-toto/in-toto-golang/in_toto"
+	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	sigdsee "github.com/sigstore/sigstore/pkg/signature/dsse"
 )
@@ -46,7 +46,7 @@ type WorkflowRunAttestationItem struct {
 	ID          string         `json:"id"`
 	CreatedAt   *time.Time     `json:"createdAt"`
 	Envelope    *dsse.Envelope `json:"envelope"`
-	statement   *in_toto.Statement
+	statement   *intoto.Statement
 	Materials   []*Material   `json:"materials,omitempty"`
 	EnvVars     []*EnvVar     `json:"envvars,omitempty"`
 	Annotations []*Annotation `json:"annotations,omitempty"`
@@ -75,7 +75,7 @@ type Annotation struct {
 	Value string `json:"value"`
 }
 
-func (i *WorkflowRunAttestationItem) Statement() *in_toto.Statement {
+func (i *WorkflowRunAttestationItem) Statement() *intoto.Statement {
 	return i.statement
 }
 

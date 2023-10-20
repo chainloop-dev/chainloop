@@ -22,10 +22,10 @@ import (
 
 	v1 "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/in-toto/in-toto-golang/in_toto"
-	slsacommon "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/common"
+	intoto "github.com/in-toto/attestation/go/v1"
 )
 
 // TODO: Figure out a more appropriate meaning
@@ -61,12 +61,12 @@ type NormalizedMaterial struct {
 }
 
 type ProvenancePredicateCommon struct {
-	Metadata   *Metadata                     `json:"metadata"`
-	Builder    *slsacommon.ProvenanceBuilder `json:"builder"`
-	BuildType  string                        `json:"buildType"`
-	Env        map[string]string             `json:"env,omitempty"`
-	RunnerType string                        `json:"runnerType"`
-	RunnerURL  string                        `json:"runnerURL,omitempty"`
+	Metadata   *Metadata         `json:"metadata"`
+	Builder    *builder          `json:"builder"`
+	BuildType  string            `json:"buildType"`
+	Env        map[string]string `json:"env,omitempty"`
+	RunnerType string            `json:"runnerType"`
+	RunnerURL  string            `json:"runnerURL,omitempty"`
 	// Custom annotations
 	Annotations map[string]string `json:"annotations,omitempty"`
 }
@@ -90,6 +90,10 @@ type builderInfo struct {
 	version, digest string
 }
 
+type builder struct {
+	ID string `json:"id"`
+}
+
 type RendererCommon struct {
 	predicateType string
 	att           *v1.Attestation
@@ -99,7 +103,7 @@ type RendererCommon struct {
 func predicateCommon(builderInfo *builderInfo, att *v1.Attestation) *ProvenancePredicateCommon {
 	return &ProvenancePredicateCommon{
 		BuildType:   chainloopBuildType,
-		Builder:     &slsacommon.ProvenanceBuilder{ID: fmt.Sprintf(builderIDFmt, builderInfo.version, builderInfo.digest)},
+		Builder:     &builder{ID: fmt.Sprintf(builderIDFmt, builderInfo.version, builderInfo.digest)},
 		Metadata:    getChainloopMeta(att),
 		Env:         att.EnvVars,
 		RunnerType:  att.GetRunnerType().String(),
@@ -126,15 +130,15 @@ func getChainloopMeta(att *v1.Attestation) *Metadata {
 	}
 }
 
-func ExtractStatement(envelope *dsse.Envelope) (*in_toto.Statement, error) {
+func ExtractStatement(envelope *dsse.Envelope) (*intoto.Statement, error) {
 	decodedPayload, err := envelope.DecodeB64Payload()
 	if err != nil {
 		return nil, err
 	}
 
 	// 1 - Extract the in-toto statement
-	statement := &in_toto.Statement{}
-	if err := json.Unmarshal(decodedPayload, statement); err != nil {
+	statement := &intoto.Statement{}
+	if err := protojson.Unmarshal(decodedPayload, statement); err != nil {
 		return nil, fmt.Errorf("un-marshaling predicate: %w", err)
 	}
 
@@ -168,8 +172,8 @@ func ExtractPredicate(envelope *dsse.Envelope) (NormalizablePredicate, error) {
 	}
 }
 
-func extractPredicate(statement *in_toto.Statement, v any) error {
-	jsonPredicate, err := json.Marshal(statement.Predicate)
+func extractPredicate(statement *intoto.Statement, v any) error {
+	jsonPredicate, err := protojson.Marshal(statement.Predicate)
 	if err != nil {
 		return fmt.Errorf("un-marshaling predicate: %w", err)
 	}
