@@ -24,6 +24,7 @@ import (
 
 	v1 "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -121,19 +122,19 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 	}
 
 	// transform to structpb.Struct in a two steps process
-	// 1 - ProvenancePredicate -> json -> map[string]interface{}
-	// 2 - map[string]interface{} -> structpb.Struct
+	// 1 - ProvenancePredicate -> json
+	// 2 - json -> structpb.Struct
 	predicateJSON, err := json.Marshal(p)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling predicate: %w", err)
 	}
 
-	predicateMap := make(map[string]interface{})
-	if err := json.Unmarshal(predicateJSON, &predicateMap); err != nil {
+	predicate := &structpb.Struct{}
+	if err := protojson.Unmarshal(predicateJSON, predicate); err != nil {
 		return nil, fmt.Errorf("error unmarshaling predicate: %w", err)
 	}
 
-	return structpb.NewStruct(predicateMap)
+	return predicate, nil
 }
 
 func outputMaterials(att *v1.Attestation, onlyOutput bool) ([]*intoto.ResourceDescriptor, error) {
