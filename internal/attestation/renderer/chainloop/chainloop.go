@@ -156,13 +156,6 @@ func ExtractPredicate(envelope *dsse.Envelope) (NormalizablePredicate, error) {
 
 	// 2 - Extract the Chainloop predicate from the in-toto statement
 	switch statement.PredicateType {
-	case PredicateTypeV01:
-		var predicate *ProvenancePredicateV01
-		if err = extractPredicate(statement, &predicate); err != nil {
-			return nil, fmt.Errorf("extracting predicate: %w", err)
-		}
-
-		return predicate, nil
 	case PredicateTypeV02:
 		var predicate *ProvenancePredicateV02
 		if err = extractPredicate(statement, &predicate); err != nil {
