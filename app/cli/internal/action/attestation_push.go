@@ -19,12 +19,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type AttestationPushOpts struct {
@@ -106,6 +108,9 @@ func (action *AttestationPush) Run(runtimeAnnotations map[string]string) (*Attes
 	}
 
 	action.Logger.Debug().Msg("validation completed")
+
+	// Indicate that we are done with the attestation
+	action.c.CraftingState.Attestation.FinishedAt = timestamppb.New(time.Now())
 
 	renderer, err := renderer.NewAttestationRenderer(action.c.CraftingState, action.keyPath, action.cliVersion, action.cliDigest, renderer.WithLogger(action.Logger))
 	if err != nil {

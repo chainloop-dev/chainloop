@@ -1,73 +1,73 @@
-{
-  "_type": "https://in-toto.io/Statement/v0.1",
-  "predicateType": "chainloop.dev/attestation/v0.2",
-  "subject": [
-    {
-      "name": "chainloop.workflow.foo",
-      "digest": {
-        "sha256": "6cd649c6105e12a235510a585371eb69c8c9ee797d8dc80d30695828ca116b00"
-      }
-    },
-    {
-      "name": "index.docker.io/bitnami/nginx",
-      "digest": {
+{                                                                                                                                                             
+  "type": "https://in-toto.io/Statement/v1",     
+  "subject": [                                                                                                                                                
+    {                                                                          
+      "name": "chainloop.workflow.foo",                                                                                                                       
+      "digest": {                      
+        "sha256": "b403d1bb2b7739495df20f6d3838956333b04a66bc81d43bc7c64cee1433b604"
+      }                                                                        
+    },                                                                         
+    {                                                                                                                                                         
+      "name": "index.docker.io/bitnami/nginx",                                
+      "digest": {                                                              
         "sha256": "580ac09da7771920dfd0c214964e7bfe4c27903bcbe075769a4044a67c9a390a"
-      }
-    }
-  ],
-  "predicate": {
-    "metadata": {
-      "name": "foo",
-      "project": "bar",
-      "team": "",
-      "initializedAt": "2023-05-03T17:22:12.743426076Z",
-      "finishedAt": "2023-05-03T19:27:51.352850152+02:00",
-      "workflowRunID": "",
-      "workflowID": "54ea7c5c-7592-48ac-9a9f-084b72447184"
-    },
-    "materials": [
-      {
-        "content": "YS1zdHJpbmc=",
-        "annotations": {
-          "chainloop.material.name": "build-ref",
-          "chainloop.material.type": "STRING"
-        }
-      },
-      {
-        "digest": {
-          "sha256": "cfc7d8e24d21ade921d720228ad1693de59dab45ff679606940be75b7bf660dc"
-        },
-        "name": "Makefile",
-        "annotations": {
-          "chainloop.material.name": "rootfs",
-          "chainloop.material.type": "ARTIFACT"
-        }
-      },
-      {
-        "digest": {
-          "sha256": "580ac09da7771920dfd0c214964e7bfe4c27903bcbe075769a4044a67c9a390a"
-        },
-        "name": "index.docker.io/bitnami/nginx",
-        "annotations": {
-          "chainloop.material.name": "skynet-control-plane",
-          "chainloop.material.type": "CONTAINER_IMAGE"
-        }
-      },
-      {
-        "digest": {
-          "sha256": "16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c"
-        },
-        "name": "sbom.cyclonedx.json",
-        "annotations": {
-          "chainloop.material.name": "skynet-sbom",
-          "chainloop.material.type": "SBOM_CYCLONEDX_JSON"
-        }
-      }
-    ],
-    "builder": {
-      "id": "chainloop.dev/cli/dev@sha256:59e14f1a9de709cdd0e91c36b33e54fcca95f7dba1dc7169a7f81986e02108e5"
-    },
+      }                                                                        
+    }                                                                          
+  ],                                                                           
+  "predicate_type": "chainloop.dev/attestation/v0.2",                                                                                                         
+  "predicate": {                                                                                                                                              
     "buildType": "chainloop.dev/workflowrun/v0.1",
-    "runnerType": "GITHUB_ACTION"
-  }
-}
+    "builder": {                                                               
+      "id": "chainloop.dev/cli/dev@sha256:59e14f1a9de709cdd0e91c36b33e54fcca95f7dba1dc7169a7f81986e02108e5"            
+    },                                                                         
+    "materials": [                                                             
+      {                                                                        
+        "annotations": {                                                       
+          "chainloop.material.name": "build-ref",        
+          "chainloop.material.type": "STRING"                                                                                                                 
+        },                                                                                                                                                    
+        "content": "YS1zdHJpbmc="                                              
+      },                                                                       
+      {                                                                                                                                                       
+        "annotations": {                                                       
+          "chainloop.material.name": "rootfs",                                                                                                                
+          "chainloop.material.type": "ARTIFACT"
+        },                                                                     
+        "digest": {                                                            
+          "sha256": "cfc7d8e24d21ade921d720228ad1693de59dab45ff679606940be75b7bf660dc"
+        },                                                                                                                                                    
+        "name": "Makefile"                                                     
+      },                                                                       
+      {                                                                                                                                                       
+        "annotations": {                                                       
+          "chainloop.material.name": "skynet-control-plane",          
+          "chainloop.material.type": "CONTAINER_IMAGE"
+        },                             
+        "digest": {                                                            
+          "sha256": "580ac09da7771920dfd0c214964e7bfe4c27903bcbe075769a4044a67c9a390a"     
+        },                                                                                                                                                    
+        "name": "index.docker.io/bitnami/nginx"      
+      },                                                                       
+      {                                                                        
+        "annotations": {                                                                                                                                      
+          "chainloop.material.name": "skynet-sbom",                                                                                                           
+          "chainloop.material.type": "SBOM_CYCLONEDX_JSON" 
+        },                                                                                                                                                    
+        "digest": {                                                                                                                                           
+          "sha256": "16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c"
+        },                             
+        "name": "sbom.cyclonedx.json"                                          
+      }                                                                        
+    ],                                                                         
+    "metadata": {                                                              
+      "finishedAt": "2023-05-03T17:25:12.743426076Z",
+      "initializedAt": "2023-05-03T17:22:12.743426076Z",                      
+      "name": "foo",                                                           
+      "project": "bar",                                                        
+      "team": "",                                                              
+      "workflowID": "54ea7c5c-7592-48ac-9a9f-084b72447184",
+      "workflowRunID": ""                                                                                                                                     
+    },                                                                         
+    "runnerType": "GITHUB_ACTION"                                              
+  }                                                                            
+}                     

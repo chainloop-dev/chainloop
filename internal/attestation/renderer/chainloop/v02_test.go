@@ -36,50 +36,42 @@ func TestRenderV02(t *testing.T) {
 		outputPath string
 	}{
 		{
-			name:       "render v0.2",
+			name:       "basic",
 			sourcePath: "testdata/attestation.source.json",
 			outputPath: "testdata/attestation.output.v0.2.json",
+		},
+		{
+			name:       "with multiple types of materials",
+			sourcePath: "testdata/attestation.source-2.json",
+			outputPath: "testdata/attestation.output-2.v0.2.json",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			t.SkipNow()
 			// Load expected resulting output
-			wantRaw, err := os.ReadFile(tc.outputPath)
+			raw, err := os.ReadFile(tc.outputPath)
 			require.NoError(t, err)
-
 			var want *intoto.Statement
-			err = json.Unmarshal(wantRaw, &want)
+			err = json.Unmarshal(raw, &want)
+			require.NoError(t, err)
+			wantRaw, err := json.MarshalIndent(want, "", "  ")
 			require.NoError(t, err)
 
 			// Initialize renderer
 			state := &api.CraftingState{}
 			stateRaw, err := os.ReadFile(tc.sourcePath)
 			require.NoError(t, err)
-
 			err = protojson.Unmarshal(stateRaw, state)
 			require.NoError(t, err)
+			renderer := NewChainloopRendererV02(state.Attestation, "dev", "sha256:59e14f1a9de709cdd0e91c36b33e54fcca95f7dba1dc7169a7f81986e02108e5")
 
-			// renderer := NewChainloopRendererV02(state.Attestation, "dev", "sha256:59e14f1a9de709cdd0e91c36b33e54fcca95f7dba1dc7169a7f81986e02108e5")
-
-			// Compare header
-			// gotHeader, err := renderer.Header()
-			// assert.NoError(t, err)
-			// assert.Equal(t, want.Type, gotHeader.Type)
-			// assert.Equal(t, want.Subject, gotHeader.Subject)
-			// assert.Equal(t, want.PredicateType, gotHeader.PredicateType)
-
-			// Compare predicate
-			// gotPredicateI, err := renderer.predicate()
-			// assert.NoError(t, err)
-			// gotPredicate := gotPredicateI.(ProvenancePredicateV02)
-
-			// wantPredicate := ProvenancePredicateV02{}
-			// err = extractPredicate(want, &wantPredicate)
-			// assert.NoError(t, err)
-			// wantPredicate.Metadata.FinishedAt = gotPredicate.Metadata.FinishedAt
-			// assert.EqualValues(t, wantPredicate, gotPredicate)
+			// Compare result
+			statement, err := renderer.Statement()
+			require.NoError(t, err)
+			rawStatement, err := json.MarshalIndent(statement, "", "  ")
+			require.NoError(t, err)
+			assert.Equal(t, string(wantRaw), string(rawStatement))
 		})
 	}
 }

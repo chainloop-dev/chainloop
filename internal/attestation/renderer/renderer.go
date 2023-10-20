@@ -33,6 +33,7 @@ import (
 	"github.com/sigstore/cosign/v2/pkg/signature"
 	sigdsee "github.com/sigstore/sigstore/pkg/signature/dsse"
 	"golang.org/x/term"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 type AttestationRenderer struct {
@@ -83,7 +84,11 @@ func (ab *AttestationRenderer) Render() (*dsse.Envelope, error) {
 		return nil, err
 	}
 
-	rawStatement, err := json.Marshal(statement)
+	if err := statement.Validate(); err != nil {
+		return nil, fmt.Errorf("validating intoto statement: %w", err)
+	}
+
+	rawStatement, err := protojson.Marshal(statement)
 	if err != nil {
 		return nil, err
 	}

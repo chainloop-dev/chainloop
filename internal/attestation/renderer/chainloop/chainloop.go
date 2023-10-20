@@ -114,10 +114,8 @@ func predicateCommon(builderInfo *builderInfo, att *v1.Attestation) *ProvenanceP
 
 func getChainloopMeta(att *v1.Attestation) *Metadata {
 	initializedAt := att.InitializedAt.AsTime()
+	finishedAt := att.GetFinishedAt().AsTime()
 	wfMeta := att.GetWorkflow()
-
-	// Finished at is set at the time of render
-	finishedAt := time.Now()
 
 	return &Metadata{
 		InitializedAt: &initializedAt,
