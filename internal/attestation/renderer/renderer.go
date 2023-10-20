@@ -27,7 +27,7 @@ import (
 
 	v1 "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
-	"github.com/in-toto/in-toto-golang/in_toto"
+	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/sigstore/cosign/v2/pkg/signature"
@@ -42,10 +42,8 @@ type AttestationRenderer struct {
 	renderer       r
 }
 
-// DEPRECATED
 type r interface {
-	Header() (*in_toto.StatementHeader, error)
-	Predicate() (interface{}, error)
+	Statement() (*intoto.Statement, error)
 }
 
 type Opt func(*AttestationRenderer)
@@ -80,7 +78,7 @@ func NewAttestationRenderer(state *v1.CraftingState, keyPath, builderVersion, bu
 func (ab *AttestationRenderer) Render() (*dsse.Envelope, error) {
 	ab.logger.Debug().Msg("generating in-toto statement")
 
-	statement, err := ab.statement()
+	statement, err := ab.renderer.Statement()
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +95,7 @@ func (ab *AttestationRenderer) Render() (*dsse.Envelope, error) {
 		return nil, err
 	}
 
-	wrappedSigner := sigdsee.WrapSigner(signer, in_toto.PayloadType)
+	wrappedSigner := sigdsee.WrapSigner(signer, "application/vnd.in-toto+json")
 
 	signedAtt, err := wrappedSigner.SignMessage(bytes.NewReader(rawStatement))
 	if err != nil {
@@ -110,23 +108,6 @@ func (ab *AttestationRenderer) Render() (*dsse.Envelope, error) {
 	}
 
 	return &dseeEnvelope, nil
-}
-
-func (ab *AttestationRenderer) statement() (*in_toto.Statement, error) {
-	header, err := ab.renderer.Header()
-	if err != nil {
-		return nil, err
-	}
-
-	predicate, err := ab.renderer.Predicate()
-	if err != nil {
-		return nil, err
-	}
-
-	return &in_toto.Statement{
-		StatementHeader: *header,
-		Predicate:       predicate,
-	}, nil
 }
 
 func getPass(confirm bool) ([]byte, error) {

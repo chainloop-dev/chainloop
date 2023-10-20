@@ -24,7 +24,6 @@ import (
 
 	v1 "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/in-toto/in-toto-golang/in_toto"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -49,26 +48,35 @@ func NewChainloopRendererV02(att *v1.Attestation, builderVersion, builderDigest 
 	}
 }
 
-func (r *RendererV02) Predicate() (interface{}, error) {
-	normalizedMaterials, err := outputMaterials(r.att, false)
+func (r *RendererV02) Statement() (*intoto.Statement, error) {
+	subject, err := r.subject()
 	if err != nil {
-		return nil, fmt.Errorf("error normalizing materials: %w", err)
+		return nil, fmt.Errorf("error creating subject: %w", err)
 	}
 
-	return ProvenancePredicateV02{
-		ProvenancePredicateCommon: predicateCommon(r.builder, r.att),
-		Materials:                 normalizedMaterials,
-	}, nil
+	predicate, err := r.predicate()
+	if err != nil {
+		return nil, fmt.Errorf("error creating predicate: %w", err)
+	}
+
+	statement := &intoto.Statement{
+		Type:          intoto.StatementTypeUri,
+		Subject:       subject,
+		PredicateType: r.predicateType,
+		Predicate:     predicate,
+	}
+
+	return statement, nil
 }
 
-func (r *RendererV02) Header() (*in_toto.StatementHeader, error) {
+func (r *RendererV02) subject() ([]*intoto.ResourceDescriptor, error) {
 	raw, err := json.Marshal(r.att)
 	if err != nil {
 		return nil, err
 	}
 
 	// We might don't want this and just force the existence of one material with output = true
-	subjects := []in_toto.Subject{
+	subject := []*intoto.ResourceDescriptor{
 		{
 			Name: prefixed(fmt.Sprintf("workflow.%s", r.att.GetWorkflow().Name)),
 			Digest: map[string]string{
@@ -78,7 +86,7 @@ func (r *RendererV02) Header() (*in_toto.StatementHeader, error) {
 	}
 
 	if r.att.GetSha1Commit() != "" {
-		subjects = append(subjects, in_toto.Subject{
+		subject = append(subject, &intoto.ResourceDescriptor{
 			Name:   subjectGitHead,
 			Digest: map[string]string{"sha1": r.att.GetSha1Commit()},
 		})
@@ -91,18 +99,41 @@ func (r *RendererV02) Header() (*in_toto.StatementHeader, error) {
 
 	for _, m := range normalizedMaterials {
 		if m.Digest != nil {
-			subjects = append(subjects, in_toto.Subject{
+			subject = append(subject, &intoto.ResourceDescriptor{
 				Name:   m.Name,
 				Digest: m.Digest,
 			})
 		}
 	}
 
-	return &in_toto.StatementHeader{
-		Type:          in_toto.StatementInTotoV01,
-		PredicateType: r.predicateType,
-		Subject:       subjects,
-	}, nil
+	return subject, nil
+}
+
+func (r *RendererV02) predicate() (*structpb.Struct, error) {
+	normalizedMaterials, err := outputMaterials(r.att, false)
+	if err != nil {
+		return nil, fmt.Errorf("error normalizing materials: %w", err)
+	}
+
+	p := ProvenancePredicateV02{
+		ProvenancePredicateCommon: predicateCommon(r.builder, r.att),
+		Materials:                 normalizedMaterials,
+	}
+
+	// transform to structpb.Struct in a two steps process
+	// 1 - ProvenancePredicate -> json -> map[string]interface{}
+	// 2 - map[string]interface{} -> structpb.Struct
+	predicateJSON, err := json.Marshal(p)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling predicate: %w", err)
+	}
+
+	predicateMap := make(map[string]interface{})
+	if err := json.Unmarshal(predicateJSON, &predicateMap); err != nil {
+		return nil, fmt.Errorf("error unmarshaling predicate: %w", err)
+	}
+
+	return structpb.NewStruct(predicateMap)
 }
 
 func outputMaterials(att *v1.Attestation, onlyOutput bool) ([]*intoto.ResourceDescriptor, error) {
