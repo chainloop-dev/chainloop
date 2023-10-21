@@ -74,6 +74,9 @@ type Opts struct {
 
 // NewGRPCServer new a gRPC server.
 func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
+	// Opt-in histogram metrics for the interceptor
+	grpc_prometheus.EnableHandlingTimeHistogram()
+
 	var serverOpts = []grpc.ServerOption{
 		grpc.Middleware(craftMiddleware(opts)...),
 		grpc.UnaryInterceptor(grpc_prometheus.UnaryServerInterceptor),
