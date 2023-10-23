@@ -7,11 +7,15 @@
         "sha256": "b403d1bb2b7739495df20f6d3838956333b04a66bc81d43bc7c64cee1433b604"
       }                                                                        
     },                                                                         
-    {                                                                                                                                                         
-      "name": "index.docker.io/bitnami/nginx",                                
-      "digest": {                                                              
+    {
+      "name": "index.docker.io/bitnami/nginx",
+      "digest": {
         "sha256": "580ac09da7771920dfd0c214964e7bfe4c27903bcbe075769a4044a67c9a390a"
-      }                                                                        
+      },
+      "annotations": {
+        "chainloop.material.name": "skynet-control-plane",
+        "chainloop.material.type": "CONTAINER_IMAGE"
+      }
     }                                                                          
   ],                                                                           
   "predicate_type": "chainloop.dev/attestation/v0.2",                                                                                                         
