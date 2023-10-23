@@ -1,0 +1,96 @@
+{
+  "type": "https://in-toto.io/Statement/v1",
+  "subject": [
+    {
+      "name": "chainloop.workflow.test-new-types",
+      "digest": {
+        "sha256": "f1fad10a3399754f2ea93265601bf25788d5abf6c447e08d1fc4c9ffc043c19e"
+      }
+    },
+    {
+      "name": "git.head",
+      "digest": {
+        "sha1": "78ac366c9e8a300d51808d581422ca61f7b5b721"
+      }
+    },
+    {
+      "name": "index.docker.io/bitnami/nginx",
+      "digest": {
+        "sha256": "fbd9335f55d83d8aaf9ab1a539b0f2a87b444e8c54f34c9a1ca9d7df15605db4"
+      }
+    }
+  ],
+  "predicate_type": "chainloop.dev/attestation/v0.2",
+  "predicate": {
+    "buildType": "chainloop.dev/workflowrun/v0.1",
+    "builder": {
+      "id": "chainloop.dev/cli/dev@sha256:59e14f1a9de709cdd0e91c36b33e54fcca95f7dba1dc7169a7f81986e02108e5"
+    },
+    "materials": [
+      {
+        "annotations": {
+          "chainloop.material.name": "image",
+          "chainloop.material.type": "CONTAINER_IMAGE"
+        },
+        "digest": {
+          "sha256": "fbd9335f55d83d8aaf9ab1a539b0f2a87b444e8c54f34c9a1ca9d7df15605db4"
+        },
+        "name": "index.docker.io/bitnami/nginx"
+      },
+      {
+        "annotations": {
+          "chainloop.material.cas": true,
+          "chainloop.material.name": "rootfs",
+          "chainloop.material.type": "ARTIFACT"
+        },
+        "digest": {
+          "sha256": "385c4188b9c080499413f2e0fa0b3951ed107b5f0cb35c2f2b1f07a7be9a7512"
+        },
+        "name": "download.gif"
+      },
+      {
+        "annotations": {
+          "chainloop.material.cas": true,
+          "chainloop.material.name": "sarif",
+          "chainloop.material.type": "SARIF"
+        },
+        "digest": {
+          "sha256": "c4a63494f9289dd9fd44f841efb4f5b52765c2de6332f2d86e5f6c0340b40a95"
+        },
+        "name": "report.sarif"
+      },
+      {
+        "annotations": {
+          "chainloop.material.cas": true,
+          "chainloop.material.name": "sbom",
+          "chainloop.material.type": "SBOM_CYCLONEDX_JSON"
+        },
+        "digest": {
+          "sha256": "16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c"
+        },
+        "name": "sbom.cyclonedx.json"
+      },
+      {
+        "annotations": {
+          "chainloop.material.cas": true,
+          "chainloop.material.name": "vex",
+          "chainloop.material.type": "OPENVEX"
+        },
+        "digest": {
+          "sha256": "b4bd86d5855f94bcac0a92d3100ae7b85d050bd2e5fb9037a200e5f5f0b073a2"
+        },
+        "name": "openvex_v0.2.0.json"
+      }
+    ],
+    "metadata": {
+      "finishedAt": "2023-10-20T12:58:10.562093962Z",
+      "initializedAt": "2023-10-20T12:57:10.562093962Z",
+      "name": "test-new-types",
+      "project": "test",
+      "team": "",
+      "workflowID": "ab98be70-041b-4a82-97f3-daa56f61262b",
+      "workflowRunID": "f97a0680-e64b-478a-9eea-df8864fa27f8"
+    },
+    "runnerType": "RUNNER_TYPE_UNSPECIFIED"
+  }
+}

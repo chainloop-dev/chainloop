@@ -34,6 +34,7 @@
   },
   "attestation": {
     "initializedAt": "2023-05-03T17:22:12.743426076Z",
+    "finishedAt": "2023-05-03T17:25:12.743426076Z",
     "workflow": {
       "name": "foo",
       "project": "bar",

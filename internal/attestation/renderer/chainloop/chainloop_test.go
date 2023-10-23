@@ -35,28 +35,6 @@ func TestExtractPredicate(t *testing.T) {
 		wantErr      bool
 	}{
 		{
-			name:         "valid envelope v1",
-			envelopePath: "testdata/valid.envelope.v1.json",
-			envVars:      map[string]string{"GITHUB_ACTOR": "migmartri", "GITHUB_REF": "refs/tags/v0.0.39", "GITHUB_REPOSITORY": "chainloop-dev/integration-demo", "GITHUB_REPOSITORY_OWNER": "chainloop-dev", "GITHUB_RUN_ID": "4410543365", "GITHUB_SHA": "0accc9392fb1f9b258167c18ffa0aeb626973f1c", "RUNNER_NAME": "Hosted Agent", "RUNNER_OS": "Linux"},
-			materials: []*NormalizedMaterial{
-				{
-					Name: "binary", Type: "ARTIFACT",
-					Value: "integration-demo_0.0.39_linux_amd64.tar.gz",
-					Hash:  &crv1.Hash{Algorithm: "sha256", Hex: "b155cdfc328b273c4b741c08b3b84ac441b0562ca51893f23495b35abf89ea87"},
-				},
-				{
-					Name: "image", Type: "CONTAINER_IMAGE",
-					Value: "ghcr.io/chainloop-dev/integration-demo",
-					Hash:  &crv1.Hash{Algorithm: "sha256", Hex: "e0d8179991dd735baf0961901b33476a76a0f300bc4ea07e3d7ae7c24e147193"},
-				},
-				{
-					Name: "sbom", Type: "SBOM_CYCLONEDX_JSON",
-					Value: "sbom.cyclonedx.json",
-					Hash:  &crv1.Hash{Algorithm: "sha256", Hex: "b50f38961cc2e97d0903f4683a40e2528f7f6c9d382e8c6048b0363af95b7080"},
-				},
-			},
-		},
-		{
 			name:         "valid envelope v2",
 			envelopePath: "testdata/valid.envelope.v2.json",
 			envVars:      map[string]string{"CUSTOM_VAR": "foobar"},
@@ -114,6 +92,7 @@ func TestExtractPredicate(t *testing.T) {
 				return
 			}
 
+			require.NoError(t, err)
 			gotVars := gotPredicate.GetEnvVars()
 			assert.Equal(t, tc.envVars, gotVars)
 

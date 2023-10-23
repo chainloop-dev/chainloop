@@ -22,11 +22,11 @@ import (
 
 	api "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/in-toto/in-toto-golang/in_toto"
-	slsa_v1 "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v1"
+	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func TestRenderV02(t *testing.T) {
@@ -36,97 +36,97 @@ func TestRenderV02(t *testing.T) {
 		outputPath string
 	}{
 		{
-			name:       "render v0.2",
+			name:       "basic",
 			sourcePath: "testdata/attestation.source.json",
 			outputPath: "testdata/attestation.output.v0.2.json",
+		},
+		{
+			name:       "with multiple types of materials",
+			sourcePath: "testdata/attestation.source-2.json",
+			outputPath: "testdata/attestation.output-2.v0.2.json",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Load expected resulting output
-			wantRaw, err := os.ReadFile(tc.outputPath)
+			raw, err := os.ReadFile(tc.outputPath)
 			require.NoError(t, err)
-
-			var want *in_toto.Statement
-			err = json.Unmarshal(wantRaw, &want)
+			var want *intoto.Statement
+			err = json.Unmarshal(raw, &want)
+			require.NoError(t, err)
+			wantRaw, err := json.MarshalIndent(want, "", "  ")
 			require.NoError(t, err)
 
 			// Initialize renderer
 			state := &api.CraftingState{}
 			stateRaw, err := os.ReadFile(tc.sourcePath)
 			require.NoError(t, err)
-
 			err = protojson.Unmarshal(stateRaw, state)
 			require.NoError(t, err)
-
 			renderer := NewChainloopRendererV02(state.Attestation, "dev", "sha256:59e14f1a9de709cdd0e91c36b33e54fcca95f7dba1dc7169a7f81986e02108e5")
 
-			// Compare header
-			gotHeader, err := renderer.Header()
-			assert.NoError(t, err)
-			assert.Equal(t, want.Type, gotHeader.Type)
-			assert.Equal(t, want.Subject, gotHeader.Subject)
-			assert.Equal(t, want.PredicateType, gotHeader.PredicateType)
-
-			// Compare predicate
-			gotPredicateI, err := renderer.Predicate()
-			assert.NoError(t, err)
-			gotPredicate := gotPredicateI.(ProvenancePredicateV02)
-
-			wantPredicate := ProvenancePredicateV02{}
-			err = extractPredicate(want, &wantPredicate)
-			assert.NoError(t, err)
-			wantPredicate.Metadata.FinishedAt = gotPredicate.Metadata.FinishedAt
-			assert.EqualValues(t, wantPredicate, gotPredicate)
+			// Compare result
+			statement, err := renderer.Statement()
+			require.NoError(t, err)
+			rawStatement, err := json.MarshalIndent(statement, "", "  ")
+			require.NoError(t, err)
+			assert.Equal(t, string(wantRaw), string(rawStatement))
 		})
 	}
+}
+
+func mapToStruct(t *testing.T, input map[string]interface{}) *structpb.Struct {
+	res, err := structpb.NewStruct(input)
+	require.NoError(t, err)
+	return res
 }
 
 func TestNormalizeMaterial(t *testing.T) {
 	var emptyMap = make(map[string]string)
 
 	testCases := []struct {
-		name    string
-		input   *slsa_v1.ResourceDescriptor
-		want    *NormalizedMaterial
-		wantErr bool
+		name             string
+		input            *intoto.ResourceDescriptor
+		inputAnnotations map[string]interface{}
+		want             *NormalizedMaterial
+		wantErr          bool
 	}{
 		{
 			name: "invalid material type",
-			input: &slsa_v1.ResourceDescriptor{
-				Annotations: map[string]interface{}{
+			input: &intoto.ResourceDescriptor{
+				Annotations: mapToStruct(t, map[string]interface{}{
 					"chainloop.material.name": "foo",
 					"chainloop.material.type": "INVALID",
-				},
+				}),
 			},
 			wantErr: true,
 		},
 		{
 			name: "missing material type",
-			input: &slsa_v1.ResourceDescriptor{
-				Annotations: map[string]interface{}{
+			input: &intoto.ResourceDescriptor{
+				Annotations: mapToStruct(t, map[string]interface{}{
 					"chainloop.material.name": "foo",
-				},
+				}),
 			},
 			wantErr: true,
 		},
 		{
 			name: "missing material name",
-			input: &slsa_v1.ResourceDescriptor{
-				Annotations: map[string]interface{}{
+			input: &intoto.ResourceDescriptor{
+				Annotations: mapToStruct(t, map[string]interface{}{
 					"chainloop.material.type": "STRING",
-				},
+				}),
 			},
 			wantErr: true,
 		},
 		{
 			name: "valid string material",
-			input: &slsa_v1.ResourceDescriptor{
-				Annotations: map[string]interface{}{
+			input: &intoto.ResourceDescriptor{
+				Annotations: mapToStruct(t, map[string]interface{}{
 					"chainloop.material.name": "foo",
 					"chainloop.material.type": "STRING",
-				},
+				}),
 				Content: []byte("bar"),
 			},
 			want: &NormalizedMaterial{
@@ -138,22 +138,22 @@ func TestNormalizeMaterial(t *testing.T) {
 		},
 		{
 			name: "empty string material",
-			input: &slsa_v1.ResourceDescriptor{
-				Annotations: map[string]interface{}{
+			input: &intoto.ResourceDescriptor{
+				Annotations: mapToStruct(t, map[string]interface{}{
 					"chainloop.material.name": "foo",
 					"chainloop.material.type": "STRING",
-				},
+				}),
 			},
 			wantErr: true,
 		},
 		{
 			name: "valid artifact material",
-			input: &slsa_v1.ResourceDescriptor{
-				Annotations: map[string]interface{}{
+			input: &intoto.ResourceDescriptor{
+				Annotations: mapToStruct(t, map[string]interface{}{
 					"chainloop.material.name": "foo",
 					"chainloop.material.type": "ARTIFACT",
 					"chainloop.material.cas":  true,
-				},
+				}),
 				Digest: map[string]string{
 					"sha256": "deadbeef",
 				},
@@ -170,14 +170,14 @@ func TestNormalizeMaterial(t *testing.T) {
 		},
 		{
 			name: "valid artifact material with annotations",
-			input: &slsa_v1.ResourceDescriptor{
-				Annotations: map[string]interface{}{
+			input: &intoto.ResourceDescriptor{
+				Annotations: mapToStruct(t, map[string]interface{}{
 					"chainloop.material.name": "foo",
 					"chainloop.material.type": "ARTIFACT",
 					"chainloop.material.cas":  true,
 					"foo":                     "bar",
 					"bar":                     "baz",
-				},
+				}),
 				Digest: map[string]string{
 					"sha256": "deadbeef",
 				},
@@ -194,12 +194,12 @@ func TestNormalizeMaterial(t *testing.T) {
 		},
 		{
 			name: "valid artifact material, inline content",
-			input: &slsa_v1.ResourceDescriptor{
-				Annotations: map[string]interface{}{
+			input: &intoto.ResourceDescriptor{
+				Annotations: mapToStruct(t, map[string]interface{}{
 					"chainloop.material.name":       "foo",
 					"chainloop.material.type":       "ARTIFACT",
 					"chainloop.material.cas.inline": true,
-				},
+				}),
 				Digest: map[string]string{
 					"sha256": "deadbeef",
 				},
@@ -218,11 +218,11 @@ func TestNormalizeMaterial(t *testing.T) {
 		},
 		{
 			name: "invalid artifact material, missing file name",
-			input: &slsa_v1.ResourceDescriptor{
-				Annotations: map[string]interface{}{
+			input: &intoto.ResourceDescriptor{
+				Annotations: mapToStruct(t, map[string]interface{}{
 					"chainloop.material.name": "foo",
 					"chainloop.material.type": "ARTIFACT",
-				},
+				}),
 				Digest: map[string]string{
 					"sha256": "deadbeef",
 				},
@@ -231,11 +231,11 @@ func TestNormalizeMaterial(t *testing.T) {
 		},
 		{
 			name: "invalid artifact material, missing digest",
-			input: &slsa_v1.ResourceDescriptor{
-				Annotations: map[string]interface{}{
+			input: &intoto.ResourceDescriptor{
+				Annotations: mapToStruct(t, map[string]interface{}{
 					"chainloop.material.name": "foo",
 					"chainloop.material.type": "ARTIFACT",
-				},
+				}),
 				Name: "artifact.tgz",
 			},
 			wantErr: true,
