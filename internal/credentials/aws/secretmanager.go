@@ -116,9 +116,11 @@ func (m *Manager) ReadCredentials(ctx context.Context, secretID string, creds an
 			case (&types.ResourceNotFoundException{}).ErrorCode():
 				return fmt.Errorf("%w: path=%s", credentials.ErrNotFound, secretID)
 			default:
-				return err
+				return fmt.Errorf("getting AWS Secret Value: %w", err)
 			}
 		}
+
+		return fmt.Errorf("getting AWS Secret Value: %w", err)
 	}
 
 	return json.Unmarshal([]byte(*resp.SecretString), creds)
