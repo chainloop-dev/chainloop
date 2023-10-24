@@ -18,12 +18,14 @@ package aws
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"reflect"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/aws/aws-sdk-go-v2/service/sso/types"
+	"github.com/aws/smithy-go"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	mclient "github.com/chainloop-dev/chainloop/internal/credentials/aws/mocks"
 	"github.com/stretchr/testify/assert"
@@ -66,6 +68,72 @@ const orgID = "test-org"
 const defaultRegion = "default-region"
 const defaultAccessKey = "access-key-not-a-real-key"
 const defaultSecretKey = "secret-key-not-a-real-key"
+
+func (s *testSuite) TestReadCredentialsErrorHandling() {
+	fakeSecretID := "fakeSecretID"
+	genericErr := errors.New("generic error")
+	genericAPIErr := &smithy.GenericAPIError{Code: "AnotherAPIError", Message: "Some message"}
+
+	testCases := []struct {
+		name          string
+		wantedError   error
+		expectedError error
+	}{
+		{
+			"GetSecretValue returns no error",
+			nil,
+			nil,
+		}, {
+			"GetSecretValue returns a smithy.APIError error of type 'resource not found'",
+			&smithy.GenericAPIError{Code: "ResourceNotFoundException", Message: "Some message"},
+			credentials.ErrNotFound,
+		}, {
+			"GetSecretValue returns a smithy.APIError error of type 'other type'",
+			genericAPIErr,
+			genericAPIErr,
+		}, {
+			"GetSecretValue returns an error that is not smithy.APIError",
+			genericErr,
+			genericErr,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			// re-set the manager mocked expectations
+			initMockedManager(s)
+			m := s.mockedManager
+			mc, _ := m.client.(*mclient.SecretsManagerIface)
+			ctx := context.Background()
+
+			// mock response for method GetSecretValue(..)
+			var getSecretValueResp secretsmanager.GetSecretValueOutput
+			if tc.wantedError == nil {
+				validAPICreds := &credentials.APICreds{Host: "h", Key: "k"}
+				mockedResp, _ := json.Marshal(validAPICreds)
+				getSecretValueResp = secretsmanager.GetSecretValueOutput{
+					SecretString: aws.String(string(mockedResp)),
+				}
+			}
+
+			// mock call to GetSecretValue to return the wanted error
+			mc.On("GetSecretValue", ctx, &secretsmanager.GetSecretValueInput{
+				SecretId: aws.String(fakeSecretID),
+			}).Return(&getSecretValueResp, tc.wantedError)
+
+			// call
+			creds := &credentials.APICreds{}
+			err := m.ReadCredentials(ctx, fakeSecretID, creds)
+
+			// test
+			if tc.expectedError == nil {
+				require.NoError(s.T(), err)
+			} else {
+				require.ErrorIs(s.T(), err, tc.expectedError)
+			}
+		})
+	}
+}
 
 func (s *testSuite) TestReadWriteCredentials() {
 	assert := assert.New(s.T())
