@@ -59,7 +59,7 @@ require (
 	golang.org/x/term v0.13.0
 	google.golang.org/api v0.138.0
 	google.golang.org/genproto v0.0.0-20230822172742-b8732ec3820d // indirect
-	google.golang.org/grpc v1.57.0
+	google.golang.org/grpc v1.57.1
 	google.golang.org/protobuf v1.31.0
 	sigs.k8s.io/yaml v1.3.0
 )
