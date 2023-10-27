@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/go-git/go-git/v5/config"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -34,27 +35,36 @@ type crafterUnitSuite struct {
 }
 
 func (s *crafterUnitSuite) TestGitRepoHead() {
-	initRepo := func(withCommit bool) func(string) (string, error) {
-		return func(repoPath string) (string, error) {
+	initRepo := func(withCommit bool) func(string) (*HeadCommit, error) {
+		return func(repoPath string) (*HeadCommit, error) {
 			repo, err := git.PlainInit(repoPath, false)
 			if err != nil {
-				return "", err
+				return nil, err
+			}
+
+			_, err = repo.CreateRemote(&config.RemoteConfig{
+				Name: "origin",
+				URLs: []string{"git@cyberdyne.com:skynet.git"},
+			})
+
+			if err != nil {
+				return nil, err
 			}
 
 			if withCommit {
 				wt, err := repo.Worktree()
 				if err != nil {
-					return "", err
+					return nil, err
 				}
 
 				filename := filepath.Join(repoPath, "example-git-file")
 				if err = os.WriteFile(filename, []byte("hello world!"), 0600); err != nil {
-					return "", err
+					return nil, err
 				}
 
 				_, err = wt.Add("example-git-file")
 				if err != nil {
-					return "", err
+					return nil, err
 				}
 
 				h, err := wt.Commit("test commit", &git.CommitOptions{
@@ -65,44 +75,49 @@ func (s *crafterUnitSuite) TestGitRepoHead() {
 					},
 				})
 				if err != nil {
-					return "", err
+					return nil, err
 				}
 
-				return h.String(), nil
+				return &HeadCommit{
+					Hash:        h.String(),
+					AuthorEmail: "john@doe.org",
+					AuthorName:  "John Doe",
+					Message:     "test commit",
+				}, nil
 			}
 
-			return "", nil
+			return nil, nil
 		}
 	}
 
 	testCases := []struct {
-		name          string
-		repoProvider  func(string) (string, error)
-		wantErr       bool
-		wantEmptyHash bool
+		name         string
+		repoProvider func(string) (*HeadCommit, error)
+		wantErr      bool
+		wantNoCommit bool
 	}{
 		{
 			name:         "happy path",
 			repoProvider: initRepo(true),
 		},
 		{
-			name:          "empty repo",
-			repoProvider:  initRepo(false),
-			wantEmptyHash: true,
+			name:         "empty repo",
+			repoProvider: initRepo(false),
+			wantNoCommit: true,
 		},
 		{
-			name:          "not a repository",
-			wantEmptyHash: true,
+			name:         "not a repository",
+			wantNoCommit: true,
 		},
 	}
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			path := s.T().TempDir()
-			var wantDigest string
+			var wantCommit *HeadCommit
 			if tc.repoProvider != nil {
 				var err error
-				wantDigest, err = tc.repoProvider(path)
+				wantCommit, err = tc.repoProvider(path)
 				require.NoError(s.T(), err)
 			}
 
@@ -112,14 +127,22 @@ func (s *crafterUnitSuite) TestGitRepoHead() {
 				return
 			}
 
-			if tc.wantEmptyHash {
+			require.NoError(s.T(), err)
+
+			if tc.wantNoCommit {
 				assert.Empty(s.T(), got)
-			} else {
-				assert.NotEmpty(s.T(), got)
+				return
 			}
 
-			assert.NoError(s.T(), err)
-			assert.Equal(s.T(), wantDigest, got)
+			assert.Equal(s.T(), wantCommit.AuthorEmail, got.AuthorEmail)
+			assert.Equal(s.T(), wantCommit.AuthorName, got.AuthorName)
+			assert.Equal(s.T(), wantCommit.Hash, got.Hash)
+			assert.NotEmpty(s.T(), got.Remotes)
+			assert.Equal(s.T(), &CommitRemote{
+				Name: "origin",
+				URL:  "git@cyberdyne.com:skynet.git",
+			}, got.Remotes[0])
+			assert.NotEmpty(s.T(), got.Date)
 		})
 	}
 }

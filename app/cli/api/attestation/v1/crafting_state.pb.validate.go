@@ -221,7 +221,34 @@ func (m *Attestation) validate(all bool) error {
 
 	// no validation rules for RunnerType
 
-	// no validation rules for Sha1Commit
+	if all {
+		switch v := interface{}(m.GetHead()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AttestationValidationError{
+					field:  "Head",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AttestationValidationError{
+					field:  "Head",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetHead()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AttestationValidationError{
+				field:  "Head",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	if len(errors) > 0 {
 		return AttestationMultiError(errors)
@@ -299,6 +326,211 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = AttestationValidationError{}
+
+// Validate checks the field values on Commit with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *Commit) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on Commit with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in CommitMultiError, or nil if none found.
+func (m *Commit) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *Commit) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetHash()) < 1 {
+		err := CommitValidationError{
+			field:  "Hash",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetAuthorEmail()) < 1 {
+		err := CommitValidationError{
+			field:  "AuthorEmail",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetAuthorName()) < 1 {
+		err := CommitValidationError{
+			field:  "AuthorName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetMessage()) < 1 {
+		err := CommitValidationError{
+			field:  "Message",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if all {
+		switch v := interface{}(m.GetDate()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CommitValidationError{
+					field:  "Date",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CommitValidationError{
+					field:  "Date",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDate()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CommitValidationError{
+				field:  "Date",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	for idx, item := range m.GetRemotes() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, CommitValidationError{
+						field:  fmt.Sprintf("Remotes[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, CommitValidationError{
+						field:  fmt.Sprintf("Remotes[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return CommitValidationError{
+					field:  fmt.Sprintf("Remotes[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return CommitMultiError(errors)
+	}
+
+	return nil
+}
+
+// CommitMultiError is an error wrapping multiple validation errors returned by
+// Commit.ValidateAll() if the designated constraints aren't met.
+type CommitMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CommitMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CommitMultiError) AllErrors() []error { return m }
+
+// CommitValidationError is the validation error returned by Commit.Validate if
+// the designated constraints aren't met.
+type CommitValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CommitValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CommitValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CommitValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CommitValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CommitValidationError) ErrorName() string { return "CommitValidationError" }
+
+// Error satisfies the builtin error interface
+func (e CommitValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCommit.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CommitValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CommitValidationError{}
 
 // Validate checks the field values on CraftingState with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
@@ -1296,3 +1528,125 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = Attestation_Material_ArtifactValidationError{}
+
+// Validate checks the field values on Commit_Remote with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *Commit_Remote) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on Commit_Remote with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in Commit_RemoteMultiError, or
+// nil if none found.
+func (m *Commit_Remote) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *Commit_Remote) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetName()) < 1 {
+		err := Commit_RemoteValidationError{
+			field:  "Name",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetUrl()) < 1 {
+		err := Commit_RemoteValidationError{
+			field:  "Url",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return Commit_RemoteMultiError(errors)
+	}
+
+	return nil
+}
+
+// Commit_RemoteMultiError is an error wrapping multiple validation errors
+// returned by Commit_Remote.ValidateAll() if the designated constraints
+// aren't met.
+type Commit_RemoteMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m Commit_RemoteMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m Commit_RemoteMultiError) AllErrors() []error { return m }
+
+// Commit_RemoteValidationError is the validation error returned by
+// Commit_Remote.Validate if the designated constraints aren't met.
+type Commit_RemoteValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e Commit_RemoteValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e Commit_RemoteValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e Commit_RemoteValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e Commit_RemoteValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e Commit_RemoteValidationError) ErrorName() string { return "Commit_RemoteValidationError" }
+
+// Error satisfies the builtin error interface
+func (e Commit_RemoteValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCommit_Remote.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = Commit_RemoteValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = Commit_RemoteValidationError{}

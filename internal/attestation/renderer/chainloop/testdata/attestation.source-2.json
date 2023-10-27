@@ -87,6 +87,18 @@
         "uploadedToCas": true
       }
     },
-    "sha1Commit": "78ac366c9e8a300d51808d581422ca61f7b5b721"
+    "head": {
+      "hash": "78ac366c9e8a300d51808d581422ca61f7b5b721",
+      "authorEmail": "john@cyberdyne.com",
+      "authorName": "John Connor",
+      "date": "2023-10-26T17:09:20Z",
+      "message": "chatGPT wrapper",
+       "remotes": [
+        {
+          "name": "upstream",
+          "url": "git@cyberdyne.internal:skynet.git"
+        }
+      ]
+    }
   }
 }

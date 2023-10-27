@@ -120,7 +120,8 @@ func (s *crafterSuite) TestInit() {
 			}
 
 			if tc.wantRepoDigest {
-				want.Attestation.Sha1Commit = s.repoHead
+				want.Attestation.Head = &v1.Commit{Hash: s.repoHead, AuthorEmail: "john@doe.org", AuthorName: "John Doe", Message: "test commit"}
+				c.CraftingState.Attestation.Head.Date = nil
 			}
 
 			// reset to nil to easily compare them

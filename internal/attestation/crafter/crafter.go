@@ -237,9 +237,25 @@ func (c *Crafter) LoadCraftingState() error {
 	return nil
 }
 
+type HeadCommit struct {
+	// hash of the commit
+	Hash string
+	// When did the commit happen
+	Date time.Time
+	// Author of the commit
+	AuthorEmail, AuthorName string
+	// Commit Message
+	Message string
+	Remotes []*CommitRemote
+}
+
+type CommitRemote struct {
+	Name, URL string
+}
+
 // Returns the current directory git commit hash if possible
 // If we are not in a git repo it will return an empty string
-func gracefulGitRepoHead(path string) (string, error) {
+func gracefulGitRepoHead(path string) (*HeadCommit, error) {
 	repo, err := git.PlainOpenWithOptions(path, &git.PlainOpenOptions{
 		// walk up the directory tree until we find a git repo
 		DetectDotGit: true,
@@ -247,33 +263,76 @@ func gracefulGitRepoHead(path string) (string, error) {
 
 	if err != nil {
 		if errors.Is(err, git.ErrRepositoryNotExists) {
-			return "", nil
+			return nil, nil
 		}
 
-		return "", fmt.Errorf("opening repository: %w", err)
+		return nil, fmt.Errorf("opening repository: %w", err)
 	}
 
 	head, err := repo.Head()
 	if err != nil {
 		if errors.Is(err, plumbing.ErrReferenceNotFound) {
-			return "", nil
+			return nil, nil
 		}
-		return "", fmt.Errorf("finding repo head: %w", err)
+		return nil, fmt.Errorf("finding repo head: %w", err)
 	}
 
 	commit, err := repo.CommitObject(head.Hash())
 	if err != nil {
-		return "", fmt.Errorf("finding head commit: %w", err)
+		return nil, fmt.Errorf("finding head commit: %w", err)
 	}
 
-	return commit.Hash.String(), nil
+	c := &HeadCommit{
+		Hash:        commit.Hash.String(),
+		AuthorEmail: commit.Author.Email,
+		AuthorName:  commit.Author.Name,
+		Date:        commit.Author.When,
+		Message:     commit.Message,
+		Remotes:     make([]*CommitRemote, 0),
+	}
+
+	remotes, err := repo.Remotes()
+	if err != nil {
+		return nil, fmt.Errorf("getting remotes: %w", err)
+	}
+
+	for _, r := range remotes {
+		if err := r.Config().Validate(); err != nil {
+			continue
+		}
+
+		c.Remotes = append(c.Remotes, &CommitRemote{
+			Name: r.Config().Name,
+			URL:  r.Config().URLs[0],
+		})
+	}
+
+	return c, nil
 }
 
 func initialCraftingState(cwd string, schema *schemaapi.CraftingSchema, wf *api.WorkflowMetadata, dryRun bool, runnerType schemaapi.CraftingSchema_Runner_RunnerType, jobURL string) (*api.CraftingState, error) {
 	// Get git commit hash
-	commitHash, err := gracefulGitRepoHead(cwd)
+	headCommit, err := gracefulGitRepoHead(cwd)
 	if err != nil {
 		return nil, fmt.Errorf("getting git commit hash: %w", err)
+	}
+
+	var headCommitP *api.Commit
+	if headCommit != nil {
+		headCommitP = &api.Commit{
+			Hash:        headCommit.Hash,
+			AuthorEmail: headCommit.AuthorEmail,
+			AuthorName:  headCommit.AuthorName,
+			Date:        timestamppb.New(headCommit.Date),
+			Message:     headCommit.Message,
+		}
+
+		for _, r := range headCommit.Remotes {
+			headCommitP.Remotes = append(headCommitP.Remotes, &api.Commit_Remote{
+				Name: r.Name,
+				Url:  r.URL,
+			})
+		}
 	}
 
 	// Generate Crafting state
@@ -284,7 +343,7 @@ func initialCraftingState(cwd string, schema *schemaapi.CraftingSchema, wf *api.
 			Workflow:      wf,
 			RunnerType:    runnerType,
 			RunnerUrl:     jobURL,
-			Sha1Commit:    commitHash,
+			Head:          headCommitP,
 		},
 		DryRun: dryRun,
 	}, nil

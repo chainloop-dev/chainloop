@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	v1 "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
@@ -70,6 +71,29 @@ func (r *RendererV02) Statement() (*intoto.Statement, error) {
 	return statement, nil
 }
 
+func commitAnnotations(c *v1.Commit) (*structpb.Struct, error) {
+	annotationsRaw := map[string]interface{}{
+		subjectGitAnnotationWhen:        c.GetDate().AsTime().Format(time.RFC3339),
+		subjectGitAnnotationAuthorEmail: c.GetAuthorEmail(),
+		subjectGitAnnotationAuthorName:  c.GetAuthorName(),
+		subjectGitAnnotationMessage:     c.GetMessage(),
+	}
+
+	if remotes := c.GetRemotes(); len(remotes) > 0 {
+		remotesRaw := []interface{}{}
+		for _, r := range remotes {
+			remotesRaw = append(remotesRaw, map[string]interface{}{
+				"name": r.GetName(),
+				"url":  r.GetUrl(),
+			})
+		}
+
+		annotationsRaw[subjectGitAnnotationRemotes] = remotesRaw
+	}
+
+	return structpb.NewStruct(annotationsRaw)
+}
+
 func (r *RendererV02) subject() ([]*intoto.ResourceDescriptor, error) {
 	raw, err := json.Marshal(r.att)
 	if err != nil {
@@ -86,10 +110,16 @@ func (r *RendererV02) subject() ([]*intoto.ResourceDescriptor, error) {
 		},
 	}
 
-	if r.att.GetSha1Commit() != "" {
+	if head := r.att.GetHead(); head != nil {
+		annotations, err := commitAnnotations(head)
+		if err != nil {
+			return nil, fmt.Errorf("error creating annotations: %w", err)
+		}
+
 		subject = append(subject, &intoto.ResourceDescriptor{
-			Name:   subjectGitHead,
-			Digest: map[string]string{"sha1": r.att.GetSha1Commit()},
+			Name:        subjectGitHead,
+			Digest:      map[string]string{"sha1": head.GetHash()},
+			Annotations: annotations,
 		})
 	}
 
