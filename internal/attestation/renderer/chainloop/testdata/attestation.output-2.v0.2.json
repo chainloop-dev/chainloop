@@ -17,6 +17,10 @@
       "name": "index.docker.io/bitnami/nginx",
       "digest": {
         "sha256": "fbd9335f55d83d8aaf9ab1a539b0f2a87b444e8c54f34c9a1ca9d7df15605db4"
+      },
+      "annotations": {
+        "chainloop.material.name": "image",
+        "chainloop.material.type": "CONTAINER_IMAGE"
       }
     }
   ],

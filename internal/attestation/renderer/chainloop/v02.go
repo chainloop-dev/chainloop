@@ -101,8 +101,9 @@ func (r *RendererV02) subject() ([]*intoto.ResourceDescriptor, error) {
 	for _, m := range normalizedMaterials {
 		if m.Digest != nil {
 			subject = append(subject, &intoto.ResourceDescriptor{
-				Name:   m.Name,
-				Digest: m.Digest,
+				Name:        m.Name,
+				Digest:      m.Digest,
+				Annotations: m.Annotations,
 			})
 		}
 	}
