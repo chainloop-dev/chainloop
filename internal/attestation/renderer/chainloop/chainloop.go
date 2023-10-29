@@ -199,7 +199,12 @@ func (p *ProvenancePredicateCommon) GetAnnotations() map[string]string {
 const (
 	rendererPrefix = "chainloop."
 	// Subject names
-	subjectGitHead = "git.head"
+	subjectGitHead                  = "git.head"
+	subjectGitAnnotationAuthorEmail = "author.email"
+	subjectGitAnnotationAuthorName  = "author.name"
+	subjectGitAnnotationWhen        = "date"
+	subjectGitAnnotationMessage     = "message"
+	subjectGitAnnotationRemotes     = "remotes"
 )
 
 var (
