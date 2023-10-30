@@ -56,6 +56,10 @@ type ErrValidation struct {
 	err error
 }
 
+func NewErrValidationStr(errMsg string) ErrValidation {
+	return ErrValidation{errors.New(errMsg)}
+}
+
 func NewErrValidation(err error) ErrValidation {
 	return ErrValidation{err}
 }
@@ -70,6 +74,10 @@ func IsErrValidation(err error) bool {
 
 type ErrUnauthorized struct {
 	err error
+}
+
+func NewErrUnauthorizedStr(errMsg string) ErrUnauthorized {
+	return ErrUnauthorized{errors.New(errMsg)}
 }
 
 func NewErrUnauthorized(err error) ErrUnauthorized {

@@ -20,6 +20,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/orginvite"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
@@ -45,6 +46,21 @@ func (r *OrgInvite) Create(ctx context.Context, orgID, senderID uuid.UUID, recei
 
 	if err != nil {
 		return nil, err
+	}
+
+	return entInviteToBiz(invite), nil
+}
+
+func (r *OrgInvite) PendingInvite(ctx context.Context, orgID uuid.UUID, receiverEmail string) (*biz.OrgInvite, error) {
+	invite, err := r.data.db.OrgInvite.Query().
+		Where(orginvite.OrganizationID(orgID),
+			orginvite.ReceiverEmail(receiverEmail),
+			orginvite.StatusEQ(biz.OrgInviteStatusPending),
+		).Only(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, err
+	} else if invite == nil {
+		return nil, nil
 	}
 
 	return entInviteToBiz(invite), nil
