@@ -17,6 +17,7 @@ package data
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
@@ -71,7 +72,7 @@ func (r *OrgInvite) PendingInvite(ctx context.Context, orgID uuid.UUID, receiver
 func (r *OrgInvite) FindByID(ctx context.Context, id uuid.UUID) (*biz.OrgInvite, error) {
 	invite, err := r.data.db.OrgInvite.Query().Where(orginvite.ID(id), orginvite.DeletedAtIsNil()).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
-		return nil, err
+		return nil, fmt.Errorf("error finding invite %s: %w", id.String(), err)
 	} else if invite == nil {
 		return nil, nil
 	}
@@ -81,6 +82,20 @@ func (r *OrgInvite) FindByID(ctx context.Context, id uuid.UUID) (*biz.OrgInvite,
 
 func (r *OrgInvite) SoftDelete(ctx context.Context, id uuid.UUID) error {
 	return r.data.db.OrgInvite.UpdateOneID(id).SetDeletedAt(time.Now()).Exec(ctx)
+}
+
+func (r *OrgInvite) ListBySender(ctx context.Context, userID uuid.UUID) ([]*biz.OrgInvite, error) {
+	invite, err := r.data.db.OrgInvite.Query().Where(orginvite.SenderID(userID), orginvite.DeletedAtIsNil()).All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error finding invites for user %s: %w", userID.String(), err)
+	}
+
+	res := make([]*biz.OrgInvite, len(invite))
+	for i, v := range invite {
+		res[i] = entInviteToBiz(v)
+	}
+
+	return res, nil
 }
 
 func entInviteToBiz(i *ent.OrgInvite) *biz.OrgInvite {

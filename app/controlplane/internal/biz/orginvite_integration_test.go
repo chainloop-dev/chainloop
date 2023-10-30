@@ -52,6 +52,14 @@ func (s *OrgInviteIntegrationTestSuite) TestCreate() {
 		s.Nil(invite)
 	})
 
+	s.T().Run("receiver email same than sender", func(t *testing.T) {
+		invite, err := s.OrgInvite.Create(context.Background(), s.org1.ID, s.user.ID, s.user.Email)
+		s.Error(err)
+		s.ErrorContains(err, "sender and receiver emails cannot be the same")
+		s.True(biz.IsErrValidation(err))
+		s.Nil(invite)
+	})
+
 	s.T().Run("org not found", func(t *testing.T) {
 		invite, err := s.OrgInvite.Create(context.Background(), s.org1.ID, uuid.NewString(), receiverEmail)
 		s.Error(err)

@@ -70,7 +70,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	casMappingRepo := data.NewCASMappingRepo(dataData, casBackendRepo, logger)
 	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipRepo, logger)
 	orgInviteRepo := data.NewOrgInvite(dataData, logger)
-	orgInviteUseCase, err := biz.NewOrgInviteUseCase(orgInviteRepo, membershipRepo, logger)
+	orgInviteUseCase, err := biz.NewOrgInviteUseCase(orgInviteRepo, membershipRepo, userRepo, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err

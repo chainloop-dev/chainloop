@@ -127,7 +127,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		return nil, nil, err
 	}
 	orgInviteRepo := data.NewOrgInvite(dataData, logger)
-	orgInviteUseCase, err := biz.NewOrgInviteUseCase(orgInviteRepo, membershipRepo, logger)
+	orgInviteUseCase, err := biz.NewOrgInviteUseCase(orgInviteRepo, membershipRepo, userRepo, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err

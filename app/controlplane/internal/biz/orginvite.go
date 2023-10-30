@@ -25,9 +25,10 @@ import (
 )
 
 type OrgInviteUseCase struct {
-	logger *log.Helper
-	repo   OrgInviteRepo
-	mRepo  MembershipRepo
+	logger   *log.Helper
+	repo     OrgInviteRepo
+	mRepo    MembershipRepo
+	userRepo UserRepo
 }
 
 type OrgInvite struct {
@@ -44,11 +45,11 @@ type OrgInviteRepo interface {
 	FindByID(ctx context.Context, ID uuid.UUID) (*OrgInvite, error)
 	PendingInvite(ctx context.Context, orgID uuid.UUID, receiverEmail string) (*OrgInvite, error)
 	SoftDelete(ctx context.Context, id uuid.UUID) error
-	// ListByUser(ctx context.Context, user uuid.UUID) ([]*OrgInvite, error)
+	ListBySender(ctx context.Context, sender uuid.UUID) ([]*OrgInvite, error)
 }
 
-func NewOrgInviteUseCase(r OrgInviteRepo, mRepo MembershipRepo, l log.Logger) (*OrgInviteUseCase, error) {
-	return &OrgInviteUseCase{logger: log.NewHelper(l), repo: r, mRepo: mRepo}, nil
+func NewOrgInviteUseCase(r OrgInviteRepo, mRepo MembershipRepo, uRepo UserRepo, l log.Logger) (*OrgInviteUseCase, error) {
+	return &OrgInviteUseCase{logger: log.NewHelper(l), repo: r, mRepo: mRepo, userRepo: uRepo}, nil
 }
 
 func (uc *OrgInviteUseCase) Create(ctx context.Context, orgID, senderID, receiverEmail string) (*OrgInvite, error) {
@@ -67,7 +68,19 @@ func (uc *OrgInviteUseCase) Create(ctx context.Context, orgID, senderID, receive
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	// 2 - Check if the user has permissions to invite to the org
+	// 2 - the sender exists and it's not the same than the receiver of the invitation
+	sender, err := uc.userRepo.FindByID(ctx, senderUUID)
+	if err != nil {
+		return nil, fmt.Errorf("error finding sender %s: %w", senderUUID.String(), err)
+	} else if sender == nil {
+		return nil, NewErrNotFound("sender")
+	}
+
+	if sender.Email == receiverEmail {
+		return nil, NewErrValidationStr("sender and receiver emails cannot be the same")
+	}
+
+	// 3 - Check if the user has permissions to invite to the org
 	memberships, err := uc.mRepo.FindByUser(ctx, senderUUID)
 	if err != nil {
 		return nil, fmt.Errorf("error finding memberships for user %s: %w", senderUUID.String(), err)
@@ -86,7 +99,7 @@ func (uc *OrgInviteUseCase) Create(ctx context.Context, orgID, senderID, receive
 		return nil, NewErrNotFound("user does not have permission to invite to this org")
 	}
 
-	// 3 - Check if there is already an invite for this user for this org
+	// 4 - Check if there is already an invite for this user for this org
 	m, err := uc.repo.PendingInvite(ctx, orgUUID, receiverEmail)
 	if err != nil {
 		return nil, fmt.Errorf("error finding invite for org %s and receiver %s: %w", orgID, receiverEmail, err)
@@ -96,13 +109,22 @@ func (uc *OrgInviteUseCase) Create(ctx context.Context, orgID, senderID, receive
 		return nil, NewErrValidationStr("invite already exists for this user and org")
 	}
 
-	// 4 - Create the invite
+	// 5 - Create the invite
 	invite, err := uc.repo.Create(ctx, orgUUID, senderUUID, receiverEmail)
 	if err != nil {
 		return nil, fmt.Errorf("error creating invite: %w", err)
 	}
 
 	return invite, nil
+}
+
+func (uc *OrgInviteUseCase) ListBySender(ctx context.Context, senderID string) ([]*OrgInvite, error) {
+	senderUUID, err := uuid.Parse(senderID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	return uc.repo.ListBySender(ctx, senderUUID)
 }
 
 // Revoke an invite by ID only if the user is the one who created it

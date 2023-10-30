@@ -65,6 +65,25 @@ func (s *OrgInviteService) Revoke(ctx context.Context, req *pb.OrgInviteServiceR
 	return &pb.OrgInviteServiceRevokeResponse{}, nil
 }
 
+func (s *OrgInviteService) ListSent(ctx context.Context, _ *pb.OrgInviteServiceListSentRequest) (*pb.OrgInviteServiceListSentResponse, error) {
+	user, _, err := loadCurrentUserAndOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	invites, err := s.useCase.ListBySender(ctx, user.ID)
+	if err != nil {
+		return nil, handleUseCaseErr("invite", err, s.log)
+	}
+
+	res := []*pb.OrgInviteItem{}
+	for _, invite := range invites {
+		res = append(res, bizInviteToPB(invite))
+	}
+
+	return &pb.OrgInviteServiceListSentResponse{Result: res}, nil
+}
+
 func bizInviteToPB(e *biz.OrgInvite) *pb.OrgInviteItem {
 	return &pb.OrgInviteItem{
 		Id: e.ID.String(), CreatedAt: timestamppb.New(*e.CreatedAt),
