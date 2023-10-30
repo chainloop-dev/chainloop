@@ -34,15 +34,21 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	OrgInviteService_Create_FullMethodName = "/controlplane.v1.OrgInviteService/Create"
+	OrgInviteService_Create_FullMethodName   = "/controlplane.v1.OrgInviteService/Create"
+	OrgInviteService_Revoke_FullMethodName   = "/controlplane.v1.OrgInviteService/Revoke"
+	OrgInviteService_ListSent_FullMethodName = "/controlplane.v1.OrgInviteService/ListSent"
 )
 
 // OrgInviteServiceClient is the client API for OrgInviteService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type OrgInviteServiceClient interface {
-	// Create an invitation
+	// Create an invitation for a user to join an organization.
 	Create(ctx context.Context, in *OrgInviteServiceCreateRequest, opts ...grpc.CallOption) (*OrgInviteServiceCreateResponse, error)
+	// Revoke an invitation.
+	Revoke(ctx context.Context, in *OrgInviteServiceRevokeRequest, opts ...grpc.CallOption) (*OrgInviteServiceRevokeResponse, error)
+	// List all invitations sent by the current user.
+	ListSent(ctx context.Context, in *OrgInviteServiceListSentRequest, opts ...grpc.CallOption) (*OrgInviteServiceListSentResponse, error)
 }
 
 type orgInviteServiceClient struct {
@@ -62,12 +68,34 @@ func (c *orgInviteServiceClient) Create(ctx context.Context, in *OrgInviteServic
 	return out, nil
 }
 
+func (c *orgInviteServiceClient) Revoke(ctx context.Context, in *OrgInviteServiceRevokeRequest, opts ...grpc.CallOption) (*OrgInviteServiceRevokeResponse, error) {
+	out := new(OrgInviteServiceRevokeResponse)
+	err := c.cc.Invoke(ctx, OrgInviteService_Revoke_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orgInviteServiceClient) ListSent(ctx context.Context, in *OrgInviteServiceListSentRequest, opts ...grpc.CallOption) (*OrgInviteServiceListSentResponse, error) {
+	out := new(OrgInviteServiceListSentResponse)
+	err := c.cc.Invoke(ctx, OrgInviteService_ListSent_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // OrgInviteServiceServer is the server API for OrgInviteService service.
 // All implementations must embed UnimplementedOrgInviteServiceServer
 // for forward compatibility
 type OrgInviteServiceServer interface {
-	// Create an invitation
+	// Create an invitation for a user to join an organization.
 	Create(context.Context, *OrgInviteServiceCreateRequest) (*OrgInviteServiceCreateResponse, error)
+	// Revoke an invitation.
+	Revoke(context.Context, *OrgInviteServiceRevokeRequest) (*OrgInviteServiceRevokeResponse, error)
+	// List all invitations sent by the current user.
+	ListSent(context.Context, *OrgInviteServiceListSentRequest) (*OrgInviteServiceListSentResponse, error)
 	mustEmbedUnimplementedOrgInviteServiceServer()
 }
 
@@ -77,6 +105,12 @@ type UnimplementedOrgInviteServiceServer struct {
 
 func (UnimplementedOrgInviteServiceServer) Create(context.Context, *OrgInviteServiceCreateRequest) (*OrgInviteServiceCreateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
+}
+func (UnimplementedOrgInviteServiceServer) Revoke(context.Context, *OrgInviteServiceRevokeRequest) (*OrgInviteServiceRevokeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Revoke not implemented")
+}
+func (UnimplementedOrgInviteServiceServer) ListSent(context.Context, *OrgInviteServiceListSentRequest) (*OrgInviteServiceListSentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListSent not implemented")
 }
 func (UnimplementedOrgInviteServiceServer) mustEmbedUnimplementedOrgInviteServiceServer() {}
 
@@ -109,6 +143,42 @@ func _OrgInviteService_Create_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _OrgInviteService_Revoke_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(OrgInviteServiceRevokeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrgInviteServiceServer).Revoke(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrgInviteService_Revoke_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrgInviteServiceServer).Revoke(ctx, req.(*OrgInviteServiceRevokeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OrgInviteService_ListSent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(OrgInviteServiceListSentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrgInviteServiceServer).ListSent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrgInviteService_ListSent_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrgInviteServiceServer).ListSent(ctx, req.(*OrgInviteServiceListSentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // OrgInviteService_ServiceDesc is the grpc.ServiceDesc for OrgInviteService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -119,6 +189,14 @@ var OrgInviteService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Create",
 			Handler:    _OrgInviteService_Create_Handler,
+		},
+		{
+			MethodName: "Revoke",
+			Handler:    _OrgInviteService_Revoke_Handler,
+		},
+		{
+			MethodName: "ListSent",
+			Handler:    _OrgInviteService_ListSent_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

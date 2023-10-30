@@ -23,8 +23,12 @@ import "validate/validate.proto";
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
 service OrgInviteService {
-  // Create an invitation
+  // Create an invitation for a user to join an organization.
   rpc Create(OrgInviteServiceCreateRequest) returns (OrgInviteServiceCreateResponse);
+  // Revoke an invitation.
+  rpc Revoke(OrgInviteServiceRevokeRequest) returns (OrgInviteServiceRevokeResponse);
+  // List all invitations sent by the current user.
+  rpc ListSent(OrgInviteServiceListSentRequest) returns (OrgInviteServiceListSentResponse);
 }
 
 message OrgInviteServiceCreateRequest {
@@ -34,6 +38,18 @@ message OrgInviteServiceCreateRequest {
 
 message OrgInviteServiceCreateResponse {
   OrgInviteItem result = 1;
+}
+
+message OrgInviteServiceRevokeRequest {
+  string id = 1 [(validate.rules).string.uuid = true];
+}
+
+message OrgInviteServiceRevokeResponse {}
+
+message OrgInviteServiceListSentRequest {}
+
+message OrgInviteServiceListSentResponse {
+  repeated OrgInviteItem result = 1;
 }
 
 message OrgInviteItem {

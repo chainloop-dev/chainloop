@@ -24,6 +24,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -84,6 +85,51 @@ func (s *OrgInviteIntegrationTestSuite) TestCreate() {
 		s.True(biz.IsErrValidation(err))
 		s.Nil(invite)
 	})
+
+	s.T().Run("but it can if it's another email", func(t *testing.T) {
+		invite, err := s.OrgInvite.Create(context.Background(), s.org1.ID, s.user.ID, "anotheremail@cyberdyne.io")
+		s.Equal("anotheremail@cyberdyne.io", invite.ReceiverEmail)
+		s.Equal(s.org1.ID, invite.OrgID.String())
+		s.NoError(err)
+	})
+}
+
+func (s *OrgInviteIntegrationTestSuite) TestRevoke() {
+	s.T().Run("invalid ID", func(t *testing.T) {
+		err := s.OrgInvite.Revoke(context.Background(), s.user.ID, "deadbeef")
+		s.Error(err)
+		s.True(biz.IsErrInvalidUUID(err))
+	})
+
+	s.T().Run("invalid user ID", func(t *testing.T) {
+		err := s.OrgInvite.Revoke(context.Background(), "deadbeef", uuid.NewString())
+		s.Error(err)
+		s.True(biz.IsErrInvalidUUID(err))
+	})
+
+	s.T().Run("invitation not found", func(t *testing.T) {
+		err := s.OrgInvite.Revoke(context.Background(), s.user.ID, uuid.NewString())
+		s.Error(err)
+		s.True(biz.IsNotFound(err))
+	})
+
+	s.T().Run("invitation not created by this user", func(t *testing.T) {
+		invite, err := s.OrgInvite.Create(context.Background(), s.org1.ID, s.user2.ID, "anotheremail@cyberdyne.io")
+		require.NoError(s.T(), err)
+		err = s.OrgInvite.Revoke(context.Background(), s.user.ID, invite.ID.String())
+		s.Error(err)
+		s.True(biz.IsNotFound(err))
+	})
+
+	s.T().Run("happy path", func(t *testing.T) {
+		invite, err := s.OrgInvite.Create(context.Background(), s.org1.ID, s.user.ID, receiverEmail)
+		require.NoError(s.T(), err)
+		err = s.OrgInvite.Revoke(context.Background(), s.user.ID, invite.ID.String())
+		s.NoError(err)
+		err = s.OrgInvite.Revoke(context.Background(), s.user.ID, invite.ID.String())
+		s.Error(err)
+		s.True(biz.IsNotFound(err))
+	})
 }
 
 // Run the tests
@@ -95,7 +141,7 @@ func TestOrgInviteUseCase(t *testing.T) {
 type OrgInviteIntegrationTestSuite struct {
 	testhelpers.UseCasesEachTestSuite
 	org1, org2, org3 *biz.Organization
-	user             *biz.User
+	user, user2      *biz.User
 }
 
 // 3 orgs, user belongs to org1 and org2 but not org3
@@ -120,5 +166,10 @@ func (s *OrgInviteIntegrationTestSuite) SetupTest() {
 	_, err = s.Membership.Create(ctx, s.org1.ID, s.user.ID, true)
 	assert.NoError(err)
 	_, err = s.Membership.Create(ctx, s.org2.ID, s.user.ID, true)
+	assert.NoError(err)
+
+	s.user2, err = s.User.FindOrCreateByEmail(ctx, "user-2@test.com")
+	assert.NoError(err)
+	_, err = s.Membership.Create(ctx, s.org1.ID, s.user2.ID, true)
 	assert.NoError(err)
 }

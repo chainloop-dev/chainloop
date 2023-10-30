@@ -17,6 +17,7 @@ package data
 
 import (
 	"context"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent"
@@ -56,6 +57,7 @@ func (r *OrgInvite) PendingInvite(ctx context.Context, orgID uuid.UUID, receiver
 		Where(orginvite.OrganizationID(orgID),
 			orginvite.ReceiverEmail(receiverEmail),
 			orginvite.StatusEQ(biz.OrgInviteStatusPending),
+			orginvite.DeletedAtIsNil(),
 		).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
@@ -64,6 +66,21 @@ func (r *OrgInvite) PendingInvite(ctx context.Context, orgID uuid.UUID, receiver
 	}
 
 	return entInviteToBiz(invite), nil
+}
+
+func (r *OrgInvite) FindByID(ctx context.Context, id uuid.UUID) (*biz.OrgInvite, error) {
+	invite, err := r.data.db.OrgInvite.Query().Where(orginvite.ID(id), orginvite.DeletedAtIsNil()).Only(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, err
+	} else if invite == nil {
+		return nil, nil
+	}
+
+	return entInviteToBiz(invite), nil
+}
+
+func (r *OrgInvite) SoftDelete(ctx context.Context, id uuid.UUID) error {
+	return r.data.db.OrgInvite.UpdateOneID(id).SetDeletedAt(time.Now()).Exec(ctx)
 }
 
 func entInviteToBiz(i *ent.OrgInvite) *biz.OrgInvite {

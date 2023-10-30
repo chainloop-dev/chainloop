@@ -41,7 +41,10 @@ type OrgInvite struct {
 
 type OrgInviteRepo interface {
 	Create(ctx context.Context, orgID, senderID uuid.UUID, receiverEmail string) (*OrgInvite, error)
+	FindByID(ctx context.Context, ID uuid.UUID) (*OrgInvite, error)
 	PendingInvite(ctx context.Context, orgID uuid.UUID, receiverEmail string) (*OrgInvite, error)
+	SoftDelete(ctx context.Context, id uuid.UUID) error
+	// ListByUser(ctx context.Context, user uuid.UUID) ([]*OrgInvite, error)
 }
 
 func NewOrgInviteUseCase(r OrgInviteRepo, mRepo MembershipRepo, l log.Logger) (*OrgInviteUseCase, error) {
@@ -100,6 +103,28 @@ func (uc *OrgInviteUseCase) Create(ctx context.Context, orgID, senderID, receive
 	}
 
 	return invite, nil
+}
+
+// Revoke an invite by ID only if the user is the one who created it
+func (uc *OrgInviteUseCase) Revoke(ctx context.Context, senderID, inviteID string) error {
+	inviteUUID, err := uuid.Parse(inviteID)
+	if err != nil {
+		return NewErrInvalidUUID(err)
+	}
+
+	senderUUID, err := uuid.Parse(senderID)
+	if err != nil {
+		return NewErrInvalidUUID(err)
+	}
+
+	m, err := uc.repo.FindByID(ctx, inviteUUID)
+	if err != nil {
+		return fmt.Errorf("error finding invite %s: %w", inviteID, err)
+	} else if m == nil || m.SenderID != senderUUID {
+		return NewErrNotFound("invite")
+	}
+
+	return uc.repo.SoftDelete(ctx, inviteUUID)
 }
 
 type OrgInviteStatus string

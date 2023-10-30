@@ -355,6 +355,474 @@ var _ interface {
 	ErrorName() string
 } = OrgInviteServiceCreateResponseValidationError{}
 
+// Validate checks the field values on OrgInviteServiceRevokeRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *OrgInviteServiceRevokeRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on OrgInviteServiceRevokeRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// OrgInviteServiceRevokeRequestMultiError, or nil if none found.
+func (m *OrgInviteServiceRevokeRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *OrgInviteServiceRevokeRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if err := m._validateUuid(m.GetId()); err != nil {
+		err = OrgInviteServiceRevokeRequestValidationError{
+			field:  "Id",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return OrgInviteServiceRevokeRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *OrgInviteServiceRevokeRequest) _validateUuid(uuid string) error {
+	if matched := _org_invite_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
+	}
+
+	return nil
+}
+
+// OrgInviteServiceRevokeRequestMultiError is an error wrapping multiple
+// validation errors returned by OrgInviteServiceRevokeRequest.ValidateAll()
+// if the designated constraints aren't met.
+type OrgInviteServiceRevokeRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m OrgInviteServiceRevokeRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m OrgInviteServiceRevokeRequestMultiError) AllErrors() []error { return m }
+
+// OrgInviteServiceRevokeRequestValidationError is the validation error
+// returned by OrgInviteServiceRevokeRequest.Validate if the designated
+// constraints aren't met.
+type OrgInviteServiceRevokeRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e OrgInviteServiceRevokeRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e OrgInviteServiceRevokeRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e OrgInviteServiceRevokeRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e OrgInviteServiceRevokeRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e OrgInviteServiceRevokeRequestValidationError) ErrorName() string {
+	return "OrgInviteServiceRevokeRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e OrgInviteServiceRevokeRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sOrgInviteServiceRevokeRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = OrgInviteServiceRevokeRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = OrgInviteServiceRevokeRequestValidationError{}
+
+// Validate checks the field values on OrgInviteServiceRevokeResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *OrgInviteServiceRevokeResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on OrgInviteServiceRevokeResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// OrgInviteServiceRevokeResponseMultiError, or nil if none found.
+func (m *OrgInviteServiceRevokeResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *OrgInviteServiceRevokeResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return OrgInviteServiceRevokeResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// OrgInviteServiceRevokeResponseMultiError is an error wrapping multiple
+// validation errors returned by OrgInviteServiceRevokeResponse.ValidateAll()
+// if the designated constraints aren't met.
+type OrgInviteServiceRevokeResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m OrgInviteServiceRevokeResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m OrgInviteServiceRevokeResponseMultiError) AllErrors() []error { return m }
+
+// OrgInviteServiceRevokeResponseValidationError is the validation error
+// returned by OrgInviteServiceRevokeResponse.Validate if the designated
+// constraints aren't met.
+type OrgInviteServiceRevokeResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e OrgInviteServiceRevokeResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e OrgInviteServiceRevokeResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e OrgInviteServiceRevokeResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e OrgInviteServiceRevokeResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e OrgInviteServiceRevokeResponseValidationError) ErrorName() string {
+	return "OrgInviteServiceRevokeResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e OrgInviteServiceRevokeResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sOrgInviteServiceRevokeResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = OrgInviteServiceRevokeResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = OrgInviteServiceRevokeResponseValidationError{}
+
+// Validate checks the field values on OrgInviteServiceListSentRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *OrgInviteServiceListSentRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on OrgInviteServiceListSentRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// OrgInviteServiceListSentRequestMultiError, or nil if none found.
+func (m *OrgInviteServiceListSentRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *OrgInviteServiceListSentRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return OrgInviteServiceListSentRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// OrgInviteServiceListSentRequestMultiError is an error wrapping multiple
+// validation errors returned by OrgInviteServiceListSentRequest.ValidateAll()
+// if the designated constraints aren't met.
+type OrgInviteServiceListSentRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m OrgInviteServiceListSentRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m OrgInviteServiceListSentRequestMultiError) AllErrors() []error { return m }
+
+// OrgInviteServiceListSentRequestValidationError is the validation error
+// returned by OrgInviteServiceListSentRequest.Validate if the designated
+// constraints aren't met.
+type OrgInviteServiceListSentRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e OrgInviteServiceListSentRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e OrgInviteServiceListSentRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e OrgInviteServiceListSentRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e OrgInviteServiceListSentRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e OrgInviteServiceListSentRequestValidationError) ErrorName() string {
+	return "OrgInviteServiceListSentRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e OrgInviteServiceListSentRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sOrgInviteServiceListSentRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = OrgInviteServiceListSentRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = OrgInviteServiceListSentRequestValidationError{}
+
+// Validate checks the field values on OrgInviteServiceListSentResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *OrgInviteServiceListSentResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on OrgInviteServiceListSentResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// OrgInviteServiceListSentResponseMultiError, or nil if none found.
+func (m *OrgInviteServiceListSentResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *OrgInviteServiceListSentResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetResult() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, OrgInviteServiceListSentResponseValidationError{
+						field:  fmt.Sprintf("Result[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, OrgInviteServiceListSentResponseValidationError{
+						field:  fmt.Sprintf("Result[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return OrgInviteServiceListSentResponseValidationError{
+					field:  fmt.Sprintf("Result[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return OrgInviteServiceListSentResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// OrgInviteServiceListSentResponseMultiError is an error wrapping multiple
+// validation errors returned by
+// OrgInviteServiceListSentResponse.ValidateAll() if the designated
+// constraints aren't met.
+type OrgInviteServiceListSentResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m OrgInviteServiceListSentResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m OrgInviteServiceListSentResponseMultiError) AllErrors() []error { return m }
+
+// OrgInviteServiceListSentResponseValidationError is the validation error
+// returned by OrgInviteServiceListSentResponse.Validate if the designated
+// constraints aren't met.
+type OrgInviteServiceListSentResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e OrgInviteServiceListSentResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e OrgInviteServiceListSentResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e OrgInviteServiceListSentResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e OrgInviteServiceListSentResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e OrgInviteServiceListSentResponseValidationError) ErrorName() string {
+	return "OrgInviteServiceListSentResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e OrgInviteServiceListSentResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sOrgInviteServiceListSentResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = OrgInviteServiceListSentResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = OrgInviteServiceListSentResponseValidationError{}
+
 // Validate checks the field values on OrgInviteItem with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.

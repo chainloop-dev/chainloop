@@ -52,6 +52,19 @@ func (s *OrgInviteService) Create(ctx context.Context, req *pb.OrgInviteServiceC
 	return &pb.OrgInviteServiceCreateResponse{Result: bizInviteToPB(i)}, nil
 }
 
+func (s *OrgInviteService) Revoke(ctx context.Context, req *pb.OrgInviteServiceRevokeRequest) (*pb.OrgInviteServiceRevokeResponse, error) {
+	user, _, err := loadCurrentUserAndOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.useCase.Revoke(ctx, user.ID, req.Id); err != nil {
+		return nil, handleUseCaseErr("invite", err, s.log)
+	}
+
+	return &pb.OrgInviteServiceRevokeResponse{}, nil
+}
+
 func bizInviteToPB(e *biz.OrgInvite) *pb.OrgInviteItem {
 	return &pb.OrgInviteItem{
 		Id: e.ID.String(), CreatedAt: timestamppb.New(*e.CreatedAt),

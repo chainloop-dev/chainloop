@@ -15,6 +15,20 @@ export interface OrgInviteServiceCreateResponse {
   result?: OrgInviteItem;
 }
 
+export interface OrgInviteServiceRevokeRequest {
+  id: string;
+}
+
+export interface OrgInviteServiceRevokeResponse {
+}
+
+export interface OrgInviteServiceListSentRequest {
+}
+
+export interface OrgInviteServiceListSentResponse {
+  result: OrgInviteItem[];
+}
+
 export interface OrgInviteItem {
   id: string;
   createdAt?: Date;
@@ -157,6 +171,216 @@ export const OrgInviteServiceCreateResponse = {
   },
 };
 
+function createBaseOrgInviteServiceRevokeRequest(): OrgInviteServiceRevokeRequest {
+  return { id: "" };
+}
+
+export const OrgInviteServiceRevokeRequest = {
+  encode(message: OrgInviteServiceRevokeRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): OrgInviteServiceRevokeRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseOrgInviteServiceRevokeRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): OrgInviteServiceRevokeRequest {
+    return { id: isSet(object.id) ? String(object.id) : "" };
+  },
+
+  toJSON(message: OrgInviteServiceRevokeRequest): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<OrgInviteServiceRevokeRequest>, I>>(base?: I): OrgInviteServiceRevokeRequest {
+    return OrgInviteServiceRevokeRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<OrgInviteServiceRevokeRequest>, I>>(
+    object: I,
+  ): OrgInviteServiceRevokeRequest {
+    const message = createBaseOrgInviteServiceRevokeRequest();
+    message.id = object.id ?? "";
+    return message;
+  },
+};
+
+function createBaseOrgInviteServiceRevokeResponse(): OrgInviteServiceRevokeResponse {
+  return {};
+}
+
+export const OrgInviteServiceRevokeResponse = {
+  encode(_: OrgInviteServiceRevokeResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): OrgInviteServiceRevokeResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseOrgInviteServiceRevokeResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): OrgInviteServiceRevokeResponse {
+    return {};
+  },
+
+  toJSON(_: OrgInviteServiceRevokeResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<OrgInviteServiceRevokeResponse>, I>>(base?: I): OrgInviteServiceRevokeResponse {
+    return OrgInviteServiceRevokeResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<OrgInviteServiceRevokeResponse>, I>>(_: I): OrgInviteServiceRevokeResponse {
+    const message = createBaseOrgInviteServiceRevokeResponse();
+    return message;
+  },
+};
+
+function createBaseOrgInviteServiceListSentRequest(): OrgInviteServiceListSentRequest {
+  return {};
+}
+
+export const OrgInviteServiceListSentRequest = {
+  encode(_: OrgInviteServiceListSentRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): OrgInviteServiceListSentRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseOrgInviteServiceListSentRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): OrgInviteServiceListSentRequest {
+    return {};
+  },
+
+  toJSON(_: OrgInviteServiceListSentRequest): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<OrgInviteServiceListSentRequest>, I>>(base?: I): OrgInviteServiceListSentRequest {
+    return OrgInviteServiceListSentRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<OrgInviteServiceListSentRequest>, I>>(_: I): OrgInviteServiceListSentRequest {
+    const message = createBaseOrgInviteServiceListSentRequest();
+    return message;
+  },
+};
+
+function createBaseOrgInviteServiceListSentResponse(): OrgInviteServiceListSentResponse {
+  return { result: [] };
+}
+
+export const OrgInviteServiceListSentResponse = {
+  encode(message: OrgInviteServiceListSentResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.result) {
+      OrgInviteItem.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): OrgInviteServiceListSentResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseOrgInviteServiceListSentResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.result.push(OrgInviteItem.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): OrgInviteServiceListSentResponse {
+    return { result: Array.isArray(object?.result) ? object.result.map((e: any) => OrgInviteItem.fromJSON(e)) : [] };
+  },
+
+  toJSON(message: OrgInviteServiceListSentResponse): unknown {
+    const obj: any = {};
+    if (message.result) {
+      obj.result = message.result.map((e) => e ? OrgInviteItem.toJSON(e) : undefined);
+    } else {
+      obj.result = [];
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<OrgInviteServiceListSentResponse>, I>>(
+    base?: I,
+  ): OrgInviteServiceListSentResponse {
+    return OrgInviteServiceListSentResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<OrgInviteServiceListSentResponse>, I>>(
+    object: I,
+  ): OrgInviteServiceListSentResponse {
+    const message = createBaseOrgInviteServiceListSentResponse();
+    message.result = object.result?.map((e) => OrgInviteItem.fromPartial(e)) || [];
+    return message;
+  },
+};
+
 function createBaseOrgInviteItem(): OrgInviteItem {
   return { id: "", createdAt: undefined, receiverEmail: "", organizationId: "", senderId: "", status: "" };
 }
@@ -281,11 +505,21 @@ export const OrgInviteItem = {
 };
 
 export interface OrgInviteService {
-  /** Create an invitation */
+  /** Create an invitation for a user to join an organization. */
   Create(
     request: DeepPartial<OrgInviteServiceCreateRequest>,
     metadata?: grpc.Metadata,
   ): Promise<OrgInviteServiceCreateResponse>;
+  /** Revoke an invitation. */
+  Revoke(
+    request: DeepPartial<OrgInviteServiceRevokeRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<OrgInviteServiceRevokeResponse>;
+  /** List all invitations sent by the current user. */
+  ListSent(
+    request: DeepPartial<OrgInviteServiceListSentRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<OrgInviteServiceListSentResponse>;
 }
 
 export class OrgInviteServiceClientImpl implements OrgInviteService {
@@ -294,6 +528,8 @@ export class OrgInviteServiceClientImpl implements OrgInviteService {
   constructor(rpc: Rpc) {
     this.rpc = rpc;
     this.Create = this.Create.bind(this);
+    this.Revoke = this.Revoke.bind(this);
+    this.ListSent = this.ListSent.bind(this);
   }
 
   Create(
@@ -301,6 +537,20 @@ export class OrgInviteServiceClientImpl implements OrgInviteService {
     metadata?: grpc.Metadata,
   ): Promise<OrgInviteServiceCreateResponse> {
     return this.rpc.unary(OrgInviteServiceCreateDesc, OrgInviteServiceCreateRequest.fromPartial(request), metadata);
+  }
+
+  Revoke(
+    request: DeepPartial<OrgInviteServiceRevokeRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<OrgInviteServiceRevokeResponse> {
+    return this.rpc.unary(OrgInviteServiceRevokeDesc, OrgInviteServiceRevokeRequest.fromPartial(request), metadata);
+  }
+
+  ListSent(
+    request: DeepPartial<OrgInviteServiceListSentRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<OrgInviteServiceListSentResponse> {
+    return this.rpc.unary(OrgInviteServiceListSentDesc, OrgInviteServiceListSentRequest.fromPartial(request), metadata);
   }
 }
 
@@ -319,6 +569,52 @@ export const OrgInviteServiceCreateDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = OrgInviteServiceCreateResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const OrgInviteServiceRevokeDesc: UnaryMethodDefinitionish = {
+  methodName: "Revoke",
+  service: OrgInviteServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return OrgInviteServiceRevokeRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = OrgInviteServiceRevokeResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const OrgInviteServiceListSentDesc: UnaryMethodDefinitionish = {
+  methodName: "ListSent",
+  service: OrgInviteServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return OrgInviteServiceListSentRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = OrgInviteServiceListSentResponse.decode(data);
       return {
         ...value,
         toObject() {
