@@ -16,14 +16,15 @@
 syntax = "proto3";
 
 package controlplane.v1;
-option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
 import "google/protobuf/timestamp.proto";
 import "validate/validate.proto";
 
+option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
+
 service OrgInviteService {
   // Create an invitation
-	rpc Create (OrgInviteServiceCreateRequest) returns (OrgInviteServiceCreateResponse);
+  rpc Create(OrgInviteServiceCreateRequest) returns (OrgInviteServiceCreateResponse);
 }
 
 message OrgInviteServiceCreateRequest {
@@ -43,4 +44,3 @@ message OrgInviteItem {
   string sender_id = 5;
   string status = 6;
 }
-
