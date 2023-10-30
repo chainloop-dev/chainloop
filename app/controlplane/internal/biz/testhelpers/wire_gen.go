@@ -69,6 +69,12 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	robotAccountUseCase := biz.NewRootAccountUseCase(robotAccountRepo, workflowRepo, auth, logger)
 	casMappingRepo := data.NewCASMappingRepo(dataData, casBackendRepo, logger)
 	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipRepo, logger)
+	orgInviteRepo := data.NewOrgInvite(dataData, logger)
+	orgInviteUseCase, err := biz.NewOrgInviteUseCase(orgInviteRepo, membershipRepo, logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
 	testingUseCases := &TestingUseCases{
 		DB:                     testDatabase,
 		Data:                   dataData,
@@ -84,6 +90,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		RobotAccount:           robotAccountUseCase,
 		RegisteredIntegrations: availablePlugins,
 		CASMapping:             casMappingUseCase,
+		OrgInvite:              orgInviteUseCase,
 	}
 	return testingUseCases, func() {
 		cleanup()

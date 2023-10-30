@@ -80,7 +80,7 @@ func (uc *OrgInviteUseCase) Create(ctx context.Context, orgID, senderID, receive
 	}
 
 	if !hasPermission {
-		return nil, NewErrUnauthorizedStr("user does not have permission to invite to this org")
+		return nil, NewErrNotFound("user does not have permission to invite to this org")
 	}
 
 	// 3 - Check if there is already an invite for this user for this org

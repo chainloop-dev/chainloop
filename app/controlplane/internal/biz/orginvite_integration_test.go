@@ -1,0 +1,124 @@
+//
+// Copyright 2023 The Chainloop Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package biz_test
+
+import (
+	"context"
+	"testing"
+
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
+	"github.com/google/uuid"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
+)
+
+const receiverEmail = "sarah@cyberdyne.io"
+
+func (s *OrgInviteIntegrationTestSuite) TestCreate() {
+	s.T().Run("invalid org ID", func(t *testing.T) {
+		invite, err := s.OrgInvite.Create(context.Background(), "deadbeef", s.user.ID, receiverEmail)
+		s.Error(err)
+		s.True(biz.IsErrInvalidUUID(err))
+		s.Nil(invite)
+	})
+
+	s.T().Run("invalid user ID", func(t *testing.T) {
+		invite, err := s.OrgInvite.Create(context.Background(), s.org1.ID, "deadbeef", receiverEmail)
+		s.Error(err)
+		s.True(biz.IsErrInvalidUUID(err))
+		s.Nil(invite)
+	})
+
+	s.T().Run("missing receiver email", func(t *testing.T) {
+		invite, err := s.OrgInvite.Create(context.Background(), s.org1.ID, s.user.ID, "")
+		s.Error(err)
+		s.True(biz.IsErrValidation(err))
+		s.Nil(invite)
+	})
+
+	s.T().Run("org not found", func(t *testing.T) {
+		invite, err := s.OrgInvite.Create(context.Background(), s.org1.ID, uuid.NewString(), receiverEmail)
+		s.Error(err)
+		s.True(biz.IsNotFound(err))
+		s.Nil(invite)
+	})
+
+	s.T().Run("user is not member of that org", func(t *testing.T) {
+		invite, err := s.OrgInvite.Create(context.Background(), s.org3.ID, s.user.ID, receiverEmail)
+		s.Error(err)
+		s.True(biz.IsNotFound(err))
+		s.Nil(invite)
+	})
+
+	s.T().Run("can create invites for org1 and 2", func(t *testing.T) {
+		for _, org := range []*biz.Organization{s.org1, s.org2} {
+			invite, err := s.OrgInvite.Create(context.Background(), org.ID, s.user.ID, receiverEmail)
+			s.NoError(err)
+			s.Equal(org.ID, invite.OrgID.String())
+			s.Equal(s.user.ID, invite.SenderID.String())
+			s.Equal(receiverEmail, invite.ReceiverEmail)
+			s.Equal(biz.OrgInviteStatusPending, invite.Status)
+			s.NotNil(invite.CreatedAt)
+		}
+	})
+
+	s.T().Run("but can't create if there is one pending", func(t *testing.T) {
+		invite, err := s.OrgInvite.Create(context.Background(), s.org1.ID, s.user.ID, receiverEmail)
+		s.Error(err)
+		s.ErrorContains(err, "already exists")
+		s.True(biz.IsErrValidation(err))
+		s.Nil(invite)
+	})
+}
+
+// Run the tests
+func TestOrgInviteUseCase(t *testing.T) {
+	suite.Run(t, new(OrgInviteIntegrationTestSuite))
+}
+
+// Utility struct to hold the test suite
+type OrgInviteIntegrationTestSuite struct {
+	testhelpers.UseCasesEachTestSuite
+	org1, org2, org3 *biz.Organization
+	user             *biz.User
+}
+
+// 3 orgs, user belongs to org1 and org2 but not org3
+func (s *OrgInviteIntegrationTestSuite) SetupTest() {
+	t := s.T()
+	var err error
+	assert := assert.New(s.T())
+	ctx := context.Background()
+
+	s.TestingUseCases = testhelpers.NewTestingUseCases(t)
+	s.org1, err = s.Organization.Create(ctx, "org1")
+	assert.NoError(err)
+	s.org2, err = s.Organization.Create(ctx, "org2")
+	assert.NoError(err)
+	s.org3, err = s.Organization.Create(ctx, "org3")
+	assert.NoError(err)
+
+	// Create User 1
+	s.user, err = s.User.FindOrCreateByEmail(ctx, "user-1@test.com")
+	assert.NoError(err)
+	// Attach both orgs
+	_, err = s.Membership.Create(ctx, s.org1.ID, s.user.ID, true)
+	assert.NoError(err)
+	_, err = s.Membership.Create(ctx, s.org2.ID, s.user.ID, true)
+	assert.NoError(err)
+}
