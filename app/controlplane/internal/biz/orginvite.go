@@ -186,6 +186,7 @@ func (uc *OrgInviteUseCase) AcceptPendingInvites(ctx context.Context, receiverEm
 		return NewErrInvalidUUID(err)
 	}
 
+	// Find all memberships for the user and all pending invites
 	memberships, err := uc.mRepo.FindByUser(ctx, userUUID)
 	if err != nil {
 		return fmt.Errorf("error finding memberships for user %s: %w", receiverEmail, err)
@@ -198,6 +199,7 @@ func (uc *OrgInviteUseCase) AcceptPendingInvites(ctx context.Context, receiverEm
 
 	uc.logger.Infow("msg", "Checking pending invites", "user_id", user.ID, "invites", len(invites))
 
+	// Iterate on the invites and create the membership if it doesn't exist
 	for _, invite := range invites {
 		var alreadyMember bool
 		for _, m := range memberships {
@@ -231,6 +233,22 @@ func (uc *OrgInviteUseCase) AcceptInvite(ctx context.Context, inviteID string) e
 	}
 
 	return uc.repo.ChangeStatus(ctx, inviteUUID, OrgInviteStatusAccepted)
+}
+
+func (uc *OrgInviteUseCase) FindByID(ctx context.Context, inviteID string) (*OrgInvite, error) {
+	inviteUUID, err := uuid.Parse(inviteID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	invite, err := uc.repo.FindByID(ctx, inviteUUID)
+	if err != nil {
+		return nil, fmt.Errorf("error finding invite %s: %w", inviteID, err)
+	} else if invite == nil {
+		return nil, NewErrNotFound("invite")
+	}
+
+	return invite, nil
 }
 
 type OrgInviteStatus string

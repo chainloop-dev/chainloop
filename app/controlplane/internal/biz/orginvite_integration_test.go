@@ -110,6 +110,43 @@ func (s *OrgInviteIntegrationTestSuite) TestCreate() {
 	})
 }
 
+func (s *OrgInviteIntegrationTestSuite) TestAcceptPendingInvites() {
+	ctx := context.Background()
+	receiver, err := s.User.FindOrCreateByEmail(ctx, receiverEmail)
+	require.NoError(s.T(), err)
+
+	s.T().Run("user doesn't exist", func(t *testing.T) {
+		err := s.OrgInvite.AcceptPendingInvites(ctx, "non-existant@cyberdyne.io")
+		s.ErrorContains(err, "not found")
+	})
+
+	s.T().Run("no invites for user", func(t *testing.T) {
+		err = s.OrgInvite.AcceptPendingInvites(ctx, receiverEmail)
+		s.NoError(err)
+
+		memberships, err := s.Membership.ByUser(ctx, receiver.ID)
+		s.NoError(err)
+		s.Len(memberships, 0)
+	})
+
+	s.T().Run("user is invited to org 1", func(t *testing.T) {
+		invite, err := s.OrgInvite.Create(ctx, s.org1.ID, s.user.ID, receiverEmail)
+		require.NoError(s.T(), err)
+		err = s.OrgInvite.AcceptPendingInvites(ctx, receiverEmail)
+		s.NoError(err)
+
+		memberships, err := s.Membership.ByUser(ctx, receiver.ID)
+		s.NoError(err)
+		s.Len(memberships, 1)
+		assert.Equal(s.T(), s.org1.ID, memberships[0].OrganizationID.String())
+
+		// the invite is now accepted
+		invite, err = s.OrgInvite.FindByID(ctx, invite.ID.String())
+		s.NoError(err)
+		s.Equal(biz.OrgInviteStatusAccepted, invite.Status)
+	})
+}
+
 func (s *OrgInviteIntegrationTestSuite) TestRevoke() {
 	s.T().Run("invalid ID", func(t *testing.T) {
 		err := s.OrgInvite.Revoke(context.Background(), s.user.ID, "deadbeef")
