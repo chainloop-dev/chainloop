@@ -1,0 +1,460 @@
+/* eslint-disable */
+import { grpc } from "@improbable-eng/grpc-web";
+import { BrowserHeaders } from "browser-headers";
+import _m0 from "protobufjs/minimal";
+import { Timestamp } from "../../google/protobuf/timestamp";
+
+export const protobufPackage = "controlplane.v1";
+
+export interface OrgInviteServiceCreateRequest {
+  organizationId: string;
+  receiverEmail: string;
+}
+
+export interface OrgInviteServiceCreateResponse {
+  result?: OrgInviteItem;
+}
+
+export interface OrgInviteItem {
+  id: string;
+  createdAt?: Date;
+  receiverEmail: string;
+  organizationId: string;
+  senderId: string;
+  status: string;
+}
+
+function createBaseOrgInviteServiceCreateRequest(): OrgInviteServiceCreateRequest {
+  return { organizationId: "", receiverEmail: "" };
+}
+
+export const OrgInviteServiceCreateRequest = {
+  encode(message: OrgInviteServiceCreateRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.organizationId !== "") {
+      writer.uint32(10).string(message.organizationId);
+    }
+    if (message.receiverEmail !== "") {
+      writer.uint32(18).string(message.receiverEmail);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): OrgInviteServiceCreateRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseOrgInviteServiceCreateRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.organizationId = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.receiverEmail = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): OrgInviteServiceCreateRequest {
+    return {
+      organizationId: isSet(object.organizationId) ? String(object.organizationId) : "",
+      receiverEmail: isSet(object.receiverEmail) ? String(object.receiverEmail) : "",
+    };
+  },
+
+  toJSON(message: OrgInviteServiceCreateRequest): unknown {
+    const obj: any = {};
+    message.organizationId !== undefined && (obj.organizationId = message.organizationId);
+    message.receiverEmail !== undefined && (obj.receiverEmail = message.receiverEmail);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<OrgInviteServiceCreateRequest>, I>>(base?: I): OrgInviteServiceCreateRequest {
+    return OrgInviteServiceCreateRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<OrgInviteServiceCreateRequest>, I>>(
+    object: I,
+  ): OrgInviteServiceCreateRequest {
+    const message = createBaseOrgInviteServiceCreateRequest();
+    message.organizationId = object.organizationId ?? "";
+    message.receiverEmail = object.receiverEmail ?? "";
+    return message;
+  },
+};
+
+function createBaseOrgInviteServiceCreateResponse(): OrgInviteServiceCreateResponse {
+  return { result: undefined };
+}
+
+export const OrgInviteServiceCreateResponse = {
+  encode(message: OrgInviteServiceCreateResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.result !== undefined) {
+      OrgInviteItem.encode(message.result, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): OrgInviteServiceCreateResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseOrgInviteServiceCreateResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.result = OrgInviteItem.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): OrgInviteServiceCreateResponse {
+    return { result: isSet(object.result) ? OrgInviteItem.fromJSON(object.result) : undefined };
+  },
+
+  toJSON(message: OrgInviteServiceCreateResponse): unknown {
+    const obj: any = {};
+    message.result !== undefined && (obj.result = message.result ? OrgInviteItem.toJSON(message.result) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<OrgInviteServiceCreateResponse>, I>>(base?: I): OrgInviteServiceCreateResponse {
+    return OrgInviteServiceCreateResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<OrgInviteServiceCreateResponse>, I>>(
+    object: I,
+  ): OrgInviteServiceCreateResponse {
+    const message = createBaseOrgInviteServiceCreateResponse();
+    message.result = (object.result !== undefined && object.result !== null)
+      ? OrgInviteItem.fromPartial(object.result)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseOrgInviteItem(): OrgInviteItem {
+  return { id: "", createdAt: undefined, receiverEmail: "", organizationId: "", senderId: "", status: "" };
+}
+
+export const OrgInviteItem = {
+  encode(message: OrgInviteItem, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.createdAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(18).fork()).ldelim();
+    }
+    if (message.receiverEmail !== "") {
+      writer.uint32(26).string(message.receiverEmail);
+    }
+    if (message.organizationId !== "") {
+      writer.uint32(34).string(message.organizationId);
+    }
+    if (message.senderId !== "") {
+      writer.uint32(42).string(message.senderId);
+    }
+    if (message.status !== "") {
+      writer.uint32(50).string(message.status);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): OrgInviteItem {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseOrgInviteItem();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.receiverEmail = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.organizationId = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.senderId = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.status = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): OrgInviteItem {
+    return {
+      id: isSet(object.id) ? String(object.id) : "",
+      createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
+      receiverEmail: isSet(object.receiverEmail) ? String(object.receiverEmail) : "",
+      organizationId: isSet(object.organizationId) ? String(object.organizationId) : "",
+      senderId: isSet(object.senderId) ? String(object.senderId) : "",
+      status: isSet(object.status) ? String(object.status) : "",
+    };
+  },
+
+  toJSON(message: OrgInviteItem): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
+    message.receiverEmail !== undefined && (obj.receiverEmail = message.receiverEmail);
+    message.organizationId !== undefined && (obj.organizationId = message.organizationId);
+    message.senderId !== undefined && (obj.senderId = message.senderId);
+    message.status !== undefined && (obj.status = message.status);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<OrgInviteItem>, I>>(base?: I): OrgInviteItem {
+    return OrgInviteItem.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<OrgInviteItem>, I>>(object: I): OrgInviteItem {
+    const message = createBaseOrgInviteItem();
+    message.id = object.id ?? "";
+    message.createdAt = object.createdAt ?? undefined;
+    message.receiverEmail = object.receiverEmail ?? "";
+    message.organizationId = object.organizationId ?? "";
+    message.senderId = object.senderId ?? "";
+    message.status = object.status ?? "";
+    return message;
+  },
+};
+
+export interface OrgInviteService {
+  /** Create an invitation */
+  Create(
+    request: DeepPartial<OrgInviteServiceCreateRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<OrgInviteServiceCreateResponse>;
+}
+
+export class OrgInviteServiceClientImpl implements OrgInviteService {
+  private readonly rpc: Rpc;
+
+  constructor(rpc: Rpc) {
+    this.rpc = rpc;
+    this.Create = this.Create.bind(this);
+  }
+
+  Create(
+    request: DeepPartial<OrgInviteServiceCreateRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<OrgInviteServiceCreateResponse> {
+    return this.rpc.unary(OrgInviteServiceCreateDesc, OrgInviteServiceCreateRequest.fromPartial(request), metadata);
+  }
+}
+
+export const OrgInviteServiceDesc = { serviceName: "controlplane.v1.OrgInviteService" };
+
+export const OrgInviteServiceCreateDesc: UnaryMethodDefinitionish = {
+  methodName: "Create",
+  service: OrgInviteServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return OrgInviteServiceCreateRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = OrgInviteServiceCreateResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+interface UnaryMethodDefinitionishR extends grpc.UnaryMethodDefinition<any, any> {
+  requestStream: any;
+  responseStream: any;
+}
+
+type UnaryMethodDefinitionish = UnaryMethodDefinitionishR;
+
+interface Rpc {
+  unary<T extends UnaryMethodDefinitionish>(
+    methodDesc: T,
+    request: any,
+    metadata: grpc.Metadata | undefined,
+  ): Promise<any>;
+}
+
+export class GrpcWebImpl {
+  private host: string;
+  private options: {
+    transport?: grpc.TransportFactory;
+
+    debug?: boolean;
+    metadata?: grpc.Metadata;
+    upStreamRetryCodes?: number[];
+  };
+
+  constructor(
+    host: string,
+    options: {
+      transport?: grpc.TransportFactory;
+
+      debug?: boolean;
+      metadata?: grpc.Metadata;
+      upStreamRetryCodes?: number[];
+    },
+  ) {
+    this.host = host;
+    this.options = options;
+  }
+
+  unary<T extends UnaryMethodDefinitionish>(
+    methodDesc: T,
+    _request: any,
+    metadata: grpc.Metadata | undefined,
+  ): Promise<any> {
+    const request = { ..._request, ...methodDesc.requestType };
+    const maybeCombinedMetadata = metadata && this.options.metadata
+      ? new BrowserHeaders({ ...this.options?.metadata.headersMap, ...metadata?.headersMap })
+      : metadata || this.options.metadata;
+    return new Promise((resolve, reject) => {
+      grpc.unary(methodDesc, {
+        request,
+        host: this.host,
+        metadata: maybeCombinedMetadata,
+        transport: this.options.transport,
+        debug: this.options.debug,
+        onEnd: function (response) {
+          if (response.status === grpc.Code.OK) {
+            resolve(response.message!.toObject());
+          } else {
+            const err = new GrpcWebError(response.statusMessage, response.status, response.trailers);
+            reject(err);
+          }
+        },
+      });
+    });
+  }
+}
+
+declare var self: any | undefined;
+declare var window: any | undefined;
+declare var global: any | undefined;
+var tsProtoGlobalThis: any = (() => {
+  if (typeof globalThis !== "undefined") {
+    return globalThis;
+  }
+  if (typeof self !== "undefined") {
+    return self;
+  }
+  if (typeof window !== "undefined") {
+    return window;
+  }
+  if (typeof global !== "undefined") {
+    return global;
+  }
+  throw "Unable to locate global object";
+})();
+
+type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
+
+export type DeepPartial<T> = T extends Builtin ? T
+  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
+  : Partial<T>;
+
+type KeysOfUnion<T> = T extends T ? keyof T : never;
+export type Exact<P, I extends P> = P extends Builtin ? P
+  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+
+function toTimestamp(date: Date): Timestamp {
+  const seconds = date.getTime() / 1_000;
+  const nanos = (date.getTime() % 1_000) * 1_000_000;
+  return { seconds, nanos };
+}
+
+function fromTimestamp(t: Timestamp): Date {
+  let millis = (t.seconds || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
+  return new Date(millis);
+}
+
+function fromJsonTimestamp(o: any): Date {
+  if (o instanceof Date) {
+    return o;
+  } else if (typeof o === "string") {
+    return new Date(o);
+  } else {
+    return fromTimestamp(Timestamp.fromJSON(o));
+  }
+}
+
+function isSet(value: any): boolean {
+  return value !== null && value !== undefined;
+}
+
+export class GrpcWebError extends tsProtoGlobalThis.Error {
+  constructor(message: string, public code: grpc.Code, public metadata: grpc.Metadata) {
+    super(message);
+  }
+}

@@ -43,6 +43,7 @@ var ProviderSet = wire.NewSet(
 	NewCASBackendService,
 	NewCASRedirectService,
 	NewOrganizationService,
+	NewOrgInviteService,
 	wire.Struct(new(NewWorkflowRunServiceOpts), "*"),
 	wire.Struct(new(NewAttestationServiceOpts), "*"),
 )
@@ -81,11 +82,14 @@ func WithLogger(logger log.Logger) NewOpt {
 }
 
 func handleUseCaseErr(entity string, err error, l *log.Helper) error {
-	if biz.IsErrValidation(err) {
+	switch {
+	case biz.IsErrValidation(err):
 		return errors.BadRequest(fmt.Sprintf("invalid %s", entity), err.Error())
-	} else if biz.IsNotFound(err) {
+	case biz.IsNotFound(err):
 		return errors.NotFound(fmt.Sprintf("%s not found", entity), err.Error())
+	case biz.IsErrUnauthorized(err):
+		return errors.Forbidden(fmt.Sprintf("unauthorized %s", entity), err.Error())
+	default:
+		return servicelogger.LogAndMaskErr(err, l)
 	}
-
-	return servicelogger.LogAndMaskErr(err, l)
 }

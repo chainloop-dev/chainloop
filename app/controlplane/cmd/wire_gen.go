@@ -126,6 +126,13 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		cleanup()
 		return nil, nil, err
 	}
+	orgInviteRepo := data.NewOrgInvite(dataData, logger)
+	orgInviteUseCase, err := biz.NewOrgInviteUseCase(orgInviteRepo, membershipRepo, logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	orgInviteService := service.NewOrgInviteService(orgInviteUseCase, v2...)
 	opts := &server.Opts{
 		UserUseCase:         userUseCase,
 		RobotAccountUseCase: robotAccountUseCase,
@@ -145,6 +152,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		OrganizationSvc:     organizationService,
 		CASBackendSvc:       casBackendService,
 		CASRedirectSvc:      casRedirectService,
+		OrgInviteSvc:        orgInviteService,
 		Logger:              logger,
 		ServerConfig:        confServer,
 		AuthConfig:          auth,
