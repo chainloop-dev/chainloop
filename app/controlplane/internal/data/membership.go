@@ -79,7 +79,7 @@ func (r *MembershipRepo) FindByUser(ctx context.Context, userID uuid.UUID) ([]*b
 // FindByOrg finds all memberships for a given organization
 func (r *MembershipRepo) FindByOrg(ctx context.Context, orgID uuid.UUID) ([]*biz.Membership, error) {
 	memberships, err := orgScopedQuery(r.data.db, orgID).
-		QueryMemberships().
+		QueryMemberships().WithUser().
 		WithOrganization().All(ctx)
 	if err != nil {
 		return nil, err
@@ -162,6 +162,7 @@ func entMembershipToBiz(m *ent.Membership) *biz.Membership {
 
 	if m.Edges.User != nil {
 		res.UserID = m.Edges.User.ID
+		res.UserEmail = m.Edges.User.Email
 	}
 
 	return res

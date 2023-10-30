@@ -25,6 +25,7 @@ import (
 
 type Membership struct {
 	ID, UserID, OrganizationID uuid.UUID
+	UserEmail                  string
 	Current                    bool
 	CreatedAt, UpdatedAt       *time.Time
 	Org                        *Organization

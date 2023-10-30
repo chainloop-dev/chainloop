@@ -80,8 +80,20 @@ func (uc *OrgInviteUseCase) Create(ctx context.Context, orgID, senderID, receive
 		return nil, NewErrValidationStr("sender and receiver emails cannot be the same")
 	}
 
-	// 3 - Check if the user has permissions to invite to the org
-	memberships, err := uc.mRepo.FindByUser(ctx, senderUUID)
+	// 3 - The receiver does not exist in the org already
+	memberships, err := uc.mRepo.FindByOrg(ctx, orgUUID)
+	if err != nil {
+		return nil, fmt.Errorf("error finding memberships for user %s: %w", senderUUID.String(), err)
+	}
+
+	for _, m := range memberships {
+		if m.UserEmail == receiverEmail {
+			return nil, NewErrValidationStr("user already exists in the org")
+		}
+	}
+
+	// 4 - Check if the user has permissions to invite to the org
+	memberships, err = uc.mRepo.FindByUser(ctx, senderUUID)
 	if err != nil {
 		return nil, fmt.Errorf("error finding memberships for user %s: %w", senderUUID.String(), err)
 	}
@@ -99,7 +111,7 @@ func (uc *OrgInviteUseCase) Create(ctx context.Context, orgID, senderID, receive
 		return nil, NewErrNotFound("user does not have permission to invite to this org")
 	}
 
-	// 4 - Check if there is already an invite for this user for this org
+	// 5 - Check if there is already an invite for this user for this org
 	m, err := uc.repo.PendingInvite(ctx, orgUUID, receiverEmail)
 	if err != nil {
 		return nil, fmt.Errorf("error finding invite for org %s and receiver %s: %w", orgID, receiverEmail, err)
