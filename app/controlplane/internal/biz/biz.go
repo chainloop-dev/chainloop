@@ -31,6 +31,7 @@ var ProviderSet = wire.NewSet(
 	NewIntegrationUseCase,
 	NewMembershipUseCase,
 	NewCASClientUseCase,
+	NewOrgInviteUseCase,
 	NewAttestationUseCase,
 	NewWorkflowRunExpirerUseCase,
 	NewCASMappingUseCase,
