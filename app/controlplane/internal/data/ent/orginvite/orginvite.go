@@ -84,7 +84,7 @@ const DefaultStatus biz.OrgInviteStatus = "pending"
 // StatusValidator is a validator for the "status" field enum values. It is called by the builders before save.
 func StatusValidator(s biz.OrgInviteStatus) error {
 	switch s {
-	case "accepted", "declined", "pending":
+	case "accepted", "pending":
 		return nil
 	default:
 		return fmt.Errorf("orginvite: invalid enum value for status field: %q", s)

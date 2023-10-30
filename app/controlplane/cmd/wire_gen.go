@@ -69,8 +69,14 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, workflowContractUseCase, logger)
 	v2 := serviceOpts(logger)
 	workflowService := service.NewWorkflowService(workflowUseCase, v2...)
+	orgInviteRepo := data.NewOrgInvite(dataData, logger)
+	orgInviteUseCase, err := biz.NewOrgInviteUseCase(orgInviteRepo, membershipRepo, userRepo, logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
 	confServer := bootstrap.Server
-	authService, err := service.NewAuthService(userUseCase, organizationUseCase, membershipUseCase, casBackendUseCase, auth, confServer, v2...)
+	authService, err := service.NewAuthService(userUseCase, organizationUseCase, membershipUseCase, casBackendUseCase, orgInviteUseCase, auth, confServer, v2...)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -122,12 +128,6 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	organizationService := service.NewOrganizationService(membershipUseCase, v2...)
 	casBackendService := service.NewCASBackendService(casBackendUseCase, providers, v2...)
 	casRedirectService, err := service.NewCASRedirectService(casMappingUseCase, casCredentialsUseCase, bootstrap_CASServer, v2...)
-	if err != nil {
-		cleanup()
-		return nil, nil, err
-	}
-	orgInviteRepo := data.NewOrgInvite(dataData, logger)
-	orgInviteUseCase, err := biz.NewOrgInviteUseCase(orgInviteRepo, membershipRepo, userRepo, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err

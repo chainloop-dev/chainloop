@@ -173,7 +173,7 @@ var (
 	OrgInvitesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "receiver_email", Type: field.TypeString},
-		{Name: "status", Type: field.TypeEnum, Enums: []string{"accepted", "declined", "pending"}, Default: "pending"},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"accepted", "pending"}, Default: "pending"},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
 		{Name: "organization_id", Type: field.TypeUUID},

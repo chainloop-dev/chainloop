@@ -70,10 +70,11 @@ type AuthService struct {
 	orgUseCase        *biz.OrganizationUseCase
 	casBackendUseCase *biz.CASBackendUseCase
 	membershipUseCase *biz.MembershipUseCase
+	orgInvitesUseCase *biz.OrgInviteUseCase
 	AuthURLs          *AuthURLs
 }
 
-func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC *biz.MembershipUseCase, cbUC *biz.CASBackendUseCase, authConfig *conf.Auth, serverConfig *conf.Server, opts ...NewOpt) (*AuthService, error) {
+func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC *biz.MembershipUseCase, cbUC *biz.CASBackendUseCase, inviteUC *biz.OrgInviteUseCase, authConfig *conf.Auth, serverConfig *conf.Server, opts ...NewOpt) (*AuthService, error) {
 	oidcConfig := authConfig.GetOidc()
 	if oidcConfig == nil {
 		return nil, errors.New("oauth configuration missing")
@@ -99,6 +100,7 @@ func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC
 		AuthURLs:          authURLs,
 		membershipUseCase: mUC,
 		casBackendUseCase: cbUC,
+		orgInvitesUseCase: inviteUC,
 	}, nil
 }
 
@@ -223,6 +225,11 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) (
 		}
 
 		svc.log.Infow("msg", "new user associated to an org", "org_id", currentOrg.ID, "user_id", u.ID)
+	}
+
+	// Accept any pending invites
+	if err := svc.orgInvitesUseCase.AcceptPendingInvites(ctx, u.Email); err != nil {
+		return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
 	}
 
 	// Create a default inline CAS backend if none exists

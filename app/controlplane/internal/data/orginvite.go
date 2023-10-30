@@ -69,6 +69,27 @@ func (r *OrgInvite) PendingInvite(ctx context.Context, orgID uuid.UUID, receiver
 	return entInviteToBiz(invite), nil
 }
 
+func (r *OrgInvite) PendingInvites(ctx context.Context, receiverEmail string) ([]*biz.OrgInvite, error) {
+	invites, err := r.data.db.OrgInvite.Query().Where(
+		orginvite.ReceiverEmail(receiverEmail),
+		orginvite.StatusEQ(biz.OrgInviteStatusPending),
+		orginvite.DeletedAtIsNil()).All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error finding invites for user %s: %w", receiverEmail, err)
+	}
+
+	res := make([]*biz.OrgInvite, len(invites))
+	for i, v := range invites {
+		res[i] = entInviteToBiz(v)
+	}
+
+	return res, nil
+}
+
+func (r *OrgInvite) ChangeStatus(ctx context.Context, id uuid.UUID, status biz.OrgInviteStatus) error {
+	return r.data.db.OrgInvite.UpdateOneID(id).SetStatus(status).Exec(ctx)
+}
+
 func (r *OrgInvite) FindByID(ctx context.Context, id uuid.UUID) (*biz.OrgInvite, error) {
 	invite, err := r.data.db.OrgInvite.Query().Where(orginvite.ID(id), orginvite.DeletedAtIsNil()).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {

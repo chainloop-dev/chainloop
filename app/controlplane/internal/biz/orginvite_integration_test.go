@@ -137,6 +137,19 @@ func (s *OrgInviteIntegrationTestSuite) TestRevoke() {
 		s.True(biz.IsNotFound(err))
 	})
 
+	s.T().Run("invitation not in pending state", func(t *testing.T) {
+		invite, err := s.OrgInvite.Create(context.Background(), s.org1.ID, s.user.ID, receiverEmail)
+		require.NoError(s.T(), err)
+		err = s.OrgInvite.AcceptInvite(context.Background(), invite.ID.String())
+		require.NoError(s.T(), err)
+
+		// It's in accepted state now
+		err = s.OrgInvite.Revoke(context.Background(), s.user.ID, invite.ID.String())
+		s.Error(err)
+		s.ErrorContains(err, "not in pending state")
+		s.True(biz.IsErrValidation(err))
+	})
+
 	s.T().Run("happy path", func(t *testing.T) {
 		invite, err := s.OrgInvite.Create(context.Background(), s.org1.ID, s.user.ID, receiverEmail)
 		require.NoError(s.T(), err)
