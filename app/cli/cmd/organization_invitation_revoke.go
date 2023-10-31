@@ -22,28 +22,23 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newOrganizationInviteCreateCmd() *cobra.Command {
-	var receiverEmail, organizationID string
+func newOrganizationInvitationRevokeCmd() *cobra.Command {
+	var invitationID string
 	cmd := &cobra.Command{
-		Use:   "create",
-		Short: "Invite a User to an Organization",
+		Use:   "revoke",
+		Short: "Revoke a pending invitation",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewOrgInviteCreate(actionOpts).Run(
-				context.Background(), organizationID, receiverEmail)
-			if err != nil {
+			if err := action.NewOrgInvitationRevoke(actionOpts).Run(context.Background(), invitationID); err != nil {
 				return err
 			}
 
-			return encodeOutput([]*action.OrgInviteItem{res}, orgInviteTableOutput)
+			logger.Info().Msg("Invitation Revoked!")
+			return nil
 		},
 	}
 
-	cmd.Flags().StringVar(&receiverEmail, "receiver", "", "Email of the user to invite")
-	err := cmd.MarkFlagRequired("receiver")
-	cobra.CheckErr(err)
-
-	cmd.Flags().StringVar(&organizationID, "organization", "", "ID of the organization to invite the user to")
-	err = cmd.MarkFlagRequired("organization")
+	cmd.Flags().StringVar(&invitationID, "id", "", "Invitation ID")
+	err := cmd.MarkFlagRequired("id")
 	cobra.CheckErr(err)
 
 	return cmd

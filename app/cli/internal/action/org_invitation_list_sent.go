@@ -22,11 +22,11 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
-type OrgInviteListSent struct {
+type OrgInvitationListSent struct {
 	cfg *ActionsOpts
 }
 
-type OrgInviteItem struct {
+type OrgInvitationItem struct {
 	ID            string     `json:"id"`
 	ReceiverEmail string     `json:"receiverEmail"`
 	Organization  *OrgItem   `json:"organization"`
@@ -35,31 +35,31 @@ type OrgInviteItem struct {
 	CreatedAt     *time.Time `json:"createdAt"`
 }
 
-func NewOrgInviteListSent(cfg *ActionsOpts) *OrgInviteListSent {
-	return &OrgInviteListSent{cfg}
+func NewOrgInvitationListSent(cfg *ActionsOpts) *OrgInvitationListSent {
+	return &OrgInvitationListSent{cfg}
 }
 
-func (action *OrgInviteListSent) Run(ctx context.Context) ([]*OrgInviteItem, error) {
+func (action *OrgInvitationListSent) Run(ctx context.Context) ([]*OrgInvitationItem, error) {
 	client := pb.NewOrgInviteServiceClient(action.cfg.CPConnection)
 	resp, err := client.ListSent(ctx, &pb.OrgInviteServiceListSentRequest{})
 	if err != nil {
 		return nil, err
 	}
 
-	result := make([]*OrgInviteItem, 0, len(resp.Result))
+	result := make([]*OrgInvitationItem, 0, len(resp.Result))
 	for _, p := range resp.Result {
-		result = append(result, pbOrgInviteItemToAction(p))
+		result = append(result, pbOrgInvitationItemToAction(p))
 	}
 
 	return result, nil
 }
 
-func pbOrgInviteItemToAction(in *pb.OrgInviteItem) *OrgInviteItem {
+func pbOrgInvitationItemToAction(in *pb.OrgInviteItem) *OrgInvitationItem {
 	if in == nil {
 		return nil
 	}
 
-	return &OrgInviteItem{
+	return &OrgInvitationItem{
 		ID:            in.Id,
 		ReceiverEmail: in.ReceiverEmail,
 		Organization:  pbOrgItemToAction(in.Organization),

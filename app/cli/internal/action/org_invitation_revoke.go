@@ -21,15 +21,15 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
-type OrgInviteRevoke struct {
+type OrgInvitationRevoke struct {
 	cfg *ActionsOpts
 }
 
-func NewOrgInviteRevoke(cfg *ActionsOpts) *OrgInviteRevoke {
-	return &OrgInviteRevoke{cfg}
+func NewOrgInvitationRevoke(cfg *ActionsOpts) *OrgInvitationRevoke {
+	return &OrgInvitationRevoke{cfg}
 }
 
-func (action *OrgInviteRevoke) Run(ctx context.Context, inviteID string) error {
+func (action *OrgInvitationRevoke) Run(ctx context.Context, inviteID string) error {
 	client := pb.NewOrgInviteServiceClient(action.cfg.CPConnection)
 	_, err := client.Revoke(ctx, &pb.OrgInviteServiceRevokeRequest{Id: inviteID})
 	if err != nil {

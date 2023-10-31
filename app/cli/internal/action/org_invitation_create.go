@@ -21,15 +21,15 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
-type OrgInviteCreate struct {
+type OrgInvitationCreate struct {
 	cfg *ActionsOpts
 }
 
-func NewOrgInviteCreate(cfg *ActionsOpts) *OrgInviteCreate {
-	return &OrgInviteCreate{cfg}
+func NewOrgInvitationCreate(cfg *ActionsOpts) *OrgInvitationCreate {
+	return &OrgInvitationCreate{cfg}
 }
 
-func (action *OrgInviteCreate) Run(ctx context.Context, organization, receiver string) (*OrgInviteItem, error) {
+func (action *OrgInvitationCreate) Run(ctx context.Context, organization, receiver string) (*OrgInvitationItem, error) {
 	client := pb.NewOrgInviteServiceClient(action.cfg.CPConnection)
 	resp, err := client.Create(ctx, &pb.OrgInviteServiceCreateRequest{
 		OrganizationId: organization,
@@ -40,5 +40,5 @@ func (action *OrgInviteCreate) Run(ctx context.Context, organization, receiver s
 		return nil, err
 	}
 
-	return pbOrgInviteItemToAction(resp.Result), nil
+	return pbOrgInvitationItemToAction(resp.Result), nil
 }

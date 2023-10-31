@@ -30,7 +30,7 @@ func newOrganizationCmd() *cobra.Command {
 		newOrganizationList(),
 		newOrganizationSet(),
 		newOrganizationDescribeCmd(),
-		newOrganizationInviteCmd(),
+		newOrganizationInvitationCmd(),
 	)
 	return cmd
 }

@@ -19,14 +19,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newOrganizationInviteCmd() *cobra.Command {
+func newOrganizationInvitationCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "invite",
-		Aliases: []string{"invitations"},
-		Short:   "User Invitations management",
+		Use:   "invitation",
+		Short: "User Invitations management",
 	}
 
-	cmd.AddCommand(newOrganizationInviteSentCmd(), newOrganizationInviteCreateCmd(), newOrganizationInviteRevokeCmd())
+	cmd.AddCommand(newOrganizationInvitationSentCmd(), newOrganizationInvitationCreateCmd(), newOrganizationInvitationRevokeCmd())
 
 	return cmd
 }
