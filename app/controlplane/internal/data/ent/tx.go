@@ -22,8 +22,8 @@ type Tx struct {
 	IntegrationAttachment *IntegrationAttachmentClient
 	// Membership is the client for interacting with the Membership builders.
 	Membership *MembershipClient
-	// OrgInvite is the client for interacting with the OrgInvite builders.
-	OrgInvite *OrgInviteClient
+	// OrgInvitation is the client for interacting with the OrgInvitation builders.
+	OrgInvitation *OrgInvitationClient
 	// Organization is the client for interacting with the Organization builders.
 	Organization *OrganizationClient
 	// RobotAccount is the client for interacting with the RobotAccount builders.
@@ -174,7 +174,7 @@ func (tx *Tx) init() {
 	tx.Integration = NewIntegrationClient(tx.config)
 	tx.IntegrationAttachment = NewIntegrationAttachmentClient(tx.config)
 	tx.Membership = NewMembershipClient(tx.config)
-	tx.OrgInvite = NewOrgInviteClient(tx.config)
+	tx.OrgInvitation = NewOrgInvitationClient(tx.config)
 	tx.Organization = NewOrganizationClient(tx.config)
 	tx.RobotAccount = NewRobotAccountClient(tx.config)
 	tx.User = NewUserClient(tx.config)

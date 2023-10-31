@@ -11,19 +11,19 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/orginvite"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/orginvitation"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/user"
 	"github.com/google/uuid"
 )
 
-// OrgInviteQuery is the builder for querying OrgInvite entities.
-type OrgInviteQuery struct {
+// OrgInvitationQuery is the builder for querying OrgInvitation entities.
+type OrgInvitationQuery struct {
 	config
 	ctx              *QueryContext
-	order            []orginvite.OrderOption
+	order            []orginvitation.OrderOption
 	inters           []Interceptor
-	predicates       []predicate.OrgInvite
+	predicates       []predicate.OrgInvitation
 	withOrganization *OrganizationQuery
 	withSender       *UserQuery
 	// intermediate query (i.e. traversal path).
@@ -31,39 +31,39 @@ type OrgInviteQuery struct {
 	path func(context.Context) (*sql.Selector, error)
 }
 
-// Where adds a new predicate for the OrgInviteQuery builder.
-func (oiq *OrgInviteQuery) Where(ps ...predicate.OrgInvite) *OrgInviteQuery {
+// Where adds a new predicate for the OrgInvitationQuery builder.
+func (oiq *OrgInvitationQuery) Where(ps ...predicate.OrgInvitation) *OrgInvitationQuery {
 	oiq.predicates = append(oiq.predicates, ps...)
 	return oiq
 }
 
 // Limit the number of records to be returned by this query.
-func (oiq *OrgInviteQuery) Limit(limit int) *OrgInviteQuery {
+func (oiq *OrgInvitationQuery) Limit(limit int) *OrgInvitationQuery {
 	oiq.ctx.Limit = &limit
 	return oiq
 }
 
 // Offset to start from.
-func (oiq *OrgInviteQuery) Offset(offset int) *OrgInviteQuery {
+func (oiq *OrgInvitationQuery) Offset(offset int) *OrgInvitationQuery {
 	oiq.ctx.Offset = &offset
 	return oiq
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (oiq *OrgInviteQuery) Unique(unique bool) *OrgInviteQuery {
+func (oiq *OrgInvitationQuery) Unique(unique bool) *OrgInvitationQuery {
 	oiq.ctx.Unique = &unique
 	return oiq
 }
 
 // Order specifies how the records should be ordered.
-func (oiq *OrgInviteQuery) Order(o ...orginvite.OrderOption) *OrgInviteQuery {
+func (oiq *OrgInvitationQuery) Order(o ...orginvitation.OrderOption) *OrgInvitationQuery {
 	oiq.order = append(oiq.order, o...)
 	return oiq
 }
 
 // QueryOrganization chains the current query on the "organization" edge.
-func (oiq *OrgInviteQuery) QueryOrganization() *OrganizationQuery {
+func (oiq *OrgInvitationQuery) QueryOrganization() *OrganizationQuery {
 	query := (&OrganizationClient{config: oiq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := oiq.prepareQuery(ctx); err != nil {
@@ -74,9 +74,9 @@ func (oiq *OrgInviteQuery) QueryOrganization() *OrganizationQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(orginvite.Table, orginvite.FieldID, selector),
+			sqlgraph.From(orginvitation.Table, orginvitation.FieldID, selector),
 			sqlgraph.To(organization.Table, organization.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, orginvite.OrganizationTable, orginvite.OrganizationColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, orginvitation.OrganizationTable, orginvitation.OrganizationColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(oiq.driver.Dialect(), step)
 		return fromU, nil
@@ -85,7 +85,7 @@ func (oiq *OrgInviteQuery) QueryOrganization() *OrganizationQuery {
 }
 
 // QuerySender chains the current query on the "sender" edge.
-func (oiq *OrgInviteQuery) QuerySender() *UserQuery {
+func (oiq *OrgInvitationQuery) QuerySender() *UserQuery {
 	query := (&UserClient{config: oiq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := oiq.prepareQuery(ctx); err != nil {
@@ -96,9 +96,9 @@ func (oiq *OrgInviteQuery) QuerySender() *UserQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(orginvite.Table, orginvite.FieldID, selector),
+			sqlgraph.From(orginvitation.Table, orginvitation.FieldID, selector),
 			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, orginvite.SenderTable, orginvite.SenderColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, orginvitation.SenderTable, orginvitation.SenderColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(oiq.driver.Dialect(), step)
 		return fromU, nil
@@ -106,21 +106,21 @@ func (oiq *OrgInviteQuery) QuerySender() *UserQuery {
 	return query
 }
 
-// First returns the first OrgInvite entity from the query.
-// Returns a *NotFoundError when no OrgInvite was found.
-func (oiq *OrgInviteQuery) First(ctx context.Context) (*OrgInvite, error) {
+// First returns the first OrgInvitation entity from the query.
+// Returns a *NotFoundError when no OrgInvitation was found.
+func (oiq *OrgInvitationQuery) First(ctx context.Context) (*OrgInvitation, error) {
 	nodes, err := oiq.Limit(1).All(setContextOp(ctx, oiq.ctx, "First"))
 	if err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
-		return nil, &NotFoundError{orginvite.Label}
+		return nil, &NotFoundError{orginvitation.Label}
 	}
 	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (oiq *OrgInviteQuery) FirstX(ctx context.Context) *OrgInvite {
+func (oiq *OrgInvitationQuery) FirstX(ctx context.Context) *OrgInvitation {
 	node, err := oiq.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -128,22 +128,22 @@ func (oiq *OrgInviteQuery) FirstX(ctx context.Context) *OrgInvite {
 	return node
 }
 
-// FirstID returns the first OrgInvite ID from the query.
-// Returns a *NotFoundError when no OrgInvite ID was found.
-func (oiq *OrgInviteQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+// FirstID returns the first OrgInvitation ID from the query.
+// Returns a *NotFoundError when no OrgInvitation ID was found.
+func (oiq *OrgInvitationQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
 	if ids, err = oiq.Limit(1).IDs(setContextOp(ctx, oiq.ctx, "FirstID")); err != nil {
 		return
 	}
 	if len(ids) == 0 {
-		err = &NotFoundError{orginvite.Label}
+		err = &NotFoundError{orginvitation.Label}
 		return
 	}
 	return ids[0], nil
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (oiq *OrgInviteQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (oiq *OrgInvitationQuery) FirstIDX(ctx context.Context) uuid.UUID {
 	id, err := oiq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -151,10 +151,10 @@ func (oiq *OrgInviteQuery) FirstIDX(ctx context.Context) uuid.UUID {
 	return id
 }
 
-// Only returns a single OrgInvite entity found by the query, ensuring it only returns one.
-// Returns a *NotSingularError when more than one OrgInvite entity is found.
-// Returns a *NotFoundError when no OrgInvite entities are found.
-func (oiq *OrgInviteQuery) Only(ctx context.Context) (*OrgInvite, error) {
+// Only returns a single OrgInvitation entity found by the query, ensuring it only returns one.
+// Returns a *NotSingularError when more than one OrgInvitation entity is found.
+// Returns a *NotFoundError when no OrgInvitation entities are found.
+func (oiq *OrgInvitationQuery) Only(ctx context.Context) (*OrgInvitation, error) {
 	nodes, err := oiq.Limit(2).All(setContextOp(ctx, oiq.ctx, "Only"))
 	if err != nil {
 		return nil, err
@@ -163,14 +163,14 @@ func (oiq *OrgInviteQuery) Only(ctx context.Context) (*OrgInvite, error) {
 	case 1:
 		return nodes[0], nil
 	case 0:
-		return nil, &NotFoundError{orginvite.Label}
+		return nil, &NotFoundError{orginvitation.Label}
 	default:
-		return nil, &NotSingularError{orginvite.Label}
+		return nil, &NotSingularError{orginvitation.Label}
 	}
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (oiq *OrgInviteQuery) OnlyX(ctx context.Context) *OrgInvite {
+func (oiq *OrgInvitationQuery) OnlyX(ctx context.Context) *OrgInvitation {
 	node, err := oiq.Only(ctx)
 	if err != nil {
 		panic(err)
@@ -178,10 +178,10 @@ func (oiq *OrgInviteQuery) OnlyX(ctx context.Context) *OrgInvite {
 	return node
 }
 
-// OnlyID is like Only, but returns the only OrgInvite ID in the query.
-// Returns a *NotSingularError when more than one OrgInvite ID is found.
+// OnlyID is like Only, but returns the only OrgInvitation ID in the query.
+// Returns a *NotSingularError when more than one OrgInvitation ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (oiq *OrgInviteQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+func (oiq *OrgInvitationQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
 	if ids, err = oiq.Limit(2).IDs(setContextOp(ctx, oiq.ctx, "OnlyID")); err != nil {
 		return
@@ -190,15 +190,15 @@ func (oiq *OrgInviteQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error)
 	case 1:
 		id = ids[0]
 	case 0:
-		err = &NotFoundError{orginvite.Label}
+		err = &NotFoundError{orginvitation.Label}
 	default:
-		err = &NotSingularError{orginvite.Label}
+		err = &NotSingularError{orginvitation.Label}
 	}
 	return
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (oiq *OrgInviteQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (oiq *OrgInvitationQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 	id, err := oiq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -206,18 +206,18 @@ func (oiq *OrgInviteQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 	return id
 }
 
-// All executes the query and returns a list of OrgInvites.
-func (oiq *OrgInviteQuery) All(ctx context.Context) ([]*OrgInvite, error) {
+// All executes the query and returns a list of OrgInvitations.
+func (oiq *OrgInvitationQuery) All(ctx context.Context) ([]*OrgInvitation, error) {
 	ctx = setContextOp(ctx, oiq.ctx, "All")
 	if err := oiq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
-	qr := querierAll[[]*OrgInvite, *OrgInviteQuery]()
-	return withInterceptors[[]*OrgInvite](ctx, oiq, qr, oiq.inters)
+	qr := querierAll[[]*OrgInvitation, *OrgInvitationQuery]()
+	return withInterceptors[[]*OrgInvitation](ctx, oiq, qr, oiq.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (oiq *OrgInviteQuery) AllX(ctx context.Context) []*OrgInvite {
+func (oiq *OrgInvitationQuery) AllX(ctx context.Context) []*OrgInvitation {
 	nodes, err := oiq.All(ctx)
 	if err != nil {
 		panic(err)
@@ -225,20 +225,20 @@ func (oiq *OrgInviteQuery) AllX(ctx context.Context) []*OrgInvite {
 	return nodes
 }
 
-// IDs executes the query and returns a list of OrgInvite IDs.
-func (oiq *OrgInviteQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+// IDs executes the query and returns a list of OrgInvitation IDs.
+func (oiq *OrgInvitationQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
 	if oiq.ctx.Unique == nil && oiq.path != nil {
 		oiq.Unique(true)
 	}
 	ctx = setContextOp(ctx, oiq.ctx, "IDs")
-	if err = oiq.Select(orginvite.FieldID).Scan(ctx, &ids); err != nil {
+	if err = oiq.Select(orginvitation.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (oiq *OrgInviteQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (oiq *OrgInvitationQuery) IDsX(ctx context.Context) []uuid.UUID {
 	ids, err := oiq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -247,16 +247,16 @@ func (oiq *OrgInviteQuery) IDsX(ctx context.Context) []uuid.UUID {
 }
 
 // Count returns the count of the given query.
-func (oiq *OrgInviteQuery) Count(ctx context.Context) (int, error) {
+func (oiq *OrgInvitationQuery) Count(ctx context.Context) (int, error) {
 	ctx = setContextOp(ctx, oiq.ctx, "Count")
 	if err := oiq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, oiq, querierCount[*OrgInviteQuery](), oiq.inters)
+	return withInterceptors[int](ctx, oiq, querierCount[*OrgInvitationQuery](), oiq.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (oiq *OrgInviteQuery) CountX(ctx context.Context) int {
+func (oiq *OrgInvitationQuery) CountX(ctx context.Context) int {
 	count, err := oiq.Count(ctx)
 	if err != nil {
 		panic(err)
@@ -265,7 +265,7 @@ func (oiq *OrgInviteQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (oiq *OrgInviteQuery) Exist(ctx context.Context) (bool, error) {
+func (oiq *OrgInvitationQuery) Exist(ctx context.Context) (bool, error) {
 	ctx = setContextOp(ctx, oiq.ctx, "Exist")
 	switch _, err := oiq.FirstID(ctx); {
 	case IsNotFound(err):
@@ -278,7 +278,7 @@ func (oiq *OrgInviteQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (oiq *OrgInviteQuery) ExistX(ctx context.Context) bool {
+func (oiq *OrgInvitationQuery) ExistX(ctx context.Context) bool {
 	exist, err := oiq.Exist(ctx)
 	if err != nil {
 		panic(err)
@@ -286,18 +286,18 @@ func (oiq *OrgInviteQuery) ExistX(ctx context.Context) bool {
 	return exist
 }
 
-// Clone returns a duplicate of the OrgInviteQuery builder, including all associated steps. It can be
+// Clone returns a duplicate of the OrgInvitationQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (oiq *OrgInviteQuery) Clone() *OrgInviteQuery {
+func (oiq *OrgInvitationQuery) Clone() *OrgInvitationQuery {
 	if oiq == nil {
 		return nil
 	}
-	return &OrgInviteQuery{
+	return &OrgInvitationQuery{
 		config:           oiq.config,
 		ctx:              oiq.ctx.Clone(),
-		order:            append([]orginvite.OrderOption{}, oiq.order...),
+		order:            append([]orginvitation.OrderOption{}, oiq.order...),
 		inters:           append([]Interceptor{}, oiq.inters...),
-		predicates:       append([]predicate.OrgInvite{}, oiq.predicates...),
+		predicates:       append([]predicate.OrgInvitation{}, oiq.predicates...),
 		withOrganization: oiq.withOrganization.Clone(),
 		withSender:       oiq.withSender.Clone(),
 		// clone intermediate query.
@@ -308,7 +308,7 @@ func (oiq *OrgInviteQuery) Clone() *OrgInviteQuery {
 
 // WithOrganization tells the query-builder to eager-load the nodes that are connected to
 // the "organization" edge. The optional arguments are used to configure the query builder of the edge.
-func (oiq *OrgInviteQuery) WithOrganization(opts ...func(*OrganizationQuery)) *OrgInviteQuery {
+func (oiq *OrgInvitationQuery) WithOrganization(opts ...func(*OrganizationQuery)) *OrgInvitationQuery {
 	query := (&OrganizationClient{config: oiq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
@@ -319,7 +319,7 @@ func (oiq *OrgInviteQuery) WithOrganization(opts ...func(*OrganizationQuery)) *O
 
 // WithSender tells the query-builder to eager-load the nodes that are connected to
 // the "sender" edge. The optional arguments are used to configure the query builder of the edge.
-func (oiq *OrgInviteQuery) WithSender(opts ...func(*UserQuery)) *OrgInviteQuery {
+func (oiq *OrgInvitationQuery) WithSender(opts ...func(*UserQuery)) *OrgInvitationQuery {
 	query := (&UserClient{config: oiq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
@@ -338,15 +338,15 @@ func (oiq *OrgInviteQuery) WithSender(opts ...func(*UserQuery)) *OrgInviteQuery 
 //		Count int `json:"count,omitempty"`
 //	}
 //
-//	client.OrgInvite.Query().
-//		GroupBy(orginvite.FieldReceiverEmail).
+//	client.OrgInvitation.Query().
+//		GroupBy(orginvitation.FieldReceiverEmail).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (oiq *OrgInviteQuery) GroupBy(field string, fields ...string) *OrgInviteGroupBy {
+func (oiq *OrgInvitationQuery) GroupBy(field string, fields ...string) *OrgInvitationGroupBy {
 	oiq.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &OrgInviteGroupBy{build: oiq}
+	grbuild := &OrgInvitationGroupBy{build: oiq}
 	grbuild.flds = &oiq.ctx.Fields
-	grbuild.label = orginvite.Label
+	grbuild.label = orginvitation.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
 }
@@ -360,23 +360,23 @@ func (oiq *OrgInviteQuery) GroupBy(field string, fields ...string) *OrgInviteGro
 //		ReceiverEmail string `json:"receiver_email,omitempty"`
 //	}
 //
-//	client.OrgInvite.Query().
-//		Select(orginvite.FieldReceiverEmail).
+//	client.OrgInvitation.Query().
+//		Select(orginvitation.FieldReceiverEmail).
 //		Scan(ctx, &v)
-func (oiq *OrgInviteQuery) Select(fields ...string) *OrgInviteSelect {
+func (oiq *OrgInvitationQuery) Select(fields ...string) *OrgInvitationSelect {
 	oiq.ctx.Fields = append(oiq.ctx.Fields, fields...)
-	sbuild := &OrgInviteSelect{OrgInviteQuery: oiq}
-	sbuild.label = orginvite.Label
+	sbuild := &OrgInvitationSelect{OrgInvitationQuery: oiq}
+	sbuild.label = orginvitation.Label
 	sbuild.flds, sbuild.scan = &oiq.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
-// Aggregate returns a OrgInviteSelect configured with the given aggregations.
-func (oiq *OrgInviteQuery) Aggregate(fns ...AggregateFunc) *OrgInviteSelect {
+// Aggregate returns a OrgInvitationSelect configured with the given aggregations.
+func (oiq *OrgInvitationQuery) Aggregate(fns ...AggregateFunc) *OrgInvitationSelect {
 	return oiq.Select().Aggregate(fns...)
 }
 
-func (oiq *OrgInviteQuery) prepareQuery(ctx context.Context) error {
+func (oiq *OrgInvitationQuery) prepareQuery(ctx context.Context) error {
 	for _, inter := range oiq.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
@@ -388,7 +388,7 @@ func (oiq *OrgInviteQuery) prepareQuery(ctx context.Context) error {
 		}
 	}
 	for _, f := range oiq.ctx.Fields {
-		if !orginvite.ValidColumn(f) {
+		if !orginvitation.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
@@ -402,9 +402,9 @@ func (oiq *OrgInviteQuery) prepareQuery(ctx context.Context) error {
 	return nil
 }
 
-func (oiq *OrgInviteQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*OrgInvite, error) {
+func (oiq *OrgInvitationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*OrgInvitation, error) {
 	var (
-		nodes       = []*OrgInvite{}
+		nodes       = []*OrgInvitation{}
 		_spec       = oiq.querySpec()
 		loadedTypes = [2]bool{
 			oiq.withOrganization != nil,
@@ -412,10 +412,10 @@ func (oiq *OrgInviteQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*O
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
-		return (*OrgInvite).scanValues(nil, columns)
+		return (*OrgInvitation).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &OrgInvite{config: oiq.config}
+		node := &OrgInvitation{config: oiq.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
@@ -431,22 +431,22 @@ func (oiq *OrgInviteQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*O
 	}
 	if query := oiq.withOrganization; query != nil {
 		if err := oiq.loadOrganization(ctx, query, nodes, nil,
-			func(n *OrgInvite, e *Organization) { n.Edges.Organization = e }); err != nil {
+			func(n *OrgInvitation, e *Organization) { n.Edges.Organization = e }); err != nil {
 			return nil, err
 		}
 	}
 	if query := oiq.withSender; query != nil {
 		if err := oiq.loadSender(ctx, query, nodes, nil,
-			func(n *OrgInvite, e *User) { n.Edges.Sender = e }); err != nil {
+			func(n *OrgInvitation, e *User) { n.Edges.Sender = e }); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
 }
 
-func (oiq *OrgInviteQuery) loadOrganization(ctx context.Context, query *OrganizationQuery, nodes []*OrgInvite, init func(*OrgInvite), assign func(*OrgInvite, *Organization)) error {
+func (oiq *OrgInvitationQuery) loadOrganization(ctx context.Context, query *OrganizationQuery, nodes []*OrgInvitation, init func(*OrgInvitation), assign func(*OrgInvitation, *Organization)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*OrgInvite)
+	nodeids := make(map[uuid.UUID][]*OrgInvitation)
 	for i := range nodes {
 		fk := nodes[i].OrganizationID
 		if _, ok := nodeids[fk]; !ok {
@@ -473,9 +473,9 @@ func (oiq *OrgInviteQuery) loadOrganization(ctx context.Context, query *Organiza
 	}
 	return nil
 }
-func (oiq *OrgInviteQuery) loadSender(ctx context.Context, query *UserQuery, nodes []*OrgInvite, init func(*OrgInvite), assign func(*OrgInvite, *User)) error {
+func (oiq *OrgInvitationQuery) loadSender(ctx context.Context, query *UserQuery, nodes []*OrgInvitation, init func(*OrgInvitation), assign func(*OrgInvitation, *User)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*OrgInvite)
+	nodeids := make(map[uuid.UUID][]*OrgInvitation)
 	for i := range nodes {
 		fk := nodes[i].SenderID
 		if _, ok := nodeids[fk]; !ok {
@@ -503,7 +503,7 @@ func (oiq *OrgInviteQuery) loadSender(ctx context.Context, query *UserQuery, nod
 	return nil
 }
 
-func (oiq *OrgInviteQuery) sqlCount(ctx context.Context) (int, error) {
+func (oiq *OrgInvitationQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := oiq.querySpec()
 	_spec.Node.Columns = oiq.ctx.Fields
 	if len(oiq.ctx.Fields) > 0 {
@@ -512,8 +512,8 @@ func (oiq *OrgInviteQuery) sqlCount(ctx context.Context) (int, error) {
 	return sqlgraph.CountNodes(ctx, oiq.driver, _spec)
 }
 
-func (oiq *OrgInviteQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(orginvite.Table, orginvite.Columns, sqlgraph.NewFieldSpec(orginvite.FieldID, field.TypeUUID))
+func (oiq *OrgInvitationQuery) querySpec() *sqlgraph.QuerySpec {
+	_spec := sqlgraph.NewQuerySpec(orginvitation.Table, orginvitation.Columns, sqlgraph.NewFieldSpec(orginvitation.FieldID, field.TypeUUID))
 	_spec.From = oiq.sql
 	if unique := oiq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -522,17 +522,17 @@ func (oiq *OrgInviteQuery) querySpec() *sqlgraph.QuerySpec {
 	}
 	if fields := oiq.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, orginvite.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, orginvitation.FieldID)
 		for i := range fields {
-			if fields[i] != orginvite.FieldID {
+			if fields[i] != orginvitation.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
 		if oiq.withOrganization != nil {
-			_spec.Node.AddColumnOnce(orginvite.FieldOrganizationID)
+			_spec.Node.AddColumnOnce(orginvitation.FieldOrganizationID)
 		}
 		if oiq.withSender != nil {
-			_spec.Node.AddColumnOnce(orginvite.FieldSenderID)
+			_spec.Node.AddColumnOnce(orginvitation.FieldSenderID)
 		}
 	}
 	if ps := oiq.predicates; len(ps) > 0 {
@@ -558,12 +558,12 @@ func (oiq *OrgInviteQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (oiq *OrgInviteQuery) sqlQuery(ctx context.Context) *sql.Selector {
+func (oiq *OrgInvitationQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(oiq.driver.Dialect())
-	t1 := builder.Table(orginvite.Table)
+	t1 := builder.Table(orginvitation.Table)
 	columns := oiq.ctx.Fields
 	if len(columns) == 0 {
-		columns = orginvite.Columns
+		columns = orginvitation.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
 	if oiq.sql != nil {
@@ -590,28 +590,28 @@ func (oiq *OrgInviteQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	return selector
 }
 
-// OrgInviteGroupBy is the group-by builder for OrgInvite entities.
-type OrgInviteGroupBy struct {
+// OrgInvitationGroupBy is the group-by builder for OrgInvitation entities.
+type OrgInvitationGroupBy struct {
 	selector
-	build *OrgInviteQuery
+	build *OrgInvitationQuery
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (oigb *OrgInviteGroupBy) Aggregate(fns ...AggregateFunc) *OrgInviteGroupBy {
+func (oigb *OrgInvitationGroupBy) Aggregate(fns ...AggregateFunc) *OrgInvitationGroupBy {
 	oigb.fns = append(oigb.fns, fns...)
 	return oigb
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (oigb *OrgInviteGroupBy) Scan(ctx context.Context, v any) error {
+func (oigb *OrgInvitationGroupBy) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, oigb.build.ctx, "GroupBy")
 	if err := oigb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*OrgInviteQuery, *OrgInviteGroupBy](ctx, oigb.build, oigb, oigb.build.inters, v)
+	return scanWithInterceptors[*OrgInvitationQuery, *OrgInvitationGroupBy](ctx, oigb.build, oigb, oigb.build.inters, v)
 }
 
-func (oigb *OrgInviteGroupBy) sqlScan(ctx context.Context, root *OrgInviteQuery, v any) error {
+func (oigb *OrgInvitationGroupBy) sqlScan(ctx context.Context, root *OrgInvitationQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
 	aggregation := make([]string, 0, len(oigb.fns))
 	for _, fn := range oigb.fns {
@@ -638,28 +638,28 @@ func (oigb *OrgInviteGroupBy) sqlScan(ctx context.Context, root *OrgInviteQuery,
 	return sql.ScanSlice(rows, v)
 }
 
-// OrgInviteSelect is the builder for selecting fields of OrgInvite entities.
-type OrgInviteSelect struct {
-	*OrgInviteQuery
+// OrgInvitationSelect is the builder for selecting fields of OrgInvitation entities.
+type OrgInvitationSelect struct {
+	*OrgInvitationQuery
 	selector
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (ois *OrgInviteSelect) Aggregate(fns ...AggregateFunc) *OrgInviteSelect {
+func (ois *OrgInvitationSelect) Aggregate(fns ...AggregateFunc) *OrgInvitationSelect {
 	ois.fns = append(ois.fns, fns...)
 	return ois
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (ois *OrgInviteSelect) Scan(ctx context.Context, v any) error {
+func (ois *OrgInvitationSelect) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, ois.ctx, "Select")
 	if err := ois.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*OrgInviteQuery, *OrgInviteSelect](ctx, ois.OrgInviteQuery, ois, ois.inters, v)
+	return scanWithInterceptors[*OrgInvitationQuery, *OrgInvitationSelect](ctx, ois.OrgInvitationQuery, ois, ois.inters, v)
 }
 
-func (ois *OrgInviteSelect) sqlScan(ctx context.Context, root *OrgInviteQuery, v any) error {
+func (ois *OrgInvitationSelect) sqlScan(ctx context.Context, root *OrgInvitationQuery, v any) error {
 	selector := root.sqlQuery(ctx)
 	aggregation := make([]string, 0, len(ois.fns))
 	for _, fn := range ois.fns {

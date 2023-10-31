@@ -18,7 +18,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integrationattachment"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/membership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/orginvite"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/orginvitation"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/user"
@@ -44,7 +44,7 @@ const (
 	TypeIntegration             = "Integration"
 	TypeIntegrationAttachment   = "IntegrationAttachment"
 	TypeMembership              = "Membership"
-	TypeOrgInvite               = "OrgInvite"
+	TypeOrgInvitation           = "OrgInvitation"
 	TypeOrganization            = "Organization"
 	TypeRobotAccount            = "RobotAccount"
 	TypeUser                    = "User"
@@ -3623,14 +3623,14 @@ func (m *MembershipMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown Membership edge %s", name)
 }
 
-// OrgInviteMutation represents an operation that mutates the OrgInvite nodes in the graph.
-type OrgInviteMutation struct {
+// OrgInvitationMutation represents an operation that mutates the OrgInvitation nodes in the graph.
+type OrgInvitationMutation struct {
 	config
 	op                  Op
 	typ                 string
 	id                  *uuid.UUID
 	receiver_email      *string
-	status              *biz.OrgInviteStatus
+	status              *biz.OrgInvitationStatus
 	created_at          *time.Time
 	deleted_at          *time.Time
 	clearedFields       map[string]struct{}
@@ -3639,21 +3639,21 @@ type OrgInviteMutation struct {
 	sender              *uuid.UUID
 	clearedsender       bool
 	done                bool
-	oldValue            func(context.Context) (*OrgInvite, error)
-	predicates          []predicate.OrgInvite
+	oldValue            func(context.Context) (*OrgInvitation, error)
+	predicates          []predicate.OrgInvitation
 }
 
-var _ ent.Mutation = (*OrgInviteMutation)(nil)
+var _ ent.Mutation = (*OrgInvitationMutation)(nil)
 
-// orginviteOption allows management of the mutation configuration using functional options.
-type orginviteOption func(*OrgInviteMutation)
+// orginvitationOption allows management of the mutation configuration using functional options.
+type orginvitationOption func(*OrgInvitationMutation)
 
-// newOrgInviteMutation creates new mutation for the OrgInvite entity.
-func newOrgInviteMutation(c config, op Op, opts ...orginviteOption) *OrgInviteMutation {
-	m := &OrgInviteMutation{
+// newOrgInvitationMutation creates new mutation for the OrgInvitation entity.
+func newOrgInvitationMutation(c config, op Op, opts ...orginvitationOption) *OrgInvitationMutation {
+	m := &OrgInvitationMutation{
 		config:        c,
 		op:            op,
-		typ:           TypeOrgInvite,
+		typ:           TypeOrgInvitation,
 		clearedFields: make(map[string]struct{}),
 	}
 	for _, opt := range opts {
@@ -3662,20 +3662,20 @@ func newOrgInviteMutation(c config, op Op, opts ...orginviteOption) *OrgInviteMu
 	return m
 }
 
-// withOrgInviteID sets the ID field of the mutation.
-func withOrgInviteID(id uuid.UUID) orginviteOption {
-	return func(m *OrgInviteMutation) {
+// withOrgInvitationID sets the ID field of the mutation.
+func withOrgInvitationID(id uuid.UUID) orginvitationOption {
+	return func(m *OrgInvitationMutation) {
 		var (
 			err   error
 			once  sync.Once
-			value *OrgInvite
+			value *OrgInvitation
 		)
-		m.oldValue = func(ctx context.Context) (*OrgInvite, error) {
+		m.oldValue = func(ctx context.Context) (*OrgInvitation, error) {
 			once.Do(func() {
 				if m.done {
 					err = errors.New("querying old values post mutation is not allowed")
 				} else {
-					value, err = m.Client().OrgInvite.Get(ctx, id)
+					value, err = m.Client().OrgInvitation.Get(ctx, id)
 				}
 			})
 			return value, err
@@ -3684,10 +3684,10 @@ func withOrgInviteID(id uuid.UUID) orginviteOption {
 	}
 }
 
-// withOrgInvite sets the old OrgInvite of the mutation.
-func withOrgInvite(node *OrgInvite) orginviteOption {
-	return func(m *OrgInviteMutation) {
-		m.oldValue = func(context.Context) (*OrgInvite, error) {
+// withOrgInvitation sets the old OrgInvitation of the mutation.
+func withOrgInvitation(node *OrgInvitation) orginvitationOption {
+	return func(m *OrgInvitationMutation) {
+		m.oldValue = func(context.Context) (*OrgInvitation, error) {
 			return node, nil
 		}
 		m.id = &node.ID
@@ -3696,7 +3696,7 @@ func withOrgInvite(node *OrgInvite) orginviteOption {
 
 // Client returns a new `ent.Client` from the mutation. If the mutation was
 // executed in a transaction (ent.Tx), a transactional client is returned.
-func (m OrgInviteMutation) Client() *Client {
+func (m OrgInvitationMutation) Client() *Client {
 	client := &Client{config: m.config}
 	client.init()
 	return client
@@ -3704,7 +3704,7 @@ func (m OrgInviteMutation) Client() *Client {
 
 // Tx returns an `ent.Tx` for mutations that were executed in transactions;
 // it returns an error otherwise.
-func (m OrgInviteMutation) Tx() (*Tx, error) {
+func (m OrgInvitationMutation) Tx() (*Tx, error) {
 	if _, ok := m.driver.(*txDriver); !ok {
 		return nil, errors.New("ent: mutation is not running in a transaction")
 	}
@@ -3714,14 +3714,14 @@ func (m OrgInviteMutation) Tx() (*Tx, error) {
 }
 
 // SetID sets the value of the id field. Note that this
-// operation is only accepted on creation of OrgInvite entities.
-func (m *OrgInviteMutation) SetID(id uuid.UUID) {
+// operation is only accepted on creation of OrgInvitation entities.
+func (m *OrgInvitationMutation) SetID(id uuid.UUID) {
 	m.id = &id
 }
 
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *OrgInviteMutation) ID() (id uuid.UUID, exists bool) {
+func (m *OrgInvitationMutation) ID() (id uuid.UUID, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -3732,7 +3732,7 @@ func (m *OrgInviteMutation) ID() (id uuid.UUID, exists bool) {
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *OrgInviteMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+func (m *OrgInvitationMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
@@ -3741,19 +3741,19 @@ func (m *OrgInviteMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
-		return m.Client().OrgInvite.Query().Where(m.predicates...).IDs(ctx)
+		return m.Client().OrgInvitation.Query().Where(m.predicates...).IDs(ctx)
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
 }
 
 // SetReceiverEmail sets the "receiver_email" field.
-func (m *OrgInviteMutation) SetReceiverEmail(s string) {
+func (m *OrgInvitationMutation) SetReceiverEmail(s string) {
 	m.receiver_email = &s
 }
 
 // ReceiverEmail returns the value of the "receiver_email" field in the mutation.
-func (m *OrgInviteMutation) ReceiverEmail() (r string, exists bool) {
+func (m *OrgInvitationMutation) ReceiverEmail() (r string, exists bool) {
 	v := m.receiver_email
 	if v == nil {
 		return
@@ -3761,10 +3761,10 @@ func (m *OrgInviteMutation) ReceiverEmail() (r string, exists bool) {
 	return *v, true
 }
 
-// OldReceiverEmail returns the old "receiver_email" field's value of the OrgInvite entity.
-// If the OrgInvite object wasn't provided to the builder, the object is fetched from the database.
+// OldReceiverEmail returns the old "receiver_email" field's value of the OrgInvitation entity.
+// If the OrgInvitation object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *OrgInviteMutation) OldReceiverEmail(ctx context.Context) (v string, err error) {
+func (m *OrgInvitationMutation) OldReceiverEmail(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldReceiverEmail is only allowed on UpdateOne operations")
 	}
@@ -3779,17 +3779,17 @@ func (m *OrgInviteMutation) OldReceiverEmail(ctx context.Context) (v string, err
 }
 
 // ResetReceiverEmail resets all changes to the "receiver_email" field.
-func (m *OrgInviteMutation) ResetReceiverEmail() {
+func (m *OrgInvitationMutation) ResetReceiverEmail() {
 	m.receiver_email = nil
 }
 
 // SetStatus sets the "status" field.
-func (m *OrgInviteMutation) SetStatus(bis biz.OrgInviteStatus) {
+func (m *OrgInvitationMutation) SetStatus(bis biz.OrgInvitationStatus) {
 	m.status = &bis
 }
 
 // Status returns the value of the "status" field in the mutation.
-func (m *OrgInviteMutation) Status() (r biz.OrgInviteStatus, exists bool) {
+func (m *OrgInvitationMutation) Status() (r biz.OrgInvitationStatus, exists bool) {
 	v := m.status
 	if v == nil {
 		return
@@ -3797,10 +3797,10 @@ func (m *OrgInviteMutation) Status() (r biz.OrgInviteStatus, exists bool) {
 	return *v, true
 }
 
-// OldStatus returns the old "status" field's value of the OrgInvite entity.
-// If the OrgInvite object wasn't provided to the builder, the object is fetched from the database.
+// OldStatus returns the old "status" field's value of the OrgInvitation entity.
+// If the OrgInvitation object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *OrgInviteMutation) OldStatus(ctx context.Context) (v biz.OrgInviteStatus, err error) {
+func (m *OrgInvitationMutation) OldStatus(ctx context.Context) (v biz.OrgInvitationStatus, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
 	}
@@ -3815,17 +3815,17 @@ func (m *OrgInviteMutation) OldStatus(ctx context.Context) (v biz.OrgInviteStatu
 }
 
 // ResetStatus resets all changes to the "status" field.
-func (m *OrgInviteMutation) ResetStatus() {
+func (m *OrgInvitationMutation) ResetStatus() {
 	m.status = nil
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (m *OrgInviteMutation) SetCreatedAt(t time.Time) {
+func (m *OrgInvitationMutation) SetCreatedAt(t time.Time) {
 	m.created_at = &t
 }
 
 // CreatedAt returns the value of the "created_at" field in the mutation.
-func (m *OrgInviteMutation) CreatedAt() (r time.Time, exists bool) {
+func (m *OrgInvitationMutation) CreatedAt() (r time.Time, exists bool) {
 	v := m.created_at
 	if v == nil {
 		return
@@ -3833,10 +3833,10 @@ func (m *OrgInviteMutation) CreatedAt() (r time.Time, exists bool) {
 	return *v, true
 }
 
-// OldCreatedAt returns the old "created_at" field's value of the OrgInvite entity.
-// If the OrgInvite object wasn't provided to the builder, the object is fetched from the database.
+// OldCreatedAt returns the old "created_at" field's value of the OrgInvitation entity.
+// If the OrgInvitation object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *OrgInviteMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+func (m *OrgInvitationMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
 	}
@@ -3851,17 +3851,17 @@ func (m *OrgInviteMutation) OldCreatedAt(ctx context.Context) (v time.Time, err 
 }
 
 // ResetCreatedAt resets all changes to the "created_at" field.
-func (m *OrgInviteMutation) ResetCreatedAt() {
+func (m *OrgInvitationMutation) ResetCreatedAt() {
 	m.created_at = nil
 }
 
 // SetDeletedAt sets the "deleted_at" field.
-func (m *OrgInviteMutation) SetDeletedAt(t time.Time) {
+func (m *OrgInvitationMutation) SetDeletedAt(t time.Time) {
 	m.deleted_at = &t
 }
 
 // DeletedAt returns the value of the "deleted_at" field in the mutation.
-func (m *OrgInviteMutation) DeletedAt() (r time.Time, exists bool) {
+func (m *OrgInvitationMutation) DeletedAt() (r time.Time, exists bool) {
 	v := m.deleted_at
 	if v == nil {
 		return
@@ -3869,10 +3869,10 @@ func (m *OrgInviteMutation) DeletedAt() (r time.Time, exists bool) {
 	return *v, true
 }
 
-// OldDeletedAt returns the old "deleted_at" field's value of the OrgInvite entity.
-// If the OrgInvite object wasn't provided to the builder, the object is fetched from the database.
+// OldDeletedAt returns the old "deleted_at" field's value of the OrgInvitation entity.
+// If the OrgInvitation object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *OrgInviteMutation) OldDeletedAt(ctx context.Context) (v time.Time, err error) {
+func (m *OrgInvitationMutation) OldDeletedAt(ctx context.Context) (v time.Time, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldDeletedAt is only allowed on UpdateOne operations")
 	}
@@ -3887,30 +3887,30 @@ func (m *OrgInviteMutation) OldDeletedAt(ctx context.Context) (v time.Time, err 
 }
 
 // ClearDeletedAt clears the value of the "deleted_at" field.
-func (m *OrgInviteMutation) ClearDeletedAt() {
+func (m *OrgInvitationMutation) ClearDeletedAt() {
 	m.deleted_at = nil
-	m.clearedFields[orginvite.FieldDeletedAt] = struct{}{}
+	m.clearedFields[orginvitation.FieldDeletedAt] = struct{}{}
 }
 
 // DeletedAtCleared returns if the "deleted_at" field was cleared in this mutation.
-func (m *OrgInviteMutation) DeletedAtCleared() bool {
-	_, ok := m.clearedFields[orginvite.FieldDeletedAt]
+func (m *OrgInvitationMutation) DeletedAtCleared() bool {
+	_, ok := m.clearedFields[orginvitation.FieldDeletedAt]
 	return ok
 }
 
 // ResetDeletedAt resets all changes to the "deleted_at" field.
-func (m *OrgInviteMutation) ResetDeletedAt() {
+func (m *OrgInvitationMutation) ResetDeletedAt() {
 	m.deleted_at = nil
-	delete(m.clearedFields, orginvite.FieldDeletedAt)
+	delete(m.clearedFields, orginvitation.FieldDeletedAt)
 }
 
 // SetOrganizationID sets the "organization_id" field.
-func (m *OrgInviteMutation) SetOrganizationID(u uuid.UUID) {
+func (m *OrgInvitationMutation) SetOrganizationID(u uuid.UUID) {
 	m.organization = &u
 }
 
 // OrganizationID returns the value of the "organization_id" field in the mutation.
-func (m *OrgInviteMutation) OrganizationID() (r uuid.UUID, exists bool) {
+func (m *OrgInvitationMutation) OrganizationID() (r uuid.UUID, exists bool) {
 	v := m.organization
 	if v == nil {
 		return
@@ -3918,10 +3918,10 @@ func (m *OrgInviteMutation) OrganizationID() (r uuid.UUID, exists bool) {
 	return *v, true
 }
 
-// OldOrganizationID returns the old "organization_id" field's value of the OrgInvite entity.
-// If the OrgInvite object wasn't provided to the builder, the object is fetched from the database.
+// OldOrganizationID returns the old "organization_id" field's value of the OrgInvitation entity.
+// If the OrgInvitation object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *OrgInviteMutation) OldOrganizationID(ctx context.Context) (v uuid.UUID, err error) {
+func (m *OrgInvitationMutation) OldOrganizationID(ctx context.Context) (v uuid.UUID, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldOrganizationID is only allowed on UpdateOne operations")
 	}
@@ -3936,17 +3936,17 @@ func (m *OrgInviteMutation) OldOrganizationID(ctx context.Context) (v uuid.UUID,
 }
 
 // ResetOrganizationID resets all changes to the "organization_id" field.
-func (m *OrgInviteMutation) ResetOrganizationID() {
+func (m *OrgInvitationMutation) ResetOrganizationID() {
 	m.organization = nil
 }
 
 // SetSenderID sets the "sender_id" field.
-func (m *OrgInviteMutation) SetSenderID(u uuid.UUID) {
+func (m *OrgInvitationMutation) SetSenderID(u uuid.UUID) {
 	m.sender = &u
 }
 
 // SenderID returns the value of the "sender_id" field in the mutation.
-func (m *OrgInviteMutation) SenderID() (r uuid.UUID, exists bool) {
+func (m *OrgInvitationMutation) SenderID() (r uuid.UUID, exists bool) {
 	v := m.sender
 	if v == nil {
 		return
@@ -3954,10 +3954,10 @@ func (m *OrgInviteMutation) SenderID() (r uuid.UUID, exists bool) {
 	return *v, true
 }
 
-// OldSenderID returns the old "sender_id" field's value of the OrgInvite entity.
-// If the OrgInvite object wasn't provided to the builder, the object is fetched from the database.
+// OldSenderID returns the old "sender_id" field's value of the OrgInvitation entity.
+// If the OrgInvitation object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *OrgInviteMutation) OldSenderID(ctx context.Context) (v uuid.UUID, err error) {
+func (m *OrgInvitationMutation) OldSenderID(ctx context.Context) (v uuid.UUID, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldSenderID is only allowed on UpdateOne operations")
 	}
@@ -3972,24 +3972,24 @@ func (m *OrgInviteMutation) OldSenderID(ctx context.Context) (v uuid.UUID, err e
 }
 
 // ResetSenderID resets all changes to the "sender_id" field.
-func (m *OrgInviteMutation) ResetSenderID() {
+func (m *OrgInvitationMutation) ResetSenderID() {
 	m.sender = nil
 }
 
 // ClearOrganization clears the "organization" edge to the Organization entity.
-func (m *OrgInviteMutation) ClearOrganization() {
+func (m *OrgInvitationMutation) ClearOrganization() {
 	m.clearedorganization = true
 }
 
 // OrganizationCleared reports if the "organization" edge to the Organization entity was cleared.
-func (m *OrgInviteMutation) OrganizationCleared() bool {
+func (m *OrgInvitationMutation) OrganizationCleared() bool {
 	return m.clearedorganization
 }
 
 // OrganizationIDs returns the "organization" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // OrganizationID instead. It exists only for internal usage by the builders.
-func (m *OrgInviteMutation) OrganizationIDs() (ids []uuid.UUID) {
+func (m *OrgInvitationMutation) OrganizationIDs() (ids []uuid.UUID) {
 	if id := m.organization; id != nil {
 		ids = append(ids, *id)
 	}
@@ -3997,25 +3997,25 @@ func (m *OrgInviteMutation) OrganizationIDs() (ids []uuid.UUID) {
 }
 
 // ResetOrganization resets all changes to the "organization" edge.
-func (m *OrgInviteMutation) ResetOrganization() {
+func (m *OrgInvitationMutation) ResetOrganization() {
 	m.organization = nil
 	m.clearedorganization = false
 }
 
 // ClearSender clears the "sender" edge to the User entity.
-func (m *OrgInviteMutation) ClearSender() {
+func (m *OrgInvitationMutation) ClearSender() {
 	m.clearedsender = true
 }
 
 // SenderCleared reports if the "sender" edge to the User entity was cleared.
-func (m *OrgInviteMutation) SenderCleared() bool {
+func (m *OrgInvitationMutation) SenderCleared() bool {
 	return m.clearedsender
 }
 
 // SenderIDs returns the "sender" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // SenderID instead. It exists only for internal usage by the builders.
-func (m *OrgInviteMutation) SenderIDs() (ids []uuid.UUID) {
+func (m *OrgInvitationMutation) SenderIDs() (ids []uuid.UUID) {
 	if id := m.sender; id != nil {
 		ids = append(ids, *id)
 	}
@@ -4023,20 +4023,20 @@ func (m *OrgInviteMutation) SenderIDs() (ids []uuid.UUID) {
 }
 
 // ResetSender resets all changes to the "sender" edge.
-func (m *OrgInviteMutation) ResetSender() {
+func (m *OrgInvitationMutation) ResetSender() {
 	m.sender = nil
 	m.clearedsender = false
 }
 
-// Where appends a list predicates to the OrgInviteMutation builder.
-func (m *OrgInviteMutation) Where(ps ...predicate.OrgInvite) {
+// Where appends a list predicates to the OrgInvitationMutation builder.
+func (m *OrgInvitationMutation) Where(ps ...predicate.OrgInvitation) {
 	m.predicates = append(m.predicates, ps...)
 }
 
-// WhereP appends storage-level predicates to the OrgInviteMutation builder. Using this method,
+// WhereP appends storage-level predicates to the OrgInvitationMutation builder. Using this method,
 // users can use type-assertion to append predicates that do not depend on any generated package.
-func (m *OrgInviteMutation) WhereP(ps ...func(*sql.Selector)) {
-	p := make([]predicate.OrgInvite, len(ps))
+func (m *OrgInvitationMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.OrgInvitation, len(ps))
 	for i := range ps {
 		p[i] = ps[i]
 	}
@@ -4044,42 +4044,42 @@ func (m *OrgInviteMutation) WhereP(ps ...func(*sql.Selector)) {
 }
 
 // Op returns the operation name.
-func (m *OrgInviteMutation) Op() Op {
+func (m *OrgInvitationMutation) Op() Op {
 	return m.op
 }
 
 // SetOp allows setting the mutation operation.
-func (m *OrgInviteMutation) SetOp(op Op) {
+func (m *OrgInvitationMutation) SetOp(op Op) {
 	m.op = op
 }
 
-// Type returns the node type of this mutation (OrgInvite).
-func (m *OrgInviteMutation) Type() string {
+// Type returns the node type of this mutation (OrgInvitation).
+func (m *OrgInvitationMutation) Type() string {
 	return m.typ
 }
 
 // Fields returns all fields that were changed during this mutation. Note that in
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
-func (m *OrgInviteMutation) Fields() []string {
+func (m *OrgInvitationMutation) Fields() []string {
 	fields := make([]string, 0, 6)
 	if m.receiver_email != nil {
-		fields = append(fields, orginvite.FieldReceiverEmail)
+		fields = append(fields, orginvitation.FieldReceiverEmail)
 	}
 	if m.status != nil {
-		fields = append(fields, orginvite.FieldStatus)
+		fields = append(fields, orginvitation.FieldStatus)
 	}
 	if m.created_at != nil {
-		fields = append(fields, orginvite.FieldCreatedAt)
+		fields = append(fields, orginvitation.FieldCreatedAt)
 	}
 	if m.deleted_at != nil {
-		fields = append(fields, orginvite.FieldDeletedAt)
+		fields = append(fields, orginvitation.FieldDeletedAt)
 	}
 	if m.organization != nil {
-		fields = append(fields, orginvite.FieldOrganizationID)
+		fields = append(fields, orginvitation.FieldOrganizationID)
 	}
 	if m.sender != nil {
-		fields = append(fields, orginvite.FieldSenderID)
+		fields = append(fields, orginvitation.FieldSenderID)
 	}
 	return fields
 }
@@ -4087,19 +4087,19 @@ func (m *OrgInviteMutation) Fields() []string {
 // Field returns the value of a field with the given name. The second boolean
 // return value indicates that this field was not set, or was not defined in the
 // schema.
-func (m *OrgInviteMutation) Field(name string) (ent.Value, bool) {
+func (m *OrgInvitationMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case orginvite.FieldReceiverEmail:
+	case orginvitation.FieldReceiverEmail:
 		return m.ReceiverEmail()
-	case orginvite.FieldStatus:
+	case orginvitation.FieldStatus:
 		return m.Status()
-	case orginvite.FieldCreatedAt:
+	case orginvitation.FieldCreatedAt:
 		return m.CreatedAt()
-	case orginvite.FieldDeletedAt:
+	case orginvitation.FieldDeletedAt:
 		return m.DeletedAt()
-	case orginvite.FieldOrganizationID:
+	case orginvitation.FieldOrganizationID:
 		return m.OrganizationID()
-	case orginvite.FieldSenderID:
+	case orginvitation.FieldSenderID:
 		return m.SenderID()
 	}
 	return nil, false
@@ -4108,65 +4108,65 @@ func (m *OrgInviteMutation) Field(name string) (ent.Value, bool) {
 // OldField returns the old value of the field from the database. An error is
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
-func (m *OrgInviteMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+func (m *OrgInvitationMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case orginvite.FieldReceiverEmail:
+	case orginvitation.FieldReceiverEmail:
 		return m.OldReceiverEmail(ctx)
-	case orginvite.FieldStatus:
+	case orginvitation.FieldStatus:
 		return m.OldStatus(ctx)
-	case orginvite.FieldCreatedAt:
+	case orginvitation.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
-	case orginvite.FieldDeletedAt:
+	case orginvitation.FieldDeletedAt:
 		return m.OldDeletedAt(ctx)
-	case orginvite.FieldOrganizationID:
+	case orginvitation.FieldOrganizationID:
 		return m.OldOrganizationID(ctx)
-	case orginvite.FieldSenderID:
+	case orginvitation.FieldSenderID:
 		return m.OldSenderID(ctx)
 	}
-	return nil, fmt.Errorf("unknown OrgInvite field %s", name)
+	return nil, fmt.Errorf("unknown OrgInvitation field %s", name)
 }
 
 // SetField sets the value of a field with the given name. It returns an error if
 // the field is not defined in the schema, or if the type mismatched the field
 // type.
-func (m *OrgInviteMutation) SetField(name string, value ent.Value) error {
+func (m *OrgInvitationMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case orginvite.FieldReceiverEmail:
+	case orginvitation.FieldReceiverEmail:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetReceiverEmail(v)
 		return nil
-	case orginvite.FieldStatus:
-		v, ok := value.(biz.OrgInviteStatus)
+	case orginvitation.FieldStatus:
+		v, ok := value.(biz.OrgInvitationStatus)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetStatus(v)
 		return nil
-	case orginvite.FieldCreatedAt:
+	case orginvitation.FieldCreatedAt:
 		v, ok := value.(time.Time)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCreatedAt(v)
 		return nil
-	case orginvite.FieldDeletedAt:
+	case orginvitation.FieldDeletedAt:
 		v, ok := value.(time.Time)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDeletedAt(v)
 		return nil
-	case orginvite.FieldOrganizationID:
+	case orginvitation.FieldOrganizationID:
 		v, ok := value.(uuid.UUID)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetOrganizationID(v)
 		return nil
-	case orginvite.FieldSenderID:
+	case orginvitation.FieldSenderID:
 		v, ok := value.(uuid.UUID)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
@@ -4174,106 +4174,106 @@ func (m *OrgInviteMutation) SetField(name string, value ent.Value) error {
 		m.SetSenderID(v)
 		return nil
 	}
-	return fmt.Errorf("unknown OrgInvite field %s", name)
+	return fmt.Errorf("unknown OrgInvitation field %s", name)
 }
 
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
-func (m *OrgInviteMutation) AddedFields() []string {
+func (m *OrgInvitationMutation) AddedFields() []string {
 	return nil
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
-func (m *OrgInviteMutation) AddedField(name string) (ent.Value, bool) {
+func (m *OrgInvitationMutation) AddedField(name string) (ent.Value, bool) {
 	return nil, false
 }
 
 // AddField adds the value to the field with the given name. It returns an error if
 // the field is not defined in the schema, or if the type mismatched the field
 // type.
-func (m *OrgInviteMutation) AddField(name string, value ent.Value) error {
+func (m *OrgInvitationMutation) AddField(name string, value ent.Value) error {
 	switch name {
 	}
-	return fmt.Errorf("unknown OrgInvite numeric field %s", name)
+	return fmt.Errorf("unknown OrgInvitation numeric field %s", name)
 }
 
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
-func (m *OrgInviteMutation) ClearedFields() []string {
+func (m *OrgInvitationMutation) ClearedFields() []string {
 	var fields []string
-	if m.FieldCleared(orginvite.FieldDeletedAt) {
-		fields = append(fields, orginvite.FieldDeletedAt)
+	if m.FieldCleared(orginvitation.FieldDeletedAt) {
+		fields = append(fields, orginvitation.FieldDeletedAt)
 	}
 	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
 // cleared in this mutation.
-func (m *OrgInviteMutation) FieldCleared(name string) bool {
+func (m *OrgInvitationMutation) FieldCleared(name string) bool {
 	_, ok := m.clearedFields[name]
 	return ok
 }
 
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
-func (m *OrgInviteMutation) ClearField(name string) error {
+func (m *OrgInvitationMutation) ClearField(name string) error {
 	switch name {
-	case orginvite.FieldDeletedAt:
+	case orginvitation.FieldDeletedAt:
 		m.ClearDeletedAt()
 		return nil
 	}
-	return fmt.Errorf("unknown OrgInvite nullable field %s", name)
+	return fmt.Errorf("unknown OrgInvitation nullable field %s", name)
 }
 
 // ResetField resets all changes in the mutation for the field with the given name.
 // It returns an error if the field is not defined in the schema.
-func (m *OrgInviteMutation) ResetField(name string) error {
+func (m *OrgInvitationMutation) ResetField(name string) error {
 	switch name {
-	case orginvite.FieldReceiverEmail:
+	case orginvitation.FieldReceiverEmail:
 		m.ResetReceiverEmail()
 		return nil
-	case orginvite.FieldStatus:
+	case orginvitation.FieldStatus:
 		m.ResetStatus()
 		return nil
-	case orginvite.FieldCreatedAt:
+	case orginvitation.FieldCreatedAt:
 		m.ResetCreatedAt()
 		return nil
-	case orginvite.FieldDeletedAt:
+	case orginvitation.FieldDeletedAt:
 		m.ResetDeletedAt()
 		return nil
-	case orginvite.FieldOrganizationID:
+	case orginvitation.FieldOrganizationID:
 		m.ResetOrganizationID()
 		return nil
-	case orginvite.FieldSenderID:
+	case orginvitation.FieldSenderID:
 		m.ResetSenderID()
 		return nil
 	}
-	return fmt.Errorf("unknown OrgInvite field %s", name)
+	return fmt.Errorf("unknown OrgInvitation field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
-func (m *OrgInviteMutation) AddedEdges() []string {
+func (m *OrgInvitationMutation) AddedEdges() []string {
 	edges := make([]string, 0, 2)
 	if m.organization != nil {
-		edges = append(edges, orginvite.EdgeOrganization)
+		edges = append(edges, orginvitation.EdgeOrganization)
 	}
 	if m.sender != nil {
-		edges = append(edges, orginvite.EdgeSender)
+		edges = append(edges, orginvitation.EdgeSender)
 	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
-func (m *OrgInviteMutation) AddedIDs(name string) []ent.Value {
+func (m *OrgInvitationMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case orginvite.EdgeOrganization:
+	case orginvitation.EdgeOrganization:
 		if id := m.organization; id != nil {
 			return []ent.Value{*id}
 		}
-	case orginvite.EdgeSender:
+	case orginvitation.EdgeSender:
 		if id := m.sender; id != nil {
 			return []ent.Value{*id}
 		}
@@ -4282,36 +4282,36 @@ func (m *OrgInviteMutation) AddedIDs(name string) []ent.Value {
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
-func (m *OrgInviteMutation) RemovedEdges() []string {
+func (m *OrgInvitationMutation) RemovedEdges() []string {
 	edges := make([]string, 0, 2)
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
-func (m *OrgInviteMutation) RemovedIDs(name string) []ent.Value {
+func (m *OrgInvitationMutation) RemovedIDs(name string) []ent.Value {
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
-func (m *OrgInviteMutation) ClearedEdges() []string {
+func (m *OrgInvitationMutation) ClearedEdges() []string {
 	edges := make([]string, 0, 2)
 	if m.clearedorganization {
-		edges = append(edges, orginvite.EdgeOrganization)
+		edges = append(edges, orginvitation.EdgeOrganization)
 	}
 	if m.clearedsender {
-		edges = append(edges, orginvite.EdgeSender)
+		edges = append(edges, orginvitation.EdgeSender)
 	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
-func (m *OrgInviteMutation) EdgeCleared(name string) bool {
+func (m *OrgInvitationMutation) EdgeCleared(name string) bool {
 	switch name {
-	case orginvite.EdgeOrganization:
+	case orginvitation.EdgeOrganization:
 		return m.clearedorganization
-	case orginvite.EdgeSender:
+	case orginvitation.EdgeSender:
 		return m.clearedsender
 	}
 	return false
@@ -4319,30 +4319,30 @@ func (m *OrgInviteMutation) EdgeCleared(name string) bool {
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
-func (m *OrgInviteMutation) ClearEdge(name string) error {
+func (m *OrgInvitationMutation) ClearEdge(name string) error {
 	switch name {
-	case orginvite.EdgeOrganization:
+	case orginvitation.EdgeOrganization:
 		m.ClearOrganization()
 		return nil
-	case orginvite.EdgeSender:
+	case orginvitation.EdgeSender:
 		m.ClearSender()
 		return nil
 	}
-	return fmt.Errorf("unknown OrgInvite unique edge %s", name)
+	return fmt.Errorf("unknown OrgInvitation unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
-func (m *OrgInviteMutation) ResetEdge(name string) error {
+func (m *OrgInvitationMutation) ResetEdge(name string) error {
 	switch name {
-	case orginvite.EdgeOrganization:
+	case orginvitation.EdgeOrganization:
 		m.ResetOrganization()
 		return nil
-	case orginvite.EdgeSender:
+	case orginvitation.EdgeSender:
 		m.ResetSender()
 		return nil
 	}
-	return fmt.Errorf("unknown OrgInvite edge %s", name)
+	return fmt.Errorf("unknown OrgInvitation edge %s", name)
 }
 
 // OrganizationMutation represents an operation that mutates the Organization nodes in the graph.

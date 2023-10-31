@@ -40,8 +40,8 @@ func NewOrgInvitationListSent(cfg *ActionsOpts) *OrgInvitationListSent {
 }
 
 func (action *OrgInvitationListSent) Run(ctx context.Context) ([]*OrgInvitationItem, error) {
-	client := pb.NewOrgInviteServiceClient(action.cfg.CPConnection)
-	resp, err := client.ListSent(ctx, &pb.OrgInviteServiceListSentRequest{})
+	client := pb.NewOrgInvitationServiceClient(action.cfg.CPConnection)
+	resp, err := client.ListSent(ctx, &pb.OrgInvitationServiceListSentRequest{})
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (action *OrgInvitationListSent) Run(ctx context.Context) ([]*OrgInvitationI
 	return result, nil
 }
 
-func pbOrgInvitationItemToAction(in *pb.OrgInviteItem) *OrgInvitationItem {
+func pbOrgInvitationItemToAction(in *pb.OrgInvitationItem) *OrgInvitationItem {
 	if in == nil {
 		return nil
 	}

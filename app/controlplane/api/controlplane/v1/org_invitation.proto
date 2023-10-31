@@ -23,37 +23,37 @@ import "controlplane/v1/response_messages.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
-service OrgInviteService {
+service OrgInvitationService {
   // Create an invitation for a user to join an organization.
-  rpc Create(OrgInviteServiceCreateRequest) returns (OrgInviteServiceCreateResponse);
+  rpc Create(OrgInvitationServiceCreateRequest) returns (OrgInvitationServiceCreateResponse);
   // Revoke an invitation.
-  rpc Revoke(OrgInviteServiceRevokeRequest) returns (OrgInviteServiceRevokeResponse);
+  rpc Revoke(OrgInvitationServiceRevokeRequest) returns (OrgInvitationServiceRevokeResponse);
   // List all invitations sent by the current user.
-  rpc ListSent(OrgInviteServiceListSentRequest) returns (OrgInviteServiceListSentResponse);
+  rpc ListSent(OrgInvitationServiceListSentRequest) returns (OrgInvitationServiceListSentResponse);
 }
 
-message OrgInviteServiceCreateRequest {
+message OrgInvitationServiceCreateRequest {
   string organization_id = 1 [(validate.rules).string.uuid = true];
   string receiver_email = 2 [(validate.rules).string.email = true];
 }
 
-message OrgInviteServiceCreateResponse {
-  OrgInviteItem result = 1;
+message OrgInvitationServiceCreateResponse {
+  OrgInvitationItem result = 1;
 }
 
-message OrgInviteServiceRevokeRequest {
+message OrgInvitationServiceRevokeRequest {
   string id = 1 [(validate.rules).string.uuid = true];
 }
 
-message OrgInviteServiceRevokeResponse {}
+message OrgInvitationServiceRevokeResponse {}
 
-message OrgInviteServiceListSentRequest {}
+message OrgInvitationServiceListSentRequest {}
 
-message OrgInviteServiceListSentResponse {
-  repeated OrgInviteItem result = 1;
+message OrgInvitationServiceListSentResponse {
+  repeated OrgInvitationItem result = 1;
 }
 
-message OrgInviteItem {
+message OrgInvitationItem {
   string id = 1;
   google.protobuf.Timestamp created_at = 2;
   string receiver_email = 3;

@@ -12,32 +12,32 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/orginvite"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/orginvitation"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/user"
 	"github.com/google/uuid"
 )
 
-// OrgInviteCreate is the builder for creating a OrgInvite entity.
-type OrgInviteCreate struct {
+// OrgInvitationCreate is the builder for creating a OrgInvitation entity.
+type OrgInvitationCreate struct {
 	config
-	mutation *OrgInviteMutation
+	mutation *OrgInvitationMutation
 	hooks    []Hook
 }
 
 // SetReceiverEmail sets the "receiver_email" field.
-func (oic *OrgInviteCreate) SetReceiverEmail(s string) *OrgInviteCreate {
+func (oic *OrgInvitationCreate) SetReceiverEmail(s string) *OrgInvitationCreate {
 	oic.mutation.SetReceiverEmail(s)
 	return oic
 }
 
 // SetStatus sets the "status" field.
-func (oic *OrgInviteCreate) SetStatus(bis biz.OrgInviteStatus) *OrgInviteCreate {
+func (oic *OrgInvitationCreate) SetStatus(bis biz.OrgInvitationStatus) *OrgInvitationCreate {
 	oic.mutation.SetStatus(bis)
 	return oic
 }
 
 // SetNillableStatus sets the "status" field if the given value is not nil.
-func (oic *OrgInviteCreate) SetNillableStatus(bis *biz.OrgInviteStatus) *OrgInviteCreate {
+func (oic *OrgInvitationCreate) SetNillableStatus(bis *biz.OrgInvitationStatus) *OrgInvitationCreate {
 	if bis != nil {
 		oic.SetStatus(*bis)
 	}
@@ -45,13 +45,13 @@ func (oic *OrgInviteCreate) SetNillableStatus(bis *biz.OrgInviteStatus) *OrgInvi
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (oic *OrgInviteCreate) SetCreatedAt(t time.Time) *OrgInviteCreate {
+func (oic *OrgInvitationCreate) SetCreatedAt(t time.Time) *OrgInvitationCreate {
 	oic.mutation.SetCreatedAt(t)
 	return oic
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (oic *OrgInviteCreate) SetNillableCreatedAt(t *time.Time) *OrgInviteCreate {
+func (oic *OrgInvitationCreate) SetNillableCreatedAt(t *time.Time) *OrgInvitationCreate {
 	if t != nil {
 		oic.SetCreatedAt(*t)
 	}
@@ -59,13 +59,13 @@ func (oic *OrgInviteCreate) SetNillableCreatedAt(t *time.Time) *OrgInviteCreate 
 }
 
 // SetDeletedAt sets the "deleted_at" field.
-func (oic *OrgInviteCreate) SetDeletedAt(t time.Time) *OrgInviteCreate {
+func (oic *OrgInvitationCreate) SetDeletedAt(t time.Time) *OrgInvitationCreate {
 	oic.mutation.SetDeletedAt(t)
 	return oic
 }
 
 // SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
-func (oic *OrgInviteCreate) SetNillableDeletedAt(t *time.Time) *OrgInviteCreate {
+func (oic *OrgInvitationCreate) SetNillableDeletedAt(t *time.Time) *OrgInvitationCreate {
 	if t != nil {
 		oic.SetDeletedAt(*t)
 	}
@@ -73,25 +73,25 @@ func (oic *OrgInviteCreate) SetNillableDeletedAt(t *time.Time) *OrgInviteCreate 
 }
 
 // SetOrganizationID sets the "organization_id" field.
-func (oic *OrgInviteCreate) SetOrganizationID(u uuid.UUID) *OrgInviteCreate {
+func (oic *OrgInvitationCreate) SetOrganizationID(u uuid.UUID) *OrgInvitationCreate {
 	oic.mutation.SetOrganizationID(u)
 	return oic
 }
 
 // SetSenderID sets the "sender_id" field.
-func (oic *OrgInviteCreate) SetSenderID(u uuid.UUID) *OrgInviteCreate {
+func (oic *OrgInvitationCreate) SetSenderID(u uuid.UUID) *OrgInvitationCreate {
 	oic.mutation.SetSenderID(u)
 	return oic
 }
 
 // SetID sets the "id" field.
-func (oic *OrgInviteCreate) SetID(u uuid.UUID) *OrgInviteCreate {
+func (oic *OrgInvitationCreate) SetID(u uuid.UUID) *OrgInvitationCreate {
 	oic.mutation.SetID(u)
 	return oic
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (oic *OrgInviteCreate) SetNillableID(u *uuid.UUID) *OrgInviteCreate {
+func (oic *OrgInvitationCreate) SetNillableID(u *uuid.UUID) *OrgInvitationCreate {
 	if u != nil {
 		oic.SetID(*u)
 	}
@@ -99,28 +99,28 @@ func (oic *OrgInviteCreate) SetNillableID(u *uuid.UUID) *OrgInviteCreate {
 }
 
 // SetOrganization sets the "organization" edge to the Organization entity.
-func (oic *OrgInviteCreate) SetOrganization(o *Organization) *OrgInviteCreate {
+func (oic *OrgInvitationCreate) SetOrganization(o *Organization) *OrgInvitationCreate {
 	return oic.SetOrganizationID(o.ID)
 }
 
 // SetSender sets the "sender" edge to the User entity.
-func (oic *OrgInviteCreate) SetSender(u *User) *OrgInviteCreate {
+func (oic *OrgInvitationCreate) SetSender(u *User) *OrgInvitationCreate {
 	return oic.SetSenderID(u.ID)
 }
 
-// Mutation returns the OrgInviteMutation object of the builder.
-func (oic *OrgInviteCreate) Mutation() *OrgInviteMutation {
+// Mutation returns the OrgInvitationMutation object of the builder.
+func (oic *OrgInvitationCreate) Mutation() *OrgInvitationMutation {
 	return oic.mutation
 }
 
-// Save creates the OrgInvite in the database.
-func (oic *OrgInviteCreate) Save(ctx context.Context) (*OrgInvite, error) {
+// Save creates the OrgInvitation in the database.
+func (oic *OrgInvitationCreate) Save(ctx context.Context) (*OrgInvitation, error) {
 	oic.defaults()
 	return withHooks(ctx, oic.sqlSave, oic.mutation, oic.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (oic *OrgInviteCreate) SaveX(ctx context.Context) *OrgInvite {
+func (oic *OrgInvitationCreate) SaveX(ctx context.Context) *OrgInvitation {
 	v, err := oic.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -129,66 +129,66 @@ func (oic *OrgInviteCreate) SaveX(ctx context.Context) *OrgInvite {
 }
 
 // Exec executes the query.
-func (oic *OrgInviteCreate) Exec(ctx context.Context) error {
+func (oic *OrgInvitationCreate) Exec(ctx context.Context) error {
 	_, err := oic.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (oic *OrgInviteCreate) ExecX(ctx context.Context) {
+func (oic *OrgInvitationCreate) ExecX(ctx context.Context) {
 	if err := oic.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (oic *OrgInviteCreate) defaults() {
+func (oic *OrgInvitationCreate) defaults() {
 	if _, ok := oic.mutation.Status(); !ok {
-		v := orginvite.DefaultStatus
+		v := orginvitation.DefaultStatus
 		oic.mutation.SetStatus(v)
 	}
 	if _, ok := oic.mutation.CreatedAt(); !ok {
-		v := orginvite.DefaultCreatedAt()
+		v := orginvitation.DefaultCreatedAt()
 		oic.mutation.SetCreatedAt(v)
 	}
 	if _, ok := oic.mutation.ID(); !ok {
-		v := orginvite.DefaultID()
+		v := orginvitation.DefaultID()
 		oic.mutation.SetID(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (oic *OrgInviteCreate) check() error {
+func (oic *OrgInvitationCreate) check() error {
 	if _, ok := oic.mutation.ReceiverEmail(); !ok {
-		return &ValidationError{Name: "receiver_email", err: errors.New(`ent: missing required field "OrgInvite.receiver_email"`)}
+		return &ValidationError{Name: "receiver_email", err: errors.New(`ent: missing required field "OrgInvitation.receiver_email"`)}
 	}
 	if _, ok := oic.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "OrgInvite.status"`)}
+		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "OrgInvitation.status"`)}
 	}
 	if v, ok := oic.mutation.Status(); ok {
-		if err := orginvite.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "OrgInvite.status": %w`, err)}
+		if err := orginvitation.StatusValidator(v); err != nil {
+			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "OrgInvitation.status": %w`, err)}
 		}
 	}
 	if _, ok := oic.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "OrgInvite.created_at"`)}
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "OrgInvitation.created_at"`)}
 	}
 	if _, ok := oic.mutation.OrganizationID(); !ok {
-		return &ValidationError{Name: "organization_id", err: errors.New(`ent: missing required field "OrgInvite.organization_id"`)}
+		return &ValidationError{Name: "organization_id", err: errors.New(`ent: missing required field "OrgInvitation.organization_id"`)}
 	}
 	if _, ok := oic.mutation.SenderID(); !ok {
-		return &ValidationError{Name: "sender_id", err: errors.New(`ent: missing required field "OrgInvite.sender_id"`)}
+		return &ValidationError{Name: "sender_id", err: errors.New(`ent: missing required field "OrgInvitation.sender_id"`)}
 	}
 	if _, ok := oic.mutation.OrganizationID(); !ok {
-		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "OrgInvite.organization"`)}
+		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "OrgInvitation.organization"`)}
 	}
 	if _, ok := oic.mutation.SenderID(); !ok {
-		return &ValidationError{Name: "sender", err: errors.New(`ent: missing required edge "OrgInvite.sender"`)}
+		return &ValidationError{Name: "sender", err: errors.New(`ent: missing required edge "OrgInvitation.sender"`)}
 	}
 	return nil
 }
 
-func (oic *OrgInviteCreate) sqlSave(ctx context.Context) (*OrgInvite, error) {
+func (oic *OrgInvitationCreate) sqlSave(ctx context.Context) (*OrgInvitation, error) {
 	if err := oic.check(); err != nil {
 		return nil, err
 	}
@@ -211,37 +211,37 @@ func (oic *OrgInviteCreate) sqlSave(ctx context.Context) (*OrgInvite, error) {
 	return _node, nil
 }
 
-func (oic *OrgInviteCreate) createSpec() (*OrgInvite, *sqlgraph.CreateSpec) {
+func (oic *OrgInvitationCreate) createSpec() (*OrgInvitation, *sqlgraph.CreateSpec) {
 	var (
-		_node = &OrgInvite{config: oic.config}
-		_spec = sqlgraph.NewCreateSpec(orginvite.Table, sqlgraph.NewFieldSpec(orginvite.FieldID, field.TypeUUID))
+		_node = &OrgInvitation{config: oic.config}
+		_spec = sqlgraph.NewCreateSpec(orginvitation.Table, sqlgraph.NewFieldSpec(orginvitation.FieldID, field.TypeUUID))
 	)
 	if id, ok := oic.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
 	if value, ok := oic.mutation.ReceiverEmail(); ok {
-		_spec.SetField(orginvite.FieldReceiverEmail, field.TypeString, value)
+		_spec.SetField(orginvitation.FieldReceiverEmail, field.TypeString, value)
 		_node.ReceiverEmail = value
 	}
 	if value, ok := oic.mutation.Status(); ok {
-		_spec.SetField(orginvite.FieldStatus, field.TypeEnum, value)
+		_spec.SetField(orginvitation.FieldStatus, field.TypeEnum, value)
 		_node.Status = value
 	}
 	if value, ok := oic.mutation.CreatedAt(); ok {
-		_spec.SetField(orginvite.FieldCreatedAt, field.TypeTime, value)
+		_spec.SetField(orginvitation.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
 	if value, ok := oic.mutation.DeletedAt(); ok {
-		_spec.SetField(orginvite.FieldDeletedAt, field.TypeTime, value)
+		_spec.SetField(orginvitation.FieldDeletedAt, field.TypeTime, value)
 		_node.DeletedAt = value
 	}
 	if nodes := oic.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   orginvite.OrganizationTable,
-			Columns: []string{orginvite.OrganizationColumn},
+			Table:   orginvitation.OrganizationTable,
+			Columns: []string{orginvitation.OrganizationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
@@ -257,8 +257,8 @@ func (oic *OrgInviteCreate) createSpec() (*OrgInvite, *sqlgraph.CreateSpec) {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   orginvite.SenderTable,
-			Columns: []string{orginvite.SenderColumn},
+			Table:   orginvitation.SenderTable,
+			Columns: []string{orginvitation.SenderColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
@@ -273,23 +273,23 @@ func (oic *OrgInviteCreate) createSpec() (*OrgInvite, *sqlgraph.CreateSpec) {
 	return _node, _spec
 }
 
-// OrgInviteCreateBulk is the builder for creating many OrgInvite entities in bulk.
-type OrgInviteCreateBulk struct {
+// OrgInvitationCreateBulk is the builder for creating many OrgInvitation entities in bulk.
+type OrgInvitationCreateBulk struct {
 	config
-	builders []*OrgInviteCreate
+	builders []*OrgInvitationCreate
 }
 
-// Save creates the OrgInvite entities in the database.
-func (oicb *OrgInviteCreateBulk) Save(ctx context.Context) ([]*OrgInvite, error) {
+// Save creates the OrgInvitation entities in the database.
+func (oicb *OrgInvitationCreateBulk) Save(ctx context.Context) ([]*OrgInvitation, error) {
 	specs := make([]*sqlgraph.CreateSpec, len(oicb.builders))
-	nodes := make([]*OrgInvite, len(oicb.builders))
+	nodes := make([]*OrgInvitation, len(oicb.builders))
 	mutators := make([]Mutator, len(oicb.builders))
 	for i := range oicb.builders {
 		func(i int, root context.Context) {
 			builder := oicb.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-				mutation, ok := m.(*OrgInviteMutation)
+				mutation, ok := m.(*OrgInvitationMutation)
 				if !ok {
 					return nil, fmt.Errorf("unexpected mutation type %T", m)
 				}
@@ -332,7 +332,7 @@ func (oicb *OrgInviteCreateBulk) Save(ctx context.Context) ([]*OrgInvite, error)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (oicb *OrgInviteCreateBulk) SaveX(ctx context.Context) []*OrgInvite {
+func (oicb *OrgInvitationCreateBulk) SaveX(ctx context.Context) []*OrgInvitation {
 	v, err := oicb.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -341,13 +341,13 @@ func (oicb *OrgInviteCreateBulk) SaveX(ctx context.Context) []*OrgInvite {
 }
 
 // Exec executes the query.
-func (oicb *OrgInviteCreateBulk) Exec(ctx context.Context) error {
+func (oicb *OrgInvitationCreateBulk) Exec(ctx context.Context) error {
 	_, err := oicb.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (oicb *OrgInviteCreateBulk) ExecX(ctx context.Context) {
+func (oicb *OrgInvitationCreateBulk) ExecX(ctx context.Context) {
 	if err := oicb.Exec(ctx); err != nil {
 		panic(err)
 	}

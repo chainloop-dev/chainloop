@@ -69,14 +69,14 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, workflowContractUseCase, logger)
 	v2 := serviceOpts(logger)
 	workflowService := service.NewWorkflowService(workflowUseCase, v2...)
-	orgInviteRepo := data.NewOrgInvite(dataData, logger)
-	orgInviteUseCase, err := biz.NewOrgInviteUseCase(orgInviteRepo, membershipRepo, userRepo, logger)
+	orgInvitationRepo := data.NewOrgInvitation(dataData, logger)
+	orgInvitationUseCase, err := biz.NewOrgInvitationUseCase(orgInvitationRepo, membershipRepo, userRepo, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
 	confServer := bootstrap.Server
-	authService, err := service.NewAuthService(userUseCase, organizationUseCase, membershipUseCase, casBackendUseCase, orgInviteUseCase, auth, confServer, v2...)
+	authService, err := service.NewAuthService(userUseCase, organizationUseCase, membershipUseCase, casBackendUseCase, orgInvitationUseCase, auth, confServer, v2...)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -132,7 +132,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		cleanup()
 		return nil, nil, err
 	}
-	orgInviteService := service.NewOrgInviteService(orgInviteUseCase, v2...)
+	orgInvitationService := service.NewOrgInvitationService(orgInvitationUseCase, v2...)
 	opts := &server.Opts{
 		UserUseCase:         userUseCase,
 		RobotAccountUseCase: robotAccountUseCase,
@@ -152,7 +152,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		OrganizationSvc:     organizationService,
 		CASBackendSvc:       casBackendService,
 		CASRedirectSvc:      casRedirectService,
-		OrgInviteSvc:        orgInviteService,
+		OrgInvitationSvc:    orgInvitationService,
 		Logger:              logger,
 		ServerConfig:        confServer,
 		AuthConfig:          auth,

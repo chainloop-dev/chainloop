@@ -30,8 +30,8 @@ func NewOrgInvitationCreate(cfg *ActionsOpts) *OrgInvitationCreate {
 }
 
 func (action *OrgInvitationCreate) Run(ctx context.Context, organization, receiver string) (*OrgInvitationItem, error) {
-	client := pb.NewOrgInviteServiceClient(action.cfg.CPConnection)
-	resp, err := client.Create(ctx, &pb.OrgInviteServiceCreateRequest{
+	client := pb.NewOrgInvitationServiceClient(action.cfg.CPConnection)
+	resp, err := client.Create(ctx, &pb.OrgInvitationServiceCreateRequest{
 		OrganizationId: organization,
 		ReceiverEmail:  receiver,
 	})

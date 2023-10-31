@@ -11,7 +11,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integrationattachment"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/membership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/orginvite"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/orginvitation"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/schema"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/user"
@@ -96,16 +96,16 @@ func init() {
 	membershipDescID := membershipFields[0].Descriptor()
 	// membership.DefaultID holds the default value on creation for the id field.
 	membership.DefaultID = membershipDescID.Default.(func() uuid.UUID)
-	orginviteFields := schema.OrgInvite{}.Fields()
-	_ = orginviteFields
-	// orginviteDescCreatedAt is the schema descriptor for created_at field.
-	orginviteDescCreatedAt := orginviteFields[3].Descriptor()
-	// orginvite.DefaultCreatedAt holds the default value on creation for the created_at field.
-	orginvite.DefaultCreatedAt = orginviteDescCreatedAt.Default.(func() time.Time)
-	// orginviteDescID is the schema descriptor for id field.
-	orginviteDescID := orginviteFields[0].Descriptor()
-	// orginvite.DefaultID holds the default value on creation for the id field.
-	orginvite.DefaultID = orginviteDescID.Default.(func() uuid.UUID)
+	orginvitationFields := schema.OrgInvitation{}.Fields()
+	_ = orginvitationFields
+	// orginvitationDescCreatedAt is the schema descriptor for created_at field.
+	orginvitationDescCreatedAt := orginvitationFields[3].Descriptor()
+	// orginvitation.DefaultCreatedAt holds the default value on creation for the created_at field.
+	orginvitation.DefaultCreatedAt = orginvitationDescCreatedAt.Default.(func() time.Time)
+	// orginvitationDescID is the schema descriptor for id field.
+	orginvitationDescID := orginvitationFields[0].Descriptor()
+	// orginvitation.DefaultID holds the default value on creation for the id field.
+	orginvitation.DefaultID = orginvitationDescID.Default.(func() uuid.UUID)
 	organizationFields := schema.Organization{}.Fields()
 	_ = organizationFields
 	// organizationDescName is the schema descriptor for name field.

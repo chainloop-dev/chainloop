@@ -26,17 +26,17 @@ import (
 	"github.com/google/uuid"
 )
 
-type OrgInvite struct {
+type OrgInvitation struct {
 	ent.Schema
 }
 
-func (OrgInvite) Fields() []ent.Field {
+func (OrgInvitation) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),
 		field.String("receiver_email").Immutable(),
 		field.Enum("status").
-			GoType(biz.OrgInviteStatus("")).
-			Default(string(biz.OrgInviteStatusPending)),
+			GoType(biz.OrgInvitationStatus("")).
+			Default(string(biz.OrgInvitationStatusPending)),
 		field.Time("created_at").
 			Default(time.Now).
 			Immutable().
@@ -49,7 +49,7 @@ func (OrgInvite) Fields() []ent.Field {
 	}
 }
 
-func (OrgInvite) Edges() []ent.Edge {
+func (OrgInvitation) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("organization", Organization.Type).Unique().Required().Field("organization_id"),
 		edge.To("sender", User.Type).Unique().Required().Field("sender_id"),

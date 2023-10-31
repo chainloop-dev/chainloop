@@ -23,21 +23,21 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-type OrgInviteService struct {
-	pb.UnimplementedOrgInviteServiceServer
+type OrgInvitationService struct {
+	pb.UnimplementedOrgInvitationServiceServer
 	*service
 
-	useCase *biz.OrgInviteUseCase
+	useCase *biz.OrgInvitationUseCase
 }
 
-func NewOrgInviteService(uc *biz.OrgInviteUseCase, opts ...NewOpt) *OrgInviteService {
-	return &OrgInviteService{
+func NewOrgInvitationService(uc *biz.OrgInvitationUseCase, opts ...NewOpt) *OrgInvitationService {
+	return &OrgInvitationService{
 		service: newService(opts...),
 		useCase: uc,
 	}
 }
 
-func (s *OrgInviteService) Create(ctx context.Context, req *pb.OrgInviteServiceCreateRequest) (*pb.OrgInviteServiceCreateResponse, error) {
+func (s *OrgInvitationService) Create(ctx context.Context, req *pb.OrgInvitationServiceCreateRequest) (*pb.OrgInvitationServiceCreateResponse, error) {
 	user, _, err := loadCurrentUserAndOrg(ctx)
 	if err != nil {
 		return nil, err
@@ -46,46 +46,46 @@ func (s *OrgInviteService) Create(ctx context.Context, req *pb.OrgInviteServiceC
 	// Validations and rbac checks are done in the biz layer
 	i, err := s.useCase.Create(ctx, req.OrganizationId, user.ID, req.ReceiverEmail)
 	if err != nil {
-		return nil, handleUseCaseErr("invite", err, s.log)
+		return nil, handleUseCaseErr("Invitation", err, s.log)
 	}
 
-	return &pb.OrgInviteServiceCreateResponse{Result: bizInviteToPB(i)}, nil
+	return &pb.OrgInvitationServiceCreateResponse{Result: bizInvitationToPB(i)}, nil
 }
 
-func (s *OrgInviteService) Revoke(ctx context.Context, req *pb.OrgInviteServiceRevokeRequest) (*pb.OrgInviteServiceRevokeResponse, error) {
+func (s *OrgInvitationService) Revoke(ctx context.Context, req *pb.OrgInvitationServiceRevokeRequest) (*pb.OrgInvitationServiceRevokeResponse, error) {
 	user, _, err := loadCurrentUserAndOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	if err := s.useCase.Revoke(ctx, user.ID, req.Id); err != nil {
-		return nil, handleUseCaseErr("invite", err, s.log)
+		return nil, handleUseCaseErr("Invitation", err, s.log)
 	}
 
-	return &pb.OrgInviteServiceRevokeResponse{}, nil
+	return &pb.OrgInvitationServiceRevokeResponse{}, nil
 }
 
-func (s *OrgInviteService) ListSent(ctx context.Context, _ *pb.OrgInviteServiceListSentRequest) (*pb.OrgInviteServiceListSentResponse, error) {
+func (s *OrgInvitationService) ListSent(ctx context.Context, _ *pb.OrgInvitationServiceListSentRequest) (*pb.OrgInvitationServiceListSentResponse, error) {
 	user, _, err := loadCurrentUserAndOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	invites, err := s.useCase.ListBySender(ctx, user.ID)
+	Invitations, err := s.useCase.ListBySender(ctx, user.ID)
 	if err != nil {
-		return nil, handleUseCaseErr("invite", err, s.log)
+		return nil, handleUseCaseErr("Invitation", err, s.log)
 	}
 
-	res := []*pb.OrgInviteItem{}
-	for _, invite := range invites {
-		res = append(res, bizInviteToPB(invite))
+	res := []*pb.OrgInvitationItem{}
+	for _, Invitation := range Invitations {
+		res = append(res, bizInvitationToPB(Invitation))
 	}
 
-	return &pb.OrgInviteServiceListSentResponse{Result: res}, nil
+	return &pb.OrgInvitationServiceListSentResponse{Result: res}, nil
 }
 
-func bizInviteToPB(e *biz.OrgInvite) *pb.OrgInviteItem {
-	return &pb.OrgInviteItem{
+func bizInvitationToPB(e *biz.OrgInvitation) *pb.OrgInvitationItem {
+	return &pb.OrgInvitationItem{
 		Id: e.ID.String(), CreatedAt: timestamppb.New(*e.CreatedAt),
 		ReceiverEmail: e.ReceiverEmail, Status: string(e.Status),
 		Organization: bizOrgToPb(e.Org), Sender: bizUserToPb(e.Sender),

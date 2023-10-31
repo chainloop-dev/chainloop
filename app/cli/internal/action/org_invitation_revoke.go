@@ -29,9 +29,9 @@ func NewOrgInvitationRevoke(cfg *ActionsOpts) *OrgInvitationRevoke {
 	return &OrgInvitationRevoke{cfg}
 }
 
-func (action *OrgInvitationRevoke) Run(ctx context.Context, inviteID string) error {
-	client := pb.NewOrgInviteServiceClient(action.cfg.CPConnection)
-	_, err := client.Revoke(ctx, &pb.OrgInviteServiceRevokeRequest{Id: inviteID})
+func (action *OrgInvitationRevoke) Run(ctx context.Context, InvitationID string) error {
+	client := pb.NewOrgInvitationServiceClient(action.cfg.CPConnection)
+	_, err := client.Revoke(ctx, &pb.OrgInvitationServiceRevokeRequest{Id: InvitationID})
 	if err != nil {
 		return err
 	}

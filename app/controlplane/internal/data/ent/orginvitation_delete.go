@@ -8,30 +8,30 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/orginvite"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/orginvitation"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
 )
 
-// OrgInviteDelete is the builder for deleting a OrgInvite entity.
-type OrgInviteDelete struct {
+// OrgInvitationDelete is the builder for deleting a OrgInvitation entity.
+type OrgInvitationDelete struct {
 	config
 	hooks    []Hook
-	mutation *OrgInviteMutation
+	mutation *OrgInvitationMutation
 }
 
-// Where appends a list predicates to the OrgInviteDelete builder.
-func (oid *OrgInviteDelete) Where(ps ...predicate.OrgInvite) *OrgInviteDelete {
+// Where appends a list predicates to the OrgInvitationDelete builder.
+func (oid *OrgInvitationDelete) Where(ps ...predicate.OrgInvitation) *OrgInvitationDelete {
 	oid.mutation.Where(ps...)
 	return oid
 }
 
 // Exec executes the deletion query and returns how many vertices were deleted.
-func (oid *OrgInviteDelete) Exec(ctx context.Context) (int, error) {
+func (oid *OrgInvitationDelete) Exec(ctx context.Context) (int, error) {
 	return withHooks(ctx, oid.sqlExec, oid.mutation, oid.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (oid *OrgInviteDelete) ExecX(ctx context.Context) int {
+func (oid *OrgInvitationDelete) ExecX(ctx context.Context) int {
 	n, err := oid.Exec(ctx)
 	if err != nil {
 		panic(err)
@@ -39,8 +39,8 @@ func (oid *OrgInviteDelete) ExecX(ctx context.Context) int {
 	return n
 }
 
-func (oid *OrgInviteDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(orginvite.Table, sqlgraph.NewFieldSpec(orginvite.FieldID, field.TypeUUID))
+func (oid *OrgInvitationDelete) sqlExec(ctx context.Context) (int, error) {
+	_spec := sqlgraph.NewDeleteSpec(orginvitation.Table, sqlgraph.NewFieldSpec(orginvitation.FieldID, field.TypeUUID))
 	if ps := oid.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -56,32 +56,32 @@ func (oid *OrgInviteDelete) sqlExec(ctx context.Context) (int, error) {
 	return affected, err
 }
 
-// OrgInviteDeleteOne is the builder for deleting a single OrgInvite entity.
-type OrgInviteDeleteOne struct {
-	oid *OrgInviteDelete
+// OrgInvitationDeleteOne is the builder for deleting a single OrgInvitation entity.
+type OrgInvitationDeleteOne struct {
+	oid *OrgInvitationDelete
 }
 
-// Where appends a list predicates to the OrgInviteDelete builder.
-func (oido *OrgInviteDeleteOne) Where(ps ...predicate.OrgInvite) *OrgInviteDeleteOne {
+// Where appends a list predicates to the OrgInvitationDelete builder.
+func (oido *OrgInvitationDeleteOne) Where(ps ...predicate.OrgInvitation) *OrgInvitationDeleteOne {
 	oido.oid.mutation.Where(ps...)
 	return oido
 }
 
 // Exec executes the deletion query.
-func (oido *OrgInviteDeleteOne) Exec(ctx context.Context) error {
+func (oido *OrgInvitationDeleteOne) Exec(ctx context.Context) error {
 	n, err := oido.oid.Exec(ctx)
 	switch {
 	case err != nil:
 		return err
 	case n == 0:
-		return &NotFoundError{orginvite.Label}
+		return &NotFoundError{orginvitation.Label}
 	default:
 		return nil
 	}
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (oido *OrgInviteDeleteOne) ExecX(ctx context.Context) {
+func (oido *OrgInvitationDeleteOne) ExecX(ctx context.Context) {
 	if err := oido.Exec(ctx); err != nil {
 		panic(err)
 	}

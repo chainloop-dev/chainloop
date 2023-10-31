@@ -70,11 +70,11 @@ type AuthService struct {
 	orgUseCase        *biz.OrganizationUseCase
 	casBackendUseCase *biz.CASBackendUseCase
 	membershipUseCase *biz.MembershipUseCase
-	orgInvitesUseCase *biz.OrgInviteUseCase
+	orgInvitesUseCase *biz.OrgInvitationUseCase
 	AuthURLs          *AuthURLs
 }
 
-func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC *biz.MembershipUseCase, cbUC *biz.CASBackendUseCase, inviteUC *biz.OrgInviteUseCase, authConfig *conf.Auth, serverConfig *conf.Server, opts ...NewOpt) (*AuthService, error) {
+func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC *biz.MembershipUseCase, cbUC *biz.CASBackendUseCase, inviteUC *biz.OrgInvitationUseCase, authConfig *conf.Auth, serverConfig *conf.Server, opts ...NewOpt) (*AuthService, error) {
 	oidcConfig := authConfig.GetOidc()
 	if oidcConfig == nil {
 		return nil, errors.New("oauth configuration missing")
@@ -228,7 +228,7 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) (
 	}
 
 	// Accept any pending invites
-	if err := svc.orgInvitesUseCase.AcceptPendingInvites(ctx, u.Email); err != nil {
+	if err := svc.orgInvitesUseCase.AcceptPendingInvitations(ctx, u.Email); err != nil {
 		return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
 	}
 
