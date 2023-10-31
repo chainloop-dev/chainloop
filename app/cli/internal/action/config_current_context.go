@@ -31,12 +31,12 @@ func NewConfigCurrentContext(cfg *ActionsOpts) *ConfigCurrentContext {
 }
 
 type ConfigContextItem struct {
-	CurrentUser       *ConfigContextItemUser
+	CurrentUser       *UserItem
 	CurrentOrg        *OrgItem
 	CurrentCASBackend *CASBackendItem
 }
 
-type ConfigContextItemUser struct {
+type UserItem struct {
 	ID, Email string
 	CreatedAt *time.Time
 }
@@ -51,12 +51,20 @@ func (action *ConfigCurrentContext) Run() (*ConfigContextItem, error) {
 	res := resp.GetResult()
 
 	return &ConfigContextItem{
-		CurrentUser: &ConfigContextItemUser{
-			ID:        res.GetCurrentUser().Id,
-			Email:     res.GetCurrentUser().Email,
-			CreatedAt: toTimePtr(res.GetCurrentUser().CreatedAt.AsTime()),
-		},
+		CurrentUser:       pbUserItemToAction(res.GetCurrentUser()),
 		CurrentOrg:        pbOrgItemToAction(res.GetCurrentOrg()),
 		CurrentCASBackend: pbCASBackendItemToAction(res.GetCurrentCasBackend()),
 	}, nil
+}
+
+func pbUserItemToAction(in *pb.User) *UserItem {
+	if in == nil {
+		return nil
+	}
+
+	return &UserItem{
+		ID:        in.Id,
+		Email:     in.Email,
+		CreatedAt: toTimePtr(in.CreatedAt.AsTime()),
+	}
 }
