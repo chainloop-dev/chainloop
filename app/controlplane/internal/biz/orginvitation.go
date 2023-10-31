@@ -210,13 +210,13 @@ func (uc *OrgInvitationUseCase) AcceptPendingInvitations(ctx context.Context, re
 
 		// user is not a member of the org, create the membership
 		if !alreadyMember {
-			uc.logger.Infow("msg", "Adding member", "Invitation_id", invitation.ID.String(), "org_id", invitation.Org.ID, "user_id", user.ID)
+			uc.logger.Infow("msg", "Adding member", "invitation_id", invitation.ID.String(), "org_id", invitation.Org.ID, "user_id", user.ID)
 			if _, err := uc.mRepo.Create(ctx, orgUUID, userUUID, false); err != nil {
 				return fmt.Errorf("error creating membership for user %s: %w", receiverEmail, err)
 			}
 		}
 
-		uc.logger.Infow("msg", "Accepting invitation", "Invitation_id", invitation.ID.String(), "org_id", invitation.Org.ID, "user_id", user.ID)
+		uc.logger.Infow("msg", "Accepting invitation", "invitation_id", invitation.ID.String(), "org_id", invitation.Org.ID, "user_id", user.ID)
 		// change the status of the invitation
 		if err := uc.repo.ChangeStatus(ctx, invitation.ID, OrgInvitationStatusAccepted); err != nil {
 			return fmt.Errorf("error changing status of invitation %s: %w", invitation.ID.String(), err)
