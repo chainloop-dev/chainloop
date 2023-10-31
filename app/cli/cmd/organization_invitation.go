@@ -23,7 +23,7 @@ func newOrganizationInvitationCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "invitation",
 		Aliases: []string{"invite"},
-		Short:   "User Invitations management",
+		Short:   "User Invitations",
 	}
 
 	cmd.AddCommand(newOrganizationInvitationListSentCmd(), newOrganizationInvitationCreateCmd(), newOrganizationInvitationRevokeCmd())

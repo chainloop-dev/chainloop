@@ -71,13 +71,13 @@ func (s *OrgInvitationService) ListSent(ctx context.Context, _ *pb.OrgInvitation
 		return nil, err
 	}
 
-	Invitations, err := s.useCase.ListBySender(ctx, user.ID)
+	invitations, err := s.useCase.ListBySender(ctx, user.ID)
 	if err != nil {
 		return nil, handleUseCaseErr("invitation", err, s.log)
 	}
 
 	res := []*pb.OrgInvitationItem{}
-	for _, invitation := range Invitations {
+	for _, invitation := range invitations {
 		res = append(res, bizInvitationToPB(invitation))
 	}
 
