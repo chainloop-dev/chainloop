@@ -26,7 +26,7 @@ func newOrganizationInviteCreateCmd() *cobra.Command {
 	var receiverEmail, organizationID string
 	cmd := &cobra.Command{
 		Use:   "create",
-		Short: "Invite an User to an Organization",
+		Short: "Invite a User to an Organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			res, err := action.NewOrgInviteCreate(actionOpts).Run(
 				context.Background(), organizationID, receiverEmail)

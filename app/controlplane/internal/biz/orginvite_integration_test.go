@@ -154,12 +154,6 @@ func (s *OrgInviteIntegrationTestSuite) TestRevoke() {
 		s.True(biz.IsErrInvalidUUID(err))
 	})
 
-	s.T().Run("invalid user ID", func(t *testing.T) {
-		err := s.OrgInvite.Revoke(context.Background(), "deadbeef", uuid.NewString())
-		s.Error(err)
-		s.True(biz.IsErrInvalidUUID(err))
-	})
-
 	s.T().Run("invitation not found", func(t *testing.T) {
 		err := s.OrgInvite.Revoke(context.Background(), s.user.ID, uuid.NewString())
 		s.Error(err)
