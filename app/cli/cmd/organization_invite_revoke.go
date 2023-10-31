@@ -17,46 +17,29 @@ package cmd
 
 import (
 	"context"
-	"fmt"
-	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
-	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 )
 
-func newOrganizationInviteSentCmd() *cobra.Command {
+func newOrganizationInviteRevokeCmd() *cobra.Command {
+	var inviteID string
 	cmd := &cobra.Command{
-		Use:     "sent",
-		Aliases: []string{"ls"},
-		Short:   "List sent invitations",
+		Use:   "revoke",
+		Short: "Revoke a pending invitation",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewOrgInviteListSent(actionOpts).Run(context.Background())
-			if err != nil {
+			if err := action.NewOrgInviteRevoke(actionOpts).Run(context.Background(), inviteID); err != nil {
 				return err
 			}
 
-			return encodeOutput(res, orgInviteTableOutput)
+			logger.Info().Msg("Invite Revoked!")
+			return nil
 		},
 	}
 
+	cmd.Flags().StringVar(&inviteID, "id", "", "Invitation ID")
+	err := cmd.MarkFlagRequired("id")
+	cobra.CheckErr(err)
+
 	return cmd
-}
-
-func orgInviteTableOutput(items []*action.OrgInviteItem) error {
-	if len(items) == 0 {
-		fmt.Println("there are no sent invitations")
-		return nil
-	}
-
-	t := newTableWriter()
-	t.AppendHeader(table.Row{"ID", "Org Name", "Receiver Email", "Status", "Created At"})
-
-	for _, i := range items {
-		t.AppendRow(table.Row{i.ID, i.Organization.Name, i.ReceiverEmail, i.Status, i.CreatedAt.Format(time.RFC822)})
-		t.AppendSeparator()
-	}
-
-	t.Render()
-	return nil
 }

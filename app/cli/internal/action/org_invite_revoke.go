@@ -13,20 +13,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package action
 
 import (
-	"github.com/spf13/cobra"
+	"context"
+
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
-func newOrganizationInviteCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "invite",
-		Aliases: []string{"invitations"},
-		Short:   "User Invitations management",
+type OrgInviteRevoke struct {
+	cfg *ActionsOpts
+}
+
+func NewOrgInviteRevoke(cfg *ActionsOpts) *OrgInviteRevoke {
+	return &OrgInviteRevoke{cfg}
+}
+
+func (action *OrgInviteRevoke) Run(ctx context.Context, inviteID string) error {
+	client := pb.NewOrgInviteServiceClient(action.cfg.CPConnection)
+	_, err := client.Revoke(ctx, &pb.OrgInviteServiceRevokeRequest{Id: inviteID})
+	if err != nil {
+		return err
 	}
 
-	cmd.AddCommand(newOrganizationInviteSentCmd(), newOrganizationInviteCreateCmd(), newOrganizationInviteRevokeCmd())
-
-	return cmd
+	return nil
 }

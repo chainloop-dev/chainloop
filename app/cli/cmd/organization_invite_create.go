@@ -17,46 +17,34 @@ package cmd
 
 import (
 	"context"
-	"fmt"
-	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
-	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 )
 
-func newOrganizationInviteSentCmd() *cobra.Command {
+func newOrganizationInviteCreateCmd() *cobra.Command {
+	var receiverEmail, organizationID string
 	cmd := &cobra.Command{
-		Use:     "sent",
-		Aliases: []string{"ls"},
-		Short:   "List sent invitations",
+		Use:   "create",
+		Short: "Invite an User to an Organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewOrgInviteListSent(actionOpts).Run(context.Background())
+			res, err := action.NewOrgInviteCreate(actionOpts).Run(
+				context.Background(), organizationID, receiverEmail)
 			if err != nil {
 				return err
 			}
 
-			return encodeOutput(res, orgInviteTableOutput)
+			return encodeOutput([]*action.OrgInviteItem{res}, orgInviteTableOutput)
 		},
 	}
 
+	cmd.Flags().StringVar(&receiverEmail, "receiver", "", "Email of the user to invite")
+	err := cmd.MarkFlagRequired("receiver")
+	cobra.CheckErr(err)
+
+	cmd.Flags().StringVar(&organizationID, "organization", "", "ID of the organization to invite the user to")
+	err = cmd.MarkFlagRequired("organization")
+	cobra.CheckErr(err)
+
 	return cmd
-}
-
-func orgInviteTableOutput(items []*action.OrgInviteItem) error {
-	if len(items) == 0 {
-		fmt.Println("there are no sent invitations")
-		return nil
-	}
-
-	t := newTableWriter()
-	t.AppendHeader(table.Row{"ID", "Org Name", "Receiver Email", "Status", "Created At"})
-
-	for _, i := range items {
-		t.AppendRow(table.Row{i.ID, i.Organization.Name, i.ReceiverEmail, i.Status, i.CreatedAt.Format(time.RFC822)})
-		t.AppendSeparator()
-	}
-
-	t.Render()
-	return nil
 }
