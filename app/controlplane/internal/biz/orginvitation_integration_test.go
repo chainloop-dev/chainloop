@@ -75,9 +75,18 @@ func (s *OrgInvitationIntegrationTestSuite) TestCreate() {
 		s.Nil(invite)
 	})
 
-	s.T().Run("user is not member of that org", func(t *testing.T) {
+	s.T().Run("sender is not member of that org", func(t *testing.T) {
 		invite, err := s.OrgInvitation.Create(context.Background(), s.org3.ID, s.user.ID, receiverEmail)
 		s.Error(err)
+		s.ErrorContains(err, "user does not have permission to invite to this org")
+		s.True(biz.IsNotFound(err))
+		s.Nil(invite)
+	})
+
+	s.T().Run("sender is not member of that org but receiver is", func(t *testing.T) {
+		invite, err := s.OrgInvitation.Create(context.Background(), s.org3.ID, s.user.ID, s.user2.Email)
+		s.Error(err)
+		s.ErrorContains(err, "user does not have permission to invite to this org")
 		s.True(biz.IsNotFound(err))
 		s.Nil(invite)
 	})
@@ -231,5 +240,7 @@ func (s *OrgInvitationIntegrationTestSuite) SetupTest() {
 	s.user2, err = s.User.FindOrCreateByEmail(ctx, "user-2@test.com")
 	assert.NoError(err)
 	_, err = s.Membership.Create(ctx, s.org1.ID, s.user2.ID, true)
+	assert.NoError(err)
+	_, err = s.Membership.Create(ctx, s.org3.ID, s.user2.ID, true)
 	assert.NoError(err)
 }
