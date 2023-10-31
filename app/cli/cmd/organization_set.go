@@ -16,28 +16,48 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
 )
 
 func newOrganizationSet() *cobra.Command {
-	var membershipID string
+	var orgID string
 
 	cmd := &cobra.Command{
 		Use:   "set",
 		Short: "Set the current organization associated with this user",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewMembershipSet(actionOpts).Run(membershipID)
+			// To change the current organization, we need to find the membership ID
+			memberships, err := action.NewMembershipList(actionOpts).Run()
+			if err != nil {
+				return err
+			}
+
+			var membershipID string
+			for _, m := range memberships {
+				if m.Org.ID == orgID {
+					membershipID = m.ID
+					break
+				}
+			}
+
+			if membershipID == "" {
+				return fmt.Errorf("organization %s not found", orgID)
+			}
+
+			m, err := action.NewMembershipSet(actionOpts).Run(membershipID)
 			if err != nil {
 				return err
 			}
 
 			logger.Info().Msg("Organization switched!")
-			return encodeOutput([]*action.MembershipItem{res}, orgMembershipTableOutput)
+			return encodeOutput([]*action.MembershipItem{m}, orgMembershipTableOutput)
 		},
 	}
 
-	cmd.Flags().StringVar(&membershipID, "id", "", "membership ID to make the switch")
+	cmd.Flags().StringVar(&orgID, "id", "", "organization ID to make the switch")
 	cobra.CheckErr(cmd.MarkFlagRequired("id"))
 
 	return cmd

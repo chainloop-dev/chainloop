@@ -21,6 +21,9 @@ type IntegrationAttachment func(*sql.Selector)
 // Membership is the predicate function for membership builders.
 type Membership func(*sql.Selector)
 
+// OrgInvitation is the predicate function for orginvitation builders.
+type OrgInvitation func(*sql.Selector)
+
 // Organization is the predicate function for organization builders.
 type Organization func(*sql.Selector)
 

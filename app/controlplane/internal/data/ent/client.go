@@ -21,6 +21,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integrationattachment"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/membership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/orginvitation"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/user"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
@@ -44,6 +45,8 @@ type Client struct {
 	IntegrationAttachment *IntegrationAttachmentClient
 	// Membership is the client for interacting with the Membership builders.
 	Membership *MembershipClient
+	// OrgInvitation is the client for interacting with the OrgInvitation builders.
+	OrgInvitation *OrgInvitationClient
 	// Organization is the client for interacting with the Organization builders.
 	Organization *OrganizationClient
 	// RobotAccount is the client for interacting with the RobotAccount builders.
@@ -76,6 +79,7 @@ func (c *Client) init() {
 	c.Integration = NewIntegrationClient(c.config)
 	c.IntegrationAttachment = NewIntegrationAttachmentClient(c.config)
 	c.Membership = NewMembershipClient(c.config)
+	c.OrgInvitation = NewOrgInvitationClient(c.config)
 	c.Organization = NewOrganizationClient(c.config)
 	c.RobotAccount = NewRobotAccountClient(c.config)
 	c.User = NewUserClient(c.config)
@@ -170,6 +174,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Integration:             NewIntegrationClient(cfg),
 		IntegrationAttachment:   NewIntegrationAttachmentClient(cfg),
 		Membership:              NewMembershipClient(cfg),
+		OrgInvitation:           NewOrgInvitationClient(cfg),
 		Organization:            NewOrganizationClient(cfg),
 		RobotAccount:            NewRobotAccountClient(cfg),
 		User:                    NewUserClient(cfg),
@@ -201,6 +206,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Integration:             NewIntegrationClient(cfg),
 		IntegrationAttachment:   NewIntegrationAttachmentClient(cfg),
 		Membership:              NewMembershipClient(cfg),
+		OrgInvitation:           NewOrgInvitationClient(cfg),
 		Organization:            NewOrganizationClient(cfg),
 		RobotAccount:            NewRobotAccountClient(cfg),
 		User:                    NewUserClient(cfg),
@@ -238,8 +244,8 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.CASBackend, c.CASMapping, c.Integration, c.IntegrationAttachment,
-		c.Membership, c.Organization, c.RobotAccount, c.User, c.Workflow,
-		c.WorkflowContract, c.WorkflowContractVersion, c.WorkflowRun,
+		c.Membership, c.OrgInvitation, c.Organization, c.RobotAccount, c.User,
+		c.Workflow, c.WorkflowContract, c.WorkflowContractVersion, c.WorkflowRun,
 	} {
 		n.Use(hooks...)
 	}
@@ -250,8 +256,8 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.CASBackend, c.CASMapping, c.Integration, c.IntegrationAttachment,
-		c.Membership, c.Organization, c.RobotAccount, c.User, c.Workflow,
-		c.WorkflowContract, c.WorkflowContractVersion, c.WorkflowRun,
+		c.Membership, c.OrgInvitation, c.Organization, c.RobotAccount, c.User,
+		c.Workflow, c.WorkflowContract, c.WorkflowContractVersion, c.WorkflowRun,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -270,6 +276,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.IntegrationAttachment.mutate(ctx, m)
 	case *MembershipMutation:
 		return c.Membership.mutate(ctx, m)
+	case *OrgInvitationMutation:
+		return c.OrgInvitation.mutate(ctx, m)
 	case *OrganizationMutation:
 		return c.Organization.mutate(ctx, m)
 	case *RobotAccountMutation:
@@ -1052,6 +1060,156 @@ func (c *MembershipClient) mutate(ctx context.Context, m *MembershipMutation) (V
 		return (&MembershipDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Membership mutation op: %q", m.Op())
+	}
+}
+
+// OrgInvitationClient is a client for the OrgInvitation schema.
+type OrgInvitationClient struct {
+	config
+}
+
+// NewOrgInvitationClient returns a client for the OrgInvitation from the given config.
+func NewOrgInvitationClient(c config) *OrgInvitationClient {
+	return &OrgInvitationClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `orginvitation.Hooks(f(g(h())))`.
+func (c *OrgInvitationClient) Use(hooks ...Hook) {
+	c.hooks.OrgInvitation = append(c.hooks.OrgInvitation, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `orginvitation.Intercept(f(g(h())))`.
+func (c *OrgInvitationClient) Intercept(interceptors ...Interceptor) {
+	c.inters.OrgInvitation = append(c.inters.OrgInvitation, interceptors...)
+}
+
+// Create returns a builder for creating a OrgInvitation entity.
+func (c *OrgInvitationClient) Create() *OrgInvitationCreate {
+	mutation := newOrgInvitationMutation(c.config, OpCreate)
+	return &OrgInvitationCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of OrgInvitation entities.
+func (c *OrgInvitationClient) CreateBulk(builders ...*OrgInvitationCreate) *OrgInvitationCreateBulk {
+	return &OrgInvitationCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for OrgInvitation.
+func (c *OrgInvitationClient) Update() *OrgInvitationUpdate {
+	mutation := newOrgInvitationMutation(c.config, OpUpdate)
+	return &OrgInvitationUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *OrgInvitationClient) UpdateOne(oi *OrgInvitation) *OrgInvitationUpdateOne {
+	mutation := newOrgInvitationMutation(c.config, OpUpdateOne, withOrgInvitation(oi))
+	return &OrgInvitationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *OrgInvitationClient) UpdateOneID(id uuid.UUID) *OrgInvitationUpdateOne {
+	mutation := newOrgInvitationMutation(c.config, OpUpdateOne, withOrgInvitationID(id))
+	return &OrgInvitationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for OrgInvitation.
+func (c *OrgInvitationClient) Delete() *OrgInvitationDelete {
+	mutation := newOrgInvitationMutation(c.config, OpDelete)
+	return &OrgInvitationDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *OrgInvitationClient) DeleteOne(oi *OrgInvitation) *OrgInvitationDeleteOne {
+	return c.DeleteOneID(oi.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *OrgInvitationClient) DeleteOneID(id uuid.UUID) *OrgInvitationDeleteOne {
+	builder := c.Delete().Where(orginvitation.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &OrgInvitationDeleteOne{builder}
+}
+
+// Query returns a query builder for OrgInvitation.
+func (c *OrgInvitationClient) Query() *OrgInvitationQuery {
+	return &OrgInvitationQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeOrgInvitation},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a OrgInvitation entity by its id.
+func (c *OrgInvitationClient) Get(ctx context.Context, id uuid.UUID) (*OrgInvitation, error) {
+	return c.Query().Where(orginvitation.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *OrgInvitationClient) GetX(ctx context.Context, id uuid.UUID) *OrgInvitation {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryOrganization queries the organization edge of a OrgInvitation.
+func (c *OrgInvitationClient) QueryOrganization(oi *OrgInvitation) *OrganizationQuery {
+	query := (&OrganizationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := oi.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(orginvitation.Table, orginvitation.FieldID, id),
+			sqlgraph.To(organization.Table, organization.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, orginvitation.OrganizationTable, orginvitation.OrganizationColumn),
+		)
+		fromV = sqlgraph.Neighbors(oi.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySender queries the sender edge of a OrgInvitation.
+func (c *OrgInvitationClient) QuerySender(oi *OrgInvitation) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := oi.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(orginvitation.Table, orginvitation.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, orginvitation.SenderTable, orginvitation.SenderColumn),
+		)
+		fromV = sqlgraph.Neighbors(oi.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *OrgInvitationClient) Hooks() []Hook {
+	return c.hooks.OrgInvitation
+}
+
+// Interceptors returns the client interceptors.
+func (c *OrgInvitationClient) Interceptors() []Interceptor {
+	return c.inters.OrgInvitation
+}
+
+func (c *OrgInvitationClient) mutate(ctx context.Context, m *OrgInvitationMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&OrgInvitationCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&OrgInvitationUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&OrgInvitationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&OrgInvitationDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown OrgInvitation mutation op: %q", m.Op())
 	}
 }
 
@@ -2221,12 +2379,12 @@ func (c *WorkflowRunClient) mutate(ctx context.Context, m *WorkflowRunMutation) 
 type (
 	hooks struct {
 		CASBackend, CASMapping, Integration, IntegrationAttachment, Membership,
-		Organization, RobotAccount, User, Workflow, WorkflowContract,
+		OrgInvitation, Organization, RobotAccount, User, Workflow, WorkflowContract,
 		WorkflowContractVersion, WorkflowRun []ent.Hook
 	}
 	inters struct {
 		CASBackend, CASMapping, Integration, IntegrationAttachment, Membership,
-		Organization, RobotAccount, User, Workflow, WorkflowContract,
+		OrgInvitation, Organization, RobotAccount, User, Workflow, WorkflowContract,
 		WorkflowContractVersion, WorkflowRun []ent.Interceptor
 	}
 )

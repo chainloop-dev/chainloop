@@ -52,6 +52,7 @@ var ProviderSet = wire.NewSet(
 	NewIntegrationAttachmentRepo,
 	NewCASMappingRepo,
 	NewMembershipRepo,
+	NewOrgInvitation,
 )
 
 // Data .

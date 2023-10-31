@@ -16,46 +16,30 @@
 package cmd
 
 import (
-	"fmt"
-	"time"
+	"context"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
-	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 )
 
-func newOrganizationList() *cobra.Command {
+func newOrganizationInvitationRevokeCmd() *cobra.Command {
+	var invitationID string
 	cmd := &cobra.Command{
-		Use:     "list",
-		Aliases: []string{"ls"},
-		Short:   "List the organizations this user has access to",
+		Use:   "revoke",
+		Short: "Revoke a pending invitation",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewMembershipList(actionOpts).Run()
-			if err != nil {
+			if err := action.NewOrgInvitationRevoke(actionOpts).Run(context.Background(), invitationID); err != nil {
 				return err
 			}
 
-			return encodeOutput(res, orgMembershipTableOutput)
+			logger.Info().Msg("Invitation Revoked!")
+			return nil
 		},
 	}
 
+	cmd.Flags().StringVar(&invitationID, "id", "", "Invitation ID")
+	err := cmd.MarkFlagRequired("id")
+	cobra.CheckErr(err)
+
 	return cmd
-}
-
-func orgMembershipTableOutput(items []*action.MembershipItem) error {
-	if len(items) == 0 {
-		fmt.Println("you have no access to any organization yet")
-		return nil
-	}
-
-	t := newTableWriter()
-	t.AppendHeader(table.Row{"Org ID", "Org Name", "Current", "Joined At"})
-
-	for _, i := range items {
-		t.AppendRow(table.Row{i.Org.ID, i.Org.Name, i.Current, i.CreatedAt.Format(time.RFC822)})
-		t.AppendSeparator()
-	}
-
-	t.Render()
-	return nil
 }

@@ -13,28 +13,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package biz
+package action
 
-import "github.com/google/wire"
+import (
+	"context"
 
-// ProviderSet is biz providers.
-var ProviderSet = wire.NewSet(
-	NewWorkflowUsecase,
-	NewUserUseCase,
-	NewRootAccountUseCase,
-	NewWorkflowRunUseCase,
-	NewOrganizationUseCase,
-	NewWorkflowContractUseCase,
-	NewCASCredentialsUseCase,
-	NewCASBackendUseCase,
-	NewOrgMetricsUseCase,
-	NewIntegrationUseCase,
-	NewMembershipUseCase,
-	NewCASClientUseCase,
-	NewOrgInvitationUseCase,
-	NewAttestationUseCase,
-	NewWorkflowRunExpirerUseCase,
-	NewCASMappingUseCase,
-	wire.Struct(new(NewIntegrationUseCaseOpts), "*"),
-	wire.Struct(new(NewUserUseCaseParams), "*"),
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
+
+type OrgInvitationRevoke struct {
+	cfg *ActionsOpts
+}
+
+func NewOrgInvitationRevoke(cfg *ActionsOpts) *OrgInvitationRevoke {
+	return &OrgInvitationRevoke{cfg}
+}
+
+func (action *OrgInvitationRevoke) Run(ctx context.Context, invitationID string) error {
+	client := pb.NewOrgInvitationServiceClient(action.cfg.CPConnection)
+	_, err := client.Revoke(ctx, &pb.OrgInvitationServiceRevokeRequest{Id: invitationID})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

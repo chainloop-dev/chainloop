@@ -13,28 +13,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package biz
+package cmd
 
-import "github.com/google/wire"
-
-// ProviderSet is biz providers.
-var ProviderSet = wire.NewSet(
-	NewWorkflowUsecase,
-	NewUserUseCase,
-	NewRootAccountUseCase,
-	NewWorkflowRunUseCase,
-	NewOrganizationUseCase,
-	NewWorkflowContractUseCase,
-	NewCASCredentialsUseCase,
-	NewCASBackendUseCase,
-	NewOrgMetricsUseCase,
-	NewIntegrationUseCase,
-	NewMembershipUseCase,
-	NewCASClientUseCase,
-	NewOrgInvitationUseCase,
-	NewAttestationUseCase,
-	NewWorkflowRunExpirerUseCase,
-	NewCASMappingUseCase,
-	wire.Struct(new(NewIntegrationUseCaseOpts), "*"),
-	wire.Struct(new(NewUserUseCaseParams), "*"),
+import (
+	"github.com/spf13/cobra"
 )
+
+func newOrganizationInvitationCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "invitation",
+		Aliases: []string{"invite"},
+		Short:   "User Invitations",
+	}
+
+	cmd.AddCommand(newOrganizationInvitationListSentCmd(), newOrganizationInvitationCreateCmd(), newOrganizationInvitationRevokeCmd())
+
+	return cmd
+}

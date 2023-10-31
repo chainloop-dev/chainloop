@@ -16,46 +16,35 @@
 package cmd
 
 import (
-	"fmt"
-	"time"
+	"context"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
-	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 )
 
-func newOrganizationList() *cobra.Command {
+func newOrganizationInvitationCreateCmd() *cobra.Command {
+	var receiverEmail, organizationID string
 	cmd := &cobra.Command{
-		Use:     "list",
-		Aliases: []string{"ls"},
-		Short:   "List the organizations this user has access to",
+		Use:   "create",
+		Short: "Invite a User to an Organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewMembershipList(actionOpts).Run()
+			res, err := action.NewOrgInvitationCreate(actionOpts).Run(
+				context.Background(), organizationID, receiverEmail)
 			if err != nil {
 				return err
 			}
 
-			return encodeOutput(res, orgMembershipTableOutput)
+			return encodeOutput([]*action.OrgInvitationItem{res}, orgInvitationTableOutput)
 		},
 	}
 
+	cmd.Flags().StringVar(&receiverEmail, "receiver", "", "Email of the user to invite")
+	err := cmd.MarkFlagRequired("receiver")
+	cobra.CheckErr(err)
+
+	cmd.Flags().StringVar(&organizationID, "organization", "", "ID of the organization to invite the user to")
+	err = cmd.MarkFlagRequired("organization")
+	cobra.CheckErr(err)
+
 	return cmd
-}
-
-func orgMembershipTableOutput(items []*action.MembershipItem) error {
-	if len(items) == 0 {
-		fmt.Println("you have no access to any organization yet")
-		return nil
-	}
-
-	t := newTableWriter()
-	t.AppendHeader(table.Row{"Org ID", "Org Name", "Current", "Joined At"})
-
-	for _, i := range items {
-		t.AppendRow(table.Row{i.Org.ID, i.Org.Name, i.Current, i.CreatedAt.Format(time.RFC822)})
-		t.AppendSeparator()
-	}
-
-	t.Render()
-	return nil
 }

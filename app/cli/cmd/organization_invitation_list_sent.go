@@ -16,6 +16,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -24,35 +25,35 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newOrganizationList() *cobra.Command {
+func newOrganizationInvitationListSentCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "list",
 		Aliases: []string{"ls"},
-		Short:   "List the organizations this user has access to",
+		Short:   "List sent invitations",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewMembershipList(actionOpts).Run()
+			res, err := action.NewOrgInvitationListSent(actionOpts).Run(context.Background())
 			if err != nil {
 				return err
 			}
 
-			return encodeOutput(res, orgMembershipTableOutput)
+			return encodeOutput(res, orgInvitationTableOutput)
 		},
 	}
 
 	return cmd
 }
 
-func orgMembershipTableOutput(items []*action.MembershipItem) error {
+func orgInvitationTableOutput(items []*action.OrgInvitationItem) error {
 	if len(items) == 0 {
-		fmt.Println("you have no access to any organization yet")
+		fmt.Println("there are no sent invitations")
 		return nil
 	}
 
 	t := newTableWriter()
-	t.AppendHeader(table.Row{"Org ID", "Org Name", "Current", "Joined At"})
+	t.AppendHeader(table.Row{"ID", "Org Name", "Receiver Email", "Status", "Created At"})
 
 	for _, i := range items {
-		t.AppendRow(table.Row{i.Org.ID, i.Org.Name, i.Current, i.CreatedAt.Format(time.RFC822)})
+		t.AppendRow(table.Row{i.ID, i.Organization.Name, i.ReceiverEmail, i.Status, i.CreatedAt.Format(time.RFC822)})
 		t.AppendSeparator()
 	}
 

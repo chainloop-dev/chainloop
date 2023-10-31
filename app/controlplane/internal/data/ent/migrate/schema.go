@@ -169,6 +169,36 @@ var (
 			},
 		},
 	}
+	// OrgInvitationsColumns holds the columns for the "org_invitations" table.
+	OrgInvitationsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "receiver_email", Type: field.TypeString},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"accepted", "pending"}, Default: "pending"},
+		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "organization_id", Type: field.TypeUUID},
+		{Name: "sender_id", Type: field.TypeUUID},
+	}
+	// OrgInvitationsTable holds the schema information for the "org_invitations" table.
+	OrgInvitationsTable = &schema.Table{
+		Name:       "org_invitations",
+		Columns:    OrgInvitationsColumns,
+		PrimaryKey: []*schema.Column{OrgInvitationsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "org_invitations_organizations_organization",
+				Columns:    []*schema.Column{OrgInvitationsColumns[5]},
+				RefColumns: []*schema.Column{OrganizationsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "org_invitations_users_sender",
+				Columns:    []*schema.Column{OrgInvitationsColumns[6]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
 	// OrganizationsColumns holds the columns for the "organizations" table.
 	OrganizationsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
@@ -382,6 +412,7 @@ var (
 		IntegrationsTable,
 		IntegrationAttachmentsTable,
 		MembershipsTable,
+		OrgInvitationsTable,
 		OrganizationsTable,
 		RobotAccountsTable,
 		UsersTable,
@@ -403,6 +434,8 @@ func init() {
 	IntegrationAttachmentsTable.ForeignKeys[1].RefTable = WorkflowsTable
 	MembershipsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	MembershipsTable.ForeignKeys[1].RefTable = UsersTable
+	OrgInvitationsTable.ForeignKeys[0].RefTable = OrganizationsTable
+	OrgInvitationsTable.ForeignKeys[1].RefTable = UsersTable
 	RobotAccountsTable.ForeignKeys[0].RefTable = WorkflowsTable
 	WorkflowsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	WorkflowsTable.ForeignKeys[1].RefTable = WorkflowContractsTable

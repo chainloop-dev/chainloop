@@ -26,6 +26,11 @@ func newOrganizationCmd() *cobra.Command {
 		Short:   "Organizations management",
 	}
 
-	cmd.AddCommand(newOrganizationList(), newOrganizationSet(), newOrganizationDescribeCmd())
+	cmd.AddCommand(
+		newOrganizationList(),
+		newOrganizationSet(),
+		newOrganizationDescribeCmd(),
+		newOrganizationInvitationCmd(),
+	)
 	return cmd
 }
