@@ -88,6 +88,6 @@ func bizInviteToPB(e *biz.OrgInvite) *pb.OrgInviteItem {
 	return &pb.OrgInviteItem{
 		Id: e.ID.String(), CreatedAt: timestamppb.New(*e.CreatedAt),
 		ReceiverEmail: e.ReceiverEmail, Status: string(e.Status),
-		OrganizationId: e.OrgID.String(), SenderId: e.SenderID.String(),
+		Organization: bizOrgToPb(e.Org), Sender: bizUserToPb(e.Sender),
 	}
 }

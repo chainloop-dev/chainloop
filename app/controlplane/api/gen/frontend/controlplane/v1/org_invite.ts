@@ -3,6 +3,7 @@ import { grpc } from "@improbable-eng/grpc-web";
 import { BrowserHeaders } from "browser-headers";
 import _m0 from "protobufjs/minimal";
 import { Timestamp } from "../../google/protobuf/timestamp";
+import { Org, User } from "./response_messages";
 
 export const protobufPackage = "controlplane.v1";
 
@@ -33,8 +34,8 @@ export interface OrgInviteItem {
   id: string;
   createdAt?: Date;
   receiverEmail: string;
-  organizationId: string;
-  senderId: string;
+  sender?: User;
+  organization?: Org;
   status: string;
 }
 
@@ -382,7 +383,7 @@ export const OrgInviteServiceListSentResponse = {
 };
 
 function createBaseOrgInviteItem(): OrgInviteItem {
-  return { id: "", createdAt: undefined, receiverEmail: "", organizationId: "", senderId: "", status: "" };
+  return { id: "", createdAt: undefined, receiverEmail: "", sender: undefined, organization: undefined, status: "" };
 }
 
 export const OrgInviteItem = {
@@ -396,11 +397,11 @@ export const OrgInviteItem = {
     if (message.receiverEmail !== "") {
       writer.uint32(26).string(message.receiverEmail);
     }
-    if (message.organizationId !== "") {
-      writer.uint32(34).string(message.organizationId);
+    if (message.sender !== undefined) {
+      User.encode(message.sender, writer.uint32(34).fork()).ldelim();
     }
-    if (message.senderId !== "") {
-      writer.uint32(42).string(message.senderId);
+    if (message.organization !== undefined) {
+      Org.encode(message.organization, writer.uint32(42).fork()).ldelim();
     }
     if (message.status !== "") {
       writer.uint32(50).string(message.status);
@@ -441,14 +442,14 @@ export const OrgInviteItem = {
             break;
           }
 
-          message.organizationId = reader.string();
+          message.sender = User.decode(reader, reader.uint32());
           continue;
         case 5:
           if (tag !== 42) {
             break;
           }
 
-          message.senderId = reader.string();
+          message.organization = Org.decode(reader, reader.uint32());
           continue;
         case 6:
           if (tag !== 50) {
@@ -471,8 +472,8 @@ export const OrgInviteItem = {
       id: isSet(object.id) ? String(object.id) : "",
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
       receiverEmail: isSet(object.receiverEmail) ? String(object.receiverEmail) : "",
-      organizationId: isSet(object.organizationId) ? String(object.organizationId) : "",
-      senderId: isSet(object.senderId) ? String(object.senderId) : "",
+      sender: isSet(object.sender) ? User.fromJSON(object.sender) : undefined,
+      organization: isSet(object.organization) ? Org.fromJSON(object.organization) : undefined,
       status: isSet(object.status) ? String(object.status) : "",
     };
   },
@@ -482,8 +483,9 @@ export const OrgInviteItem = {
     message.id !== undefined && (obj.id = message.id);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
     message.receiverEmail !== undefined && (obj.receiverEmail = message.receiverEmail);
-    message.organizationId !== undefined && (obj.organizationId = message.organizationId);
-    message.senderId !== undefined && (obj.senderId = message.senderId);
+    message.sender !== undefined && (obj.sender = message.sender ? User.toJSON(message.sender) : undefined);
+    message.organization !== undefined &&
+      (obj.organization = message.organization ? Org.toJSON(message.organization) : undefined);
     message.status !== undefined && (obj.status = message.status);
     return obj;
   },
@@ -497,8 +499,12 @@ export const OrgInviteItem = {
     message.id = object.id ?? "";
     message.createdAt = object.createdAt ?? undefined;
     message.receiverEmail = object.receiverEmail ?? "";
-    message.organizationId = object.organizationId ?? "";
-    message.senderId = object.senderId ?? "";
+    message.sender = (object.sender !== undefined && object.sender !== null)
+      ? User.fromPartial(object.sender)
+      : undefined;
+    message.organization = (object.organization !== undefined && object.organization !== null)
+      ? Org.fromPartial(object.organization)
+      : undefined;
     message.status = object.status ?? "";
     return message;
   },

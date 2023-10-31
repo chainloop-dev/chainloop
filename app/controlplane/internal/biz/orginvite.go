@@ -34,8 +34,8 @@ type OrgInviteUseCase struct {
 
 type OrgInvite struct {
 	ID            uuid.UUID
-	OrgID         uuid.UUID
-	SenderID      uuid.UUID
+	Org           *Organization
+	Sender        *User
 	ReceiverEmail string
 	CreatedAt     *time.Time
 	Status        OrgInviteStatus
@@ -152,16 +152,11 @@ func (uc *OrgInviteUseCase) Revoke(ctx context.Context, senderID, inviteID strin
 		return NewErrInvalidUUID(err)
 	}
 
-	senderUUID, err := uuid.Parse(senderID)
-	if err != nil {
-		return NewErrInvalidUUID(err)
-	}
-
 	// We care only about invites that are pending and sent by the user
 	m, err := uc.repo.FindByID(ctx, inviteUUID)
 	if err != nil {
 		return fmt.Errorf("error finding invite %s: %w", inviteID, err)
-	} else if m == nil || m.SenderID != senderUUID {
+	} else if m == nil || m.Sender.ID != senderID {
 		return NewErrNotFound("invite")
 	}
 
@@ -203,20 +198,25 @@ func (uc *OrgInviteUseCase) AcceptPendingInvites(ctx context.Context, receiverEm
 	for _, invite := range invites {
 		var alreadyMember bool
 		for _, m := range memberships {
-			if m.OrganizationID == invite.OrgID {
+			if m.OrganizationID.String() == invite.Org.ID {
 				alreadyMember = true
 			}
 		}
 
+		orgUUID, err := uuid.Parse(invite.Org.ID)
+		if err != nil {
+			return NewErrInvalidUUID(err)
+		}
+
 		// user is not a member of the org, create the membership
 		if !alreadyMember {
-			uc.logger.Infow("msg", "Adding member", "invite_id", invite.ID.String(), "org_id", invite.OrgID.String(), "user_id", user.ID)
-			if _, err := uc.mRepo.Create(ctx, invite.OrgID, userUUID, false); err != nil {
+			uc.logger.Infow("msg", "Adding member", "invite_id", invite.ID.String(), "org_id", invite.Org.ID, "user_id", user.ID)
+			if _, err := uc.mRepo.Create(ctx, orgUUID, userUUID, false); err != nil {
 				return fmt.Errorf("error creating membership for user %s: %w", receiverEmail, err)
 			}
 		}
 
-		uc.logger.Infow("msg", "Accepting invite", "invite_id", invite.ID.String(), "org_id", invite.OrgID.String(), "user_id", user.ID)
+		uc.logger.Infow("msg", "Accepting invite", "invite_id", invite.ID.String(), "org_id", invite.Org.ID, "user_id", user.ID)
 		// change the status of the invite
 		if err := uc.repo.ChangeStatus(ctx, invite.ID, OrgInviteStatusAccepted); err != nil {
 			return fmt.Errorf("error changing status of invite %s: %w", invite.ID.String(), err)

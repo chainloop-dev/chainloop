@@ -50,12 +50,13 @@ func (r *OrgInvite) Create(ctx context.Context, orgID, senderID uuid.UUID, recei
 		return nil, err
 	}
 
-	return entInviteToBiz(invite), nil
+	return r.FindByID(ctx, invite.ID)
 }
 
 func (r *OrgInvite) PendingInvite(ctx context.Context, orgID uuid.UUID, receiverEmail string) (*biz.OrgInvite, error) {
-	invite, err := r.data.db.OrgInvite.Query().
-		Where(orginvite.OrganizationID(orgID),
+	invite, err := r.query().
+		Where(
+			orginvite.OrganizationID(orgID),
 			orginvite.ReceiverEmail(receiverEmail),
 			orginvite.StatusEQ(biz.OrgInviteStatusPending),
 			orginvite.DeletedAtIsNil(),
@@ -70,7 +71,7 @@ func (r *OrgInvite) PendingInvite(ctx context.Context, orgID uuid.UUID, receiver
 }
 
 func (r *OrgInvite) PendingInvites(ctx context.Context, receiverEmail string) ([]*biz.OrgInvite, error) {
-	invites, err := r.data.db.OrgInvite.Query().Where(
+	invites, err := r.query().Where(
 		orginvite.ReceiverEmail(receiverEmail),
 		orginvite.StatusEQ(biz.OrgInviteStatusPending),
 		orginvite.DeletedAtIsNil()).All(ctx)
@@ -90,8 +91,13 @@ func (r *OrgInvite) ChangeStatus(ctx context.Context, id uuid.UUID, status biz.O
 	return r.data.db.OrgInvite.UpdateOneID(id).SetStatus(status).Exec(ctx)
 }
 
+// Full query with dependencies
+func (r *OrgInvite) query() *ent.OrgInviteQuery {
+	return r.data.db.OrgInvite.Query().WithOrganization().WithSender()
+}
+
 func (r *OrgInvite) FindByID(ctx context.Context, id uuid.UUID) (*biz.OrgInvite, error) {
-	invite, err := r.data.db.OrgInvite.Query().Where(orginvite.ID(id), orginvite.DeletedAtIsNil()).Only(ctx)
+	invite, err := r.query().Where(orginvite.ID(id), orginvite.DeletedAtIsNil()).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, fmt.Errorf("error finding invite %s: %w", id.String(), err)
 	} else if invite == nil {
@@ -106,7 +112,7 @@ func (r *OrgInvite) SoftDelete(ctx context.Context, id uuid.UUID) error {
 }
 
 func (r *OrgInvite) ListBySender(ctx context.Context, userID uuid.UUID) ([]*biz.OrgInvite, error) {
-	invite, err := r.data.db.OrgInvite.Query().Where(orginvite.SenderID(userID), orginvite.DeletedAtIsNil()).All(ctx)
+	invite, err := r.query().Where(orginvite.SenderID(userID), orginvite.DeletedAtIsNil()).All(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error finding invites for user %s: %w", userID.String(), err)
 	}
@@ -124,12 +130,20 @@ func entInviteToBiz(i *ent.OrgInvite) *biz.OrgInvite {
 		return nil
 	}
 
-	return &biz.OrgInvite{
+	res := &biz.OrgInvite{
 		ID:            i.ID,
 		ReceiverEmail: i.ReceiverEmail,
 		CreatedAt:     toTimePtr(i.CreatedAt),
-		OrgID:         i.OrganizationID,
-		SenderID:      i.SenderID,
 		Status:        i.Status,
 	}
+
+	if i.Edges.Organization != nil {
+		res.Org = entOrgToBizOrg(i.Edges.Organization)
+	}
+
+	if i.Edges.Sender != nil {
+		res.Sender = entUserToBizUser(i.Edges.Sender)
+	}
+
+	return res
 }

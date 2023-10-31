@@ -56,7 +56,8 @@ func (r *userRepo) CreateByEmail(ctx context.Context, email string) (*biz.User, 
 		return nil, err
 	}
 
-	return entUserToBizUser(u), nil
+	// Query it to load the fully formed object, including proper casted dates that come from the DB
+	return r.FindByID(ctx, u.ID)
 }
 
 // Find by ID, returns nil if not found

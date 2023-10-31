@@ -68,3 +68,7 @@ func (s *ContextService) Current(ctx context.Context, _ *pb.ContextServiceCurren
 func bizOrgToPb(m *biz.Organization) *pb.Org {
 	return &pb.Org{Id: m.ID, Name: m.Name, CreatedAt: timestamppb.New(*m.CreatedAt)}
 }
+
+func bizUserToPb(u *biz.User) *pb.User {
+	return &pb.User{Id: u.ID, Email: u.Email, CreatedAt: timestamppb.New(*u.CreatedAt)}
+}

@@ -86,8 +86,8 @@ func (s *OrgInviteIntegrationTestSuite) TestCreate() {
 		for _, org := range []*biz.Organization{s.org1, s.org2} {
 			invite, err := s.OrgInvite.Create(context.Background(), org.ID, s.user.ID, receiverEmail)
 			s.NoError(err)
-			s.Equal(org.ID, invite.OrgID.String())
-			s.Equal(s.user.ID, invite.SenderID.String())
+			s.Equal(org, invite.Org)
+			s.Equal(s.user, invite.Sender)
 			s.Equal(receiverEmail, invite.ReceiverEmail)
 			s.Equal(biz.OrgInviteStatusPending, invite.Status)
 			s.NotNil(invite.CreatedAt)
@@ -105,7 +105,7 @@ func (s *OrgInviteIntegrationTestSuite) TestCreate() {
 	s.T().Run("but it can if it's another email", func(t *testing.T) {
 		invite, err := s.OrgInvite.Create(context.Background(), s.org1.ID, s.user.ID, "anotheremail@cyberdyne.io")
 		s.Equal("anotheremail@cyberdyne.io", invite.ReceiverEmail)
-		s.Equal(s.org1.ID, invite.OrgID.String())
+		s.Equal(s.org1, invite.Org)
 		s.NoError(err)
 	})
 }
