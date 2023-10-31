@@ -59,7 +59,6 @@ func (r *OrgInvitation) PendingInvitation(ctx context.Context, orgID uuid.UUID, 
 			orginvitation.OrganizationID(orgID),
 			orginvitation.ReceiverEmail(receiverEmail),
 			orginvitation.StatusEQ(biz.OrgInvitationStatusPending),
-			orginvitation.DeletedAtIsNil(),
 		).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
@@ -74,7 +73,7 @@ func (r *OrgInvitation) PendingInvitations(ctx context.Context, receiverEmail st
 	invites, err := r.query().Where(
 		orginvitation.ReceiverEmail(receiverEmail),
 		orginvitation.StatusEQ(biz.OrgInvitationStatusPending),
-		orginvitation.DeletedAtIsNil()).All(ctx)
+	).All(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error finding invites for user %s: %w", receiverEmail, err)
 	}
@@ -91,13 +90,13 @@ func (r *OrgInvitation) ChangeStatus(ctx context.Context, id uuid.UUID, status b
 	return r.data.db.OrgInvitation.UpdateOneID(id).SetStatus(status).Exec(ctx)
 }
 
-// Full query with dependencies
+// Full query of non-deleted invites with all edges loaded
 func (r *OrgInvitation) query() *ent.OrgInvitationQuery {
-	return r.data.db.OrgInvitation.Query().WithOrganization().WithSender()
+	return r.data.db.OrgInvitation.Query().WithOrganization().WithSender().Where(orginvitation.DeletedAtIsNil())
 }
 
 func (r *OrgInvitation) FindByID(ctx context.Context, id uuid.UUID) (*biz.OrgInvitation, error) {
-	invite, err := r.query().Where(orginvitation.ID(id), orginvitation.DeletedAtIsNil()).Only(ctx)
+	invite, err := r.query().Where(orginvitation.ID(id)).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, fmt.Errorf("error finding invite %s: %w", id.String(), err)
 	} else if invite == nil {
@@ -112,7 +111,7 @@ func (r *OrgInvitation) SoftDelete(ctx context.Context, id uuid.UUID) error {
 }
 
 func (r *OrgInvitation) ListBySender(ctx context.Context, userID uuid.UUID) ([]*biz.OrgInvitation, error) {
-	invite, err := r.query().Where(orginvitation.SenderID(userID), orginvitation.DeletedAtIsNil()).All(ctx)
+	invite, err := r.query().Where(orginvitation.SenderID(userID)).All(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error finding invites for user %s: %w", userID.String(), err)
 	}

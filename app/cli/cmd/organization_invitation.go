@@ -26,7 +26,7 @@ func newOrganizationInvitationCmd() *cobra.Command {
 		Short:   "User Invitations management",
 	}
 
-	cmd.AddCommand(newOrganizationInvitationSentCmd(), newOrganizationInvitationCreateCmd(), newOrganizationInvitationRevokeCmd())
+	cmd.AddCommand(newOrganizationInvitationListSentCmd(), newOrganizationInvitationCreateCmd(), newOrganizationInvitationRevokeCmd())
 
 	return cmd
 }

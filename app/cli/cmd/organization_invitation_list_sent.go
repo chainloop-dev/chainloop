@@ -25,9 +25,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newOrganizationInvitationSentCmd() *cobra.Command {
+func newOrganizationInvitationListSentCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "sent",
+		Use:     "list",
 		Aliases: []string{"ls"},
 		Short:   "List sent invitations",
 		RunE: func(cmd *cobra.Command, args []string) error {
