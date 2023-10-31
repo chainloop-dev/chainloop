@@ -38,11 +38,11 @@ func newOrganizationInvitationCreateCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&receiverEmail, "receiver", "", "Email of the user to Invitation")
+	cmd.Flags().StringVar(&receiverEmail, "receiver", "", "Email of the user to invite")
 	err := cmd.MarkFlagRequired("receiver")
 	cobra.CheckErr(err)
 
-	cmd.Flags().StringVar(&organizationID, "organization", "", "ID of the organization to Invitation the user to")
+	cmd.Flags().StringVar(&organizationID, "organization", "", "ID of the organization to invite the user to")
 	err = cmd.MarkFlagRequired("organization")
 	cobra.CheckErr(err)
 

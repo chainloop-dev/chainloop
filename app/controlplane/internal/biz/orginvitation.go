@@ -98,7 +98,7 @@ func (uc *OrgInvitationUseCase) Create(ctx context.Context, orgID, senderID, rec
 		}
 	}
 
-	// 4 - Check if the user has permissions to Invitation to the org
+	// 4 - Check if the user has permissions to invite to the org
 	memberships, err = uc.mRepo.FindByUser(ctx, senderUUID)
 	if err != nil {
 		return nil, fmt.Errorf("error finding memberships for user %s: %w", senderUUID.String(), err)
@@ -107,33 +107,33 @@ func (uc *OrgInvitationUseCase) Create(ctx context.Context, orgID, senderID, rec
 	var hasPermission bool
 	for _, m := range memberships {
 		if m.OrganizationID == orgUUID {
-			// User has permission to Invitation to this org
+			// User has permission to invite to this org
 			hasPermission = true
 			break
 		}
 	}
 
 	if !hasPermission {
-		return nil, NewErrNotFound("user does not have permission to Invitation to this org")
+		return nil, NewErrNotFound("user does not have permission to invite to this org")
 	}
 
-	// 5 - Check if there is already an Invitation for this user for this org
+	// 5 - Check if there is already an invitation for this user for this org
 	m, err := uc.repo.PendingInvitation(ctx, orgUUID, receiverEmail)
 	if err != nil {
 		return nil, fmt.Errorf("error finding Invitation for org %s and receiver %s: %w", orgID, receiverEmail, err)
 	}
 
 	if m != nil {
-		return nil, NewErrValidationStr("Invitation already exists for this user and org")
+		return nil, NewErrValidationStr("invitation already exists for this user and org")
 	}
 
-	// 5 - Create the Invitation
-	Invitation, err := uc.repo.Create(ctx, orgUUID, senderUUID, receiverEmail)
+	// 5 - Create the invitation
+	invitation, err := uc.repo.Create(ctx, orgUUID, senderUUID, receiverEmail)
 	if err != nil {
 		return nil, fmt.Errorf("error creating Invitation: %w", err)
 	}
 
-	return Invitation, nil
+	return invitation, nil
 }
 
 func (uc *OrgInvitationUseCase) ListBySender(ctx context.Context, senderID string) ([]*OrgInvitation, error) {
@@ -146,16 +146,16 @@ func (uc *OrgInvitationUseCase) ListBySender(ctx context.Context, senderID strin
 }
 
 // Revoke an Invitation by ID only if the user is the one who created it
-func (uc *OrgInvitationUseCase) Revoke(ctx context.Context, senderID, InvitationID string) error {
-	InvitationUUID, err := uuid.Parse(InvitationID)
+func (uc *OrgInvitationUseCase) Revoke(ctx context.Context, senderID, invitationID string) error {
+	invitationUUID, err := uuid.Parse(invitationID)
 	if err != nil {
 		return NewErrInvalidUUID(err)
 	}
 
 	// We care only about Invitations that are pending and sent by the user
-	m, err := uc.repo.FindByID(ctx, InvitationUUID)
+	m, err := uc.repo.FindByID(ctx, invitationUUID)
 	if err != nil {
-		return fmt.Errorf("error finding Invitation %s: %w", InvitationID, err)
+		return fmt.Errorf("error finding Invitation %s: %w", invitationID, err)
 	} else if m == nil || m.Sender.ID != senderID {
 		return NewErrNotFound("Invitation")
 	}
@@ -164,7 +164,7 @@ func (uc *OrgInvitationUseCase) Revoke(ctx context.Context, senderID, Invitation
 		return NewErrValidationStr("Invitation is not in pending state")
 	}
 
-	return uc.repo.SoftDelete(ctx, InvitationUUID)
+	return uc.repo.SoftDelete(ctx, invitationUUID)
 }
 
 // AcceptPendingInvitations accepts all pending Invitations for a given user email
@@ -226,24 +226,24 @@ func (uc *OrgInvitationUseCase) AcceptPendingInvitations(ctx context.Context, re
 	return nil
 }
 
-func (uc *OrgInvitationUseCase) AcceptInvitation(ctx context.Context, InvitationID string) error {
-	InvitationUUID, err := uuid.Parse(InvitationID)
+func (uc *OrgInvitationUseCase) AcceptInvitation(ctx context.Context, invitationID string) error {
+	invitationUUID, err := uuid.Parse(invitationID)
 	if err != nil {
 		return NewErrInvalidUUID(err)
 	}
 
-	return uc.repo.ChangeStatus(ctx, InvitationUUID, OrgInvitationStatusAccepted)
+	return uc.repo.ChangeStatus(ctx, invitationUUID, OrgInvitationStatusAccepted)
 }
 
-func (uc *OrgInvitationUseCase) FindByID(ctx context.Context, InvitationID string) (*OrgInvitation, error) {
-	InvitationUUID, err := uuid.Parse(InvitationID)
+func (uc *OrgInvitationUseCase) FindByID(ctx context.Context, invitationID string) (*OrgInvitation, error) {
+	invitationUUID, err := uuid.Parse(invitationID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	Invitation, err := uc.repo.FindByID(ctx, InvitationUUID)
+	Invitation, err := uc.repo.FindByID(ctx, invitationUUID)
 	if err != nil {
-		return nil, fmt.Errorf("error finding Invitation %s: %w", InvitationID, err)
+		return nil, fmt.Errorf("error finding Invitation %s: %w", invitationID, err)
 	} else if Invitation == nil {
 		return nil, NewErrNotFound("Invitation")
 	}
