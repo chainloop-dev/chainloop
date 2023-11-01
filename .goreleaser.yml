@@ -1,11 +1,14 @@
 project_name: Chainloop
 env:
   - CGO_ENABLED=0
+  - COMMON_LDFLAGS=-s -w
+report_sizes: true
 builds:
   - binary: control-plane
     id: control-plane
     main: ./app/controlplane/cmd
     ldflags:
+      - "{{ .Env.COMMON_LDFLAGS }}"
       - -X github.com/chainloop-dev/chainloop/app/controlplane/internal/server.Version={{ .Version }}
       - -X main.Version={{ .Version }}
     targets:
@@ -14,6 +17,7 @@ builds:
     id: artifact-cas
     main: ./app/artifact-cas/cmd
     ldflags:
+      - "{{ .Env.COMMON_LDFLAGS }}"
       - -X github.com/chainloop-dev/chainloop/app/artifact-cas/internal/server.Version={{ .Version }}
       - -X main.Version={{ .Version }}
     targets:
@@ -22,6 +26,7 @@ builds:
     id: cli
     main: ./app/cli
     ldflags:
+      - "{{ .Env.COMMON_LDFLAGS }}"
       - -X github.com/chainloop-dev/chainloop/app/cli/cmd.Version={{ .Version }}
     targets:
       - darwin_amd64
@@ -38,11 +43,13 @@ builds:
     main: ./app/controlplane/plugins/core/discord-webhook/v1/cmd
     targets:
       - linux_amd64
+    ldflags: ["{{ .Env.COMMON_LDFLAGS }}"]
   - binary: chainloop-plugin-smtp
     id: chainloop-plugin-smtp
     main: ./app/controlplane/plugins/core/smtp/v1/cmd
     targets:
       - linux_amd64
+    ldflags: ["{{ .Env.COMMON_LDFLAGS }}"]
   - binary: chainloop-plugin-dependency-track
     id: chainloop-plugin-dependency-track
     main: ./app/controlplane/plugins/core/dependency-track/v1/cmd
