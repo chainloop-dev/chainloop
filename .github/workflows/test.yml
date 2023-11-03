@@ -50,10 +50,23 @@ jobs:
       # Check that the generated ent code is up to date
       # see https://entgo.io/docs/ci/
       - uses: ent/contrib/ci@e38dfb6484dfbe64b8bd060fe6a219a1aa5da770 # master
-        name: "Check all generated code is checked in"
+        name: "Check all ent generated code is checked in"
         if: ${{ matrix.app != 'main-module' }}
         with:
           working-directory: app/${{ matrix.app }}
+
+      # Check that the generated API code is up to date
+      # We install the tools and run the protoc generation before checking differences
+      - name: "Check all API generated code is checked in"
+        if: ${{ matrix.app == 'main-module' }}
+        run: |
+          make init-api-tools
+          make api
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Error: The Git repository is dirty (has uncommitted changes). Make sure all the generated API-related files are checked in."
+            git status --porcelain
+            exit 1
+          fi
 
       - name: Test
         if: ${{ matrix.app != 'main-module' }}

@@ -2,16 +2,21 @@ VERSION=$(shell git describe --tags --always)
 
 .PHONY: init
 # init env
-init:
-	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.31.0
-	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
-	go install github.com/envoyproxy/protoc-gen-validate@v1.0.1
-	go install github.com/go-kratos/kratos/cmd/protoc-gen-go-errors/v2@latest
-	go install github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@latest
+init: init-api-tools
 	go install github.com/google/wire/cmd/wire@latest
 	go install github.com/vektra/mockery/v2@v2.20.0
 	go install ariga.io/atlas/cmd/atlas@v0.12.0
+
+# initialize API tooling
+.PHONY: init-api-tools
+init-api-tools:
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.31.0
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
 	go install github.com/bufbuild/buf/cmd/buf@v1.10.0
+	go install github.com/envoyproxy/protoc-gen-validate@v1.0.1
+	# Tools fixed to a specific version via its commit since they are not released standalone
+	go install github.com/go-kratos/kratos/cmd/protoc-gen-go-errors/v2@v2.0.0-20231102162905-3fc8fb7a0a0b
+	go install github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@v2.0.0-20231102162905-3fc8fb7a0a0b
 
 # show help
 help:
