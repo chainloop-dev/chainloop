@@ -44,6 +44,7 @@ message CraftingSchema {
       GITHUB_ACTION = 1;
       GITLAB_PIPELINE = 2;
       AZURE_PIPELINE = 3;
+      JENKINS_JOB = 4;
     }
   }
 
