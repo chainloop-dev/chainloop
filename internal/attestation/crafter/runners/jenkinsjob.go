@@ -43,8 +43,10 @@ func (r *JenkinsJob) ListEnvVars() []string {
 		"BUILD_URL",
 
 		// Some info about the commit (Jenkins Git Plugin)
-		"GIT_BRANCH",
-		"GIT_COMMIT",
+		// NOTE: Commenting these vars out because they are not always present
+		//       and current chainloop behavior requires these to be set.
+		// "GIT_BRANCH",
+		// "GIT_COMMIT",
 
 		// Some info about the agent
 		"AGENT_WORKDIR",
