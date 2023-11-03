@@ -80,8 +80,6 @@ func (s *jenkinsJobSuite) TestListEnvVars() {
 	s.Equal([]string{
 		"JOB_NAME",
 		"BUILD_URL",
-		"GIT_BRANCH",
-		"GIT_COMMIT",
 		"AGENT_WORKDIR",
 		"NODE_NAME",
 	}, s.runner.ListEnvVars())
@@ -111,8 +109,6 @@ func (s *jenkinsJobSuite) SetupTest() {
 var jenkinsJobTestingEnvVars = map[string]string{
 	"JOB_NAME":      "some-jenkins-job",
 	"BUILD_URL":     "http://some-build-url/",
-	"GIT_BRANCH":    "some-branch",
-	"GIT_COMMIT":    "123",
 	"AGENT_WORKDIR": "/home/sample/agent",
 	"NODE_NAME":     "some-node",
 }
