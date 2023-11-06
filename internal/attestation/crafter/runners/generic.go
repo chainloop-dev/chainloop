@@ -27,6 +27,8 @@ func (r *Generic) CheckEnv() bool {
 	return true
 }
 
+// Returns a list of environment variables names. This list is used to
+// automatically inject environment variables into the attestation.
 func (r *Generic) ListEnvVars() []string {
 	return []string{}
 }

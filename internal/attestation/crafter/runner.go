@@ -44,6 +44,8 @@ func NewRunner(t schemaapi.CraftingSchema_Runner_RunnerType) supportedRunner {
 		return &runners.GitlabPipeline{}
 	case schemaapi.CraftingSchema_Runner_AZURE_PIPELINE:
 		return &runners.AzurePipeline{}
+	case schemaapi.CraftingSchema_Runner_JENKINS_JOB:
+		return &runners.JenkinsJob{}
 	default:
 		return &runners.Generic{}
 	}
