@@ -12,6 +12,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/membership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/orginvitation"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/referrer"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/schema"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/user"
@@ -120,6 +121,16 @@ func init() {
 	organizationDescID := organizationFields[0].Descriptor()
 	// organization.DefaultID holds the default value on creation for the id field.
 	organization.DefaultID = organizationDescID.Default.(func() uuid.UUID)
+	referrerFields := schema.Referrer{}.Fields()
+	_ = referrerFields
+	// referrerDescCreatedAt is the schema descriptor for created_at field.
+	referrerDescCreatedAt := referrerFields[3].Descriptor()
+	// referrer.DefaultCreatedAt holds the default value on creation for the created_at field.
+	referrer.DefaultCreatedAt = referrerDescCreatedAt.Default.(func() time.Time)
+	// referrerDescID is the schema descriptor for id field.
+	referrerDescID := referrerFields[0].Descriptor()
+	// referrer.DefaultID holds the default value on creation for the id field.
+	referrer.DefaultID = referrerDescID.Default.(func() uuid.UUID)
 	robotaccountFields := schema.RobotAccount{}.Fields()
 	_ = robotaccountFields
 	// robotaccountDescCreatedAt is the schema descriptor for created_at field.

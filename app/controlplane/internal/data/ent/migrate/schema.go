@@ -211,6 +211,26 @@ var (
 		Columns:    OrganizationsColumns,
 		PrimaryKey: []*schema.Column{OrganizationsColumns[0]},
 	}
+	// ReferrersColumns holds the columns for the "referrers" table.
+	ReferrersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "digest", Type: field.TypeString},
+		{Name: "artifact_type", Type: field.TypeString},
+		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
+	}
+	// ReferrersTable holds the schema information for the "referrers" table.
+	ReferrersTable = &schema.Table{
+		Name:       "referrers",
+		Columns:    ReferrersColumns,
+		PrimaryKey: []*schema.Column{ReferrersColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "referrer_digest",
+				Unique:  false,
+				Columns: []*schema.Column{ReferrersColumns[1]},
+			},
+		},
+	}
 	// RobotAccountsColumns holds the columns for the "robot_accounts" table.
 	RobotAccountsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
@@ -380,6 +400,31 @@ var (
 			},
 		},
 	}
+	// ReferrerReferencesColumns holds the columns for the "referrer_references" table.
+	ReferrerReferencesColumns = []*schema.Column{
+		{Name: "referrer_id", Type: field.TypeUUID},
+		{Name: "referred_by_id", Type: field.TypeUUID},
+	}
+	// ReferrerReferencesTable holds the schema information for the "referrer_references" table.
+	ReferrerReferencesTable = &schema.Table{
+		Name:       "referrer_references",
+		Columns:    ReferrerReferencesColumns,
+		PrimaryKey: []*schema.Column{ReferrerReferencesColumns[0], ReferrerReferencesColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "referrer_references_referrer_id",
+				Columns:    []*schema.Column{ReferrerReferencesColumns[0]},
+				RefColumns: []*schema.Column{ReferrersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "referrer_references_referred_by_id",
+				Columns:    []*schema.Column{ReferrerReferencesColumns[1]},
+				RefColumns: []*schema.Column{ReferrersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// WorkflowRunCasBackendsColumns holds the columns for the "workflow_run_cas_backends" table.
 	WorkflowRunCasBackendsColumns = []*schema.Column{
 		{Name: "workflow_run_id", Type: field.TypeUUID},
@@ -414,12 +459,14 @@ var (
 		MembershipsTable,
 		OrgInvitationsTable,
 		OrganizationsTable,
+		ReferrersTable,
 		RobotAccountsTable,
 		UsersTable,
 		WorkflowsTable,
 		WorkflowContractsTable,
 		WorkflowContractVersionsTable,
 		WorkflowRunsTable,
+		ReferrerReferencesTable,
 		WorkflowRunCasBackendsTable,
 	}
 )
@@ -444,6 +491,8 @@ func init() {
 	WorkflowRunsTable.ForeignKeys[0].RefTable = RobotAccountsTable
 	WorkflowRunsTable.ForeignKeys[1].RefTable = WorkflowsTable
 	WorkflowRunsTable.ForeignKeys[2].RefTable = WorkflowContractVersionsTable
+	ReferrerReferencesTable.ForeignKeys[0].RefTable = ReferrersTable
+	ReferrerReferencesTable.ForeignKeys[1].RefTable = ReferrersTable
 	WorkflowRunCasBackendsTable.ForeignKeys[0].RefTable = WorkflowRunsTable
 	WorkflowRunCasBackendsTable.ForeignKeys[1].RefTable = CasBackendsTable
 }
