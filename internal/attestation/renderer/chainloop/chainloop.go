@@ -208,12 +208,12 @@ const (
 )
 
 var (
-	AnnotationMaterialType      = Prefixed("material.type")
-	AnnotationMaterialName      = Prefixed("material.name")
-	AnnotationMaterialCAS       = Prefixed("material.cas")
-	annotationMaterialInlineCAS = Prefixed("material.cas.inline")
+	AnnotationMaterialType      = prefixed("material.type")
+	AnnotationMaterialName      = prefixed("material.name")
+	AnnotationMaterialCAS       = prefixed("material.cas")
+	annotationMaterialInlineCAS = prefixed("material.cas.inline")
 )
 
-func Prefixed(name string) string {
+func prefixed(name string) string {
 	return fmt.Sprintf("%s%s", rendererPrefix, name)
 }

@@ -103,7 +103,7 @@ func (r *RendererV02) subject() ([]*intoto.ResourceDescriptor, error) {
 	// We might don't want this and just force the existence of one material with output = true
 	subject := []*intoto.ResourceDescriptor{
 		{
-			Name: Prefixed(fmt.Sprintf("workflow.%s", r.att.GetWorkflow().Name)),
+			Name: prefixed(fmt.Sprintf("workflow.%s", r.att.GetWorkflow().Name)),
 			Digest: map[string]string{
 				"sha256": fmt.Sprintf("%x", sha256.Sum256(raw)),
 			},
