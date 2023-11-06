@@ -65,6 +65,7 @@ type TestingUseCases struct {
 	RegisteredIntegrations sdk.AvailablePlugins
 	CASMapping             *biz.CASMappingUseCase
 	OrgInvitation          *biz.OrgInvitationUseCase
+	Referrer               *biz.ReferrerUseCase
 }
 
 type newTestingOpts struct {

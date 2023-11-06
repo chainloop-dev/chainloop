@@ -38,20 +38,20 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 			inputPath: "testdata/attestations/full.json",
 			want: ReferrerMap{
 				"sha256:1a077137aef7ca208b80c339769d0d7eecacc2850368e56e834cda1750ce413a": &Referrer{
-					digest:       "sha256:1a077137aef7ca208b80c339769d0d7eecacc2850368e56e834cda1750ce413a",
-					artifactType: "ATTESTATION",
-					references: []string{
+					Digest:       "sha256:1a077137aef7ca208b80c339769d0d7eecacc2850368e56e834cda1750ce413a",
+					ArtifactType: "ATTESTATION",
+					References: []string{
 						"sha256:264f55a6ff9cec2f4742a9faacc033b29f65c04dd4480e71e23579d484288d61",
 						"sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c",
 					},
 				},
 				"sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c": &Referrer{
-					digest:       "sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c",
-					artifactType: "SBOM_CYCLONEDX_JSON",
+					Digest:       "sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c",
+					ArtifactType: "SBOM_CYCLONEDX_JSON",
 				},
 				"sha256:264f55a6ff9cec2f4742a9faacc033b29f65c04dd4480e71e23579d484288d61": &Referrer{
-					digest:       "sha256:264f55a6ff9cec2f4742a9faacc033b29f65c04dd4480e71e23579d484288d61",
-					artifactType: "CONTAINER_IMAGE",
+					Digest:       "sha256:264f55a6ff9cec2f4742a9faacc033b29f65c04dd4480e71e23579d484288d61",
+					ArtifactType: "CONTAINER_IMAGE",
 				},
 			},
 		},
@@ -61,16 +61,16 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 			want: ReferrerMap{
 				// the git commit a subject in the attestation
 				"sha1:58442b61a6564df94857ff69ad7c340c55703e20": &Referrer{
-					digest:       "sha1:58442b61a6564df94857ff69ad7c340c55703e20",
-					artifactType: "GIT_HEAD_COMMIT",
-					references: []string{
+					Digest:       "sha1:58442b61a6564df94857ff69ad7c340c55703e20",
+					ArtifactType: "GIT_HEAD_COMMIT",
+					References: []string{
 						"sha256:507dddb505ceb53fb32cde31f9935c9a3ebc7b7d82f36101de638b1ab9367344",
 					},
 				},
 				"sha256:507dddb505ceb53fb32cde31f9935c9a3ebc7b7d82f36101de638b1ab9367344": &Referrer{
-					digest:       "sha256:507dddb505ceb53fb32cde31f9935c9a3ebc7b7d82f36101de638b1ab9367344",
-					artifactType: "ATTESTATION",
-					references: []string{
+					Digest:       "sha256:507dddb505ceb53fb32cde31f9935c9a3ebc7b7d82f36101de638b1ab9367344",
+					ArtifactType: "ATTESTATION",
+					References: []string{
 						"sha1:58442b61a6564df94857ff69ad7c340c55703e20",
 					},
 				},
@@ -81,41 +81,41 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 			inputPath: "testdata/attestations/with-git-subject.json",
 			want: ReferrerMap{
 				"sha256:fbd9335f55d83d8aaf9ab1a539b0f2a87b444e8c54f34c9a1ca9d7df15605db4": &Referrer{
-					digest:       "sha256:fbd9335f55d83d8aaf9ab1a539b0f2a87b444e8c54f34c9a1ca9d7df15605db4",
-					artifactType: "CONTAINER_IMAGE",
+					Digest:       "sha256:fbd9335f55d83d8aaf9ab1a539b0f2a87b444e8c54f34c9a1ca9d7df15605db4",
+					ArtifactType: "CONTAINER_IMAGE",
 					// the container image is a subject in the attestation
-					references: []string{
+					References: []string{
 						"sha256:ad704d286bcad6e155e71c33d48247931231338396acbcd9769087530085b2a2",
 					},
 				},
 				"sha1:78ac366c9e8a300d51808d581422ca61f7b5b721": &Referrer{
-					digest:       "sha1:78ac366c9e8a300d51808d581422ca61f7b5b721",
-					artifactType: "GIT_HEAD_COMMIT",
+					Digest:       "sha1:78ac366c9e8a300d51808d581422ca61f7b5b721",
+					ArtifactType: "GIT_HEAD_COMMIT",
 					// the git commit a subject in the attestation
-					references: []string{
+					References: []string{
 						"sha256:ad704d286bcad6e155e71c33d48247931231338396acbcd9769087530085b2a2",
 					},
 				},
 				"sha256:385c4188b9c080499413f2e0fa0b3951ed107b5f0cb35c2f2b1f07a7be9a7512": &Referrer{
-					digest:       "sha256:385c4188b9c080499413f2e0fa0b3951ed107b5f0cb35c2f2b1f07a7be9a7512",
-					artifactType: "ARTIFACT",
+					Digest:       "sha256:385c4188b9c080499413f2e0fa0b3951ed107b5f0cb35c2f2b1f07a7be9a7512",
+					ArtifactType: "ARTIFACT",
 				},
 				"sha256:c4a63494f9289dd9fd44f841efb4f5b52765c2de6332f2d86e5f6c0340b40a95": &Referrer{
-					digest:       "sha256:c4a63494f9289dd9fd44f841efb4f5b52765c2de6332f2d86e5f6c0340b40a95",
-					artifactType: "SARIF",
+					Digest:       "sha256:c4a63494f9289dd9fd44f841efb4f5b52765c2de6332f2d86e5f6c0340b40a95",
+					ArtifactType: "SARIF",
 				},
 				"sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c": &Referrer{
-					digest:       "sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c",
-					artifactType: "SBOM_CYCLONEDX_JSON",
+					Digest:       "sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c",
+					ArtifactType: "SBOM_CYCLONEDX_JSON",
 				},
 				"sha256:b4bd86d5855f94bcac0a92d3100ae7b85d050bd2e5fb9037a200e5f5f0b073a2": &Referrer{
-					digest:       "sha256:b4bd86d5855f94bcac0a92d3100ae7b85d050bd2e5fb9037a200e5f5f0b073a2",
-					artifactType: "OPENVEX",
+					Digest:       "sha256:b4bd86d5855f94bcac0a92d3100ae7b85d050bd2e5fb9037a200e5f5f0b073a2",
+					ArtifactType: "OPENVEX",
 				},
 				"sha256:ad704d286bcad6e155e71c33d48247931231338396acbcd9769087530085b2a2": &Referrer{
-					digest:       "sha256:ad704d286bcad6e155e71c33d48247931231338396acbcd9769087530085b2a2",
-					artifactType: "ATTESTATION",
-					references: []string{
+					Digest:       "sha256:ad704d286bcad6e155e71c33d48247931231338396acbcd9769087530085b2a2",
+					ArtifactType: "ATTESTATION",
+					References: []string{
 						// container image
 						"sha256:fbd9335f55d83d8aaf9ab1a539b0f2a87b444e8c54f34c9a1ca9d7df15605db4",
 						// artifact

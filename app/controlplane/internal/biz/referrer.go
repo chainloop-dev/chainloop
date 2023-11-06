@@ -21,26 +21,35 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/uuid"
 	v1 "github.com/in-toto/attestation/go/v1"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
 
 type Referrer struct {
-	digest       string
-	artifactType string
+	Digest       string
+	ArtifactType string
 	// points to other digests
-	references []string
+	References []string
+}
+
+type StoredReferrer struct {
+	ID uuid.UUID
+	*Referrer
+	CreatedAt *time.Time
 }
 
 type ReferrerMap map[string]*Referrer
 
 type ReferrerRepo interface {
-	Save(ctx context.Context, input *ReferrerMap) error
+	Save(ctx context.Context, input ReferrerMap) error
+	GetFromRoot(ctx context.Context, digest string) (*StoredReferrer, error)
 }
 
 type ReferrerUseCase struct {
@@ -54,6 +63,30 @@ func NewReferrerUseCase(repo ReferrerRepo, l log.Logger) *ReferrerUseCase {
 	}
 
 	return &ReferrerUseCase{repo, servicelogger.ScopedHelper(l, "biz/Referrer")}
+}
+
+func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envelope) error {
+	m, err := extractReferrers(att)
+	if err != nil {
+		return fmt.Errorf("extracting referrers: %w", err)
+	}
+
+	if err := s.repo.Save(ctx, m); err != nil {
+		return fmt.Errorf("saving referrers: %w", err)
+	}
+
+	return nil
+}
+
+func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest string) (*StoredReferrer, error) {
+	ref, err := s.repo.GetFromRoot(ctx, digest)
+	if err != nil {
+		return nil, fmt.Errorf("getting referrer from root: %w", err)
+	} else if ref == nil {
+		return nil, NewErrNotFound("referrer")
+	}
+
+	return ref, nil
 }
 
 const (
@@ -86,8 +119,8 @@ func extractReferrers(att *dsse.Envelope) (ReferrerMap, error) {
 	// Add the attestation itself as a referrer to the map without references yet
 	attestationHash := h.String()
 	referrers[attestationHash] = &Referrer{
-		digest:       attestationHash,
-		artifactType: referrerAttestationType,
+		Digest:       attestationHash,
+		ArtifactType: referrerAttestationType,
 	}
 
 	// 2 - Predicate that's referenced from the attestation
@@ -112,12 +145,12 @@ func extractReferrers(att *dsse.Envelope) (ReferrerMap, error) {
 		}
 
 		referrers[material.Hash.String()] = &Referrer{
-			digest:       material.Hash.String(),
-			artifactType: material.Type,
+			Digest:       material.Hash.String(),
+			ArtifactType: material.Type,
 		}
 
 		// Add the reference to the attestation
-		referrers[attestationHash].references = append(referrers[attestationHash].references, material.Hash.String())
+		referrers[attestationHash].References = append(referrers[attestationHash].References, material.Hash.String())
 	}
 
 	// 3 - Subject that points to the attestation
@@ -138,14 +171,14 @@ func extractReferrers(att *dsse.Envelope) (ReferrerMap, error) {
 
 		// check if we already have a referrer for this digest and set it otherwise
 		// this is the case for example for git.Head ones
-		if _, ok := referrers[subjectRef.digest]; !ok {
-			referrers[subjectRef.digest] = subjectRef
+		if _, ok := referrers[subjectRef.Digest]; !ok {
+			referrers[subjectRef.Digest] = subjectRef
 			// add it to the list of of attestation-referenced digests
-			referrers[attestationHash].references = append(referrers[attestationHash].references, subjectRef.digest)
+			referrers[attestationHash].References = append(referrers[attestationHash].References, subjectRef.Digest)
 		}
 
 		// Update referrer to point to the attestation
-		referrers[subjectRef.digest].references = []string{attestationHash}
+		referrers[subjectRef.Digest].References = []string{attestationHash}
 	}
 
 	return referrers, nil
@@ -169,8 +202,8 @@ func intotoSubjectToReferrer(r *v1.ResourceDescriptor) (*Referrer, error) {
 		}
 
 		return &Referrer{
-			digest:       digestStr,
-			artifactType: referrerGitHeadType,
+			Digest:       digestStr,
+			ArtifactType: referrerGitHeadType,
 		}, nil
 	}
 
@@ -189,8 +222,8 @@ func intotoSubjectToReferrer(r *v1.ResourceDescriptor) (*Referrer, error) {
 			}
 
 			return &Referrer{
-				digest:       digestStr,
-				artifactType: v,
+				Digest:       digestStr,
+				ArtifactType: v,
 			}, nil
 		}
 	}
