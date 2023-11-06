@@ -17,6 +17,7 @@ package biz
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -38,7 +39,9 @@ type Referrer struct {
 
 type ReferrerMap map[string]*Referrer
 
-type ReferrerRepo interface{}
+type ReferrerRepo interface {
+	Save(ctx context.Context, input *ReferrerMap) error
+}
 
 type ReferrerUseCase struct {
 	repo   ReferrerRepo
@@ -53,7 +56,10 @@ func NewReferrerUseCase(repo ReferrerRepo, l log.Logger) *ReferrerUseCase {
 	return &ReferrerUseCase{repo, servicelogger.ScopedHelper(l, "biz/Referrer")}
 }
 
-const ReferrerAttestationType = "ATTESTATION"
+const (
+	referrerAttestationType = "ATTESTATION"
+	referrerGitHeadType     = "GIT_HEAD_COMMIT"
+)
 
 // ExtractReferrers extracts the referrers from the given attestation
 // this means
@@ -81,7 +87,7 @@ func extractReferrers(att *dsse.Envelope) (ReferrerMap, error) {
 	attestationHash := h.String()
 	referrers[attestationHash] = &Referrer{
 		digest:       attestationHash,
-		artifactType: ReferrerAttestationType,
+		artifactType: referrerAttestationType,
 	}
 
 	// 2 - Predicate that's referenced from the attestation
@@ -164,7 +170,7 @@ func intotoSubjectToReferrer(r *v1.ResourceDescriptor) (*Referrer, error) {
 
 		return &Referrer{
 			digest:       digestStr,
-			artifactType: "GIT_HEAD_COMMIT",
+			artifactType: referrerGitHeadType,
 		}, nil
 	}
 
