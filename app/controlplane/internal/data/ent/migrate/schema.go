@@ -225,9 +225,9 @@ var (
 		PrimaryKey: []*schema.Column{ReferrersColumns[0]},
 		Indexes: []*schema.Index{
 			{
-				Name:    "referrer_digest",
-				Unique:  false,
-				Columns: []*schema.Column{ReferrersColumns[1]},
+				Name:    "referrer_digest_artifact_type",
+				Unique:  true,
+				Columns: []*schema.Column{ReferrersColumns[1], ReferrersColumns[2]},
 			},
 		},
 	}

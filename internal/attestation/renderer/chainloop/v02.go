@@ -103,7 +103,7 @@ func (r *RendererV02) subject() ([]*intoto.ResourceDescriptor, error) {
 	// We might don't want this and just force the existence of one material with output = true
 	subject := []*intoto.ResourceDescriptor{
 		{
-			Name: prefixed(fmt.Sprintf("workflow.%s", r.att.GetWorkflow().Name)),
+			Name: Prefixed(fmt.Sprintf("workflow.%s", r.att.GetWorkflow().Name)),
 			Digest: map[string]string{
 				"sha256": fmt.Sprintf("%x", sha256.Sum256(raw)),
 			},
@@ -117,7 +117,7 @@ func (r *RendererV02) subject() ([]*intoto.ResourceDescriptor, error) {
 		}
 
 		subject = append(subject, &intoto.ResourceDescriptor{
-			Name:        subjectGitHead,
+			Name:        SubjectGitHead,
 			Digest:      map[string]string{"sha1": head.GetHash()},
 			Annotations: annotations,
 		})
@@ -209,8 +209,8 @@ func outputMaterials(att *v1.Attestation, onlyOutput bool) ([]*intoto.ResourceDe
 
 		// Required, built-in annotations
 		annotationsM := map[string]interface{}{
-			annotationMaterialType: artifactType.String(),
-			annotationMaterialName: mdefName,
+			AnnotationMaterialType: artifactType.String(),
+			AnnotationMaterialName: mdefName,
 		}
 
 		// Custom annotations, it does not override the built-in ones
@@ -270,7 +270,7 @@ func normalizeMaterial(material *intoto.ResourceDescriptor) (*NormalizedMaterial
 		m.Annotations[k] = v.GetStringValue()
 	}
 
-	mType, ok := mAnnotationsMap[annotationMaterialType]
+	mType, ok := mAnnotationsMap[AnnotationMaterialType]
 	if !ok {
 		return nil, fmt.Errorf("material type not found")
 	}
@@ -278,7 +278,7 @@ func normalizeMaterial(material *intoto.ResourceDescriptor) (*NormalizedMaterial
 	// Set the type
 	m.Type = mType.GetStringValue()
 
-	mName, ok := mAnnotationsMap[annotationMaterialName]
+	mName, ok := mAnnotationsMap[AnnotationMaterialName]
 	if !ok {
 		return nil, fmt.Errorf("material name not found")
 	}

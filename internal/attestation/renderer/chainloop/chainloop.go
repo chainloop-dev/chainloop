@@ -199,7 +199,7 @@ func (p *ProvenancePredicateCommon) GetAnnotations() map[string]string {
 const (
 	rendererPrefix = "chainloop."
 	// Subject names
-	subjectGitHead                  = "git.head"
+	SubjectGitHead                  = "git.head"
 	subjectGitAnnotationAuthorEmail = "author.email"
 	subjectGitAnnotationAuthorName  = "author.name"
 	subjectGitAnnotationWhen        = "date"
@@ -208,12 +208,12 @@ const (
 )
 
 var (
-	annotationMaterialType      = prefixed("material.type")
-	annotationMaterialName      = prefixed("material.name")
-	annotationMaterialCAS       = prefixed("material.cas")
-	annotationMaterialInlineCAS = prefixed("material.cas.inline")
+	AnnotationMaterialType      = Prefixed("material.type")
+	AnnotationMaterialName      = Prefixed("material.name")
+	annotationMaterialCAS       = Prefixed("material.cas")
+	annotationMaterialInlineCAS = Prefixed("material.cas.inline")
 )
 
-func prefixed(name string) string {
+func Prefixed(name string) string {
 	return fmt.Sprintf("%s%s", rendererPrefix, name)
 }

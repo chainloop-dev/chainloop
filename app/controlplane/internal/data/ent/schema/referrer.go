@@ -44,14 +44,15 @@ func (Referrer) Fields() []ent.Field {
 }
 
 func (Referrer) Edges() []ent.Edge {
-	// M2M relationship. referrer can refer to multiple referrers
 	return []ent.Edge{
+		// M2M relationship. referrer can refer to multiple referrers
 		edge.To("references", Referrer.Type).From("referred_by").Immutable(),
 	}
 }
 
 func (Referrer) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("digest"),
+		// For now we only guarantee that the digest is unique in the scope of the artifact type
+		index.Fields("digest", "artifact_type").Unique(),
 	}
 }

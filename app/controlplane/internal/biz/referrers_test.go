@@ -56,6 +56,27 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 			},
 		},
 		{
+			name:      "basic",
+			inputPath: "testdata/attestations/with-string.json",
+			want: ReferrerMap{
+				// the git commit a subject in the attestation
+				"sha1:58442b61a6564df94857ff69ad7c340c55703e20": &Referrer{
+					digest:       "sha1:58442b61a6564df94857ff69ad7c340c55703e20",
+					artifactType: "GIT_HEAD_COMMIT",
+					references: []string{
+						"sha256:507dddb505ceb53fb32cde31f9935c9a3ebc7b7d82f36101de638b1ab9367344",
+					},
+				},
+				"sha256:507dddb505ceb53fb32cde31f9935c9a3ebc7b7d82f36101de638b1ab9367344": &Referrer{
+					digest:       "sha256:507dddb505ceb53fb32cde31f9935c9a3ebc7b7d82f36101de638b1ab9367344",
+					artifactType: "ATTESTATION",
+					references: []string{
+						"sha1:58442b61a6564df94857ff69ad7c340c55703e20",
+					},
+				},
+			},
+		},
+		{
 			name:      "with git subject",
 			inputPath: "testdata/attestations/with-git-subject.json",
 			want: ReferrerMap{
@@ -63,6 +84,14 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 					digest:       "sha256:fbd9335f55d83d8aaf9ab1a539b0f2a87b444e8c54f34c9a1ca9d7df15605db4",
 					artifactType: "CONTAINER_IMAGE",
 					// the container image is a subject in the attestation
+					references: []string{
+						"sha256:ad704d286bcad6e155e71c33d48247931231338396acbcd9769087530085b2a2",
+					},
+				},
+				"sha1:78ac366c9e8a300d51808d581422ca61f7b5b721": &Referrer{
+					digest:       "sha1:78ac366c9e8a300d51808d581422ca61f7b5b721",
+					artifactType: "GIT_HEAD_COMMIT",
+					// the git commit a subject in the attestation
 					references: []string{
 						"sha256:ad704d286bcad6e155e71c33d48247931231338396acbcd9769087530085b2a2",
 					},
@@ -87,11 +116,18 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 					digest:       "sha256:ad704d286bcad6e155e71c33d48247931231338396acbcd9769087530085b2a2",
 					artifactType: "ATTESTATION",
 					references: []string{
+						// container image
 						"sha256:fbd9335f55d83d8aaf9ab1a539b0f2a87b444e8c54f34c9a1ca9d7df15605db4",
+						// artifact
 						"sha256:385c4188b9c080499413f2e0fa0b3951ed107b5f0cb35c2f2b1f07a7be9a7512",
+						// sarif
 						"sha256:c4a63494f9289dd9fd44f841efb4f5b52765c2de6332f2d86e5f6c0340b40a95",
+						// sbom
 						"sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c",
+						// openvex
 						"sha256:b4bd86d5855f94bcac0a92d3100ae7b85d050bd2e5fb9037a200e5f5f0b073a2",
+						// git head commit
+						"sha1:78ac366c9e8a300d51808d581422ca61f7b5b721",
 					},
 				},
 			},
@@ -112,7 +148,7 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 				return
 			}
 
-			s.NoError(err)
+			require.NoError(s.T(), err)
 			assert.Equal(s.T(), tc.want, got)
 		})
 	}
