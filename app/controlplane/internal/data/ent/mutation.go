@@ -5166,6 +5166,7 @@ type ReferrerMutation struct {
 	id                 *uuid.UUID
 	digest             *string
 	artifact_type      *string
+	downloadable       *bool
 	created_at         *time.Time
 	clearedFields      map[string]struct{}
 	referred_by        map[uuid.UUID]struct{}
@@ -5355,6 +5356,42 @@ func (m *ReferrerMutation) ResetArtifactType() {
 	m.artifact_type = nil
 }
 
+// SetDownloadable sets the "downloadable" field.
+func (m *ReferrerMutation) SetDownloadable(b bool) {
+	m.downloadable = &b
+}
+
+// Downloadable returns the value of the "downloadable" field in the mutation.
+func (m *ReferrerMutation) Downloadable() (r bool, exists bool) {
+	v := m.downloadable
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDownloadable returns the old "downloadable" field's value of the Referrer entity.
+// If the Referrer object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ReferrerMutation) OldDownloadable(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDownloadable is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDownloadable requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDownloadable: %w", err)
+	}
+	return oldValue.Downloadable, nil
+}
+
+// ResetDownloadable resets all changes to the "downloadable" field.
+func (m *ReferrerMutation) ResetDownloadable() {
+	m.downloadable = nil
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (m *ReferrerMutation) SetCreatedAt(t time.Time) {
 	m.created_at = &t
@@ -5533,12 +5570,15 @@ func (m *ReferrerMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ReferrerMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 4)
 	if m.digest != nil {
 		fields = append(fields, referrer.FieldDigest)
 	}
 	if m.artifact_type != nil {
 		fields = append(fields, referrer.FieldArtifactType)
+	}
+	if m.downloadable != nil {
+		fields = append(fields, referrer.FieldDownloadable)
 	}
 	if m.created_at != nil {
 		fields = append(fields, referrer.FieldCreatedAt)
@@ -5555,6 +5595,8 @@ func (m *ReferrerMutation) Field(name string) (ent.Value, bool) {
 		return m.Digest()
 	case referrer.FieldArtifactType:
 		return m.ArtifactType()
+	case referrer.FieldDownloadable:
+		return m.Downloadable()
 	case referrer.FieldCreatedAt:
 		return m.CreatedAt()
 	}
@@ -5570,6 +5612,8 @@ func (m *ReferrerMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldDigest(ctx)
 	case referrer.FieldArtifactType:
 		return m.OldArtifactType(ctx)
+	case referrer.FieldDownloadable:
+		return m.OldDownloadable(ctx)
 	case referrer.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
 	}
@@ -5594,6 +5638,13 @@ func (m *ReferrerMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetArtifactType(v)
+		return nil
+	case referrer.FieldDownloadable:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDownloadable(v)
 		return nil
 	case referrer.FieldCreatedAt:
 		v, ok := value.(time.Time)
@@ -5656,6 +5707,9 @@ func (m *ReferrerMutation) ResetField(name string) error {
 		return nil
 	case referrer.FieldArtifactType:
 		m.ResetArtifactType()
+		return nil
+	case referrer.FieldDownloadable:
+		m.ResetDownloadable()
 		return nil
 	case referrer.FieldCreatedAt:
 		m.ResetCreatedAt()

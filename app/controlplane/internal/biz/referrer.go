@@ -35,6 +35,8 @@ import (
 type Referrer struct {
 	Digest       string
 	ArtifactType string
+	// Wether the item is downloadable from CAS or not
+	Downloadable bool
 	// points to other digests
 	References []string
 }
@@ -121,6 +123,7 @@ func extractReferrers(att *dsse.Envelope) (ReferrerMap, error) {
 	referrers[attestationHash] = &Referrer{
 		Digest:       attestationHash,
 		ArtifactType: referrerAttestationType,
+		Downloadable: true,
 	}
 
 	// 2 - Predicate that's referenced from the attestation
@@ -147,6 +150,7 @@ func extractReferrers(att *dsse.Envelope) (ReferrerMap, error) {
 		referrers[material.Hash.String()] = &Referrer{
 			Digest:       material.Hash.String(),
 			ArtifactType: material.Type,
+			Downloadable: material.UploadedToCAS,
 		}
 
 		// Add the reference to the attestation
@@ -207,26 +211,31 @@ func intotoSubjectToReferrer(r *v1.ResourceDescriptor) (*Referrer, error) {
 		}, nil
 	}
 
+	// Iterate on material types
+	var materialType string
+	var uploadedToCAS bool
 	// it's a material type
 	for k, v := range r.Annotations.AsMap() {
 		// It's a material type
 		if k == chainloop.AnnotationMaterialType {
-			// check that v is a string and cast it
-			v, ok := v.(string)
-			if !ok {
-				return nil, fmt.Errorf("invalid material type %T", v)
-			}
-
-			if digestStr == "" {
-				return nil, fmt.Errorf("no digest found for subject %s", r.Name)
-			}
-
-			return &Referrer{
-				Digest:       digestStr,
-				ArtifactType: v,
-			}, nil
+			materialType = v.(string)
+		} else if k == chainloop.AnnotationMaterialCAS {
+			uploadedToCAS = v.(bool)
 		}
 	}
 
-	return nil, nil
+	// it's not a material type
+	if materialType == "" {
+		return nil, nil
+	}
+
+	if digestStr == "" {
+		return nil, fmt.Errorf("no digest found for subject %s", r.Name)
+	}
+
+	return &Referrer{
+		Digest:       digestStr,
+		ArtifactType: materialType,
+		Downloadable: uploadedToCAS,
+	}, nil
 }

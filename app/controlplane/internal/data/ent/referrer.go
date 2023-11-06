@@ -22,6 +22,8 @@ type Referrer struct {
 	Digest string `json:"digest,omitempty"`
 	// ArtifactType holds the value of the "artifact_type" field.
 	ArtifactType string `json:"artifact_type,omitempty"`
+	// Downloadable holds the value of the "downloadable" field.
+	Downloadable bool `json:"downloadable,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -64,6 +66,8 @@ func (*Referrer) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case referrer.FieldDownloadable:
+			values[i] = new(sql.NullBool)
 		case referrer.FieldDigest, referrer.FieldArtifactType:
 			values[i] = new(sql.NullString)
 		case referrer.FieldCreatedAt:
@@ -102,6 +106,12 @@ func (r *Referrer) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field artifact_type", values[i])
 			} else if value.Valid {
 				r.ArtifactType = value.String
+			}
+		case referrer.FieldDownloadable:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field downloadable", values[i])
+			} else if value.Valid {
+				r.Downloadable = value.Bool
 			}
 		case referrer.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -160,6 +170,9 @@ func (r *Referrer) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("artifact_type=")
 	builder.WriteString(r.ArtifactType)
+	builder.WriteString(", ")
+	builder.WriteString("downloadable=")
+	builder.WriteString(fmt.Sprintf("%v", r.Downloadable))
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(r.CreatedAt.Format(time.ANSIC))

@@ -40,6 +40,7 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 				"sha256:1a077137aef7ca208b80c339769d0d7eecacc2850368e56e834cda1750ce413a": &Referrer{
 					Digest:       "sha256:1a077137aef7ca208b80c339769d0d7eecacc2850368e56e834cda1750ce413a",
 					ArtifactType: "ATTESTATION",
+					Downloadable: true,
 					References: []string{
 						"sha256:264f55a6ff9cec2f4742a9faacc033b29f65c04dd4480e71e23579d484288d61",
 						"sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c",
@@ -48,6 +49,7 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 				"sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c": &Referrer{
 					Digest:       "sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c",
 					ArtifactType: "SBOM_CYCLONEDX_JSON",
+					Downloadable: true,
 				},
 				"sha256:264f55a6ff9cec2f4742a9faacc033b29f65c04dd4480e71e23579d484288d61": &Referrer{
 					Digest:       "sha256:264f55a6ff9cec2f4742a9faacc033b29f65c04dd4480e71e23579d484288d61",
@@ -73,6 +75,7 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 					References: []string{
 						"sha1:58442b61a6564df94857ff69ad7c340c55703e20",
 					},
+					Downloadable: true,
 				},
 			},
 		},
@@ -99,22 +102,27 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 				"sha256:385c4188b9c080499413f2e0fa0b3951ed107b5f0cb35c2f2b1f07a7be9a7512": &Referrer{
 					Digest:       "sha256:385c4188b9c080499413f2e0fa0b3951ed107b5f0cb35c2f2b1f07a7be9a7512",
 					ArtifactType: "ARTIFACT",
+					Downloadable: true,
 				},
 				"sha256:c4a63494f9289dd9fd44f841efb4f5b52765c2de6332f2d86e5f6c0340b40a95": &Referrer{
 					Digest:       "sha256:c4a63494f9289dd9fd44f841efb4f5b52765c2de6332f2d86e5f6c0340b40a95",
 					ArtifactType: "SARIF",
+					Downloadable: true,
 				},
 				"sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c": &Referrer{
 					Digest:       "sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c",
 					ArtifactType: "SBOM_CYCLONEDX_JSON",
+					Downloadable: true,
 				},
 				"sha256:b4bd86d5855f94bcac0a92d3100ae7b85d050bd2e5fb9037a200e5f5f0b073a2": &Referrer{
 					Digest:       "sha256:b4bd86d5855f94bcac0a92d3100ae7b85d050bd2e5fb9037a200e5f5f0b073a2",
 					ArtifactType: "OPENVEX",
+					Downloadable: true,
 				},
 				"sha256:ad704d286bcad6e155e71c33d48247931231338396acbcd9769087530085b2a2": &Referrer{
 					Digest:       "sha256:ad704d286bcad6e155e71c33d48247931231338396acbcd9769087530085b2a2",
 					ArtifactType: "ATTESTATION",
+					Downloadable: true,
 					References: []string{
 						// container image
 						"sha256:fbd9335f55d83d8aaf9ab1a539b0f2a87b444e8c54f34c9a1ca9d7df15605db4",

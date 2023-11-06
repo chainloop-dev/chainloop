@@ -222,7 +222,7 @@ func outputMaterials(att *v1.Attestation, onlyOutput bool) ([]*intoto.ResourceDe
 		}
 
 		if mdef.UploadedToCas {
-			annotationsM[annotationMaterialCAS] = true
+			annotationsM[AnnotationMaterialCAS] = true
 		} else if mdef.InlineCas {
 			annotationsM[annotationMaterialInlineCAS] = true
 		}
@@ -314,7 +314,7 @@ func normalizeMaterial(material *intoto.ResourceDescriptor) (*NormalizedMaterial
 	// In the case of container images for example the value is in the name field
 	m.Value = material.Name
 
-	if v, ok := mAnnotationsMap[annotationMaterialCAS]; ok && v.GetBoolValue() {
+	if v, ok := mAnnotationsMap[AnnotationMaterialCAS]; ok && v.GetBoolValue() {
 		m.UploadedToCAS = true
 	}
 

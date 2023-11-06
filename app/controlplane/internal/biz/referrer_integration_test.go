@@ -40,6 +40,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 	wantReferrer := &biz.Referrer{
 		Digest:       attDigest,
 		ArtifactType: "ATTESTATION",
+		Downloadable: true,
 		References: []string{
 			// git head commit
 			"sha1:78ac366c9e8a300d51808d581422ca61f7b5b721",

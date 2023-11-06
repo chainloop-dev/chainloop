@@ -124,7 +124,7 @@ func init() {
 	referrerFields := schema.Referrer{}.Fields()
 	_ = referrerFields
 	// referrerDescCreatedAt is the schema descriptor for created_at field.
-	referrerDescCreatedAt := referrerFields[3].Descriptor()
+	referrerDescCreatedAt := referrerFields[4].Descriptor()
 	// referrer.DefaultCreatedAt holds the default value on creation for the created_at field.
 	referrer.DefaultCreatedAt = referrerDescCreatedAt.Default.(func() time.Time)
 	// referrerDescID is the schema descriptor for id field.

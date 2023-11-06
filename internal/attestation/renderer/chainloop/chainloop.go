@@ -210,7 +210,7 @@ const (
 var (
 	AnnotationMaterialType      = Prefixed("material.type")
 	AnnotationMaterialName      = Prefixed("material.name")
-	annotationMaterialCAS       = Prefixed("material.cas")
+	AnnotationMaterialCAS       = Prefixed("material.cas")
 	annotationMaterialInlineCAS = Prefixed("material.cas.inline")
 )
 

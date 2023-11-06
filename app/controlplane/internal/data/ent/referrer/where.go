@@ -66,6 +66,11 @@ func ArtifactType(v string) predicate.Referrer {
 	return predicate.Referrer(sql.FieldEQ(FieldArtifactType, v))
 }
 
+// Downloadable applies equality check predicate on the "downloadable" field. It's identical to DownloadableEQ.
+func Downloadable(v bool) predicate.Referrer {
+	return predicate.Referrer(sql.FieldEQ(FieldDownloadable, v))
+}
+
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.Referrer {
 	return predicate.Referrer(sql.FieldEQ(FieldCreatedAt, v))
@@ -199,6 +204,16 @@ func ArtifactTypeEqualFold(v string) predicate.Referrer {
 // ArtifactTypeContainsFold applies the ContainsFold predicate on the "artifact_type" field.
 func ArtifactTypeContainsFold(v string) predicate.Referrer {
 	return predicate.Referrer(sql.FieldContainsFold(FieldArtifactType, v))
+}
+
+// DownloadableEQ applies the EQ predicate on the "downloadable" field.
+func DownloadableEQ(v bool) predicate.Referrer {
+	return predicate.Referrer(sql.FieldEQ(FieldDownloadable, v))
+}
+
+// DownloadableNEQ applies the NEQ predicate on the "downloadable" field.
+func DownloadableNEQ(v bool) predicate.Referrer {
+	return predicate.Referrer(sql.FieldNEQ(FieldDownloadable, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.

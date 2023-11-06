@@ -1,5 +1,5 @@
 -- Create "referrers" table
-CREATE TABLE "referrers" ("id" uuid NOT NULL, "digest" character varying NOT NULL, "artifact_type" character varying NOT NULL, "created_at" timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY ("id"));
+CREATE TABLE "referrers" ("id" uuid NOT NULL, "digest" character varying NOT NULL, "artifact_type" character varying NOT NULL, "downloadable" boolean NOT NULL, "created_at" timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY ("id"));
 -- Create index "referrer_digest_artifact_type" to table: "referrers"
 CREATE UNIQUE INDEX "referrer_digest_artifact_type" ON "referrers" ("digest", "artifact_type");
 -- Create "referrer_references" table

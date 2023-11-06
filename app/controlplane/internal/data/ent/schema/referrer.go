@@ -36,6 +36,8 @@ func (Referrer) Fields() []ent.Field {
 		field.String("digest").Immutable(),
 		// referrer type i.e CONTAINER
 		field.String("artifact_type").Immutable(),
+		// wether it can be downloaded from CAS or not
+		field.Bool("downloadable").Immutable(),
 		field.Time("created_at").
 			Default(time.Now).
 			Immutable().

@@ -19,6 +19,8 @@ const (
 	FieldDigest = "digest"
 	// FieldArtifactType holds the string denoting the artifact_type field in the database.
 	FieldArtifactType = "artifact_type"
+	// FieldDownloadable holds the string denoting the downloadable field in the database.
+	FieldDownloadable = "downloadable"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// EdgeReferredBy holds the string denoting the referred_by edge name in mutations.
@@ -38,6 +40,7 @@ var Columns = []string{
 	FieldID,
 	FieldDigest,
 	FieldArtifactType,
+	FieldDownloadable,
 	FieldCreatedAt,
 }
 
@@ -83,6 +86,11 @@ func ByDigest(opts ...sql.OrderTermOption) OrderOption {
 // ByArtifactType orders the results by the artifact_type field.
 func ByArtifactType(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldArtifactType, opts...).ToFunc()
+}
+
+// ByDownloadable orders the results by the downloadable field.
+func ByDownloadable(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDownloadable, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.

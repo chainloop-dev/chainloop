@@ -33,6 +33,12 @@ func (rc *ReferrerCreate) SetArtifactType(s string) *ReferrerCreate {
 	return rc
 }
 
+// SetDownloadable sets the "downloadable" field.
+func (rc *ReferrerCreate) SetDownloadable(b bool) *ReferrerCreate {
+	rc.mutation.SetDownloadable(b)
+	return rc
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (rc *ReferrerCreate) SetCreatedAt(t time.Time) *ReferrerCreate {
 	rc.mutation.SetCreatedAt(t)
@@ -144,6 +150,9 @@ func (rc *ReferrerCreate) check() error {
 	if _, ok := rc.mutation.ArtifactType(); !ok {
 		return &ValidationError{Name: "artifact_type", err: errors.New(`ent: missing required field "Referrer.artifact_type"`)}
 	}
+	if _, ok := rc.mutation.Downloadable(); !ok {
+		return &ValidationError{Name: "downloadable", err: errors.New(`ent: missing required field "Referrer.downloadable"`)}
+	}
 	if _, ok := rc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Referrer.created_at"`)}
 	}
@@ -189,6 +198,10 @@ func (rc *ReferrerCreate) createSpec() (*Referrer, *sqlgraph.CreateSpec) {
 	if value, ok := rc.mutation.ArtifactType(); ok {
 		_spec.SetField(referrer.FieldArtifactType, field.TypeString, value)
 		_node.ArtifactType = value
+	}
+	if value, ok := rc.mutation.Downloadable(); ok {
+		_spec.SetField(referrer.FieldDownloadable, field.TypeBool, value)
+		_node.Downloadable = value
 	}
 	if value, ok := rc.mutation.CreatedAt(); ok {
 		_spec.SetField(referrer.FieldCreatedAt, field.TypeTime, value)

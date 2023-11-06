@@ -216,6 +216,7 @@ var (
 		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "digest", Type: field.TypeString},
 		{Name: "artifact_type", Type: field.TypeString},
+		{Name: "downloadable", Type: field.TypeBool},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 	}
 	// ReferrersTable holds the schema information for the "referrers" table.

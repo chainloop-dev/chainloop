@@ -56,7 +56,8 @@ func (r *ReferrerRepo) Save(ctx context.Context, input biz.ReferrerMap) error {
 				return fmt.Errorf("failed to query referrer: %w", err)
 			}
 
-			storedRef, err = tx.Referrer.Create().SetDigest(digest).SetArtifactType(r.ArtifactType).Save(ctx)
+			storedRef, err = tx.Referrer.Create().
+				SetDigest(digest).SetArtifactType(r.ArtifactType).SetDownloadable(r.Downloadable).Save(ctx)
 			if err != nil {
 				return fmt.Errorf("failed to create referrer: %w", err)
 			}
@@ -121,6 +122,7 @@ func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string) (*biz.Sto
 			Digest:       ref.Digest,
 			ArtifactType: ref.ArtifactType,
 			References:   make([]string, 0),
+			Downloadable: ref.Downloadable,
 		},
 	}
 
