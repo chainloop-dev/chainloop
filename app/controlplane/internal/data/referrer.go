@@ -95,40 +95,60 @@ func (r *ReferrerRepo) Save(ctx context.Context, input biz.ReferrerMap) error {
 }
 
 func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string) (*biz.StoredReferrer, error) {
+	// Find the referrer recursively starting from the root
+	res, err := r.doGet(ctx, digest, 0)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get referrer: %w", err)
+	}
+
+	return res, nil
+}
+
+// max number of recursive levels to traverse
+// we just care about 1 level, i.e att -> commit, or commit -> attestation
+// we also need to limit this because there might be cycles
+const maxTraverseLevels = 1
+
+func (r *ReferrerRepo) doGet(ctx context.Context, digest string, level int) (*biz.StoredReferrer, error) {
 	// Find the referrer
-	ref, err := r.data.db.Referrer.Query().
-		Where(referrer.Digest(digest)).
-		Only(ctx)
+	ref, err := r.data.db.Referrer.Query().Where(referrer.Digest(digest)).Only(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, nil
 		}
 
 		return nil, fmt.Errorf("failed to query referrer: %w", err)
-
 	}
 
-	// Find the references
+	// Add the referrer to the result
+	res := &biz.StoredReferrer{
+		ID:           ref.ID,
+		CreatedAt:    toTimePtr(ref.CreatedAt),
+		Digest:       ref.Digest,
+		ArtifactType: ref.ArtifactType,
+		Downloadable: ref.Downloadable,
+	}
+
+	// We won't traverse more than maxTraverseLevels levels
+	if level > maxTraverseLevels {
+		return res, nil
+	}
+
+	// Find the references and call recursively
 	refs, err := ref.QueryReferences().Order(referrer.ByDigest()).All(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query references: %w", err)
 	}
 
-	// Add the referrer to the result
-	res := &biz.StoredReferrer{
-		ID:        ref.ID,
-		CreatedAt: toTimePtr(ref.CreatedAt),
-		Referrer: &biz.Referrer{
-			Digest:       ref.Digest,
-			ArtifactType: ref.ArtifactType,
-			References:   make([]string, 0),
-			Downloadable: ref.Downloadable,
-		},
-	}
-
 	// Add the references to the result
-	for _, r := range refs {
-		res.References = append(res.References, r.Digest)
+	for _, reference := range refs {
+		// Call recursively the function
+		ref, err := r.doGet(ctx, reference.Digest, level+1)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get referrer: %w", err)
+		}
+
+		res.References = append(res.References, ref)
 	}
 
 	return res, nil

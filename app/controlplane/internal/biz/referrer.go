@@ -41,10 +41,16 @@ type Referrer struct {
 	References []string
 }
 
+// Actual referrer stored in the DB which includes a nested list of storedReferences
 type StoredReferrer struct {
-	ID uuid.UUID
-	*Referrer
-	CreatedAt *time.Time
+	ID           uuid.UUID
+	Digest       string
+	ArtifactType string
+	// Wether the item is downloadable from CAS or not
+	Downloadable bool
+	CreatedAt    *time.Time
+	// Fully expanded list of 1-level off references
+	References []*StoredReferrer
 }
 
 type ReferrerMap map[string]*Referrer
