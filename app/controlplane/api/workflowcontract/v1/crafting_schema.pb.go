@@ -43,6 +43,7 @@ const (
 	CraftingSchema_Runner_GITHUB_ACTION           CraftingSchema_Runner_RunnerType = 1
 	CraftingSchema_Runner_GITLAB_PIPELINE         CraftingSchema_Runner_RunnerType = 2
 	CraftingSchema_Runner_AZURE_PIPELINE          CraftingSchema_Runner_RunnerType = 3
+	CraftingSchema_Runner_JENKINS_JOB	      CraftingSchema_Runner_RunnerType = 4
 )
 
 // Enum value maps for CraftingSchema_Runner_RunnerType.
