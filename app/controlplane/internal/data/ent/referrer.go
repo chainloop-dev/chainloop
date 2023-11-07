@@ -38,9 +38,11 @@ type ReferrerEdges struct {
 	ReferredBy []*Referrer `json:"referred_by,omitempty"`
 	// References holds the value of the references edge.
 	References []*Referrer `json:"references,omitempty"`
+	// Organizations holds the value of the organizations edge.
+	Organizations []*Organization `json:"organizations,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // ReferredByOrErr returns the ReferredBy value or an error if the edge
@@ -59,6 +61,15 @@ func (e ReferrerEdges) ReferencesOrErr() ([]*Referrer, error) {
 		return e.References, nil
 	}
 	return nil, &NotLoadedError{edge: "references"}
+}
+
+// OrganizationsOrErr returns the Organizations value or an error if the edge
+// was not loaded in eager-loading.
+func (e ReferrerEdges) OrganizationsOrErr() ([]*Organization, error) {
+	if e.loadedTypes[2] {
+		return e.Organizations, nil
+	}
+	return nil, &NotLoadedError{edge: "organizations"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -140,6 +151,11 @@ func (r *Referrer) QueryReferredBy() *ReferrerQuery {
 // QueryReferences queries the "references" edge of the Referrer entity.
 func (r *Referrer) QueryReferences() *ReferrerQuery {
 	return NewReferrerClient(r.config).QueryReferences(r)
+}
+
+// QueryOrganizations queries the "organizations" edge of the Referrer entity.
+func (r *Referrer) QueryOrganizations() *OrganizationQuery {
+	return NewReferrerClient(r.config).QueryOrganizations(r)
 }
 
 // Update returns a builder for updating this Referrer.

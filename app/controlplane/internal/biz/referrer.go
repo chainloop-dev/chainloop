@@ -51,37 +51,50 @@ type StoredReferrer struct {
 	CreatedAt    *time.Time
 	// Fully expanded list of 1-level off references
 	References []*StoredReferrer
+	OrgIDs     []uuid.UUID
 }
 
 type ReferrerMap map[string]*Referrer
 
 type ReferrerRepo interface {
-	Save(ctx context.Context, input ReferrerMap) error
+	Save(ctx context.Context, input ReferrerMap, orgID uuid.UUID) error
 	GetFromRoot(ctx context.Context, digest string) (*StoredReferrer, error)
 }
 
 type ReferrerUseCase struct {
-	repo   ReferrerRepo
-	logger *log.Helper
+	repo    ReferrerRepo
+	orgRepo OrganizationRepo
+	logger  *log.Helper
 }
 
-func NewReferrerUseCase(repo ReferrerRepo, l log.Logger) *ReferrerUseCase {
+func NewReferrerUseCase(repo ReferrerRepo, orgRepo OrganizationRepo, l log.Logger) *ReferrerUseCase {
 	if l == nil {
 		l = log.NewStdLogger(io.Discard)
 	}
 
-	return &ReferrerUseCase{repo, servicelogger.ScopedHelper(l, "biz/Referrer")}
+	return &ReferrerUseCase{repo, orgRepo, servicelogger.ScopedHelper(l, "biz/Referrer")}
 }
 
 // ExtractAndPersist extracts the referrers (subject + materials) from the given attestation
 // and store it as part of the referrers index table
-func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envelope) error {
+func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envelope, orgID string) error {
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return NewErrInvalidUUID(err)
+	}
+
+	if org, err := s.orgRepo.FindByID(ctx, orgUUID); err != nil {
+		return fmt.Errorf("finding organization: %w", err)
+	} else if org == nil {
+		return NewErrNotFound("organization")
+	}
+
 	m, err := extractReferrers(att)
 	if err != nil {
 		return fmt.Errorf("extracting referrers: %w", err)
 	}
 
-	if err := s.repo.Save(ctx, m); err != nil {
+	if err := s.repo.Save(ctx, m, orgUUID); err != nil {
 		return fmt.Errorf("saving referrers: %w", err)
 	}
 

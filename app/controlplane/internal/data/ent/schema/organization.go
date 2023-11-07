@@ -53,5 +53,6 @@ func (Organization) Edges() []ent.Edge {
 		edge.To("workflows", Workflow.Type).StorageKey(edge.Column("organization_id")).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 		edge.To("cas_backends", CASBackend.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 		edge.To("integrations", Integration.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
+		edge.From("referrers", Referrer.Type).Ref("organizations"),
 	}
 }

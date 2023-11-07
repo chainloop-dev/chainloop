@@ -47,8 +47,10 @@ func (Referrer) Fields() []ent.Field {
 
 func (Referrer) Edges() []ent.Edge {
 	return []ent.Edge{
-		// M2M relationship. referrer can refer to multiple referrers
+		// M2M referrer can refer to itself via references
 		edge.To("references", Referrer.Type).From("referred_by").Immutable(),
+		// M2M. referrer can be part of multiple organizations
+		edge.To("organizations", Organization.Type),
 	}
 }
 

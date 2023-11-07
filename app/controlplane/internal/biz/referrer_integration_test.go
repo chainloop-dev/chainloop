@@ -23,8 +23,8 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
+	"github.com/google/uuid"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -76,63 +76,91 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		ArtifactType: "CONTAINER_IMAGE",
 	}
 
+	s.T().Run("creation fails if the org doesn't exist", func(t *testing.T) {
+		err := s.Referrer.ExtractAndPersist(context.Background(), envelope, uuid.NewString())
+		s.True(biz.IsNotFound(err))
+	})
+
 	var prevStoredRef *biz.StoredReferrer
 	s.T().Run("it can store properly the first time", func(t *testing.T) {
-		err := s.Referrer.ExtractAndPersist(context.Background(), envelope)
-		assert.NoError(t, err)
+		err := s.Referrer.ExtractAndPersist(context.Background(), envelope, s.org.ID)
+		s.NoError(err)
 		prevStoredRef, err = s.Referrer.GetFromRoot(context.Background(), wantReferrerAtt.Digest)
-		assert.NoError(t, err)
+		s.NoError(err)
 	})
 
 	s.T().Run("and it's idempotent", func(t *testing.T) {
-		err := s.Referrer.ExtractAndPersist(context.Background(), envelope)
-		assert.NoError(t, err)
+		err := s.Referrer.ExtractAndPersist(context.Background(), envelope, s.org.ID)
+		s.NoError(err)
 		ref, err := s.Referrer.GetFromRoot(context.Background(), wantReferrerAtt.Digest)
-		assert.NoError(t, err)
+		s.NoError(err)
 		// Check it's the same referrer than previously retrieved, including timestamps
-		assert.Equal(t, prevStoredRef, ref)
+		s.Equal(prevStoredRef, ref)
 	})
 
 	s.T().Run("contains all the info", func(t *testing.T) {
 		got, err := s.Referrer.GetFromRoot(context.Background(), wantReferrerAtt.Digest)
-		assert.NoError(t, err)
+		s.NoError(err)
 		// parent i.e attestation
-		assert.Equal(t, wantReferrerAtt.Digest, got.Digest)
-		assert.Equal(t, wantReferrerAtt.Downloadable, got.Downloadable)
-		assert.Equal(t, wantReferrerAtt.ArtifactType, got.ArtifactType)
+		s.Equal(wantReferrerAtt.Digest, got.Digest)
+		s.Equal(wantReferrerAtt.Downloadable, got.Downloadable)
+		s.Equal(wantReferrerAtt.ArtifactType, got.ArtifactType)
 		// it has all the references
 		require.Len(t, got.References, 6)
 
 		for i, want := range []*biz.StoredReferrer{
 			wantReferrerCommit, wantReferrerSBOM, wantReferrerArtifact, wantReferrerOpenVEX, wantReferrerSarif, wantReferrerContainerImage} {
 			gotR := got.References[i]
-			assert.Equal(t, want.Digest, gotR.Digest)
-			assert.Equal(t, want.ArtifactType, gotR.ArtifactType)
-			assert.Equal(t, want.Downloadable, gotR.Downloadable)
+			s.Equal(want.Digest, gotR.Digest)
+			s.Equal(want.ArtifactType, gotR.ArtifactType)
+			s.Equal(want.Downloadable, gotR.Downloadable)
 		}
+		s.Equal([]uuid.UUID{s.orgUUID}, got.OrgIDs)
+	})
+
+	s.T().Run("but another org can be attached", func(t *testing.T) {
+		org2, err := s.Organization.Create(context.Background(), "testing org 2")
+		require.NoError(s.T(), err)
+		org2UUID, err := uuid.Parse(org2.ID)
+		require.NoError(s.T(), err)
+
+		err = s.Referrer.ExtractAndPersist(context.Background(), envelope, org2.ID)
+		s.NoError(err)
+		got, err := s.Referrer.GetFromRoot(context.Background(), wantReferrerAtt.Digest)
+		s.NoError(err)
+		require.Len(t, got.OrgIDs, 2)
+		s.Contains(got.OrgIDs, s.orgUUID)
+		s.Contains(got.OrgIDs, org2UUID)
+
+		// and it's idempotent (no new orgs added)
+		err = s.Referrer.ExtractAndPersist(context.Background(), envelope, org2.ID)
+		s.NoError(err)
+		got, err = s.Referrer.GetFromRoot(context.Background(), wantReferrerAtt.Digest)
+		s.NoError(err)
+		require.Len(t, got.OrgIDs, 2)
 	})
 
 	s.T().Run("you can ask for info about materials that are subjects", func(t *testing.T) {
 		got, err := s.Referrer.GetFromRoot(context.Background(), wantReferrerContainerImage.Digest)
-		assert.NoError(t, err)
+		s.NoError(err)
 		// parent i.e attestation
-		assert.Equal(t, wantReferrerContainerImage.Digest, got.Digest)
-		assert.Equal(t, wantReferrerContainerImage.Downloadable, got.Downloadable)
-		assert.Equal(t, wantReferrerContainerImage.ArtifactType, got.ArtifactType)
+		s.Equal(wantReferrerContainerImage.Digest, got.Digest)
+		s.Equal(wantReferrerContainerImage.Downloadable, got.Downloadable)
+		s.Equal(wantReferrerContainerImage.ArtifactType, got.ArtifactType)
 		// it's connected to the attestation
 		require.Len(t, got.References, 1)
-		assert.Equal(t, wantReferrerAtt.Digest, got.References[0].Digest)
-		assert.Equal(t, wantReferrerAtt.ArtifactType, got.References[0].ArtifactType)
-		assert.Equal(t, wantReferrerAtt.Downloadable, got.References[0].Downloadable)
+		s.Equal(wantReferrerAtt.Digest, got.References[0].Digest)
+		s.Equal(wantReferrerAtt.ArtifactType, got.References[0].ArtifactType)
+		s.Equal(wantReferrerAtt.Downloadable, got.References[0].Downloadable)
 	})
 
 	s.T().Run("it might not have references", func(t *testing.T) {
 		got, err := s.Referrer.GetFromRoot(context.Background(), wantReferrerSarif.Digest)
-		assert.NoError(t, err)
+		s.NoError(err)
 		// parent i.e attestation
-		assert.Equal(t, wantReferrerSarif.Digest, got.Digest)
-		assert.Equal(t, wantReferrerSarif.Downloadable, got.Downloadable)
-		assert.Equal(t, wantReferrerSarif.ArtifactType, got.ArtifactType)
+		s.Equal(wantReferrerSarif.Digest, got.Digest)
+		s.Equal(wantReferrerSarif.Downloadable, got.Downloadable)
+		s.Equal(wantReferrerSarif.ArtifactType, got.ArtifactType)
 		require.Len(t, got.References, 0)
 	})
 
@@ -147,7 +175,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		require.NoError(s.T(), err)
 		require.NoError(s.T(), json.Unmarshal(attJSON, &envelope))
 
-		err := s.Referrer.ExtractAndPersist(context.Background(), envelope)
+		err := s.Referrer.ExtractAndPersist(context.Background(), envelope, s.org.ID)
 		s.ErrorContains(err, "has different types")
 	})
 
@@ -158,7 +186,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		require.NoError(s.T(), json.Unmarshal(attJSON, &envelope))
 
 		// storing will not fail since it's the a different artifact type
-		err := s.Referrer.ExtractAndPersist(context.Background(), envelope)
+		err := s.Referrer.ExtractAndPersist(context.Background(), envelope, s.org.ID)
 		s.NoError(err)
 
 		// but retrieval should fail. In the future we will ask the user to provide the artifact type in these cases of ambiguity
@@ -182,10 +210,19 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 
 type referrerIntegrationTestSuite struct {
 	testhelpers.UseCasesEachTestSuite
+	org     *biz.Organization
+	orgUUID uuid.UUID
 }
 
 func (s *referrerIntegrationTestSuite) SetupTest() {
 	s.TestingUseCases = testhelpers.NewTestingUseCases(s.T())
+
+	var err error
+	s.org, err = s.Organization.Create(context.Background(), "testing org")
+	require.NoError(s.T(), err)
+
+	s.orgUUID, err = uuid.Parse(s.org.ID)
+	require.NoError(s.T(), err)
 }
 
 func TestReferrerIntegration(t *testing.T) {

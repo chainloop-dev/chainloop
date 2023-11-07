@@ -1396,6 +1396,22 @@ func (c *OrganizationClient) QueryIntegrations(o *Organization) *IntegrationQuer
 	return query
 }
 
+// QueryReferrers queries the referrers edge of a Organization.
+func (c *OrganizationClient) QueryReferrers(o *Organization) *ReferrerQuery {
+	query := (&ReferrerClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := o.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(organization.Table, organization.FieldID, id),
+			sqlgraph.To(referrer.Table, referrer.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, organization.ReferrersTable, organization.ReferrersPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(o.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *OrganizationClient) Hooks() []Hook {
 	return c.hooks.Organization
@@ -1539,6 +1555,22 @@ func (c *ReferrerClient) QueryReferences(r *Referrer) *ReferrerQuery {
 			sqlgraph.From(referrer.Table, referrer.FieldID, id),
 			sqlgraph.To(referrer.Table, referrer.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, referrer.ReferencesTable, referrer.ReferencesPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryOrganizations queries the organizations edge of a Referrer.
+func (c *ReferrerClient) QueryOrganizations(r *Referrer) *OrganizationQuery {
+	query := (&OrganizationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := r.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(referrer.Table, referrer.FieldID, id),
+			sqlgraph.To(organization.Table, organization.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, referrer.OrganizationsTable, referrer.OrganizationsPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
 		return fromV, nil

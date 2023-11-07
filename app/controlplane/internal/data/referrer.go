@@ -23,6 +23,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/referrer"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/google/uuid"
 )
 
 type ReferrerRepo struct {
@@ -39,7 +40,7 @@ func NewReferrerRepo(data *Data, logger log.Logger) biz.ReferrerRepo {
 
 type storedReferrerMap map[string]*ent.Referrer
 
-func (r *ReferrerRepo) Save(ctx context.Context, input biz.ReferrerMap) error {
+func (r *ReferrerRepo) Save(ctx context.Context, input biz.ReferrerMap, orgID uuid.UUID) error {
 	// Start transaction
 	tx, err := r.data.db.Tx(ctx)
 	if err != nil {
@@ -57,10 +58,16 @@ func (r *ReferrerRepo) Save(ctx context.Context, input biz.ReferrerMap) error {
 			}
 
 			storedRef, err = tx.Referrer.Create().
-				SetDigest(digest).SetArtifactType(r.ArtifactType).SetDownloadable(r.Downloadable).Save(ctx)
+				SetDigest(digest).SetArtifactType(r.ArtifactType).SetDownloadable(r.Downloadable).AddOrganizationIDs(orgID).Save(ctx)
 			if err != nil {
 				return fmt.Errorf("failed to create referrer: %w", err)
 			}
+		}
+
+		// associate it with the organization
+		storedRef, err = storedRef.Update().AddOrganizationIDs(orgID).Save(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to add organization to referrer: %w", err)
 		}
 
 		// Store it in the map
@@ -123,7 +130,7 @@ func (r *ReferrerRepo) doGet(ctx context.Context, digest string, level int) (*bi
 		return nil, fmt.Errorf("failed to query referrer: %w", err)
 	}
 
-	// Add the referrer to the result
+	// Assemble the referrer to return
 	res := &biz.StoredReferrer{
 		ID:           ref.ID,
 		CreatedAt:    toTimePtr(ref.CreatedAt),
@@ -132,7 +139,13 @@ func (r *ReferrerRepo) doGet(ctx context.Context, digest string, level int) (*bi
 		Downloadable: ref.Downloadable,
 	}
 
-	// We won't traverse more than maxTraverseLevels levels
+	// with all the organizationIDs attached
+	res.OrgIDs, err = ref.QueryOrganizations().IDs(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query organizations: %w", err)
+	}
+
+	// Next: We'll find the references recursively up to a max of maxTraverseLevels levels
 	if level >= maxTraverseLevels {
 		return res, nil
 	}
