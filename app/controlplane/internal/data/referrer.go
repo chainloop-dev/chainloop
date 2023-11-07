@@ -111,10 +111,13 @@ const maxTraverseLevels = 1
 
 func (r *ReferrerRepo) doGet(ctx context.Context, digest string, level int) (*biz.StoredReferrer, error) {
 	// Find the referrer
+	// if there is more than 1 item with the same digest+artifactType it will fail
 	ref, err := r.data.db.Referrer.Query().Where(referrer.Digest(digest)).Only(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, nil
+		} else if ent.IsNotSingular(err) {
+			return nil, fmt.Errorf("found more than one referrer with digest %s, please provide artifact type", digest)
 		}
 
 		return nil, fmt.Errorf("failed to query referrer: %w", err)
@@ -130,7 +133,7 @@ func (r *ReferrerRepo) doGet(ctx context.Context, digest string, level int) (*bi
 	}
 
 	// We won't traverse more than maxTraverseLevels levels
-	if level > maxTraverseLevels {
+	if level >= maxTraverseLevels {
 		return res, nil
 	}
 

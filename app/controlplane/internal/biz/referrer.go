@@ -73,6 +73,8 @@ func NewReferrerUseCase(repo ReferrerRepo, l log.Logger) *ReferrerUseCase {
 	return &ReferrerUseCase{repo, servicelogger.ScopedHelper(l, "biz/Referrer")}
 }
 
+// ExtractAndPersist extracts the referrers (subject + materials) from the given attestation
+// and store it as part of the referrers index table
 func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envelope) error {
 	m, err := extractReferrers(att)
 	if err != nil {
@@ -86,6 +88,8 @@ func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envel
 	return nil
 }
 
+// GetFromRoot returns the referrer identified by the provided content digest, including its first-level references
+// For example if sha:deadbeef represents an attestation, the result will contain the attestation + materials associated to it
 func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest string) (*StoredReferrer, error) {
 	ref, err := s.repo.GetFromRoot(ctx, digest)
 	if err != nil {
@@ -149,7 +153,12 @@ func extractReferrers(att *dsse.Envelope) (ReferrerMap, error) {
 		// Create its referrer entry if it doesn't exist yet
 		// the reason it might exist is because you might be attaching the same material twice
 		// i.e the same SBOM twice, in that case we don't want to create a new referrer
-		if _, ok := referrers[material.Hash.String()]; ok {
+		// If we are providing different types for the same digest, we should error out
+		if r, ok := referrers[material.Hash.String()]; ok {
+			if r.ArtifactType != material.Type {
+				return nil, fmt.Errorf("material %s has different types: %s and %s", material.Hash.String(), r.ArtifactType, material.Type)
+			}
+
 			continue
 		}
 

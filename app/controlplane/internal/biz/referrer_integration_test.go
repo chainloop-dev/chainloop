@@ -32,13 +32,12 @@ import (
 func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 	// Load attestation
 	attJSON, err := os.ReadFile("testdata/attestations/with-git-subject.json")
-	const attDigest = "sha256:ad704d286bcad6e155e71c33d48247931231338396acbcd9769087530085b2a2"
 	require.NoError(s.T(), err)
 	var envelope *dsse.Envelope
 	require.NoError(s.T(), json.Unmarshal(attJSON, &envelope))
 
 	wantReferrerAtt := &biz.StoredReferrer{
-		Digest:       attDigest,
+		Digest:       "sha256:ad704d286bcad6e155e71c33d48247931231338396acbcd9769087530085b2a2",
 		ArtifactType: "ATTESTATION",
 		Downloadable: true,
 	}
@@ -81,21 +80,21 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 	s.T().Run("it can store properly the first time", func(t *testing.T) {
 		err := s.Referrer.ExtractAndPersist(context.Background(), envelope)
 		assert.NoError(t, err)
-		prevStoredRef, err = s.Referrer.GetFromRoot(context.Background(), attDigest)
+		prevStoredRef, err = s.Referrer.GetFromRoot(context.Background(), wantReferrerAtt.Digest)
 		assert.NoError(t, err)
 	})
 
 	s.T().Run("and it's idempotent", func(t *testing.T) {
 		err := s.Referrer.ExtractAndPersist(context.Background(), envelope)
 		assert.NoError(t, err)
-		ref, err := s.Referrer.GetFromRoot(context.Background(), attDigest)
+		ref, err := s.Referrer.GetFromRoot(context.Background(), wantReferrerAtt.Digest)
 		assert.NoError(t, err)
 		// Check it's the same referrer than previously retrieved, including timestamps
 		assert.Equal(t, prevStoredRef, ref)
 	})
 
 	s.T().Run("contains all the info", func(t *testing.T) {
-		got, err := s.Referrer.GetFromRoot(context.Background(), attDigest)
+		got, err := s.Referrer.GetFromRoot(context.Background(), wantReferrerAtt.Digest)
 		assert.NoError(t, err)
 		// parent i.e attestation
 		assert.Equal(t, wantReferrerAtt.Digest, got.Digest)
@@ -141,6 +140,43 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		got, err := s.Referrer.GetFromRoot(context.Background(), "sha256:deadbeef")
 		s.True(biz.IsNotFound(err))
 		s.Nil(got)
+	})
+
+	s.T().Run("it should fail if the attestation has the same material twice with different types", func(t *testing.T) {
+		attJSON, err = os.ReadFile("testdata/attestations/with-duplicated-sha.json")
+		require.NoError(s.T(), err)
+		require.NoError(s.T(), json.Unmarshal(attJSON, &envelope))
+
+		err := s.Referrer.ExtractAndPersist(context.Background(), envelope)
+		s.ErrorContains(err, "has different types")
+	})
+
+	s.T().Run("it should fail on retrieval if we have stored two referrers with same digest (for two different types)", func(t *testing.T) {
+		// this attestation contains a material with same digest than the container image from git-subject.json
+		attJSON, err = os.ReadFile("testdata/attestations/same-digest-than-git-subject.json")
+		require.NoError(s.T(), err)
+		require.NoError(s.T(), json.Unmarshal(attJSON, &envelope))
+
+		// storing will not fail since it's the a different artifact type
+		err := s.Referrer.ExtractAndPersist(context.Background(), envelope)
+		s.NoError(err)
+
+		// but retrieval should fail. In the future we will ask the user to provide the artifact type in these cases of ambiguity
+		got, err := s.Referrer.GetFromRoot(context.Background(), wantReferrerSarif.Digest)
+		s.Nil(got)
+		s.ErrorContains(err, "found more than one referrer with digest")
+	})
+
+	s.T().Run("now there should a container image pointing to two attestations", func(t *testing.T) {
+		// but retrieval should fail. In the future we will ask the user to provide the artifact type in these cases of ambiguity
+		got, err := s.Referrer.GetFromRoot(context.Background(), wantReferrerContainerImage.Digest)
+		s.NoError(err)
+		// it should be referenced by two attestations since it's subject of both
+		require.Len(t, got.References, 2)
+		s.Equal("ATTESTATION", got.References[0].ArtifactType)
+		s.Equal(wantReferrerAtt.Digest, got.References[0].Digest)
+		s.Equal("ATTESTATION", got.References[1].ArtifactType)
+		s.Equal("sha256:c90ccaab0b2cfda9980836aef407f62d747680ea9793ddc6ad2e2d7ab615933d", got.References[1].Digest)
 	})
 }
 
