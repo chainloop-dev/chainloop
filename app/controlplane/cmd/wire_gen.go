@@ -100,6 +100,8 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	fanOutDispatcher := dispatcher.New(integrationUseCase, workflowUseCase, workflowRunUseCase, readerWriter, casClientUseCase, availablePlugins, logger)
 	casMappingRepo := data.NewCASMappingRepo(dataData, casBackendRepo, logger)
 	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipRepo, logger)
+	referrerRepo := data.NewReferrerRepo(dataData, logger)
+	referrerUseCase := biz.NewReferrerUseCase(referrerRepo, organizationRepo, logger)
 	newAttestationServiceOpts := &service.NewAttestationServiceOpts{
 		WorkflowRunUC:      workflowRunUseCase,
 		WorkflowUC:         workflowUseCase,
@@ -111,6 +113,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		AttestationUC:      attestationUseCase,
 		FanoutDispatcher:   fanOutDispatcher,
 		CASMappingUseCase:  casMappingUseCase,
+		ReferrerUC:         referrerUseCase,
 		Opts:               v2,
 	}
 	attestationService := service.NewAttestationService(newAttestationServiceOpts)

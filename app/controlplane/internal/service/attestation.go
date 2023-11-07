@@ -50,6 +50,7 @@ type AttestationService struct {
 	casCredsUseCase         *biz.CASCredentialsUseCase
 	attestationUseCase      *biz.AttestationUseCase
 	casMappingUseCase       *biz.CASMappingUseCase
+	referrerUseCase         *biz.ReferrerUseCase
 }
 
 type NewAttestationServiceOpts struct {
@@ -63,6 +64,7 @@ type NewAttestationServiceOpts struct {
 	AttestationUC      *biz.AttestationUseCase
 	FanoutDispatcher   *dispatcher.FanOutDispatcher
 	CASMappingUseCase  *biz.CASMappingUseCase
+	ReferrerUC         *biz.ReferrerUseCase
 	Opts               []NewOpt
 }
 
@@ -79,6 +81,7 @@ func NewAttestationService(opts *NewAttestationServiceOpts) *AttestationService 
 		integrationDispatcher:   opts.FanoutDispatcher,
 		attestationUseCase:      opts.AttestationUC,
 		casMappingUseCase:       opts.CASMappingUseCase,
+		referrerUseCase:         opts.ReferrerUC,
 	}
 }
 
@@ -214,6 +217,11 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 
 	// Store the attestation including the digest in the CAS backend (if exists)
 	if err := s.wrUseCase.SaveAttestation(ctx, req.WorkflowRunId, envelope, digestInCAS); err != nil {
+		return nil, sl.LogAndMaskErr(err, s.log)
+	}
+
+	// Store the exploded attestation referrer information in the DB
+	if err := s.referrerUseCase.ExtractAndPersist(ctx, envelope, robotAccount.OrgID); err != nil {
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}
 

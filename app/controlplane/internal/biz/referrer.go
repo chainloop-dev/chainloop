@@ -103,6 +103,7 @@ func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envel
 
 // GetFromRoot returns the referrer identified by the provided content digest, including its first-level references
 // For example if sha:deadbeef represents an attestation, the result will contain the attestation + materials associated to it
+// TODO:(miguel) authz by user similar to what we do with CASmapping
 func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest string) (*StoredReferrer, error) {
 	ref, err := s.repo.GetFromRoot(ctx, digest)
 	if err != nil {
