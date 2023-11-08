@@ -53,8 +53,6 @@ message WorkflowRunItem {
 }
 
 message AttestationItem {
-  string id = 1;
-  google.protobuf.Timestamp created_at = 2;
   // encoded DSEE envelope
   bytes envelope = 3;
   // sha256sum of the envelope in json format, used as a key in the CAS backend
