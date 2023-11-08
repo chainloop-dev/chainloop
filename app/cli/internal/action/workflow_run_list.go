@@ -118,8 +118,8 @@ func humanizedRunnerType(in v1.CraftingSchema_Runner_RunnerType) string {
 		*v1.CraftingSchema_Runner_JENKINS_JOB.Enum():             "Jenkins Job",
 	}
 
-	hrt := mapping[in]
-	if hrt == "" {
+	hrt, ok := mapping[in]
+	if !ok {
 		return "Unknown"
 	}
 
