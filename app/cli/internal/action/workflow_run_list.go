@@ -111,15 +111,16 @@ func pbWorkflowRunItemToAction(in *pb.WorkflowRunItem) *WorkflowRunItem {
 
 func humanizedRunnerType(in v1.CraftingSchema_Runner_RunnerType) string {
 	mapping := map[v1.CraftingSchema_Runner_RunnerType]string{
-		*v1.CraftingSchema_Runner_GITHUB_ACTION.Enum():   "GitHub",
-		*v1.CraftingSchema_Runner_GITLAB_PIPELINE.Enum(): "GitLab",
-		*v1.CraftingSchema_Runner_AZURE_PIPELINE.Enum():  "Azure Pipeline",
-		*v1.CraftingSchema_Runner_JENKINS_JOB.Enum():     "Jenkins Job",
+		*v1.CraftingSchema_Runner_RUNNER_TYPE_UNSPECIFIED.Enum(): "Unspecified",
+		*v1.CraftingSchema_Runner_GITHUB_ACTION.Enum():           "GitHub",
+		*v1.CraftingSchema_Runner_GITLAB_PIPELINE.Enum():         "GitLab",
+		*v1.CraftingSchema_Runner_AZURE_PIPELINE.Enum():          "Azure Pipeline",
+		*v1.CraftingSchema_Runner_JENKINS_JOB.Enum():             "Jenkins Job",
 	}
 
 	hrt := mapping[in]
 	if hrt == "" {
-		return "Unspecified"
+		return "Unknown"
 	}
 
 	return hrt
