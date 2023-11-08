@@ -63,8 +63,8 @@ func (s *workflowRunListSuite) TestHumanizedRunnerType() {
 	nRunnerTypes := len(v1.CraftingSchema_Runner_RunnerType_name)
 	nTestCases := len(testCases)
 	s.Equal(
-		len(testCases)-1,
-		len(v1.CraftingSchema_Runner_RunnerType_name),
+		nTestCases-1,
+		nRunnerTypes,
 		"%d runners detected vs. %d test entries",
 		nRunnerTypes,
 		nTestCases-1,
