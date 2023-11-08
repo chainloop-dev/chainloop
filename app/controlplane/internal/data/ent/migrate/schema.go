@@ -56,19 +56,19 @@ var (
 				Symbol:     "cas_mappings_cas_backends_cas_backend",
 				Columns:    []*schema.Column{CasMappingsColumns[3]},
 				RefColumns: []*schema.Column{CasBackendsColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "cas_mappings_workflow_runs_workflow_run",
 				Columns:    []*schema.Column{CasMappingsColumns[4]},
 				RefColumns: []*schema.Column{WorkflowRunsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "cas_mappings_organizations_organization",
 				Columns:    []*schema.Column{CasMappingsColumns[5]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -189,7 +189,7 @@ var (
 				Symbol:     "org_invitations_organizations_organization",
 				Columns:    []*schema.Column{OrgInvitationsColumns[5]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "org_invitations_users_sender",
