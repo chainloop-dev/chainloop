@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"sort"
-	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
@@ -43,8 +42,6 @@ type WorkflowRunItemFull struct {
 }
 
 type WorkflowRunAttestationItem struct {
-	ID          string         `json:"id"`
-	CreatedAt   *time.Time     `json:"createdAt"`
 	Envelope    *dsse.Envelope `json:"envelope"`
 	statement   *intoto.Statement
 	Materials   []*Material   `json:"materials,omitempty"`
@@ -153,7 +150,6 @@ func (action *WorkflowRunDescribe) Run(runID string, verify bool, publicKey stri
 	}
 
 	item.Attestation = &WorkflowRunAttestationItem{
-		ID: attestation.Id, CreatedAt: toTimePtr(attestation.CreatedAt.AsTime()),
 		Envelope:    envelope,
 		statement:   statement,
 		EnvVars:     envVars,
