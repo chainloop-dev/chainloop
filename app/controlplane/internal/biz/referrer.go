@@ -58,21 +58,22 @@ type ReferrerMap map[string]*Referrer
 
 type ReferrerRepo interface {
 	Save(ctx context.Context, input ReferrerMap, orgID uuid.UUID) error
-	GetFromRoot(ctx context.Context, digest string) (*StoredReferrer, error)
+	GetFromRoot(ctx context.Context, digest string, orgIDS []uuid.UUID) (*StoredReferrer, error)
 }
 
 type ReferrerUseCase struct {
-	repo    ReferrerRepo
-	orgRepo OrganizationRepo
-	logger  *log.Helper
+	repo           ReferrerRepo
+	orgRepo        OrganizationRepo
+	membershipRepo MembershipRepo
+	logger         *log.Helper
 }
 
-func NewReferrerUseCase(repo ReferrerRepo, orgRepo OrganizationRepo, l log.Logger) *ReferrerUseCase {
+func NewReferrerUseCase(repo ReferrerRepo, orgRepo OrganizationRepo, mRepo MembershipRepo, l log.Logger) *ReferrerUseCase {
 	if l == nil {
 		l = log.NewStdLogger(io.Discard)
 	}
 
-	return &ReferrerUseCase{repo, orgRepo, servicelogger.ScopedHelper(l, "biz/Referrer")}
+	return &ReferrerUseCase{repo, orgRepo, mRepo, servicelogger.ScopedHelper(l, "biz/Referrer")}
 }
 
 // ExtractAndPersist extracts the referrers (subject + materials) from the given attestation
@@ -104,8 +105,26 @@ func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envel
 // GetFromRoot returns the referrer identified by the provided content digest, including its first-level references
 // For example if sha:deadbeef represents an attestation, the result will contain the attestation + materials associated to it
 // TODO:(miguel) authz by user similar to what we do with CASmapping
-func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest string) (*StoredReferrer, error) {
-	ref, err := s.repo.GetFromRoot(ctx, digest)
+func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest string, userID string) (*StoredReferrer, error) {
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	// We pass the list of organizationsIDs from where to look for the referrer
+	// For now we just pass the list of organizations the user is member of
+	// in the future we will expand this to publicly available orgs and so on.
+	var orgIDs []uuid.UUID
+	memberships, err := s.membershipRepo.FindByUser(ctx, userUUID)
+	if err != nil {
+		return nil, fmt.Errorf("finding memberships: %w", err)
+	}
+
+	for _, m := range memberships {
+		orgIDs = append(orgIDs, m.OrganizationID)
+	}
+
+	ref, err := s.repo.GetFromRoot(ctx, digest, orgIDs)
 	if err != nil {
 		return nil, fmt.Errorf("getting referrer from root: %w", err)
 	} else if ref == nil {

@@ -21,6 +21,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/referrer"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
@@ -101,9 +102,9 @@ func (r *ReferrerRepo) Save(ctx context.Context, input biz.ReferrerMap, orgID uu
 	return nil
 }
 
-func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string) (*biz.StoredReferrer, error) {
+func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string, orgIDs []uuid.UUID) (*biz.StoredReferrer, error) {
 	// Find the referrer recursively starting from the root
-	res, err := r.doGet(ctx, digest, 0)
+	res, err := r.doGet(ctx, digest, orgIDs, 0)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get referrer: %w", err)
 	}
@@ -116,10 +117,12 @@ func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string) (*biz.Sto
 // we also need to limit this because there might be cycles
 const maxTraverseLevels = 1
 
-func (r *ReferrerRepo) doGet(ctx context.Context, digest string, level int) (*biz.StoredReferrer, error) {
+func (r *ReferrerRepo) doGet(ctx context.Context, digest string, orgIDs []uuid.UUID, level int) (*biz.StoredReferrer, error) {
 	// Find the referrer
 	// if there is more than 1 item with the same digest+artifactType it will fail
-	ref, err := r.data.db.Referrer.Query().Where(referrer.Digest(digest)).Only(ctx)
+	ref, err := r.data.db.Debug().Referrer.Query().Where(referrer.Digest(digest)).
+		Where(referrer.HasOrganizationsWith(organization.IDIn(orgIDs...))).
+		Only(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, nil
@@ -151,7 +154,9 @@ func (r *ReferrerRepo) doGet(ctx context.Context, digest string, level int) (*bi
 	}
 
 	// Find the references and call recursively
-	refs, err := ref.QueryReferences().Order(referrer.ByDigest()).All(ctx)
+	refs, err := ref.QueryReferences().
+		Where(referrer.HasOrganizationsWith(organization.IDIn(orgIDs...))).
+		Order(referrer.ByDigest()).All(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query references: %w", err)
 	}
@@ -159,7 +164,7 @@ func (r *ReferrerRepo) doGet(ctx context.Context, digest string, level int) (*bi
 	// Add the references to the result
 	for _, reference := range refs {
 		// Call recursively the function
-		ref, err := r.doGet(ctx, reference.Digest, level+1)
+		ref, err := r.doGet(ctx, reference.Digest, orgIDs, level+1)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get referrer: %w", err)
 		}

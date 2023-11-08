@@ -48,6 +48,7 @@ func NewHTTPServer(opts *Opts, grpcSrv *grpc.Server) (*http.Server, error) {
 	httpSrv.Handle(service.AuthLoginPath, opts.AuthSvc.RegisterLoginHandler())
 	httpSrv.Handle(service.AuthCallbackPath, opts.AuthSvc.RegisterCallbackHandler())
 	v1.RegisterStatusServiceHTTPServer(httpSrv, service.NewStatusService(opts.AuthSvc.AuthURLs.Login, Version, opts.CASClientUseCase))
+	v1.RegisterReferrerServiceHTTPServer(httpSrv, service.NewReferrerService(opts.ReferrerUseCase))
 
 	// Wrap http server to handle grpc-web calls and we will return this new server
 	wrappedServer := http.NewServer(serverOpts...)
