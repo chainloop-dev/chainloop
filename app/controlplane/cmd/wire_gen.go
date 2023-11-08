@@ -136,6 +136,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		return nil, nil, err
 	}
 	orgInvitationService := service.NewOrgInvitationService(orgInvitationUseCase, v2...)
+	referrerService := service.NewReferrerService(referrerUseCase, v2...)
 	opts := &server.Opts{
 		UserUseCase:         userUseCase,
 		RobotAccountUseCase: robotAccountUseCase,
@@ -156,6 +157,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		CASBackendSvc:       casBackendService,
 		CASRedirectSvc:      casRedirectService,
 		OrgInvitationSvc:    orgInvitationService,
+		ReferrerSvc:         referrerService,
 		Logger:              logger,
 		ServerConfig:        confServer,
 		AuthConfig:          auth,

@@ -66,6 +66,7 @@ type Opts struct {
 	CASBackendSvc       *service.CASBackendService
 	CASRedirectSvc      *service.CASRedirectService
 	OrgInvitationSvc    *service.OrgInvitationService
+	ReferrerSvc         *service.ReferrerService
 	// Utils
 	Logger       log.Logger
 	ServerConfig *conf.Server
@@ -123,6 +124,7 @@ func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
 	v1.RegisterCASBackendServiceServer(srv, opts.CASBackendSvc)
 	v1.RegisterCASRedirectServiceServer(srv, opts.CASRedirectSvc)
 	v1.RegisterOrgInvitationServiceServer(srv, opts.OrgInvitationSvc)
+	v1.RegisterReferrerServiceServer(srv, opts.ReferrerSvc)
 
 	// Register Prometheus metrics
 	grpc_prometheus.Register(srv.Server)
