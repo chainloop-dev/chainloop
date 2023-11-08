@@ -40,8 +40,8 @@ lint:
 
 .PHONY: test
 # All tests, both unit and integration
-test: 
-	go test ./... 
+test:
+	go test ./...
 
 .PHONY: build_devel
 # build for development testing

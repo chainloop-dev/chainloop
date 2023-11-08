@@ -91,7 +91,11 @@ func newWorkflowCreateCmd() *cobra.Command {
 
 			// Print the Robot Account Token
 			if workflowRA.RobotAccountID != "" {
-				fmt.Printf("\nThis is automatically generated Robot Account Token (ID: %s). Save the following token since it will not printed again: \n\n %s\n\n", workflowRA.RobotAccountID, workflowRA.RobotAccountKey)
+				fmt.Printf(
+					"\nThis is an automatically generated Robot Account Token (ID: %s). Save the following token since it will not printed again: \n\n%s\n\n",
+					workflowRA.RobotAccountID,
+					workflowRA.RobotAccountKey,
+				)
 			}
 
 			return nil
