@@ -80,11 +80,17 @@ func NewWorkflowRunDescribe(cfg *ActionsOpts) *WorkflowRunDescribe {
 	return &WorkflowRunDescribe{cfg}
 }
 
-func (action *WorkflowRunDescribe) Run(runID string, verify bool, publicKey string) (*WorkflowRunItemFull, error) {
+func (action *WorkflowRunDescribe) Run(ctx context.Context, runID string, digest string, verify bool, publicKey string) (*WorkflowRunItemFull, error) {
 	client := pb.NewWorkflowRunServiceClient(action.cfg.CPConnection)
-	resp, err := client.View(context.Background(), &pb.WorkflowRunServiceViewRequest{
-		Ref: &pb.WorkflowRunServiceViewRequest_Id{Id: runID},
-	})
+
+	req := &pb.WorkflowRunServiceViewRequest{}
+	if digest != "" {
+		req.Ref = &pb.WorkflowRunServiceViewRequest_Digest{Digest: digest}
+	} else if runID != "" {
+		req.Ref = &pb.WorkflowRunServiceViewRequest_Id{Id: runID}
+	}
+
+	resp, err := client.View(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +119,7 @@ func (action *WorkflowRunDescribe) Run(runID string, verify bool, publicKey stri
 	}
 
 	if verify {
-		if err := verifyEnvelope(context.Background(), envelope, publicKey); err != nil {
+		if err := verifyEnvelope(ctx, envelope, publicKey); err != nil {
 			action.cfg.Logger.Debug().Err(err).Msg("verifying the envelope")
 			return nil, errors.New("invalid signature, did you provide the right key?")
 		}

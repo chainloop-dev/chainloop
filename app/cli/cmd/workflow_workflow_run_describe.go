@@ -16,6 +16,7 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -32,7 +33,7 @@ const formatStatement = "statement"
 const formatAttestation = "attestation"
 
 func newWorkflowWorkflowRunDescribeCmd() *cobra.Command {
-	var runID, publicKey string
+	var runID, attestationDigest, publicKey string
 	var verifyAttestation bool
 	// TODO: Replace by retrieving key from rekor
 	const signingKeyEnvVarName = "CHAINLOOP_SIGNING_PUBLIC_KEY"
@@ -44,10 +45,15 @@ func newWorkflowWorkflowRunDescribeCmd() *cobra.Command {
 			if verifyAttestation && publicKey == "" {
 				return errors.New("a public key needs to be provided for verification")
 			}
+
+			if runID == "" && attestationDigest == "" {
+				return errors.New("either a run ID or the attestation digest needs to be provided")
+			}
+
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewWorkflowRunDescribe(actionOpts).Run(runID, verifyAttestation, publicKey)
+			res, err := action.NewWorkflowRunDescribe(actionOpts).Run(context.Background(), runID, attestationDigest, verifyAttestation, publicKey)
 			if err != nil {
 				return err
 			}
@@ -57,8 +63,7 @@ func newWorkflowWorkflowRunDescribeCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&runID, "id", "", "workflow Run ID")
-	err := cmd.MarkFlagRequired("id")
-	cobra.CheckErr(err)
+	cmd.Flags().StringVar(&attestationDigest, "digest", "", "content digest of the attestation")
 
 	cmd.Flags().BoolVar(&verifyAttestation, "verify", false, "verify the attestation")
 	cmd.Flags().StringVar(&publicKey, "key", "", fmt.Sprintf("public key used to verify the attestation. Note: You can also use env variable %s", signingKeyEnvVarName))
