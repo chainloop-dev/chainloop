@@ -22,7 +22,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newDiscoverCmd() *cobra.Command {
+func newReferrerDiscoverCmd() *cobra.Command {
 	var digest string
 
 	cmd := &cobra.Command{
