@@ -40,7 +40,9 @@ message ReferrerServiceDiscoverResponse {
 
 message ReferrerItem {
   string digest = 1;
-  string artifact_type = 2;
+  // Kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...
+  string kind = 2;
+  // Whether the referrer is downloadable or not from CAS
   bool downloadable = 3;
   repeated ReferrerItem references = 4;
   google.protobuf.Timestamp created_at = 5;

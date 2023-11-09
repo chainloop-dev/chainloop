@@ -57,7 +57,7 @@ func bizReferrerToPb(r *biz.StoredReferrer) *pb.ReferrerItem {
 	item := &pb.ReferrerItem{
 		Digest:       r.Digest,
 		Downloadable: r.Downloadable,
-		ArtifactType: r.ArtifactType,
+		Kind:         r.Kind,
 		CreatedAt:    timestamppb.New(*r.CreatedAt),
 	}
 

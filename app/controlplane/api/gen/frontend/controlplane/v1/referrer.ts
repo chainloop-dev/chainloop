@@ -16,7 +16,9 @@ export interface ReferrerServiceDiscoverResponse {
 
 export interface ReferrerItem {
   digest: string;
-  artifactType: string;
+  /** Kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ... */
+  kind: string;
+  /** Whether the referrer is downloadable or not from CAS */
   downloadable: boolean;
   references: ReferrerItem[];
   createdAt?: Date;
@@ -141,7 +143,7 @@ export const ReferrerServiceDiscoverResponse = {
 };
 
 function createBaseReferrerItem(): ReferrerItem {
-  return { digest: "", artifactType: "", downloadable: false, references: [], createdAt: undefined };
+  return { digest: "", kind: "", downloadable: false, references: [], createdAt: undefined };
 }
 
 export const ReferrerItem = {
@@ -149,8 +151,8 @@ export const ReferrerItem = {
     if (message.digest !== "") {
       writer.uint32(10).string(message.digest);
     }
-    if (message.artifactType !== "") {
-      writer.uint32(18).string(message.artifactType);
+    if (message.kind !== "") {
+      writer.uint32(18).string(message.kind);
     }
     if (message.downloadable === true) {
       writer.uint32(24).bool(message.downloadable);
@@ -183,7 +185,7 @@ export const ReferrerItem = {
             break;
           }
 
-          message.artifactType = reader.string();
+          message.kind = reader.string();
           continue;
         case 3:
           if (tag !== 24) {
@@ -218,7 +220,7 @@ export const ReferrerItem = {
   fromJSON(object: any): ReferrerItem {
     return {
       digest: isSet(object.digest) ? String(object.digest) : "",
-      artifactType: isSet(object.artifactType) ? String(object.artifactType) : "",
+      kind: isSet(object.kind) ? String(object.kind) : "",
       downloadable: isSet(object.downloadable) ? Boolean(object.downloadable) : false,
       references: Array.isArray(object?.references) ? object.references.map((e: any) => ReferrerItem.fromJSON(e)) : [],
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
@@ -228,7 +230,7 @@ export const ReferrerItem = {
   toJSON(message: ReferrerItem): unknown {
     const obj: any = {};
     message.digest !== undefined && (obj.digest = message.digest);
-    message.artifactType !== undefined && (obj.artifactType = message.artifactType);
+    message.kind !== undefined && (obj.kind = message.kind);
     message.downloadable !== undefined && (obj.downloadable = message.downloadable);
     if (message.references) {
       obj.references = message.references.map((e) => e ? ReferrerItem.toJSON(e) : undefined);
@@ -246,7 +248,7 @@ export const ReferrerItem = {
   fromPartial<I extends Exact<DeepPartial<ReferrerItem>, I>>(object: I): ReferrerItem {
     const message = createBaseReferrerItem();
     message.digest = object.digest ?? "";
-    message.artifactType = object.artifactType ?? "";
+    message.kind = object.kind ?? "";
     message.downloadable = object.downloadable ?? false;
     message.references = object.references?.map((e) => ReferrerItem.fromPartial(e)) || [];
     message.createdAt = object.createdAt ?? undefined;

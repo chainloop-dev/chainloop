@@ -305,7 +305,7 @@ func (m *ReferrerItem) validate(all bool) error {
 
 	// no validation rules for Digest
 
-	// no validation rules for ArtifactType
+	// no validation rules for Kind
 
 	// no validation rules for Downloadable
 
