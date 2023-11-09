@@ -215,7 +215,7 @@ var (
 	ReferrersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "digest", Type: field.TypeString},
-		{Name: "artifact_type", Type: field.TypeString},
+		{Name: "kind", Type: field.TypeString},
 		{Name: "downloadable", Type: field.TypeBool},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 	}
@@ -226,7 +226,7 @@ var (
 		PrimaryKey: []*schema.Column{ReferrersColumns[0]},
 		Indexes: []*schema.Index{
 			{
-				Name:    "referrer_digest_artifact_type",
+				Name:    "referrer_digest_kind",
 				Unique:  true,
 				Columns: []*schema.Column{ReferrersColumns[1], ReferrersColumns[2]},
 			},

@@ -34,8 +34,8 @@ func (Referrer) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),
 		field.String("digest").Immutable(),
-		// referrer type i.e CONTAINER
-		field.String("artifact_type").Immutable(),
+		// referrer kind i.e CONTAINER
+		field.String("kind").Immutable(),
 		// wether it can be downloaded from CAS or not
 		field.Bool("downloadable").Immutable(),
 		field.Time("created_at").
@@ -56,7 +56,8 @@ func (Referrer) Edges() []ent.Edge {
 
 func (Referrer) Indexes() []ent.Index {
 	return []ent.Index{
-		// For now we only guarantee that the digest is unique in the scope of the artifact type
-		index.Fields("digest", "artifact_type").Unique(),
+		// Two referrers of different kinds can have the same digest
+		// For now we only guarantee that the digest is unique in the scope of the referrer kind
+		index.Fields("digest", "kind").Unique(),
 	}
 }

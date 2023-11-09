@@ -5248,7 +5248,7 @@ type ReferrerMutation struct {
 	typ                  string
 	id                   *uuid.UUID
 	digest               *string
-	artifact_type        *string
+	kind                 *string
 	downloadable         *bool
 	created_at           *time.Time
 	clearedFields        map[string]struct{}
@@ -5406,40 +5406,40 @@ func (m *ReferrerMutation) ResetDigest() {
 	m.digest = nil
 }
 
-// SetArtifactType sets the "artifact_type" field.
-func (m *ReferrerMutation) SetArtifactType(s string) {
-	m.artifact_type = &s
+// SetKind sets the "kind" field.
+func (m *ReferrerMutation) SetKind(s string) {
+	m.kind = &s
 }
 
-// ArtifactType returns the value of the "artifact_type" field in the mutation.
-func (m *ReferrerMutation) ArtifactType() (r string, exists bool) {
-	v := m.artifact_type
+// Kind returns the value of the "kind" field in the mutation.
+func (m *ReferrerMutation) Kind() (r string, exists bool) {
+	v := m.kind
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldArtifactType returns the old "artifact_type" field's value of the Referrer entity.
+// OldKind returns the old "kind" field's value of the Referrer entity.
 // If the Referrer object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ReferrerMutation) OldArtifactType(ctx context.Context) (v string, err error) {
+func (m *ReferrerMutation) OldKind(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldArtifactType is only allowed on UpdateOne operations")
+		return v, errors.New("OldKind is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldArtifactType requires an ID field in the mutation")
+		return v, errors.New("OldKind requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldArtifactType: %w", err)
+		return v, fmt.Errorf("querying old value for OldKind: %w", err)
 	}
-	return oldValue.ArtifactType, nil
+	return oldValue.Kind, nil
 }
 
-// ResetArtifactType resets all changes to the "artifact_type" field.
-func (m *ReferrerMutation) ResetArtifactType() {
-	m.artifact_type = nil
+// ResetKind resets all changes to the "kind" field.
+func (m *ReferrerMutation) ResetKind() {
+	m.kind = nil
 }
 
 // SetDownloadable sets the "downloadable" field.
@@ -5714,8 +5714,8 @@ func (m *ReferrerMutation) Fields() []string {
 	if m.digest != nil {
 		fields = append(fields, referrer.FieldDigest)
 	}
-	if m.artifact_type != nil {
-		fields = append(fields, referrer.FieldArtifactType)
+	if m.kind != nil {
+		fields = append(fields, referrer.FieldKind)
 	}
 	if m.downloadable != nil {
 		fields = append(fields, referrer.FieldDownloadable)
@@ -5733,8 +5733,8 @@ func (m *ReferrerMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case referrer.FieldDigest:
 		return m.Digest()
-	case referrer.FieldArtifactType:
-		return m.ArtifactType()
+	case referrer.FieldKind:
+		return m.Kind()
 	case referrer.FieldDownloadable:
 		return m.Downloadable()
 	case referrer.FieldCreatedAt:
@@ -5750,8 +5750,8 @@ func (m *ReferrerMutation) OldField(ctx context.Context, name string) (ent.Value
 	switch name {
 	case referrer.FieldDigest:
 		return m.OldDigest(ctx)
-	case referrer.FieldArtifactType:
-		return m.OldArtifactType(ctx)
+	case referrer.FieldKind:
+		return m.OldKind(ctx)
 	case referrer.FieldDownloadable:
 		return m.OldDownloadable(ctx)
 	case referrer.FieldCreatedAt:
@@ -5772,12 +5772,12 @@ func (m *ReferrerMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDigest(v)
 		return nil
-	case referrer.FieldArtifactType:
+	case referrer.FieldKind:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetArtifactType(v)
+		m.SetKind(v)
 		return nil
 	case referrer.FieldDownloadable:
 		v, ok := value.(bool)
@@ -5845,8 +5845,8 @@ func (m *ReferrerMutation) ResetField(name string) error {
 	case referrer.FieldDigest:
 		m.ResetDigest()
 		return nil
-	case referrer.FieldArtifactType:
-		m.ResetArtifactType()
+	case referrer.FieldKind:
+		m.ResetKind()
 		return nil
 	case referrer.FieldDownloadable:
 		m.ResetDownloadable()

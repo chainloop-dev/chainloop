@@ -33,8 +33,8 @@ import (
 )
 
 type Referrer struct {
-	Digest       string
-	ArtifactType string
+	Digest string
+	Kind   string
 	// Wether the item is downloadable from CAS or not
 	Downloadable bool
 	// points to other digests
@@ -43,9 +43,9 @@ type Referrer struct {
 
 // Actual referrer stored in the DB which includes a nested list of storedReferences
 type StoredReferrer struct {
-	ID           uuid.UUID
-	Digest       string
-	ArtifactType string
+	ID     uuid.UUID
+	Digest string
+	Kind   string
 	// Wether the item is downloadable from CAS or not
 	Downloadable bool
 	CreatedAt    *time.Time
@@ -146,7 +146,7 @@ func extractReferrers(att *dsse.Envelope) (ReferrerMap, error) {
 	attestationHash := h.String()
 	referrers[attestationHash] = &Referrer{
 		Digest:       attestationHash,
-		ArtifactType: referrerAttestationType,
+		Kind:         referrerAttestationType,
 		Downloadable: true,
 	}
 
@@ -169,8 +169,8 @@ func extractReferrers(att *dsse.Envelope) (ReferrerMap, error) {
 		// i.e the same SBOM twice, in that case we don't want to create a new referrer
 		// If we are providing different types for the same digest, we should error out
 		if r, ok := referrers[material.Hash.String()]; ok {
-			if r.ArtifactType != material.Type {
-				return nil, fmt.Errorf("material %s has different types: %s and %s", material.Hash.String(), r.ArtifactType, material.Type)
+			if r.Kind != material.Type {
+				return nil, fmt.Errorf("material %s has different types: %s and %s", material.Hash.String(), r.Kind, material.Type)
 			}
 
 			continue
@@ -178,7 +178,7 @@ func extractReferrers(att *dsse.Envelope) (ReferrerMap, error) {
 
 		referrers[material.Hash.String()] = &Referrer{
 			Digest:       material.Hash.String(),
-			ArtifactType: material.Type,
+			Kind:         material.Type,
 			Downloadable: material.UploadedToCAS,
 		}
 
@@ -235,8 +235,8 @@ func intotoSubjectToReferrer(r *v1.ResourceDescriptor) (*Referrer, error) {
 		}
 
 		return &Referrer{
-			Digest:       digestStr,
-			ArtifactType: referrerGitHeadType,
+			Digest: digestStr,
+			Kind:   referrerGitHeadType,
 		}, nil
 	}
 
@@ -264,7 +264,7 @@ func intotoSubjectToReferrer(r *v1.ResourceDescriptor) (*Referrer, error) {
 
 	return &Referrer{
 		Digest:       digestStr,
-		ArtifactType: materialType,
+		Kind:         materialType,
 		Downloadable: uploadedToCAS,
 	}, nil
 }

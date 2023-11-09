@@ -17,8 +17,8 @@ const (
 	FieldID = "id"
 	// FieldDigest holds the string denoting the digest field in the database.
 	FieldDigest = "digest"
-	// FieldArtifactType holds the string denoting the artifact_type field in the database.
-	FieldArtifactType = "artifact_type"
+	// FieldKind holds the string denoting the kind field in the database.
+	FieldKind = "kind"
 	// FieldDownloadable holds the string denoting the downloadable field in the database.
 	FieldDownloadable = "downloadable"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -46,7 +46,7 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldDigest,
-	FieldArtifactType,
+	FieldKind,
 	FieldDownloadable,
 	FieldCreatedAt,
 }
@@ -93,9 +93,9 @@ func ByDigest(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDigest, opts...).ToFunc()
 }
 
-// ByArtifactType orders the results by the artifact_type field.
-func ByArtifactType(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldArtifactType, opts...).ToFunc()
+// ByKind orders the results by the kind field.
+func ByKind(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldKind, opts...).ToFunc()
 }
 
 // ByDownloadable orders the results by the downloadable field.

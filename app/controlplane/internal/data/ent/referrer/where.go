@@ -61,9 +61,9 @@ func Digest(v string) predicate.Referrer {
 	return predicate.Referrer(sql.FieldEQ(FieldDigest, v))
 }
 
-// ArtifactType applies equality check predicate on the "artifact_type" field. It's identical to ArtifactTypeEQ.
-func ArtifactType(v string) predicate.Referrer {
-	return predicate.Referrer(sql.FieldEQ(FieldArtifactType, v))
+// Kind applies equality check predicate on the "kind" field. It's identical to KindEQ.
+func Kind(v string) predicate.Referrer {
+	return predicate.Referrer(sql.FieldEQ(FieldKind, v))
 }
 
 // Downloadable applies equality check predicate on the "downloadable" field. It's identical to DownloadableEQ.
@@ -141,69 +141,69 @@ func DigestContainsFold(v string) predicate.Referrer {
 	return predicate.Referrer(sql.FieldContainsFold(FieldDigest, v))
 }
 
-// ArtifactTypeEQ applies the EQ predicate on the "artifact_type" field.
-func ArtifactTypeEQ(v string) predicate.Referrer {
-	return predicate.Referrer(sql.FieldEQ(FieldArtifactType, v))
+// KindEQ applies the EQ predicate on the "kind" field.
+func KindEQ(v string) predicate.Referrer {
+	return predicate.Referrer(sql.FieldEQ(FieldKind, v))
 }
 
-// ArtifactTypeNEQ applies the NEQ predicate on the "artifact_type" field.
-func ArtifactTypeNEQ(v string) predicate.Referrer {
-	return predicate.Referrer(sql.FieldNEQ(FieldArtifactType, v))
+// KindNEQ applies the NEQ predicate on the "kind" field.
+func KindNEQ(v string) predicate.Referrer {
+	return predicate.Referrer(sql.FieldNEQ(FieldKind, v))
 }
 
-// ArtifactTypeIn applies the In predicate on the "artifact_type" field.
-func ArtifactTypeIn(vs ...string) predicate.Referrer {
-	return predicate.Referrer(sql.FieldIn(FieldArtifactType, vs...))
+// KindIn applies the In predicate on the "kind" field.
+func KindIn(vs ...string) predicate.Referrer {
+	return predicate.Referrer(sql.FieldIn(FieldKind, vs...))
 }
 
-// ArtifactTypeNotIn applies the NotIn predicate on the "artifact_type" field.
-func ArtifactTypeNotIn(vs ...string) predicate.Referrer {
-	return predicate.Referrer(sql.FieldNotIn(FieldArtifactType, vs...))
+// KindNotIn applies the NotIn predicate on the "kind" field.
+func KindNotIn(vs ...string) predicate.Referrer {
+	return predicate.Referrer(sql.FieldNotIn(FieldKind, vs...))
 }
 
-// ArtifactTypeGT applies the GT predicate on the "artifact_type" field.
-func ArtifactTypeGT(v string) predicate.Referrer {
-	return predicate.Referrer(sql.FieldGT(FieldArtifactType, v))
+// KindGT applies the GT predicate on the "kind" field.
+func KindGT(v string) predicate.Referrer {
+	return predicate.Referrer(sql.FieldGT(FieldKind, v))
 }
 
-// ArtifactTypeGTE applies the GTE predicate on the "artifact_type" field.
-func ArtifactTypeGTE(v string) predicate.Referrer {
-	return predicate.Referrer(sql.FieldGTE(FieldArtifactType, v))
+// KindGTE applies the GTE predicate on the "kind" field.
+func KindGTE(v string) predicate.Referrer {
+	return predicate.Referrer(sql.FieldGTE(FieldKind, v))
 }
 
-// ArtifactTypeLT applies the LT predicate on the "artifact_type" field.
-func ArtifactTypeLT(v string) predicate.Referrer {
-	return predicate.Referrer(sql.FieldLT(FieldArtifactType, v))
+// KindLT applies the LT predicate on the "kind" field.
+func KindLT(v string) predicate.Referrer {
+	return predicate.Referrer(sql.FieldLT(FieldKind, v))
 }
 
-// ArtifactTypeLTE applies the LTE predicate on the "artifact_type" field.
-func ArtifactTypeLTE(v string) predicate.Referrer {
-	return predicate.Referrer(sql.FieldLTE(FieldArtifactType, v))
+// KindLTE applies the LTE predicate on the "kind" field.
+func KindLTE(v string) predicate.Referrer {
+	return predicate.Referrer(sql.FieldLTE(FieldKind, v))
 }
 
-// ArtifactTypeContains applies the Contains predicate on the "artifact_type" field.
-func ArtifactTypeContains(v string) predicate.Referrer {
-	return predicate.Referrer(sql.FieldContains(FieldArtifactType, v))
+// KindContains applies the Contains predicate on the "kind" field.
+func KindContains(v string) predicate.Referrer {
+	return predicate.Referrer(sql.FieldContains(FieldKind, v))
 }
 
-// ArtifactTypeHasPrefix applies the HasPrefix predicate on the "artifact_type" field.
-func ArtifactTypeHasPrefix(v string) predicate.Referrer {
-	return predicate.Referrer(sql.FieldHasPrefix(FieldArtifactType, v))
+// KindHasPrefix applies the HasPrefix predicate on the "kind" field.
+func KindHasPrefix(v string) predicate.Referrer {
+	return predicate.Referrer(sql.FieldHasPrefix(FieldKind, v))
 }
 
-// ArtifactTypeHasSuffix applies the HasSuffix predicate on the "artifact_type" field.
-func ArtifactTypeHasSuffix(v string) predicate.Referrer {
-	return predicate.Referrer(sql.FieldHasSuffix(FieldArtifactType, v))
+// KindHasSuffix applies the HasSuffix predicate on the "kind" field.
+func KindHasSuffix(v string) predicate.Referrer {
+	return predicate.Referrer(sql.FieldHasSuffix(FieldKind, v))
 }
 
-// ArtifactTypeEqualFold applies the EqualFold predicate on the "artifact_type" field.
-func ArtifactTypeEqualFold(v string) predicate.Referrer {
-	return predicate.Referrer(sql.FieldEqualFold(FieldArtifactType, v))
+// KindEqualFold applies the EqualFold predicate on the "kind" field.
+func KindEqualFold(v string) predicate.Referrer {
+	return predicate.Referrer(sql.FieldEqualFold(FieldKind, v))
 }
 
-// ArtifactTypeContainsFold applies the ContainsFold predicate on the "artifact_type" field.
-func ArtifactTypeContainsFold(v string) predicate.Referrer {
-	return predicate.Referrer(sql.FieldContainsFold(FieldArtifactType, v))
+// KindContainsFold applies the ContainsFold predicate on the "kind" field.
+func KindContainsFold(v string) predicate.Referrer {
+	return predicate.Referrer(sql.FieldContainsFold(FieldKind, v))
 }
 
 // DownloadableEQ applies the EQ predicate on the "downloadable" field.

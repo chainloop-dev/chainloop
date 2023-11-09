@@ -28,9 +28,9 @@ func (rc *ReferrerCreate) SetDigest(s string) *ReferrerCreate {
 	return rc
 }
 
-// SetArtifactType sets the "artifact_type" field.
-func (rc *ReferrerCreate) SetArtifactType(s string) *ReferrerCreate {
-	rc.mutation.SetArtifactType(s)
+// SetKind sets the "kind" field.
+func (rc *ReferrerCreate) SetKind(s string) *ReferrerCreate {
+	rc.mutation.SetKind(s)
 	return rc
 }
 
@@ -163,8 +163,8 @@ func (rc *ReferrerCreate) check() error {
 	if _, ok := rc.mutation.Digest(); !ok {
 		return &ValidationError{Name: "digest", err: errors.New(`ent: missing required field "Referrer.digest"`)}
 	}
-	if _, ok := rc.mutation.ArtifactType(); !ok {
-		return &ValidationError{Name: "artifact_type", err: errors.New(`ent: missing required field "Referrer.artifact_type"`)}
+	if _, ok := rc.mutation.Kind(); !ok {
+		return &ValidationError{Name: "kind", err: errors.New(`ent: missing required field "Referrer.kind"`)}
 	}
 	if _, ok := rc.mutation.Downloadable(); !ok {
 		return &ValidationError{Name: "downloadable", err: errors.New(`ent: missing required field "Referrer.downloadable"`)}
@@ -211,9 +211,9 @@ func (rc *ReferrerCreate) createSpec() (*Referrer, *sqlgraph.CreateSpec) {
 		_spec.SetField(referrer.FieldDigest, field.TypeString, value)
 		_node.Digest = value
 	}
-	if value, ok := rc.mutation.ArtifactType(); ok {
-		_spec.SetField(referrer.FieldArtifactType, field.TypeString, value)
-		_node.ArtifactType = value
+	if value, ok := rc.mutation.Kind(); ok {
+		_spec.SetField(referrer.FieldKind, field.TypeString, value)
+		_node.Kind = value
 	}
 	if value, ok := rc.mutation.Downloadable(); ok {
 		_spec.SetField(referrer.FieldDownloadable, field.TypeBool, value)

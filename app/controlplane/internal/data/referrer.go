@@ -51,14 +51,14 @@ func (r *ReferrerRepo) Save(ctx context.Context, input biz.ReferrerMap, orgID uu
 	// 1 - Find or create each referrer
 	for digest, r := range input {
 		// Check if it exists already, if not create it
-		storedRef, err := tx.Referrer.Query().Where(referrer.Digest(digest), referrer.ArtifactType(r.ArtifactType)).Only(ctx)
+		storedRef, err := tx.Referrer.Query().Where(referrer.Digest(digest), referrer.Kind(r.Kind)).Only(ctx)
 		if err != nil {
 			if !ent.IsNotFound(err) {
 				return fmt.Errorf("failed to query referrer: %w", err)
 			}
 
 			storedRef, err = tx.Referrer.Create().
-				SetDigest(digest).SetArtifactType(r.ArtifactType).SetDownloadable(r.Downloadable).AddOrganizationIDs(orgID).Save(ctx)
+				SetDigest(digest).SetKind(r.Kind).SetDownloadable(r.Downloadable).AddOrganizationIDs(orgID).Save(ctx)
 			if err != nil {
 				return fmt.Errorf("failed to create referrer: %w", err)
 			}
@@ -135,7 +135,7 @@ func (r *ReferrerRepo) doGet(ctx context.Context, digest string, level int) (*bi
 		ID:           ref.ID,
 		CreatedAt:    toTimePtr(ref.CreatedAt),
 		Digest:       ref.Digest,
-		ArtifactType: ref.ArtifactType,
+		Kind:         ref.Kind,
 		Downloadable: ref.Downloadable,
 	}
 

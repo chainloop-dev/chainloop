@@ -20,8 +20,8 @@ type Referrer struct {
 	ID uuid.UUID `json:"id,omitempty"`
 	// Digest holds the value of the "digest" field.
 	Digest string `json:"digest,omitempty"`
-	// ArtifactType holds the value of the "artifact_type" field.
-	ArtifactType string `json:"artifact_type,omitempty"`
+	// Kind holds the value of the "kind" field.
+	Kind string `json:"kind,omitempty"`
 	// Downloadable holds the value of the "downloadable" field.
 	Downloadable bool `json:"downloadable,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -79,7 +79,7 @@ func (*Referrer) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case referrer.FieldDownloadable:
 			values[i] = new(sql.NullBool)
-		case referrer.FieldDigest, referrer.FieldArtifactType:
+		case referrer.FieldDigest, referrer.FieldKind:
 			values[i] = new(sql.NullString)
 		case referrer.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -112,11 +112,11 @@ func (r *Referrer) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				r.Digest = value.String
 			}
-		case referrer.FieldArtifactType:
+		case referrer.FieldKind:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field artifact_type", values[i])
+				return fmt.Errorf("unexpected type %T for field kind", values[i])
 			} else if value.Valid {
-				r.ArtifactType = value.String
+				r.Kind = value.String
 			}
 		case referrer.FieldDownloadable:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -184,8 +184,8 @@ func (r *Referrer) String() string {
 	builder.WriteString("digest=")
 	builder.WriteString(r.Digest)
 	builder.WriteString(", ")
-	builder.WriteString("artifact_type=")
-	builder.WriteString(r.ArtifactType)
+	builder.WriteString("kind=")
+	builder.WriteString(r.Kind)
 	builder.WriteString(", ")
 	builder.WriteString("downloadable=")
 	builder.WriteString(fmt.Sprintf("%v", r.Downloadable))
