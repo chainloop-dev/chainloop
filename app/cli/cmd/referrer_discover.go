@@ -39,7 +39,7 @@ func newReferrerDiscoverCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&digest, "digest", "d", "", "hash of the piece of evidence or artifact, i.e sha256:deadbeef")
+	cmd.Flags().StringVarP(&digest, "digest", "d", "", "hash of the attestation, piece of evidence or artifact, i.e sha256:deadbeef")
 	err := cmd.MarkFlagRequired("digest")
 	cobra.CheckErr(err)
 
