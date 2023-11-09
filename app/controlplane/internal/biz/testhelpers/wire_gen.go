@@ -75,6 +75,8 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		cleanup()
 		return nil, nil, err
 	}
+	referrerRepo := data.NewReferrerRepo(dataData, logger)
+	referrerUseCase := biz.NewReferrerUseCase(referrerRepo, organizationRepo, logger)
 	testingUseCases := &TestingUseCases{
 		DB:                     testDatabase,
 		Data:                   dataData,
@@ -91,6 +93,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		RegisteredIntegrations: availablePlugins,
 		CASMapping:             casMappingUseCase,
 		OrgInvitation:          orgInvitationUseCase,
+		Referrer:               referrerUseCase,
 	}
 	return testingUseCases, func() {
 		cleanup()
