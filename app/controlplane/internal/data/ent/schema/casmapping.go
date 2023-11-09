@@ -44,9 +44,9 @@ func (CASMapping) Fields() []ent.Field {
 
 func (CASMapping) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("cas_backend", CASBackend.Type).Unique().Required().Immutable(),
-		edge.To("workflow_run", WorkflowRun.Type).Unique().Immutable(),
-		edge.To("organization", Organization.Type).Unique().Required().Immutable(),
+		edge.To("cas_backend", CASBackend.Type).Unique().Required().Immutable().Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
+		edge.To("workflow_run", WorkflowRun.Type).Unique().Immutable().Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
+		edge.To("organization", Organization.Type).Unique().Required().Immutable().Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 	}
 }
 
