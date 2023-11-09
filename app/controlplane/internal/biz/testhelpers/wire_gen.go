@@ -76,7 +76,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		return nil, nil, err
 	}
 	referrerRepo := data.NewReferrerRepo(dataData, logger)
-	referrerUseCase := biz.NewReferrerUseCase(referrerRepo, organizationRepo, logger)
+	referrerUseCase := biz.NewReferrerUseCase(referrerRepo, organizationRepo, membershipRepo, logger)
 	testingUseCases := &TestingUseCases{
 		DB:                     testDatabase,
 		Data:                   dataData,

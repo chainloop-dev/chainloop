@@ -64,6 +64,8 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	bootstrap_CASServer := bootstrap.CasServer
 	v := _wireValue
 	casClientUseCase := biz.NewCASClientUseCase(casCredentialsUseCase, bootstrap_CASServer, logger, v...)
+	referrerRepo := data.NewReferrerRepo(dataData, logger)
+	referrerUseCase := biz.NewReferrerUseCase(referrerRepo, organizationRepo, membershipRepo, logger)
 	workflowContractRepo := data.NewWorkflowContractRepo(dataData, logger)
 	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, logger)
 	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, workflowContractUseCase, logger)
@@ -100,8 +102,6 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	fanOutDispatcher := dispatcher.New(integrationUseCase, workflowUseCase, workflowRunUseCase, readerWriter, casClientUseCase, availablePlugins, logger)
 	casMappingRepo := data.NewCASMappingRepo(dataData, casBackendRepo, logger)
 	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipRepo, logger)
-	referrerRepo := data.NewReferrerRepo(dataData, logger)
-	referrerUseCase := biz.NewReferrerUseCase(referrerRepo, organizationRepo, logger)
 	newAttestationServiceOpts := &service.NewAttestationServiceOpts{
 		WorkflowRunUC:      workflowRunUseCase,
 		WorkflowUC:         workflowUseCase,
@@ -136,12 +136,14 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		return nil, nil, err
 	}
 	orgInvitationService := service.NewOrgInvitationService(orgInvitationUseCase, v2...)
+	referrerService := service.NewReferrerService(referrerUseCase, v2...)
 	opts := &server.Opts{
 		UserUseCase:         userUseCase,
 		RobotAccountUseCase: robotAccountUseCase,
 		CASBackendUseCase:   casBackendUseCase,
 		CASClientUseCase:    casClientUseCase,
 		IntegrationUseCase:  integrationUseCase,
+		ReferrerUseCase:     referrerUseCase,
 		WorkflowSvc:         workflowService,
 		AuthSvc:             authService,
 		RobotAccountSvc:     robotAccountService,
@@ -156,6 +158,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		CASBackendSvc:       casBackendService,
 		CASRedirectSvc:      casRedirectService,
 		OrgInvitationSvc:    orgInvitationService,
+		ReferrerSvc:         referrerService,
 		Logger:              logger,
 		ServerConfig:        confServer,
 		AuthConfig:          auth,
