@@ -26,6 +26,8 @@ type Tx struct {
 	OrgInvitation *OrgInvitationClient
 	// Organization is the client for interacting with the Organization builders.
 	Organization *OrganizationClient
+	// Referrer is the client for interacting with the Referrer builders.
+	Referrer *ReferrerClient
 	// RobotAccount is the client for interacting with the RobotAccount builders.
 	RobotAccount *RobotAccountClient
 	// User is the client for interacting with the User builders.
@@ -176,6 +178,7 @@ func (tx *Tx) init() {
 	tx.Membership = NewMembershipClient(tx.config)
 	tx.OrgInvitation = NewOrgInvitationClient(tx.config)
 	tx.Organization = NewOrganizationClient(tx.config)
+	tx.Referrer = NewReferrerClient(tx.config)
 	tx.RobotAccount = NewRobotAccountClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 	tx.Workflow = NewWorkflowClient(tx.config)

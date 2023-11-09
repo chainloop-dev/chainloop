@@ -27,6 +27,9 @@ type OrgInvitation func(*sql.Selector)
 // Organization is the predicate function for organization builders.
 type Organization func(*sql.Selector)
 
+// Referrer is the predicate function for referrer builders.
+type Referrer func(*sql.Selector)
+
 // RobotAccount is the predicate function for robotaccount builders.
 type RobotAccount func(*sql.Selector)
 
