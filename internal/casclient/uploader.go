@@ -88,7 +88,10 @@ func (c *Client) Upload(ctx context.Context, r io.Reader, filename, digest strin
 		Msg("uploading")
 
 	var totalUploaded int64
-	var latestStatus *UpDownStatus
+	latestStatus := &UpDownStatus{
+		Filename: filename,
+		Digest:   h.String(),
+	}
 
 doUpload:
 	for {
@@ -131,11 +134,7 @@ doUpload:
 			}
 		}
 
-		latestStatus = &UpDownStatus{
-			Filename:       filename,
-			Digest:         h.String(),
-			ProcessedBytes: totalUploaded,
-		}
+		latestStatus.ProcessedBytes = totalUploaded
 
 		select {
 		case c.ProgressStatus <- latestStatus:
