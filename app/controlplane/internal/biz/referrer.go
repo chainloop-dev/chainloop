@@ -58,6 +58,9 @@ type ReferrerMap map[string]*Referrer
 
 type ReferrerRepo interface {
 	Save(ctx context.Context, input ReferrerMap, orgID uuid.UUID) error
+	// GetFromRoot returns the referrer identified by the provided content digest, including its first-level references
+	// For example if sha:deadbeef represents an attestation, the result will contain the attestation + materials associated to it
+	// OrgIDs represent an allowList of organizations where the referrers should be looked for
 	GetFromRoot(ctx context.Context, digest string, orgIDS []uuid.UUID) (*StoredReferrer, error)
 }
 
@@ -104,7 +107,7 @@ func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envel
 
 // GetFromRoot returns the referrer identified by the provided content digest, including its first-level references
 // For example if sha:deadbeef represents an attestation, the result will contain the attestation + materials associated to it
-// TODO:(miguel) authz by user similar to what we do with CASmapping
+// It only returns referrers that belong to organizations the user is member of
 func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest string, userID string) (*StoredReferrer, error) {
 	userUUID, err := uuid.Parse(userID)
 	if err != nil {
