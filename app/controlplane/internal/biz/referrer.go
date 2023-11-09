@@ -114,12 +114,12 @@ func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest string, userID
 	// We pass the list of organizationsIDs from where to look for the referrer
 	// For now we just pass the list of organizations the user is member of
 	// in the future we will expand this to publicly available orgs and so on.
-	var orgIDs []uuid.UUID
 	memberships, err := s.membershipRepo.FindByUser(ctx, userUUID)
 	if err != nil {
 		return nil, fmt.Errorf("finding memberships: %w", err)
 	}
 
+	orgIDs := make([]uuid.UUID, 0, len(memberships))
 	for _, m := range memberships {
 		orgIDs = append(orgIDs, m.OrganizationID)
 	}

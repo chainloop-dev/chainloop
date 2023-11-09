@@ -15,6 +15,7 @@ export interface ReferrerServiceDiscoverResponse {
 }
 
 export interface ReferrerItem {
+  /** Digest of the referrer, i.e sha256:deadbeef or sha1:beefdead */
   digest: string;
   /** Kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ... */
   kind: string;

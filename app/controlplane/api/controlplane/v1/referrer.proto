@@ -17,21 +17,20 @@ syntax = "proto3";
 
 package controlplane.v1;
 
-option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
-import "validate/validate.proto";
-import "google/protobuf/timestamp.proto";
 import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "validate/validate.proto";
+
+option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
 service ReferrerService {
-	rpc Discover (ReferrerServiceDiscoverRequest) returns (ReferrerServiceDiscoverResponse) {
-		option (google.api.http) = {
-        get: "/discover/{digest}"
-    };
+  rpc Discover(ReferrerServiceDiscoverRequest) returns (ReferrerServiceDiscoverResponse) {
+    option (google.api.http) = {get: "/discover/{digest}"};
   }
 }
 
 message ReferrerServiceDiscoverRequest {
-  string digest = 1 [(validate.rules).string = {min_len: 1}]; 
+  string digest = 1 [(validate.rules).string = {min_len: 1}];
 }
 
 message ReferrerServiceDiscoverResponse {
@@ -39,6 +38,7 @@ message ReferrerServiceDiscoverResponse {
 }
 
 message ReferrerItem {
+  // Digest of the referrer, i.e sha256:deadbeef or sha1:beefdead
   string digest = 1;
   // Kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...
   string kind = 2;

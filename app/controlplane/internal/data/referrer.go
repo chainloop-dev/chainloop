@@ -120,7 +120,7 @@ const maxTraverseLevels = 1
 func (r *ReferrerRepo) doGet(ctx context.Context, digest string, orgIDs []uuid.UUID, level int) (*biz.StoredReferrer, error) {
 	// Find the referrer
 	// if there is more than 1 item with the same digest+artifactType it will fail
-	ref, err := r.data.db.Debug().Referrer.Query().Where(referrer.Digest(digest)).
+	ref, err := r.data.db.Referrer.Query().Where(referrer.Digest(digest)).
 		Where(referrer.HasOrganizationsWith(organization.IDIn(orgIDs...))).
 		Only(ctx)
 	if err != nil {
