@@ -59,11 +59,6 @@ func (a *ArtifactUpload) Run(filePath string) (*CASArtifact, error) {
 		return nil, fmt.Errorf("retrieving file information: %w", err)
 	}
 
-	if info.Size() == 0 {
-		a.Logger.Info().Msg("the file is empty, nothing to upload")
-		return nil, nil
-	}
-
 	// render progress bar
 	go renderOperationStatus(context.Background(), client.ProgressStatus, info.Size())
 	defer close(client.ProgressStatus)
