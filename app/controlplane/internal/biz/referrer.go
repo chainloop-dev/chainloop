@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"sort"
@@ -124,6 +125,10 @@ func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest string, userID
 
 	ref, err := s.repo.GetFromRoot(ctx, digest, orgIDs)
 	if err != nil {
+		if errors.As(err, &ErrAmbiguousReferrer{}) {
+			return nil, NewErrValidation(fmt.Errorf("please provide the referrer kind: %w", err))
+		}
+
 		return nil, fmt.Errorf("getting referrer from root: %w", err)
 	} else if ref == nil {
 		return nil, NewErrNotFound("referrer")

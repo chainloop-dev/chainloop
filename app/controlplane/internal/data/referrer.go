@@ -124,18 +124,27 @@ const maxTraverseLevels = 1
 func (r *ReferrerRepo) doGet(ctx context.Context, digest string, orgIDs []uuid.UUID, level int) (*biz.StoredReferrer, error) {
 	// Find the referrer
 	// if there is more than 1 item with the same digest+artifactType it will fail
-	ref, err := r.data.db.Referrer.Query().Where(referrer.Digest(digest)).
+	refs, err := r.data.db.Referrer.Query().Where(referrer.Digest(digest)).
 		Where(referrer.HasOrganizationsWith(organization.IDIn(orgIDs...))).
-		Only(ctx)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return nil, nil
-		} else if ent.IsNotSingular(err) {
-			return nil, fmt.Errorf("found more than one referrer with digest %s, please provide artifact type", digest)
-		}
+		All(ctx)
 
+	if err != nil {
 		return nil, fmt.Errorf("failed to query referrer: %w", err)
 	}
+
+	// No items found
+	if numrefs := len(refs); numrefs == 0 {
+		return nil, nil
+	} else if numrefs > 1 {
+		// if there is more than 1 item with the same digest+artifactType we will fail
+		var kinds []string
+		for _, r := range refs {
+			kinds = append(kinds, r.Kind)
+		}
+		return nil, biz.NewErrReferrerAmbiguous(digest, kinds)
+	}
+
+	ref := refs[0]
 
 	// Assemble the referrer to return
 	res := &biz.StoredReferrer{
@@ -160,7 +169,7 @@ func (r *ReferrerRepo) doGet(ctx context.Context, digest string, orgIDs []uuid.U
 	}
 
 	// Find the references and call recursively
-	refs, err := ref.QueryReferences().
+	refs, err = ref.QueryReferences().
 		Where(referrer.HasOrganizationsWith(organization.IDIn(orgIDs...))).
 		Order(referrer.ByDigest()).All(ctx)
 	if err != nil {
