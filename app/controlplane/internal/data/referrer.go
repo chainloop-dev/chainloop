@@ -41,10 +41,6 @@ func NewReferrerRepo(data *Data, logger log.Logger) biz.ReferrerRepo {
 
 type storedReferrerMap map[string]*ent.Referrer
 
-func newRef(digest, kind string) string {
-	return fmt.Sprintf("%s-%s", kind, digest)
-}
-
 func (r *ReferrerRepo) Save(ctx context.Context, referrers []*biz.Referrer, orgID uuid.UUID) error {
 	// Start transaction
 	tx, err := r.data.db.Tx(ctx)

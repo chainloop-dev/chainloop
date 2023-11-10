@@ -105,5 +105,5 @@ func NewErrReferrerAmbiguous(digest string, kinds []string) error {
 }
 
 func (e ErrAmbiguousReferrer) Error() string {
-	return fmt.Sprintf("digest %s present in two kinds %q", e.digest, e.kinds)
+	return fmt.Sprintf("digest %s present in %d kinds %q", e.digest, len(e.kinds), e.kinds)
 }

@@ -201,7 +201,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		// but retrieval should fail. In the future we will ask the user to provide the artifact type in these cases of ambiguity
 		got, err := s.Referrer.GetFromRoot(ctx, wantReferrerSarif.Digest, s.user.ID)
 		s.Nil(got)
-		s.ErrorContains(err, "found more than one referrer with digest")
+		s.ErrorContains(err, "present in 2 kinds")
 	})
 
 	s.T().Run("now there should a container image pointing to two attestations", func(t *testing.T) {
