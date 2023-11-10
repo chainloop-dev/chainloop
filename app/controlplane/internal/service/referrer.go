@@ -43,7 +43,7 @@ func (s *ReferrerService) Discover(ctx context.Context, req *pb.ReferrerServiceD
 		return nil, err
 	}
 
-	res, err := s.referrerUC.GetFromRoot(ctx, req.GetDigest(), currentUser.ID)
+	res, err := s.referrerUC.GetFromRoot(ctx, req.GetDigest(), req.GetKind(), currentUser.ID)
 	if err != nil {
 		return nil, handleUseCaseErr("referrer discovery", err, s.log)
 	}

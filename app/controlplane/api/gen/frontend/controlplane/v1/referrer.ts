@@ -8,6 +8,11 @@ export const protobufPackage = "controlplane.v1";
 
 export interface ReferrerServiceDiscoverRequest {
   digest: string;
+  /**
+   * Optional kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...
+   * Used to filter and resolve ambiguities
+   */
+  kind: string;
 }
 
 export interface ReferrerServiceDiscoverResponse {
@@ -26,13 +31,16 @@ export interface ReferrerItem {
 }
 
 function createBaseReferrerServiceDiscoverRequest(): ReferrerServiceDiscoverRequest {
-  return { digest: "" };
+  return { digest: "", kind: "" };
 }
 
 export const ReferrerServiceDiscoverRequest = {
   encode(message: ReferrerServiceDiscoverRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.digest !== "") {
       writer.uint32(10).string(message.digest);
+    }
+    if (message.kind !== "") {
+      writer.uint32(18).string(message.kind);
     }
     return writer;
   },
@@ -51,6 +59,13 @@ export const ReferrerServiceDiscoverRequest = {
 
           message.digest = reader.string();
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.kind = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -61,12 +76,16 @@ export const ReferrerServiceDiscoverRequest = {
   },
 
   fromJSON(object: any): ReferrerServiceDiscoverRequest {
-    return { digest: isSet(object.digest) ? String(object.digest) : "" };
+    return {
+      digest: isSet(object.digest) ? String(object.digest) : "",
+      kind: isSet(object.kind) ? String(object.kind) : "",
+    };
   },
 
   toJSON(message: ReferrerServiceDiscoverRequest): unknown {
     const obj: any = {};
     message.digest !== undefined && (obj.digest = message.digest);
+    message.kind !== undefined && (obj.kind = message.kind);
     return obj;
   },
 
@@ -79,6 +98,7 @@ export const ReferrerServiceDiscoverRequest = {
   ): ReferrerServiceDiscoverRequest {
     const message = createBaseReferrerServiceDiscoverRequest();
     message.digest = object.digest ?? "";
+    message.kind = object.kind ?? "";
     return message;
   },
 };
