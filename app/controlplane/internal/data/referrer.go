@@ -50,16 +50,16 @@ func (r *ReferrerRepo) Save(ctx context.Context, input biz.ReferrerMap, orgID uu
 
 	storedMap := make(storedReferrerMap)
 	// 1 - Find or create each referrer
-	for digest, r := range input {
+	for id, r := range input {
 		// Check if it exists already, if not create it
-		storedRef, err := tx.Referrer.Query().Where(referrer.Digest(digest), referrer.Kind(r.Kind)).Only(ctx)
+		storedRef, err := tx.Referrer.Query().Where(referrer.Digest(r.Digest), referrer.Kind(r.Kind)).Only(ctx)
 		if err != nil {
 			if !ent.IsNotFound(err) {
 				return fmt.Errorf("failed to query referrer: %w", err)
 			}
 
 			storedRef, err = tx.Referrer.Create().
-				SetDigest(digest).SetKind(r.Kind).SetDownloadable(r.Downloadable).AddOrganizationIDs(orgID).Save(ctx)
+				SetDigest(r.Digest).SetKind(r.Kind).SetDownloadable(r.Downloadable).AddOrganizationIDs(orgID).Save(ctx)
 			if err != nil {
 				return fmt.Errorf("failed to create referrer: %w", err)
 			}
@@ -72,17 +72,17 @@ func (r *ReferrerRepo) Save(ctx context.Context, input biz.ReferrerMap, orgID uu
 		}
 
 		// Store it in the map
-		storedMap[digest] = storedRef
+		storedMap[id] = storedRef
 	}
 
 	// 2 - define the relationship between referrers
-	for digest, inputRef := range input {
+	for id, inputRef := range input {
 		// This is the current item stored in DB
-		storedReferrer := storedMap[digest]
+		storedReferrer := storedMap[id]
 		// Iterate on the items it refer to (references)
 		for _, ref := range inputRef.References {
 			// amd find it in the DB
-			storedReference, ok := storedMap[ref]
+			storedReference, ok := storedMap[id]
 			if !ok {
 				return fmt.Errorf("referrer %s not found", ref)
 			}

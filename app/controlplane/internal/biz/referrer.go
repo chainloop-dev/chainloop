@@ -38,7 +38,12 @@ type Referrer struct {
 	// Wether the item is downloadable from CAS or not
 	Downloadable bool
 	// points to other digests
-	References []string
+	References []*ReferrerReference
+}
+
+type ReferrerReference struct {
+	Digest string
+	Kind   string
 }
 
 // Actual referrer stored in the DB which includes a nested list of storedReferences
@@ -142,6 +147,10 @@ const (
 	referrerGitHeadType     = "GIT_HEAD_COMMIT"
 )
 
+func newRef(digest, kind string) string {
+	return fmt.Sprintf("%s-%s", kind, digest)
+}
+
 // ExtractReferrers extracts the referrers from the given attestation
 // this means
 // 1 - write an entry for the attestation itself
@@ -166,11 +175,13 @@ func extractReferrers(att *dsse.Envelope) (ReferrerMap, error) {
 	// 1 - Attestation referrer
 	// Add the attestation itself as a referrer to the map without references yet
 	attestationHash := h.String()
-	referrers[attestationHash] = &Referrer{
+	attestationReferrer := &Referrer{
 		Digest:       attestationHash,
 		Kind:         referrerAttestationType,
 		Downloadable: true,
 	}
+
+	referrers[newRef(attestationHash, referrerAttestationType)] = attestationReferrer
 
 	// 2 - Predicate that's referenced from the attestation
 	predicate, err := chainloop.ExtractPredicate(att)
@@ -189,23 +200,23 @@ func extractReferrers(att *dsse.Envelope) (ReferrerMap, error) {
 		// Create its referrer entry if it doesn't exist yet
 		// the reason it might exist is because you might be attaching the same material twice
 		// i.e the same SBOM twice, in that case we don't want to create a new referrer
-		// If we are providing different types for the same digest, we should error out
-		if r, ok := referrers[material.Hash.String()]; ok {
-			if r.Kind != material.Type {
-				return nil, fmt.Errorf("material %s has different types: %s and %s", material.Hash.String(), r.Kind, material.Type)
-			}
-
+		materialRef := newRef(material.Hash.String(), material.Type)
+		if _, ok := referrers[materialRef]; ok {
 			continue
 		}
 
-		referrers[material.Hash.String()] = &Referrer{
+		referrers[materialRef] = &Referrer{
 			Digest:       material.Hash.String(),
 			Kind:         material.Type,
 			Downloadable: material.UploadedToCAS,
 		}
 
+		materialReferrer := referrers[materialRef]
+
 		// Add the reference to the attestation
-		referrers[attestationHash].References = append(referrers[attestationHash].References, material.Hash.String())
+		attestationReferrer.References = append(attestationReferrer.References, &ReferrerReference{
+			Digest: materialReferrer.Digest, Kind: materialReferrer.Kind,
+		})
 	}
 
 	// 3 - Subject that points to the attestation
@@ -215,25 +226,30 @@ func extractReferrers(att *dsse.Envelope) (ReferrerMap, error) {
 	}
 
 	for _, subject := range statement.Subject {
-		subjectRef, err := intotoSubjectToReferrer(subject)
+		subjectReferrer, err := intotoSubjectToReferrer(subject)
 		if err != nil {
 			return nil, fmt.Errorf("transforming subject to referrer: %w", err)
 		}
 
-		if subjectRef == nil {
+		if subjectReferrer == nil {
 			continue
 		}
 
+		subjectRef := newRef(subjectReferrer.Digest, subjectReferrer.Kind)
+
 		// check if we already have a referrer for this digest and set it otherwise
 		// this is the case for example for git.Head ones
-		if _, ok := referrers[subjectRef.Digest]; !ok {
-			referrers[subjectRef.Digest] = subjectRef
+		if _, ok := referrers[subjectRef]; !ok {
+			referrers[subjectRef] = subjectReferrer
 			// add it to the list of of attestation-referenced digests
-			referrers[attestationHash].References = append(referrers[attestationHash].References, subjectRef.Digest)
+			attestationReferrer.References = append(attestationReferrer.References,
+				&ReferrerReference{
+					Digest: subjectReferrer.Digest, Kind: subjectReferrer.Kind,
+				})
 		}
 
 		// Update referrer to point to the attestation
-		referrers[subjectRef.Digest].References = []string{attestationHash}
+		referrers[subjectRef].References = []*ReferrerReference{{Digest: attestationReferrer.Digest, Kind: attestationReferrer.Kind}}
 	}
 
 	return referrers, nil
