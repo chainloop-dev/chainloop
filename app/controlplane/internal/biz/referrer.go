@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"sort"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
@@ -37,32 +38,21 @@ type Referrer struct {
 	Kind   string
 	// Wether the item is downloadable from CAS or not
 	Downloadable bool
-	// points to other digests
-	References []*ReferrerReference
-}
-
-type ReferrerReference struct {
-	Digest string
-	Kind   string
+	References   []*Referrer
 }
 
 // Actual referrer stored in the DB which includes a nested list of storedReferences
 type StoredReferrer struct {
-	ID     uuid.UUID
-	Digest string
-	Kind   string
-	// Wether the item is downloadable from CAS or not
-	Downloadable bool
-	CreatedAt    *time.Time
+	*Referrer
+	ID        uuid.UUID
+	CreatedAt *time.Time
 	// Fully expanded list of 1-level off references
 	References []*StoredReferrer
 	OrgIDs     []uuid.UUID
 }
 
-type ReferrerMap map[string]*Referrer
-
 type ReferrerRepo interface {
-	Save(ctx context.Context, input ReferrerMap, orgID uuid.UUID) error
+	Save(ctx context.Context, input []*Referrer, orgID uuid.UUID) error
 	// GetFromRoot returns the referrer identified by the provided content digest, including its first-level references
 	// For example if sha:deadbeef represents an attestation, the result will contain the attestation + materials associated to it
 	// OrgIDs represent an allowList of organizations where the referrers should be looked for
@@ -151,6 +141,10 @@ func newRef(digest, kind string) string {
 	return fmt.Sprintf("%s-%s", kind, digest)
 }
 
+func (r *Referrer) MapID() string {
+	return newRef(r.Digest, r.Kind)
+}
+
 // ExtractReferrers extracts the referrers from the given attestation
 // this means
 // 1 - write an entry for the attestation itself
@@ -158,7 +152,7 @@ func newRef(digest, kind string) string {
 // 3 - and the subjects (some of them)
 // 4 - creating link between the attestation and the materials/subjects as needed
 // see tests for examples
-func extractReferrers(att *dsse.Envelope) (ReferrerMap, error) {
+func extractReferrers(att *dsse.Envelope) ([]*Referrer, error) {
 	// Calculate the attestation hash
 	jsonAtt, err := json.Marshal(att)
 	if err != nil {
@@ -171,7 +165,7 @@ func extractReferrers(att *dsse.Envelope) (ReferrerMap, error) {
 		return nil, fmt.Errorf("calculating attestation hash: %w", err)
 	}
 
-	referrers := make(ReferrerMap)
+	referrersMap := make(map[string]*Referrer)
 	// 1 - Attestation referrer
 	// Add the attestation itself as a referrer to the map without references yet
 	attestationHash := h.String()
@@ -181,7 +175,7 @@ func extractReferrers(att *dsse.Envelope) (ReferrerMap, error) {
 		Downloadable: true,
 	}
 
-	referrers[newRef(attestationHash, referrerAttestationType)] = attestationReferrer
+	referrersMap[newRef(attestationHash, referrerAttestationType)] = attestationReferrer
 
 	// 2 - Predicate that's referenced from the attestation
 	predicate, err := chainloop.ExtractPredicate(att)
@@ -201,20 +195,20 @@ func extractReferrers(att *dsse.Envelope) (ReferrerMap, error) {
 		// the reason it might exist is because you might be attaching the same material twice
 		// i.e the same SBOM twice, in that case we don't want to create a new referrer
 		materialRef := newRef(material.Hash.String(), material.Type)
-		if _, ok := referrers[materialRef]; ok {
+		if _, ok := referrersMap[materialRef]; ok {
 			continue
 		}
 
-		referrers[materialRef] = &Referrer{
+		referrersMap[materialRef] = &Referrer{
 			Digest:       material.Hash.String(),
 			Kind:         material.Type,
 			Downloadable: material.UploadedToCAS,
 		}
 
-		materialReferrer := referrers[materialRef]
+		materialReferrer := referrersMap[materialRef]
 
 		// Add the reference to the attestation
-		attestationReferrer.References = append(attestationReferrer.References, &ReferrerReference{
+		attestationReferrer.References = append(attestationReferrer.References, &Referrer{
 			Digest: materialReferrer.Digest, Kind: materialReferrer.Kind,
 		})
 	}
@@ -239,17 +233,29 @@ func extractReferrers(att *dsse.Envelope) (ReferrerMap, error) {
 
 		// check if we already have a referrer for this digest and set it otherwise
 		// this is the case for example for git.Head ones
-		if _, ok := referrers[subjectRef]; !ok {
-			referrers[subjectRef] = subjectReferrer
+		if _, ok := referrersMap[subjectRef]; !ok {
+			referrersMap[subjectRef] = subjectReferrer
 			// add it to the list of of attestation-referenced digests
 			attestationReferrer.References = append(attestationReferrer.References,
-				&ReferrerReference{
+				&Referrer{
 					Digest: subjectReferrer.Digest, Kind: subjectReferrer.Kind,
 				})
 		}
 
 		// Update referrer to point to the attestation
-		referrers[subjectRef].References = []*ReferrerReference{{Digest: attestationReferrer.Digest, Kind: attestationReferrer.Kind}}
+		referrersMap[subjectRef].References = []*Referrer{{Digest: attestationReferrer.Digest, Kind: attestationReferrer.Kind}}
+	}
+
+	// Return a sorted list of referrers
+	mapKeys := make([]string, 0, len(referrersMap))
+	for k := range referrersMap {
+		mapKeys = append(mapKeys, k)
+	}
+	sort.Strings(mapKeys)
+
+	referrers := make([]*Referrer, 0, len(referrersMap))
+	for _, k := range mapKeys {
+		referrers = append(referrers, referrersMap[k])
 	}
 
 	return referrers, nil

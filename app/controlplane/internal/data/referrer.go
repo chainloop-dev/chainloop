@@ -41,7 +41,11 @@ func NewReferrerRepo(data *Data, logger log.Logger) biz.ReferrerRepo {
 
 type storedReferrerMap map[string]*ent.Referrer
 
-func (r *ReferrerRepo) Save(ctx context.Context, input biz.ReferrerMap, orgID uuid.UUID) error {
+func newRef(digest, kind string) string {
+	return fmt.Sprintf("%s-%s", kind, digest)
+}
+
+func (r *ReferrerRepo) Save(ctx context.Context, referrers []*biz.Referrer, orgID uuid.UUID) error {
 	// Start transaction
 	tx, err := r.data.db.Tx(ctx)
 	if err != nil {
@@ -50,7 +54,7 @@ func (r *ReferrerRepo) Save(ctx context.Context, input biz.ReferrerMap, orgID uu
 
 	storedMap := make(storedReferrerMap)
 	// 1 - Find or create each referrer
-	for id, r := range input {
+	for _, r := range referrers {
 		// Check if it exists already, if not create it
 		storedRef, err := tx.Referrer.Query().Where(referrer.Digest(r.Digest), referrer.Kind(r.Kind)).Only(ctx)
 		if err != nil {
@@ -72,19 +76,19 @@ func (r *ReferrerRepo) Save(ctx context.Context, input biz.ReferrerMap, orgID uu
 		}
 
 		// Store it in the map
-		storedMap[id] = storedRef
+		storedMap[r.MapID()] = storedRef
 	}
 
 	// 2 - define the relationship between referrers
-	for id, inputRef := range input {
+	for _, r := range referrers {
 		// This is the current item stored in DB
-		storedReferrer := storedMap[id]
+		storedReferrer := storedMap[r.MapID()]
 		// Iterate on the items it refer to (references)
-		for _, ref := range inputRef.References {
+		for _, ref := range r.References {
 			// amd find it in the DB
-			storedReference, ok := storedMap[id]
+			storedReference, ok := storedMap[ref.MapID()]
 			if !ok {
-				return fmt.Errorf("referrer %s not found", ref)
+				return fmt.Errorf("referrer %v not found", ref)
 			}
 
 			// Create the relationship
@@ -135,11 +139,13 @@ func (r *ReferrerRepo) doGet(ctx context.Context, digest string, orgIDs []uuid.U
 
 	// Assemble the referrer to return
 	res := &biz.StoredReferrer{
-		ID:           ref.ID,
-		CreatedAt:    toTimePtr(ref.CreatedAt),
-		Digest:       ref.Digest,
-		Kind:         ref.Kind,
-		Downloadable: ref.Downloadable,
+		ID:        ref.ID,
+		CreatedAt: toTimePtr(ref.CreatedAt),
+		Referrer: &biz.Referrer{
+			Digest:       ref.Digest,
+			Kind:         ref.Kind,
+			Downloadable: ref.Downloadable,
+		},
 	}
 
 	// with all the organizationIDs attached
