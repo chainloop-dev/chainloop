@@ -91,3 +91,19 @@ func (e ErrUnauthorized) Error() string {
 func IsErrUnauthorized(err error) bool {
 	return errors.As(err, &ErrUnauthorized{})
 }
+
+// A referrer with the same digest points to two different artifact types
+// and we require filtering out which one
+type ErrAmbiguousReferrer struct {
+	digest string
+	// what kinds contain duplicates
+	kinds []string
+}
+
+func NewErrReferrerAmbiguous(digest string, kinds []string) error {
+	return ErrAmbiguousReferrer{digest, kinds}
+}
+
+func (e ErrAmbiguousReferrer) Error() string {
+	return fmt.Sprintf("digest %s present in %d kinds %q", e.digest, len(e.kinds), e.kinds)
+}

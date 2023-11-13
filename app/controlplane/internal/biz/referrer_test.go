@@ -31,50 +31,101 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 		name      string
 		inputPath string
 		expectErr bool
-		want      ReferrerMap
+		want      []*Referrer
 	}{
 		{
 			name:      "basic",
 			inputPath: "testdata/attestations/full.json",
-			want: ReferrerMap{
-				"sha256:1a077137aef7ca208b80c339769d0d7eecacc2850368e56e834cda1750ce413a": &Referrer{
+			want: []*Referrer{
+				{
 					Digest:       "sha256:1a077137aef7ca208b80c339769d0d7eecacc2850368e56e834cda1750ce413a",
 					Kind:         "ATTESTATION",
 					Downloadable: true,
-					References: []string{
-						"sha256:264f55a6ff9cec2f4742a9faacc033b29f65c04dd4480e71e23579d484288d61",
-						"sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c",
+					References: []*Referrer{
+						{
+							Digest: "sha256:264f55a6ff9cec2f4742a9faacc033b29f65c04dd4480e71e23579d484288d61",
+							Kind:   "CONTAINER_IMAGE",
+						},
+						{
+							Digest: "sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c",
+							Kind:   "SBOM_CYCLONEDX_JSON",
+						},
 					},
 				},
-				"sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c": &Referrer{
+				{
+					Digest: "sha256:264f55a6ff9cec2f4742a9faacc033b29f65c04dd4480e71e23579d484288d61",
+					Kind:   "CONTAINER_IMAGE",
+				},
+				{
 					Digest:       "sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c",
 					Kind:         "SBOM_CYCLONEDX_JSON",
 					Downloadable: true,
 				},
-				"sha256:264f55a6ff9cec2f4742a9faacc033b29f65c04dd4480e71e23579d484288d61": &Referrer{
-					Digest: "sha256:264f55a6ff9cec2f4742a9faacc033b29f65c04dd4480e71e23579d484288d61",
-					Kind:   "CONTAINER_IMAGE",
+			},
+		},
+		{
+			name:      "with string value material to be discarded",
+			inputPath: "testdata/attestations/with-string.json",
+			want: []*Referrer{
+				{
+					Digest:       "sha256:507dddb505ceb53fb32cde31f9935c9a3ebc7b7d82f36101de638b1ab9367344",
+					Kind:         "ATTESTATION",
+					Downloadable: true,
+					References: []*Referrer{
+						{
+							Digest: "sha1:58442b61a6564df94857ff69ad7c340c55703e20",
+							Kind:   "GIT_HEAD_COMMIT",
+						},
+					},
+				},
+				// the git commit a subject in the attestation
+				{
+					Digest: "sha1:58442b61a6564df94857ff69ad7c340c55703e20",
+					Kind:   "GIT_HEAD_COMMIT",
+					References: []*Referrer{
+						{
+							Digest: "sha256:507dddb505ceb53fb32cde31f9935c9a3ebc7b7d82f36101de638b1ab9367344",
+							Kind:   "ATTESTATION",
+						},
+					},
 				},
 			},
 		},
 		{
-			name:      "basic",
-			inputPath: "testdata/attestations/with-string.json",
-			want: ReferrerMap{
-				// the git commit a subject in the attestation
-				"sha1:58442b61a6564df94857ff69ad7c340c55703e20": &Referrer{
-					Digest: "sha1:58442b61a6564df94857ff69ad7c340c55703e20",
-					Kind:   "GIT_HEAD_COMMIT",
-					References: []string{
-						"sha256:507dddb505ceb53fb32cde31f9935c9a3ebc7b7d82f36101de638b1ab9367344",
+			name:      "with two materials with same digest",
+			inputPath: "testdata/attestations/with-duplicated-sha.json",
+			want: []*Referrer{
+				{
+					Digest:       "sha256:47e94045e8ffb5ea9a4939a03a21c5ad26f4ea7d463ac6ec46dac15349f45b3f",
+					Kind:         "ATTESTATION",
+					Downloadable: true,
+					References: []*Referrer{
+						{
+							Digest: "sha256:264f55a6ff9cec2f4742a9faacc033b29f65c04dd4480e71e23579d484288d61",
+							Kind:   "CONTAINER_IMAGE",
+						},
+						{
+							Digest: "sha256:264f55a6ff9cec2f4742a9faacc033b29f65c04dd4480e71e23579d484288d61",
+							Kind:   "SBOM_CYCLONEDX_JSON",
+						},
+						{
+							Digest: "sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c",
+							Kind:   "SBOM_CYCLONEDX_JSON",
+						},
 					},
 				},
-				"sha256:507dddb505ceb53fb32cde31f9935c9a3ebc7b7d82f36101de638b1ab9367344": &Referrer{
-					Digest: "sha256:507dddb505ceb53fb32cde31f9935c9a3ebc7b7d82f36101de638b1ab9367344",
-					Kind:   "ATTESTATION",
-					References: []string{
-						"sha1:58442b61a6564df94857ff69ad7c340c55703e20",
-					},
+				{
+					Digest: "sha256:264f55a6ff9cec2f4742a9faacc033b29f65c04dd4480e71e23579d484288d61",
+					Kind:   "CONTAINER_IMAGE",
+				},
+				{
+					Digest:       "sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c",
+					Kind:         "SBOM_CYCLONEDX_JSON",
+					Downloadable: true,
+				},
+				{
+					Digest:       "sha256:264f55a6ff9cec2f4742a9faacc033b29f65c04dd4480e71e23579d484288d61",
+					Kind:         "SBOM_CYCLONEDX_JSON",
 					Downloadable: true,
 				},
 			},
@@ -82,61 +133,79 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 		{
 			name:      "with git subject",
 			inputPath: "testdata/attestations/with-git-subject.json",
-			want: ReferrerMap{
-				"sha256:fbd9335f55d83d8aaf9ab1a539b0f2a87b444e8c54f34c9a1ca9d7df15605db4": &Referrer{
-					Digest: "sha256:fbd9335f55d83d8aaf9ab1a539b0f2a87b444e8c54f34c9a1ca9d7df15605db4",
-					Kind:   "CONTAINER_IMAGE",
-					// the container image is a subject in the attestation
-					References: []string{
-						"sha256:ad704d286bcad6e155e71c33d48247931231338396acbcd9769087530085b2a2",
-					},
-				},
-				"sha1:78ac366c9e8a300d51808d581422ca61f7b5b721": &Referrer{
-					Digest: "sha1:78ac366c9e8a300d51808d581422ca61f7b5b721",
-					Kind:   "GIT_HEAD_COMMIT",
-					// the git commit a subject in the attestation
-					References: []string{
-						"sha256:ad704d286bcad6e155e71c33d48247931231338396acbcd9769087530085b2a2",
-					},
-				},
-				"sha256:385c4188b9c080499413f2e0fa0b3951ed107b5f0cb35c2f2b1f07a7be9a7512": &Referrer{
+			want: []*Referrer{
+				{
 					Digest:       "sha256:385c4188b9c080499413f2e0fa0b3951ed107b5f0cb35c2f2b1f07a7be9a7512",
 					Kind:         "ARTIFACT",
 					Downloadable: true,
 				},
-				"sha256:c4a63494f9289dd9fd44f841efb4f5b52765c2de6332f2d86e5f6c0340b40a95": &Referrer{
-					Digest:       "sha256:c4a63494f9289dd9fd44f841efb4f5b52765c2de6332f2d86e5f6c0340b40a95",
-					Kind:         "SARIF",
+				{
+					Digest:       "sha256:ad704d286bcad6e155e71c33d48247931231338396acbcd9769087530085b2a2",
+					Kind:         "ATTESTATION",
 					Downloadable: true,
+					References: []*Referrer{
+						{
+							Digest: "sha256:fbd9335f55d83d8aaf9ab1a539b0f2a87b444e8c54f34c9a1ca9d7df15605db4",
+							Kind:   "CONTAINER_IMAGE",
+						},
+						{
+							Digest: "sha256:385c4188b9c080499413f2e0fa0b3951ed107b5f0cb35c2f2b1f07a7be9a7512",
+							Kind:   "ARTIFACT",
+						},
+						{
+							Digest: "sha256:c4a63494f9289dd9fd44f841efb4f5b52765c2de6332f2d86e5f6c0340b40a95",
+							Kind:   "SARIF",
+						},
+						{
+							Digest: "sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c",
+							Kind:   "SBOM_CYCLONEDX_JSON",
+						},
+						{
+							Digest: "sha256:b4bd86d5855f94bcac0a92d3100ae7b85d050bd2e5fb9037a200e5f5f0b073a2",
+							Kind:   "OPENVEX",
+						},
+						{
+							Digest: "sha1:78ac366c9e8a300d51808d581422ca61f7b5b721",
+							Kind:   "GIT_HEAD_COMMIT",
+						},
+					},
 				},
-				"sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c": &Referrer{
-					Digest:       "sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c",
-					Kind:         "SBOM_CYCLONEDX_JSON",
-					Downloadable: true,
+				{
+					Digest: "sha256:fbd9335f55d83d8aaf9ab1a539b0f2a87b444e8c54f34c9a1ca9d7df15605db4",
+					Kind:   "CONTAINER_IMAGE",
+					// the container image is a subject in the attestation
+					References: []*Referrer{
+						{
+							Digest: "sha256:ad704d286bcad6e155e71c33d48247931231338396acbcd9769087530085b2a2",
+							Kind:   "ATTESTATION",
+						},
+					},
 				},
-				"sha256:b4bd86d5855f94bcac0a92d3100ae7b85d050bd2e5fb9037a200e5f5f0b073a2": &Referrer{
+				{
+					Digest: "sha1:78ac366c9e8a300d51808d581422ca61f7b5b721",
+					Kind:   "GIT_HEAD_COMMIT",
+					// the git commit a subject in the attestation
+					References: []*Referrer{
+						{
+							Digest: "sha256:ad704d286bcad6e155e71c33d48247931231338396acbcd9769087530085b2a2",
+							Kind:   "ATTESTATION",
+						},
+					},
+				},
+				{
 					Digest:       "sha256:b4bd86d5855f94bcac0a92d3100ae7b85d050bd2e5fb9037a200e5f5f0b073a2",
 					Kind:         "OPENVEX",
 					Downloadable: true,
 				},
-				"sha256:ad704d286bcad6e155e71c33d48247931231338396acbcd9769087530085b2a2": &Referrer{
-					Digest:       "sha256:ad704d286bcad6e155e71c33d48247931231338396acbcd9769087530085b2a2",
-					Kind:         "ATTESTATION",
+				{
+					Digest:       "sha256:c4a63494f9289dd9fd44f841efb4f5b52765c2de6332f2d86e5f6c0340b40a95",
+					Kind:         "SARIF",
 					Downloadable: true,
-					References: []string{
-						// container image
-						"sha256:fbd9335f55d83d8aaf9ab1a539b0f2a87b444e8c54f34c9a1ca9d7df15605db4",
-						// artifact
-						"sha256:385c4188b9c080499413f2e0fa0b3951ed107b5f0cb35c2f2b1f07a7be9a7512",
-						// sarif
-						"sha256:c4a63494f9289dd9fd44f841efb4f5b52765c2de6332f2d86e5f6c0340b40a95",
-						// sbom
-						"sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c",
-						// openvex
-						"sha256:b4bd86d5855f94bcac0a92d3100ae7b85d050bd2e5fb9037a200e5f5f0b073a2",
-						// git head commit
-						"sha1:78ac366c9e8a300d51808d581422ca61f7b5b721",
-					},
+				},
+				{
+					Digest:       "sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c",
+					Kind:         "SBOM_CYCLONEDX_JSON",
+					Downloadable: true,
 				},
 			},
 		},

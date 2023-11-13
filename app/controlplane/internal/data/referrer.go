@@ -41,7 +41,7 @@ func NewReferrerRepo(data *Data, logger log.Logger) biz.ReferrerRepo {
 
 type storedReferrerMap map[string]*ent.Referrer
 
-func (r *ReferrerRepo) Save(ctx context.Context, input biz.ReferrerMap, orgID uuid.UUID) error {
+func (r *ReferrerRepo) Save(ctx context.Context, referrers []*biz.Referrer, orgID uuid.UUID) error {
 	// Start transaction
 	tx, err := r.data.db.Tx(ctx)
 	if err != nil {
@@ -50,16 +50,16 @@ func (r *ReferrerRepo) Save(ctx context.Context, input biz.ReferrerMap, orgID uu
 
 	storedMap := make(storedReferrerMap)
 	// 1 - Find or create each referrer
-	for digest, r := range input {
+	for _, r := range referrers {
 		// Check if it exists already, if not create it
-		storedRef, err := tx.Referrer.Query().Where(referrer.Digest(digest), referrer.Kind(r.Kind)).Only(ctx)
+		storedRef, err := tx.Referrer.Query().Where(referrer.Digest(r.Digest), referrer.Kind(r.Kind)).Only(ctx)
 		if err != nil {
 			if !ent.IsNotFound(err) {
 				return fmt.Errorf("failed to query referrer: %w", err)
 			}
 
 			storedRef, err = tx.Referrer.Create().
-				SetDigest(digest).SetKind(r.Kind).SetDownloadable(r.Downloadable).AddOrganizationIDs(orgID).Save(ctx)
+				SetDigest(r.Digest).SetKind(r.Kind).SetDownloadable(r.Downloadable).AddOrganizationIDs(orgID).Save(ctx)
 			if err != nil {
 				return fmt.Errorf("failed to create referrer: %w", err)
 			}
@@ -72,19 +72,19 @@ func (r *ReferrerRepo) Save(ctx context.Context, input biz.ReferrerMap, orgID uu
 		}
 
 		// Store it in the map
-		storedMap[digest] = storedRef
+		storedMap[r.MapID()] = storedRef
 	}
 
 	// 2 - define the relationship between referrers
-	for digest, inputRef := range input {
+	for _, r := range referrers {
 		// This is the current item stored in DB
-		storedReferrer := storedMap[digest]
+		storedReferrer := storedMap[r.MapID()]
 		// Iterate on the items it refer to (references)
-		for _, ref := range inputRef.References {
+		for _, ref := range r.References {
 			// amd find it in the DB
-			storedReference, ok := storedMap[ref]
+			storedReference, ok := storedMap[ref.MapID()]
 			if !ok {
-				return fmt.Errorf("referrer %s not found", ref)
+				return fmt.Errorf("referrer %v not found", ref)
 			}
 
 			// Create the relationship
@@ -120,26 +120,37 @@ const maxTraverseLevels = 1
 func (r *ReferrerRepo) doGet(ctx context.Context, digest string, orgIDs []uuid.UUID, level int) (*biz.StoredReferrer, error) {
 	// Find the referrer
 	// if there is more than 1 item with the same digest+artifactType it will fail
-	ref, err := r.data.db.Referrer.Query().Where(referrer.Digest(digest)).
+	refs, err := r.data.db.Referrer.Query().Where(referrer.Digest(digest)).
 		Where(referrer.HasOrganizationsWith(organization.IDIn(orgIDs...))).
-		Only(ctx)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return nil, nil
-		} else if ent.IsNotSingular(err) {
-			return nil, fmt.Errorf("found more than one referrer with digest %s, please provide artifact type", digest)
-		}
+		All(ctx)
 
+	if err != nil {
 		return nil, fmt.Errorf("failed to query referrer: %w", err)
 	}
 
+	// No items found
+	if numrefs := len(refs); numrefs == 0 {
+		return nil, nil
+	} else if numrefs > 1 {
+		// if there is more than 1 item with the same digest+artifactType we will fail
+		var kinds []string
+		for _, r := range refs {
+			kinds = append(kinds, r.Kind)
+		}
+		return nil, biz.NewErrReferrerAmbiguous(digest, kinds)
+	}
+
+	ref := refs[0]
+
 	// Assemble the referrer to return
 	res := &biz.StoredReferrer{
-		ID:           ref.ID,
-		CreatedAt:    toTimePtr(ref.CreatedAt),
-		Digest:       ref.Digest,
-		Kind:         ref.Kind,
-		Downloadable: ref.Downloadable,
+		ID:        ref.ID,
+		CreatedAt: toTimePtr(ref.CreatedAt),
+		Referrer: &biz.Referrer{
+			Digest:       ref.Digest,
+			Kind:         ref.Kind,
+			Downloadable: ref.Downloadable,
+		},
 	}
 
 	// with all the organizationIDs attached
@@ -154,7 +165,7 @@ func (r *ReferrerRepo) doGet(ctx context.Context, digest string, orgIDs []uuid.U
 	}
 
 	// Find the references and call recursively
-	refs, err := ref.QueryReferences().
+	refs, err = ref.QueryReferences().
 		Where(referrer.HasOrganizationsWith(organization.IDIn(orgIDs...))).
 		Order(referrer.ByDigest()).All(ctx)
 	if err != nil {
