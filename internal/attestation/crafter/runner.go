@@ -39,14 +39,16 @@ type supportedRunner interface {
 func NewRunner(t schemaapi.CraftingSchema_Runner_RunnerType) supportedRunner {
 	switch t {
 	case schemaapi.CraftingSchema_Runner_GITHUB_ACTION:
-		return &runners.GitHubAction{}
+		return runners.NewGithubAction()
 	case schemaapi.CraftingSchema_Runner_GITLAB_PIPELINE:
-		return &runners.GitlabPipeline{}
+		return runners.NewGitlabPipeline()
 	case schemaapi.CraftingSchema_Runner_AZURE_PIPELINE:
-		return &runners.AzurePipeline{}
+		return runners.NewAzurePipeline()
 	case schemaapi.CraftingSchema_Runner_JENKINS_JOB:
-		return &runners.JenkinsJob{}
+		return runners.NewJenkinsJob()
+	case schemaapi.CraftingSchema_Runner_CIRCLECI_BUILD:
+		return runners.NewCircleCIBuild()
 	default:
-		return &runners.Generic{}
+		return runners.NewGeneric()
 	}
 }
