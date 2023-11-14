@@ -28,24 +28,34 @@ import (
 )
 
 type ReferrerRepo struct {
-	data *Data
-	log  *log.Helper
+	data         *Data
+	log          *log.Helper
+	workflowRepo biz.WorkflowRepo
 }
 
-func NewReferrerRepo(data *Data, logger log.Logger) biz.ReferrerRepo {
+func NewReferrerRepo(data *Data, wfRepo biz.WorkflowRepo, logger log.Logger) biz.ReferrerRepo {
 	return &ReferrerRepo{
-		data: data,
-		log:  log.NewHelper(logger),
+		data:         data,
+		log:          log.NewHelper(logger),
+		workflowRepo: wfRepo,
 	}
 }
 
 type storedReferrerMap map[string]*ent.Referrer
 
-func (r *ReferrerRepo) Save(ctx context.Context, referrers []*biz.Referrer, orgID uuid.UUID) error {
+func (r *ReferrerRepo) Save(ctx context.Context, referrers []*biz.Referrer, workflowID uuid.UUID) error {
 	// Start transaction
 	tx, err := r.data.db.Tx(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create transaction: %w", err)
+	}
+
+	// find the workflow
+	wf, err := r.workflowRepo.FindByID(ctx, workflowID)
+	if err != nil {
+		return fmt.Errorf("failed to find workflow: %w", err)
+	} else if wf == nil {
+		return biz.NewErrNotFound("workflow")
 	}
 
 	storedMap := make(storedReferrerMap)
@@ -59,14 +69,20 @@ func (r *ReferrerRepo) Save(ctx context.Context, referrers []*biz.Referrer, orgI
 			}
 
 			storedRef, err = tx.Referrer.Create().
-				SetDigest(r.Digest).SetKind(r.Kind).SetDownloadable(r.Downloadable).AddOrganizationIDs(orgID).Save(ctx)
+				SetDigest(r.Digest).SetKind(r.Kind).SetDownloadable(r.Downloadable).
+				AddOrganizationIDs(wf.OrgID).
+				AddWorkflowIDs(workflowID).
+				Save(ctx)
 			if err != nil {
 				return fmt.Errorf("failed to create referrer: %w", err)
 			}
 		}
 
-		// associate it with the organization
-		storedRef, err = storedRef.Update().AddOrganizationIDs(orgID).Save(ctx)
+		// associate it with the possibly new organization and workflow
+		storedRef, err = storedRef.Update().
+			AddOrganizationIDs(wf.OrgID).
+			AddWorkflowIDs(workflowID).
+			Save(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to add organization to referrer: %w", err)
 		}
@@ -114,7 +130,7 @@ func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest, rootKind string,
 		query = query.Where(referrer.Kind(rootKind))
 	}
 
-	refs, err := query.All(ctx)
+	refs, err := query.WithWorkflows().All(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query referrer: %w", err)
 	}
@@ -146,14 +162,24 @@ func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest, rootKind string,
 const maxTraverseLevels = 1
 
 func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, orgIDs []uuid.UUID, level int) (*biz.StoredReferrer, error) {
+	// Find if it has a public workflow associated
+	isPublic := false
+	for _, wf := range root.Edges.Workflows {
+		if wf.Public {
+			isPublic = true
+			break
+		}
+	}
+
 	// Assemble the referrer to return
 	res := &biz.StoredReferrer{
 		ID:        root.ID,
 		CreatedAt: toTimePtr(root.CreatedAt),
 		Referrer: &biz.Referrer{
-			Digest:       root.Digest,
-			Kind:         root.Kind,
-			Downloadable: root.Downloadable,
+			Digest:           root.Digest,
+			Kind:             root.Kind,
+			Downloadable:     root.Downloadable,
+			InPublicWorkflow: isPublic,
 		},
 	}
 
@@ -170,7 +196,7 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, orgIDs []u
 	}
 
 	// Find the references and call recursively
-	refs, err := root.QueryReferences().
+	refs, err := root.QueryReferences().WithWorkflows().
 		Where(referrer.HasOrganizationsWith(organization.IDIn(orgIDs...))).
 		Order(referrer.ByDigest()).All(ctx)
 	if err != nil {

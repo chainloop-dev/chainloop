@@ -14,6 +14,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integrationattachment"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/referrer"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowcontract"
@@ -33,6 +34,7 @@ type WorkflowQuery struct {
 	withOrganization           *OrganizationQuery
 	withContract               *WorkflowContractQuery
 	withIntegrationAttachments *IntegrationAttachmentQuery
+	withReferrers              *ReferrerQuery
 	withFKs                    bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -173,6 +175,28 @@ func (wq *WorkflowQuery) QueryIntegrationAttachments() *IntegrationAttachmentQue
 			sqlgraph.From(workflow.Table, workflow.FieldID, selector),
 			sqlgraph.To(integrationattachment.Table, integrationattachment.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, workflow.IntegrationAttachmentsTable, workflow.IntegrationAttachmentsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(wq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryReferrers chains the current query on the "referrers" edge.
+func (wq *WorkflowQuery) QueryReferrers() *ReferrerQuery {
+	query := (&ReferrerClient{config: wq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := wq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := wq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(workflow.Table, workflow.FieldID, selector),
+			sqlgraph.To(referrer.Table, referrer.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, workflow.ReferrersTable, workflow.ReferrersPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(wq.driver.Dialect(), step)
 		return fromU, nil
@@ -377,6 +401,7 @@ func (wq *WorkflowQuery) Clone() *WorkflowQuery {
 		withOrganization:           wq.withOrganization.Clone(),
 		withContract:               wq.withContract.Clone(),
 		withIntegrationAttachments: wq.withIntegrationAttachments.Clone(),
+		withReferrers:              wq.withReferrers.Clone(),
 		// clone intermediate query.
 		sql:  wq.sql.Clone(),
 		path: wq.path,
@@ -435,6 +460,17 @@ func (wq *WorkflowQuery) WithIntegrationAttachments(opts ...func(*IntegrationAtt
 		opt(query)
 	}
 	wq.withIntegrationAttachments = query
+	return wq
+}
+
+// WithReferrers tells the query-builder to eager-load the nodes that are connected to
+// the "referrers" edge. The optional arguments are used to configure the query builder of the edge.
+func (wq *WorkflowQuery) WithReferrers(opts ...func(*ReferrerQuery)) *WorkflowQuery {
+	query := (&ReferrerClient{config: wq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	wq.withReferrers = query
 	return wq
 }
 
@@ -517,12 +553,13 @@ func (wq *WorkflowQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Wor
 		nodes       = []*Workflow{}
 		withFKs     = wq.withFKs
 		_spec       = wq.querySpec()
-		loadedTypes = [5]bool{
+		loadedTypes = [6]bool{
 			wq.withRobotaccounts != nil,
 			wq.withWorkflowruns != nil,
 			wq.withOrganization != nil,
 			wq.withContract != nil,
 			wq.withIntegrationAttachments != nil,
+			wq.withReferrers != nil,
 		}
 	)
 	if wq.withOrganization != nil || wq.withContract != nil {
@@ -581,6 +618,13 @@ func (wq *WorkflowQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Wor
 			func(n *Workflow, e *IntegrationAttachment) {
 				n.Edges.IntegrationAttachments = append(n.Edges.IntegrationAttachments, e)
 			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := wq.withReferrers; query != nil {
+		if err := wq.loadReferrers(ctx, query, nodes,
+			func(n *Workflow) { n.Edges.Referrers = []*Referrer{} },
+			func(n *Workflow, e *Referrer) { n.Edges.Referrers = append(n.Edges.Referrers, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -741,6 +785,67 @@ func (wq *WorkflowQuery) loadIntegrationAttachments(ctx context.Context, query *
 			return fmt.Errorf(`unexpected referenced foreign-key "integration_attachment_workflow" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
+	}
+	return nil
+}
+func (wq *WorkflowQuery) loadReferrers(ctx context.Context, query *ReferrerQuery, nodes []*Workflow, init func(*Workflow), assign func(*Workflow, *Referrer)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*Workflow)
+	nids := make(map[uuid.UUID]map[*Workflow]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(workflow.ReferrersTable)
+		s.Join(joinT).On(s.C(referrer.FieldID), joinT.C(workflow.ReferrersPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(workflow.ReferrersPrimaryKey[1]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(workflow.ReferrersPrimaryKey[1]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Workflow]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Referrer](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "referrers" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
 	}
 	return nil
 }

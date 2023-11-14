@@ -26,6 +26,8 @@ export interface ReferrerItem {
   kind: string;
   /** Whether the referrer is downloadable or not from CAS */
   downloadable: boolean;
+  /** Whether the referrer is public since it belongs to a public workflow */
+  public: boolean;
   references: ReferrerItem[];
   createdAt?: Date;
 }
@@ -164,7 +166,7 @@ export const ReferrerServiceDiscoverResponse = {
 };
 
 function createBaseReferrerItem(): ReferrerItem {
-  return { digest: "", kind: "", downloadable: false, references: [], createdAt: undefined };
+  return { digest: "", kind: "", downloadable: false, public: false, references: [], createdAt: undefined };
 }
 
 export const ReferrerItem = {
@@ -177,6 +179,9 @@ export const ReferrerItem = {
     }
     if (message.downloadable === true) {
       writer.uint32(24).bool(message.downloadable);
+    }
+    if (message.public === true) {
+      writer.uint32(48).bool(message.public);
     }
     for (const v of message.references) {
       ReferrerItem.encode(v!, writer.uint32(34).fork()).ldelim();
@@ -215,6 +220,13 @@ export const ReferrerItem = {
 
           message.downloadable = reader.bool();
           continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.public = reader.bool();
+          continue;
         case 4:
           if (tag !== 34) {
             break;
@@ -243,6 +255,7 @@ export const ReferrerItem = {
       digest: isSet(object.digest) ? String(object.digest) : "",
       kind: isSet(object.kind) ? String(object.kind) : "",
       downloadable: isSet(object.downloadable) ? Boolean(object.downloadable) : false,
+      public: isSet(object.public) ? Boolean(object.public) : false,
       references: Array.isArray(object?.references) ? object.references.map((e: any) => ReferrerItem.fromJSON(e)) : [],
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
     };
@@ -253,6 +266,7 @@ export const ReferrerItem = {
     message.digest !== undefined && (obj.digest = message.digest);
     message.kind !== undefined && (obj.kind = message.kind);
     message.downloadable !== undefined && (obj.downloadable = message.downloadable);
+    message.public !== undefined && (obj.public = message.public);
     if (message.references) {
       obj.references = message.references.map((e) => e ? ReferrerItem.toJSON(e) : undefined);
     } else {
@@ -271,6 +285,7 @@ export const ReferrerItem = {
     message.digest = object.digest ?? "";
     message.kind = object.kind ?? "";
     message.downloadable = object.downloadable ?? false;
+    message.public = object.public ?? false;
     message.references = object.references?.map((e) => ReferrerItem.fromPartial(e)) || [];
     message.createdAt = object.createdAt ?? undefined;
     return message;

@@ -13,6 +13,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/referrer"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
 	"github.com/google/uuid"
 )
 
@@ -57,6 +58,21 @@ func (ru *ReferrerUpdate) AddOrganizations(o ...*Organization) *ReferrerUpdate {
 		ids[i] = o[i].ID
 	}
 	return ru.AddOrganizationIDs(ids...)
+}
+
+// AddWorkflowIDs adds the "workflows" edge to the Workflow entity by IDs.
+func (ru *ReferrerUpdate) AddWorkflowIDs(ids ...uuid.UUID) *ReferrerUpdate {
+	ru.mutation.AddWorkflowIDs(ids...)
+	return ru
+}
+
+// AddWorkflows adds the "workflows" edges to the Workflow entity.
+func (ru *ReferrerUpdate) AddWorkflows(w ...*Workflow) *ReferrerUpdate {
+	ids := make([]uuid.UUID, len(w))
+	for i := range w {
+		ids[i] = w[i].ID
+	}
+	return ru.AddWorkflowIDs(ids...)
 }
 
 // Mutation returns the ReferrerMutation object of the builder.
@@ -104,6 +120,27 @@ func (ru *ReferrerUpdate) RemoveOrganizations(o ...*Organization) *ReferrerUpdat
 		ids[i] = o[i].ID
 	}
 	return ru.RemoveOrganizationIDs(ids...)
+}
+
+// ClearWorkflows clears all "workflows" edges to the Workflow entity.
+func (ru *ReferrerUpdate) ClearWorkflows() *ReferrerUpdate {
+	ru.mutation.ClearWorkflows()
+	return ru
+}
+
+// RemoveWorkflowIDs removes the "workflows" edge to Workflow entities by IDs.
+func (ru *ReferrerUpdate) RemoveWorkflowIDs(ids ...uuid.UUID) *ReferrerUpdate {
+	ru.mutation.RemoveWorkflowIDs(ids...)
+	return ru
+}
+
+// RemoveWorkflows removes "workflows" edges to Workflow entities.
+func (ru *ReferrerUpdate) RemoveWorkflows(w ...*Workflow) *ReferrerUpdate {
+	ids := make([]uuid.UUID, len(w))
+	for i := range w {
+		ids[i] = w[i].ID
+	}
+	return ru.RemoveWorkflowIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -232,6 +269,51 @@ func (ru *ReferrerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if ru.mutation.WorkflowsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   referrer.WorkflowsTable,
+			Columns: referrer.WorkflowsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.RemovedWorkflowsIDs(); len(nodes) > 0 && !ru.mutation.WorkflowsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   referrer.WorkflowsTable,
+			Columns: referrer.WorkflowsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.WorkflowsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   referrer.WorkflowsTable,
+			Columns: referrer.WorkflowsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, ru.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{referrer.Label}
@@ -282,6 +364,21 @@ func (ruo *ReferrerUpdateOne) AddOrganizations(o ...*Organization) *ReferrerUpda
 	return ruo.AddOrganizationIDs(ids...)
 }
 
+// AddWorkflowIDs adds the "workflows" edge to the Workflow entity by IDs.
+func (ruo *ReferrerUpdateOne) AddWorkflowIDs(ids ...uuid.UUID) *ReferrerUpdateOne {
+	ruo.mutation.AddWorkflowIDs(ids...)
+	return ruo
+}
+
+// AddWorkflows adds the "workflows" edges to the Workflow entity.
+func (ruo *ReferrerUpdateOne) AddWorkflows(w ...*Workflow) *ReferrerUpdateOne {
+	ids := make([]uuid.UUID, len(w))
+	for i := range w {
+		ids[i] = w[i].ID
+	}
+	return ruo.AddWorkflowIDs(ids...)
+}
+
 // Mutation returns the ReferrerMutation object of the builder.
 func (ruo *ReferrerUpdateOne) Mutation() *ReferrerMutation {
 	return ruo.mutation
@@ -327,6 +424,27 @@ func (ruo *ReferrerUpdateOne) RemoveOrganizations(o ...*Organization) *ReferrerU
 		ids[i] = o[i].ID
 	}
 	return ruo.RemoveOrganizationIDs(ids...)
+}
+
+// ClearWorkflows clears all "workflows" edges to the Workflow entity.
+func (ruo *ReferrerUpdateOne) ClearWorkflows() *ReferrerUpdateOne {
+	ruo.mutation.ClearWorkflows()
+	return ruo
+}
+
+// RemoveWorkflowIDs removes the "workflows" edge to Workflow entities by IDs.
+func (ruo *ReferrerUpdateOne) RemoveWorkflowIDs(ids ...uuid.UUID) *ReferrerUpdateOne {
+	ruo.mutation.RemoveWorkflowIDs(ids...)
+	return ruo
+}
+
+// RemoveWorkflows removes "workflows" edges to Workflow entities.
+func (ruo *ReferrerUpdateOne) RemoveWorkflows(w ...*Workflow) *ReferrerUpdateOne {
+	ids := make([]uuid.UUID, len(w))
+	for i := range w {
+		ids[i] = w[i].ID
+	}
+	return ruo.RemoveWorkflowIDs(ids...)
 }
 
 // Where appends a list predicates to the ReferrerUpdate builder.
@@ -478,6 +596,51 @@ func (ruo *ReferrerUpdateOne) sqlSave(ctx context.Context) (_node *Referrer, err
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if ruo.mutation.WorkflowsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   referrer.WorkflowsTable,
+			Columns: referrer.WorkflowsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.RemovedWorkflowsIDs(); len(nodes) > 0 && !ruo.mutation.WorkflowsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   referrer.WorkflowsTable,
+			Columns: referrer.WorkflowsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.WorkflowsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   referrer.WorkflowsTable,
+			Columns: referrer.WorkflowsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

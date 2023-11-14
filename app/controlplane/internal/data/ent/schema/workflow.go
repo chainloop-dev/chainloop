@@ -59,5 +59,8 @@ func (Workflow) Edges() []ent.Edge {
 		edge.To("contract", WorkflowContract.Type).Unique().Required(),
 		edge.From("integration_attachments", IntegrationAttachment.Type).
 			Ref("workflow"),
+
+		// M2M. referrer can be part of multiple workflows
+		edge.From("referrers", Referrer.Type).Ref("workflows"),
 	}
 }

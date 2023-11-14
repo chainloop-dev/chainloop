@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integrationattachment"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/referrer"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowcontract"
@@ -195,6 +196,21 @@ func (wc *WorkflowCreate) AddIntegrationAttachments(i ...*IntegrationAttachment)
 		ids[j] = i[j].ID
 	}
 	return wc.AddIntegrationAttachmentIDs(ids...)
+}
+
+// AddReferrerIDs adds the "referrers" edge to the Referrer entity by IDs.
+func (wc *WorkflowCreate) AddReferrerIDs(ids ...uuid.UUID) *WorkflowCreate {
+	wc.mutation.AddReferrerIDs(ids...)
+	return wc
+}
+
+// AddReferrers adds the "referrers" edges to the Referrer entity.
+func (wc *WorkflowCreate) AddReferrers(r ...*Referrer) *WorkflowCreate {
+	ids := make([]uuid.UUID, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return wc.AddReferrerIDs(ids...)
 }
 
 // Mutation returns the WorkflowMutation object of the builder.
@@ -408,6 +424,22 @@ func (wc *WorkflowCreate) createSpec() (*Workflow, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(integrationattachment.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := wc.mutation.ReferrersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   workflow.ReferrersTable,
+			Columns: workflow.ReferrersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(referrer.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

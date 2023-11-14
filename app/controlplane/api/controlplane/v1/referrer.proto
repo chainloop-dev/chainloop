@@ -47,6 +47,8 @@ message ReferrerItem {
   string kind = 2;
   // Whether the referrer is downloadable or not from CAS
   bool downloadable = 3;
+  // Whether the referrer is public since it belongs to a public workflow
+  bool public = 6;
   repeated ReferrerItem references = 4;
   google.protobuf.Timestamp created_at = 5;
 }

@@ -221,7 +221,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	}
 
 	// Store the exploded attestation referrer information in the DB
-	if err := s.referrerUseCase.ExtractAndPersist(ctx, envelope, robotAccount.OrgID); err != nil {
+	if err := s.referrerUseCase.ExtractAndPersist(ctx, envelope, robotAccount.OrgID, robotAccount.WorkflowID); err != nil {
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}
 

@@ -29,6 +29,8 @@ const (
 	EdgeReferences = "references"
 	// EdgeOrganizations holds the string denoting the organizations edge name in mutations.
 	EdgeOrganizations = "organizations"
+	// EdgeWorkflows holds the string denoting the workflows edge name in mutations.
+	EdgeWorkflows = "workflows"
 	// Table holds the table name of the referrer in the database.
 	Table = "referrers"
 	// ReferredByTable is the table that holds the referred_by relation/edge. The primary key declared below.
@@ -40,6 +42,11 @@ const (
 	// OrganizationsInverseTable is the table name for the Organization entity.
 	// It exists in this package in order to avoid circular dependency with the "organization" package.
 	OrganizationsInverseTable = "organizations"
+	// WorkflowsTable is the table that holds the workflows relation/edge. The primary key declared below.
+	WorkflowsTable = "referrer_workflows"
+	// WorkflowsInverseTable is the table name for the Workflow entity.
+	// It exists in this package in order to avoid circular dependency with the "workflow" package.
+	WorkflowsInverseTable = "workflows"
 )
 
 // Columns holds all SQL columns for referrer fields.
@@ -61,6 +68,9 @@ var (
 	// OrganizationsPrimaryKey and OrganizationsColumn2 are the table columns denoting the
 	// primary key for the organizations relation (M2M).
 	OrganizationsPrimaryKey = []string{"referrer_id", "organization_id"}
+	// WorkflowsPrimaryKey and WorkflowsColumn2 are the table columns denoting the
+	// primary key for the workflows relation (M2M).
+	WorkflowsPrimaryKey = []string{"referrer_id", "workflow_id"}
 )
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -149,6 +159,20 @@ func ByOrganizations(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newOrganizationsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByWorkflowsCount orders the results by workflows count.
+func ByWorkflowsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newWorkflowsStep(), opts...)
+	}
+}
+
+// ByWorkflows orders the results by workflows terms.
+func ByWorkflows(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newWorkflowsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newReferredByStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -168,5 +192,12 @@ func newOrganizationsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(OrganizationsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2M, false, OrganizationsTable, OrganizationsPrimaryKey...),
+	)
+}
+func newWorkflowsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(WorkflowsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, false, WorkflowsTable, WorkflowsPrimaryKey...),
 	)
 }

@@ -5261,6 +5261,9 @@ type ReferrerMutation struct {
 	organizations        map[uuid.UUID]struct{}
 	removedorganizations map[uuid.UUID]struct{}
 	clearedorganizations bool
+	workflows            map[uuid.UUID]struct{}
+	removedworkflows     map[uuid.UUID]struct{}
+	clearedworkflows     bool
 	done                 bool
 	oldValue             func(context.Context) (*Referrer, error)
 	predicates           []predicate.Referrer
@@ -5676,6 +5679,60 @@ func (m *ReferrerMutation) ResetOrganizations() {
 	m.removedorganizations = nil
 }
 
+// AddWorkflowIDs adds the "workflows" edge to the Workflow entity by ids.
+func (m *ReferrerMutation) AddWorkflowIDs(ids ...uuid.UUID) {
+	if m.workflows == nil {
+		m.workflows = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.workflows[ids[i]] = struct{}{}
+	}
+}
+
+// ClearWorkflows clears the "workflows" edge to the Workflow entity.
+func (m *ReferrerMutation) ClearWorkflows() {
+	m.clearedworkflows = true
+}
+
+// WorkflowsCleared reports if the "workflows" edge to the Workflow entity was cleared.
+func (m *ReferrerMutation) WorkflowsCleared() bool {
+	return m.clearedworkflows
+}
+
+// RemoveWorkflowIDs removes the "workflows" edge to the Workflow entity by IDs.
+func (m *ReferrerMutation) RemoveWorkflowIDs(ids ...uuid.UUID) {
+	if m.removedworkflows == nil {
+		m.removedworkflows = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.workflows, ids[i])
+		m.removedworkflows[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedWorkflows returns the removed IDs of the "workflows" edge to the Workflow entity.
+func (m *ReferrerMutation) RemovedWorkflowsIDs() (ids []uuid.UUID) {
+	for id := range m.removedworkflows {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// WorkflowsIDs returns the "workflows" edge IDs in the mutation.
+func (m *ReferrerMutation) WorkflowsIDs() (ids []uuid.UUID) {
+	for id := range m.workflows {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetWorkflows resets all changes to the "workflows" edge.
+func (m *ReferrerMutation) ResetWorkflows() {
+	m.workflows = nil
+	m.clearedworkflows = false
+	m.removedworkflows = nil
+}
+
 // Where appends a list predicates to the ReferrerMutation builder.
 func (m *ReferrerMutation) Where(ps ...predicate.Referrer) {
 	m.predicates = append(m.predicates, ps...)
@@ -5860,7 +5917,7 @@ func (m *ReferrerMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ReferrerMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.referred_by != nil {
 		edges = append(edges, referrer.EdgeReferredBy)
 	}
@@ -5869,6 +5926,9 @@ func (m *ReferrerMutation) AddedEdges() []string {
 	}
 	if m.organizations != nil {
 		edges = append(edges, referrer.EdgeOrganizations)
+	}
+	if m.workflows != nil {
+		edges = append(edges, referrer.EdgeWorkflows)
 	}
 	return edges
 }
@@ -5895,13 +5955,19 @@ func (m *ReferrerMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case referrer.EdgeWorkflows:
+		ids := make([]ent.Value, 0, len(m.workflows))
+		for id := range m.workflows {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ReferrerMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.removedreferred_by != nil {
 		edges = append(edges, referrer.EdgeReferredBy)
 	}
@@ -5910,6 +5976,9 @@ func (m *ReferrerMutation) RemovedEdges() []string {
 	}
 	if m.removedorganizations != nil {
 		edges = append(edges, referrer.EdgeOrganizations)
+	}
+	if m.removedworkflows != nil {
+		edges = append(edges, referrer.EdgeWorkflows)
 	}
 	return edges
 }
@@ -5936,13 +6005,19 @@ func (m *ReferrerMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case referrer.EdgeWorkflows:
+		ids := make([]ent.Value, 0, len(m.removedworkflows))
+		for id := range m.removedworkflows {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ReferrerMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.clearedreferred_by {
 		edges = append(edges, referrer.EdgeReferredBy)
 	}
@@ -5951,6 +6026,9 @@ func (m *ReferrerMutation) ClearedEdges() []string {
 	}
 	if m.clearedorganizations {
 		edges = append(edges, referrer.EdgeOrganizations)
+	}
+	if m.clearedworkflows {
+		edges = append(edges, referrer.EdgeWorkflows)
 	}
 	return edges
 }
@@ -5965,6 +6043,8 @@ func (m *ReferrerMutation) EdgeCleared(name string) bool {
 		return m.clearedreferences
 	case referrer.EdgeOrganizations:
 		return m.clearedorganizations
+	case referrer.EdgeWorkflows:
+		return m.clearedworkflows
 	}
 	return false
 }
@@ -5989,6 +6069,9 @@ func (m *ReferrerMutation) ResetEdge(name string) error {
 		return nil
 	case referrer.EdgeOrganizations:
 		m.ResetOrganizations()
+		return nil
+	case referrer.EdgeWorkflows:
+		m.ResetWorkflows()
 		return nil
 	}
 	return fmt.Errorf("unknown Referrer edge %s", name)
@@ -7115,6 +7198,9 @@ type WorkflowMutation struct {
 	integration_attachments        map[uuid.UUID]struct{}
 	removedintegration_attachments map[uuid.UUID]struct{}
 	clearedintegration_attachments bool
+	referrers                      map[uuid.UUID]struct{}
+	removedreferrers               map[uuid.UUID]struct{}
+	clearedreferrers               bool
 	done                           bool
 	oldValue                       func(context.Context) (*Workflow, error)
 	predicates                     []predicate.Workflow
@@ -7775,6 +7861,60 @@ func (m *WorkflowMutation) ResetIntegrationAttachments() {
 	m.removedintegration_attachments = nil
 }
 
+// AddReferrerIDs adds the "referrers" edge to the Referrer entity by ids.
+func (m *WorkflowMutation) AddReferrerIDs(ids ...uuid.UUID) {
+	if m.referrers == nil {
+		m.referrers = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.referrers[ids[i]] = struct{}{}
+	}
+}
+
+// ClearReferrers clears the "referrers" edge to the Referrer entity.
+func (m *WorkflowMutation) ClearReferrers() {
+	m.clearedreferrers = true
+}
+
+// ReferrersCleared reports if the "referrers" edge to the Referrer entity was cleared.
+func (m *WorkflowMutation) ReferrersCleared() bool {
+	return m.clearedreferrers
+}
+
+// RemoveReferrerIDs removes the "referrers" edge to the Referrer entity by IDs.
+func (m *WorkflowMutation) RemoveReferrerIDs(ids ...uuid.UUID) {
+	if m.removedreferrers == nil {
+		m.removedreferrers = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.referrers, ids[i])
+		m.removedreferrers[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedReferrers returns the removed IDs of the "referrers" edge to the Referrer entity.
+func (m *WorkflowMutation) RemovedReferrersIDs() (ids []uuid.UUID) {
+	for id := range m.removedreferrers {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ReferrersIDs returns the "referrers" edge IDs in the mutation.
+func (m *WorkflowMutation) ReferrersIDs() (ids []uuid.UUID) {
+	for id := range m.referrers {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetReferrers resets all changes to the "referrers" edge.
+func (m *WorkflowMutation) ResetReferrers() {
+	m.referrers = nil
+	m.clearedreferrers = false
+	m.removedreferrers = nil
+}
+
 // Where appends a list predicates to the WorkflowMutation builder.
 func (m *WorkflowMutation) Where(ps ...predicate.Workflow) {
 	m.predicates = append(m.predicates, ps...)
@@ -8046,7 +8186,7 @@ func (m *WorkflowMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *WorkflowMutation) AddedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.robotaccounts != nil {
 		edges = append(edges, workflow.EdgeRobotaccounts)
 	}
@@ -8061,6 +8201,9 @@ func (m *WorkflowMutation) AddedEdges() []string {
 	}
 	if m.integration_attachments != nil {
 		edges = append(edges, workflow.EdgeIntegrationAttachments)
+	}
+	if m.referrers != nil {
+		edges = append(edges, workflow.EdgeReferrers)
 	}
 	return edges
 }
@@ -8095,13 +8238,19 @@ func (m *WorkflowMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case workflow.EdgeReferrers:
+		ids := make([]ent.Value, 0, len(m.referrers))
+		for id := range m.referrers {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *WorkflowMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.removedrobotaccounts != nil {
 		edges = append(edges, workflow.EdgeRobotaccounts)
 	}
@@ -8110,6 +8259,9 @@ func (m *WorkflowMutation) RemovedEdges() []string {
 	}
 	if m.removedintegration_attachments != nil {
 		edges = append(edges, workflow.EdgeIntegrationAttachments)
+	}
+	if m.removedreferrers != nil {
+		edges = append(edges, workflow.EdgeReferrers)
 	}
 	return edges
 }
@@ -8136,13 +8288,19 @@ func (m *WorkflowMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case workflow.EdgeReferrers:
+		ids := make([]ent.Value, 0, len(m.removedreferrers))
+		for id := range m.removedreferrers {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *WorkflowMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.clearedrobotaccounts {
 		edges = append(edges, workflow.EdgeRobotaccounts)
 	}
@@ -8157,6 +8315,9 @@ func (m *WorkflowMutation) ClearedEdges() []string {
 	}
 	if m.clearedintegration_attachments {
 		edges = append(edges, workflow.EdgeIntegrationAttachments)
+	}
+	if m.clearedreferrers {
+		edges = append(edges, workflow.EdgeReferrers)
 	}
 	return edges
 }
@@ -8175,6 +8336,8 @@ func (m *WorkflowMutation) EdgeCleared(name string) bool {
 		return m.clearedcontract
 	case workflow.EdgeIntegrationAttachments:
 		return m.clearedintegration_attachments
+	case workflow.EdgeReferrers:
+		return m.clearedreferrers
 	}
 	return false
 }
@@ -8211,6 +8374,9 @@ func (m *WorkflowMutation) ResetEdge(name string) error {
 		return nil
 	case workflow.EdgeIntegrationAttachments:
 		m.ResetIntegrationAttachments()
+		return nil
+	case workflow.EdgeReferrers:
+		m.ResetReferrers()
 		return nil
 	}
 	return fmt.Errorf("unknown Workflow edge %s", name)

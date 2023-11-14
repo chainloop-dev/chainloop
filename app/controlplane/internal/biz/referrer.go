@@ -39,7 +39,9 @@ type Referrer struct {
 	Kind   string
 	// Wether the item is downloadable from CAS or not
 	Downloadable bool
-	References   []*Referrer
+	// If this referrer is part of a public workflow
+	InPublicWorkflow bool
+	References       []*Referrer
 }
 
 // Actual referrer stored in the DB which includes a nested list of storedReferences
@@ -53,7 +55,7 @@ type StoredReferrer struct {
 }
 
 type ReferrerRepo interface {
-	Save(ctx context.Context, input []*Referrer, orgID uuid.UUID) error
+	Save(ctx context.Context, input []*Referrer, workflowID uuid.UUID) error
 	// GetFromRoot returns the referrer identified by the provided content digest, including its first-level references
 	// For example if sha:deadbeef represents an attestation, the result will contain the attestation + materials associated to it
 	// OrgIDs represent an allowList of organizations where the referrers should be looked for
@@ -62,30 +64,36 @@ type ReferrerRepo interface {
 
 type ReferrerUseCase struct {
 	repo           ReferrerRepo
-	orgRepo        OrganizationRepo
 	membershipRepo MembershipRepo
+	workflowRepo   WorkflowRepo
 	logger         *log.Helper
 }
 
-func NewReferrerUseCase(repo ReferrerRepo, orgRepo OrganizationRepo, mRepo MembershipRepo, l log.Logger) *ReferrerUseCase {
+func NewReferrerUseCase(repo ReferrerRepo, wfRepo WorkflowRepo, mRepo MembershipRepo, l log.Logger) *ReferrerUseCase {
 	if l == nil {
 		l = log.NewStdLogger(io.Discard)
 	}
 
-	return &ReferrerUseCase{repo, orgRepo, mRepo, servicelogger.ScopedHelper(l, "biz/Referrer")}
+	return &ReferrerUseCase{repo, mRepo, wfRepo, servicelogger.ScopedHelper(l, "biz/Referrer")}
 }
 
 // ExtractAndPersist extracts the referrers (subject + materials) from the given attestation
 // and store it as part of the referrers index table
-func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envelope, orgID string) error {
+func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envelope, orgID, workflowID string) error {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return NewErrInvalidUUID(err)
 	}
 
-	if org, err := s.orgRepo.FindByID(ctx, orgUUID); err != nil {
+	workflowUUID, err := uuid.Parse(workflowID)
+	if err != nil {
+		return NewErrInvalidUUID(err)
+	}
+
+	// Check that the workflow belongs to the organization
+	if wf, err := s.workflowRepo.GetOrgScoped(ctx, orgUUID, workflowUUID); err != nil {
 		return fmt.Errorf("finding organization: %w", err)
-	} else if org == nil {
+	} else if wf == nil {
 		return NewErrNotFound("organization")
 	}
 
@@ -94,7 +102,7 @@ func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envel
 		return fmt.Errorf("extracting referrers: %w", err)
 	}
 
-	if err := s.repo.Save(ctx, m, orgUUID); err != nil {
+	if err := s.repo.Save(ctx, m, workflowUUID); err != nil {
 		return fmt.Errorf("saving referrers: %w", err)
 	}
 

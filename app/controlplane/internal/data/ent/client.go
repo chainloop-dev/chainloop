@@ -1578,6 +1578,22 @@ func (c *ReferrerClient) QueryOrganizations(r *Referrer) *OrganizationQuery {
 	return query
 }
 
+// QueryWorkflows queries the workflows edge of a Referrer.
+func (c *ReferrerClient) QueryWorkflows(r *Referrer) *WorkflowQuery {
+	query := (&WorkflowClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := r.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(referrer.Table, referrer.FieldID, id),
+			sqlgraph.To(workflow.Table, workflow.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, referrer.WorkflowsTable, referrer.WorkflowsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *ReferrerClient) Hooks() []Hook {
 	return c.hooks.Referrer
@@ -2053,6 +2069,22 @@ func (c *WorkflowClient) QueryIntegrationAttachments(w *Workflow) *IntegrationAt
 			sqlgraph.From(workflow.Table, workflow.FieldID, id),
 			sqlgraph.To(integrationattachment.Table, integrationattachment.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, workflow.IntegrationAttachmentsTable, workflow.IntegrationAttachmentsColumn),
+		)
+		fromV = sqlgraph.Neighbors(w.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryReferrers queries the referrers edge of a Workflow.
+func (c *WorkflowClient) QueryReferrers(w *Workflow) *ReferrerQuery {
+	query := (&ReferrerClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := w.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(workflow.Table, workflow.FieldID, id),
+			sqlgraph.To(referrer.Table, referrer.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, workflow.ReferrersTable, workflow.ReferrersPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(w.driver.Dialect(), step)
 		return fromV, nil

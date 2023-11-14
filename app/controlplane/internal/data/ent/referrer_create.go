@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/referrer"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
 	"github.com/google/uuid"
 )
 
@@ -111,6 +112,21 @@ func (rc *ReferrerCreate) AddOrganizations(o ...*Organization) *ReferrerCreate {
 		ids[i] = o[i].ID
 	}
 	return rc.AddOrganizationIDs(ids...)
+}
+
+// AddWorkflowIDs adds the "workflows" edge to the Workflow entity by IDs.
+func (rc *ReferrerCreate) AddWorkflowIDs(ids ...uuid.UUID) *ReferrerCreate {
+	rc.mutation.AddWorkflowIDs(ids...)
+	return rc
+}
+
+// AddWorkflows adds the "workflows" edges to the Workflow entity.
+func (rc *ReferrerCreate) AddWorkflows(w ...*Workflow) *ReferrerCreate {
+	ids := make([]uuid.UUID, len(w))
+	for i := range w {
+		ids[i] = w[i].ID
+	}
+	return rc.AddWorkflowIDs(ids...)
 }
 
 // Mutation returns the ReferrerMutation object of the builder.
@@ -264,6 +280,22 @@ func (rc *ReferrerCreate) createSpec() (*Referrer, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := rc.mutation.WorkflowsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   referrer.WorkflowsTable,
+			Columns: referrer.WorkflowsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
