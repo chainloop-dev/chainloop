@@ -38,9 +38,11 @@ func NewReferrerDiscover(cfg *ActionsOpts) *ReferrerDiscover {
 	return &ReferrerDiscover{cfg}
 }
 
-func (action *ReferrerDiscover) Run(ctx context.Context, digest string) (*ReferrerItem, error) {
+func (action *ReferrerDiscover) Run(ctx context.Context, digest, kind string) (*ReferrerItem, error) {
 	client := pb.NewReferrerServiceClient(action.cfg.CPConnection)
-	resp, err := client.Discover(ctx, &pb.ReferrerServiceDiscoverRequest{Digest: digest})
+	resp, err := client.Discover(ctx, &pb.ReferrerServiceDiscoverRequest{
+		Digest: digest, Kind: kind,
+	})
 	if err != nil {
 		return nil, err
 	}

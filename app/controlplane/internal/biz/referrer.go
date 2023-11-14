@@ -57,7 +57,7 @@ type ReferrerRepo interface {
 	// GetFromRoot returns the referrer identified by the provided content digest, including its first-level references
 	// For example if sha:deadbeef represents an attestation, the result will contain the attestation + materials associated to it
 	// OrgIDs represent an allowList of organizations where the referrers should be looked for
-	GetFromRoot(ctx context.Context, digest string, orgIDS []uuid.UUID) (*StoredReferrer, error)
+	GetFromRoot(ctx context.Context, digest, kind string, orgIDS []uuid.UUID) (*StoredReferrer, error)
 }
 
 type ReferrerUseCase struct {
@@ -104,7 +104,7 @@ func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envel
 // GetFromRoot returns the referrer identified by the provided content digest, including its first-level references
 // For example if sha:deadbeef represents an attestation, the result will contain the attestation + materials associated to it
 // It only returns referrers that belong to organizations the user is member of
-func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest string, userID string) (*StoredReferrer, error) {
+func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest string, rootKind, userID string) (*StoredReferrer, error) {
 	userUUID, err := uuid.Parse(userID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -123,7 +123,7 @@ func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest string, userID
 		orgIDs = append(orgIDs, m.OrganizationID)
 	}
 
-	ref, err := s.repo.GetFromRoot(ctx, digest, orgIDs)
+	ref, err := s.repo.GetFromRoot(ctx, digest, rootKind, orgIDs)
 	if err != nil {
 		if errors.As(err, &ErrAmbiguousReferrer{}) {
 			return nil, NewErrValidation(fmt.Errorf("please provide the referrer kind: %w", err))

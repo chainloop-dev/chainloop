@@ -31,6 +31,9 @@ service ReferrerService {
 
 message ReferrerServiceDiscoverRequest {
   string digest = 1 [(validate.rules).string = {min_len: 1}];
+  // Optional kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...
+  // Used to filter and resolve ambiguities
+  string kind = 2;
 }
 
 message ReferrerServiceDiscoverResponse {

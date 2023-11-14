@@ -23,13 +23,13 @@ import (
 )
 
 func newReferrerDiscoverCmd() *cobra.Command {
-	var digest string
+	var digest, kind string
 
 	cmd := &cobra.Command{
 		Use:   "discover",
 		Short: "(Preview) inspect pieces of evidence or artifacts stored through Chainloop",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewReferrerDiscover(actionOpts).Run(context.Background(), digest)
+			res, err := action.NewReferrerDiscover(actionOpts).Run(context.Background(), digest, kind)
 			if err != nil {
 				return err
 			}
@@ -42,6 +42,7 @@ func newReferrerDiscoverCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&digest, "digest", "d", "", "hash of the attestation, piece of evidence or artifact, i.e sha256:deadbeef")
 	err := cmd.MarkFlagRequired("digest")
 	cobra.CheckErr(err)
+	cmd.Flags().StringVarP(&kind, "kind", "k", "", "optional kind of the referrer, used to disambiguate between multiple referrers with the same digest")
 
 	return cmd
 }

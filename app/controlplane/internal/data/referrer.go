@@ -102,28 +102,19 @@ func (r *ReferrerRepo) Save(ctx context.Context, referrers []*biz.Referrer, orgI
 	return nil
 }
 
-func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string, orgIDs []uuid.UUID) (*biz.StoredReferrer, error) {
-	// Find the referrer recursively starting from the root
-	res, err := r.doGet(ctx, digest, orgIDs, 0)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get referrer: %w", err)
+func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest, rootKind string, orgIDs []uuid.UUID) (*biz.StoredReferrer, error) {
+	// Find the referrer from its digest + artifactType
+	// if there is more than 1 item we return ReferrerAmbiguous error
+	query := r.data.db.Referrer.Query().
+		Where(referrer.Digest(digest)).
+		Where(referrer.HasOrganizationsWith(organization.IDIn(orgIDs...)))
+
+	// We might be filtering by the rootKind, this will prevent ambiguity
+	if rootKind != "" {
+		query = query.Where(referrer.Kind(rootKind))
 	}
 
-	return res, nil
-}
-
-// max number of recursive levels to traverse
-// we just care about 1 level, i.e att -> commit, or commit -> attestation
-// we also need to limit this because there might be cycles
-const maxTraverseLevels = 1
-
-func (r *ReferrerRepo) doGet(ctx context.Context, digest string, orgIDs []uuid.UUID, level int) (*biz.StoredReferrer, error) {
-	// Find the referrer
-	// if there is more than 1 item with the same digest+artifactType it will fail
-	refs, err := r.data.db.Referrer.Query().Where(referrer.Digest(digest)).
-		Where(referrer.HasOrganizationsWith(organization.IDIn(orgIDs...))).
-		All(ctx)
-
+	refs, err := query.All(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query referrer: %w", err)
 	}
@@ -140,21 +131,35 @@ func (r *ReferrerRepo) doGet(ctx context.Context, digest string, orgIDs []uuid.U
 		return nil, biz.NewErrReferrerAmbiguous(digest, kinds)
 	}
 
-	ref := refs[0]
+	// Find the referrer recursively starting from the root
+	res, err := r.doGet(ctx, refs[0], orgIDs, 0)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get referrer: %w", err)
+	}
 
+	return res, nil
+}
+
+// max number of recursive levels to traverse
+// we just care about 1 level, i.e att -> commit, or commit -> attestation
+// we also need to limit this because there might be cycles
+const maxTraverseLevels = 1
+
+func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, orgIDs []uuid.UUID, level int) (*biz.StoredReferrer, error) {
 	// Assemble the referrer to return
 	res := &biz.StoredReferrer{
-		ID:        ref.ID,
-		CreatedAt: toTimePtr(ref.CreatedAt),
+		ID:        root.ID,
+		CreatedAt: toTimePtr(root.CreatedAt),
 		Referrer: &biz.Referrer{
-			Digest:       ref.Digest,
-			Kind:         ref.Kind,
-			Downloadable: ref.Downloadable,
+			Digest:       root.Digest,
+			Kind:         root.Kind,
+			Downloadable: root.Downloadable,
 		},
 	}
 
+	var err error
 	// with all the organizationIDs attached
-	res.OrgIDs, err = ref.QueryOrganizations().IDs(ctx)
+	res.OrgIDs, err = root.QueryOrganizations().IDs(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query organizations: %w", err)
 	}
@@ -165,7 +170,7 @@ func (r *ReferrerRepo) doGet(ctx context.Context, digest string, orgIDs []uuid.U
 	}
 
 	// Find the references and call recursively
-	refs, err = ref.QueryReferences().
+	refs, err := root.QueryReferences().
 		Where(referrer.HasOrganizationsWith(organization.IDIn(orgIDs...))).
 		Order(referrer.ByDigest()).All(ctx)
 	if err != nil {
@@ -175,7 +180,8 @@ func (r *ReferrerRepo) doGet(ctx context.Context, digest string, orgIDs []uuid.U
 	// Add the references to the result
 	for _, reference := range refs {
 		// Call recursively the function
-		ref, err := r.doGet(ctx, reference.Digest, orgIDs, level+1)
+		// we return all the references
+		ref, err := r.doGet(ctx, reference, orgIDs, level+1)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get referrer: %w", err)
 		}
