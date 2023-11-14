@@ -110,6 +110,10 @@ func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest string, rootKi
 		return nil, NewErrInvalidUUID(err)
 	}
 
+	if _, err = cr_v1.NewHash(digest); err != nil {
+		return nil, NewErrValidation(fmt.Errorf("invalid digest format: %w", err))
+	}
+
 	// We pass the list of organizationsIDs from where to look for the referrer
 	// For now we just pass the list of organizations the user is member of
 	// in the future we will expand this to publicly available orgs and so on.

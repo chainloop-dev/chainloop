@@ -173,8 +173,15 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		require.Len(t, got.References, 0)
 	})
 
-	s.T().Run("or not to exist", func(t *testing.T) {
+	s.T().Run("or it's an invalid digest", func(t *testing.T) {
 		got, err := s.Referrer.GetFromRoot(ctx, "sha256:deadbeef", "", s.user.ID)
+		s.True(biz.IsErrValidation(err))
+		s.ErrorContains(err, "invalid digest format")
+		s.Nil(got)
+	})
+
+	s.T().Run("or it does not exist", func(t *testing.T) {
+		got, err := s.Referrer.GetFromRoot(ctx, "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "", s.user.ID)
 		s.True(biz.IsNotFound(err))
 		s.Nil(got)
 	})
