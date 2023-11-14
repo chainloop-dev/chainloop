@@ -38,20 +38,26 @@ type Workflow struct {
 }
 
 type WorkflowRepo interface {
-	Create(context.Context, *CreateOpts) (*Workflow, error)
+	Create(ctx context.Context, opts *WorkflowCreateOpts) (*Workflow, error)
+	Update(ctx context.Context, id uuid.UUID, opts *WorkflowUpdateOpts) (*Workflow, error)
 	List(ctx context.Context, orgID uuid.UUID) ([]*Workflow, error)
 	GetOrgScoped(ctx context.Context, orgID, workflowID uuid.UUID) (*Workflow, error)
 	IncRunsCounter(ctx context.Context, workflowID uuid.UUID) error
 	FindByID(ctx context.Context, workflowID uuid.UUID) (*Workflow, error)
 	SoftDelete(ctx context.Context, workflowID uuid.UUID) error
-	ChangeVisibility(ctx context.Context, workflowID uuid.UUID, public bool) (*Workflow, error)
 }
 
-type CreateOpts struct {
+// TODO: move to pointer properties to handle empty values
+type WorkflowCreateOpts struct {
 	Name, OrgID, Project, Team, ContractID string
 	// Public means that the associated workflow runs, attestations and materials
 	// are reachable by other users, regardless of their organization
 	Public bool
+}
+
+type WorkflowUpdateOpts struct {
+	Name, Project, Team *string
+	Public              *bool
 }
 
 type WorkflowUseCase struct {
@@ -64,7 +70,7 @@ func NewWorkflowUsecase(wfr WorkflowRepo, schemaUC *WorkflowContractUseCase, log
 	return &WorkflowUseCase{wfRepo: wfr, contractUC: schemaUC, logger: log.NewHelper(logger)}
 }
 
-func (uc *WorkflowUseCase) Create(ctx context.Context, opts *CreateOpts) (*Workflow, error) {
+func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts) (*Workflow, error) {
 	if opts.Name == "" {
 		return nil, errors.New("workflow name is required")
 	}
@@ -77,6 +83,34 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *CreateOpts) (*Workf
 	// Set the potential new schemaID
 	opts.ContractID = contract.ID.String()
 	return uc.wfRepo.Create(ctx, opts)
+}
+
+func (uc *WorkflowUseCase) Update(ctx context.Context, orgID, workflowID string, opts *WorkflowUpdateOpts) (*Workflow, error) {
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	workflowUUID, err := uuid.Parse(workflowID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	// make sure that the workflow is for the provided org
+	if wf, err := uc.wfRepo.GetOrgScoped(ctx, orgUUID, workflowUUID); err != nil {
+		return nil, err
+	} else if wf == nil {
+		return nil, NewErrNotFound("workflow in organization")
+	}
+
+	wf, err := uc.wfRepo.Update(ctx, workflowUUID, opts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update workflow: %w", err)
+	} else if wf == nil {
+		return nil, NewErrNotFound("workflow")
+	}
+
+	return wf, err
 }
 
 func (uc *WorkflowUseCase) findOrCreateContract(ctx context.Context, orgID, contractID, project, name string) (*WorkflowContract, error) {
@@ -106,27 +140,6 @@ func (uc *WorkflowUseCase) IncRunsCounter(ctx context.Context, workflowID string
 	}
 
 	return uc.wfRepo.IncRunsCounter(ctx, workflowUUID)
-}
-
-func (uc *WorkflowUseCase) ChangeVisibility(ctx context.Context, orgID, workflowID string, public bool) (*Workflow, error) {
-	orgUUID, err := uuid.Parse(orgID)
-	if err != nil {
-		return nil, NewErrInvalidUUID(err)
-	}
-
-	workflowUUID, err := uuid.Parse(workflowID)
-	if err != nil {
-		return nil, NewErrInvalidUUID(err)
-	}
-
-	// make sure that the workflow is for the provided org
-	if wf, err := uc.wfRepo.GetOrgScoped(ctx, orgUUID, workflowUUID); err != nil {
-		return nil, err
-	} else if wf == nil {
-		return nil, NewErrNotFound("workflow in organization")
-	}
-
-	return uc.wfRepo.ChangeVisibility(ctx, workflowUUID, public)
 }
 
 func (uc *WorkflowUseCase) FindByID(ctx context.Context, workflowID string) (*Workflow, error) {

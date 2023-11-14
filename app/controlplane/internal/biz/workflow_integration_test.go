@@ -107,6 +107,6 @@ func (s *workflowIntegrationTestSuite) SetupTest() {
 	ctx := context.Background()
 	s.org, err = s.Organization.Create(ctx, "testing org")
 	assert.NoError(err)
-	s.workflow, err = s.Workflow.Create(ctx, &biz.CreateOpts{Name: "test workflow", OrgID: s.org.ID})
+	s.workflow, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test workflow", OrgID: s.org.ID})
 	assert.NoError(err)
 }

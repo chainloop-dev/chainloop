@@ -323,10 +323,10 @@ func (s *casMappingIntegrationSuite) SetupTest() {
 
 	// Create workflowRun in the database
 	// Workflow
-	workflow, err := s.Workflow.Create(ctx, &biz.CreateOpts{Name: "test workflow", OrgID: s.org1.ID})
+	workflow, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test workflow", OrgID: s.org1.ID})
 	assert.NoError(err)
 
-	publicWorkflow, err := s.Workflow.Create(ctx, &biz.CreateOpts{Name: "test workflow", OrgID: s.org1.ID})
+	publicWorkflow, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test workflow", OrgID: s.org1.ID})
 	assert.NoError(err)
 	_, err = s.Workflow.ChangeVisibility(ctx, s.org1.ID, publicWorkflow.ID.String(), true)
 	assert.NoError(err)

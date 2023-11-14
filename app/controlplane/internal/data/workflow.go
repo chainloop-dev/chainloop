@@ -17,6 +17,7 @@ package data
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
@@ -40,7 +41,7 @@ func NewWorkflowRepo(data *Data, logger log.Logger) biz.WorkflowRepo {
 	}
 }
 
-func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.CreateOpts) (*biz.Workflow, error) {
+func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts) (*biz.Workflow, error) {
 	orgUUID, err := uuid.Parse(opts.OrgID)
 	if err != nil {
 		return nil, err
@@ -62,6 +63,27 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.CreateOpts) (*biz.W
 		Save(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	// Reload the object to include the relations
+	return r.FindByID(ctx, wf.ID)
+}
+
+func (r *WorkflowRepo) Update(ctx context.Context, id uuid.UUID, opts *biz.WorkflowUpdateOpts) (*biz.Workflow, error) {
+	req := r.data.db.Workflow.UpdateOneID(id).
+		SetNillableTeam(opts.Team).
+		SetNillableProject(opts.Project).
+		SetNillablePublic(opts.Public)
+
+	// Required schema properties do not have a nillable setter
+	// https://github.com/ent/ent/issues/2108#issuecomment-961898661
+	if opts.Name != nil && *opts.Name != "" {
+		req = req.SetName(*opts.Name)
+	}
+
+	wf, err := req.Save(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update workflow: %w", err)
 	}
 
 	// Reload the object to include the relations
@@ -138,15 +160,6 @@ func (r *WorkflowRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Workflo
 	}
 
 	return entWFToBizWF(workflow, lastRun), nil
-}
-
-func (r *WorkflowRepo) ChangeVisibility(ctx context.Context, id uuid.UUID, public bool) (*biz.Workflow, error) {
-	workflow, err := r.data.db.Workflow.UpdateOneID(id).SetPublic(public).Save(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return r.FindByID(ctx, workflow.ID)
 }
 
 func (r *WorkflowRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
