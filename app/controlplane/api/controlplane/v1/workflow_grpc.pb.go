@@ -34,10 +34,10 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	WorkflowService_Create_FullMethodName           = "/controlplane.v1.WorkflowService/Create"
-	WorkflowService_List_FullMethodName             = "/controlplane.v1.WorkflowService/List"
-	WorkflowService_Delete_FullMethodName           = "/controlplane.v1.WorkflowService/Delete"
-	WorkflowService_ChangeVisibility_FullMethodName = "/controlplane.v1.WorkflowService/ChangeVisibility"
+	WorkflowService_Create_FullMethodName = "/controlplane.v1.WorkflowService/Create"
+	WorkflowService_Update_FullMethodName = "/controlplane.v1.WorkflowService/Update"
+	WorkflowService_List_FullMethodName   = "/controlplane.v1.WorkflowService/List"
+	WorkflowService_Delete_FullMethodName = "/controlplane.v1.WorkflowService/Delete"
 )
 
 // WorkflowServiceClient is the client API for WorkflowService service.
@@ -45,9 +45,9 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type WorkflowServiceClient interface {
 	Create(ctx context.Context, in *WorkflowServiceCreateRequest, opts ...grpc.CallOption) (*WorkflowServiceCreateResponse, error)
+	Update(ctx context.Context, in *WorkflowServiceUpdateRequest, opts ...grpc.CallOption) (*WorkflowServiceUpdateResponse, error)
 	List(ctx context.Context, in *WorkflowServiceListRequest, opts ...grpc.CallOption) (*WorkflowServiceListResponse, error)
 	Delete(ctx context.Context, in *WorkflowServiceDeleteRequest, opts ...grpc.CallOption) (*WorkflowServiceDeleteResponse, error)
-	ChangeVisibility(ctx context.Context, in *WorkflowServiceChangeVisibilityRequest, opts ...grpc.CallOption) (*WorkflowServiceChangeVisibilityResponse, error)
 }
 
 type workflowServiceClient struct {
@@ -61,6 +61,15 @@ func NewWorkflowServiceClient(cc grpc.ClientConnInterface) WorkflowServiceClient
 func (c *workflowServiceClient) Create(ctx context.Context, in *WorkflowServiceCreateRequest, opts ...grpc.CallOption) (*WorkflowServiceCreateResponse, error) {
 	out := new(WorkflowServiceCreateResponse)
 	err := c.cc.Invoke(ctx, WorkflowService_Create_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *workflowServiceClient) Update(ctx context.Context, in *WorkflowServiceUpdateRequest, opts ...grpc.CallOption) (*WorkflowServiceUpdateResponse, error) {
+	out := new(WorkflowServiceUpdateResponse)
+	err := c.cc.Invoke(ctx, WorkflowService_Update_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -85,23 +94,14 @@ func (c *workflowServiceClient) Delete(ctx context.Context, in *WorkflowServiceD
 	return out, nil
 }
 
-func (c *workflowServiceClient) ChangeVisibility(ctx context.Context, in *WorkflowServiceChangeVisibilityRequest, opts ...grpc.CallOption) (*WorkflowServiceChangeVisibilityResponse, error) {
-	out := new(WorkflowServiceChangeVisibilityResponse)
-	err := c.cc.Invoke(ctx, WorkflowService_ChangeVisibility_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // WorkflowServiceServer is the server API for WorkflowService service.
 // All implementations must embed UnimplementedWorkflowServiceServer
 // for forward compatibility
 type WorkflowServiceServer interface {
 	Create(context.Context, *WorkflowServiceCreateRequest) (*WorkflowServiceCreateResponse, error)
+	Update(context.Context, *WorkflowServiceUpdateRequest) (*WorkflowServiceUpdateResponse, error)
 	List(context.Context, *WorkflowServiceListRequest) (*WorkflowServiceListResponse, error)
 	Delete(context.Context, *WorkflowServiceDeleteRequest) (*WorkflowServiceDeleteResponse, error)
-	ChangeVisibility(context.Context, *WorkflowServiceChangeVisibilityRequest) (*WorkflowServiceChangeVisibilityResponse, error)
 	mustEmbedUnimplementedWorkflowServiceServer()
 }
 
@@ -112,14 +112,14 @@ type UnimplementedWorkflowServiceServer struct {
 func (UnimplementedWorkflowServiceServer) Create(context.Context, *WorkflowServiceCreateRequest) (*WorkflowServiceCreateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
 }
+func (UnimplementedWorkflowServiceServer) Update(context.Context, *WorkflowServiceUpdateRequest) (*WorkflowServiceUpdateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
+}
 func (UnimplementedWorkflowServiceServer) List(context.Context, *WorkflowServiceListRequest) (*WorkflowServiceListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
 func (UnimplementedWorkflowServiceServer) Delete(context.Context, *WorkflowServiceDeleteRequest) (*WorkflowServiceDeleteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
-}
-func (UnimplementedWorkflowServiceServer) ChangeVisibility(context.Context, *WorkflowServiceChangeVisibilityRequest) (*WorkflowServiceChangeVisibilityResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ChangeVisibility not implemented")
 }
 func (UnimplementedWorkflowServiceServer) mustEmbedUnimplementedWorkflowServiceServer() {}
 
@@ -148,6 +148,24 @@ func _WorkflowService_Create_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(WorkflowServiceServer).Create(ctx, req.(*WorkflowServiceCreateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _WorkflowService_Update_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WorkflowServiceUpdateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkflowServiceServer).Update(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorkflowService_Update_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkflowServiceServer).Update(ctx, req.(*WorkflowServiceUpdateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -188,24 +206,6 @@ func _WorkflowService_Delete_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
-func _WorkflowService_ChangeVisibility_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(WorkflowServiceChangeVisibilityRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(WorkflowServiceServer).ChangeVisibility(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: WorkflowService_ChangeVisibility_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkflowServiceServer).ChangeVisibility(ctx, req.(*WorkflowServiceChangeVisibilityRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // WorkflowService_ServiceDesc is the grpc.ServiceDesc for WorkflowService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -218,16 +218,16 @@ var WorkflowService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _WorkflowService_Create_Handler,
 		},
 		{
+			MethodName: "Update",
+			Handler:    _WorkflowService_Update_Handler,
+		},
+		{
 			MethodName: "List",
 			Handler:    _WorkflowService_List_Handler,
 		},
 		{
 			MethodName: "Delete",
 			Handler:    _WorkflowService_Delete_Handler,
-		},
-		{
-			MethodName: "ChangeVisibility",
-			Handler:    _WorkflowService_ChangeVisibility_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

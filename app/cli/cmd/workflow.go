@@ -26,6 +26,6 @@ func newWorkflowCmd() *cobra.Command {
 		Short:   "Workflow, contracts, robot-accounts and runs management in the control plane",
 	}
 
-	cmd.AddCommand(newWorkflowListCmd(), newWorkflowCreateCmd(), newWorkflowDeleteCmd(), newWorkflowRobotAccountCmd(), newWorkflowWorkflowRunCmd(), newWorkflowContractCmd(), newAttachedIntegrationCmd())
+	cmd.AddCommand(newWorkflowListCmd(), newWorkflowCreateCmd(), newWorkflowUpdateCmd(), newWorkflowDeleteCmd(), newWorkflowRobotAccountCmd(), newWorkflowWorkflowRunCmd(), newWorkflowContractCmd(), newAttachedIntegrationCmd())
 	return cmd
 }

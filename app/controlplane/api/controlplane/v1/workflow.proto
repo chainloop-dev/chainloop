@@ -24,9 +24,9 @@ import "controlplane/v1/response_messages.proto";
 
 service WorkflowService {
 	rpc Create (WorkflowServiceCreateRequest) returns (WorkflowServiceCreateResponse);
+	rpc Update (WorkflowServiceUpdateRequest) returns (WorkflowServiceUpdateResponse);
 	rpc List (WorkflowServiceListRequest) returns (WorkflowServiceListResponse);
 	rpc Delete (WorkflowServiceDeleteRequest) returns (WorkflowServiceDeleteResponse);
-	rpc ChangeVisibility (WorkflowServiceChangeVisibilityRequest) returns (WorkflowServiceChangeVisibilityResponse);
 }
 
 message WorkflowServiceCreateRequest {
@@ -36,6 +36,21 @@ message WorkflowServiceCreateRequest {
   string schema_id = 3;
   string team = 4;
 }
+
+message WorkflowServiceUpdateRequest {
+  string id = 1 [(validate.rules).string.uuid = true];
+  // "optional" allow us to detect if the value is explicitly set
+  // and not just the default balue
+  optional string name = 2;
+  optional string project = 3;
+  optional string team = 4;
+  optional bool public = 5;
+}
+
+message WorkflowServiceUpdateResponse {
+  WorkflowItem result = 1;
+}
+
 
 message WorkflowServiceCreateResponse {
   WorkflowItem result = 1;
@@ -50,16 +65,4 @@ message WorkflowServiceDeleteResponse {}
 message WorkflowServiceListRequest {}
 message WorkflowServiceListResponse {
   repeated WorkflowItem result = 1;
-}
-
-message WorkflowServiceChangeVisibilityRequest {
-  string id = 1 [(validate.rules).string.uuid = true];
-  // A public workflow means that any user can
-  // - access to all its workflow runs
-  // - their attestation and materials
-  bool public = 2;
-}
-
-message WorkflowServiceChangeVisibilityResponse {
-  WorkflowItem result = 1;
 }

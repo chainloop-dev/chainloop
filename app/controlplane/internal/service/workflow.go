@@ -26,8 +26,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const workflowEntity = "Workflow"
-
 type WorkflowService struct {
 	pb.UnimplementedWorkflowServiceServer
 	*service
@@ -48,7 +46,7 @@ func (s *WorkflowService) Create(ctx context.Context, req *pb.WorkflowServiceCre
 		return nil, err
 	}
 
-	createOpts := &biz.CreateOpts{
+	createOpts := &biz.WorkflowCreateOpts{
 		OrgID:      currentOrg.ID,
 		Name:       req.GetName(),
 		Project:    req.GetProject(),
@@ -67,6 +65,32 @@ func (s *WorkflowService) Create(ctx context.Context, req *pb.WorkflowServiceCre
 	}
 
 	return &pb.WorkflowServiceCreateResponse{Result: workflow}, nil
+}
+
+func (s *WorkflowService) Update(ctx context.Context, req *pb.WorkflowServiceUpdateRequest) (*pb.WorkflowServiceUpdateResponse, error) {
+	_, currentOrg, err := loadCurrentUserAndOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	updateOpts := &biz.WorkflowUpdateOpts{
+		Name:    req.Name,
+		Project: req.Project,
+		Team:    req.Team,
+		Public:  req.Public,
+	}
+
+	p, err := s.useCase.Update(ctx, currentOrg.ID, req.Id, updateOpts)
+	if err != nil {
+		return nil, sl.LogAndMaskErr(err, s.log)
+	}
+
+	workflow := bizWorkflowToPb(p)
+	if err := workflow.ValidateAll(); err != nil {
+		return nil, err
+	}
+
+	return &pb.WorkflowServiceUpdateResponse{Result: workflow}, nil
 }
 
 func (s *WorkflowService) List(ctx context.Context, _ *pb.WorkflowServiceListRequest) (*pb.WorkflowServiceListResponse, error) {
@@ -101,22 +125,6 @@ func (s *WorkflowService) Delete(ctx context.Context, req *pb.WorkflowServiceDel
 	}
 
 	return &pb.WorkflowServiceDeleteResponse{}, nil
-}
-
-func (s *WorkflowService) ChangeVisibility(ctx context.Context, req *pb.WorkflowServiceChangeVisibilityRequest) (*pb.WorkflowServiceChangeVisibilityResponse, error) {
-	_, currentOrg, err := loadCurrentUserAndOrg(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	wf, err := s.useCase.ChangeVisibility(ctx, currentOrg.ID, req.Id, req.Public)
-	if err != nil {
-		return nil, handleUseCaseErr(workflowEntity, err, s.log)
-	}
-
-	return &pb.WorkflowServiceChangeVisibilityResponse{
-		Result: bizWorkflowToPb(wf),
-	}, nil
 }
 
 func bizWorkflowToPb(wf *biz.Workflow) *pb.WorkflowItem {
