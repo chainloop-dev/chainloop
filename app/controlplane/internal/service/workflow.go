@@ -26,8 +26,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const workflowEntity = "Workflow"
-
 type WorkflowService struct {
 	pb.UnimplementedWorkflowServiceServer
 	*service
