@@ -326,9 +326,7 @@ func (s *casMappingIntegrationSuite) SetupTest() {
 	workflow, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test workflow", OrgID: s.org1.ID})
 	assert.NoError(err)
 
-	publicWorkflow, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test workflow", OrgID: s.org1.ID})
-	assert.NoError(err)
-	_, err = s.Workflow.ChangeVisibility(ctx, s.org1.ID, publicWorkflow.ID.String(), true)
+	publicWorkflow, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test workflow", OrgID: s.org1.ID, Public: true})
 	assert.NoError(err)
 
 	// Robot account

@@ -22,67 +22,110 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
 	"github.com/docker/distribution/uuid"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
-func (s *workflowIntegrationTestSuite) TestChangeVisibility() {
-	assert := assert.New(s.T())
-	org2, err := s.Organization.Create(context.Background(), "testing org")
-	assert.NoError(err)
+func (s *workflowIntegrationTestSuite) TestUpdate() {
+	ctx := context.Background()
+	const (
+		name    = "test workflow"
+		team    = "test team"
+		project = "test project"
+	)
 
-	s.Run("by default the workflow is non public", func() {
-		assert.False(s.workflow.Public)
+	org2, err := s.Organization.Create(context.Background(), "testing org")
+	require.NoError(s.T(), err)
+	workflow, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: name, OrgID: s.org.ID})
+	require.NoError(s.T(), err)
+
+	s.Run("by default the workflow is private", func() {
+		s.False(workflow.Public)
+	})
+
+	s.Run("can't update a workflow in another org", func() {
+		got, err := s.Workflow.Update(ctx, org2.ID, workflow.ID.String(), nil)
+		s.True(biz.IsNotFound(err))
+		s.Error(err)
+		s.Nil(got)
 	})
 
 	testCases := []struct {
-		name       string
-		workflowID string
-		orgID      string
-		public     bool
-		wantErr    bool
+		name string
+		// if not set, it will use the workflow we create on each run
+		id      string
+		updates *biz.WorkflowUpdateOpts
+		want    *biz.Workflow
+		wantErr bool
 	}{
 		{
-			name:       "non existing workflow",
-			workflowID: uuid.Generate().String(),
-			orgID:      s.org.ID,
-			wantErr:    true,
+			name:    "non existing workflow",
+			id:      uuid.Generate().String(),
+			updates: &biz.WorkflowUpdateOpts{Name: toPtrS("new name")},
+			wantErr: true,
 		},
 		{
-			name:       "invalid uuid",
-			workflowID: "deadbeef",
-			orgID:      s.org.ID,
-			wantErr:    true,
+			name:    "invalid uuid",
+			id:      "deadbeef",
+			updates: &biz.WorkflowUpdateOpts{Name: toPtrS("new name")},
+			wantErr: true,
 		},
 		{
-			name:       "valid workflow set to true",
-			workflowID: s.workflow.ID.String(),
-			orgID:      s.org.ID,
-			public:     true,
+			name: "no updates",
+			want: &biz.Workflow{Name: name, Team: team, Project: project, Public: false},
 		},
 		{
-			name:       "valid workflow set to false",
-			workflowID: s.workflow.ID.String(),
-			orgID:      s.org.ID,
-			public:     false,
+			name:    "update name",
+			updates: &biz.WorkflowUpdateOpts{Name: toPtrS("new name")},
+			want:    &biz.Workflow{Name: "new name", Team: team, Project: project, Public: false},
 		},
 		{
-			name:       "valid workflow in other org",
-			workflowID: s.workflow.ID.String(),
-			orgID:      org2.ID,
-			wantErr:    true,
+			name:    "update visibility",
+			updates: &biz.WorkflowUpdateOpts{Public: toPtrBool(true)},
+			want:    &biz.Workflow{Name: name, Team: team, Project: project, Public: true},
+		},
+		{
+			name:    "update all options",
+			updates: &biz.WorkflowUpdateOpts{Name: toPtrS("new name"), Project: toPtrS("new project"), Team: toPtrS("new team"), Public: toPtrBool(true)},
+			want:    &biz.Workflow{Name: "new name", Team: "new team", Project: "new project", Public: true},
+		},
+		{
+			name:    "name can't be emptied",
+			updates: &biz.WorkflowUpdateOpts{Name: toPtrS("")},
+			want:    &biz.Workflow{Name: name, Team: team, Project: project},
+		},
+		{
+			name:    "but other opts can",
+			updates: &biz.WorkflowUpdateOpts{Team: toPtrS(""), Project: toPtrS("")},
+			want:    &biz.Workflow{Name: name, Team: "", Project: ""},
 		},
 	}
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			wf, err := s.Workflow.ChangeVisibility(context.Background(), tc.orgID, tc.workflowID, tc.public)
+			workflow, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: name, Team: team, Project: project, OrgID: s.org.ID})
+			require.NoError(s.T(), err)
+
+			workflowID := tc.id
+			if workflowID == "" {
+				workflowID = workflow.ID.String()
+			}
+
+			got, err := s.Workflow.Update(ctx, s.org.ID, workflowID, tc.updates)
 			if tc.wantErr {
-				assert.Error(err)
+				s.Error(err)
 				return
 			}
-			assert.NoError(err)
-			assert.Equal(tc.public, wf.Public)
+			s.NoError(err)
+
+			if diff := cmp.Diff(tc.want, got,
+				cmpopts.IgnoreFields(biz.Workflow{}, "CreatedAt", "ID", "OrgID", "ContractID"),
+			); diff != "" {
+				s.Failf("mismatch (-want +got):\n%s", diff)
+			}
 		})
 	}
 }
@@ -95,8 +138,7 @@ func TestWorkflowUseCase(t *testing.T) {
 // Utility struct to hold the test suite
 type workflowIntegrationTestSuite struct {
 	testhelpers.UseCasesEachTestSuite
-	org      *biz.Organization
-	workflow *biz.Workflow
+	org *biz.Organization
 }
 
 func (s *workflowIntegrationTestSuite) SetupTest() {
@@ -107,6 +149,12 @@ func (s *workflowIntegrationTestSuite) SetupTest() {
 	ctx := context.Background()
 	s.org, err = s.Organization.Create(ctx, "testing org")
 	assert.NoError(err)
-	s.workflow, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test workflow", OrgID: s.org.ID})
-	assert.NoError(err)
+}
+
+func toPtrS(s string) *string {
+	return &s
+}
+
+func toPtrBool(b bool) *bool {
+	return &b
 }

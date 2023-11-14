@@ -70,6 +70,10 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 }
 
 func (r *WorkflowRepo) Update(ctx context.Context, id uuid.UUID, opts *biz.WorkflowUpdateOpts) (*biz.Workflow, error) {
+	if opts == nil {
+		opts = &biz.WorkflowUpdateOpts{}
+	}
+
 	req := r.data.db.Workflow.UpdateOneID(id).
 		SetNillableTeam(opts.Team).
 		SetNillableProject(opts.Project).
