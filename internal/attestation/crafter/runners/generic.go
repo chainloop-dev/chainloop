@@ -23,6 +23,10 @@ type Generic struct{}
 
 const GenericID = "generic"
 
+func NewGeneric() *Generic {
+	return &Generic{}
+}
+
 func (r *Generic) CheckEnv() bool {
 	return true
 }

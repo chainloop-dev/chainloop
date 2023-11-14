@@ -116,6 +116,7 @@ func humanizedRunnerType(in v1.CraftingSchema_Runner_RunnerType) string {
 		*v1.CraftingSchema_Runner_GITLAB_PIPELINE.Enum():         "GitLab",
 		*v1.CraftingSchema_Runner_AZURE_PIPELINE.Enum():          "Azure Pipeline",
 		*v1.CraftingSchema_Runner_JENKINS_JOB.Enum():             "Jenkins Job",
+		*v1.CraftingSchema_Runner_CIRCLECI_BUILD.Enum():          "CircleCI Build",
 	}
 
 	hrt, ok := mapping[in]

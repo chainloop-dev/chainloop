@@ -31,6 +31,7 @@ export enum CraftingSchema_Runner_RunnerType {
   GITLAB_PIPELINE = 2,
   AZURE_PIPELINE = 3,
   JENKINS_JOB = 4,
+  CIRCLECI_BUILD = 5,
   UNRECOGNIZED = -1,
 }
 
@@ -51,6 +52,9 @@ export function craftingSchema_Runner_RunnerTypeFromJSON(object: any): CraftingS
     case 4:
     case "JENKINS_JOB":
       return CraftingSchema_Runner_RunnerType.JENKINS_JOB;
+    case 5:
+    case "CIRCLECI_BUILD":
+      return CraftingSchema_Runner_RunnerType.CIRCLECI_BUILD;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -70,6 +74,8 @@ export function craftingSchema_Runner_RunnerTypeToJSON(object: CraftingSchema_Ru
       return "AZURE_PIPELINE";
     case CraftingSchema_Runner_RunnerType.JENKINS_JOB:
       return "JENKINS_JOB";
+    case CraftingSchema_Runner_RunnerType.CIRCLECI_BUILD:
+      return "CIRCLECI_BUILD";
     case CraftingSchema_Runner_RunnerType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
