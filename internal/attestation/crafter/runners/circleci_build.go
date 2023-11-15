@@ -43,7 +43,6 @@ func (r *CircleCIBuild) ListEnvVars() []string {
 
 		// Some info about the commit
 		"CIRCLE_BRANCH",
-		"CIRCLE_PR_NUMBER",
 
 		// Some info about the agent
 		"CIRCLE_NODE_TOTAL",
