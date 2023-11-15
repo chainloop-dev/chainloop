@@ -130,7 +130,7 @@ func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest, rootKind string,
 		query = query.Where(referrer.Kind(rootKind))
 	}
 
-	refs, err := query.WithWorkflows().All(ctx)
+	refs, err := query.WithWorkflows().WithOrganizations().All(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query referrer: %w", err)
 	}
@@ -161,14 +161,23 @@ func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest, rootKind string,
 // we also need to limit this because there might be cycles
 const maxTraverseLevels = 1
 
-func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, orgIDs []uuid.UUID, level int) (*biz.StoredReferrer, error) {
+func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrgs []uuid.UUID, level int) (*biz.StoredReferrer, error) {
 	// Find if it has a public workflow associated
+	// The list of associated workflows and organizations
+	// that come preloaded in the edges already
 	isPublic := false
+	workflowIDs := make([]uuid.UUID, 0, len(root.Edges.Workflows))
 	for _, wf := range root.Edges.Workflows {
 		if wf.Public {
 			isPublic = true
-			break
 		}
+		workflowIDs = append(workflowIDs, wf.ID)
+	}
+
+	// Organization associated to the root referrer
+	rootOrgsIDs := make([]uuid.UUID, 0, len(root.Edges.Organizations))
+	for _, org := range root.Edges.Organizations {
+		rootOrgsIDs = append(rootOrgsIDs, org.ID)
 	}
 
 	// Assemble the referrer to return
@@ -181,13 +190,8 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, orgIDs []u
 			Downloadable:     root.Downloadable,
 			InPublicWorkflow: isPublic,
 		},
-	}
-
-	var err error
-	// with all the organizationIDs attached
-	res.OrgIDs, err = root.QueryOrganizations().IDs(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query organizations: %w", err)
+		WorkflowIDs: workflowIDs,
+		OrgIDs:      rootOrgsIDs,
 	}
 
 	// Next: We'll find the references recursively up to a max of maxTraverseLevels levels
@@ -196,8 +200,8 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, orgIDs []u
 	}
 
 	// Find the references and call recursively
-	refs, err := root.QueryReferences().WithWorkflows().
-		Where(referrer.HasOrganizationsWith(organization.IDIn(orgIDs...))).
+	refs, err := root.QueryReferences().WithWorkflows().WithOrganizations().
+		Where(referrer.HasOrganizationsWith(organization.IDIn(allowedOrgs...))).
 		Order(referrer.ByDigest()).All(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query references: %w", err)
@@ -207,7 +211,7 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, orgIDs []u
 	for _, reference := range refs {
 		// Call recursively the function
 		// we return all the references
-		ref, err := r.doGet(ctx, reference, orgIDs, level+1)
+		ref, err := r.doGet(ctx, reference, allowedOrgs, level+1)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get referrer: %w", err)
 		}

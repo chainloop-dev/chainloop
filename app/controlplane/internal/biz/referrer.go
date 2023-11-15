@@ -50,8 +50,8 @@ type StoredReferrer struct {
 	ID        uuid.UUID
 	CreatedAt *time.Time
 	// Fully expanded list of 1-level off references
-	References []*StoredReferrer
-	OrgIDs     []uuid.UUID
+	References          []*StoredReferrer
+	OrgIDs, WorkflowIDs []uuid.UUID
 }
 
 type ReferrerRepo interface {
@@ -79,22 +79,17 @@ func NewReferrerUseCase(repo ReferrerRepo, wfRepo WorkflowRepo, mRepo Membership
 
 // ExtractAndPersist extracts the referrers (subject + materials) from the given attestation
 // and store it as part of the referrers index table
-func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envelope, orgID, workflowID string) error {
-	orgUUID, err := uuid.Parse(orgID)
-	if err != nil {
-		return NewErrInvalidUUID(err)
-	}
-
+func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envelope, workflowID string) error {
 	workflowUUID, err := uuid.Parse(workflowID)
 	if err != nil {
 		return NewErrInvalidUUID(err)
 	}
 
 	// Check that the workflow belongs to the organization
-	if wf, err := s.workflowRepo.GetOrgScoped(ctx, orgUUID, workflowUUID); err != nil {
-		return fmt.Errorf("finding organization: %w", err)
+	if wf, err := s.workflowRepo.FindByID(ctx, workflowUUID); err != nil {
+		return fmt.Errorf("finding workflow: %w", err)
 	} else if wf == nil {
-		return NewErrNotFound("organization")
+		return NewErrNotFound("workflow")
 	}
 
 	m, err := extractReferrers(att)
