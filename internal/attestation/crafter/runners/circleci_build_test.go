@@ -92,7 +92,6 @@ func (s *circleCIBuildSuite) TestListEnvVars() {
 		"CIRCLE_BUILD_URL",
 		"CIRCLE_JOB",
 		"CIRCLE_BRANCH",
-		"CIRCLE_PR_NUMBER",
 		"CIRCLE_NODE_TOTAL",
 		"CIRCLE_NODE_INDEX",
 	}, s.runner.ListEnvVars())
@@ -123,7 +122,6 @@ var circleCIBuildTestingEnvVars = map[string]string{
 	"CIRCLE_BUILD_URL":  "http://some-build-url/",
 	"CIRCLE_JOB":        "some-job",
 	"CIRCLE_BRANCH":     "some-branch",
-	"CIRCLE_PR_NUMBER":  "1337",
 	"CIRCLE_NODE_TOTAL": "3",
 	"CIRCLE_NODE_INDEX": "1",
 }
