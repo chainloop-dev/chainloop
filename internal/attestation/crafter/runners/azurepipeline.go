@@ -55,8 +55,12 @@ func (r *AzurePipeline) ListEnvVars() []string {
 	}
 }
 
+func (r *AzurePipeline) ListOptionalEnvVars() []string {
+	return []string{}
+}
+
 func (r *AzurePipeline) ResolveEnvVars() map[string]string {
-	return resolveEnvVars(r.ListEnvVars())
+	return resolveEnvVars(r.ListEnvVars(), r.ListOptionalEnvVars())
 }
 
 func (r *AzurePipeline) String() string {

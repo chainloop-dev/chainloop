@@ -31,9 +31,14 @@ func (r *Generic) CheckEnv() bool {
 	return true
 }
 
-// Returns a list of environment variables names. This list is used to
+// Returns a list of environment variables names. These lists are used to
 // automatically inject environment variables into the attestation.
+
 func (r *Generic) ListEnvVars() []string {
+	return []string{}
+}
+
+func (r *Generic) ListOptionalEnvVars() []string {
 	return []string{}
 }
 
@@ -49,11 +54,18 @@ func (r *Generic) RunURI() string {
 	return ""
 }
 
-func resolveEnvVars(varsL []string) map[string]string {
-	res := make(map[string]string)
-	for _, name := range varsL {
-		e := os.Getenv(name)
-		res[name] = e
+func resolveEnvVars(requiredEnvVars, optionalEnvVars []string) map[string]string {
+	result := make(map[string]string)
+
+	for _, name := range requiredEnvVars {
+		value := os.Getenv(name)
+		result[name] = value
 	}
-	return res
+
+	for _, name := range optionalEnvVars {
+		value := os.Getenv(name)
+		result[name] = value
+	}
+
+	return result
 }

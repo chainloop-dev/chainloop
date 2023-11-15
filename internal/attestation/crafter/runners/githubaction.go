@@ -52,8 +52,12 @@ func (r *GitHubAction) ListEnvVars() []string {
 	}
 }
 
+func (r *GitHubAction) ListOptionalEnvVars() []string {
+	return []string{}
+}
+
 func (r *GitHubAction) ResolveEnvVars() map[string]string {
-	return resolveEnvVars(r.ListEnvVars())
+	return resolveEnvVars(r.ListEnvVars(), r.ListOptionalEnvVars())
 }
 
 func (r *GitHubAction) String() string {

@@ -61,7 +61,8 @@ func TestResolveEnvVars(t *testing.T) {
 	t.Setenv("A", "a")
 	t.Setenv("C", "c")
 	t.Setenv("D", "d")
-	varsL := []string{"A", "B", "C"}
-	res := resolveEnvVars(varsL)
+	requiredEnvVars := []string{"A", "B", "C"}
+	optionalEnvVars := []string{}
+	res := resolveEnvVars(requiredEnvVars, optionalEnvVars)
 	assert.Equal(t, map[string]string{"A": "a", "B": "", "C": "c"}, res)
 }

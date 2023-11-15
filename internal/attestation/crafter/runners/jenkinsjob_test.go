@@ -111,6 +111,8 @@ var jenkinsJobTestingEnvVars = map[string]string{
 	"BUILD_URL":     "http://some-build-url/",
 	"AGENT_WORKDIR": "/home/sample/agent",
 	"NODE_NAME":     "some-node",
+	"GIT_BRANCH":    "somebranch",
+	"GIT_COMMIT":    "somecommit",
 }
 
 // Run the tests

@@ -42,20 +42,22 @@ func (r *JenkinsJob) ListEnvVars() []string {
 		"JOB_NAME",
 		"BUILD_URL",
 
-		// Some info about the commit (Jenkins Git Plugin)
-		// NOTE: Commenting these vars out because they are not always present
-		//       and current chainloop behavior requires these to be set.
-		// "GIT_BRANCH",
-		// "GIT_COMMIT",
-
 		// Some info about the agent
 		"AGENT_WORKDIR",
 		"NODE_NAME",
 	}
 }
 
+func (r *JenkinsJob) ListOptionalEnvVars() []string {
+	return []string{
+		// Some info about the branch
+		"GIT_BRANCH",
+		"GIT_COMMIT",
+	}
+}
+
 func (r *JenkinsJob) ResolveEnvVars() map[string]string {
-	return resolveEnvVars(r.ListEnvVars())
+	return resolveEnvVars(r.ListEnvVars(), r.ListOptionalEnvVars())
 }
 
 func (r *JenkinsJob) String() string {

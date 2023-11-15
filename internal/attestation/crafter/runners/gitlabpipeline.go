@@ -52,8 +52,12 @@ func (r *GitlabPipeline) ListEnvVars() []string {
 	}
 }
 
+func (r *GitlabPipeline) ListOptionalEnvVars() []string {
+	return []string{}
+}
+
 func (r *GitlabPipeline) ResolveEnvVars() map[string]string {
-	return resolveEnvVars(r.ListEnvVars())
+	return resolveEnvVars(r.ListEnvVars(), r.ListOptionalEnvVars())
 }
 
 func (r *GitlabPipeline) String() string {

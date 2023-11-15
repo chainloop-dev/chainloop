@@ -50,8 +50,15 @@ func (r *CircleCIBuild) ListEnvVars() []string {
 	}
 }
 
+func (r *CircleCIBuild) ListOptionalEnvVars() []string {
+	return []string{
+		// Some info about the commit
+		"CIRCLE_PR_NUMBER",
+	}
+}
+
 func (r *CircleCIBuild) ResolveEnvVars() map[string]string {
-	return resolveEnvVars(r.ListEnvVars())
+	return resolveEnvVars(r.ListEnvVars(), r.ListOptionalEnvVars())
 }
 
 func (r *CircleCIBuild) String() string {

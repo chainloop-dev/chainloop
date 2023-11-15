@@ -124,6 +124,7 @@ var circleCIBuildTestingEnvVars = map[string]string{
 	"CIRCLE_BRANCH":     "some-branch",
 	"CIRCLE_NODE_TOTAL": "3",
 	"CIRCLE_NODE_INDEX": "1",
+	"CIRCLE_PR_NUMBER":  "1337",
 }
 
 // Run the tests
