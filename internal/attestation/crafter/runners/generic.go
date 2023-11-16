@@ -64,7 +64,9 @@ func resolveEnvVars(requiredEnvVars, optionalEnvVars []string) map[string]string
 
 	for _, name := range optionalEnvVars {
 		value := os.Getenv(name)
-		result[name] = value
+		if value != "" {
+			result[name] = value
+		}
 	}
 
 	return result
