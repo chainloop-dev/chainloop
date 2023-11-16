@@ -59,7 +59,28 @@ type ReferrerRepo interface {
 	// GetFromRoot returns the referrer identified by the provided content digest, including its first-level references
 	// For example if sha:deadbeef represents an attestation, the result will contain the attestation + materials associated to it
 	// OrgIDs represent an allowList of organizations where the referrers should be looked for
-	GetFromRoot(ctx context.Context, digest, kind string, orgIDS []uuid.UUID) (*StoredReferrer, error)
+	GetFromRoot(ctx context.Context, digest string, orgIDS []uuid.UUID, filters ...GetFromRootFilter) (*StoredReferrer, error)
+}
+
+type GetFromRootFilters struct {
+	// RootKind is the kind of the root referrer, i.e ATTESTATION
+	RootKind *string
+	// Wether to filter by visibility or not
+	Public *bool
+}
+
+type GetFromRootFilter func(*GetFromRootFilters)
+
+func WithKind(kind string) func(*GetFromRootFilters) {
+	return func(o *GetFromRootFilters) {
+		o.RootKind = &kind
+	}
+}
+
+func WithPublicVisibility(public bool) func(*GetFromRootFilters) {
+	return func(o *GetFromRootFilters) {
+		o.Public = &public
+	}
 }
 
 type ReferrerUseCase struct {
@@ -130,7 +151,12 @@ func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest string, rootKi
 		orgIDs = append(orgIDs, m.OrganizationID)
 	}
 
-	ref, err := s.repo.GetFromRoot(ctx, digest, rootKind, orgIDs)
+	filters := make([]GetFromRootFilter, 0)
+	if rootKind != "" {
+		filters = append(filters, WithKind(rootKind))
+	}
+
+	ref, err := s.repo.GetFromRoot(ctx, digest, orgIDs, filters...)
 	if err != nil {
 		if errors.As(err, &ErrAmbiguousReferrer{}) {
 			return nil, NewErrValidation(fmt.Errorf("please provide the referrer kind: %w", err))

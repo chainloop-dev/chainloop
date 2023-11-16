@@ -23,6 +23,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/referrer"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
@@ -118,7 +119,12 @@ func (r *ReferrerRepo) Save(ctx context.Context, referrers []*biz.Referrer, work
 	return nil
 }
 
-func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest, rootKind string, orgIDs []uuid.UUID) (*biz.StoredReferrer, error) {
+func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string, orgIDs []uuid.UUID, filters ...biz.GetFromRootFilter) (*biz.StoredReferrer, error) {
+	opts := &biz.GetFromRootFilters{}
+	for _, f := range filters {
+		f(opts)
+	}
+
 	// Find the referrer from its digest + artifactType
 	// if there is more than 1 item we return ReferrerAmbiguous error
 	query := r.data.db.Referrer.Query().
@@ -126,8 +132,13 @@ func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest, rootKind string,
 		Where(referrer.HasOrganizationsWith(organization.IDIn(orgIDs...)))
 
 	// We might be filtering by the rootKind, this will prevent ambiguity
-	if rootKind != "" {
-		query = query.Where(referrer.Kind(rootKind))
+	if opts.RootKind != nil {
+		query = query.Where(referrer.Kind(*opts.RootKind))
+	}
+
+	// And by visibility
+	if opts.Public != nil {
+		query = query.Where(referrer.HasWorkflowsWith(workflow.Public(*opts.Public)))
 	}
 
 	refs, err := query.WithWorkflows().WithOrganizations().All(ctx)
@@ -148,7 +159,7 @@ func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest, rootKind string,
 	}
 
 	// Find the referrer recursively starting from the root
-	res, err := r.doGet(ctx, refs[0], orgIDs, 0)
+	res, err := r.doGet(ctx, refs[0], orgIDs, opts.Public, 0)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get referrer: %w", err)
 	}
@@ -161,7 +172,7 @@ func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest, rootKind string,
 // we also need to limit this because there might be cycles
 const maxTraverseLevels = 1
 
-func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrgs []uuid.UUID, level int) (*biz.StoredReferrer, error) {
+func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrgs []uuid.UUID, public *bool, level int) (*biz.StoredReferrer, error) {
 	// Find if it has a public workflow associated
 	// The list of associated workflows and organizations
 	// that come preloaded in the edges already
@@ -199,10 +210,14 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 		return res, nil
 	}
 
-	// Find the references and call recursively
-	refs, err := root.QueryReferences().WithWorkflows().WithOrganizations().
-		Where(referrer.HasOrganizationsWith(organization.IDIn(allowedOrgs...))).
-		Order(referrer.ByDigest()).All(ctx)
+	// Find the references and call recursively filtered out by the allowed organizations
+	// and by the visibility if needed
+	query := root.QueryReferences().Where(referrer.HasOrganizationsWith(organization.IDIn(allowedOrgs...)))
+	if public != nil {
+		query = query.Where(referrer.HasWorkflowsWith(workflow.Public(*public)))
+	}
+
+	refs, err := query.WithWorkflows().WithOrganizations().Order(referrer.ByDigest()).All(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query references: %w", err)
 	}
@@ -211,7 +226,7 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 	for _, reference := range refs {
 		// Call recursively the function
 		// we return all the references
-		ref, err := r.doGet(ctx, reference, allowedOrgs, level+1)
+		ref, err := r.doGet(ctx, reference, allowedOrgs, public, level+1)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get referrer: %w", err)
 		}
