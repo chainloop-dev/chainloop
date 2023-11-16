@@ -128,8 +128,11 @@ func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string, orgIDs []
 	// Find the referrer from its digest + artifactType
 	// if there is more than 1 item we return ReferrerAmbiguous error
 	query := r.data.db.Referrer.Query().
-		Where(referrer.Digest(digest)).
-		Where(referrer.HasOrganizationsWith(organization.IDIn(orgIDs...)))
+		Where(
+			referrer.Digest(digest),
+			referrer.HasOrganizationsWith(organization.IDIn(orgIDs...)),
+			referrer.HasWorkflowsWith(workflow.DeletedAtIsNil()),
+		)
 
 	// We might be filtering by the rootKind, this will prevent ambiguity
 	if opts.RootKind != nil {
@@ -212,7 +215,12 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 
 	// Find the references and call recursively filtered out by the allowed organizations
 	// and by the visibility if needed
-	query := root.QueryReferences().Where(referrer.HasOrganizationsWith(organization.IDIn(allowedOrgs...)))
+	query := root.QueryReferences().
+		Where(
+			referrer.HasOrganizationsWith(organization.IDIn(allowedOrgs...)),
+			referrer.HasWorkflowsWith(workflow.DeletedAtIsNil()),
+		)
+
 	if public != nil {
 		query = query.Where(referrer.HasWorkflowsWith(workflow.Public(*public)))
 	}

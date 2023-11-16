@@ -37,7 +37,7 @@ func NewReferrerService(uc *biz.ReferrerUseCase, opts ...NewOpt) *ReferrerServic
 	}
 }
 
-func (s *ReferrerService) Discover(ctx context.Context, req *pb.ReferrerServiceDiscoverRequest) (*pb.ReferrerServiceDiscoverResponse, error) {
+func (s *ReferrerService) DiscoverPrivate(ctx context.Context, req *pb.ReferrerServiceDiscoverPrivateRequest) (*pb.ReferrerServiceDiscoverPrivateResponse, error) {
 	currentUser, _, err := loadCurrentUserAndOrg(ctx)
 	if err != nil {
 		return nil, err
@@ -48,7 +48,18 @@ func (s *ReferrerService) Discover(ctx context.Context, req *pb.ReferrerServiceD
 		return nil, handleUseCaseErr("referrer discovery", err, s.log)
 	}
 
-	return &pb.ReferrerServiceDiscoverResponse{
+	return &pb.ReferrerServiceDiscoverPrivateResponse{
+		Result: bizReferrerToPb(res),
+	}, nil
+}
+
+func (s *ReferrerService) DiscoverPublicShared(ctx context.Context, req *pb.DiscoverPublicSharedRequest) (*pb.DiscoverPublicSharedResponse, error) {
+	res, err := s.referrerUC.GetFromRootInPublicSharedIndex(ctx, req.GetDigest(), req.GetKind())
+	if err != nil {
+		return nil, handleUseCaseErr("referrer discovery", err, s.log)
+	}
+
+	return &pb.DiscoverPublicSharedResponse{
 		Result: bizReferrerToPb(res),
 	}, nil
 }

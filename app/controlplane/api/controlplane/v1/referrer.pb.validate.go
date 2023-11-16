@@ -35,22 +35,23 @@ var (
 	_ = sort.Sort
 )
 
-// Validate checks the field values on ReferrerServiceDiscoverRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ReferrerServiceDiscoverRequest) Validate() error {
+// Validate checks the field values on ReferrerServiceDiscoverPrivateRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *ReferrerServiceDiscoverPrivateRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ReferrerServiceDiscoverRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// ReferrerServiceDiscoverRequestMultiError, or nil if none found.
-func (m *ReferrerServiceDiscoverRequest) ValidateAll() error {
+// ValidateAll checks the field values on ReferrerServiceDiscoverPrivateRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// ReferrerServiceDiscoverPrivateRequestMultiError, or nil if none found.
+func (m *ReferrerServiceDiscoverPrivateRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ReferrerServiceDiscoverRequest) validate(all bool) error {
+func (m *ReferrerServiceDiscoverPrivateRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -58,7 +59,7 @@ func (m *ReferrerServiceDiscoverRequest) validate(all bool) error {
 	var errors []error
 
 	if utf8.RuneCountInString(m.GetDigest()) < 1 {
-		err := ReferrerServiceDiscoverRequestValidationError{
+		err := ReferrerServiceDiscoverPrivateRequestValidationError{
 			field:  "Digest",
 			reason: "value length must be at least 1 runes",
 		}
@@ -71,19 +72,20 @@ func (m *ReferrerServiceDiscoverRequest) validate(all bool) error {
 	// no validation rules for Kind
 
 	if len(errors) > 0 {
-		return ReferrerServiceDiscoverRequestMultiError(errors)
+		return ReferrerServiceDiscoverPrivateRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// ReferrerServiceDiscoverRequestMultiError is an error wrapping multiple
-// validation errors returned by ReferrerServiceDiscoverRequest.ValidateAll()
-// if the designated constraints aren't met.
-type ReferrerServiceDiscoverRequestMultiError []error
+// ReferrerServiceDiscoverPrivateRequestMultiError is an error wrapping
+// multiple validation errors returned by
+// ReferrerServiceDiscoverPrivateRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ReferrerServiceDiscoverPrivateRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ReferrerServiceDiscoverRequestMultiError) Error() string {
+func (m ReferrerServiceDiscoverPrivateRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -92,12 +94,12 @@ func (m ReferrerServiceDiscoverRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ReferrerServiceDiscoverRequestMultiError) AllErrors() []error { return m }
+func (m ReferrerServiceDiscoverPrivateRequestMultiError) AllErrors() []error { return m }
 
-// ReferrerServiceDiscoverRequestValidationError is the validation error
-// returned by ReferrerServiceDiscoverRequest.Validate if the designated
-// constraints aren't met.
-type ReferrerServiceDiscoverRequestValidationError struct {
+// ReferrerServiceDiscoverPrivateRequestValidationError is the validation error
+// returned by ReferrerServiceDiscoverPrivateRequest.Validate if the
+// designated constraints aren't met.
+type ReferrerServiceDiscoverPrivateRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -105,24 +107,24 @@ type ReferrerServiceDiscoverRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e ReferrerServiceDiscoverRequestValidationError) Field() string { return e.field }
+func (e ReferrerServiceDiscoverPrivateRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ReferrerServiceDiscoverRequestValidationError) Reason() string { return e.reason }
+func (e ReferrerServiceDiscoverPrivateRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ReferrerServiceDiscoverRequestValidationError) Cause() error { return e.cause }
+func (e ReferrerServiceDiscoverPrivateRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ReferrerServiceDiscoverRequestValidationError) Key() bool { return e.key }
+func (e ReferrerServiceDiscoverPrivateRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ReferrerServiceDiscoverRequestValidationError) ErrorName() string {
-	return "ReferrerServiceDiscoverRequestValidationError"
+func (e ReferrerServiceDiscoverPrivateRequestValidationError) ErrorName() string {
+	return "ReferrerServiceDiscoverPrivateRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e ReferrerServiceDiscoverRequestValidationError) Error() string {
+func (e ReferrerServiceDiscoverPrivateRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -134,14 +136,14 @@ func (e ReferrerServiceDiscoverRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sReferrerServiceDiscoverRequest.%s: %s%s",
+		"invalid %sReferrerServiceDiscoverPrivateRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ReferrerServiceDiscoverRequestValidationError{}
+var _ error = ReferrerServiceDiscoverPrivateRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -149,24 +151,140 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ReferrerServiceDiscoverRequestValidationError{}
+} = ReferrerServiceDiscoverPrivateRequestValidationError{}
 
-// Validate checks the field values on ReferrerServiceDiscoverResponse with the
+// Validate checks the field values on DiscoverPublicSharedRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ReferrerServiceDiscoverResponse) Validate() error {
+func (m *DiscoverPublicSharedRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ReferrerServiceDiscoverResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// ReferrerServiceDiscoverResponseMultiError, or nil if none found.
-func (m *ReferrerServiceDiscoverResponse) ValidateAll() error {
+// ValidateAll checks the field values on DiscoverPublicSharedRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DiscoverPublicSharedRequestMultiError, or nil if none found.
+func (m *DiscoverPublicSharedRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ReferrerServiceDiscoverResponse) validate(all bool) error {
+func (m *DiscoverPublicSharedRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetDigest()) < 1 {
+		err := DiscoverPublicSharedRequestValidationError{
+			field:  "Digest",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Kind
+
+	if len(errors) > 0 {
+		return DiscoverPublicSharedRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// DiscoverPublicSharedRequestMultiError is an error wrapping multiple
+// validation errors returned by DiscoverPublicSharedRequest.ValidateAll() if
+// the designated constraints aren't met.
+type DiscoverPublicSharedRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DiscoverPublicSharedRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DiscoverPublicSharedRequestMultiError) AllErrors() []error { return m }
+
+// DiscoverPublicSharedRequestValidationError is the validation error returned
+// by DiscoverPublicSharedRequest.Validate if the designated constraints
+// aren't met.
+type DiscoverPublicSharedRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DiscoverPublicSharedRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DiscoverPublicSharedRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DiscoverPublicSharedRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DiscoverPublicSharedRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DiscoverPublicSharedRequestValidationError) ErrorName() string {
+	return "DiscoverPublicSharedRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DiscoverPublicSharedRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDiscoverPublicSharedRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DiscoverPublicSharedRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DiscoverPublicSharedRequestValidationError{}
+
+// Validate checks the field values on DiscoverPublicSharedResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *DiscoverPublicSharedResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DiscoverPublicSharedResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DiscoverPublicSharedResponseMultiError, or nil if none found.
+func (m *DiscoverPublicSharedResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DiscoverPublicSharedResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -177,7 +295,7 @@ func (m *ReferrerServiceDiscoverResponse) validate(all bool) error {
 		switch v := interface{}(m.GetResult()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ReferrerServiceDiscoverResponseValidationError{
+				errors = append(errors, DiscoverPublicSharedResponseValidationError{
 					field:  "Result",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -185,7 +303,7 @@ func (m *ReferrerServiceDiscoverResponse) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, ReferrerServiceDiscoverResponseValidationError{
+				errors = append(errors, DiscoverPublicSharedResponseValidationError{
 					field:  "Result",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -194,7 +312,7 @@ func (m *ReferrerServiceDiscoverResponse) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetResult()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return ReferrerServiceDiscoverResponseValidationError{
+			return DiscoverPublicSharedResponseValidationError{
 				field:  "Result",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -203,19 +321,19 @@ func (m *ReferrerServiceDiscoverResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return ReferrerServiceDiscoverResponseMultiError(errors)
+		return DiscoverPublicSharedResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// ReferrerServiceDiscoverResponseMultiError is an error wrapping multiple
-// validation errors returned by ReferrerServiceDiscoverResponse.ValidateAll()
-// if the designated constraints aren't met.
-type ReferrerServiceDiscoverResponseMultiError []error
+// DiscoverPublicSharedResponseMultiError is an error wrapping multiple
+// validation errors returned by DiscoverPublicSharedResponse.ValidateAll() if
+// the designated constraints aren't met.
+type DiscoverPublicSharedResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ReferrerServiceDiscoverResponseMultiError) Error() string {
+func (m DiscoverPublicSharedResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -224,12 +342,12 @@ func (m ReferrerServiceDiscoverResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ReferrerServiceDiscoverResponseMultiError) AllErrors() []error { return m }
+func (m DiscoverPublicSharedResponseMultiError) AllErrors() []error { return m }
 
-// ReferrerServiceDiscoverResponseValidationError is the validation error
-// returned by ReferrerServiceDiscoverResponse.Validate if the designated
-// constraints aren't met.
-type ReferrerServiceDiscoverResponseValidationError struct {
+// DiscoverPublicSharedResponseValidationError is the validation error returned
+// by DiscoverPublicSharedResponse.Validate if the designated constraints
+// aren't met.
+type DiscoverPublicSharedResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -237,24 +355,24 @@ type ReferrerServiceDiscoverResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e ReferrerServiceDiscoverResponseValidationError) Field() string { return e.field }
+func (e DiscoverPublicSharedResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ReferrerServiceDiscoverResponseValidationError) Reason() string { return e.reason }
+func (e DiscoverPublicSharedResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ReferrerServiceDiscoverResponseValidationError) Cause() error { return e.cause }
+func (e DiscoverPublicSharedResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ReferrerServiceDiscoverResponseValidationError) Key() bool { return e.key }
+func (e DiscoverPublicSharedResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ReferrerServiceDiscoverResponseValidationError) ErrorName() string {
-	return "ReferrerServiceDiscoverResponseValidationError"
+func (e DiscoverPublicSharedResponseValidationError) ErrorName() string {
+	return "DiscoverPublicSharedResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e ReferrerServiceDiscoverResponseValidationError) Error() string {
+func (e DiscoverPublicSharedResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -266,14 +384,14 @@ func (e ReferrerServiceDiscoverResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sReferrerServiceDiscoverResponse.%s: %s%s",
+		"invalid %sDiscoverPublicSharedResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ReferrerServiceDiscoverResponseValidationError{}
+var _ error = DiscoverPublicSharedResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -281,7 +399,142 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ReferrerServiceDiscoverResponseValidationError{}
+} = DiscoverPublicSharedResponseValidationError{}
+
+// Validate checks the field values on ReferrerServiceDiscoverPrivateResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *ReferrerServiceDiscoverPrivateResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// ReferrerServiceDiscoverPrivateResponse with the rules defined in the proto
+// definition for this message. If any rules are violated, the result is a
+// list of violation errors wrapped in
+// ReferrerServiceDiscoverPrivateResponseMultiError, or nil if none found.
+func (m *ReferrerServiceDiscoverPrivateResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ReferrerServiceDiscoverPrivateResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetResult()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ReferrerServiceDiscoverPrivateResponseValidationError{
+					field:  "Result",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ReferrerServiceDiscoverPrivateResponseValidationError{
+					field:  "Result",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetResult()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ReferrerServiceDiscoverPrivateResponseValidationError{
+				field:  "Result",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ReferrerServiceDiscoverPrivateResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ReferrerServiceDiscoverPrivateResponseMultiError is an error wrapping
+// multiple validation errors returned by
+// ReferrerServiceDiscoverPrivateResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ReferrerServiceDiscoverPrivateResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ReferrerServiceDiscoverPrivateResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ReferrerServiceDiscoverPrivateResponseMultiError) AllErrors() []error { return m }
+
+// ReferrerServiceDiscoverPrivateResponseValidationError is the validation
+// error returned by ReferrerServiceDiscoverPrivateResponse.Validate if the
+// designated constraints aren't met.
+type ReferrerServiceDiscoverPrivateResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ReferrerServiceDiscoverPrivateResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ReferrerServiceDiscoverPrivateResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ReferrerServiceDiscoverPrivateResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ReferrerServiceDiscoverPrivateResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ReferrerServiceDiscoverPrivateResponseValidationError) ErrorName() string {
+	return "ReferrerServiceDiscoverPrivateResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ReferrerServiceDiscoverPrivateResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sReferrerServiceDiscoverPrivateResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ReferrerServiceDiscoverPrivateResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ReferrerServiceDiscoverPrivateResponseValidationError{}
 
 // Validate checks the field values on ReferrerItem with the rules defined in
 // the proto definition for this message. If any rules are violated, the first

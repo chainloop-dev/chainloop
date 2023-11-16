@@ -24,12 +24,21 @@ import (
 
 func newReferrerDiscoverCmd() *cobra.Command {
 	var digest, kind string
+	var fromPublicIndex bool
 
 	cmd := &cobra.Command{
 		Use:   "discover",
 		Short: "(Preview) inspect pieces of evidence or artifacts stored through Chainloop",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewReferrerDiscover(actionOpts).Run(context.Background(), digest, kind)
+			var res *action.ReferrerItem
+			var err error
+
+			if fromPublicIndex {
+				res, err = action.NewReferrerDiscoverPublicIndex(actionOpts).Run(context.Background(), digest, kind)
+			} else {
+				res, err = action.NewReferrerDiscoverPrivate(actionOpts).Run(context.Background(), digest, kind)
+			}
+
 			if err != nil {
 				return err
 			}
@@ -43,6 +52,8 @@ func newReferrerDiscoverCmd() *cobra.Command {
 	err := cmd.MarkFlagRequired("digest")
 	cobra.CheckErr(err)
 	cmd.Flags().StringVarP(&kind, "kind", "k", "", "optional kind of the referrer, used to disambiguate between multiple referrers with the same digest")
+	cobra.CheckErr(err)
+	cmd.Flags().BoolVar(&fromPublicIndex, "public", false, "discover from public shared index instead of your organizations'")
 
 	return cmd
 }

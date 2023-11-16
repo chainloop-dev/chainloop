@@ -25,6 +25,9 @@ import (
 type ReferrerDiscover struct {
 	cfg *ActionsOpts
 }
+type ReferrerDiscoverPublic struct {
+	cfg *ActionsOpts
+}
 
 type ReferrerItem struct {
 	Digest       string          `json:"digest"`
@@ -35,13 +38,29 @@ type ReferrerItem struct {
 	References   []*ReferrerItem `json:"references"`
 }
 
-func NewReferrerDiscover(cfg *ActionsOpts) *ReferrerDiscover {
+func NewReferrerDiscoverPrivate(cfg *ActionsOpts) *ReferrerDiscover {
 	return &ReferrerDiscover{cfg}
 }
 
 func (action *ReferrerDiscover) Run(ctx context.Context, digest, kind string) (*ReferrerItem, error) {
 	client := pb.NewReferrerServiceClient(action.cfg.CPConnection)
-	resp, err := client.Discover(ctx, &pb.ReferrerServiceDiscoverRequest{
+	resp, err := client.DiscoverPrivate(ctx, &pb.ReferrerServiceDiscoverPrivateRequest{
+		Digest: digest, Kind: kind,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return pbReferrerItemToAction(resp.Result), nil
+}
+
+func NewReferrerDiscoverPublicIndex(cfg *ActionsOpts) *ReferrerDiscoverPublic {
+	return &ReferrerDiscoverPublic{cfg}
+}
+
+func (action *ReferrerDiscoverPublic) Run(ctx context.Context, digest, kind string) (*ReferrerItem, error) {
+	client := pb.NewReferrerServiceClient(action.cfg.CPConnection)
+	resp, err := client.DiscoverPublicShared(ctx, &pb.DiscoverPublicSharedRequest{
 		Digest: digest, Kind: kind,
 	})
 	if err != nil {

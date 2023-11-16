@@ -24,19 +24,33 @@ import "validate/validate.proto";
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
 service ReferrerService {
-  rpc Discover(ReferrerServiceDiscoverRequest) returns (ReferrerServiceDiscoverResponse) {
+  // DiscoverPrivate returns the referrer item for a given digest in the organizations of the logged-in user
+  rpc DiscoverPrivate(ReferrerServiceDiscoverPrivateRequest) returns (ReferrerServiceDiscoverPrivateResponse);
+  // DiscoverPublicShared returns the referrer item for a given digest in the public shared index
+  rpc DiscoverPublicShared(DiscoverPublicSharedRequest) returns (DiscoverPublicSharedResponse) {
     option (google.api.http) = {get: "/discover/{digest}"};
   }
 }
 
-message ReferrerServiceDiscoverRequest {
+message ReferrerServiceDiscoverPrivateRequest {
   string digest = 1 [(validate.rules).string = {min_len: 1}];
   // Optional kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...
   // Used to filter and resolve ambiguities
   string kind = 2;
 }
 
-message ReferrerServiceDiscoverResponse {
+message DiscoverPublicSharedRequest {
+  string digest = 1 [(validate.rules).string = {min_len: 1}];
+  // Optional kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...
+  // Used to filter and resolve ambiguities
+  string kind = 2;
+}
+
+message DiscoverPublicSharedResponse {
+  ReferrerItem result = 1;
+}
+
+message ReferrerServiceDiscoverPrivateResponse {
   ReferrerItem result = 1;
 }
 

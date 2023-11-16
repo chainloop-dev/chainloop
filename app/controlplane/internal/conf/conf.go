@@ -23,7 +23,7 @@ import (
 )
 
 func (c *ReferrerSharedIndex) ValidateOrgs() error {
-	if c == nil {
+	if c == nil || !c.Enabled {
 		return nil
 	}
 

@@ -49,6 +49,6 @@ auth:
   cas_robot_account_private_key_path: "../../devel/devkeys/cas.pem"
 
 referrer_shared_index:
-  enabled: false
+  enabled: true
   allowed_orgs:
-    - deadbeef
+    - 7ae5a35a-9f01-4711-b293-bd1d161c01a9 # practical_mayer

@@ -6,7 +6,7 @@ import { Timestamp } from "../../google/protobuf/timestamp";
 
 export const protobufPackage = "controlplane.v1";
 
-export interface ReferrerServiceDiscoverRequest {
+export interface ReferrerServiceDiscoverPrivateRequest {
   digest: string;
   /**
    * Optional kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...
@@ -15,7 +15,20 @@ export interface ReferrerServiceDiscoverRequest {
   kind: string;
 }
 
-export interface ReferrerServiceDiscoverResponse {
+export interface DiscoverPublicSharedRequest {
+  digest: string;
+  /**
+   * Optional kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...
+   * Used to filter and resolve ambiguities
+   */
+  kind: string;
+}
+
+export interface DiscoverPublicSharedResponse {
+  result?: ReferrerItem;
+}
+
+export interface ReferrerServiceDiscoverPrivateResponse {
   result?: ReferrerItem;
 }
 
@@ -32,12 +45,12 @@ export interface ReferrerItem {
   createdAt?: Date;
 }
 
-function createBaseReferrerServiceDiscoverRequest(): ReferrerServiceDiscoverRequest {
+function createBaseReferrerServiceDiscoverPrivateRequest(): ReferrerServiceDiscoverPrivateRequest {
   return { digest: "", kind: "" };
 }
 
-export const ReferrerServiceDiscoverRequest = {
-  encode(message: ReferrerServiceDiscoverRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ReferrerServiceDiscoverPrivateRequest = {
+  encode(message: ReferrerServiceDiscoverPrivateRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.digest !== "") {
       writer.uint32(10).string(message.digest);
     }
@@ -47,10 +60,10 @@ export const ReferrerServiceDiscoverRequest = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ReferrerServiceDiscoverRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ReferrerServiceDiscoverPrivateRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseReferrerServiceDiscoverRequest();
+    const message = createBaseReferrerServiceDiscoverPrivateRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -77,50 +90,123 @@ export const ReferrerServiceDiscoverRequest = {
     return message;
   },
 
-  fromJSON(object: any): ReferrerServiceDiscoverRequest {
+  fromJSON(object: any): ReferrerServiceDiscoverPrivateRequest {
     return {
       digest: isSet(object.digest) ? String(object.digest) : "",
       kind: isSet(object.kind) ? String(object.kind) : "",
     };
   },
 
-  toJSON(message: ReferrerServiceDiscoverRequest): unknown {
+  toJSON(message: ReferrerServiceDiscoverPrivateRequest): unknown {
     const obj: any = {};
     message.digest !== undefined && (obj.digest = message.digest);
     message.kind !== undefined && (obj.kind = message.kind);
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<ReferrerServiceDiscoverRequest>, I>>(base?: I): ReferrerServiceDiscoverRequest {
-    return ReferrerServiceDiscoverRequest.fromPartial(base ?? {});
+  create<I extends Exact<DeepPartial<ReferrerServiceDiscoverPrivateRequest>, I>>(
+    base?: I,
+  ): ReferrerServiceDiscoverPrivateRequest {
+    return ReferrerServiceDiscoverPrivateRequest.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<ReferrerServiceDiscoverRequest>, I>>(
+  fromPartial<I extends Exact<DeepPartial<ReferrerServiceDiscoverPrivateRequest>, I>>(
     object: I,
-  ): ReferrerServiceDiscoverRequest {
-    const message = createBaseReferrerServiceDiscoverRequest();
+  ): ReferrerServiceDiscoverPrivateRequest {
+    const message = createBaseReferrerServiceDiscoverPrivateRequest();
     message.digest = object.digest ?? "";
     message.kind = object.kind ?? "";
     return message;
   },
 };
 
-function createBaseReferrerServiceDiscoverResponse(): ReferrerServiceDiscoverResponse {
+function createBaseDiscoverPublicSharedRequest(): DiscoverPublicSharedRequest {
+  return { digest: "", kind: "" };
+}
+
+export const DiscoverPublicSharedRequest = {
+  encode(message: DiscoverPublicSharedRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.digest !== "") {
+      writer.uint32(10).string(message.digest);
+    }
+    if (message.kind !== "") {
+      writer.uint32(18).string(message.kind);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DiscoverPublicSharedRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDiscoverPublicSharedRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.digest = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.kind = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DiscoverPublicSharedRequest {
+    return {
+      digest: isSet(object.digest) ? String(object.digest) : "",
+      kind: isSet(object.kind) ? String(object.kind) : "",
+    };
+  },
+
+  toJSON(message: DiscoverPublicSharedRequest): unknown {
+    const obj: any = {};
+    message.digest !== undefined && (obj.digest = message.digest);
+    message.kind !== undefined && (obj.kind = message.kind);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<DiscoverPublicSharedRequest>, I>>(base?: I): DiscoverPublicSharedRequest {
+    return DiscoverPublicSharedRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<DiscoverPublicSharedRequest>, I>>(object: I): DiscoverPublicSharedRequest {
+    const message = createBaseDiscoverPublicSharedRequest();
+    message.digest = object.digest ?? "";
+    message.kind = object.kind ?? "";
+    return message;
+  },
+};
+
+function createBaseDiscoverPublicSharedResponse(): DiscoverPublicSharedResponse {
   return { result: undefined };
 }
 
-export const ReferrerServiceDiscoverResponse = {
-  encode(message: ReferrerServiceDiscoverResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const DiscoverPublicSharedResponse = {
+  encode(message: DiscoverPublicSharedResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.result !== undefined) {
       ReferrerItem.encode(message.result, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ReferrerServiceDiscoverResponse {
+  decode(input: _m0.Reader | Uint8Array, length?: number): DiscoverPublicSharedResponse {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseReferrerServiceDiscoverResponse();
+    const message = createBaseDiscoverPublicSharedResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -140,24 +226,84 @@ export const ReferrerServiceDiscoverResponse = {
     return message;
   },
 
-  fromJSON(object: any): ReferrerServiceDiscoverResponse {
+  fromJSON(object: any): DiscoverPublicSharedResponse {
     return { result: isSet(object.result) ? ReferrerItem.fromJSON(object.result) : undefined };
   },
 
-  toJSON(message: ReferrerServiceDiscoverResponse): unknown {
+  toJSON(message: DiscoverPublicSharedResponse): unknown {
     const obj: any = {};
     message.result !== undefined && (obj.result = message.result ? ReferrerItem.toJSON(message.result) : undefined);
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<ReferrerServiceDiscoverResponse>, I>>(base?: I): ReferrerServiceDiscoverResponse {
-    return ReferrerServiceDiscoverResponse.fromPartial(base ?? {});
+  create<I extends Exact<DeepPartial<DiscoverPublicSharedResponse>, I>>(base?: I): DiscoverPublicSharedResponse {
+    return DiscoverPublicSharedResponse.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<ReferrerServiceDiscoverResponse>, I>>(
+  fromPartial<I extends Exact<DeepPartial<DiscoverPublicSharedResponse>, I>>(object: I): DiscoverPublicSharedResponse {
+    const message = createBaseDiscoverPublicSharedResponse();
+    message.result = (object.result !== undefined && object.result !== null)
+      ? ReferrerItem.fromPartial(object.result)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseReferrerServiceDiscoverPrivateResponse(): ReferrerServiceDiscoverPrivateResponse {
+  return { result: undefined };
+}
+
+export const ReferrerServiceDiscoverPrivateResponse = {
+  encode(message: ReferrerServiceDiscoverPrivateResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.result !== undefined) {
+      ReferrerItem.encode(message.result, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ReferrerServiceDiscoverPrivateResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseReferrerServiceDiscoverPrivateResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.result = ReferrerItem.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ReferrerServiceDiscoverPrivateResponse {
+    return { result: isSet(object.result) ? ReferrerItem.fromJSON(object.result) : undefined };
+  },
+
+  toJSON(message: ReferrerServiceDiscoverPrivateResponse): unknown {
+    const obj: any = {};
+    message.result !== undefined && (obj.result = message.result ? ReferrerItem.toJSON(message.result) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ReferrerServiceDiscoverPrivateResponse>, I>>(
+    base?: I,
+  ): ReferrerServiceDiscoverPrivateResponse {
+    return ReferrerServiceDiscoverPrivateResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ReferrerServiceDiscoverPrivateResponse>, I>>(
     object: I,
-  ): ReferrerServiceDiscoverResponse {
-    const message = createBaseReferrerServiceDiscoverResponse();
+  ): ReferrerServiceDiscoverPrivateResponse {
+    const message = createBaseReferrerServiceDiscoverPrivateResponse();
     message.result = (object.result !== undefined && object.result !== null)
       ? ReferrerItem.fromPartial(object.result)
       : undefined;
@@ -293,10 +439,16 @@ export const ReferrerItem = {
 };
 
 export interface ReferrerService {
-  Discover(
-    request: DeepPartial<ReferrerServiceDiscoverRequest>,
+  /** DiscoverPrivate returns the referrer item for a given digest in the organizations of the logged-in user */
+  DiscoverPrivate(
+    request: DeepPartial<ReferrerServiceDiscoverPrivateRequest>,
     metadata?: grpc.Metadata,
-  ): Promise<ReferrerServiceDiscoverResponse>;
+  ): Promise<ReferrerServiceDiscoverPrivateResponse>;
+  /** DiscoverPublicShared returns the referrer item for a given digest in the public shared index */
+  DiscoverPublicShared(
+    request: DeepPartial<DiscoverPublicSharedRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<DiscoverPublicSharedResponse>;
 }
 
 export class ReferrerServiceClientImpl implements ReferrerService {
@@ -304,32 +456,71 @@ export class ReferrerServiceClientImpl implements ReferrerService {
 
   constructor(rpc: Rpc) {
     this.rpc = rpc;
-    this.Discover = this.Discover.bind(this);
+    this.DiscoverPrivate = this.DiscoverPrivate.bind(this);
+    this.DiscoverPublicShared = this.DiscoverPublicShared.bind(this);
   }
 
-  Discover(
-    request: DeepPartial<ReferrerServiceDiscoverRequest>,
+  DiscoverPrivate(
+    request: DeepPartial<ReferrerServiceDiscoverPrivateRequest>,
     metadata?: grpc.Metadata,
-  ): Promise<ReferrerServiceDiscoverResponse> {
-    return this.rpc.unary(ReferrerServiceDiscoverDesc, ReferrerServiceDiscoverRequest.fromPartial(request), metadata);
+  ): Promise<ReferrerServiceDiscoverPrivateResponse> {
+    return this.rpc.unary(
+      ReferrerServiceDiscoverPrivateDesc,
+      ReferrerServiceDiscoverPrivateRequest.fromPartial(request),
+      metadata,
+    );
+  }
+
+  DiscoverPublicShared(
+    request: DeepPartial<DiscoverPublicSharedRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<DiscoverPublicSharedResponse> {
+    return this.rpc.unary(
+      ReferrerServiceDiscoverPublicSharedDesc,
+      DiscoverPublicSharedRequest.fromPartial(request),
+      metadata,
+    );
   }
 }
 
 export const ReferrerServiceDesc = { serviceName: "controlplane.v1.ReferrerService" };
 
-export const ReferrerServiceDiscoverDesc: UnaryMethodDefinitionish = {
-  methodName: "Discover",
+export const ReferrerServiceDiscoverPrivateDesc: UnaryMethodDefinitionish = {
+  methodName: "DiscoverPrivate",
   service: ReferrerServiceDesc,
   requestStream: false,
   responseStream: false,
   requestType: {
     serializeBinary() {
-      return ReferrerServiceDiscoverRequest.encode(this).finish();
+      return ReferrerServiceDiscoverPrivateRequest.encode(this).finish();
     },
   } as any,
   responseType: {
     deserializeBinary(data: Uint8Array) {
-      const value = ReferrerServiceDiscoverResponse.decode(data);
+      const value = ReferrerServiceDiscoverPrivateResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const ReferrerServiceDiscoverPublicSharedDesc: UnaryMethodDefinitionish = {
+  methodName: "DiscoverPublicShared",
+  service: ReferrerServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return DiscoverPublicSharedRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = DiscoverPublicSharedResponse.decode(data);
       return {
         ...value,
         toObject() {

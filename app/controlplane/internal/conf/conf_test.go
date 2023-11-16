@@ -47,6 +47,13 @@ func TestValidateOrgs(t *testing.T) {
 			wantErrMsg: "invalid org id: invalid",
 		},
 		{
+			name: "with invalid orgs but disabled",
+			index: &ReferrerSharedIndex{
+				Enabled:     false,
+				AllowedOrgs: []string{"invalid"},
+			},
+		},
+		{
 			name: "enabled with valid orgs",
 			index: &ReferrerSharedIndex{
 				Enabled:     true,
@@ -65,5 +72,4 @@ func TestValidateOrgs(t *testing.T) {
 			}
 		})
 	}
-
 }
