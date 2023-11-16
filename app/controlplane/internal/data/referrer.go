@@ -132,7 +132,6 @@ func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string, orgIDs []
 	predicateReferrer := []predicate.Referrer{
 		referrer.Digest(digest),
 		referrer.HasOrganizationsWith(organization.IDIn(orgIDs...)),
-		referrer.HasWorkflowsWith(workflow.DeletedAtIsNil(), workflow.HasOrganizationWith(organization.IDIn(orgIDs...))),
 	}
 
 	// We might be filtering by the rootKind, this will prevent ambiguity
@@ -224,17 +223,23 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 
 	// Find the references and call recursively filtered out by the allowed organizations
 	// and by the visibility if needed
-	query := root.QueryReferences().
-		Where(
-			referrer.HasOrganizationsWith(organization.IDIn(allowedOrgs...)),
-			referrer.HasWorkflowsWith(workflow.DeletedAtIsNil(), workflow.HasOrganizationWith(organization.IDIn(allowedOrgs...))),
-		)
-
-	if public != nil {
-		query = query.Where(referrer.HasWorkflowsWith(workflow.Public(*public)))
+	predicateReferrer := []predicate.Referrer{
+		referrer.HasOrganizationsWith(organization.IDIn(allowedOrgs...)),
 	}
 
-	refs, err := query.WithWorkflows().WithOrganizations().Order(referrer.ByDigest()).All(ctx)
+	predicateWF := []predicate.Workflow{
+		workflow.DeletedAtIsNil(), workflow.HasOrganizationWith(organization.IDIn(allowedOrgs...)),
+	}
+
+	// optionally attaching its visibility
+	if public != nil {
+		predicateWF = append(predicateWF, workflow.Public(*public))
+	}
+
+	// Attach the workflow predicate
+	predicateReferrer = append(predicateReferrer, referrer.HasWorkflowsWith(predicateWF...))
+
+	refs, err := root.QueryReferences().Where(predicateReferrer...).WithWorkflows().WithOrganizations().Order(referrer.ByDigest()).All(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query references: %w", err)
 	}
