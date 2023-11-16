@@ -32,6 +32,8 @@ message Bootstrap {
   // Plugins directory
   // NOTE: plugins have the form of chainloop-plugin-<name>
   string plugins_dir = 7;
+  // Configuration about the shared referrer index
+  ReferrerSharedIndex referrer_shared_index = 8;
 
   message Observability {
     Sentry sentry = 1;
@@ -51,6 +53,17 @@ message Bootstrap {
     // https://github.com/chainloop-dev/chainloop/blob/126f47b6c0803eac844b8e3e1a21d582f00e4dc6/app/artifact-cas/internal/service/download.go#L34
     string download_url = 3;
   }
+}
+
+// Configuration used to enable a shared index API endpoint that can be used to discover metadata referrers
+// To populate the shared index you need to enable the feature and configure the allowed orgs
+// The reason to have an org allowList is to avoid leaking metadata from other organizations and set the stage for a trusted publisher model
+message ReferrerSharedIndex {
+  // If the shared, public index feature is enabled
+  bool enabled = 1;
+  // list of organizations uuids that are allowed to appear in the shared referrer index
+  // think of it as a list of trusted publishers 
+  repeated string allowed_orgs = 2;
 }
 
 message Server {

@@ -66,6 +66,14 @@ type TestingUseCases struct {
 	CASMapping             *biz.CASMappingUseCase
 	OrgInvitation          *biz.OrgInvitationUseCase
 	Referrer               *biz.ReferrerUseCase
+	// Repositories that can be used for custom crafting of use-cases
+	Repos *TestingRepos
+}
+
+type TestingRepos struct {
+	Membership biz.MembershipRepo
+	Referrer   biz.ReferrerRepo
+	Workflow   biz.WorkflowRepo
 }
 
 type newTestingOpts struct {

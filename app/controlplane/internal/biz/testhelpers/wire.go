@@ -21,6 +21,8 @@
 package testhelpers
 
 import (
+	"testing"
+
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
@@ -30,7 +32,6 @@ import (
 	robotaccount "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
-	"testing"
 )
 
 // wireTestData init testing data
@@ -39,7 +40,9 @@ func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWrite
 		wire.Build(
 			data.ProviderSet,
 			biz.ProviderSet,
+			wire.Value(&conf.ReferrerSharedIndex{}),
 			wire.Struct(new(TestingUseCases), "*"),
+			wire.Struct(new(TestingRepos), "*"),
 			newConfData,
 		),
 	)
