@@ -92,6 +92,8 @@ func (s *gitlabPipelineSuite) TestListEnvVars() {
 }
 
 func (s *gitlabPipelineSuite) TestResolveEnvVars() {
+	resolvedEnvVars, err := s.runner.ResolveEnvVars()
+	s.NoError(err)
 	s.Equal(map[string]string{
 		"GITLAB_USER_EMAIL":     "foo@foo.com",
 		"GITLAB_USER_LOGIN":     "foo",
@@ -102,7 +104,7 @@ func (s *gitlabPipelineSuite) TestResolveEnvVars() {
 		"CI_RUNNER_VERSION":     "13.10.0",
 		"CI_RUNNER_DESCRIPTION": "chainloop-runner",
 		"CI_COMMIT_REF_NAME":    "main",
-	}, s.runner.ResolveEnvVars())
+	}, resolvedEnvVars)
 }
 
 func (s *gitlabPipelineSuite) TestRunURI() {

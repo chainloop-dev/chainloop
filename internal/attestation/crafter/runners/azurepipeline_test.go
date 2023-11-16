@@ -93,6 +93,9 @@ func (s *azurePipelineSuite) TestListEnvVars() {
 }
 
 func (s *azurePipelineSuite) TestResolveEnvVars() {
+	resolvedEnvVars, err := s.runner.ResolveEnvVars()
+	s.NoError(err)
+
 	s.Equal(map[string]string{
 		"AGENT_VERSION":           "3.220.5",
 		"BUILD_BUILDID":           "6",
@@ -104,7 +107,7 @@ func (s *azurePipelineSuite) TestResolveEnvVars() {
 		"BUILD_REQUESTEDFOR":      "Jan Kowalsky",
 		"BUILD_REQUESTEDFOREMAIL": "jan@kowalscy.onmicrosoft.com",
 		"TF_BUILD":                "True",
-	}, s.runner.ResolveEnvVars())
+	}, resolvedEnvVars)
 }
 
 func (s *azurePipelineSuite) TestRunURI() {

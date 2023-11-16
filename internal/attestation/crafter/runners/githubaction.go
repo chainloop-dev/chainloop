@@ -39,21 +39,17 @@ func (r *GitHubAction) CheckEnv() bool {
 	return true
 }
 
-func (r *GitHubAction) ListEnvVars() []string {
-	return []string{
-		"GITHUB_ACTOR",
-		"GITHUB_REF",
-		"GITHUB_REPOSITORY",
-		"GITHUB_REPOSITORY_OWNER",
-		"GITHUB_RUN_ID",
-		"GITHUB_SHA",
-		"RUNNER_NAME",
-		"RUNNER_OS",
+func (r *GitHubAction) ListEnvVars() []*EnvVarDefinition {
+	return []*EnvVarDefinition{
+		{"GITHUB_ACTOR", false},
+		{"GITHUB_REF", false},
+		{"GITHUB_REPOSITORY", false},
+		{"GITHUB_REPOSITORY_OWNER", false},
+		{"GITHUB_RUN_ID", false},
+		{"GITHUB_SHA", false},
+		{"RUNNER_NAME", false},
+		{"RUNNER_OS", false},
 	}
-}
-
-func (r *GitHubAction) ResolveEnvVars() map[string]string {
-	return resolveEnvVars(r.ListEnvVars())
 }
 
 func (r *GitHubAction) String() string {
@@ -67,4 +63,8 @@ func (r *GitHubAction) RunURI() (url string) {
 	}
 
 	return url
+}
+
+func (r *GitHubAction) ResolveEnvVars() (map[string]string, error) {
+	return resolveEnvVars(r.ListEnvVars())
 }

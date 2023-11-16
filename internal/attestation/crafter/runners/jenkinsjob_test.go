@@ -86,7 +86,9 @@ func (s *jenkinsJobSuite) TestListEnvVars() {
 }
 
 func (s *jenkinsJobSuite) TestResolveEnvVars() {
-	s.Equal(jenkinsJobTestingEnvVars, s.runner.ResolveEnvVars())
+	resolvedEnvVars, err := s.runner.ResolveEnvVars()
+	s.NoError(err)
+	s.Equal(jenkinsJobTestingEnvVars, resolvedEnvVars)
 }
 
 func (s *jenkinsJobSuite) TestRunURI() {
@@ -111,6 +113,8 @@ var jenkinsJobTestingEnvVars = map[string]string{
 	"BUILD_URL":     "http://some-build-url/",
 	"AGENT_WORKDIR": "/home/sample/agent",
 	"NODE_NAME":     "some-node",
+	"GIT_BRANCH":    "somebranch",
+	"GIT_COMMIT":    "somecommit",
 }
 
 // Run the tests

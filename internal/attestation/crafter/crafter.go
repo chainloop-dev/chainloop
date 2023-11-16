@@ -372,49 +372,44 @@ func persistCraftingState(craftState *api.CraftingState, stateFilePath string) e
 
 // ResolveEnvVars will iterate on the env vars in the allow list and resolve them from the system context
 // strict indicates if it should fail if any env variable can not be found
-func (c *Crafter) ResolveEnvVars(strict bool) error {
+func (c *Crafter) ResolveEnvVars() error {
 	if err := c.requireStateLoaded(); err != nil {
 		return err
 	}
 
-	// Runner specific env variables
+	// Runner specific environment variables
+
 	c.logger.Debug().Str("runnerType", c.Runner.String()).Msg("loading runner specific env variables")
 	var outputEnvVars = make(map[string]string)
 	if !c.Runner.CheckEnv() {
 		errorStr := fmt.Sprintf("couldn't detect the environment %q. Is the crafting process happening in the target env?", c.Runner.String())
-		if strict {
-			return fmt.Errorf("%s - %w", errorStr, ErrRunnerContextNotFound)
-		}
-		c.logger.Warn().Msg(errorStr)
-	} else {
-		c.logger.Debug().Str("runnerType", c.Runner.String()).Strs("variables", c.Runner.ListEnvVars()).Msg("list of env variables to automatically extract")
-		outputEnvVars = c.Runner.ResolveEnvVars()
-		if notFound := notResolvedVars(outputEnvVars, c.Runner.ListEnvVars()); len(notFound) > 0 {
-			if strict {
-				return fmt.Errorf("required env variables not present %q", notFound)
-			}
-			c.logger.Warn().Strs("key", notFound).Msg("required env variables not present")
-		}
+		return fmt.Errorf("%s - %w", errorStr, ErrRunnerContextNotFound)
 	}
 
-	// User-defined env vars
-	varsAllowList := c.CraftingState.InputSchema.EnvAllowList
-	if len(varsAllowList) > 0 {
-		c.logger.Debug().Strs("allowList", varsAllowList).Msg("loading env variables")
-		for _, want := range varsAllowList {
-			val := os.Getenv(want)
-			if val == "" {
-				continue
-			}
+	// Workflow run environment variables
 
+	var varNames []string
+	for _, envVarDef := range c.Runner.ListEnvVars() {
+		varNames = append(varNames, envVarDef.Name)
+	}
+	c.logger.Debug().Str("runnerType", c.Runner.String()).Strs("variables", varNames).Msg("list of env variables to automatically extract")
+
+	outputEnvVars, err := c.Runner.ResolveEnvVars()
+	if err != nil {
+		return err
+	}
+
+	// User-defined environment vars
+
+	if len(c.CraftingState.InputSchema.EnvAllowList) > 0 {
+		c.logger.Debug().Strs("allowList", c.CraftingState.InputSchema.EnvAllowList).Msg("loading env variables")
+	}
+	for _, want := range c.CraftingState.InputSchema.EnvAllowList {
+		val := os.Getenv(want)
+		if val != "" {
 			outputEnvVars[want] = val
-		}
-
-		if notFound := notResolvedVars(outputEnvVars, varsAllowList); len(notFound) > 0 {
-			if strict {
-				return fmt.Errorf("required env variables not present %q", notFound)
-			}
-			c.logger.Warn().Strs("key", notFound).Msg("required env variables not present")
+		} else if !c.CraftingState.DryRun {
+			return fmt.Errorf("required env variables not present %q", want)
 		}
 	}
 

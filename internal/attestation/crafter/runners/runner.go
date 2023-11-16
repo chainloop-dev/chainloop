@@ -15,32 +15,29 @@
 
 package runners
 
-type Generic struct{}
+import (
+	"fmt"
+	"os"
+)
 
-const GenericID = "generic"
-
-func NewGeneric() *Generic {
-	return &Generic{}
+type EnvVarDefinition struct {
+	Name     string
+	Optional bool
 }
 
-func (r *Generic) CheckEnv() bool {
-	return true
-}
+func resolveEnvVars(envVarsDefinitions []*EnvVarDefinition) (map[string]string, error) {
+	result := make(map[string]string)
 
-// Returns a list of environment variables names. This list is used to
-// automatically inject environment variables into the attestation.
-func (r *Generic) ListEnvVars() []*EnvVarDefinition {
-	return []*EnvVarDefinition{}
-}
+	for _, envVarDef := range envVarsDefinitions {
+		value := os.Getenv(envVarDef.Name)
+		if value != "" {
+			result[envVarDef.Name] = value
+		} else {
+			if !envVarDef.Optional {
+				return nil, fmt.Errorf("environment variable %s cannot be resolved", envVarDef.Name)
+			}
+		}
+	}
 
-func (r *Generic) String() string {
-	return GenericID
-}
-
-func (r *Generic) RunURI() string {
-	return ""
-}
-
-func (r *Generic) ResolveEnvVars() (map[string]string, error) {
-	return resolveEnvVars(r.ListEnvVars())
+	return result, nil
 }

@@ -102,7 +102,9 @@ func (s *githubActionSuite) TestListEnvVars() {
 }
 
 func (s *githubActionSuite) TestResolveEnvVars() {
-	s.Equal(gitHubTestingEnvVars, s.runner.ResolveEnvVars())
+	resolvedEnvVars, err := s.runner.ResolveEnvVars()
+	s.NoError(err)
+	s.Equal(gitHubTestingEnvVars, resolvedEnvVars)
 }
 
 func (s *githubActionSuite) TestRunURI() {

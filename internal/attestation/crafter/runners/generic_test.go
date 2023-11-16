@@ -18,7 +18,6 @@ package runners
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -36,7 +35,9 @@ func (s *genericSuite) TestListEnvVars() {
 }
 
 func (s *genericSuite) TestResolveEnvVars() {
-	s.Equal(map[string]string{}, s.runner.ResolveEnvVars())
+	result, err := s.runner.ResolveEnvVars()
+	s.NoError(err)
+	s.Equal(map[string]string{}, result)
 }
 
 func (s *genericSuite) TestRunURI() {
@@ -55,13 +56,4 @@ func (s *genericSuite) SetupTest() {
 // Run the tests
 func TestGenericRunner(t *testing.T) {
 	suite.Run(t, new(genericSuite))
-}
-
-func TestResolveEnvVars(t *testing.T) {
-	t.Setenv("A", "a")
-	t.Setenv("C", "c")
-	t.Setenv("D", "d")
-	varsL := []string{"A", "B", "C"}
-	res := resolveEnvVars(varsL)
-	assert.Equal(t, map[string]string{"A": "a", "B": "", "C": "c"}, res)
 }

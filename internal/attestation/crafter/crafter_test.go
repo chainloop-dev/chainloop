@@ -222,24 +222,27 @@ func (s *crafterSuite) TestLoadSchema() {
 func (s *crafterSuite) TestResolveEnvVars() {
 	testCases := []struct {
 		name   string
-		strict bool
+		dryrun bool
+
 		// Custom env variables to expose
 		envVars map[string]string
+
 		// Simulate that the crafting process is hapenning in a github action runner
 		inGithubEnv bool
 		wantErr     bool
+
 		// Total list of resolved env vars
 		want map[string]string
 	}{
 		{
-			name:        "strict missing custom vars",
-			strict:      true,
+			name:        "dryrun missing custom vars",
+			dryrun:      true,
 			inGithubEnv: true,
 			wantErr:     true,
 		},
 		{
-			name:        "strict, not running in github env",
-			strict:      true,
+			name:        "dryrun, not running in github env",
+			dryrun:      true,
 			inGithubEnv: false,
 			wantErr:     true,
 			envVars: map[string]string{
@@ -248,8 +251,8 @@ func (s *crafterSuite) TestResolveEnvVars() {
 			},
 		},
 		{
-			name:        "strict, missing some github env",
-			strict:      true,
+			name:        "dryrun, missing some github env",
+			dryrun:      true,
 			inGithubEnv: false,
 			wantErr:     true,
 			envVars: map[string]string{
@@ -260,8 +263,8 @@ func (s *crafterSuite) TestResolveEnvVars() {
 			},
 		},
 		{
-			name:        "strict and all envs available",
-			strict:      true,
+			name:        "dryrun and all envs available",
+			dryrun:      true,
 			inGithubEnv: true,
 			envVars: map[string]string{
 				"CUSTOM_VAR_1": "custom_value_1",
@@ -281,15 +284,15 @@ func (s *crafterSuite) TestResolveEnvVars() {
 			},
 		},
 		{
-			name:        "non strict missing custom vars",
-			strict:      false,
+			name:        "non dryrun missing custom vars",
+			dryrun:      false,
 			inGithubEnv: true,
 			wantErr:     false,
 			want:        gitHubTestingEnvVars,
 		},
 		{
-			name:        "non strict, missing some github env",
-			strict:      false,
+			name:        "non dryrun, missing some github env",
+			dryrun:      false,
 			inGithubEnv: false,
 			wantErr:     false,
 			envVars: map[string]string{
@@ -313,8 +316,8 @@ func (s *crafterSuite) TestResolveEnvVars() {
 			},
 		},
 		{
-			name:        "non strict, wrong runner context",
-			strict:      false,
+			name:        "non dryrun, wrong runner context",
+			dryrun:      false,
 			inGithubEnv: false,
 			wantErr:     false,
 			envVars: map[string]string{
@@ -334,6 +337,7 @@ func (s *crafterSuite) TestResolveEnvVars() {
 			for k, v := range tc.envVars {
 				s.T().Setenv(k, v)
 			}
+
 			// Runner env variables
 			if tc.inGithubEnv {
 				s.T().Setenv("CI", "true")
@@ -342,10 +346,10 @@ func (s *crafterSuite) TestResolveEnvVars() {
 				}
 			}
 
-			c, err := newInitializedCrafter(s.T(), "testdata/contracts/with_env_vars.yaml", &v1.WorkflowMetadata{}, true, "")
+			c, err := newInitializedCrafter(s.T(), "testdata/contracts/with_env_vars.yaml", &v1.WorkflowMetadata{}, tc.dryrun, "")
 			require.NoError(s.T(), err)
 
-			err = c.ResolveEnvVars(tc.strict)
+			err = c.ResolveEnvVars()
 			if tc.wantErr {
 				s.Error(err)
 				return
