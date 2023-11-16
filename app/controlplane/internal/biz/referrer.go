@@ -189,8 +189,9 @@ func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind, use
 	return ref, nil
 }
 
-// Get the list of public referrers from organizations that have been allowed to be shown in a shared index
-// NOTE: This is a public endpoint
+// Get the list of public referrers from organizations
+// that have been allowed to be shown in a shared index
+// NOTE: This is a public endpoint under /discover/[sha256:deadbeef]
 func (s *ReferrerUseCase) GetFromRootInPublicSharedIndex(ctx context.Context, digest, rootKind string) (*StoredReferrer, error) {
 	if s.indexConfig == nil || !s.indexConfig.Enabled {
 		return nil, NewErrUnauthorizedStr("shared referrer index functionality is not enabled")

@@ -23,11 +23,90 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/google/uuid"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
+
+func (s *referrerIntegrationTestSuite) TestGetFromRootInPublicSharedIndex() {
+	// Load attestation
+	attJSON, err := os.ReadFile("testdata/attestations/with-git-subject.json")
+	require.NoError(s.T(), err)
+	var envelope *dsse.Envelope
+	require.NoError(s.T(), json.Unmarshal(attJSON, &envelope))
+
+	wantReferrerAtt := &biz.Referrer{
+		Digest:       "sha256:ad704d286bcad6e155e71c33d48247931231338396acbcd9769087530085b2a2",
+		Kind:         "ATTESTATION",
+		Downloadable: true,
+	}
+
+	// We'll store the attestation in the private only index
+	ctx := context.Background()
+	s.T().Run("public endpoint fails if feature not enabled", func(t *testing.T) {
+		_, err := s.Referrer.GetFromRootInPublicSharedIndex(ctx, wantReferrerAtt.Digest, "")
+		s.ErrorContains(err, "not enabled")
+	})
+
+	s.T().Run("storing it associated with a private workflow keeps it private and not in the index", func(t *testing.T) {
+		err = s.sharedEnabledUC.ExtractAndPersist(ctx, envelope, s.workflow1.ID.String())
+		require.NoError(s.T(), err)
+		ref, err := s.Referrer.GetFromRoot(ctx, wantReferrerAtt.Digest, "", s.user.ID)
+		s.NoError(err)
+		s.False(ref.InPublicWorkflow)
+		res, err := s.sharedEnabledUC.GetFromRootInPublicSharedIndex(ctx, wantReferrerAtt.Digest, "")
+		s.True(biz.IsNotFound(err))
+		s.Nil(res)
+	})
+
+	s.T().Run("storing it associated with a public workflow but not allowed org keeps it out of the index", func(t *testing.T) {
+		// Make workflow2 public
+		_, err := s.Workflow.Update(ctx, s.org2.ID, s.workflow2.ID.String(), &biz.WorkflowUpdateOpts{Public: toPtrBool(true)})
+		require.NoError(t, err)
+
+		err = s.sharedEnabledUC.ExtractAndPersist(ctx, envelope, s.workflow2.ID.String())
+		require.NoError(s.T(), err)
+		// It's marked as public in the internal index
+		ref, err := s.sharedEnabledUC.GetFromRoot(ctx, wantReferrerAtt.Digest, "", s.user.ID)
+		s.NoError(err)
+		s.True(ref.InPublicWorkflow)
+
+		// But it's not in the public shared index because the org 2 is not whitelisted
+		res, err := s.sharedEnabledUC.GetFromRootInPublicSharedIndex(ctx, wantReferrerAtt.Digest, "")
+		s.True(biz.IsNotFound(err))
+		s.Nil(res)
+	})
+
+	s.T().Run("it should appear if we whitelist org2", func(t *testing.T) {
+		uc, err := biz.NewReferrerUseCase(s.Repos.Referrer, s.Repos.Workflow, s.Repos.Membership,
+			&conf.ReferrerSharedIndex{
+				Enabled:     true,
+				AllowedOrgs: []string{s.org2.ID},
+			}, nil)
+		require.NoError(t, err)
+		// Now it's public since org2 is whitelisted
+		res, err := uc.GetFromRootInPublicSharedIndex(ctx, wantReferrerAtt.Digest, "")
+		s.NoError(err)
+		s.Equal(wantReferrerAtt.Digest, res.Digest)
+	})
+
+	s.T().Run("or we can make the workflow 1 public", func(t *testing.T) {
+		// reset workflow2 to private
+		_, err := s.Workflow.Update(ctx, s.org2.ID, s.workflow2.ID.String(), &biz.WorkflowUpdateOpts{Public: toPtrBool(false)})
+		require.NoError(t, err)
+		// Make workflow1 public
+		_, err = s.Workflow.Update(ctx, s.org1.ID, s.workflow1.ID.String(), &biz.WorkflowUpdateOpts{Public: toPtrBool(true)})
+		require.NoError(t, err)
+		err = s.sharedEnabledUC.ExtractAndPersist(ctx, envelope, s.workflow2.ID.String())
+		require.NoError(s.T(), err)
+		// Now it's public since org1 is whitelisted
+		res, err := s.sharedEnabledUC.GetFromRootInPublicSharedIndex(ctx, wantReferrerAtt.Digest, "")
+		s.NoError(err)
+		s.Equal(wantReferrerAtt.Digest, res.Digest)
+	})
+}
 
 func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 	// Load attestation
@@ -271,6 +350,7 @@ type referrerIntegrationTestSuite struct {
 	workflow1, workflow2 *biz.Workflow
 	org1UUID, org2UUID   uuid.UUID
 	user, user2          *biz.User
+	sharedEnabledUC      *biz.ReferrerUseCase
 }
 
 func (s *referrerIntegrationTestSuite) SetupTest() {
@@ -306,6 +386,14 @@ func (s *referrerIntegrationTestSuite) SetupTest() {
 	require.NoError(s.T(), err)
 	_, err = s.Membership.Create(ctx, s.org2.ID, s.user2.ID, true)
 	require.NoError(s.T(), err)
+
+	s.sharedEnabledUC, err = biz.NewReferrerUseCase(s.Repos.Referrer, s.Repos.Workflow, s.Repos.Membership,
+		&conf.ReferrerSharedIndex{
+			Enabled:     true,
+			AllowedOrgs: []string{s.org1.ID},
+		}, nil)
+	require.NoError(s.T(), err)
+
 }
 
 func TestReferrerIntegration(t *testing.T) {

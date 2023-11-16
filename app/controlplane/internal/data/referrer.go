@@ -22,6 +22,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/referrer"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
 	"github.com/go-kratos/kratos/v2/log"
@@ -125,26 +126,34 @@ func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string, orgIDs []
 		f(opts)
 	}
 
-	// Find the referrer from its digest + artifactType
+	// Find the referrer from its digest + artifactType (optional)
 	// if there is more than 1 item we return ReferrerAmbiguous error
-	query := r.data.db.Referrer.Query().
-		Where(
-			referrer.Digest(digest),
-			referrer.HasOrganizationsWith(organization.IDIn(orgIDs...)),
-			referrer.HasWorkflowsWith(workflow.DeletedAtIsNil()),
-		)
+	// filter by the allowed organizations and by the visibility of the attached workflows if needed
+	predicateReferrer := []predicate.Referrer{
+		referrer.Digest(digest),
+		referrer.HasOrganizationsWith(organization.IDIn(orgIDs...)),
+		referrer.HasWorkflowsWith(workflow.DeletedAtIsNil(), workflow.HasOrganizationWith(organization.IDIn(orgIDs...))),
+	}
 
 	// We might be filtering by the rootKind, this will prevent ambiguity
 	if opts.RootKind != nil {
-		query = query.Where(referrer.Kind(*opts.RootKind))
+		predicateReferrer = append(predicateReferrer, referrer.Kind(*opts.RootKind))
 	}
 
-	// And by visibility
+	// Prepare the workflow query predicate
+	predicateWF := []predicate.Workflow{
+		workflow.DeletedAtIsNil(), workflow.HasOrganizationWith(organization.IDIn(orgIDs...)),
+	}
+
+	// optionally attaching its visibility
 	if opts.Public != nil {
-		query = query.Where(referrer.HasWorkflowsWith(workflow.Public(*opts.Public)))
+		predicateWF = append(predicateWF, workflow.Public(*opts.Public))
 	}
 
-	refs, err := query.WithWorkflows().WithOrganizations().All(ctx)
+	// Attach the workflow predicate
+	predicateReferrer = append(predicateReferrer, referrer.HasWorkflowsWith(predicateWF...))
+
+	refs, err := r.data.db.Referrer.Query().Where(predicateReferrer...).WithWorkflows().WithOrganizations().All(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query referrer: %w", err)
 	}
@@ -218,7 +227,7 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 	query := root.QueryReferences().
 		Where(
 			referrer.HasOrganizationsWith(organization.IDIn(allowedOrgs...)),
-			referrer.HasWorkflowsWith(workflow.DeletedAtIsNil()),
+			referrer.HasWorkflowsWith(workflow.DeletedAtIsNil(), workflow.HasOrganizationWith(organization.IDIn(allowedOrgs...))),
 		)
 
 	if public != nil {
