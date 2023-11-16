@@ -393,7 +393,6 @@ func (s *referrerIntegrationTestSuite) SetupTest() {
 			AllowedOrgs: []string{s.org1.ID},
 		}, nil)
 	require.NoError(s.T(), err)
-
 }
 
 func TestReferrerIntegration(t *testing.T) {
