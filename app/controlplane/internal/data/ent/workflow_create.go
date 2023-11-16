@@ -117,6 +117,12 @@ func (wc *WorkflowCreate) SetNillablePublic(b *bool) *WorkflowCreate {
 	return wc
 }
 
+// SetOrganizationID sets the "organization_id" field.
+func (wc *WorkflowCreate) SetOrganizationID(u uuid.UUID) *WorkflowCreate {
+	wc.mutation.SetOrganizationID(u)
+	return wc
+}
+
 // SetID sets the "id" field.
 func (wc *WorkflowCreate) SetID(u uuid.UUID) *WorkflowCreate {
 	wc.mutation.SetID(u)
@@ -159,12 +165,6 @@ func (wc *WorkflowCreate) AddWorkflowruns(w ...*WorkflowRun) *WorkflowCreate {
 		ids[i] = w[i].ID
 	}
 	return wc.AddWorkflowrunIDs(ids...)
-}
-
-// SetOrganizationID sets the "organization" edge to the Organization entity by ID.
-func (wc *WorkflowCreate) SetOrganizationID(id uuid.UUID) *WorkflowCreate {
-	wc.mutation.SetOrganizationID(id)
-	return wc
 }
 
 // SetOrganization sets the "organization" edge to the Organization entity.
@@ -281,6 +281,9 @@ func (wc *WorkflowCreate) check() error {
 		return &ValidationError{Name: "public", err: errors.New(`ent: missing required field "Workflow.public"`)}
 	}
 	if _, ok := wc.mutation.OrganizationID(); !ok {
+		return &ValidationError{Name: "organization_id", err: errors.New(`ent: missing required field "Workflow.organization_id"`)}
+	}
+	if _, ok := wc.mutation.OrganizationID(); !ok {
 		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "Workflow.organization"`)}
 	}
 	if _, ok := wc.mutation.ContractID(); !ok {
@@ -395,7 +398,7 @@ func (wc *WorkflowCreate) createSpec() (*Workflow, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.organization_id = &nodes[0]
+		_node.OrganizationID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := wc.mutation.ContractIDs(); len(nodes) > 0 {

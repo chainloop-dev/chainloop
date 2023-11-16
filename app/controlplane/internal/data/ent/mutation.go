@@ -4371,9 +4371,6 @@ type OrganizationMutation struct {
 	integrations              map[uuid.UUID]struct{}
 	removedintegrations       map[uuid.UUID]struct{}
 	clearedintegrations       bool
-	referrers                 map[uuid.UUID]struct{}
-	removedreferrers          map[uuid.UUID]struct{}
-	clearedreferrers          bool
 	done                      bool
 	oldValue                  func(context.Context) (*Organization, error)
 	predicates                []predicate.Organization
@@ -4825,60 +4822,6 @@ func (m *OrganizationMutation) ResetIntegrations() {
 	m.removedintegrations = nil
 }
 
-// AddReferrerIDs adds the "referrers" edge to the Referrer entity by ids.
-func (m *OrganizationMutation) AddReferrerIDs(ids ...uuid.UUID) {
-	if m.referrers == nil {
-		m.referrers = make(map[uuid.UUID]struct{})
-	}
-	for i := range ids {
-		m.referrers[ids[i]] = struct{}{}
-	}
-}
-
-// ClearReferrers clears the "referrers" edge to the Referrer entity.
-func (m *OrganizationMutation) ClearReferrers() {
-	m.clearedreferrers = true
-}
-
-// ReferrersCleared reports if the "referrers" edge to the Referrer entity was cleared.
-func (m *OrganizationMutation) ReferrersCleared() bool {
-	return m.clearedreferrers
-}
-
-// RemoveReferrerIDs removes the "referrers" edge to the Referrer entity by IDs.
-func (m *OrganizationMutation) RemoveReferrerIDs(ids ...uuid.UUID) {
-	if m.removedreferrers == nil {
-		m.removedreferrers = make(map[uuid.UUID]struct{})
-	}
-	for i := range ids {
-		delete(m.referrers, ids[i])
-		m.removedreferrers[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedReferrers returns the removed IDs of the "referrers" edge to the Referrer entity.
-func (m *OrganizationMutation) RemovedReferrersIDs() (ids []uuid.UUID) {
-	for id := range m.removedreferrers {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ReferrersIDs returns the "referrers" edge IDs in the mutation.
-func (m *OrganizationMutation) ReferrersIDs() (ids []uuid.UUID) {
-	for id := range m.referrers {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetReferrers resets all changes to the "referrers" edge.
-func (m *OrganizationMutation) ResetReferrers() {
-	m.referrers = nil
-	m.clearedreferrers = false
-	m.removedreferrers = nil
-}
-
 // Where appends a list predicates to the OrganizationMutation builder.
 func (m *OrganizationMutation) Where(ps ...predicate.Organization) {
 	m.predicates = append(m.predicates, ps...)
@@ -5029,7 +4972,7 @@ func (m *OrganizationMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *OrganizationMutation) AddedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 5)
 	if m.memberships != nil {
 		edges = append(edges, organization.EdgeMemberships)
 	}
@@ -5044,9 +4987,6 @@ func (m *OrganizationMutation) AddedEdges() []string {
 	}
 	if m.integrations != nil {
 		edges = append(edges, organization.EdgeIntegrations)
-	}
-	if m.referrers != nil {
-		edges = append(edges, organization.EdgeReferrers)
 	}
 	return edges
 }
@@ -5085,19 +5025,13 @@ func (m *OrganizationMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case organization.EdgeReferrers:
-		ids := make([]ent.Value, 0, len(m.referrers))
-		for id := range m.referrers {
-			ids = append(ids, id)
-		}
-		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *OrganizationMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 5)
 	if m.removedmemberships != nil {
 		edges = append(edges, organization.EdgeMemberships)
 	}
@@ -5112,9 +5046,6 @@ func (m *OrganizationMutation) RemovedEdges() []string {
 	}
 	if m.removedintegrations != nil {
 		edges = append(edges, organization.EdgeIntegrations)
-	}
-	if m.removedreferrers != nil {
-		edges = append(edges, organization.EdgeReferrers)
 	}
 	return edges
 }
@@ -5153,19 +5084,13 @@ func (m *OrganizationMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case organization.EdgeReferrers:
-		ids := make([]ent.Value, 0, len(m.removedreferrers))
-		for id := range m.removedreferrers {
-			ids = append(ids, id)
-		}
-		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *OrganizationMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 5)
 	if m.clearedmemberships {
 		edges = append(edges, organization.EdgeMemberships)
 	}
@@ -5180,9 +5105,6 @@ func (m *OrganizationMutation) ClearedEdges() []string {
 	}
 	if m.clearedintegrations {
 		edges = append(edges, organization.EdgeIntegrations)
-	}
-	if m.clearedreferrers {
-		edges = append(edges, organization.EdgeReferrers)
 	}
 	return edges
 }
@@ -5201,8 +5123,6 @@ func (m *OrganizationMutation) EdgeCleared(name string) bool {
 		return m.clearedcas_backends
 	case organization.EdgeIntegrations:
 		return m.clearedintegrations
-	case organization.EdgeReferrers:
-		return m.clearedreferrers
 	}
 	return false
 }
@@ -5234,9 +5154,6 @@ func (m *OrganizationMutation) ResetEdge(name string) error {
 	case organization.EdgeIntegrations:
 		m.ResetIntegrations()
 		return nil
-	case organization.EdgeReferrers:
-		m.ResetReferrers()
-		return nil
 	}
 	return fmt.Errorf("unknown Organization edge %s", name)
 }
@@ -5244,29 +5161,26 @@ func (m *OrganizationMutation) ResetEdge(name string) error {
 // ReferrerMutation represents an operation that mutates the Referrer nodes in the graph.
 type ReferrerMutation struct {
 	config
-	op                   Op
-	typ                  string
-	id                   *uuid.UUID
-	digest               *string
-	kind                 *string
-	downloadable         *bool
-	created_at           *time.Time
-	clearedFields        map[string]struct{}
-	referred_by          map[uuid.UUID]struct{}
-	removedreferred_by   map[uuid.UUID]struct{}
-	clearedreferred_by   bool
-	references           map[uuid.UUID]struct{}
-	removedreferences    map[uuid.UUID]struct{}
-	clearedreferences    bool
-	organizations        map[uuid.UUID]struct{}
-	removedorganizations map[uuid.UUID]struct{}
-	clearedorganizations bool
-	workflows            map[uuid.UUID]struct{}
-	removedworkflows     map[uuid.UUID]struct{}
-	clearedworkflows     bool
-	done                 bool
-	oldValue             func(context.Context) (*Referrer, error)
-	predicates           []predicate.Referrer
+	op                 Op
+	typ                string
+	id                 *uuid.UUID
+	digest             *string
+	kind               *string
+	downloadable       *bool
+	created_at         *time.Time
+	clearedFields      map[string]struct{}
+	referred_by        map[uuid.UUID]struct{}
+	removedreferred_by map[uuid.UUID]struct{}
+	clearedreferred_by bool
+	references         map[uuid.UUID]struct{}
+	removedreferences  map[uuid.UUID]struct{}
+	clearedreferences  bool
+	workflows          map[uuid.UUID]struct{}
+	removedworkflows   map[uuid.UUID]struct{}
+	clearedworkflows   bool
+	done               bool
+	oldValue           func(context.Context) (*Referrer, error)
+	predicates         []predicate.Referrer
 }
 
 var _ ent.Mutation = (*ReferrerMutation)(nil)
@@ -5625,60 +5539,6 @@ func (m *ReferrerMutation) ResetReferences() {
 	m.removedreferences = nil
 }
 
-// AddOrganizationIDs adds the "organizations" edge to the Organization entity by ids.
-func (m *ReferrerMutation) AddOrganizationIDs(ids ...uuid.UUID) {
-	if m.organizations == nil {
-		m.organizations = make(map[uuid.UUID]struct{})
-	}
-	for i := range ids {
-		m.organizations[ids[i]] = struct{}{}
-	}
-}
-
-// ClearOrganizations clears the "organizations" edge to the Organization entity.
-func (m *ReferrerMutation) ClearOrganizations() {
-	m.clearedorganizations = true
-}
-
-// OrganizationsCleared reports if the "organizations" edge to the Organization entity was cleared.
-func (m *ReferrerMutation) OrganizationsCleared() bool {
-	return m.clearedorganizations
-}
-
-// RemoveOrganizationIDs removes the "organizations" edge to the Organization entity by IDs.
-func (m *ReferrerMutation) RemoveOrganizationIDs(ids ...uuid.UUID) {
-	if m.removedorganizations == nil {
-		m.removedorganizations = make(map[uuid.UUID]struct{})
-	}
-	for i := range ids {
-		delete(m.organizations, ids[i])
-		m.removedorganizations[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedOrganizations returns the removed IDs of the "organizations" edge to the Organization entity.
-func (m *ReferrerMutation) RemovedOrganizationsIDs() (ids []uuid.UUID) {
-	for id := range m.removedorganizations {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// OrganizationsIDs returns the "organizations" edge IDs in the mutation.
-func (m *ReferrerMutation) OrganizationsIDs() (ids []uuid.UUID) {
-	for id := range m.organizations {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetOrganizations resets all changes to the "organizations" edge.
-func (m *ReferrerMutation) ResetOrganizations() {
-	m.organizations = nil
-	m.clearedorganizations = false
-	m.removedorganizations = nil
-}
-
 // AddWorkflowIDs adds the "workflows" edge to the Workflow entity by ids.
 func (m *ReferrerMutation) AddWorkflowIDs(ids ...uuid.UUID) {
 	if m.workflows == nil {
@@ -5917,15 +5777,12 @@ func (m *ReferrerMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ReferrerMutation) AddedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 3)
 	if m.referred_by != nil {
 		edges = append(edges, referrer.EdgeReferredBy)
 	}
 	if m.references != nil {
 		edges = append(edges, referrer.EdgeReferences)
-	}
-	if m.organizations != nil {
-		edges = append(edges, referrer.EdgeOrganizations)
 	}
 	if m.workflows != nil {
 		edges = append(edges, referrer.EdgeWorkflows)
@@ -5949,12 +5806,6 @@ func (m *ReferrerMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case referrer.EdgeOrganizations:
-		ids := make([]ent.Value, 0, len(m.organizations))
-		for id := range m.organizations {
-			ids = append(ids, id)
-		}
-		return ids
 	case referrer.EdgeWorkflows:
 		ids := make([]ent.Value, 0, len(m.workflows))
 		for id := range m.workflows {
@@ -5967,15 +5818,12 @@ func (m *ReferrerMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ReferrerMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 3)
 	if m.removedreferred_by != nil {
 		edges = append(edges, referrer.EdgeReferredBy)
 	}
 	if m.removedreferences != nil {
 		edges = append(edges, referrer.EdgeReferences)
-	}
-	if m.removedorganizations != nil {
-		edges = append(edges, referrer.EdgeOrganizations)
 	}
 	if m.removedworkflows != nil {
 		edges = append(edges, referrer.EdgeWorkflows)
@@ -5999,12 +5847,6 @@ func (m *ReferrerMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case referrer.EdgeOrganizations:
-		ids := make([]ent.Value, 0, len(m.removedorganizations))
-		for id := range m.removedorganizations {
-			ids = append(ids, id)
-		}
-		return ids
 	case referrer.EdgeWorkflows:
 		ids := make([]ent.Value, 0, len(m.removedworkflows))
 		for id := range m.removedworkflows {
@@ -6017,15 +5859,12 @@ func (m *ReferrerMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ReferrerMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 3)
 	if m.clearedreferred_by {
 		edges = append(edges, referrer.EdgeReferredBy)
 	}
 	if m.clearedreferences {
 		edges = append(edges, referrer.EdgeReferences)
-	}
-	if m.clearedorganizations {
-		edges = append(edges, referrer.EdgeOrganizations)
 	}
 	if m.clearedworkflows {
 		edges = append(edges, referrer.EdgeWorkflows)
@@ -6041,8 +5880,6 @@ func (m *ReferrerMutation) EdgeCleared(name string) bool {
 		return m.clearedreferred_by
 	case referrer.EdgeReferences:
 		return m.clearedreferences
-	case referrer.EdgeOrganizations:
-		return m.clearedorganizations
 	case referrer.EdgeWorkflows:
 		return m.clearedworkflows
 	}
@@ -6066,9 +5903,6 @@ func (m *ReferrerMutation) ResetEdge(name string) error {
 		return nil
 	case referrer.EdgeReferences:
 		m.ResetReferences()
-		return nil
-	case referrer.EdgeOrganizations:
-		m.ResetOrganizations()
 		return nil
 	case referrer.EdgeWorkflows:
 		m.ResetWorkflows()
@@ -7621,6 +7455,42 @@ func (m *WorkflowMutation) ResetPublic() {
 	m.public = nil
 }
 
+// SetOrganizationID sets the "organization_id" field.
+func (m *WorkflowMutation) SetOrganizationID(u uuid.UUID) {
+	m.organization = &u
+}
+
+// OrganizationID returns the value of the "organization_id" field in the mutation.
+func (m *WorkflowMutation) OrganizationID() (r uuid.UUID, exists bool) {
+	v := m.organization
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOrganizationID returns the old "organization_id" field's value of the Workflow entity.
+// If the Workflow object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowMutation) OldOrganizationID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOrganizationID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOrganizationID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOrganizationID: %w", err)
+	}
+	return oldValue.OrganizationID, nil
+}
+
+// ResetOrganizationID resets all changes to the "organization_id" field.
+func (m *WorkflowMutation) ResetOrganizationID() {
+	m.organization = nil
+}
+
 // AddRobotaccountIDs adds the "robotaccounts" edge to the RobotAccount entity by ids.
 func (m *WorkflowMutation) AddRobotaccountIDs(ids ...uuid.UUID) {
 	if m.robotaccounts == nil {
@@ -7729,11 +7599,6 @@ func (m *WorkflowMutation) ResetWorkflowruns() {
 	m.removedworkflowruns = nil
 }
 
-// SetOrganizationID sets the "organization" edge to the Organization entity by id.
-func (m *WorkflowMutation) SetOrganizationID(id uuid.UUID) {
-	m.organization = &id
-}
-
 // ClearOrganization clears the "organization" edge to the Organization entity.
 func (m *WorkflowMutation) ClearOrganization() {
 	m.clearedorganization = true
@@ -7742,14 +7607,6 @@ func (m *WorkflowMutation) ClearOrganization() {
 // OrganizationCleared reports if the "organization" edge to the Organization entity was cleared.
 func (m *WorkflowMutation) OrganizationCleared() bool {
 	return m.clearedorganization
-}
-
-// OrganizationID returns the "organization" edge ID in the mutation.
-func (m *WorkflowMutation) OrganizationID() (id uuid.UUID, exists bool) {
-	if m.organization != nil {
-		return *m.organization, true
-	}
-	return
 }
 
 // OrganizationIDs returns the "organization" edge IDs in the mutation.
@@ -7949,7 +7806,7 @@ func (m *WorkflowMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *WorkflowMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 8)
 	if m.name != nil {
 		fields = append(fields, workflow.FieldName)
 	}
@@ -7970,6 +7827,9 @@ func (m *WorkflowMutation) Fields() []string {
 	}
 	if m.public != nil {
 		fields = append(fields, workflow.FieldPublic)
+	}
+	if m.organization != nil {
+		fields = append(fields, workflow.FieldOrganizationID)
 	}
 	return fields
 }
@@ -7993,6 +7853,8 @@ func (m *WorkflowMutation) Field(name string) (ent.Value, bool) {
 		return m.DeletedAt()
 	case workflow.FieldPublic:
 		return m.Public()
+	case workflow.FieldOrganizationID:
+		return m.OrganizationID()
 	}
 	return nil, false
 }
@@ -8016,6 +7878,8 @@ func (m *WorkflowMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldDeletedAt(ctx)
 	case workflow.FieldPublic:
 		return m.OldPublic(ctx)
+	case workflow.FieldOrganizationID:
+		return m.OldOrganizationID(ctx)
 	}
 	return nil, fmt.Errorf("unknown Workflow field %s", name)
 }
@@ -8073,6 +7937,13 @@ func (m *WorkflowMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetPublic(v)
+		return nil
+	case workflow.FieldOrganizationID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOrganizationID(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Workflow field %s", name)
@@ -8179,6 +8050,9 @@ func (m *WorkflowMutation) ResetField(name string) error {
 		return nil
 	case workflow.FieldPublic:
 		m.ResetPublic()
+		return nil
+	case workflow.FieldOrganizationID:
+		m.ResetOrganizationID()
 		return nil
 	}
 	return fmt.Errorf("unknown Workflow field %s", name)

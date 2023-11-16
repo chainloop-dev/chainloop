@@ -15,7 +15,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/membership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/referrer"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowcontract"
 	"github.com/google/uuid"
@@ -121,21 +120,6 @@ func (ou *OrganizationUpdate) AddIntegrations(i ...*Integration) *OrganizationUp
 		ids[j] = i[j].ID
 	}
 	return ou.AddIntegrationIDs(ids...)
-}
-
-// AddReferrerIDs adds the "referrers" edge to the Referrer entity by IDs.
-func (ou *OrganizationUpdate) AddReferrerIDs(ids ...uuid.UUID) *OrganizationUpdate {
-	ou.mutation.AddReferrerIDs(ids...)
-	return ou
-}
-
-// AddReferrers adds the "referrers" edges to the Referrer entity.
-func (ou *OrganizationUpdate) AddReferrers(r ...*Referrer) *OrganizationUpdate {
-	ids := make([]uuid.UUID, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
-	}
-	return ou.AddReferrerIDs(ids...)
 }
 
 // Mutation returns the OrganizationMutation object of the builder.
@@ -246,27 +230,6 @@ func (ou *OrganizationUpdate) RemoveIntegrations(i ...*Integration) *Organizatio
 		ids[j] = i[j].ID
 	}
 	return ou.RemoveIntegrationIDs(ids...)
-}
-
-// ClearReferrers clears all "referrers" edges to the Referrer entity.
-func (ou *OrganizationUpdate) ClearReferrers() *OrganizationUpdate {
-	ou.mutation.ClearReferrers()
-	return ou
-}
-
-// RemoveReferrerIDs removes the "referrers" edge to Referrer entities by IDs.
-func (ou *OrganizationUpdate) RemoveReferrerIDs(ids ...uuid.UUID) *OrganizationUpdate {
-	ou.mutation.RemoveReferrerIDs(ids...)
-	return ou
-}
-
-// RemoveReferrers removes "referrers" edges to Referrer entities.
-func (ou *OrganizationUpdate) RemoveReferrers(r ...*Referrer) *OrganizationUpdate {
-	ids := make([]uuid.UUID, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
-	}
-	return ou.RemoveReferrerIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -533,51 +496,6 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if ou.mutation.ReferrersCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   organization.ReferrersTable,
-			Columns: organization.ReferrersPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(referrer.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ou.mutation.RemovedReferrersIDs(); len(nodes) > 0 && !ou.mutation.ReferrersCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   organization.ReferrersTable,
-			Columns: organization.ReferrersPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(referrer.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ou.mutation.ReferrersIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   organization.ReferrersTable,
-			Columns: organization.ReferrersPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(referrer.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if n, err = sqlgraph.UpdateNodes(ctx, ou.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{organization.Label}
@@ -685,21 +603,6 @@ func (ouo *OrganizationUpdateOne) AddIntegrations(i ...*Integration) *Organizati
 		ids[j] = i[j].ID
 	}
 	return ouo.AddIntegrationIDs(ids...)
-}
-
-// AddReferrerIDs adds the "referrers" edge to the Referrer entity by IDs.
-func (ouo *OrganizationUpdateOne) AddReferrerIDs(ids ...uuid.UUID) *OrganizationUpdateOne {
-	ouo.mutation.AddReferrerIDs(ids...)
-	return ouo
-}
-
-// AddReferrers adds the "referrers" edges to the Referrer entity.
-func (ouo *OrganizationUpdateOne) AddReferrers(r ...*Referrer) *OrganizationUpdateOne {
-	ids := make([]uuid.UUID, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
-	}
-	return ouo.AddReferrerIDs(ids...)
 }
 
 // Mutation returns the OrganizationMutation object of the builder.
@@ -810,27 +713,6 @@ func (ouo *OrganizationUpdateOne) RemoveIntegrations(i ...*Integration) *Organiz
 		ids[j] = i[j].ID
 	}
 	return ouo.RemoveIntegrationIDs(ids...)
-}
-
-// ClearReferrers clears all "referrers" edges to the Referrer entity.
-func (ouo *OrganizationUpdateOne) ClearReferrers() *OrganizationUpdateOne {
-	ouo.mutation.ClearReferrers()
-	return ouo
-}
-
-// RemoveReferrerIDs removes the "referrers" edge to Referrer entities by IDs.
-func (ouo *OrganizationUpdateOne) RemoveReferrerIDs(ids ...uuid.UUID) *OrganizationUpdateOne {
-	ouo.mutation.RemoveReferrerIDs(ids...)
-	return ouo
-}
-
-// RemoveReferrers removes "referrers" edges to Referrer entities.
-func (ouo *OrganizationUpdateOne) RemoveReferrers(r ...*Referrer) *OrganizationUpdateOne {
-	ids := make([]uuid.UUID, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
-	}
-	return ouo.RemoveReferrerIDs(ids...)
 }
 
 // Where appends a list predicates to the OrganizationUpdate builder.
@@ -1120,51 +1002,6 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(integration.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if ouo.mutation.ReferrersCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   organization.ReferrersTable,
-			Columns: organization.ReferrersPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(referrer.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ouo.mutation.RemovedReferrersIDs(); len(nodes) > 0 && !ouo.mutation.ReferrersCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   organization.ReferrersTable,
-			Columns: organization.ReferrersPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(referrer.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ouo.mutation.ReferrersIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   organization.ReferrersTable,
-			Columns: organization.ReferrersPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(referrer.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

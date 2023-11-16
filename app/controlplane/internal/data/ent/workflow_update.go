@@ -136,6 +136,12 @@ func (wu *WorkflowUpdate) SetNillablePublic(b *bool) *WorkflowUpdate {
 	return wu
 }
 
+// SetOrganizationID sets the "organization_id" field.
+func (wu *WorkflowUpdate) SetOrganizationID(u uuid.UUID) *WorkflowUpdate {
+	wu.mutation.SetOrganizationID(u)
+	return wu
+}
+
 // AddRobotaccountIDs adds the "robotaccounts" edge to the RobotAccount entity by IDs.
 func (wu *WorkflowUpdate) AddRobotaccountIDs(ids ...uuid.UUID) *WorkflowUpdate {
 	wu.mutation.AddRobotaccountIDs(ids...)
@@ -164,12 +170,6 @@ func (wu *WorkflowUpdate) AddWorkflowruns(w ...*WorkflowRun) *WorkflowUpdate {
 		ids[i] = w[i].ID
 	}
 	return wu.AddWorkflowrunIDs(ids...)
-}
-
-// SetOrganizationID sets the "organization" edge to the Organization entity by ID.
-func (wu *WorkflowUpdate) SetOrganizationID(id uuid.UUID) *WorkflowUpdate {
-	wu.mutation.SetOrganizationID(id)
-	return wu
 }
 
 // SetOrganization sets the "organization" edge to the Organization entity.
@@ -758,6 +758,12 @@ func (wuo *WorkflowUpdateOne) SetNillablePublic(b *bool) *WorkflowUpdateOne {
 	return wuo
 }
 
+// SetOrganizationID sets the "organization_id" field.
+func (wuo *WorkflowUpdateOne) SetOrganizationID(u uuid.UUID) *WorkflowUpdateOne {
+	wuo.mutation.SetOrganizationID(u)
+	return wuo
+}
+
 // AddRobotaccountIDs adds the "robotaccounts" edge to the RobotAccount entity by IDs.
 func (wuo *WorkflowUpdateOne) AddRobotaccountIDs(ids ...uuid.UUID) *WorkflowUpdateOne {
 	wuo.mutation.AddRobotaccountIDs(ids...)
@@ -786,12 +792,6 @@ func (wuo *WorkflowUpdateOne) AddWorkflowruns(w ...*WorkflowRun) *WorkflowUpdate
 		ids[i] = w[i].ID
 	}
 	return wuo.AddWorkflowrunIDs(ids...)
-}
-
-// SetOrganizationID sets the "organization" edge to the Organization entity by ID.
-func (wuo *WorkflowUpdateOne) SetOrganizationID(id uuid.UUID) *WorkflowUpdateOne {
-	wuo.mutation.SetOrganizationID(id)
-	return wuo
 }
 
 // SetOrganization sets the "organization" edge to the Organization entity.

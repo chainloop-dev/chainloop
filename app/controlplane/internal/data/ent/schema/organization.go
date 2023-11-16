@@ -50,9 +50,8 @@ func (Organization) Edges() []ent.Edge {
 		// an org can have and belong to many users
 		edge.To("memberships", Membership.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 		edge.To("workflow_contracts", WorkflowContract.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
-		edge.To("workflows", Workflow.Type).StorageKey(edge.Column("organization_id")).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
+		edge.To("workflows", Workflow.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 		edge.To("cas_backends", CASBackend.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 		edge.To("integrations", Integration.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
-		edge.From("referrers", Referrer.Type).Ref("organizations"),
 	}
 }

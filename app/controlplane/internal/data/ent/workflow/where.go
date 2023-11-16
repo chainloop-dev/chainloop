@@ -91,6 +91,11 @@ func Public(v bool) predicate.Workflow {
 	return predicate.Workflow(sql.FieldEQ(FieldPublic, v))
 }
 
+// OrganizationID applies equality check predicate on the "organization_id" field. It's identical to OrganizationIDEQ.
+func OrganizationID(v uuid.UUID) predicate.Workflow {
+	return predicate.Workflow(sql.FieldEQ(FieldOrganizationID, v))
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.Workflow {
 	return predicate.Workflow(sql.FieldEQ(FieldName, v))
@@ -444,6 +449,26 @@ func PublicEQ(v bool) predicate.Workflow {
 // PublicNEQ applies the NEQ predicate on the "public" field.
 func PublicNEQ(v bool) predicate.Workflow {
 	return predicate.Workflow(sql.FieldNEQ(FieldPublic, v))
+}
+
+// OrganizationIDEQ applies the EQ predicate on the "organization_id" field.
+func OrganizationIDEQ(v uuid.UUID) predicate.Workflow {
+	return predicate.Workflow(sql.FieldEQ(FieldOrganizationID, v))
+}
+
+// OrganizationIDNEQ applies the NEQ predicate on the "organization_id" field.
+func OrganizationIDNEQ(v uuid.UUID) predicate.Workflow {
+	return predicate.Workflow(sql.FieldNEQ(FieldOrganizationID, v))
+}
+
+// OrganizationIDIn applies the In predicate on the "organization_id" field.
+func OrganizationIDIn(vs ...uuid.UUID) predicate.Workflow {
+	return predicate.Workflow(sql.FieldIn(FieldOrganizationID, vs...))
+}
+
+// OrganizationIDNotIn applies the NotIn predicate on the "organization_id" field.
+func OrganizationIDNotIn(vs ...uuid.UUID) predicate.Workflow {
+	return predicate.Workflow(sql.FieldNotIn(FieldOrganizationID, vs...))
 }
 
 // HasRobotaccounts applies the HasEdge predicate on the "robotaccounts" edge.

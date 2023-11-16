@@ -40,11 +40,9 @@ type OrganizationEdges struct {
 	CasBackends []*CASBackend `json:"cas_backends,omitempty"`
 	// Integrations holds the value of the integrations edge.
 	Integrations []*Integration `json:"integrations,omitempty"`
-	// Referrers holds the value of the referrers edge.
-	Referrers []*Referrer `json:"referrers,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [6]bool
+	loadedTypes [5]bool
 }
 
 // MembershipsOrErr returns the Memberships value or an error if the edge
@@ -90,15 +88,6 @@ func (e OrganizationEdges) IntegrationsOrErr() ([]*Integration, error) {
 		return e.Integrations, nil
 	}
 	return nil, &NotLoadedError{edge: "integrations"}
-}
-
-// ReferrersOrErr returns the Referrers value or an error if the edge
-// was not loaded in eager-loading.
-func (e OrganizationEdges) ReferrersOrErr() ([]*Referrer, error) {
-	if e.loadedTypes[5] {
-		return e.Referrers, nil
-	}
-	return nil, &NotLoadedError{edge: "referrers"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -181,11 +170,6 @@ func (o *Organization) QueryCasBackends() *CASBackendQuery {
 // QueryIntegrations queries the "integrations" edge of the Organization entity.
 func (o *Organization) QueryIntegrations() *IntegrationQuery {
 	return NewOrganizationClient(o.config).QueryIntegrations(o)
-}
-
-// QueryReferrers queries the "referrers" edge of the Organization entity.
-func (o *Organization) QueryReferrers() *ReferrerQuery {
-	return NewOrganizationClient(o.config).QueryReferrers(o)
 }
 
 // Update returns a builder for updating this Organization.

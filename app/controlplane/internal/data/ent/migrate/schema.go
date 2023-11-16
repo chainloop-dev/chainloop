@@ -426,31 +426,6 @@ var (
 			},
 		},
 	}
-	// ReferrerOrganizationsColumns holds the columns for the "referrer_organizations" table.
-	ReferrerOrganizationsColumns = []*schema.Column{
-		{Name: "referrer_id", Type: field.TypeUUID},
-		{Name: "organization_id", Type: field.TypeUUID},
-	}
-	// ReferrerOrganizationsTable holds the schema information for the "referrer_organizations" table.
-	ReferrerOrganizationsTable = &schema.Table{
-		Name:       "referrer_organizations",
-		Columns:    ReferrerOrganizationsColumns,
-		PrimaryKey: []*schema.Column{ReferrerOrganizationsColumns[0], ReferrerOrganizationsColumns[1]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "referrer_organizations_referrer_id",
-				Columns:    []*schema.Column{ReferrerOrganizationsColumns[0]},
-				RefColumns: []*schema.Column{ReferrersColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "referrer_organizations_organization_id",
-				Columns:    []*schema.Column{ReferrerOrganizationsColumns[1]},
-				RefColumns: []*schema.Column{OrganizationsColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
-	}
 	// ReferrerWorkflowsColumns holds the columns for the "referrer_workflows" table.
 	ReferrerWorkflowsColumns = []*schema.Column{
 		{Name: "referrer_id", Type: field.TypeUUID},
@@ -518,7 +493,6 @@ var (
 		WorkflowContractVersionsTable,
 		WorkflowRunsTable,
 		ReferrerReferencesTable,
-		ReferrerOrganizationsTable,
 		ReferrerWorkflowsTable,
 		WorkflowRunCasBackendsTable,
 	}
@@ -546,8 +520,6 @@ func init() {
 	WorkflowRunsTable.ForeignKeys[2].RefTable = WorkflowContractVersionsTable
 	ReferrerReferencesTable.ForeignKeys[0].RefTable = ReferrersTable
 	ReferrerReferencesTable.ForeignKeys[1].RefTable = ReferrersTable
-	ReferrerOrganizationsTable.ForeignKeys[0].RefTable = ReferrersTable
-	ReferrerOrganizationsTable.ForeignKeys[1].RefTable = OrganizationsTable
 	ReferrerWorkflowsTable.ForeignKeys[0].RefTable = ReferrersTable
 	ReferrerWorkflowsTable.ForeignKeys[1].RefTable = WorkflowsTable
 	WorkflowRunCasBackendsTable.ForeignKeys[0].RefTable = WorkflowRunsTable

@@ -10,7 +10,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/referrer"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
@@ -43,21 +42,6 @@ func (ru *ReferrerUpdate) AddReferences(r ...*Referrer) *ReferrerUpdate {
 		ids[i] = r[i].ID
 	}
 	return ru.AddReferenceIDs(ids...)
-}
-
-// AddOrganizationIDs adds the "organizations" edge to the Organization entity by IDs.
-func (ru *ReferrerUpdate) AddOrganizationIDs(ids ...uuid.UUID) *ReferrerUpdate {
-	ru.mutation.AddOrganizationIDs(ids...)
-	return ru
-}
-
-// AddOrganizations adds the "organizations" edges to the Organization entity.
-func (ru *ReferrerUpdate) AddOrganizations(o ...*Organization) *ReferrerUpdate {
-	ids := make([]uuid.UUID, len(o))
-	for i := range o {
-		ids[i] = o[i].ID
-	}
-	return ru.AddOrganizationIDs(ids...)
 }
 
 // AddWorkflowIDs adds the "workflows" edge to the Workflow entity by IDs.
@@ -99,27 +83,6 @@ func (ru *ReferrerUpdate) RemoveReferences(r ...*Referrer) *ReferrerUpdate {
 		ids[i] = r[i].ID
 	}
 	return ru.RemoveReferenceIDs(ids...)
-}
-
-// ClearOrganizations clears all "organizations" edges to the Organization entity.
-func (ru *ReferrerUpdate) ClearOrganizations() *ReferrerUpdate {
-	ru.mutation.ClearOrganizations()
-	return ru
-}
-
-// RemoveOrganizationIDs removes the "organizations" edge to Organization entities by IDs.
-func (ru *ReferrerUpdate) RemoveOrganizationIDs(ids ...uuid.UUID) *ReferrerUpdate {
-	ru.mutation.RemoveOrganizationIDs(ids...)
-	return ru
-}
-
-// RemoveOrganizations removes "organizations" edges to Organization entities.
-func (ru *ReferrerUpdate) RemoveOrganizations(o ...*Organization) *ReferrerUpdate {
-	ids := make([]uuid.UUID, len(o))
-	for i := range o {
-		ids[i] = o[i].ID
-	}
-	return ru.RemoveOrganizationIDs(ids...)
 }
 
 // ClearWorkflows clears all "workflows" edges to the Workflow entity.
@@ -224,51 +187,6 @@ func (ru *ReferrerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if ru.mutation.OrganizationsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   referrer.OrganizationsTable,
-			Columns: referrer.OrganizationsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ru.mutation.RemovedOrganizationsIDs(); len(nodes) > 0 && !ru.mutation.OrganizationsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   referrer.OrganizationsTable,
-			Columns: referrer.OrganizationsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ru.mutation.OrganizationsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   referrer.OrganizationsTable,
-			Columns: referrer.OrganizationsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if ru.mutation.WorkflowsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
@@ -349,21 +267,6 @@ func (ruo *ReferrerUpdateOne) AddReferences(r ...*Referrer) *ReferrerUpdateOne {
 	return ruo.AddReferenceIDs(ids...)
 }
 
-// AddOrganizationIDs adds the "organizations" edge to the Organization entity by IDs.
-func (ruo *ReferrerUpdateOne) AddOrganizationIDs(ids ...uuid.UUID) *ReferrerUpdateOne {
-	ruo.mutation.AddOrganizationIDs(ids...)
-	return ruo
-}
-
-// AddOrganizations adds the "organizations" edges to the Organization entity.
-func (ruo *ReferrerUpdateOne) AddOrganizations(o ...*Organization) *ReferrerUpdateOne {
-	ids := make([]uuid.UUID, len(o))
-	for i := range o {
-		ids[i] = o[i].ID
-	}
-	return ruo.AddOrganizationIDs(ids...)
-}
-
 // AddWorkflowIDs adds the "workflows" edge to the Workflow entity by IDs.
 func (ruo *ReferrerUpdateOne) AddWorkflowIDs(ids ...uuid.UUID) *ReferrerUpdateOne {
 	ruo.mutation.AddWorkflowIDs(ids...)
@@ -403,27 +306,6 @@ func (ruo *ReferrerUpdateOne) RemoveReferences(r ...*Referrer) *ReferrerUpdateOn
 		ids[i] = r[i].ID
 	}
 	return ruo.RemoveReferenceIDs(ids...)
-}
-
-// ClearOrganizations clears all "organizations" edges to the Organization entity.
-func (ruo *ReferrerUpdateOne) ClearOrganizations() *ReferrerUpdateOne {
-	ruo.mutation.ClearOrganizations()
-	return ruo
-}
-
-// RemoveOrganizationIDs removes the "organizations" edge to Organization entities by IDs.
-func (ruo *ReferrerUpdateOne) RemoveOrganizationIDs(ids ...uuid.UUID) *ReferrerUpdateOne {
-	ruo.mutation.RemoveOrganizationIDs(ids...)
-	return ruo
-}
-
-// RemoveOrganizations removes "organizations" edges to Organization entities.
-func (ruo *ReferrerUpdateOne) RemoveOrganizations(o ...*Organization) *ReferrerUpdateOne {
-	ids := make([]uuid.UUID, len(o))
-	for i := range o {
-		ids[i] = o[i].ID
-	}
-	return ruo.RemoveOrganizationIDs(ids...)
 }
 
 // ClearWorkflows clears all "workflows" edges to the Workflow entity.
@@ -551,51 +433,6 @@ func (ruo *ReferrerUpdateOne) sqlSave(ctx context.Context) (_node *Referrer, err
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(referrer.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if ruo.mutation.OrganizationsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   referrer.OrganizationsTable,
-			Columns: referrer.OrganizationsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ruo.mutation.RemovedOrganizationsIDs(); len(nodes) > 0 && !ruo.mutation.OrganizationsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   referrer.OrganizationsTable,
-			Columns: referrer.OrganizationsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ruo.mutation.OrganizationsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   referrer.OrganizationsTable,
-			Columns: referrer.OrganizationsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

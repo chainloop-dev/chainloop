@@ -14,7 +14,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integration"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/membership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/referrer"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowcontract"
 	"github.com/google/uuid"
@@ -142,21 +141,6 @@ func (oc *OrganizationCreate) AddIntegrations(i ...*Integration) *OrganizationCr
 		ids[j] = i[j].ID
 	}
 	return oc.AddIntegrationIDs(ids...)
-}
-
-// AddReferrerIDs adds the "referrers" edge to the Referrer entity by IDs.
-func (oc *OrganizationCreate) AddReferrerIDs(ids ...uuid.UUID) *OrganizationCreate {
-	oc.mutation.AddReferrerIDs(ids...)
-	return oc
-}
-
-// AddReferrers adds the "referrers" edges to the Referrer entity.
-func (oc *OrganizationCreate) AddReferrers(r ...*Referrer) *OrganizationCreate {
-	ids := make([]uuid.UUID, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
-	}
-	return oc.AddReferrerIDs(ids...)
 }
 
 // Mutation returns the OrganizationMutation object of the builder.
@@ -332,22 +316,6 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(integration.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := oc.mutation.ReferrersIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   organization.ReferrersTable,
-			Columns: organization.ReferrersPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(referrer.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

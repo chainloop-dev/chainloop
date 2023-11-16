@@ -10,7 +10,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/referrer"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
 	"github.com/google/uuid"
@@ -97,21 +96,6 @@ func (rc *ReferrerCreate) AddReferences(r ...*Referrer) *ReferrerCreate {
 		ids[i] = r[i].ID
 	}
 	return rc.AddReferenceIDs(ids...)
-}
-
-// AddOrganizationIDs adds the "organizations" edge to the Organization entity by IDs.
-func (rc *ReferrerCreate) AddOrganizationIDs(ids ...uuid.UUID) *ReferrerCreate {
-	rc.mutation.AddOrganizationIDs(ids...)
-	return rc
-}
-
-// AddOrganizations adds the "organizations" edges to the Organization entity.
-func (rc *ReferrerCreate) AddOrganizations(o ...*Organization) *ReferrerCreate {
-	ids := make([]uuid.UUID, len(o))
-	for i := range o {
-		ids[i] = o[i].ID
-	}
-	return rc.AddOrganizationIDs(ids...)
 }
 
 // AddWorkflowIDs adds the "workflows" edge to the Workflow entity by IDs.
@@ -264,22 +248,6 @@ func (rc *ReferrerCreate) createSpec() (*Referrer, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(referrer.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := rc.mutation.OrganizationsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   referrer.OrganizationsTable,
-			Columns: referrer.OrganizationsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
