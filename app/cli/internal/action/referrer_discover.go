@@ -30,6 +30,7 @@ type ReferrerItem struct {
 	Digest       string          `json:"digest"`
 	Kind         string          `json:"kind"`
 	Downloadable bool            `json:"downloadable"`
+	Public       bool            `json:"public"`
 	CreatedAt    *time.Time      `json:"createdAt"`
 	References   []*ReferrerItem `json:"references"`
 }
@@ -58,6 +59,7 @@ func pbReferrerItemToAction(in *pb.ReferrerItem) *ReferrerItem {
 	out := &ReferrerItem{
 		Digest:       in.GetDigest(),
 		Downloadable: in.GetDownloadable(),
+		Public:       in.GetPublic(),
 		Kind:         in.GetKind(),
 		CreatedAt:    toTimePtr(in.GetCreatedAt().AsTime()),
 		References:   make([]*ReferrerItem, 0, len(in.GetReferences())),

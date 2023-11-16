@@ -39,7 +39,9 @@ type Referrer struct {
 	Kind   string
 	// Wether the item is downloadable from CAS or not
 	Downloadable bool
-	References   []*Referrer
+	// If this referrer is part of a public workflow
+	InPublicWorkflow bool
+	References       []*Referrer
 }
 
 // Actual referrer stored in the DB which includes a nested list of storedReferences
@@ -48,45 +50,67 @@ type StoredReferrer struct {
 	ID        uuid.UUID
 	CreatedAt *time.Time
 	// Fully expanded list of 1-level off references
-	References []*StoredReferrer
-	OrgIDs     []uuid.UUID
+	References          []*StoredReferrer
+	OrgIDs, WorkflowIDs []uuid.UUID
 }
 
 type ReferrerRepo interface {
-	Save(ctx context.Context, input []*Referrer, orgID uuid.UUID) error
+	Save(ctx context.Context, input []*Referrer, workflowID uuid.UUID) error
 	// GetFromRoot returns the referrer identified by the provided content digest, including its first-level references
 	// For example if sha:deadbeef represents an attestation, the result will contain the attestation + materials associated to it
 	// OrgIDs represent an allowList of organizations where the referrers should be looked for
-	GetFromRoot(ctx context.Context, digest, kind string, orgIDS []uuid.UUID) (*StoredReferrer, error)
+	GetFromRoot(ctx context.Context, digest string, orgIDS []uuid.UUID, filters ...GetFromRootFilter) (*StoredReferrer, error)
+}
+
+type GetFromRootFilters struct {
+	// RootKind is the kind of the root referrer, i.e ATTESTATION
+	RootKind *string
+	// Wether to filter by visibility or not
+	Public *bool
+}
+
+type GetFromRootFilter func(*GetFromRootFilters)
+
+func WithKind(kind string) func(*GetFromRootFilters) {
+	return func(o *GetFromRootFilters) {
+		o.RootKind = &kind
+	}
+}
+
+func WithPublicVisibility(public bool) func(*GetFromRootFilters) {
+	return func(o *GetFromRootFilters) {
+		o.Public = &public
+	}
 }
 
 type ReferrerUseCase struct {
 	repo           ReferrerRepo
-	orgRepo        OrganizationRepo
 	membershipRepo MembershipRepo
+	workflowRepo   WorkflowRepo
 	logger         *log.Helper
 }
 
-func NewReferrerUseCase(repo ReferrerRepo, orgRepo OrganizationRepo, mRepo MembershipRepo, l log.Logger) *ReferrerUseCase {
+func NewReferrerUseCase(repo ReferrerRepo, wfRepo WorkflowRepo, mRepo MembershipRepo, l log.Logger) *ReferrerUseCase {
 	if l == nil {
 		l = log.NewStdLogger(io.Discard)
 	}
 
-	return &ReferrerUseCase{repo, orgRepo, mRepo, servicelogger.ScopedHelper(l, "biz/Referrer")}
+	return &ReferrerUseCase{repo, mRepo, wfRepo, servicelogger.ScopedHelper(l, "biz/Referrer")}
 }
 
 // ExtractAndPersist extracts the referrers (subject + materials) from the given attestation
 // and store it as part of the referrers index table
-func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envelope, orgID string) error {
-	orgUUID, err := uuid.Parse(orgID)
+func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envelope, workflowID string) error {
+	workflowUUID, err := uuid.Parse(workflowID)
 	if err != nil {
 		return NewErrInvalidUUID(err)
 	}
 
-	if org, err := s.orgRepo.FindByID(ctx, orgUUID); err != nil {
-		return fmt.Errorf("finding organization: %w", err)
-	} else if org == nil {
-		return NewErrNotFound("organization")
+	// Check that the workflow belongs to the organization
+	if wf, err := s.workflowRepo.FindByID(ctx, workflowUUID); err != nil {
+		return fmt.Errorf("finding workflow: %w", err)
+	} else if wf == nil {
+		return NewErrNotFound("workflow")
 	}
 
 	m, err := extractReferrers(att)
@@ -94,7 +118,7 @@ func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envel
 		return fmt.Errorf("extracting referrers: %w", err)
 	}
 
-	if err := s.repo.Save(ctx, m, orgUUID); err != nil {
+	if err := s.repo.Save(ctx, m, workflowUUID); err != nil {
 		return fmt.Errorf("saving referrers: %w", err)
 	}
 
@@ -110,6 +134,10 @@ func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest string, rootKi
 		return nil, NewErrInvalidUUID(err)
 	}
 
+	if _, err = cr_v1.NewHash(digest); err != nil {
+		return nil, NewErrValidation(fmt.Errorf("invalid digest format: %w", err))
+	}
+
 	// We pass the list of organizationsIDs from where to look for the referrer
 	// For now we just pass the list of organizations the user is member of
 	// in the future we will expand this to publicly available orgs and so on.
@@ -123,7 +151,12 @@ func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest string, rootKi
 		orgIDs = append(orgIDs, m.OrganizationID)
 	}
 
-	ref, err := s.repo.GetFromRoot(ctx, digest, rootKind, orgIDs)
+	filters := make([]GetFromRootFilter, 0)
+	if rootKind != "" {
+		filters = append(filters, WithKind(rootKind))
+	}
+
+	ref, err := s.repo.GetFromRoot(ctx, digest, orgIDs, filters...)
 	if err != nil {
 		if errors.As(err, &ErrAmbiguousReferrer{}) {
 			return nil, NewErrValidation(fmt.Errorf("please provide the referrer kind: %w", err))

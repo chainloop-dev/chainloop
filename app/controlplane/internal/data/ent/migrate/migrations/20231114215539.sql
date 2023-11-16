@@ -1,0 +1,2 @@
+-- Create "referrer_workflows" table
+CREATE TABLE "referrer_workflows" ("referrer_id" uuid NOT NULL, "workflow_id" uuid NOT NULL, PRIMARY KEY ("referrer_id", "workflow_id"), CONSTRAINT "referrer_workflows_referrer_id" FOREIGN KEY ("referrer_id") REFERENCES "referrers" ("id") ON UPDATE NO ACTION ON DELETE CASCADE, CONSTRAINT "referrer_workflows_workflow_id" FOREIGN KEY ("workflow_id") REFERENCES "workflows" ("id") ON UPDATE NO ACTION ON DELETE CASCADE);

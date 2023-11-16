@@ -451,6 +451,31 @@ var (
 			},
 		},
 	}
+	// ReferrerWorkflowsColumns holds the columns for the "referrer_workflows" table.
+	ReferrerWorkflowsColumns = []*schema.Column{
+		{Name: "referrer_id", Type: field.TypeUUID},
+		{Name: "workflow_id", Type: field.TypeUUID},
+	}
+	// ReferrerWorkflowsTable holds the schema information for the "referrer_workflows" table.
+	ReferrerWorkflowsTable = &schema.Table{
+		Name:       "referrer_workflows",
+		Columns:    ReferrerWorkflowsColumns,
+		PrimaryKey: []*schema.Column{ReferrerWorkflowsColumns[0], ReferrerWorkflowsColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "referrer_workflows_referrer_id",
+				Columns:    []*schema.Column{ReferrerWorkflowsColumns[0]},
+				RefColumns: []*schema.Column{ReferrersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "referrer_workflows_workflow_id",
+				Columns:    []*schema.Column{ReferrerWorkflowsColumns[1]},
+				RefColumns: []*schema.Column{WorkflowsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// WorkflowRunCasBackendsColumns holds the columns for the "workflow_run_cas_backends" table.
 	WorkflowRunCasBackendsColumns = []*schema.Column{
 		{Name: "workflow_run_id", Type: field.TypeUUID},
@@ -494,6 +519,7 @@ var (
 		WorkflowRunsTable,
 		ReferrerReferencesTable,
 		ReferrerOrganizationsTable,
+		ReferrerWorkflowsTable,
 		WorkflowRunCasBackendsTable,
 	}
 )
@@ -522,6 +548,8 @@ func init() {
 	ReferrerReferencesTable.ForeignKeys[1].RefTable = ReferrersTable
 	ReferrerOrganizationsTable.ForeignKeys[0].RefTable = ReferrersTable
 	ReferrerOrganizationsTable.ForeignKeys[1].RefTable = OrganizationsTable
+	ReferrerWorkflowsTable.ForeignKeys[0].RefTable = ReferrersTable
+	ReferrerWorkflowsTable.ForeignKeys[1].RefTable = WorkflowsTable
 	WorkflowRunCasBackendsTable.ForeignKeys[0].RefTable = WorkflowRunsTable
 	WorkflowRunCasBackendsTable.ForeignKeys[1].RefTable = CasBackendsTable
 }

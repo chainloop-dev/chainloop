@@ -40,9 +40,11 @@ type ReferrerEdges struct {
 	References []*Referrer `json:"references,omitempty"`
 	// Organizations holds the value of the organizations edge.
 	Organizations []*Organization `json:"organizations,omitempty"`
+	// Workflows holds the value of the workflows edge.
+	Workflows []*Workflow `json:"workflows,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 }
 
 // ReferredByOrErr returns the ReferredBy value or an error if the edge
@@ -70,6 +72,15 @@ func (e ReferrerEdges) OrganizationsOrErr() ([]*Organization, error) {
 		return e.Organizations, nil
 	}
 	return nil, &NotLoadedError{edge: "organizations"}
+}
+
+// WorkflowsOrErr returns the Workflows value or an error if the edge
+// was not loaded in eager-loading.
+func (e ReferrerEdges) WorkflowsOrErr() ([]*Workflow, error) {
+	if e.loadedTypes[3] {
+		return e.Workflows, nil
+	}
+	return nil, &NotLoadedError{edge: "workflows"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -156,6 +167,11 @@ func (r *Referrer) QueryReferences() *ReferrerQuery {
 // QueryOrganizations queries the "organizations" edge of the Referrer entity.
 func (r *Referrer) QueryOrganizations() *OrganizationQuery {
 	return NewReferrerClient(r.config).QueryOrganizations(r)
+}
+
+// QueryWorkflows queries the "workflows" edge of the Referrer entity.
+func (r *Referrer) QueryWorkflows() *WorkflowQuery {
+	return NewReferrerClient(r.config).QueryWorkflows(r)
 }
 
 // Update returns a builder for updating this Referrer.

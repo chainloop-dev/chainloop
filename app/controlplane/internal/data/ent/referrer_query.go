@@ -14,6 +14,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/referrer"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
 	"github.com/google/uuid"
 )
 
@@ -27,6 +28,7 @@ type ReferrerQuery struct {
 	withReferredBy    *ReferrerQuery
 	withReferences    *ReferrerQuery
 	withOrganizations *OrganizationQuery
+	withWorkflows     *WorkflowQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -122,6 +124,28 @@ func (rq *ReferrerQuery) QueryOrganizations() *OrganizationQuery {
 			sqlgraph.From(referrer.Table, referrer.FieldID, selector),
 			sqlgraph.To(organization.Table, organization.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, referrer.OrganizationsTable, referrer.OrganizationsPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryWorkflows chains the current query on the "workflows" edge.
+func (rq *ReferrerQuery) QueryWorkflows() *WorkflowQuery {
+	query := (&WorkflowClient{config: rq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := rq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := rq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(referrer.Table, referrer.FieldID, selector),
+			sqlgraph.To(workflow.Table, workflow.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, referrer.WorkflowsTable, referrer.WorkflowsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
 		return fromU, nil
@@ -324,6 +348,7 @@ func (rq *ReferrerQuery) Clone() *ReferrerQuery {
 		withReferredBy:    rq.withReferredBy.Clone(),
 		withReferences:    rq.withReferences.Clone(),
 		withOrganizations: rq.withOrganizations.Clone(),
+		withWorkflows:     rq.withWorkflows.Clone(),
 		// clone intermediate query.
 		sql:  rq.sql.Clone(),
 		path: rq.path,
@@ -360,6 +385,17 @@ func (rq *ReferrerQuery) WithOrganizations(opts ...func(*OrganizationQuery)) *Re
 		opt(query)
 	}
 	rq.withOrganizations = query
+	return rq
+}
+
+// WithWorkflows tells the query-builder to eager-load the nodes that are connected to
+// the "workflows" edge. The optional arguments are used to configure the query builder of the edge.
+func (rq *ReferrerQuery) WithWorkflows(opts ...func(*WorkflowQuery)) *ReferrerQuery {
+	query := (&WorkflowClient{config: rq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	rq.withWorkflows = query
 	return rq
 }
 
@@ -441,10 +477,11 @@ func (rq *ReferrerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ref
 	var (
 		nodes       = []*Referrer{}
 		_spec       = rq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			rq.withReferredBy != nil,
 			rq.withReferences != nil,
 			rq.withOrganizations != nil,
+			rq.withWorkflows != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -483,6 +520,13 @@ func (rq *ReferrerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ref
 		if err := rq.loadOrganizations(ctx, query, nodes,
 			func(n *Referrer) { n.Edges.Organizations = []*Organization{} },
 			func(n *Referrer, e *Organization) { n.Edges.Organizations = append(n.Edges.Organizations, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := rq.withWorkflows; query != nil {
+		if err := rq.loadWorkflows(ctx, query, nodes,
+			func(n *Referrer) { n.Edges.Workflows = []*Workflow{} },
+			func(n *Referrer, e *Workflow) { n.Edges.Workflows = append(n.Edges.Workflows, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -665,6 +709,67 @@ func (rq *ReferrerQuery) loadOrganizations(ctx context.Context, query *Organizat
 		nodes, ok := nids[n.ID]
 		if !ok {
 			return fmt.Errorf(`unexpected "organizations" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (rq *ReferrerQuery) loadWorkflows(ctx context.Context, query *WorkflowQuery, nodes []*Referrer, init func(*Referrer), assign func(*Referrer, *Workflow)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*Referrer)
+	nids := make(map[uuid.UUID]map[*Referrer]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(referrer.WorkflowsTable)
+		s.Join(joinT).On(s.C(workflow.FieldID), joinT.C(referrer.WorkflowsPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(referrer.WorkflowsPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(referrer.WorkflowsPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Referrer]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Workflow](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "workflows" node returned %v`, n.ID)
 		}
 		for kn := range nodes {
 			assign(kn, n)

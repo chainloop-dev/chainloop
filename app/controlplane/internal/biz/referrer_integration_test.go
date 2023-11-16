@@ -77,21 +77,21 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 	}
 
 	ctx := context.Background()
-	s.T().Run("creation fails if the org doesn't exist", func(t *testing.T) {
+	s.T().Run("creation fails if the workflow doesn't exist", func(t *testing.T) {
 		err := s.Referrer.ExtractAndPersist(ctx, envelope, uuid.NewString())
 		s.True(biz.IsNotFound(err))
 	})
 
 	var prevStoredRef *biz.StoredReferrer
 	s.T().Run("it can store properly the first time", func(t *testing.T) {
-		err := s.Referrer.ExtractAndPersist(ctx, envelope, s.org1.ID)
+		err := s.Referrer.ExtractAndPersist(ctx, envelope, s.workflow1.ID.String())
 		s.NoError(err)
 		prevStoredRef, err = s.Referrer.GetFromRoot(ctx, wantReferrerAtt.Digest, "", s.user.ID)
 		s.NoError(err)
 	})
 
 	s.T().Run("and it's idempotent", func(t *testing.T) {
-		err := s.Referrer.ExtractAndPersist(ctx, envelope, s.org1.ID)
+		err := s.Referrer.ExtractAndPersist(ctx, envelope, s.workflow1.ID.String())
 		s.NoError(err)
 		ref, err := s.Referrer.GetFromRoot(ctx, wantReferrerAtt.Digest, "", s.user.ID)
 		s.NoError(err)
@@ -115,6 +115,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 			s.Equal(want, gotR.Referrer)
 		}
 		s.Equal([]uuid.UUID{s.org1UUID}, got.OrgIDs)
+		s.Equal([]uuid.UUID{s.workflow1.ID}, got.WorkflowIDs)
 	})
 
 	s.T().Run("can't be accessed by a second user in another org", func(t *testing.T) {
@@ -124,8 +125,8 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		s.Nil(got)
 	})
 
-	s.T().Run("but another org can be attached", func(t *testing.T) {
-		err = s.Referrer.ExtractAndPersist(ctx, envelope, s.org2.ID)
+	s.T().Run("but another workflow can be attached", func(t *testing.T) {
+		err = s.Referrer.ExtractAndPersist(ctx, envelope, s.workflow2.ID.String())
 		s.NoError(err)
 		got, err := s.Referrer.GetFromRoot(ctx, wantReferrerAtt.Digest, "", s.user.ID)
 		s.NoError(err)
@@ -134,15 +135,17 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		s.Contains(got.OrgIDs, s.org2UUID)
 
 		// and it's idempotent (no new orgs added)
-		err = s.Referrer.ExtractAndPersist(ctx, envelope, s.org2.ID)
+		err = s.Referrer.ExtractAndPersist(ctx, envelope, s.workflow2.ID.String())
 		s.NoError(err)
 		got, err = s.Referrer.GetFromRoot(ctx, wantReferrerAtt.Digest, "", s.user.ID)
 		s.NoError(err)
 		require.Len(t, got.OrgIDs, 2)
+		s.Equal([]uuid.UUID{s.org1UUID, s.org2UUID}, got.OrgIDs)
+		s.Equal([]uuid.UUID{s.workflow1.ID, s.workflow2.ID}, got.WorkflowIDs)
 	})
 
-	s.T().Run("and now user2 has access to it since it has access to org2", func(t *testing.T) {
-		err = s.Referrer.ExtractAndPersist(ctx, envelope, s.org2.ID)
+	s.T().Run("and now user2 has access to it since it has access to workflow2 in org2", func(t *testing.T) {
+		err = s.Referrer.ExtractAndPersist(ctx, envelope, s.workflow2.ID.String())
 		s.NoError(err)
 		got, err := s.Referrer.GetFromRoot(ctx, wantReferrerAtt.Digest, "", s.user2.ID)
 		s.NoError(err)
@@ -173,8 +176,15 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		require.Len(t, got.References, 0)
 	})
 
-	s.T().Run("or not to exist", func(t *testing.T) {
+	s.T().Run("or it's an invalid digest", func(t *testing.T) {
 		got, err := s.Referrer.GetFromRoot(ctx, "sha256:deadbeef", "", s.user.ID)
+		s.True(biz.IsErrValidation(err))
+		s.ErrorContains(err, "invalid digest format")
+		s.Nil(got)
+	})
+
+	s.T().Run("or it does not exist", func(t *testing.T) {
+		got, err := s.Referrer.GetFromRoot(ctx, "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "", s.user.ID)
 		s.True(biz.IsNotFound(err))
 		s.Nil(got)
 	})
@@ -184,7 +194,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		require.NoError(s.T(), err)
 		require.NoError(s.T(), json.Unmarshal(attJSON, &envelope))
 
-		err := s.Referrer.ExtractAndPersist(ctx, envelope, s.org1.ID)
+		err := s.Referrer.ExtractAndPersist(ctx, envelope, s.workflow1.ID.String())
 		s.NoError(err)
 	})
 
@@ -195,7 +205,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		require.NoError(s.T(), json.Unmarshal(attJSON, &envelope))
 
 		// storing will not fail since it's the a different artifact type
-		err := s.Referrer.ExtractAndPersist(ctx, envelope, s.org1.ID)
+		err := s.Referrer.ExtractAndPersist(ctx, envelope, s.workflow1.ID.String())
 		s.NoError(err)
 
 		// but retrieval should fail. In the future we will ask the user to provide the artifact type in these cases of ambiguity
@@ -230,13 +240,37 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		s.Equal("ATTESTATION", got.References[1].Kind)
 		s.Equal("sha256:c90ccaab0b2cfda9980836aef407f62d747680ea9793ddc6ad2e2d7ab615933d", got.References[1].Digest)
 	})
+
+	s.T().Run("if all associated workflows are private, the referrer is private", func(t *testing.T) {
+		got, err := s.Referrer.GetFromRoot(ctx, wantReferrerAtt.Digest, "", s.user.ID)
+		s.NoError(err)
+		s.False(got.InPublicWorkflow)
+		s.Equal([]uuid.UUID{s.workflow1.ID, s.workflow2.ID}, got.WorkflowIDs)
+		for _, r := range got.References {
+			s.False(r.InPublicWorkflow)
+		}
+	})
+
+	s.T().Run("the referrer will be public if one associated workflow is public", func(t *testing.T) {
+		// Make workflow1 public
+		_, err := s.Workflow.Update(ctx, s.org1.ID, s.workflow1.ID.String(), &biz.WorkflowUpdateOpts{Public: toPtrBool(true)})
+		require.NoError(t, err)
+
+		got, err := s.Referrer.GetFromRoot(ctx, wantReferrerAtt.Digest, "", s.user.ID)
+		s.NoError(err)
+		s.True(got.InPublicWorkflow)
+		for _, r := range got.References {
+			s.True(r.InPublicWorkflow)
+		}
+	})
 }
 
 type referrerIntegrationTestSuite struct {
 	testhelpers.UseCasesEachTestSuite
-	org1, org2         *biz.Organization
-	org1UUID, org2UUID uuid.UUID
-	user, user2        *biz.User
+	org1, org2           *biz.Organization
+	workflow1, workflow2 *biz.Workflow
+	org1UUID, org2UUID   uuid.UUID
+	user, user2          *biz.User
 }
 
 func (s *referrerIntegrationTestSuite) SetupTest() {
@@ -252,6 +286,11 @@ func (s *referrerIntegrationTestSuite) SetupTest() {
 	s.org1UUID, err = uuid.Parse(s.org1.ID)
 	require.NoError(s.T(), err)
 	s.org2UUID, err = uuid.Parse(s.org2.ID)
+	require.NoError(s.T(), err)
+
+	s.workflow1, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "wf", Team: "team", OrgID: s.org1.ID})
+	require.NoError(s.T(), err)
+	s.workflow2, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "wf from org 2", Team: "team", OrgID: s.org2.ID})
 	require.NoError(s.T(), err)
 
 	// user 1 has access to org 1 and 2

@@ -54,9 +54,11 @@ type WorkflowEdges struct {
 	Contract *WorkflowContract `json:"contract,omitempty"`
 	// IntegrationAttachments holds the value of the integration_attachments edge.
 	IntegrationAttachments []*IntegrationAttachment `json:"integration_attachments,omitempty"`
+	// Referrers holds the value of the referrers edge.
+	Referrers []*Referrer `json:"referrers,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [5]bool
+	loadedTypes [6]bool
 }
 
 // RobotaccountsOrErr returns the Robotaccounts value or an error if the edge
@@ -110,6 +112,15 @@ func (e WorkflowEdges) IntegrationAttachmentsOrErr() ([]*IntegrationAttachment, 
 		return e.IntegrationAttachments, nil
 	}
 	return nil, &NotLoadedError{edge: "integration_attachments"}
+}
+
+// ReferrersOrErr returns the Referrers value or an error if the edge
+// was not loaded in eager-loading.
+func (e WorkflowEdges) ReferrersOrErr() ([]*Referrer, error) {
+	if e.loadedTypes[5] {
+		return e.Referrers, nil
+	}
+	return nil, &NotLoadedError{edge: "referrers"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -244,6 +255,11 @@ func (w *Workflow) QueryContract() *WorkflowContractQuery {
 // QueryIntegrationAttachments queries the "integration_attachments" edge of the Workflow entity.
 func (w *Workflow) QueryIntegrationAttachments() *IntegrationAttachmentQuery {
 	return NewWorkflowClient(w.config).QueryIntegrationAttachments(w)
+}
+
+// QueryReferrers queries the "referrers" edge of the Workflow entity.
+func (w *Workflow) QueryReferrers() *ReferrerQuery {
+	return NewWorkflowClient(w.config).QueryReferrers(w)
 }
 
 // Update returns a builder for updating this Workflow.

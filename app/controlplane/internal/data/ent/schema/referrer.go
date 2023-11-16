@@ -50,7 +50,9 @@ func (Referrer) Edges() []ent.Edge {
 		// M2M referrer can refer to itself via references
 		edge.To("references", Referrer.Type).From("referred_by").Immutable(),
 		// M2M. referrer can be part of multiple organizations
-		edge.To("organizations", Organization.Type),
+		edge.To("organizations", Organization.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
+		// M2M. referrer can be part of multiple workflows
+		edge.To("workflows", Workflow.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 	}
 }
 

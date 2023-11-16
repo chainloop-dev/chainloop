@@ -311,6 +311,8 @@ func (m *ReferrerItem) validate(all bool) error {
 
 	// no validation rules for Downloadable
 
+	// no validation rules for Public
+
 	for idx, item := range m.GetReferences() {
 		_, _ = idx, item
 
