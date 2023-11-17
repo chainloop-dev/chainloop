@@ -88,12 +88,12 @@ func (s *circleCIBuildSuite) TestCheckEnv() {
 }
 
 func (s *circleCIBuildSuite) TestListEnvVars() {
-	s.Equal([]string{
-		"CIRCLE_BUILD_URL",
-		"CIRCLE_JOB",
-		"CIRCLE_BRANCH",
-		"CIRCLE_NODE_TOTAL",
-		"CIRCLE_NODE_INDEX",
+	s.Equal([]*EnvVarDefinition{
+		{"CIRCLE_BUILD_URL", false},
+		{"CIRCLE_JOB", false},
+		{"CIRCLE_BRANCH", false},
+		{"CIRCLE_NODE_TOTAL", false},
+		{"CIRCLE_NODE_INDEX", false},
 	}, s.runner.ListEnvVars())
 }
 

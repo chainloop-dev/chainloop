@@ -77,11 +77,13 @@ func (s *jenkinsJobSuite) TestCheckEnv() {
 }
 
 func (s *jenkinsJobSuite) TestListEnvVars() {
-	s.Equal([]string{
-		"JOB_NAME",
-		"BUILD_URL",
-		"AGENT_WORKDIR",
-		"NODE_NAME",
+	s.Equal([]*EnvVarDefinition{
+		{"JOB_NAME", false},
+		{"BUILD_URL", false},
+		{"GIT_BRANCH", true},
+		{"GIT_COMMIT", true},
+		{"AGENT_WORKDIR", false},
+		{"NODE_NAME", false},
 	}, s.runner.ListEnvVars())
 }
 

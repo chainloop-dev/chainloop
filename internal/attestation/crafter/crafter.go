@@ -109,7 +109,7 @@ func (c *Crafter) Init(opts *InitOpts) error {
 	// Check that the initialization is happening in the right environment
 	runnerType := opts.SchemaV1.Runner.GetType()
 	runnerContext := NewRunner(runnerType)
-	if !opts.DryRun && !runnerContext.CheckEnv() {
+	if !runnerContext.CheckEnv() {
 		return fmt.Errorf("%w, expected %s", ErrRunnerContextNotFound, runnerType)
 	}
 
@@ -408,7 +408,7 @@ func (c *Crafter) ResolveEnvVars() error {
 		val := os.Getenv(want)
 		if val != "" {
 			outputEnvVars[want] = val
-		} else if !c.CraftingState.DryRun {
+		} else {
 			return fmt.Errorf("required env variables not present %q", want)
 		}
 	}
@@ -420,17 +420,6 @@ func (c *Crafter) ResolveEnvVars() error {
 	}
 
 	return nil
-}
-
-func notResolvedVars(resolved map[string]string, wantList []string) []string {
-	var notFound []string
-	for _, want := range wantList {
-		if val, ok := resolved[want]; !ok || val == "" {
-			notFound = append(notFound, want)
-		}
-	}
-
-	return notFound
 }
 
 // Inject material to attestation state

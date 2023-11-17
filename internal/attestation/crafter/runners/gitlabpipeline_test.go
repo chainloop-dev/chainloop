@@ -78,16 +78,16 @@ func (s *gitlabPipelineSuite) TestCheckEnv() {
 }
 
 func (s *gitlabPipelineSuite) TestListEnvVars() {
-	assert.Equal(s.T(), []string{
-		"GITLAB_USER_EMAIL",
-		"GITLAB_USER_LOGIN",
-		"CI_PROJECT_URL",
-		"CI_COMMIT_SHA",
-		"CI_JOB_URL",
-		"CI_PIPELINE_URL",
-		"CI_RUNNER_VERSION",
-		"CI_RUNNER_DESCRIPTION",
-		"CI_COMMIT_REF_NAME",
+	assert.Equal(s.T(), []*EnvVarDefinition{
+		{"GITLAB_USER_EMAIL", false},
+		{"GITLAB_USER_LOGIN", false},
+		{"CI_PROJECT_URL", false},
+		{"CI_COMMIT_SHA", false},
+		{"CI_JOB_URL", false},
+		{"CI_PIPELINE_URL", false},
+		{"CI_RUNNER_VERSION", false},
+		{"CI_RUNNER_DESCRIPTION", false},
+		{"CI_COMMIT_REF_NAME", false},
 	}, s.runner.ListEnvVars())
 }
 

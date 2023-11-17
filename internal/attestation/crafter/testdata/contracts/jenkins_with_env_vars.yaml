@@ -1,0 +1,8 @@
+schemaVersion: "v1"
+
+runner:
+  type: "JENKINS_JOB"
+
+envAllowList:
+  - CUSTOM_VAR_1
+  - CUSTOM_VAR_2

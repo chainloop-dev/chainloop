@@ -221,142 +221,108 @@ func (s *crafterSuite) TestLoadSchema() {
 
 func (s *crafterSuite) TestResolveEnvVars() {
 	testCases := []struct {
-		name   string
-		dryrun bool
+		name string
 
 		// Custom env variables to expose
 		envVars map[string]string
 
-		// Simulate that the crafting process is hapenning in a github action runner
-		inGithubEnv bool
-		wantErr     bool
+		// Simulate that the crafting process is hapenning in a specific runner
+		inGithubEnv  bool
+		inJenkinsEnv bool
 
-		// Total list of resolved env vars
-		want map[string]string
+		expectedError   string
+		expectedEnvVars map[string]string
 	}{
 		{
-			name:        "dryrun missing custom vars",
-			dryrun:      true,
-			inGithubEnv: true,
-			wantErr:     true,
-		},
-		{
-			name:        "dryrun, not running in github env",
-			dryrun:      true,
-			inGithubEnv: false,
-			wantErr:     true,
+			name:          "missing custom vars",
+			inGithubEnv:   true,
+			expectedError: "required env variables not present \"CUSTOM_VAR_1\"",
+		}, {
+			name:          "missing some github runner env",
+			inGithubEnv:   true,
+			expectedError: "environment variable GITHUB_ACTOR cannot be resolved",
 			envVars: map[string]string{
 				"CUSTOM_VAR_1": "custom_value_1",
 				"CUSTOM_VAR_2": "custom_value_2",
+				"GITHUB_ACTOR": "", // This is removing one necessary variable
 			},
-		},
-		{
-			name:        "dryrun, missing some github env",
-			dryrun:      true,
-			inGithubEnv: false,
-			wantErr:     true,
+		}, {
+			name:          "missing optional jenkins variable with no error",
+			inJenkinsEnv:  true,
+			expectedError: "",
 			envVars: map[string]string{
+				// Missing var: GIT_BRANCH
+				"CUSTOM_VAR_1": "custom_value_1",
+				"CUSTOM_VAR_2": "custom_value_2",
+			},
+			expectedEnvVars: map[string]string{
+				// Missing var: GIT_BRANCH
 				"CUSTOM_VAR_1":  "custom_value_1",
 				"CUSTOM_VAR_2":  "custom_value_2",
-				"CI":            "true",
-				"GITHUB_RUN_ID": "123",
+				"JOB_NAME":      "some-job",
+				"BUILD_URL":     "http://some-url",
+				"AGENT_WORKDIR": "/some/home/dir",
+				"NODE_NAME":     "some-node",
 			},
-		},
-		{
-			name:        "dryrun and all envs available",
-			dryrun:      true,
-			inGithubEnv: true,
+		}, {
+			name:          "all optional jenkins variable with no error",
+			inJenkinsEnv:  true,
+			expectedError: "",
 			envVars: map[string]string{
+				"GIT_BRANCH":   "some-branch", // optional var 1
+				"GIT_COMMIT":   "some-commit", // optional var 2
 				"CUSTOM_VAR_1": "custom_value_1",
 				"CUSTOM_VAR_2": "custom_value_2",
 			},
-			want: map[string]string{
-				"CUSTOM_VAR_1":            "custom_value_1",
-				"CUSTOM_VAR_2":            "custom_value_2",
-				"GITHUB_REPOSITORY":       "chainloop/chainloop",
-				"GITHUB_RUN_ID":           "123",
-				"GITHUB_ACTOR":            "chainloop",
-				"GITHUB_REF":              "refs/heads/main",
-				"GITHUB_REPOSITORY_OWNER": "chainloop",
-				"GITHUB_SHA":              "1234567890",
-				"RUNNER_NAME":             "chainloop-runner",
-				"RUNNER_OS":               "linux",
-			},
-		},
-		{
-			name:        "non dryrun missing custom vars",
-			dryrun:      false,
-			inGithubEnv: true,
-			wantErr:     false,
-			want:        gitHubTestingEnvVars,
-		},
-		{
-			name:        "non dryrun, missing some github env",
-			dryrun:      false,
-			inGithubEnv: false,
-			wantErr:     false,
-			envVars: map[string]string{
-				"CUSTOM_VAR_1":      "custom_value_1",
-				"CUSTOM_VAR_2":      "custom_value_2",
-				"CI":                "true",
-				"GITHUB_RUN_ID":     "123",
-				"GITHUB_REPOSITORY": "chainloop/chainloop",
-			},
-			want: map[string]string{
-				"CUSTOM_VAR_1":            "custom_value_1",
-				"CUSTOM_VAR_2":            "custom_value_2",
-				"GITHUB_REPOSITORY":       "chainloop/chainloop",
-				"GITHUB_RUN_ID":           "123",
-				"GITHUB_ACTOR":            "",
-				"GITHUB_REF":              "",
-				"GITHUB_REPOSITORY_OWNER": "",
-				"GITHUB_SHA":              "",
-				"RUNNER_NAME":             "",
-				"RUNNER_OS":               "",
-			},
-		},
-		{
-			name:        "non dryrun, wrong runner context",
-			dryrun:      false,
-			inGithubEnv: false,
-			wantErr:     false,
-			envVars: map[string]string{
-				"CUSTOM_VAR_1": "custom_value_1",
-				"CUSTOM_VAR_2": "custom_value_2",
-			},
-			want: map[string]string{
-				"CUSTOM_VAR_1": "custom_value_1",
-				"CUSTOM_VAR_2": "custom_value_2",
+			expectedEnvVars: map[string]string{
+				"GIT_BRANCH":    "some-branch", // optional var 1
+				"GIT_COMMIT":    "some-commit", // optional var 2
+				"CUSTOM_VAR_1":  "custom_value_1",
+				"CUSTOM_VAR_2":  "custom_value_2",
+				"JOB_NAME":      "some-job",
+				"BUILD_URL":     "http://some-url",
+				"AGENT_WORKDIR": "/some/home/dir",
+				"NODE_NAME":     "some-node",
 			},
 		},
 	}
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			// Customs env vars
-			for k, v := range tc.envVars {
-				s.T().Setenv(k, v)
-			}
-
-			// Runner env variables
+			contract := "testdata/contracts/with_env_vars.yaml"
 			if tc.inGithubEnv {
 				s.T().Setenv("CI", "true")
 				for k, v := range gitHubTestingEnvVars {
 					s.T().Setenv(k, v)
 				}
+			} else if tc.inJenkinsEnv {
+				contract = "testdata/contracts/jenkins_with_env_vars.yaml"
+				s.T().Setenv("JOB_NAME", "some-job")
+				s.T().Setenv("BUILD_URL", "http://some-url")
+				s.T().Setenv("AGENT_WORKDIR", "/some/home/dir")
+				s.T().Setenv("NODE_NAME", "some-node")
+				s.T().Setenv("JENKINS_HOME", "/some/home/dir")
 			}
 
-			c, err := newInitializedCrafter(s.T(), "testdata/contracts/with_env_vars.yaml", &v1.WorkflowMetadata{}, tc.dryrun, "")
+			// Customs env vars
+			for k, v := range tc.envVars {
+				s.T().Setenv(k, v)
+			}
+
+			c, err := newInitializedCrafter(s.T(), contract, &v1.WorkflowMetadata{}, false, "")
 			require.NoError(s.T(), err)
 
 			err = c.ResolveEnvVars()
-			if tc.wantErr {
+
+			if tc.expectedError != "" {
 				s.Error(err)
+				actualError := err.Error()
+				s.Equal(tc.expectedError, actualError)
 				return
 			}
 
 			s.NoError(err)
-			s.Equal(tc.want, c.CraftingState.Attestation.EnvVars)
+			s.Equal(tc.expectedEnvVars, c.CraftingState.Attestation.EnvVars)
 		})
 	}
 }
