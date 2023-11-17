@@ -35,3 +35,5 @@ data:
       insecure: true
       download_url: {{ include "chainloop.cas.external_url" . }}/download
     plugins_dir: {{ .Values.controlplane.pluginsDir }}
+    referrer_shared_index:
+      {{- toYaml .Values.controlplane.referrerSharedIndex | nindent 6 }}
