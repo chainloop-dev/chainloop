@@ -47,6 +47,7 @@ func (Workflow) Fields() []ent.Field {
 		field.Time("deleted_at").Optional(),
 		// public means that the workflow runs, attestations and materials are reachable
 		field.Bool("public").Default(false),
+		field.UUID("organization_id", uuid.UUID{}),
 	}
 }
 
@@ -55,7 +56,7 @@ func (Workflow) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("robotaccounts", RobotAccount.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 		edge.To("workflowruns", WorkflowRun.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
-		edge.From("organization", Organization.Type).Ref("workflows").Unique().Required(),
+		edge.From("organization", Organization.Type).Field("organization_id").Ref("workflows").Unique().Required(),
 		edge.To("contract", WorkflowContract.Type).Unique().Required(),
 		edge.From("integration_attachments", IntegrationAttachment.Type).
 			Ref("workflow"),

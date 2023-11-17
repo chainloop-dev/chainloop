@@ -20,11 +20,63 @@ import (
 	"os"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
+
+func (s *referrerTestSuite) TestInitialization() {
+	testCases := []struct {
+		name       string
+		conf       *conf.ReferrerSharedIndex
+		wantErrMsg string
+	}{
+		{
+			name: "nil configuration",
+		},
+		{
+			name: "disabled",
+			conf: &conf.ReferrerSharedIndex{
+				Enabled: false,
+			},
+		},
+		{
+			name: "enabled but without orgs",
+			conf: &conf.ReferrerSharedIndex{
+				Enabled: true,
+			},
+			wantErrMsg: "invalid shared index config: index is enabled, but no orgs are allowed",
+		},
+		{
+			name: "enabled with invalid orgs",
+			conf: &conf.ReferrerSharedIndex{
+				Enabled:     true,
+				AllowedOrgs: []string{"invalid"},
+			},
+			wantErrMsg: "invalid shared index config: invalid org id: invalid",
+		},
+		{
+			name: "enabled with valid orgs",
+			conf: &conf.ReferrerSharedIndex{
+				Enabled:     true,
+				AllowedOrgs: []string{"00000000-0000-0000-0000-000000000000"},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.T().Run(tc.name, func(t *testing.T) {
+			_, err := NewReferrerUseCase(nil, nil, nil, tc.conf, nil)
+			if tc.wantErrMsg != "" {
+				assert.EqualError(t, err, tc.wantErrMsg)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
 
 func (s *referrerTestSuite) TestExtractReferrers() {
 	testCases := []struct {

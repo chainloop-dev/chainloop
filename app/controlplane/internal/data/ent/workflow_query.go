@@ -562,7 +562,7 @@ func (wq *WorkflowQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Wor
 			wq.withReferrers != nil,
 		}
 	)
-	if wq.withOrganization != nil || wq.withContract != nil {
+	if wq.withContract != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -697,10 +697,7 @@ func (wq *WorkflowQuery) loadOrganization(ctx context.Context, query *Organizati
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*Workflow)
 	for i := range nodes {
-		if nodes[i].organization_id == nil {
-			continue
-		}
-		fk := *nodes[i].organization_id
+		fk := nodes[i].OrganizationID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -874,6 +871,9 @@ func (wq *WorkflowQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != workflow.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if wq.withOrganization != nil {
+			_spec.Node.AddColumnOnce(workflow.FieldOrganizationID)
 		}
 	}
 	if ps := wq.predicates; len(ps) > 0 {

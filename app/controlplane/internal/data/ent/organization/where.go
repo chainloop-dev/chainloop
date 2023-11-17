@@ -286,29 +286,6 @@ func HasIntegrationsWith(preds ...predicate.Integration) predicate.Organization 
 	})
 }
 
-// HasReferrers applies the HasEdge predicate on the "referrers" edge.
-func HasReferrers() predicate.Organization {
-	return predicate.Organization(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, ReferrersTable, ReferrersPrimaryKey...),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasReferrersWith applies the HasEdge predicate on the "referrers" edge with a given conditions (other predicates).
-func HasReferrersWith(preds ...predicate.Referrer) predicate.Organization {
-	return predicate.Organization(func(s *sql.Selector) {
-		step := newReferrersStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Organization) predicate.Organization {
 	return predicate.Organization(func(s *sql.Selector) {

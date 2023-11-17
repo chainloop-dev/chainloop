@@ -34,10 +34,11 @@ type Workflow struct {
 	DeletedAt time.Time `json:"deleted_at,omitempty"`
 	// Public holds the value of the "public" field.
 	Public bool `json:"public,omitempty"`
+	// OrganizationID holds the value of the "organization_id" field.
+	OrganizationID uuid.UUID `json:"organization_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the WorkflowQuery when eager-loading is set.
 	Edges             WorkflowEdges `json:"edges"`
-	organization_id   *uuid.UUID
 	workflow_contract *uuid.UUID
 	selectValues      sql.SelectValues
 }
@@ -136,11 +137,9 @@ func (*Workflow) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case workflow.FieldCreatedAt, workflow.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
-		case workflow.FieldID:
+		case workflow.FieldID, workflow.FieldOrganizationID:
 			values[i] = new(uuid.UUID)
-		case workflow.ForeignKeys[0]: // organization_id
-			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
-		case workflow.ForeignKeys[1]: // workflow_contract
+		case workflow.ForeignKeys[0]: // workflow_contract
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			values[i] = new(sql.UnknownType)
@@ -205,14 +204,13 @@ func (w *Workflow) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				w.Public = value.Bool
 			}
-		case workflow.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullScanner); !ok {
+		case workflow.FieldOrganizationID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field organization_id", values[i])
-			} else if value.Valid {
-				w.organization_id = new(uuid.UUID)
-				*w.organization_id = *value.S.(*uuid.UUID)
+			} else if value != nil {
+				w.OrganizationID = *value
 			}
-		case workflow.ForeignKeys[1]:
+		case workflow.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field workflow_contract", values[i])
 			} else if value.Valid {
@@ -305,6 +303,9 @@ func (w *Workflow) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("public=")
 	builder.WriteString(fmt.Sprintf("%v", w.Public))
+	builder.WriteString(", ")
+	builder.WriteString("organization_id=")
+	builder.WriteString(fmt.Sprintf("%v", w.OrganizationID))
 	builder.WriteByte(')')
 	return builder.String()
 }

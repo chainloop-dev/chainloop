@@ -47,3 +47,8 @@ auth:
 
   # Private key used to sign the JWTs meant to be consumed by the CAS
   cas_robot_account_private_key_path: "../../devel/devkeys/cas.pem"
+
+# referrer_shared_index:
+#   enabled: true
+#   allowed_orgs:
+#     - deadbeef

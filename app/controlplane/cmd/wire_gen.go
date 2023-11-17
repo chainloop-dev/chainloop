@@ -65,7 +65,12 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	v := _wireValue
 	casClientUseCase := biz.NewCASClientUseCase(casCredentialsUseCase, bootstrap_CASServer, logger, v...)
 	referrerRepo := data.NewReferrerRepo(dataData, workflowRepo, logger)
-	referrerUseCase := biz.NewReferrerUseCase(referrerRepo, workflowRepo, membershipRepo, logger)
+	referrerSharedIndex := bootstrap.ReferrerSharedIndex
+	referrerUseCase, err := biz.NewReferrerUseCase(referrerRepo, workflowRepo, membershipRepo, referrerSharedIndex, logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
 	workflowContractRepo := data.NewWorkflowContractRepo(dataData, logger)
 	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, logger)
 	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, workflowContractUseCase, logger)

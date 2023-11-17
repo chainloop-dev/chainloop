@@ -19,41 +19,42 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
-const OperationReferrerServiceDiscover = "/controlplane.v1.ReferrerService/Discover"
+const OperationReferrerServiceDiscoverPublicShared = "/controlplane.v1.ReferrerService/DiscoverPublicShared"
 
 type ReferrerServiceHTTPServer interface {
-	Discover(context.Context, *ReferrerServiceDiscoverRequest) (*ReferrerServiceDiscoverResponse, error)
+	// DiscoverPublicShared DiscoverPublicShared returns the referrer item for a given digest in the public shared index
+	DiscoverPublicShared(context.Context, *DiscoverPublicSharedRequest) (*DiscoverPublicSharedResponse, error)
 }
 
 func RegisterReferrerServiceHTTPServer(s *http.Server, srv ReferrerServiceHTTPServer) {
 	r := s.Route("/")
-	r.GET("/discover/{digest}", _ReferrerService_Discover0_HTTP_Handler(srv))
+	r.GET("/discover/{digest}", _ReferrerService_DiscoverPublicShared0_HTTP_Handler(srv))
 }
 
-func _ReferrerService_Discover0_HTTP_Handler(srv ReferrerServiceHTTPServer) func(ctx http.Context) error {
+func _ReferrerService_DiscoverPublicShared0_HTTP_Handler(srv ReferrerServiceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in ReferrerServiceDiscoverRequest
+		var in DiscoverPublicSharedRequest
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
 		if err := ctx.BindVars(&in); err != nil {
 			return err
 		}
-		http.SetOperation(ctx, OperationReferrerServiceDiscover)
+		http.SetOperation(ctx, OperationReferrerServiceDiscoverPublicShared)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.Discover(ctx, req.(*ReferrerServiceDiscoverRequest))
+			return srv.DiscoverPublicShared(ctx, req.(*DiscoverPublicSharedRequest))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
 			return err
 		}
-		reply := out.(*ReferrerServiceDiscoverResponse)
+		reply := out.(*DiscoverPublicSharedResponse)
 		return ctx.Result(200, reply)
 	}
 }
 
 type ReferrerServiceHTTPClient interface {
-	Discover(ctx context.Context, req *ReferrerServiceDiscoverRequest, opts ...http.CallOption) (rsp *ReferrerServiceDiscoverResponse, err error)
+	DiscoverPublicShared(ctx context.Context, req *DiscoverPublicSharedRequest, opts ...http.CallOption) (rsp *DiscoverPublicSharedResponse, err error)
 }
 
 type ReferrerServiceHTTPClientImpl struct {
@@ -64,11 +65,11 @@ func NewReferrerServiceHTTPClient(client *http.Client) ReferrerServiceHTTPClient
 	return &ReferrerServiceHTTPClientImpl{client}
 }
 
-func (c *ReferrerServiceHTTPClientImpl) Discover(ctx context.Context, in *ReferrerServiceDiscoverRequest, opts ...http.CallOption) (*ReferrerServiceDiscoverResponse, error) {
-	var out ReferrerServiceDiscoverResponse
+func (c *ReferrerServiceHTTPClientImpl) DiscoverPublicShared(ctx context.Context, in *DiscoverPublicSharedRequest, opts ...http.CallOption) (*DiscoverPublicSharedResponse, error) {
+	var out DiscoverPublicSharedResponse
 	pattern := "/discover/{digest}"
 	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationReferrerServiceDiscover))
+	opts = append(opts, http.Operation(OperationReferrerServiceDiscoverPublicShared))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {

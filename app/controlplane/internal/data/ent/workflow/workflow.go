@@ -29,6 +29,8 @@ const (
 	FieldDeletedAt = "deleted_at"
 	// FieldPublic holds the string denoting the public field in the database.
 	FieldPublic = "public"
+	// FieldOrganizationID holds the string denoting the organization_id field in the database.
+	FieldOrganizationID = "organization_id"
 	// EdgeRobotaccounts holds the string denoting the robotaccounts edge name in mutations.
 	EdgeRobotaccounts = "robotaccounts"
 	// EdgeWorkflowruns holds the string denoting the workflowruns edge name in mutations.
@@ -95,12 +97,12 @@ var Columns = []string{
 	FieldCreatedAt,
 	FieldDeletedAt,
 	FieldPublic,
+	FieldOrganizationID,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "workflows"
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
-	"organization_id",
 	"workflow_contract",
 }
 
@@ -177,6 +179,11 @@ func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByPublic orders the results by the public field.
 func ByPublic(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPublic, opts...).ToFunc()
+}
+
+// ByOrganizationID orders the results by the organization_id field.
+func ByOrganizationID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOrganizationID, opts...).ToFunc()
 }
 
 // ByRobotaccountsCount orders the results by robotaccounts count.

@@ -16,7 +16,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/membership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/referrer"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowcontract"
 	"github.com/google/uuid"
@@ -34,7 +33,6 @@ type OrganizationQuery struct {
 	withWorkflows         *WorkflowQuery
 	withCasBackends       *CASBackendQuery
 	withIntegrations      *IntegrationQuery
-	withReferrers         *ReferrerQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -174,28 +172,6 @@ func (oq *OrganizationQuery) QueryIntegrations() *IntegrationQuery {
 			sqlgraph.From(organization.Table, organization.FieldID, selector),
 			sqlgraph.To(integration.Table, integration.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, organization.IntegrationsTable, organization.IntegrationsColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(oq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryReferrers chains the current query on the "referrers" edge.
-func (oq *OrganizationQuery) QueryReferrers() *ReferrerQuery {
-	query := (&ReferrerClient{config: oq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := oq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := oq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(organization.Table, organization.FieldID, selector),
-			sqlgraph.To(referrer.Table, referrer.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, organization.ReferrersTable, organization.ReferrersPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(oq.driver.Dialect(), step)
 		return fromU, nil
@@ -400,7 +376,6 @@ func (oq *OrganizationQuery) Clone() *OrganizationQuery {
 		withWorkflows:         oq.withWorkflows.Clone(),
 		withCasBackends:       oq.withCasBackends.Clone(),
 		withIntegrations:      oq.withIntegrations.Clone(),
-		withReferrers:         oq.withReferrers.Clone(),
 		// clone intermediate query.
 		sql:  oq.sql.Clone(),
 		path: oq.path,
@@ -459,17 +434,6 @@ func (oq *OrganizationQuery) WithIntegrations(opts ...func(*IntegrationQuery)) *
 		opt(query)
 	}
 	oq.withIntegrations = query
-	return oq
-}
-
-// WithReferrers tells the query-builder to eager-load the nodes that are connected to
-// the "referrers" edge. The optional arguments are used to configure the query builder of the edge.
-func (oq *OrganizationQuery) WithReferrers(opts ...func(*ReferrerQuery)) *OrganizationQuery {
-	query := (&ReferrerClient{config: oq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	oq.withReferrers = query
 	return oq
 }
 
@@ -551,13 +515,12 @@ func (oq *OrganizationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	var (
 		nodes       = []*Organization{}
 		_spec       = oq.querySpec()
-		loadedTypes = [6]bool{
+		loadedTypes = [5]bool{
 			oq.withMemberships != nil,
 			oq.withWorkflowContracts != nil,
 			oq.withWorkflows != nil,
 			oq.withCasBackends != nil,
 			oq.withIntegrations != nil,
-			oq.withReferrers != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -612,13 +575,6 @@ func (oq *OrganizationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 		if err := oq.loadIntegrations(ctx, query, nodes,
 			func(n *Organization) { n.Edges.Integrations = []*Integration{} },
 			func(n *Organization, e *Integration) { n.Edges.Integrations = append(n.Edges.Integrations, e) }); err != nil {
-			return nil, err
-		}
-	}
-	if query := oq.withReferrers; query != nil {
-		if err := oq.loadReferrers(ctx, query, nodes,
-			func(n *Organization) { n.Edges.Referrers = []*Referrer{} },
-			func(n *Organization, e *Referrer) { n.Edges.Referrers = append(n.Edges.Referrers, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -698,6 +654,9 @@ func (oq *OrganizationQuery) loadWorkflows(ctx context.Context, query *WorkflowQ
 		}
 	}
 	query.withFKs = true
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(workflow.FieldOrganizationID)
+	}
 	query.Where(predicate.Workflow(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(organization.WorkflowsColumn), fks...))
 	}))
@@ -706,13 +665,10 @@ func (oq *OrganizationQuery) loadWorkflows(ctx context.Context, query *WorkflowQ
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.organization_id
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "organization_id" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
+		fk := n.OrganizationID
+		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "organization_id" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "organization_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -777,67 +733,6 @@ func (oq *OrganizationQuery) loadIntegrations(ctx context.Context, query *Integr
 			return fmt.Errorf(`unexpected referenced foreign-key "organization_integrations" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
-	}
-	return nil
-}
-func (oq *OrganizationQuery) loadReferrers(ctx context.Context, query *ReferrerQuery, nodes []*Organization, init func(*Organization), assign func(*Organization, *Referrer)) error {
-	edgeIDs := make([]driver.Value, len(nodes))
-	byID := make(map[uuid.UUID]*Organization)
-	nids := make(map[uuid.UUID]map[*Organization]struct{})
-	for i, node := range nodes {
-		edgeIDs[i] = node.ID
-		byID[node.ID] = node
-		if init != nil {
-			init(node)
-		}
-	}
-	query.Where(func(s *sql.Selector) {
-		joinT := sql.Table(organization.ReferrersTable)
-		s.Join(joinT).On(s.C(referrer.FieldID), joinT.C(organization.ReferrersPrimaryKey[0]))
-		s.Where(sql.InValues(joinT.C(organization.ReferrersPrimaryKey[1]), edgeIDs...))
-		columns := s.SelectedColumns()
-		s.Select(joinT.C(organization.ReferrersPrimaryKey[1]))
-		s.AppendSelect(columns...)
-		s.SetDistinct(false)
-	})
-	if err := query.prepareQuery(ctx); err != nil {
-		return err
-	}
-	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
-		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
-			assign := spec.Assign
-			values := spec.ScanValues
-			spec.ScanValues = func(columns []string) ([]any, error) {
-				values, err := values(columns[1:])
-				if err != nil {
-					return nil, err
-				}
-				return append([]any{new(uuid.UUID)}, values...), nil
-			}
-			spec.Assign = func(columns []string, values []any) error {
-				outValue := *values[0].(*uuid.UUID)
-				inValue := *values[1].(*uuid.UUID)
-				if nids[inValue] == nil {
-					nids[inValue] = map[*Organization]struct{}{byID[outValue]: {}}
-					return assign(columns[1:], values[1:])
-				}
-				nids[inValue][byID[outValue]] = struct{}{}
-				return nil
-			}
-		})
-	})
-	neighbors, err := withInterceptors[[]*Referrer](ctx, query, qr, query.inters)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected "referrers" node returned %v`, n.ID)
-		}
-		for kn := range nodes {
-			assign(kn, n)
-		}
 	}
 	return nil
 }

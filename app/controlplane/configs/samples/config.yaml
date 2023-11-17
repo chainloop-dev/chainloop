@@ -46,3 +46,13 @@ credentials_service:
   #   client_id: Service Principal ID
   #   client_secret: Service Principal Secret
   #   vault_uri: https://myvault.vault.azure.net/
+
+# referrer shared index configuration.
+# This is used to enable a shared index API endpoint that can be used to discover metadata referrers
+# To populate the shared index you need to enable the feature and configure the allowed orgs
+# The reason to have an org allowList is to avoid leaking metadata from other organizations
+# and set the stage for a trusted publisher model
+referrer_shared_index:
+  enabled: true
+  allowed_orgs:
+    - deadbeef

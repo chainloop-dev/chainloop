@@ -25,6 +25,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
@@ -33,6 +34,47 @@ import (
 	v1 "github.com/in-toto/attestation/go/v1"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
+
+type ReferrerUseCase struct {
+	repo           ReferrerRepo
+	membershipRepo MembershipRepo
+	workflowRepo   WorkflowRepo
+	logger         *log.Helper
+	indexConfig    *conf.ReferrerSharedIndex
+}
+
+func NewReferrerUseCase(repo ReferrerRepo, wfRepo WorkflowRepo, mRepo MembershipRepo, indexCfg *conf.ReferrerSharedIndex, l log.Logger) (*ReferrerUseCase, error) {
+	if l == nil {
+		l = log.NewStdLogger(io.Discard)
+	}
+	logger := servicelogger.ScopedHelper(l, "biz/referrer")
+
+	if indexCfg != nil {
+		if err := indexCfg.ValidateOrgs(); err != nil {
+			return nil, fmt.Errorf("invalid shared index config: %w", err)
+		}
+
+		if indexCfg.Enabled {
+			logger.Infow("msg", "shared index enabled", "allowedOrgs", indexCfg.AllowedOrgs)
+		}
+	}
+
+	return &ReferrerUseCase{
+		repo:           repo,
+		membershipRepo: mRepo,
+		indexConfig:    indexCfg,
+		workflowRepo:   wfRepo,
+		logger:         logger,
+	}, nil
+}
+
+type ReferrerRepo interface {
+	Save(ctx context.Context, input []*Referrer, workflowID uuid.UUID) error
+	// GetFromRoot returns the referrer identified by the provided content digest, including its first-level references
+	// For example if sha:deadbeef represents an attestation, the result will contain the attestation + materials associated to it
+	// OrgIDs represent an allowList of organizations where the referrers should be looked for
+	GetFromRoot(ctx context.Context, digest string, orgIDS []uuid.UUID, filters ...GetFromRootFilter) (*StoredReferrer, error)
+}
 
 type Referrer struct {
 	Digest string
@@ -54,14 +96,6 @@ type StoredReferrer struct {
 	OrgIDs, WorkflowIDs []uuid.UUID
 }
 
-type ReferrerRepo interface {
-	Save(ctx context.Context, input []*Referrer, workflowID uuid.UUID) error
-	// GetFromRoot returns the referrer identified by the provided content digest, including its first-level references
-	// For example if sha:deadbeef represents an attestation, the result will contain the attestation + materials associated to it
-	// OrgIDs represent an allowList of organizations where the referrers should be looked for
-	GetFromRoot(ctx context.Context, digest string, orgIDS []uuid.UUID, filters ...GetFromRootFilter) (*StoredReferrer, error)
-}
-
 type GetFromRootFilters struct {
 	// RootKind is the kind of the root referrer, i.e ATTESTATION
 	RootKind *string
@@ -81,21 +115,6 @@ func WithPublicVisibility(public bool) func(*GetFromRootFilters) {
 	return func(o *GetFromRootFilters) {
 		o.Public = &public
 	}
-}
-
-type ReferrerUseCase struct {
-	repo           ReferrerRepo
-	membershipRepo MembershipRepo
-	workflowRepo   WorkflowRepo
-	logger         *log.Helper
-}
-
-func NewReferrerUseCase(repo ReferrerRepo, wfRepo WorkflowRepo, mRepo MembershipRepo, l log.Logger) *ReferrerUseCase {
-	if l == nil {
-		l = log.NewStdLogger(io.Discard)
-	}
-
-	return &ReferrerUseCase{repo, mRepo, wfRepo, servicelogger.ScopedHelper(l, "biz/Referrer")}
 }
 
 // ExtractAndPersist extracts the referrers (subject + materials) from the given attestation
@@ -128,7 +147,7 @@ func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envel
 // GetFromRoot returns the referrer identified by the provided content digest, including its first-level references
 // For example if sha:deadbeef represents an attestation, the result will contain the attestation + materials associated to it
 // It only returns referrers that belong to organizations the user is member of
-func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest string, rootKind, userID string) (*StoredReferrer, error) {
+func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind, userID string) (*StoredReferrer, error) {
 	userUUID, err := uuid.Parse(userID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -152,6 +171,48 @@ func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest string, rootKi
 	}
 
 	filters := make([]GetFromRootFilter, 0)
+	if rootKind != "" {
+		filters = append(filters, WithKind(rootKind))
+	}
+
+	ref, err := s.repo.GetFromRoot(ctx, digest, orgIDs, filters...)
+	if err != nil {
+		if errors.As(err, &ErrAmbiguousReferrer{}) {
+			return nil, NewErrValidation(fmt.Errorf("please provide the referrer kind: %w", err))
+		}
+
+		return nil, fmt.Errorf("getting referrer from root: %w", err)
+	} else if ref == nil {
+		return nil, NewErrNotFound("referrer")
+	}
+
+	return ref, nil
+}
+
+// Get the list of public referrers from organizations
+// that have been allowed to be shown in a shared index
+// NOTE: This is a public endpoint under /discover/[sha256:deadbeef]
+func (s *ReferrerUseCase) GetFromRootInPublicSharedIndex(ctx context.Context, digest, rootKind string) (*StoredReferrer, error) {
+	if s.indexConfig == nil || !s.indexConfig.Enabled {
+		return nil, NewErrUnauthorizedStr("shared referrer index functionality is not enabled")
+	}
+
+	if _, err := cr_v1.NewHash(digest); err != nil {
+		return nil, NewErrValidation(fmt.Errorf("invalid digest format: %w", err))
+	}
+
+	// Load the organizations that are allowed to appear in the shared index
+	orgIDs := make([]uuid.UUID, 0)
+	for _, orgID := range s.indexConfig.AllowedOrgs {
+		orgUUID, err := uuid.Parse(orgID)
+		if err != nil {
+			return nil, NewErrInvalidUUID(err)
+		}
+		orgIDs = append(orgIDs, orgUUID)
+	}
+
+	// and ask only for the public referrers of those orgs
+	filters := []GetFromRootFilter{WithPublicVisibility(true)}
 	if rootKind != "" {
 		filters = append(filters, WithKind(rootKind))
 	}

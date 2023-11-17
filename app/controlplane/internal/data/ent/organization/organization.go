@@ -29,8 +29,6 @@ const (
 	EdgeCasBackends = "cas_backends"
 	// EdgeIntegrations holds the string denoting the integrations edge name in mutations.
 	EdgeIntegrations = "integrations"
-	// EdgeReferrers holds the string denoting the referrers edge name in mutations.
-	EdgeReferrers = "referrers"
 	// Table holds the table name of the organization in the database.
 	Table = "organizations"
 	// MembershipsTable is the table that holds the memberships relation/edge.
@@ -68,11 +66,6 @@ const (
 	IntegrationsInverseTable = "integrations"
 	// IntegrationsColumn is the table column denoting the integrations relation/edge.
 	IntegrationsColumn = "organization_integrations"
-	// ReferrersTable is the table that holds the referrers relation/edge. The primary key declared below.
-	ReferrersTable = "referrer_organizations"
-	// ReferrersInverseTable is the table name for the Referrer entity.
-	// It exists in this package in order to avoid circular dependency with the "referrer" package.
-	ReferrersInverseTable = "referrers"
 )
 
 // Columns holds all SQL columns for organization fields.
@@ -81,12 +74,6 @@ var Columns = []string{
 	FieldName,
 	FieldCreatedAt,
 }
-
-var (
-	// ReferrersPrimaryKey and ReferrersColumn2 are the table columns denoting the
-	// primary key for the referrers relation (M2M).
-	ReferrersPrimaryKey = []string{"referrer_id", "organization_id"}
-)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
@@ -194,20 +181,6 @@ func ByIntegrations(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newIntegrationsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-
-// ByReferrersCount orders the results by referrers count.
-func ByReferrersCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newReferrersStep(), opts...)
-	}
-}
-
-// ByReferrers orders the results by referrers terms.
-func ByReferrers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newReferrersStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
 func newMembershipsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -241,12 +214,5 @@ func newIntegrationsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(IntegrationsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, IntegrationsTable, IntegrationsColumn),
-	)
-}
-func newReferrersStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(ReferrersInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2M, true, ReferrersTable, ReferrersPrimaryKey...),
 	)
 }

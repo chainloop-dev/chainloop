@@ -34,14 +34,18 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ReferrerService_Discover_FullMethodName = "/controlplane.v1.ReferrerService/Discover"
+	ReferrerService_DiscoverPrivate_FullMethodName      = "/controlplane.v1.ReferrerService/DiscoverPrivate"
+	ReferrerService_DiscoverPublicShared_FullMethodName = "/controlplane.v1.ReferrerService/DiscoverPublicShared"
 )
 
 // ReferrerServiceClient is the client API for ReferrerService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ReferrerServiceClient interface {
-	Discover(ctx context.Context, in *ReferrerServiceDiscoverRequest, opts ...grpc.CallOption) (*ReferrerServiceDiscoverResponse, error)
+	// DiscoverPrivate returns the referrer item for a given digest in the organizations of the logged-in user
+	DiscoverPrivate(ctx context.Context, in *ReferrerServiceDiscoverPrivateRequest, opts ...grpc.CallOption) (*ReferrerServiceDiscoverPrivateResponse, error)
+	// DiscoverPublicShared returns the referrer item for a given digest in the public shared index
+	DiscoverPublicShared(ctx context.Context, in *DiscoverPublicSharedRequest, opts ...grpc.CallOption) (*DiscoverPublicSharedResponse, error)
 }
 
 type referrerServiceClient struct {
@@ -52,9 +56,18 @@ func NewReferrerServiceClient(cc grpc.ClientConnInterface) ReferrerServiceClient
 	return &referrerServiceClient{cc}
 }
 
-func (c *referrerServiceClient) Discover(ctx context.Context, in *ReferrerServiceDiscoverRequest, opts ...grpc.CallOption) (*ReferrerServiceDiscoverResponse, error) {
-	out := new(ReferrerServiceDiscoverResponse)
-	err := c.cc.Invoke(ctx, ReferrerService_Discover_FullMethodName, in, out, opts...)
+func (c *referrerServiceClient) DiscoverPrivate(ctx context.Context, in *ReferrerServiceDiscoverPrivateRequest, opts ...grpc.CallOption) (*ReferrerServiceDiscoverPrivateResponse, error) {
+	out := new(ReferrerServiceDiscoverPrivateResponse)
+	err := c.cc.Invoke(ctx, ReferrerService_DiscoverPrivate_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *referrerServiceClient) DiscoverPublicShared(ctx context.Context, in *DiscoverPublicSharedRequest, opts ...grpc.CallOption) (*DiscoverPublicSharedResponse, error) {
+	out := new(DiscoverPublicSharedResponse)
+	err := c.cc.Invoke(ctx, ReferrerService_DiscoverPublicShared_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +78,10 @@ func (c *referrerServiceClient) Discover(ctx context.Context, in *ReferrerServic
 // All implementations must embed UnimplementedReferrerServiceServer
 // for forward compatibility
 type ReferrerServiceServer interface {
-	Discover(context.Context, *ReferrerServiceDiscoverRequest) (*ReferrerServiceDiscoverResponse, error)
+	// DiscoverPrivate returns the referrer item for a given digest in the organizations of the logged-in user
+	DiscoverPrivate(context.Context, *ReferrerServiceDiscoverPrivateRequest) (*ReferrerServiceDiscoverPrivateResponse, error)
+	// DiscoverPublicShared returns the referrer item for a given digest in the public shared index
+	DiscoverPublicShared(context.Context, *DiscoverPublicSharedRequest) (*DiscoverPublicSharedResponse, error)
 	mustEmbedUnimplementedReferrerServiceServer()
 }
 
@@ -73,8 +89,11 @@ type ReferrerServiceServer interface {
 type UnimplementedReferrerServiceServer struct {
 }
 
-func (UnimplementedReferrerServiceServer) Discover(context.Context, *ReferrerServiceDiscoverRequest) (*ReferrerServiceDiscoverResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Discover not implemented")
+func (UnimplementedReferrerServiceServer) DiscoverPrivate(context.Context, *ReferrerServiceDiscoverPrivateRequest) (*ReferrerServiceDiscoverPrivateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DiscoverPrivate not implemented")
+}
+func (UnimplementedReferrerServiceServer) DiscoverPublicShared(context.Context, *DiscoverPublicSharedRequest) (*DiscoverPublicSharedResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DiscoverPublicShared not implemented")
 }
 func (UnimplementedReferrerServiceServer) mustEmbedUnimplementedReferrerServiceServer() {}
 
@@ -89,20 +108,38 @@ func RegisterReferrerServiceServer(s grpc.ServiceRegistrar, srv ReferrerServiceS
 	s.RegisterService(&ReferrerService_ServiceDesc, srv)
 }
 
-func _ReferrerService_Discover_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ReferrerServiceDiscoverRequest)
+func _ReferrerService_DiscoverPrivate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReferrerServiceDiscoverPrivateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ReferrerServiceServer).Discover(ctx, in)
+		return srv.(ReferrerServiceServer).DiscoverPrivate(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ReferrerService_Discover_FullMethodName,
+		FullMethod: ReferrerService_DiscoverPrivate_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ReferrerServiceServer).Discover(ctx, req.(*ReferrerServiceDiscoverRequest))
+		return srv.(ReferrerServiceServer).DiscoverPrivate(ctx, req.(*ReferrerServiceDiscoverPrivateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ReferrerService_DiscoverPublicShared_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DiscoverPublicSharedRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReferrerServiceServer).DiscoverPublicShared(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReferrerService_DiscoverPublicShared_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReferrerServiceServer).DiscoverPublicShared(ctx, req.(*DiscoverPublicSharedRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -115,8 +152,12 @@ var ReferrerService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ReferrerServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Discover",
-			Handler:    _ReferrerService_Discover_Handler,
+			MethodName: "DiscoverPrivate",
+			Handler:    _ReferrerService_DiscoverPrivate_Handler,
+		},
+		{
+			MethodName: "DiscoverPublicShared",
+			Handler:    _ReferrerService_DiscoverPublicShared_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
