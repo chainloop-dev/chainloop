@@ -123,7 +123,7 @@ func (action *AttestationInit) Run(contractRevision int) error {
 	}
 
 	// Load the env variables both the system populated and the user predefined ones
-	if err := action.c.ResolveEnvVars(!action.dryRun); err != nil {
+	if err := action.c.ResolveEnvVars(); err != nil {
 		_ = action.c.Reset()
 		return err
 	}

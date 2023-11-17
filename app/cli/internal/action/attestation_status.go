@@ -124,8 +124,14 @@ func (action *AttestationStatus) Run() (*AttestationStatusResult, error) {
 	}
 
 	res.EnvVars = envVars
+
+	runnerEnvVars, err := c.Runner.ResolveEnvVars()
+	if err != nil {
+		return nil, err
+	}
+
 	res.RunnerContext = &AttestationResultRunnerContext{
-		EnvVars:    c.Runner.ResolveEnvVars(),
+		EnvVars:    runnerEnvVars,
 		RunnerType: att.RunnerType.String(),
 		JobURL:     att.RunnerUrl,
 	}
