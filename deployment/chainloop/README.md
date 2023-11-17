@@ -439,13 +439,16 @@ chainloop config save \
 
 ### Control Plane
 
-| Name                                 | Description                                                                             | Value                                           |
-| ------------------------------------ | --------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| `controlplane.replicaCount`          | Number of replicas                                                                      | `2`                                             |
-| `controlplane.image.repository`      | FQDN uri for the image                                                                  | `ghcr.io/chainloop-dev/chainloop/control-plane` |
-| `controlplane.image.tag`             | Image tag (immutable tags are recommended). If no set chart.appVersion will be used     |                                                 |
-| `controlplane.tlsConfig.secret.name` | name of a secret containing TLS certificate to be used by the controlplane grpc server. | `""`                                            |
-| `controlplane.pluginsDir`            | Directory where to look for plugins                                                     | `/plugins`                                      |
+| Name                                           | Description                                                                                     | Value                                           |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| `controlplane.replicaCount`                    | Number of replicas                                                                              | `2`                                             |
+| `controlplane.image.repository`                | FQDN uri for the image                                                                          | `ghcr.io/chainloop-dev/chainloop/control-plane` |
+| `controlplane.image.tag`                       | Image tag (immutable tags are recommended). If no set chart.appVersion will be used             |                                                 |
+| `controlplane.tlsConfig.secret.name`           | name of a secret containing TLS certificate to be used by the controlplane grpc server.         | `""`                                            |
+| `controlplane.pluginsDir`                      | Directory where to look for plugins                                                             | `/plugins`                                      |
+| `controlplane.referrerSharedIndex`             | Configure the shared, public index API endpoint that can be used to discover metadata referrers |                                                 |
+| `controlplane.referrerSharedIndex.enabled`     | Enable index API endpoint                                                                       | `false`                                         |
+| `controlplane.referrerSharedIndex.allowedOrgs` | List of UUIDs of organizations that are allowed to publish to the shared index                  | `[]`                                            |
 
 ### Control Plane Database
 

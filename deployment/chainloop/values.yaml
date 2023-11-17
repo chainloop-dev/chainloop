@@ -114,6 +114,13 @@ controlplane:
   ## @param controlplane.pluginsDir Directory where to look for plugins
   pluginsDir: /plugins
 
+  ## @extra controlplane.referrerSharedIndex Configure the shared, public index API endpoint that can be used to discover metadata referrers
+  ## @param controlplane.referrerSharedIndex.enabled Enable index API endpoint
+  ## @param controlplane.referrerSharedIndex.allowedOrgs List of UUIDs of organizations that are allowed to publish to the shared index
+  referrerSharedIndex:
+    enabled: false
+    allowedOrgs: []
+
   # Database migration
   ## @skip controlplane.migration
   migration:
