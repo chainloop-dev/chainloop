@@ -197,6 +197,12 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		s.Equal([]uuid.UUID{s.workflow1.ID}, got.WorkflowIDs)
 	})
 
+	s.T().Run("can get sha1 digests too", func(t *testing.T) {
+		got, err := s.Referrer.GetFromRoot(ctx, wantReferrerCommit.Digest, "", s.user.ID)
+		s.NoError(err)
+		s.Equal(wantReferrerCommit.Digest, got.Digest)
+	})
+
 	s.T().Run("can't be accessed by a second user in another org", func(t *testing.T) {
 		// the user2 has not access to org1
 		got, err := s.Referrer.GetFromRoot(ctx, wantReferrerAtt.Digest, "", s.user2.ID)
@@ -253,13 +259,6 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		s.Equal(wantReferrerSarif.Downloadable, got.Downloadable)
 		s.Equal(wantReferrerSarif.Kind, got.Kind)
 		require.Len(t, got.References, 0)
-	})
-
-	s.T().Run("or it's an invalid digest", func(t *testing.T) {
-		got, err := s.Referrer.GetFromRoot(ctx, "sha256:deadbeef", "", s.user.ID)
-		s.True(biz.IsErrValidation(err))
-		s.ErrorContains(err, "invalid digest format")
-		s.Nil(got)
 	})
 
 	s.T().Run("or it does not exist", func(t *testing.T) {
