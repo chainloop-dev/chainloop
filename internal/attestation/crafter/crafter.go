@@ -395,7 +395,7 @@ func (c *Crafter) ResolveEnvVars() error {
 
 	outputEnvVars, err := c.Runner.ResolveEnvVars()
 	if err != nil {
-		return err
+		return fmt.Errorf("error while resolving runner environment variables: %w", err)
 	}
 
 	// User-defined environment vars
