@@ -226,9 +226,9 @@ func (s *workflowRunIntegrationTestSuite) SetupTest() {
 
 	s.TestingUseCases = testhelpers.NewTestingUseCases(s.T(), testhelpers.WithCredsReaderWriter(credsWriter))
 
-	s.org, err = s.Organization.Create(ctx, "testing org")
+	s.org, err = s.Organization.Create(ctx, "testing-org")
 	assert.NoError(err)
-	s.org2, err = s.Organization.Create(ctx, "second org")
+	s.org2, err = s.Organization.Create(ctx, "second-org")
 	assert.NoError(err)
 
 	// Workflow

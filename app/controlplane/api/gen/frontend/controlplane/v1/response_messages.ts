@@ -140,13 +140,13 @@ export interface User {
 
 export interface OrgMembershipItem {
   id: string;
-  org?: Org;
+  org?: OrgItem;
   current: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-export interface Org {
+export interface OrgItem {
   id: string;
   name: string;
   createdAt?: Date;
@@ -1416,7 +1416,7 @@ export const OrgMembershipItem = {
       writer.uint32(10).string(message.id);
     }
     if (message.org !== undefined) {
-      Org.encode(message.org, writer.uint32(18).fork()).ldelim();
+      OrgItem.encode(message.org, writer.uint32(18).fork()).ldelim();
     }
     if (message.current === true) {
       writer.uint32(24).bool(message.current);
@@ -1449,7 +1449,7 @@ export const OrgMembershipItem = {
             break;
           }
 
-          message.org = Org.decode(reader, reader.uint32());
+          message.org = OrgItem.decode(reader, reader.uint32());
           continue;
         case 3:
           if (tag !== 24) {
@@ -1484,7 +1484,7 @@ export const OrgMembershipItem = {
   fromJSON(object: any): OrgMembershipItem {
     return {
       id: isSet(object.id) ? String(object.id) : "",
-      org: isSet(object.org) ? Org.fromJSON(object.org) : undefined,
+      org: isSet(object.org) ? OrgItem.fromJSON(object.org) : undefined,
       current: isSet(object.current) ? Boolean(object.current) : false,
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
       updatedAt: isSet(object.updatedAt) ? fromJsonTimestamp(object.updatedAt) : undefined,
@@ -1494,7 +1494,7 @@ export const OrgMembershipItem = {
   toJSON(message: OrgMembershipItem): unknown {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
-    message.org !== undefined && (obj.org = message.org ? Org.toJSON(message.org) : undefined);
+    message.org !== undefined && (obj.org = message.org ? OrgItem.toJSON(message.org) : undefined);
     message.current !== undefined && (obj.current = message.current);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
     message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt.toISOString());
@@ -1508,7 +1508,7 @@ export const OrgMembershipItem = {
   fromPartial<I extends Exact<DeepPartial<OrgMembershipItem>, I>>(object: I): OrgMembershipItem {
     const message = createBaseOrgMembershipItem();
     message.id = object.id ?? "";
-    message.org = (object.org !== undefined && object.org !== null) ? Org.fromPartial(object.org) : undefined;
+    message.org = (object.org !== undefined && object.org !== null) ? OrgItem.fromPartial(object.org) : undefined;
     message.current = object.current ?? false;
     message.createdAt = object.createdAt ?? undefined;
     message.updatedAt = object.updatedAt ?? undefined;
@@ -1516,12 +1516,12 @@ export const OrgMembershipItem = {
   },
 };
 
-function createBaseOrg(): Org {
+function createBaseOrgItem(): OrgItem {
   return { id: "", name: "", createdAt: undefined };
 }
 
-export const Org = {
-  encode(message: Org, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const OrgItem = {
+  encode(message: OrgItem, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.id !== "") {
       writer.uint32(10).string(message.id);
     }
@@ -1534,10 +1534,10 @@ export const Org = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): Org {
+  decode(input: _m0.Reader | Uint8Array, length?: number): OrgItem {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseOrg();
+    const message = createBaseOrgItem();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1571,7 +1571,7 @@ export const Org = {
     return message;
   },
 
-  fromJSON(object: any): Org {
+  fromJSON(object: any): OrgItem {
     return {
       id: isSet(object.id) ? String(object.id) : "",
       name: isSet(object.name) ? String(object.name) : "",
@@ -1579,7 +1579,7 @@ export const Org = {
     };
   },
 
-  toJSON(message: Org): unknown {
+  toJSON(message: OrgItem): unknown {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
     message.name !== undefined && (obj.name = message.name);
@@ -1587,12 +1587,12 @@ export const Org = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<Org>, I>>(base?: I): Org {
-    return Org.fromPartial(base ?? {});
+  create<I extends Exact<DeepPartial<OrgItem>, I>>(base?: I): OrgItem {
+    return OrgItem.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<Org>, I>>(object: I): Org {
-    const message = createBaseOrg();
+  fromPartial<I extends Exact<DeepPartial<OrgItem>, I>>(object: I): OrgItem {
+    const message = createBaseOrgItem();
     message.id = object.id ?? "";
     message.name = object.name ?? "";
     message.createdAt = object.createdAt ?? undefined;

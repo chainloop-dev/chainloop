@@ -284,6 +284,269 @@ var _ interface {
 	ErrorName() string
 } = OrganizationServiceListMembershipsResponseValidationError{}
 
+// Validate checks the field values on OrganizationServiceUpdateRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *OrganizationServiceUpdateRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on OrganizationServiceUpdateRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// OrganizationServiceUpdateRequestMultiError, or nil if none found.
+func (m *OrganizationServiceUpdateRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *OrganizationServiceUpdateRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if err := m._validateUuid(m.GetId()); err != nil {
+		err = OrganizationServiceUpdateRequestValidationError{
+			field:  "Id",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.Name != nil {
+		// no validation rules for Name
+	}
+
+	if len(errors) > 0 {
+		return OrganizationServiceUpdateRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *OrganizationServiceUpdateRequest) _validateUuid(uuid string) error {
+	if matched := _organization_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
+	}
+
+	return nil
+}
+
+// OrganizationServiceUpdateRequestMultiError is an error wrapping multiple
+// validation errors returned by
+// OrganizationServiceUpdateRequest.ValidateAll() if the designated
+// constraints aren't met.
+type OrganizationServiceUpdateRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m OrganizationServiceUpdateRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m OrganizationServiceUpdateRequestMultiError) AllErrors() []error { return m }
+
+// OrganizationServiceUpdateRequestValidationError is the validation error
+// returned by OrganizationServiceUpdateRequest.Validate if the designated
+// constraints aren't met.
+type OrganizationServiceUpdateRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e OrganizationServiceUpdateRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e OrganizationServiceUpdateRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e OrganizationServiceUpdateRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e OrganizationServiceUpdateRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e OrganizationServiceUpdateRequestValidationError) ErrorName() string {
+	return "OrganizationServiceUpdateRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e OrganizationServiceUpdateRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sOrganizationServiceUpdateRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = OrganizationServiceUpdateRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = OrganizationServiceUpdateRequestValidationError{}
+
+// Validate checks the field values on OrganizationServiceUpdateResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *OrganizationServiceUpdateResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on OrganizationServiceUpdateResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// OrganizationServiceUpdateResponseMultiError, or nil if none found.
+func (m *OrganizationServiceUpdateResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *OrganizationServiceUpdateResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetResult()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, OrganizationServiceUpdateResponseValidationError{
+					field:  "Result",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, OrganizationServiceUpdateResponseValidationError{
+					field:  "Result",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetResult()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return OrganizationServiceUpdateResponseValidationError{
+				field:  "Result",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return OrganizationServiceUpdateResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// OrganizationServiceUpdateResponseMultiError is an error wrapping multiple
+// validation errors returned by
+// OrganizationServiceUpdateResponse.ValidateAll() if the designated
+// constraints aren't met.
+type OrganizationServiceUpdateResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m OrganizationServiceUpdateResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m OrganizationServiceUpdateResponseMultiError) AllErrors() []error { return m }
+
+// OrganizationServiceUpdateResponseValidationError is the validation error
+// returned by OrganizationServiceUpdateResponse.Validate if the designated
+// constraints aren't met.
+type OrganizationServiceUpdateResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e OrganizationServiceUpdateResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e OrganizationServiceUpdateResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e OrganizationServiceUpdateResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e OrganizationServiceUpdateResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e OrganizationServiceUpdateResponseValidationError) ErrorName() string {
+	return "OrganizationServiceUpdateResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e OrganizationServiceUpdateResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sOrganizationServiceUpdateResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = OrganizationServiceUpdateResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = OrganizationServiceUpdateResponseValidationError{}
+
 // Validate checks the field values on SetCurrentMembershipRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.

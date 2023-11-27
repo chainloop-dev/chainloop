@@ -30,13 +30,15 @@ type OrganizationService struct {
 	pb.UnimplementedOrganizationServiceServer
 	*service
 
-	useCase *biz.MembershipUseCase
+	membershipUC *biz.MembershipUseCase
+	orgUC        *biz.OrganizationUseCase
 }
 
-func NewOrganizationService(uc *biz.MembershipUseCase, opts ...NewOpt) *OrganizationService {
+func NewOrganizationService(muc *biz.MembershipUseCase, ouc *biz.OrganizationUseCase, opts ...NewOpt) *OrganizationService {
 	return &OrganizationService{
-		service: newService(opts...),
-		useCase: uc,
+		service:      newService(opts...),
+		membershipUC: muc,
+		orgUC:        ouc,
 	}
 }
 
@@ -46,7 +48,7 @@ func (s *OrganizationService) ListMemberships(ctx context.Context, _ *pb.Organiz
 		return nil, err
 	}
 
-	memberships, err := s.useCase.ByUser(ctx, currentUser.ID)
+	memberships, err := s.membershipUC.ByUser(ctx, currentUser.ID)
 	if err != nil && biz.IsNotFound(err) {
 		return nil, errors.NotFound("not found", err.Error())
 	} else if err != nil {
@@ -61,13 +63,27 @@ func (s *OrganizationService) ListMemberships(ctx context.Context, _ *pb.Organiz
 	return &pb.OrganizationServiceListMembershipsResponse{Result: result}, nil
 }
 
+func (s *OrganizationService) Update(ctx context.Context, req *pb.OrganizationServiceUpdateRequest) (*pb.OrganizationServiceUpdateResponse, error) {
+	currentUser, _, err := loadCurrentUserAndOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	org, err := s.orgUC.Update(ctx, currentUser.ID, req.Id, req.Name)
+	if err != nil {
+		return nil, handleUseCaseErr("organization", err, s.log)
+	}
+
+	return &pb.OrganizationServiceUpdateResponse{Result: bizOrgToPb(org)}, nil
+}
+
 func (s *OrganizationService) SetCurrentMembership(ctx context.Context, req *pb.SetCurrentMembershipRequest) (*pb.SetCurrentMembershipResponse, error) {
 	currentUser, _, err := loadCurrentUserAndOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	m, err := s.useCase.SetCurrent(ctx, currentUser.ID, req.MembershipId)
+	m, err := s.membershipUC.SetCurrent(ctx, currentUser.ID, req.MembershipId)
 	if err != nil && biz.IsNotFound(err) {
 		return nil, errors.NotFound("not found", err.Error())
 	} else if err != nil {

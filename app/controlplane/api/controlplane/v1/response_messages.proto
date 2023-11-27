@@ -111,13 +111,13 @@ message User {
 
 message OrgMembershipItem {
   string id = 1;
-  Org org = 2;
+  OrgItem org = 2;
   bool current = 3;
   google.protobuf.Timestamp created_at = 4;
   google.protobuf.Timestamp updated_at = 5;
 }
 
-message Org {
+message OrgItem {
   string id = 1;
   string name = 2;
   google.protobuf.Timestamp created_at = 3;

@@ -58,7 +58,7 @@ func (action *MembershipList) Run() ([]*MembershipItem, error) {
 	return result, nil
 }
 
-func pbOrgItemToAction(in *pb.Org) *OrgItem {
+func pbOrgItemToAction(in *pb.OrgItem) *OrgItem {
 	return &OrgItem{
 		ID:        in.Id,
 		Name:      in.Name,

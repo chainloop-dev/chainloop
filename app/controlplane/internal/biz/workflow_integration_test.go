@@ -37,7 +37,7 @@ func (s *workflowIntegrationTestSuite) TestUpdate() {
 		project = "test project"
 	)
 
-	org2, err := s.Organization.Create(context.Background(), "testing org")
+	org2, err := s.Organization.Create(context.Background(), "testing-org")
 	require.NoError(s.T(), err)
 	workflow, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: name, OrgID: s.org.ID})
 	require.NoError(s.T(), err)
@@ -147,7 +147,7 @@ func (s *workflowIntegrationTestSuite) SetupTest() {
 	s.TestingUseCases = testhelpers.NewTestingUseCases(s.T())
 
 	ctx := context.Background()
-	s.org, err = s.Organization.Create(ctx, "testing org")
+	s.org, err = s.Organization.Create(ctx, "testing-org")
 	assert.NoError(err)
 }
 

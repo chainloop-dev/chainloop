@@ -24,6 +24,7 @@ import "validate/validate.proto";
 service OrganizationService {
   // List the organizations this user has access to
 	rpc ListMemberships (OrganizationServiceListMembershipsRequest) returns (OrganizationServiceListMembershipsResponse);
+	rpc Update (OrganizationServiceUpdateRequest) returns (OrganizationServiceUpdateResponse);
 	rpc SetCurrentMembership (SetCurrentMembershipRequest) returns (SetCurrentMembershipResponse);
 }
 
@@ -31,6 +32,17 @@ message OrganizationServiceListMembershipsRequest {}
 
 message OrganizationServiceListMembershipsResponse {
   repeated OrgMembershipItem result = 1;
+}
+
+message OrganizationServiceUpdateRequest {
+  string id = 1 [(validate.rules).string.uuid = true];
+  // "optional" allow us to detect if the value is explicitly set
+  // and not just the default balue
+  optional string name = 2;
+}
+
+message OrganizationServiceUpdateResponse {
+  OrgItem result = 1;
 }
 
 message SetCurrentMembershipRequest {

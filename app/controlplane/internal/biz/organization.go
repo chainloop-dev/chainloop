@@ -17,12 +17,15 @@ package biz
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"github.com/moby/moby/pkg/namesgenerator"
+	"k8s.io/apimachinery/pkg/util/validation"
 )
 
 type Organization struct {
@@ -33,6 +36,7 @@ type Organization struct {
 type OrganizationRepo interface {
 	FindByID(ctx context.Context, orgID uuid.UUID) (*Organization, error)
 	Create(ctx context.Context, name string) (*Organization, error)
+	Update(ctx context.Context, id uuid.UUID, name *string) (*Organization, error)
 	Delete(ctx context.Context, ID uuid.UUID) error
 }
 
@@ -41,13 +45,15 @@ type OrganizationUseCase struct {
 	logger            *log.Helper
 	casBackendUseCase *CASBackendUseCase
 	integrationUC     *IntegrationUseCase
+	membershipRepo    MembershipRepo
 }
 
-func NewOrganizationUseCase(repo OrganizationRepo, repoUC *CASBackendUseCase, iUC *IntegrationUseCase, logger log.Logger) *OrganizationUseCase {
+func NewOrganizationUseCase(repo OrganizationRepo, repoUC *CASBackendUseCase, iUC *IntegrationUseCase, mRepo MembershipRepo, logger log.Logger) *OrganizationUseCase {
 	return &OrganizationUseCase{orgRepo: repo,
 		logger:            log.NewHelper(logger),
 		casBackendUseCase: repoUC,
 		integrationUC:     iUC,
+		membershipRepo:    mRepo,
 	}
 }
 
@@ -55,9 +61,78 @@ func (uc *OrganizationUseCase) Create(ctx context.Context, name string) (*Organi
 	// Create a random name if none is provided
 	if name == "" {
 		name = namesgenerator.GetRandomName(0)
+		// Replace underscores with dashes to make it compatible with DNS1123
+		name = strings.ReplaceAll(name, "_", "-")
+	}
+
+	if err := validateOrgName(name); err != nil {
+		return nil, NewErrValidation(fmt.Errorf("invalid organization name: %w", err))
 	}
 
 	return uc.orgRepo.Create(ctx, name)
+}
+
+func validateOrgName(name string) error {
+	// The same validation done by Kubernetes for their namespace name
+	// https://github.com/kubernetes/apimachinery/blob/fa98d6eaedb4caccd69fc07d90bbb6a1e551f00f/pkg/api/validation/generic.go#L63
+	err := validation.IsDNS1123Label(name)
+	if len(err) > 0 {
+		errMsg := ""
+		for _, e := range err {
+			errMsg += e + "\n"
+		}
+
+		return errors.New(errMsg)
+	}
+
+	return nil
+}
+
+func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgID string, name *string) (*Organization, error) {
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	// We validate the name to get ready for the name to become identifiers
+	if name != nil {
+		if err := validateOrgName(*name); err != nil {
+			return nil, NewErrValidation(fmt.Errorf("invalid organization name: %w", err))
+		}
+	}
+
+	// Make sure that the organization exists and that the user is a member of it
+	memberships, err := uc.membershipRepo.FindByUser(ctx, userUUID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find memberships: %w", err)
+	}
+
+	var found bool
+	for _, m := range memberships {
+		if m.OrganizationID == orgUUID {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		return nil, NewErrNotFound("organization")
+	}
+
+	// Perform the update
+	org, err := uc.orgRepo.Update(ctx, orgUUID, name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update organization: %w", err)
+	} else if org == nil {
+		return nil, NewErrNotFound("organization")
+	}
+
+	return org, nil
 }
 
 func (uc *OrganizationUseCase) FindByID(ctx context.Context, id string) (*Organization, error) {

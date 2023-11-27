@@ -32,7 +32,7 @@ message ContextServiceCurrentResponse {
   
   message Result {
     User current_user = 1;
-    Org current_org = 2;
+    OrgItem current_org = 2;
     CASBackendItem current_cas_backend = 3;
   }
 }

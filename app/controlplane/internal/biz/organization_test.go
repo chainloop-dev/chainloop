@@ -13,54 +13,47 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package biz_test
+package biz
 
 import (
-	"context"
 	"testing"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
-	repoM "github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/mocks"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
 type organizationTestSuite struct {
 	suite.Suite
-	repo    *repoM.OrganizationRepo
-	useCase *biz.OrganizationUseCase
 }
 
-func (s *organizationTestSuite) SetupTest() {
-	s.repo = repoM.NewOrganizationRepo(s.T())
-	s.useCase = biz.NewOrganizationUseCase(s.repo, nil, nil, nil)
-}
+func (s *organizationTestSuite) TestValidateOrgName() {
+	testCases := []struct {
+		name          string
+		expectedError bool
+	}{
+		{"", true},
+		{"a", false},
+		{"aa-aa", false},
+		{"-aaa", true},
+		// no under-scores
+		{"aaa_aaa", true},
+		{"1-aaaa", false},
+		{"Aaaaa", true},
+		{"12-foo-bar-waz", false},
+		// 63 max
+		{"abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijk", false},
+		// over the max size
+		{"aabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijk", true},
+	}
 
-func (s *organizationTestSuite) TestCreate() {
-	assert := assert.New(s.T())
-	ctx := context.Background()
-	tests := []struct {
-		name string
-	}{{"defined"}, {""}}
-
-	newOrg := &biz.Organization{}
-	s.repo.On("Create", ctx, mock.AnythingOfType("string")).Return(
-		func(ctx context.Context, s string) *biz.Organization {
-			newOrg.Name = s
-			return newOrg
-		}, nil,
-	)
-
-	for _, tc := range tests {
-		gotOrg, err := s.useCase.Create(ctx, tc.name)
-		assert.NoError(err)
-		// The name was provided
-		if tc.name != "" {
-			assert.Equal(gotOrg.Name, tc.name)
-		}
-		// The name is always set, even if it was not provided
-		assert.NotEmpty(gotOrg.Name)
+	for _, tc := range testCases {
+		s.T().Run(tc.name, func(t *testing.T) {
+			err := validateOrgName(tc.name)
+			if tc.expectedError {
+				s.Error(err)
+			} else {
+				s.NoError(err)
+			}
+		})
 	}
 }
 
