@@ -109,7 +109,7 @@ func (c *Crafter) Init(opts *InitOpts) error {
 	// Check that the initialization is happening in the right environment
 	runnerType := opts.SchemaV1.Runner.GetType()
 	runnerContext := NewRunner(runnerType)
-	if !runnerContext.CheckEnv() {
+	if !opts.DryRun && !runnerContext.CheckEnv() {
 		return fmt.Errorf("%w, expected %s", ErrRunnerContextNotFound, runnerType)
 	}
 
@@ -380,7 +380,6 @@ func (c *Crafter) ResolveEnvVars() error {
 	// Runner specific environment variables
 
 	c.logger.Debug().Str("runnerType", c.Runner.String()).Msg("loading runner specific env variables")
-	var outputEnvVars = make(map[string]string)
 	if !c.Runner.CheckEnv() {
 		errorStr := fmt.Sprintf("couldn't detect the environment %q. Is the crafting process happening in the target env?", c.Runner.String())
 		return fmt.Errorf("%s - %w", errorStr, ErrRunnerContextNotFound)

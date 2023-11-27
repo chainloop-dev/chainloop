@@ -32,10 +32,11 @@ func resolveEnvVars(envVarsDefinitions []*EnvVarDefinition) (map[string]string, 
 		value := os.Getenv(envVarDef.Name)
 		if value != "" {
 			result[envVarDef.Name] = value
-		} else {
-			if !envVarDef.Optional {
-				return nil, fmt.Errorf("environment variable %s cannot be resolved", envVarDef.Name)
-			}
+			continue
+		}
+
+		if !envVarDef.Optional {
+			return nil, fmt.Errorf("environment variable %s cannot be resolved", envVarDef.Name)
 		}
 	}
 
