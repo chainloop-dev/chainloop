@@ -387,9 +387,9 @@ func (c *Crafter) ResolveEnvVars() error {
 
 	// Workflow run environment variables
 
-	var varNames []string
-	for _, envVarDef := range c.Runner.ListEnvVars() {
-		varNames = append(varNames, envVarDef.Name)
+	varNames := make([]string, len(c.Runner.ListEnvVars()))
+	for index, envVarDef := range c.Runner.ListEnvVars() {
+		varNames[index] = envVarDef.Name
 	}
 	c.logger.Debug().Str("runnerType", c.Runner.String()).Strs("variables", varNames).Msg("list of env variables to automatically extract")
 
