@@ -88,9 +88,17 @@ func (s *jenkinsJobSuite) TestListEnvVars() {
 }
 
 func (s *jenkinsJobSuite) TestResolveEnvVars() {
+	// Test with all of the environment variables present
 	resolvedEnvVars, err := s.runner.ResolveEnvVars()
 	s.NoError(err)
 	s.Equal(jenkinsJobTestingEnvVars, resolvedEnvVars)
+
+	// Test with the optional environment variables unset
+	os.Unsetenv("GIT_BRANCH")
+	os.Unsetenv("GIT_COMMIT")
+	resolvedEnvVars, err = s.runner.ResolveEnvVars()
+	s.NoError(err)
+	s.Equal(reuiredJenkinsJobTestingEnvVars, resolvedEnvVars)
 }
 
 func (s *jenkinsJobSuite) TestRunURI() {
@@ -117,6 +125,13 @@ var jenkinsJobTestingEnvVars = map[string]string{
 	"NODE_NAME":     "some-node",
 	"GIT_BRANCH":    "somebranch",
 	"GIT_COMMIT":    "somecommit",
+}
+
+var reuiredJenkinsJobTestingEnvVars = map[string]string{
+	"JOB_NAME":      "some-jenkins-job",
+	"BUILD_URL":     "http://some-build-url/",
+	"AGENT_WORKDIR": "/home/sample/agent",
+	"NODE_NAME":     "some-node",
 }
 
 // Run the tests
