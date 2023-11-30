@@ -43,6 +43,8 @@ func (r *JenkinsJob) ListEnvVars() []*EnvVarDefinition {
 		{"BUILD_URL", false},
 
 		// Some info about the commit (Jenkins Git Plugin)
+		// NOTE: These variables are marked as optional because their presence
+		//       depends the jenkins' configuration (e.g., multibranch pipelines).
 		{"GIT_BRANCH", true},
 		{"GIT_COMMIT", true},
 

@@ -391,9 +391,13 @@ func (c *Crafter) ResolveEnvVars() error {
 	}
 	c.logger.Debug().Str("runnerType", c.Runner.String()).Strs("variables", varNames).Msg("list of env variables to automatically extract")
 
-	outputEnvVars, err := c.Runner.ResolveEnvVars()
-	if err != nil {
-		return fmt.Errorf("error while resolving runner environment variables: %w", err)
+	outputEnvVars, errors := c.Runner.ResolveEnvVars()
+	if len(errors) > 0 {
+		var combinedErrs string
+		for _, err := range errors {
+			combinedErrs += (*err).Error() + "\n"
+		}
+		return fmt.Errorf("error while resolving runner environment variables: %s", combinedErrs)
 	}
 
 	// User-defined environment vars
