@@ -124,8 +124,18 @@ func (action *AttestationStatus) Run() (*AttestationStatusResult, error) {
 	}
 
 	res.EnvVars = envVars
+
+	runnerEnvVars, errors := c.Runner.ResolveEnvVars()
+	var combinedErrs string
+	for _, err := range errors {
+		combinedErrs += (*err).Error() + "\n"
+	}
+	if len(errors) > 0 && !c.CraftingState.DryRun {
+		return nil, fmt.Errorf("error resolving env vars: %s", combinedErrs)
+	}
+
 	res.RunnerContext = &AttestationResultRunnerContext{
-		EnvVars:    c.Runner.ResolveEnvVars(),
+		EnvVars:    runnerEnvVars,
 		RunnerType: att.RunnerType.String(),
 		JobURL:     att.RunnerUrl,
 	}

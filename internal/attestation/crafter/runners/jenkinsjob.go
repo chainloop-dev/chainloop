@@ -36,26 +36,22 @@ func (r *JenkinsJob) CheckEnv() bool {
 	return true
 }
 
-func (r *JenkinsJob) ListEnvVars() []string {
-	return []string{
+func (r *JenkinsJob) ListEnvVars() []*EnvVarDefinition {
+	return []*EnvVarDefinition{
 		// Some info about the job
-		"JOB_NAME",
-		"BUILD_URL",
+		{"JOB_NAME", false},
+		{"BUILD_URL", false},
 
 		// Some info about the commit (Jenkins Git Plugin)
-		// NOTE: Commenting these vars out because they are not always present
-		//       and current chainloop behavior requires these to be set.
-		// "GIT_BRANCH",
-		// "GIT_COMMIT",
+		// NOTE: These variables are marked as optional because their presence
+		//       depends the jenkins' configuration (e.g., multibranch pipelines).
+		{"GIT_BRANCH", true},
+		{"GIT_COMMIT", true},
 
 		// Some info about the agent
-		"AGENT_WORKDIR",
-		"NODE_NAME",
+		{"AGENT_WORKDIR", false},
+		{"NODE_NAME", false},
 	}
-}
-
-func (r *JenkinsJob) ResolveEnvVars() map[string]string {
-	return resolveEnvVars(r.ListEnvVars())
 }
 
 func (r *JenkinsJob) String() string {
@@ -64,4 +60,8 @@ func (r *JenkinsJob) String() string {
 
 func (r *JenkinsJob) RunURI() string {
 	return os.Getenv("BUILD_URL")
+}
+
+func (r *JenkinsJob) ResolveEnvVars() (map[string]string, []*error) {
+	return resolveEnvVars(r.ListEnvVars())
 }

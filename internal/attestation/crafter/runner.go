@@ -27,11 +27,15 @@ var ErrRunnerContextNotFound = errors.New("the runner environment doesn't match 
 type supportedRunner interface {
 	// Whether the attestation is happening in this environment
 	CheckEnv() bool
+
 	// List the env variables registered
-	ListEnvVars() []string
+	ListEnvVars() []*runners.EnvVarDefinition
+
 	// Return the list of env vars associated with this runner already resolved
-	ResolveEnvVars() map[string]string
+	ResolveEnvVars() (map[string]string, []*error)
+
 	String() string
+
 	// uri to the running job/workload
 	RunURI() string
 }

@@ -38,22 +38,18 @@ func (r *GitlabPipeline) CheckEnv() bool {
 	return true
 }
 
-func (r *GitlabPipeline) ListEnvVars() []string {
-	return []string{
-		"GITLAB_USER_EMAIL",
-		"GITLAB_USER_LOGIN",
-		"CI_PROJECT_URL",
-		"CI_COMMIT_SHA",
-		"CI_JOB_URL",
-		"CI_PIPELINE_URL",
-		"CI_RUNNER_VERSION",
-		"CI_RUNNER_DESCRIPTION",
-		"CI_COMMIT_REF_NAME",
+func (r *GitlabPipeline) ListEnvVars() []*EnvVarDefinition {
+	return []*EnvVarDefinition{
+		{"GITLAB_USER_EMAIL", false},
+		{"GITLAB_USER_LOGIN", false},
+		{"CI_PROJECT_URL", false},
+		{"CI_COMMIT_SHA", false},
+		{"CI_JOB_URL", false},
+		{"CI_PIPELINE_URL", false},
+		{"CI_RUNNER_VERSION", false},
+		{"CI_RUNNER_DESCRIPTION", false},
+		{"CI_COMMIT_REF_NAME", false},
 	}
-}
-
-func (r *GitlabPipeline) ResolveEnvVars() map[string]string {
-	return resolveEnvVars(r.ListEnvVars())
 }
 
 func (r *GitlabPipeline) String() string {
@@ -62,4 +58,8 @@ func (r *GitlabPipeline) String() string {
 
 func (r *GitlabPipeline) RunURI() (url string) {
 	return os.Getenv("CI_JOB_URL")
+}
+
+func (r *GitlabPipeline) ResolveEnvVars() (map[string]string, []*error) {
+	return resolveEnvVars(r.ListEnvVars())
 }

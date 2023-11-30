@@ -89,20 +89,22 @@ func (s *githubActionSuite) TestCheckEnv() {
 }
 
 func (s *githubActionSuite) TestListEnvVars() {
-	s.Equal([]string{
-		"GITHUB_ACTOR",
-		"GITHUB_REF",
-		"GITHUB_REPOSITORY",
-		"GITHUB_REPOSITORY_OWNER",
-		"GITHUB_RUN_ID",
-		"GITHUB_SHA",
-		"RUNNER_NAME",
-		"RUNNER_OS",
+	s.Equal([]*EnvVarDefinition{
+		{"GITHUB_ACTOR", false},
+		{"GITHUB_REF", false},
+		{"GITHUB_REPOSITORY", false},
+		{"GITHUB_REPOSITORY_OWNER", false},
+		{"GITHUB_RUN_ID", false},
+		{"GITHUB_SHA", false},
+		{"RUNNER_NAME", false},
+		{"RUNNER_OS", false},
 	}, s.runner.ListEnvVars())
 }
 
 func (s *githubActionSuite) TestResolveEnvVars() {
-	s.Equal(gitHubTestingEnvVars, s.runner.ResolveEnvVars())
+	resolvedEnvVars, errors := s.runner.ResolveEnvVars()
+	s.Empty(errors)
+	s.Equal(gitHubTestingEnvVars, resolvedEnvVars)
 }
 
 func (s *githubActionSuite) TestRunURI() {

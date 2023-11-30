@@ -35,23 +35,19 @@ func (r *CircleCIBuild) CheckEnv() bool {
 	return true
 }
 
-func (r *CircleCIBuild) ListEnvVars() []string {
-	return []string{
+func (r *CircleCIBuild) ListEnvVars() []*EnvVarDefinition {
+	return []*EnvVarDefinition{
 		// Some info about the job
-		"CIRCLE_BUILD_URL",
-		"CIRCLE_JOB",
+		{"CIRCLE_BUILD_URL", false},
+		{"CIRCLE_JOB", false},
 
 		// Some info about the commit
-		"CIRCLE_BRANCH",
+		{"CIRCLE_BRANCH", false},
 
 		// Some info about the agent
-		"CIRCLE_NODE_TOTAL",
-		"CIRCLE_NODE_INDEX",
+		{"CIRCLE_NODE_TOTAL", false},
+		{"CIRCLE_NODE_INDEX", false},
 	}
-}
-
-func (r *CircleCIBuild) ResolveEnvVars() map[string]string {
-	return resolveEnvVars(r.ListEnvVars())
 }
 
 func (r *CircleCIBuild) String() string {
@@ -60,4 +56,8 @@ func (r *CircleCIBuild) String() string {
 
 func (r *CircleCIBuild) RunURI() string {
 	return os.Getenv("CIRCLE_BUILD_URL")
+}
+
+func (r *CircleCIBuild) ResolveEnvVars() (map[string]string, []*error) {
+	return resolveEnvVars(r.ListEnvVars())
 }

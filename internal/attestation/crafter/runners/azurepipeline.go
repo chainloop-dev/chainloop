@@ -40,23 +40,19 @@ func (r *AzurePipeline) CheckEnv() bool {
 	return true
 }
 
-func (r *AzurePipeline) ListEnvVars() []string {
-	return []string{
-		"BUILD_REQUESTEDFOREMAIL",
-		"BUILD_REQUESTEDFOR",
-		"BUILD_REPOSITORY_URI",
-		"BUILD_REPOSITORY_NAME",
-		"BUILD_BUILDID",
-		"BUILD_BUILDNUMBER",
-		"BUILD_BUILDURI",
-		"BUILD_REASON",
-		"AGENT_VERSION",
-		"TF_BUILD",
+func (r *AzurePipeline) ListEnvVars() []*EnvVarDefinition {
+	return []*EnvVarDefinition{
+		{"BUILD_REQUESTEDFOREMAIL", false},
+		{"BUILD_REQUESTEDFOR", false},
+		{"BUILD_REPOSITORY_URI", false},
+		{"BUILD_REPOSITORY_NAME", false},
+		{"BUILD_BUILDID", false},
+		{"BUILD_BUILDNUMBER", false},
+		{"BUILD_BUILDURI", false},
+		{"BUILD_REASON", false},
+		{"AGENT_VERSION", false},
+		{"TF_BUILD", false},
 	}
-}
-
-func (r *AzurePipeline) ResolveEnvVars() map[string]string {
-	return resolveEnvVars(r.ListEnvVars())
 }
 
 func (r *AzurePipeline) String() string {
@@ -83,4 +79,8 @@ func (r *AzurePipeline) RunURI() (url string) {
 	uri.RawQuery = query.Encode()
 
 	return uri.String()
+}
+
+func (r *AzurePipeline) ResolveEnvVars() (map[string]string, []*error) {
+	return resolveEnvVars(r.ListEnvVars())
 }

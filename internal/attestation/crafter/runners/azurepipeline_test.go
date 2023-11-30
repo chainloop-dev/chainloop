@@ -78,21 +78,24 @@ func (s *azurePipelineSuite) TestCheckEnv() {
 }
 
 func (s *azurePipelineSuite) TestListEnvVars() {
-	assert.Equal(s.T(), []string{
-		"BUILD_REQUESTEDFOREMAIL",
-		"BUILD_REQUESTEDFOR",
-		"BUILD_REPOSITORY_URI",
-		"BUILD_REPOSITORY_NAME",
-		"BUILD_BUILDID",
-		"BUILD_BUILDNUMBER",
-		"BUILD_BUILDURI",
-		"BUILD_REASON",
-		"AGENT_VERSION",
-		"TF_BUILD",
+	assert.Equal(s.T(), []*EnvVarDefinition{
+		{"BUILD_REQUESTEDFOREMAIL", false},
+		{"BUILD_REQUESTEDFOR", false},
+		{"BUILD_REPOSITORY_URI", false},
+		{"BUILD_REPOSITORY_NAME", false},
+		{"BUILD_BUILDID", false},
+		{"BUILD_BUILDNUMBER", false},
+		{"BUILD_BUILDURI", false},
+		{"BUILD_REASON", false},
+		{"AGENT_VERSION", false},
+		{"TF_BUILD", false},
 	}, s.runner.ListEnvVars())
 }
 
 func (s *azurePipelineSuite) TestResolveEnvVars() {
+	resolvedEnvVars, errors := s.runner.ResolveEnvVars()
+	s.Empty(errors)
+
 	s.Equal(map[string]string{
 		"AGENT_VERSION":           "3.220.5",
 		"BUILD_BUILDID":           "6",
@@ -104,7 +107,7 @@ func (s *azurePipelineSuite) TestResolveEnvVars() {
 		"BUILD_REQUESTEDFOR":      "Jan Kowalsky",
 		"BUILD_REQUESTEDFOREMAIL": "jan@kowalscy.onmicrosoft.com",
 		"TF_BUILD":                "True",
-	}, s.runner.ResolveEnvVars())
+	}, resolvedEnvVars)
 }
 
 func (s *azurePipelineSuite) TestRunURI() {
