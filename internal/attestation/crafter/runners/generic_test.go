@@ -35,8 +35,8 @@ func (s *genericSuite) TestListEnvVars() {
 }
 
 func (s *genericSuite) TestResolveEnvVars() {
-	result, err := s.runner.ResolveEnvVars()
-	s.NoError(err)
+	result, errors := s.runner.ResolveEnvVars()
+	s.Empty(errors)
 	s.Equal(map[string]string{}, result)
 }
 

@@ -92,8 +92,8 @@ func (s *gitlabPipelineSuite) TestListEnvVars() {
 }
 
 func (s *gitlabPipelineSuite) TestResolveEnvVars() {
-	resolvedEnvVars, err := s.runner.ResolveEnvVars()
-	s.NoError(err)
+	resolvedEnvVars, errors := s.runner.ResolveEnvVars()
+	s.Empty(errors)
 	s.Equal(map[string]string{
 		"GITLAB_USER_EMAIL":     "foo@foo.com",
 		"GITLAB_USER_LOGIN":     "foo",

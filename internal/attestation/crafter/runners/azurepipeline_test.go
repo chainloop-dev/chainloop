@@ -93,8 +93,8 @@ func (s *azurePipelineSuite) TestListEnvVars() {
 }
 
 func (s *azurePipelineSuite) TestResolveEnvVars() {
-	resolvedEnvVars, err := s.runner.ResolveEnvVars()
-	s.NoError(err)
+	resolvedEnvVars, errors := s.runner.ResolveEnvVars()
+	s.Empty(errors)
 
 	s.Equal(map[string]string{
 		"AGENT_VERSION":           "3.220.5",

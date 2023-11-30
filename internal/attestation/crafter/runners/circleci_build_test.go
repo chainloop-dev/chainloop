@@ -98,8 +98,8 @@ func (s *circleCIBuildSuite) TestListEnvVars() {
 }
 
 func (s *circleCIBuildSuite) TestResolveEnvVars() {
-	resolvedEnvVars, err := s.runner.ResolveEnvVars()
-	s.NoError(err)
+	resolvedEnvVars, errors := s.runner.ResolveEnvVars()
+	s.Empty(errors)
 	s.Equal(circleCIBuildTestingEnvVars, resolvedEnvVars)
 }
 

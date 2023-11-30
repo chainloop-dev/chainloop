@@ -89,15 +89,15 @@ func (s *jenkinsJobSuite) TestListEnvVars() {
 
 func (s *jenkinsJobSuite) TestResolveEnvVars() {
 	// Test with all of the environment variables present
-	resolvedEnvVars, err := s.runner.ResolveEnvVars()
-	s.NoError(err)
+	resolvedEnvVars, errors := s.runner.ResolveEnvVars()
+	s.Empty(errors)
 	s.Equal(jenkinsJobTestingEnvVars, resolvedEnvVars)
 
 	// Test with the optional environment variables unset
 	os.Unsetenv("GIT_BRANCH")
 	os.Unsetenv("GIT_COMMIT")
-	resolvedEnvVars, err = s.runner.ResolveEnvVars()
-	s.NoError(err)
+	resolvedEnvVars, errors = s.runner.ResolveEnvVars()
+	s.Empty(errors)
 	s.Equal(reuiredJenkinsJobTestingEnvVars, resolvedEnvVars)
 }
 
