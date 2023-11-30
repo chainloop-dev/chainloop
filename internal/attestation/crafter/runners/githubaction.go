@@ -65,6 +65,6 @@ func (r *GitHubAction) RunURI() (url string) {
 	return url
 }
 
-func (r *GitHubAction) ResolveEnvVars() (map[string]string, error) {
+func (r *GitHubAction) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }

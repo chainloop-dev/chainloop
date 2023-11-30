@@ -25,8 +25,9 @@ type EnvVarDefinition struct {
 	Optional bool
 }
 
-func resolveEnvVars(envVarsDefinitions []*EnvVarDefinition) (map[string]string, error) {
+func resolveEnvVars(envVarsDefinitions []*EnvVarDefinition) (map[string]string, []*error) {
 	result := make(map[string]string)
+	var errors []*error
 
 	for _, envVarDef := range envVarsDefinitions {
 		value := os.Getenv(envVarDef.Name)
@@ -36,9 +37,14 @@ func resolveEnvVars(envVarsDefinitions []*EnvVarDefinition) (map[string]string, 
 		}
 
 		if !envVarDef.Optional {
-			return nil, fmt.Errorf("environment variable %s cannot be resolved", envVarDef.Name)
+			err := fmt.Errorf("environment variable %s cannot be resolved", envVarDef.Name)
+			errors = append(errors, &err)
 		}
 	}
 
-	return result, nil
+	if len(errors) > 0 {
+		result = nil
+	}
+
+	return result, errors
 }

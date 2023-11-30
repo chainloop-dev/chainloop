@@ -378,7 +378,6 @@ func (c *Crafter) ResolveEnvVars() error {
 	}
 
 	// Runner specific environment variables
-
 	c.logger.Debug().Str("runnerType", c.Runner.String()).Msg("loading runner specific env variables")
 	if !c.Runner.CheckEnv() {
 		errorStr := fmt.Sprintf("couldn't detect the environment %q. Is the crafting process happening in the target env?", c.Runner.String())
@@ -386,7 +385,6 @@ func (c *Crafter) ResolveEnvVars() error {
 	}
 
 	// Workflow run environment variables
-
 	varNames := make([]string, len(c.Runner.ListEnvVars()))
 	for index, envVarDef := range c.Runner.ListEnvVars() {
 		varNames[index] = envVarDef.Name
@@ -399,7 +397,6 @@ func (c *Crafter) ResolveEnvVars() error {
 	}
 
 	// User-defined environment vars
-
 	if len(c.CraftingState.InputSchema.EnvAllowList) > 0 {
 		c.logger.Debug().Strs("allowList", c.CraftingState.InputSchema.EnvAllowList).Msg("loading env variables")
 	}

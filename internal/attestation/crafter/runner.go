@@ -32,7 +32,7 @@ type supportedRunner interface {
 	ListEnvVars() []*runners.EnvVarDefinition
 
 	// Return the list of env vars associated with this runner already resolved
-	ResolveEnvVars() (map[string]string, error)
+	ResolveEnvVars() (map[string]string, []*error)
 
 	String() string
 

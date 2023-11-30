@@ -81,6 +81,6 @@ func (r *AzurePipeline) RunURI() (url string) {
 	return uri.String()
 }
 
-func (r *AzurePipeline) ResolveEnvVars() (map[string]string, error) {
+func (r *AzurePipeline) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }

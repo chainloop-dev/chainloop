@@ -41,6 +41,6 @@ func (r *Generic) RunURI() string {
 	return ""
 }
 
-func (r *Generic) ResolveEnvVars() (map[string]string, error) {
+func (r *Generic) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }

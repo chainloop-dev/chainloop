@@ -126,7 +126,7 @@ func (action *AttestationStatus) Run() (*AttestationStatusResult, error) {
 	res.EnvVars = envVars
 
 	runnerEnvVars, err := c.Runner.ResolveEnvVars()
-	if err != nil {
+	if err != nil && !c.CraftingState.DryRun {
 		return nil, fmt.Errorf("error resolving env vars: %w", err)
 	}
 

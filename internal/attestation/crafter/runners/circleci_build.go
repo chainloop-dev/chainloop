@@ -58,6 +58,6 @@ func (r *CircleCIBuild) RunURI() string {
 	return os.Getenv("CIRCLE_BUILD_URL")
 }
 
-func (r *CircleCIBuild) ResolveEnvVars() (map[string]string, error) {
+func (r *CircleCIBuild) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }

@@ -60,6 +60,6 @@ func (r *GitlabPipeline) RunURI() (url string) {
 	return os.Getenv("CI_JOB_URL")
 }
 
-func (r *GitlabPipeline) ResolveEnvVars() (map[string]string, error) {
+func (r *GitlabPipeline) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }

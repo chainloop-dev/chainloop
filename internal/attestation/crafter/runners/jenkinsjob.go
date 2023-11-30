@@ -60,6 +60,6 @@ func (r *JenkinsJob) RunURI() string {
 	return os.Getenv("BUILD_URL")
 }
 
-func (r *JenkinsJob) ResolveEnvVars() (map[string]string, error) {
+func (r *JenkinsJob) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }
