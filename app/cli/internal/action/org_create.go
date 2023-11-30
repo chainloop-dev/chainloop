@@ -13,26 +13,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package action
 
 import (
-	"github.com/spf13/cobra"
+	"context"
+
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
-func newOrganizationCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "organization",
-		Aliases: []string{"org"},
-		Short:   "Organizations management",
+type OrgCreate struct {
+	cfg *ActionsOpts
+}
+
+func NewOrgCreate(cfg *ActionsOpts) *OrgCreate {
+	return &OrgCreate{cfg}
+}
+
+func (action *OrgCreate) Run(ctx context.Context, name string) (*OrgItem, error) {
+	client := pb.NewOrganizationServiceClient(action.cfg.CPConnection)
+	resp, err := client.Create(ctx, &pb.OrganizationServiceCreateRequest{Name: name})
+	if err != nil {
+		return nil, err
 	}
 
-	cmd.AddCommand(
-		newOrganizationList(),
-		newOrganizationCreateCmd(),
-		newOrganizationUpdateCmd(),
-		newOrganizationSet(),
-		newOrganizationDescribeCmd(),
-		newOrganizationInvitationCmd(),
-	)
-	return cmd
+	return pbOrgItemToAction(resp.Result), nil
 }

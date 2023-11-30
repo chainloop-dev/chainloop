@@ -24,6 +24,7 @@ import "validate/validate.proto";
 service OrganizationService {
   // List the organizations this user has access to
 	rpc ListMemberships (OrganizationServiceListMembershipsRequest) returns (OrganizationServiceListMembershipsResponse);
+	rpc Create (OrganizationServiceCreateRequest) returns (OrganizationServiceCreateResponse);
 	rpc Update (OrganizationServiceUpdateRequest) returns (OrganizationServiceUpdateResponse);
 	rpc SetCurrentMembership (SetCurrentMembershipRequest) returns (SetCurrentMembershipResponse);
 }
@@ -32,6 +33,14 @@ message OrganizationServiceListMembershipsRequest {}
 
 message OrganizationServiceListMembershipsResponse {
   repeated OrgMembershipItem result = 1;
+}
+
+message OrganizationServiceCreateRequest {
+  string name = 1 [(validate.rules).string.min_len = 1];
+}
+
+message OrganizationServiceCreateResponse {
+  OrgItem result = 1;
 }
 
 message OrganizationServiceUpdateRequest {

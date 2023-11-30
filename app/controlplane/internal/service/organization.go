@@ -63,6 +63,26 @@ func (s *OrganizationService) ListMemberships(ctx context.Context, _ *pb.Organiz
 	return &pb.OrganizationServiceListMembershipsResponse{Result: result}, nil
 }
 
+func (s *OrganizationService) Create(ctx context.Context, req *pb.OrganizationServiceCreateRequest) (*pb.OrganizationServiceCreateResponse, error) {
+	currentUser, _, err := loadCurrentUserAndOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create org
+	org, err := s.orgUC.Create(ctx, req.Name)
+	if err != nil {
+		return nil, handleUseCaseErr("organization", err, s.log)
+	}
+
+	// Associate to user
+	if _, err := s.membershipUC.Create(ctx, org.ID, currentUser.ID, false); err != nil {
+		return nil, handleUseCaseErr("organization", err, s.log)
+	}
+
+	return &pb.OrganizationServiceCreateResponse{Result: bizOrgToPb(org)}, nil
+}
+
 func (s *OrganizationService) Update(ctx context.Context, req *pb.OrganizationServiceUpdateRequest) (*pb.OrganizationServiceUpdateResponse, error) {
 	currentUser, _, err := loadCurrentUserAndOrg(ctx)
 	if err != nil {
