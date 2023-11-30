@@ -3,7 +3,7 @@ import { grpc } from "@improbable-eng/grpc-web";
 import { BrowserHeaders } from "browser-headers";
 import _m0 from "protobufjs/minimal";
 import { Timestamp } from "../../google/protobuf/timestamp";
-import { Org, User } from "./response_messages";
+import { OrgItem, User } from "./response_messages";
 
 export const protobufPackage = "controlplane.v1";
 
@@ -35,7 +35,7 @@ export interface OrgInvitationItem {
   createdAt?: Date;
   receiverEmail: string;
   sender?: User;
-  organization?: Org;
+  organization?: OrgItem;
   status: string;
 }
 
@@ -418,7 +418,7 @@ export const OrgInvitationItem = {
       User.encode(message.sender, writer.uint32(34).fork()).ldelim();
     }
     if (message.organization !== undefined) {
-      Org.encode(message.organization, writer.uint32(42).fork()).ldelim();
+      OrgItem.encode(message.organization, writer.uint32(42).fork()).ldelim();
     }
     if (message.status !== "") {
       writer.uint32(50).string(message.status);
@@ -466,7 +466,7 @@ export const OrgInvitationItem = {
             break;
           }
 
-          message.organization = Org.decode(reader, reader.uint32());
+          message.organization = OrgItem.decode(reader, reader.uint32());
           continue;
         case 6:
           if (tag !== 50) {
@@ -490,7 +490,7 @@ export const OrgInvitationItem = {
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
       receiverEmail: isSet(object.receiverEmail) ? String(object.receiverEmail) : "",
       sender: isSet(object.sender) ? User.fromJSON(object.sender) : undefined,
-      organization: isSet(object.organization) ? Org.fromJSON(object.organization) : undefined,
+      organization: isSet(object.organization) ? OrgItem.fromJSON(object.organization) : undefined,
       status: isSet(object.status) ? String(object.status) : "",
     };
   },
@@ -502,7 +502,7 @@ export const OrgInvitationItem = {
     message.receiverEmail !== undefined && (obj.receiverEmail = message.receiverEmail);
     message.sender !== undefined && (obj.sender = message.sender ? User.toJSON(message.sender) : undefined);
     message.organization !== undefined &&
-      (obj.organization = message.organization ? Org.toJSON(message.organization) : undefined);
+      (obj.organization = message.organization ? OrgItem.toJSON(message.organization) : undefined);
     message.status !== undefined && (obj.status = message.status);
     return obj;
   },
@@ -520,7 +520,7 @@ export const OrgInvitationItem = {
       ? User.fromPartial(object.sender)
       : undefined;
     message.organization = (object.organization !== undefined && object.organization !== null)
-      ? Org.fromPartial(object.organization)
+      ? OrgItem.fromPartial(object.organization)
       : undefined;
     message.status = object.status ?? "";
     return message;

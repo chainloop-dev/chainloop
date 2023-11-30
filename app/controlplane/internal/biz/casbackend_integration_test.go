@@ -320,11 +320,11 @@ func (s *CASBackendIntegrationTestSuite) SetupTest() {
 
 	s.TestingUseCases = testhelpers.NewTestingUseCases(s.T(), testhelpers.WithCredsReaderWriter(s.credsWriter))
 
-	s.orgOne, err = s.Organization.Create(ctx, "testing org 1 with one backend")
+	s.orgOne, err = s.Organization.Create(ctx, "testing-org-1-with-one-backend")
 	assert.NoError(err)
-	s.orgTwo, err = s.Organization.Create(ctx, "testing org 2 with 2 backends")
+	s.orgTwo, err = s.Organization.Create(ctx, "testing-org-2-with-2-backends")
 	assert.NoError(err)
-	s.orgNoBackend, err = s.Organization.Create(ctx, "testing org 3, no backends")
+	s.orgNoBackend, err = s.Organization.Create(ctx, "testing-org-3-no-backends")
 	assert.NoError(err)
 
 	s.casBackend1, err = s.CASBackend.Create(ctx, s.orgOne.ID, "my-location", "backend 1 description", backendType, nil, true)

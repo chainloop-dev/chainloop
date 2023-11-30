@@ -187,9 +187,9 @@ func (s *testSuite) SetupTest() {
 
 	var err error
 	// Create org, integration and oci repository
-	s.org, err = s.Organization.Create(ctx, "testing org")
+	s.org, err = s.Organization.Create(ctx, "testing-org")
 	assert.NoError(err)
-	s.emptyOrg, err = s.Organization.Create(ctx, "empty org")
+	s.emptyOrg, err = s.Organization.Create(ctx, "empty-org")
 	assert.NoError(err)
 
 	// Workflow

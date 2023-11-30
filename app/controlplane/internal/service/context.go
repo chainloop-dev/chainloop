@@ -65,8 +65,8 @@ func (s *ContextService) Current(ctx context.Context, _ *pb.ContextServiceCurren
 	}, nil
 }
 
-func bizOrgToPb(m *biz.Organization) *pb.Org {
-	return &pb.Org{Id: m.ID, Name: m.Name, CreatedAt: timestamppb.New(*m.CreatedAt)}
+func bizOrgToPb(m *biz.Organization) *pb.OrgItem {
+	return &pb.OrgItem{Id: m.ID, Name: m.Name, CreatedAt: timestamppb.New(*m.CreatedAt)}
 }
 
 func bizUserToPb(u *biz.User) *pb.User {

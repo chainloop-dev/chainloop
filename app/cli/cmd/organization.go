@@ -28,6 +28,7 @@ func newOrganizationCmd() *cobra.Command {
 
 	cmd.AddCommand(
 		newOrganizationList(),
+		newOrganizationUpdateCmd(),
 		newOrganizationSet(),
 		newOrganizationDescribeCmd(),
 		newOrganizationInvitationCmd(),

@@ -45,7 +45,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		Logger:  logger,
 	}
 	integrationUseCase := biz.NewIntegrationUseCase(newIntegrationUseCaseOpts)
-	organizationUseCase := biz.NewOrganizationUseCase(organizationRepo, casBackendUseCase, integrationUseCase, logger)
+	organizationUseCase := biz.NewOrganizationUseCase(organizationRepo, casBackendUseCase, integrationUseCase, membershipRepo, logger)
 	newUserUseCaseParams := &biz.NewUserUseCaseParams{
 		UserRepo:            userRepo,
 		MembershipUseCase:   membershipUseCase,
@@ -133,7 +133,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	orgMetricsService := service.NewOrgMetricsService(orgMetricsUseCase, v2...)
 	integrationsService := service.NewIntegrationsService(integrationUseCase, workflowUseCase, availablePlugins, v2...)
-	organizationService := service.NewOrganizationService(membershipUseCase, v2...)
+	organizationService := service.NewOrganizationService(membershipUseCase, organizationUseCase, v2...)
 	casBackendService := service.NewCASBackendService(casBackendUseCase, providers, v2...)
 	casRedirectService, err := service.NewCASRedirectService(casMappingUseCase, casCredentialsUseCase, bootstrap_CASServer, v2...)
 	if err != nil {

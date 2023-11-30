@@ -58,6 +58,6 @@ message OrgInvitationItem {
   google.protobuf.Timestamp created_at = 2;
   string receiver_email = 3;
   User sender = 4;
-  Org organization = 5;
+  OrgItem organization = 5;
   string status = 6;
 }

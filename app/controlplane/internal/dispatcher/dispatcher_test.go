@@ -213,11 +213,11 @@ func (s *dispatcherTestSuite) SetupTest() {
 	s.TestingUseCases = testhelpers.NewTestingUseCases(s.T())
 
 	// Create org, integration and oci repository
-	s.org, err = s.Organization.Create(ctx, "testing org")
+	s.org, err = s.Organization.Create(ctx, "testing-org")
 	assert.NoError(s.T(), err)
 
 	// Create org, integration and oci repository
-	s.emptyOrg, err = s.Organization.Create(ctx, "empty org")
+	s.emptyOrg, err = s.Organization.Create(ctx, "empty-org")
 	assert.NoError(s.T(), err)
 
 	// Workflow

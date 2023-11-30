@@ -78,9 +78,9 @@ func (s *userIntegrationTestSuite) SetupTest() {
 
 	s.TestingUseCases = testhelpers.NewTestingUseCases(t)
 
-	s.userOneOrg, err = s.Organization.Create(ctx, "user 1 org")
+	s.userOneOrg, err = s.Organization.Create(ctx, "user-1-org")
 	assert.NoError(err)
-	s.sharedOrg, err = s.Organization.Create(ctx, "shared org")
+	s.sharedOrg, err = s.Organization.Create(ctx, "shared-org")
 	assert.NoError(err)
 
 	// Create User 1

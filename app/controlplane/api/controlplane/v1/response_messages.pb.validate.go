@@ -1253,21 +1253,21 @@ var _ interface {
 	ErrorName() string
 } = OrgMembershipItemValidationError{}
 
-// Validate checks the field values on Org with the rules defined in the proto
-// definition for this message. If any rules are violated, the first error
-// encountered is returned, or nil if there are no violations.
-func (m *Org) Validate() error {
+// Validate checks the field values on OrgItem with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *OrgItem) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on Org with the rules defined in the
+// ValidateAll checks the field values on OrgItem with the rules defined in the
 // proto definition for this message. If any rules are violated, the result is
-// a list of violation errors wrapped in OrgMultiError, or nil if none found.
-func (m *Org) ValidateAll() error {
+// a list of violation errors wrapped in OrgItemMultiError, or nil if none found.
+func (m *OrgItem) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *Org) validate(all bool) error {
+func (m *OrgItem) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -1282,7 +1282,7 @@ func (m *Org) validate(all bool) error {
 		switch v := interface{}(m.GetCreatedAt()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, OrgValidationError{
+				errors = append(errors, OrgItemValidationError{
 					field:  "CreatedAt",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -1290,7 +1290,7 @@ func (m *Org) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, OrgValidationError{
+				errors = append(errors, OrgItemValidationError{
 					field:  "CreatedAt",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -1299,7 +1299,7 @@ func (m *Org) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetCreatedAt()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return OrgValidationError{
+			return OrgItemValidationError{
 				field:  "CreatedAt",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -1308,18 +1308,18 @@ func (m *Org) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return OrgMultiError(errors)
+		return OrgItemMultiError(errors)
 	}
 
 	return nil
 }
 
-// OrgMultiError is an error wrapping multiple validation errors returned by
-// Org.ValidateAll() if the designated constraints aren't met.
-type OrgMultiError []error
+// OrgItemMultiError is an error wrapping multiple validation errors returned
+// by OrgItem.ValidateAll() if the designated constraints aren't met.
+type OrgItemMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m OrgMultiError) Error() string {
+func (m OrgItemMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -1328,11 +1328,11 @@ func (m OrgMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m OrgMultiError) AllErrors() []error { return m }
+func (m OrgItemMultiError) AllErrors() []error { return m }
 
-// OrgValidationError is the validation error returned by Org.Validate if the
-// designated constraints aren't met.
-type OrgValidationError struct {
+// OrgItemValidationError is the validation error returned by OrgItem.Validate
+// if the designated constraints aren't met.
+type OrgItemValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -1340,22 +1340,22 @@ type OrgValidationError struct {
 }
 
 // Field function returns field value.
-func (e OrgValidationError) Field() string { return e.field }
+func (e OrgItemValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e OrgValidationError) Reason() string { return e.reason }
+func (e OrgItemValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e OrgValidationError) Cause() error { return e.cause }
+func (e OrgItemValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e OrgValidationError) Key() bool { return e.key }
+func (e OrgItemValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e OrgValidationError) ErrorName() string { return "OrgValidationError" }
+func (e OrgItemValidationError) ErrorName() string { return "OrgItemValidationError" }
 
 // Error satisfies the builtin error interface
-func (e OrgValidationError) Error() string {
+func (e OrgItemValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -1367,14 +1367,14 @@ func (e OrgValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sOrg.%s: %s%s",
+		"invalid %sOrgItem.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = OrgValidationError{}
+var _ error = OrgItemValidationError{}
 
 var _ interface {
 	Field() string
@@ -1382,7 +1382,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = OrgValidationError{}
+} = OrgItemValidationError{}
 
 // Validate checks the field values on CASBackendItem with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
