@@ -240,7 +240,7 @@ func (s *crafterSuite) TestResolveEnvVars() {
 		}, {
 			name:          "missing some github runner env",
 			inGithubEnv:   true,
-			expectedError: "error while resolving runner environment variables: environment variable GITHUB_ACTOR cannot be resolved",
+			expectedError: "error while resolving runner environment variables: environment variable GITHUB_ACTOR cannot be resolved\n",
 			envVars: map[string]string{
 				"CUSTOM_VAR_1": "custom_value_1",
 				"CUSTOM_VAR_2": "custom_value_2",
