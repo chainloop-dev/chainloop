@@ -141,7 +141,14 @@ func (uc *OrganizationUseCase) FindByID(ctx context.Context, id string) (*Organi
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	return uc.orgRepo.FindByID(ctx, orgUUID)
+	org, err := uc.orgRepo.FindByID(ctx, orgUUID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find organization: %w", err)
+	} else if org == nil {
+		return nil, NewErrNotFound("organization")
+	}
+
+	return org, nil
 }
 
 // Delete deletes an organization and all relevant data

@@ -19,12 +19,77 @@ import (
 	"context"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
+
+func (s *membershipIntegrationTestSuite) TestDeleteWithOrg() {
+	ctx := context.Background()
+
+	user, err := s.User.FindOrCreateByEmail(ctx, "foo@test.com")
+	s.NoError(err)
+	user2, err := s.User.FindOrCreateByEmail(ctx, "foo-2@test.com")
+	s.NoError(err)
+	userOrg, err := s.Organization.Create(ctx, "foo")
+	s.NoError(err)
+	sharedOrg, err := s.Organization.Create(ctx, "shared-org")
+	s.NoError(err)
+
+	mUser, err := s.Membership.Create(ctx, userOrg.ID, user.ID, true)
+	s.NoError(err)
+	mUserSharedOrg, err := s.Membership.Create(ctx, sharedOrg.ID, user.ID, true)
+	s.NoError(err)
+	mUser2SharedOrg, err := s.Membership.Create(ctx, sharedOrg.ID, user2.ID, true)
+	s.NoError(err)
+
+	s.T().Run("invalid userID", func(t *testing.T) {
+		err := s.Membership.DeleteWithOrg(ctx, "invalid", mUser.ID.String())
+		s.True(biz.IsErrInvalidUUID(err))
+	})
+
+	s.T().Run("invalid orgID", func(t *testing.T) {
+		err := s.Membership.DeleteWithOrg(ctx, user.ID, "invalid")
+		s.True(biz.IsErrInvalidUUID(err))
+	})
+
+	s.T().Run("membership ID from another user", func(t *testing.T) {
+		err := s.Membership.DeleteWithOrg(ctx, user.ID, mUser2SharedOrg.ID.String())
+		s.True(biz.IsNotFound(err))
+	})
+
+	s.T().Run("delete the membership when the only member", func(t *testing.T) {
+		err := s.Membership.DeleteWithOrg(ctx, user.ID, mUser.ID.String())
+		s.NoError(err)
+		// The org should also be deleted
+		_, err = s.Organization.FindByID(ctx, userOrg.ID)
+		s.True(biz.IsNotFound(err))
+	})
+
+	s.T().Run("delete the membership when there are more than 1 member", func(t *testing.T) {
+		err := s.Membership.DeleteWithOrg(ctx, user.ID, mUserSharedOrg.ID.String())
+		s.NoError(err)
+		// The org should not be deleted
+		got, err := s.Organization.FindByID(ctx, sharedOrg.ID)
+		s.NoError(err)
+
+		// User 2 is still a member
+		members, err := s.Membership.ByOrg(ctx, got.ID)
+		s.NoError(err)
+		s.Len(members, 1)
+		s.Equal(user2.ID, members[0].UserID.String())
+	})
+
+	s.T().Run("we can remove the latest member", func(t *testing.T) {
+		err := s.Membership.DeleteWithOrg(ctx, user2.ID, mUser2SharedOrg.ID.String())
+		s.NoError(err)
+		_, err = s.Organization.FindByID(ctx, sharedOrg.ID)
+		s.True(biz.IsNotFound(err))
+	})
+}
 
 func (s *membershipIntegrationTestSuite) TestCreateMembership() {
 	assert := assert.New(s.T())
