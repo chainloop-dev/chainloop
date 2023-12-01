@@ -29,12 +29,12 @@ func newOrganizationCreateCmd() *cobra.Command {
 		Use:   "create",
 		Short: "Create an organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_, err := action.NewOrgCreate(actionOpts).Run(context.Background(), name)
+			org, err := action.NewOrgCreate(actionOpts).Run(context.Background(), name)
 			if err != nil {
 				return err
 			}
 
-			logger.Info().Msg("Organization Created!")
+			logger.Info().Msgf("Organization %q created!", org.Name)
 			return nil
 		},
 	}
