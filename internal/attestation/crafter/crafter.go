@@ -253,9 +253,12 @@ type CommitRemote struct {
 	Name, URL string
 }
 
+// This error is not exposed by go-git
+var errBranchInvalidMerge = errors.New("branch config: invalid merge")
+
 // Returns the current directory git commit hash if possible
 // If we are not in a git repo it will return an empty string
-func (c *Crafter) gracefulGitRepoHead(path string) (*HeadCommit, error) {
+func gracefulGitRepoHead(path string) (*HeadCommit, error) {
 	repo, err := git.PlainOpenWithOptions(path, &git.PlainOpenOptions{
 		// walk up the directory tree until we find a git repo
 		DetectDotGit: true,
@@ -282,7 +285,7 @@ func (c *Crafter) gracefulGitRepoHead(path string) (*HeadCommit, error) {
 		return nil, fmt.Errorf("finding head commit: %w", err)
 	}
 
-	headCommit := &HeadCommit{
+	c := &HeadCommit{
 		Hash:        commit.Hash.String(),
 		AuthorEmail: commit.Author.Email,
 		AuthorName:  commit.Author.Name,
@@ -293,10 +296,15 @@ func (c *Crafter) gracefulGitRepoHead(path string) (*HeadCommit, error) {
 
 	remotes, err := repo.Remotes()
 	if err != nil {
-		c.logger.Warn().Err(err).Msg("failed to list remotes")
 		// go-git does an additional validation that the branch is pushed upstream
 		// we do not care about that use-case, so we ignore the error
-		return headCommit, nil
+		// we compare by error string because go-git does not expose the error type
+		// and errors.Is require the same instance of the error
+		if err.Error() == errBranchInvalidMerge.Error() {
+			return c, nil
+		}
+
+		return nil, fmt.Errorf("getting remotes: %w", err)
 	}
 
 	for _, r := range remotes {
@@ -304,18 +312,18 @@ func (c *Crafter) gracefulGitRepoHead(path string) (*HeadCommit, error) {
 			continue
 		}
 
-		headCommit.Remotes = append(headCommit.Remotes, &CommitRemote{
+		c.Remotes = append(c.Remotes, &CommitRemote{
 			Name: r.Config().Name,
 			URL:  r.Config().URLs[0],
 		})
 	}
 
-	return headCommit, nil
+	return c, nil
 }
 
 func (c *Crafter) initialCraftingState(cwd string, schema *schemaapi.CraftingSchema, wf *api.WorkflowMetadata, dryRun bool, runnerType schemaapi.CraftingSchema_Runner_RunnerType, jobURL string) (*api.CraftingState, error) {
 	// Get git commit hash
-	headCommit, err := c.gracefulGitRepoHead(cwd)
+	headCommit, err := gracefulGitRepoHead(cwd)
 	if err != nil {
 		return nil, fmt.Errorf("getting git commit hash: %w", err)
 	}

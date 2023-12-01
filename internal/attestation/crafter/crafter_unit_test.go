@@ -121,7 +121,7 @@ func (s *crafterUnitSuite) TestGitRepoHead() {
 				require.NoError(s.T(), err)
 			}
 
-			got, err := NewCrafter().gracefulGitRepoHead(path)
+			got, err := gracefulGitRepoHead(path)
 			if tc.wantErr {
 				assert.Error(s.T(), err)
 				return
