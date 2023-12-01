@@ -186,7 +186,7 @@ func LoadSchema(pathOrURI string) (*schemaapi.CraftingSchema, error) {
 // Initialize the temporary file with the content of the schema
 func (c *Crafter) initCraftingStateFile(schema *schemaapi.CraftingSchema, wf *api.WorkflowMetadata, dryRun bool, runnerType schemaapi.CraftingSchema_Runner_RunnerType, jobURL string) error {
 	// Generate Crafting state
-	state, err := initialCraftingState(c.workingDir, schema, wf, dryRun, runnerType, jobURL)
+	state, err := c.initialCraftingState(c.workingDir, schema, wf, dryRun, runnerType, jobURL)
 	if err != nil {
 		return fmt.Errorf("initializing crafting state: %w", err)
 	}
@@ -255,7 +255,7 @@ type CommitRemote struct {
 
 // Returns the current directory git commit hash if possible
 // If we are not in a git repo it will return an empty string
-func gracefulGitRepoHead(path string) (*HeadCommit, error) {
+func (c *Crafter) gracefulGitRepoHead(path string) (*HeadCommit, error) {
 	repo, err := git.PlainOpenWithOptions(path, &git.PlainOpenOptions{
 		// walk up the directory tree until we find a git repo
 		DetectDotGit: true,
@@ -282,7 +282,7 @@ func gracefulGitRepoHead(path string) (*HeadCommit, error) {
 		return nil, fmt.Errorf("finding head commit: %w", err)
 	}
 
-	c := &HeadCommit{
+	headCommit := &HeadCommit{
 		Hash:        commit.Hash.String(),
 		AuthorEmail: commit.Author.Email,
 		AuthorName:  commit.Author.Name,
@@ -293,9 +293,10 @@ func gracefulGitRepoHead(path string) (*HeadCommit, error) {
 
 	remotes, err := repo.Remotes()
 	if err != nil {
+		c.logger.Warn().Err(err).Msg("failed to list remotes")
 		// go-git does an additional validation that the branch is pushed upstream
 		// we do not care about that use-case, so we ignore the error
-		return c, nil
+		return headCommit, nil
 	}
 
 	for _, r := range remotes {
@@ -303,18 +304,18 @@ func gracefulGitRepoHead(path string) (*HeadCommit, error) {
 			continue
 		}
 
-		c.Remotes = append(c.Remotes, &CommitRemote{
+		headCommit.Remotes = append(headCommit.Remotes, &CommitRemote{
 			Name: r.Config().Name,
 			URL:  r.Config().URLs[0],
 		})
 	}
 
-	return c, nil
+	return headCommit, nil
 }
 
-func initialCraftingState(cwd string, schema *schemaapi.CraftingSchema, wf *api.WorkflowMetadata, dryRun bool, runnerType schemaapi.CraftingSchema_Runner_RunnerType, jobURL string) (*api.CraftingState, error) {
+func (c *Crafter) initialCraftingState(cwd string, schema *schemaapi.CraftingSchema, wf *api.WorkflowMetadata, dryRun bool, runnerType schemaapi.CraftingSchema_Runner_RunnerType, jobURL string) (*api.CraftingState, error) {
 	// Get git commit hash
-	headCommit, err := gracefulGitRepoHead(cwd)
+	headCommit, err := c.gracefulGitRepoHead(cwd)
 	if err != nil {
 		return nil, fmt.Errorf("getting git commit hash: %w", err)
 	}
