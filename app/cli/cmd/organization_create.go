@@ -16,23 +16,32 @@
 package cmd
 
 import (
+	"context"
+
+	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
 )
 
-func newOrganizationCmd() *cobra.Command {
+func newOrganizationCreateCmd() *cobra.Command {
+	var name string
+
 	cmd := &cobra.Command{
-		Use:     "organization",
-		Aliases: []string{"org"},
-		Short:   "Organizations management",
+		Use:   "create",
+		Short: "Create an organization",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			org, err := action.NewOrgCreate(actionOpts).Run(context.Background(), name)
+			if err != nil {
+				return err
+			}
+
+			logger.Info().Msgf("Organization %q created!", org.Name)
+			return nil
+		},
 	}
 
-	cmd.AddCommand(
-		newOrganizationList(),
-		newOrganizationCreateCmd(),
-		newOrganizationUpdateCmd(),
-		newOrganizationSet(),
-		newOrganizationDescribeCmd(),
-		newOrganizationInvitationCmd(),
-	)
+	cmd.Flags().StringVar(&name, "name", "", "organization name")
+	err := cmd.MarkFlagRequired("name")
+	cobra.CheckErr(err)
+
 	return cmd
 }

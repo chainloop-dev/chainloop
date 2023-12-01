@@ -48,6 +48,6 @@ func newOrganizationUpdateCmd() *cobra.Command {
 	err := cmd.MarkFlagRequired("id")
 	cobra.CheckErr(err)
 
-	cmd.Flags().StringVar(&name, "name", "", "workflow name")
+	cmd.Flags().StringVar(&name, "name", "", "organization name")
 	return cmd
 }

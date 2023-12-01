@@ -13,6 +13,14 @@ export interface OrganizationServiceListMembershipsResponse {
   result: OrgMembershipItem[];
 }
 
+export interface OrganizationServiceCreateRequest {
+  name: string;
+}
+
+export interface OrganizationServiceCreateResponse {
+  result?: OrgItem;
+}
+
 export interface OrganizationServiceUpdateRequest {
   id: string;
   /**
@@ -144,6 +152,128 @@ export const OrganizationServiceListMembershipsResponse = {
   ): OrganizationServiceListMembershipsResponse {
     const message = createBaseOrganizationServiceListMembershipsResponse();
     message.result = object.result?.map((e) => OrgMembershipItem.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseOrganizationServiceCreateRequest(): OrganizationServiceCreateRequest {
+  return { name: "" };
+}
+
+export const OrganizationServiceCreateRequest = {
+  encode(message: OrganizationServiceCreateRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): OrganizationServiceCreateRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseOrganizationServiceCreateRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): OrganizationServiceCreateRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: OrganizationServiceCreateRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<OrganizationServiceCreateRequest>, I>>(
+    base?: I,
+  ): OrganizationServiceCreateRequest {
+    return OrganizationServiceCreateRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<OrganizationServiceCreateRequest>, I>>(
+    object: I,
+  ): OrganizationServiceCreateRequest {
+    const message = createBaseOrganizationServiceCreateRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseOrganizationServiceCreateResponse(): OrganizationServiceCreateResponse {
+  return { result: undefined };
+}
+
+export const OrganizationServiceCreateResponse = {
+  encode(message: OrganizationServiceCreateResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.result !== undefined) {
+      OrgItem.encode(message.result, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): OrganizationServiceCreateResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseOrganizationServiceCreateResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.result = OrgItem.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): OrganizationServiceCreateResponse {
+    return { result: isSet(object.result) ? OrgItem.fromJSON(object.result) : undefined };
+  },
+
+  toJSON(message: OrganizationServiceCreateResponse): unknown {
+    const obj: any = {};
+    message.result !== undefined && (obj.result = message.result ? OrgItem.toJSON(message.result) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<OrganizationServiceCreateResponse>, I>>(
+    base?: I,
+  ): OrganizationServiceCreateResponse {
+    return OrganizationServiceCreateResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<OrganizationServiceCreateResponse>, I>>(
+    object: I,
+  ): OrganizationServiceCreateResponse {
+    const message = createBaseOrganizationServiceCreateResponse();
+    message.result = (object.result !== undefined && object.result !== null)
+      ? OrgItem.fromPartial(object.result)
+      : undefined;
     return message;
   },
 };
@@ -406,6 +536,10 @@ export interface OrganizationService {
     request: DeepPartial<OrganizationServiceListMembershipsRequest>,
     metadata?: grpc.Metadata,
   ): Promise<OrganizationServiceListMembershipsResponse>;
+  Create(
+    request: DeepPartial<OrganizationServiceCreateRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<OrganizationServiceCreateResponse>;
   Update(
     request: DeepPartial<OrganizationServiceUpdateRequest>,
     metadata?: grpc.Metadata,
@@ -422,6 +556,7 @@ export class OrganizationServiceClientImpl implements OrganizationService {
   constructor(rpc: Rpc) {
     this.rpc = rpc;
     this.ListMemberships = this.ListMemberships.bind(this);
+    this.Create = this.Create.bind(this);
     this.Update = this.Update.bind(this);
     this.SetCurrentMembership = this.SetCurrentMembership.bind(this);
   }
@@ -433,6 +568,17 @@ export class OrganizationServiceClientImpl implements OrganizationService {
     return this.rpc.unary(
       OrganizationServiceListMembershipsDesc,
       OrganizationServiceListMembershipsRequest.fromPartial(request),
+      metadata,
+    );
+  }
+
+  Create(
+    request: DeepPartial<OrganizationServiceCreateRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<OrganizationServiceCreateResponse> {
+    return this.rpc.unary(
+      OrganizationServiceCreateDesc,
+      OrganizationServiceCreateRequest.fromPartial(request),
       metadata,
     );
   }
@@ -475,6 +621,29 @@ export const OrganizationServiceListMembershipsDesc: UnaryMethodDefinitionish = 
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = OrganizationServiceListMembershipsResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const OrganizationServiceCreateDesc: UnaryMethodDefinitionish = {
+  methodName: "Create",
+  service: OrganizationServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return OrganizationServiceCreateRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = OrganizationServiceCreateResponse.decode(data);
       return {
         ...value,
         toObject() {
