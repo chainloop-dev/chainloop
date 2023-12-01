@@ -1051,3 +1051,227 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = SetCurrentMembershipResponseValidationError{}
+
+// Validate checks the field values on DeleteMembershipRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *DeleteMembershipRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DeleteMembershipRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DeleteMembershipRequestMultiError, or nil if none found.
+func (m *DeleteMembershipRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DeleteMembershipRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if err := m._validateUuid(m.GetMembershipId()); err != nil {
+		err = DeleteMembershipRequestValidationError{
+			field:  "MembershipId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return DeleteMembershipRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *DeleteMembershipRequest) _validateUuid(uuid string) error {
+	if matched := _organization_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
+	}
+
+	return nil
+}
+
+// DeleteMembershipRequestMultiError is an error wrapping multiple validation
+// errors returned by DeleteMembershipRequest.ValidateAll() if the designated
+// constraints aren't met.
+type DeleteMembershipRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DeleteMembershipRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DeleteMembershipRequestMultiError) AllErrors() []error { return m }
+
+// DeleteMembershipRequestValidationError is the validation error returned by
+// DeleteMembershipRequest.Validate if the designated constraints aren't met.
+type DeleteMembershipRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DeleteMembershipRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DeleteMembershipRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DeleteMembershipRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DeleteMembershipRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DeleteMembershipRequestValidationError) ErrorName() string {
+	return "DeleteMembershipRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DeleteMembershipRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDeleteMembershipRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DeleteMembershipRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DeleteMembershipRequestValidationError{}
+
+// Validate checks the field values on DeleteMembershipResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *DeleteMembershipResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DeleteMembershipResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DeleteMembershipResponseMultiError, or nil if none found.
+func (m *DeleteMembershipResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DeleteMembershipResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return DeleteMembershipResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// DeleteMembershipResponseMultiError is an error wrapping multiple validation
+// errors returned by DeleteMembershipResponse.ValidateAll() if the designated
+// constraints aren't met.
+type DeleteMembershipResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DeleteMembershipResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DeleteMembershipResponseMultiError) AllErrors() []error { return m }
+
+// DeleteMembershipResponseValidationError is the validation error returned by
+// DeleteMembershipResponse.Validate if the designated constraints aren't met.
+type DeleteMembershipResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DeleteMembershipResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DeleteMembershipResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DeleteMembershipResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DeleteMembershipResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DeleteMembershipResponseValidationError) ErrorName() string {
+	return "DeleteMembershipResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DeleteMembershipResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDeleteMembershipResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DeleteMembershipResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DeleteMembershipResponseValidationError{}

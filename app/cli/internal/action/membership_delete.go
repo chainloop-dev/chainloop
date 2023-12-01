@@ -13,27 +13,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package action
 
 import (
-	"github.com/spf13/cobra"
+	"context"
+	"fmt"
+
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
-func newOrganizationCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "organization",
-		Aliases: []string{"org"},
-		Short:   "Organizations management",
+type MembershipDelete struct {
+	cfg *ActionsOpts
+}
+
+func NewMembershipDelete(cfg *ActionsOpts) *MembershipDelete {
+	return &MembershipDelete{cfg}
+}
+
+func (action *MembershipDelete) Run(ctx context.Context, membershipID string) error {
+	client := pb.NewOrganizationServiceClient(action.cfg.CPConnection)
+	if _, err := client.DeleteMembership(ctx, &pb.DeleteMembershipRequest{MembershipId: membershipID}); err != nil {
+		return fmt.Errorf("deleting membership: %w", err)
 	}
 
-	cmd.AddCommand(
-		newOrganizationList(),
-		newOrganizationCreateCmd(),
-		newOrganizationUpdateCmd(),
-		newOrganizationSet(),
-		newOrganizationLeaveCmd(),
-		newOrganizationDescribeCmd(),
-		newOrganizationInvitationCmd(),
-	)
-	return cmd
+	return nil
 }

@@ -29,7 +29,6 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	userRepo := data.NewUserRepo(dataData, logger)
 	membershipRepo := data.NewMembershipRepo(dataData, logger)
-	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, logger)
 	organizationRepo := data.NewOrganizationRepo(dataData, logger)
 	casBackendRepo := data.NewCASBackendRepo(dataData, logger)
 	providers := loader.LoadProviders(readerWriter)
@@ -46,6 +45,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	integrationUseCase := biz.NewIntegrationUseCase(newIntegrationUseCaseOpts)
 	organizationUseCase := biz.NewOrganizationUseCase(organizationRepo, casBackendUseCase, integrationUseCase, membershipRepo, logger)
+	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, organizationUseCase, logger)
 	newUserUseCaseParams := &biz.NewUserUseCaseParams{
 		UserRepo:            userRepo,
 		MembershipUseCase:   membershipUseCase,

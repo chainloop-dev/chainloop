@@ -32,7 +32,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		return nil, nil, err
 	}
 	membershipRepo := data.NewMembershipRepo(dataData, logger)
-	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, logger)
+	organizationRepo := data.NewOrganizationRepo(dataData, logger)
 	casBackendRepo := data.NewCASBackendRepo(dataData, logger)
 	casBackendUseCase := biz.NewCASBackendUseCase(casBackendRepo, readerWriter, providers, logger)
 	integrationRepo := data.NewIntegrationRepo(dataData, logger)
@@ -46,8 +46,8 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		Logger:  logger,
 	}
 	integrationUseCase := biz.NewIntegrationUseCase(newIntegrationUseCaseOpts)
-	organizationRepo := data.NewOrganizationRepo(dataData, logger)
 	organizationUseCase := biz.NewOrganizationUseCase(organizationRepo, casBackendUseCase, integrationUseCase, membershipRepo, logger)
+	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, organizationUseCase, logger)
 	workflowContractRepo := data.NewWorkflowContractRepo(dataData, logger)
 	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, logger)
 	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, workflowContractUseCase, logger)

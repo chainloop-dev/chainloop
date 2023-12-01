@@ -16,18 +16,34 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
 )
 
-func newOrganizationSet() *cobra.Command {
-	var orgID string
+// Get the membership entry associated to the current user for the given organization
+func membershipFromOrg(orgID string) (*action.MembershipItem, error) {
+	memberships, err := action.NewMembershipList(actionOpts).Run()
+	if err != nil {
+		return nil, fmt.Errorf("listing memberships: %w", err)
+	}
 
+	for _, m := range memberships {
+		if m.Org.ID == orgID {
+			return m, nil
+		}
+	}
+
+	return nil, fmt.Errorf("organization %s not found", orgID)
+}
+
+func newOrganizationLeaveCmd() *cobra.Command {
+	var orgID string
 	cmd := &cobra.Command{
-		Use:   "set",
-		Short: "Set the current organization associated with this user",
+		Use:   "leave",
+		Short: "leave an organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// To find the membership ID, we need to iterate and filter by org
 			membership, err := membershipFromOrg(orgID)
@@ -37,18 +53,24 @@ func newOrganizationSet() *cobra.Command {
 				return fmt.Errorf("organization %s not found", orgID)
 			}
 
-			m, err := action.NewMembershipSet(actionOpts).Run(membership.ID)
-			if err != nil {
+			fmt.Printf("You are about to leave the organization %q\n", membership.Org.Name)
+
+			// Ask for confirmation
+			if err := confirmDeletion(); err != nil {
 				return err
 			}
 
-			logger.Info().Msg("Organization switched!")
-			return encodeOutput([]*action.MembershipItem{m}, orgMembershipTableOutput)
+			// Membership deletion
+			if err := action.NewMembershipDelete(actionOpts).Run(context.Background(), membership.ID); err != nil {
+				return fmt.Errorf("deleting membership: %w", err)
+			}
+
+			logger.Info().Msg("Membership deleted")
+			return nil
 		},
 	}
 
-	cmd.Flags().StringVar(&orgID, "id", "", "organization ID to make the switch")
+	cmd.Flags().StringVar(&orgID, "id", "", "organization ID to leave")
 	cobra.CheckErr(cmd.MarkFlagRequired("id"))
-
 	return cmd
 }
