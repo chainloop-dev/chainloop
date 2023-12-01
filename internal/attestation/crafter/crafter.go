@@ -253,6 +253,9 @@ type CommitRemote struct {
 	Name, URL string
 }
 
+// This error is not exposed by go-git
+var errBranchInvalidMerge = errors.New("branch config: invalid merge")
+
 // Returns the current directory git commit hash if possible
 // If we are not in a git repo it will return an empty string
 func gracefulGitRepoHead(path string) (*HeadCommit, error) {
@@ -293,6 +296,14 @@ func gracefulGitRepoHead(path string) (*HeadCommit, error) {
 
 	remotes, err := repo.Remotes()
 	if err != nil {
+		// go-git does an additional validation that the branch is pushed upstream
+		// we do not care about that use-case, so we ignore the error
+		// we compare by error string because go-git does not expose the error type
+		// and errors.Is require the same instance of the error
+		if err.Error() == errBranchInvalidMerge.Error() {
+			return c, nil
+		}
+
 		return nil, fmt.Errorf("getting remotes: %w", err)
 	}
 
