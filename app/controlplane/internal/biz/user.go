@@ -17,6 +17,7 @@ package biz
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -117,7 +118,7 @@ func (uc *UserUseCase) CurrentOrg(ctx context.Context, userID string) (*Organiza
 
 	// there is no current organization
 	if len(memberships) == 0 {
-		return nil, nil
+		return nil, errors.New("user does not have any organization associated")
 	}
 
 	// By default we set the first one
