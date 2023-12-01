@@ -293,7 +293,9 @@ func gracefulGitRepoHead(path string) (*HeadCommit, error) {
 
 	remotes, err := repo.Remotes()
 	if err != nil {
-		return nil, fmt.Errorf("getting remotes: %w", err)
+		// go-git does an additional validation that the branch is pushed upstream
+		// we do not care about that use-case, so we ignore the error
+		return c, nil
 	}
 
 	for _, r := range remotes {
