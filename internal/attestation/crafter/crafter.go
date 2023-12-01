@@ -186,7 +186,7 @@ func LoadSchema(pathOrURI string) (*schemaapi.CraftingSchema, error) {
 // Initialize the temporary file with the content of the schema
 func (c *Crafter) initCraftingStateFile(schema *schemaapi.CraftingSchema, wf *api.WorkflowMetadata, dryRun bool, runnerType schemaapi.CraftingSchema_Runner_RunnerType, jobURL string) error {
 	// Generate Crafting state
-	state, err := c.initialCraftingState(c.workingDir, schema, wf, dryRun, runnerType, jobURL)
+	state, err := initialCraftingState(c.workingDir, schema, wf, dryRun, runnerType, jobURL)
 	if err != nil {
 		return fmt.Errorf("initializing crafting state: %w", err)
 	}
@@ -321,7 +321,7 @@ func gracefulGitRepoHead(path string) (*HeadCommit, error) {
 	return c, nil
 }
 
-func (c *Crafter) initialCraftingState(cwd string, schema *schemaapi.CraftingSchema, wf *api.WorkflowMetadata, dryRun bool, runnerType schemaapi.CraftingSchema_Runner_RunnerType, jobURL string) (*api.CraftingState, error) {
+func initialCraftingState(cwd string, schema *schemaapi.CraftingSchema, wf *api.WorkflowMetadata, dryRun bool, runnerType schemaapi.CraftingSchema_Runner_RunnerType, jobURL string) (*api.CraftingState, error) {
 	// Get git commit hash
 	headCommit, err := gracefulGitRepoHead(cwd)
 	if err != nil {
