@@ -32,30 +32,30 @@ User mapping:
 - userOne, userTwo -> shared org
 */
 func (s *userIntegrationTestSuite) TestDeleteUser() {
-	assert := assert.New(s.T())
 	ctx := context.Background()
 
 	err := s.User.DeleteUser(ctx, s.userOne.ID)
-	assert.NoError(err)
+	s.NoError(err)
 
 	// Organization where the user is the only member got deleted
 	gotOrgOne, err := s.Organization.FindByID(ctx, s.userOneOrg.ID)
-	assert.NoError(err)
-	assert.Nil(gotOrgOne)
+	s.Error(err)
+	s.True(biz.IsNotFound(err))
+	s.Nil(gotOrgOne)
 
 	// Organization that it's shared with another user is still present
 	gotSharedOrg, err := s.Organization.FindByID(ctx, s.sharedOrg.ID)
-	assert.NoError(err)
-	assert.NotNil(gotSharedOrg)
+	s.NoError(err)
+	s.NotNil(gotSharedOrg)
 
 	// user and associated memberships have been deleted
 	gotUser, err := s.User.FindByID(ctx, s.userOne.ID)
-	assert.NoError(err)
-	assert.Nil(gotUser)
+	s.NoError(err)
+	s.Nil(gotUser)
 
 	gotMembership, err := s.Membership.ByUser(ctx, s.userOne.ID)
-	assert.NoError(err)
-	assert.Empty(gotMembership)
+	s.NoError(err)
+	s.Empty(gotMembership)
 }
 
 // Run the tests
