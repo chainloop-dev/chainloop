@@ -107,20 +107,10 @@ func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgID string,
 	}
 
 	// Make sure that the organization exists and that the user is a member of it
-	memberships, err := uc.membershipRepo.FindByUser(ctx, userUUID)
+	membership, err := uc.membershipRepo.FindByOrgAndUser(ctx, orgUUID, userUUID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find memberships: %w", err)
-	}
-
-	var found bool
-	for _, m := range memberships {
-		if m.OrganizationID == orgUUID {
-			found = true
-			break
-		}
-	}
-
-	if !found {
+	} else if membership == nil {
 		return nil, NewErrNotFound("organization")
 	}
 

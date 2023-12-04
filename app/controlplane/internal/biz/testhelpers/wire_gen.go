@@ -82,6 +82,8 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		cleanup()
 		return nil, nil, err
 	}
+	apiTokenRepo := data.NewAPITokenRepo(dataData, logger)
+	apiTokenUseCase := biz.NewAPITokenUseCase(apiTokenRepo, membershipRepo, auth, logger)
 	testingRepos := &TestingRepos{
 		Membership: membershipRepo,
 		Referrer:   referrerRepo,
@@ -104,6 +106,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		CASMapping:             casMappingUseCase,
 		OrgInvitation:          orgInvitationUseCase,
 		Referrer:               referrerUseCase,
+		APIToken:               apiTokenUseCase,
 		Repos:                  testingRepos,
 	}
 	return testingUseCases, func() {
