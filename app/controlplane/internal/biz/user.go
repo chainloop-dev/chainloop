@@ -18,6 +18,7 @@ package biz
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/go-kratos/kratos/v2/log"
@@ -75,24 +76,8 @@ func (uc *UserUseCase) DeleteUser(ctx context.Context, userID string) error {
 
 	// Iterate on user memberships, delete org if the user is the only member
 	for _, m := range memberships {
-		membershipsInOrg, err := uc.membershipUseCase.ByOrg(ctx, m.OrganizationID.String())
-		if err != nil {
-			return err
-		}
-
-		uc.logger.Infow("msg", "Deleting membership", "user_id", userID, "membership_id", m.ID.String())
-		if err := uc.membershipUseCase.Delete(ctx, m.ID.String()); err != nil {
-			return err
-		}
-
-		// Check number of members in the org
-		// If it's the only one, delete the org
-		if len(membershipsInOrg) == 1 {
-			// Delete the org
-			uc.logger.Infow("msg", "Deleting organization", "organization_id", m.OrganizationID.String())
-			if err := uc.organizationUseCase.Delete(ctx, m.OrganizationID.String()); err != nil {
-				return err
-			}
+		if err := uc.membershipUseCase.DeleteWithOrg(ctx, userID, m.ID.String()); err != nil {
+			return fmt.Errorf("failed to delete membership: %w", err)
 		}
 	}
 
@@ -131,6 +116,7 @@ func (uc *UserUseCase) CurrentOrg(ctx context.Context, userID string) (*Organiza
 		return nil, err
 	}
 
+	// there is no current organization
 	if len(memberships) == 0 {
 		return nil, errors.New("user does not have any organization associated")
 	}

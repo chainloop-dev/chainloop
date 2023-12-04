@@ -112,6 +112,22 @@ func (s *OrganizationService) SetCurrentMembership(ctx context.Context, req *pb.
 	return &pb.SetCurrentMembershipResponse{Result: bizMembershipToPb(m)}, nil
 }
 
+func (s *OrganizationService) DeleteMembership(ctx context.Context, req *pb.DeleteMembershipRequest) (*pb.DeleteMembershipResponse, error) {
+	currentUser, _, err := loadCurrentUserAndOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.membershipUC.DeleteWithOrg(ctx, currentUser.ID, req.MembershipId)
+	if err != nil && biz.IsNotFound(err) {
+		return nil, errors.NotFound("not found", err.Error())
+	} else if err != nil {
+		return nil, sl.LogAndMaskErr(err, s.log)
+	}
+
+	return &pb.DeleteMembershipResponse{}, nil
+}
+
 func bizMembershipToPb(m *biz.Membership) *pb.OrgMembershipItem {
 	item := &pb.OrgMembershipItem{
 		Id: m.ID.String(), Current: m.Current,

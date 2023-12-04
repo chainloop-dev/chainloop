@@ -22,11 +22,14 @@ import "controlplane/v1/response_messages.proto";
 import "validate/validate.proto";
 
 service OrganizationService {
+  // Mermbership management
   // List the organizations this user has access to
 	rpc ListMemberships (OrganizationServiceListMembershipsRequest) returns (OrganizationServiceListMembershipsResponse);
+	rpc DeleteMembership (DeleteMembershipRequest) returns (DeleteMembershipResponse);
+	rpc SetCurrentMembership (SetCurrentMembershipRequest) returns (SetCurrentMembershipResponse);
+  // Organization management
 	rpc Create (OrganizationServiceCreateRequest) returns (OrganizationServiceCreateResponse);
 	rpc Update (OrganizationServiceUpdateRequest) returns (OrganizationServiceUpdateResponse);
-	rpc SetCurrentMembership (SetCurrentMembershipRequest) returns (SetCurrentMembershipResponse);
 }
 
 message OrganizationServiceListMembershipsRequest {}
@@ -61,3 +64,9 @@ message SetCurrentMembershipRequest {
 message SetCurrentMembershipResponse {
   OrgMembershipItem result = 1;
 }
+
+message DeleteMembershipRequest {
+  string membership_id = 1 [(validate.rules).string.uuid = true];
+}
+
+message DeleteMembershipResponse {}

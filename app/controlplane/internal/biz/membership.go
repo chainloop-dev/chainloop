@@ -17,6 +17,7 @@ package biz
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/go-kratos/kratos/v2/log"
@@ -41,21 +42,57 @@ type MembershipRepo interface {
 }
 
 type MembershipUseCase struct {
-	repo   MembershipRepo
-	logger *log.Helper
+	repo       MembershipRepo
+	orgUseCase *OrganizationUseCase
+	logger     *log.Helper
 }
 
-func NewMembershipUseCase(repo MembershipRepo, logger log.Logger) *MembershipUseCase {
-	return &MembershipUseCase{repo, log.NewHelper(logger)}
+func NewMembershipUseCase(repo MembershipRepo, orgUC *OrganizationUseCase, logger log.Logger) *MembershipUseCase {
+	return &MembershipUseCase{repo, orgUC, log.NewHelper(logger)}
 }
 
-func (uc *MembershipUseCase) Delete(ctx context.Context, id string) error {
-	uuid, err := uuid.Parse(id)
+// Delete deletes a membership from the database
+// and the associated org if the user is the only member
+func (uc *MembershipUseCase) DeleteWithOrg(ctx context.Context, userID, membershipID string) error {
+	membershipUUID, err := uuid.Parse(membershipID)
 	if err != nil {
 		return NewErrInvalidUUID(err)
 	}
 
-	return uc.repo.Delete(ctx, uuid)
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return NewErrInvalidUUID(err)
+	}
+
+	// Check that the provided membershipID in fact belongs to a membership from the user
+	m, err := uc.repo.FindByIDInUser(ctx, userUUID, membershipUUID)
+	if err != nil {
+		return fmt.Errorf("failed to find membership: %w", err)
+	} else if m == nil {
+		return NewErrNotFound("membership")
+	}
+
+	uc.logger.Infow("msg", "Deleting membership", "user_id", userID, "membership_id", m.ID.String())
+	if err := uc.repo.Delete(ctx, membershipUUID); err != nil {
+		return fmt.Errorf("failed to delete membership: %w", err)
+	}
+
+	// Check number of members in the org
+	// If it's the only one, delete the org
+	membershipsInOrg, err := uc.repo.FindByOrg(ctx, m.OrganizationID)
+	if err != nil {
+		return fmt.Errorf("failed to find memberships in org: %w", err)
+	}
+
+	if len(membershipsInOrg) == 0 {
+		// Delete the org
+		uc.logger.Infow("msg", "Deleting organization", "organization_id", m.OrganizationID.String())
+		if err := uc.orgUseCase.Delete(ctx, m.OrganizationID.String()); err != nil {
+			return fmt.Errorf("failed to delete org: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func (uc *MembershipUseCase) Create(ctx context.Context, orgID, userID string, current bool) (*Membership, error) {

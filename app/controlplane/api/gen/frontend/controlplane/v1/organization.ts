@@ -42,6 +42,13 @@ export interface SetCurrentMembershipResponse {
   result?: OrgMembershipItem;
 }
 
+export interface DeleteMembershipRequest {
+  membershipId: string;
+}
+
+export interface DeleteMembershipResponse {
+}
+
 function createBaseOrganizationServiceListMembershipsRequest(): OrganizationServiceListMembershipsRequest {
   return {};
 }
@@ -530,12 +537,124 @@ export const SetCurrentMembershipResponse = {
   },
 };
 
+function createBaseDeleteMembershipRequest(): DeleteMembershipRequest {
+  return { membershipId: "" };
+}
+
+export const DeleteMembershipRequest = {
+  encode(message: DeleteMembershipRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.membershipId !== "") {
+      writer.uint32(10).string(message.membershipId);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DeleteMembershipRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteMembershipRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.membershipId = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteMembershipRequest {
+    return { membershipId: isSet(object.membershipId) ? String(object.membershipId) : "" };
+  },
+
+  toJSON(message: DeleteMembershipRequest): unknown {
+    const obj: any = {};
+    message.membershipId !== undefined && (obj.membershipId = message.membershipId);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<DeleteMembershipRequest>, I>>(base?: I): DeleteMembershipRequest {
+    return DeleteMembershipRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<DeleteMembershipRequest>, I>>(object: I): DeleteMembershipRequest {
+    const message = createBaseDeleteMembershipRequest();
+    message.membershipId = object.membershipId ?? "";
+    return message;
+  },
+};
+
+function createBaseDeleteMembershipResponse(): DeleteMembershipResponse {
+  return {};
+}
+
+export const DeleteMembershipResponse = {
+  encode(_: DeleteMembershipResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DeleteMembershipResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteMembershipResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): DeleteMembershipResponse {
+    return {};
+  },
+
+  toJSON(_: DeleteMembershipResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<DeleteMembershipResponse>, I>>(base?: I): DeleteMembershipResponse {
+    return DeleteMembershipResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<DeleteMembershipResponse>, I>>(_: I): DeleteMembershipResponse {
+    const message = createBaseDeleteMembershipResponse();
+    return message;
+  },
+};
+
 export interface OrganizationService {
-  /** List the organizations this user has access to */
+  /**
+   * Mermbership management
+   * List the organizations this user has access to
+   */
   ListMemberships(
     request: DeepPartial<OrganizationServiceListMembershipsRequest>,
     metadata?: grpc.Metadata,
   ): Promise<OrganizationServiceListMembershipsResponse>;
+  DeleteMembership(
+    request: DeepPartial<DeleteMembershipRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<DeleteMembershipResponse>;
+  SetCurrentMembership(
+    request: DeepPartial<SetCurrentMembershipRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<SetCurrentMembershipResponse>;
+  /** Organization management */
   Create(
     request: DeepPartial<OrganizationServiceCreateRequest>,
     metadata?: grpc.Metadata,
@@ -544,10 +663,6 @@ export interface OrganizationService {
     request: DeepPartial<OrganizationServiceUpdateRequest>,
     metadata?: grpc.Metadata,
   ): Promise<OrganizationServiceUpdateResponse>;
-  SetCurrentMembership(
-    request: DeepPartial<SetCurrentMembershipRequest>,
-    metadata?: grpc.Metadata,
-  ): Promise<SetCurrentMembershipResponse>;
 }
 
 export class OrganizationServiceClientImpl implements OrganizationService {
@@ -556,9 +671,10 @@ export class OrganizationServiceClientImpl implements OrganizationService {
   constructor(rpc: Rpc) {
     this.rpc = rpc;
     this.ListMemberships = this.ListMemberships.bind(this);
+    this.DeleteMembership = this.DeleteMembership.bind(this);
+    this.SetCurrentMembership = this.SetCurrentMembership.bind(this);
     this.Create = this.Create.bind(this);
     this.Update = this.Update.bind(this);
-    this.SetCurrentMembership = this.SetCurrentMembership.bind(this);
   }
 
   ListMemberships(
@@ -568,6 +684,28 @@ export class OrganizationServiceClientImpl implements OrganizationService {
     return this.rpc.unary(
       OrganizationServiceListMembershipsDesc,
       OrganizationServiceListMembershipsRequest.fromPartial(request),
+      metadata,
+    );
+  }
+
+  DeleteMembership(
+    request: DeepPartial<DeleteMembershipRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<DeleteMembershipResponse> {
+    return this.rpc.unary(
+      OrganizationServiceDeleteMembershipDesc,
+      DeleteMembershipRequest.fromPartial(request),
+      metadata,
+    );
+  }
+
+  SetCurrentMembership(
+    request: DeepPartial<SetCurrentMembershipRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<SetCurrentMembershipResponse> {
+    return this.rpc.unary(
+      OrganizationServiceSetCurrentMembershipDesc,
+      SetCurrentMembershipRequest.fromPartial(request),
       metadata,
     );
   }
@@ -593,17 +731,6 @@ export class OrganizationServiceClientImpl implements OrganizationService {
       metadata,
     );
   }
-
-  SetCurrentMembership(
-    request: DeepPartial<SetCurrentMembershipRequest>,
-    metadata?: grpc.Metadata,
-  ): Promise<SetCurrentMembershipResponse> {
-    return this.rpc.unary(
-      OrganizationServiceSetCurrentMembershipDesc,
-      SetCurrentMembershipRequest.fromPartial(request),
-      metadata,
-    );
-  }
 }
 
 export const OrganizationServiceDesc = { serviceName: "controlplane.v1.OrganizationService" };
@@ -621,6 +748,52 @@ export const OrganizationServiceListMembershipsDesc: UnaryMethodDefinitionish = 
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = OrganizationServiceListMembershipsResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const OrganizationServiceDeleteMembershipDesc: UnaryMethodDefinitionish = {
+  methodName: "DeleteMembership",
+  service: OrganizationServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return DeleteMembershipRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = DeleteMembershipResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const OrganizationServiceSetCurrentMembershipDesc: UnaryMethodDefinitionish = {
+  methodName: "SetCurrentMembership",
+  service: OrganizationServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return SetCurrentMembershipRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = SetCurrentMembershipResponse.decode(data);
       return {
         ...value,
         toObject() {
@@ -667,29 +840,6 @@ export const OrganizationServiceUpdateDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = OrganizationServiceUpdateResponse.decode(data);
-      return {
-        ...value,
-        toObject() {
-          return value;
-        },
-      };
-    },
-  } as any,
-};
-
-export const OrganizationServiceSetCurrentMembershipDesc: UnaryMethodDefinitionish = {
-  methodName: "SetCurrentMembership",
-  service: OrganizationServiceDesc,
-  requestStream: false,
-  responseStream: false,
-  requestType: {
-    serializeBinary() {
-      return SetCurrentMembershipRequest.encode(this).finish();
-    },
-  } as any,
-  responseType: {
-    deserializeBinary(data: Uint8Array) {
-      const value = SetCurrentMembershipResponse.decode(data);
       return {
         ...value,
         toObject() {
