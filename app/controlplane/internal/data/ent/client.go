@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/apitoken"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casmapping"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integration"
@@ -36,6 +37,8 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// APIToken is the client for interacting with the APIToken builders.
+	APIToken *APITokenClient
 	// CASBackend is the client for interacting with the CASBackend builders.
 	CASBackend *CASBackendClient
 	// CASMapping is the client for interacting with the CASMapping builders.
@@ -77,6 +80,7 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.APIToken = NewAPITokenClient(c.config)
 	c.CASBackend = NewCASBackendClient(c.config)
 	c.CASMapping = NewCASMappingClient(c.config)
 	c.Integration = NewIntegrationClient(c.config)
@@ -173,6 +177,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	return &Tx{
 		ctx:                     ctx,
 		config:                  cfg,
+		APIToken:                NewAPITokenClient(cfg),
 		CASBackend:              NewCASBackendClient(cfg),
 		CASMapping:              NewCASMappingClient(cfg),
 		Integration:             NewIntegrationClient(cfg),
@@ -206,6 +211,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		ctx:                     ctx,
 		config:                  cfg,
+		APIToken:                NewAPITokenClient(cfg),
 		CASBackend:              NewCASBackendClient(cfg),
 		CASMapping:              NewCASMappingClient(cfg),
 		Integration:             NewIntegrationClient(cfg),
@@ -226,7 +232,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		CASBackend.
+//		APIToken.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -249,7 +255,7 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.CASBackend, c.CASMapping, c.Integration, c.IntegrationAttachment,
+		c.APIToken, c.CASBackend, c.CASMapping, c.Integration, c.IntegrationAttachment,
 		c.Membership, c.OrgInvitation, c.Organization, c.Referrer, c.RobotAccount,
 		c.User, c.Workflow, c.WorkflowContract, c.WorkflowContractVersion,
 		c.WorkflowRun,
@@ -262,7 +268,7 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.CASBackend, c.CASMapping, c.Integration, c.IntegrationAttachment,
+		c.APIToken, c.CASBackend, c.CASMapping, c.Integration, c.IntegrationAttachment,
 		c.Membership, c.OrgInvitation, c.Organization, c.Referrer, c.RobotAccount,
 		c.User, c.Workflow, c.WorkflowContract, c.WorkflowContractVersion,
 		c.WorkflowRun,
@@ -274,6 +280,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
+	case *APITokenMutation:
+		return c.APIToken.mutate(ctx, m)
 	case *CASBackendMutation:
 		return c.CASBackend.mutate(ctx, m)
 	case *CASMappingMutation:
@@ -304,6 +312,140 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.WorkflowRun.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
+	}
+}
+
+// APITokenClient is a client for the APIToken schema.
+type APITokenClient struct {
+	config
+}
+
+// NewAPITokenClient returns a client for the APIToken from the given config.
+func NewAPITokenClient(c config) *APITokenClient {
+	return &APITokenClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `apitoken.Hooks(f(g(h())))`.
+func (c *APITokenClient) Use(hooks ...Hook) {
+	c.hooks.APIToken = append(c.hooks.APIToken, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `apitoken.Intercept(f(g(h())))`.
+func (c *APITokenClient) Intercept(interceptors ...Interceptor) {
+	c.inters.APIToken = append(c.inters.APIToken, interceptors...)
+}
+
+// Create returns a builder for creating a APIToken entity.
+func (c *APITokenClient) Create() *APITokenCreate {
+	mutation := newAPITokenMutation(c.config, OpCreate)
+	return &APITokenCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of APIToken entities.
+func (c *APITokenClient) CreateBulk(builders ...*APITokenCreate) *APITokenCreateBulk {
+	return &APITokenCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for APIToken.
+func (c *APITokenClient) Update() *APITokenUpdate {
+	mutation := newAPITokenMutation(c.config, OpUpdate)
+	return &APITokenUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *APITokenClient) UpdateOne(at *APIToken) *APITokenUpdateOne {
+	mutation := newAPITokenMutation(c.config, OpUpdateOne, withAPIToken(at))
+	return &APITokenUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *APITokenClient) UpdateOneID(id uuid.UUID) *APITokenUpdateOne {
+	mutation := newAPITokenMutation(c.config, OpUpdateOne, withAPITokenID(id))
+	return &APITokenUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for APIToken.
+func (c *APITokenClient) Delete() *APITokenDelete {
+	mutation := newAPITokenMutation(c.config, OpDelete)
+	return &APITokenDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *APITokenClient) DeleteOne(at *APIToken) *APITokenDeleteOne {
+	return c.DeleteOneID(at.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *APITokenClient) DeleteOneID(id uuid.UUID) *APITokenDeleteOne {
+	builder := c.Delete().Where(apitoken.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &APITokenDeleteOne{builder}
+}
+
+// Query returns a query builder for APIToken.
+func (c *APITokenClient) Query() *APITokenQuery {
+	return &APITokenQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeAPIToken},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a APIToken entity by its id.
+func (c *APITokenClient) Get(ctx context.Context, id uuid.UUID) (*APIToken, error) {
+	return c.Query().Where(apitoken.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *APITokenClient) GetX(ctx context.Context, id uuid.UUID) *APIToken {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryOrganization queries the organization edge of a APIToken.
+func (c *APITokenClient) QueryOrganization(at *APIToken) *OrganizationQuery {
+	query := (&OrganizationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := at.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apitoken.Table, apitoken.FieldID, id),
+			sqlgraph.To(organization.Table, organization.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, apitoken.OrganizationTable, apitoken.OrganizationColumn),
+		)
+		fromV = sqlgraph.Neighbors(at.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *APITokenClient) Hooks() []Hook {
+	return c.hooks.APIToken
+}
+
+// Interceptors returns the client interceptors.
+func (c *APITokenClient) Interceptors() []Interceptor {
+	return c.inters.APIToken
+}
+
+func (c *APITokenClient) mutate(ctx context.Context, m *APITokenMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&APITokenCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&APITokenUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&APITokenUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&APITokenDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown APIToken mutation op: %q", m.Op())
 	}
 }
 
@@ -2570,13 +2712,14 @@ func (c *WorkflowRunClient) mutate(ctx context.Context, m *WorkflowRunMutation) 
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		CASBackend, CASMapping, Integration, IntegrationAttachment, Membership,
-		OrgInvitation, Organization, Referrer, RobotAccount, User, Workflow,
-		WorkflowContract, WorkflowContractVersion, WorkflowRun []ent.Hook
+		APIToken, CASBackend, CASMapping, Integration, IntegrationAttachment,
+		Membership, OrgInvitation, Organization, Referrer, RobotAccount, User,
+		Workflow, WorkflowContract, WorkflowContractVersion, WorkflowRun []ent.Hook
 	}
 	inters struct {
-		CASBackend, CASMapping, Integration, IntegrationAttachment, Membership,
-		OrgInvitation, Organization, Referrer, RobotAccount, User, Workflow,
-		WorkflowContract, WorkflowContractVersion, WorkflowRun []ent.Interceptor
+		APIToken, CASBackend, CASMapping, Integration, IntegrationAttachment,
+		Membership, OrgInvitation, Organization, Referrer, RobotAccount, User,
+		Workflow, WorkflowContract, WorkflowContractVersion,
+		WorkflowRun []ent.Interceptor
 	}
 )

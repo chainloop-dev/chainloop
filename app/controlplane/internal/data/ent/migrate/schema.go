@@ -8,6 +8,29 @@ import (
 )
 
 var (
+	// APITokensColumns holds the columns for the "api_tokens" table.
+	APITokensColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "description", Type: field.TypeString, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "expires_at", Type: field.TypeTime, Nullable: true},
+		{Name: "revoked_at", Type: field.TypeTime, Nullable: true},
+		{Name: "organization_id", Type: field.TypeUUID},
+	}
+	// APITokensTable holds the schema information for the "api_tokens" table.
+	APITokensTable = &schema.Table{
+		Name:       "api_tokens",
+		Columns:    APITokensColumns,
+		PrimaryKey: []*schema.Column{APITokensColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "api_tokens_organizations_organization",
+				Columns:    []*schema.Column{APITokensColumns[5]},
+				RefColumns: []*schema.Column{OrganizationsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
 	// CasBackendsColumns holds the columns for the "cas_backends" table.
 	CasBackendsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
@@ -478,6 +501,7 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		APITokensTable,
 		CasBackendsTable,
 		CasMappingsTable,
 		IntegrationsTable,
@@ -499,6 +523,7 @@ var (
 )
 
 func init() {
+	APITokensTable.ForeignKeys[0].RefTable = OrganizationsTable
 	CasBackendsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	CasMappingsTable.ForeignKeys[0].RefTable = CasBackendsTable
 	CasMappingsTable.ForeignKeys[1].RefTable = WorkflowRunsTable
