@@ -53,6 +53,10 @@ func newOrganizationLeaveCmd() *cobra.Command {
 				return fmt.Errorf("organization %s not found", orgID)
 			}
 
+			if membership.Current {
+				return fmt.Errorf("organization with ID %s is marked as 'current'", orgID)
+			}
+
 			fmt.Printf("You are about to leave the organization %q\n", membership.Org.Name)
 
 			// Ask for confirmation
