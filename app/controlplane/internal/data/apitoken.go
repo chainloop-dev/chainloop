@@ -22,6 +22,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/apitoken"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
@@ -50,6 +51,41 @@ func (r *APITokenRepo) Create(ctx context.Context, description *string, expiresA
 	}
 
 	return entAPITokenToBiz(token), nil
+}
+
+func (r *APITokenRepo) List(ctx context.Context, orgID uuid.UUID, includeRevoked bool) ([]*biz.APIToken, error) {
+	query := r.data.db.APIToken.Query().Where(apitoken.OrganizationIDEQ(orgID))
+	if !includeRevoked {
+		query = query.Where(apitoken.RevokedAtIsNil())
+	}
+
+	tokens, err := query.Order(ent.Asc(apitoken.FieldCreatedAt)).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*biz.APIToken, 0, len(tokens))
+	for _, t := range tokens {
+		result = append(result, entAPITokenToBiz(t))
+	}
+
+	return result, nil
+}
+
+func (r *APITokenRepo) Revoke(ctx context.Context, orgID, id uuid.UUID) error {
+	// Update a token with id = id that has not been revoked yet and its orgID = orgID
+	err := r.data.db.APIToken.UpdateOneID(id).
+		Where(apitoken.OrganizationIDEQ(orgID), apitoken.RevokedAtIsNil()).
+		SetRevokedAt(time.Now()).Exec(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return biz.NewErrNotFound("API token")
+		}
+
+		return fmt.Errorf("revoking APIToken: %w", err)
+	}
+
+	return nil
 }
 
 func entAPITokenToBiz(t *ent.APIToken) *biz.APIToken {

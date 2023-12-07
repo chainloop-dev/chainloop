@@ -44,22 +44,23 @@ type APIToken struct {
 
 type APITokenRepo interface {
 	Create(ctx context.Context, description *string, expiresAt *time.Time, organizationID uuid.UUID) (*APIToken, error)
+	List(ctx context.Context, orgID uuid.UUID, includeRevoked bool) ([]*APIToken, error)
+	Revoke(ctx context.Context, orgID, ID uuid.UUID) error
 }
 
 type APITokenUseCase struct {
-	apiTokenRepo   APITokenRepo
-	membershipRepo MembershipRepo
-	logger         *log.Helper
-	jwtBuilder     *apitoken.Builder
+	apiTokenRepo APITokenRepo
+	logger       *log.Helper
+	jwtBuilder   *apitoken.Builder
 }
 
-func NewAPITokenUseCase(apiTokenRepo APITokenRepo, mRepo MembershipRepo, conf *conf.Auth, logger log.Logger) (*APITokenUseCase, error) {
+func NewAPITokenUseCase(apiTokenRepo APITokenRepo, conf *conf.Auth, logger log.Logger) (*APITokenUseCase, error) {
 	uc := &APITokenUseCase{
-		apiTokenRepo:   apiTokenRepo,
-		membershipRepo: mRepo,
-		logger:         log.NewHelper(logger),
+		apiTokenRepo: apiTokenRepo,
+		logger:       log.NewHelper(logger),
 	}
 
+	// Create the JWT builder for the API token
 	b, err := apitoken.NewBuilder(
 		apitoken.WithIssuer(jwt.DefaultIssuer),
 		apitoken.WithKeySecret(conf.GeneratedJwsHmacSecret),
@@ -72,37 +73,17 @@ func NewAPITokenUseCase(apiTokenRepo APITokenRepo, mRepo MembershipRepo, conf *c
 	return uc, nil
 }
 
-// This is the minimum duration that a token can be created for
-const minDuration = 24 * time.Hour
-
 // expires in is a string that can be parsed by time.ParseDuration
-func (uc *APITokenUseCase) Create(ctx context.Context, description *string, expiresIn *time.Duration, userID, orgID string) (*APIToken, error) {
+func (uc *APITokenUseCase) Create(ctx context.Context, description *string, expiresIn *time.Duration, orgID string) (*APIToken, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
-	}
-
-	userUUID, err := uuid.Parse(userID)
-	if err != nil {
-		return nil, NewErrInvalidUUID(err)
-	}
-
-	// Make sure that the organization exists and that the user is a member of it
-	membership, err := uc.membershipRepo.FindByOrgAndUser(ctx, orgUUID, userUUID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find memberships: %w", err)
-	} else if membership == nil {
-		return nil, NewErrNotFound("organization")
 	}
 
 	// If expiration is provided we store it
 	// we also validate that it's at least 24 hours and valid string format
 	var expiresAt *time.Time
 	if expiresIn != nil {
-		if *expiresIn < minDuration {
-			return nil, NewErrValidation(fmt.Errorf("expiration must be at least %s", minDuration))
-		}
-
 		expiresAt = new(time.Time)
 		*expiresAt = time.Now().Add(*expiresIn)
 	}
@@ -121,4 +102,27 @@ func (uc *APITokenUseCase) Create(ctx context.Context, description *string, expi
 	}
 
 	return token, nil
+}
+
+func (uc *APITokenUseCase) List(ctx context.Context, orgID string, includeRevoked bool) ([]*APIToken, error) {
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	return uc.apiTokenRepo.List(ctx, orgUUID, includeRevoked)
+}
+
+func (uc *APITokenUseCase) Revoke(ctx context.Context, orgID, id string) error {
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return NewErrInvalidUUID(err)
+	}
+
+	uuid, err := uuid.Parse(id)
+	if err != nil {
+		return NewErrInvalidUUID(err)
+	}
+
+	return uc.apiTokenRepo.Revoke(ctx, orgUUID, uuid)
 }

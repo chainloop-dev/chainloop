@@ -33,36 +33,14 @@ import (
 func (s *apiTokenTestSuite) TestCreate() {
 	ctx := context.Background()
 	s.T().Run("invalid org ID", func(t *testing.T) {
-		token, err := s.APIToken.Create(ctx, nil, nil, s.user.ID, "deadbeef")
+		token, err := s.APIToken.Create(ctx, nil, nil, "deadbeef")
 		s.Error(err)
 		s.True(biz.IsErrInvalidUUID(err))
-		s.Nil(token)
-	})
-
-	s.T().Run("invalid user ID", func(t *testing.T) {
-		token, err := s.APIToken.Create(ctx, nil, nil, "deadbeef", s.org.ID)
-		s.Error(err)
-		s.True(biz.IsErrInvalidUUID(err))
-		s.Nil(token)
-	})
-
-	s.T().Run("user2 has no access to org", func(t *testing.T) {
-		token, err := s.APIToken.Create(ctx, nil, nil, s.user2.ID, s.org.ID)
-		s.Error(err)
-		s.True(biz.IsNotFound(err))
-		s.Nil(token)
-	})
-
-	s.T().Run("expiration below threshold", func(t *testing.T) {
-		token, err := s.APIToken.Create(ctx, nil, toPtrDuration(2*time.Hour), s.user.ID, s.org.ID)
-		s.Error(err)
-		s.True(biz.IsErrValidation(err))
-		s.ErrorContains(err, "expiration must be at least")
 		s.Nil(token)
 	})
 
 	s.T().Run("happy path without expiration nor description", func(t *testing.T) {
-		token, err := s.APIToken.Create(ctx, nil, nil, s.user.ID, s.org.ID)
+		token, err := s.APIToken.Create(ctx, nil, nil, s.org.ID)
 		s.NoError(err)
 		s.NotNil(token.ID)
 		s.Equal(s.org.ID, token.OrganizationID.String())
@@ -73,7 +51,7 @@ func (s *apiTokenTestSuite) TestCreate() {
 	})
 
 	s.T().Run("happy path with description and expiration", func(t *testing.T) {
-		token, err := s.APIToken.Create(ctx, toPtrS("tokenStr"), toPtrDuration(24*time.Hour), s.user.ID, s.org.ID)
+		token, err := s.APIToken.Create(ctx, toPtrS("tokenStr"), toPtrDuration(24*time.Hour), s.org.ID)
 		s.NoError(err)
 		s.Equal(s.org.ID, token.OrganizationID.String())
 		s.Equal("tokenStr", token.Description)
@@ -82,8 +60,96 @@ func (s *apiTokenTestSuite) TestCreate() {
 	})
 }
 
+func (s *apiTokenTestSuite) TestRevoke() {
+	ctx := context.Background()
+
+	s.T().Run("invalid org ID", func(t *testing.T) {
+		err := s.APIToken.Revoke(ctx, "deadbeef", s.t1.ID.String())
+		s.Error(err)
+		s.True(biz.IsErrInvalidUUID(err))
+	})
+
+	s.T().Run("invalid token ID", func(t *testing.T) {
+		err := s.APIToken.Revoke(ctx, s.org.ID, "deadbeef")
+		s.Error(err)
+		s.True(biz.IsErrInvalidUUID(err))
+	})
+
+	s.T().Run("token not found in org", func(t *testing.T) {
+		err := s.APIToken.Revoke(ctx, s.org.ID, s.t3.ID.String())
+		s.Error(err)
+		s.True(biz.IsNotFound(err))
+	})
+
+	s.T().Run("token can be revoked once", func(t *testing.T) {
+		err := s.APIToken.Revoke(ctx, s.org.ID, s.t1.ID.String())
+		s.NoError(err)
+		tokens, err := s.APIToken.List(ctx, s.org.ID, true)
+		s.NoError(err)
+		s.Equal(s.t1.ID, tokens[0].ID)
+		// It's revoked
+		s.NotNil(tokens[0].RevokedAt)
+
+		// Can't be revoked twice
+		err = s.APIToken.Revoke(ctx, s.org.ID, s.t1.ID.String())
+		s.Error(err)
+		s.True(biz.IsNotFound(err))
+	})
+}
+
+func (s *apiTokenTestSuite) TestList() {
+	ctx := context.Background()
+	s.T().Run("invalid org ID", func(t *testing.T) {
+		tokens, err := s.APIToken.List(ctx, "deadbeef", false)
+		s.Error(err)
+		s.True(biz.IsErrInvalidUUID(err))
+		s.Nil(tokens)
+	})
+
+	s.T().Run("returns empty list", func(t *testing.T) {
+		emptyOrg, err := s.Organization.Create(ctx, "org1")
+		require.NoError(s.T(), err)
+		tokens, err := s.APIToken.List(ctx, emptyOrg.ID, false)
+		s.NoError(err)
+		s.Len(tokens, 0)
+	})
+
+	s.T().Run("returns the tokens for that org", func(t *testing.T) {
+		var err error
+		tokens, err := s.APIToken.List(ctx, s.org.ID, false)
+		s.NoError(err)
+		require.Len(s.T(), tokens, 2)
+		s.Equal(s.t1.ID, tokens[0].ID)
+		s.Equal(s.t2.ID, tokens[1].ID)
+
+		tokens, err = s.APIToken.List(ctx, s.org2.ID, false)
+		s.NoError(err)
+		require.Len(s.T(), tokens, 1)
+		s.Equal(s.t3.ID, tokens[0].ID)
+	})
+
+	s.T().Run("doesn't return revoked by default", func(t *testing.T) {
+		// revoke one token
+		err := s.APIToken.Revoke(ctx, s.org.ID, s.t1.ID.String())
+		require.NoError(s.T(), err)
+		tokens, err := s.APIToken.List(ctx, s.org.ID, false)
+		s.NoError(err)
+		require.Len(s.T(), tokens, 1)
+		s.Equal(s.t2.ID, tokens[0].ID)
+	})
+
+	s.T().Run("doesn't return revoked unless requested", func(t *testing.T) {
+		// revoke one token
+		tokens, err := s.APIToken.List(ctx, s.org.ID, true)
+		s.NoError(err)
+		require.Len(s.T(), tokens, 2)
+		s.Equal(s.t1.ID, tokens[0].ID)
+		s.Equal(s.t2.ID, tokens[1].ID)
+	})
+}
+
 func (s *apiTokenTestSuite) TestGeneratedJWT() {
-	token, err := s.APIToken.Create(context.Background(), nil, toPtrDuration(24*time.Hour), s.user.ID, s.org.ID)
+	token, err := s.APIToken.Create(context.Background(), nil, toPtrDuration(24*time.Hour), s.org.ID)
 	s.NoError(err)
 	require.NotNil(s.T(), token)
 
@@ -109,8 +175,8 @@ func TestAPITokenUseCase(t *testing.T) {
 // Utility struct to hold the test suite
 type apiTokenTestSuite struct {
 	testhelpers.UseCasesEachTestSuite
-	org         *biz.Organization
-	user, user2 *biz.User
+	org, org2  *biz.Organization
+	t1, t2, t3 *biz.APIToken
 }
 
 func (s *apiTokenTestSuite) SetupTest() {
@@ -122,15 +188,15 @@ func (s *apiTokenTestSuite) SetupTest() {
 	s.TestingUseCases = testhelpers.NewTestingUseCases(t)
 	s.org, err = s.Organization.Create(ctx, "org1")
 	assert.NoError(err)
-
-	// Create User 1
-	s.user, err = s.User.FindOrCreateByEmail(ctx, "user-1@test.com")
-	assert.NoError(err)
-	// Attach org 1
-	_, err = s.Membership.Create(ctx, s.org.ID, s.user.ID, true)
+	s.org2, err = s.Organization.Create(ctx, "org2")
 	assert.NoError(err)
 
-	// Create user 2 with no orgs
-	s.user2, err = s.User.FindOrCreateByEmail(ctx, "user-2@test.com")
-	assert.NoError(err)
+	// Create 2 tokens for org 1
+	s.t1, err = s.APIToken.Create(ctx, nil, nil, s.org.ID)
+	require.NoError(s.T(), err)
+	s.t2, err = s.APIToken.Create(ctx, nil, nil, s.org.ID)
+	require.NoError(s.T(), err)
+	// and 1 token for org 2
+	s.t3, err = s.APIToken.Create(ctx, nil, nil, s.org2.ID)
+	require.NoError(s.T(), err)
 }

@@ -83,7 +83,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		return nil, nil, err
 	}
 	apiTokenRepo := data.NewAPITokenRepo(dataData, logger)
-	apiTokenUseCase, err := biz.NewAPITokenUseCase(apiTokenRepo, membershipRepo, auth, logger)
+	apiTokenUseCase, err := biz.NewAPITokenUseCase(apiTokenRepo, auth, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
