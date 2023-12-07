@@ -350,7 +350,7 @@ func generateUserJWT(userID, passphrase string, expiration time.Duration) (strin
 		return "", err
 	}
 
-	return b.GenerateJWT(userID, jwt.DefaultAudience)
+	return b.GenerateJWT(userID)
 }
 
 func setOauthCookie(w http.ResponseWriter, name, value string) {

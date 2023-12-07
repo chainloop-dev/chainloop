@@ -89,7 +89,7 @@ func (uc *RobotAccountUseCase) Create(ctx context.Context, name string, orgID, w
 		return nil, err
 	}
 
-	jwt, err := b.GenerateJWT(orgID, workflowID, res.ID.String(), jwt.DefaultAudience)
+	jwt, err := b.GenerateJWT(orgID, workflowID, res.ID.String())
 	if err != nil {
 		return nil, err
 	}

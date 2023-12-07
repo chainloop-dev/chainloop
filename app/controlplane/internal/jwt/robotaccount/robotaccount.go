@@ -23,9 +23,17 @@ import (
 
 var SigningMethod = jwt.SigningMethodHS256
 
+// This type of JWT is meant to be used by the attestations service
+const (
+	Audience = "attestations.chainloop"
+	// Previous audience, deprecated, we keep it to not to break compatibility
+	DeprecatedAudience = "client.chainloop"
+)
+
 type Builder struct {
 	issuer     string
 	hmacSecret string
+	audience   string
 }
 
 type NewOpt func(b *Builder)
@@ -47,7 +55,7 @@ func WithKeySecret(hmacSecret string) NewOpt {
 // Currently we use a simple hmac encryption method meant to be continuously rotated
 // TODO: additional/alternative encryption method, i.e DSE asymetric, see CAS robot account for reference
 func NewBuilder(opts ...NewOpt) (*Builder, error) {
-	b := &Builder{}
+	b := &Builder{audience: Audience}
 	for _, opt := range opts {
 		opt(b)
 	}
@@ -64,7 +72,7 @@ func NewBuilder(opts ...NewOpt) (*Builder, error) {
 }
 
 // NOTE: It does not expire, it will get revoked instead
-func (ra *Builder) GenerateJWT(orgID, workflowID, keyID, audience string) (string, error) {
+func (ra *Builder) GenerateJWT(orgID, workflowID, keyID string) (string, error) {
 	claims := CustomClaims{
 		orgID,
 		workflowID,
@@ -72,7 +80,7 @@ func (ra *Builder) GenerateJWT(orgID, workflowID, keyID, audience string) (strin
 			// Key identifier so we can check it's revocation status
 			ID:       keyID,
 			Issuer:   ra.issuer,
-			Audience: jwt.ClaimStrings{audience},
+			Audience: jwt.ClaimStrings{ra.audience},
 		},
 	}
 

@@ -62,6 +62,12 @@ func WithCurrentRobotAccount(robotAccountUseCase *biz.RobotAccountUseCase, logge
 				return nil, errors.New("error mapping the claims")
 			}
 
+			// Do not accept tokens that are crafted for a different audience in this system
+			// NOTE: we allow deprecated audience to not to break compatibility with previously issued robot-accounts
+			if !claims.VerifyAudience(robotaccount.Audience, true) && !claims.VerifyAudience(robotaccount.DeprecatedAudience, true) {
+				return nil, errors.New("unexpected token, invalid audience")
+			}
+
 			// Extract account ID
 			robotAccountID := claims.ID
 			if robotAccountID == "" {

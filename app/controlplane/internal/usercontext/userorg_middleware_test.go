@@ -22,9 +22,11 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	bizMocks "github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/mocks"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/user"
 	userjwtbuilder "github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/user"
 	"github.com/go-kratos/kratos/v2/log"
 	jwtmiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
@@ -36,13 +38,21 @@ func TestWithCurrentUserAndOrgMiddleware(t *testing.T) {
 	testCases := []struct {
 		name      string
 		loggedIn  bool
+		audience  string
 		userExist bool
 		orgExist  bool
 		wantErr   bool
 	}{
 		{
+			name:     "invalid audience",
+			loggedIn: true,
+			audience: "another-aud",
+			wantErr:  true,
+		},
+		{
 			name:      "logged in, user and org exists",
 			loggedIn:  true,
+			audience:  user.Audience,
 			userExist: true,
 			orgExist:  true,
 			wantErr:   false,
@@ -50,18 +60,21 @@ func TestWithCurrentUserAndOrgMiddleware(t *testing.T) {
 		{
 			name:      "logged in, user does not exist",
 			loggedIn:  true,
+			audience:  user.Audience,
 			userExist: false,
 			wantErr:   true,
 		},
 		{
 			name:      "logged in, org does not exist",
 			loggedIn:  true,
+			audience:  user.Audience,
 			userExist: true,
 			wantErr:   true,
 		},
 		{
 			name:     "not logged in",
 			loggedIn: false,
+			audience: user.Audience,
 			wantErr:  true,
 		},
 	}
@@ -76,13 +89,16 @@ func TestWithCurrentUserAndOrgMiddleware(t *testing.T) {
 			if tc.loggedIn {
 				ctx = jwtmiddleware.NewContext(ctx, &userjwtbuilder.CustomClaims{
 					UserID: wantUser.ID,
+					RegisteredClaims: jwt.RegisteredClaims{
+						Audience: jwt.ClaimStrings{tc.audience},
+					},
 				})
 			}
 
 			if tc.userExist {
 				usecase.On("FindByID", ctx, wantUser.ID).Return(wantUser, nil)
 			} else if tc.loggedIn {
-				usecase.On("FindByID", ctx, wantUser.ID).Return(nil, nil)
+				usecase.On("FindByID", ctx, wantUser.ID).Maybe().Return(nil, nil)
 			}
 
 			if tc.orgExist {

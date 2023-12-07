@@ -22,10 +22,13 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
+const Audience = "user-auth.chainloop"
+
 type Builder struct {
 	issuer     string
 	hmacSecret string
 	expiration time.Duration
+	audience   string
 }
 
 type NewOpt func(b *Builder)
@@ -54,6 +57,7 @@ var SigningMethod = jwt.SigningMethodHS256
 func NewBuilder(opts ...NewOpt) (*Builder, error) {
 	b := &Builder{
 		expiration: defaultExpiration,
+		audience:   Audience,
 	}
 
 	for _, opt := range opts {
@@ -71,12 +75,12 @@ func NewBuilder(opts ...NewOpt) (*Builder, error) {
 	return b, nil
 }
 
-func (ra *Builder) GenerateJWT(userID, audience string) (string, error) {
+func (ra *Builder) GenerateJWT(userID string) (string, error) {
 	claims := CustomClaims{
 		userID,
 		jwt.RegisteredClaims{
 			Issuer:    ra.issuer,
-			Audience:  jwt.ClaimStrings{audience},
+			Audience:  jwt.ClaimStrings{ra.audience},
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(ra.expiration)),
 		},
 	}
