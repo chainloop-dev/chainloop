@@ -21,6 +21,8 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/apitoken"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
@@ -47,24 +49,34 @@ type APITokenRepo interface {
 type APITokenUseCase struct {
 	apiTokenRepo   APITokenRepo
 	membershipRepo MembershipRepo
-	authConf       *conf.Auth
 	logger         *log.Helper
+	jwtBuilder     *apitoken.Builder
 }
 
-func NewAPITokenUseCase(apiTokenRepo APITokenRepo, mRepo MembershipRepo, conf *conf.Auth, logger log.Logger) *APITokenUseCase {
-	return &APITokenUseCase{
+func NewAPITokenUseCase(apiTokenRepo APITokenRepo, mRepo MembershipRepo, conf *conf.Auth, logger log.Logger) (*APITokenUseCase, error) {
+	uc := &APITokenUseCase{
 		apiTokenRepo:   apiTokenRepo,
 		membershipRepo: mRepo,
-		authConf:       conf,
 		logger:         log.NewHelper(logger),
 	}
+
+	b, err := apitoken.NewBuilder(
+		apitoken.WithIssuer(jwt.DefaultIssuer),
+		apitoken.WithKeySecret(conf.GeneratedJwsHmacSecret),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("creating jwt builder: %w", err)
+	}
+
+	uc.jwtBuilder = b
+	return uc, nil
 }
 
 // This is the minimum duration that a token can be created for
 const minDuration = 24 * time.Hour
 
 // expires in is a string that can be parsed by time.ParseDuration
-func (uc *APITokenUseCase) Create(ctx context.Context, description *string, expiresIn *string, userID, orgID string) (*APIToken, error) {
+func (uc *APITokenUseCase) Create(ctx context.Context, description *string, expiresIn *time.Duration, userID, orgID string) (*APIToken, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -87,17 +99,12 @@ func (uc *APITokenUseCase) Create(ctx context.Context, description *string, expi
 	// we also validate that it's at least 24 hours and valid string format
 	var expiresAt *time.Time
 	if expiresIn != nil {
-		d, err := time.ParseDuration(*expiresIn)
-		if err != nil {
-			return nil, NewErrValidationStr("invalid expiration format, good values are 1d, 1w, 1m, 1y")
-		}
-
-		if d < minDuration {
+		if *expiresIn < minDuration {
 			return nil, NewErrValidation(fmt.Errorf("expiration must be at least %s", minDuration))
 		}
 
 		expiresAt = new(time.Time)
-		*expiresAt = time.Now().Add(d)
+		*expiresAt = time.Now().Add(*expiresIn)
 	}
 
 	// NOTE: the expiration time is stored just for reference, it's also encoded in the JWT
@@ -107,6 +114,11 @@ func (uc *APITokenUseCase) Create(ctx context.Context, description *string, expi
 		return nil, fmt.Errorf("storing token: %w", err)
 	}
 
-	// TODO: generate JWT token
+	// generate the JWT
+	token.JWT, err = uc.jwtBuilder.GenerateJWT(orgID, token.ID.String(), expiresAt)
+	if err != nil {
+		return nil, fmt.Errorf("generating jwt: %w", err)
+	}
+
 	return token, nil
 }

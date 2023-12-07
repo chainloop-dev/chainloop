@@ -18,11 +18,15 @@ package biz_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/apitoken"
+	"github.com/golang-jwt/jwt"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -49,16 +53,8 @@ func (s *apiTokenTestSuite) TestCreate() {
 		s.Nil(token)
 	})
 
-	s.T().Run("invalid expiration format expiration", func(t *testing.T) {
-		token, err := s.APIToken.Create(ctx, nil, toPtrS("wrong"), s.user.ID, s.org.ID)
-		s.Error(err)
-		s.True(biz.IsErrValidation(err))
-		s.ErrorContains(err, "invalid expiration format")
-		s.Nil(token)
-	})
-
 	s.T().Run("expiration below threshold", func(t *testing.T) {
-		token, err := s.APIToken.Create(ctx, nil, toPtrS("1h"), s.user.ID, s.org.ID)
+		token, err := s.APIToken.Create(ctx, nil, toPtrDuration(2*time.Hour), s.user.ID, s.org.ID)
 		s.Error(err)
 		s.True(biz.IsErrValidation(err))
 		s.ErrorContains(err, "expiration must be at least")
@@ -73,16 +69,36 @@ func (s *apiTokenTestSuite) TestCreate() {
 		s.Empty(token.Description)
 		s.Nil(token.ExpiresAt)
 		s.Nil(token.RevokedAt)
+		s.NotNil(token.JWT)
 	})
 
 	s.T().Run("happy path with description and expiration", func(t *testing.T) {
-		token, err := s.APIToken.Create(ctx, toPtrS("tokenStr"), toPtrS("24h"), s.user.ID, s.org.ID)
+		token, err := s.APIToken.Create(ctx, toPtrS("tokenStr"), toPtrDuration(24*time.Hour), s.user.ID, s.org.ID)
 		s.NoError(err)
 		s.Equal(s.org.ID, token.OrganizationID.String())
 		s.Equal("tokenStr", token.Description)
 		s.NotNil(token.ExpiresAt)
 		s.Nil(token.RevokedAt)
 	})
+}
+
+func (s *apiTokenTestSuite) TestGeneratedJWT() {
+	token, err := s.APIToken.Create(context.Background(), nil, toPtrDuration(24*time.Hour), s.user.ID, s.org.ID)
+	s.NoError(err)
+	require.NotNil(s.T(), token)
+
+	claims := &apitoken.CustomClaims{}
+	tokenInfo, err := jwt.ParseWithClaims(token.JWT, claims, func(_ *jwt.Token) (interface{}, error) {
+		return []byte("test"), nil
+	})
+
+	require.NoError(s.T(), err)
+	s.True(tokenInfo.Valid)
+	// The resulting JWT should have the same org, token ID and expiration time than
+	// the reference in the DB
+	s.Equal(token.OrganizationID.String(), claims.OrgID)
+	s.Equal(token.ID.String(), claims.ID)
+	s.Equal(token.ExpiresAt.Truncate(time.Second), claims.ExpiresAt.Truncate(time.Second))
 }
 
 // Run the tests

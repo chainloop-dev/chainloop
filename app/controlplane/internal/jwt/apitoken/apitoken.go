@@ -13,15 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package robotaccount
+package apitoken
 
 import (
 	"errors"
+	"time"
 
 	"github.com/golang-jwt/jwt/v4"
 )
 
 var SigningMethod = jwt.SigningMethodHS256
+
+const Audience = "api-token-auth.chainloop"
 
 type Builder struct {
 	issuer     string
@@ -42,8 +45,8 @@ func WithKeySecret(hmacSecret string) NewOpt {
 	}
 }
 
-// NewBuilder creates a new robot account builder meant to be associated with a workflowRun
-// It does not expire but its revocation status is checked on every request
+// NewBuilder creates a new APIToken JWT builder
+// It supports expiration and revocation
 // Currently we use a simple hmac encryption method meant to be continuously rotated
 // TODO: additional/alternative encryption method, i.e DSE asymmetric, see CAS robot account for reference
 func NewBuilder(opts ...NewOpt) (*Builder, error) {
@@ -63,17 +66,21 @@ func NewBuilder(opts ...NewOpt) (*Builder, error) {
 	return b, nil
 }
 
-// NOTE: It does not expire, it will get revoked instead
-func (ra *Builder) GenerateJWT(orgID, workflowID, keyID, audience string) (string, error) {
+// it can both expire and being revoked, revocation is performed by checking the keyID against our revocation list
+func (ra *Builder) GenerateJWT(orgID, keyID string, expiresAt *time.Time) (string, error) {
 	claims := CustomClaims{
 		orgID,
-		workflowID,
 		jwt.RegisteredClaims{
 			// Key identifier so we can check it's revocation status
 			ID:       keyID,
 			Issuer:   ra.issuer,
-			Audience: jwt.ClaimStrings{audience},
+			Audience: jwt.ClaimStrings{Audience},
 		},
+	}
+
+	// optional expiration value, i.e 30 days
+	if expiresAt != nil {
+		claims.ExpiresAt = jwt.NewNumericDate(*expiresAt)
 	}
 
 	resultToken := jwt.NewWithClaims(SigningMethod, claims)
@@ -81,7 +88,6 @@ func (ra *Builder) GenerateJWT(orgID, workflowID, keyID, audience string) (strin
 }
 
 type CustomClaims struct {
-	OrgID      string `json:"org_id"`
-	WorkflowID string `json:"workflow_id"`
+	OrgID string `json:"org_id"`
 	jwt.RegisteredClaims
 }
