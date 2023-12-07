@@ -33,7 +33,6 @@ const (
 type Builder struct {
 	issuer     string
 	hmacSecret string
-	audience   string
 }
 
 type NewOpt func(b *Builder)
@@ -55,7 +54,7 @@ func WithKeySecret(hmacSecret string) NewOpt {
 // Currently we use a simple hmac encryption method meant to be continuously rotated
 // TODO: additional/alternative encryption method, i.e DSE asymetric, see CAS robot account for reference
 func NewBuilder(opts ...NewOpt) (*Builder, error) {
-	b := &Builder{audience: Audience}
+	b := &Builder{}
 	for _, opt := range opts {
 		opt(b)
 	}
@@ -80,7 +79,7 @@ func (ra *Builder) GenerateJWT(orgID, workflowID, keyID string) (string, error) 
 			// Key identifier so we can check it's revocation status
 			ID:       keyID,
 			Issuer:   ra.issuer,
-			Audience: jwt.ClaimStrings{ra.audience},
+			Audience: jwt.ClaimStrings{Audience},
 		},
 	}
 

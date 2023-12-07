@@ -28,7 +28,6 @@ type Builder struct {
 	issuer     string
 	hmacSecret string
 	expiration time.Duration
-	audience   string
 }
 
 type NewOpt func(b *Builder)
@@ -57,7 +56,6 @@ var SigningMethod = jwt.SigningMethodHS256
 func NewBuilder(opts ...NewOpt) (*Builder, error) {
 	b := &Builder{
 		expiration: defaultExpiration,
-		audience:   Audience,
 	}
 
 	for _, opt := range opts {
@@ -80,7 +78,7 @@ func (ra *Builder) GenerateJWT(userID string) (string, error) {
 		userID,
 		jwt.RegisteredClaims{
 			Issuer:    ra.issuer,
-			Audience:  jwt.ClaimStrings{ra.audience},
+			Audience:  jwt.ClaimStrings{Audience},
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(ra.expiration)),
 		},
 	}
