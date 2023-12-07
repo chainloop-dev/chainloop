@@ -22,7 +22,6 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	bizMocks "github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/mocks"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/user"
 	userjwtbuilder "github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/user"
 	"github.com/go-kratos/kratos/v2/log"
 	jwtmiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
@@ -52,7 +51,7 @@ func TestWithCurrentUserAndOrgMiddleware(t *testing.T) {
 		{
 			name:      "logged in, user and org exists",
 			loggedIn:  true,
-			audience:  user.Audience,
+			audience:  userjwtbuilder.Audience,
 			userExist: true,
 			orgExist:  true,
 			wantErr:   false,
@@ -60,21 +59,21 @@ func TestWithCurrentUserAndOrgMiddleware(t *testing.T) {
 		{
 			name:      "logged in, user does not exist",
 			loggedIn:  true,
-			audience:  user.Audience,
+			audience:  userjwtbuilder.Audience,
 			userExist: false,
 			wantErr:   true,
 		},
 		{
 			name:      "logged in, org does not exist",
 			loggedIn:  true,
-			audience:  user.Audience,
+			audience:  userjwtbuilder.Audience,
 			userExist: true,
 			wantErr:   true,
 		},
 		{
 			name:     "not logged in",
 			loggedIn: false,
-			audience: user.Audience,
+			audience: userjwtbuilder.Audience,
 			wantErr:  true,
 		},
 	}
