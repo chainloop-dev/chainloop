@@ -75,7 +75,7 @@ func TestGenerateJWT(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	token, err := b.GenerateJWT("org-id", "workflow-id", "key-id", "my-audience")
+	token, err := b.GenerateJWT("org-id", "workflow-id", "key-id")
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
 
@@ -91,6 +91,6 @@ func TestGenerateJWT(t *testing.T) {
 	assert.Equal(t, "workflow-id", claims.WorkflowID)
 	assert.Equal(t, "key-id", claims.ID)
 	assert.Equal(t, "my-issuer", claims.Issuer)
-	assert.Contains(t, claims.Audience, "my-audience")
+	assert.Contains(t, claims.Audience, Audience)
 	assert.Nil(t, claims.ExpiresAt)
 }

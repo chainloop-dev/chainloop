@@ -86,6 +86,11 @@ func WithCurrentUserAndOrgMiddleware(userUseCase biz.UserOrgFinder, logger *log.
 				return nil, errors.New("error mapping the claims")
 			}
 
+			// Do not accept tokens that are crafted for a different audience in this system
+			if !customClaims.VerifyAudience(user.Audience, true) {
+				return nil, errors.New("unexpected token, invalid audience")
+			}
+
 			userID := customClaims.UserID
 			if userID == "" {
 				return nil, errors.New("error retrieving the user information from the auth token")

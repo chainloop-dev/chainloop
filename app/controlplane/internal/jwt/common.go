@@ -16,5 +16,4 @@
 package jwt
 
 const DefaultIssuer = "cp.chainloop"
-const DefaultAudience = "client.chainloop"
 const CASAudience = "artifact-cas.chainloop"

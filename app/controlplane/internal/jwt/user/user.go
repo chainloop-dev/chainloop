@@ -22,6 +22,8 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
+const Audience = "user-auth.chainloop"
+
 type Builder struct {
 	issuer     string
 	hmacSecret string
@@ -71,12 +73,12 @@ func NewBuilder(opts ...NewOpt) (*Builder, error) {
 	return b, nil
 }
 
-func (ra *Builder) GenerateJWT(userID, audience string) (string, error) {
+func (ra *Builder) GenerateJWT(userID string) (string, error) {
 	claims := CustomClaims{
 		userID,
 		jwt.RegisteredClaims{
 			Issuer:    ra.issuer,
-			Audience:  jwt.ClaimStrings{audience},
+			Audience:  jwt.ClaimStrings{Audience},
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(ra.expiration)),
 		},
 	}
