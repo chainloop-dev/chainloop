@@ -6,6 +6,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// APIToken is the predicate function for apitoken builders.
+type APIToken func(*sql.Selector)
+
 // CASBackend is the predicate function for casbackend builders.
 type CASBackend func(*sql.Selector)
 

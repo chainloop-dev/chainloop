@@ -93,6 +93,18 @@ func (r *MembershipRepo) FindByOrg(ctx context.Context, orgID uuid.UUID) ([]*biz
 	return result, nil
 }
 
+// FindByOrgAndUser finds the membership for a given organization and user
+func (r *MembershipRepo) FindByOrgAndUser(ctx context.Context, orgID, userID uuid.UUID) (*biz.Membership, error) {
+	m, err := orgScopedQuery(r.data.db, orgID).
+		QueryMemberships().Where(membership.HasUserWith(user.ID(userID))).
+		WithOrganization().WithUser().Only(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, err
+	}
+
+	return entMembershipToBiz(m), nil
+}
+
 func (r *MembershipRepo) FindByIDInUser(ctx context.Context, userID, membershipID uuid.UUID) (*biz.Membership, error) {
 	m, err := r.data.db.User.Query().Where(user.ID(userID)).
 		QueryMemberships().

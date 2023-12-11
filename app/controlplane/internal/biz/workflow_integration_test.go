@@ -18,6 +18,7 @@ package biz_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
@@ -157,4 +158,8 @@ func toPtrS(s string) *string {
 
 func toPtrBool(b bool) *bool {
 	return &b
+}
+
+func toPtrDuration(d time.Duration) *time.Duration {
+	return &d
 }

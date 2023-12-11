@@ -9,6 +9,18 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent"
 )
 
+// The APITokenFunc type is an adapter to allow the use of ordinary
+// function as APIToken mutator.
+type APITokenFunc func(context.Context, *ent.APITokenMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f APITokenFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.APITokenMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.APITokenMutation", m)
+}
+
 // The CASBackendFunc type is an adapter to allow the use of ordinary
 // function as CASBackend mutator.
 type CASBackendFunc func(context.Context, *ent.CASBackendMutation) (ent.Value, error)

@@ -36,6 +36,7 @@ var ProviderSet = wire.NewSet(
 	NewWorkflowRunExpirerUseCase,
 	NewCASMappingUseCase,
 	NewReferrerUseCase,
+	NewAPITokenUseCase,
 	wire.Struct(new(NewIntegrationUseCaseOpts), "*"),
 	wire.Struct(new(NewUserUseCaseParams), "*"),
 )

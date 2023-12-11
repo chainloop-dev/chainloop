@@ -36,6 +36,7 @@ type MembershipRepo interface {
 	FindByUser(ctx context.Context, userID uuid.UUID) ([]*Membership, error)
 	FindByOrg(ctx context.Context, orgID uuid.UUID) ([]*Membership, error)
 	FindByIDInUser(ctx context.Context, userID, ID uuid.UUID) (*Membership, error)
+	FindByOrgAndUser(ctx context.Context, orgID, userID uuid.UUID) (*Membership, error)
 	SetCurrent(ctx context.Context, ID uuid.UUID) (*Membership, error)
 	Create(ctx context.Context, orgID, userID uuid.UUID, current bool) (*Membership, error)
 	Delete(ctx context.Context, ID uuid.UUID) error

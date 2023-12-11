@@ -66,6 +66,7 @@ type TestingUseCases struct {
 	CASMapping             *biz.CASMappingUseCase
 	OrgInvitation          *biz.OrgInvitationUseCase
 	Referrer               *biz.ReferrerUseCase
+	APIToken               *biz.APITokenUseCase
 	// Repositories that can be used for custom crafting of use-cases
 	Repos *TestingRepos
 }
