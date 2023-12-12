@@ -16,25 +16,30 @@
 package cmd
 
 import (
+	"context"
+	"fmt"
+
+	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
 )
 
-func newOrganizationCmd() *cobra.Command {
+func newAPITokenListCmd() *cobra.Command {
+	var includeRevoked bool
+
 	cmd := &cobra.Command{
-		Use:     "organization",
-		Aliases: []string{"org"},
-		Short:   "Organizations management",
+		Use:     "list",
+		Aliases: []string{"ls"},
+		Short:   "List API tokens in this organization",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			res, err := action.NewAPITokenList(actionOpts).Run(context.Background(), includeRevoked)
+			if err != nil {
+				return fmt.Errorf("listing API tokens: %w", err)
+			}
+
+			return encodeOutput(res, apiTokenListTableOutput)
+		},
 	}
 
-	cmd.AddCommand(
-		newOrganizationList(),
-		newOrganizationCreateCmd(),
-		newOrganizationUpdateCmd(),
-		newOrganizationSet(),
-		newOrganizationLeaveCmd(),
-		newOrganizationDescribeCmd(),
-		newOrganizationInvitationCmd(),
-		newOrganizationAPITokenCmd(),
-	)
+	cmd.Flags().BoolVarP(&includeRevoked, "all", "a", false, "show all API tokens including revoked ones")
 	return cmd
 }

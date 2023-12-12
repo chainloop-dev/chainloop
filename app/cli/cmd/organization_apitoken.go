@@ -19,22 +19,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newOrganizationCmd() *cobra.Command {
+func newOrganizationAPITokenCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "organization",
-		Aliases: []string{"org"},
-		Short:   "Organizations management",
+		Use:     "api-token",
+		Aliases: []string{"token"},
+		Short:   "API token management",
 	}
 
-	cmd.AddCommand(
-		newOrganizationList(),
-		newOrganizationCreateCmd(),
-		newOrganizationUpdateCmd(),
-		newOrganizationSet(),
-		newOrganizationLeaveCmd(),
-		newOrganizationDescribeCmd(),
-		newOrganizationInvitationCmd(),
-		newOrganizationAPITokenCmd(),
-	)
+	cmd.AddCommand(newAPITokenCreateCmd(), newAPITokenListCmd(), newAPITokenRevokeCmd())
+
 	return cmd
 }
