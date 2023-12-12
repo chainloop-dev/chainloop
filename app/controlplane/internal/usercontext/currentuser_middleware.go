@@ -91,8 +91,8 @@ func WithCurrentUserAndOrgMiddleware(userUseCase biz.UserOrgFinder, logger *log.
 			// Check wether the token is for a user or an API-token and handle accordingly
 			// We've received a token for a user
 			if genericClaims.VerifyAudience(user.Audience, true) {
-				userID := genericClaims["user_id"].(string)
-				if userID == "" {
+				userID, ok := genericClaims["user_id"].(string)
+				if !ok || userID == "" {
 					return nil, errors.New("error mapping the user claims")
 				}
 

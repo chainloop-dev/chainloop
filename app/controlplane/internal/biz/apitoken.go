@@ -134,5 +134,12 @@ func (uc *APITokenUseCase) FindByID(ctx context.Context, id string) (*APIToken, 
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	return uc.apiTokenRepo.FindByID(ctx, uuid)
+	t, err := uc.apiTokenRepo.FindByID(ctx, uuid)
+	if err != nil {
+		return nil, fmt.Errorf("finding token: %w", err)
+	} else if t == nil {
+		return nil, NewErrNotFound("token")
+	}
+
+	return t, nil
 }

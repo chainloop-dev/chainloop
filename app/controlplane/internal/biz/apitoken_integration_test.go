@@ -23,6 +23,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/google/uuid"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -93,6 +94,29 @@ func (s *apiTokenTestSuite) TestRevoke() {
 		err = s.APIToken.Revoke(ctx, s.org.ID, s.t1.ID.String())
 		s.Error(err)
 		s.True(biz.IsNotFound(err))
+	})
+}
+
+func (s *apiTokenTestSuite) TestFindByID() {
+	ctx := context.Background()
+
+	s.T().Run("invalid ID", func(t *testing.T) {
+		_, err := s.APIToken.FindByID(ctx, "deadbeef")
+		s.Error(err)
+		s.True(biz.IsErrInvalidUUID(err))
+	})
+
+	s.T().Run("token not found", func(t *testing.T) {
+		token, err := s.APIToken.FindByID(ctx, uuid.NewString())
+		s.Error(err)
+		s.True(biz.IsNotFound(err))
+		s.Nil(token)
+	})
+
+	s.T().Run("token is found", func(t *testing.T) {
+		token, err := s.APIToken.FindByID(ctx, s.t1.ID.String())
+		s.NoError(err)
+		s.Equal(s.t1.ID, token.ID)
 	})
 }
 

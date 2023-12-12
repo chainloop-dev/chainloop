@@ -68,8 +68,8 @@ func WithCurrentAPITokenAndOrgMiddleware(apiTokenUC *biz.APITokenUseCase, orgUC 
 			// We've received an API-token
 			if genericClaims.VerifyAudience(apitoken.Audience, true) {
 				var err error
-				tokenID := genericClaims["jti"].(string)
-				if tokenID == "" {
+				tokenID, ok := genericClaims["jti"].(string)
+				if !ok || tokenID == "" {
 					return nil, errors.New("error mapping the API-token claims")
 				}
 
