@@ -40,13 +40,15 @@ func TestWithCurrentUserAndOrgMiddleware(t *testing.T) {
 		audience  string
 		userExist bool
 		orgExist  bool
-		wantErr   bool
+		// the middleware logic got skipped
+		skipped bool
+		wantErr bool
 	}{
 		{
-			name:     "invalid audience",
+			name:     "invalid audience", // in this case it gets ignored
 			loggedIn: true,
 			audience: "another-aud",
-			wantErr:  true,
+			skipped:  true,
 		},
 		{
 			name:      "logged in, user and org exists",
@@ -86,12 +88,12 @@ func TestWithCurrentUserAndOrgMiddleware(t *testing.T) {
 			usecase := bizMocks.NewUserOrgFinder(t)
 			ctx := context.Background()
 			if tc.loggedIn {
-				ctx = jwtmiddleware.NewContext(ctx, &userjwtbuilder.CustomClaims{
-					UserID: wantUser.ID,
-					RegisteredClaims: jwt.RegisteredClaims{
-						Audience: jwt.ClaimStrings{tc.audience},
-					},
-				})
+				c := jwt.MapClaims{
+					"aud":     tc.audience,
+					"user_id": wantUser.ID,
+				}
+
+				ctx = jwtmiddleware.NewContext(ctx, c)
 			}
 
 			if tc.userExist {
@@ -113,9 +115,11 @@ func TestWithCurrentUserAndOrgMiddleware(t *testing.T) {
 						return nil, nil
 					}
 
-					// Check that the wrapped handler contains the user and org
-					assert.Equal(t, CurrentOrg(ctx).ID, wantOrg.ID)
-					assert.Equal(t, CurrentUser(ctx).ID, wantUser.ID)
+					if !tc.skipped {
+						// Check that the wrapped handler contains the user and org
+						assert.Equal(t, CurrentOrg(ctx).ID, wantOrg.ID)
+						assert.Equal(t, CurrentUser(ctx).ID, wantUser.ID)
+					}
 
 					return nil, nil
 				})(ctx, nil)
