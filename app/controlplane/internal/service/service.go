@@ -45,17 +45,27 @@ var ProviderSet = wire.NewSet(
 	NewOrganizationService,
 	NewOrgInvitationService,
 	NewReferrerService,
+	NewAPITokenService,
 	wire.Struct(new(NewWorkflowRunServiceOpts), "*"),
 	wire.Struct(new(NewAttestationServiceOpts), "*"),
 )
 
-func loadCurrentUserAndOrg(ctx context.Context) (*usercontext.User, *usercontext.Org, error) {
-	currentUser, currentOrg := usercontext.CurrentUser(ctx), usercontext.CurrentOrg(ctx)
-	if currentUser == nil || currentOrg == nil {
-		return nil, nil, errors.NotFound("not found", "logged in user and org not found")
+func requireCurrentUser(ctx context.Context) (*usercontext.User, error) {
+	currentUser := usercontext.CurrentUser(ctx)
+	if currentUser == nil {
+		return nil, errors.NotFound("not found", "logged in user")
 	}
 
-	return currentUser, currentOrg, nil
+	return currentUser, nil
+}
+
+func requireCurrentOrg(ctx context.Context) (*usercontext.Org, error) {
+	currentOrg := usercontext.CurrentOrg(ctx)
+	if currentOrg == nil {
+		return nil, errors.NotFound("not found", "current organization not set")
+	}
+
+	return currentOrg, nil
 }
 
 func newService(opts ...NewOpt) *service {

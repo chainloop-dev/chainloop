@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -76,19 +76,18 @@ func TestGenerateJWT(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	token, err := b.GenerateJWT("org-id", "key-id", toPtrTime(time.Now().Add(1*time.Hour)))
+	token, err := b.GenerateJWT("key-id", toPtrTime(time.Now().Add(1*time.Hour)))
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
 
 	// Verify signature and check claims
-	claims := &CustomClaims{}
+	claims := &jwt.RegisteredClaims{}
 	tokenInfo, err := jwt.ParseWithClaims(token, claims, func(_ *jwt.Token) (interface{}, error) {
 		return []byte(hmacSecret), nil
 	})
 
 	require.NoError(t, err)
 	assert.True(t, tokenInfo.Valid)
-	assert.Equal(t, "org-id", claims.OrgID)
 	assert.Equal(t, "key-id", claims.ID)
 	assert.Equal(t, "my-issuer", claims.Issuer)
 	assert.Contains(t, claims.Audience, Audience)

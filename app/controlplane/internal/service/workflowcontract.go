@@ -40,7 +40,7 @@ func NewWorkflowSchemaService(uc *biz.WorkflowContractUseCase, opts ...NewOpt) *
 }
 
 func (s *WorkflowContractService) List(ctx context.Context, _ *pb.WorkflowContractServiceListRequest) (*pb.WorkflowContractServiceListResponse, error) {
-	_, currentOrg, err := loadCurrentUserAndOrg(ctx)
+	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func (s *WorkflowContractService) List(ctx context.Context, _ *pb.WorkflowContra
 }
 
 func (s *WorkflowContractService) Describe(ctx context.Context, req *pb.WorkflowContractServiceDescribeRequest) (*pb.WorkflowContractServiceDescribeResponse, error) {
-	_, currentOrg, err := loadCurrentUserAndOrg(ctx)
+	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func (s *WorkflowContractService) Describe(ctx context.Context, req *pb.Workflow
 }
 
 func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowContractServiceCreateRequest) (*pb.WorkflowContractServiceCreateResponse, error) {
-	_, currentOrg, err := loadCurrentUserAndOrg(ctx)
+	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 }
 
 func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowContractServiceUpdateRequest) (*pb.WorkflowContractServiceUpdateResponse, error) {
-	_, currentOrg, err := loadCurrentUserAndOrg(ctx)
+	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +117,7 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 }
 
 func (s *WorkflowContractService) Delete(ctx context.Context, req *pb.WorkflowContractServiceDeleteRequest) (*pb.WorkflowContractServiceDeleteResponse, error) {
-	_, currentOrg, err := loadCurrentUserAndOrg(ctx)
+	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}

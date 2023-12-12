@@ -53,6 +53,17 @@ func (r *APITokenRepo) Create(ctx context.Context, description *string, expiresA
 	return entAPITokenToBiz(token), nil
 }
 
+func (r *APITokenRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.APIToken, error) {
+	token, err := r.data.db.APIToken.Get(ctx, id)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, fmt.Errorf("getting APIToken: %w", err)
+	} else if token == nil {
+		return nil, nil
+	}
+
+	return entAPITokenToBiz(token), nil
+}
+
 func (r *APITokenRepo) List(ctx context.Context, orgID uuid.UUID, includeRevoked bool) ([]*biz.APIToken, error) {
 	query := r.data.db.APIToken.Query().Where(apitoken.OrganizationIDEQ(orgID))
 	if !includeRevoked {

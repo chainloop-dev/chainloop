@@ -40,7 +40,7 @@ func NewRobotAccountService(uc *biz.RobotAccountUseCase, opts ...NewOpt) *RobotA
 }
 
 func (s *RobotAccountService) Create(ctx context.Context, req *pb.RobotAccountServiceCreateRequest) (*pb.RobotAccountServiceCreateResponse, error) {
-	_, currentOrg, err := loadCurrentUserAndOrg(ctx)
+	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func (s *RobotAccountService) Create(ctx context.Context, req *pb.RobotAccountSe
 }
 
 func (s *RobotAccountService) List(ctx context.Context, req *pb.RobotAccountServiceListRequest) (*pb.RobotAccountServiceListResponse, error) {
-	_, currentOrg, err := loadCurrentUserAndOrg(ctx)
+	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func (s *RobotAccountService) List(ctx context.Context, req *pb.RobotAccountServ
 }
 
 func (s *RobotAccountService) Revoke(ctx context.Context, req *pb.RobotAccountServiceRevokeRequest) (*pb.RobotAccountServiceRevokeResponse, error) {
-	_, currentOrg, err := loadCurrentUserAndOrg(ctx)
+	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}

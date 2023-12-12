@@ -76,7 +76,7 @@ func (s *IntegrationsService) ListAvailable(_ context.Context, _ *pb.Integration
 }
 
 func (s *IntegrationsService) Register(ctx context.Context, req *pb.IntegrationsServiceRegisterRequest) (*pb.IntegrationsServiceRegisterResponse, error) {
-	_, org, err := loadCurrentUserAndOrg(ctx)
+	org, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (s *IntegrationsService) Register(ctx context.Context, req *pb.Integrations
 }
 
 func (s *IntegrationsService) Attach(ctx context.Context, req *pb.IntegrationsServiceAttachRequest) (*pb.IntegrationsServiceAttachResponse, error) {
-	_, org, err := loadCurrentUserAndOrg(ctx)
+	org, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func (s *IntegrationsService) Attach(ctx context.Context, req *pb.IntegrationsSe
 }
 
 func (s *IntegrationsService) ListRegistrations(ctx context.Context, _ *pb.IntegrationsServiceListRegistrationsRequest) (*pb.IntegrationsServiceListRegistrationsResponse, error) {
-	_, org, err := loadCurrentUserAndOrg(ctx)
+	org, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +165,7 @@ func (s *IntegrationsService) ListRegistrations(ctx context.Context, _ *pb.Integ
 }
 
 func (s *IntegrationsService) DescribeRegistration(ctx context.Context, req *pb.IntegrationsServiceDescribeRegistrationRequest) (*pb.IntegrationsServiceDescribeRegistrationResponse, error) {
-	_, org, err := loadCurrentUserAndOrg(ctx)
+	org, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +181,7 @@ func (s *IntegrationsService) DescribeRegistration(ctx context.Context, req *pb.
 }
 
 func (s *IntegrationsService) Deregister(ctx context.Context, req *pb.IntegrationsServiceDeregisterRequest) (*pb.IntegrationsServiceDeregisterResponse, error) {
-	_, org, err := loadCurrentUserAndOrg(ctx)
+	org, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +197,7 @@ func (s *IntegrationsService) Deregister(ctx context.Context, req *pb.Integratio
 }
 
 func (s *IntegrationsService) ListAttachments(ctx context.Context, req *pb.ListAttachmentsRequest) (*pb.ListAttachmentsResponse, error) {
-	_, org, err := loadCurrentUserAndOrg(ctx)
+	org, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +220,7 @@ func (s *IntegrationsService) ListAttachments(ctx context.Context, req *pb.ListA
 }
 
 func (s *IntegrationsService) Detach(ctx context.Context, req *pb.IntegrationsServiceDetachRequest) (*pb.IntegrationsServiceDetachResponse, error) {
-	_, org, err := loadCurrentUserAndOrg(ctx)
+	org, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}

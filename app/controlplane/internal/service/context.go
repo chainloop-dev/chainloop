@@ -39,7 +39,12 @@ func NewContextService(repoUC *biz.CASBackendUseCase, opts ...NewOpt) *ContextSe
 }
 
 func (s *ContextService) Current(ctx context.Context, _ *pb.ContextServiceCurrentRequest) (*pb.ContextServiceCurrentResponse, error) {
-	currentUser, currentOrg, err := loadCurrentUserAndOrg(ctx)
+	currentUser, err := requireCurrentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -18,9 +18,11 @@ package usercontext
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/golang-jwt/jwt/v4"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/user"
@@ -70,7 +72,7 @@ func CurrentOrg(ctx context.Context) *Org {
 type currentUserCtxKey struct{}
 type currentOrgCtxKey struct{}
 
-// Middleware that injects the current user to the context
+// Middleware that injects the current user / API-token entry + organization to the context
 func WithCurrentUserAndOrgMiddleware(userUseCase biz.UserOrgFinder, logger *log.Helper) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
@@ -78,28 +80,27 @@ func WithCurrentUserAndOrgMiddleware(userUseCase biz.UserOrgFinder, logger *log.
 			// If not found means that there is no currentUser set in the context
 			if !ok {
 				logger.Warn("couldn't extract org/user, JWT parser middleware not running before this one?")
-				return nil, errors.New("can't extract info from the token")
+				return nil, errors.New("can't extract JWT info from the context")
 			}
 
-			customClaims, ok := rawClaims.(*user.CustomClaims)
+			genericClaims, ok := rawClaims.(jwt.MapClaims)
 			if !ok {
 				return nil, errors.New("error mapping the claims")
 			}
 
-			// Do not accept tokens that are crafted for a different audience in this system
-			if !customClaims.VerifyAudience(user.Audience, true) {
-				return nil, errors.New("unexpected token, invalid audience")
-			}
+			// Check wether the token is for a user or an API-token and handle accordingly
+			// We've received a token for a user
+			if genericClaims.VerifyAudience(user.Audience, true) {
+				userID := genericClaims["user_id"].(string)
+				if userID == "" {
+					return nil, errors.New("error mapping the user claims")
+				}
 
-			userID := customClaims.UserID
-			if userID == "" {
-				return nil, errors.New("error retrieving the user information from the auth token")
-			}
-
-			// Find user in DB and set it as currentUser
-			ctx, err := setCurrentOrgAndUser(ctx, userUseCase, userID, logger)
-			if err != nil {
-				return nil, err
+				var err error
+				ctx, err = setCurrentUser(ctx, userUseCase, userID, logger)
+				if err != nil {
+					return nil, fmt.Errorf("error setting current org and user: %w", err)
+				}
 			}
 
 			return handler(ctx, req)
@@ -108,7 +109,7 @@ func WithCurrentUserAndOrgMiddleware(userUseCase biz.UserOrgFinder, logger *log.
 }
 
 // Find organization and user in DB
-func setCurrentOrgAndUser(ctx context.Context, userUC biz.UserOrgFinder, userID string, logger *log.Helper) (context.Context, error) {
+func setCurrentUser(ctx context.Context, userUC biz.UserOrgFinder, userID string, logger *log.Helper) (context.Context, error) {
 	u, err := userUC.FindByID(ctx, userID)
 	if err != nil {
 		return nil, err

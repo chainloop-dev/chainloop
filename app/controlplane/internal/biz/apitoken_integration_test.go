@@ -22,8 +22,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/apitoken"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v4"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -153,7 +152,7 @@ func (s *apiTokenTestSuite) TestGeneratedJWT() {
 	s.NoError(err)
 	require.NotNil(s.T(), token)
 
-	claims := &apitoken.CustomClaims{}
+	claims := &jwt.RegisteredClaims{}
 	tokenInfo, err := jwt.ParseWithClaims(token.JWT, claims, func(_ *jwt.Token) (interface{}, error) {
 		return []byte("test"), nil
 	})
@@ -162,7 +161,7 @@ func (s *apiTokenTestSuite) TestGeneratedJWT() {
 	s.True(tokenInfo.Valid)
 	// The resulting JWT should have the same org, token ID and expiration time than
 	// the reference in the DB
-	s.Equal(token.OrganizationID.String(), claims.OrgID)
+	s.Equal(token.OrganizationID.String(), s.org.ID)
 	s.Equal(token.ID.String(), claims.ID)
 	s.Equal(token.ExpiresAt.Truncate(time.Second), claims.ExpiresAt.Truncate(time.Second))
 }

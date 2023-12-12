@@ -46,12 +46,14 @@ import (
 
 type Opts struct {
 	// UseCases
-	UserUseCase         *biz.UserUseCase
-	RobotAccountUseCase *biz.RobotAccountUseCase
-	CASBackendUseCase   *biz.CASBackendUseCase
-	CASClientUseCase    *biz.CASClientUseCase
-	IntegrationUseCase  *biz.IntegrationUseCase
-	ReferrerUseCase     *biz.ReferrerUseCase
+	UserUseCase          *biz.UserUseCase
+	RobotAccountUseCase  *biz.RobotAccountUseCase
+	CASBackendUseCase    *biz.CASBackendUseCase
+	CASClientUseCase     *biz.CASClientUseCase
+	IntegrationUseCase   *biz.IntegrationUseCase
+	ReferrerUseCase      *biz.ReferrerUseCase
+	APITokenUseCase      *biz.APITokenUseCase
+	OrganizationUserCase *biz.OrganizationUseCase
 	// Services
 	WorkflowSvc         *service.WorkflowService
 	AuthSvc             *service.AuthService
@@ -68,6 +70,7 @@ type Opts struct {
 	CASRedirectSvc      *service.CASRedirectService
 	OrgInvitationSvc    *service.OrgInvitationService
 	ReferrerSvc         *service.ReferrerService
+	APITokenSvc         *service.APITokenService
 	// Utils
 	Logger       log.Logger
 	ServerConfig *conf.Server
@@ -126,6 +129,7 @@ func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
 	v1.RegisterCASRedirectServiceServer(srv, opts.CASRedirectSvc)
 	v1.RegisterOrgInvitationServiceServer(srv, opts.OrgInvitationSvc)
 	v1.RegisterReferrerServiceServer(srv, opts.ReferrerSvc)
+	v1.RegisterAPITokenServiceServer(srv, opts.APITokenSvc)
 
 	// Register Prometheus metrics
 	grpc_prometheus.Register(srv.Server)
@@ -150,15 +154,17 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 	middlewares = append(middlewares,
 		// If we require a logged in user we
 		selector.Server(
-			// 1 - Extract the currentUser from the JWT
+			// 1 - Extract the currentUser/API token from the JWT
+			// NOTE: this works because both currentUser and API tokens JWT use the same signing method and secret
 			jwtMiddleware.Server(func(token *jwt.Token) (interface{}, error) {
 				return []byte(opts.AuthConfig.GeneratedJwsHmacSecret), nil
 			},
 				jwtMiddleware.WithSigningMethod(user.SigningMethod),
-				jwtMiddleware.WithClaims(func() jwt.Claims { return &user.CustomClaims{} }),
 			),
-			// 1 - Set its user and organization
+			// 2.a - Set its user and organization
 			usercontext.WithCurrentUserAndOrgMiddleware(opts.UserUseCase, logHelper),
+			// 2.b - Set its API token and organization as alternative to the user
+			usercontext.WithCurrentAPITokenAndOrgMiddleware(opts.APITokenUseCase, opts.OrganizationUserCase, logHelper),
 			// 3 - Make sure its account is fully functional
 			selector.Server(
 				usercontext.CheckUserInAllowList(opts.AuthConfig.AllowList),
