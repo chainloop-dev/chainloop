@@ -72,7 +72,7 @@ func CurrentOrg(ctx context.Context) *Org {
 type currentUserCtxKey struct{}
 type currentOrgCtxKey struct{}
 
-// Middleware that injects the current user / API-token entry + organization to the context
+// Middleware that injects the current user + organization to the context
 func WithCurrentUserAndOrgMiddleware(userUseCase biz.UserOrgFinder, logger *log.Helper) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
@@ -97,7 +97,7 @@ func WithCurrentUserAndOrgMiddleware(userUseCase biz.UserOrgFinder, logger *log.
 				}
 
 				var err error
-				ctx, err = setCurrentUser(ctx, userUseCase, userID, logger)
+				ctx, err = setCurrentOrgAndUser(ctx, userUseCase, userID, logger)
 				if err != nil {
 					return nil, fmt.Errorf("error setting current org and user: %w", err)
 				}
@@ -111,7 +111,7 @@ func WithCurrentUserAndOrgMiddleware(userUseCase biz.UserOrgFinder, logger *log.
 }
 
 // Find organization and user in DB
-func setCurrentUser(ctx context.Context, userUC biz.UserOrgFinder, userID string, logger *log.Helper) (context.Context, error) {
+func setCurrentOrgAndUser(ctx context.Context, userUC biz.UserOrgFinder, userID string, logger *log.Helper) (context.Context, error) {
 	u, err := userUC.FindByID(ctx, userID)
 	if err != nil {
 		return nil, err

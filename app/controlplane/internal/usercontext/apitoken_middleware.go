@@ -73,7 +73,7 @@ func WithCurrentAPITokenAndOrgMiddleware(apiTokenUC *biz.APITokenUseCase, orgUC 
 					return nil, errors.New("error mapping the API-token claims")
 				}
 
-				ctx, err = setCurrentAPIToken(ctx, apiTokenUC, orgUC, tokenID)
+				ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID)
 				if err != nil {
 					return nil, fmt.Errorf("error setting current org and user: %w", err)
 				}
@@ -87,7 +87,7 @@ func WithCurrentAPITokenAndOrgMiddleware(apiTokenUC *biz.APITokenUseCase, orgUC 
 }
 
 // Set the current organization and API-Token in the context
-func setCurrentAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, tokenID string) (context.Context, error) {
+func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, tokenID string) (context.Context, error) {
 	if tokenID == "" {
 		return nil, errors.New("error retrieving the key ID from the API token")
 	}
