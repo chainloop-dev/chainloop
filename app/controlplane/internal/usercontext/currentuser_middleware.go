@@ -101,6 +101,8 @@ func WithCurrentUserAndOrgMiddleware(userUseCase biz.UserOrgFinder, logger *log.
 				if err != nil {
 					return nil, fmt.Errorf("error setting current org and user: %w", err)
 				}
+
+				logger.Infow("msg", "[authN] processed credentials", "id", userID, "type", "user")
 			}
 
 			return handler(ctx, req)

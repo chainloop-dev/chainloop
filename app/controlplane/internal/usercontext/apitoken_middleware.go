@@ -39,6 +39,14 @@ func withCurrentAPIToken(ctx context.Context, token *APIToken) context.Context {
 	return context.WithValue(ctx, currentAPITokenCtxKey{}, token)
 }
 
+func CurrentAPIToken(ctx context.Context) *APIToken {
+	res := ctx.Value(currentAPITokenCtxKey{})
+	if res == nil {
+		return nil
+	}
+	return res.(*APIToken)
+}
+
 type currentAPITokenCtxKey struct{}
 
 // Middleware that injects the API-Token + organization to the context
@@ -69,6 +77,8 @@ func WithCurrentAPITokenAndOrgMiddleware(apiTokenUC *biz.APITokenUseCase, orgUC 
 				if err != nil {
 					return nil, fmt.Errorf("error setting current org and user: %w", err)
 				}
+
+				logger.Infow("msg", "[authN] processed credentials", "id", tokenID, "type", "API-token")
 			}
 
 			return handler(ctx, req)

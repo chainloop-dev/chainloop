@@ -39,10 +39,15 @@ var (
 	logger           zerolog.Logger
 	defaultCPAPI     = "api.cp.chainloop.dev:443"
 	defaultCASAPI    = "api.cas.chainloop.dev:443"
+	apiToken         string
 )
 
-const useWorkflowRobotAccount = "withWorkflowRobotAccount"
-const appName = "chainloop"
+const (
+	useWorkflowRobotAccount = "withWorkflowRobotAccount"
+	appName                 = "chainloop"
+	//nolint:gosec
+	apiTokenEnvVarName = "CHAINLOOP_API_TOKEN"
+)
 
 func NewRootCmd(l zerolog.Logger) *cobra.Command {
 	rootCmd := &cobra.Command{
@@ -51,33 +56,24 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 		SilenceErrors: true,
 		SilenceUsage:  true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			logger.Debug().Str("path", viper.ConfigFileUsed()).Msg("using config file")
+
 			var err error
 			logger, err = initLogger(l)
 			if err != nil {
 				return err
 			}
 
-			logger.Debug().Str("path", viper.ConfigFileUsed()).Msg("using config file")
-
-			// Some actions do not need authentication headers
-			storedToken := viper.GetString(confOptions.authToken.viperKey)
-
-			// If the CMD uses a workflow robot account instead of the regular Auth token we override it
-			// TODO: the attestation CLI should get split from this one
-			if _, ok := cmd.Annotations[useWorkflowRobotAccount]; ok {
-				storedToken = robotAccount
-				if storedToken != "" {
-					logger.Debug().Msg("loaded token from robot account")
-				} else {
-					return newGracefulError(ErrRobotAccountRequired)
-				}
-			}
-
 			if flagInsecure {
 				logger.Warn().Msg("API contacted in insecure mode")
 			}
 
-			conn, err := grpcconn.New(viper.GetString(confOptions.controlplaneAPI.viperKey), storedToken, flagInsecure)
+			apiToken, err := loadControlplaneAuthToken(cmd)
+			if err != nil {
+				return fmt.Errorf("loading controlplane auth token: %w", err)
+			}
+
+			conn, err := grpcconn.New(viper.GetString(confOptions.controlplaneAPI.viperKey), apiToken, flagInsecure)
 			if err != nil {
 				return err
 			}
@@ -106,6 +102,14 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 	rootCmd.PersistentFlags().BoolVarP(&flagInsecure, "insecure", "i", false, "Skip TLS transport during connection to the control plane")
 	rootCmd.PersistentFlags().BoolVar(&flagDebug, "debug", false, "Enable debug/verbose logging mode")
 	rootCmd.PersistentFlags().StringVarP(&flagOutputFormat, "output", "o", "table", "Output format, valid options are json and table")
+
+	// Override the oauth authentication requirement for the CLI by providing an API token
+	rootCmd.PersistentFlags().StringVarP(&apiToken, "token", "t", "", fmt.Sprintf("API token. NOTE: Alternatively use the env variable %s", apiTokenEnvVarName))
+	// We do not use viper in this case because we do not want this token to be saved in the config file
+	// Instead we load the env variable manually
+	if apiToken == "" {
+		apiToken = os.Getenv(apiTokenEnvVarName)
+	}
 
 	rootCmd.AddCommand(newWorkflowCmd(), newAuthCmd(), NewVersionCmd(),
 		newAttestationCmd(), newArtifactCmd(), newConfigCmd(),
@@ -181,4 +185,31 @@ func cleanup(conn *grpc.ClientConn) error {
 		}
 	}
 	return nil
+}
+
+// Load the controlplane based on the following order:
+// 1. If the CMD uses a robot account instead of the regular auth token we override it
+// 2. If the CMD uses an API token flag/env variable we override it
+// 3. If the CMD uses a config file we load it from there
+func loadControlplaneAuthToken(cmd *cobra.Command) (string, error) {
+	// If the CMD uses a robot account instead of the regular auth token we override it
+	// TODO: the attestation CLI should get split from this one
+	if _, ok := cmd.Annotations[useWorkflowRobotAccount]; ok {
+		if robotAccount != "" {
+			logger.Debug().Msg("loaded token from robot account")
+		} else {
+			return "", newGracefulError(ErrRobotAccountRequired)
+		}
+
+		return robotAccount, nil
+	}
+
+	// override if token is passed as a flag/env variable
+	if apiToken != "" {
+		logger.Info().Msg("API token provided to the command line")
+		return apiToken, nil
+	}
+
+	// loaded from config file, previously stored via "auth login"
+	return viper.GetString(confOptions.authToken.viperKey), nil
 }

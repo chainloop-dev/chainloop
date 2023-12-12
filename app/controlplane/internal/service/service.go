@@ -59,6 +59,15 @@ func requireCurrentUser(ctx context.Context) (*usercontext.User, error) {
 	return currentUser, nil
 }
 
+func requireAPIToken(ctx context.Context) (*usercontext.APIToken, error) {
+	token := usercontext.CurrentAPIToken(ctx)
+	if token == nil {
+		return nil, errors.NotFound("not found", "API token")
+	}
+
+	return token, nil
+}
+
 func requireCurrentOrg(ctx context.Context) (*usercontext.Org, error) {
 	currentOrg := usercontext.CurrentOrg(ctx)
 	if currentOrg == nil {

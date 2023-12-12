@@ -47,6 +47,7 @@ func (s *APITokenService) Create(ctx context.Context, req *pb.APITokenServiceCre
 	}
 
 	// This is a API operation that requires actual user to be logged in not API token
+	// TODO: replace with authz layer, i.e casbin policies
 	_, err = requireCurrentUser(ctx)
 	if err != nil {
 		return nil, err
@@ -80,6 +81,7 @@ func (s *APITokenService) List(ctx context.Context, req *pb.APITokenServiceListR
 	}
 
 	// This is a API operation that requires actual user to be logged in not API token
+	// TODO: replace with authz layer, i.e casbin policies
 	_, err = requireCurrentUser(ctx)
 	if err != nil {
 		return nil, err
@@ -107,6 +109,7 @@ func (s *APITokenService) Revoke(ctx context.Context, req *pb.APITokenServiceRev
 	}
 
 	// This is a API operation that requires actual user to be logged in not API token
+	// TODO: replace with authz layer, i.e casbin policies
 	_, err = requireCurrentUser(ctx)
 	if err != nil {
 		return nil, err
