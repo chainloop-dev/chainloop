@@ -193,10 +193,6 @@ func (s *ReferrerUseCase) GetFromRootInPublicSharedIndex(ctx context.Context, di
 		return nil, NewErrUnauthorizedStr("shared referrer index functionality is not enabled")
 	}
 
-	if _, err := cr_v1.NewHash(digest); err != nil {
-		return nil, NewErrValidation(fmt.Errorf("invalid digest format: %w", err))
-	}
-
 	// Load the organizations that are allowed to appear in the shared index
 	orgIDs := make([]uuid.UUID, 0)
 	for _, orgID := range s.indexConfig.AllowedOrgs {
