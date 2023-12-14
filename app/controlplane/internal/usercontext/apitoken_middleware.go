@@ -100,6 +100,8 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 		return nil, errors.New("API token not found")
 	}
 
+	// Note: Expiration time does not need to be checked because that's done at the JWT
+	// verification layer, which happens before this middleware is called
 	if token.RevokedAt != nil {
 		return nil, errors.New("API token revoked")
 	}

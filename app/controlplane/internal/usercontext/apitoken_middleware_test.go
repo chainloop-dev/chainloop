@@ -19,6 +19,7 @@ import (
 	"context"
 	"io"
 	"testing"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	bizMocks "github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/mocks"
@@ -39,6 +40,7 @@ func TestWithCurrentAPITokenAndOrgMiddleware(t *testing.T) {
 		receivedToken bool
 		audience      string
 		tokenExists   bool
+		tokenRevoked  bool
 		orgExist      bool
 		// the middleware logic got skipped
 		skipped bool
@@ -57,6 +59,14 @@ func TestWithCurrentAPITokenAndOrgMiddleware(t *testing.T) {
 			tokenExists:   true,
 			orgExist:      true,
 			wantErr:       false,
+		},
+		{
+			name:          "token revoked",
+			receivedToken: true,
+			audience:      apitoken.Audience,
+			tokenExists:   true,
+			tokenRevoked:  true,
+			wantErr:       true,
 		},
 		{
 			name:          "token does not exist",
@@ -80,11 +90,11 @@ func TestWithCurrentAPITokenAndOrgMiddleware(t *testing.T) {
 		},
 	}
 
-	wantOrgID := uuid.New()
-	wantOrg := &biz.Organization{ID: wantOrgID.String()}
-	wantToken := &biz.APIToken{ID: uuid.New(), OrganizationID: wantOrgID}
-
 	for _, tc := range testCases {
+		wantOrgID := uuid.New()
+		wantOrg := &biz.Organization{ID: wantOrgID.String()}
+		wantToken := &biz.APIToken{ID: uuid.New(), OrganizationID: wantOrgID}
+
 		t.Run(tc.name, func(t *testing.T) {
 			apiTokenRepo := bizMocks.NewAPITokenRepo(t)
 			orgRepo := bizMocks.NewOrganizationRepo(t)
@@ -104,6 +114,10 @@ func TestWithCurrentAPITokenAndOrgMiddleware(t *testing.T) {
 			}
 
 			if tc.tokenExists {
+				if tc.tokenRevoked {
+					wantToken.RevokedAt = toTimePtr(time.Now())
+				}
+
 				apiTokenRepo.On("FindByID", ctx, wantToken.ID).Return(wantToken, nil)
 			} else if tc.receivedToken {
 				apiTokenRepo.On("FindByID", ctx, wantToken.ID).Maybe().Return(nil, nil)
