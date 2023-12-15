@@ -24,6 +24,8 @@ func newOrganizationAPITokenCmd() *cobra.Command {
 		Use:     "api-token",
 		Aliases: []string{"token"},
 		Short:   "API token management",
+		Long: `Manage API tokens to authenticate with the Chainloop API.
+NOTE: They are not meant to be used during the attestation process, for that purpose you'll need to use a robot accounts instead.`,
 	}
 
 	cmd.AddCommand(newAPITokenCreateCmd(), newAPITokenListCmd(), newAPITokenRevokeCmd())
