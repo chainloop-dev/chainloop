@@ -43,7 +43,7 @@ func NewOrganizationService(muc *biz.MembershipUseCase, ouc *biz.OrganizationUse
 }
 
 func (s *OrganizationService) ListMemberships(ctx context.Context, _ *pb.OrganizationServiceListMembershipsRequest) (*pb.OrganizationServiceListMembershipsResponse, error) {
-	currentUser, _, err := loadCurrentUserAndOrg(ctx)
+	currentUser, err := requireCurrentUser(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (s *OrganizationService) ListMemberships(ctx context.Context, _ *pb.Organiz
 
 // Create persists an organization with a given name and associate it to the current user.
 func (s *OrganizationService) Create(ctx context.Context, req *pb.OrganizationServiceCreateRequest) (*pb.OrganizationServiceCreateResponse, error) {
-	currentUser, _, err := loadCurrentUserAndOrg(ctx)
+	currentUser, err := requireCurrentUser(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func (s *OrganizationService) Create(ctx context.Context, req *pb.OrganizationSe
 }
 
 func (s *OrganizationService) Update(ctx context.Context, req *pb.OrganizationServiceUpdateRequest) (*pb.OrganizationServiceUpdateResponse, error) {
-	currentUser, _, err := loadCurrentUserAndOrg(ctx)
+	currentUser, err := requireCurrentUser(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func (s *OrganizationService) Update(ctx context.Context, req *pb.OrganizationSe
 }
 
 func (s *OrganizationService) SetCurrentMembership(ctx context.Context, req *pb.SetCurrentMembershipRequest) (*pb.SetCurrentMembershipResponse, error) {
-	currentUser, _, err := loadCurrentUserAndOrg(ctx)
+	currentUser, err := requireCurrentUser(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func (s *OrganizationService) SetCurrentMembership(ctx context.Context, req *pb.
 }
 
 func (s *OrganizationService) DeleteMembership(ctx context.Context, req *pb.DeleteMembershipRequest) (*pb.DeleteMembershipResponse, error) {
-	currentUser, _, err := loadCurrentUserAndOrg(ctx)
+	currentUser, err := requireCurrentUser(ctx)
 	if err != nil {
 		return nil, err
 	}

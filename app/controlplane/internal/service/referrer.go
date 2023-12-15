@@ -38,7 +38,7 @@ func NewReferrerService(uc *biz.ReferrerUseCase, opts ...NewOpt) *ReferrerServic
 }
 
 func (s *ReferrerService) DiscoverPrivate(ctx context.Context, req *pb.ReferrerServiceDiscoverPrivateRequest) (*pb.ReferrerServiceDiscoverPrivateResponse, error) {
-	currentUser, _, err := loadCurrentUserAndOrg(ctx)
+	currentUser, err := requireCurrentUser(ctx)
 	if err != nil {
 		return nil, err
 	}

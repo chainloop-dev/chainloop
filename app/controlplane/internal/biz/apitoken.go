@@ -46,6 +46,7 @@ type APITokenRepo interface {
 	Create(ctx context.Context, description *string, expiresAt *time.Time, organizationID uuid.UUID) (*APIToken, error)
 	List(ctx context.Context, orgID uuid.UUID, includeRevoked bool) ([]*APIToken, error)
 	Revoke(ctx context.Context, orgID, ID uuid.UUID) error
+	FindByID(ctx context.Context, ID uuid.UUID) (*APIToken, error)
 }
 
 type APITokenUseCase struct {
@@ -96,7 +97,7 @@ func (uc *APITokenUseCase) Create(ctx context.Context, description *string, expi
 	}
 
 	// generate the JWT
-	token.JWT, err = uc.jwtBuilder.GenerateJWT(orgID, token.ID.String(), expiresAt)
+	token.JWT, err = uc.jwtBuilder.GenerateJWT(token.ID.String(), expiresAt)
 	if err != nil {
 		return nil, fmt.Errorf("generating jwt: %w", err)
 	}
@@ -125,4 +126,20 @@ func (uc *APITokenUseCase) Revoke(ctx context.Context, orgID, id string) error {
 	}
 
 	return uc.apiTokenRepo.Revoke(ctx, orgUUID, uuid)
+}
+
+func (uc *APITokenUseCase) FindByID(ctx context.Context, id string) (*APIToken, error) {
+	uuid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	t, err := uc.apiTokenRepo.FindByID(ctx, uuid)
+	if err != nil {
+		return nil, fmt.Errorf("finding token: %w", err)
+	} else if t == nil {
+		return nil, NewErrNotFound("token")
+	}
+
+	return t, nil
 }

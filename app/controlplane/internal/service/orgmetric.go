@@ -38,7 +38,7 @@ func NewOrgMetricsService(uc *biz.OrgMetricsUseCase, opts ...NewOpt) *OrgMetrics
 }
 
 func (s *OrgMetricsService) Totals(ctx context.Context, req *pb.OrgMetricsServiceTotalsRequest) (*pb.OrgMetricsServiceTotalsResponse, error) {
-	_, currentOrg, err := loadCurrentUserAndOrg(ctx)
+	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func (s *OrgMetricsService) Totals(ctx context.Context, req *pb.OrgMetricsServic
 }
 
 func (s *OrgMetricsService) TopWorkflowsByRunsCount(ctx context.Context, req *pb.TopWorkflowsByRunsCountRequest) (*pb.TopWorkflowsByRunsCountResponse, error) {
-	_, currentOrg, err := loadCurrentUserAndOrg(ctx)
+	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -45,7 +45,7 @@ func NewCASBackendService(uc *biz.CASBackendUseCase, providers backend.Providers
 }
 
 func (s *CASBackendService) List(ctx context.Context, _ *pb.CASBackendServiceListRequest) (*pb.CASBackendServiceListResponse, error) {
-	_, currentOrg, err := loadCurrentUserAndOrg(ctx)
+	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func (s *CASBackendService) List(ctx context.Context, _ *pb.CASBackendServiceLis
 }
 
 func (s *CASBackendService) Create(ctx context.Context, req *pb.CASBackendServiceCreateRequest) (*pb.CASBackendServiceCreateResponse, error) {
-	_, currentOrg, err := loadCurrentUserAndOrg(ctx)
+	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func (s *CASBackendService) Create(ctx context.Context, req *pb.CASBackendServic
 }
 
 func (s *CASBackendService) Update(ctx context.Context, req *pb.CASBackendServiceUpdateRequest) (*pb.CASBackendServiceUpdateResponse, error) {
-	_, currentOrg, err := loadCurrentUserAndOrg(ctx)
+	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +138,7 @@ func (s *CASBackendService) Update(ctx context.Context, req *pb.CASBackendServic
 
 // Delete the CAS backend
 func (s *CASBackendService) Delete(ctx context.Context, req *pb.CASBackendServiceDeleteRequest) (*pb.CASBackendServiceDeleteResponse, error) {
-	_, currentOrg, err := loadCurrentUserAndOrg(ctx)
+	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}

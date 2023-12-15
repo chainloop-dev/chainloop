@@ -21,6 +21,7 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
+	errors "github.com/go-kratos/kratos/v2/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -39,16 +40,36 @@ func NewContextService(repoUC *biz.CASBackendUseCase, opts ...NewOpt) *ContextSe
 }
 
 func (s *ContextService) Current(ctx context.Context, _ *pb.ContextServiceCurrentRequest) (*pb.ContextServiceCurrentResponse, error) {
-	currentUser, currentOrg, err := loadCurrentUserAndOrg(ctx)
+	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	res := &pb.ContextServiceCurrentResponse_Result{
-		CurrentUser: &pb.User{
+	// load either user or API token
+	currentUser, err := requireCurrentUser(ctx)
+	if err != nil && !errors.IsNotFound(err) {
+		return nil, err
+	}
+
+	currentAPIToken, err := requireAPIToken(ctx)
+	if err != nil && !errors.IsNotFound(err) {
+		return nil, err
+	}
+
+	if currentUser == nil && currentAPIToken == nil {
+		return nil, errors.NotFound("not found", "logged in user")
+	}
+
+	res := &pb.ContextServiceCurrentResponse_Result{CurrentOrg: bizOrgToPb((*biz.Organization)(currentOrg))}
+
+	if currentAPIToken != nil {
+		res.CurrentUser = &pb.User{
+			Id: currentAPIToken.ID, Email: "API-token@chainloop", CreatedAt: timestamppb.New(*currentAPIToken.CreatedAt),
+		}
+	} else if currentUser != nil {
+		res.CurrentUser = &pb.User{
 			Id: currentUser.ID, Email: currentUser.Email, CreatedAt: timestamppb.New(*currentUser.CreatedAt),
-		},
-		CurrentOrg: bizOrgToPb((*biz.Organization)(currentOrg)),
+		}
 	}
 
 	backend, err := s.uc.FindDefaultBackend(ctx, currentOrg.ID)

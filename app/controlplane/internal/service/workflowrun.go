@@ -57,7 +57,7 @@ func NewWorkflowRunService(opts *NewWorkflowRunServiceOpts) *WorkflowRunService 
 }
 
 func (s *WorkflowRunService) List(ctx context.Context, req *pb.WorkflowRunServiceListRequest) (*pb.WorkflowRunServiceListResponse, error) {
-	_, currentOrg, err := loadCurrentUserAndOrg(ctx)
+	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func bizCursorToPb(cursor string) *pb.PaginationResponse {
 const workflowRunEntity = "Workflow Run"
 
 func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServiceViewRequest) (*pb.WorkflowRunServiceViewResponse, error) {
-	_, currentOrg, err := loadCurrentUserAndOrg(ctx)
+	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -22,8 +22,8 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/apitoken"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v4"
+	"github.com/google/uuid"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -97,6 +97,29 @@ func (s *apiTokenTestSuite) TestRevoke() {
 	})
 }
 
+func (s *apiTokenTestSuite) TestFindByID() {
+	ctx := context.Background()
+
+	s.T().Run("invalid ID", func(t *testing.T) {
+		_, err := s.APIToken.FindByID(ctx, "deadbeef")
+		s.Error(err)
+		s.True(biz.IsErrInvalidUUID(err))
+	})
+
+	s.T().Run("token not found", func(t *testing.T) {
+		token, err := s.APIToken.FindByID(ctx, uuid.NewString())
+		s.Error(err)
+		s.True(biz.IsNotFound(err))
+		s.Nil(token)
+	})
+
+	s.T().Run("token is found", func(t *testing.T) {
+		token, err := s.APIToken.FindByID(ctx, s.t1.ID.String())
+		s.NoError(err)
+		s.Equal(s.t1.ID, token.ID)
+	})
+}
+
 func (s *apiTokenTestSuite) TestList() {
 	ctx := context.Background()
 	s.T().Run("invalid org ID", func(t *testing.T) {
@@ -153,7 +176,7 @@ func (s *apiTokenTestSuite) TestGeneratedJWT() {
 	s.NoError(err)
 	require.NotNil(s.T(), token)
 
-	claims := &apitoken.CustomClaims{}
+	claims := &jwt.RegisteredClaims{}
 	tokenInfo, err := jwt.ParseWithClaims(token.JWT, claims, func(_ *jwt.Token) (interface{}, error) {
 		return []byte("test"), nil
 	})
@@ -162,7 +185,7 @@ func (s *apiTokenTestSuite) TestGeneratedJWT() {
 	s.True(tokenInfo.Valid)
 	// The resulting JWT should have the same org, token ID and expiration time than
 	// the reference in the DB
-	s.Equal(token.OrganizationID.String(), claims.OrgID)
+	s.Equal(token.OrganizationID.String(), s.org.ID)
 	s.Equal(token.ID.String(), claims.ID)
 	s.Equal(token.ExpiresAt.Truncate(time.Second), claims.ExpiresAt.Truncate(time.Second))
 }

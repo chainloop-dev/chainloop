@@ -38,7 +38,7 @@ func NewOrgInvitationService(uc *biz.OrgInvitationUseCase, opts ...NewOpt) *OrgI
 }
 
 func (s *OrgInvitationService) Create(ctx context.Context, req *pb.OrgInvitationServiceCreateRequest) (*pb.OrgInvitationServiceCreateResponse, error) {
-	user, _, err := loadCurrentUserAndOrg(ctx)
+	user, err := requireCurrentUser(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func (s *OrgInvitationService) Create(ctx context.Context, req *pb.OrgInvitation
 }
 
 func (s *OrgInvitationService) Revoke(ctx context.Context, req *pb.OrgInvitationServiceRevokeRequest) (*pb.OrgInvitationServiceRevokeResponse, error) {
-	user, _, err := loadCurrentUserAndOrg(ctx)
+	user, err := requireCurrentUser(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func (s *OrgInvitationService) Revoke(ctx context.Context, req *pb.OrgInvitation
 }
 
 func (s *OrgInvitationService) ListSent(ctx context.Context, _ *pb.OrgInvitationServiceListSentRequest) (*pb.OrgInvitationServiceListSentResponse, error) {
-	user, _, err := loadCurrentUserAndOrg(ctx)
+	user, err := requireCurrentUser(ctx)
 	if err != nil {
 		return nil, err
 	}

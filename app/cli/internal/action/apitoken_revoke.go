@@ -13,28 +13,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package action
 
 import (
-	"github.com/spf13/cobra"
+	"context"
+	"fmt"
+
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
-func newOrganizationCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "organization",
-		Aliases: []string{"org"},
-		Short:   "Organizations management",
+type APITokenRevoke struct {
+	cfg *ActionsOpts
+}
+
+func NewAPITokenRevoke(cfg *ActionsOpts) *APITokenRevoke {
+	return &APITokenRevoke{cfg}
+}
+
+func (action *APITokenRevoke) Run(ctx context.Context, apiTokenID string) error {
+	client := pb.NewAPITokenServiceClient(action.cfg.CPConnection)
+	if _, err := client.Revoke(ctx, &pb.APITokenServiceRevokeRequest{Id: apiTokenID}); err != nil {
+		return fmt.Errorf("revoking API token: %w", err)
 	}
 
-	cmd.AddCommand(
-		newOrganizationList(),
-		newOrganizationCreateCmd(),
-		newOrganizationUpdateCmd(),
-		newOrganizationSet(),
-		newOrganizationLeaveCmd(),
-		newOrganizationDescribeCmd(),
-		newOrganizationInvitationCmd(),
-		newOrganizationAPITokenCmd(),
-	)
-	return cmd
+	return nil
 }

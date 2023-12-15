@@ -71,6 +71,12 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		cleanup()
 		return nil, nil, err
 	}
+	apiTokenRepo := data.NewAPITokenRepo(dataData, logger)
+	apiTokenUseCase, err := biz.NewAPITokenUseCase(apiTokenRepo, auth, logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
 	workflowContractRepo := data.NewWorkflowContractRepo(dataData, logger)
 	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, logger)
 	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, workflowContractUseCase, logger)
@@ -142,32 +148,36 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	orgInvitationService := service.NewOrgInvitationService(orgInvitationUseCase, v2...)
 	referrerService := service.NewReferrerService(referrerUseCase, v2...)
+	apiTokenService := service.NewAPITokenService(apiTokenUseCase, v2...)
 	opts := &server.Opts{
-		UserUseCase:         userUseCase,
-		RobotAccountUseCase: robotAccountUseCase,
-		CASBackendUseCase:   casBackendUseCase,
-		CASClientUseCase:    casClientUseCase,
-		IntegrationUseCase:  integrationUseCase,
-		ReferrerUseCase:     referrerUseCase,
-		WorkflowSvc:         workflowService,
-		AuthSvc:             authService,
-		RobotAccountSvc:     robotAccountService,
-		WorkflowRunSvc:      workflowRunService,
-		AttestationSvc:      attestationService,
-		WorkflowContractSvc: workflowContractService,
-		ContextSvc:          contextService,
-		CASCredsSvc:         casCredentialsService,
-		OrgMetricsSvc:       orgMetricsService,
-		IntegrationsSvc:     integrationsService,
-		OrganizationSvc:     organizationService,
-		CASBackendSvc:       casBackendService,
-		CASRedirectSvc:      casRedirectService,
-		OrgInvitationSvc:    orgInvitationService,
-		ReferrerSvc:         referrerService,
-		Logger:              logger,
-		ServerConfig:        confServer,
-		AuthConfig:          auth,
-		Credentials:         readerWriter,
+		UserUseCase:          userUseCase,
+		RobotAccountUseCase:  robotAccountUseCase,
+		CASBackendUseCase:    casBackendUseCase,
+		CASClientUseCase:     casClientUseCase,
+		IntegrationUseCase:   integrationUseCase,
+		ReferrerUseCase:      referrerUseCase,
+		APITokenUseCase:      apiTokenUseCase,
+		OrganizationUserCase: organizationUseCase,
+		WorkflowSvc:          workflowService,
+		AuthSvc:              authService,
+		RobotAccountSvc:      robotAccountService,
+		WorkflowRunSvc:       workflowRunService,
+		AttestationSvc:       attestationService,
+		WorkflowContractSvc:  workflowContractService,
+		ContextSvc:           contextService,
+		CASCredsSvc:          casCredentialsService,
+		OrgMetricsSvc:        orgMetricsService,
+		IntegrationsSvc:      integrationsService,
+		OrganizationSvc:      organizationService,
+		CASBackendSvc:        casBackendService,
+		CASRedirectSvc:       casRedirectService,
+		OrgInvitationSvc:     orgInvitationService,
+		ReferrerSvc:          referrerService,
+		APITokenSvc:          apiTokenService,
+		Logger:               logger,
+		ServerConfig:         confServer,
+		AuthConfig:           auth,
+		Credentials:          readerWriter,
 	}
 	grpcServer, err := server.NewGRPCServer(opts)
 	if err != nil {

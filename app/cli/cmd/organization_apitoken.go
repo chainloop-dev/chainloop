@@ -19,22 +19,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newOrganizationCmd() *cobra.Command {
+func newOrganizationAPITokenCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "organization",
-		Aliases: []string{"org"},
-		Short:   "Organizations management",
+		Use:     "api-token",
+		Aliases: []string{"token"},
+		Short:   "API token management",
+		Long: `Manage API tokens to authenticate with the Chainloop API.
+NOTE: They are not meant to be used during the attestation process, for that purpose you'll need to use a robot accounts instead.`,
 	}
 
-	cmd.AddCommand(
-		newOrganizationList(),
-		newOrganizationCreateCmd(),
-		newOrganizationUpdateCmd(),
-		newOrganizationSet(),
-		newOrganizationLeaveCmd(),
-		newOrganizationDescribeCmd(),
-		newOrganizationInvitationCmd(),
-		newOrganizationAPITokenCmd(),
-	)
+	cmd.AddCommand(newAPITokenCreateCmd(), newAPITokenListCmd(), newAPITokenRevokeCmd())
+
 	return cmd
 }

@@ -48,7 +48,13 @@ func NewCASCredentialsService(casUC *biz.CASCredentialsUseCase, casmUC *biz.CASM
 
 // Get will generate temporary credentials to be used against the CAS service for the current organization
 func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsServiceGetRequest) (*pb.CASCredentialsServiceGetResponse, error) {
-	currentUser, currentOrg, err := loadCurrentUserAndOrg(ctx)
+	// TODO: Add support API-Token-based authentication
+	currentUser, err := requireCurrentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}

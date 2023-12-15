@@ -16,25 +16,32 @@
 package cmd
 
 import (
+	"context"
+	"fmt"
+
+	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
 )
 
-func newOrganizationCmd() *cobra.Command {
+func newAPITokenRevokeCmd() *cobra.Command {
+	var apiTokenID string
+
 	cmd := &cobra.Command{
-		Use:     "organization",
-		Aliases: []string{"org"},
-		Short:   "Organizations management",
+		Use:   "revoke",
+		Short: "revoke API token",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := action.NewAPITokenRevoke(actionOpts).Run(context.Background(), apiTokenID); err != nil {
+				return fmt.Errorf("revoking API token: %w", err)
+			}
+
+			logger.Info().Msg("API token revoked!")
+			return nil
+		},
 	}
 
-	cmd.AddCommand(
-		newOrganizationList(),
-		newOrganizationCreateCmd(),
-		newOrganizationUpdateCmd(),
-		newOrganizationSet(),
-		newOrganizationLeaveCmd(),
-		newOrganizationDescribeCmd(),
-		newOrganizationInvitationCmd(),
-		newOrganizationAPITokenCmd(),
-	)
+	cmd.Flags().StringVar(&apiTokenID, "id", "", "API token ID")
+	err := cmd.MarkFlagRequired("id")
+	cobra.CheckErr(err)
+
 	return cmd
 }
