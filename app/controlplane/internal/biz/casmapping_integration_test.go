@@ -39,7 +39,7 @@ const (
 	invalidDigest     = "sha256:deadbeef"
 )
 
-func (s *casMappingIntegrationSuite) TestCASMappingForDownload() {
+func (s *casMappingIntegrationSuite) TestCASMappingForDownlod() {
 	// Let's create 3 CASMappings:
 	// 1. Digest: validDigest, CASBackend: casBackend1, WorkflowRunID: workflowRun
 	// 2. Digest: validDigest, CASBackend: casBackend2, WorkflowRunID: workflowRun
@@ -60,55 +60,55 @@ func (s *casMappingIntegrationSuite) TestCASMappingForDownload() {
 	// Since the userOrg1And2 is member of org1 and org2, she should be able to download
 	// both validDigest and validDigest2 from two different orgs
 	s.Run("userOrg1And2 can download validDigest from org1", func() {
-		mapping, err := s.CASMapping.FindCASMappingForDownload(context.TODO(), validDigest, s.userOrg1And2.ID)
+		mapping, err := s.CASMapping.FindCASMappingForDownloadByUser(context.TODO(), validDigest, s.userOrg1And2.ID)
 		s.NoError(err)
 		s.NotNil(mapping)
 		s.Equal(s.casBackend1.ID, mapping.CASBackend.ID)
 	})
 
 	s.Run("userOrg1And2 can download validDigest2 from org2", func() {
-		mapping, err := s.CASMapping.FindCASMappingForDownload(context.TODO(), validDigest2, s.userOrg1And2.ID)
+		mapping, err := s.CASMapping.FindCASMappingForDownloadByUser(context.TODO(), validDigest2, s.userOrg1And2.ID)
 		s.NoError(err)
 		s.NotNil(mapping)
 		s.Equal(s.casBackend2.ID, mapping.CASBackend.ID)
 	})
 
 	s.Run("userOrg1And2 can not download validDigest3 from org3", func() {
-		mapping, err := s.CASMapping.FindCASMappingForDownload(context.TODO(), validDigest3, s.userOrg1And2.ID)
+		mapping, err := s.CASMapping.FindCASMappingForDownloadByUser(context.TODO(), validDigest3, s.userOrg1And2.ID)
 		s.Error(err)
 		s.Nil(mapping)
 	})
 
 	s.Run("userOrg1And2 can download validDigestPublic from org3", func() {
-		mapping, err := s.CASMapping.FindCASMappingForDownload(context.TODO(), validDigestPublic, s.userOrg1And2.ID)
+		mapping, err := s.CASMapping.FindCASMappingForDownloadByUser(context.TODO(), validDigestPublic, s.userOrg1And2.ID)
 		s.NoError(err)
 		s.NotNil(mapping)
 		s.Equal(s.casBackend3.ID, mapping.CASBackend.ID)
 	})
 
 	s.Run("userOrg2 can download validDigest2 from org2", func() {
-		mapping, err := s.CASMapping.FindCASMappingForDownload(context.TODO(), validDigest2, s.userOrg2.ID)
+		mapping, err := s.CASMapping.FindCASMappingForDownloadByUser(context.TODO(), validDigest2, s.userOrg2.ID)
 		s.NoError(err)
 		s.NotNil(mapping)
 		s.Equal(s.casBackend2.ID, mapping.CASBackend.ID)
 	})
 
 	s.Run("userOrg2 can download validDigestPublic from org3", func() {
-		mapping, err := s.CASMapping.FindCASMappingForDownload(context.TODO(), validDigestPublic, s.userOrg2.ID)
+		mapping, err := s.CASMapping.FindCASMappingForDownloadByUser(context.TODO(), validDigestPublic, s.userOrg2.ID)
 		s.NoError(err)
 		s.NotNil(mapping)
 		s.Equal(s.casBackend3.ID, mapping.CASBackend.ID)
 	})
 
 	s.Run("userOrg2 can download validDigest from org2", func() {
-		mapping, err := s.CASMapping.FindCASMappingForDownload(context.TODO(), validDigest, s.userOrg2.ID)
+		mapping, err := s.CASMapping.FindCASMappingForDownloadByUser(context.TODO(), validDigest, s.userOrg2.ID)
 		s.NoError(err)
 		s.NotNil(mapping)
 		s.Equal(s.casBackend2.ID, mapping.CASBackend.ID)
 	})
 
 	s.Run("userOrg2 can not download invalidDigest", func() {
-		mapping, err := s.CASMapping.FindCASMappingForDownload(context.TODO(), invalidDigest, s.userOrg2.ID)
+		mapping, err := s.CASMapping.FindCASMappingForDownloadByUser(context.TODO(), invalidDigest, s.userOrg2.ID)
 		s.Error(err)
 		s.Nil(mapping)
 	})

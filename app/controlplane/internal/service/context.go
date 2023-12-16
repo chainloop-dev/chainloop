@@ -45,14 +45,8 @@ func (s *ContextService) Current(ctx context.Context, _ *pb.ContextServiceCurren
 		return nil, err
 	}
 
-	// load either user or API token
-	currentUser, err := requireCurrentUser(ctx)
-	if err != nil && !errors.IsNotFound(err) {
-		return nil, err
-	}
-
-	currentAPIToken, err := requireAPIToken(ctx)
-	if err != nil && !errors.IsNotFound(err) {
+	currentUser, currentAPIToken, err := requireCurrentUserOrAPIToken(ctx)
+	if err != nil {
 		return nil, err
 	}
 

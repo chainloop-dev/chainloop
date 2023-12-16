@@ -68,6 +68,26 @@ func requireAPIToken(ctx context.Context) (*usercontext.APIToken, error) {
 	return token, nil
 }
 
+func requireCurrentUserOrAPIToken(ctx context.Context) (*usercontext.User, *usercontext.APIToken, error) {
+	user, err := requireCurrentUser(ctx)
+	if err != nil && !errors.IsNotFound(err) {
+		return nil, nil, err
+	}
+
+	apiToken, err := requireAPIToken(ctx)
+	if err != nil && !errors.IsNotFound(err) {
+		return nil, nil, err
+	}
+
+	// NOTE: we shouldn't get to this point since the middleware should have already catched this
+	// Adding the check here for defensivity and testing purposes
+	if user == nil && apiToken == nil {
+		return nil, nil, errors.Forbidden("authz required", "logged in user nor API token found")
+	}
+
+	return user, apiToken, nil
+}
+
 func requireCurrentOrg(ctx context.Context) (*usercontext.Org, error) {
 	currentOrg := usercontext.CurrentOrg(ctx)
 	if currentOrg == nil {
