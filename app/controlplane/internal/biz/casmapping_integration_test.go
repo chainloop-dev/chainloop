@@ -40,6 +40,24 @@ const (
 )
 
 func (s *casMappingIntegrationSuite) TestCASMappingForDownloadUser() {
+	// Let's create 3 CASMappings:
+	// 1. Digest: validDigest, CASBackend: casBackend1, WorkflowRunID: workflowRun
+	// 2. Digest: validDigest, CASBackend: casBackend2, WorkflowRunID: workflowRun
+	// 3. Digest: validDigest2, CASBackend: casBackend2, WorkflowRunID: workflowRun
+	// 4. Digest: validDigest3, CASBackend: casBackend3, WorkflowRunID: workflowRun
+	// 4. Digest: validDigestPublic, CASBackend: casBackend3, WorkflowRunID: workflowRunPublic
+	_, err := s.CASMapping.Create(context.TODO(), validDigest, s.casBackend1.ID.String(), s.workflowRun.ID.String())
+	require.NoError(s.T(), err)
+	_, err = s.CASMapping.Create(context.TODO(), validDigest, s.casBackend2.ID.String(), s.workflowRun.ID.String())
+	require.NoError(s.T(), err)
+	_, err = s.CASMapping.Create(context.TODO(), validDigest2, s.casBackend2.ID.String(), s.workflowRun.ID.String())
+	require.NoError(s.T(), err)
+	_, err = s.CASMapping.Create(context.TODO(), validDigest3, s.casBackend3.ID.String(), s.workflowRun.ID.String())
+	require.NoError(s.T(), err)
+	_, err = s.CASMapping.Create(context.TODO(), validDigestPublic, s.casBackend3.ID.String(), s.publicWorkflowRun.ID.String())
+	require.NoError(s.T(), err)
+
+	// Since the userOrg1And2 is member of org1 and org2, she should be able to download
 	// both validDigest and validDigest2 from two different orgs
 	s.Run("userOrg1And2 can download validDigest from org1", func() {
 		mapping, err := s.CASMapping.FindCASMappingForDownloadByUser(context.TODO(), validDigest, s.userOrg1And2.ID)
@@ -98,6 +116,11 @@ func (s *casMappingIntegrationSuite) TestCASMappingForDownloadUser() {
 
 func (s *casMappingIntegrationSuite) TestCASMappingForDownloadByOrg() {
 	ctx := context.Background()
+	_, err := s.CASMapping.Create(ctx, validDigest, s.casBackend1.ID.String(), s.workflowRun.ID.String())
+	require.NoError(s.T(), err)
+	_, err = s.CASMapping.Create(ctx, validDigestPublic, s.casBackend3.ID.String(), s.publicWorkflowRun.ID.String())
+	require.NoError(s.T(), err)
+
 	// both validDigest and validDigest2 from two different orgs
 	s.Run("validDigest is in org1", func() {
 		mapping, err := s.CASMapping.FindCASMappingForDownloadByOrg(ctx, validDigest, []string{s.org1.ID})
@@ -368,25 +391,6 @@ func (s *casMappingIntegrationSuite) SetupTest() {
 	assert.NoError(err)
 	_, err = s.Membership.Create(ctx, s.org2.ID, s.userOrg2.ID, true)
 	assert.NoError(err)
-
-	// Let's create 3 CASMappings:
-	// 1. Digest: validDigest, CASBackend: casBackend1, WorkflowRunID: workflowRun
-	// 2. Digest: validDigest, CASBackend: casBackend2, WorkflowRunID: workflowRun
-	// 3. Digest: validDigest2, CASBackend: casBackend2, WorkflowRunID: workflowRun
-	// 4. Digest: validDigest3, CASBackend: casBackend3, WorkflowRunID: workflowRun
-	// 4. Digest: validDigestPublic, CASBackend: casBackend3, WorkflowRunID: workflowRunPublic
-	_, err = s.CASMapping.Create(context.TODO(), validDigest, s.casBackend1.ID.String(), s.workflowRun.ID.String())
-	require.NoError(s.T(), err)
-	_, err = s.CASMapping.Create(context.TODO(), validDigest, s.casBackend2.ID.String(), s.workflowRun.ID.String())
-	require.NoError(s.T(), err)
-	_, err = s.CASMapping.Create(context.TODO(), validDigest2, s.casBackend2.ID.String(), s.workflowRun.ID.String())
-	require.NoError(s.T(), err)
-	_, err = s.CASMapping.Create(context.TODO(), validDigest3, s.casBackend3.ID.String(), s.workflowRun.ID.String())
-	require.NoError(s.T(), err)
-	_, err = s.CASMapping.Create(context.TODO(), validDigestPublic, s.casBackend3.ID.String(), s.publicWorkflowRun.ID.String())
-	require.NoError(s.T(), err)
-
-	// Since the userOrg1And2 is member of org1 and org2, she should be able to download
 }
 
 func TestCASMappingIntegration(t *testing.T) {
