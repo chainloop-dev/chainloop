@@ -59,7 +59,7 @@ func TestCheckUserInAllowList(t *testing.T) {
 			m := CheckUserInAllowList(tc.allowList)
 			ctx := context.Background()
 			if tc.user != nil {
-				ctx = withCurrentUser(ctx, tc.user)
+				ctx = WithCurrentUser(ctx, tc.user)
 			}
 
 			_, err := m(emptyHandler)(ctx, nil)

@@ -35,7 +35,7 @@ type APIToken struct {
 	CreatedAt *time.Time
 }
 
-func withCurrentAPIToken(ctx context.Context, token *APIToken) context.Context {
+func WithCurrentAPIToken(ctx context.Context, token *APIToken) context.Context {
 	return context.WithValue(ctx, currentAPITokenCtxKey{}, token)
 }
 
@@ -114,7 +114,7 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 		return nil, errors.New("organization not found")
 	}
 
-	ctx = withCurrentOrg(ctx, &Org{Name: org.Name, ID: org.ID, CreatedAt: org.CreatedAt})
-	ctx = withCurrentAPIToken(ctx, &APIToken{ID: token.ID.String(), CreatedAt: token.CreatedAt})
+	ctx = WithCurrentOrg(ctx, &Org{Name: org.Name, ID: org.ID, CreatedAt: org.CreatedAt})
+	ctx = WithCurrentAPIToken(ctx, &APIToken{ID: token.ID.String(), CreatedAt: token.CreatedAt})
 	return ctx, nil
 }
