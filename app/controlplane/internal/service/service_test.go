@@ -146,5 +146,4 @@ func TestRequireCurrentUserOrAPIToken(t *testing.T) {
 			}
 		})
 	}
-
 }
