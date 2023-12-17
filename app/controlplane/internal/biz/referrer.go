@@ -36,12 +36,11 @@ import (
 )
 
 type ReferrerUseCase struct {
-	repo            ReferrerRepo
-	membershipRepo  MembershipRepo
-	workflowRepo    WorkflowRepo
-	workflowRunRepo WorkflowRunRepo
-	logger          *log.Helper
-	indexConfig     *conf.ReferrerSharedIndex
+	repo           ReferrerRepo
+	membershipRepo MembershipRepo
+	workflowRepo   WorkflowRepo
+	logger         *log.Helper
+	indexConfig    *conf.ReferrerSharedIndex
 }
 
 func NewReferrerUseCase(repo ReferrerRepo, wfRepo WorkflowRepo, mRepo MembershipRepo, indexCfg *conf.ReferrerSharedIndex, l log.Logger) (*ReferrerUseCase, error) {
