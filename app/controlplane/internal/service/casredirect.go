@@ -68,14 +68,23 @@ func NewCASRedirectService(casmUC *biz.CASMappingUseCase, casCredsUC *biz.CASCre
 // The URL includes a JWT token that is used to authenticate the request, this token has all the information required to validate the request
 // The result would look like "https://cas.chainloop.dev/download/sha256:[DIGEST]?t=tokenJWT
 func (s *CASRedirectService) GetDownloadURL(ctx context.Context, req *pb.GetDownloadURLRequest) (*pb.GetDownloadURLResponse, error) {
-	// TODO: Add support API-Token-based authentication
-	currentUser, err := requireCurrentUser(ctx)
+	currentUser, currentAPIToken, err := requireCurrentUserOrAPIToken(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// Find the CAS backend that should be used for the download, if any
-	mapping, err := s.casMappingUC.FindCASMappingForDownload(ctx, req.Digest, currentUser.ID)
+	currentOrg, err := requireCurrentOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var mapping *biz.CASMapping
+	if currentUser != nil {
+		mapping, err = s.casMappingUC.FindCASMappingForDownloadByUser(ctx, req.Digest, currentUser.ID)
+	} else if currentAPIToken != nil {
+		mapping, err = s.casMappingUC.FindCASMappingForDownloadByOrg(ctx, req.Digest, []string{currentOrg.ID})
+	}
+
 	if err != nil {
 		// We don't want to leak the fact that the asset exists but the user does not have permissions
 		// that's why we return a generic 404 in unauthorized scenarios too

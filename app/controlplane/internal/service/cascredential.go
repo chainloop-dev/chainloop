@@ -48,8 +48,7 @@ func NewCASCredentialsService(casUC *biz.CASCredentialsUseCase, casmUC *biz.CASM
 
 // Get will generate temporary credentials to be used against the CAS service for the current organization
 func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsServiceGetRequest) (*pb.CASCredentialsServiceGetResponse, error) {
-	// TODO: Add support API-Token-based authentication
-	currentUser, err := requireCurrentUser(ctx)
+	currentUser, currentAPIToken, err := requireCurrentUserOrAPIToken(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -72,12 +71,20 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 	if err != nil && !biz.IsNotFound(err) {
 		return nil, sl.LogAndMaskErr(err, s.log)
 	} else if backend == nil {
-		return nil, errors.NotFound("not found", "main repository not found")
+		return nil, errors.NotFound("not found", "main CAS backend not found")
 	}
 
+	// Try to find the proper backend where the artifact is stored
 	if role == casJWT.Downloader {
-		// Try to find the proper backend where the artifact is stored
-		mapping, err := s.casMappingUC.FindCASMappingForDownload(ctx, req.Digest, currentUser.ID)
+		var mapping *biz.CASMapping
+		// If we are logged in as a user, we'll try to find a mapping for that user
+		if currentUser != nil {
+			mapping, err = s.casMappingUC.FindCASMappingForDownloadByUser(ctx, req.Digest, currentUser.ID)
+			// otherwise, we'll try to find a mapping for the current API token associated orgs
+		} else if currentAPIToken != nil {
+			mapping, err = s.casMappingUC.FindCASMappingForDownloadByOrg(ctx, req.Digest, []string{currentOrg.ID})
+		}
+
 		// If we can't find a mapping, we'll use the default backend
 		if err != nil && !biz.IsNotFound(err) && !biz.IsErrUnauthorized(err) {
 			if biz.IsErrValidation(err) {

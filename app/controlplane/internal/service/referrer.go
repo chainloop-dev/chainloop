@@ -17,9 +17,11 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -38,18 +40,36 @@ func NewReferrerService(uc *biz.ReferrerUseCase, opts ...NewOpt) *ReferrerServic
 }
 
 func (s *ReferrerService) DiscoverPrivate(ctx context.Context, req *pb.ReferrerServiceDiscoverPrivateRequest) (*pb.ReferrerServiceDiscoverPrivateResponse, error) {
-	currentUser, err := requireCurrentUser(ctx)
+	currentUser, currentToken, err := requireCurrentUserOrAPIToken(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := s.referrerUC.GetFromRoot(ctx, req.GetDigest(), req.GetKind(), currentUser.ID)
+	currentOrg, err := requireCurrentOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// if we are logged in as user we find the referrer from the user
+	// otherwise for the current organization associated with the API token
+	var referrer *biz.StoredReferrer
+	if currentUser != nil {
+		referrer, err = s.referrerUC.GetFromRootUser(ctx, req.GetDigest(), req.GetKind(), currentUser.ID)
+	} else if currentToken != nil {
+		var orgUUID uuid.UUID
+		orgUUID, err = uuid.Parse(currentOrg.ID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid org UUID: %w", err)
+		}
+
+		referrer, err = s.referrerUC.GetFromRoot(ctx, req.GetDigest(), req.GetKind(), []uuid.UUID{orgUUID})
+	}
 	if err != nil {
 		return nil, handleUseCaseErr("referrer discovery", err, s.log)
 	}
 
 	return &pb.ReferrerServiceDiscoverPrivateResponse{
-		Result: bizReferrerToPb(res),
+		Result: bizReferrerToPb(referrer),
 	}, nil
 }
 

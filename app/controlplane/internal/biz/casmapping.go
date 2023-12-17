@@ -79,12 +79,12 @@ func (uc *CASMappingUseCase) FindByDigest(ctx context.Context, digest string) ([
 	return uc.repo.FindByDigest(ctx, digest)
 }
 
-// FindCASMappingForDownload returns the CASMapping appropriate for the given digest and user
+// FindCASMappingForDownloadByUser returns the CASMapping appropriate for the given digest and user
 // This means, in order
 // 1 - Any mapping that points to an organization which the user is member of
 // 1.1 If there are multiple mappings, it will pick the default one or the first one
 // 2 - Any mapping that is public
-func (uc *CASMappingUseCase) FindCASMappingForDownload(ctx context.Context, digest string, userID string) (*CASMapping, error) {
+func (uc *CASMappingUseCase) FindCASMappingForDownloadByUser(ctx context.Context, digest string, userID string) (*CASMapping, error) {
 	uc.logger.Infow("msg", "finding cas mapping for download", "digest", digest, "user", userID)
 
 	userUUID, err := uuid.Parse(userID)
@@ -92,8 +92,27 @@ func (uc *CASMappingUseCase) FindCASMappingForDownload(ctx context.Context, dige
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	if _, err = cr_v1.NewHash(digest); err != nil {
+	// Load organizations for the given user
+	memberships, err := uc.membershipRepo.FindByUser(ctx, userUUID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list memberships: %w", err)
+	}
+
+	userOrgs := make([]string, 0, len(memberships))
+	for _, m := range memberships {
+		userOrgs = append(userOrgs, m.OrganizationID.String())
+	}
+
+	return uc.FindCASMappingForDownloadByOrg(ctx, digest, userOrgs)
+}
+
+func (uc *CASMappingUseCase) FindCASMappingForDownloadByOrg(ctx context.Context, digest string, orgs []string) (*CASMapping, error) {
+	if _, err := cr_v1.NewHash(digest); err != nil {
 		return nil, NewErrValidation(fmt.Errorf("invalid digest format: %w", err))
+	}
+
+	if len(orgs) == 0 {
+		return nil, NewErrValidationStr("no organizations provided")
 	}
 
 	// 1 - All CAS mappings for the given digest
@@ -102,19 +121,19 @@ func (uc *CASMappingUseCase) FindCASMappingForDownload(ctx context.Context, dige
 		return nil, fmt.Errorf("failed to list cas mappings: %w", err)
 	}
 
-	uc.logger.Debugw("msg", fmt.Sprintf("found %d entries globally", len(mappings)), "digest", digest, "user", userID)
+	uc.logger.Debugw("msg", fmt.Sprintf("found %d entries globally", len(mappings)), "digest", digest, "orgs", orgs)
 	if len(mappings) == 0 {
 		return nil, NewErrNotFound("digest not found in any mapping")
 	}
 
-	// 2 - CAS mappings that the user has access to.
-	// This means any mapping that points to an organization which the user is member of
-	userMappings, err := filterByUser(ctx, mappings, userUUID, uc.membershipRepo)
+	// 2 - CAS mappings associated with the given list of orgs
+	orgMappings, err := filterByOrgs(mappings, orgs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load mappings associated to an user: %w", err)
-	} else if len(userMappings) > 0 {
-		result := defaultOrFirst(userMappings)
-		uc.logger.Infow("msg", "mapping found!", "digest", digest, "user", userID, "casBackend", result.CASBackend.ID, "default", result.CASBackend.Default, "public", result.Public)
+	} else if len(orgMappings) > 0 {
+		result := defaultOrFirst(orgMappings)
+
+		uc.logger.Infow("msg", "mapping found!", "digest", digest, "orgs", orgs, "casBackend", result.CASBackend.ID, "default", result.CASBackend.Default, "public", result.Public)
 		return result, nil
 	}
 
@@ -122,30 +141,23 @@ func (uc *CASMappingUseCase) FindCASMappingForDownload(ctx context.Context, dige
 	publicMappings := filterByPublic(mappings)
 	// The user has not access to neither proprietary nor public mappings
 	if len(publicMappings) == 0 {
-		uc.logger.Warnw("msg", "digest exist but user does not have access to it", "digest", digest, "user", userID)
+		uc.logger.Warnw("msg", "digest exist but user does not have access to it", "digest", digest, "orgs", orgs)
 		return nil, NewErrUnauthorized(errors.New("unauthorized access to the artifact"))
 	}
 
 	// Pick the appropriate mapping from multiple ones
 	result := defaultOrFirst(publicMappings)
-	uc.logger.Infow("msg", "mapping found!", "digest", digest, "user", userID, "casBackend", result.CASBackend.ID, "default", result.CASBackend.Default, "public", result.Public)
+	uc.logger.Infow("msg", "mapping found!", "digest", digest, "orgs", orgs, "casBackend", result.CASBackend.ID, "default", result.CASBackend.Default, "public", result.Public)
 	return result, nil
 }
 
-// get the casMapping based on
-// 1 - the mapping is part of an organization an user has access to
-// 2 - if there is more than one, pick the default if possible
-func filterByUser(ctx context.Context, mappings []*CASMapping, userID uuid.UUID, mRepo MembershipRepo) ([]*CASMapping, error) {
+// Extract only the mappings associated with a list of orgs
+func filterByOrgs(mappings []*CASMapping, orgs []string) ([]*CASMapping, error) {
 	result := make([]*CASMapping, 0)
 
-	memberships, err := mRepo.FindByUser(ctx, userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list memberships: %w", err)
-	}
-
 	for _, mapping := range mappings {
-		for _, m := range memberships {
-			if mapping.OrgID == m.OrganizationID {
+		for _, o := range orgs {
+			if mapping.OrgID.String() == o {
 				result = append(result, mapping)
 			}
 		}

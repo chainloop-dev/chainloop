@@ -41,7 +41,7 @@ type Org struct {
 	CreatedAt *time.Time
 }
 
-func withCurrentUser(ctx context.Context, user *User) context.Context {
+func WithCurrentUser(ctx context.Context, user *User) context.Context {
 	return context.WithValue(ctx, currentUserCtxKey{}, user)
 }
 
@@ -55,7 +55,7 @@ func CurrentUser(ctx context.Context) *User {
 	return res.(*User)
 }
 
-func withCurrentOrg(ctx context.Context, org *Org) context.Context {
+func WithCurrentOrg(ctx context.Context, org *Org) context.Context {
 	return context.WithValue(ctx, currentOrgCtxKey{}, org)
 }
 
@@ -133,8 +133,8 @@ func setCurrentOrgAndUser(ctx context.Context, userUC biz.UserOrgFinder, userID 
 		return nil, errors.New("org not found")
 	}
 
-	ctx = withCurrentOrg(ctx, &Org{Name: org.Name, ID: org.ID, CreatedAt: org.CreatedAt})
-	ctx = withCurrentUser(ctx, &User{Email: u.Email, ID: u.ID, CreatedAt: u.CreatedAt})
+	ctx = WithCurrentOrg(ctx, &Org{Name: org.Name, ID: org.ID, CreatedAt: org.CreatedAt})
+	ctx = WithCurrentUser(ctx, &User{Email: u.Email, ID: u.ID, CreatedAt: u.CreatedAt})
 
 	return ctx, nil
 }
