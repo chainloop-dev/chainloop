@@ -91,6 +91,8 @@ func bizReferrerToPb(r *biz.StoredReferrer) *pb.ReferrerItem {
 		Public:       r.InPublicWorkflow,
 		Kind:         r.Kind,
 		CreatedAt:    timestamppb.New(*r.CreatedAt),
+		Metadata:     r.Metadata,
+		Annotations:  r.Annotations,
 	}
 
 	for _, r := range r.References {

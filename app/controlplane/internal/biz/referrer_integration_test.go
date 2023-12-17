@@ -185,6 +185,8 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		s.Equal(wantReferrerAtt.Digest, got.Digest)
 		s.Equal(wantReferrerAtt.Downloadable, got.Downloadable)
 		s.Equal(wantReferrerAtt.Kind, got.Kind)
+		// It has metadata
+		s.Equal(map[string]string{"name": "test-new-types"}, got.Metadata)
 		// it has all the references
 		require.Len(t, got.References, 6)
 

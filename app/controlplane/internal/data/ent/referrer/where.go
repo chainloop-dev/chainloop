@@ -256,6 +256,26 @@ func CreatedAtLTE(v time.Time) predicate.Referrer {
 	return predicate.Referrer(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// MetadataIsNil applies the IsNil predicate on the "metadata" field.
+func MetadataIsNil() predicate.Referrer {
+	return predicate.Referrer(sql.FieldIsNull(FieldMetadata))
+}
+
+// MetadataNotNil applies the NotNil predicate on the "metadata" field.
+func MetadataNotNil() predicate.Referrer {
+	return predicate.Referrer(sql.FieldNotNull(FieldMetadata))
+}
+
+// AnnotationsIsNil applies the IsNil predicate on the "annotations" field.
+func AnnotationsIsNil() predicate.Referrer {
+	return predicate.Referrer(sql.FieldIsNull(FieldAnnotations))
+}
+
+// AnnotationsNotNil applies the NotNil predicate on the "annotations" field.
+func AnnotationsNotNil() predicate.Referrer {
+	return predicate.Referrer(sql.FieldNotNull(FieldAnnotations))
+}
+
 // HasReferredBy applies the HasEdge predicate on the "referred_by" edge.
 func HasReferredBy() predicate.Referrer {
 	return predicate.Referrer(func(s *sql.Selector) {

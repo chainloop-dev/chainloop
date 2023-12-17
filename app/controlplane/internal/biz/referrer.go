@@ -84,6 +84,8 @@ type Referrer struct {
 	// If this referrer is part of a public workflow
 	InPublicWorkflow bool
 	References       []*Referrer
+
+	Metadata, Annotations map[string]string
 }
 
 // Actual referrer stored in the DB which includes a nested list of storedReferences
@@ -132,12 +134,12 @@ func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envel
 		return NewErrNotFound("workflow")
 	}
 
-	m, err := extractReferrers(att)
+	referrers, err := extractReferrers(att)
 	if err != nil {
 		return fmt.Errorf("extracting referrers: %w", err)
 	}
 
-	if err := s.repo.Save(ctx, m, workflowUUID); err != nil {
+	if err := s.repo.Save(ctx, referrers, workflowUUID); err != nil {
 		return fmt.Errorf("saving referrers: %w", err)
 	}
 
@@ -276,6 +278,14 @@ func extractReferrers(att *dsse.Envelope) ([]*Referrer, error) {
 	predicate, err := chainloop.ExtractPredicate(att)
 	if err != nil {
 		return nil, fmt.Errorf("extracting predicate: %w", err)
+	}
+
+	// We currently only support adding additional information about the attestation kind
+	// We add both annotations and workflow metadata
+	attestationReferrer.Annotations = predicate.GetAnnotations()
+	attestationReferrer.Metadata = map[string]string{
+		// workflow name
+		"name": predicate.GetMetadata().Name,
 	}
 
 	// Create new referrers for each material

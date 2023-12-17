@@ -39,6 +39,7 @@ type NormalizablePredicate interface {
 	GetEnvVars() map[string]string
 	GetMaterials() []*NormalizedMaterial
 	GetRunLink() string
+	GetMetadata() *Metadata
 }
 
 type NormalizedMaterial struct {
@@ -194,6 +195,10 @@ func (p *ProvenancePredicateCommon) GetRunLink() string {
 
 func (p *ProvenancePredicateCommon) GetAnnotations() map[string]string {
 	return p.Annotations
+}
+
+func (p *ProvenancePredicateCommon) GetMetadata() *Metadata {
+	return p.Metadata
 }
 
 const (

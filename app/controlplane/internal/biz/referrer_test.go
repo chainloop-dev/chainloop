@@ -93,6 +93,13 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 					Digest:       "sha256:1a077137aef7ca208b80c339769d0d7eecacc2850368e56e834cda1750ce413a",
 					Kind:         "ATTESTATION",
 					Downloadable: true,
+					Metadata: map[string]string{
+						"name": "only-sbom",
+					},
+					Annotations: map[string]string{
+						"branch":   "stable",
+						"toplevel": "true",
+					},
 					References: []*Referrer{
 						{
 							Digest: "sha256:264f55a6ff9cec2f4742a9faacc033b29f65c04dd4480e71e23579d484288d61",
@@ -129,6 +136,12 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 							Kind:   "GIT_HEAD_COMMIT",
 						},
 					},
+					Metadata: map[string]string{
+						"name": "test",
+					},
+					Annotations: map[string]string{
+						"version": "oss",
+					},
 				},
 				// the git commit a subject in the attestation
 				{
@@ -151,6 +164,13 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 					Digest:       "sha256:47e94045e8ffb5ea9a4939a03a21c5ad26f4ea7d463ac6ec46dac15349f45b3f",
 					Kind:         "ATTESTATION",
 					Downloadable: true,
+					Metadata: map[string]string{
+						"name": "only-sbom",
+					},
+					Annotations: map[string]string{
+						"branch":   "stable",
+						"toplevel": "true",
+					},
 					References: []*Referrer{
 						{
 							Digest: "sha256:264f55a6ff9cec2f4742a9faacc033b29f65c04dd4480e71e23579d484288d61",
@@ -195,6 +215,9 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 					Digest:       "sha256:ad704d286bcad6e155e71c33d48247931231338396acbcd9769087530085b2a2",
 					Kind:         "ATTESTATION",
 					Downloadable: true,
+					Metadata: map[string]string{
+						"name": "test-new-types",
+					},
 					References: []*Referrer{
 						{
 							Digest: "sha256:fbd9335f55d83d8aaf9ab1a539b0f2a87b444e8c54f34c9a1ca9d7df15605db4",

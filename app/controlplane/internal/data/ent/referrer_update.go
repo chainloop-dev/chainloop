@@ -142,6 +142,12 @@ func (ru *ReferrerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if ru.mutation.MetadataCleared() {
+		_spec.ClearField(referrer.FieldMetadata, field.TypeJSON)
+	}
+	if ru.mutation.AnnotationsCleared() {
+		_spec.ClearField(referrer.FieldAnnotations, field.TypeJSON)
+	}
 	if ru.mutation.ReferencesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
@@ -394,6 +400,12 @@ func (ruo *ReferrerUpdateOne) sqlSave(ctx context.Context) (_node *Referrer, err
 				ps[i](selector)
 			}
 		}
+	}
+	if ruo.mutation.MetadataCleared() {
+		_spec.ClearField(referrer.FieldMetadata, field.TypeJSON)
+	}
+	if ruo.mutation.AnnotationsCleared() {
+		_spec.ClearField(referrer.FieldAnnotations, field.TypeJSON)
 	}
 	if ruo.mutation.ReferencesCleared() {
 		edge := &sqlgraph.EdgeSpec{

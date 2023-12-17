@@ -23,6 +23,10 @@ const (
 	FieldDownloadable = "downloadable"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
+	// FieldMetadata holds the string denoting the metadata field in the database.
+	FieldMetadata = "metadata"
+	// FieldAnnotations holds the string denoting the annotations field in the database.
+	FieldAnnotations = "annotations"
 	// EdgeReferredBy holds the string denoting the referred_by edge name in mutations.
 	EdgeReferredBy = "referred_by"
 	// EdgeReferences holds the string denoting the references edge name in mutations.
@@ -49,6 +53,8 @@ var Columns = []string{
 	FieldKind,
 	FieldDownloadable,
 	FieldCreatedAt,
+	FieldMetadata,
+	FieldAnnotations,
 }
 
 var (

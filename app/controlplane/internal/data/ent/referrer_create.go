@@ -54,6 +54,18 @@ func (rc *ReferrerCreate) SetNillableCreatedAt(t *time.Time) *ReferrerCreate {
 	return rc
 }
 
+// SetMetadata sets the "metadata" field.
+func (rc *ReferrerCreate) SetMetadata(m map[string]string) *ReferrerCreate {
+	rc.mutation.SetMetadata(m)
+	return rc
+}
+
+// SetAnnotations sets the "annotations" field.
+func (rc *ReferrerCreate) SetAnnotations(m map[string]string) *ReferrerCreate {
+	rc.mutation.SetAnnotations(m)
+	return rc
+}
+
 // SetID sets the "id" field.
 func (rc *ReferrerCreate) SetID(u uuid.UUID) *ReferrerCreate {
 	rc.mutation.SetID(u)
@@ -222,6 +234,14 @@ func (rc *ReferrerCreate) createSpec() (*Referrer, *sqlgraph.CreateSpec) {
 	if value, ok := rc.mutation.CreatedAt(); ok {
 		_spec.SetField(referrer.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
+	}
+	if value, ok := rc.mutation.Metadata(); ok {
+		_spec.SetField(referrer.FieldMetadata, field.TypeJSON, value)
+		_node.Metadata = value
+	}
+	if value, ok := rc.mutation.Annotations(); ok {
+		_spec.SetField(referrer.FieldAnnotations, field.TypeJSON, value)
+		_node.Annotations = value
 	}
 	if nodes := rc.mutation.ReferredByIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

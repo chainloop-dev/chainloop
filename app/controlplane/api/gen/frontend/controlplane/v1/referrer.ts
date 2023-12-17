@@ -43,6 +43,18 @@ export interface ReferrerItem {
   public: boolean;
   references: ReferrerItem[];
   createdAt?: Date;
+  metadata: { [key: string]: string };
+  annotations: { [key: string]: string };
+}
+
+export interface ReferrerItem_MetadataEntry {
+  key: string;
+  value: string;
+}
+
+export interface ReferrerItem_AnnotationsEntry {
+  key: string;
+  value: string;
 }
 
 function createBaseReferrerServiceDiscoverPrivateRequest(): ReferrerServiceDiscoverPrivateRequest {
@@ -312,7 +324,16 @@ export const ReferrerServiceDiscoverPrivateResponse = {
 };
 
 function createBaseReferrerItem(): ReferrerItem {
-  return { digest: "", kind: "", downloadable: false, public: false, references: [], createdAt: undefined };
+  return {
+    digest: "",
+    kind: "",
+    downloadable: false,
+    public: false,
+    references: [],
+    createdAt: undefined,
+    metadata: {},
+    annotations: {},
+  };
 }
 
 export const ReferrerItem = {
@@ -335,6 +356,12 @@ export const ReferrerItem = {
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(42).fork()).ldelim();
     }
+    Object.entries(message.metadata).forEach(([key, value]) => {
+      ReferrerItem_MetadataEntry.encode({ key: key as any, value }, writer.uint32(58).fork()).ldelim();
+    });
+    Object.entries(message.annotations).forEach(([key, value]) => {
+      ReferrerItem_AnnotationsEntry.encode({ key: key as any, value }, writer.uint32(66).fork()).ldelim();
+    });
     return writer;
   },
 
@@ -387,6 +414,26 @@ export const ReferrerItem = {
 
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          const entry7 = ReferrerItem_MetadataEntry.decode(reader, reader.uint32());
+          if (entry7.value !== undefined) {
+            message.metadata[entry7.key] = entry7.value;
+          }
+          continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          const entry8 = ReferrerItem_AnnotationsEntry.decode(reader, reader.uint32());
+          if (entry8.value !== undefined) {
+            message.annotations[entry8.key] = entry8.value;
+          }
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -404,6 +451,18 @@ export const ReferrerItem = {
       public: isSet(object.public) ? Boolean(object.public) : false,
       references: Array.isArray(object?.references) ? object.references.map((e: any) => ReferrerItem.fromJSON(e)) : [],
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
+      metadata: isObject(object.metadata)
+        ? Object.entries(object.metadata).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+          acc[key] = String(value);
+          return acc;
+        }, {})
+        : {},
+      annotations: isObject(object.annotations)
+        ? Object.entries(object.annotations).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+          acc[key] = String(value);
+          return acc;
+        }, {})
+        : {},
     };
   },
 
@@ -419,6 +478,18 @@ export const ReferrerItem = {
       obj.references = [];
     }
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
+    obj.metadata = {};
+    if (message.metadata) {
+      Object.entries(message.metadata).forEach(([k, v]) => {
+        obj.metadata[k] = v;
+      });
+    }
+    obj.annotations = {};
+    if (message.annotations) {
+      Object.entries(message.annotations).forEach(([k, v]) => {
+        obj.annotations[k] = v;
+      });
+    }
     return obj;
   },
 
@@ -434,6 +505,159 @@ export const ReferrerItem = {
     message.public = object.public ?? false;
     message.references = object.references?.map((e) => ReferrerItem.fromPartial(e)) || [];
     message.createdAt = object.createdAt ?? undefined;
+    message.metadata = Object.entries(object.metadata ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = String(value);
+      }
+      return acc;
+    }, {});
+    message.annotations = Object.entries(object.annotations ?? {}).reduce<{ [key: string]: string }>(
+      (acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key] = String(value);
+        }
+        return acc;
+      },
+      {},
+    );
+    return message;
+  },
+};
+
+function createBaseReferrerItem_MetadataEntry(): ReferrerItem_MetadataEntry {
+  return { key: "", value: "" };
+}
+
+export const ReferrerItem_MetadataEntry = {
+  encode(message: ReferrerItem_MetadataEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ReferrerItem_MetadataEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseReferrerItem_MetadataEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ReferrerItem_MetadataEntry {
+    return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? String(object.value) : "" };
+  },
+
+  toJSON(message: ReferrerItem_MetadataEntry): unknown {
+    const obj: any = {};
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ReferrerItem_MetadataEntry>, I>>(base?: I): ReferrerItem_MetadataEntry {
+    return ReferrerItem_MetadataEntry.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ReferrerItem_MetadataEntry>, I>>(object: I): ReferrerItem_MetadataEntry {
+    const message = createBaseReferrerItem_MetadataEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
+    return message;
+  },
+};
+
+function createBaseReferrerItem_AnnotationsEntry(): ReferrerItem_AnnotationsEntry {
+  return { key: "", value: "" };
+}
+
+export const ReferrerItem_AnnotationsEntry = {
+  encode(message: ReferrerItem_AnnotationsEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ReferrerItem_AnnotationsEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseReferrerItem_AnnotationsEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ReferrerItem_AnnotationsEntry {
+    return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? String(object.value) : "" };
+  },
+
+  toJSON(message: ReferrerItem_AnnotationsEntry): unknown {
+    const obj: any = {};
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ReferrerItem_AnnotationsEntry>, I>>(base?: I): ReferrerItem_AnnotationsEntry {
+    return ReferrerItem_AnnotationsEntry.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ReferrerItem_AnnotationsEntry>, I>>(
+    object: I,
+  ): ReferrerItem_AnnotationsEntry {
+    const message = createBaseReferrerItem_AnnotationsEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
     return message;
   },
 };
@@ -649,6 +873,10 @@ function fromJsonTimestamp(o: any): Date {
   } else {
     return fromTimestamp(Timestamp.fromJSON(o));
   }
+}
+
+function isObject(value: any): boolean {
+  return typeof value === "object" && value !== null;
 }
 
 function isSet(value: any): boolean {

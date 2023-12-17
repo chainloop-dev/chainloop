@@ -65,4 +65,7 @@ message ReferrerItem {
   bool public = 6;
   repeated ReferrerItem references = 4;
   google.protobuf.Timestamp created_at = 5;
+
+  map<string, string> metadata = 7;
+  map<string, string> annotations = 8;
 }

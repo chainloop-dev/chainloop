@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -26,6 +27,10 @@ type Referrer struct {
 	Downloadable bool `json:"downloadable,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
+	// Metadata holds the value of the "metadata" field.
+	Metadata map[string]string `json:"metadata,omitempty"`
+	// Annotations holds the value of the "annotations" field.
+	Annotations map[string]string `json:"annotations,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ReferrerQuery when eager-loading is set.
 	Edges        ReferrerEdges `json:"edges"`
@@ -77,6 +82,8 @@ func (*Referrer) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case referrer.FieldMetadata, referrer.FieldAnnotations:
+			values[i] = new([]byte)
 		case referrer.FieldDownloadable:
 			values[i] = new(sql.NullBool)
 		case referrer.FieldDigest, referrer.FieldKind:
@@ -129,6 +136,22 @@ func (r *Referrer) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
 				r.CreatedAt = value.Time
+			}
+		case referrer.FieldMetadata:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field metadata", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &r.Metadata); err != nil {
+					return fmt.Errorf("unmarshal field metadata: %w", err)
+				}
+			}
+		case referrer.FieldAnnotations:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field annotations", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &r.Annotations); err != nil {
+					return fmt.Errorf("unmarshal field annotations: %w", err)
+				}
 			}
 		default:
 			r.selectValues.Set(columns[i], values[i])
@@ -192,6 +215,12 @@ func (r *Referrer) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(r.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("metadata=")
+	builder.WriteString(fmt.Sprintf("%v", r.Metadata))
+	builder.WriteString(", ")
+	builder.WriteString("annotations=")
+	builder.WriteString(fmt.Sprintf("%v", r.Annotations))
 	builder.WriteByte(')')
 	return builder.String()
 }

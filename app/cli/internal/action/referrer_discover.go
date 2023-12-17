@@ -30,12 +30,14 @@ type ReferrerDiscoverPublic struct {
 }
 
 type ReferrerItem struct {
-	Digest       string          `json:"digest"`
-	Kind         string          `json:"kind"`
-	Downloadable bool            `json:"downloadable"`
-	Public       bool            `json:"public"`
-	CreatedAt    *time.Time      `json:"createdAt"`
-	References   []*ReferrerItem `json:"references"`
+	Digest       string            `json:"digest"`
+	Kind         string            `json:"kind"`
+	Downloadable bool              `json:"downloadable"`
+	Public       bool              `json:"public"`
+	CreatedAt    *time.Time        `json:"createdAt"`
+	References   []*ReferrerItem   `json:"references"`
+	Metadata     map[string]string `json:"metadata,omitempty"`
+	Annotations  map[string]string `json:"annotations,omitempty"`
 }
 
 func NewReferrerDiscoverPrivate(cfg *ActionsOpts) *ReferrerDiscover {
@@ -82,6 +84,8 @@ func pbReferrerItemToAction(in *pb.ReferrerItem) *ReferrerItem {
 		Kind:         in.GetKind(),
 		CreatedAt:    toTimePtr(in.GetCreatedAt().AsTime()),
 		References:   make([]*ReferrerItem, 0, len(in.GetReferences())),
+		Metadata:     in.GetMetadata(),
+		Annotations:  in.GetAnnotations(),
 	}
 
 	for _, r := range in.GetReferences() {
