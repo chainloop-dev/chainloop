@@ -80,7 +80,7 @@ func (s *referrerIntegrationTestSuite) TestGetFromRootInPublicSharedIndex() {
 	})
 
 	s.T().Run("it should appear if we whitelist org2", func(t *testing.T) {
-		uc, err := biz.NewReferrerUseCase(s.Repos.Referrer, s.Repos.Workflow, s.Repos.WorkflowRunRepo, s.Repos.Membership,
+		uc, err := biz.NewReferrerUseCase(s.Repos.Referrer, s.Repos.Workflow, s.Repos.Membership,
 			&conf.ReferrerSharedIndex{
 				Enabled:     true,
 				AllowedOrgs: []string{s.org2.ID},
@@ -185,6 +185,8 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		s.Equal(wantReferrerAtt.Digest, got.Digest)
 		s.Equal(wantReferrerAtt.Downloadable, got.Downloadable)
 		s.Equal(wantReferrerAtt.Kind, got.Kind)
+		// It has metadata
+		s.Equal(map[string]string{"name": "test-new-types"}, got.Metadata)
 		// it has all the references
 		require.Len(t, got.References, 6)
 
@@ -386,7 +388,7 @@ func (s *referrerIntegrationTestSuite) SetupTest() {
 	_, err = s.Membership.Create(ctx, s.org2.ID, s.user2.ID, true)
 	require.NoError(s.T(), err)
 
-	s.sharedEnabledUC, err = biz.NewReferrerUseCase(s.Repos.Referrer, s.Repos.Workflow, s.Repos.WorkflowRunRepo, s.Repos.Membership,
+	s.sharedEnabledUC, err = biz.NewReferrerUseCase(s.Repos.Referrer, s.Repos.Workflow, s.Repos.Membership,
 		&conf.ReferrerSharedIndex{
 			Enabled:     true,
 			AllowedOrgs: []string{s.org1.ID},

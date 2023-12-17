@@ -42,6 +42,8 @@ func (Referrer) Fields() []ent.Field {
 			Default(time.Now).
 			Immutable().
 			Annotations(&entsql.Annotation{Default: "CURRENT_TIMESTAMP"}),
+		field.JSON("metadata", map[string]string{}).Optional().Immutable(),
+		field.JSON("annotations", map[string]string{}).Optional().Immutable(),
 	}
 }
 

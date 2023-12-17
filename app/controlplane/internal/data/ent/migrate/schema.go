@@ -241,6 +241,8 @@ var (
 		{Name: "kind", Type: field.TypeString},
 		{Name: "downloadable", Type: field.TypeBool},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
+		{Name: "annotations", Type: field.TypeJSON, Nullable: true},
 	}
 	// ReferrersTable holds the schema information for the "referrers" table.
 	ReferrersTable = &schema.Table{

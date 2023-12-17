@@ -65,9 +65,8 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	v := _wireValue
 	casClientUseCase := biz.NewCASClientUseCase(casCredentialsUseCase, bootstrap_CASServer, logger, v...)
 	referrerRepo := data.NewReferrerRepo(dataData, workflowRepo, logger)
-	workflowRunRepo := data.NewWorkflowRunRepo(dataData, logger)
 	referrerSharedIndex := bootstrap.ReferrerSharedIndex
-	referrerUseCase, err := biz.NewReferrerUseCase(referrerRepo, workflowRepo, workflowRunRepo, membershipRepo, referrerSharedIndex, logger)
+	referrerUseCase, err := biz.NewReferrerUseCase(referrerRepo, workflowRepo, membershipRepo, referrerSharedIndex, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -96,6 +95,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		return nil, nil, err
 	}
 	robotAccountService := service.NewRobotAccountService(robotAccountUseCase, v2...)
+	workflowRunRepo := data.NewWorkflowRunRepo(dataData, logger)
 	workflowRunUseCase, err := biz.NewWorkflowRunUseCase(workflowRunRepo, workflowRepo, logger)
 	if err != nil {
 		cleanup()

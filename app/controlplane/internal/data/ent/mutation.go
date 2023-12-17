@@ -5831,6 +5831,8 @@ type ReferrerMutation struct {
 	kind               *string
 	downloadable       *bool
 	created_at         *time.Time
+	metadata           *map[string]string
+	annotations        *map[string]string
 	clearedFields      map[string]struct{}
 	referred_by        map[uuid.UUID]struct{}
 	removedreferred_by map[uuid.UUID]struct{}
@@ -6094,6 +6096,104 @@ func (m *ReferrerMutation) ResetCreatedAt() {
 	m.created_at = nil
 }
 
+// SetMetadata sets the "metadata" field.
+func (m *ReferrerMutation) SetMetadata(value map[string]string) {
+	m.metadata = &value
+}
+
+// Metadata returns the value of the "metadata" field in the mutation.
+func (m *ReferrerMutation) Metadata() (r map[string]string, exists bool) {
+	v := m.metadata
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMetadata returns the old "metadata" field's value of the Referrer entity.
+// If the Referrer object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ReferrerMutation) OldMetadata(ctx context.Context) (v map[string]string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMetadata is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMetadata requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMetadata: %w", err)
+	}
+	return oldValue.Metadata, nil
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (m *ReferrerMutation) ClearMetadata() {
+	m.metadata = nil
+	m.clearedFields[referrer.FieldMetadata] = struct{}{}
+}
+
+// MetadataCleared returns if the "metadata" field was cleared in this mutation.
+func (m *ReferrerMutation) MetadataCleared() bool {
+	_, ok := m.clearedFields[referrer.FieldMetadata]
+	return ok
+}
+
+// ResetMetadata resets all changes to the "metadata" field.
+func (m *ReferrerMutation) ResetMetadata() {
+	m.metadata = nil
+	delete(m.clearedFields, referrer.FieldMetadata)
+}
+
+// SetAnnotations sets the "annotations" field.
+func (m *ReferrerMutation) SetAnnotations(value map[string]string) {
+	m.annotations = &value
+}
+
+// Annotations returns the value of the "annotations" field in the mutation.
+func (m *ReferrerMutation) Annotations() (r map[string]string, exists bool) {
+	v := m.annotations
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAnnotations returns the old "annotations" field's value of the Referrer entity.
+// If the Referrer object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ReferrerMutation) OldAnnotations(ctx context.Context) (v map[string]string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAnnotations is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAnnotations requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAnnotations: %w", err)
+	}
+	return oldValue.Annotations, nil
+}
+
+// ClearAnnotations clears the value of the "annotations" field.
+func (m *ReferrerMutation) ClearAnnotations() {
+	m.annotations = nil
+	m.clearedFields[referrer.FieldAnnotations] = struct{}{}
+}
+
+// AnnotationsCleared returns if the "annotations" field was cleared in this mutation.
+func (m *ReferrerMutation) AnnotationsCleared() bool {
+	_, ok := m.clearedFields[referrer.FieldAnnotations]
+	return ok
+}
+
+// ResetAnnotations resets all changes to the "annotations" field.
+func (m *ReferrerMutation) ResetAnnotations() {
+	m.annotations = nil
+	delete(m.clearedFields, referrer.FieldAnnotations)
+}
+
 // AddReferredByIDs adds the "referred_by" edge to the Referrer entity by ids.
 func (m *ReferrerMutation) AddReferredByIDs(ids ...uuid.UUID) {
 	if m.referred_by == nil {
@@ -6290,7 +6390,7 @@ func (m *ReferrerMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ReferrerMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 6)
 	if m.digest != nil {
 		fields = append(fields, referrer.FieldDigest)
 	}
@@ -6302,6 +6402,12 @@ func (m *ReferrerMutation) Fields() []string {
 	}
 	if m.created_at != nil {
 		fields = append(fields, referrer.FieldCreatedAt)
+	}
+	if m.metadata != nil {
+		fields = append(fields, referrer.FieldMetadata)
+	}
+	if m.annotations != nil {
+		fields = append(fields, referrer.FieldAnnotations)
 	}
 	return fields
 }
@@ -6319,6 +6425,10 @@ func (m *ReferrerMutation) Field(name string) (ent.Value, bool) {
 		return m.Downloadable()
 	case referrer.FieldCreatedAt:
 		return m.CreatedAt()
+	case referrer.FieldMetadata:
+		return m.Metadata()
+	case referrer.FieldAnnotations:
+		return m.Annotations()
 	}
 	return nil, false
 }
@@ -6336,6 +6446,10 @@ func (m *ReferrerMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldDownloadable(ctx)
 	case referrer.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
+	case referrer.FieldMetadata:
+		return m.OldMetadata(ctx)
+	case referrer.FieldAnnotations:
+		return m.OldAnnotations(ctx)
 	}
 	return nil, fmt.Errorf("unknown Referrer field %s", name)
 }
@@ -6373,6 +6487,20 @@ func (m *ReferrerMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetCreatedAt(v)
 		return nil
+	case referrer.FieldMetadata:
+		v, ok := value.(map[string]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMetadata(v)
+		return nil
+	case referrer.FieldAnnotations:
+		v, ok := value.(map[string]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAnnotations(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Referrer field %s", name)
 }
@@ -6402,7 +6530,14 @@ func (m *ReferrerMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *ReferrerMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(referrer.FieldMetadata) {
+		fields = append(fields, referrer.FieldMetadata)
+	}
+	if m.FieldCleared(referrer.FieldAnnotations) {
+		fields = append(fields, referrer.FieldAnnotations)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -6415,6 +6550,14 @@ func (m *ReferrerMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *ReferrerMutation) ClearField(name string) error {
+	switch name {
+	case referrer.FieldMetadata:
+		m.ClearMetadata()
+		return nil
+	case referrer.FieldAnnotations:
+		m.ClearAnnotations()
+		return nil
+	}
 	return fmt.Errorf("unknown Referrer nullable field %s", name)
 }
 
@@ -6433,6 +6576,12 @@ func (m *ReferrerMutation) ResetField(name string) error {
 		return nil
 	case referrer.FieldCreatedAt:
 		m.ResetCreatedAt()
+		return nil
+	case referrer.FieldMetadata:
+		m.ResetMetadata()
+		return nil
+	case referrer.FieldAnnotations:
+		m.ResetAnnotations()
 		return nil
 	}
 	return fmt.Errorf("unknown Referrer field %s", name)

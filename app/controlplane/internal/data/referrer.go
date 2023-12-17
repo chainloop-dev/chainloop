@@ -71,7 +71,9 @@ func (r *ReferrerRepo) Save(ctx context.Context, referrers []*biz.Referrer, work
 			}
 
 			storedRef, err = tx.Referrer.Create().
-				SetDigest(r.Digest).SetKind(r.Kind).SetDownloadable(r.Downloadable).AddWorkflowIDs(workflowID).Save(ctx)
+				SetDigest(r.Digest).SetKind(r.Kind).SetDownloadable(r.Downloadable).
+				SetMetadata(r.Metadata).SetAnnotations(r.Annotations).
+				AddWorkflowIDs(workflowID).Save(ctx)
 			if err != nil {
 				return fmt.Errorf("failed to create referrer: %w", err)
 			}
@@ -185,6 +187,8 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 			Digest:       root.Digest,
 			Kind:         root.Kind,
 			Downloadable: root.Downloadable,
+			Metadata:     root.Metadata,
+			Annotations:  root.Annotations,
 		},
 	}
 

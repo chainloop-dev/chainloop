@@ -44,7 +44,7 @@ type ReferrerUseCase struct {
 	indexConfig     *conf.ReferrerSharedIndex
 }
 
-func NewReferrerUseCase(repo ReferrerRepo, wfRepo WorkflowRepo, wfRunRepo WorkflowRunRepo, mRepo MembershipRepo, indexCfg *conf.ReferrerSharedIndex, l log.Logger) (*ReferrerUseCase, error) {
+func NewReferrerUseCase(repo ReferrerRepo, wfRepo WorkflowRepo, mRepo MembershipRepo, indexCfg *conf.ReferrerSharedIndex, l log.Logger) (*ReferrerUseCase, error) {
 	if l == nil {
 		l = log.NewStdLogger(io.Discard)
 	}
@@ -61,12 +61,11 @@ func NewReferrerUseCase(repo ReferrerRepo, wfRepo WorkflowRepo, wfRunRepo Workfl
 	}
 
 	return &ReferrerUseCase{
-		repo:            repo,
-		membershipRepo:  mRepo,
-		indexConfig:     indexCfg,
-		workflowRepo:    wfRepo,
-		workflowRunRepo: wfRunRepo,
-		logger:          logger,
+		repo:           repo,
+		membershipRepo: mRepo,
+		indexConfig:    indexCfg,
+		workflowRepo:   wfRepo,
+		logger:         logger,
 	}, nil
 }
 
@@ -86,6 +85,8 @@ type Referrer struct {
 	// If this referrer is part of a public workflow
 	InPublicWorkflow bool
 	References       []*Referrer
+
+	Metadata, Annotations map[string]string
 }
 
 // Actual referrer stored in the DB which includes a nested list of storedReferences
@@ -96,8 +97,6 @@ type StoredReferrer struct {
 	// Fully expanded list of 1-level off references
 	References          []*StoredReferrer
 	OrgIDs, WorkflowIDs []uuid.UUID
-
-	Metadata, Annotations map[string]string
 }
 
 type GetFromRootFilters struct {
@@ -136,12 +135,12 @@ func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envel
 		return NewErrNotFound("workflow")
 	}
 
-	m, err := extractReferrers(att)
+	referrers, err := extractReferrers(att)
 	if err != nil {
 		return fmt.Errorf("extracting referrers: %w", err)
 	}
 
-	if err := s.repo.Save(ctx, m, workflowUUID); err != nil {
+	if err := s.repo.Save(ctx, referrers, workflowUUID); err != nil {
 		return fmt.Errorf("saving referrers: %w", err)
 	}
 
@@ -184,15 +183,6 @@ func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind, use
 		return nil, fmt.Errorf("getting referrer from root: %w", err)
 	} else if ref == nil {
 		return nil, NewErrNotFound("referrer")
-	}
-
-	// Add additional information to the referrer
-	// This is prioritizing accuracy over performance
-	// that's why for example we'll be generating it on the fly based on the attestation
-	// that we'll eventually verify before returning it
-	if err := s.addMetadata(ctx, ref); err != nil {
-		// we do not fail for now since this is required
-		s.logger.Warn("error hydrating referrer", "err", err)
 	}
 
 	return ref, nil
@@ -285,6 +275,14 @@ func extractReferrers(att *dsse.Envelope) ([]*Referrer, error) {
 	predicate, err := chainloop.ExtractPredicate(att)
 	if err != nil {
 		return nil, fmt.Errorf("extracting predicate: %w", err)
+	}
+
+	// We currently only support adding additional information about the attestation kind
+	// We add both annotations and workflow metadata
+	attestationReferrer.Annotations = predicate.GetAnnotations()
+	attestationReferrer.Metadata = map[string]string{
+		// workflow name
+		"name": predicate.GetMetadata().Name,
 	}
 
 	// Create new referrers for each material
@@ -415,53 +413,4 @@ func intotoSubjectToReferrer(r *v1.ResourceDescriptor) (*Referrer, error) {
 		Kind:         materialType,
 		Downloadable: uploadedToCAS,
 	}, nil
-}
-
-func (s *ReferrerUseCase) addMetadata(ctx context.Context, ref *StoredReferrer) error {
-	// Hydrate the references
-	for _, r := range ref.References {
-		if err := s.addMetadata(ctx, r); err != nil {
-			return fmt.Errorf("hydrating referrer: %w", err)
-		}
-	}
-
-	// Currently we only support adding information about the attestation
-	if ref.Kind == referrerAttestationType {
-		return hydrateAttestationReferrer(ctx, ref, s.workflowRunRepo)
-	}
-
-	return nil
-}
-
-func hydrateAttestationReferrer(ctx context.Context, ref *StoredReferrer, wfRunRepo WorkflowRunRepo) error {
-	// For now we only hydrate the attestation referrer
-	if ref.Kind != referrerAttestationType {
-		return errors.New("not an attestation referrer")
-	}
-
-	// Find the attestation information
-	run, err := wfRunRepo.FindByAttestationDigest(ctx, ref.Digest)
-	if err != nil {
-		return fmt.Errorf("finding workflow run: %w", err)
-	} else if run == nil {
-		return NewErrNotFound("workflow run")
-	}
-
-	if run.Attestation == nil {
-		return NewErrNotFound("attestation")
-	}
-
-	// Extract metadata and add it to referrer
-	att, err := chainloop.ExtractPredicate(run.Attestation.Envelope)
-	if err != nil {
-		return fmt.Errorf("error extracting predicate from attestation: %w", err)
-	}
-
-	ref.Annotations = att.GetAnnotations()
-	ref.Metadata = map[string]string{
-		// workflow name
-		"name": att.GetMetadata().Name,
-	}
-
-	return nil
 }
