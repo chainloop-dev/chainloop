@@ -144,10 +144,10 @@ func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envel
 	return nil
 }
 
-// GetFromRoot returns the referrer identified by the provided content digest, including its first-level references
+// GetFromRootUser returns the referrer identified by the provided content digest, including its first-level references
 // For example if sha:deadbeef represents an attestation, the result will contain the attestation + materials associated to it
 // It only returns referrers that belong to organizations the user is member of
-func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind, userID string) (*StoredReferrer, error) {
+func (s *ReferrerUseCase) GetFromRootUser(ctx context.Context, digest, rootKind, userID string) (*StoredReferrer, error) {
 	userUUID, err := uuid.Parse(userID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -166,6 +166,10 @@ func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind, use
 		orgIDs = append(orgIDs, m.OrganizationID)
 	}
 
+	return s.GetFromRoot(ctx, digest, rootKind, orgIDs)
+}
+
+func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind string, orgIDs []uuid.UUID) (*StoredReferrer, error) {
 	filters := make([]GetFromRootFilter, 0)
 	if rootKind != "" {
 		filters = append(filters, WithKind(rootKind))
