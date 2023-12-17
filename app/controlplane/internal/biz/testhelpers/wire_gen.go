@@ -77,7 +77,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	}
 	referrerRepo := data.NewReferrerRepo(dataData, workflowRepo, logger)
 	referrerSharedIndex := _wireReferrerSharedIndexValue
-	referrerUseCase, err := biz.NewReferrerUseCase(referrerRepo, workflowRepo, membershipRepo, referrerSharedIndex, logger)
+	referrerUseCase, err := biz.NewReferrerUseCase(referrerRepo, workflowRepo, workflowRunRepo, membershipRepo, referrerSharedIndex, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -89,9 +89,10 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		return nil, nil, err
 	}
 	testingRepos := &TestingRepos{
-		Membership: membershipRepo,
-		Referrer:   referrerRepo,
-		Workflow:   workflowRepo,
+		Membership:      membershipRepo,
+		Referrer:        referrerRepo,
+		Workflow:        workflowRepo,
+		WorkflowRunRepo: workflowRunRepo,
 	}
 	testingUseCases := &TestingUseCases{
 		DB:                     testDatabase,

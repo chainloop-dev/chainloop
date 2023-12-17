@@ -629,6 +629,10 @@ func (m *ReferrerItem) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for Metadata
+
+	// no validation rules for Annotations
+
 	if len(errors) > 0 {
 		return ReferrerItemMultiError(errors)
 	}

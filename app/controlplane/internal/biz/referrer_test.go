@@ -68,7 +68,7 @@ func (s *referrerTestSuite) TestInitialization() {
 
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
-			_, err := NewReferrerUseCase(nil, nil, nil, tc.conf, nil)
+			_, err := NewReferrerUseCase(nil, nil, nil, nil, tc.conf, nil)
 			if tc.wantErrMsg != "" {
 				assert.EqualError(t, err, tc.wantErrMsg)
 			} else {
