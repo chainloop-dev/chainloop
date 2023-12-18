@@ -16,6 +16,7 @@
 package data
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"time"
@@ -180,18 +181,18 @@ func (r *WorkflowContractRepo) Update(ctx context.Context, opts *biz.ContractUpd
 		}
 	}
 
-	version, err := latestVersion(ctx, contract)
+	latestVersion, err := latestVersion(ctx, contract)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create a revision only if we are providing a new contract
-	if opts.ContractBody != nil {
-		// TODO: Add pesimist locking to make sure we are incrementing the latest revision
-		version, err = tx.WorkflowContractVersion.Create().
+	// Create a revision only if we are providing a new contract and it has changed
+	if opts.ContractBody != nil && !bytes.Equal(latestVersion.Body, opts.ContractBody) {
+		// TODO: Add pessimist locking to make sure we are incrementing the latest revision
+		latestVersion, err = tx.WorkflowContractVersion.Create().
 			SetBody(opts.ContractBody).
 			SetContract(contract).
-			SetRevision(version.Revision + 1).
+			SetRevision(latestVersion.Revision + 1).
 			Save(ctx)
 		if err != nil {
 			return nil, rollback(tx, err)
@@ -207,7 +208,7 @@ func (r *WorkflowContractRepo) Update(ctx context.Context, opts *biz.ContractUpd
 		return nil, err
 	}
 
-	v, err := entContractVersionToBizContractVersion(version)
+	v, err := entContractVersionToBizContractVersion(latestVersion)
 	if err != nil {
 		return nil, err
 	}

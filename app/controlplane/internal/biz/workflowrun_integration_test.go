@@ -19,6 +19,7 @@ import (
 	"context"
 	"testing"
 
+	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
@@ -196,6 +197,64 @@ func (s *workflowRunIntegrationTestSuite) TestCreate() {
 			assert.Failf("mismatch (-want +got):\n%s", diff)
 		}
 	})
+}
+
+func (s *workflowRunIntegrationTestSuite) TestUpdate() {
+	testCases := []struct {
+		name         string
+		contractID   string
+		inputName    string
+		inputSchema  *schemav1.CraftingSchema
+		wantError    bool
+		wantRevision int
+	}{
+		{
+			name:       "invalid contract",
+			contractID: uuid.NewString(),
+			wantError:  true,
+		},
+		{
+			name:         "update only name does not bump revision",
+			contractID:   s.contractVersion.Contract.ID.String(),
+			inputName:    "new name",
+			wantRevision: 1,
+		},
+		{
+			name:         "updating schema bumps revision",
+			contractID:   s.contractVersion.Contract.ID.String(),
+			inputSchema:  &schemav1.CraftingSchema{SchemaVersion: "v123"},
+			wantRevision: 2,
+		},
+		{
+			name:         "updating with same schema DOES NOT bump revision",
+			contractID:   s.contractVersion.Contract.ID.String(),
+			inputSchema:  &schemav1.CraftingSchema{SchemaVersion: "v123"},
+			wantRevision: 2,
+		},
+		{
+			name:         "updating with same schema but different name DOES NOT bump revision either",
+			contractID:   s.contractVersion.Contract.ID.String(),
+			inputSchema:  &schemav1.CraftingSchema{SchemaVersion: "v123"},
+			inputName:    "new new name",
+			wantRevision: 2,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.T().Run(tc.name, func(t *testing.T) {
+			contract, err := s.WorkflowContract.Update(context.Background(), s.org.ID, tc.contractID, tc.inputName, tc.inputSchema)
+			if tc.wantError {
+				s.Error(err)
+				return
+			}
+
+			s.NoError(err)
+			s.Equal(tc.wantRevision, contract.Version.Revision)
+			if tc.inputName != "" {
+				s.Equal(tc.inputName, contract.Contract.Name)
+			}
+		})
+	}
 }
 
 // Run the tests
