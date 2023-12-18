@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
@@ -161,6 +162,14 @@ func (s *CASRedirectService) HTTPDownload(ctx khttp.Context) error {
 	urlResponse := out.(*pb.GetDownloadURLResponse)
 	if urlResponse.GetResult().GetUrl() == "" {
 		return kerrors.BadRequest("invalid URL", "the URL returned by the server is empty")
+	}
+
+	// if the client is not a browser (i.e curl), we perform a redirect
+	acceptHeader := ctx.Request().Header.Get("Accept")
+	if !strings.Contains(acceptHeader, "text/http") {
+		ctx.Response().Header().Set("Location", urlResponse.Result.Url)
+		ctx.Response().WriteHeader(http.StatusFound)
+		return nil
 	}
 
 	// perform redirect
