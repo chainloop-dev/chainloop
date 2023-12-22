@@ -21,6 +21,7 @@
 package main
 
 import (
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
@@ -47,7 +48,9 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.Availabl
 			serviceOpts,
 			wire.Value([]biz.CASClientOpts{}),
 			wire.FieldsOf(new(*conf.Bootstrap), "Server", "Auth", "Data", "CasServer", "ReferrerSharedIndex"),
+			wire.FieldsOf(new(*conf.Data), "Database"),
 			dispatcher.New,
+			authz.NewEnforcer,
 			newApp,
 		),
 	)

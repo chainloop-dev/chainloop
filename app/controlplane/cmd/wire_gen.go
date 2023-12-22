@@ -7,6 +7,7 @@
 package main
 
 import (
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
@@ -195,7 +196,13 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		return nil, nil, err
 	}
 	workflowRunExpirerUseCase := biz.NewWorkflowRunExpirerUseCase(workflowRunRepo, logger)
-	mainApp := newApp(logger, grpcServer, httpServer, httpMetricsServer, workflowRunExpirerUseCase, availablePlugins)
+	data_Database := confData.Database
+	enforcer, err := authz.NewEnforcer(data_Database, logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	mainApp := newApp(logger, grpcServer, httpServer, httpMetricsServer, workflowRunExpirerUseCase, availablePlugins, enforcer)
 	return mainApp, func() {
 		cleanup()
 	}, nil
