@@ -33,7 +33,7 @@ func WithCurrentAPITokenAuthzMiddleware(enforcer *authz.Enforcer, logger *log.He
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			token := usercontext.CurrentAPIToken(ctx)
-			// We do nothing
+			// We do nothing if the token is not available
 			if token == nil {
 				return handler(ctx, req)
 			}
@@ -49,7 +49,6 @@ func WithCurrentAPITokenAuthzMiddleware(enforcer *authz.Enforcer, logger *log.He
 				return nil, errors.InternalServer("invalid request", "could not find API request")
 			}
 
-			// Subject
 			subject := authz.SubjectAPIToken{ID: token.ID}
 
 			logger.Infow("msg", "[authZ] checking authorization", "sub", subject.String(), "operation", apiOperation)
@@ -60,6 +59,7 @@ func WithCurrentAPITokenAuthzMiddleware(enforcer *authz.Enforcer, logger *log.He
 				return nil, errors.Forbidden("forbidden", "operation not allowed")
 			}
 
+			// 3 - Ask enforcer if the token meets all the policies defined in the map
 			for _, p := range policies {
 				ok, err := enforcer.Enforce(subject.String(), p.Resource, p.Action)
 				if err != nil {
@@ -72,7 +72,6 @@ func WithCurrentAPITokenAuthzMiddleware(enforcer *authz.Enforcer, logger *log.He
 				}
 			}
 
-			// 3 - Ask enforcer if the token meets all the policies defined in the map
 			return handler(ctx, req)
 		}
 	}
