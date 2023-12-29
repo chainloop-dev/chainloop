@@ -46,13 +46,6 @@ func (s *APITokenService) Create(ctx context.Context, req *pb.APITokenServiceCre
 		return nil, err
 	}
 
-	// This is a API operation that requires actual user to be logged in not API token
-	// TODO: replace with authz layer, i.e casbin policies
-	_, err = requireCurrentUser(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	var expiresIn *time.Duration
 	if req.ExpiresIn != nil {
 		expiresIn = new(time.Duration)
@@ -80,13 +73,6 @@ func (s *APITokenService) List(ctx context.Context, req *pb.APITokenServiceListR
 		return nil, err
 	}
 
-	// This is a API operation that requires actual user to be logged in not API token
-	// TODO: replace with authz layer, i.e casbin policies
-	_, err = requireCurrentUser(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	tokens, err := s.APITokenUseCase.List(ctx, currentOrg.ID, req.IncludeRevoked)
 	if err != nil && biz.IsNotFound(err) {
 		return nil, errors.NotFound("not found", err.Error())
@@ -104,13 +90,6 @@ func (s *APITokenService) List(ctx context.Context, req *pb.APITokenServiceListR
 
 func (s *APITokenService) Revoke(ctx context.Context, req *pb.APITokenServiceRevokeRequest) (*pb.APITokenServiceRevokeResponse, error) {
 	currentOrg, err := requireCurrentOrg(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// This is a API operation that requires actual user to be logged in not API token
-	// TODO: replace with authz layer, i.e casbin policies
-	_, err = requireCurrentUser(ctx)
 	if err != nil {
 		return nil, err
 	}
