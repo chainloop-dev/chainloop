@@ -73,7 +73,13 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		return nil, nil, err
 	}
 	apiTokenRepo := data.NewAPITokenRepo(dataData, logger)
-	apiTokenUseCase, err := biz.NewAPITokenUseCase(apiTokenRepo, auth, logger)
+	data_Database := confData.Database
+	enforcer, err := authz.NewEnforcer(data_Database)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	apiTokenUseCase, err := biz.NewAPITokenUseCase(apiTokenRepo, auth, enforcer, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -150,12 +156,6 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	orgInvitationService := service.NewOrgInvitationService(orgInvitationUseCase, v2...)
 	referrerService := service.NewReferrerService(referrerUseCase, v2...)
 	apiTokenService := service.NewAPITokenService(apiTokenUseCase, v2...)
-	data_Database := confData.Database
-	enforcer, err := authz.NewEnforcer(data_Database)
-	if err != nil {
-		cleanup()
-		return nil, nil, err
-	}
 	opts := &server.Opts{
 		UserUseCase:          userUseCase,
 		RobotAccountUseCase:  robotAccountUseCase,

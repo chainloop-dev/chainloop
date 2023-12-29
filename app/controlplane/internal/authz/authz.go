@@ -17,6 +17,7 @@
 package authz
 
 import (
+	"errors"
 	"fmt"
 
 	_ "embed"
@@ -67,6 +68,23 @@ var modelFile []byte
 
 type Enforcer struct {
 	*casbin.Enforcer
+}
+
+func (e *Enforcer) AddPolicies(sub SubjectAPIToken, policies ...*Policy) error {
+	if len(policies) == 0 {
+		return errors.New("no policies to add")
+	}
+
+	casbinPolicies := [][]string{}
+	for _, p := range policies {
+		casbinPolicies = append(casbinPolicies, []string{sub.String(), p.Resource, p.Action})
+	}
+
+	if _, err := e.Enforcer.AddPolicies(casbinPolicies); err != nil {
+		return fmt.Errorf("failed to add policies: %w", err)
+	}
+
+	return nil
 }
 
 // NewEnforcer creates a new casbin authorization enforcer for the policies stored

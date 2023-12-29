@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/apitoken"
@@ -53,12 +54,14 @@ type APITokenUseCase struct {
 	apiTokenRepo APITokenRepo
 	logger       *log.Helper
 	jwtBuilder   *apitoken.Builder
+	enforcer     *authz.Enforcer
 }
 
-func NewAPITokenUseCase(apiTokenRepo APITokenRepo, conf *conf.Auth, logger log.Logger) (*APITokenUseCase, error) {
+func NewAPITokenUseCase(apiTokenRepo APITokenRepo, conf *conf.Auth, authzE *authz.Enforcer, logger log.Logger) (*APITokenUseCase, error) {
 	uc := &APITokenUseCase{
 		apiTokenRepo: apiTokenRepo,
 		logger:       log.NewHelper(logger),
+		enforcer:     authzE,
 	}
 
 	// Create the JWT builder for the API token
@@ -102,7 +105,26 @@ func (uc *APITokenUseCase) Create(ctx context.Context, description *string, expi
 		return nil, fmt.Errorf("generating jwt: %w", err)
 	}
 
+	// Add default policies to the enforcer
+	if err := initializeDefaultAuthzPolicies(token.ID.String(), uc.enforcer); err != nil {
+		return nil, fmt.Errorf("initializing default policies: %w", err)
+	}
+
 	return token, nil
+}
+
+// initializeDefaultAuthzPolicies adds the default authorization policies for the API token
+func initializeDefaultAuthzPolicies(tokenID string, e *authz.Enforcer) error {
+	if err := e.AddPolicies(authz.SubjectAPIToken{ID: tokenID},
+		// Add permissions to workflow contract management
+		authz.PolicyWorkflowContractList, authz.PolicyWorkflowContractRead, authz.PolicyWorkflowContractUpdate,
+		// to download artifacts and list referrers
+		authz.PolicyArtifactDownload, authz.PolicyReferrerRead,
+	); err != nil {
+		return fmt.Errorf("adding default policies: %w", err)
+	}
+
+	return nil
 }
 
 func (uc *APITokenUseCase) List(ctx context.Context, orgID string, includeRevoked bool) ([]*APIToken, error) {

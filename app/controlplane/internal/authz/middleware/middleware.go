@@ -52,7 +52,7 @@ func WithCurrentAPITokenAuthzMiddleware(enforcer *authz.Enforcer, logger *log.He
 			// Subject
 			subject := authz.SubjectAPIToken{ID: token.ID}
 
-			logger.Infow("msg", "[authZ] checking authorization", "sub", subject, "operation", apiOperation)
+			logger.Infow("msg", "[authZ] checking authorization", "sub", subject.String(), "operation", apiOperation)
 
 			// 2 - check that the API operation is mapped, return forbidden if not
 			policies, ok := serverOperations[apiOperation]
@@ -67,7 +67,7 @@ func WithCurrentAPITokenAuthzMiddleware(enforcer *authz.Enforcer, logger *log.He
 				}
 
 				if !ok {
-					logger.Infow("msg", "[authZ] policy not found", "sub", subject, "operation", apiOperation, "resource", p.Resource, "action", p.Action)
+					logger.Infow("msg", "[authZ] policy not found", "sub", subject.String(), "operation", apiOperation, "resource", p.Resource, "action", p.Action)
 					return nil, errors.Forbidden("forbidden", "operation not allowed")
 				}
 			}
