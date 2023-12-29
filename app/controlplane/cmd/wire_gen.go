@@ -150,6 +150,12 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	orgInvitationService := service.NewOrgInvitationService(orgInvitationUseCase, v2...)
 	referrerService := service.NewReferrerService(referrerUseCase, v2...)
 	apiTokenService := service.NewAPITokenService(apiTokenUseCase, v2...)
+	data_Database := confData.Database
+	enforcer, err := authz.NewEnforcer(data_Database)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
 	opts := &server.Opts{
 		UserUseCase:          userUseCase,
 		RobotAccountUseCase:  robotAccountUseCase,
@@ -179,6 +185,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		ServerConfig:         confServer,
 		AuthConfig:           auth,
 		Credentials:          readerWriter,
+		Enforcer:             enforcer,
 	}
 	grpcServer, err := server.NewGRPCServer(opts)
 	if err != nil {
@@ -196,13 +203,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		return nil, nil, err
 	}
 	workflowRunExpirerUseCase := biz.NewWorkflowRunExpirerUseCase(workflowRunRepo, logger)
-	data_Database := confData.Database
-	enforcer, err := authz.NewEnforcer(data_Database, logger)
-	if err != nil {
-		cleanup()
-		return nil, nil, err
-	}
-	mainApp := newApp(logger, grpcServer, httpServer, httpMetricsServer, workflowRunExpirerUseCase, availablePlugins, enforcer)
+	mainApp := newApp(logger, grpcServer, httpServer, httpMetricsServer, workflowRunExpirerUseCase, availablePlugins)
 	return mainApp, func() {
 		cleanup()
 	}, nil

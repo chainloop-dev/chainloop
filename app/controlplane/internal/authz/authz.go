@@ -19,8 +19,6 @@ package authz
 import (
 	"fmt"
 
-	"github.com/go-kratos/kratos/v2/log"
-
 	_ "embed"
 
 	"github.com/casbin/casbin/v2"
@@ -29,12 +27,51 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 )
 
+const (
+	// Actions
+	ActionRead   = "read"
+	ActionList   = "list"
+	ActionUpdate = "update"
+	ActionDelete = "delete"
+
+	// Resources
+	ResourceWorkflowContract = "workflow_contract"
+	ResourceCASArtifact      = "cas_artifact"
+	ResourceReferrer         = "referrer"
+)
+
+// resource, action tuple
+type Policy struct {
+	Resource string
+	Action   string
+}
+
+var (
+	PolicyWorkflowContractList   = &Policy{ResourceWorkflowContract, ActionList}
+	PolicyWorkflowContractRead   = &Policy{ResourceWorkflowContract, ActionRead}
+	PolicyWorkflowContractUpdate = &Policy{ResourceWorkflowContract, ActionUpdate}
+	PolicyArtifactDownload       = &Policy{ResourceCASArtifact, ActionRead}
+	PolicyReferrerRead           = &Policy{ResourceReferrer, ActionRead}
+)
+
+type SubjectAPIToken struct {
+	ID string
+}
+
+func (t *SubjectAPIToken) String() string {
+	return fmt.Sprintf("api-token:%s", t.ID)
+}
+
 //go:embed model.conf
 var modelFile []byte
 
+type Enforcer struct {
+	*casbin.Enforcer
+}
+
 // NewEnforcer creates a new casbin authorization enforcer for the policies stored
 // in the database and the model defined in model.conf
-func NewEnforcer(c *conf.Data_Database, l log.Logger) (*casbin.Enforcer, error) {
+func NewEnforcer(c *conf.Data_Database) (*Enforcer, error) {
 	// policy storage in database
 	a, err := entadapter.NewAdapter(c.Driver, c.Source)
 	if err != nil {
@@ -53,8 +90,5 @@ func NewEnforcer(c *conf.Data_Database, l log.Logger) (*casbin.Enforcer, error) 
 		return nil, fmt.Errorf("failed to create enforcer: %w", err)
 	}
 
-	logger := log.NewHelper(log.With(l, "component", "authz"))
-	logger.Info("enforcer created")
-
-	return enforcer, nil
+	return &Enforcer{enforcer}, nil
 }

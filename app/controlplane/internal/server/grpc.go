@@ -22,6 +22,8 @@ import (
 	"regexp"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
+	authzMiddleware "github.com/chainloop-dev/chainloop/app/controlplane/internal/authz/middleware"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/robotaccount"
@@ -76,6 +78,7 @@ type Opts struct {
 	ServerConfig *conf.Server
 	AuthConfig   *conf.Auth
 	Credentials  credentials.ReaderWriter
+	Enforcer     *authz.Enforcer
 }
 
 // NewGRPCServer new a gRPC server.
@@ -165,7 +168,9 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 			usercontext.WithCurrentUserAndOrgMiddleware(opts.UserUseCase, logHelper),
 			// 2.b - Set its API token and organization as alternative to the user
 			usercontext.WithCurrentAPITokenAndOrgMiddleware(opts.APITokenUseCase, opts.OrganizationUserCase, logHelper),
-			// 3 - Make sure its account is fully functional
+			// 3 - Check API token authorization if needed
+			authzMiddleware.WithCurrentAPITokenAuthzMiddleware(opts.Enforcer, logHelper),
+			// 4 - Make sure its account is fully functional
 			selector.Server(
 				usercontext.CheckUserInAllowList(opts.AuthConfig.AllowList),
 				usercontext.CheckOrgRequirements(opts.CASBackendUseCase),

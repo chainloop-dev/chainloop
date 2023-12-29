@@ -20,7 +20,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/casbin/casbin/v2"
 	"github.com/getsentry/sentry-go"
 	flag "github.com/spf13/pflag"
 
@@ -58,7 +57,7 @@ func init() {
 	flag.StringVar(&flagconf, "conf", "../configs", "config path, eg: -conf config.yaml")
 }
 
-func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTPMetricsServer, expirer *biz.WorkflowRunExpirerUseCase, plugins sdk.AvailablePlugins, e *casbin.Enforcer) *app {
+func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTPMetricsServer, expirer *biz.WorkflowRunExpirerUseCase, plugins sdk.AvailablePlugins) *app {
 	return &app{
 		kratos.New(
 			kratos.ID(id),
@@ -67,7 +66,7 @@ func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTP
 			kratos.Metadata(map[string]string{}),
 			kratos.Logger(logger),
 			kratos.Server(gs, hs, ms),
-		), expirer, plugins, e}
+		), expirer, plugins}
 }
 
 func main() {
@@ -141,7 +140,6 @@ type app struct {
 	// Periodic job that expires unfinished attestation processes older than a given threshold
 	runsExpirer      *biz.WorkflowRunExpirerUseCase
 	availablePlugins sdk.AvailablePlugins
-	authzEnforcer    *casbin.Enforcer
 }
 
 func filterSensitiveArgs(_ log.Level, keyvals ...interface{}) bool {
