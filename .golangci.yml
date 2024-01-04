@@ -51,7 +51,7 @@ linters-settings:
       limitations under the License.
     values:
       regexp:
-        copyright-year: 202[3]
+        copyright-year: 202[3|4]
   forbidigo:
     forbid:
       - ^print.*$
