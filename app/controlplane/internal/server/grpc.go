@@ -168,9 +168,9 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 			usercontext.WithCurrentUserAndOrgMiddleware(opts.UserUseCase, logHelper),
 			// 2.b - Set its API token and organization as alternative to the user
 			usercontext.WithCurrentAPITokenAndOrgMiddleware(opts.APITokenUseCase, opts.OrganizationUserCase, logHelper),
-			// 3 - Check API token authorization if needed
-			authzMiddleware.WithCurrentAPITokenAuthzMiddleware(opts.Enforcer, logHelper),
-			// 4 - Make sure its account is fully functional
+			// 3 - Check user/token authorization
+			authzMiddleware.WithAuthzMiddleware(opts.Enforcer, logHelper),
+			// 4 - Make sure the account is fully functional
 			selector.Server(
 				usercontext.CheckUserInAllowList(opts.AuthConfig.AllowList),
 				usercontext.CheckOrgRequirements(opts.CASBackendUseCase),
@@ -178,7 +178,7 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 		).Match(requireCurrentUserMatcher()).Build(),
 	)
 
-	// robot account authentication
+	// attestation robot account authentication
 	middlewares = append(middlewares,
 		// if we require a robot account
 		selector.Server(

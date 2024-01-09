@@ -23,6 +23,7 @@ package testhelpers
 import (
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
@@ -44,6 +45,8 @@ func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWrite
 			wire.Struct(new(TestingUseCases), "*"),
 			wire.Struct(new(TestingRepos), "*"),
 			newConfData,
+			authz.NewEnforcer,
+			wire.FieldsOf(new(*conf.Data), "Database"),
 		),
 	)
 }

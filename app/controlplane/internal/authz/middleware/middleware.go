@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,18 +27,23 @@ import (
 	"github.com/go-kratos/kratos/v2/transport"
 )
 
-// Check API token authorization
-// If the token is not available we do nothing
-func WithCurrentAPITokenAuthzMiddleware(enforcer *authz.Enforcer, logger *log.Helper) middleware.Middleware {
+// Check Authorization for the current API operation against the current user/token
+func WithAuthzMiddleware(enforcer *authz.Enforcer, logger *log.Helper) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
-			token := usercontext.CurrentAPIToken(ctx)
-			// We do nothing if the token is not available
-			if token == nil {
+			// Currently authz is only implemented for API tokens
+			// we skip it if the currentUser is represented by a user
+			if user := usercontext.CurrentUser(ctx); user != nil {
 				return handler(ctx, req)
 			}
 
-			// 1 - Check that the current operation is in the server operations ACL map
+			token := usercontext.CurrentAPIToken(ctx)
+			// At this point, we should have a token, but if we don't, we fail
+			if token == nil {
+				return nil, errors.Forbidden("forbidden", "missing auth")
+			}
+
+			// 1 - Check that the current API operation is in the server operations ACL map
 			t, ok := transport.FromServerContext(ctx)
 			if !ok {
 				return nil, errors.InternalServer("invalid request", "could not get transport from context")
@@ -50,16 +55,15 @@ func WithCurrentAPITokenAuthzMiddleware(enforcer *authz.Enforcer, logger *log.He
 			}
 
 			subject := authz.SubjectAPIToken{ID: token.ID}
-
 			logger.Infow("msg", "[authZ] checking authorization", "sub", subject.String(), "operation", apiOperation)
 
-			// 2 - check that the API operation is mapped, return forbidden if not
+			// 2 - If there is no entry in the map for this API operation, we deny access
 			policies, ok := serverOperations[apiOperation]
 			if !ok {
 				return nil, errors.Forbidden("forbidden", "operation not allowed")
 			}
 
-			// 3 - Ask enforcer if the token meets all the policies defined in the map
+			// 3 - Ask AuthZ enforcer if the token meets all the policies defined in the map
 			for _, p := range policies {
 				ok, err := enforcer.Enforce(subject.String(), p.Resource, p.Action)
 				if err != nil {
@@ -89,6 +93,8 @@ var serverOperations = ServerOperationMap{
 	"/controlplane.v1.WorkflowContractService/List":     {authz.PolicyWorkflowContractList},
 	"/controlplane.v1.WorkflowContractService/Describe": {authz.PolicyWorkflowContractRead},
 	"/controlplane.v1.WorkflowContractService/Update":   {authz.PolicyWorkflowContractUpdate},
-	"/controlplane.v1.CASCredentialsService/Get":        {authz.PolicyArtifactDownload},
-	"/controlplane.v1.ReferrerService/DiscoverPrivate":  {authz.PolicyReferrerRead},
+	// Download/Uploading artifacts
+	"/controlplane.v1.CASCredentialsService/Get": {authz.PolicyArtifactDownload},
+	// Discover endpoint
+	"/controlplane.v1.ReferrerService/DiscoverPrivate": {authz.PolicyReferrerRead},
 }
