@@ -85,7 +85,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	}
 	apiTokenRepo := data.NewAPITokenRepo(dataData, logger)
 	data_Database := confData.Database
-	enforcer, err := authz.NewEnforcer(data_Database)
+	enforcer, err := authz.NewDatabaseEnforcer(data_Database)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -119,6 +119,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		OrgInvitation:          orgInvitationUseCase,
 		Referrer:               referrerUseCase,
 		APIToken:               apiTokenUseCase,
+		Enforcer:               enforcer,
 		Repos:                  testingRepos,
 	}
 	return testingUseCases, func() {

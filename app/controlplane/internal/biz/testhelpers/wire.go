@@ -45,7 +45,7 @@ func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWrite
 			wire.Struct(new(TestingUseCases), "*"),
 			wire.Struct(new(TestingRepos), "*"),
 			newConfData,
-			authz.NewEnforcer,
+			authz.NewDatabaseEnforcer,
 			wire.FieldsOf(new(*conf.Data), "Database"),
 		),
 	)

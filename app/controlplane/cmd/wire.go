@@ -50,7 +50,7 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.Availabl
 			wire.FieldsOf(new(*conf.Bootstrap), "Server", "Auth", "Data", "CasServer", "ReferrerSharedIndex"),
 			wire.FieldsOf(new(*conf.Data), "Database"),
 			dispatcher.New,
-			authz.NewEnforcer,
+			authz.NewDatabaseEnforcer,
 			newApp,
 		),
 	)

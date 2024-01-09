@@ -26,6 +26,7 @@ import (
 	// Required for the database waitFor strategy
 	_ "github.com/lib/pq"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
@@ -67,6 +68,7 @@ type TestingUseCases struct {
 	OrgInvitation          *biz.OrgInvitationUseCase
 	Referrer               *biz.ReferrerUseCase
 	APIToken               *biz.APITokenUseCase
+	Enforcer               *authz.Enforcer
 	// Repositories that can be used for custom crafting of use-cases
 	Repos *TestingRepos
 }

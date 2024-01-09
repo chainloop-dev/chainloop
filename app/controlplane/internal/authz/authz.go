@@ -24,6 +24,8 @@ import (
 
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
+	"github.com/casbin/casbin/v2/persist"
+	fileadapter "github.com/casbin/casbin/v2/persist/file-adapter"
 	entadapter "github.com/casbin/ent-adapter"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 )
@@ -70,9 +72,13 @@ type Enforcer struct {
 	*casbin.Enforcer
 }
 
-func (e *Enforcer) AddPolicies(sub SubjectAPIToken, policies ...*Policy) error {
+func (e *Enforcer) AddPolicies(sub *SubjectAPIToken, policies ...*Policy) error {
 	if len(policies) == 0 {
 		return errors.New("no policies to add")
+	}
+
+	if sub == nil {
+		return errors.New("no subject provided")
 	}
 
 	casbinPolicies := [][]string{}
@@ -87,15 +93,39 @@ func (e *Enforcer) AddPolicies(sub SubjectAPIToken, policies ...*Policy) error {
 	return nil
 }
 
-// NewEnforcer creates a new casbin authorization enforcer for the policies stored
-// in the database and the model defined in model.conf
-func NewEnforcer(c *conf.Data_Database) (*Enforcer, error) {
+// NewDatabaseEnforcer creates a new casbin authorization enforcer
+// based on a database backend as policies storage backend
+func NewDatabaseEnforcer(c *conf.Data_Database) (*Enforcer, error) {
 	// policy storage in database
 	a, err := entadapter.NewAdapter(c.Driver, c.Source)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create adapter: %w", err)
 	}
 
+	e, err := newEnforcer(a)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create enforcer: %w", err)
+	}
+
+	return e, nil
+}
+
+// NewFileAdapter creates a new casbin authorization enforcer
+// based on a CSV file as policies storage backend
+func NewFiletypeEnforcer(path string) (*Enforcer, error) {
+	// policy storage in filesystem
+	a := fileadapter.NewAdapter(path)
+	e, err := newEnforcer(a)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create enforcer: %w", err)
+	}
+
+	return e, nil
+}
+
+// NewEnforcer creates a new casbin authorization enforcer for the policies stored
+// in the database and the model defined in model.conf
+func newEnforcer(a persist.Adapter) (*Enforcer, error) {
 	// load model defined in model.conf
 	m, err := model.NewModelFromString(string(modelFile))
 	if err != nil {

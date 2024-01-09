@@ -17,9 +17,11 @@ package biz_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
 	"github.com/golang-jwt/jwt/v4"
@@ -58,6 +60,23 @@ func (s *apiTokenTestSuite) TestCreate() {
 		s.NotNil(token.ExpiresAt)
 		s.Nil(token.RevokedAt)
 	})
+}
+
+func (s *apiTokenTestSuite) TestAuthzPolicies() {
+	// a new token has a new set of policies associated
+	token, err := s.APIToken.Create(context.Background(), nil, nil, s.org.ID)
+	require.NoError(s.T(), err)
+
+	subject := (&authz.SubjectAPIToken{ID: token.ID.String()}).String()
+	// load the policies associated with the token from the global enforcer
+	policies := s.Enforcer.GetFilteredPolicy(0, subject)
+
+	// Check that only default policies are loaded
+	s.Len(policies, len(s.APIToken.DefaultAuthzPolicies))
+	for _, p := range s.APIToken.DefaultAuthzPolicies {
+		ok := s.Enforcer.HasPolicy(subject, p.Resource, p.Action)
+		s.True(ok, fmt.Sprintf("policy %s:%s not found", p.Resource, p.Action))
+	}
 }
 
 func (s *apiTokenTestSuite) TestRevoke() {
