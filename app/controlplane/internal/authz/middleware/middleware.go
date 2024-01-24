@@ -27,8 +27,12 @@ import (
 	"github.com/go-kratos/kratos/v2/transport"
 )
 
+type Enforcer interface {
+	Enforce(...interface{}) (bool, error)
+}
+
 // Check Authorization for the current API operation against the current user/token
-func WithAuthzMiddleware(enforcer *authz.Enforcer, logger *log.Helper) middleware.Middleware {
+func WithAuthzMiddleware(enforcer Enforcer, logger *log.Helper) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			// Currently authz is only implemented for API tokens
