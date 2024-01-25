@@ -69,7 +69,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.8.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.4.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.1.0
-	github.com/casbin/casbin/v2 v2.29.2
+	github.com/casbin/casbin/v2 v2.81.0
 	github.com/casbin/ent-adapter v0.3.0
 	github.com/in-toto/attestation v0.1.1-0.20231010121940-09a03152c04a
 	github.com/invopop/jsonschema v0.7.0
@@ -87,9 +87,9 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.4.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/keyvault/internal v0.7.1 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.0 // indirect
-	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible // indirect
 	github.com/Microsoft/hcsshim v0.11.4 // indirect
 	github.com/anchore/go-struct-converter v0.0.0-20230627203149-c72ef8859ca9 // indirect
+	github.com/casbin/govaluate v1.1.0 // indirect
 	github.com/cockroachdb/apd/v3 v3.2.1 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect

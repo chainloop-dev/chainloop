@@ -100,6 +100,18 @@ func (s *apiTokenTestSuite) TestRevoke() {
 		s.True(biz.IsNotFound(err))
 	})
 
+	s.T().Run("the revoked token also get its policies cleared", func(t *testing.T) {
+		sub := (&authz.SubjectAPIToken{ID: s.t2.ID.String()}).String()
+		// It has the default policies
+		gotPolicies := s.Enforcer.GetFilteredPolicy(0, sub)
+		assert.Len(t, gotPolicies, len(s.APIToken.DefaultAuthzPolicies))
+		err := s.APIToken.Revoke(ctx, s.org.ID, s.t2.ID.String())
+		s.NoError(err)
+		// once revoked, the policies are cleared
+		gotPolicies = s.Enforcer.GetFilteredPolicy(0, sub)
+		assert.Len(t, gotPolicies, 0)
+	})
+
 	s.T().Run("token can be revoked once", func(t *testing.T) {
 		err := s.APIToken.Revoke(ctx, s.org.ID, s.t1.ID.String())
 		s.NoError(err)

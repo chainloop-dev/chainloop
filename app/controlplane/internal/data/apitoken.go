@@ -64,8 +64,13 @@ func (r *APITokenRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.APIToke
 	return entAPITokenToBiz(token), nil
 }
 
-func (r *APITokenRepo) List(ctx context.Context, orgID uuid.UUID, includeRevoked bool) ([]*biz.APIToken, error) {
-	query := r.data.db.APIToken.Query().Where(apitoken.OrganizationIDEQ(orgID))
+func (r *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, includeRevoked bool) ([]*biz.APIToken, error) {
+	query := r.data.db.APIToken.Query()
+
+	if orgID != nil {
+		query = query.Where(apitoken.OrganizationIDEQ(*orgID))
+	}
+
 	if !includeRevoked {
 		query = query.Where(apitoken.RevokedAtIsNil())
 	}

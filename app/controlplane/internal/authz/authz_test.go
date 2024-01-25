@@ -91,6 +91,64 @@ func TestAddPolicies(t *testing.T) {
 	}
 }
 
+func TestAddPoliciesDuplication(t *testing.T) {
+	want := []*Policy{
+		PolicyWorkflowContractList,
+		PolicyWorkflowContractRead,
+	}
+
+	enforcer, closer := testEnforcer(t)
+	defer closer.Close()
+	sub := &SubjectAPIToken{ID: uuid.NewString()}
+
+	err := enforcer.AddPolicies(sub, want...)
+	require.NoError(t, err)
+	got := enforcer.GetFilteredPolicy(0, sub.String())
+	assert.Len(t, got, 2)
+
+	// Update the list of policies we want to add by appending an extra one
+	want = append(want, PolicyWorkflowContractUpdate)
+	// AddPolicies only add the policies that are not already present preventing duplication
+	err = enforcer.AddPolicies(sub, want...)
+	assert.NoError(t, err)
+	got = enforcer.GetFilteredPolicy(0, sub.String())
+	assert.Len(t, got, 3)
+}
+
+func TestClearPolicies(t *testing.T) {
+	want := []*Policy{
+		PolicyWorkflowContractList,
+		PolicyWorkflowContractRead,
+	}
+
+	enforcer, closer := testEnforcer(t)
+	defer closer.Close()
+	sub := &SubjectAPIToken{ID: uuid.NewString()}
+	sub2 := &SubjectAPIToken{ID: uuid.NewString()}
+
+	// Create policies for two different subjects
+	err := enforcer.AddPolicies(sub, want...)
+	require.NoError(t, err)
+	err = enforcer.AddPolicies(sub2, want...)
+	require.NoError(t, err)
+	// Each have 2 items
+	got := enforcer.GetFilteredPolicy(0, sub.String())
+	assert.Len(t, got, 2)
+	// 4 in total
+	got = enforcer.GetPolicy()
+	assert.Len(t, got, 4)
+
+	// Clear all the policies for the subject
+	err = enforcer.ClearPolicies(sub)
+	assert.NoError(t, err)
+	// there should be no policies left for this user
+	got = enforcer.GetFilteredPolicy(0, sub.String())
+	assert.Len(t, got, 0)
+	// but the other user should still have 2
+	got = enforcer.GetFilteredPolicy(0, sub2.String())
+	assert.Len(t, got, 2)
+}
+
 func testEnforcer(t *testing.T) (*Enforcer, io.Closer) {
 	policyFilepath := filepath.Join(t.TempDir(), "policy.csv")
 	// create the file if it doesn't exist

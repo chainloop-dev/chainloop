@@ -81,13 +81,29 @@ func (e *Enforcer) AddPolicies(sub *SubjectAPIToken, policies ...*Policy) error 
 		return errors.New("no subject provided")
 	}
 
-	casbinPolicies := [][]string{}
 	for _, p := range policies {
-		casbinPolicies = append(casbinPolicies, []string{sub.String(), p.Resource, p.Action})
+		casbinPolicy := []string{sub.String(), p.Resource, p.Action}
+		// Add policies one by one to skip existing ones.
+		// This is because the bulk method AddPoliciesEx does not work well with the ent adapter
+		if _, err := e.AddPolicy(casbinPolicy); err != nil {
+			return fmt.Errorf("failed to add policy: %w", err)
+		}
 	}
 
-	if _, err := e.Enforcer.AddPolicies(casbinPolicies); err != nil {
-		return fmt.Errorf("failed to add policies: %w", err)
+	return nil
+}
+
+// Remove all the policies for the given subject
+func (e *Enforcer) ClearPolicies(sub *SubjectAPIToken) error {
+	if sub == nil {
+		return errors.New("no subject provided")
+	}
+
+	// Get all the policies for the subject
+	policies := e.GetFilteredPolicy(0, sub.String())
+
+	if _, err := e.Enforcer.RemovePolicies(policies); err != nil {
+		return fmt.Errorf("failed to remove policies: %w", err)
 	}
 
 	return nil

@@ -24,6 +24,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/apitoken"
+	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
@@ -45,7 +46,8 @@ type APIToken struct {
 
 type APITokenRepo interface {
 	Create(ctx context.Context, description *string, expiresAt *time.Time, organizationID uuid.UUID) (*APIToken, error)
-	List(ctx context.Context, orgID uuid.UUID, includeRevoked bool) ([]*APIToken, error)
+	// List all the tokens optionally filtering it by organization and including revoked tokens
+	List(ctx context.Context, orgID *uuid.UUID, includeRevoked bool) ([]*APIToken, error)
 	Revoke(ctx context.Context, orgID, ID uuid.UUID) error
 	FindByID(ctx context.Context, ID uuid.UUID) (*APIToken, error)
 }
@@ -61,7 +63,7 @@ type APITokenUseCase struct {
 func NewAPITokenUseCase(apiTokenRepo APITokenRepo, conf *conf.Auth, authzE *authz.Enforcer, logger log.Logger) (*APITokenUseCase, error) {
 	uc := &APITokenUseCase{
 		apiTokenRepo: apiTokenRepo,
-		logger:       log.NewHelper(logger),
+		logger:       servicelogger.ScopedHelper(logger, "biz/APITokenUseCase"),
 		enforcer:     authzE,
 		DefaultAuthzPolicies: []*authz.Policy{
 			// Add permissions to workflow contract management
@@ -81,7 +83,38 @@ func NewAPITokenUseCase(apiTokenRepo APITokenRepo, conf *conf.Auth, authzE *auth
 	}
 
 	uc.jwtBuilder = b
+
+	// Since policies management is not enabled yet but instead is based on a hardcoded list of permissions
+	// We'll use this method to make sure all the API tokens contain the default policies at boot
+	// This will allow us to add more policies in the future and keep backwards compatibility with existing tokens
+	go func() {
+		if err := uc.syncPolicies(); err != nil {
+			uc.logger.Errorf("syncing policies: %w", err)
+		}
+	}()
+
 	return uc, nil
+}
+
+// Make sure all the API tokens contain the default policies
+// NOTE: We'll remove this method once we have a proper policies management system where the user can add/remove policies
+func (uc *APITokenUseCase) syncPolicies() error {
+	uc.logger.Info("syncing policies for all the API tokens")
+
+	// List all the non-revoked tokens from all the orgs
+	tokens, err := uc.apiTokenRepo.List(context.Background(), nil, false)
+	if err != nil {
+		return fmt.Errorf("listing tokens: %w", err)
+	}
+
+	for _, t := range tokens {
+		// Add default policies to the enforcer
+		if err := uc.enforcer.AddPolicies(&authz.SubjectAPIToken{ID: t.ID.String()}, uc.DefaultAuthzPolicies...); err != nil {
+			return fmt.Errorf("adding default policies: %w", err)
+		}
+	}
+
+	return nil
 }
 
 // expires in is a string that can be parsed by time.ParseDuration
@@ -126,7 +159,7 @@ func (uc *APITokenUseCase) List(ctx context.Context, orgID string, includeRevoke
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	return uc.apiTokenRepo.List(ctx, orgUUID, includeRevoked)
+	return uc.apiTokenRepo.List(ctx, &orgUUID, includeRevoked)
 }
 
 func (uc *APITokenUseCase) Revoke(ctx context.Context, orgID, id string) error {
@@ -138,6 +171,11 @@ func (uc *APITokenUseCase) Revoke(ctx context.Context, orgID, id string) error {
 	uuid, err := uuid.Parse(id)
 	if err != nil {
 		return NewErrInvalidUUID(err)
+	}
+
+	// clean policies
+	if err := uc.enforcer.ClearPolicies(&authz.SubjectAPIToken{ID: id}); err != nil {
+		return fmt.Errorf("removing policies: %w", err)
 	}
 
 	return uc.apiTokenRepo.Revoke(ctx, orgUUID, uuid)
