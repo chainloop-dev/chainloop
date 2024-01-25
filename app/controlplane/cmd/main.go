@@ -57,7 +57,7 @@ func init() {
 	flag.StringVar(&flagconf, "conf", "../configs", "config path, eg: -conf config.yaml")
 }
 
-func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTPMetricsServer, expirer *biz.WorkflowRunExpirerUseCase, plugins sdk.AvailablePlugins) *app {
+func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTPMetricsServer, expirer *biz.WorkflowRunExpirerUseCase, plugins sdk.AvailablePlugins, tokenSync *biz.APITokenSyncerUseCase) *app {
 	return &app{
 		kratos.New(
 			kratos.ID(id),
@@ -66,7 +66,7 @@ func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTP
 			kratos.Metadata(map[string]string{}),
 			kratos.Logger(logger),
 			kratos.Server(gs, hs, ms),
-		), expirer, plugins}
+		), expirer, plugins, tokenSync}
 }
 
 func main() {
@@ -129,6 +129,15 @@ func main() {
 	// TODO: Make it configurable from the application config
 	app.runsExpirer.Run(ctx, &biz.WorkflowRunExpirerOpts{CheckInterval: 1 * time.Minute, ExpirationWindow: 1 * time.Hour})
 
+	// Since policies management is not enabled yet but instead is based on a hardcoded list of permissions
+	// We'll perform a reconciliation of the policies with the tokens stored in the database on startup
+	// This will allow us to add more policies in the future and keep backwards compatibility with existing tokens
+	go func() {
+		if err := app.tokenAuthSyncer.SyncPolicies(); err != nil {
+			_ = logger.Log(log.LevelError, "msg", "syncing policies", "error", err)
+		}
+	}()
+
 	// start and wait for stop signal
 	if err := app.Run(); err != nil {
 		panic(err)
@@ -140,6 +149,7 @@ type app struct {
 	// Periodic job that expires unfinished attestation processes older than a given threshold
 	runsExpirer      *biz.WorkflowRunExpirerUseCase
 	availablePlugins sdk.AvailablePlugins
+	tokenAuthSyncer  *biz.APITokenSyncerUseCase
 }
 
 func filterSensitiveArgs(_ log.Level, keyvals ...interface{}) bool {

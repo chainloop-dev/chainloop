@@ -60,6 +60,10 @@ type APITokenUseCase struct {
 	DefaultAuthzPolicies []*authz.Policy
 }
 
+type APITokenSyncerUseCase struct {
+	base *APITokenUseCase
+}
+
 func NewAPITokenUseCase(apiTokenRepo APITokenRepo, conf *conf.Auth, authzE *authz.Enforcer, logger log.Logger) (*APITokenUseCase, error) {
 	uc := &APITokenUseCase{
 		apiTokenRepo: apiTokenRepo,
@@ -84,37 +88,7 @@ func NewAPITokenUseCase(apiTokenRepo APITokenRepo, conf *conf.Auth, authzE *auth
 
 	uc.jwtBuilder = b
 
-	// Since policies management is not enabled yet but instead is based on a hardcoded list of permissions
-	// We'll use this method to make sure all the API tokens contain the default policies at boot
-	// This will allow us to add more policies in the future and keep backwards compatibility with existing tokens
-	go func() {
-		if err := uc.syncPolicies(); err != nil {
-			uc.logger.Errorf("syncing policies: %w", err)
-		}
-	}()
-
 	return uc, nil
-}
-
-// Make sure all the API tokens contain the default policies
-// NOTE: We'll remove this method once we have a proper policies management system where the user can add/remove policies
-func (uc *APITokenUseCase) syncPolicies() error {
-	uc.logger.Info("syncing policies for all the API tokens")
-
-	// List all the non-revoked tokens from all the orgs
-	tokens, err := uc.apiTokenRepo.List(context.Background(), nil, false)
-	if err != nil {
-		return fmt.Errorf("listing tokens: %w", err)
-	}
-
-	for _, t := range tokens {
-		// Add default policies to the enforcer
-		if err := uc.enforcer.AddPolicies(&authz.SubjectAPIToken{ID: t.ID.String()}, uc.DefaultAuthzPolicies...); err != nil {
-			return fmt.Errorf("adding default policies: %w", err)
-		}
-	}
-
-	return nil
 }
 
 // expires in is a string that can be parsed by time.ParseDuration
@@ -195,4 +169,31 @@ func (uc *APITokenUseCase) FindByID(ctx context.Context, id string) (*APIToken, 
 	}
 
 	return t, nil
+}
+
+func NewAPITokenSyncerUseCase(tokenUC *APITokenUseCase) *APITokenSyncerUseCase {
+	return &APITokenSyncerUseCase{
+		base: tokenUC,
+	}
+}
+
+// Make sure all the API tokens contain the default policies
+// NOTE: We'll remove this method once we have a proper policies management system where the user can add/remove policies
+func (suc *APITokenSyncerUseCase) SyncPolicies() error {
+	suc.base.logger.Info("syncing policies for all the API tokens")
+
+	// List all the non-revoked tokens from all the orgs
+	tokens, err := suc.base.apiTokenRepo.List(context.Background(), nil, false)
+	if err != nil {
+		return fmt.Errorf("listing tokens: %w", err)
+	}
+
+	for _, t := range tokens {
+		// Add default policies to the enforcer
+		if err := suc.base.enforcer.AddPolicies(&authz.SubjectAPIToken{ID: t.ID.String()}, suc.base.DefaultAuthzPolicies...); err != nil {
+			return fmt.Errorf("adding default policies: %w", err)
+		}
+	}
+
+	return nil
 }
