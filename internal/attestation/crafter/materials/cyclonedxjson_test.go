@@ -65,9 +65,11 @@ func TestNewCyclonedxJSONCrafter(t *testing.T) {
 
 func TestCyclonedxJSONCraft(t *testing.T) {
 	testCases := []struct {
-		name     string
-		filePath string
-		wantErr  string
+		name         string
+		filePath     string
+		wantErr      string
+		wantFilename string
+		wantDigest   string
 	}{
 		{
 			name:     "invalid path",
@@ -85,8 +87,16 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 			wantErr:  "unexpected material type",
 		},
 		{
-			name:     "valid artifact type",
-			filePath: "./testdata/sbom.cyclonedx.json",
+			name:         "1.4 version",
+			filePath:     "./testdata/sbom.cyclonedx.json",
+			wantDigest:   "sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c",
+			wantFilename: "sbom.cyclonedx.json",
+		},
+		{
+			name:         "1.5 version",
+			filePath:     "./testdata/sbom.cyclonedx-1.5.json",
+			wantDigest:   "sha256:5ca3508f02893b0419b266927f66c7b9dd8b11dbea7faf7cdb9169df8f69d8e3",
+			wantFilename: "sbom.cyclonedx-1.5.json",
 		},
 	}
 
@@ -102,10 +112,7 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 			uploader := mUploader.NewUploader(t)
 			if tc.wantErr == "" {
 				uploader.On("UploadFile", context.TODO(), tc.filePath).
-					Return(&casclient.UpDownStatus{
-						Digest:   "deadbeef",
-						Filename: "sbom.cyclonedx.json",
-					}, nil)
+					Return(&casclient.UpDownStatus{}, nil)
 			}
 
 			backend := &casclient.CASBackend{Uploader: uploader}
@@ -123,9 +130,9 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 			assert.True(got.UploadedToCas)
 
 			// The result includes the digest reference
-			assert.Equal(got.GetArtifact(), &attestationApi.Attestation_Material_Artifact{
-				Id: "test", Digest: "sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c", Name: "sbom.cyclonedx.json",
-			})
+			assert.Equal(&attestationApi.Attestation_Material_Artifact{
+				Id: "test", Digest: tc.wantDigest, Name: tc.wantFilename,
+			}, got.GetArtifact())
 		})
 	}
 }
