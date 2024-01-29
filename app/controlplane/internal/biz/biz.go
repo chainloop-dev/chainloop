@@ -37,6 +37,7 @@ var ProviderSet = wire.NewSet(
 	NewCASMappingUseCase,
 	NewReferrerUseCase,
 	NewAPITokenUseCase,
+	NewAPITokenSyncerUseCase,
 	wire.Struct(new(NewIntegrationUseCaseOpts), "*"),
 	wire.Struct(new(NewUserUseCaseParams), "*"),
 )

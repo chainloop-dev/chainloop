@@ -7,6 +7,7 @@
 package testhelpers
 
 import (
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
@@ -83,7 +84,13 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		return nil, nil, err
 	}
 	apiTokenRepo := data.NewAPITokenRepo(dataData, logger)
-	apiTokenUseCase, err := biz.NewAPITokenUseCase(apiTokenRepo, auth, logger)
+	data_Database := confData.Database
+	enforcer, err := authz.NewDatabaseEnforcer(data_Database)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	apiTokenUseCase, err := biz.NewAPITokenUseCase(apiTokenRepo, auth, enforcer, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -112,6 +119,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		OrgInvitation:          orgInvitationUseCase,
 		Referrer:               referrerUseCase,
 		APIToken:               apiTokenUseCase,
+		Enforcer:               enforcer,
 		Repos:                  testingRepos,
 	}
 	return testingUseCases, func() {

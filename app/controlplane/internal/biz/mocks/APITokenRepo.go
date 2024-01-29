@@ -72,15 +72,15 @@ func (_m *APITokenRepo) FindByID(ctx context.Context, ID uuid.UUID) (*biz.APITok
 }
 
 // List provides a mock function with given fields: ctx, orgID, includeRevoked
-func (_m *APITokenRepo) List(ctx context.Context, orgID uuid.UUID, includeRevoked bool) ([]*biz.APIToken, error) {
+func (_m *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, includeRevoked bool) ([]*biz.APIToken, error) {
 	ret := _m.Called(ctx, orgID, includeRevoked)
 
 	var r0 []*biz.APIToken
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, bool) ([]*biz.APIToken, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *uuid.UUID, bool) ([]*biz.APIToken, error)); ok {
 		return rf(ctx, orgID, includeRevoked)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, bool) []*biz.APIToken); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *uuid.UUID, bool) []*biz.APIToken); ok {
 		r0 = rf(ctx, orgID, includeRevoked)
 	} else {
 		if ret.Get(0) != nil {
@@ -88,7 +88,7 @@ func (_m *APITokenRepo) List(ctx context.Context, orgID uuid.UUID, includeRevoke
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, bool) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *uuid.UUID, bool) error); ok {
 		r1 = rf(ctx, orgID, includeRevoked)
 	} else {
 		r1 = ret.Error(1)

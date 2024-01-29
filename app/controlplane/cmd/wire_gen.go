@@ -7,6 +7,7 @@
 package main
 
 import (
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
@@ -72,7 +73,13 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		return nil, nil, err
 	}
 	apiTokenRepo := data.NewAPITokenRepo(dataData, logger)
-	apiTokenUseCase, err := biz.NewAPITokenUseCase(apiTokenRepo, auth, logger)
+	data_Database := confData.Database
+	enforcer, err := authz.NewDatabaseEnforcer(data_Database)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	apiTokenUseCase, err := biz.NewAPITokenUseCase(apiTokenRepo, auth, enforcer, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -178,6 +185,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		ServerConfig:         confServer,
 		AuthConfig:           auth,
 		Credentials:          readerWriter,
+		Enforcer:             enforcer,
 	}
 	grpcServer, err := server.NewGRPCServer(opts)
 	if err != nil {
@@ -195,7 +203,8 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		return nil, nil, err
 	}
 	workflowRunExpirerUseCase := biz.NewWorkflowRunExpirerUseCase(workflowRunRepo, logger)
-	mainApp := newApp(logger, grpcServer, httpServer, httpMetricsServer, workflowRunExpirerUseCase, availablePlugins)
+	apiTokenSyncerUseCase := biz.NewAPITokenSyncerUseCase(apiTokenUseCase)
+	mainApp := newApp(logger, grpcServer, httpServer, httpMetricsServer, workflowRunExpirerUseCase, availablePlugins, apiTokenSyncerUseCase)
 	return mainApp, func() {
 		cleanup()
 	}, nil

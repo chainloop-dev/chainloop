@@ -17,9 +17,11 @@ package biz_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
 	"github.com/golang-jwt/jwt/v4"
@@ -60,6 +62,23 @@ func (s *apiTokenTestSuite) TestCreate() {
 	})
 }
 
+func (s *apiTokenTestSuite) TestAuthzPolicies() {
+	// a new token has a new set of policies associated
+	token, err := s.APIToken.Create(context.Background(), nil, nil, s.org.ID)
+	require.NoError(s.T(), err)
+
+	subject := (&authz.SubjectAPIToken{ID: token.ID.String()}).String()
+	// load the policies associated with the token from the global enforcer
+	policies := s.Enforcer.GetFilteredPolicy(0, subject)
+
+	// Check that only default policies are loaded
+	s.Len(policies, len(s.APIToken.DefaultAuthzPolicies))
+	for _, p := range s.APIToken.DefaultAuthzPolicies {
+		ok := s.Enforcer.HasPolicy(subject, p.Resource, p.Action)
+		s.True(ok, fmt.Sprintf("policy %s:%s not found", p.Resource, p.Action))
+	}
+}
+
 func (s *apiTokenTestSuite) TestRevoke() {
 	ctx := context.Background()
 
@@ -79,6 +98,18 @@ func (s *apiTokenTestSuite) TestRevoke() {
 		err := s.APIToken.Revoke(ctx, s.org.ID, s.t3.ID.String())
 		s.Error(err)
 		s.True(biz.IsNotFound(err))
+	})
+
+	s.T().Run("the revoked token also get its policies cleared", func(t *testing.T) {
+		sub := (&authz.SubjectAPIToken{ID: s.t2.ID.String()}).String()
+		// It has the default policies
+		gotPolicies := s.Enforcer.GetFilteredPolicy(0, sub)
+		assert.Len(t, gotPolicies, len(s.APIToken.DefaultAuthzPolicies))
+		err := s.APIToken.Revoke(ctx, s.org.ID, s.t2.ID.String())
+		s.NoError(err)
+		// once revoked, the policies are cleared
+		gotPolicies = s.Enforcer.GetFilteredPolicy(0, sub)
+		assert.Len(t, gotPolicies, 0)
 	})
 
 	s.T().Run("token can be revoked once", func(t *testing.T) {

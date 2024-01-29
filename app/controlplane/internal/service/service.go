@@ -79,10 +79,8 @@ func requireCurrentUserOrAPIToken(ctx context.Context) (*usercontext.User, *user
 		return nil, nil, err
 	}
 
-	// NOTE: we shouldn't get to this point since the middleware should have already catched this
-	// Adding the check here for defensivity and testing purposes
 	if user == nil && apiToken == nil {
-		return nil, nil, errors.Forbidden("authz required", "logged in user nor API token found")
+		return nil, nil, errors.Forbidden("authN required", "logged in user nor API token found")
 	}
 
 	return user, apiToken, nil

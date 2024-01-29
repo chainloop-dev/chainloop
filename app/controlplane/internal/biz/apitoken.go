@@ -20,9 +20,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/apitoken"
+	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
@@ -44,21 +46,35 @@ type APIToken struct {
 
 type APITokenRepo interface {
 	Create(ctx context.Context, description *string, expiresAt *time.Time, organizationID uuid.UUID) (*APIToken, error)
-	List(ctx context.Context, orgID uuid.UUID, includeRevoked bool) ([]*APIToken, error)
+	// List all the tokens optionally filtering it by organization and including revoked tokens
+	List(ctx context.Context, orgID *uuid.UUID, includeRevoked bool) ([]*APIToken, error)
 	Revoke(ctx context.Context, orgID, ID uuid.UUID) error
 	FindByID(ctx context.Context, ID uuid.UUID) (*APIToken, error)
 }
 
 type APITokenUseCase struct {
-	apiTokenRepo APITokenRepo
-	logger       *log.Helper
-	jwtBuilder   *apitoken.Builder
+	apiTokenRepo         APITokenRepo
+	logger               *log.Helper
+	jwtBuilder           *apitoken.Builder
+	enforcer             *authz.Enforcer
+	DefaultAuthzPolicies []*authz.Policy
 }
 
-func NewAPITokenUseCase(apiTokenRepo APITokenRepo, conf *conf.Auth, logger log.Logger) (*APITokenUseCase, error) {
+type APITokenSyncerUseCase struct {
+	base *APITokenUseCase
+}
+
+func NewAPITokenUseCase(apiTokenRepo APITokenRepo, conf *conf.Auth, authzE *authz.Enforcer, logger log.Logger) (*APITokenUseCase, error) {
 	uc := &APITokenUseCase{
 		apiTokenRepo: apiTokenRepo,
-		logger:       log.NewHelper(logger),
+		logger:       servicelogger.ScopedHelper(logger, "biz/APITokenUseCase"),
+		enforcer:     authzE,
+		DefaultAuthzPolicies: []*authz.Policy{
+			// Add permissions to workflow contract management
+			authz.PolicyWorkflowContractList, authz.PolicyWorkflowContractRead, authz.PolicyWorkflowContractUpdate,
+			// to download artifacts and list referrers
+			authz.PolicyArtifactDownload, authz.PolicyReferrerRead,
+		},
 	}
 
 	// Create the JWT builder for the API token
@@ -71,6 +87,7 @@ func NewAPITokenUseCase(apiTokenRepo APITokenRepo, conf *conf.Auth, logger log.L
 	}
 
 	uc.jwtBuilder = b
+
 	return uc, nil
 }
 
@@ -102,6 +119,11 @@ func (uc *APITokenUseCase) Create(ctx context.Context, description *string, expi
 		return nil, fmt.Errorf("generating jwt: %w", err)
 	}
 
+	// Add default policies to the enforcer
+	if err := uc.enforcer.AddPolicies(&authz.SubjectAPIToken{ID: token.ID.String()}, uc.DefaultAuthzPolicies...); err != nil {
+		return nil, fmt.Errorf("adding default policies: %w", err)
+	}
+
 	return token, nil
 }
 
@@ -111,7 +133,7 @@ func (uc *APITokenUseCase) List(ctx context.Context, orgID string, includeRevoke
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	return uc.apiTokenRepo.List(ctx, orgUUID, includeRevoked)
+	return uc.apiTokenRepo.List(ctx, &orgUUID, includeRevoked)
 }
 
 func (uc *APITokenUseCase) Revoke(ctx context.Context, orgID, id string) error {
@@ -123,6 +145,11 @@ func (uc *APITokenUseCase) Revoke(ctx context.Context, orgID, id string) error {
 	uuid, err := uuid.Parse(id)
 	if err != nil {
 		return NewErrInvalidUUID(err)
+	}
+
+	// clean policies
+	if err := uc.enforcer.ClearPolicies(&authz.SubjectAPIToken{ID: id}); err != nil {
+		return fmt.Errorf("removing policies: %w", err)
 	}
 
 	return uc.apiTokenRepo.Revoke(ctx, orgUUID, uuid)
@@ -142,4 +169,31 @@ func (uc *APITokenUseCase) FindByID(ctx context.Context, id string) (*APIToken, 
 	}
 
 	return t, nil
+}
+
+func NewAPITokenSyncerUseCase(tokenUC *APITokenUseCase) *APITokenSyncerUseCase {
+	return &APITokenSyncerUseCase{
+		base: tokenUC,
+	}
+}
+
+// Make sure all the API tokens contain the default policies
+// NOTE: We'll remove this method once we have a proper policies management system where the user can add/remove policies
+func (suc *APITokenSyncerUseCase) SyncPolicies() error {
+	suc.base.logger.Info("syncing policies for all the API tokens")
+
+	// List all the non-revoked tokens from all the orgs
+	tokens, err := suc.base.apiTokenRepo.List(context.Background(), nil, false)
+	if err != nil {
+		return fmt.Errorf("listing tokens: %w", err)
+	}
+
+	for _, t := range tokens {
+		// Add default policies to the enforcer
+		if err := suc.base.enforcer.AddPolicies(&authz.SubjectAPIToken{ID: t.ID.String()}, suc.base.DefaultAuthzPolicies...); err != nil {
+			return fmt.Errorf("adding default policies: %w", err)
+		}
+	}
+
+	return nil
 }
