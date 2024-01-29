@@ -179,7 +179,7 @@ func (db *TestDatabase) ConnectionString(t *testing.T) string {
 	return fmt.Sprintf("postgres://postgres:postgres@127.0.0.1:%d/postgres", db.Port(t))
 }
 
-func newConfData(db *TestDatabase, t *testing.T) *conf.Data {
+func NewConfData(db *TestDatabase, t *testing.T) *conf.Data {
 	return &conf.Data{Database: &conf.Data_Database{Driver: "pgx", Source: db.ConnectionString(t)}}
 }
 

@@ -127,7 +127,7 @@ func NewDatabaseEnforcer(c *conf.Data_Database) (*Enforcer, error) {
 	}
 
 	// watch for policy changes in database and update enforcer
-	w, err := psqlwatcher.NewWatcherWithConnString(context.Background(), c.Source, psqlwatcher.Option{Verbose: true})
+	w, err := psqlwatcher.NewWatcherWithConnString(context.Background(), c.Source, psqlwatcher.Option{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create watcher: %w", err)
 	}

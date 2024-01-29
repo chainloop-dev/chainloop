@@ -27,7 +27,7 @@ import (
 
 // wireTestData init testing data
 func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, readerWriter credentials.ReaderWriter, builder *robotaccount.Builder, auth *conf.Auth, availablePlugins sdk.AvailablePlugins, providers backend.Providers) (*TestingUseCases, func(), error) {
-	confData := newConfData(testDatabase, t)
+	confData := NewConfData(testDatabase, t)
 	dataData, cleanup, err := data.NewData(confData, logger)
 	if err != nil {
 		return nil, nil, err
