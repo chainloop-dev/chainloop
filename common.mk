@@ -37,7 +37,7 @@ help:
 
 .DEFAULT_GOAL := help
 
-.PHONY: check-goreleaser-tool
+.PHONY: check-atlas-tool
 check-atlas-tool:
 	@if ! command -v atlas >/dev/null 2>&1; then \
 		echo "altas is not installed. Please run \"make init\" or install the tool manually."; \

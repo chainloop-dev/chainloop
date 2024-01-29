@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/google/uuid"
@@ -30,13 +29,14 @@ import (
 
 func TestAddPolicies(t *testing.T) {
 	testcases := []struct {
-		name     string
-		subject  *SubjectAPIToken
-		policies []*Policy
-		wantErr  bool
+		name               string
+		subject            *SubjectAPIToken
+		policies           []*Policy
+		wantErr            bool
+		wantNumberPolicies int
 	}{
 		{
-			name:    "empty policies",
+			name:    "empty policies and subject",
 			wantErr: true,
 		},
 		{
@@ -47,17 +47,21 @@ func TestAddPolicies(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "happy path",
-			subject: &SubjectAPIToken{
-				ID: uuid.NewString(),
-			},
+			name:    "no policies",
+			subject: &SubjectAPIToken{ID: uuid.NewString()},
+			wantErr: true,
+		},
+		{
+			name:    "adds two policies",
+			subject: &SubjectAPIToken{ID: uuid.NewString()},
 			policies: []*Policy{
 				PolicyWorkflowContractList,
 				PolicyReferrerRead,
 			},
+			wantNumberPolicies: 2,
 		},
 		{
-			name: "another happy path",
+			name: "handles duplicated policies",
 			subject: &SubjectAPIToken{
 				ID: uuid.NewString(),
 			},
@@ -65,15 +69,19 @@ func TestAddPolicies(t *testing.T) {
 				PolicyWorkflowContractList,
 				PolicyWorkflowContractRead,
 				PolicyWorkflowContractUpdate,
+				PolicyWorkflowContractList,
+				PolicyArtifactDownload,
+				PolicyWorkflowContractUpdate,
 				PolicyArtifactDownload,
 			},
+			wantNumberPolicies: 4,
 		},
 	}
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			enforcer, closer := testEnforcer(t)
-			defer closer.Close()
+			closer.Close()
 
 			err := enforcer.AddPolicies(tc.subject, tc.policies...)
 			if tc.wantErr {
@@ -87,6 +95,9 @@ func TestAddPolicies(t *testing.T) {
 				ok := enforcer.HasPolicy(tc.subject.String(), p.Resource, p.Action)
 				assert.True(t, ok, fmt.Sprintf("policy %s:%s not found", p.Resource, p.Action))
 			}
+
+			gotLength := enforcer.GetFilteredPolicy(0, tc.subject.String())
+			assert.Len(t, gotLength, tc.wantNumberPolicies)
 		})
 	}
 }
@@ -150,14 +161,12 @@ func TestClearPolicies(t *testing.T) {
 }
 
 func testEnforcer(t *testing.T) (*Enforcer, io.Closer) {
-	policyFilepath := filepath.Join(t.TempDir(), "policy.csv")
-	// create the file if it doesn't exist
-	f, err := os.Create(policyFilepath)
+	f, err := os.CreateTemp(t.TempDir(), "policy*.csv")
 	if err != nil {
 		require.FailNow(t, err.Error())
 	}
 
-	enforcer, err := NewFiletypeEnforcer(policyFilepath)
+	enforcer, err := NewFiletypeEnforcer(f.Name())
 	require.NoError(t, err)
 	return enforcer, f
 }
