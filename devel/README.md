@@ -6,13 +6,21 @@ For development, Chainloop components (Control Plane, Artifact CAS and CLI) come
 
 ![development environment](../docs/img/dev-env-overview.png)
 
-### 1 - Prerequisites
+### 0 - Prerequisites
 
 To get up and running you'll need
 
 - Golang 1.20+ toolchain
 - [Docker Compose](https://docs.docker.com/compose/)
-- `make` (optional)
+- `make`
+
+### 1 - Initialize your environment
+
+This will download and install the CLI tools required to work with our code.
+
+```sh
+make init
+```
 
 ### 2 - Run pre-required/auxiliary services
 
@@ -60,7 +68,7 @@ You should now be ready to authenticate the CLI
 > NOTE: In development a `--insecure` flag must be provided to talk to the local APIs
 
 ```
-go run --insecure app/cli/main.go auth login
+go run app/cli/main.go --insecure auth login
 ```
 
 You will get redirected to the pre-configured local OIDC provider (DEX) where there are two configured users
