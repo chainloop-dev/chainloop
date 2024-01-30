@@ -107,6 +107,12 @@ dockers:
     image_templates:
       - "ghcr.io/chainloop-dev/chainloop/artifact-cas:{{ .Tag }}"
       - "ghcr.io/chainloop-dev/chainloop/artifact-cas:latest"
+  - dockerfile: app/cli/Dockerfile.goreleaser
+    ids:
+      - cli
+    image_templates:
+      - "ghcr.io/chainloop-dev/chainloop/cli:{{ .Tag }}"
+      - "ghcr.io/chainloop-dev/chainloop/cli:latest"
 
 release:
   extra_files:
