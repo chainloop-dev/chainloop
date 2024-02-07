@@ -37,8 +37,8 @@ func New(statePath string) (*Filesystem, error) {
 	return &Filesystem{statePath}, nil
 }
 
-func (l *Filesystem) Info() string {
-	return l.statePath
+func (l *Filesystem) String() string {
+	return fmt.Sprintf("file://%s", l.statePath)
 }
 
 func (l *Filesystem) Initialized() (bool, error) {

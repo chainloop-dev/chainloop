@@ -144,9 +144,9 @@ func (s *testSuite) TestReset() {
 		s.NoError(err)
 	})
 }
-func (s *testSuite) TestInfo() {
+func (s *testSuite) TestString() {
 	fs, _ := New("state.json")
-	s.Equal("state.json", fs.Info())
+	s.Equal("state.json", fs.String())
 }
 
 func (s *testSuite) TestInitialized() {

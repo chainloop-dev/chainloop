@@ -49,8 +49,8 @@ type StateManager interface {
 	Read(*api.CraftingState) error
 	// Reset/Delete the state
 	Reset() error
-	// Info returns a string representation of the state manager
-	Info() string
+	// Atring returns a string representation of the state manager
+	String() string
 }
 
 type Crafter struct {
@@ -196,7 +196,7 @@ func (c *Crafter) initCraftingStateFile(schema *schemaapi.CraftingSchema, wf *ap
 		return fmt.Errorf("failed to persist crafting state: %w", err)
 	}
 
-	c.logger.Debug().Str("path", c.stateManager.Info()).Msg("created state file")
+	c.logger.Debug().Str("state", c.stateManager.String()).Msg("created state file")
 
 	return c.LoadCraftingState()
 }
@@ -207,7 +207,7 @@ func (c *Crafter) Reset() error {
 }
 
 func (c *Crafter) LoadCraftingState() error {
-	c.logger.Debug().Str("path", c.stateManager.Info()).Msg("loading state")
+	c.logger.Debug().Str("state", c.stateManager.String()).Msg("loading state")
 
 	c.CraftingState = &api.CraftingState{}
 
@@ -222,7 +222,7 @@ func (c *Crafter) LoadCraftingState() error {
 	}
 
 	c.Runner = NewRunner(runnerType)
-	c.logger.Debug().Str("path", c.stateManager.Info()).Msg("loaded state")
+	c.logger.Debug().Str("state", c.stateManager.String()).Msg("loaded state")
 
 	return nil
 }
