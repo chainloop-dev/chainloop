@@ -39,11 +39,17 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+// StateManager is an interface for managing the state of the crafting process
 type StateManager interface {
+	// Check if the state is already initialized
 	Initialized() (bool, error)
+	// Write the state to the manager backend
 	Write(*api.CraftingState) error
+	// Read the state from the manager backend
 	Read(*api.CraftingState) error
+	// Reset/Delete the state
 	Reset() error
+	// Info returns a string representation of the state manager
 	Info() string
 }
 
@@ -58,13 +64,6 @@ type Crafter struct {
 var ErrAttestationStateNotLoaded = errors.New("crafting state not loaded")
 
 type NewOpt func(c *Crafter)
-
-// where to store the attestation state file
-// func WithStatePath(path string) NewOpt {
-// 	return func(c *Crafter) {
-// 		c.statePath = path
-// 	}
-// }
 
 func WithLogger(l *zerolog.Logger) NewOpt {
 	return func(c *Crafter) {

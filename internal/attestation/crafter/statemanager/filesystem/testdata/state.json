@@ -1,0 +1,8 @@
+{
+  "attestation": {
+    "annotations": {
+      "foo": "bar"
+    }
+  },
+  "dryRun": true
+}

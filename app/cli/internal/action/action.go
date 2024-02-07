@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
-	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/statemanager/local"
+	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/statemanager/filesystem"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 )
@@ -40,7 +40,7 @@ func toTimePtr(t time.Time) *time.Time {
 // TODO: We'll enable the ability to load a crafter that relies on a remote state manager
 func newCrafter(_ *grpc.ClientConn, logger *zerolog.Logger) (*crafter.Crafter, error) {
 	statePath := filepath.Join(os.TempDir(), "chainloop-attestation.tmp.json")
-	localStateManager, err := local.New(statePath)
+	localStateManager, err := filesystem.New(statePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create local state manager: %w", err)
 	}

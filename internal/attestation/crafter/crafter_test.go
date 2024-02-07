@@ -25,7 +25,7 @@ import (
 	v1 "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
-	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/statemanager/local"
+	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/statemanager/filesystem"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/stretchr/testify/require"
@@ -134,21 +134,16 @@ func (s *crafterSuite) TestInit() {
 			if ok := proto.Equal(want, c.CraftingState); !ok {
 				s.Fail(fmt.Sprintf("These two protobuf messages are not equal:\nexpected: %v\nactual:  %v", want, c.CraftingState))
 			}
-
-			// Check state file
-			_, err = os.Stat(c.statePath)
-			s.NoError(err, "state file should be created")
 		})
 	}
 }
 
 type testingCrafter struct {
 	*crafter.Crafter
-	statePath string
 }
 
 func testingStateManager(t *testing.T, statePath string) crafter.StateManager {
-	stateManager, err := local.New(statePath)
+	stateManager, err := filesystem.New(statePath)
 	require.NoError(t, err)
 	return stateManager
 }
@@ -171,7 +166,7 @@ func newInitializedCrafter(t *testing.T, contractPath string, wfMeta *v1.Workflo
 		return nil, err
 	}
 
-	return &testingCrafter{c, statePath}, nil
+	return &testingCrafter{c}, nil
 }
 
 func (s *crafterSuite) TestLoadSchema() {
@@ -351,7 +346,7 @@ func (s *crafterSuite) TestAlreadyInitialized() {
 		statePath := fmt.Sprintf("%s/attestation.json", t.TempDir())
 		_, err := os.Create(statePath)
 		require.NoError(s.T(), err)
-		fmt.Println(testingStateManager(t, statePath).Info(), statePath)
+		// TODO: replace by a mock
 		c, err := crafter.NewCrafter(testingStateManager(t, statePath))
 		require.NoError(s.T(), err)
 		s.True(c.AlreadyInitialized())

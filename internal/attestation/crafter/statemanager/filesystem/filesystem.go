@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package local
+package filesystem
 
 import (
 	"fmt"
@@ -21,27 +21,28 @@ import (
 	"os"
 
 	v1 "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/statemanager"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
-type Local struct {
+type Filesystem struct {
 	statePath string
 }
 
-func New(statePath string) (*Local, error) {
+func New(statePath string) (*Filesystem, error) {
 	if statePath == "" {
 		return nil, fmt.Errorf("state path cannot be empty")
 	}
 
-	return &Local{statePath}, nil
+	return &Filesystem{statePath}, nil
 }
 
-func (l *Local) Info() string {
+func (l *Filesystem) Info() string {
 	return l.statePath
 }
 
-func (l *Local) Initialized() (bool, error) {
-	if file, err := os.Stat(l.statePath); err != nil {
+func (l *Filesystem) Initialized() (bool, error) {
+	if file, err := os.Stat(l.statePath); err != nil && !os.IsNotExist(err) {
 		return false, fmt.Errorf("failed to check state file: %w", err)
 	} else if file != nil {
 		return true, nil
@@ -50,7 +51,11 @@ func (l *Local) Initialized() (bool, error) {
 	return false, nil
 }
 
-func (l *Local) Write(state *v1.CraftingState) error {
+func (l *Filesystem) Write(state *v1.CraftingState) error {
+	if state == nil {
+		return fmt.Errorf("state cannot be nil")
+	}
+
 	marshaler := protojson.MarshalOptions{Indent: "  "}
 	raw, err := marshaler.Marshal(state)
 	if err != nil {
@@ -72,9 +77,15 @@ func (l *Local) Write(state *v1.CraftingState) error {
 	return nil
 }
 
-func (l *Local) Read(state *v1.CraftingState) error {
+func (l *Filesystem) Read(state *v1.CraftingState) error {
+	if state == nil {
+		return fmt.Errorf("state cannot be nil")
+	}
+
 	file, err := os.Open(l.statePath)
-	if err != nil {
+	if err != nil && os.IsNotExist(err) {
+		return &statemanager.ErrNotFound{Path: l.statePath}
+	} else if err != nil {
 		return fmt.Errorf("failed to open state file: %w", err)
 	}
 	defer file.Close()
@@ -91,6 +102,12 @@ func (l *Local) Read(state *v1.CraftingState) error {
 	return nil
 }
 
-func (l *Local) Reset() error {
-	return os.Remove(l.statePath)
+func (l *Filesystem) Reset() error {
+	if err := os.Remove(l.statePath); err != nil && os.IsNotExist(err) {
+		return &statemanager.ErrNotFound{Path: l.statePath}
+	} else if err != nil {
+		return fmt.Errorf("failed to remove state file: %w", err)
+	}
+
+	return nil
 }
