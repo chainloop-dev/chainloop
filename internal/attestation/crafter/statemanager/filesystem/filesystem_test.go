@@ -146,7 +146,7 @@ func (s *testSuite) TestReset() {
 }
 func (s *testSuite) TestString() {
 	fs, _ := New("state.json")
-	s.Equal("state.json", fs.String())
+	s.Equal("file://state.json", fs.String())
 }
 
 func (s *testSuite) TestInitialized() {
