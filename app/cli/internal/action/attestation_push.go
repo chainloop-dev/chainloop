@@ -45,14 +45,19 @@ type AttestationPush struct {
 	keyPath, cliVersion, cliDigest string
 }
 
-func NewAttestationPush(cfg *AttestationPushOpts) *AttestationPush {
+func NewAttestationPush(cfg *AttestationPushOpts) (*AttestationPush, error) {
+	c, err := newCrafter(cfg.CPConnection, &cfg.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load crafter: %w", err)
+	}
+
 	return &AttestationPush{
 		ActionsOpts: cfg.ActionsOpts,
-		c:           crafter.NewCrafter(crafter.WithLogger(&cfg.Logger)),
+		c:           c,
 		keyPath:     cfg.KeyPath,
 		cliVersion:  cfg.CLIVersion,
 		cliDigest:   cfg.CLIDigest,
-	}
+	}, nil
 }
 
 func (action *AttestationPush) Run(runtimeAnnotations map[string]string) (*AttestationResult, error) {

@@ -57,11 +57,13 @@ type AttestationStatusResultMaterial struct {
 	Set, IsOutput, Required bool
 }
 
-func NewAttestationStatus(cfg *AttestationStatusOpts) *AttestationStatus {
-	return &AttestationStatus{
-		ActionsOpts: cfg.ActionsOpts,
-		c:           crafter.NewCrafter(crafter.WithLogger(&cfg.Logger)),
+func NewAttestationStatus(cfg *AttestationStatusOpts) (*AttestationStatus, error) {
+	c, err := newCrafter(cfg.CPConnection, &cfg.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load crafter: %w", err)
 	}
+
+	return &AttestationStatus{ActionsOpts: cfg.ActionsOpts, c: c}, nil
 }
 
 func (action *AttestationStatus) Run() (*AttestationStatusResult, error) {

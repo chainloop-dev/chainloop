@@ -41,15 +41,18 @@ type AttestationAdd struct {
 	connectionInsecure bool
 }
 
-func NewAttestationAdd(cfg *AttestationAddOpts) *AttestationAdd {
+func NewAttestationAdd(cfg *AttestationAddOpts) (*AttestationAdd, error) {
+	c, err := newCrafter(cfg.CPConnection, &cfg.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load crafter: %w", err)
+	}
+
 	return &AttestationAdd{
-		ActionsOpts: cfg.ActionsOpts,
-		c: crafter.NewCrafter(
-			crafter.WithLogger(&cfg.Logger),
-		),
+		ActionsOpts:        cfg.ActionsOpts,
+		c:                  c,
 		casURI:             cfg.CASURI,
 		connectionInsecure: cfg.ConnectionInsecure,
-	}
+	}, nil
 }
 
 var ErrAttestationNotInitialized = errors.New("attestation not yet initialized")

@@ -17,6 +17,7 @@ package action
 
 import (
 	"context"
+	"fmt"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
@@ -35,11 +36,13 @@ type AttestationReset struct {
 	c *crafter.Crafter
 }
 
-func NewAttestationReset(opts *ActionsOpts) *AttestationReset {
-	return &AttestationReset{
-		ActionsOpts: opts,
-		c:           crafter.NewCrafter(crafter.WithLogger(&opts.Logger)),
+func NewAttestationReset(opts *ActionsOpts) (*AttestationReset, error) {
+	c, err := newCrafter(opts.CPConnection, &opts.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load crafter: %w", err)
 	}
+
+	return &AttestationReset{ActionsOpts: opts, c: c}, nil
 }
 
 func (action *AttestationReset) Run(trigger, reason string) error {

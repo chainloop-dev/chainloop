@@ -48,13 +48,18 @@ func (e ErrRunnerContextNotFound) Error() string {
 	return fmt.Sprintf("The contract expects the attestation to be crafted in a runner of type %q but couldn't be detected", e.RunnerType)
 }
 
-func NewAttestationInit(cfg *AttestationInitOpts) *AttestationInit {
+func NewAttestationInit(cfg *AttestationInitOpts) (*AttestationInit, error) {
+	c, err := newCrafter(cfg.CPConnection, &cfg.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load crafter: %w", err)
+	}
+
 	return &AttestationInit{
 		ActionsOpts: cfg.ActionsOpts,
 		override:    cfg.Override,
-		c:           crafter.NewCrafter(crafter.WithLogger(&cfg.Logger)),
+		c:           c,
 		dryRun:      cfg.DryRun,
-	}
+	}, nil
 }
 
 func (action *AttestationInit) Run(contractRevision int) error {

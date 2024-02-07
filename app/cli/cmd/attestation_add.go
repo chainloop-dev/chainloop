@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -37,13 +38,16 @@ func newAttestationAddCmd() *cobra.Command {
 			useWorkflowRobotAccount: "true",
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			a := action.NewAttestationAdd(
+			a, err := action.NewAttestationAdd(
 				&action.AttestationAddOpts{
 					ActionsOpts:        actionOpts,
 					CASURI:             viper.GetString(confOptions.CASAPI.viperKey),
 					ConnectionInsecure: flagInsecure,
 				},
 			)
+			if err != nil {
+				return fmt.Errorf("failed to load action: %w", err)
+			}
 
 			// Extract annotations
 			annotations, err := extractAnnotations(annotationsFlag)

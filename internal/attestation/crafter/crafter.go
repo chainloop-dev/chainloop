@@ -39,12 +39,20 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+type StateManager interface {
+	Initialized() (bool, error)
+	Write(*api.CraftingState) error
+	Read(*api.CraftingState) error
+	Reset() error
+	Info() string
+}
+
 type Crafter struct {
 	logger        *zerolog.Logger
-	statePath     string
 	CraftingState *api.CraftingState
 	Runner        supportedRunner
 	workingDir    string
+	stateManager  StateManager
 }
 
 var ErrAttestationStateNotLoaded = errors.New("crafting state not loaded")
@@ -52,11 +60,11 @@ var ErrAttestationStateNotLoaded = errors.New("crafting state not loaded")
 type NewOpt func(c *Crafter)
 
 // where to store the attestation state file
-func WithStatePath(path string) NewOpt {
-	return func(c *Crafter) {
-		c.statePath = path
-	}
-}
+// func WithStatePath(path string) NewOpt {
+// 	return func(c *Crafter) {
+// 		c.statePath = path
+// 	}
+// }
 
 func WithLogger(l *zerolog.Logger) NewOpt {
 	return func(c *Crafter) {
@@ -71,22 +79,21 @@ func WithWorkingDirPath(path string) NewOpt {
 }
 
 // Create a completely new crafter
-func NewCrafter(opts ...NewOpt) *Crafter {
+func NewCrafter(stateManager StateManager, opts ...NewOpt) (*Crafter, error) {
 	noopLogger := zerolog.Nop()
-	defaultStatePath := filepath.Join(os.TempDir(), "chainloop_attestation.tmp.json")
 
 	cw, _ := os.Getwd()
 	c := &Crafter{
-		logger:     &noopLogger,
-		statePath:  defaultStatePath,
-		workingDir: cw,
+		logger:       &noopLogger,
+		workingDir:   cw,
+		stateManager: stateManager,
 	}
 
 	for _, opt := range opts {
 		opt(c)
 	}
 
-	return c
+	return c, nil
 }
 
 type InitOpts struct {
@@ -117,13 +124,8 @@ func (c *Crafter) Init(opts *InitOpts) error {
 }
 
 func (c *Crafter) AlreadyInitialized() bool {
-	if file, err := os.Stat(c.statePath); err != nil {
-		return false
-	} else if file != nil {
-		return true
-	}
-
-	return false
+	ok, _ := c.stateManager.Initialized()
+	return ok
 }
 
 // Extract raw data in JSON format from different sources, i.e cue or yaml files
@@ -191,49 +193,38 @@ func (c *Crafter) initCraftingStateFile(schema *schemaapi.CraftingSchema, wf *ap
 		return fmt.Errorf("initializing crafting state: %w", err)
 	}
 
-	if err := persistCraftingState(state, c.statePath); err != nil {
+	if err := c.stateManager.Write(state); err != nil {
 		return fmt.Errorf("failed to persist crafting state: %w", err)
 	}
 
-	c.logger.Debug().Str("path", c.statePath).Msg("created state file")
+	c.logger.Debug().Str("path", c.stateManager.Info()).Msg("created state file")
 
 	return c.LoadCraftingState()
 }
 
 // Reset removes the current crafting state
 func (c *Crafter) Reset() error {
-	c.logger.Debug().Str("path", c.statePath).Msg("removing")
-	return os.Remove(c.statePath)
+	return c.stateManager.Reset()
 }
 
 func (c *Crafter) LoadCraftingState() error {
-	file, err := os.Open(c.statePath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
+	c.logger.Debug().Str("path", c.stateManager.Info()).Msg("loading state")
 
-	state := &api.CraftingState{}
-	stateRaw, err := io.ReadAll(file)
-	if err != nil {
-		return err
-	}
+	c.CraftingState = &api.CraftingState{}
 
-	if err := protojson.Unmarshal(stateRaw, state); err != nil {
-		return err
+	if err := c.stateManager.Read(c.CraftingState); err != nil {
+		return fmt.Errorf("failed to load crafting state: %w", err)
 	}
-
-	c.CraftingState = state
 
 	// Set runner too
-	runnerType := state.GetInputSchema().GetRunner().GetType()
+	runnerType := c.CraftingState.GetInputSchema().GetRunner().GetType()
 	if runnerType.String() == "" {
 		return errors.New("runner type not set in the crafting state")
 	}
 
 	c.Runner = NewRunner(runnerType)
+	c.logger.Debug().Str("path", c.stateManager.Info()).Msg("loaded state")
 
-	c.logger.Debug().Str("path", c.statePath).Msg("loaded state file")
 	return nil
 }
 
@@ -360,27 +351,6 @@ func initialCraftingState(cwd string, schema *schemaapi.CraftingSchema, wf *api.
 	}, nil
 }
 
-func persistCraftingState(craftState *api.CraftingState, stateFilePath string) error {
-	marshaler := protojson.MarshalOptions{Indent: "  "}
-	raw, err := marshaler.Marshal(craftState)
-	if err != nil {
-		return err
-	}
-
-	// Create empty file
-	file, err := os.Create(stateFilePath)
-	if err != nil {
-		return err
-	}
-
-	_, err = file.Write(raw)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // ResolveEnvVars will iterate on the env vars in the allow list and resolve them from the system context
 // strict indicates if it should fail if any env variable can not be found
 func (c *Crafter) ResolveEnvVars() error {
@@ -426,7 +396,7 @@ func (c *Crafter) ResolveEnvVars() error {
 
 	c.CraftingState.Attestation.EnvVars = outputEnvVars
 
-	if err := persistCraftingState(c.CraftingState, c.statePath); err != nil {
+	if err := c.stateManager.Write(c.CraftingState); err != nil {
 		return fmt.Errorf("failed to persist crafting state: %w", err)
 	}
 
@@ -504,8 +474,8 @@ func (c *Crafter) AddMaterial(key, value string, casBackend *casclient.CASBacken
 	}
 
 	// 6 - Persist state
-	if err := persistCraftingState(c.CraftingState, c.statePath); err != nil {
-		return err
+	if err := c.stateManager.Write(c.CraftingState); err != nil {
+		return fmt.Errorf("failed to persist crafting state: %w", err)
 	}
 
 	c.logger.Debug().Str("key", key).Msg("added to state")

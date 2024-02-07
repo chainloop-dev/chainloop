@@ -34,11 +34,14 @@ func newAttestationStatusCmd() *cobra.Command {
 		Use:   "status",
 		Short: "check the status of the current attestation process",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			a := action.NewAttestationStatus(
+			a, err := action.NewAttestationStatus(
 				&action.AttestationStatusOpts{
 					ActionsOpts: actionOpts,
 				},
 			)
+			if err != nil {
+				return fmt.Errorf("failed to load action: %w", err)
+			}
 
 			res, err := a.Run()
 			if err != nil {

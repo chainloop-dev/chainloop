@@ -38,16 +38,19 @@ func newAttestationInitCmd() *cobra.Command {
 			useWorkflowRobotAccount: "true",
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			a := action.NewAttestationInit(
+			a, err := action.NewAttestationInit(
 				&action.AttestationInitOpts{
 					ActionsOpts: actionOpts,
 					Override:    replaceRun,
 					DryRun:      attestationDryRun,
 				},
 			)
+			if err != nil {
+				return fmt.Errorf("failed to initialize attestation: %w", err)
+			}
 
 			// Initialize it
-			err := a.Run(contractRevision)
+			err = a.Run(contractRevision)
 			if err != nil {
 				if errors.Is(err, action.ErrAttestationAlreadyExist) {
 					return err
@@ -61,7 +64,12 @@ func newAttestationInitCmd() *cobra.Command {
 			logger.Info().Msg("Attestation initialized! now you can check its status or add materials to it")
 
 			// Show the status information
-			res, err := action.NewAttestationStatus(&action.AttestationStatusOpts{ActionsOpts: actionOpts}).Run()
+			statusAction, err := action.NewAttestationStatus(&action.AttestationStatusOpts{ActionsOpts: actionOpts})
+			if err != nil {
+				return newGracefulError(err)
+			}
+
+			res, err := statusAction.Run()
 			if err != nil {
 				return newGracefulError(err)
 			}

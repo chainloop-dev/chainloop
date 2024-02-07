@@ -41,7 +41,10 @@ func newAttestationResetCmd() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			a := action.NewAttestationReset(actionOpts)
+			a, err := action.NewAttestationReset(actionOpts)
+			if err != nil {
+				return fmt.Errorf("failed to load action: %w", err)
+			}
 
 			if err := a.Run(trigger, reason); err != nil {
 				return newGracefulError(err)

@@ -25,6 +25,7 @@ import (
 	v1 "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
+	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/statemanager/local"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/stretchr/testify/require"
@@ -146,19 +147,26 @@ type testingCrafter struct {
 	statePath string
 }
 
+func testingStateManager(t *testing.T, statePath string) crafter.StateManager {
+	stateManager, err := local.New(statePath)
+	require.NoError(t, err)
+	return stateManager
+}
+
 func newInitializedCrafter(t *testing.T, contractPath string, wfMeta *v1.WorkflowMetadata, dryRun bool, workingDir string) (*testingCrafter, error) {
+	opts := []crafter.NewOpt{}
+	if workingDir != "" {
+		opts = append(opts, crafter.WithWorkingDirPath(workingDir))
+	}
+
+	statePath := fmt.Sprintf("%s/attestation.json", t.TempDir())
+	c, err := crafter.NewCrafter(testingStateManager(t, statePath), opts...)
+	require.NoError(t, err)
 	contract, err := crafter.LoadSchema(contractPath)
 	if err != nil {
 		return nil, err
 	}
 
-	statePath := fmt.Sprintf("%s/attestation.json", t.TempDir())
-	opts := []crafter.NewOpt{crafter.WithStatePath(statePath)}
-	if workingDir != "" {
-		opts = append(opts, crafter.WithWorkingDirPath(workingDir))
-	}
-
-	c := crafter.NewCrafter(opts...)
 	if err = c.Init(&crafter.InitOpts{SchemaV1: contract, WfInfo: wfMeta, DryRun: dryRun}); err != nil {
 		return nil, err
 	}
@@ -343,13 +351,16 @@ func (s *crafterSuite) TestAlreadyInitialized() {
 		statePath := fmt.Sprintf("%s/attestation.json", t.TempDir())
 		_, err := os.Create(statePath)
 		require.NoError(s.T(), err)
-		c := crafter.NewCrafter(crafter.WithStatePath(statePath))
+		fmt.Println(testingStateManager(t, statePath).Info(), statePath)
+		c, err := crafter.NewCrafter(testingStateManager(t, statePath))
+		require.NoError(s.T(), err)
 		s.True(c.AlreadyInitialized())
 	})
 
 	s.T().Run("non existing", func(t *testing.T) {
 		statePath := fmt.Sprintf("%s/attestation.json", t.TempDir())
-		c := crafter.NewCrafter(crafter.WithStatePath(statePath))
+		c, err := crafter.NewCrafter(testingStateManager(t, statePath))
+		require.NoError(s.T(), err)
 		s.False(c.AlreadyInitialized())
 	})
 }

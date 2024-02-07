@@ -61,9 +61,12 @@ func newAttestationPushCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("getting executable information: %w", err)
 			}
-			a := action.NewAttestationPush(&action.AttestationPushOpts{
+			a, err := action.NewAttestationPush(&action.AttestationPushOpts{
 				ActionsOpts: actionOpts, KeyPath: pkPath, CLIVersion: info.Version, CLIDigest: info.Digest,
 			})
+			if err != nil {
+				return fmt.Errorf("failed to load action: %w", err)
+			}
 
 			annotations, err := extractAnnotations(annotationsFlag)
 			if err != nil {
