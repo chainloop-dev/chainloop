@@ -44,7 +44,7 @@ func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWrite
 			wire.Value(&conf.ReferrerSharedIndex{}),
 			wire.Struct(new(TestingUseCases), "*"),
 			wire.Struct(new(TestingRepos), "*"),
-			newConfData,
+			NewConfData,
 			authz.NewDatabaseEnforcer,
 			wire.FieldsOf(new(*conf.Data), "Database"),
 		),

@@ -14,14 +14,18 @@
 // limitations under the License.
 
 // Authorization package
-package authz
+package authz_test
 
 import (
 	"fmt"
 	"io"
 	"os"
 	"testing"
+	"time"
 
+	"github.com/cenkalti/backoff/v4"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -30,8 +34,8 @@ import (
 func TestAddPolicies(t *testing.T) {
 	testcases := []struct {
 		name               string
-		subject            *SubjectAPIToken
-		policies           []*Policy
+		subject            *authz.SubjectAPIToken
+		policies           []*authz.Policy
 		wantErr            bool
 		wantNumberPolicies int
 	}{
@@ -41,38 +45,38 @@ func TestAddPolicies(t *testing.T) {
 		},
 		{
 			name: "no subject",
-			policies: []*Policy{
-				PolicyWorkflowContractList,
+			policies: []*authz.Policy{
+				authz.PolicyWorkflowContractList,
 			},
 			wantErr: true,
 		},
 		{
 			name:    "no policies",
-			subject: &SubjectAPIToken{ID: uuid.NewString()},
+			subject: &authz.SubjectAPIToken{ID: uuid.NewString()},
 			wantErr: true,
 		},
 		{
 			name:    "adds two policies",
-			subject: &SubjectAPIToken{ID: uuid.NewString()},
-			policies: []*Policy{
-				PolicyWorkflowContractList,
-				PolicyReferrerRead,
+			subject: &authz.SubjectAPIToken{ID: uuid.NewString()},
+			policies: []*authz.Policy{
+				authz.PolicyWorkflowContractList,
+				authz.PolicyReferrerRead,
 			},
 			wantNumberPolicies: 2,
 		},
 		{
 			name: "handles duplicated policies",
-			subject: &SubjectAPIToken{
+			subject: &authz.SubjectAPIToken{
 				ID: uuid.NewString(),
 			},
-			policies: []*Policy{
-				PolicyWorkflowContractList,
-				PolicyWorkflowContractRead,
-				PolicyWorkflowContractUpdate,
-				PolicyWorkflowContractList,
-				PolicyArtifactDownload,
-				PolicyWorkflowContractUpdate,
-				PolicyArtifactDownload,
+			policies: []*authz.Policy{
+				authz.PolicyWorkflowContractList,
+				authz.PolicyWorkflowContractRead,
+				authz.PolicyWorkflowContractUpdate,
+				authz.PolicyWorkflowContractList,
+				authz.PolicyArtifactDownload,
+				authz.PolicyWorkflowContractUpdate,
+				authz.PolicyArtifactDownload,
 			},
 			wantNumberPolicies: 4,
 		},
@@ -103,14 +107,14 @@ func TestAddPolicies(t *testing.T) {
 }
 
 func TestAddPoliciesDuplication(t *testing.T) {
-	want := []*Policy{
-		PolicyWorkflowContractList,
-		PolicyWorkflowContractRead,
+	want := []*authz.Policy{
+		authz.PolicyWorkflowContractList,
+		authz.PolicyWorkflowContractRead,
 	}
 
 	enforcer, closer := testEnforcer(t)
 	defer closer.Close()
-	sub := &SubjectAPIToken{ID: uuid.NewString()}
+	sub := &authz.SubjectAPIToken{ID: uuid.NewString()}
 
 	err := enforcer.AddPolicies(sub, want...)
 	require.NoError(t, err)
@@ -118,7 +122,7 @@ func TestAddPoliciesDuplication(t *testing.T) {
 	assert.Len(t, got, 2)
 
 	// Update the list of policies we want to add by appending an extra one
-	want = append(want, PolicyWorkflowContractUpdate)
+	want = append(want, authz.PolicyWorkflowContractUpdate)
 	// AddPolicies only add the policies that are not already present preventing duplication
 	err = enforcer.AddPolicies(sub, want...)
 	assert.NoError(t, err)
@@ -127,15 +131,15 @@ func TestAddPoliciesDuplication(t *testing.T) {
 }
 
 func TestClearPolicies(t *testing.T) {
-	want := []*Policy{
-		PolicyWorkflowContractList,
-		PolicyWorkflowContractRead,
+	want := []*authz.Policy{
+		authz.PolicyWorkflowContractList,
+		authz.PolicyWorkflowContractRead,
 	}
 
 	enforcer, closer := testEnforcer(t)
 	defer closer.Close()
-	sub := &SubjectAPIToken{ID: uuid.NewString()}
-	sub2 := &SubjectAPIToken{ID: uuid.NewString()}
+	sub := &authz.SubjectAPIToken{ID: uuid.NewString()}
+	sub2 := &authz.SubjectAPIToken{ID: uuid.NewString()}
 
 	// Create policies for two different subjects
 	err := enforcer.AddPolicies(sub, want...)
@@ -160,13 +164,68 @@ func TestClearPolicies(t *testing.T) {
 	assert.Len(t, got, 2)
 }
 
-func testEnforcer(t *testing.T) (*Enforcer, io.Closer) {
+func testEnforcer(t *testing.T) (*authz.Enforcer, io.Closer) {
 	f, err := os.CreateTemp(t.TempDir(), "policy*.csv")
 	if err != nil {
 		require.FailNow(t, err.Error())
 	}
 
-	enforcer, err := NewFiletypeEnforcer(f.Name())
+	enforcer, err := authz.NewFiletypeEnforcer(f.Name())
 	require.NoError(t, err)
 	return enforcer, f
+}
+
+func TestMultiReplicaPropagation(t *testing.T) {
+	// Create two enforcers that share the same database
+	db := testhelpers.NewTestDatabase(t)
+	defer db.Close(t)
+
+	enforcerA, err := authz.NewDatabaseEnforcer(testhelpers.NewConfData(db, t).Database)
+	require.NoError(t, err)
+	enforcerB, err := authz.NewDatabaseEnforcer(testhelpers.NewConfData(db, t).Database)
+	require.NoError(t, err)
+
+	// Subject and policies to add
+	sub := &authz.SubjectAPIToken{ID: uuid.NewString()}
+	want := []*authz.Policy{authz.PolicyWorkflowContractList, authz.PolicyWorkflowContractRead}
+
+	// Create policies in one enforcer
+	err = enforcerA.AddPolicies(sub, want...)
+	require.NoError(t, err)
+
+	// Make sure it propagates to the other one
+	got := enforcerA.GetFilteredPolicy(0, sub.String())
+	assert.Len(t, got, 2)
+
+	// it might take a bit for the policies to propagate to the other enforcer
+	err = fnWithRetry(func() error {
+		got = enforcerB.GetFilteredPolicy(0, sub.String())
+		if len(got) == 2 {
+			return nil
+		}
+		return fmt.Errorf("policies not propagated yet")
+	})
+	require.NoError(t, err)
+	assert.Len(t, got, 2)
+
+	// Then delete them from the second one and check propagation again
+	require.NoError(t, enforcerB.ClearPolicies(sub))
+	assert.Len(t, enforcerB.GetFilteredPolicy(0, sub.String()), 0)
+
+	// Make sure it propagates to the other one
+	err = fnWithRetry(func() error {
+		got = enforcerA.GetFilteredPolicy(0, sub.String())
+		if len(got) == 0 {
+			return nil
+		}
+
+		return fmt.Errorf("policies not propagated yet")
+	})
+	require.NoError(t, err)
+	assert.Len(t, enforcerA.GetFilteredPolicy(0, sub.String()), 0)
+}
+
+func fnWithRetry(f func() error) error {
+	// Max 1 seconds
+	return backoff.Retry(f, backoff.WithMaxRetries(backoff.NewConstantBackOff(100*time.Millisecond), 10))
 }

@@ -17,15 +17,18 @@
 package authz
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
 	_ "embed"
 
+	psqlwatcher "github.com/IguteChung/casbin-psql-watcher"
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
 	"github.com/casbin/casbin/v2/persist"
 	fileadapter "github.com/casbin/casbin/v2/persist/file-adapter"
+
 	entadapter "github.com/casbin/ent-adapter"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 )
@@ -121,6 +124,25 @@ func NewDatabaseEnforcer(c *conf.Data_Database) (*Enforcer, error) {
 	e, err := newEnforcer(a)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create enforcer: %w", err)
+	}
+
+	// watch for policy changes in database and update enforcer
+	w, err := psqlwatcher.NewWatcherWithConnString(context.Background(), c.Source, psqlwatcher.Option{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create watcher: %w", err)
+	}
+
+	if err = e.SetWatcher(w); err != nil {
+		return nil, fmt.Errorf("failed to set watcher: %w", err)
+	}
+
+	if err = w.SetUpdateCallback(func(string) {
+		// When there is a change in the policy, we load the in-memory policy for the current enforcer
+		if err := e.LoadPolicy(); err != nil {
+			fmt.Printf("failed to load policy: %v", err)
+		}
+	}); err != nil {
+		return nil, fmt.Errorf("failed to set update callback: %w", err)
 	}
 
 	return e, nil
