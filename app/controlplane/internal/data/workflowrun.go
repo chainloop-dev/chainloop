@@ -124,12 +124,11 @@ func (r *WorkflowRunRepo) SaveAttestation(ctx context.Context, id uuid.UUID, att
 func (r *WorkflowRunRepo) MarkAsFinished(ctx context.Context, id uuid.UUID, status biz.WorkflowRunStatus, reason string) error {
 	run, err := r.data.db.WorkflowRun.Query().Where(workflowrun.ID(id)).WithWorkflow().First(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to find workflow run: %w", err)
 	}
 
-	_, err = run.Update().SetFinishedAt(time.Now()).SetState(status).SetReason(reason).Save(ctx)
-	if err != nil {
-		return err
+	if err = run.Update().SetFinishedAt(time.Now()).SetState(status).SetReason(reason).ClearAttestationState().Exec(ctx); err != nil {
+		return fmt.Errorf("failed to mark workflow run as finished: %w", err)
 	}
 
 	return nil
@@ -199,7 +198,7 @@ func (r *WorkflowRunRepo) ListNotFinishedOlderThan(ctx context.Context, olderTha
 }
 
 func (r *WorkflowRunRepo) Expire(ctx context.Context, id uuid.UUID) error {
-	return r.data.db.WorkflowRun.UpdateOneID(id).SetState(biz.WorkflowRunExpired).Exec(ctx)
+	return r.data.db.WorkflowRun.UpdateOneID(id).SetState(biz.WorkflowRunExpired).ClearAttestationState().Exec(ctx)
 }
 
 func entWrToBizWr(wr *ent.WorkflowRun) *biz.WorkflowRun {

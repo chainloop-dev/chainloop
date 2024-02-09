@@ -40,7 +40,7 @@ func NewAttestationStateRepo(data *Data, logger log.Logger) biz.AttestationState
 
 // find the workflow run by its ID and check that it has attestation state
 func (r *AttestationStateRepo) Initialized(ctx context.Context, runID uuid.UUID) (bool, error) {
-	exists, err := r.data.db.WorkflowRun.Query().Where(workflowrun.ID(runID)).Where(workflowrun.StateNotIn()).Exist(ctx)
+	exists, err := r.data.db.WorkflowRun.Query().Where(workflowrun.ID(runID)).Where(workflowrun.AttestationStateNotNil()).Exist(ctx)
 	if err != nil {
 		return false, fmt.Errorf("failed to check attestation state: %w", err)
 	}
