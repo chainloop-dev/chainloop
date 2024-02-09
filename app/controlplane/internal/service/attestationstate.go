@@ -60,7 +60,7 @@ func (s *AttestationStateService) Save(ctx context.Context, req *cpAPI.Attestati
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
 
-	if err := s.uc.Save(ctx, robotAccount.WorkflowID, req.WorkflowRunId, req.EncryptedState); err != nil {
+	if err := s.uc.Save(ctx, robotAccount.WorkflowID, req.WorkflowRunId, req.AttestationState); err != nil {
 		return nil, handleUseCaseErr("state", err, s.log)
 	}
 
@@ -80,7 +80,7 @@ func (s *AttestationStateService) Read(ctx context.Context, req *cpAPI.Attestati
 
 	return &cpAPI.AttestationStateServiceReadResponse{
 		Result: &cpAPI.AttestationStateServiceReadResponse_Result{
-			EncryptedState: state.EncryptedState,
+			AttestationState: state.EncryptedState,
 		},
 	}, nil
 }

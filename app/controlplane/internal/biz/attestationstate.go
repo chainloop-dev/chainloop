@@ -18,15 +18,12 @@ package biz
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/google/uuid"
 )
 
 type AttestationState struct {
 	EncryptedState []byte
-	CreatedAt      time.Time
-	WorkflowRunID  uuid.UUID
 }
 
 type AttestationStateRepo interface {

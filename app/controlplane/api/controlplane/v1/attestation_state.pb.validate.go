@@ -321,9 +321,9 @@ func (m *AttestationStateServiceSaveRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if len(m.GetEncryptedState()) < 1 {
+	if len(m.GetAttestationState()) < 1 {
 		err := AttestationStateServiceSaveRequestValidationError{
-			field:  "EncryptedState",
+			field:  "AttestationState",
 			reason: "value length must be at least 1 bytes",
 		}
 		if !all {
@@ -1129,7 +1129,7 @@ func (m *AttestationStateServiceReadResponse_Result) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for EncryptedState
+	// no validation rules for AttestationState
 
 	if len(errors) > 0 {
 		return AttestationStateServiceReadResponse_ResultMultiError(errors)

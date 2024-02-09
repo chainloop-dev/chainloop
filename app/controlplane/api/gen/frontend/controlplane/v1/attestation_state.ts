@@ -19,7 +19,8 @@ export interface AttestationStateServiceInitializedResponse_Result {
 
 export interface AttestationStateServiceSaveRequest {
   workflowRunId: string;
-  encryptedState: Uint8Array;
+  /** encrypted attestation state */
+  attestationState: Uint8Array;
 }
 
 export interface AttestationStateServiceSaveResponse {
@@ -34,7 +35,8 @@ export interface AttestationStateServiceReadResponse {
 }
 
 export interface AttestationStateServiceReadResponse_Result {
-  encryptedState: Uint8Array;
+  /** encrypted attestation state */
+  attestationState: Uint8Array;
 }
 
 export interface AttestationStateServiceResetRequest {
@@ -236,7 +238,7 @@ export const AttestationStateServiceInitializedResponse_Result = {
 };
 
 function createBaseAttestationStateServiceSaveRequest(): AttestationStateServiceSaveRequest {
-  return { workflowRunId: "", encryptedState: new Uint8Array(0) };
+  return { workflowRunId: "", attestationState: new Uint8Array(0) };
 }
 
 export const AttestationStateServiceSaveRequest = {
@@ -244,8 +246,8 @@ export const AttestationStateServiceSaveRequest = {
     if (message.workflowRunId !== "") {
       writer.uint32(10).string(message.workflowRunId);
     }
-    if (message.encryptedState.length !== 0) {
-      writer.uint32(18).bytes(message.encryptedState);
+    if (message.attestationState.length !== 0) {
+      writer.uint32(18).bytes(message.attestationState);
     }
     return writer;
   },
@@ -269,7 +271,7 @@ export const AttestationStateServiceSaveRequest = {
             break;
           }
 
-          message.encryptedState = reader.bytes();
+          message.attestationState = reader.bytes();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -283,16 +285,16 @@ export const AttestationStateServiceSaveRequest = {
   fromJSON(object: any): AttestationStateServiceSaveRequest {
     return {
       workflowRunId: isSet(object.workflowRunId) ? String(object.workflowRunId) : "",
-      encryptedState: isSet(object.encryptedState) ? bytesFromBase64(object.encryptedState) : new Uint8Array(0),
+      attestationState: isSet(object.attestationState) ? bytesFromBase64(object.attestationState) : new Uint8Array(0),
     };
   },
 
   toJSON(message: AttestationStateServiceSaveRequest): unknown {
     const obj: any = {};
     message.workflowRunId !== undefined && (obj.workflowRunId = message.workflowRunId);
-    message.encryptedState !== undefined &&
-      (obj.encryptedState = base64FromBytes(
-        message.encryptedState !== undefined ? message.encryptedState : new Uint8Array(0),
+    message.attestationState !== undefined &&
+      (obj.attestationState = base64FromBytes(
+        message.attestationState !== undefined ? message.attestationState : new Uint8Array(0),
       ));
     return obj;
   },
@@ -308,7 +310,7 @@ export const AttestationStateServiceSaveRequest = {
   ): AttestationStateServiceSaveRequest {
     const message = createBaseAttestationStateServiceSaveRequest();
     message.workflowRunId = object.workflowRunId ?? "";
-    message.encryptedState = object.encryptedState ?? new Uint8Array(0);
+    message.attestationState = object.attestationState ?? new Uint8Array(0);
     return message;
   },
 };
@@ -487,13 +489,13 @@ export const AttestationStateServiceReadResponse = {
 };
 
 function createBaseAttestationStateServiceReadResponse_Result(): AttestationStateServiceReadResponse_Result {
-  return { encryptedState: new Uint8Array(0) };
+  return { attestationState: new Uint8Array(0) };
 }
 
 export const AttestationStateServiceReadResponse_Result = {
   encode(message: AttestationStateServiceReadResponse_Result, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.encryptedState.length !== 0) {
-      writer.uint32(18).bytes(message.encryptedState);
+    if (message.attestationState.length !== 0) {
+      writer.uint32(18).bytes(message.attestationState);
     }
     return writer;
   },
@@ -510,7 +512,7 @@ export const AttestationStateServiceReadResponse_Result = {
             break;
           }
 
-          message.encryptedState = reader.bytes();
+          message.attestationState = reader.bytes();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -523,15 +525,15 @@ export const AttestationStateServiceReadResponse_Result = {
 
   fromJSON(object: any): AttestationStateServiceReadResponse_Result {
     return {
-      encryptedState: isSet(object.encryptedState) ? bytesFromBase64(object.encryptedState) : new Uint8Array(0),
+      attestationState: isSet(object.attestationState) ? bytesFromBase64(object.attestationState) : new Uint8Array(0),
     };
   },
 
   toJSON(message: AttestationStateServiceReadResponse_Result): unknown {
     const obj: any = {};
-    message.encryptedState !== undefined &&
-      (obj.encryptedState = base64FromBytes(
-        message.encryptedState !== undefined ? message.encryptedState : new Uint8Array(0),
+    message.attestationState !== undefined &&
+      (obj.attestationState = base64FromBytes(
+        message.attestationState !== undefined ? message.attestationState : new Uint8Array(0),
       ));
     return obj;
   },
@@ -546,7 +548,7 @@ export const AttestationStateServiceReadResponse_Result = {
     object: I,
   ): AttestationStateServiceReadResponse_Result {
     const message = createBaseAttestationStateServiceReadResponse_Result();
-    message.encryptedState = object.encryptedState ?? new Uint8Array(0);
+    message.attestationState = object.attestationState ?? new Uint8Array(0);
     return message;
   },
 };
