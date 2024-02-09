@@ -46,7 +46,7 @@ func newAttestationResetCmd() *cobra.Command {
 				return fmt.Errorf("failed to load action: %w", err)
 			}
 
-			if err := a.Run(trigger, reason); err != nil {
+			if err := a.Run("", trigger, reason); err != nil {
 				return newGracefulError(err)
 			}
 

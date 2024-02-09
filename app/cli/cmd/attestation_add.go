@@ -55,7 +55,7 @@ func newAttestationAddCmd() *cobra.Command {
 				return err
 			}
 
-			if err := a.Run(name, value, annotations); err != nil {
+			if err := a.Run("", name, value, annotations); err != nil {
 				if errors.Is(err, action.ErrAttestationNotInitialized) {
 					return err
 				}

@@ -43,7 +43,7 @@ func newAttestationStatusCmd() *cobra.Command {
 				return fmt.Errorf("failed to load action: %w", err)
 			}
 
-			res, err := a.Run()
+			res, err := a.Run("")
 			if err != nil {
 				return err
 			}

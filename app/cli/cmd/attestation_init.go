@@ -26,7 +26,6 @@ import (
 
 func newAttestationInitCmd() *cobra.Command {
 	var (
-		replaceRun        bool
 		contractRevision  int
 		attestationDryRun bool
 	)
@@ -41,7 +40,6 @@ func newAttestationInitCmd() *cobra.Command {
 			a, err := action.NewAttestationInit(
 				&action.AttestationInitOpts{
 					ActionsOpts: actionOpts,
-					Override:    replaceRun,
 					DryRun:      attestationDryRun,
 				},
 			)
@@ -69,7 +67,7 @@ func newAttestationInitCmd() *cobra.Command {
 				return newGracefulError(err)
 			}
 
-			res, err := statusAction.Run()
+			res, err := statusAction.Run("")
 			if err != nil {
 				return newGracefulError(err)
 			}
@@ -78,7 +76,6 @@ func newAttestationInitCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().BoolVarP(&replaceRun, "replace", "f", false, "replace any existing run")
 	cmd.Flags().BoolVar(&attestationDryRun, "dry-run", false, "do not record attestation in the control plane, useful for development")
 	cmd.Flags().IntVar(&contractRevision, "contract-revision", 0, "revision of the contract to retrieve, \"latest\" by default")
 

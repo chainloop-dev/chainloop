@@ -60,12 +60,12 @@ func NewAttestationPush(cfg *AttestationPushOpts) (*AttestationPush, error) {
 	}, nil
 }
 
-func (action *AttestationPush) Run(runtimeAnnotations map[string]string) (*AttestationResult, error) {
-	if initialized := action.c.AlreadyInitialized(); !initialized {
+func (action *AttestationPush) Run(attestationID string, runtimeAnnotations map[string]string) (*AttestationResult, error) {
+	if initialized := action.c.AlreadyInitialized(attestationID); !initialized {
 		return nil, ErrAttestationNotInitialized
 	}
 
-	if err := action.c.LoadCraftingState(); err != nil {
+	if err := action.c.LoadCraftingState(attestationID); err != nil {
 		action.Logger.Err(err).Msg("loading existing attestation")
 		return nil, err
 	}
@@ -133,7 +133,7 @@ func (action *AttestationPush) Run(runtimeAnnotations map[string]string) (*Attes
 	if action.c.CraftingState.DryRun {
 		action.Logger.Info().Msg("dry-run completed, push skipped")
 		// We are done, remove the existing att state
-		if err := action.c.Reset(); err != nil {
+		if err := action.c.Reset(attestationID); err != nil {
 			return nil, err
 		}
 
@@ -148,7 +148,7 @@ func (action *AttestationPush) Run(runtimeAnnotations map[string]string) (*Attes
 	action.Logger.Info().Msg("push completed")
 
 	// We are done, remove the existing att state
-	if err := action.c.Reset(); err != nil {
+	if err := action.c.Reset(attestationID); err != nil {
 		return nil, err
 	}
 

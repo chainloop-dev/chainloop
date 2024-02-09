@@ -29,6 +29,9 @@ type Filesystem struct {
 	statePath string
 }
 
+// Filesystem crafter does not require passing a stateID as it only supports a single state file
+// This also allow us to not to require users to provide a stateID when using the filesystem crafter
+// and keep the current UX
 func New(statePath string) (*Filesystem, error) {
 	if statePath == "" {
 		return nil, fmt.Errorf("state path cannot be empty")
@@ -37,11 +40,11 @@ func New(statePath string) (*Filesystem, error) {
 	return &Filesystem{statePath}, nil
 }
 
-func (l *Filesystem) String() string {
+func (l *Filesystem) Info(_ string) string {
 	return fmt.Sprintf("file://%s", l.statePath)
 }
 
-func (l *Filesystem) Initialized() (bool, error) {
+func (l *Filesystem) Initialized(_ string) (bool, error) {
 	if file, err := os.Stat(l.statePath); err != nil && !os.IsNotExist(err) {
 		return false, fmt.Errorf("failed to check state file: %w", err)
 	} else if file != nil {
@@ -51,7 +54,7 @@ func (l *Filesystem) Initialized() (bool, error) {
 	return false, nil
 }
 
-func (l *Filesystem) Write(state *v1.CraftingState) error {
+func (l *Filesystem) Write(_ string, state *v1.CraftingState) error {
 	if state == nil {
 		return fmt.Errorf("state cannot be nil")
 	}
@@ -77,7 +80,7 @@ func (l *Filesystem) Write(state *v1.CraftingState) error {
 	return nil
 }
 
-func (l *Filesystem) Read(state *v1.CraftingState) error {
+func (l *Filesystem) Read(_ string, state *v1.CraftingState) error {
 	if state == nil {
 		return fmt.Errorf("state cannot be nil")
 	}
@@ -102,7 +105,7 @@ func (l *Filesystem) Read(state *v1.CraftingState) error {
 	return nil
 }
 
-func (l *Filesystem) Reset() error {
+func (l *Filesystem) Reset(_ string) error {
 	if err := os.Remove(l.statePath); err != nil && os.IsNotExist(err) {
 		return &statemanager.ErrNotFound{Path: l.statePath}
 	} else if err != nil {

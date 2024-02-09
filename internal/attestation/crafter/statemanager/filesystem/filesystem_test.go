@@ -79,7 +79,7 @@ func (s *testSuite) TestWrite() {
 			sm, err := New(s.statePath)
 			require.NoError(s.T(), err)
 
-			err = sm.Write(tc.state)
+			err = sm.Write("", tc.state)
 			if tc.wantErr {
 				s.Error(err)
 				return
@@ -87,7 +87,7 @@ func (s *testSuite) TestWrite() {
 
 			s.NoError(err)
 			got := &v1.CraftingState{}
-			err = sm.Read(got)
+			err = sm.Read("", got)
 			s.NoError(err)
 			s.Equal(tc.state, got)
 			s.True(tc.state.DryRun)
@@ -99,14 +99,14 @@ func (s *testSuite) TestRead() {
 	s.T().Run("empty input state", func(t *testing.T) {
 		sm, err := New(s.statePath)
 		require.NoError(t, err)
-		err = sm.Read(nil)
+		err = sm.Read("", nil)
 		s.Error(err)
 	})
 
 	s.T().Run("no state found in path return NotFound error", func(t *testing.T) {
 		sm, err := New(s.statePath)
 		require.NoError(t, err)
-		err = sm.Read(&v1.CraftingState{})
+		err = sm.Read("", &v1.CraftingState{})
 		s.Error(err)
 		want := &statemanager.ErrNotFound{}
 		s.ErrorAs(err, &want)
@@ -116,7 +116,7 @@ func (s *testSuite) TestRead() {
 		sm, err := New("testdata/state.json")
 		require.NoError(t, err)
 		got := &v1.CraftingState{}
-		err = sm.Read(got)
+		err = sm.Read("", got)
 		require.NoError(s.T(), err)
 
 		if ok := proto.Equal(s.exampleState, got); !ok {
@@ -129,7 +129,7 @@ func (s *testSuite) TestReset() {
 	s.T().Run("no state found in path return NotFound error", func(t *testing.T) {
 		sm, err := New(s.statePath)
 		require.NoError(t, err)
-		err = sm.Reset()
+		err = sm.Reset("")
 		s.Error(err)
 		want := &statemanager.ErrNotFound{}
 		s.ErrorAs(err, &want)
@@ -140,20 +140,20 @@ func (s *testSuite) TestReset() {
 		require.NoError(s.T(), err)
 		sm, err := New(s.statePath)
 		require.NoError(t, err)
-		err = sm.Reset()
+		err = sm.Reset("")
 		s.NoError(err)
 	})
 }
-func (s *testSuite) TestString() {
+func (s *testSuite) TestInfo() {
 	fs, _ := New("state.json")
-	s.Equal("file://state.json", fs.String())
+	s.Equal("file://state.json", fs.Info(""))
 }
 
 func (s *testSuite) TestInitialized() {
 	s.T().Run("non existing", func(t *testing.T) {
 		fs, err := New(s.statePath)
 		require.NoError(s.T(), err)
-		ok, err := fs.Initialized()
+		ok, err := fs.Initialized("")
 		require.NoError(s.T(), err)
 		s.False(ok)
 	})
@@ -163,7 +163,7 @@ func (s *testSuite) TestInitialized() {
 		require.NoError(s.T(), err)
 		fs, err := New(s.statePath)
 		require.NoError(s.T(), err)
-		ok, err := fs.Initialized()
+		ok, err := fs.Initialized("")
 		require.NoError(s.T(), err)
 		s.True(ok)
 	})

@@ -42,15 +42,15 @@ import (
 // StateManager is an interface for managing the state of the crafting process
 type StateManager interface {
 	// Check if the state is already initialized
-	Initialized() (bool, error)
+	Initialized(key string) (bool, error)
 	// Write the state to the manager backend
-	Write(*api.CraftingState) error
+	Write(key string, state *api.CraftingState) error
 	// Read the state from the manager backend
-	Read(*api.CraftingState) error
+	Read(key string, state *api.CraftingState) error
 	// Reset/Delete the state
-	Reset() error
-	// Atring returns a string representation of the state manager
-	String() string
+	Reset(key string) error
+	// String returns a string representation of the state manager
+	Info(key string) string
 }
 
 type Crafter struct {
@@ -102,6 +102,8 @@ type InitOpts struct {
 	SchemaV1 *schemaapi.CraftingSchema
 	// do not record, upload or push attestation
 	DryRun bool
+	// Identifier of the attestation state
+	StateID string
 }
 
 // Initialize the crafter with a remote or local schema
@@ -112,6 +114,10 @@ func (c *Crafter) Init(opts *InitOpts) error {
 		return errors.New("workflow metadata is nil")
 	}
 
+	if opts.StateID == "" {
+		return errors.New("stateID is empty")
+	}
+
 	// Check that the initialization is happening in the right environment
 	runnerType := opts.SchemaV1.Runner.GetType()
 	runnerContext := NewRunner(runnerType)
@@ -119,11 +125,11 @@ func (c *Crafter) Init(opts *InitOpts) error {
 		return fmt.Errorf("%w, expected %s", ErrRunnerContextNotFound, runnerType)
 	}
 
-	return c.initCraftingStateFile(opts.SchemaV1, opts.WfInfo, opts.DryRun, runnerType, runnerContext.RunURI())
+	return c.initCraftingStateFile(opts.SchemaV1, opts.WfInfo, opts.DryRun, runnerType, runnerContext.RunURI(), opts.StateID)
 }
 
-func (c *Crafter) AlreadyInitialized() bool {
-	ok, _ := c.stateManager.Initialized()
+func (c *Crafter) AlreadyInitialized(stateID string) bool {
+	ok, _ := c.stateManager.Initialized(stateID)
 	return ok
 }
 
@@ -185,33 +191,40 @@ func LoadSchema(pathOrURI string) (*schemaapi.CraftingSchema, error) {
 }
 
 // Initialize the temporary file with the content of the schema
-func (c *Crafter) initCraftingStateFile(schema *schemaapi.CraftingSchema, wf *api.WorkflowMetadata, dryRun bool, runnerType schemaapi.CraftingSchema_Runner_RunnerType, jobURL string) error {
+func (c *Crafter) initCraftingStateFile(
+	schema *schemaapi.CraftingSchema,
+	wf *api.WorkflowMetadata,
+	dryRun bool,
+	runnerType schemaapi.CraftingSchema_Runner_RunnerType,
+	jobURL string,
+	stateID string,
+) error {
 	// Generate Crafting state
 	state, err := initialCraftingState(c.workingDir, schema, wf, dryRun, runnerType, jobURL)
 	if err != nil {
 		return fmt.Errorf("initializing crafting state: %w", err)
 	}
 
-	if err := c.stateManager.Write(state); err != nil {
+	if err := c.stateManager.Write(stateID, state); err != nil {
 		return fmt.Errorf("failed to persist crafting state: %w", err)
 	}
 
-	c.logger.Debug().Str("state", c.stateManager.String()).Msg("created state file")
+	c.logger.Debug().Str("state", c.stateManager.Info(stateID)).Msg("created state file")
 
-	return c.LoadCraftingState()
+	return c.LoadCraftingState(stateID)
 }
 
 // Reset removes the current crafting state
-func (c *Crafter) Reset() error {
-	return c.stateManager.Reset()
+func (c *Crafter) Reset(stateID string) error {
+	return c.stateManager.Reset(stateID)
 }
 
-func (c *Crafter) LoadCraftingState() error {
-	c.logger.Debug().Str("state", c.stateManager.String()).Msg("loading state")
+func (c *Crafter) LoadCraftingState(stateID string) error {
+	c.logger.Debug().Str("state", c.stateManager.Info(stateID)).Msg("loading state")
 
 	c.CraftingState = &api.CraftingState{}
 
-	if err := c.stateManager.Read(c.CraftingState); err != nil {
+	if err := c.stateManager.Read(stateID, c.CraftingState); err != nil {
 		return fmt.Errorf("failed to load crafting state: %w", err)
 	}
 
@@ -222,7 +235,7 @@ func (c *Crafter) LoadCraftingState() error {
 	}
 
 	c.Runner = NewRunner(runnerType)
-	c.logger.Debug().Str("state", c.stateManager.String()).Msg("loaded state")
+	c.logger.Debug().Str("state", c.stateManager.Info(stateID)).Msg("loaded state")
 
 	return nil
 }
@@ -352,7 +365,7 @@ func initialCraftingState(cwd string, schema *schemaapi.CraftingSchema, wf *api.
 
 // ResolveEnvVars will iterate on the env vars in the allow list and resolve them from the system context
 // strict indicates if it should fail if any env variable can not be found
-func (c *Crafter) ResolveEnvVars() error {
+func (c *Crafter) ResolveEnvVars(stateID string) error {
 	if err := c.requireStateLoaded(); err != nil {
 		return err
 	}
@@ -395,7 +408,7 @@ func (c *Crafter) ResolveEnvVars() error {
 
 	c.CraftingState.Attestation.EnvVars = outputEnvVars
 
-	if err := c.stateManager.Write(c.CraftingState); err != nil {
+	if err := c.stateManager.Write(stateID, c.CraftingState); err != nil {
 		return fmt.Errorf("failed to persist crafting state: %w", err)
 	}
 
@@ -403,7 +416,7 @@ func (c *Crafter) ResolveEnvVars() error {
 }
 
 // Inject material to attestation state
-func (c *Crafter) AddMaterial(key, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string) error {
+func (c *Crafter) AddMaterial(key, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string, stateID string) error {
 	if err := c.requireStateLoaded(); err != nil {
 		return err
 	}
@@ -473,7 +486,7 @@ func (c *Crafter) AddMaterial(key, value string, casBackend *casclient.CASBacken
 	}
 
 	// 6 - Persist state
-	if err := c.stateManager.Write(c.CraftingState); err != nil {
+	if err := c.stateManager.Write(stateID, c.CraftingState); err != nil {
 		return fmt.Errorf("failed to persist crafting state: %w", err)
 	}
 

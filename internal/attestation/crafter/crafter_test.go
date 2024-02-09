@@ -315,7 +315,7 @@ func (s *crafterSuite) TestResolveEnvVars() {
 			c, err := newInitializedCrafter(s.T(), contract, &v1.WorkflowMetadata{}, false, "")
 			require.NoError(s.T(), err)
 
-			err = c.ResolveEnvVars()
+			err = c.ResolveEnvVars("")
 
 			if tc.expectedError != "" {
 				s.Error(err)
@@ -349,14 +349,14 @@ func (s *crafterSuite) TestAlreadyInitialized() {
 		// TODO: replace by a mock
 		c, err := crafter.NewCrafter(testingStateManager(t, statePath))
 		require.NoError(s.T(), err)
-		s.True(c.AlreadyInitialized())
+		s.True(c.AlreadyInitialized(""))
 	})
 
 	s.T().Run("non existing", func(t *testing.T) {
 		statePath := fmt.Sprintf("%s/attestation.json", t.TempDir())
 		c, err := crafter.NewCrafter(testingStateManager(t, statePath))
 		require.NoError(s.T(), err)
-		s.False(c.AlreadyInitialized())
+		s.False(c.AlreadyInitialized(""))
 	})
 }
 
