@@ -162,7 +162,7 @@ func newInitializedCrafter(t *testing.T, contractPath string, wfMeta *v1.Workflo
 		return nil, err
 	}
 
-	if err = c.Init(&crafter.InitOpts{SchemaV1: contract, WfInfo: wfMeta, DryRun: dryRun}); err != nil {
+	if err = c.Init(&crafter.InitOpts{SchemaV1: contract, WfInfo: wfMeta, DryRun: dryRun, AttestationID: ""}); err != nil {
 		return nil, err
 	}
 

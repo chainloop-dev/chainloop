@@ -119,8 +119,8 @@ func (action *AttestationInit) Run(contractRevision int) error {
 	// with the workflowRunId that comes from the control plane
 	initOpts := &crafter.InitOpts{
 		WfInfo: workflowMeta, SchemaV1: contractVersion.GetV1(),
-		DryRun:  action.dryRun,
-		StateID: attestationID,
+		DryRun:        action.dryRun,
+		AttestationID: attestationID,
 	}
 
 	if err := action.c.Init(initOpts); err != nil {

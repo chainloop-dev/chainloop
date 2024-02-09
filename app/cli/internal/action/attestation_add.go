@@ -101,7 +101,7 @@ func (action *AttestationAdd) Run(attestationID, materialName, materialValue str
 		casBackend.Uploader = casclient.New(artifactCASConn, casclient.WithLogger(action.Logger))
 	}
 
-	if err := action.c.AddMaterial(materialName, materialValue, casBackend, annotations, attestationID); err != nil {
+	if err := action.c.AddMaterial(attestationID, materialName, materialValue, casBackend, annotations); err != nil {
 		return fmt.Errorf("adding material: %w", err)
 	}
 
