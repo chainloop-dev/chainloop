@@ -19,6 +19,7 @@ import (
 	"context"
 
 	cpAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 
 	errors "github.com/go-kratos/kratos/v2/errors"
@@ -26,12 +27,13 @@ import (
 
 type AttestationStateService struct {
 	cpAPI.UnimplementedAttestationStateServiceServer
+	uc *biz.AttestationStateUseCase
 	*service
 }
 
-func NewAttestationStateService(opts ...NewOpt) *AttestationStateService {
+func NewAttestationStateService(uc *biz.AttestationStateUseCase, opts ...NewOpt) *AttestationStateService {
 	return &AttestationStateService{
-		service: newService(opts...),
+		service: newService(opts...), uc: uc,
 	}
 }
 
@@ -41,31 +43,56 @@ func (s *AttestationStateService) Initialized(ctx context.Context, req *cpAPI.At
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
 
-	return &cpAPI.AttestationStateServiceInitializedResponse{}, nil
+	initialized, err := s.uc.Initialized(ctx, robotAccount.WorkflowID, req.WorkflowRunId)
+	if err != nil {
+		return nil, handleUseCaseErr("state", err, s.log)
+	}
+
+	return &cpAPI.AttestationStateServiceInitializedResponse{
+		Result: &cpAPI.AttestationStateServiceInitializedResponse_Result{
+			Initialized: initialized,
+		}}, nil
 }
 
-func (s *AttestationService) Save(ctx context.Context, req *cpAPI.AttestationStateServiceSaveRequest) (*cpAPI.AttestationStateServiceSaveResponse, error) {
+func (s *AttestationStateService) Save(ctx context.Context, req *cpAPI.AttestationStateServiceSaveRequest) (*cpAPI.AttestationStateServiceSaveResponse, error) {
 	robotAccount := usercontext.CurrentRobotAccount(ctx)
 	if robotAccount == nil {
 		return nil, errors.NotFound("not found", "robot account not found")
+	}
+
+	if err := s.uc.Save(ctx, robotAccount.WorkflowID, req.WorkflowRunId, req.EncryptedState); err != nil {
+		return nil, handleUseCaseErr("state", err, s.log)
 	}
 
 	return &cpAPI.AttestationStateServiceSaveResponse{}, nil
 }
 
-func (s *AttestationService) Read(ctx context.Context, req *cpAPI.AttestationStateServiceReadRequest) (*cpAPI.AttestationStateServiceReadResponse, error) {
+func (s *AttestationStateService) Read(ctx context.Context, req *cpAPI.AttestationStateServiceReadRequest) (*cpAPI.AttestationStateServiceReadResponse, error) {
 	robotAccount := usercontext.CurrentRobotAccount(ctx)
 	if robotAccount == nil {
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
 
-	return &cpAPI.AttestationStateServiceReadResponse{}, nil
+	state, err := s.uc.Read(ctx, robotAccount.WorkflowID, req.WorkflowRunId)
+	if err != nil {
+		return nil, handleUseCaseErr("state", err, s.log)
+	}
+
+	return &cpAPI.AttestationStateServiceReadResponse{
+		Result: &cpAPI.AttestationStateServiceReadResponse_Result{
+			EncryptedState: state.EncryptedState,
+		},
+	}, nil
 }
 
-func (s *AttestationService) Reset(ctx context.Context, req *cpAPI.AttestationStateServiceResetRequest) (*cpAPI.AttestationStateServiceResetResponse, error) {
+func (s *AttestationStateService) Reset(ctx context.Context, req *cpAPI.AttestationStateServiceResetRequest) (*cpAPI.AttestationStateServiceResetResponse, error) {
 	robotAccount := usercontext.CurrentRobotAccount(ctx)
 	if robotAccount == nil {
 		return nil, errors.NotFound("not found", "robot account not found")
+	}
+
+	if err := s.uc.Reset(ctx, robotAccount.WorkflowID, req.WorkflowRunId); err != nil {
+		return nil, handleUseCaseErr("state", err, s.log)
 	}
 
 	return &cpAPI.AttestationStateServiceResetResponse{}, nil
