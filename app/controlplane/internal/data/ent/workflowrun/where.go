@@ -87,6 +87,11 @@ func AttestationDigest(v string) predicate.WorkflowRun {
 	return predicate.WorkflowRun(sql.FieldEQ(FieldAttestationDigest, v))
 }
 
+// AttestationState applies equality check predicate on the "attestation_state" field. It's identical to AttestationStateEQ.
+func AttestationState(v []byte) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldEQ(FieldAttestationState, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.WorkflowRun {
 	return predicate.WorkflowRun(sql.FieldEQ(FieldCreatedAt, v))
@@ -515,6 +520,56 @@ func AttestationDigestEqualFold(v string) predicate.WorkflowRun {
 // AttestationDigestContainsFold applies the ContainsFold predicate on the "attestation_digest" field.
 func AttestationDigestContainsFold(v string) predicate.WorkflowRun {
 	return predicate.WorkflowRun(sql.FieldContainsFold(FieldAttestationDigest, v))
+}
+
+// AttestationStateEQ applies the EQ predicate on the "attestation_state" field.
+func AttestationStateEQ(v []byte) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldEQ(FieldAttestationState, v))
+}
+
+// AttestationStateNEQ applies the NEQ predicate on the "attestation_state" field.
+func AttestationStateNEQ(v []byte) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNEQ(FieldAttestationState, v))
+}
+
+// AttestationStateIn applies the In predicate on the "attestation_state" field.
+func AttestationStateIn(vs ...[]byte) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldIn(FieldAttestationState, vs...))
+}
+
+// AttestationStateNotIn applies the NotIn predicate on the "attestation_state" field.
+func AttestationStateNotIn(vs ...[]byte) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNotIn(FieldAttestationState, vs...))
+}
+
+// AttestationStateGT applies the GT predicate on the "attestation_state" field.
+func AttestationStateGT(v []byte) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldGT(FieldAttestationState, v))
+}
+
+// AttestationStateGTE applies the GTE predicate on the "attestation_state" field.
+func AttestationStateGTE(v []byte) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldGTE(FieldAttestationState, v))
+}
+
+// AttestationStateLT applies the LT predicate on the "attestation_state" field.
+func AttestationStateLT(v []byte) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldLT(FieldAttestationState, v))
+}
+
+// AttestationStateLTE applies the LTE predicate on the "attestation_state" field.
+func AttestationStateLTE(v []byte) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldLTE(FieldAttestationState, v))
+}
+
+// AttestationStateIsNil applies the IsNil predicate on the "attestation_state" field.
+func AttestationStateIsNil() predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldIsNull(FieldAttestationState))
+}
+
+// AttestationStateNotNil applies the NotNil predicate on the "attestation_state" field.
+func AttestationStateNotNil() predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNotNull(FieldAttestationState))
 }
 
 // HasWorkflow applies the HasEdge predicate on the "workflow" edge.

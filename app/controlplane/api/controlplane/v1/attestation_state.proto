@@ -30,7 +30,7 @@ service AttestationStateService {
 }
 
 message AttestationStateServiceInitializedRequest {
-  string state_id = 1 [(validate.rules).string = {min_len: 1}];
+  string workflow_run_id = 1 [(validate.rules).string = {min_len: 1}];
 }
 
 message AttestationStateServiceInitializedResponse {
@@ -42,13 +42,13 @@ message AttestationStateServiceInitializedResponse {
 }
 
 message AttestationStateServiceSaveRequest {
-  string state_id = 1 [(validate.rules).string = {min_len: 1}];
+  string workflow_run_id = 1 [(validate.rules).string = {min_len: 1}];
 }
 
 message AttestationStateServiceSaveResponse {}
 
 message AttestationStateServiceReadRequest {
-  string state_id = 1 [(validate.rules).string = {min_len: 1}];
+  string workflow_run_id = 1 [(validate.rules).string = {min_len: 1}];
 }
 
 message AttestationStateServiceReadResponse {
@@ -60,7 +60,7 @@ message AttestationStateServiceReadResponse {
 }
 
 message AttestationStateServiceResetRequest {
-  string state_id = 1 [(validate.rules).string = {min_len: 1}];
+  string workflow_run_id = 1 [(validate.rules).string = {min_len: 1}];
 }
 
 message AttestationStateServiceResetResponse {}

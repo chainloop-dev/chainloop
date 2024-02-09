@@ -6,7 +6,7 @@ import _m0 from "protobufjs/minimal";
 export const protobufPackage = "controlplane.v1";
 
 export interface AttestationStateServiceInitializedRequest {
-  stateId: string;
+  workflowRunId: string;
 }
 
 export interface AttestationStateServiceInitializedResponse {
@@ -18,14 +18,14 @@ export interface AttestationStateServiceInitializedResponse_Result {
 }
 
 export interface AttestationStateServiceSaveRequest {
-  stateId: string;
+  workflowRunId: string;
 }
 
 export interface AttestationStateServiceSaveResponse {
 }
 
 export interface AttestationStateServiceReadRequest {
-  stateId: string;
+  workflowRunId: string;
 }
 
 export interface AttestationStateServiceReadResponse {
@@ -37,20 +37,20 @@ export interface AttestationStateServiceReadResponse_Result {
 }
 
 export interface AttestationStateServiceResetRequest {
-  stateId: string;
+  workflowRunId: string;
 }
 
 export interface AttestationStateServiceResetResponse {
 }
 
 function createBaseAttestationStateServiceInitializedRequest(): AttestationStateServiceInitializedRequest {
-  return { stateId: "" };
+  return { workflowRunId: "" };
 }
 
 export const AttestationStateServiceInitializedRequest = {
   encode(message: AttestationStateServiceInitializedRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.stateId !== "") {
-      writer.uint32(10).string(message.stateId);
+    if (message.workflowRunId !== "") {
+      writer.uint32(10).string(message.workflowRunId);
     }
     return writer;
   },
@@ -67,7 +67,7 @@ export const AttestationStateServiceInitializedRequest = {
             break;
           }
 
-          message.stateId = reader.string();
+          message.workflowRunId = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -79,12 +79,12 @@ export const AttestationStateServiceInitializedRequest = {
   },
 
   fromJSON(object: any): AttestationStateServiceInitializedRequest {
-    return { stateId: isSet(object.stateId) ? String(object.stateId) : "" };
+    return { workflowRunId: isSet(object.workflowRunId) ? String(object.workflowRunId) : "" };
   },
 
   toJSON(message: AttestationStateServiceInitializedRequest): unknown {
     const obj: any = {};
-    message.stateId !== undefined && (obj.stateId = message.stateId);
+    message.workflowRunId !== undefined && (obj.workflowRunId = message.workflowRunId);
     return obj;
   },
 
@@ -98,7 +98,7 @@ export const AttestationStateServiceInitializedRequest = {
     object: I,
   ): AttestationStateServiceInitializedRequest {
     const message = createBaseAttestationStateServiceInitializedRequest();
-    message.stateId = object.stateId ?? "";
+    message.workflowRunId = object.workflowRunId ?? "";
     return message;
   },
 };
@@ -235,13 +235,13 @@ export const AttestationStateServiceInitializedResponse_Result = {
 };
 
 function createBaseAttestationStateServiceSaveRequest(): AttestationStateServiceSaveRequest {
-  return { stateId: "" };
+  return { workflowRunId: "" };
 }
 
 export const AttestationStateServiceSaveRequest = {
   encode(message: AttestationStateServiceSaveRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.stateId !== "") {
-      writer.uint32(10).string(message.stateId);
+    if (message.workflowRunId !== "") {
+      writer.uint32(10).string(message.workflowRunId);
     }
     return writer;
   },
@@ -258,7 +258,7 @@ export const AttestationStateServiceSaveRequest = {
             break;
           }
 
-          message.stateId = reader.string();
+          message.workflowRunId = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -270,12 +270,12 @@ export const AttestationStateServiceSaveRequest = {
   },
 
   fromJSON(object: any): AttestationStateServiceSaveRequest {
-    return { stateId: isSet(object.stateId) ? String(object.stateId) : "" };
+    return { workflowRunId: isSet(object.workflowRunId) ? String(object.workflowRunId) : "" };
   },
 
   toJSON(message: AttestationStateServiceSaveRequest): unknown {
     const obj: any = {};
-    message.stateId !== undefined && (obj.stateId = message.stateId);
+    message.workflowRunId !== undefined && (obj.workflowRunId = message.workflowRunId);
     return obj;
   },
 
@@ -289,7 +289,7 @@ export const AttestationStateServiceSaveRequest = {
     object: I,
   ): AttestationStateServiceSaveRequest {
     const message = createBaseAttestationStateServiceSaveRequest();
-    message.stateId = object.stateId ?? "";
+    message.workflowRunId = object.workflowRunId ?? "";
     return message;
   },
 };
@@ -343,13 +343,13 @@ export const AttestationStateServiceSaveResponse = {
 };
 
 function createBaseAttestationStateServiceReadRequest(): AttestationStateServiceReadRequest {
-  return { stateId: "" };
+  return { workflowRunId: "" };
 }
 
 export const AttestationStateServiceReadRequest = {
   encode(message: AttestationStateServiceReadRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.stateId !== "") {
-      writer.uint32(10).string(message.stateId);
+    if (message.workflowRunId !== "") {
+      writer.uint32(10).string(message.workflowRunId);
     }
     return writer;
   },
@@ -366,7 +366,7 @@ export const AttestationStateServiceReadRequest = {
             break;
           }
 
-          message.stateId = reader.string();
+          message.workflowRunId = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -378,12 +378,12 @@ export const AttestationStateServiceReadRequest = {
   },
 
   fromJSON(object: any): AttestationStateServiceReadRequest {
-    return { stateId: isSet(object.stateId) ? String(object.stateId) : "" };
+    return { workflowRunId: isSet(object.workflowRunId) ? String(object.workflowRunId) : "" };
   },
 
   toJSON(message: AttestationStateServiceReadRequest): unknown {
     const obj: any = {};
-    message.stateId !== undefined && (obj.stateId = message.stateId);
+    message.workflowRunId !== undefined && (obj.workflowRunId = message.workflowRunId);
     return obj;
   },
 
@@ -397,7 +397,7 @@ export const AttestationStateServiceReadRequest = {
     object: I,
   ): AttestationStateServiceReadRequest {
     const message = createBaseAttestationStateServiceReadRequest();
-    message.stateId = object.stateId ?? "";
+    message.workflowRunId = object.workflowRunId ?? "";
     return message;
   },
 };
@@ -529,13 +529,13 @@ export const AttestationStateServiceReadResponse_Result = {
 };
 
 function createBaseAttestationStateServiceResetRequest(): AttestationStateServiceResetRequest {
-  return { stateId: "" };
+  return { workflowRunId: "" };
 }
 
 export const AttestationStateServiceResetRequest = {
   encode(message: AttestationStateServiceResetRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.stateId !== "") {
-      writer.uint32(10).string(message.stateId);
+    if (message.workflowRunId !== "") {
+      writer.uint32(10).string(message.workflowRunId);
     }
     return writer;
   },
@@ -552,7 +552,7 @@ export const AttestationStateServiceResetRequest = {
             break;
           }
 
-          message.stateId = reader.string();
+          message.workflowRunId = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -564,12 +564,12 @@ export const AttestationStateServiceResetRequest = {
   },
 
   fromJSON(object: any): AttestationStateServiceResetRequest {
-    return { stateId: isSet(object.stateId) ? String(object.stateId) : "" };
+    return { workflowRunId: isSet(object.workflowRunId) ? String(object.workflowRunId) : "" };
   },
 
   toJSON(message: AttestationStateServiceResetRequest): unknown {
     const obj: any = {};
-    message.stateId !== undefined && (obj.stateId = message.stateId);
+    message.workflowRunId !== undefined && (obj.workflowRunId = message.workflowRunId);
     return obj;
   },
 
@@ -583,7 +583,7 @@ export const AttestationStateServiceResetRequest = {
     object: I,
   ): AttestationStateServiceResetRequest {
     const message = createBaseAttestationStateServiceResetRequest();
-    message.stateId = object.stateId ?? "";
+    message.workflowRunId = object.workflowRunId ?? "";
     return message;
   },
 };

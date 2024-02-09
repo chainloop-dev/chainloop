@@ -59,9 +59,9 @@ func (m *AttestationStateServiceInitializedRequest) validate(all bool) error {
 
 	var errors []error
 
-	if utf8.RuneCountInString(m.GetStateId()) < 1 {
+	if utf8.RuneCountInString(m.GetWorkflowRunId()) < 1 {
 		err := AttestationStateServiceInitializedRequestValidationError{
-			field:  "StateId",
+			field:  "WorkflowRunId",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -310,9 +310,9 @@ func (m *AttestationStateServiceSaveRequest) validate(all bool) error {
 
 	var errors []error
 
-	if utf8.RuneCountInString(m.GetStateId()) < 1 {
+	if utf8.RuneCountInString(m.GetWorkflowRunId()) < 1 {
 		err := AttestationStateServiceSaveRequestValidationError{
-			field:  "StateId",
+			field:  "WorkflowRunId",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -531,9 +531,9 @@ func (m *AttestationStateServiceReadRequest) validate(all bool) error {
 
 	var errors []error
 
-	if utf8.RuneCountInString(m.GetStateId()) < 1 {
+	if utf8.RuneCountInString(m.GetWorkflowRunId()) < 1 {
 		err := AttestationStateServiceReadRequestValidationError{
-			field:  "StateId",
+			field:  "WorkflowRunId",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -781,9 +781,9 @@ func (m *AttestationStateServiceResetRequest) validate(all bool) error {
 
 	var errors []error
 
-	if utf8.RuneCountInString(m.GetStateId()) < 1 {
+	if utf8.RuneCountInString(m.GetWorkflowRunId()) < 1 {
 		err := AttestationStateServiceResetRequestValidationError{
-			field:  "StateId",
+			field:  "WorkflowRunId",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {

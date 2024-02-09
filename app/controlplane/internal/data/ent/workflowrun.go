@@ -40,6 +40,8 @@ type WorkflowRun struct {
 	Attestation *dsse.Envelope `json:"attestation,omitempty"`
 	// AttestationDigest holds the value of the "attestation_digest" field.
 	AttestationDigest string `json:"attestation_digest,omitempty"`
+	// AttestationState holds the value of the "attestation_state" field.
+	AttestationState []byte `json:"attestation_state,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the WorkflowRunQuery when eager-loading is set.
 	Edges                         WorkflowRunEdges `json:"edges"`
@@ -117,7 +119,7 @@ func (*WorkflowRun) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case workflowrun.FieldAttestation:
+		case workflowrun.FieldAttestation, workflowrun.FieldAttestationState:
 			values[i] = new([]byte)
 		case workflowrun.FieldState, workflowrun.FieldReason, workflowrun.FieldRunURL, workflowrun.FieldRunnerType, workflowrun.FieldAttestationDigest:
 			values[i] = new(sql.NullString)
@@ -201,6 +203,12 @@ func (wr *WorkflowRun) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field attestation_digest", values[i])
 			} else if value.Valid {
 				wr.AttestationDigest = value.String
+			}
+		case workflowrun.FieldAttestationState:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field attestation_state", values[i])
+			} else if value != nil {
+				wr.AttestationState = *value
 			}
 		case workflowrun.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -302,6 +310,9 @@ func (wr *WorkflowRun) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("attestation_digest=")
 	builder.WriteString(wr.AttestationDigest)
+	builder.WriteString(", ")
+	builder.WriteString("attestation_state=")
+	builder.WriteString(fmt.Sprintf("%v", wr.AttestationState))
 	builder.WriteByte(')')
 	return builder.String()
 }

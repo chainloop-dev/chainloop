@@ -161,6 +161,18 @@ func (wru *WorkflowRunUpdate) ClearAttestationDigest() *WorkflowRunUpdate {
 	return wru
 }
 
+// SetAttestationState sets the "attestation_state" field.
+func (wru *WorkflowRunUpdate) SetAttestationState(b []byte) *WorkflowRunUpdate {
+	wru.mutation.SetAttestationState(b)
+	return wru
+}
+
+// ClearAttestationState clears the value of the "attestation_state" field.
+func (wru *WorkflowRunUpdate) ClearAttestationState() *WorkflowRunUpdate {
+	wru.mutation.ClearAttestationState()
+	return wru
+}
+
 // SetWorkflowID sets the "workflow" edge to the Workflow entity by ID.
 func (wru *WorkflowRunUpdate) SetWorkflowID(id uuid.UUID) *WorkflowRunUpdate {
 	wru.mutation.SetWorkflowID(id)
@@ -364,6 +376,12 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if wru.mutation.AttestationDigestCleared() {
 		_spec.ClearField(workflowrun.FieldAttestationDigest, field.TypeString)
+	}
+	if value, ok := wru.mutation.AttestationState(); ok {
+		_spec.SetField(workflowrun.FieldAttestationState, field.TypeBytes, value)
+	}
+	if wru.mutation.AttestationStateCleared() {
+		_spec.ClearField(workflowrun.FieldAttestationState, field.TypeBytes)
 	}
 	if wru.mutation.WorkflowCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -643,6 +661,18 @@ func (wruo *WorkflowRunUpdateOne) ClearAttestationDigest() *WorkflowRunUpdateOne
 	return wruo
 }
 
+// SetAttestationState sets the "attestation_state" field.
+func (wruo *WorkflowRunUpdateOne) SetAttestationState(b []byte) *WorkflowRunUpdateOne {
+	wruo.mutation.SetAttestationState(b)
+	return wruo
+}
+
+// ClearAttestationState clears the value of the "attestation_state" field.
+func (wruo *WorkflowRunUpdateOne) ClearAttestationState() *WorkflowRunUpdateOne {
+	wruo.mutation.ClearAttestationState()
+	return wruo
+}
+
 // SetWorkflowID sets the "workflow" edge to the Workflow entity by ID.
 func (wruo *WorkflowRunUpdateOne) SetWorkflowID(id uuid.UUID) *WorkflowRunUpdateOne {
 	wruo.mutation.SetWorkflowID(id)
@@ -876,6 +906,12 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 	}
 	if wruo.mutation.AttestationDigestCleared() {
 		_spec.ClearField(workflowrun.FieldAttestationDigest, field.TypeString)
+	}
+	if value, ok := wruo.mutation.AttestationState(); ok {
+		_spec.SetField(workflowrun.FieldAttestationState, field.TypeBytes, value)
+	}
+	if wruo.mutation.AttestationStateCleared() {
+		_spec.ClearField(workflowrun.FieldAttestationState, field.TypeBytes)
 	}
 	if wruo.mutation.WorkflowCleared() {
 		edge := &sqlgraph.EdgeSpec{

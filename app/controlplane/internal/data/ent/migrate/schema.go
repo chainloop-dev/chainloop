@@ -379,6 +379,7 @@ var (
 		{Name: "runner_type", Type: field.TypeString, Nullable: true},
 		{Name: "attestation", Type: field.TypeJSON, Nullable: true},
 		{Name: "attestation_digest", Type: field.TypeString, Nullable: true},
+		{Name: "attestation_state", Type: field.TypeBytes, Nullable: true},
 		{Name: "robot_account_workflowruns", Type: field.TypeUUID, Nullable: true},
 		{Name: "workflow_workflowruns", Type: field.TypeUUID, Nullable: true},
 		{Name: "workflow_run_contract_version", Type: field.TypeUUID, Nullable: true},
@@ -391,19 +392,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "workflow_runs_robot_accounts_workflowruns",
-				Columns:    []*schema.Column{WorkflowRunsColumns[9]},
+				Columns:    []*schema.Column{WorkflowRunsColumns[10]},
 				RefColumns: []*schema.Column{RobotAccountsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "workflow_runs_workflows_workflowruns",
-				Columns:    []*schema.Column{WorkflowRunsColumns[10]},
+				Columns:    []*schema.Column{WorkflowRunsColumns[11]},
 				RefColumns: []*schema.Column{WorkflowsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "workflow_runs_workflow_contract_versions_contract_version",
-				Columns:    []*schema.Column{WorkflowRunsColumns[11]},
+				Columns:    []*schema.Column{WorkflowRunsColumns[12]},
 				RefColumns: []*schema.Column{WorkflowContractVersionsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
