@@ -57,21 +57,23 @@ type AttestationStatusResultMaterial struct {
 	Set, IsOutput, Required bool
 }
 
-func NewAttestationStatus(cfg *AttestationStatusOpts) *AttestationStatus {
-	return &AttestationStatus{
-		ActionsOpts: cfg.ActionsOpts,
-		c:           crafter.NewCrafter(crafter.WithLogger(&cfg.Logger)),
+func NewAttestationStatus(cfg *AttestationStatusOpts) (*AttestationStatus, error) {
+	c, err := newCrafter(cfg.CPConnection, &cfg.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load crafter: %w", err)
 	}
+
+	return &AttestationStatus{ActionsOpts: cfg.ActionsOpts, c: c}, nil
 }
 
-func (action *AttestationStatus) Run() (*AttestationStatusResult, error) {
+func (action *AttestationStatus) Run(attestationID string) (*AttestationStatusResult, error) {
 	c := action.c
 
-	if initialized := c.AlreadyInitialized(); !initialized {
+	if initialized := c.AlreadyInitialized(attestationID); !initialized {
 		return nil, ErrAttestationNotInitialized
 	}
 
-	if err := c.LoadCraftingState(); err != nil {
+	if err := c.LoadCraftingState(attestationID); err != nil {
 		action.Logger.Err(err).Msg("loading existing attestation")
 		return nil, err
 	}

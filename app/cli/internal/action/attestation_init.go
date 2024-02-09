@@ -28,13 +28,13 @@ import (
 
 type AttestationInitOpts struct {
 	*ActionsOpts
-	Override, DryRun bool
+	DryRun bool
 }
 
 type AttestationInit struct {
 	*ActionsOpts
-	override, dryRun bool
-	c                *crafter.Crafter
+	dryRun bool
+	c      *crafter.Crafter
 }
 
 // ErrAttestationAlreadyExist means that there is an attestation in progress
@@ -48,20 +48,20 @@ func (e ErrRunnerContextNotFound) Error() string {
 	return fmt.Sprintf("The contract expects the attestation to be crafted in a runner of type %q but couldn't be detected", e.RunnerType)
 }
 
-func NewAttestationInit(cfg *AttestationInitOpts) *AttestationInit {
+func NewAttestationInit(cfg *AttestationInitOpts) (*AttestationInit, error) {
+	c, err := newCrafter(cfg.CPConnection, &cfg.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load crafter: %w", err)
+	}
+
 	return &AttestationInit{
 		ActionsOpts: cfg.ActionsOpts,
-		override:    cfg.Override,
-		c:           crafter.NewCrafter(crafter.WithLogger(&cfg.Logger)),
+		c:           c,
 		dryRun:      cfg.DryRun,
-	}
+	}, nil
 }
 
 func (action *AttestationInit) Run(contractRevision int) error {
-	if initialized := action.c.AlreadyInitialized(); initialized && !action.override {
-		return ErrAttestationAlreadyExist
-	}
-
 	action.Logger.Debug().Msg("Retrieving attestation definition")
 	client := pb.NewAttestationServiceClient(action.ActionsOpts.CPConnection)
 	// get information of the workflow
@@ -92,6 +92,9 @@ func (action *AttestationInit) Run(contractRevision int) error {
 		return ErrRunnerContextNotFound{runnerContext.String()}
 	}
 
+	// Identifier of this attestation instance
+	var attestationID string
+
 	// Init in the control plane if needed including the runner context
 	if !action.dryRun {
 		runResp, err := client.Init(
@@ -108,6 +111,7 @@ func (action *AttestationInit) Run(contractRevision int) error {
 		workflowRun := runResp.GetResult().GetWorkflowRun()
 		workflowMeta.WorkflowRunId = workflowRun.GetId()
 		action.Logger.Debug().Str("workflow-run-id", workflowRun.GetId()).Msg("attestation initialized in the control plane")
+		attestationID = workflowRun.GetId()
 	}
 
 	// Initialize the local attestation crafter
@@ -115,7 +119,8 @@ func (action *AttestationInit) Run(contractRevision int) error {
 	// with the workflowRunId that comes from the control plane
 	initOpts := &crafter.InitOpts{
 		WfInfo: workflowMeta, SchemaV1: contractVersion.GetV1(),
-		DryRun: action.dryRun,
+		DryRun:        action.dryRun,
+		AttestationID: attestationID,
 	}
 
 	if err := action.c.Init(initOpts); err != nil {
@@ -123,12 +128,12 @@ func (action *AttestationInit) Run(contractRevision int) error {
 	}
 
 	// Load the env variables both the system populated and the user predefined ones
-	if err := action.c.ResolveEnvVars(); err != nil {
+	if err := action.c.ResolveEnvVars(attestationID); err != nil {
 		if action.dryRun {
 			return nil
 		}
 
-		_ = action.c.Reset()
+		_ = action.c.Reset(attestationID)
 		return err
 	}
 

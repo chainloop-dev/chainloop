@@ -41,25 +41,28 @@ type AttestationAdd struct {
 	connectionInsecure bool
 }
 
-func NewAttestationAdd(cfg *AttestationAddOpts) *AttestationAdd {
+func NewAttestationAdd(cfg *AttestationAddOpts) (*AttestationAdd, error) {
+	c, err := newCrafter(cfg.CPConnection, &cfg.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load crafter: %w", err)
+	}
+
 	return &AttestationAdd{
-		ActionsOpts: cfg.ActionsOpts,
-		c: crafter.NewCrafter(
-			crafter.WithLogger(&cfg.Logger),
-		),
+		ActionsOpts:        cfg.ActionsOpts,
+		c:                  c,
 		casURI:             cfg.CASURI,
 		connectionInsecure: cfg.ConnectionInsecure,
-	}
+	}, nil
 }
 
 var ErrAttestationNotInitialized = errors.New("attestation not yet initialized")
 
-func (action *AttestationAdd) Run(k, v string, annotations map[string]string) error {
-	if initialized := action.c.AlreadyInitialized(); !initialized {
+func (action *AttestationAdd) Run(attestationID, materialName, materialValue string, annotations map[string]string) error {
+	if initialized := action.c.AlreadyInitialized(attestationID); !initialized {
 		return ErrAttestationNotInitialized
 	}
 
-	if err := action.c.LoadCraftingState(); err != nil {
+	if err := action.c.LoadCraftingState(attestationID); err != nil {
 		action.Logger.Err(err).Msg("loading existing attestation")
 		return err
 	}
@@ -98,7 +101,7 @@ func (action *AttestationAdd) Run(k, v string, annotations map[string]string) er
 		casBackend.Uploader = casclient.New(artifactCASConn, casclient.WithLogger(action.Logger))
 	}
 
-	if err := action.c.AddMaterial(k, v, casBackend, annotations); err != nil {
+	if err := action.c.AddMaterial(attestationID, materialName, materialValue, casBackend, annotations); err != nil {
 		return fmt.Errorf("adding material: %w", err)
 	}
 

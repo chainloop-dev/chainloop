@@ -25,6 +25,7 @@ import (
 	v1 "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
+	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/statemanager/filesystem"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/stretchr/testify/require"
@@ -133,37 +134,39 @@ func (s *crafterSuite) TestInit() {
 			if ok := proto.Equal(want, c.CraftingState); !ok {
 				s.Fail(fmt.Sprintf("These two protobuf messages are not equal:\nexpected: %v\nactual:  %v", want, c.CraftingState))
 			}
-
-			// Check state file
-			_, err = os.Stat(c.statePath)
-			s.NoError(err, "state file should be created")
 		})
 	}
 }
 
 type testingCrafter struct {
 	*crafter.Crafter
-	statePath string
+}
+
+func testingStateManager(t *testing.T, statePath string) crafter.StateManager {
+	stateManager, err := filesystem.New(statePath)
+	require.NoError(t, err)
+	return stateManager
 }
 
 func newInitializedCrafter(t *testing.T, contractPath string, wfMeta *v1.WorkflowMetadata, dryRun bool, workingDir string) (*testingCrafter, error) {
+	opts := []crafter.NewOpt{}
+	if workingDir != "" {
+		opts = append(opts, crafter.WithWorkingDirPath(workingDir))
+	}
+
+	statePath := fmt.Sprintf("%s/attestation.json", t.TempDir())
+	c, err := crafter.NewCrafter(testingStateManager(t, statePath), opts...)
+	require.NoError(t, err)
 	contract, err := crafter.LoadSchema(contractPath)
 	if err != nil {
 		return nil, err
 	}
 
-	statePath := fmt.Sprintf("%s/attestation.json", t.TempDir())
-	opts := []crafter.NewOpt{crafter.WithStatePath(statePath)}
-	if workingDir != "" {
-		opts = append(opts, crafter.WithWorkingDirPath(workingDir))
-	}
-
-	c := crafter.NewCrafter(opts...)
-	if err = c.Init(&crafter.InitOpts{SchemaV1: contract, WfInfo: wfMeta, DryRun: dryRun}); err != nil {
+	if err = c.Init(&crafter.InitOpts{SchemaV1: contract, WfInfo: wfMeta, DryRun: dryRun, AttestationID: ""}); err != nil {
 		return nil, err
 	}
 
-	return &testingCrafter{c, statePath}, nil
+	return &testingCrafter{c}, nil
 }
 
 func (s *crafterSuite) TestLoadSchema() {
@@ -312,7 +315,7 @@ func (s *crafterSuite) TestResolveEnvVars() {
 			c, err := newInitializedCrafter(s.T(), contract, &v1.WorkflowMetadata{}, false, "")
 			require.NoError(s.T(), err)
 
-			err = c.ResolveEnvVars()
+			err = c.ResolveEnvVars("")
 
 			if tc.expectedError != "" {
 				s.Error(err)
@@ -343,14 +346,17 @@ func (s *crafterSuite) TestAlreadyInitialized() {
 		statePath := fmt.Sprintf("%s/attestation.json", t.TempDir())
 		_, err := os.Create(statePath)
 		require.NoError(s.T(), err)
-		c := crafter.NewCrafter(crafter.WithStatePath(statePath))
-		s.True(c.AlreadyInitialized())
+		// TODO: replace by a mock
+		c, err := crafter.NewCrafter(testingStateManager(t, statePath))
+		require.NoError(s.T(), err)
+		s.True(c.AlreadyInitialized(""))
 	})
 
 	s.T().Run("non existing", func(t *testing.T) {
 		statePath := fmt.Sprintf("%s/attestation.json", t.TempDir())
-		c := crafter.NewCrafter(crafter.WithStatePath(statePath))
-		s.False(c.AlreadyInitialized())
+		c, err := crafter.NewCrafter(testingStateManager(t, statePath))
+		require.NoError(s.T(), err)
+		s.False(c.AlreadyInitialized(""))
 	})
 }
 
