@@ -73,6 +73,7 @@ type Opts struct {
 	OrgInvitationSvc    *service.OrgInvitationService
 	ReferrerSvc         *service.ReferrerService
 	APITokenSvc         *service.APITokenService
+	AttestationStateSvc *service.AttestationStateService
 	// Utils
 	Logger       log.Logger
 	ServerConfig *conf.Server
@@ -133,6 +134,7 @@ func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
 	v1.RegisterOrgInvitationServiceServer(srv, opts.OrgInvitationSvc)
 	v1.RegisterReferrerServiceServer(srv, opts.ReferrerSvc)
 	v1.RegisterAPITokenServiceServer(srv, opts.APITokenSvc)
+	v1.RegisterAttestationStateServiceServer(srv, opts.AttestationStateSvc)
 
 	// Register Prometheus metrics
 	grpc_prometheus.Register(srv.Server)

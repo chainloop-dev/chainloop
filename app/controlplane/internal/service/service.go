@@ -46,6 +46,7 @@ var ProviderSet = wire.NewSet(
 	NewOrgInvitationService,
 	NewReferrerService,
 	NewAPITokenService,
+	NewAttestationStateService,
 	wire.Struct(new(NewWorkflowRunServiceOpts), "*"),
 	wire.Struct(new(NewAttestationServiceOpts), "*"),
 )

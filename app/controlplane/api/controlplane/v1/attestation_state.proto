@@ -1,0 +1,67 @@
+//
+// Copyright 2023 The Chainloop Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package controlplane.v1;
+
+option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
+
+import "validate/validate.proto";
+
+// This service is used by the CLI to generate attestation
+service AttestationStateService {
+	rpc Initialized (AttestationStateServiceInitializedRequest) returns (AttestationStateServiceInitializedResponse);
+	rpc Save (AttestationStateServiceSaveRequest) returns (AttestationStateServiceSaveResponse);
+	rpc Read (AttestationStateServiceReadRequest) returns (AttestationStateServiceReadResponse);
+	rpc Reset (AttestationStateServiceResetRequest) returns (AttestationStateServiceResetResponse);
+}
+
+message AttestationStateServiceInitializedRequest {
+  string state_id = 1 [(validate.rules).string = {min_len: 1}];
+}
+
+message AttestationStateServiceInitializedResponse {
+  Result result = 1;
+  
+  message Result {
+    bool initialized = 1;
+  }
+}
+
+message AttestationStateServiceSaveRequest {
+  string state_id = 1 [(validate.rules).string = {min_len: 1}];
+}
+
+message AttestationStateServiceSaveResponse {}
+
+message AttestationStateServiceReadRequest {
+  string state_id = 1 [(validate.rules).string = {min_len: 1}];
+}
+
+message AttestationStateServiceReadResponse {
+  Result result = 1;
+  
+  message Result {
+    bytes state = 1;
+  }
+}
+
+message AttestationStateServiceResetRequest {
+  string state_id = 1 [(validate.rules).string = {min_len: 1}];
+}
+
+message AttestationStateServiceResetResponse {}
+
