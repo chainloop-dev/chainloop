@@ -69,6 +69,7 @@ type TestingUseCases struct {
 	Referrer               *biz.ReferrerUseCase
 	APIToken               *biz.APITokenUseCase
 	Enforcer               *authz.Enforcer
+	AttestationState       *biz.AttestationStateUseCase
 	// Repositories that can be used for custom crafting of use-cases
 	Repos *TestingRepos
 }
