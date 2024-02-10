@@ -22,7 +22,8 @@ option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/con
 import "validate/validate.proto";
 import "workflowcontract/v1/crafting_schema.proto";
 
-// This service is used by the CLI to generate attestation
+// API to remotely store and retrieve attestation state
+// using the attestation crafting process
 service AttestationStateService {
 	rpc Initialized (AttestationStateServiceInitializedRequest) returns (AttestationStateServiceInitializedResponse);
 	rpc Save (AttestationStateServiceSaveRequest) returns (AttestationStateServiceSaveResponse);

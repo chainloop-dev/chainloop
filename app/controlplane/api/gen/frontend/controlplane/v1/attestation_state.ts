@@ -660,7 +660,10 @@ export const AttestationStateServiceResetResponse = {
   },
 };
 
-/** This service is used by the CLI to generate attestation */
+/**
+ * API to remotely store and retrieve attestation state
+ * using the attestation crafting process
+ */
 export interface AttestationStateService {
   Initialized(
     request: DeepPartial<AttestationStateServiceInitializedRequest>,
