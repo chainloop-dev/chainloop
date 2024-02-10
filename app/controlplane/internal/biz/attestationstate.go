@@ -17,10 +17,16 @@ package biz
 
 import (
 	"context"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"crypto/sha256"
 	"fmt"
+	"io"
 
 	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/google/uuid"
+	"golang.org/x/crypto/pbkdf2"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -58,7 +64,7 @@ func (uc *AttestationStateUseCase) Initialized(ctx context.Context, workflowID, 
 	return initialized, nil
 }
 
-func (uc *AttestationStateUseCase) Save(ctx context.Context, workflowID, runID string, state *schemav1.CraftingSchema) error {
+func (uc *AttestationStateUseCase) Save(ctx context.Context, workflowID, runID string, state *schemav1.CraftingSchema, passphrase string) error {
 	run, err := uc.checkWorkflowRunInWorkflow(ctx, workflowID, runID)
 	if err != nil {
 		return fmt.Errorf("failed to check workflow run: %w", err)
@@ -69,14 +75,19 @@ func (uc *AttestationStateUseCase) Save(ctx context.Context, workflowID, runID s
 		return fmt.Errorf("failed to marshal attestation state: %w", err)
 	}
 
-	if err := uc.repo.Save(ctx, run.ID, rawState); err != nil {
+	encryptedState, err := encrypt(rawState, passphrase)
+	if err != nil {
+		return fmt.Errorf("failed to encrypt attestation state: %w", err)
+	}
+
+	if err := uc.repo.Save(ctx, run.ID, encryptedState); err != nil {
 		return fmt.Errorf("failed to save attestation state: %w", err)
 	}
 
 	return nil
 }
 
-func (uc *AttestationStateUseCase) Read(ctx context.Context, workflowID, runID string) (*AttestationState, error) {
+func (uc *AttestationStateUseCase) Read(ctx context.Context, workflowID, runID, passphrase string) (*AttestationState, error) {
 	run, err := uc.checkWorkflowRunInWorkflow(ctx, workflowID, runID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check workflow run: %w", err)
@@ -84,11 +95,16 @@ func (uc *AttestationStateUseCase) Read(ctx context.Context, workflowID, runID s
 
 	res, err := uc.repo.Read(ctx, run.ID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to save attestation state: %w", err)
+		return nil, fmt.Errorf("failed to read attestation state: %w", err)
+	}
+
+	decryptedState, err := decrypt(res, passphrase)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt attestation state: %w", err)
 	}
 
 	state := &schemav1.CraftingSchema{}
-	if err := proto.Unmarshal(res, state); err != nil {
+	if err := proto.Unmarshal(decryptedState, state); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal attestation state: %w", err)
 	}
 
@@ -134,4 +150,81 @@ func (uc *AttestationStateUseCase) checkWorkflowRunInWorkflow(ctx context.Contex
 	}
 
 	return run, nil
+}
+
+// The following code is in charge of symmetric encryption and decryption of the attestation state
+// The only purpose is to have encryption at rest in the database
+const (
+	saltSize   = 16
+	iterations = 10000
+	keySize    = 32 // AES-256
+	// The magic string is used to check if the passphrase is correct
+	// It's prepended to the plaintext before encryption
+	// If the passphrase is incorrect, the decrypted data won't start with this string
+	magic = "Salted__"
+)
+
+// Generate an AES key derived from the passphrase and a salt
+func generateKey(passphrase string, salt []byte) []byte {
+	return pbkdf2.Key([]byte(passphrase), salt, iterations, keySize, sha256.New)
+}
+
+func encrypt(data []byte, passphrase string) ([]byte, error) {
+	salt := make([]byte, saltSize)
+	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
+		return nil, err
+	}
+
+	key := generateKey(passphrase, salt)
+
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+	// Prepend magic string to the plaintext
+	plaintextWithMagic := append([]byte(magic), data...)
+
+	ciphertext := make([]byte, aes.BlockSize+len(plaintextWithMagic))
+	iv := ciphertext[:aes.BlockSize]
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+		return nil, err
+	}
+
+	stream := cipher.NewCFBEncrypter(block, iv)
+	stream.XORKeyStream(ciphertext[aes.BlockSize:], plaintextWithMagic)
+
+	return append(salt, ciphertext...), nil
+}
+
+func decrypt(ciphertext []byte, passphrase string) ([]byte, error) {
+	if len(ciphertext) <= saltSize {
+		return nil, fmt.Errorf("encrypted data too short")
+	}
+
+	salt := ciphertext[:saltSize]
+	ciphertext = ciphertext[saltSize:]
+
+	key := generateKey(passphrase, salt)
+
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create cipher: %w", err)
+	}
+
+	if len(ciphertext) < aes.BlockSize {
+		return nil, fmt.Errorf("ciphertext too short")
+	}
+
+	iv := ciphertext[:aes.BlockSize]
+	ciphertext = ciphertext[aes.BlockSize:]
+
+	stream := cipher.NewCFBDecrypter(block, iv)
+	stream.XORKeyStream(ciphertext, ciphertext)
+
+	// Check if the decrypted data starts with the magic string
+	if string(ciphertext[:len(magic)]) != magic {
+		return nil, fmt.Errorf("incorrect passphrase")
+	}
+
+	return ciphertext[len(magic):], nil
 }

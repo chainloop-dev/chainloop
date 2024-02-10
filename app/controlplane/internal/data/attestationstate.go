@@ -63,8 +63,8 @@ func (r *AttestationStateRepo) Read(ctx context.Context, runID uuid.UUID) ([]byt
 	run, err := r.data.db.WorkflowRun.Query().Where(workflowrun.ID(runID)).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, fmt.Errorf("failed to read attestation state: %w", err)
-	} else if run == nil {
-		return nil, biz.NewErrNotFound("workflow run")
+	} else if run == nil || run.AttestationState == nil {
+		return nil, biz.NewErrNotFound("attestation state")
 	}
 
 	return run.AttestationState, nil
@@ -75,7 +75,7 @@ func (r *AttestationStateRepo) Reset(ctx context.Context, runID uuid.UUID) error
 	if err != nil && !ent.IsNotFound(err) {
 		return fmt.Errorf("failed to clear attestation state: %w", err)
 	} else if err != nil {
-		return biz.NewErrNotFound("workflow run")
+		return biz.NewErrNotFound("attestation state")
 	}
 
 	return nil

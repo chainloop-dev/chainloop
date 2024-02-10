@@ -102,10 +102,11 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		return nil, nil, err
 	}
 	testingRepos := &TestingRepos{
-		Membership:      membershipRepo,
-		Referrer:        referrerRepo,
-		Workflow:        workflowRepo,
-		WorkflowRunRepo: workflowRunRepo,
+		Membership:       membershipRepo,
+		Referrer:         referrerRepo,
+		Workflow:         workflowRepo,
+		WorkflowRunRepo:  workflowRunRepo,
+		AttestationState: attestationStateRepo,
 	}
 	testingUseCases := &TestingUseCases{
 		DB:                     testDatabase,

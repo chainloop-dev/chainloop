@@ -75,10 +75,11 @@ type TestingUseCases struct {
 }
 
 type TestingRepos struct {
-	Membership      biz.MembershipRepo
-	Referrer        biz.ReferrerRepo
-	Workflow        biz.WorkflowRepo
-	WorkflowRunRepo biz.WorkflowRunRepo
+	Membership       biz.MembershipRepo
+	Referrer         biz.ReferrerRepo
+	Workflow         biz.WorkflowRepo
+	WorkflowRunRepo  biz.WorkflowRunRepo
+	AttestationState biz.AttestationStateRepo
 }
 
 type newTestingOpts struct {

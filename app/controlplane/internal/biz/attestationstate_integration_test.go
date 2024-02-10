@@ -59,7 +59,7 @@ func (s *attestationStateTestSuite) TestInitialized() {
 	})
 
 	s.T().Run("the run is initialized", func(t *testing.T) {
-		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState)
+		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState, s.passphrase)
 		s.NoError(err)
 		ok, err := s.AttestationState.Initialized(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String())
 		s.NoError(err)
@@ -70,22 +70,22 @@ func (s *attestationStateTestSuite) TestInitialized() {
 func (s *attestationStateTestSuite) TestSave() {
 	ctx := context.Background()
 	s.T().Run("run in different workflow causes error", func(t *testing.T) {
-		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg2.ID.String(), s.testState)
+		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg2.ID.String(), s.testState, s.passphrase)
 		s.Error(err)
 		s.True(biz.IsNotFound(err))
 	})
 
 	s.T().Run("the run doesn't exist", func(t *testing.T) {
-		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), uuid.NewString(), s.testState)
+		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), uuid.NewString(), s.testState, s.passphrase)
 		s.Error(err)
 		s.True(biz.IsNotFound(err))
 	})
 
 	s.T().Run("the run exists", func(t *testing.T) {
-		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState)
+		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState, s.passphrase)
 		s.NoError(err)
 
-		got, err := s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String())
+		got, err := s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.passphrase)
 		s.NoError(err)
 		if ok := proto.Equal(s.testState, got.State); !ok {
 			s.Fail(fmt.Sprintf("These two protobuf messages are not equal:\nexpected: %v\nactual:  %v", s.testState, got.State))
@@ -93,20 +93,20 @@ func (s *attestationStateTestSuite) TestSave() {
 	})
 
 	s.T().Run("it can be overridden", func(t *testing.T) {
-		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState)
+		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState, s.passphrase)
 		s.NoError(err)
 
-		got, err := s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String())
+		got, err := s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.passphrase)
 		s.NoError(err)
 		if ok := proto.Equal(s.testState, got.State); !ok {
 			s.Fail(fmt.Sprintf("These two protobuf messages are not equal:\nexpected: %v\nactual:  %v", s.testState, got.State))
 		}
 
 		newState := &schemav1.CraftingSchema{SchemaVersion: "v2"}
-		err = s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), newState)
+		err = s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), newState, s.passphrase)
 		s.NoError(err)
 
-		got, err = s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String())
+		got, err = s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.passphrase)
 		s.NoError(err)
 		if ok := proto.Equal(newState, got.State); !ok {
 			s.Fail(fmt.Sprintf("These two protobuf messages are not equal:\nexpected: %v\nactual:  %v", newState, got.State))
@@ -114,18 +114,81 @@ func (s *attestationStateTestSuite) TestSave() {
 	})
 }
 
+func (s *attestationStateTestSuite) TestRead() {
+	ctx := context.Background()
+	s.T().Run("can be retrieved with same passphrase", func(t *testing.T) {
+		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState, s.passphrase)
+		s.NoError(err)
+
+		got, err := s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.passphrase)
+		s.NoError(err)
+		if ok := proto.Equal(s.testState, got.State); !ok {
+			s.Fail(fmt.Sprintf("These two protobuf messages are not equal:\nexpected: %v\nactual:  %v", s.testState, got.State))
+		}
+	})
+
+	s.T().Run("it fails if they are different passphrases", func(t *testing.T) {
+		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState, s.passphrase)
+		s.NoError(err)
+
+		got, err := s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), "wrong-passphrase")
+		s.ErrorContains(err, "incorrect passphrase")
+		s.Nil(got)
+	})
+
+	s.T().Run("it fails if the content has been tampered with", func(t *testing.T) {
+		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState, s.passphrase)
+		s.NoError(err)
+
+		// tamper directly with the database
+		err = s.Repos.AttestationState.Save(ctx, s.runOrg1.ID, []byte("tampered data modified directly in the DB"))
+		s.NoError(err)
+
+		got, err := s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.passphrase)
+		s.ErrorContains(err, "incorrect passphrase")
+		s.Nil(got)
+	})
+}
+
+func (s *attestationStateTestSuite) TestWorkflowRunLifecycle() {
+	ctx := context.Background()
+	s.T().Run("the state gets cleared when workflow run is set as finished", func(t *testing.T) {
+		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState, s.passphrase)
+		s.NoError(err)
+
+		err = s.WorkflowRun.MarkAsFinished(ctx, s.runOrg1.ID.String(), biz.WorkflowRunSuccess, "finished")
+		s.NoError(err)
+
+		_, err = s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.passphrase)
+		s.Error(err)
+		s.True(biz.IsNotFound(err))
+	})
+
+	s.T().Run("or it expires", func(t *testing.T) {
+		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState, s.passphrase)
+		s.NoError(err)
+
+		err = s.Repos.WorkflowRunRepo.Expire(ctx, s.runOrg1.ID)
+		s.NoError(err)
+
+		_, err = s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.passphrase)
+		s.Error(err)
+		s.True(biz.IsNotFound(err))
+	})
+}
+
 func (s *attestationStateTestSuite) TestReset() {
 	ctx := context.Background()
 
 	s.T().Run("the run is initialized", func(t *testing.T) {
-		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState)
+		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState, s.passphrase)
 		s.NoError(err)
 
 		ok, err := s.AttestationState.Initialized(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String())
 		s.NoError(err)
 		s.True(ok)
 
-		_, err = s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String())
+		_, err = s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.passphrase)
 		s.NoError(err)
 
 		err = s.AttestationState.Reset(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String())
@@ -135,11 +198,9 @@ func (s *attestationStateTestSuite) TestReset() {
 		s.NoError(err)
 		s.False(ok)
 
-		got, err := s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String())
-		s.NoError(err)
-		if ok := proto.Equal(&schemav1.CraftingSchema{}, got.State); !ok {
-			s.Fail(fmt.Sprintf("These two protobuf messages are not equal:\nexpected: %v\nactual:  %v", nil, got.State))
-		}
+		_, err = s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.passphrase)
+		s.Error(err)
+		s.True(biz.IsNotFound(err))
 	})
 
 	s.T().Run("if the run is not initialized the state doesn't change", func(t *testing.T) {
@@ -161,7 +222,8 @@ func TestAttestationStateUseCase(t *testing.T) {
 type attestationStateTestSuite struct {
 	testhelpers.UseCasesEachTestSuite
 	*workflowRunTestData
-	testState *schemav1.CraftingSchema
+	testState  *schemav1.CraftingSchema
+	passphrase string
 }
 
 func (s *attestationStateTestSuite) SetupTest() {
@@ -173,4 +235,5 @@ func (s *attestationStateTestSuite) SetupTest() {
 	s.workflowRunTestData = &workflowRunTestData{}
 	setupWorkflowRunTestData(s.T(), s.TestingUseCases, s.workflowRunTestData)
 	s.testState = &schemav1.CraftingSchema{SchemaVersion: "v1"}
+	s.passphrase = "development passphrase super secret"
 }

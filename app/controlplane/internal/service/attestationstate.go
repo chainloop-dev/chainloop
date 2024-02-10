@@ -17,12 +17,16 @@ package service
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"strings"
 
 	cpAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 
 	errors "github.com/go-kratos/kratos/v2/errors"
+	"github.com/go-kratos/kratos/v2/transport"
 )
 
 type AttestationStateService struct {
@@ -60,7 +64,12 @@ func (s *AttestationStateService) Save(ctx context.Context, req *cpAPI.Attestati
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
 
-	if err := s.uc.Save(ctx, robotAccount.WorkflowID, req.WorkflowRunId, req.AttestationState); err != nil {
+	encryptionPassphrase, err := encryptionPassphrase(ctx)
+	if err != nil {
+		return nil, errors.Forbidden("forbidden", "failed to authenticate request")
+	}
+
+	if err := s.uc.Save(ctx, robotAccount.WorkflowID, req.WorkflowRunId, req.AttestationState, encryptionPassphrase); err != nil {
 		return nil, handleUseCaseErr("state", err, s.log)
 	}
 
@@ -73,7 +82,12 @@ func (s *AttestationStateService) Read(ctx context.Context, req *cpAPI.Attestati
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
 
-	state, err := s.uc.Read(ctx, robotAccount.WorkflowID, req.WorkflowRunId)
+	encryptionPassphrase, err := encryptionPassphrase(ctx)
+	if err != nil {
+		return nil, errors.Forbidden("forbidden", "failed to authenticate request")
+	}
+
+	state, err := s.uc.Read(ctx, robotAccount.WorkflowID, req.WorkflowRunId, encryptionPassphrase)
 	if err != nil {
 		return nil, handleUseCaseErr("state", err, s.log)
 	}
@@ -96,4 +110,25 @@ func (s *AttestationStateService) Reset(ctx context.Context, req *cpAPI.Attestat
 	}
 
 	return &cpAPI.AttestationStateServiceResetResponse{}, nil
+}
+
+// In order to encrypt the state at rest, we will encrypt the state using a passphrase
+// which comes in the request and is used to derive an encryption key.
+// The passphrase that we'll use is the robot-account token that only the workload should have.
+// This method will extract the token from the request and return it.
+// NOTE: Using the robot-account as JWT is not ideal but it's a start
+func encryptionPassphrase(ctx context.Context) (string, error) {
+	header, ok := transport.FromServerContext(ctx)
+	if !ok {
+		return "", errors.NotFound("not found", "transport not found")
+	}
+
+	auths := strings.SplitN(header.RequestHeader().Get(authorizationKey), " ", 2)
+	if len(auths) != 2 || !strings.EqualFold(auths[0], "Bearer") {
+		return "", errors.BadRequest("bad request", "missing auth token")
+	}
+
+	// We'll use the sha256 of the token as the passphrase
+	hash := sha256.Sum256([]byte(auths[1]))
+	return hex.EncodeToString(hash[:]), nil
 }
