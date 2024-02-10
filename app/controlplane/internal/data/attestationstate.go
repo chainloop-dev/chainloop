@@ -59,7 +59,7 @@ func (r *AttestationStateRepo) Save(ctx context.Context, runID uuid.UUID, state 
 	return nil
 }
 
-func (r *AttestationStateRepo) Read(ctx context.Context, runID uuid.UUID) (*biz.AttestationState, error) {
+func (r *AttestationStateRepo) Read(ctx context.Context, runID uuid.UUID) ([]byte, error) {
 	run, err := r.data.db.WorkflowRun.Query().Where(workflowrun.ID(runID)).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, fmt.Errorf("failed to read attestation state: %w", err)
@@ -67,7 +67,7 @@ func (r *AttestationStateRepo) Read(ctx context.Context, runID uuid.UUID) (*biz.
 		return nil, biz.NewErrNotFound("workflow run")
 	}
 
-	return &biz.AttestationState{EncryptedState: run.AttestationState}, nil
+	return run.AttestationState, nil
 }
 
 func (r *AttestationStateRepo) Reset(ctx context.Context, runID uuid.UUID) error {

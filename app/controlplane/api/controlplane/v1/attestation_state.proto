@@ -20,6 +20,7 @@ package controlplane.v1;
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
 import "validate/validate.proto";
+import "workflowcontract/v1/crafting_schema.proto";
 
 // This service is used by the CLI to generate attestation
 service AttestationStateService {
@@ -43,8 +44,7 @@ message AttestationStateServiceInitializedResponse {
 
 message AttestationStateServiceSaveRequest {
   string workflow_run_id = 1 [(validate.rules).string = {min_len: 1}];
-  // encrypted attestation state
-  bytes attestation_state = 2 [(validate.rules).bytes = {min_len: 1}];;
+  workflowcontract.v1.CraftingSchema attestation_state = 2 [(validate.rules).message.required = true];
 }
 
 message AttestationStateServiceSaveResponse {}
@@ -57,8 +57,7 @@ message AttestationStateServiceReadResponse {
   Result result = 1;
   
   message Result {
-    // encrypted attestation state
-    bytes attestation_state = 2;
+    workflowcontract.v1.CraftingSchema attestation_state = 2;
   }
 }
 

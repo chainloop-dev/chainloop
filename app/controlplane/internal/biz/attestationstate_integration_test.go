@@ -17,13 +17,16 @@ package biz_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
+	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	creds "github.com/chainloop-dev/chainloop/internal/credentials/mocks"
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
@@ -84,7 +87,9 @@ func (s *attestationStateTestSuite) TestSave() {
 
 		got, err := s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String())
 		s.NoError(err)
-		s.Equal(s.testState, got.EncryptedState)
+		if ok := proto.Equal(s.testState, got.State); !ok {
+			s.Fail(fmt.Sprintf("These two protobuf messages are not equal:\nexpected: %v\nactual:  %v", s.testState, got.State))
+		}
 	})
 
 	s.T().Run("it can be overridden", func(t *testing.T) {
@@ -93,14 +98,19 @@ func (s *attestationStateTestSuite) TestSave() {
 
 		got, err := s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String())
 		s.NoError(err)
-		s.Equal(s.testState, got.EncryptedState)
+		if ok := proto.Equal(s.testState, got.State); !ok {
+			s.Fail(fmt.Sprintf("These two protobuf messages are not equal:\nexpected: %v\nactual:  %v", s.testState, got.State))
+		}
 
-		err = s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), []byte("new state"))
+		newState := &schemav1.CraftingSchema{SchemaVersion: "v2"}
+		err = s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), newState)
 		s.NoError(err)
 
 		got, err = s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String())
 		s.NoError(err)
-		s.Equal([]byte("new state"), got.EncryptedState)
+		if ok := proto.Equal(newState, got.State); !ok {
+			s.Fail(fmt.Sprintf("These two protobuf messages are not equal:\nexpected: %v\nactual:  %v", newState, got.State))
+		}
 	})
 }
 
@@ -115,9 +125,8 @@ func (s *attestationStateTestSuite) TestReset() {
 		s.NoError(err)
 		s.True(ok)
 
-		got, err := s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String())
+		_, err = s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String())
 		s.NoError(err)
-		s.Equal(s.testState, got.EncryptedState)
 
 		err = s.AttestationState.Reset(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String())
 		s.NoError(err)
@@ -126,9 +135,11 @@ func (s *attestationStateTestSuite) TestReset() {
 		s.NoError(err)
 		s.False(ok)
 
-		got, err = s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String())
+		got, err := s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String())
 		s.NoError(err)
-		s.Equal([]byte(nil), got.EncryptedState)
+		if ok := proto.Equal(&schemav1.CraftingSchema{}, got.State); !ok {
+			s.Fail(fmt.Sprintf("These two protobuf messages are not equal:\nexpected: %v\nactual:  %v", nil, got.State))
+		}
 	})
 
 	s.T().Run("if the run is not initialized the state doesn't change", func(t *testing.T) {
@@ -150,7 +161,7 @@ func TestAttestationStateUseCase(t *testing.T) {
 type attestationStateTestSuite struct {
 	testhelpers.UseCasesEachTestSuite
 	*workflowRunTestData
-	testState []byte
+	testState *schemav1.CraftingSchema
 }
 
 func (s *attestationStateTestSuite) SetupTest() {
@@ -161,5 +172,5 @@ func (s *attestationStateTestSuite) SetupTest() {
 
 	s.workflowRunTestData = &workflowRunTestData{}
 	setupWorkflowRunTestData(s.T(), s.TestingUseCases, s.workflowRunTestData)
-	s.testState = []byte("test state")
+	s.testState = &schemav1.CraftingSchema{SchemaVersion: "v1"}
 }

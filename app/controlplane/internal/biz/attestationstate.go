@@ -19,17 +19,19 @@ import (
 	"context"
 	"fmt"
 
+	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/proto"
 )
 
 type AttestationState struct {
-	EncryptedState []byte
+	State *schemav1.CraftingSchema
 }
 
 type AttestationStateRepo interface {
 	Initialized(ctx context.Context, workflowRunID uuid.UUID) (bool, error)
 	Save(ctx context.Context, workflowRunID uuid.UUID, state []byte) error
-	Read(ctx context.Context, workflowRunID uuid.UUID) (*AttestationState, error)
+	Read(ctx context.Context, workflowRunID uuid.UUID) ([]byte, error)
 	Reset(ctx context.Context, workflowRunID uuid.UUID) error
 }
 
@@ -56,13 +58,18 @@ func (uc *AttestationStateUseCase) Initialized(ctx context.Context, workflowID, 
 	return initialized, nil
 }
 
-func (uc *AttestationStateUseCase) Save(ctx context.Context, workflowID, runID string, state []byte) error {
+func (uc *AttestationStateUseCase) Save(ctx context.Context, workflowID, runID string, state *schemav1.CraftingSchema) error {
 	run, err := uc.checkWorkflowRunInWorkflow(ctx, workflowID, runID)
 	if err != nil {
 		return fmt.Errorf("failed to check workflow run: %w", err)
 	}
 
-	if err := uc.repo.Save(ctx, run.ID, state); err != nil {
+	rawState, err := proto.Marshal(state)
+	if err != nil {
+		return fmt.Errorf("failed to marshal attestation state: %w", err)
+	}
+
+	if err := uc.repo.Save(ctx, run.ID, rawState); err != nil {
 		return fmt.Errorf("failed to save attestation state: %w", err)
 	}
 
@@ -80,7 +87,12 @@ func (uc *AttestationStateUseCase) Read(ctx context.Context, workflowID, runID s
 		return nil, fmt.Errorf("failed to save attestation state: %w", err)
 	}
 
-	return res, nil
+	state := &schemav1.CraftingSchema{}
+	if err := proto.Unmarshal(res, state); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal attestation state: %w", err)
+	}
+
+	return &AttestationState{State: state}, nil
 }
 
 func (uc *AttestationStateUseCase) Reset(ctx context.Context, workflowID, runID string) error {

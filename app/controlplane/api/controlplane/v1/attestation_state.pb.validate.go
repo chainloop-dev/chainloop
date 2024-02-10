@@ -321,15 +321,44 @@ func (m *AttestationStateServiceSaveRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if len(m.GetAttestationState()) < 1 {
+	if m.GetAttestationState() == nil {
 		err := AttestationStateServiceSaveRequestValidationError{
 			field:  "AttestationState",
-			reason: "value length must be at least 1 bytes",
+			reason: "value is required",
 		}
 		if !all {
 			return err
 		}
 		errors = append(errors, err)
+	}
+
+	if all {
+		switch v := interface{}(m.GetAttestationState()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AttestationStateServiceSaveRequestValidationError{
+					field:  "AttestationState",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AttestationStateServiceSaveRequestValidationError{
+					field:  "AttestationState",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetAttestationState()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AttestationStateServiceSaveRequestValidationError{
+				field:  "AttestationState",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
 	}
 
 	if len(errors) > 0 {
@@ -1129,7 +1158,34 @@ func (m *AttestationStateServiceReadResponse_Result) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for AttestationState
+	if all {
+		switch v := interface{}(m.GetAttestationState()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AttestationStateServiceReadResponse_ResultValidationError{
+					field:  "AttestationState",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AttestationStateServiceReadResponse_ResultValidationError{
+					field:  "AttestationState",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetAttestationState()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AttestationStateServiceReadResponse_ResultValidationError{
+				field:  "AttestationState",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	if len(errors) > 0 {
 		return AttestationStateServiceReadResponse_ResultMultiError(errors)

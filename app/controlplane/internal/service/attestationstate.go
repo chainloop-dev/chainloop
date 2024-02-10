@@ -80,7 +80,7 @@ func (s *AttestationStateService) Read(ctx context.Context, req *cpAPI.Attestati
 
 	return &cpAPI.AttestationStateServiceReadResponse{
 		Result: &cpAPI.AttestationStateServiceReadResponse_Result{
-			AttestationState: state.EncryptedState,
+			AttestationState: state.State,
 		},
 	}, nil
 }

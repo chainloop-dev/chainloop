@@ -2,6 +2,7 @@
 import { grpc } from "@improbable-eng/grpc-web";
 import { BrowserHeaders } from "browser-headers";
 import _m0 from "protobufjs/minimal";
+import { CraftingSchema } from "../../workflowcontract/v1/crafting_schema";
 
 export const protobufPackage = "controlplane.v1";
 
@@ -19,8 +20,7 @@ export interface AttestationStateServiceInitializedResponse_Result {
 
 export interface AttestationStateServiceSaveRequest {
   workflowRunId: string;
-  /** encrypted attestation state */
-  attestationState: Uint8Array;
+  attestationState?: CraftingSchema;
 }
 
 export interface AttestationStateServiceSaveResponse {
@@ -35,8 +35,7 @@ export interface AttestationStateServiceReadResponse {
 }
 
 export interface AttestationStateServiceReadResponse_Result {
-  /** encrypted attestation state */
-  attestationState: Uint8Array;
+  attestationState?: CraftingSchema;
 }
 
 export interface AttestationStateServiceResetRequest {
@@ -238,7 +237,7 @@ export const AttestationStateServiceInitializedResponse_Result = {
 };
 
 function createBaseAttestationStateServiceSaveRequest(): AttestationStateServiceSaveRequest {
-  return { workflowRunId: "", attestationState: new Uint8Array(0) };
+  return { workflowRunId: "", attestationState: undefined };
 }
 
 export const AttestationStateServiceSaveRequest = {
@@ -246,8 +245,8 @@ export const AttestationStateServiceSaveRequest = {
     if (message.workflowRunId !== "") {
       writer.uint32(10).string(message.workflowRunId);
     }
-    if (message.attestationState.length !== 0) {
-      writer.uint32(18).bytes(message.attestationState);
+    if (message.attestationState !== undefined) {
+      CraftingSchema.encode(message.attestationState, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -271,7 +270,7 @@ export const AttestationStateServiceSaveRequest = {
             break;
           }
 
-          message.attestationState = reader.bytes();
+          message.attestationState = CraftingSchema.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -285,7 +284,7 @@ export const AttestationStateServiceSaveRequest = {
   fromJSON(object: any): AttestationStateServiceSaveRequest {
     return {
       workflowRunId: isSet(object.workflowRunId) ? String(object.workflowRunId) : "",
-      attestationState: isSet(object.attestationState) ? bytesFromBase64(object.attestationState) : new Uint8Array(0),
+      attestationState: isSet(object.attestationState) ? CraftingSchema.fromJSON(object.attestationState) : undefined,
     };
   },
 
@@ -293,9 +292,7 @@ export const AttestationStateServiceSaveRequest = {
     const obj: any = {};
     message.workflowRunId !== undefined && (obj.workflowRunId = message.workflowRunId);
     message.attestationState !== undefined &&
-      (obj.attestationState = base64FromBytes(
-        message.attestationState !== undefined ? message.attestationState : new Uint8Array(0),
-      ));
+      (obj.attestationState = message.attestationState ? CraftingSchema.toJSON(message.attestationState) : undefined);
     return obj;
   },
 
@@ -310,7 +307,9 @@ export const AttestationStateServiceSaveRequest = {
   ): AttestationStateServiceSaveRequest {
     const message = createBaseAttestationStateServiceSaveRequest();
     message.workflowRunId = object.workflowRunId ?? "";
-    message.attestationState = object.attestationState ?? new Uint8Array(0);
+    message.attestationState = (object.attestationState !== undefined && object.attestationState !== null)
+      ? CraftingSchema.fromPartial(object.attestationState)
+      : undefined;
     return message;
   },
 };
@@ -489,13 +488,13 @@ export const AttestationStateServiceReadResponse = {
 };
 
 function createBaseAttestationStateServiceReadResponse_Result(): AttestationStateServiceReadResponse_Result {
-  return { attestationState: new Uint8Array(0) };
+  return { attestationState: undefined };
 }
 
 export const AttestationStateServiceReadResponse_Result = {
   encode(message: AttestationStateServiceReadResponse_Result, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.attestationState.length !== 0) {
-      writer.uint32(18).bytes(message.attestationState);
+    if (message.attestationState !== undefined) {
+      CraftingSchema.encode(message.attestationState, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -512,7 +511,7 @@ export const AttestationStateServiceReadResponse_Result = {
             break;
           }
 
-          message.attestationState = reader.bytes();
+          message.attestationState = CraftingSchema.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -525,16 +524,14 @@ export const AttestationStateServiceReadResponse_Result = {
 
   fromJSON(object: any): AttestationStateServiceReadResponse_Result {
     return {
-      attestationState: isSet(object.attestationState) ? bytesFromBase64(object.attestationState) : new Uint8Array(0),
+      attestationState: isSet(object.attestationState) ? CraftingSchema.fromJSON(object.attestationState) : undefined,
     };
   },
 
   toJSON(message: AttestationStateServiceReadResponse_Result): unknown {
     const obj: any = {};
     message.attestationState !== undefined &&
-      (obj.attestationState = base64FromBytes(
-        message.attestationState !== undefined ? message.attestationState : new Uint8Array(0),
-      ));
+      (obj.attestationState = message.attestationState ? CraftingSchema.toJSON(message.attestationState) : undefined);
     return obj;
   },
 
@@ -548,7 +545,9 @@ export const AttestationStateServiceReadResponse_Result = {
     object: I,
   ): AttestationStateServiceReadResponse_Result {
     const message = createBaseAttestationStateServiceReadResponse_Result();
-    message.attestationState = object.attestationState ?? new Uint8Array(0);
+    message.attestationState = (object.attestationState !== undefined && object.attestationState !== null)
+      ? CraftingSchema.fromPartial(object.attestationState)
+      : undefined;
     return message;
   },
 };
@@ -917,31 +916,6 @@ var tsProtoGlobalThis: any = (() => {
   }
   throw "Unable to locate global object";
 })();
-
-function bytesFromBase64(b64: string): Uint8Array {
-  if (tsProtoGlobalThis.Buffer) {
-    return Uint8Array.from(tsProtoGlobalThis.Buffer.from(b64, "base64"));
-  } else {
-    const bin = tsProtoGlobalThis.atob(b64);
-    const arr = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; ++i) {
-      arr[i] = bin.charCodeAt(i);
-    }
-    return arr;
-  }
-}
-
-function base64FromBytes(arr: Uint8Array): string {
-  if (tsProtoGlobalThis.Buffer) {
-    return tsProtoGlobalThis.Buffer.from(arr).toString("base64");
-  } else {
-    const bin: string[] = [];
-    arr.forEach((byte) => {
-      bin.push(String.fromCharCode(byte));
-    });
-    return tsProtoGlobalThis.btoa(bin.join(""));
-  }
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
