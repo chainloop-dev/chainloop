@@ -21,6 +21,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"io"
 
@@ -183,6 +184,11 @@ func encrypt(data []byte, passphrase string) ([]byte, error) {
 	}
 	// Prepend magic string to the plaintext
 	plaintextWithMagic := append([]byte(magic), data...)
+
+	// 6MB limit to protect against allocation overflows
+	if len(plaintextWithMagic) > 6*1024*1024 {
+		return nil, errors.New("value too large")
+	}
 
 	ciphertext := make([]byte, aes.BlockSize+len(plaintextWithMagic))
 	iv := ciphertext[:aes.BlockSize]
