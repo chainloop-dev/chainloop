@@ -41,7 +41,7 @@ func New(statePath string) (*Filesystem, error) {
 	return &Filesystem{statePath}, nil
 }
 
-func (l *Filesystem) Info(ctx context.Context, _ string) string {
+func (l *Filesystem) Info(_ context.Context, _ string) string {
 	return fmt.Sprintf("file://%s", l.statePath)
 }
 
