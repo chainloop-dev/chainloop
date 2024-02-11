@@ -16,6 +16,7 @@
 package filesystem
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"testing"
@@ -79,7 +80,7 @@ func (s *testSuite) TestWrite() {
 			sm, err := New(s.statePath)
 			require.NoError(s.T(), err)
 
-			err = sm.Write("", tc.state)
+			err = sm.Write(context.Background(), "", tc.state)
 			if tc.wantErr {
 				s.Error(err)
 				return
@@ -87,7 +88,7 @@ func (s *testSuite) TestWrite() {
 
 			s.NoError(err)
 			got := &v1.CraftingState{}
-			err = sm.Read("", got)
+			err = sm.Read(context.Background(), "", got)
 			s.NoError(err)
 			s.Equal(tc.state, got)
 			s.True(tc.state.DryRun)
@@ -99,14 +100,14 @@ func (s *testSuite) TestRead() {
 	s.T().Run("empty input state", func(t *testing.T) {
 		sm, err := New(s.statePath)
 		require.NoError(t, err)
-		err = sm.Read("", nil)
+		err = sm.Read(context.Background(), "", nil)
 		s.Error(err)
 	})
 
 	s.T().Run("no state found in path return NotFound error", func(t *testing.T) {
 		sm, err := New(s.statePath)
 		require.NoError(t, err)
-		err = sm.Read("", &v1.CraftingState{})
+		err = sm.Read(context.Background(), "", &v1.CraftingState{})
 		s.Error(err)
 		want := &statemanager.ErrNotFound{}
 		s.ErrorAs(err, &want)
@@ -116,7 +117,7 @@ func (s *testSuite) TestRead() {
 		sm, err := New("testdata/state.json")
 		require.NoError(t, err)
 		got := &v1.CraftingState{}
-		err = sm.Read("", got)
+		err = sm.Read(context.Background(), "", got)
 		require.NoError(s.T(), err)
 
 		if ok := proto.Equal(s.exampleState, got); !ok {
@@ -129,7 +130,7 @@ func (s *testSuite) TestReset() {
 	s.T().Run("no state found in path return NotFound error", func(t *testing.T) {
 		sm, err := New(s.statePath)
 		require.NoError(t, err)
-		err = sm.Reset("")
+		err = sm.Reset(context.Background(), "")
 		s.Error(err)
 		want := &statemanager.ErrNotFound{}
 		s.ErrorAs(err, &want)
@@ -140,20 +141,20 @@ func (s *testSuite) TestReset() {
 		require.NoError(s.T(), err)
 		sm, err := New(s.statePath)
 		require.NoError(t, err)
-		err = sm.Reset("")
+		err = sm.Reset(context.Background(), "")
 		s.NoError(err)
 	})
 }
 func (s *testSuite) TestInfo() {
 	fs, _ := New("state.json")
-	s.Equal("file://state.json", fs.Info(""))
+	s.Equal("file://state.json", fs.Info(context.Background(), ""))
 }
 
 func (s *testSuite) TestInitialized() {
 	s.T().Run("non existing", func(t *testing.T) {
 		fs, err := New(s.statePath)
 		require.NoError(s.T(), err)
-		ok, err := fs.Initialized("")
+		ok, err := fs.Initialized(context.Background(), "")
 		require.NoError(s.T(), err)
 		s.False(ok)
 	})
@@ -163,7 +164,7 @@ func (s *testSuite) TestInitialized() {
 		require.NoError(s.T(), err)
 		fs, err := New(s.statePath)
 		require.NoError(s.T(), err)
-		ok, err := fs.Initialized("")
+		ok, err := fs.Initialized(context.Background(), "")
 		require.NoError(s.T(), err)
 		s.True(ok)
 	})

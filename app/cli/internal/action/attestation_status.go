@@ -16,6 +16,7 @@
 package action
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -66,14 +67,14 @@ func NewAttestationStatus(cfg *AttestationStatusOpts) (*AttestationStatus, error
 	return &AttestationStatus{ActionsOpts: cfg.ActionsOpts, c: c}, nil
 }
 
-func (action *AttestationStatus) Run(attestationID string) (*AttestationStatusResult, error) {
+func (action *AttestationStatus) Run(ctx context.Context, attestationID string) (*AttestationStatusResult, error) {
 	c := action.c
 
-	if initialized := c.AlreadyInitialized(attestationID); !initialized {
+	if initialized := c.AlreadyInitialized(ctx, attestationID); !initialized {
 		return nil, ErrAttestationNotInitialized
 	}
 
-	if err := c.LoadCraftingState(attestationID); err != nil {
+	if err := c.LoadCraftingState(ctx, attestationID); err != nil {
 		action.Logger.Err(err).Msg("loading existing attestation")
 		return nil, err
 	}

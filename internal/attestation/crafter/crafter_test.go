@@ -16,6 +16,7 @@
 package crafter_test
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -162,7 +163,7 @@ func newInitializedCrafter(t *testing.T, contractPath string, wfMeta *v1.Workflo
 		return nil, err
 	}
 
-	if err = c.Init(&crafter.InitOpts{SchemaV1: contract, WfInfo: wfMeta, DryRun: dryRun, AttestationID: ""}); err != nil {
+	if err = c.Init(context.Background(), &crafter.InitOpts{SchemaV1: contract, WfInfo: wfMeta, DryRun: dryRun, AttestationID: ""}); err != nil {
 		return nil, err
 	}
 
@@ -315,7 +316,7 @@ func (s *crafterSuite) TestResolveEnvVars() {
 			c, err := newInitializedCrafter(s.T(), contract, &v1.WorkflowMetadata{}, false, "")
 			require.NoError(s.T(), err)
 
-			err = c.ResolveEnvVars("")
+			err = c.ResolveEnvVars(context.Background(), "")
 
 			if tc.expectedError != "" {
 				s.Error(err)
@@ -349,14 +350,14 @@ func (s *crafterSuite) TestAlreadyInitialized() {
 		// TODO: replace by a mock
 		c, err := crafter.NewCrafter(testingStateManager(t, statePath))
 		require.NoError(s.T(), err)
-		s.True(c.AlreadyInitialized(""))
+		s.True(c.AlreadyInitialized(context.Background(), ""))
 	})
 
 	s.T().Run("non existing", func(t *testing.T) {
 		statePath := fmt.Sprintf("%s/attestation.json", t.TempDir())
 		c, err := crafter.NewCrafter(testingStateManager(t, statePath))
 		require.NoError(s.T(), err)
-		s.False(c.AlreadyInitialized(""))
+		s.False(c.AlreadyInitialized(context.Background(), ""))
 	})
 }
 
