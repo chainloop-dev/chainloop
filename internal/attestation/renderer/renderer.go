@@ -25,7 +25,7 @@ import (
 	"os"
 	"syscall"
 
-	v1 "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
+	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"

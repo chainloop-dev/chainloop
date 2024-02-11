@@ -24,8 +24,8 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/bytefmt"
-	api "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	api "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
 	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/rs/zerolog"

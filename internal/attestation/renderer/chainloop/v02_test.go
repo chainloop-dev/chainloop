@@ -20,7 +20,7 @@ import (
 	"os"
 	"testing"
 
-	api "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
+	api "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/stretchr/testify/assert"

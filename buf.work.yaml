@@ -1,6 +1,6 @@
 version: v1
 directories:
-  - app/cli/api
   - app/controlplane/api
   - app/artifact-cas/api
   - internal/credentials/api
+  - internal/attestation/crafter/api

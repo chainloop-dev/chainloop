@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	v1 "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
+	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"google.golang.org/protobuf/encoding/protojson"
 
