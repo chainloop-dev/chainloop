@@ -1,10 +1,5 @@
 VERSION=$(shell git describe --tags --always)
 
-.PHONY: api
-# generate api proto
-api:
-	cd ./api && buf generate
-
 .PHONY: build
 # build
 build:

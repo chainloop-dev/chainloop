@@ -21,7 +21,7 @@ import (
 	"io"
 	"os"
 
-	v1 "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
+	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/statemanager"
 	"google.golang.org/protobuf/encoding/protojson"
 )

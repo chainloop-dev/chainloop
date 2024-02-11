@@ -21,7 +21,7 @@ import (
 	"os"
 	"testing"
 
-	v1 "github.com/chainloop-dev/chainloop/app/cli/api/attestation/v1"
+	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/statemanager"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
