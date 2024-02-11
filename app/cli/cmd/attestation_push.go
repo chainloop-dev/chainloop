@@ -73,7 +73,7 @@ func newAttestationPushCmd() *cobra.Command {
 				return err
 			}
 
-			res, err := a.Run(cmd.Context(), "", annotations)
+			res, err := a.Run(cmd.Context(), attestationID, annotations)
 			if err != nil {
 				if errors.Is(err, action.ErrAttestationNotInitialized) {
 					return err

@@ -46,7 +46,7 @@ type AttestationPush struct {
 }
 
 func NewAttestationPush(cfg *AttestationPushOpts) (*AttestationPush, error) {
-	c, err := newCrafter(cfg.CPConnection, &cfg.Logger)
+	c, err := newCrafter(cfg.UseAttestationRemoteState, cfg.CPConnection, &cfg.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load crafter: %w", err)
 	}
@@ -61,7 +61,9 @@ func NewAttestationPush(cfg *AttestationPushOpts) (*AttestationPush, error) {
 }
 
 func (action *AttestationPush) Run(ctx context.Context, attestationID string, runtimeAnnotations map[string]string) (*AttestationResult, error) {
-	if initialized := action.c.AlreadyInitialized(ctx, attestationID); !initialized {
+	if initialized, err := action.c.AlreadyInitialized(ctx, attestationID); err != nil {
+		return nil, fmt.Errorf("checking if attestation is already initialized: %w", err)
+	} else if !initialized {
 		return nil, ErrAttestationNotInitialized
 	}
 

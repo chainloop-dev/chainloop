@@ -124,9 +124,8 @@ func (c *Crafter) Init(ctx context.Context, opts *InitOpts) error {
 	return c.initCraftingStateFile(ctx, opts.AttestationID, opts.SchemaV1, opts.WfInfo, opts.DryRun, runnerType, runnerContext.RunURI())
 }
 
-func (c *Crafter) AlreadyInitialized(ctx context.Context, stateID string) bool {
-	ok, _ := c.stateManager.Initialized(ctx, stateID)
-	return ok
+func (c *Crafter) AlreadyInitialized(ctx context.Context, stateID string) (bool, error) {
+	return c.stateManager.Initialized(ctx, stateID)
 }
 
 // Extract raw data in JSON format from different sources, i.e cue or yaml files

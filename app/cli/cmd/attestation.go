@@ -24,8 +24,12 @@ import (
 )
 
 var (
-	robotAccount string
-	GracefulExit bool
+	robotAccount              string
+	useAttestationRemoteState bool
+	GracefulExit              bool
+	// attestationID is the unique identifier of the in-progress attestation
+	// this is required when use-attestation-remote-state is enabled
+	attestationID string
 )
 
 const robotAccountEnvVarName = "CHAINLOOP_ROBOT_ACCOUNT"
@@ -44,7 +48,10 @@ func newAttestationCmd() *cobra.Command {
 	if robotAccount == "" {
 		robotAccount = os.Getenv(robotAccountEnvVarName)
 	}
+
 	cmd.PersistentFlags().BoolVar(&GracefulExit, "graceful-exit", false, "exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0")
+	cmd.PersistentFlags().BoolVar(&useAttestationRemoteState, "remote-state", false, "Store the attestation state remotely (preview feature)")
+	cmd.PersistentFlags().StringVar(&attestationID, "attestation-id", "", "Unique identifier of the attestation in progress. Required when --remote-state is enabled")
 
 	cmd.AddCommand(newAttestationInitCmd(), newAttestationAddCmd(), newAttestationStatusCmd(), newAttestationPushCmd(), newAttestationResetCmd())
 

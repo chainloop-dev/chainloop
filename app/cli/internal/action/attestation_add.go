@@ -42,7 +42,7 @@ type AttestationAdd struct {
 }
 
 func NewAttestationAdd(cfg *AttestationAddOpts) (*AttestationAdd, error) {
-	c, err := newCrafter(cfg.CPConnection, &cfg.Logger)
+	c, err := newCrafter(cfg.UseAttestationRemoteState, cfg.CPConnection, &cfg.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load crafter: %w", err)
 	}
@@ -58,7 +58,9 @@ func NewAttestationAdd(cfg *AttestationAddOpts) (*AttestationAdd, error) {
 var ErrAttestationNotInitialized = errors.New("attestation not yet initialized")
 
 func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialName, materialValue string, annotations map[string]string) error {
-	if initialized := action.c.AlreadyInitialized(ctx, attestationID); !initialized {
+	if initialized, err := action.c.AlreadyInitialized(ctx, attestationID); err != nil {
+		return fmt.Errorf("checking if attestation is already initialized: %w", err)
+	} else if !initialized {
 		return ErrAttestationNotInitialized
 	}
 

@@ -33,6 +33,9 @@ func newAttestationStatusCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "status",
 		Short: "check the status of the current attestation process",
+		Annotations: map[string]string{
+			useWorkflowRobotAccount: "true",
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			a, err := action.NewAttestationStatus(
 				&action.AttestationStatusOpts{
@@ -43,7 +46,7 @@ func newAttestationStatusCmd() *cobra.Command {
 				return fmt.Errorf("failed to load action: %w", err)
 			}
 
-			res, err := a.Run(cmd.Context(), "")
+			res, err := a.Run(cmd.Context(), attestationID)
 			if err != nil {
 				return err
 			}
@@ -63,7 +66,7 @@ func attestationStatusTableOutput(status *action.AttestationStatusResult) error 
 	gt.AppendRow(table.Row{"Initialized At", status.InitializedAt.Format(time.RFC822)})
 	gt.AppendSeparator()
 	meta := status.WorkflowMeta
-	gt.AppendRow(table.Row{"Workflow", meta.WorkflowID})
+	gt.AppendRow(table.Row{"Attestation ID", meta.RunID})
 	gt.AppendRow(table.Row{"Name", meta.Name})
 	gt.AppendRow(table.Row{"Team", meta.Team})
 	gt.AppendRow(table.Row{"Project", meta.Project})

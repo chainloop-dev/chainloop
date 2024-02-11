@@ -175,7 +175,7 @@ func initConfigFile() {
 }
 
 func newActionOpts(logger zerolog.Logger, conn *grpc.ClientConn) *action.ActionsOpts {
-	return &action.ActionsOpts{CPConnection: conn, Logger: logger}
+	return &action.ActionsOpts{CPConnection: conn, Logger: logger, UseAttestationRemoteState: useAttestationRemoteState}
 }
 
 func cleanup(conn *grpc.ClientConn) error {
