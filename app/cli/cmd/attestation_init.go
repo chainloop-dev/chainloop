@@ -48,7 +48,7 @@ func newAttestationInitCmd() *cobra.Command {
 			}
 
 			// Initialize it
-			err = a.Run(contractRevision)
+			err = a.Run(cmd.Context(), contractRevision)
 			if err != nil {
 				if errors.Is(err, action.ErrAttestationAlreadyExist) {
 					return err
@@ -67,7 +67,7 @@ func newAttestationInitCmd() *cobra.Command {
 				return newGracefulError(err)
 			}
 
-			res, err := statusAction.Run("")
+			res, err := statusAction.Run(cmd.Context(), "")
 			if err != nil {
 				return newGracefulError(err)
 			}

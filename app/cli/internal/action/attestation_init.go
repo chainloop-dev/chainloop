@@ -61,11 +61,10 @@ func NewAttestationInit(cfg *AttestationInitOpts) (*AttestationInit, error) {
 	}, nil
 }
 
-func (action *AttestationInit) Run(contractRevision int) error {
+func (action *AttestationInit) Run(ctx context.Context, contractRevision int) error {
 	action.Logger.Debug().Msg("Retrieving attestation definition")
 	client := pb.NewAttestationServiceClient(action.ActionsOpts.CPConnection)
 	// get information of the workflow
-	ctx := context.Background()
 	resp, err := client.GetContract(ctx, &pb.AttestationServiceGetContractRequest{ContractRevision: int32(contractRevision)})
 	if err != nil {
 		return err
@@ -123,17 +122,17 @@ func (action *AttestationInit) Run(contractRevision int) error {
 		AttestationID: attestationID,
 	}
 
-	if err := action.c.Init(initOpts); err != nil {
+	if err := action.c.Init(ctx, initOpts); err != nil {
 		return err
 	}
 
 	// Load the env variables both the system populated and the user predefined ones
-	if err := action.c.ResolveEnvVars(attestationID); err != nil {
+	if err := action.c.ResolveEnvVars(ctx, attestationID); err != nil {
 		if action.dryRun {
 			return nil
 		}
 
-		_ = action.c.Reset(attestationID)
+		_ = action.c.Reset(ctx, attestationID)
 		return err
 	}
 

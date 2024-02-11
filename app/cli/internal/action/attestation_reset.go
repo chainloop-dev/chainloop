@@ -45,12 +45,12 @@ func NewAttestationReset(opts *ActionsOpts) (*AttestationReset, error) {
 	return &AttestationReset{ActionsOpts: opts, c: c}, nil
 }
 
-func (action *AttestationReset) Run(attestationID, trigger, reason string) error {
-	if initialized := action.c.AlreadyInitialized(attestationID); !initialized {
+func (action *AttestationReset) Run(ctx context.Context, attestationID, trigger, reason string) error {
+	if initialized := action.c.AlreadyInitialized(ctx, attestationID); !initialized {
 		return ErrAttestationNotInitialized
 	}
 
-	if err := action.c.LoadCraftingState(attestationID); err != nil {
+	if err := action.c.LoadCraftingState(ctx, attestationID); err != nil {
 		action.Logger.Err(err).Msg("loading existing attestation")
 		return err
 	}
@@ -70,7 +70,7 @@ func (action *AttestationReset) Run(attestationID, trigger, reason string) error
 		}
 	}
 
-	return action.c.Reset(attestationID)
+	return action.c.Reset(ctx, attestationID)
 }
 
 func parseTrigger(in string) pb.AttestationServiceCancelRequest_TriggerType {

@@ -57,19 +57,19 @@ func NewAttestationAdd(cfg *AttestationAddOpts) (*AttestationAdd, error) {
 
 var ErrAttestationNotInitialized = errors.New("attestation not yet initialized")
 
-func (action *AttestationAdd) Run(attestationID, materialName, materialValue string, annotations map[string]string) error {
-	if initialized := action.c.AlreadyInitialized(attestationID); !initialized {
+func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialName, materialValue string, annotations map[string]string) error {
+	if initialized := action.c.AlreadyInitialized(ctx, attestationID); !initialized {
 		return ErrAttestationNotInitialized
 	}
 
-	if err := action.c.LoadCraftingState(attestationID); err != nil {
+	if err := action.c.LoadCraftingState(ctx, attestationID); err != nil {
 		action.Logger.Err(err).Msg("loading existing attestation")
 		return err
 	}
 
 	// Get upload creds and CASbackend for the current attestation and set up CAS client
 	client := pb.NewAttestationServiceClient(action.CPConnection)
-	creds, err := client.GetUploadCreds(context.Background(),
+	creds, err := client.GetUploadCreds(ctx,
 		&pb.AttestationServiceGetUploadCredsRequest{
 			WorkflowRunId: action.c.CraftingState.GetAttestation().GetWorkflow().GetWorkflowRunId(),
 		},
@@ -101,7 +101,7 @@ func (action *AttestationAdd) Run(attestationID, materialName, materialValue str
 		casBackend.Uploader = casclient.New(artifactCASConn, casclient.WithLogger(action.Logger))
 	}
 
-	if err := action.c.AddMaterial(attestationID, materialName, materialValue, casBackend, annotations); err != nil {
+	if err := action.c.AddMaterial(ctx, attestationID, materialName, materialValue, casBackend, annotations); err != nil {
 		return fmt.Errorf("adding material: %w", err)
 	}
 

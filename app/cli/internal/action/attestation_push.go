@@ -60,12 +60,12 @@ func NewAttestationPush(cfg *AttestationPushOpts) (*AttestationPush, error) {
 	}, nil
 }
 
-func (action *AttestationPush) Run(attestationID string, runtimeAnnotations map[string]string) (*AttestationResult, error) {
-	if initialized := action.c.AlreadyInitialized(attestationID); !initialized {
+func (action *AttestationPush) Run(ctx context.Context, attestationID string, runtimeAnnotations map[string]string) (*AttestationResult, error) {
+	if initialized := action.c.AlreadyInitialized(ctx, attestationID); !initialized {
 		return nil, ErrAttestationNotInitialized
 	}
 
-	if err := action.c.LoadCraftingState(attestationID); err != nil {
+	if err := action.c.LoadCraftingState(ctx, attestationID); err != nil {
 		action.Logger.Err(err).Msg("loading existing attestation")
 		return nil, err
 	}
@@ -133,14 +133,14 @@ func (action *AttestationPush) Run(attestationID string, runtimeAnnotations map[
 	if action.c.CraftingState.DryRun {
 		action.Logger.Info().Msg("dry-run completed, push skipped")
 		// We are done, remove the existing att state
-		if err := action.c.Reset(attestationID); err != nil {
+		if err := action.c.Reset(ctx, attestationID); err != nil {
 			return nil, err
 		}
 
 		return attestationResult, nil
 	}
 
-	attestationResult.Digest, err = pushToControlPlane(action.ActionsOpts.CPConnection, envelope, action.c.CraftingState.Attestation.GetWorkflow().GetWorkflowRunId())
+	attestationResult.Digest, err = pushToControlPlane(ctx, action.ActionsOpts.CPConnection, envelope, action.c.CraftingState.Attestation.GetWorkflow().GetWorkflowRunId())
 	if err != nil {
 		return nil, fmt.Errorf("pushing to control plane: %w", err)
 	}
@@ -148,21 +148,21 @@ func (action *AttestationPush) Run(attestationID string, runtimeAnnotations map[
 	action.Logger.Info().Msg("push completed")
 
 	// We are done, remove the existing att state
-	if err := action.c.Reset(attestationID); err != nil {
+	if err := action.c.Reset(ctx, attestationID); err != nil {
 		return nil, err
 	}
 
 	return attestationResult, nil
 }
 
-func pushToControlPlane(conn *grpc.ClientConn, envelope *dsse.Envelope, workflowRunID string) (string, error) {
+func pushToControlPlane(ctx context.Context, conn *grpc.ClientConn, envelope *dsse.Envelope, workflowRunID string) (string, error) {
 	encodedAttestation, err := encodeEnvelope(envelope)
 	if err != nil {
 		return "", fmt.Errorf("encoding attestation: %w", err)
 	}
 
 	client := pb.NewAttestationServiceClient(conn)
-	resp, err := client.Store(context.Background(), &pb.AttestationServiceStoreRequest{
+	resp, err := client.Store(ctx, &pb.AttestationServiceStoreRequest{
 		Attestation:   encodedAttestation,
 		WorkflowRunId: workflowRunID,
 	})
