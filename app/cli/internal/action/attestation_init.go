@@ -61,13 +61,14 @@ func NewAttestationInit(cfg *AttestationInitOpts) (*AttestationInit, error) {
 	}, nil
 }
 
-func (action *AttestationInit) Run(ctx context.Context, contractRevision int) error {
+// returns the attestation ID
+func (action *AttestationInit) Run(ctx context.Context, contractRevision int) (string, error) {
 	action.Logger.Debug().Msg("Retrieving attestation definition")
 	client := pb.NewAttestationServiceClient(action.ActionsOpts.CPConnection)
 	// get information of the workflow
 	resp, err := client.GetContract(ctx, &pb.AttestationServiceGetContractRequest{ContractRevision: int32(contractRevision)})
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	workflow := resp.GetResult().GetWorkflow()
@@ -88,7 +89,7 @@ func (action *AttestationInit) Run(ctx context.Context, contractRevision int) er
 	runnerType := resp.Result.Contract.GetV1().Runner.GetType()
 	runnerContext := crafter.NewRunner(runnerType)
 	if !action.dryRun && !runnerContext.CheckEnv() {
-		return ErrRunnerContextNotFound{runnerContext.String()}
+		return "", ErrRunnerContextNotFound{runnerContext.String()}
 	}
 
 	// Identifier of this attestation instance
@@ -104,7 +105,7 @@ func (action *AttestationInit) Run(ctx context.Context, contractRevision int) er
 			},
 		)
 		if err != nil {
-			return err
+			return "", err
 		}
 
 		workflowRun := runResp.GetResult().GetWorkflowRun()
@@ -123,18 +124,18 @@ func (action *AttestationInit) Run(ctx context.Context, contractRevision int) er
 	}
 
 	if err := action.c.Init(ctx, initOpts); err != nil {
-		return err
+		return "", err
 	}
 
 	// Load the env variables both the system populated and the user predefined ones
 	if err := action.c.ResolveEnvVars(ctx, attestationID); err != nil {
 		if action.dryRun {
-			return nil
+			return "", nil
 		}
 
 		_ = action.c.Reset(ctx, attestationID)
-		return err
+		return "", err
 	}
 
-	return nil
+	return attestationID, nil
 }

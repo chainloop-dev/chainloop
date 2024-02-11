@@ -162,6 +162,8 @@ func filterSensitiveArgs(_ log.Level, keyvals ...interface{}) bool {
 				maskArgs(keyvals)
 			case "/controlplane.v1.CASBackendService/Create", "/controlplane.v1.CASBackendService/Update":
 				maskArgs(keyvals)
+			case "/controlplane.v1.AttestationStateService/Save":
+				maskArgs(keyvals)
 			}
 		}
 	}
