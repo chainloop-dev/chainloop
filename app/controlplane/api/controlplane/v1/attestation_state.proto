@@ -20,7 +20,7 @@ package controlplane.v1;
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
 import "validate/validate.proto";
-import "workflowcontract/v1/crafting_schema.proto";
+import "attestation/v1/crafting_state.proto";
 
 // API to remotely store and retrieve attestation state
 // using the attestation crafting process
@@ -45,7 +45,7 @@ message AttestationStateServiceInitializedResponse {
 
 message AttestationStateServiceSaveRequest {
   string workflow_run_id = 1 [(validate.rules).string = {min_len: 1}];
-  workflowcontract.v1.CraftingSchema attestation_state = 2 [(validate.rules).message.required = true];
+  attestation.v1.CraftingState attestation_state = 2 [(validate.rules).message.required = true];
 }
 
 message AttestationStateServiceSaveResponse {}
@@ -58,7 +58,7 @@ message AttestationStateServiceReadResponse {
   Result result = 1;
   
   message Result {
-    workflowcontract.v1.CraftingSchema attestation_state = 2;
+    attestation.v1.CraftingState attestation_state = 2;
   }
 }
 

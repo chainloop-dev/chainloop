@@ -2,7 +2,7 @@
 import { grpc } from "@improbable-eng/grpc-web";
 import { BrowserHeaders } from "browser-headers";
 import _m0 from "protobufjs/minimal";
-import { CraftingSchema } from "../../workflowcontract/v1/crafting_schema";
+import { CraftingState } from "../../attestation/v1/crafting_state";
 
 export const protobufPackage = "controlplane.v1";
 
@@ -20,7 +20,7 @@ export interface AttestationStateServiceInitializedResponse_Result {
 
 export interface AttestationStateServiceSaveRequest {
   workflowRunId: string;
-  attestationState?: CraftingSchema;
+  attestationState?: CraftingState;
 }
 
 export interface AttestationStateServiceSaveResponse {
@@ -35,7 +35,7 @@ export interface AttestationStateServiceReadResponse {
 }
 
 export interface AttestationStateServiceReadResponse_Result {
-  attestationState?: CraftingSchema;
+  attestationState?: CraftingState;
 }
 
 export interface AttestationStateServiceResetRequest {
@@ -246,7 +246,7 @@ export const AttestationStateServiceSaveRequest = {
       writer.uint32(10).string(message.workflowRunId);
     }
     if (message.attestationState !== undefined) {
-      CraftingSchema.encode(message.attestationState, writer.uint32(18).fork()).ldelim();
+      CraftingState.encode(message.attestationState, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -270,7 +270,7 @@ export const AttestationStateServiceSaveRequest = {
             break;
           }
 
-          message.attestationState = CraftingSchema.decode(reader, reader.uint32());
+          message.attestationState = CraftingState.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -284,7 +284,7 @@ export const AttestationStateServiceSaveRequest = {
   fromJSON(object: any): AttestationStateServiceSaveRequest {
     return {
       workflowRunId: isSet(object.workflowRunId) ? String(object.workflowRunId) : "",
-      attestationState: isSet(object.attestationState) ? CraftingSchema.fromJSON(object.attestationState) : undefined,
+      attestationState: isSet(object.attestationState) ? CraftingState.fromJSON(object.attestationState) : undefined,
     };
   },
 
@@ -292,7 +292,7 @@ export const AttestationStateServiceSaveRequest = {
     const obj: any = {};
     message.workflowRunId !== undefined && (obj.workflowRunId = message.workflowRunId);
     message.attestationState !== undefined &&
-      (obj.attestationState = message.attestationState ? CraftingSchema.toJSON(message.attestationState) : undefined);
+      (obj.attestationState = message.attestationState ? CraftingState.toJSON(message.attestationState) : undefined);
     return obj;
   },
 
@@ -308,7 +308,7 @@ export const AttestationStateServiceSaveRequest = {
     const message = createBaseAttestationStateServiceSaveRequest();
     message.workflowRunId = object.workflowRunId ?? "";
     message.attestationState = (object.attestationState !== undefined && object.attestationState !== null)
-      ? CraftingSchema.fromPartial(object.attestationState)
+      ? CraftingState.fromPartial(object.attestationState)
       : undefined;
     return message;
   },
@@ -494,7 +494,7 @@ function createBaseAttestationStateServiceReadResponse_Result(): AttestationStat
 export const AttestationStateServiceReadResponse_Result = {
   encode(message: AttestationStateServiceReadResponse_Result, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.attestationState !== undefined) {
-      CraftingSchema.encode(message.attestationState, writer.uint32(18).fork()).ldelim();
+      CraftingState.encode(message.attestationState, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -511,7 +511,7 @@ export const AttestationStateServiceReadResponse_Result = {
             break;
           }
 
-          message.attestationState = CraftingSchema.decode(reader, reader.uint32());
+          message.attestationState = CraftingState.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -524,14 +524,14 @@ export const AttestationStateServiceReadResponse_Result = {
 
   fromJSON(object: any): AttestationStateServiceReadResponse_Result {
     return {
-      attestationState: isSet(object.attestationState) ? CraftingSchema.fromJSON(object.attestationState) : undefined,
+      attestationState: isSet(object.attestationState) ? CraftingState.fromJSON(object.attestationState) : undefined,
     };
   },
 
   toJSON(message: AttestationStateServiceReadResponse_Result): unknown {
     const obj: any = {};
     message.attestationState !== undefined &&
-      (obj.attestationState = message.attestationState ? CraftingSchema.toJSON(message.attestationState) : undefined);
+      (obj.attestationState = message.attestationState ? CraftingState.toJSON(message.attestationState) : undefined);
     return obj;
   },
 
@@ -546,7 +546,7 @@ export const AttestationStateServiceReadResponse_Result = {
   ): AttestationStateServiceReadResponse_Result {
     const message = createBaseAttestationStateServiceReadResponse_Result();
     message.attestationState = (object.attestationState !== undefined && object.attestationState !== null)
-      ? CraftingSchema.fromPartial(object.attestationState)
+      ? CraftingState.fromPartial(object.attestationState)
       : undefined;
     return message;
   },

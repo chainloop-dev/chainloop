@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"testing"
 
-	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
+	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	creds "github.com/chainloop-dev/chainloop/internal/credentials/mocks"
 	"github.com/google/uuid"
@@ -102,7 +102,7 @@ func (s *attestationStateTestSuite) TestSave() {
 			s.Fail(fmt.Sprintf("These two protobuf messages are not equal:\nexpected: %v\nactual:  %v", s.testState, got.State))
 		}
 
-		newState := &schemav1.CraftingSchema{SchemaVersion: "v2"}
+		newState := &v1.CraftingState{}
 		err = s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), newState, s.passphrase)
 		s.NoError(err)
 
@@ -222,7 +222,7 @@ func TestAttestationStateUseCase(t *testing.T) {
 type attestationStateTestSuite struct {
 	testhelpers.UseCasesEachTestSuite
 	*workflowRunTestData
-	testState  *schemav1.CraftingSchema
+	testState  *v1.CraftingState
 	passphrase string
 }
 
@@ -234,6 +234,6 @@ func (s *attestationStateTestSuite) SetupTest() {
 
 	s.workflowRunTestData = &workflowRunTestData{}
 	setupWorkflowRunTestData(s.T(), s.TestingUseCases, s.workflowRunTestData)
-	s.testState = &schemav1.CraftingSchema{SchemaVersion: "v1"}
+	s.testState = &v1.CraftingState{Attestation: &v1.Attestation{Annotations: map[string]string{"key": "value"}}}
 	s.passphrase = "development passphrase super secret"
 }

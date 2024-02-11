@@ -25,14 +25,14 @@ import (
 	"fmt"
 	"io"
 
-	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/pbkdf2"
 	"google.golang.org/protobuf/proto"
 )
 
 type AttestationState struct {
-	State *schemav1.CraftingSchema
+	State *v1.CraftingState
 }
 
 type AttestationStateRepo interface {
@@ -65,7 +65,7 @@ func (uc *AttestationStateUseCase) Initialized(ctx context.Context, workflowID, 
 	return initialized, nil
 }
 
-func (uc *AttestationStateUseCase) Save(ctx context.Context, workflowID, runID string, state *schemav1.CraftingSchema, passphrase string) error {
+func (uc *AttestationStateUseCase) Save(ctx context.Context, workflowID, runID string, state *v1.CraftingState, passphrase string) error {
 	run, err := uc.checkWorkflowRunInWorkflow(ctx, workflowID, runID)
 	if err != nil {
 		return fmt.Errorf("failed to check workflow run: %w", err)
@@ -104,7 +104,7 @@ func (uc *AttestationStateUseCase) Read(ctx context.Context, workflowID, runID, 
 		return nil, fmt.Errorf("failed to decrypt attestation state: %w", err)
 	}
 
-	state := &schemav1.CraftingSchema{}
+	state := &v1.CraftingState{}
 	if err := proto.Unmarshal(decryptedState, state); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal attestation state: %w", err)
 	}
