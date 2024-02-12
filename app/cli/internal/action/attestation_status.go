@@ -35,13 +35,14 @@ type AttestationStatus struct {
 }
 
 type AttestationStatusResult struct {
-	InitializedAt *time.Time
-	WorkflowMeta  *AttestationStatusWorkflowMeta
-	Materials     []AttestationStatusResultMaterial
-	EnvVars       map[string]string
-	RunnerContext *AttestationResultRunnerContext
-	DryRun        bool
-	Annotations   []*Annotation
+	AttestationID string                            `json:"attestationID"`
+	InitializedAt *time.Time                        `json:"initializedAt"`
+	WorkflowMeta  *AttestationStatusWorkflowMeta    `json:"workflowMeta"`
+	Materials     []AttestationStatusResultMaterial `json:"materials"`
+	EnvVars       map[string]string                 `json:"envVars"`
+	RunnerContext *AttestationResultRunnerContext   `json:"runnerContext"`
+	DryRun        bool                              `json:"dryRun"`
+	Annotations   []*Annotation                     `json:"annotations"`
 }
 
 type AttestationResultRunnerContext struct {
@@ -50,7 +51,7 @@ type AttestationResultRunnerContext struct {
 }
 
 type AttestationStatusWorkflowMeta struct {
-	RunID, WorkflowID, Name, Team, Project, ContractRevision string
+	WorkflowID, Name, Team, Project, ContractRevision string
 }
 
 type AttestationStatusResultMaterial struct {
@@ -59,7 +60,7 @@ type AttestationStatusResultMaterial struct {
 }
 
 func NewAttestationStatus(cfg *AttestationStatusOpts) (*AttestationStatus, error) {
-	c, err := newCrafter(cfg.CPConnection, &cfg.Logger)
+	c, err := newCrafter(cfg.UseAttestationRemoteState, cfg.CPConnection, &cfg.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load crafter: %w", err)
 	}
@@ -70,7 +71,9 @@ func NewAttestationStatus(cfg *AttestationStatusOpts) (*AttestationStatus, error
 func (action *AttestationStatus) Run(ctx context.Context, attestationID string) (*AttestationStatusResult, error) {
 	c := action.c
 
-	if initialized := c.AlreadyInitialized(ctx, attestationID); !initialized {
+	if initialized, err := c.AlreadyInitialized(ctx, attestationID); err != nil {
+		return nil, fmt.Errorf("checking if attestation is already initialized: %w", err)
+	} else if !initialized {
 		return nil, ErrAttestationNotInitialized
 	}
 
@@ -83,8 +86,8 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 	workflowMeta := att.GetWorkflow()
 
 	res := &AttestationStatusResult{
+		AttestationID: workflowMeta.GetWorkflowRunId(),
 		WorkflowMeta: &AttestationStatusWorkflowMeta{
-			RunID:            workflowMeta.GetWorkflowRunId(),
 			WorkflowID:       workflowMeta.GetWorkflowId(),
 			Name:             workflowMeta.GetName(),
 			Project:          workflowMeta.GetProject(),

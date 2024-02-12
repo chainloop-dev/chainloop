@@ -21,29 +21,39 @@ import (
 	"path/filepath"
 	"time"
 
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/statemanager/filesystem"
+	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/statemanager/remote"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 )
 
 type ActionsOpts struct {
-	CPConnection *grpc.ClientConn
-	Logger       zerolog.Logger
+	CPConnection              *grpc.ClientConn
+	Logger                    zerolog.Logger
+	UseAttestationRemoteState bool
 }
 
 func toTimePtr(t time.Time) *time.Time {
 	return &t
 }
 
-// load a crafter with local state manager
-// TODO: We'll enable the ability to load a crafter that relies on a remote state manager
-func newCrafter(_ *grpc.ClientConn, logger *zerolog.Logger) (*crafter.Crafter, error) {
-	statePath := filepath.Join(os.TempDir(), "chainloop-attestation.tmp.json")
-	localStateManager, err := filesystem.New(statePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create local state manager: %w", err)
+// load a crafter with either local or remote state
+func newCrafter(enableRemoteState bool, conn *grpc.ClientConn, logger *zerolog.Logger) (*crafter.Crafter, error) {
+	var stateManager crafter.StateManager
+	var err error
+
+	switch enableRemoteState {
+	case true:
+		stateManager, err = remote.New(pb.NewAttestationStateServiceClient(conn))
+	case false:
+		stateManager, err = filesystem.New(filepath.Join(os.TempDir(), "chainloop-attestation.tmp.json"))
 	}
 
-	return crafter.NewCrafter(localStateManager, crafter.WithLogger(logger))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create state manager: %w", err)
+	}
+
+	return crafter.NewCrafter(stateManager, crafter.WithLogger(logger))
 }

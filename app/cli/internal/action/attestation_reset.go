@@ -37,7 +37,7 @@ type AttestationReset struct {
 }
 
 func NewAttestationReset(opts *ActionsOpts) (*AttestationReset, error) {
-	c, err := newCrafter(opts.CPConnection, &opts.Logger)
+	c, err := newCrafter(opts.UseAttestationRemoteState, opts.CPConnection, &opts.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load crafter: %w", err)
 	}
@@ -46,7 +46,9 @@ func NewAttestationReset(opts *ActionsOpts) (*AttestationReset, error) {
 }
 
 func (action *AttestationReset) Run(ctx context.Context, attestationID, trigger, reason string) error {
-	if initialized := action.c.AlreadyInitialized(ctx, attestationID); !initialized {
+	if initialized, err := action.c.AlreadyInitialized(ctx, attestationID); err != nil {
+		return fmt.Errorf("checking if attestation is already initialized: %w", err)
+	} else if !initialized {
 		return ErrAttestationNotInitialized
 	}
 
