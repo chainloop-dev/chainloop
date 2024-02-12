@@ -52,12 +52,12 @@ func NewAttestationStateUseCase(repo AttestationStateRepo, wfRunRepo WorkflowRun
 }
 
 func (uc *AttestationStateUseCase) Initialized(ctx context.Context, workflowID, runID string) (bool, error) {
-	run, err := uc.checkWorkflowRunInWorkflow(ctx, workflowID, runID)
+	runUUID, err := uc.checkWorkflowRunInWorkflow(ctx, workflowID, runID)
 	if err != nil {
 		return false, fmt.Errorf("failed to check workflow run: %w", err)
 	}
 
-	initialized, err := uc.repo.Initialized(ctx, run.ID)
+	initialized, err := uc.repo.Initialized(ctx, *runUUID)
 	if err != nil {
 		return false, fmt.Errorf("failed to check initialized state: %w", err)
 	}
@@ -66,7 +66,7 @@ func (uc *AttestationStateUseCase) Initialized(ctx context.Context, workflowID, 
 }
 
 func (uc *AttestationStateUseCase) Save(ctx context.Context, workflowID, runID string, state *v1.CraftingState, passphrase string) error {
-	run, err := uc.checkWorkflowRunInWorkflow(ctx, workflowID, runID)
+	runUUID, err := uc.checkWorkflowRunInWorkflow(ctx, workflowID, runID)
 	if err != nil {
 		return fmt.Errorf("failed to check workflow run: %w", err)
 	}
@@ -81,7 +81,7 @@ func (uc *AttestationStateUseCase) Save(ctx context.Context, workflowID, runID s
 		return fmt.Errorf("failed to encrypt attestation state: %w", err)
 	}
 
-	if err := uc.repo.Save(ctx, run.ID, encryptedState); err != nil {
+	if err := uc.repo.Save(ctx, *runUUID, encryptedState); err != nil {
 		return fmt.Errorf("failed to save attestation state: %w", err)
 	}
 
@@ -89,12 +89,12 @@ func (uc *AttestationStateUseCase) Save(ctx context.Context, workflowID, runID s
 }
 
 func (uc *AttestationStateUseCase) Read(ctx context.Context, workflowID, runID, passphrase string) (*AttestationState, error) {
-	run, err := uc.checkWorkflowRunInWorkflow(ctx, workflowID, runID)
+	runUUID, err := uc.checkWorkflowRunInWorkflow(ctx, workflowID, runID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check workflow run: %w", err)
 	}
 
-	res, err := uc.repo.Read(ctx, run.ID)
+	res, err := uc.repo.Read(ctx, *runUUID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read attestation state: %w", err)
 	}
@@ -113,12 +113,12 @@ func (uc *AttestationStateUseCase) Read(ctx context.Context, workflowID, runID, 
 }
 
 func (uc *AttestationStateUseCase) Reset(ctx context.Context, workflowID, runID string) error {
-	run, err := uc.checkWorkflowRunInWorkflow(ctx, workflowID, runID)
+	runUUID, err := uc.checkWorkflowRunInWorkflow(ctx, workflowID, runID)
 	if err != nil {
 		return fmt.Errorf("failed to check workflow run: %w", err)
 	}
 
-	if err := uc.repo.Reset(ctx, run.ID); err != nil {
+	if err := uc.repo.Reset(ctx, *runUUID); err != nil {
 		return fmt.Errorf("failed to reset attestation state: %w", err)
 	}
 
@@ -128,7 +128,7 @@ func (uc *AttestationStateUseCase) Reset(ctx context.Context, workflowID, runID 
 // checkWorkflowRunInWorkflow checks if the workflow run belongs to the provided workflow
 // This is important because the workflow is something that comes embedded in the auth token
 // so it can be used to make sure the user is not spoofing a different run that doesn't have access to
-func (uc *AttestationStateUseCase) checkWorkflowRunInWorkflow(ctx context.Context, workflowID, runID string) (*WorkflowRun, error) {
+func (uc *AttestationStateUseCase) checkWorkflowRunInWorkflow(ctx context.Context, workflowID, runID string) (*uuid.UUID, error) {
 	workflowUUID, err := uuid.Parse(workflowID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -150,7 +150,7 @@ func (uc *AttestationStateUseCase) checkWorkflowRunInWorkflow(ctx context.Contex
 		return nil, NewErrNotFound("workflow run")
 	}
 
-	return run, nil
+	return &runUUID, nil
 }
 
 // The following code is in charge of symmetric encryption and decryption of the attestation state
@@ -162,7 +162,9 @@ const (
 	// The magic string is used to check if the passphrase is correct
 	// It's prepended to the plaintext before encryption
 	// If the passphrase is incorrect, the decrypted data won't start with this string
-	magic = "Salted__"
+	magic = "MagicPrefix__"
+	// 6MB limit to protect against allocation overflows
+	maxEncryptedSize = 6 * 1024 * 1024
 )
 
 // Generate an AES key derived from the passphrase and a salt
@@ -171,31 +173,35 @@ func generateKey(passphrase string, salt []byte) []byte {
 }
 
 func encrypt(data []byte, passphrase string) ([]byte, error) {
+	// 6MB limit to protect against allocation overflows
+	if len(data) > maxEncryptedSize {
+		return nil, errors.New("value too large")
+	}
+
+	// Prepend magic string to the plaintext
+	plaintextWithMagic := append([]byte(magic), data...)
+	ciphertext := make([]byte, aes.BlockSize+len(plaintextWithMagic))
+
+	// generate salt
 	salt := make([]byte, saltSize)
 	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
 		return nil, err
 	}
 
-	key := generateKey(passphrase, salt)
-
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, err
-	}
-	// Prepend magic string to the plaintext
-	plaintextWithMagic := append([]byte(magic), data...)
-
-	// 6MB limit to protect against allocation overflows
-	if len(plaintextWithMagic) > 6*1024*1024 {
-		return nil, errors.New("value too large")
-	}
-
-	ciphertext := make([]byte, aes.BlockSize+len(plaintextWithMagic))
+	// generate iv
 	iv := ciphertext[:aes.BlockSize]
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
 		return nil, err
 	}
 
+	// Derive the key from the passphrase and the salt
+	key := generateKey(passphrase, salt)
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+
+	// perform encryption
 	stream := cipher.NewCFBEncrypter(block, iv)
 	stream.XORKeyStream(ciphertext[aes.BlockSize:], plaintextWithMagic)
 
@@ -211,7 +217,6 @@ func decrypt(ciphertext []byte, passphrase string) ([]byte, error) {
 	ciphertext = ciphertext[saltSize:]
 
 	key := generateKey(passphrase, salt)
-
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create cipher: %w", err)
