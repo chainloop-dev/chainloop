@@ -157,7 +157,7 @@ func (uc *AttestationStateUseCase) checkWorkflowRunInWorkflow(ctx context.Contex
 // The only purpose is to have encryption at rest in the database
 const (
 	saltSize   = 16
-	iterations = 10000
+	iterations = 100000
 	keySize    = 32 // AES-256
 	// The magic string is used to check if the passphrase is correct
 	// It's prepended to the plaintext before encryption
