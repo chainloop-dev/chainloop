@@ -56,6 +56,7 @@ func newAttestationStatusCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&full, "full", false, "full report including current recorded values")
+	flagAttestationID(cmd)
 
 	return cmd
 }

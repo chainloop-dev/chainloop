@@ -83,6 +83,7 @@ func newAttestationAddCmd() *cobra.Command {
 	err = cmd.MarkFlagRequired("value")
 	cobra.CheckErr(err)
 	cmd.Flags().StringSliceVar(&annotationsFlag, "annotation", nil, "additional annotation in the format of key=value")
+	flagAttestationID(cmd)
 
 	return cmd
 }

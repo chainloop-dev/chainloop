@@ -58,6 +58,7 @@ func newAttestationResetCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&trigger, "trigger", triggerFailed, fmt.Sprintf("trigger for the reset, valid options are %q and %q", triggerFailed, triggerCanceled))
 	cmd.Flags().StringVar(&reason, "reason", "", "reset reason")
+	flagAttestationID(cmd)
 
 	return cmd
 }

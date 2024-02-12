@@ -96,6 +96,7 @@ func newAttestationPushCmd() *cobra.Command {
 
 	cmd.Flags().StringVarP(&pkPath, "key", "k", "", "reference (path or env variable name) to the cosign private key that will be used to sign the attestation")
 	cmd.Flags().StringSliceVar(&annotationsFlag, "annotation", nil, "additional annotation in the format of key=value")
+	flagAttestationID(cmd)
 
 	return cmd
 }

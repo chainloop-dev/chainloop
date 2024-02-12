@@ -40,6 +40,22 @@ func newAttestationCmd() *cobra.Command {
 		Aliases: []string{"att"},
 		Short:   "Craft Software Supply Chain Attestations",
 		Example: "Refer to https://docs.chainloop.dev/getting-started/attestation-crafting",
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			// run the initialization of the root command plus the new logic
+			// specific to this attestation command
+			rootCmd := cmd.Parent().Parent()
+			if err := rootCmd.PersistentPreRunE(cmd, args); err != nil {
+				return err
+			}
+
+			// If the subcommand has the attestation-id flag,
+			// we need to make sure that both attestation-id and remote-state are used together
+			if useAttestationRemoteState && cmd.Flags().Lookup("attestation-id") != nil {
+				return cmd.MarkFlagRequired("attestation-id")
+			}
+
+			return nil
+		},
 	}
 
 	cmd.PersistentFlags().StringVarP(&robotAccount, "token", "t", "", fmt.Sprintf("robot account token. NOTE: You can also use the env variable %s", robotAccountEnvVarName))
@@ -51,11 +67,14 @@ func newAttestationCmd() *cobra.Command {
 
 	cmd.PersistentFlags().BoolVar(&GracefulExit, "graceful-exit", false, "exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0")
 	cmd.PersistentFlags().BoolVar(&useAttestationRemoteState, "remote-state", false, "Store the attestation state remotely (preview feature)")
-	cmd.PersistentFlags().StringVar(&attestationID, "attestation-id", "", "Unique identifier of the attestation in progress. Required when --remote-state is enabled")
 
 	cmd.AddCommand(newAttestationInitCmd(), newAttestationAddCmd(), newAttestationStatusCmd(), newAttestationPushCmd(), newAttestationResetCmd())
 
 	return cmd
+}
+
+func flagAttestationID(cmd *cobra.Command) {
+	cmd.Flags().StringVar(&attestationID, "attestation-id", "", "Unique identifier of the in-progress attestation")
 }
 
 // extractAnnotations extracts the annotations from the flag and returns a map
