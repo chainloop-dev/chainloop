@@ -49,7 +49,7 @@ func newAttestationCmd() *cobra.Command {
 			}
 
 			// If the subcommand has the attestation-id flag,
-			// we need to make sure that both attestation-id and remote-state are used together
+			// we need to make sure that it's set if the remote-state flag is enabled
 			if useAttestationRemoteState && cmd.Flags().Lookup("attestation-id") != nil {
 				return cmd.MarkFlagRequired("attestation-id")
 			}
