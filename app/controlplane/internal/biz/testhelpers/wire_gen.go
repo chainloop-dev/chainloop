@@ -95,11 +95,18 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		cleanup()
 		return nil, nil, err
 	}
+	attestationStateRepo := data.NewAttestationStateRepo(dataData, logger)
+	attestationStateUseCase, err := biz.NewAttestationStateUseCase(attestationStateRepo, workflowRunRepo)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
 	testingRepos := &TestingRepos{
-		Membership:      membershipRepo,
-		Referrer:        referrerRepo,
-		Workflow:        workflowRepo,
-		WorkflowRunRepo: workflowRunRepo,
+		Membership:       membershipRepo,
+		Referrer:         referrerRepo,
+		Workflow:         workflowRepo,
+		WorkflowRunRepo:  workflowRunRepo,
+		AttestationState: attestationStateRepo,
 	}
 	testingUseCases := &TestingUseCases{
 		DB:                     testDatabase,
@@ -120,6 +127,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		Referrer:               referrerUseCase,
 		APIToken:               apiTokenUseCase,
 		Enforcer:               enforcer,
+		AttestationState:       attestationStateUseCase,
 		Repos:                  testingRepos,
 	}
 	return testingUseCases, func() {

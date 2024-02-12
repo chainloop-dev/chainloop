@@ -156,6 +156,13 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	orgInvitationService := service.NewOrgInvitationService(orgInvitationUseCase, v2...)
 	referrerService := service.NewReferrerService(referrerUseCase, v2...)
 	apiTokenService := service.NewAPITokenService(apiTokenUseCase, v2...)
+	attestationStateRepo := data.NewAttestationStateRepo(dataData, logger)
+	attestationStateUseCase, err := biz.NewAttestationStateUseCase(attestationStateRepo, workflowRunRepo)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	attestationStateService := service.NewAttestationStateService(attestationStateUseCase, v2...)
 	opts := &server.Opts{
 		UserUseCase:          userUseCase,
 		RobotAccountUseCase:  robotAccountUseCase,
@@ -181,6 +188,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		OrgInvitationSvc:     orgInvitationService,
 		ReferrerSvc:          referrerService,
 		APITokenSvc:          apiTokenService,
+		AttestationStateSvc:  attestationStateService,
 		Logger:               logger,
 		ServerConfig:         confServer,
 		AuthConfig:           auth,

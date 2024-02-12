@@ -265,6 +265,10 @@ func TestWorkflowRunUseCase(t *testing.T) {
 // Utility struct to hold the test suite
 type workflowRunIntegrationTestSuite struct {
 	testhelpers.UseCasesEachTestSuite
+	*workflowRunTestData
+}
+
+type workflowRunTestData struct {
 	org, org2                                      *biz.Organization
 	casBackend                                     *biz.CASBackend
 	workflowOrg1, workflowOrg2, workflowPublicOrg2 *biz.Workflow
@@ -273,62 +277,66 @@ type workflowRunIntegrationTestSuite struct {
 	contractVersion                                *biz.WorkflowContractWithVersion
 }
 
-func (s *workflowRunIntegrationTestSuite) SetupTest() {
+// extract this setup to a helper function so it can be used from other test suites
+func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, s *workflowRunTestData) {
 	var err error
-	assert := assert.New(s.T())
+	assert := assert.New(t)
 	ctx := context.Background()
-	// OCI repository credentials
-	credsWriter := creds.NewReaderWriter(s.T())
-	credsWriter.On(
-		"SaveCredentials", ctx, mock.Anything, &credentials.OCIKeypair{Repo: "repo", Username: "username", Password: "pass"},
-	).Return("stored-OCI-secret", nil)
 
-	s.TestingUseCases = testhelpers.NewTestingUseCases(s.T(), testhelpers.WithCredsReaderWriter(credsWriter))
-
-	s.org, err = s.Organization.Create(ctx, "testing-org")
+	s.org, err = suite.Organization.Create(ctx, "testing-org")
 	assert.NoError(err)
-	s.org2, err = s.Organization.Create(ctx, "second-org")
+	s.org2, err = suite.Organization.Create(ctx, "second-org")
 	assert.NoError(err)
 
 	// Workflow
-	s.workflowOrg1, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test workflow", OrgID: s.org.ID})
+	s.workflowOrg1, err = suite.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test workflow", OrgID: s.org.ID})
 	assert.NoError(err)
-	s.workflowOrg2, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test workflow", OrgID: s.org2.ID})
+	s.workflowOrg2, err = suite.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test workflow", OrgID: s.org2.ID})
 	assert.NoError(err)
 	// Public workflow
-	s.workflowPublicOrg2, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test public workflow", OrgID: s.org2.ID, Public: true})
+	s.workflowPublicOrg2, err = suite.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test public workflow", OrgID: s.org2.ID, Public: true})
 	assert.NoError(err)
 
 	// Robot account
-	s.robotAccount, err = s.RobotAccount.Create(ctx, "name", s.org.ID, s.workflowOrg1.ID.String())
+	s.robotAccount, err = suite.RobotAccount.Create(ctx, "name", s.org.ID, s.workflowOrg1.ID.String())
 	assert.NoError(err)
 
 	// Find contract revision
-	s.contractVersion, err = s.WorkflowContract.Describe(ctx, s.org.ID, s.workflowOrg1.ContractID.String(), 0)
+	s.contractVersion, err = suite.WorkflowContract.Describe(ctx, s.org.ID, s.workflowOrg1.ContractID.String(), 0)
 	assert.NoError(err)
 
-	s.casBackend, err = s.CASBackend.CreateOrUpdate(ctx, s.org.ID, "repo", "username", "pass", backendType, true)
+	s.casBackend, err = suite.CASBackend.CreateOrUpdate(ctx, s.org.ID, "repo", "username", "pass", backendType, true)
 	assert.NoError(err)
 
 	// Let's create 3 runs, one in org1 and 2 in org2 (one public)
-	s.runOrg1, err = s.WorkflowRun.Create(ctx,
+	s.runOrg1, err = suite.WorkflowRun.Create(ctx,
 		&biz.WorkflowRunCreateOpts{
 			WorkflowID: s.workflowOrg1.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevisionUUID: s.contractVersion.Version.ID, CASBackendID: s.casBackend.ID,
 		})
 	assert.NoError(err)
-	assert.NoError(s.WorkflowRun.SaveAttestation(ctx, s.runOrg1.ID.String(), &dsse.Envelope{}, validDigest))
+	assert.NoError(suite.WorkflowRun.SaveAttestation(ctx, s.runOrg1.ID.String(), &dsse.Envelope{}, validDigest))
 
-	s.runOrg2, err = s.WorkflowRun.Create(ctx,
+	s.runOrg2, err = suite.WorkflowRun.Create(ctx,
 		&biz.WorkflowRunCreateOpts{
 			WorkflowID: s.workflowOrg2.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevisionUUID: s.contractVersion.Version.ID, CASBackendID: s.casBackend.ID,
 		})
 	assert.NoError(err)
-	assert.NoError(s.WorkflowRun.SaveAttestation(ctx, s.runOrg2.ID.String(), &dsse.Envelope{}, validDigest2))
+	assert.NoError(suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2.ID.String(), &dsse.Envelope{}, validDigest2))
 
-	s.runOrg2Public, err = s.WorkflowRun.Create(ctx,
+	s.runOrg2Public, err = suite.WorkflowRun.Create(ctx,
 		&biz.WorkflowRunCreateOpts{
 			WorkflowID: s.workflowPublicOrg2.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevisionUUID: s.contractVersion.Version.ID, CASBackendID: s.casBackend.ID,
 		})
 	assert.NoError(err)
-	assert.NoError(s.WorkflowRun.SaveAttestation(ctx, s.runOrg2Public.ID.String(), &dsse.Envelope{}, validDigest3))
+	assert.NoError(suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2Public.ID.String(), &dsse.Envelope{}, validDigest3))
+}
+
+func (s *workflowRunIntegrationTestSuite) SetupTest() {
+	credsWriter := creds.NewReaderWriter(s.T())
+	credsWriter.On("SaveCredentials", context.Background(), mock.Anything, &credentials.OCIKeypair{Repo: "repo", Username: "username", Password: "pass"}).Return("stored-OCI-secret", nil)
+
+	s.TestingUseCases = testhelpers.NewTestingUseCases(s.T(), testhelpers.WithCredsReaderWriter(credsWriter))
+
+	s.workflowRunTestData = &workflowRunTestData{}
+	setupWorkflowRunTestData(s.T(), s.TestingUseCases, s.workflowRunTestData)
 }

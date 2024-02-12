@@ -69,15 +69,17 @@ type TestingUseCases struct {
 	Referrer               *biz.ReferrerUseCase
 	APIToken               *biz.APITokenUseCase
 	Enforcer               *authz.Enforcer
+	AttestationState       *biz.AttestationStateUseCase
 	// Repositories that can be used for custom crafting of use-cases
 	Repos *TestingRepos
 }
 
 type TestingRepos struct {
-	Membership      biz.MembershipRepo
-	Referrer        biz.ReferrerRepo
-	Workflow        biz.WorkflowRepo
-	WorkflowRunRepo biz.WorkflowRunRepo
+	Membership       biz.MembershipRepo
+	Referrer         biz.ReferrerRepo
+	Workflow         biz.WorkflowRepo
+	WorkflowRunRepo  biz.WorkflowRunRepo
+	AttestationState biz.AttestationStateRepo
 }
 
 type newTestingOpts struct {

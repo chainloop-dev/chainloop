@@ -73,6 +73,7 @@ type Opts struct {
 	OrgInvitationSvc    *service.OrgInvitationService
 	ReferrerSvc         *service.ReferrerService
 	APITokenSvc         *service.APITokenService
+	AttestationStateSvc *service.AttestationStateService
 	// Utils
 	Logger       log.Logger
 	ServerConfig *conf.Server
@@ -133,6 +134,7 @@ func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
 	v1.RegisterOrgInvitationServiceServer(srv, opts.OrgInvitationSvc)
 	v1.RegisterReferrerServiceServer(srv, opts.ReferrerSvc)
 	v1.RegisterAPITokenServiceServer(srv, opts.APITokenSvc)
+	v1.RegisterAttestationStateServiceServer(srv, opts.AttestationStateSvc)
 
 	// Register Prometheus metrics
 	grpc_prometheus.Register(srv.Server)
@@ -204,7 +206,7 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 // If we should load the user
 func requireCurrentUserMatcher() selector.MatchFunc {
 	// Skip authentication on the status grpc service
-	const skipRegexp = "(controlplane.v1.AttestationService/.*|controlplane.v1.StatusService/.*|controlplane.v1.ReferrerService/DiscoverPublicShared)"
+	const skipRegexp = "(controlplane.v1.AttestationService/.*|controlplane.v1.StatusService/.*|controlplane.v1.ReferrerService/DiscoverPublicShared|controlplane.v1.AttestationStateService)"
 
 	return func(ctx context.Context, operation string) bool {
 		r := regexp.MustCompile(skipRegexp)
@@ -223,7 +225,7 @@ func requireFullyConfiguredOrgMatcher() selector.MatchFunc {
 }
 
 func requireRobotAccountMatcher() selector.MatchFunc {
-	const requireMatcher = "controlplane.v1.AttestationService/.*"
+	const requireMatcher = "controlplane.v1.AttestationService/.*|controlplane.v1.AttestationStateService/.*"
 
 	return func(ctx context.Context, operation string) bool {
 		r := regexp.MustCompile(requireMatcher)

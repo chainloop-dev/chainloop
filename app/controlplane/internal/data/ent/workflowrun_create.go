@@ -131,6 +131,12 @@ func (wrc *WorkflowRunCreate) SetNillableAttestationDigest(s *string) *WorkflowR
 	return wrc
 }
 
+// SetAttestationState sets the "attestation_state" field.
+func (wrc *WorkflowRunCreate) SetAttestationState(b []byte) *WorkflowRunCreate {
+	wrc.mutation.SetAttestationState(b)
+	return wrc
+}
+
 // SetID sets the "id" field.
 func (wrc *WorkflowRunCreate) SetID(u uuid.UUID) *WorkflowRunCreate {
 	wrc.mutation.SetID(u)
@@ -345,6 +351,10 @@ func (wrc *WorkflowRunCreate) createSpec() (*WorkflowRun, *sqlgraph.CreateSpec) 
 	if value, ok := wrc.mutation.AttestationDigest(); ok {
 		_spec.SetField(workflowrun.FieldAttestationDigest, field.TypeString, value)
 		_node.AttestationDigest = value
+	}
+	if value, ok := wrc.mutation.AttestationState(); ok {
+		_spec.SetField(workflowrun.FieldAttestationState, field.TypeBytes, value)
+		_node.AttestationState = value
 	}
 	if nodes := wrc.mutation.WorkflowIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

@@ -50,6 +50,7 @@ func (WorkflowRun) Fields() []ent.Field {
 		field.String("runner_type").Optional(),
 		field.JSON("attestation", &dsse.Envelope{}).Optional(),
 		field.String("attestation_digest").Optional(),
+		field.Bytes("attestation_state").Optional(),
 	}
 }
 

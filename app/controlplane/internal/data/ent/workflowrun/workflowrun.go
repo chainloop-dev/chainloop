@@ -33,6 +33,8 @@ const (
 	FieldAttestation = "attestation"
 	// FieldAttestationDigest holds the string denoting the attestation_digest field in the database.
 	FieldAttestationDigest = "attestation_digest"
+	// FieldAttestationState holds the string denoting the attestation_state field in the database.
+	FieldAttestationState = "attestation_state"
 	// EdgeWorkflow holds the string denoting the workflow edge name in mutations.
 	EdgeWorkflow = "workflow"
 	// EdgeRobotaccount holds the string denoting the robotaccount edge name in mutations.
@@ -82,6 +84,7 @@ var Columns = []string{
 	FieldRunnerType,
 	FieldAttestation,
 	FieldAttestationDigest,
+	FieldAttestationState,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "workflow_runs"
