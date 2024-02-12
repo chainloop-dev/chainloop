@@ -115,8 +115,8 @@ func (s *AttestationStateService) Reset(ctx context.Context, req *cpAPI.Attestat
 // In order to encrypt the state at rest, we will encrypt the state using a passphrase
 // which comes in the request and is used to derive an encryption key.
 // The passphrase that we'll use is the robot-account token that only the workload should have.
-// This method will extract the token from the request and return it.
 // NOTE: Using the robot-account as JWT is not ideal but it's a start
+// TODO: look into using some identifier from the actual client like machine-uuid
 func encryptionPassphrase(ctx context.Context) (string, error) {
 	header, ok := transport.FromServerContext(ctx)
 	if !ok {

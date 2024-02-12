@@ -206,7 +206,7 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 // If we should load the user
 func requireCurrentUserMatcher() selector.MatchFunc {
 	// Skip authentication on the status grpc service
-	const skipRegexp = "(controlplane.v1.AttestationService/.*|controlplane.v1.StatusService/.*|controlplane.v1.ReferrerService/DiscoverPublicShared|controlplane.v1.AttestationStateService/.*)"
+	const skipRegexp = "(controlplane.v1.AttestationService/.*|controlplane.v1.StatusService/.*|controlplane.v1.ReferrerService/DiscoverPublicShared|controlplane.v1.AttestationStateService)"
 
 	return func(ctx context.Context, operation string) bool {
 		r := regexp.MustCompile(skipRegexp)
