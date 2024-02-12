@@ -35,13 +35,14 @@ type AttestationStatus struct {
 }
 
 type AttestationStatusResult struct {
-	InitializedAt *time.Time
-	WorkflowMeta  *AttestationStatusWorkflowMeta
-	Materials     []AttestationStatusResultMaterial
-	EnvVars       map[string]string
-	RunnerContext *AttestationResultRunnerContext
-	DryRun        bool
-	Annotations   []*Annotation
+	AttestationID string                            `json:"attestationID"`
+	InitializedAt *time.Time                        `json:"initializedAt"`
+	WorkflowMeta  *AttestationStatusWorkflowMeta    `json:"workflowMeta"`
+	Materials     []AttestationStatusResultMaterial `json:"materials"`
+	EnvVars       map[string]string                 `json:"envVars"`
+	RunnerContext *AttestationResultRunnerContext   `json:"runnerContext"`
+	DryRun        bool                              `json:"dryRun"`
+	Annotations   []*Annotation                     `json:"annotations"`
 }
 
 type AttestationResultRunnerContext struct {
@@ -50,7 +51,7 @@ type AttestationResultRunnerContext struct {
 }
 
 type AttestationStatusWorkflowMeta struct {
-	RunID, WorkflowID, Name, Team, Project, ContractRevision string
+	WorkflowID, Name, Team, Project, ContractRevision string
 }
 
 type AttestationStatusResultMaterial struct {
@@ -85,8 +86,8 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 	workflowMeta := att.GetWorkflow()
 
 	res := &AttestationStatusResult{
+		AttestationID: workflowMeta.GetWorkflowRunId(),
 		WorkflowMeta: &AttestationStatusWorkflowMeta{
-			RunID:            workflowMeta.GetWorkflowRunId(),
 			WorkflowID:       workflowMeta.GetWorkflowId(),
 			Name:             workflowMeta.GetName(),
 			Project:          workflowMeta.GetProject(),

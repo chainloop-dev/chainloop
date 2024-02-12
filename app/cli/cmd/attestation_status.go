@@ -67,7 +67,7 @@ func attestationStatusTableOutput(status *action.AttestationStatusResult) error 
 	gt.AppendRow(table.Row{"Initialized At", status.InitializedAt.Format(time.RFC822)})
 	gt.AppendSeparator()
 	meta := status.WorkflowMeta
-	gt.AppendRow(table.Row{"Attestation ID", meta.RunID})
+	gt.AppendRow(table.Row{"Attestation ID", status.AttestationID})
 	gt.AppendRow(table.Row{"Name", meta.Name})
 	gt.AppendRow(table.Row{"Team", meta.Team})
 	gt.AppendRow(table.Row{"Project", meta.Project})
