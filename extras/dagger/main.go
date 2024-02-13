@@ -97,19 +97,24 @@ func (m *Chainloop) AttestationPush(ctx context.Context, signingKey *File, passp
 }
 
 // Mark current attestation process as canceled or failed. --trigger  "failure" | "cancellation" (default: "failure")
-func (m *Chainloop) AttestationReset(ctx context.Context, trigger, reason Optional[string], attestationID string) (string, error) {
+func (m *Chainloop) AttestationReset(ctx context.Context,
+	attestationID string,
+	// +optional
+	trigger string,
+	// +optional
+	reason string) (string, error) {
 	args := []string{
 		"attestation", "reset",
 		"--remote-state",
 		"--attestation-id", attestationID,
 	}
 
-	if reason.isSet {
-		args = append(args, "--reason", reason.value)
+	if reason != "" {
+		args = append(args, "--reason", reason)
 	}
 
-	if trigger.isSet {
-		args = append(args, "--trigger", trigger.value)
+	if trigger != "" {
+		args = append(args, "--trigger", trigger)
 	}
 
 	return m.cliImage().WithExec(args).Stdout(ctx)

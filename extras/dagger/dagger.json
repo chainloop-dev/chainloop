@@ -1,9 +1,6 @@
 {
   "name": "chainloop",
   "sdk": "go",
-  "root-for": [
-    {
-      "source": "."
-    }
-  ]
+  "source": ".",
+  "engineVersion": "v0.9.10"
 }
