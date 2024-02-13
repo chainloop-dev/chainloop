@@ -1,0 +1,9 @@
+{
+  "name": "chainloop",
+  "sdk": "go",
+  "root-for": [
+    {
+      "source": "."
+    }
+  ]
+}
