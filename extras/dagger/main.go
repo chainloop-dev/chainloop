@@ -96,9 +96,7 @@ func (m *Chainloop) AttestationPush(ctx context.Context, signingKey *File, passp
 		}).Stdout(ctx)
 }
 
-// Mark current attestation process as canceled or failed
-// trigger: is either "failure" or "cancellation" (default: "failure")
-// reason: the reason for the reset
+// Mark current attestation process as canceled or failed. --trigger = "failure" | "cancellation" (default: "failure")
 func (m *Chainloop) AttestationReset(ctx context.Context, trigger, reason Optional[string], attestationID string) (string, error) {
 	opts := []string{
 		"attestation", "reset",
