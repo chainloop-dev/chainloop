@@ -33,6 +33,7 @@ all:
 # run linter
 lint:
 	golangci-lint run
+	cd ./extras/dagger && golangci-lint run
 	buf lint
 	make -C ./app/controlplane lint
 	make -C ./app/cli lint
