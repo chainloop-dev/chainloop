@@ -66,7 +66,7 @@ jobs:
 
       - name: Initialize module
         run: |
-          make -C extras/dagger init
+          make -C extras/dagger module-init
 
       - name: Lint
         uses: golangci/golangci-lint-action@3a919529898de77ec3da873e3063ca4b10e7f5cc # v3.7.0
