@@ -29,12 +29,16 @@ import (
 type AttestationInitOpts struct {
 	*ActionsOpts
 	DryRun bool
+	// Force the initialization and override any existing, in-progress ones.
+	// Note that this is only useful when local-based attestation state is configured
+	// since it's a protection to make sure you don't override the state by mistake
+	Force bool
 }
 
 type AttestationInit struct {
 	*ActionsOpts
-	dryRun bool
-	c      *crafter.Crafter
+	dryRun, force bool
+	c             *crafter.Crafter
 }
 
 // ErrAttestationAlreadyExist means that there is an attestation in progress
@@ -58,6 +62,7 @@ func NewAttestationInit(cfg *AttestationInitOpts) (*AttestationInit, error) {
 		ActionsOpts: cfg.ActionsOpts,
 		c:           c,
 		dryRun:      cfg.DryRun,
+		force:       cfg.Force,
 	}, nil
 }
 
@@ -65,6 +70,14 @@ func NewAttestationInit(cfg *AttestationInitOpts) (*AttestationInit, error) {
 func (action *AttestationInit) Run(ctx context.Context, contractRevision int) (string, error) {
 	if action.dryRun && action.UseAttestationRemoteState {
 		return "", errors.New("remote state is not compatible with dry-run mode")
+	}
+
+	// During local initializations we need to make sure if there is already an attestation in progress
+	// If it is and we are not "forcing" the initialization, we should return an error
+	if !action.UseAttestationRemoteState && !action.force {
+		if initialized, _ := action.c.AlreadyInitialized(ctx, ""); initialized {
+			return "", ErrAttestationAlreadyExist
+		}
 	}
 
 	action.Logger.Debug().Msg("Retrieving attestation definition")
