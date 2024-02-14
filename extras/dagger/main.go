@@ -64,7 +64,6 @@ func (m *Chainloop) AttestationAdd(
 	// +optional
 	value string,
 	attestationID string) (string, error) {
-
 	if value != "" && path != nil {
 		return "", fmt.Errorf("only one of material path or value can be provided")
 	}
