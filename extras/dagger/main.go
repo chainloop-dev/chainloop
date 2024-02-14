@@ -17,10 +17,8 @@ type Chainloop struct {
 	Token *Secret
 }
 
-func New(token string) *Chainloop {
-	return &Chainloop{
-		dag.SetSecret("CHAINLOOP_TOKEN", token),
-	}
+func New(token *Secret) *Chainloop {
+	return &Chainloop{token}
 }
 
 // Start the attestation crafting process
@@ -71,10 +69,10 @@ func (m *Chainloop) AttestationAdd(ctx context.Context, name string, value *File
 }
 
 // Generate, sign and push the attestation to the control plane
-func (m *Chainloop) AttestationPush(ctx context.Context, signingKey *File, passphrase, attestationID string) (string, error) {
+func (m *Chainloop) AttestationPush(ctx context.Context, attestationID string, signingKey, passphrase *Secret) (string, error) {
 	return m.cliImage().
-		WithFile("/tmp/key.pem", signingKey).
-		WithSecretVariable("CHAINLOOP_SIGNING_PASSWORD", dag.SetSecret("CL", passphrase)).
+		WithMountedSecret("/tmp/key.pem", signingKey).
+		WithSecretVariable("CHAINLOOP_SIGNING_PASSWORD", passphrase).
 		WithExec([]string{
 			"attestation", "push",
 			"--remote-state",
