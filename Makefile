@@ -33,11 +33,11 @@ all:
 # run linter
 lint:
 	golangci-lint run
-	cd ./extras/dagger && golangci-lint run
 	buf lint
 	make -C ./app/controlplane lint
 	make -C ./app/cli lint
 	make -C ./app/artifact-cas lint
+	make -C ./extras/dagger lint
 
 .PHONY: test
 # All tests, both unit and integration

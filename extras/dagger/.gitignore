@@ -1,2 +1,3 @@
 /internal/querybuilder/
 /querybuilder/
+/dagger.gen.go
