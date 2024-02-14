@@ -1,17 +1,3 @@
-// Copyright 2024 The Chainloop Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//	http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package main
 
 import (
@@ -23,6 +9,8 @@ import (
 
 const (
 	// https://github.com/chainloop-dev/chainloop/releases/tag/v0.60.0
+	// providing a sha triggers a no-sec hardcoded credentials false positive
+	//nolint:gosec
 	clImage = "ghcr.io/chainloop-dev/chainloop/cli@sha256:4e0bc402f71f4877a1ae8d6df5eb4e666a0efa0e7d43ab4f97f21c0e46ae0a59"
 )
 
@@ -30,10 +18,8 @@ type Chainloop struct {
 	Token *Secret
 }
 
-func New(token string) *Chainloop {
-	return &Chainloop{
-		dag.SetSecret("CHAINLOOP_TOKEN", token),
-	}
+func New(token *Secret) *Chainloop {
+	return &Chainloop{token}
 }
 
 // Start the attestation crafting process
@@ -84,10 +70,10 @@ func (m *Chainloop) AttestationAdd(ctx context.Context, name string, value *File
 }
 
 // Generate, sign and push the attestation to the control plane
-func (m *Chainloop) AttestationPush(ctx context.Context, signingKey *File, passphrase, attestationID string) (string, error) {
+func (m *Chainloop) AttestationPush(ctx context.Context, attestationID string, signingKey, passphrase *Secret) (string, error) {
 	return m.cliImage().
-		WithFile("/tmp/key.pem", signingKey).
-		WithSecretVariable("CHAINLOOP_SIGNING_PASSWORD", dag.SetSecret("CL", passphrase)).
+		WithMountedSecret("/tmp/key.pem", signingKey).
+		WithSecretVariable("CHAINLOOP_SIGNING_PASSWORD", passphrase).
 		WithExec([]string{
 			"attestation", "push",
 			"--remote-state",

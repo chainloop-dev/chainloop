@@ -1,0 +1,29 @@
+run:
+  skip-dirs:
+    querybuilder
+  skip-files:
+    dagger.gen.go
+
+linters:
+  enable:
+    - dupl
+    - gofmt
+    - goimports
+    - misspell
+    - nakedret
+    - revive
+    - gosec
+    - asciicheck
+    - whitespace
+    - errorlint
+    - forbidigo
+    - gocritic
+    - importas
+    - prealloc
+    - stylecheck
+    - unconvert
+    - dogsled
+    - goconst
+    - exportloopref
+    - gocyclo
+    - goprintffuncname

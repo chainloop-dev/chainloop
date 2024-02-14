@@ -14,7 +14,6 @@ test:
 # lint
 lint:
 	golangci-lint run
-	buf lint api
 
 # show help
 help:

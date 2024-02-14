@@ -7,7 +7,7 @@ Daggerized version of [Chainloop](https://chainloop.dev) that can be used to att
 ## Prerequisites
 
 - This module requires existing familiarity with Chainloop, and its attestation process. Please refer to [this guide](https://docs.chainloop.dev/getting-started/attestation-crafting) to learn more.
-- You need a `token` (aka workflow robot account) [previously generated](https://docs.chainloop.dev/getting-started/workflow-definition#robot-account-creation) by your Chainloop administrator. 
+- You need a `token` (aka workflow robot account) [previously generated](https://docs.chainloop.dev/getting-started/workflow-definition#robot-account-creation) by your Chainloop administrator.
 
 ## Attestation Crafting
 
@@ -15,9 +15,13 @@ The [attestation process](https://docs.chainloop.dev/getting-started/attestation
 
 ### Init attestation ([docs](https://docs.chainloop.dev/getting-started/attestation-crafting#initialization))
 
+Initialize an attestation using the Chainloop token stored in the `CHAINLOOP_TOKEN` environment variable.
+
+> NOTE: `--token` can be provided only by referencing an environment variable (env:MY_VAR), not by value
+
 ```sh
 dagger call -m github.com/chainloop-dev/chainloop/extras/dagger \
-  --token $CHAINLOOP_TOKEN attestation-init
+  --token env:CHAINLOOP_TOKEN attestation-init
 ```
 
 The result of this command will be an `attestation-id` that you will use in the next steps.
@@ -26,7 +30,7 @@ The result of this command will be an `attestation-id` that you will use in the 
 
 ```sh
 dagger call -m github.com/chainloop-dev/chainloop/extras/dagger \
-  --token $CHAINLOOP_TOKEN attestation-status \
+  --token env:CHAINLOOP_TOKEN attestation-status \
   --attestation-id $ATTESTATION_ID
 ```
 
@@ -34,7 +38,7 @@ dagger call -m github.com/chainloop-dev/chainloop/extras/dagger \
 
 ```sh
 dagger call -m github.com/chainloop-dev/chainloop/extras/dagger \
-  --token $CHAINLOOP_TOKEN attestation-add \
+  --token env:CHAINLOOP_TOKEN attestation-add \
   --attestation-id $ATTESTATION_ID \
   --name [MATERIAL NAME] \
   --value [MATERIAL_VALUE]    
@@ -42,19 +46,25 @@ dagger call -m github.com/chainloop-dev/chainloop/extras/dagger \
 
 ### Sign and push ([docs](https://docs.chainloop.dev/getting-started/attestation-crafting#encode-sign-and-push-attestation))
 
+Sign and push the attestation using a cosign **key stored in a file** and a passphrase stored in an environment variable.
+
+> NOTE: neither --signing-key nor --passphrase can be provided by value. You need to provide them either as a file (file:/) or an environment variable (env:/).
+
 ```sh
 dagger call -m github.com/chainloop-dev/chainloop/extras/dagger \
-  --token $CHAINLOOP_TOKEN attestation-push \
+  --token env:CHAINLOOP_TOKEN attestation-push \
   --attestation-id $ATTESTATION_ID \
-  --signing-key [path/to/cosign.key] \
-  --passphrase [cosign-passphrase]
+  --signing-key file:/path/to/cosign.key \
+  --passphrase env:COSIGN_PASSPHRASE
 ```
+
+Alternatively, you can also provide the signing key in an environment variable `--signing-key env:MY_COSIGN_KEY`
 
 ### Cancel/Fail attestation
 
 ```sh
 dagger call -m github.com/chainloop-dev/chainloop/extras/dagger \
-  --token $CHAINLOOP_TOKEN attestation-reset \
+  --token env:CHAINLOOP_TOKEN attestation-reset \
   --attestation-id $ATTESTATION_ID \
   --trigger failure # or --trigger cancellation
 ```
