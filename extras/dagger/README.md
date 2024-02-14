@@ -36,12 +36,24 @@ dagger call -m github.com/chainloop-dev/chainloop/extras/dagger \
 
 ### Add pieces of evidence ([docs](https://docs.chainloop.dev/getting-started/attestation-crafting#adding-materials))
 
+You can attest pieces of evidence by providing its material name and its value, either in the form of a path to a file (`--path`) or a raw value (`--value`).
+
+A path to a file is required for materials derived from artifacts, such as Software Bill Of materials, or any other file-based evidence.
+
 ```sh
+# Provide a material of kind artifact through its path
 dagger call -m github.com/chainloop-dev/chainloop/extras/dagger \
   --token env:CHAINLOOP_TOKEN attestation-add \
   --attestation-id $ATTESTATION_ID \
-  --name [MATERIAL NAME] \
-  --value [MATERIAL_VALUE]    
+  --name my-sbom \
+  --path ./path/to/sbom.json
+
+# Or one with a raw value such as a container image reference
+dagger call -m github.com/chainloop-dev/chainloop/extras/dagger \
+  --token env:CHAINLOOP_TOKEN attestation-add \
+  --attestation-id $ATTESTATION_ID \
+  --name my-container-image \
+  --value ghcr.io/chainloop-dev/chainloop
 ```
 
 ### Sign and push ([docs](https://docs.chainloop.dev/getting-started/attestation-crafting#encode-sign-and-push-attestation))
