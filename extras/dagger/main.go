@@ -46,48 +46,27 @@ func (m *Chainloop) AttestationStatus(ctx context.Context, attestationID string)
 		"attestation", "status",
 		"--remote-state",
 		"--attestation-id", attestationID,
-		"--full",
 	}).Stdout(ctx)
 }
 
 // Add a piece of evidence/material to the current attestation
-// The material value can be provided either in the form of a file or as a raw string
-// The file type is required for materials of kind ARTIFACT that are uploaded to the CAS
-func (m *Chainloop) AttestationAdd(
-	ctx context.Context,
-	// material name
-	name string,
-	// path to the file to be added
-	// +optional
-	path *File,
-	// raw value to be added
-	// +optional
-	value string,
-	attestationID string) (string, error) {
-
-	if value != "" && path != nil {
-		return "", fmt.Errorf("only one of material path or value can be provided")
+func (m *Chainloop) AttestationAdd(ctx context.Context, name string, value *File, attestationID string) (string, error) {
+	fileName, err := value.Name(ctx)
+	if err != nil {
+		return "", fmt.Errorf("getting file name: %w", err)
 	}
 
-	c := m.cliImage()
-	// if the value is provided in a file we need to upload it to the container
-	if path != nil {
-		fileName, err := path.Name(ctx)
-		if err != nil {
-			return "", fmt.Errorf("getting file name: %w", err)
-		}
+	filePath := fmt.Sprintf("/tmp/%s", fileName)
 
-		value = fmt.Sprintf("/tmp/%s", fileName)
-		c = c.WithFile(value, path)
-	}
-
-	return c.WithExec([]string{
-		"attestation", "add",
-		"--remote-state",
-		"--attestation-id", attestationID,
-		"--name", name,
-		"--value", value,
-	}).Stderr(ctx)
+	return m.cliImage().
+		WithFile(filePath, value).
+		WithExec([]string{
+			"attestation", "add",
+			"--remote-state",
+			"--attestation-id", attestationID,
+			"--name", name,
+			"--value", filePath,
+		}).Stderr(ctx)
 }
 
 // Generate, sign and push the attestation to the control plane
