@@ -58,7 +58,7 @@ dagger call -m github.com/chainloop-dev/chainloop/extras/dagger \
   --value ghcr.io/chainloop-dev/chainloop/control-plane
 ```
 
-In some cases, you might be providing a private container image as a piece of evidence. In the case, you'll also need to provide the container registry credentials.
+In some cases, you might be providing a private container image as a piece of evidence. In this case, you'll also need to provide the container registry credentials.
 
 ```sh
 # Or one with a raw value such as a container image reference
