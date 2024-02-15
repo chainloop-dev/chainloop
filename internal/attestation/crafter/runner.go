@@ -52,6 +52,8 @@ func NewRunner(t schemaapi.CraftingSchema_Runner_RunnerType) supportedRunner {
 		return runners.NewJenkinsJob()
 	case schemaapi.CraftingSchema_Runner_CIRCLECI_BUILD:
 		return runners.NewCircleCIBuild()
+	case schemaapi.CraftingSchema_Runner_DAGGER_PIPELINE:
+		return runners.NewDaggerPipeline()
 	default:
 		return runners.NewGeneric()
 	}
