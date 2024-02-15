@@ -53,7 +53,7 @@ func (e ErrRunnerContextNotFound) Error() string {
 }
 
 func NewAttestationInit(cfg *AttestationInitOpts) (*AttestationInit, error) {
-	c, err := newCrafter(cfg.UseAttestationRemoteState, cfg.CPConnection, &cfg.Logger)
+	c, err := newCrafter(cfg.UseAttestationRemoteState, cfg.CPConnection, crafter.WithLogger(&cfg.Logger))
 	if err != nil {
 		return nil, fmt.Errorf("failed to load crafter: %w", err)
 	}

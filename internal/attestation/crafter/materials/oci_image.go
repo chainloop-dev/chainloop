@@ -29,15 +29,16 @@ import (
 
 type OCIImageCrafter struct {
 	*crafterCommon
+	keychain authn.Keychain
 }
 
-func NewOCIImageCrafter(schema *schemaapi.CraftingSchema_Material, l *zerolog.Logger) (*OCIImageCrafter, error) {
+func NewOCIImageCrafter(schema *schemaapi.CraftingSchema_Material, ociAuth authn.Keychain, l *zerolog.Logger) (*OCIImageCrafter, error) {
 	if schema.Type != schemaapi.CraftingSchema_Material_CONTAINER_IMAGE {
 		return nil, fmt.Errorf("material type is not container image")
 	}
 
 	craftCommon := &crafterCommon{logger: l, input: schema}
-	return &OCIImageCrafter{craftCommon}, nil
+	return &OCIImageCrafter{craftCommon, ociAuth}, nil
 }
 
 func (i *OCIImageCrafter) Craft(_ context.Context, imageRef string) (*api.Attestation_Material, error) {
@@ -48,7 +49,7 @@ func (i *OCIImageCrafter) Craft(_ context.Context, imageRef string) (*api.Attest
 		return nil, err
 	}
 
-	descriptor, err := remote.Get(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+	descriptor, err := remote.Get(ref, remote.WithAuthFromKeychain(i.keychain))
 	if err != nil {
 		return nil, err
 	}

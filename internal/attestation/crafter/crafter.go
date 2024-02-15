@@ -31,8 +31,10 @@ import (
 	api "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/materials"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
+	"github.com/chainloop-dev/chainloop/internal/ociauth"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -59,21 +61,37 @@ type Crafter struct {
 	Runner        supportedRunner
 	workingDir    string
 	stateManager  StateManager
+	// Authn is used to authenticate with the OCI registry
+	ociRegistryAuth authn.Keychain
 }
 
 var ErrAttestationStateNotLoaded = errors.New("crafting state not loaded")
 
-type NewOpt func(c *Crafter)
+type NewOpt func(c *Crafter) error
 
 func WithLogger(l *zerolog.Logger) NewOpt {
-	return func(c *Crafter) {
+	return func(c *Crafter) error {
 		c.logger = l
+		return nil
 	}
 }
 
 func WithWorkingDirPath(path string) NewOpt {
-	return func(c *Crafter) {
+	return func(c *Crafter) error {
 		c.workingDir = path
+		return nil
+	}
+}
+
+func WithOCIAuth(server, username, password string) NewOpt {
+	return func(c *Crafter) error {
+		k, err := ociauth.NewCredentialsFromRegistry(server, username, password)
+		if err != nil {
+			return fmt.Errorf("failed to load OCI credentials: %w", err)
+		}
+
+		c.ociRegistryAuth = k
+		return nil
 	}
 }
 
@@ -86,10 +104,14 @@ func NewCrafter(stateManager StateManager, opts ...NewOpt) (*Crafter, error) {
 		logger:       &noopLogger,
 		workingDir:   cw,
 		stateManager: stateManager,
+		// By default we authenticate with the current user's keychain (i.e ~/.docker/config.json)
+		ociRegistryAuth: authn.DefaultKeychain,
 	}
 
 	for _, opt := range opts {
-		opt(c)
+		if err := opt(c); err != nil {
+			return nil, err
+		}
 	}
 
 	return c, nil
@@ -435,7 +457,7 @@ func (c *Crafter) AddMaterial(ctx context.Context, attestationID, key, value str
 	}
 
 	// 3 - Craft resulting material
-	mt, err := materials.Craft(context.Background(), m, value, casBackend, c.logger)
+	mt, err := materials.Craft(context.Background(), m, value, casBackend, c.ociRegistryAuth, c.logger)
 	if err != nil {
 		return err
 	}

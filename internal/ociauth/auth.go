@@ -29,6 +29,18 @@ type Credentials struct {
 	username, password, server string
 }
 
+// Get and validate OCI credentials by providing a registry URL (no path)
+func NewCredentialsFromRegistry(repoURI, username, password string) (authn.Keychain, error) {
+	reg, err := name.NewRegistry(repoURI)
+	if err != nil {
+		return nil, fmt.Errorf("invalid registry server URI: %w", err)
+	}
+
+	c := &Credentials{username, password, reg.RegistryStr()}
+	return validateOCICredentials(c)
+}
+
+// Get and validate OCI credentials by providing a repository URL
 func NewCredentials(repoURI, username, password string) (authn.Keychain, error) {
 	repo, err := name.NewRepository(repoURI)
 	if err != nil {

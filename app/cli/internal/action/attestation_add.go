@@ -32,6 +32,8 @@ type AttestationAddOpts struct {
 	ArtifactsCASConn   *grpc.ClientConn
 	CASURI             string
 	ConnectionInsecure bool
+	// OCI registry credentials used for CONTAINER_IMAGE material type
+	RegistryServer, RegistryUsername, RegistryPassword string
 }
 
 type AttestationAdd struct {
@@ -42,7 +44,13 @@ type AttestationAdd struct {
 }
 
 func NewAttestationAdd(cfg *AttestationAddOpts) (*AttestationAdd, error) {
-	c, err := newCrafter(cfg.UseAttestationRemoteState, cfg.CPConnection, &cfg.Logger)
+	opts := []crafter.NewOpt{crafter.WithLogger(&cfg.Logger)}
+	if cfg.RegistryServer != "" && cfg.RegistryUsername != "" && cfg.RegistryPassword != "" {
+		cfg.Logger.Debug().Str("server", cfg.RegistryServer).Str("username", cfg.RegistryUsername).Msg("using OCI registry credentials")
+		opts = append(opts, crafter.WithOCIAuth(cfg.RegistryServer, cfg.RegistryUsername, cfg.RegistryPassword))
+	}
+
+	c, err := newCrafter(cfg.UseAttestationRemoteState, cfg.CPConnection, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load crafter: %w", err)
 	}

@@ -40,7 +40,7 @@ func TestCraft(t *testing.T) {
 		},
 	}
 
-	got, err := materials.Craft(context.TODO(), schema, "test-value", nil, nil)
+	got, err := materials.Craft(context.TODO(), schema, "test-value", nil, nil, nil)
 	require.NoError(t, err)
 	assert.Equal(contractAPI.CraftingSchema_Material_STRING, got.MaterialType)
 	assert.False(got.UploadedToCas)
