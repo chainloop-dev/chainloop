@@ -55,7 +55,21 @@ dagger call -m github.com/chainloop-dev/chainloop/extras/dagger \
   --token env:CHAINLOOP_TOKEN attestation-add \
   --attestation-id $ATTESTATION_ID \
   --name my-container-image \
-  --value ghcr.io/chainloop-dev/chainloop
+  --value ghcr.io/chainloop-dev/chainloop/control-plane
+```
+
+In some cases, you might be providing a container image as a piece of evidence. In the case of being a private image, you'll also need to provide the container registry credentials.
+
+```sh
+# Or one with a raw value such as a container image reference
+dagger call -m github.com/chainloop-dev/chainloop/extras/dagger \
+  --token env:CHAINLOOP_TOKEN attestation-add \
+  --attestation-id $ATTESTATION_ID \
+  --name my-container-image \
+  --value ghcr.io/chainloop-dev/chainloop/control-plane
+  --registry ghcr.io \
+  --registry-username my-username \
+  --registry-password MY_PAT_TOKEN
 ```
 
 ### Sign and push ([docs](https://docs.chainloop.dev/getting-started/attestation-crafting#encode-sign-and-push-attestation))

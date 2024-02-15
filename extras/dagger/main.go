@@ -86,7 +86,7 @@ func (m *Chainloop) AttestationAdd(
 	// +optional
 	registryUsername string,
 	// +optional
-	registrySecret *Secret,
+	registryPassword *Secret,
 ) (string, error) {
 	// Validate that either the path or the raw value is provided
 	if value != "" && path != nil {
@@ -98,7 +98,7 @@ func (m *Chainloop) AttestationAdd(
 	if registry != "" {
 		c = c.WithEnvVariable("CHAINLOOP_REGISTRY_SERVER", registry).
 			WithEnvVariable("CHAINLOOP_REGISTRY_USERNAME", registryUsername).
-			WithSecretVariable("CHAINLOOP_REGISTRY_PASSWORD", registrySecret)
+			WithSecretVariable("CHAINLOOP_REGISTRY_PASSWORD", registryPassword)
 	}
 
 	// if the value is provided in a file we need to upload it to the container
