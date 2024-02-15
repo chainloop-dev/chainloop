@@ -36,13 +36,13 @@ type AttestationReset struct {
 	c *crafter.Crafter
 }
 
-func NewAttestationReset(opts *ActionsOpts) (*AttestationReset, error) {
-	c, err := newCrafter(opts.UseAttestationRemoteState, opts.CPConnection, &opts.Logger)
+func NewAttestationReset(cfg *ActionsOpts) (*AttestationReset, error) {
+	c, err := newCrafter(cfg.UseAttestationRemoteState, cfg.CPConnection, crafter.WithLogger(&cfg.Logger))
 	if err != nil {
 		return nil, fmt.Errorf("failed to load crafter: %w", err)
 	}
 
-	return &AttestationReset{ActionsOpts: opts, c: c}, nil
+	return &AttestationReset{ActionsOpts: cfg, c: c}, nil
 }
 
 func (action *AttestationReset) Run(ctx context.Context, attestationID, trigger, reason string) error {

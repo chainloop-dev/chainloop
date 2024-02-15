@@ -27,6 +27,7 @@ import (
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	api "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
+	"github.com/google/go-containerregistry/pkg/authn"
 	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -135,7 +136,7 @@ type Craftable interface {
 	Craft(ctx context.Context, value string) (*api.Attestation_Material, error)
 }
 
-func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Material, value string, casBackend *casclient.CASBackend, logger *zerolog.Logger) (*api.Attestation_Material, error) {
+func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Material, value string, casBackend *casclient.CASBackend, ociAuth authn.Keychain, logger *zerolog.Logger) (*api.Attestation_Material, error) {
 	var crafter Craftable
 	var err error
 
@@ -147,7 +148,7 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 	case schemaapi.CraftingSchema_Material_STRING:
 		crafter, err = NewStringCrafter(materialSchema)
 	case schemaapi.CraftingSchema_Material_CONTAINER_IMAGE:
-		crafter, err = NewOCIImageCrafter(materialSchema, logger)
+		crafter, err = NewOCIImageCrafter(materialSchema, ociAuth, logger)
 	case schemaapi.CraftingSchema_Material_ARTIFACT:
 		crafter, err = NewArtifactCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON:

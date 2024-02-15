@@ -40,7 +40,7 @@ func toTimePtr(t time.Time) *time.Time {
 }
 
 // load a crafter with either local or remote state
-func newCrafter(enableRemoteState bool, conn *grpc.ClientConn, logger *zerolog.Logger) (*crafter.Crafter, error) {
+func newCrafter(enableRemoteState bool, conn *grpc.ClientConn, opts ...crafter.NewOpt) (*crafter.Crafter, error) {
 	var stateManager crafter.StateManager
 	var err error
 
@@ -55,5 +55,5 @@ func newCrafter(enableRemoteState bool, conn *grpc.ClientConn, logger *zerolog.L
 		return nil, fmt.Errorf("failed to create state manager: %w", err)
 	}
 
-	return crafter.NewCrafter(stateManager, crafter.WithLogger(logger))
+	return crafter.NewCrafter(stateManager, opts...)
 }

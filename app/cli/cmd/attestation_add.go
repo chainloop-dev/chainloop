@@ -18,6 +18,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -31,6 +32,15 @@ func newAttestationAddCmd() *cobra.Command {
 	var artifactCASConn *grpc.ClientConn
 	var annotationsFlag []string
 
+	// OCI registry credentials can be passed as flags or environment variables
+	var registryServer, registryUsername, registryPassword string
+	const (
+		registryServerEnvVarName   = "CHAINLOOP_REGISTRY_SERVER"
+		registryUsernameEnvVarName = "CHAINLOOP_REGISTRY_USERNAME"
+		// nolint: gosec
+		registryPasswordEnvVarName = "CHAINLOOP_REGISTRY_PASSWORD"
+	)
+
 	cmd := &cobra.Command{
 		Use:   "add",
 		Short: "add a material to the attestation",
@@ -43,6 +53,9 @@ func newAttestationAddCmd() *cobra.Command {
 					ActionsOpts:        actionOpts,
 					CASURI:             viper.GetString(confOptions.CASAPI.viperKey),
 					ConnectionInsecure: flagInsecure,
+					RegistryServer:     registryServer,
+					RegistryUsername:   registryUsername,
+					RegistryPassword:   registryPassword,
 				},
 			)
 			if err != nil {
@@ -84,6 +97,23 @@ func newAttestationAddCmd() *cobra.Command {
 	cobra.CheckErr(err)
 	cmd.Flags().StringSliceVar(&annotationsFlag, "annotation", nil, "additional annotation in the format of key=value")
 	flagAttestationID(cmd)
+
+	// Optional OCI registry credentials
+	cmd.Flags().StringVar(&registryServer, "registry-server", "", fmt.Sprintf("OCI repository server, ($%s)", registryServerEnvVarName))
+	cmd.Flags().StringVar(&registryUsername, "registry-username", "", fmt.Sprintf("registry username, ($%s)", registryUsernameEnvVarName))
+	cmd.Flags().StringVar(&registryPassword, "registry-password", "", fmt.Sprintf("registry password, ($%s)", registryPasswordEnvVarName))
+
+	if registryServer == "" {
+		registryServer = os.Getenv(registryServerEnvVarName)
+	}
+
+	if registryUsername == "" {
+		registryUsername = os.Getenv(registryUsernameEnvVarName)
+	}
+
+	if registryPassword == "" {
+		registryPassword = os.Getenv(registryPasswordEnvVarName)
+	}
 
 	return cmd
 }

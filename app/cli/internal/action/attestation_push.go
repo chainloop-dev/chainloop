@@ -46,7 +46,7 @@ type AttestationPush struct {
 }
 
 func NewAttestationPush(cfg *AttestationPushOpts) (*AttestationPush, error) {
-	c, err := newCrafter(cfg.UseAttestationRemoteState, cfg.CPConnection, &cfg.Logger)
+	c, err := newCrafter(cfg.UseAttestationRemoteState, cfg.CPConnection, crafter.WithLogger(&cfg.Logger))
 	if err != nil {
 		return nil, fmt.Errorf("failed to load crafter: %w", err)
 	}
