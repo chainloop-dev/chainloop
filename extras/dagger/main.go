@@ -55,7 +55,6 @@ func (m *Chainloop) AttestationStatus(ctx context.Context, attestationID string)
 // The file type is required for materials of kind ARTIFACT that are uploaded to the CAS
 func (m *Chainloop) AttestationAdd(
 	ctx context.Context,
-	attestationID string,
 	// material name
 	name string,
 	// path to the file to be added
@@ -64,27 +63,12 @@ func (m *Chainloop) AttestationAdd(
 	// raw value to be added
 	// +optional
 	value string,
-	// Container Registry Credentials for Container image-based materials
-	// i.e docker.io, ghcr.io, etc
-	// +optional
-	registry string,
-	// +optional
-	registryUsername string,
-	// +optional
-	registrySecret *Secret,
-) (string, error) {
-	// Validate that either the path or the raw value is provided
+	attestationID string) (string, error) {
 	if value != "" && path != nil {
 		return "", fmt.Errorf("only one of material path or value can be provided")
 	}
 
 	c := m.cliImage()
-	// If the registry credentials are provided, we need to mount them to the container
-	// These credentials are used to resolve materials of type CONTAINER_IMAGE
-	if registry != "" {
-		c = c.WithRegistryAuth(registry, registryUsername, registrySecret)
-	}
-
 	// if the value is provided in a file we need to upload it to the container
 	if path != nil {
 		fileName, err := path.Name(ctx)
@@ -144,7 +128,7 @@ func (m *Chainloop) AttestationReset(ctx context.Context,
 
 func (m *Chainloop) cliImage() *Container {
 	return dag.Container().
-		From("bitnami/minideb").
+		From(clImage).
 		WithSecretVariable("CHAINLOOP_ROBOT_ACCOUNT", m.Token).
 		WithEnvVariable("CACHEBUSTER", time.Now().String())
 }
