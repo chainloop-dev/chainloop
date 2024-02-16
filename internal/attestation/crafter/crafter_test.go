@@ -26,6 +26,7 @@ import (
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
 	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/runners"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/statemanager/filesystem"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -75,12 +76,6 @@ func (s *crafterSuite) TestInit() {
 			wantErr:          true,
 		},
 		{
-			name:             "required github action environment, can't run",
-			contractPath:     "testdata/contracts/empty_github.yaml",
-			workflowMetadata: s.workflowMetadata,
-			wantErr:          true,
-		},
-		{
 			name:             "required github action env (dry run)",
 			contractPath:     "testdata/contracts/empty_github.yaml",
 			workflowMetadata: s.workflowMetadata,
@@ -102,9 +97,10 @@ func (s *crafterSuite) TestInit() {
 			contract, err := crafter.LoadSchema(tc.contractPath)
 			require.NoError(s.T(), err)
 
+			runner := crafter.NewRunner(contract.GetRunner().GetType())
 			// Make sure that the tests context indicate that we are not in a CI
 			// this makes the github action runner context to fail
-			c, err := newInitializedCrafter(s.T(), tc.contractPath, tc.workflowMetadata, tc.dryRun, tc.workingDir)
+			c, err := newInitializedCrafter(s.T(), tc.contractPath, tc.workflowMetadata, tc.dryRun, tc.workingDir, runner)
 			if tc.wantErr {
 				s.Error(err)
 				return
@@ -149,10 +145,18 @@ func testingStateManager(t *testing.T, statePath string) crafter.StateManager {
 	return stateManager
 }
 
-func newInitializedCrafter(t *testing.T, contractPath string, wfMeta *v1.WorkflowMetadata, dryRun bool, workingDir string) (*testingCrafter, error) {
+func newInitializedCrafter(t *testing.T, contractPath string, wfMeta *v1.WorkflowMetadata,
+	dryRun bool,
+	workingDir string,
+	runner crafter.SupportedRunner,
+) (*testingCrafter, error) {
 	opts := []crafter.NewOpt{}
 	if workingDir != "" {
 		opts = append(opts, crafter.WithWorkingDirPath(workingDir))
+	}
+
+	if runner == nil {
+		runner = runners.NewGeneric()
 	}
 
 	statePath := fmt.Sprintf("%s/attestation.json", t.TempDir())
@@ -163,7 +167,10 @@ func newInitializedCrafter(t *testing.T, contractPath string, wfMeta *v1.Workflo
 		return nil, err
 	}
 
-	if err = c.Init(context.Background(), &crafter.InitOpts{SchemaV1: contract, WfInfo: wfMeta, DryRun: dryRun, AttestationID: ""}); err != nil {
+	if err = c.Init(context.Background(), &crafter.InitOpts{
+		SchemaV1: contract, WfInfo: wfMeta, DryRun: dryRun,
+		AttestationID: "",
+		Runner:        runner}); err != nil {
 		return nil, err
 	}
 
@@ -293,12 +300,14 @@ func (s *crafterSuite) TestResolveEnvVars() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
+			var runner crafter.SupportedRunner = runners.NewGeneric()
 			contract := "testdata/contracts/with_env_vars.yaml"
 			if tc.inGithubEnv {
 				s.T().Setenv("CI", "true")
 				for k, v := range gitHubTestingEnvVars {
 					s.T().Setenv(k, v)
 				}
+				runner = runners.NewGithubAction()
 			} else if tc.inJenkinsEnv {
 				contract = "testdata/contracts/jenkins_with_env_vars.yaml"
 				s.T().Setenv("JOB_NAME", "some-job")
@@ -306,6 +315,7 @@ func (s *crafterSuite) TestResolveEnvVars() {
 				s.T().Setenv("AGENT_WORKDIR", "/some/home/dir")
 				s.T().Setenv("NODE_NAME", "some-node")
 				s.T().Setenv("JENKINS_HOME", "/some/home/dir")
+				runner = runners.NewJenkinsJob()
 			}
 
 			// Customs env vars
@@ -313,7 +323,7 @@ func (s *crafterSuite) TestResolveEnvVars() {
 				s.T().Setenv(k, v)
 			}
 
-			c, err := newInitializedCrafter(s.T(), contract, &v1.WorkflowMetadata{}, false, "")
+			c, err := newInitializedCrafter(s.T(), contract, &v1.WorkflowMetadata{}, false, "", runner)
 			require.NoError(s.T(), err)
 
 			err = c.ResolveEnvVars(context.Background(), "")

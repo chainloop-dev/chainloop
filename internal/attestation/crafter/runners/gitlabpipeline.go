@@ -23,8 +23,6 @@ import (
 
 type GitlabPipeline struct{}
 
-const GitlabPipelineID = "gitlab-pipeline"
-
 func NewGitlabPipeline() *GitlabPipeline {
 	return &GitlabPipeline{}
 }
@@ -56,10 +54,6 @@ func (r *GitlabPipeline) ListEnvVars() []*EnvVarDefinition {
 		{"CI_RUNNER_DESCRIPTION", false},
 		{"CI_COMMIT_REF_NAME", false},
 	}
-}
-
-func (r *GitlabPipeline) String() string {
-	return GitlabPipelineID
 }
 
 func (r *GitlabPipeline) RunURI() (url string) {

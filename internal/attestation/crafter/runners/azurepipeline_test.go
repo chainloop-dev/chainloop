@@ -115,7 +115,7 @@ func (s *azurePipelineSuite) TestRunURI() {
 }
 
 func (s *azurePipelineSuite) TestRunnerName() {
-	s.Equal("azure-pipeline", s.runner.String())
+	s.Equal("AZURE_PIPELINE", s.runner.ID().String())
 }
 
 // Run before each test

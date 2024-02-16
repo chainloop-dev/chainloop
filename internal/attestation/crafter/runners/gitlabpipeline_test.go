@@ -112,7 +112,7 @@ func (s *gitlabPipelineSuite) TestRunURI() {
 }
 
 func (s *gitlabPipelineSuite) TestRunnerName() {
-	s.Equal("gitlab-pipeline", s.runner.String())
+	s.Equal("GITLAB_PIPELINE", s.runner.ID().String())
 }
 
 // Run before each test

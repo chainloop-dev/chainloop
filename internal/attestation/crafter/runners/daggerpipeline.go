@@ -23,8 +23,6 @@ import (
 
 type DaggerPipeline struct{}
 
-const DaggerPipelineID = "dagger-pipeline"
-
 func NewDaggerPipeline() *DaggerPipeline {
 	return &DaggerPipeline{}
 }
@@ -48,10 +46,6 @@ func (r *DaggerPipeline) ListEnvVars() []*EnvVarDefinition {
 		// Version of the Chainloop Client
 		{"CHAINLOOP_DAGGER_CLIENT", false},
 	}
-}
-
-func (r *DaggerPipeline) String() string {
-	return DaggerPipelineID
 }
 
 // TODO: figure out an URL and or more useful information

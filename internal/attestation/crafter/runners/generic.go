@@ -19,8 +19,6 @@ import schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workfl
 
 type Generic struct{}
 
-const GenericID = "generic"
-
 func NewGeneric() *Generic {
 	return &Generic{}
 }
@@ -37,10 +35,6 @@ func (r *Generic) CheckEnv() bool {
 // automatically inject environment variables into the attestation.
 func (r *Generic) ListEnvVars() []*EnvVarDefinition {
 	return []*EnvVarDefinition{}
-}
-
-func (r *Generic) String() string {
-	return GenericID
 }
 
 func (r *Generic) RunURI() string {

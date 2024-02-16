@@ -383,9 +383,9 @@ func (c *Crafter) ResolveEnvVars(ctx context.Context, attestationID string) erro
 	}
 
 	// Runner specific environment variables
-	c.logger.Debug().Str("runnerType", c.Runner.String()).Msg("loading runner specific env variables")
+	c.logger.Debug().Str("runnerType", c.Runner.ID().String()).Msg("loading runner specific env variables")
 	if !c.Runner.CheckEnv() {
-		errorStr := fmt.Sprintf("couldn't detect the environment %q. Is the crafting process happening in the target env?", c.Runner.String())
+		errorStr := fmt.Sprintf("couldn't detect the environment %q. Is the crafting process happening in the target env?", c.Runner.ID().String())
 		return fmt.Errorf("%s - %w", errorStr, ErrRunnerContextNotFound)
 	}
 
@@ -394,7 +394,7 @@ func (c *Crafter) ResolveEnvVars(ctx context.Context, attestationID string) erro
 	for index, envVarDef := range c.Runner.ListEnvVars() {
 		varNames[index] = envVarDef.Name
 	}
-	c.logger.Debug().Str("runnerType", c.Runner.String()).Strs("variables", varNames).Msg("list of env variables to automatically extract")
+	c.logger.Debug().Str("runnerType", c.Runner.ID().String()).Strs("variables", varNames).Msg("list of env variables to automatically extract")
 
 	outputEnvVars, errors := c.Runner.ResolveEnvVars()
 	if len(errors) > 0 {

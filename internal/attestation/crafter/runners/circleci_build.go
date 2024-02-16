@@ -23,8 +23,6 @@ import (
 
 type CircleCIBuild struct{}
 
-const CircleCIBuildID = "circleci-build"
-
 func NewCircleCIBuild() *CircleCIBuild {
 	return &CircleCIBuild{}
 }
@@ -56,10 +54,6 @@ func (r *CircleCIBuild) ListEnvVars() []*EnvVarDefinition {
 		{"CIRCLE_NODE_TOTAL", false},
 		{"CIRCLE_NODE_INDEX", false},
 	}
-}
-
-func (r *CircleCIBuild) String() string {
-	return JenkinsJobID
 }
 
 func (r *CircleCIBuild) RunURI() string {

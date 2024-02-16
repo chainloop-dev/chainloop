@@ -106,7 +106,7 @@ func (s *jenkinsJobSuite) TestRunURI() {
 }
 
 func (s *jenkinsJobSuite) TestRunnerName() {
-	s.Equal("jenkins-job", s.runner.String())
+	s.Equal("JENKINS_JOB", s.runner.ID().String())
 }
 
 // Run before each test

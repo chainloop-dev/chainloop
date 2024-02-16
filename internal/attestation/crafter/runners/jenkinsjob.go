@@ -23,8 +23,6 @@ import (
 
 type JenkinsJob struct{}
 
-const JenkinsJobID = "jenkins-job"
-
 func NewJenkinsJob() *JenkinsJob {
 	return &JenkinsJob{}
 }
@@ -60,10 +58,6 @@ func (r *JenkinsJob) ListEnvVars() []*EnvVarDefinition {
 		{"AGENT_WORKDIR", false},
 		{"NODE_NAME", false},
 	}
-}
-
-func (r *JenkinsJob) String() string {
-	return JenkinsJobID
 }
 
 func (r *JenkinsJob) RunURI() string {

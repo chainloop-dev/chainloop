@@ -76,7 +76,7 @@ func (s *daggerPipelineSuite) TestRunURI() {
 }
 
 func (s *daggerPipelineSuite) TestRunnerName() {
-	s.Equal("dagger-pipeline", s.runner.String())
+	s.Equal("DAGGER_PIPELINE", s.runner.ID().String())
 }
 
 // Run before each test

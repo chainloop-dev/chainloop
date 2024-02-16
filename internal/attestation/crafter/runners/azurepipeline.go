@@ -25,8 +25,6 @@ import (
 
 type AzurePipeline struct{}
 
-const AzurePipelineID = "azure-pipeline"
-
 func NewAzurePipeline() *AzurePipeline {
 	return &AzurePipeline{}
 }
@@ -59,10 +57,6 @@ func (r *AzurePipeline) ListEnvVars() []*EnvVarDefinition {
 		{"AGENT_VERSION", false},
 		{"TF_BUILD", false},
 	}
-}
-
-func (r *AzurePipeline) String() string {
-	return AzurePipelineID
 }
 
 func (r *AzurePipeline) RunURI() (url string) {

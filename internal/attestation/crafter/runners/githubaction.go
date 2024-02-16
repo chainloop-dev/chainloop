@@ -22,8 +22,6 @@ import (
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 )
 
-const GitHubActionID = "github-action"
-
 type GitHubAction struct{}
 
 func NewGithubAction() *GitHubAction {
@@ -56,10 +54,6 @@ func (r *GitHubAction) ListEnvVars() []*EnvVarDefinition {
 		{"RUNNER_NAME", false},
 		{"RUNNER_OS", false},
 	}
-}
-
-func (r *GitHubAction) String() string {
-	return GitHubActionID
 }
 
 func (r *GitHubAction) RunURI() (url string) {
