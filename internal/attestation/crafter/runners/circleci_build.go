@@ -15,14 +15,20 @@
 
 package runners
 
-import "os"
+import (
+	"os"
+
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+)
 
 type CircleCIBuild struct{}
 
-const CircleCIBuildID = "circleci-build"
-
 func NewCircleCIBuild() *CircleCIBuild {
 	return &CircleCIBuild{}
+}
+
+func (r *CircleCIBuild) ID() schemaapi.CraftingSchema_Runner_RunnerType {
+	return schemaapi.CraftingSchema_Runner_CIRCLECI_BUILD
 }
 
 func (r *CircleCIBuild) CheckEnv() bool {
@@ -48,10 +54,6 @@ func (r *CircleCIBuild) ListEnvVars() []*EnvVarDefinition {
 		{"CIRCLE_NODE_TOTAL", false},
 		{"CIRCLE_NODE_INDEX", false},
 	}
-}
-
-func (r *CircleCIBuild) String() string {
-	return JenkinsJobID
 }
 
 func (r *CircleCIBuild) RunURI() string {

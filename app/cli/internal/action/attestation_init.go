@@ -83,13 +83,14 @@ func (action *AttestationInit) Run(ctx context.Context, contractRevision int) (s
 	action.Logger.Debug().Msg("Retrieving attestation definition")
 	client := pb.NewAttestationServiceClient(action.ActionsOpts.CPConnection)
 	// get information of the workflow
-	resp, err := client.GetContract(ctx, &pb.AttestationServiceGetContractRequest{ContractRevision: int32(contractRevision)})
+	contractResp, err := client.GetContract(ctx, &pb.AttestationServiceGetContractRequest{ContractRevision: int32(contractRevision)})
 	if err != nil {
 		return "", err
 	}
 
-	workflow := resp.GetResult().GetWorkflow()
-	contractVersion := resp.Result.GetContract()
+	workflow := contractResp.GetResult().GetWorkflow()
+	contractVersion := contractResp.Result.GetContract()
+	contract := contractResp.GetResult().GetContract().GetV1()
 
 	workflowMeta := &clientAPI.WorkflowMetadata{
 		WorkflowId:     workflow.GetId(),
@@ -101,12 +102,10 @@ func (action *AttestationInit) Run(ctx context.Context, contractRevision int) (s
 
 	action.Logger.Debug().Msg("workflow contract and metadata retrieved from the control plane")
 
-	// Check that the instantiation is happening in the right runner context
-	// and extract the job URL
-	runnerType := resp.Result.Contract.GetV1().Runner.GetType()
-	runnerContext := crafter.NewRunner(runnerType)
-	if !action.dryRun && !runnerContext.CheckEnv() {
-		return "", ErrRunnerContextNotFound{runnerContext.String()}
+	// Auto discover the runner context and enforce against the one in the contract if needed
+	discoveredRunner, err := crafter.DiscoverAndEnforceRunner(contract.GetRunner().GetType(), action.dryRun, action.Logger)
+	if err != nil {
+		return "", ErrRunnerContextNotFound{err.Error()}
 	}
 
 	// Identifier of this attestation instance
@@ -117,7 +116,7 @@ func (action *AttestationInit) Run(ctx context.Context, contractRevision int) (s
 		runResp, err := client.Init(
 			ctx,
 			&pb.AttestationServiceInitRequest{
-				JobUrl:           runnerContext.RunURI(),
+				JobUrl:           discoveredRunner.RunURI(),
 				ContractRevision: int32(contractRevision),
 			},
 		)
@@ -138,6 +137,7 @@ func (action *AttestationInit) Run(ctx context.Context, contractRevision int) (s
 		WfInfo: workflowMeta, SchemaV1: contractVersion.GetV1(),
 		DryRun:        action.dryRun,
 		AttestationID: attestationID,
+		Runner:        discoveredRunner,
 	}
 
 	if err := action.c.Init(ctx, initOpts); err != nil {

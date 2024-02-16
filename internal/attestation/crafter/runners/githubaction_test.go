@@ -112,7 +112,7 @@ func (s *githubActionSuite) TestRunURI() {
 }
 
 func (s *githubActionSuite) TestRunnerName() {
-	s.Equal("github-action", s.runner.String())
+	s.Equal("GITHUB_ACTION", s.runner.ID().String())
 }
 
 // Run before each test

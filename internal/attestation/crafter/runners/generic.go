@@ -15,12 +15,16 @@
 
 package runners
 
-type Generic struct{}
+import schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 
-const GenericID = "generic"
+type Generic struct{}
 
 func NewGeneric() *Generic {
 	return &Generic{}
+}
+
+func (r *Generic) ID() schemaapi.CraftingSchema_Runner_RunnerType {
+	return schemaapi.CraftingSchema_Runner_RUNNER_TYPE_UNSPECIFIED
 }
 
 func (r *Generic) CheckEnv() bool {
@@ -31,10 +35,6 @@ func (r *Generic) CheckEnv() bool {
 // automatically inject environment variables into the attestation.
 func (r *Generic) ListEnvVars() []*EnvVarDefinition {
 	return []*EnvVarDefinition{}
-}
-
-func (r *Generic) String() string {
-	return GenericID
 }
 
 func (r *Generic) RunURI() string {

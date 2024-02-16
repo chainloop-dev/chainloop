@@ -45,7 +45,7 @@ func (s *genericSuite) TestRunURI() {
 }
 
 func (s *genericSuite) TestRunnerName() {
-	s.Equal("generic", s.runner.String())
+	s.Equal("RUNNER_TYPE_UNSPECIFIED", s.runner.ID().String())
 }
 
 // Run before each test

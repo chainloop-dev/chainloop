@@ -108,7 +108,7 @@ func (s *circleCIBuildSuite) TestRunURI() {
 }
 
 func (s *circleCIBuildSuite) TestRunnerName() {
-	s.Equal("jenkins-job", s.runner.String())
+	s.Equal("CIRCLECI_BUILD", s.runner.ID().String())
 }
 
 // Run before each test
