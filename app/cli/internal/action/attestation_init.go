@@ -22,7 +22,6 @@ import (
 	"strconv"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
 	clientAPI "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 )
@@ -103,9 +102,9 @@ func (action *AttestationInit) Run(ctx context.Context, contractRevision int) (s
 	action.Logger.Debug().Msg("workflow contract and metadata retrieved from the control plane")
 
 	enforcedRunnerType := resp.Result.Contract.GetV1().Runner.GetType()
-	discoveredRunner, err := action.discoverAndEnforceRunner(enforcedRunnerType, action.dryRun)
+	discoveredRunner, err := crafter.DiscoverAndEnforceRunner(enforcedRunnerType, action.dryRun, action.Logger)
 	if err != nil {
-		return "", err
+		return "", ErrRunnerContextNotFound{err.Error()}
 	}
 
 	// Identifier of this attestation instance
@@ -155,25 +154,4 @@ func (action *AttestationInit) Run(ctx context.Context, contractRevision int) (s
 	}
 
 	return attestationID, nil
-}
-
-func (action *AttestationInit) discoverAndEnforceRunner(enforcedRunnerType schemaapi.CraftingSchema_Runner_RunnerType, dryRun bool) (crafter.SupportedRunner, error) {
-	discoveredRunner := crafter.DiscoverRunner()
-
-	action.Logger.Debug().
-		Str("discovered", discoveredRunner.ID().String()).
-		Str("enforced", enforcedRunnerType.String()).
-		Msg("checking runner context")
-
-	// If the runner type is not specified and it's a dry run, we don't enforce it
-	if enforcedRunnerType == schemaapi.CraftingSchema_Runner_RUNNER_TYPE_UNSPECIFIED || dryRun {
-		return discoveredRunner, nil
-	}
-
-	// Otherwise we enforce the runner type
-	if enforcedRunnerType != discoveredRunner.ID() {
-		return nil, ErrRunnerContextNotFound{enforcedRunnerType.String()}
-	}
-
-	return discoveredRunner, nil
 }

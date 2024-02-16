@@ -17,9 +17,11 @@ package crafter
 
 import (
 	"errors"
+	"fmt"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/runners"
+	"github.com/rs/zerolog"
 )
 
 var ErrRunnerContextNotFound = errors.New("the runner environment doesn't match the required runner type")
@@ -64,7 +66,7 @@ func NewRunner(t schemaapi.CraftingSchema_Runner_RunnerType) SupportedRunner {
 }
 
 // Discover the runner environment
-func DiscoverRunner() SupportedRunner {
+func discoverRunner() SupportedRunner {
 	for _, r := range RunnersMap {
 		if r.CheckEnv() {
 			return r
@@ -72,4 +74,25 @@ func DiscoverRunner() SupportedRunner {
 	}
 
 	return runners.NewGeneric()
+}
+
+func DiscoverAndEnforceRunner(enforcedRunnerType schemaapi.CraftingSchema_Runner_RunnerType, dryRun bool, logger zerolog.Logger) (SupportedRunner, error) {
+	discoveredRunner := discoverRunner()
+
+	logger.Debug().
+		Str("discovered", discoveredRunner.ID().String()).
+		Str("enforced", enforcedRunnerType.String()).
+		Msg("checking runner context")
+
+	// If the runner type is not specified and it's a dry run, we don't enforce it
+	if enforcedRunnerType == schemaapi.CraftingSchema_Runner_RUNNER_TYPE_UNSPECIFIED || dryRun {
+		return discoveredRunner, nil
+	}
+
+	// Otherwise we enforce the runner type
+	if enforcedRunnerType != discoveredRunner.ID() {
+		return nil, fmt.Errorf("runner not found %s", enforcedRunnerType)
+	}
+
+	return discoveredRunner, nil
 }
