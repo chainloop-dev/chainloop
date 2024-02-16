@@ -7,12 +7,7 @@ import (
 	"time"
 )
 
-const (
-	// https://github.com/chainloop-dev/chainloop/releases/tag/v0.60.0
-	// providing a sha triggers a no-sec hardcoded credentials false positive
-	//nolint:gosec
-	clImage = "ghcr.io/chainloop-dev/chainloop/cli@sha256:4e0bc402f71f4877a1ae8d6df5eb4e666a0efa0e7d43ab4f97f21c0e46ae0a59"
-)
+const chainloopVersion = "v0.60.0"
 
 type Chainloop struct {
 	Token *Secret
@@ -148,7 +143,8 @@ func (m *Chainloop) AttestationReset(ctx context.Context,
 
 func (m *Chainloop) cliImage() *Container {
 	return dag.Container().
-		From(clImage).
+		From(fmt.Sprintf("ghcr.io/chainloop-dev/chainloop/cli:%s", chainloopVersion)).
 		WithSecretVariable("CHAINLOOP_ROBOT_ACCOUNT", m.Token).
-		WithEnvVariable("CACHEBUSTER", time.Now().String())
+		WithEnvVariable("CACHEBUSTER", time.Now().String()).
+		WithEnvVariable("CHAINLOOP_DAGGER_CLIENT", chainloopVersion)
 }
