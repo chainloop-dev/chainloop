@@ -116,6 +116,7 @@ func (action *AttestationInit) Run(ctx context.Context, contractRevision int) (s
 		runResp, err := client.Init(
 			ctx,
 			&pb.AttestationServiceInitRequest{
+				Runner:           discoveredRunner.ID(),
 				JobUrl:           discoveredRunner.RunURI(),
 				ContractRevision: int32(contractRevision),
 			},

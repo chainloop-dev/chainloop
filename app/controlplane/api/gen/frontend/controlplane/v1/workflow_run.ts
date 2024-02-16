@@ -2,6 +2,11 @@
 import { grpc } from "@improbable-eng/grpc-web";
 import { BrowserHeaders } from "browser-headers";
 import _m0 from "protobufjs/minimal";
+import {
+  CraftingSchema_Runner_RunnerType,
+  craftingSchema_Runner_RunnerTypeFromJSON,
+  craftingSchema_Runner_RunnerTypeToJSON,
+} from "../../workflowcontract/v1/crafting_schema";
 import { PaginationRequest, PaginationResponse } from "./pagination";
 import {
   AttestationItem,
@@ -29,6 +34,7 @@ export interface AttestationServiceGetContractResponse_Result {
 export interface AttestationServiceInitRequest {
   contractRevision: number;
   jobUrl: string;
+  runner: CraftingSchema_Runner_RunnerType;
 }
 
 export interface AttestationServiceInitResponse {
@@ -351,7 +357,7 @@ export const AttestationServiceGetContractResponse_Result = {
 };
 
 function createBaseAttestationServiceInitRequest(): AttestationServiceInitRequest {
-  return { contractRevision: 0, jobUrl: "" };
+  return { contractRevision: 0, jobUrl: "", runner: 0 };
 }
 
 export const AttestationServiceInitRequest = {
@@ -361,6 +367,9 @@ export const AttestationServiceInitRequest = {
     }
     if (message.jobUrl !== "") {
       writer.uint32(18).string(message.jobUrl);
+    }
+    if (message.runner !== 0) {
+      writer.uint32(24).int32(message.runner);
     }
     return writer;
   },
@@ -386,6 +395,13 @@ export const AttestationServiceInitRequest = {
 
           message.jobUrl = reader.string();
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.runner = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -399,6 +415,7 @@ export const AttestationServiceInitRequest = {
     return {
       contractRevision: isSet(object.contractRevision) ? Number(object.contractRevision) : 0,
       jobUrl: isSet(object.jobUrl) ? String(object.jobUrl) : "",
+      runner: isSet(object.runner) ? craftingSchema_Runner_RunnerTypeFromJSON(object.runner) : 0,
     };
   },
 
@@ -406,6 +423,7 @@ export const AttestationServiceInitRequest = {
     const obj: any = {};
     message.contractRevision !== undefined && (obj.contractRevision = Math.round(message.contractRevision));
     message.jobUrl !== undefined && (obj.jobUrl = message.jobUrl);
+    message.runner !== undefined && (obj.runner = craftingSchema_Runner_RunnerTypeToJSON(message.runner));
     return obj;
   },
 
@@ -419,6 +437,7 @@ export const AttestationServiceInitRequest = {
     const message = createBaseAttestationServiceInitRequest();
     message.contractRevision = object.contractRevision ?? 0;
     message.jobUrl = object.jobUrl ?? "";
+    message.runner = object.runner ?? 0;
     return message;
   },
 };

@@ -22,6 +22,7 @@ option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/con
 import "validate/validate.proto";
 import "controlplane/v1/response_messages.proto";
 import "controlplane/v1/pagination.proto";
+import "workflowcontract/v1/crafting_schema.proto";
 
 // This service is used by the CLI to generate attestation
 service AttestationService {
@@ -56,6 +57,7 @@ message AttestationServiceGetContractResponse {
 message AttestationServiceInitRequest {
   int32 contract_revision = 1;
   string job_url = 2;
+  workflowcontract.v1.CraftingSchema.Runner.RunnerType runner = 3;
 }
 
 message AttestationServiceInitResponse {

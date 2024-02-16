@@ -142,7 +142,7 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		WorkflowID: robotAccount.WorkflowID, RobotaccountID: robotAccount.ID,
 		ContractRevisionUUID: contractVersion.Version.ID,
 		RunnerRunURL:         req.GetJobUrl(),
-		RunnerType:           contractVersion.Version.BodyV1.GetRunner().GetType().String(),
+		RunnerType:           req.GetRunner().String(),
 		CASBackendID:         backend.ID,
 	}
 	run, err := s.wrUseCase.Create(ctx, opts)
