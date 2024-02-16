@@ -53,6 +53,10 @@ func (s *workflowRunListSuite) TestHumanizedRunnerType() {
 			testInput:      v1.CraftingSchema_Runner_JENKINS_JOB,
 			expectedOutput: "Jenkins Job",
 		}, {
+			name:           "dagger runner",
+			testInput:      v1.CraftingSchema_Runner_DAGGER_PIPELINE,
+			expectedOutput: "Dagger Pipeline",
+		}, {
 			name:           "circleci runner",
 			testInput:      v1.CraftingSchema_Runner_CIRCLECI_BUILD,
 			expectedOutput: "CircleCI Build",
