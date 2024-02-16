@@ -15,7 +15,11 @@
 
 package runners
 
-import "os"
+import (
+	"os"
+
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+)
 
 type JenkinsJob struct{}
 
@@ -23,6 +27,10 @@ const JenkinsJobID = "jenkins-job"
 
 func NewJenkinsJob() *JenkinsJob {
 	return &JenkinsJob{}
+}
+
+func (r *JenkinsJob) ID() schemaapi.CraftingSchema_Runner_RunnerType {
+	return schemaapi.CraftingSchema_Runner_JENKINS_JOB
 }
 
 // Checks whether we are within a Jenkins job

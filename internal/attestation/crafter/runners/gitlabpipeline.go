@@ -17,6 +17,8 @@ package runners
 
 import (
 	"os"
+
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 )
 
 type GitlabPipeline struct{}
@@ -25,6 +27,10 @@ const GitlabPipelineID = "gitlab-pipeline"
 
 func NewGitlabPipeline() *GitlabPipeline {
 	return &GitlabPipeline{}
+}
+
+func (r *GitlabPipeline) ID() schemaapi.CraftingSchema_Runner_RunnerType {
+	return schemaapi.CraftingSchema_Runner_GITLAB_PIPELINE
 }
 
 // Figure out if we are in a Github Action job or not

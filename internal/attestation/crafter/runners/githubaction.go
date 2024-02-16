@@ -18,6 +18,8 @@ package runners
 import (
 	"fmt"
 	"os"
+
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 )
 
 const GitHubActionID = "github-action"
@@ -26,6 +28,10 @@ type GitHubAction struct{}
 
 func NewGithubAction() *GitHubAction {
 	return &GitHubAction{}
+}
+
+func (r *GitHubAction) ID() schemaapi.CraftingSchema_Runner_RunnerType {
+	return schemaapi.CraftingSchema_Runner_GITHUB_ACTION
 }
 
 // Figure out if we are in a Github Action job or not

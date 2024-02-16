@@ -19,6 +19,8 @@ import (
 	neturl "net/url"
 	"os"
 	"path"
+
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 )
 
 type AzurePipeline struct{}
@@ -27,6 +29,10 @@ const AzurePipelineID = "azure-pipeline"
 
 func NewAzurePipeline() *AzurePipeline {
 	return &AzurePipeline{}
+}
+
+func (r *AzurePipeline) ID() schemaapi.CraftingSchema_Runner_RunnerType {
+	return schemaapi.CraftingSchema_Runner_AZURE_PIPELINE
 }
 
 // Figure out if we are in a Azure Pipeline job or not

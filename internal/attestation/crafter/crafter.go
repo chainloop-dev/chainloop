@@ -58,7 +58,7 @@ type StateManager interface {
 type Crafter struct {
 	logger        *zerolog.Logger
 	CraftingState *api.CraftingState
-	Runner        supportedRunner
+	Runner        SupportedRunner
 	workingDir    string
 	stateManager  StateManager
 	// Authn is used to authenticate with the OCI registry
@@ -126,6 +126,7 @@ type InitOpts struct {
 	DryRun bool
 	// Identifier of the attestation state
 	AttestationID string
+	Runner        SupportedRunner
 }
 
 // Initialize the crafter with a remote or local schema
@@ -136,14 +137,7 @@ func (c *Crafter) Init(ctx context.Context, opts *InitOpts) error {
 		return errors.New("workflow metadata is nil")
 	}
 
-	// Check that the initialization is happening in the right environment
-	runnerType := opts.SchemaV1.Runner.GetType()
-	runnerContext := NewRunner(runnerType)
-	if !opts.DryRun && !runnerContext.CheckEnv() {
-		return fmt.Errorf("%w, expected %s", ErrRunnerContextNotFound, runnerType)
-	}
-
-	return c.initCraftingStateFile(ctx, opts.AttestationID, opts.SchemaV1, opts.WfInfo, opts.DryRun, runnerType, runnerContext.RunURI())
+	return c.initCraftingStateFile(ctx, opts.AttestationID, opts.SchemaV1, opts.WfInfo, opts.DryRun, opts.Runner.ID(), opts.Runner.RunURI())
 }
 
 func (c *Crafter) AlreadyInitialized(ctx context.Context, stateID string) (bool, error) {
@@ -247,7 +241,7 @@ func (c *Crafter) LoadCraftingState(ctx context.Context, attestationID string) e
 	}
 
 	// Set runner too
-	runnerType := c.CraftingState.GetInputSchema().GetRunner().GetType()
+	runnerType := c.CraftingState.GetAttestation().GetRunnerType()
 	if runnerType.String() == "" {
 		return errors.New("runner type not set in the crafting state")
 	}

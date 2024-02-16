@@ -24,7 +24,7 @@ import (
 
 var ErrRunnerContextNotFound = errors.New("the runner environment doesn't match the required runner type")
 
-type supportedRunner interface {
+type SupportedRunner interface {
 	// Whether the attestation is happening in this environment
 	CheckEnv() bool
 
@@ -38,23 +38,38 @@ type supportedRunner interface {
 
 	// uri to the running job/workload
 	RunURI() string
+
+	// ID returns the runner type
+	ID() schemaapi.CraftingSchema_Runner_RunnerType
 }
 
-func NewRunner(t schemaapi.CraftingSchema_Runner_RunnerType) supportedRunner {
-	switch t {
-	case schemaapi.CraftingSchema_Runner_GITHUB_ACTION:
-		return runners.NewGithubAction()
-	case schemaapi.CraftingSchema_Runner_GITLAB_PIPELINE:
-		return runners.NewGitlabPipeline()
-	case schemaapi.CraftingSchema_Runner_AZURE_PIPELINE:
-		return runners.NewAzurePipeline()
-	case schemaapi.CraftingSchema_Runner_JENKINS_JOB:
-		return runners.NewJenkinsJob()
-	case schemaapi.CraftingSchema_Runner_CIRCLECI_BUILD:
-		return runners.NewCircleCIBuild()
-	case schemaapi.CraftingSchema_Runner_DAGGER_PIPELINE:
-		return runners.NewDaggerPipeline()
-	default:
-		return runners.NewGeneric()
+type RunnerM map[schemaapi.CraftingSchema_Runner_RunnerType]SupportedRunner
+
+var RunnersMap = map[schemaapi.CraftingSchema_Runner_RunnerType]SupportedRunner{
+	schemaapi.CraftingSchema_Runner_GITHUB_ACTION:   runners.NewGithubAction(),
+	schemaapi.CraftingSchema_Runner_GITLAB_PIPELINE: runners.NewGitlabPipeline(),
+	schemaapi.CraftingSchema_Runner_AZURE_PIPELINE:  runners.NewAzurePipeline(),
+	schemaapi.CraftingSchema_Runner_JENKINS_JOB:     runners.NewJenkinsJob(),
+	schemaapi.CraftingSchema_Runner_CIRCLECI_BUILD:  runners.NewCircleCIBuild(),
+	schemaapi.CraftingSchema_Runner_DAGGER_PIPELINE: runners.NewDaggerPipeline(),
+}
+
+// Load a specific runner
+func NewRunner(t schemaapi.CraftingSchema_Runner_RunnerType) SupportedRunner {
+	if r, ok := RunnersMap[t]; ok {
+		return r
 	}
+
+	return runners.NewGeneric()
+}
+
+// Discover the runner environment
+func DiscoverRunner() SupportedRunner {
+	for _, r := range RunnersMap {
+		if r.CheckEnv() {
+			return r
+		}
+	}
+
+	return runners.NewGeneric()
 }

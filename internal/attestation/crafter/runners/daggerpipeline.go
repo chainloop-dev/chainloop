@@ -15,7 +15,11 @@
 
 package runners
 
-import "os"
+import (
+	"os"
+
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+)
 
 type DaggerPipeline struct{}
 
@@ -23,6 +27,10 @@ const DaggerPipelineID = "dagger-pipeline"
 
 func NewDaggerPipeline() *DaggerPipeline {
 	return &DaggerPipeline{}
+}
+
+func (r *DaggerPipeline) ID() schemaapi.CraftingSchema_Runner_RunnerType {
+	return schemaapi.CraftingSchema_Runner_DAGGER_PIPELINE
 }
 
 func (r *DaggerPipeline) CheckEnv() bool {
