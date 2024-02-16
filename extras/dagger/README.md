@@ -21,7 +21,9 @@ Initialize an attestation using the Chainloop token stored in the `CHAINLOOP_TOK
 
 ```sh
 dagger call -m github.com/chainloop-dev/chainloop/extras/dagger \
-  --token env:CHAINLOOP_TOKEN attestation-init
+  --token env:CHAINLOOP_TOKEN attestation-init \
+  --repository /path/to/repo \ # optional flag to automatically attest a Git repository
+  --contract-revision 1 # optional flag to specify the revision of the Workflow Contract (default `latest`)
 ```
 
 The result of this command will be an `attestation-id` that you will use in the next steps.

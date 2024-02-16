@@ -23,8 +23,28 @@ func New(token *Secret) *Chainloop {
 }
 
 // Start the attestation crafting process
-func (m *Chainloop) AttestationInit(ctx context.Context) (string, error) {
-	info, err := m.cliImage().WithExec([]string{"attestation", "init", "--remote-state", "-o", "json"}).Stdout(ctx)
+func (m *Chainloop) AttestationInit(
+	ctx context.Context,
+	// Workflow Contract revision, default is the latest
+	// +optional
+	contractRevision string,
+	// Path to the git repository to be attested
+	// +optional
+	repository *Directory,
+) (string, error) {
+	// Append the contract revision to the args if provided
+	args := []string{"attestation", "init", "--remote-state", "-o", "json"}
+	if contractRevision != "" {
+		args = append(args, "--contract-revision", contractRevision)
+	}
+
+	// Mount the repository path if provided
+	c := m.cliImage()
+	if repository != nil {
+		c = c.WithDirectory(".", repository)
+	}
+
+	info, err := c.WithExec(args).Stdout(ctx)
 	if err != nil {
 		return "", fmt.Errorf("running attestation init: %w", err)
 	}
