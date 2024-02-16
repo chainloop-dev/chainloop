@@ -86,7 +86,7 @@ func discoverRunner(logger zerolog.Logger) SupportedRunner {
 			detectedStr = append(detectedStr, d.ID().String())
 		}
 
-		logger.Info().Strs("detected", detectedStr).Msg("multiple runners detected, incongruent environment")
+		logger.Warn().Strs("detected", detectedStr).Msg("multiple runners detected, incongruent environment")
 		return runners.NewGeneric()
 	}
 
