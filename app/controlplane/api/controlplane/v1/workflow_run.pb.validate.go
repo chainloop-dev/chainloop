@@ -17,6 +17,8 @@ import (
 	"unicode/utf8"
 
 	"google.golang.org/protobuf/types/known/anypb"
+
+	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 )
 
 // ensure the imports are used
@@ -33,6 +35,8 @@ var (
 	_ = (*mail.Address)(nil)
 	_ = anypb.Any{}
 	_ = sort.Sort
+
+	_ = v1.CraftingSchema_Runner_RunnerType(0)
 )
 
 // define the regex for a UUID once up-front
@@ -304,6 +308,8 @@ func (m *AttestationServiceInitRequest) validate(all bool) error {
 	// no validation rules for ContractRevision
 
 	// no validation rules for JobUrl
+
+	// no validation rules for Runner
 
 	if len(errors) > 0 {
 		return AttestationServiceInitRequestMultiError(errors)
