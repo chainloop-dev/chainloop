@@ -1,3 +1,4 @@
+// Chainloop is an open source project that allows you to collect, attest, and distribute pieces of evidence from your Software Supply Chain.
 package main
 
 import (
