@@ -120,10 +120,6 @@ func init() {
 	orginvitation.DefaultID = orginvitationDescID.Default.(func() uuid.UUID)
 	organizationFields := schema.Organization{}.Fields()
 	_ = organizationFields
-	// organizationDescName is the schema descriptor for name field.
-	organizationDescName := organizationFields[1].Descriptor()
-	// organization.DefaultName holds the default value on creation for the name field.
-	organization.DefaultName = organizationDescName.Default.(string)
 	// organizationDescCreatedAt is the schema descriptor for created_at field.
 	organizationDescCreatedAt := organizationFields[2].Descriptor()
 	// organization.DefaultCreatedAt holds the default value on creation for the created_at field.
