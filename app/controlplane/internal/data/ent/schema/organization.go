@@ -34,7 +34,7 @@ type Organization struct {
 func (Organization) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),
-		field.String("name").Default("default"),
+		field.String("name").Unique(),
 		field.Time("created_at").
 			Default(time.Now).
 			Immutable().
