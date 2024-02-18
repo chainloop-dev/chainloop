@@ -41,7 +41,9 @@ func (r *OrganizationRepo) Create(ctx context.Context, name string) (*biz.Organi
 	org, err := r.data.db.Organization.Create().
 		SetName(name).
 		Save(ctx)
-	if err != nil {
+	if err != nil && ent.IsConstraintError(err) {
+		return nil, biz.ErrAlreadyExists
+	} else if err != nil {
 		return nil, err
 	}
 

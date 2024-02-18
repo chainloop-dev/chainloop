@@ -19,12 +19,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
-	"github.com/moby/moby/pkg/namesgenerator"
 	"k8s.io/apimachinery/pkg/util/validation"
 )
 
@@ -57,19 +55,48 @@ func NewOrganizationUseCase(repo OrganizationRepo, repoUC *CASBackendUseCase, iU
 	}
 }
 
-func (uc *OrganizationUseCase) Create(ctx context.Context, name string) (*Organization, error) {
-	// Create a random name if none is provided
-	if name == "" {
-		name = namesgenerator.GetRandomName(0)
-		// Replace underscores with dashes to make it compatible with DNS1123
-		name = strings.ReplaceAll(name, "_", "-")
+func (uc *OrganizationUseCase) CreateWithRandomName(ctx context.Context) (*Organization, error) {
+	// Try 5 times to create a random name
+	for i := 0; i < 5; i++ {
+		// Create a random name
+		name, err := generateRandomName()
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate random name: %w", err)
+		}
+
+		org, err := uc.Create(ctx, name)
+		if err != nil {
+			// We retry if the organization already exists
+			if errors.Is(err, ErrAlreadyExists) {
+				uc.logger.Debugw("msg", "Org exists!", "name", name)
+				continue
+			}
+			return nil, err
+		}
+
+		return org, nil
 	}
+
+	return nil, errors.New("failed to create a random organization name")
+}
+
+func (uc *OrganizationUseCase) Create(ctx context.Context, name string) (*Organization, error) {
+	uc.logger.Infow("msg", "Creating organization", "name", name)
 
 	if err := validateOrgName(name); err != nil {
 		return nil, NewErrValidation(fmt.Errorf("invalid organization name: %w", err))
 	}
 
-	return uc.orgRepo.Create(ctx, name)
+	org, err := uc.orgRepo.Create(ctx, name)
+	if err != nil {
+		if errors.Is(err, ErrAlreadyExists) {
+			return nil, NewErrValidationStr("organization already exists")
+		}
+
+		return nil, fmt.Errorf("failed to create organization: %w", err)
+	}
+
+	return org, nil
 }
 
 func validateOrgName(name string) error {
