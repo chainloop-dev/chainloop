@@ -20,6 +20,8 @@ import (
 	"fmt"
 )
 
+var ErrAlreadyExists = errors.New("duplicate")
+
 type ErrNotFound struct {
 	entity string
 }
