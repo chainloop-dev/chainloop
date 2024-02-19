@@ -70,7 +70,9 @@ func (r *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, name *strin
 	}
 
 	org, err := req.Save(ctx)
-	if err != nil {
+	if err != nil && ent.IsConstraintError(err) {
+		return nil, biz.ErrAlreadyExists
+	} else if err != nil {
 		return nil, fmt.Errorf("failed to update organization: %w", err)
 	}
 

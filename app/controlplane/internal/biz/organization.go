@@ -157,6 +157,10 @@ func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgID string,
 	// Perform the update
 	org, err := uc.orgRepo.Update(ctx, orgUUID, name)
 	if err != nil {
+		if errors.Is(err, ErrAlreadyExists) {
+			return nil, NewErrValidationStr("an organization with that name already exists")
+		}
+
 		return nil, fmt.Errorf("failed to update organization: %w", err)
 	} else if org == nil {
 		return nil, NewErrNotFound("organization")
