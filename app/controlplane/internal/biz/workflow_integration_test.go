@@ -38,7 +38,7 @@ func (s *workflowIntegrationTestSuite) TestUpdate() {
 		project = "test project"
 	)
 
-	org2, err := s.Organization.Create(context.Background(), "testing-org")
+	org2, err := s.Organization.CreateWithRandomName(context.Background())
 	require.NoError(s.T(), err)
 	workflow, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: name, OrgID: s.org.ID})
 	require.NoError(s.T(), err)
