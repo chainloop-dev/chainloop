@@ -100,7 +100,7 @@ func (s *membershipIntegrationTestSuite) TestCreateMembership() {
 	assert.NoError(err)
 
 	s.T().Run("Create default", func(t *testing.T) {
-		org, err := s.Organization.Create(ctx, "foo")
+		org, err := s.Organization.CreateWithRandomName(ctx)
 		assert.NoError(err)
 
 		m, err := s.Membership.Create(ctx, org.ID, user.ID, true)
@@ -119,7 +119,7 @@ func (s *membershipIntegrationTestSuite) TestCreateMembership() {
 	})
 
 	s.T().Run("Non current", func(t *testing.T) {
-		org, err := s.Organization.Create(ctx, "foo")
+		org, err := s.Organization.CreateWithRandomName(ctx)
 		assert.NoError(err)
 
 		m, err := s.Membership.Create(ctx, org.ID, user.ID, false)
@@ -134,7 +134,7 @@ func (s *membershipIntegrationTestSuite) TestCreateMembership() {
 	})
 
 	s.T().Run("Invalid User", func(t *testing.T) {
-		org, err := s.Organization.Create(ctx, "foo")
+		org, err := s.Organization.CreateWithRandomName(ctx)
 		assert.NoError(err)
 		m, err := s.Membership.Create(ctx, org.ID, uuid.NewString(), false)
 		assert.Error(err)
