@@ -34,9 +34,9 @@ func (s *membershipIntegrationTestSuite) TestDeleteWithOrg() {
 	s.NoError(err)
 	user2, err := s.User.FindOrCreateByEmail(ctx, "foo-2@test.com")
 	s.NoError(err)
-	userOrg, err := s.Organization.Create(ctx, "foo")
+	userOrg, err := s.Organization.CreateWithRandomName(ctx)
 	s.NoError(err)
-	sharedOrg, err := s.Organization.Create(ctx, "shared-org")
+	sharedOrg, err := s.Organization.CreateWithRandomName(ctx)
 	s.NoError(err)
 
 	mUser, err := s.Membership.Create(ctx, userOrg.ID, user.ID, true)

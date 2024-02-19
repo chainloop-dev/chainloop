@@ -148,7 +148,7 @@ func (s *workflowIntegrationTestSuite) SetupTest() {
 	s.TestingUseCases = testhelpers.NewTestingUseCases(s.T())
 
 	ctx := context.Background()
-	s.org, err = s.Organization.Create(ctx, "testing-org")
+	s.org, err = s.Organization.CreateWithRandomName(ctx)
 	assert.NoError(err)
 }
 
