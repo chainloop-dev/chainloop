@@ -57,7 +57,7 @@ func generateRandomName() (string, error) {
 	// Create a random name
 	name := namesgenerator.GetRandomName(0)
 	// and append a random number to it
-	randomNumber, err := rand.Int(rand.Reader, big.NewInt(1000))
+	randomNumber, err := rand.Int(rand.Reader, big.NewInt(10000))
 	if err != nil {
 		return "", fmt.Errorf("failed to generate random number: %w", err)
 	}

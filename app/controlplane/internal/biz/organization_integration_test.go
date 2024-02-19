@@ -35,7 +35,15 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-// and delete cascades that we want to validate that they work too
+func (s *OrgIntegrationTestSuite) TestCreateWithRandomName() {
+	// It can create thousands of orgs without any problem
+	for i := 0; i < 1000; i++ {
+		org, err := s.Organization.CreateWithRandomName(context.Background())
+		s.NoError(err)
+		s.NotNil(org)
+	}
+}
+
 func (s *OrgIntegrationTestSuite) TestCreate() {
 	ctx := context.Background()
 

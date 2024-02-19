@@ -56,8 +56,8 @@ func NewOrganizationUseCase(repo OrganizationRepo, repoUC *CASBackendUseCase, iU
 }
 
 func (uc *OrganizationUseCase) CreateWithRandomName(ctx context.Context) (*Organization, error) {
-	// Try 5 times to create a random name
-	for i := 0; i < 5; i++ {
+	// Try 10 times to create a random name
+	for i := 0; i < 10; i++ {
 		// Create a random name
 		name, err := generateRandomName()
 		if err != nil {
