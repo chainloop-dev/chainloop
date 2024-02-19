@@ -34,9 +34,9 @@ func (s *membershipIntegrationTestSuite) TestDeleteWithOrg() {
 	s.NoError(err)
 	user2, err := s.User.FindOrCreateByEmail(ctx, "foo-2@test.com")
 	s.NoError(err)
-	userOrg, err := s.Organization.Create(ctx, "foo")
+	userOrg, err := s.Organization.CreateWithRandomName(ctx)
 	s.NoError(err)
-	sharedOrg, err := s.Organization.Create(ctx, "shared-org")
+	sharedOrg, err := s.Organization.CreateWithRandomName(ctx)
 	s.NoError(err)
 
 	mUser, err := s.Membership.Create(ctx, userOrg.ID, user.ID, true)
@@ -100,7 +100,7 @@ func (s *membershipIntegrationTestSuite) TestCreateMembership() {
 	assert.NoError(err)
 
 	s.T().Run("Create default", func(t *testing.T) {
-		org, err := s.Organization.Create(ctx, "foo")
+		org, err := s.Organization.CreateWithRandomName(ctx)
 		assert.NoError(err)
 
 		m, err := s.Membership.Create(ctx, org.ID, user.ID, true)
@@ -119,7 +119,7 @@ func (s *membershipIntegrationTestSuite) TestCreateMembership() {
 	})
 
 	s.T().Run("Non current", func(t *testing.T) {
-		org, err := s.Organization.Create(ctx, "foo")
+		org, err := s.Organization.CreateWithRandomName(ctx)
 		assert.NoError(err)
 
 		m, err := s.Membership.Create(ctx, org.ID, user.ID, false)
@@ -134,7 +134,7 @@ func (s *membershipIntegrationTestSuite) TestCreateMembership() {
 	})
 
 	s.T().Run("Invalid User", func(t *testing.T) {
-		org, err := s.Organization.Create(ctx, "foo")
+		org, err := s.Organization.CreateWithRandomName(ctx)
 		assert.NoError(err)
 		m, err := s.Membership.Create(ctx, org.ID, uuid.NewString(), false)
 		assert.Error(err)

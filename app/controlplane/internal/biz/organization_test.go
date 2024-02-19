@@ -13,16 +13,47 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package biz
+package biz_test
 
 import (
+	"context"
+	"io"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	repoM "github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/mocks"
+	"github.com/go-kratos/kratos/v2/log"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
 type organizationTestSuite struct {
 	suite.Suite
+}
+
+func (s *organizationTestSuite) TestCreateWithRandomName() {
+	repo := repoM.NewOrganizationRepo(s.T())
+	uc := biz.NewOrganizationUseCase(repo, nil, nil, nil, log.NewStdLogger(io.Discard))
+
+	s.Run("the org exists, we retry", func() {
+		ctx := context.Background()
+		// the first one fails because it already exists
+		repo.On("Create", ctx, mock.Anything).Once().Return(nil, biz.ErrAlreadyExists)
+		// but the second call creates the org
+		repo.On("Create", ctx, mock.Anything).Once().Return(&biz.Organization{Name: "foobar"}, nil)
+		got, err := uc.CreateWithRandomName(ctx)
+		s.NoError(err)
+		s.Equal("foobar", got.Name)
+	})
+
+	s.Run("if it runs out of tries, it fails", func() {
+		ctx := context.Background()
+		// the first one fails because it already exists
+		repo.On("Create", ctx, mock.Anything).Times(biz.OrganizationRandomNameMaxTries).Return(nil, biz.ErrAlreadyExists)
+		got, err := uc.CreateWithRandomName(ctx)
+		s.Error(err)
+		s.Nil(got)
+	})
 }
 
 func (s *organizationTestSuite) TestValidateOrgName() {
@@ -47,7 +78,7 @@ func (s *organizationTestSuite) TestValidateOrgName() {
 
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
-			err := validateOrgName(tc.name)
+			err := biz.ValidateOrgName(tc.name)
 			if tc.expectedError {
 				s.Error(err)
 			} else {

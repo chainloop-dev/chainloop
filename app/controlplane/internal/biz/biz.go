@@ -15,7 +15,15 @@
 
 package biz
 
-import "github.com/google/wire"
+import (
+	"crypto/rand"
+	"fmt"
+	"math/big"
+	"strings"
+
+	"github.com/google/wire"
+	"github.com/moby/moby/pkg/namesgenerator"
+)
 
 // ProviderSet is biz providers.
 var ProviderSet = wire.NewSet(
@@ -42,3 +50,19 @@ var ProviderSet = wire.NewSet(
 	wire.Struct(new(NewIntegrationUseCaseOpts), "*"),
 	wire.Struct(new(NewUserUseCaseParams), "*"),
 )
+
+// generate a DNS1123-valid random name using moby's namesgenerator
+// plus an additional random number
+func generateRandomName() (string, error) {
+	// Create a random name
+	name := namesgenerator.GetRandomName(0)
+	// and append a random number to it
+	randomNumber, err := rand.Int(rand.Reader, big.NewInt(10000))
+	if err != nil {
+		return "", fmt.Errorf("failed to generate random number: %w", err)
+	}
+
+	// Replace underscores with dashes to make it compatible with DNS1123
+	name = strings.ReplaceAll(fmt.Sprintf("%s-%d", name, randomNumber), "_", "-")
+	return name, nil
+}

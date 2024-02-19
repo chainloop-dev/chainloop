@@ -359,9 +359,9 @@ func (s *referrerIntegrationTestSuite) SetupTest() {
 	ctx := context.Background()
 
 	var err error
-	s.org1, err = s.Organization.Create(ctx, "testing-org")
+	s.org1, err = s.Organization.CreateWithRandomName(ctx)
 	require.NoError(s.T(), err)
-	s.org2, err = s.Organization.Create(ctx, "testing-org-2")
+	s.org2, err = s.Organization.CreateWithRandomName(ctx)
 	require.NoError(s.T(), err)
 
 	s.org1UUID, err = uuid.Parse(s.org1.ID)

@@ -161,7 +161,7 @@ func (s *apiTokenTestSuite) TestList() {
 	})
 
 	s.T().Run("returns empty list", func(t *testing.T) {
-		emptyOrg, err := s.Organization.Create(ctx, "org1")
+		emptyOrg, err := s.Organization.CreateWithRandomName(ctx)
 		require.NoError(s.T(), err)
 		tokens, err := s.APIToken.List(ctx, emptyOrg.ID, false)
 		s.NoError(err)
@@ -240,9 +240,9 @@ func (s *apiTokenTestSuite) SetupTest() {
 	ctx := context.Background()
 
 	s.TestingUseCases = testhelpers.NewTestingUseCases(t)
-	s.org, err = s.Organization.Create(ctx, "org1")
+	s.org, err = s.Organization.CreateWithRandomName(ctx)
 	assert.NoError(err)
-	s.org2, err = s.Organization.Create(ctx, "org2")
+	s.org2, err = s.Organization.CreateWithRandomName(ctx)
 	assert.NoError(err)
 
 	// Create 2 tokens for org 1
