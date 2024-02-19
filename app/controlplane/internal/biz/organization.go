@@ -55,22 +55,25 @@ func NewOrganizationUseCase(repo OrganizationRepo, repoUC *CASBackendUseCase, iU
 	}
 }
 
+const OrganizationRandomNameMaxTries = 10
+
 func (uc *OrganizationUseCase) CreateWithRandomName(ctx context.Context) (*Organization, error) {
 	// Try 10 times to create a random name
-	for i := 0; i < 10; i++ {
+	for i := 0; i < OrganizationRandomNameMaxTries; i++ {
 		// Create a random name
 		name, err := generateRandomName()
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate random name: %w", err)
 		}
 
-		org, err := uc.Create(ctx, name)
+		org, err := uc.doCreate(ctx, name)
 		if err != nil {
 			// We retry if the organization already exists
 			if errors.Is(err, ErrAlreadyExists) {
 				uc.logger.Debugw("msg", "Org exists!", "name", name)
 				continue
 			}
+			uc.logger.Debugw("msg", "BOOM", "name", name, "err", err)
 			return nil, err
 		}
 
@@ -80,14 +83,9 @@ func (uc *OrganizationUseCase) CreateWithRandomName(ctx context.Context) (*Organ
 	return nil, errors.New("failed to create a random organization name")
 }
 
+// Create an organization with the given name
 func (uc *OrganizationUseCase) Create(ctx context.Context, name string) (*Organization, error) {
-	uc.logger.Infow("msg", "Creating organization", "name", name)
-
-	if err := validateOrgName(name); err != nil {
-		return nil, NewErrValidation(fmt.Errorf("invalid organization name: %w", err))
-	}
-
-	org, err := uc.orgRepo.Create(ctx, name)
+	org, err := uc.doCreate(ctx, name)
 	if err != nil {
 		if errors.Is(err, ErrAlreadyExists) {
 			return nil, NewErrValidationStr("organization already exists")
@@ -99,7 +97,22 @@ func (uc *OrganizationUseCase) Create(ctx context.Context, name string) (*Organi
 	return org, nil
 }
 
-func validateOrgName(name string) error {
+func (uc *OrganizationUseCase) doCreate(ctx context.Context, name string) (*Organization, error) {
+	uc.logger.Infow("msg", "Creating organization", "name", name)
+
+	if err := ValidateOrgName(name); err != nil {
+		return nil, NewErrValidation(fmt.Errorf("invalid organization name: %w", err))
+	}
+
+	org, err := uc.orgRepo.Create(ctx, name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create organization: %w", err)
+	}
+
+	return org, nil
+}
+
+func ValidateOrgName(name string) error {
 	// The same validation done by Kubernetes for their namespace name
 	// https://github.com/kubernetes/apimachinery/blob/fa98d6eaedb4caccd69fc07d90bbb6a1e551f00f/pkg/api/validation/generic.go#L63
 	err := validation.IsDNS1123Label(name)
@@ -128,7 +141,7 @@ func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgID string,
 
 	// We validate the name to get ready for the name to become identifiers
 	if name != nil {
-		if err := validateOrgName(*name); err != nil {
+		if err := ValidateOrgName(*name); err != nil {
 			return nil, NewErrValidation(fmt.Errorf("invalid organization name: %w", err))
 		}
 	}
