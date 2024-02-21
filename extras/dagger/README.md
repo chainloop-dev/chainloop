@@ -2,18 +2,36 @@
 
 ![dagger-tested-version](https://img.shields.io/badge/dagger%20version-v0.9.10-green)
 
-Daggerized version of [Chainloop](https://chainloop.dev) that can be used to attest and collect pieces of evidence from your [Dagger](https://dagger.io/) pipelines.
+Daggerized version of [Chainloop](https://docs.chainloop.dev) that can be used to attest and collect pieces of evidence from your [Dagger](https://dagger.io/) pipelines.
 
 ## Prerequisites
 
-- This module requires existing familiarity with Chainloop, and its attestation process. Please refer to [this guide](https://docs.chainloop.dev/getting-started/attestation-crafting) to learn more.
+- This module requires existing familiarity with Chainloop and its attestation process. Please refer to [this guide](https://docs.chainloop.dev/getting-started/attestation-crafting) to learn more.
 - You need a `token` (aka workflow robot account) [previously generated](https://docs.chainloop.dev/getting-started/workflow-definition#robot-account-creation) by your Chainloop administrator.
 
 ## Attestation Crafting
 
 The [attestation process](https://docs.chainloop.dev/getting-started/attestation-crafting) starts with its initialization (`attestation-init`), then adding as many materials/pieces of evidence as needed (`attestation-add`), and finally, signing and pushing the attestation to the Chainloop control plane (`attestation-push`). 
 
-### Init attestation ([docs](https://docs.chainloop.dev/getting-started/attestation-crafting#initialization))
+You can invoke this module in two ways: either from the Dagger CLI `dagger call ...` or from your own Dagger pipeline by importing this module as a dependency.
+
+### Using the Chainloop module in your Dagger pipeline
+
+To use Chainloop in your module, first, you need to add it as a dependency.
+
+```sh
+dagger install github.com/chainloop-dev/chainloop/extras/dagger
+```
+
+Once done, you'll have access to the Chainloop client via `dag.Chainloop(chainloopToken)` and all attestation methods (init, add, push, reset, status).
+
+You can find a full example of how to integrate attestation crafting in your `Go` pipeline [here](https://github.com/chainloop-dev/integration-demo/blob/main/chainloop-demo/dagger/src/main.go)
+
+### Using the Dagger CLI
+
+The [attestation process](https://docs.chainloop.dev/getting-started/attestation-crafting) starts with its initialization (`attestation-init`), then adding as many materials/pieces of evidence as needed (`attestation-add`), and finally, signing and pushing the attestation to the Chainloop control plane (`attestation-push`). 
+
+#### 1 - Init attestation ([docs](https://docs.chainloop.dev/getting-started/attestation-crafting#initialization))
 
 Initialize an attestation using the Chainloop token stored in the `CHAINLOOP_TOKEN` environment variable.
 
@@ -28,7 +46,7 @@ dagger call -m github.com/chainloop-dev/chainloop/extras/dagger \
 
 The result of this command will be an `attestation-id` that you will use in the next steps.
 
-### Get the status ([docs](https://docs.chainloop.dev/getting-started/attestation-crafting#inspecting-the-crafting-status))
+#### 2 - Get the status ([docs](https://docs.chainloop.dev/getting-started/attestation-crafting#inspecting-the-crafting-status))
 
 ```sh
 dagger call -m github.com/chainloop-dev/chainloop/extras/dagger \
@@ -36,7 +54,7 @@ dagger call -m github.com/chainloop-dev/chainloop/extras/dagger \
   --attestation-id $ATTESTATION_ID
 ```
 
-### Add pieces of evidence ([docs](https://docs.chainloop.dev/getting-started/attestation-crafting#adding-materials))
+#### 3 - Add pieces of evidence ([docs](https://docs.chainloop.dev/getting-started/attestation-crafting#adding-materials))
 
 You can attest pieces of evidence by providing its material name and its value, either in the form of a path to a file (`--path`) or a raw value (`--value`).
 
@@ -72,7 +90,7 @@ dagger call -m github.com/chainloop-dev/chainloop/extras/dagger \
   --registry-password MY_PAT_TOKEN
 ```
 
-### Sign and push ([docs](https://docs.chainloop.dev/getting-started/attestation-crafting#encode-sign-and-push-attestation))
+#### 4 - Sign and push attestation ([docs](https://docs.chainloop.dev/getting-started/attestation-crafting#encode-sign-and-push-attestation))
 
 Sign and push the attestation using a cosign **key stored in a file** and a passphrase stored in an environment variable.
 
@@ -88,7 +106,7 @@ dagger call -m github.com/chainloop-dev/chainloop/extras/dagger \
 
 Alternatively, you can also provide the signing key in an environment variable `--signing-key env:MY_COSIGN_KEY`
 
-### Cancel/Fail attestation
+#### 5 - Cancel/mark attestation as failed
 
 ```sh
 dagger call -m github.com/chainloop-dev/chainloop/extras/dagger \
@@ -108,12 +126,3 @@ Chainloop is developed in the open and is constantly improved by our users, cont
 - GitHub [Issues](https://github.com/chainloop-dev/chainloop/issues)
 - Discord [Community Server](https://discord.gg/f7atkaZact)
 - Youtube [Channel](https://www.youtube.com/channel/UCISrWrPyR_AFjIQYmxAyKdg)
-
-## Contributing
-
-Want to get involved? Contributions are welcome.
-
-If you are ready to jump in and test, add code, or help with documentation, please follow the instructions on
-our [Contribution](CONTRIBUTING.md) page. At all times, follow our [Code of Conduct](./CODE_OF_CONDUCT.md).
-
-See the [issue tracker](https://github.com/chainloop-dev/chainloop/issues) if you're unsure where to start, especially the [Good first issue](https://github.com/chainloop-dev/chainloop/labels/good%20first%20issue) label.
