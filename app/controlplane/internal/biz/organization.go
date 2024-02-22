@@ -97,11 +97,13 @@ func (uc *OrganizationUseCase) Create(ctx context.Context, name string) (*Organi
 	return org, nil
 }
 
+var errOrgName = errors.New("org names must only contain lowercase letters, numbers, or hyphens. Examples of valid org names are \"myorg\", \"myorg-123\"")
+
 func (uc *OrganizationUseCase) doCreate(ctx context.Context, name string) (*Organization, error) {
 	uc.logger.Infow("msg", "Creating organization", "name", name)
 
 	if err := ValidateOrgName(name); err != nil {
-		return nil, NewErrValidation(fmt.Errorf("invalid organization name: %w", err))
+		return nil, NewErrValidation(errOrgName)
 	}
 
 	org, err := uc.orgRepo.Create(ctx, name)
@@ -142,7 +144,7 @@ func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgID string,
 	// We validate the name to get ready for the name to become identifiers
 	if name != nil {
 		if err := ValidateOrgName(*name); err != nil {
-			return nil, NewErrValidation(fmt.Errorf("invalid organization name: %w", err))
+			return nil, NewErrValidation(errOrgName)
 		}
 	}
 
