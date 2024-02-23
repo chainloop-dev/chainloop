@@ -59,6 +59,7 @@ export interface WorkflowItem {
    * - their attestation and materials
    */
   public: boolean;
+  description: string;
 }
 
 export interface WorkflowRunItem {
@@ -228,6 +229,7 @@ function createBaseWorkflowItem(): WorkflowItem {
     lastRun: undefined,
     contractId: "",
     public: false,
+    description: "",
   };
 }
 
@@ -259,6 +261,9 @@ export const WorkflowItem = {
     }
     if (message.public === true) {
       writer.uint32(72).bool(message.public);
+    }
+    if (message.description !== "") {
+      writer.uint32(82).string(message.description);
     }
     return writer;
   },
@@ -333,6 +338,13 @@ export const WorkflowItem = {
 
           message.public = reader.bool();
           continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -353,6 +365,7 @@ export const WorkflowItem = {
       lastRun: isSet(object.lastRun) ? WorkflowRunItem.fromJSON(object.lastRun) : undefined,
       contractId: isSet(object.contractId) ? String(object.contractId) : "",
       public: isSet(object.public) ? Boolean(object.public) : false,
+      description: isSet(object.description) ? String(object.description) : "",
     };
   },
 
@@ -368,6 +381,7 @@ export const WorkflowItem = {
       (obj.lastRun = message.lastRun ? WorkflowRunItem.toJSON(message.lastRun) : undefined);
     message.contractId !== undefined && (obj.contractId = message.contractId);
     message.public !== undefined && (obj.public = message.public);
+    message.description !== undefined && (obj.description = message.description);
     return obj;
   },
 
@@ -388,6 +402,7 @@ export const WorkflowItem = {
       : undefined;
     message.contractId = object.contractId ?? "";
     message.public = object.public ?? false;
+    message.description = object.description ?? "";
     return message;
   },
 };

@@ -36,6 +36,8 @@ type Workflow struct {
 	Public bool `json:"public,omitempty"`
 	// OrganizationID holds the value of the "organization_id" field.
 	OrganizationID uuid.UUID `json:"organization_id,omitempty"`
+	// Description holds the value of the "description" field.
+	Description string `json:"description,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the WorkflowQuery when eager-loading is set.
 	Edges             WorkflowEdges `json:"edges"`
@@ -133,7 +135,7 @@ func (*Workflow) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case workflow.FieldRunsCount:
 			values[i] = new(sql.NullInt64)
-		case workflow.FieldName, workflow.FieldProject, workflow.FieldTeam:
+		case workflow.FieldName, workflow.FieldProject, workflow.FieldTeam, workflow.FieldDescription:
 			values[i] = new(sql.NullString)
 		case workflow.FieldCreatedAt, workflow.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
@@ -209,6 +211,12 @@ func (w *Workflow) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field organization_id", values[i])
 			} else if value != nil {
 				w.OrganizationID = *value
+			}
+		case workflow.FieldDescription:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field description", values[i])
+			} else if value.Valid {
+				w.Description = value.String
 			}
 		case workflow.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -306,6 +314,9 @@ func (w *Workflow) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("organization_id=")
 	builder.WriteString(fmt.Sprintf("%v", w.OrganizationID))
+	builder.WriteString(", ")
+	builder.WriteString("description=")
+	builder.WriteString(w.Description)
 	builder.WriteByte(')')
 	return builder.String()
 }

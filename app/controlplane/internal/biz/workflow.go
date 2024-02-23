@@ -26,11 +26,11 @@ import (
 )
 
 type Workflow struct {
-	Name, Team, Project   string
-	CreatedAt             *time.Time
-	RunsCounter           int
-	LastRun               *WorkflowRun
-	ID, ContractID, OrgID uuid.UUID
+	Name, Description, Team, Project string
+	CreatedAt                        *time.Time
+	RunsCounter                      int
+	LastRun                          *WorkflowRun
+	ID, ContractID, OrgID            uuid.UUID
 	// Public means that the associated workflow runs, attestations and materials
 	// are reachable by other users, regardless of their organization
 	// This field is also used to calculate if an user can download attestations/materials from the CAS
@@ -49,15 +49,15 @@ type WorkflowRepo interface {
 
 // TODO: move to pointer properties to handle empty values
 type WorkflowCreateOpts struct {
-	Name, OrgID, Project, Team, ContractID string
+	Name, OrgID, Project, Team, ContractID, Description string
 	// Public means that the associated workflow runs, attestations and materials
 	// are reachable by other users, regardless of their organization
 	Public bool
 }
 
 type WorkflowUpdateOpts struct {
-	Name, Project, Team *string
-	Public              *bool
+	Name, Project, Team, Description *string
+	Public                           *bool
 }
 
 type WorkflowUseCase struct {

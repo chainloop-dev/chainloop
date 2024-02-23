@@ -301,6 +301,7 @@ var (
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
 		{Name: "public", Type: field.TypeBool, Default: false},
+		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "organization_id", Type: field.TypeUUID},
 		{Name: "workflow_contract", Type: field.TypeUUID},
 	}
@@ -312,13 +313,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "workflows_organizations_workflows",
-				Columns:    []*schema.Column{WorkflowsColumns[8]},
+				Columns:    []*schema.Column{WorkflowsColumns[9]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "workflows_workflow_contracts_contract",
-				Columns:    []*schema.Column{WorkflowsColumns[9]},
+				Columns:    []*schema.Column{WorkflowsColumns[10]},
 				RefColumns: []*schema.Column{WorkflowContractsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},

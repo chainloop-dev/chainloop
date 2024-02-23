@@ -47,11 +47,12 @@ func (s *WorkflowService) Create(ctx context.Context, req *pb.WorkflowServiceCre
 	}
 
 	createOpts := &biz.WorkflowCreateOpts{
-		OrgID:      currentOrg.ID,
-		Name:       req.GetName(),
-		Project:    req.GetProject(),
-		Team:       req.GetTeam(),
-		ContractID: req.GetSchemaId(),
+		OrgID:       currentOrg.ID,
+		Name:        req.GetName(),
+		Project:     req.GetProject(),
+		Team:        req.GetTeam(),
+		ContractID:  req.GetSchemaId(),
+		Description: req.GetDescription(),
 	}
 
 	p, err := s.useCase.Create(ctx, createOpts)
@@ -74,10 +75,11 @@ func (s *WorkflowService) Update(ctx context.Context, req *pb.WorkflowServiceUpd
 	}
 
 	updateOpts := &biz.WorkflowUpdateOpts{
-		Name:    req.Name,
-		Project: req.Project,
-		Team:    req.Team,
-		Public:  req.Public,
+		Name:        req.Name,
+		Project:     req.Project,
+		Team:        req.Team,
+		Public:      req.Public,
+		Description: req.Description,
 	}
 
 	p, err := s.useCase.Update(ctx, currentOrg.ID, req.Id, updateOpts)
@@ -131,6 +133,7 @@ func bizWorkflowToPb(wf *biz.Workflow) *pb.WorkflowItem {
 	item := &pb.WorkflowItem{
 		Id: wf.ID.String(), Name: wf.Name, CreatedAt: timestamppb.New(*wf.CreatedAt),
 		Project: wf.Project, Team: wf.Team, RunsCount: int32(wf.RunsCounter), Public: wf.Public,
+		Description: wf.Description,
 	}
 
 	if wf.ContractID != uuid.Nil {

@@ -142,6 +142,26 @@ func (wu *WorkflowUpdate) SetOrganizationID(u uuid.UUID) *WorkflowUpdate {
 	return wu
 }
 
+// SetDescription sets the "description" field.
+func (wu *WorkflowUpdate) SetDescription(s string) *WorkflowUpdate {
+	wu.mutation.SetDescription(s)
+	return wu
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (wu *WorkflowUpdate) SetNillableDescription(s *string) *WorkflowUpdate {
+	if s != nil {
+		wu.SetDescription(*s)
+	}
+	return wu
+}
+
+// ClearDescription clears the value of the "description" field.
+func (wu *WorkflowUpdate) ClearDescription() *WorkflowUpdate {
+	wu.mutation.ClearDescription()
+	return wu
+}
+
 // AddRobotaccountIDs adds the "robotaccounts" edge to the RobotAccount entity by IDs.
 func (wu *WorkflowUpdate) AddRobotaccountIDs(ids ...uuid.UUID) *WorkflowUpdate {
 	wu.mutation.AddRobotaccountIDs(ids...)
@@ -398,6 +418,12 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := wu.mutation.Public(); ok {
 		_spec.SetField(workflow.FieldPublic, field.TypeBool, value)
+	}
+	if value, ok := wu.mutation.Description(); ok {
+		_spec.SetField(workflow.FieldDescription, field.TypeString, value)
+	}
+	if wu.mutation.DescriptionCleared() {
+		_spec.ClearField(workflow.FieldDescription, field.TypeString)
 	}
 	if wu.mutation.RobotaccountsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -764,6 +790,26 @@ func (wuo *WorkflowUpdateOne) SetOrganizationID(u uuid.UUID) *WorkflowUpdateOne 
 	return wuo
 }
 
+// SetDescription sets the "description" field.
+func (wuo *WorkflowUpdateOne) SetDescription(s string) *WorkflowUpdateOne {
+	wuo.mutation.SetDescription(s)
+	return wuo
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (wuo *WorkflowUpdateOne) SetNillableDescription(s *string) *WorkflowUpdateOne {
+	if s != nil {
+		wuo.SetDescription(*s)
+	}
+	return wuo
+}
+
+// ClearDescription clears the value of the "description" field.
+func (wuo *WorkflowUpdateOne) ClearDescription() *WorkflowUpdateOne {
+	wuo.mutation.ClearDescription()
+	return wuo
+}
+
 // AddRobotaccountIDs adds the "robotaccounts" edge to the RobotAccount entity by IDs.
 func (wuo *WorkflowUpdateOne) AddRobotaccountIDs(ids ...uuid.UUID) *WorkflowUpdateOne {
 	wuo.mutation.AddRobotaccountIDs(ids...)
@@ -1050,6 +1096,12 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 	}
 	if value, ok := wuo.mutation.Public(); ok {
 		_spec.SetField(workflow.FieldPublic, field.TypeBool, value)
+	}
+	if value, ok := wuo.mutation.Description(); ok {
+		_spec.SetField(workflow.FieldDescription, field.TypeString, value)
+	}
+	if wuo.mutation.DescriptionCleared() {
+		_spec.ClearField(workflow.FieldDescription, field.TypeString)
 	}
 	if wuo.mutation.RobotaccountsCleared() {
 		edge := &sqlgraph.EdgeSpec{

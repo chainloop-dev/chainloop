@@ -60,6 +60,7 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 		SetName(opts.Name).
 		SetContractID(contractUUID).
 		SetOrganizationID(orgUUID).
+		SetDescription(opts.Description).
 		Save(ctx)
 	if err != nil {
 		return nil, err
@@ -77,7 +78,8 @@ func (r *WorkflowRepo) Update(ctx context.Context, id uuid.UUID, opts *biz.Workf
 	req := r.data.db.Workflow.UpdateOneID(id).
 		SetNillableTeam(opts.Team).
 		SetNillableProject(opts.Project).
-		SetNillablePublic(opts.Public)
+		SetNillablePublic(opts.Public).
+		SetNillableDescription(opts.Description)
 
 	// Required schema properties do not have a nillable setter
 	// https://github.com/ent/ent/issues/2108#issuecomment-961898661
@@ -189,7 +191,8 @@ func entWFToBizWF(w *ent.Workflow, r *ent.WorkflowRun) *biz.Workflow {
 	wf := &biz.Workflow{Name: w.Name, ID: w.ID,
 		CreatedAt: toTimePtr(w.CreatedAt), Team: w.Team,
 		Project: w.Project, RunsCounter: w.RunsCount,
-		Public: w.Public,
+		Public:      w.Public,
+		Description: w.Description,
 	}
 
 	if contract := w.Edges.Contract; contract != nil {
