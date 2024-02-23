@@ -33,9 +33,10 @@ import (
 func (s *workflowIntegrationTestSuite) TestUpdate() {
 	ctx := context.Background()
 	const (
-		name    = "test workflow"
-		team    = "test team"
-		project = "test project"
+		name        = "test workflow"
+		team        = "test team"
+		project     = "test project"
+		description = "test description"
 	)
 
 	org2, err := s.Organization.CreateWithRandomName(context.Background())
@@ -76,38 +77,43 @@ func (s *workflowIntegrationTestSuite) TestUpdate() {
 		},
 		{
 			name: "no updates",
-			want: &biz.Workflow{Name: name, Team: team, Project: project, Public: false},
+			want: &biz.Workflow{Name: name, Team: team, Project: project, Public: false, Description: description},
 		},
 		{
 			name:    "update name",
 			updates: &biz.WorkflowUpdateOpts{Name: toPtrS("new name")},
-			want:    &biz.Workflow{Name: "new name", Team: team, Project: project, Public: false},
+			want:    &biz.Workflow{Name: "new name", Description: description, Team: team, Project: project, Public: false},
+		},
+		{
+			name:    "update description",
+			updates: &biz.WorkflowUpdateOpts{Description: toPtrS("new description")},
+			want:    &biz.Workflow{Name: name, Description: "new description", Team: team, Project: project, Public: false},
 		},
 		{
 			name:    "update visibility",
 			updates: &biz.WorkflowUpdateOpts{Public: toPtrBool(true)},
-			want:    &biz.Workflow{Name: name, Team: team, Project: project, Public: true},
+			want:    &biz.Workflow{Name: name, Description: description, Team: team, Project: project, Public: true},
 		},
 		{
 			name:    "update all options",
 			updates: &biz.WorkflowUpdateOpts{Name: toPtrS("new name"), Project: toPtrS("new project"), Team: toPtrS("new team"), Public: toPtrBool(true)},
-			want:    &biz.Workflow{Name: "new name", Team: "new team", Project: "new project", Public: true},
+			want:    &biz.Workflow{Name: "new name", Description: description, Team: "new team", Project: "new project", Public: true},
 		},
 		{
 			name:    "name can't be emptied",
 			updates: &biz.WorkflowUpdateOpts{Name: toPtrS("")},
-			want:    &biz.Workflow{Name: name, Team: team, Project: project},
+			want:    &biz.Workflow{Name: name, Team: team, Project: project, Description: description},
 		},
 		{
 			name:    "but other opts can",
-			updates: &biz.WorkflowUpdateOpts{Team: toPtrS(""), Project: toPtrS("")},
-			want:    &biz.Workflow{Name: name, Team: "", Project: ""},
+			updates: &biz.WorkflowUpdateOpts{Team: toPtrS(""), Project: toPtrS(""), Description: toPtrS("")},
+			want:    &biz.Workflow{Name: name, Team: "", Project: "", Description: ""},
 		},
 	}
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			workflow, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: name, Team: team, Project: project, OrgID: s.org.ID})
+			workflow, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Description: description, Name: name, Team: team, Project: project, OrgID: s.org.ID})
 			require.NoError(s.T(), err)
 
 			workflowID := tc.id
