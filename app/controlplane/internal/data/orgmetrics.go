@@ -17,6 +17,7 @@ package data
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"time"
 
@@ -141,7 +142,12 @@ func (repo *OrgMetricsRepo) TopWorkflowsByRunsCount(ctx context.Context, orgID u
 				return nil, err
 			}
 
-			item = &biz.TopWorkflowsByRunsCountItem{ByStatus: make(map[string]int32), Workflow: entWFToBizWF(wf, nil)}
+			wfRes, err := entWFToBizWF(wf, nil)
+			if err != nil {
+				return nil, fmt.Errorf("converting entity: %w", err)
+			}
+
+			item = &biz.TopWorkflowsByRunsCountItem{ByStatus: make(map[string]int32), Workflow: wfRes}
 		}
 
 		item.ByStatus[r.State] = r.Count

@@ -225,7 +225,8 @@ func entWrToBizWr(wr *ent.WorkflowRun) *biz.WorkflowRun {
 	}
 
 	if wf := wr.Edges.Workflow; wf != nil {
-		r.Workflow = entWFToBizWF(wf, nil)
+		w, _ := entWFToBizWF(wf, nil)
+		r.Workflow = w
 	}
 
 	if backends := wr.Edges.CasBackends; backends != nil {

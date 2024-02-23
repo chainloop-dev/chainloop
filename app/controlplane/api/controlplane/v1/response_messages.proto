@@ -33,6 +33,7 @@ message WorkflowItem {
 
   WorkflowRunItem last_run = 7;
   string contract_id = 8;
+  int32 latest_contract_revision = 11;
   // A public workflow means that any user can
   // - access to all its workflow runs
   // - their attestation and materials

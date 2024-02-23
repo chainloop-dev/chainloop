@@ -131,6 +131,8 @@ func (m *WorkflowItem) validate(all bool) error {
 
 	// no validation rules for ContractId
 
+	// no validation rules for LatestContractRevision
+
 	// no validation rules for Public
 
 	// no validation rules for Description

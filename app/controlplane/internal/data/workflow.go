@@ -115,7 +115,12 @@ func (r *WorkflowRepo) List(ctx context.Context, orgID uuid.UUID) ([]*biz.Workfl
 			return nil, err
 		}
 
-		result = append(result, entWFToBizWF(wf, lastRun))
+		r, err := entWFToBizWF(wf, lastRun)
+		if err != nil {
+			return nil, fmt.Errorf("converting entity: %w", err)
+		}
+
+		result = append(result, r)
 	}
 
 	return result, nil
@@ -141,7 +146,7 @@ func (r *WorkflowRepo) GetOrgScoped(ctx context.Context, orgID, workflowID uuid.
 		return nil, err
 	}
 
-	return entWFToBizWF(workflow, lastRun), nil
+	return entWFToBizWF(workflow, lastRun)
 }
 
 func (r *WorkflowRepo) IncRunsCounter(ctx context.Context, workflowID uuid.UUID) error {
@@ -165,7 +170,7 @@ func (r *WorkflowRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Workflo
 		return nil, err
 	}
 
-	return entWFToBizWF(workflow, lastRun), nil
+	return entWFToBizWF(workflow, lastRun)
 }
 
 func (r *WorkflowRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
@@ -187,7 +192,7 @@ func (r *WorkflowRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
 	return tx.Commit()
 }
 
-func entWFToBizWF(w *ent.Workflow, r *ent.WorkflowRun) *biz.Workflow {
+func entWFToBizWF(w *ent.Workflow, r *ent.WorkflowRun) (*biz.Workflow, error) {
 	wf := &biz.Workflow{Name: w.Name, ID: w.ID,
 		CreatedAt: toTimePtr(w.CreatedAt), Team: w.Team,
 		Project: w.Project, RunsCounter: w.RunsCount,
@@ -195,9 +200,24 @@ func entWFToBizWF(w *ent.Workflow, r *ent.WorkflowRun) *biz.Workflow {
 		Description: w.Description,
 	}
 
-	if contract := w.Edges.Contract; contract != nil {
-		wf.ContractID = contract.ID
+	// Contract information, either from the edge or from a query
+	// NOTE: this is not efficient for list operations, eager loading should be used
+	contract := w.Edges.Contract
+	if contract == nil {
+		var err error
+		contract, err = w.QueryContract().First(context.Background())
+		if err != nil {
+			return nil, fmt.Errorf("finding contract: %w", err)
+		}
 	}
+
+	wf.ContractID = contract.ID
+	lv, err := latestVersion(context.Background(), contract)
+	if err != nil {
+		return nil, fmt.Errorf("finding contract version: %w", err)
+	}
+
+	wf.LatestContractRevision = lv.Revision
 
 	if org := w.Edges.Organization; org != nil {
 		wf.OrgID = org.ID
@@ -207,7 +227,7 @@ func entWFToBizWF(w *ent.Workflow, r *ent.WorkflowRun) *biz.Workflow {
 		wf.LastRun = entWrToBizWr(r)
 	}
 
-	return wf
+	return wf, nil
 }
 
 func getLastRun(ctx context.Context, wf *ent.Workflow) (*ent.WorkflowRun, error) {
