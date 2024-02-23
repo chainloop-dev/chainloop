@@ -123,6 +123,20 @@ func (wc *WorkflowCreate) SetOrganizationID(u uuid.UUID) *WorkflowCreate {
 	return wc
 }
 
+// SetDescription sets the "description" field.
+func (wc *WorkflowCreate) SetDescription(s string) *WorkflowCreate {
+	wc.mutation.SetDescription(s)
+	return wc
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (wc *WorkflowCreate) SetNillableDescription(s *string) *WorkflowCreate {
+	if s != nil {
+		wc.SetDescription(*s)
+	}
+	return wc
+}
+
 // SetID sets the "id" field.
 func (wc *WorkflowCreate) SetID(u uuid.UUID) *WorkflowCreate {
 	wc.mutation.SetID(u)
@@ -351,6 +365,10 @@ func (wc *WorkflowCreate) createSpec() (*Workflow, *sqlgraph.CreateSpec) {
 	if value, ok := wc.mutation.Public(); ok {
 		_spec.SetField(workflow.FieldPublic, field.TypeBool, value)
 		_node.Public = value
+	}
+	if value, ok := wc.mutation.Description(); ok {
+		_spec.SetField(workflow.FieldDescription, field.TypeString, value)
+		_node.Description = value
 	}
 	if nodes := wc.mutation.RobotaccountsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

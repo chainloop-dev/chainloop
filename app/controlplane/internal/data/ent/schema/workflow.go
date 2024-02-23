@@ -48,6 +48,7 @@ func (Workflow) Fields() []ent.Field {
 		// public means that the workflow runs, attestations and materials are reachable
 		field.Bool("public").Default(false),
 		field.UUID("organization_id", uuid.UUID{}),
+		field.String("description").Optional(),
 	}
 }
 

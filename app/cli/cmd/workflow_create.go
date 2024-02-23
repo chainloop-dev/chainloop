@@ -24,7 +24,7 @@ import (
 )
 
 func newWorkflowCreateCmd() *cobra.Command {
-	var workflowName, project, team, contract string
+	var workflowName, description, project, team, contract string
 	var skipRACreate bool
 
 	cmd := &cobra.Command{
@@ -57,7 +57,7 @@ func newWorkflowCreateCmd() *cobra.Command {
 			}
 
 			opts := &action.NewWorkflowCreateOpts{
-				Name: workflowName, Team: team, Project: project, ContractID: contract,
+				Name: workflowName, Team: team, Project: project, ContractID: contract, Description: description,
 			}
 
 			workflow, err := action.NewWorkflowCreate(actionOpts).Run(opts)
@@ -105,6 +105,7 @@ func newWorkflowCreateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&workflowName, "name", "", "workflow name")
 	err := cmd.MarkFlagRequired("name")
 	cobra.CheckErr(err)
+	cmd.Flags().StringVar(&description, "description", "", "workflow description")
 
 	cmd.Flags().StringVar(&project, "project", "", "project name")
 	err = cmd.MarkFlagRequired("project")

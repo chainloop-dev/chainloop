@@ -28,14 +28,15 @@ type WorkflowList struct {
 }
 
 type WorkflowItem struct {
-	Name       string           `json:"name"`
-	ID         string           `json:"id"`
-	Team       string           `json:"team"`
-	Project    string           `json:"project,omitempty"`
-	CreatedAt  *time.Time       `json:"createdAt"`
-	RunsCount  int32            `json:"runsCount"`
-	ContractID string           `json:"contractID,omitempty"`
-	LastRun    *WorkflowRunItem `json:"lastRun,omitempty"`
+	Name        string           `json:"name"`
+	Description string           `json:"description,omitempty"`
+	ID          string           `json:"id"`
+	Team        string           `json:"team"`
+	Project     string           `json:"project,omitempty"`
+	CreatedAt   *time.Time       `json:"createdAt"`
+	RunsCount   int32            `json:"runsCount"`
+	ContractID  string           `json:"contractID,omitempty"`
+	LastRun     *WorkflowRunItem `json:"lastRun,omitempty"`
 	// A public workflow means that any user can
 	// - access to all its workflow runs
 	// - their attestation and materials
@@ -75,9 +76,10 @@ func pbWorkflowItemToAction(wf *pb.WorkflowItem) *WorkflowItem {
 	res := &WorkflowItem{
 		Name: wf.Name, ID: wf.Id, CreatedAt: toTimePtr(wf.CreatedAt.AsTime()),
 		Project: wf.Project, Team: wf.Team, RunsCount: wf.RunsCount,
-		ContractID: wf.ContractId,
-		LastRun:    pbWorkflowRunItemToAction(wf.LastRun),
-		Public:     wf.Public,
+		ContractID:  wf.ContractId,
+		LastRun:     pbWorkflowRunItemToAction(wf.LastRun),
+		Public:      wf.Public,
+		Description: wf.Description,
 	}
 
 	return res

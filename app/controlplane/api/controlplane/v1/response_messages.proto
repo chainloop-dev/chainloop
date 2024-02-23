@@ -17,11 +17,11 @@ syntax = "proto3";
 
 package controlplane.v1;
 
-option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
-
+import "errors/errors.proto";
 import "google/protobuf/timestamp.proto";
 import "workflowcontract/v1/crafting_schema.proto";
-import "errors/errors.proto";
+
+option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
 message WorkflowItem {
   string id = 1;
@@ -37,6 +37,7 @@ message WorkflowItem {
   // - access to all its workflow runs
   // - their attestation and materials
   bool public = 9;
+  string description = 10;
 }
 
 message WorkflowRunItem {
@@ -64,20 +65,20 @@ message AttestationItem {
   map<string, string> annotations = 6;
 
   message EnvVariable {
-    string name = 1; 
-    string value = 2; 
+    string name = 1;
+    string value = 2;
   }
 
   message Material {
-    string name = 1; 
+    string name = 1;
     // This might be the raw value, the container image name, the filename and so on
-    string value = 2; 
+    string value = 2;
     // filename of the artifact that was either uploaded or injected inline in "value"
     string filename = 8;
     // Material type, i.e ARTIFACT
-    string type = 3; 
+    string type = 3;
     map<string, string> annotations = 4;
-    string hash = 5; 
+    string hash = 5;
     // it's been uploaded to an actual CAS backend
     bool uploaded_to_cas = 6;
     // the content instead if inline

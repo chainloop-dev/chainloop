@@ -133,6 +133,8 @@ func (m *WorkflowItem) validate(all bool) error {
 
 	// no validation rules for Public
 
+	// no validation rules for Description
+
 	if len(errors) > 0 {
 		return WorkflowItemMultiError(errors)
 	}

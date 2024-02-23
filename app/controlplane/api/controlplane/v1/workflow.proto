@@ -17,24 +17,25 @@ syntax = "proto3";
 
 package controlplane.v1;
 
+import "controlplane/v1/response_messages.proto";
+import "validate/validate.proto";
+
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
-import "validate/validate.proto";
-import "controlplane/v1/response_messages.proto";
-
 service WorkflowService {
-	rpc Create (WorkflowServiceCreateRequest) returns (WorkflowServiceCreateResponse);
-	rpc Update (WorkflowServiceUpdateRequest) returns (WorkflowServiceUpdateResponse);
-	rpc List (WorkflowServiceListRequest) returns (WorkflowServiceListResponse);
-	rpc Delete (WorkflowServiceDeleteRequest) returns (WorkflowServiceDeleteResponse);
+  rpc Create(WorkflowServiceCreateRequest) returns (WorkflowServiceCreateResponse);
+  rpc Update(WorkflowServiceUpdateRequest) returns (WorkflowServiceUpdateResponse);
+  rpc List(WorkflowServiceListRequest) returns (WorkflowServiceListResponse);
+  rpc Delete(WorkflowServiceDeleteRequest) returns (WorkflowServiceDeleteResponse);
 }
 
 message WorkflowServiceCreateRequest {
-  string name = 1 [(validate.rules).string = {min_len: 1}]; 
-  string project = 2 [(validate.rules).string = {min_len: 1}]; 
+  string name = 1 [(validate.rules).string = {min_len: 1}];
+  string project = 2 [(validate.rules).string = {min_len: 1}];
   // The ID of the workload schema to be associated with, if no provided one will be created for you
   string schema_id = 3;
   string team = 4;
+  string description = 5;
 }
 
 message WorkflowServiceUpdateRequest {
@@ -45,12 +46,12 @@ message WorkflowServiceUpdateRequest {
   optional string project = 3;
   optional string team = 4;
   optional bool public = 5;
+  optional string description = 6;
 }
 
 message WorkflowServiceUpdateResponse {
   WorkflowItem result = 1;
 }
-
 
 message WorkflowServiceCreateResponse {
   WorkflowItem result = 1;

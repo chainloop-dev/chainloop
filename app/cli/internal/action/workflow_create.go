@@ -30,13 +30,14 @@ func NewWorkflowCreate(cfg *ActionsOpts) *WorkflowCreate {
 }
 
 type NewWorkflowCreateOpts struct {
-	Name, Project, Team, ContractID string
+	Name, Description, Project, Team, ContractID string
 }
 
 func (action *WorkflowCreate) Run(opts *NewWorkflowCreateOpts) (*WorkflowItem, error) {
 	client := pb.NewWorkflowServiceClient(action.cfg.CPConnection)
 	resp, err := client.Create(context.Background(), &pb.WorkflowServiceCreateRequest{
 		Name: opts.Name, Project: opts.Project, Team: opts.Team, SchemaId: opts.ContractID,
+		Description: opts.Description,
 	})
 	if err != nil {
 		return nil, err

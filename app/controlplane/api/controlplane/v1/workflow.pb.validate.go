@@ -86,6 +86,8 @@ func (m *WorkflowServiceCreateRequest) validate(all bool) error {
 
 	// no validation rules for Team
 
+	// no validation rules for Description
+
 	if len(errors) > 0 {
 		return WorkflowServiceCreateRequestMultiError(errors)
 	}
@@ -215,6 +217,10 @@ func (m *WorkflowServiceUpdateRequest) validate(all bool) error {
 
 	if m.Public != nil {
 		// no validation rules for Public
+	}
+
+	if m.Description != nil {
+		// no validation rules for Description
 	}
 
 	if len(errors) > 0 {
