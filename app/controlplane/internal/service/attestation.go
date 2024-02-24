@@ -140,11 +140,12 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 	// Create workflowRun
 	opts := &biz.WorkflowRunCreateOpts{
 		WorkflowID: robotAccount.WorkflowID, RobotaccountID: robotAccount.ID,
-		ContractRevisionUUID: contractVersion.Version.ID,
-		RunnerRunURL:         req.GetJobUrl(),
-		RunnerType:           req.GetRunner().String(),
-		CASBackendID:         backend.ID,
+		ContractRevision: contractVersion,
+		RunnerRunURL:     req.GetJobUrl(),
+		RunnerType:       req.GetRunner().String(),
+		CASBackendID:     backend.ID,
 	}
+
 	run, err := s.wrUseCase.Create(ctx, opts)
 	if err != nil {
 		return nil, sl.LogAndMaskErr(err, s.log)

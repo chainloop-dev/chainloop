@@ -92,6 +92,16 @@ func AttestationState(v []byte) predicate.WorkflowRun {
 	return predicate.WorkflowRun(sql.FieldEQ(FieldAttestationState, v))
 }
 
+// ContractRevisionUsed applies equality check predicate on the "contract_revision_used" field. It's identical to ContractRevisionUsedEQ.
+func ContractRevisionUsed(v int) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldEQ(FieldContractRevisionUsed, v))
+}
+
+// ContractRevisionLatestAvailable applies equality check predicate on the "contract_revision_latest_available" field. It's identical to ContractRevisionLatestAvailableEQ.
+func ContractRevisionLatestAvailable(v int) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldEQ(FieldContractRevisionLatestAvailable, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.WorkflowRun {
 	return predicate.WorkflowRun(sql.FieldEQ(FieldCreatedAt, v))
@@ -570,6 +580,86 @@ func AttestationStateIsNil() predicate.WorkflowRun {
 // AttestationStateNotNil applies the NotNil predicate on the "attestation_state" field.
 func AttestationStateNotNil() predicate.WorkflowRun {
 	return predicate.WorkflowRun(sql.FieldNotNull(FieldAttestationState))
+}
+
+// ContractRevisionUsedEQ applies the EQ predicate on the "contract_revision_used" field.
+func ContractRevisionUsedEQ(v int) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldEQ(FieldContractRevisionUsed, v))
+}
+
+// ContractRevisionUsedNEQ applies the NEQ predicate on the "contract_revision_used" field.
+func ContractRevisionUsedNEQ(v int) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNEQ(FieldContractRevisionUsed, v))
+}
+
+// ContractRevisionUsedIn applies the In predicate on the "contract_revision_used" field.
+func ContractRevisionUsedIn(vs ...int) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldIn(FieldContractRevisionUsed, vs...))
+}
+
+// ContractRevisionUsedNotIn applies the NotIn predicate on the "contract_revision_used" field.
+func ContractRevisionUsedNotIn(vs ...int) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNotIn(FieldContractRevisionUsed, vs...))
+}
+
+// ContractRevisionUsedGT applies the GT predicate on the "contract_revision_used" field.
+func ContractRevisionUsedGT(v int) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldGT(FieldContractRevisionUsed, v))
+}
+
+// ContractRevisionUsedGTE applies the GTE predicate on the "contract_revision_used" field.
+func ContractRevisionUsedGTE(v int) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldGTE(FieldContractRevisionUsed, v))
+}
+
+// ContractRevisionUsedLT applies the LT predicate on the "contract_revision_used" field.
+func ContractRevisionUsedLT(v int) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldLT(FieldContractRevisionUsed, v))
+}
+
+// ContractRevisionUsedLTE applies the LTE predicate on the "contract_revision_used" field.
+func ContractRevisionUsedLTE(v int) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldLTE(FieldContractRevisionUsed, v))
+}
+
+// ContractRevisionLatestAvailableEQ applies the EQ predicate on the "contract_revision_latest_available" field.
+func ContractRevisionLatestAvailableEQ(v int) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldEQ(FieldContractRevisionLatestAvailable, v))
+}
+
+// ContractRevisionLatestAvailableNEQ applies the NEQ predicate on the "contract_revision_latest_available" field.
+func ContractRevisionLatestAvailableNEQ(v int) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNEQ(FieldContractRevisionLatestAvailable, v))
+}
+
+// ContractRevisionLatestAvailableIn applies the In predicate on the "contract_revision_latest_available" field.
+func ContractRevisionLatestAvailableIn(vs ...int) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldIn(FieldContractRevisionLatestAvailable, vs...))
+}
+
+// ContractRevisionLatestAvailableNotIn applies the NotIn predicate on the "contract_revision_latest_available" field.
+func ContractRevisionLatestAvailableNotIn(vs ...int) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNotIn(FieldContractRevisionLatestAvailable, vs...))
+}
+
+// ContractRevisionLatestAvailableGT applies the GT predicate on the "contract_revision_latest_available" field.
+func ContractRevisionLatestAvailableGT(v int) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldGT(FieldContractRevisionLatestAvailable, v))
+}
+
+// ContractRevisionLatestAvailableGTE applies the GTE predicate on the "contract_revision_latest_available" field.
+func ContractRevisionLatestAvailableGTE(v int) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldGTE(FieldContractRevisionLatestAvailable, v))
+}
+
+// ContractRevisionLatestAvailableLT applies the LT predicate on the "contract_revision_latest_available" field.
+func ContractRevisionLatestAvailableLT(v int) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldLT(FieldContractRevisionLatestAvailable, v))
+}
+
+// ContractRevisionLatestAvailableLTE applies the LTE predicate on the "contract_revision_latest_available" field.
+func ContractRevisionLatestAvailableLTE(v int) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldLTE(FieldContractRevisionLatestAvailable, v))
 }
 
 // HasWorkflow applies the HasEdge predicate on the "workflow" edge.

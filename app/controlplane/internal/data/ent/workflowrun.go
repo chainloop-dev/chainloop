@@ -42,6 +42,10 @@ type WorkflowRun struct {
 	AttestationDigest string `json:"attestation_digest,omitempty"`
 	// AttestationState holds the value of the "attestation_state" field.
 	AttestationState []byte `json:"attestation_state,omitempty"`
+	// ContractRevisionUsed holds the value of the "contract_revision_used" field.
+	ContractRevisionUsed int `json:"contract_revision_used,omitempty"`
+	// ContractRevisionLatestAvailable holds the value of the "contract_revision_latest_available" field.
+	ContractRevisionLatestAvailable int `json:"contract_revision_latest_available,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the WorkflowRunQuery when eager-loading is set.
 	Edges                         WorkflowRunEdges `json:"edges"`
@@ -121,6 +125,8 @@ func (*WorkflowRun) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case workflowrun.FieldAttestation, workflowrun.FieldAttestationState:
 			values[i] = new([]byte)
+		case workflowrun.FieldContractRevisionUsed, workflowrun.FieldContractRevisionLatestAvailable:
+			values[i] = new(sql.NullInt64)
 		case workflowrun.FieldState, workflowrun.FieldReason, workflowrun.FieldRunURL, workflowrun.FieldRunnerType, workflowrun.FieldAttestationDigest:
 			values[i] = new(sql.NullString)
 		case workflowrun.FieldCreatedAt, workflowrun.FieldFinishedAt:
@@ -209,6 +215,18 @@ func (wr *WorkflowRun) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field attestation_state", values[i])
 			} else if value != nil {
 				wr.AttestationState = *value
+			}
+		case workflowrun.FieldContractRevisionUsed:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field contract_revision_used", values[i])
+			} else if value.Valid {
+				wr.ContractRevisionUsed = int(value.Int64)
+			}
+		case workflowrun.FieldContractRevisionLatestAvailable:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field contract_revision_latest_available", values[i])
+			} else if value.Valid {
+				wr.ContractRevisionLatestAvailable = int(value.Int64)
 			}
 		case workflowrun.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -313,6 +331,12 @@ func (wr *WorkflowRun) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("attestation_state=")
 	builder.WriteString(fmt.Sprintf("%v", wr.AttestationState))
+	builder.WriteString(", ")
+	builder.WriteString("contract_revision_used=")
+	builder.WriteString(fmt.Sprintf("%v", wr.ContractRevisionUsed))
+	builder.WriteString(", ")
+	builder.WriteString("contract_revision_latest_available=")
+	builder.WriteString(fmt.Sprintf("%v", wr.ContractRevisionLatestAvailable))
 	builder.WriteByte(')')
 	return builder.String()
 }

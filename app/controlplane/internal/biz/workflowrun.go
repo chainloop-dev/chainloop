@@ -39,6 +39,10 @@ type WorkflowRun struct {
 	ContractVersionID     uuid.UUID
 	Attestation           *Attestation
 	CASBackends           []*CASBackend
+	// The revision of the contract that was used
+	ContractRevisionUsed int
+	// The max revision of the contract at the time of the run
+	ContractRevisionLatestAvailable int
 }
 
 type Attestation struct {
@@ -62,7 +66,7 @@ const (
 )
 
 type WorkflowRunRepo interface {
-	Create(ctx context.Context, workflowID, robotaccountID, contractVersion uuid.UUID, runURL, runnerType string, casBackends []uuid.UUID) (*WorkflowRun, error)
+	Create(ctx context.Context, opts *WorkflowRunRepoCreateOpts) (*WorkflowRun, error)
 	FindByID(ctx context.Context, ID uuid.UUID) (*WorkflowRun, error)
 	FindByAttestationDigest(ctx context.Context, digest string) (*WorkflowRun, error)
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*WorkflowRun, error)
@@ -154,10 +158,17 @@ func (uc *WorkflowRunExpirerUseCase) ExpirationSweep(ctx context.Context, olderT
 
 type WorkflowRunCreateOpts struct {
 	WorkflowID, RobotaccountID string
-	ContractRevisionUUID       uuid.UUID
+	ContractRevision           *WorkflowContractWithVersion
 	RunnerRunURL               string
 	RunnerType                 string
 	CASBackendID               uuid.UUID
+}
+
+type WorkflowRunRepoCreateOpts struct {
+	WorkflowID, RobotaccountID, SchemaVersionID uuid.UUID
+	RunURL, RunnerType                          string
+	Backends                                    []uuid.UUID
+	LatestRevision, UsedRevision                int
 }
 
 // Create will add a new WorkflowRun, associate it to a schemaVersion and increment the counter in the associated workflow
@@ -176,10 +187,25 @@ func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreat
 		return nil, errors.New("CASBackendID cannot be nil")
 	}
 
+	if opts.ContractRevision == nil {
+		return nil, errors.New("contract revision cannot be nil")
+	}
+	contractRevision := opts.ContractRevision
+
 	// For now we only associate the workflow run to one backend.
 	// This might change in the future so we prepare the data layer to support an array of associated backends
 	backends := []uuid.UUID{opts.CASBackendID}
-	run, err := uc.wfRunRepo.Create(ctx, workflowUUID, robotaccountUUID, opts.ContractRevisionUUID, opts.RunnerRunURL, opts.RunnerType, backends)
+	run, err := uc.wfRunRepo.Create(ctx,
+		&WorkflowRunRepoCreateOpts{
+			WorkflowID:      workflowUUID,
+			RobotaccountID:  robotaccountUUID,
+			SchemaVersionID: contractRevision.Version.ID,
+			RunURL:          opts.RunnerRunURL,
+			RunnerType:      opts.RunnerType,
+			Backends:        backends,
+			LatestRevision:  contractRevision.Contract.LatestRevision,
+			UsedRevision:    contractRevision.Version.Revision,
+		})
 	if err != nil {
 		return nil, err
 	}

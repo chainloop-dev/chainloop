@@ -142,12 +142,14 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 func bizWorkFlowRunToPb(wfr *biz.WorkflowRun) *pb.WorkflowRunItem {
 	r := craftingpb.CraftingSchema_Runner_RunnerType_value[wfr.RunnerType]
 	item := &pb.WorkflowRunItem{
-		Id:         wfr.ID.String(),
-		CreatedAt:  timestamppb.New(*wfr.CreatedAt),
-		State:      wfr.State,
-		Reason:     wfr.Reason,
-		JobUrl:     wfr.RunURL,
-		RunnerType: craftingpb.CraftingSchema_Runner_RunnerType(r),
+		Id:                        wfr.ID.String(),
+		CreatedAt:                 timestamppb.New(*wfr.CreatedAt),
+		State:                     wfr.State,
+		Reason:                    wfr.Reason,
+		JobUrl:                    wfr.RunURL,
+		RunnerType:                craftingpb.CraftingSchema_Runner_RunnerType(r),
+		ContractRevisionUsed:      int32(wfr.ContractRevisionUsed),
+		ContractRevisionAvailable: int32(wfr.ContractRevisionLatestAvailable),
 	}
 
 	if wfr.FinishedAt != nil {

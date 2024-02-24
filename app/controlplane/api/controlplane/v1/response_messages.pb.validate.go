@@ -362,6 +362,10 @@ func (m *WorkflowRunItem) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for ContractRevisionUsed
+
+	// no validation rules for ContractRevisionAvailable
+
 	if len(errors) > 0 {
 		return WorkflowRunItemMultiError(errors)
 	}

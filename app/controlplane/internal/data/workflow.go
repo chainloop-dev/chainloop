@@ -200,24 +200,14 @@ func entWFToBizWF(w *ent.Workflow, r *ent.WorkflowRun) (*biz.Workflow, error) {
 		Description: w.Description,
 	}
 
-	// Contract information, either from the edge or from a query
-	// NOTE: this is not efficient for list operations, eager loading should be used
-	contract := w.Edges.Contract
-	if contract == nil {
-		var err error
-		contract, err = w.QueryContract().First(context.Background())
+	if contract := w.Edges.Contract; contract != nil {
+		wf.ContractID = contract.ID
+		lv, err := latestVersion(context.Background(), contract)
 		if err != nil {
-			return nil, fmt.Errorf("finding contract: %w", err)
+			return nil, fmt.Errorf("finding contract version: %w", err)
 		}
+		wf.LatestContractRevision = lv.Revision
 	}
-
-	wf.ContractID = contract.ID
-	lv, err := latestVersion(context.Background(), contract)
-	if err != nil {
-		return nil, fmt.Errorf("finding contract version: %w", err)
-	}
-
-	wf.LatestContractRevision = lv.Revision
 
 	if org := w.Edges.Organization; org != nil {
 		wf.OrgID = org.ID

@@ -46,14 +46,17 @@ func NewWorkflowRunRepo(data *Data, logger log.Logger) biz.WorkflowRunRepo {
 	}
 }
 
-func (r *WorkflowRunRepo) Create(ctx context.Context, workflowID, robotaccountID, schemaVersionID uuid.UUID, runURL, runnerType string, backends []uuid.UUID) (*biz.WorkflowRun, error) {
+func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoCreateOpts) (*biz.WorkflowRun, error) {
+	// Find the contract to calculate the revisions
 	p, err := r.data.db.WorkflowRun.Create().
-		SetRobotaccountID(robotaccountID).
-		SetWorkflowID(workflowID).
-		SetContractVersionID(schemaVersionID).
-		SetRunURL(runURL).
-		SetRunnerType(runnerType).
-		AddCasBackendIDs(backends...).
+		SetRobotaccountID(opts.RobotaccountID).
+		SetWorkflowID(opts.WorkflowID).
+		SetContractVersionID(opts.SchemaVersionID).
+		SetRunURL(opts.RunURL).
+		SetRunnerType(opts.RunnerType).
+		AddCasBackendIDs(opts.Backends...).
+		SetContractRevisionLatestAvailable(opts.LatestRevision).
+		SetContractRevisionUsed(opts.UsedRevision).
 		Save(ctx)
 	if err != nil {
 		return nil, err
@@ -203,14 +206,16 @@ func (r *WorkflowRunRepo) Expire(ctx context.Context, id uuid.UUID) error {
 
 func entWrToBizWr(wr *ent.WorkflowRun) *biz.WorkflowRun {
 	r := &biz.WorkflowRun{
-		ID:          wr.ID,
-		CreatedAt:   toTimePtr(wr.CreatedAt),
-		FinishedAt:  toTimePtr(wr.FinishedAt),
-		State:       string(wr.State),
-		Reason:      wr.Reason,
-		RunURL:      wr.RunURL,
-		RunnerType:  wr.RunnerType,
-		CASBackends: make([]*biz.CASBackend, 0),
+		ID:                              wr.ID,
+		CreatedAt:                       toTimePtr(wr.CreatedAt),
+		FinishedAt:                      toTimePtr(wr.FinishedAt),
+		State:                           string(wr.State),
+		Reason:                          wr.Reason,
+		RunURL:                          wr.RunURL,
+		RunnerType:                      wr.RunnerType,
+		CASBackends:                     make([]*biz.CASBackend, 0),
+		ContractRevisionUsed:            wr.ContractRevisionUsed,
+		ContractRevisionLatestAvailable: wr.ContractRevisionLatestAvailable,
 	}
 
 	if wr.Attestation != nil {

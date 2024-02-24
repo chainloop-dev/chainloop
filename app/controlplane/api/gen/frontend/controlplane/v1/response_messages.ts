@@ -74,6 +74,10 @@ export interface WorkflowRunItem {
   /** string runner_type = 8; */
   runnerType: CraftingSchema_Runner_RunnerType;
   contractVersion?: WorkflowContractVersionItem;
+  /** The revision of the contract used for this run */
+  contractRevisionUsed: number;
+  /** The latest revision available for this contract at the time of the run */
+  contractRevisionAvailable: number;
 }
 
 export interface AttestationItem {
@@ -434,6 +438,8 @@ function createBaseWorkflowRunItem(): WorkflowRunItem {
     jobUrl: "",
     runnerType: 0,
     contractVersion: undefined,
+    contractRevisionUsed: 0,
+    contractRevisionAvailable: 0,
   };
 }
 
@@ -465,6 +471,12 @@ export const WorkflowRunItem = {
     }
     if (message.contractVersion !== undefined) {
       WorkflowContractVersionItem.encode(message.contractVersion, writer.uint32(74).fork()).ldelim();
+    }
+    if (message.contractRevisionUsed !== 0) {
+      writer.uint32(80).int32(message.contractRevisionUsed);
+    }
+    if (message.contractRevisionAvailable !== 0) {
+      writer.uint32(88).int32(message.contractRevisionAvailable);
     }
     return writer;
   },
@@ -539,6 +551,20 @@ export const WorkflowRunItem = {
 
           message.contractVersion = WorkflowContractVersionItem.decode(reader, reader.uint32());
           continue;
+        case 10:
+          if (tag !== 80) {
+            break;
+          }
+
+          message.contractRevisionUsed = reader.int32();
+          continue;
+        case 11:
+          if (tag !== 88) {
+            break;
+          }
+
+          message.contractRevisionAvailable = reader.int32();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -561,6 +587,8 @@ export const WorkflowRunItem = {
       contractVersion: isSet(object.contractVersion)
         ? WorkflowContractVersionItem.fromJSON(object.contractVersion)
         : undefined,
+      contractRevisionUsed: isSet(object.contractRevisionUsed) ? Number(object.contractRevisionUsed) : 0,
+      contractRevisionAvailable: isSet(object.contractRevisionAvailable) ? Number(object.contractRevisionAvailable) : 0,
     };
   },
 
@@ -578,6 +606,9 @@ export const WorkflowRunItem = {
     message.contractVersion !== undefined && (obj.contractVersion = message.contractVersion
       ? WorkflowContractVersionItem.toJSON(message.contractVersion)
       : undefined);
+    message.contractRevisionUsed !== undefined && (obj.contractRevisionUsed = Math.round(message.contractRevisionUsed));
+    message.contractRevisionAvailable !== undefined &&
+      (obj.contractRevisionAvailable = Math.round(message.contractRevisionAvailable));
     return obj;
   },
 
@@ -600,6 +631,8 @@ export const WorkflowRunItem = {
     message.contractVersion = (object.contractVersion !== undefined && object.contractVersion !== null)
       ? WorkflowContractVersionItem.fromPartial(object.contractVersion)
       : undefined;
+    message.contractRevisionUsed = object.contractRevisionUsed ?? 0;
+    message.contractRevisionAvailable = object.contractRevisionAvailable ?? 0;
     return message;
   },
 };

@@ -69,8 +69,7 @@ func (r *WorkflowContractRepo) List(ctx context.Context, orgID uuid.UUID) ([]*bi
 		if err != nil {
 			return nil, err
 		}
-		res := entContractToBizContract(s, workflowIDs)
-		res.LatestRevision = latestV.Revision
+		res := entContractToBizContract(s, latestV, workflowIDs)
 
 		result = append(result, res)
 	}
@@ -99,8 +98,7 @@ func (r *WorkflowContractRepo) Create(ctx context.Context, opts *biz.ContractCre
 		return nil, err
 	}
 
-	res := entContractToBizContract(contract, nil)
-	res.LatestRevision = version.Revision
+	res := entContractToBizContract(contract, version, nil)
 	return res, nil
 }
 
@@ -148,7 +146,7 @@ func (r *WorkflowContractRepo) Describe(ctx context.Context, orgID, contractID u
 	if err != nil {
 		return nil, err
 	}
-	s := entContractToBizContract(contract, workflowIDs)
+	s := entContractToBizContract(contract, latestV, workflowIDs)
 
 	return &biz.WorkflowContractWithVersion{
 		Contract: s,
@@ -214,7 +212,7 @@ func (r *WorkflowContractRepo) Update(ctx context.Context, opts *biz.ContractUpd
 	}
 
 	return &biz.WorkflowContractWithVersion{
-		Contract: entContractToBizContract(contract, workflowIDs),
+		Contract: entContractToBizContract(contract, latestVersion, workflowIDs),
 		Version:  v,
 	}, nil
 }
@@ -231,7 +229,13 @@ func (r *WorkflowContractRepo) FindByIDInOrg(ctx context.Context, orgID, contrac
 	if err != nil {
 		return nil, err
 	}
-	return entContractToBizContract(contract, workflowIDs), nil
+
+	latestV, err := latestVersion(ctx, contract)
+	if err != nil {
+		return nil, err
+	}
+
+	return entContractToBizContract(contract, latestV, workflowIDs), nil
 }
 
 func (r *WorkflowContractRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
@@ -282,10 +286,13 @@ func contractInOrgQuery(ctx context.Context, q *ent.OrganizationQuery, orgID, co
 		Only(ctx)
 }
 
-func entContractToBizContract(w *ent.WorkflowContract, workflowIDs []string) *biz.WorkflowContract {
-	return &biz.WorkflowContract{
+func entContractToBizContract(w *ent.WorkflowContract, version *ent.WorkflowContractVersion, workflowIDs []string) *biz.WorkflowContract {
+	c := &biz.WorkflowContract{
 		Name: w.Name, ID: w.ID, CreatedAt: toTimePtr(w.CreatedAt), WorkflowIDs: workflowIDs,
 	}
+
+	c.LatestRevision = version.Revision
+	return c
 }
 
 // get the list of workflows associated with a given contract

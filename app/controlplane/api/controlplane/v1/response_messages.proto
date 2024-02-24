@@ -52,6 +52,11 @@ message WorkflowRunItem {
   // string runner_type = 8;
   workflowcontract.v1.CraftingSchema.Runner.RunnerType runner_type = 8;
   WorkflowContractVersionItem contract_version = 9;
+
+  // The revision of the contract used for this run
+  int32 contract_revision_used = 10;
+  // The latest revision available for this contract at the time of the run
+  int32 contract_revision_available = 11;
 }
 
 message AttestationItem {

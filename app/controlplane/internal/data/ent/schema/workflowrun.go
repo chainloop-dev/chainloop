@@ -51,6 +51,10 @@ func (WorkflowRun) Fields() []ent.Field {
 		field.JSON("attestation", &dsse.Envelope{}).Optional(),
 		field.String("attestation_digest").Optional(),
 		field.Bytes("attestation_state").Optional(),
+		// The version of the contract that was used
+		field.Int("contract_revision_used"),
+		// The latest version of the contract that was available
+		field.Int("contract_revision_latest_available"),
 	}
 }
 
