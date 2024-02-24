@@ -129,7 +129,7 @@ func (s *workflowIntegrationTestSuite) TestUpdate() {
 			s.NoError(err)
 
 			if diff := cmp.Diff(tc.want, got,
-				cmpopts.IgnoreFields(biz.Workflow{}, "CreatedAt", "ID", "OrgID", "ContractID"),
+				cmpopts.IgnoreFields(biz.Workflow{}, "CreatedAt", "ID", "OrgID", "ContractID", "LatestContractRevision"),
 			); diff != "" {
 				s.Failf("mismatch (-want +got):\n%s", diff)
 			}
