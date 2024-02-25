@@ -29,26 +29,30 @@ const hostname = "http://example.com"
 func TestNewSBOMUploader(t *testing.T) {
 	const projectID = "existing-project-id"
 	const projectName = "new project name"
+	const parentID = "parent-existing-project-id"
 	var sbomReader = bytes.NewBuffer(nil)
 
 	tests := []struct {
-		hostname, apiKey, projectID, projectName string
-		sbom                                     io.Reader
-		wantError                                bool
+		hostname, apiKey, projectID, projectName, parentID string
+		sbom                                               io.Reader
+		wantError                                          bool
 	}{
 		// no api key
-		{hostname, "", projectID, projectName, sbomReader, true},
+		{hostname, "", projectID, projectName, parentID, sbomReader, true},
 		// invalid hostname
-		{"invalid-hostname", "apikey", projectID, projectName, sbomReader, true},
+		{"invalid-hostname", "apikey", projectID, projectName, parentID, sbomReader, true},
 		// both projectID and name
-		{hostname, "apikey", projectID, projectName, sbomReader, true},
-		{hostname, "apikey", projectID, "", sbomReader, false},
-		{hostname, "apikey", "", projectName, sbomReader, false},
+		{hostname, "apikey", projectID, projectName, "", sbomReader, true},
+		{hostname, "apikey", projectID, "", "", sbomReader, false},
+		{hostname, "apikey", "", projectName, "", sbomReader, false},
+		// parent ID
+		{hostname, "apikey", projectID, "", parentID, sbomReader, true},
+		{hostname, "apikey", "", projectName, parentID, sbomReader, false},
 	}
 
 	assert := assert.New(t)
 	for _, tc := range tests {
-		got, err := NewSBOMUploader(tc.hostname, tc.apiKey, tc.sbom, tc.projectID, tc.projectName)
+		got, err := NewSBOMUploader(tc.hostname, tc.apiKey, tc.sbom, tc.projectID, tc.projectName, tc.parentID)
 		if tc.wantError {
 			assert.Error(err)
 			continue
@@ -63,6 +67,7 @@ func TestNewSBOMUploader(t *testing.T) {
 			},
 			tc.sbom,
 			tc.projectID, tc.projectName,
+			tc.parentID,
 		}, got)
 	}
 }
