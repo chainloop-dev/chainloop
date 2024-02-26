@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
 	"github.com/docker/distribution/uuid"
@@ -29,6 +30,29 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
+
+func (s *workflowIntegrationTestSuite) TestContractLatestAvailable() {
+	ctx := context.Background()
+	var workflow *biz.Workflow
+	var err error
+	s.Run("by default is 1", func() {
+		workflow, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{
+			Description: description, Name: "name", Team: "team", Project: "project", OrgID: s.org.ID})
+		require.NoError(s.T(), err)
+		s.Equal(1, workflow.ContractRevisionLatest)
+	})
+
+	s.Run("it will increment if the contract is updated", func() {
+		_, err := s.WorkflowContract.Update(ctx, s.org.ID, workflow.ContractID.String(), "new-name", &v1.CraftingSchema{
+			Runner: &v1.CraftingSchema_Runner{Type: v1.CraftingSchema_Runner_CIRCLECI_BUILD},
+		})
+		s.NoError(err)
+
+		workflow, err := s.Workflow.FindByID(ctx, workflow.ID.String())
+		s.NoError(err)
+		s.Equal(2, workflow.ContractRevisionLatest)
+	})
+}
 
 func (s *workflowIntegrationTestSuite) TestUpdate() {
 	ctx := context.Background()
