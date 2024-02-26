@@ -51,6 +51,7 @@ type attachmentRequest struct {
 	ParentID string `json:"parentID,omitempty" jsonschema:"minLength=1,description=ID of parent project to create a new project under"`
 }
 
+// Enforces the requirement that parentID requires the presence of projectName
 // invopop/jsonschema doesn't appear to support dependentRequired through reflection
 func (x attachmentRequest) JSONSchemaExtend(schema *jsonschema.Schema) {
 	schema.DependentRequired = map[string][]string{
@@ -69,7 +70,7 @@ type registrationConfig struct {
 type attachmentConfig struct {
 	ProjectID   string `json:"projectId"`
 	ProjectName string `json:"projectName"`
-	ParentID    string `json:"parentID"`
+	ParentID    string `json:"parentId"`
 }
 
 const description = "Send CycloneDX SBOMs to your Dependency-Track instance"
