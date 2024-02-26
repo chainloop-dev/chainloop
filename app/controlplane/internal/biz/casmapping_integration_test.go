@@ -367,13 +367,13 @@ func (s *casMappingIntegrationSuite) SetupTest() {
 	assert.NoError(err)
 
 	s.workflowRun, err = s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
-		WorkflowID: workflow.ID.String(), RobotaccountID: robotAccount.ID.String(), ContractRevision: contractVersion.Version.ID, CASBackendID: s.casBackend1.ID,
+		WorkflowID: workflow.ID.String(), RobotaccountID: robotAccount.ID.String(), ContractRevision: contractVersion, CASBackendID: s.casBackend1.ID,
 		RunnerType: "runnerType", RunnerRunURL: "runURL",
 	})
 	assert.NoError(err)
 
 	s.publicWorkflowRun, err = s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
-		WorkflowID: publicWorkflow.ID.String(), RobotaccountID: robotAccount.ID.String(), ContractRevision: contractVersion.Version.ID, CASBackendID: s.casBackend1.ID,
+		WorkflowID: publicWorkflow.ID.String(), RobotaccountID: robotAccount.ID.String(), ContractRevision: contractVersion, CASBackendID: s.casBackend1.ID,
 		RunnerType: "runnerType", RunnerRunURL: "runURL",
 	})
 	assert.NoError(err)
