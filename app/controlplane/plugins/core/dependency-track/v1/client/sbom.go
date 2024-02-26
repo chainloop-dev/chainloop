@@ -44,6 +44,8 @@ type SBOMUploader struct {
 	sbom io.Reader
 	// Either use a projectID or create a new one by name
 	projectID, projectName string
+	// Optional parentID to use with projectName
+	parentID string
 }
 
 func newBase(host, apiKey string) (*base, error) {
@@ -69,7 +71,7 @@ func NewIntegration(host, apiKey string, checkAutoCreate bool) (*Integration, er
 	return &Integration{base: b, checkAutoCreate: checkAutoCreate}, nil
 }
 
-func NewSBOMUploader(host, apiKey string, sbom io.Reader, projectID, projectName string) (*SBOMUploader, error) {
+func NewSBOMUploader(host, apiKey string, sbom io.Reader, projectID, projectName string, parentID string) (*SBOMUploader, error) {
 	b, err := newBase(host, apiKey)
 	if err != nil {
 		return nil, err
@@ -79,7 +81,11 @@ func NewSBOMUploader(host, apiKey string, sbom io.Reader, projectID, projectName
 		return nil, errors.New("either existing project ID or new name is required")
 	}
 
-	return &SBOMUploader{b, sbom, projectID, projectName}, nil
+	if parentID != "" && projectName == "" {
+		return nil, errors.New("project name is required with parent ID")
+	}
+
+	return &SBOMUploader{b, sbom, projectID, projectName, parentID}, nil
 }
 
 const bomUploadPermission = "BOM_UPLOAD"
@@ -118,11 +124,18 @@ func (d *SBOMUploader) Validate(ctx context.Context) error {
 		return fmt.Errorf("validating the permissions: %w", err)
 	}
 
-	if d.projectID == "" {
+	if d.projectID == "" && d.parentID == "" {
 		return nil
 	}
 
-	// Check if the project exists
+	var existingProjectID string
+	if d.projectID != "" {
+		existingProjectID = d.projectID
+	} else {
+		existingProjectID = d.parentID
+	}
+
+	// Check if the project or parent project exists
 	var projectFound bool
 	projects, err := listProjects(d.host, d.apiKey)
 	if err != nil {
@@ -130,14 +143,14 @@ func (d *SBOMUploader) Validate(ctx context.Context) error {
 	}
 
 	for _, p := range projects {
-		if p.ID == d.projectID {
+		if p.ID == existingProjectID {
 			projectFound = true
 			break
 		}
 	}
 
 	if !projectFound {
-		return fmt.Errorf("project with ID %q not found", d.projectID)
+		return fmt.Errorf("project with ID %q not found", existingProjectID)
 	}
 
 	return nil
@@ -153,6 +166,10 @@ func (d *SBOMUploader) Do(_ context.Context) error {
 	if autocreate {
 		values["autoCreate"] = strings.NewReader("true")
 		values["projectName"] = strings.NewReader(d.projectName)
+
+		if d.parentID != "" {
+			values["parentUUID"] = strings.NewReader(d.parentID)
+		}
 	} else {
 		values["project"] = strings.NewReader(d.projectID)
 	}

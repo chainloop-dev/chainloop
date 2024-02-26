@@ -193,6 +193,15 @@ func TestValidateAttachmentInput(t *testing.T) {
 			input:  map[string]interface{}{"projectID": "project-id", "projectName": "project-name"},
 			errMsg: "valid against schemas at indexes 0 and 1",
 		},
+		{
+			name:  "valid request, project name and parent ID",
+			input: map[string]interface{}{"projectName": "project-name", "parentID": "parent-id"},
+		},
+		{
+			name:   "invalid with project ID and parent ID",
+			input:  map[string]interface{}{"projectID": "project-id", "parentID": "parent-id"},
+			errMsg: "property 'projectName' is required, if 'parentID' property exists",
+		},
 	}
 
 	integration, err := New(nil)
@@ -291,5 +300,38 @@ func TestValidateExecuteOpts(t *testing.T) {
 				assert.Nil(t, err)
 			}
 		})
+	}
+}
+
+func TestValidateAttachmentConfiguration(t *testing.T) {
+	testCases := []struct {
+		allowAutoCreate                  bool
+		projectID, projectName, parentID string
+		errMsg                           string
+	}{
+		{false, "project-id", "", "", ""},
+		{true, "", "project-name", "", ""},
+		{true, "", "project-name", "parent-id", ""},
+		{false, "", "project-name", "", "auto creation of projects is not supported in this integration"},
+		{false, "", "", "", "project id or name must be provided"},
+		{false, "project-id", "", "parent-id", "project name must be provided to work with parent id"},
+	}
+
+	for _, tc := range testCases {
+		rc := &registrationConfig{
+			Domain:          "http://dtrack.localhost",
+			AllowAutoCreate: tc.allowAutoCreate,
+		}
+		ac := &attachmentRequest{
+			ProjectID:   tc.projectID,
+			ProjectName: tc.projectName,
+			ParentID:    tc.parentID,
+		}
+		err := validateAttachmentConfiguration(rc, ac)
+		if tc.errMsg != "" {
+			assert.ErrorContains(t, err, tc.errMsg)
+		} else {
+			assert.Nil(t, err)
+		}
 	}
 }

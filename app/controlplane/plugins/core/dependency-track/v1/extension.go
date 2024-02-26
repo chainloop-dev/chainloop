@@ -27,6 +27,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/core/dependency-track/v1/client"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/invopop/jsonschema"
 )
 
 type DependencyTrack struct {
@@ -46,6 +47,18 @@ type attachmentRequest struct {
 	// Either one or the other
 	ProjectID   string `json:"projectID,omitempty" jsonschema:"oneof_required=projectID,minLength=1,description=The ID of the existing project to send the SBOMs to"`
 	ProjectName string `json:"projectName,omitempty" jsonschema:"oneof_required=projectName,minLength=1,description=The name of the project to create and send the SBOMs to"`
+
+	ParentID string `json:"parentID,omitempty" jsonschema:"minLength=1,description=ID of parent project to create a new project under"`
+}
+
+// Enforces the requirement that parentID requires the presence of projectName
+// invopop/jsonschema doesn't appear to support dependentRequired through reflection
+func (x attachmentRequest) JSONSchemaExtend(schema *jsonschema.Schema) {
+	schema.DependentRequired = map[string][]string{
+		"parentID": {
+			"projectName",
+		},
+	}
 }
 
 // Internal state for both registration and attachment
@@ -57,6 +70,7 @@ type registrationConfig struct {
 type attachmentConfig struct {
 	ProjectID   string `json:"projectId"`
 	ProjectName string `json:"projectName"`
+	ParentID    string `json:"parentId"`
 }
 
 const description = "Send CycloneDX SBOMs to your Dependency-Track instance"
@@ -65,7 +79,7 @@ func New(l log.Logger) (sdk.FanOut, error) {
 	base, err := sdk.NewFanOut(
 		&sdk.NewParams{
 			ID:          "dependency-track",
-			Version:     "1.3",
+			Version:     "1.4",
 			Description: description,
 			Logger:      l,
 			InputSchema: &sdk.InputSchema{
@@ -134,10 +148,10 @@ func (i *DependencyTrack) Attach(ctx context.Context, req *sdk.AttachmentRequest
 		return nil, fmt.Errorf("invalid attachment configuration: %w", err)
 	}
 
-	i.Logger.Infow("msg", "attachment OK", "projectID", request.ProjectID, "projectName", request.ProjectName)
+	i.Logger.Infow("msg", "attachment OK", "projectID", request.ProjectID, "projectName", request.ProjectName, "parentID", request.ParentID)
 
 	// We want to store the project configuration
-	rawConfig, err := sdk.ToConfig(&attachmentConfig{ProjectID: request.ProjectID, ProjectName: request.ProjectName})
+	rawConfig, err := sdk.ToConfig(&attachmentConfig{ProjectID: request.ProjectID, ProjectName: request.ProjectName, ParentID: request.ParentID})
 	if err != nil {
 		return nil, fmt.Errorf("marshalling configuration: %w", err)
 	}
@@ -204,7 +218,8 @@ func doExecute(ctx context.Context, req *sdk.ExecutionRequest, sbom *sdk.Execute
 		req.RegistrationInfo.Credentials.Password,
 		bytes.NewReader(sbom.Content),
 		attachmentConfig.ProjectID,
-		projectName)
+		projectName,
+		attachmentConfig.ParentID)
 	if err != nil {
 		return fmt.Errorf("creating uploader: %w", err)
 	}
@@ -281,7 +296,7 @@ func validateAttachment(ctx context.Context, rc *registrationConfig, ac *attachm
 	}
 
 	// Instantiate an actual client to see if it would work with the current configuration
-	d, err := client.NewSBOMUploader(rc.Domain, credentials.Password, nil, ac.ProjectID, ac.ProjectName)
+	d, err := client.NewSBOMUploader(rc.Domain, credentials.Password, nil, ac.ProjectID, ac.ProjectName, ac.ParentID)
 	if err != nil {
 		return fmt.Errorf("creating uploader: %w", err)
 	}
@@ -311,6 +326,10 @@ func validateAttachmentConfiguration(rc *registrationConfig, ac *attachmentReque
 
 	if ac.ProjectID == "" && ac.ProjectName == "" {
 		return errors.New("project id or name must be provided")
+	}
+
+	if ac.ParentID != "" && ac.ProjectName == "" {
+		return errors.New("project name must be provided to work with parent id")
 	}
 
 	return nil

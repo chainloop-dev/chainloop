@@ -45,6 +45,7 @@ See https://docs.chainloop.dev/guides/dependency-track/
 
 |Field|Type|Required|Description|
 |---|---|---|---|
+|parentID|string|no|ID of parent project to create a new project under|
 |projectID|string|no|The ID of the existing project to send the SBOMs to|
 |projectName|string|no|The name of the project to create and send the SBOMs to|
 
@@ -76,9 +77,19 @@ See https://docs.chainloop.dev/guides/dependency-track/
       "type": "string",
       "minLength": 1,
       "description": "The name of the project to create and send the SBOMs to"
+    },
+    "parentID": {
+      "type": "string",
+      "minLength": 1,
+      "description": "ID of parent project to create a new project under"
     }
   },
   "additionalProperties": false,
-  "type": "object"
+  "type": "object",
+  "dependentRequired": {
+    "parentID": [
+      "projectName"
+    ]
+  }
 }
 ```
