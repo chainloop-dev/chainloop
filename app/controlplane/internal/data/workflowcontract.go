@@ -212,12 +212,6 @@ func (r *WorkflowContractRepo) Update(ctx context.Context, opts *biz.ContractUpd
 		return nil, err
 	}
 
-	// reload latest version
-	lv, err = latestVersion(ctx, contract)
-	if err != nil {
-		return nil, err
-	}
-
 	v, err := entContractVersionToBizContractVersion(lv)
 	if err != nil {
 		return nil, err

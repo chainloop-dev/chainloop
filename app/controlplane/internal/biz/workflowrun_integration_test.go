@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
@@ -214,8 +213,8 @@ func (s *workflowRunIntegrationTestSuite) TestContractInformation() {
 	})
 
 	s.Run("if the contract gets a new revision but it's not used, it shows spread", func() {
-		updatedContractRevision, err := s.WorkflowContract.Update(ctx, s.org.ID, s.contractVersion.Contract.ID.String(), "new-name", &v1.CraftingSchema{
-			Runner: &v1.CraftingSchema_Runner{Type: v1.CraftingSchema_Runner_CIRCLECI_BUILD},
+		updatedContractRevision, err := s.WorkflowContract.Update(ctx, s.org.ID, s.contractVersion.Contract.ID.String(), "new-name", &schemav1.CraftingSchema{
+			Runner: &schemav1.CraftingSchema_Runner{Type: schemav1.CraftingSchema_Runner_CIRCLECI_BUILD},
 		})
 		s.NoError(err)
 		// load the previous version of the contract
