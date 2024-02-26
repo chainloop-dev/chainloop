@@ -143,9 +143,9 @@ func (wrc *WorkflowRunCreate) SetContractRevisionUsed(i int) *WorkflowRunCreate 
 	return wrc
 }
 
-// SetContractRevisionLatestAvailable sets the "contract_revision_latest_available" field.
-func (wrc *WorkflowRunCreate) SetContractRevisionLatestAvailable(i int) *WorkflowRunCreate {
-	wrc.mutation.SetContractRevisionLatestAvailable(i)
+// SetContractRevisionLatest sets the "contract_revision_latest" field.
+func (wrc *WorkflowRunCreate) SetContractRevisionLatest(i int) *WorkflowRunCreate {
+	wrc.mutation.SetContractRevisionLatest(i)
 	return wrc
 }
 
@@ -300,8 +300,8 @@ func (wrc *WorkflowRunCreate) check() error {
 	if _, ok := wrc.mutation.ContractRevisionUsed(); !ok {
 		return &ValidationError{Name: "contract_revision_used", err: errors.New(`ent: missing required field "WorkflowRun.contract_revision_used"`)}
 	}
-	if _, ok := wrc.mutation.ContractRevisionLatestAvailable(); !ok {
-		return &ValidationError{Name: "contract_revision_latest_available", err: errors.New(`ent: missing required field "WorkflowRun.contract_revision_latest_available"`)}
+	if _, ok := wrc.mutation.ContractRevisionLatest(); !ok {
+		return &ValidationError{Name: "contract_revision_latest", err: errors.New(`ent: missing required field "WorkflowRun.contract_revision_latest"`)}
 	}
 	return nil
 }
@@ -378,9 +378,9 @@ func (wrc *WorkflowRunCreate) createSpec() (*WorkflowRun, *sqlgraph.CreateSpec) 
 		_spec.SetField(workflowrun.FieldContractRevisionUsed, field.TypeInt, value)
 		_node.ContractRevisionUsed = value
 	}
-	if value, ok := wrc.mutation.ContractRevisionLatestAvailable(); ok {
-		_spec.SetField(workflowrun.FieldContractRevisionLatestAvailable, field.TypeInt, value)
-		_node.ContractRevisionLatestAvailable = value
+	if value, ok := wrc.mutation.ContractRevisionLatest(); ok {
+		_spec.SetField(workflowrun.FieldContractRevisionLatest, field.TypeInt, value)
+		_node.ContractRevisionLatest = value
 	}
 	if nodes := wrc.mutation.WorkflowIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

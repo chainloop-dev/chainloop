@@ -131,7 +131,7 @@ func (m *WorkflowItem) validate(all bool) error {
 
 	// no validation rules for ContractId
 
-	// no validation rules for LatestContractRevision
+	// no validation rules for ContractRevisionLatest
 
 	// no validation rules for Public
 
@@ -364,7 +364,7 @@ func (m *WorkflowRunItem) validate(all bool) error {
 
 	// no validation rules for ContractRevisionUsed
 
-	// no validation rules for ContractRevisionAvailable
+	// no validation rules for ContractRevisionLatest
 
 	if len(errors) > 0 {
 		return WorkflowRunItemMultiError(errors)

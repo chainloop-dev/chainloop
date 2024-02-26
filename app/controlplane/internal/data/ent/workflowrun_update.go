@@ -186,16 +186,16 @@ func (wru *WorkflowRunUpdate) AddContractRevisionUsed(i int) *WorkflowRunUpdate 
 	return wru
 }
 
-// SetContractRevisionLatestAvailable sets the "contract_revision_latest_available" field.
-func (wru *WorkflowRunUpdate) SetContractRevisionLatestAvailable(i int) *WorkflowRunUpdate {
-	wru.mutation.ResetContractRevisionLatestAvailable()
-	wru.mutation.SetContractRevisionLatestAvailable(i)
+// SetContractRevisionLatest sets the "contract_revision_latest" field.
+func (wru *WorkflowRunUpdate) SetContractRevisionLatest(i int) *WorkflowRunUpdate {
+	wru.mutation.ResetContractRevisionLatest()
+	wru.mutation.SetContractRevisionLatest(i)
 	return wru
 }
 
-// AddContractRevisionLatestAvailable adds i to the "contract_revision_latest_available" field.
-func (wru *WorkflowRunUpdate) AddContractRevisionLatestAvailable(i int) *WorkflowRunUpdate {
-	wru.mutation.AddContractRevisionLatestAvailable(i)
+// AddContractRevisionLatest adds i to the "contract_revision_latest" field.
+func (wru *WorkflowRunUpdate) AddContractRevisionLatest(i int) *WorkflowRunUpdate {
+	wru.mutation.AddContractRevisionLatest(i)
 	return wru
 }
 
@@ -415,11 +415,11 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := wru.mutation.AddedContractRevisionUsed(); ok {
 		_spec.AddField(workflowrun.FieldContractRevisionUsed, field.TypeInt, value)
 	}
-	if value, ok := wru.mutation.ContractRevisionLatestAvailable(); ok {
-		_spec.SetField(workflowrun.FieldContractRevisionLatestAvailable, field.TypeInt, value)
+	if value, ok := wru.mutation.ContractRevisionLatest(); ok {
+		_spec.SetField(workflowrun.FieldContractRevisionLatest, field.TypeInt, value)
 	}
-	if value, ok := wru.mutation.AddedContractRevisionLatestAvailable(); ok {
-		_spec.AddField(workflowrun.FieldContractRevisionLatestAvailable, field.TypeInt, value)
+	if value, ok := wru.mutation.AddedContractRevisionLatest(); ok {
+		_spec.AddField(workflowrun.FieldContractRevisionLatest, field.TypeInt, value)
 	}
 	if wru.mutation.WorkflowCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -724,16 +724,16 @@ func (wruo *WorkflowRunUpdateOne) AddContractRevisionUsed(i int) *WorkflowRunUpd
 	return wruo
 }
 
-// SetContractRevisionLatestAvailable sets the "contract_revision_latest_available" field.
-func (wruo *WorkflowRunUpdateOne) SetContractRevisionLatestAvailable(i int) *WorkflowRunUpdateOne {
-	wruo.mutation.ResetContractRevisionLatestAvailable()
-	wruo.mutation.SetContractRevisionLatestAvailable(i)
+// SetContractRevisionLatest sets the "contract_revision_latest" field.
+func (wruo *WorkflowRunUpdateOne) SetContractRevisionLatest(i int) *WorkflowRunUpdateOne {
+	wruo.mutation.ResetContractRevisionLatest()
+	wruo.mutation.SetContractRevisionLatest(i)
 	return wruo
 }
 
-// AddContractRevisionLatestAvailable adds i to the "contract_revision_latest_available" field.
-func (wruo *WorkflowRunUpdateOne) AddContractRevisionLatestAvailable(i int) *WorkflowRunUpdateOne {
-	wruo.mutation.AddContractRevisionLatestAvailable(i)
+// AddContractRevisionLatest adds i to the "contract_revision_latest" field.
+func (wruo *WorkflowRunUpdateOne) AddContractRevisionLatest(i int) *WorkflowRunUpdateOne {
+	wruo.mutation.AddContractRevisionLatest(i)
 	return wruo
 }
 
@@ -983,11 +983,11 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 	if value, ok := wruo.mutation.AddedContractRevisionUsed(); ok {
 		_spec.AddField(workflowrun.FieldContractRevisionUsed, field.TypeInt, value)
 	}
-	if value, ok := wruo.mutation.ContractRevisionLatestAvailable(); ok {
-		_spec.SetField(workflowrun.FieldContractRevisionLatestAvailable, field.TypeInt, value)
+	if value, ok := wruo.mutation.ContractRevisionLatest(); ok {
+		_spec.SetField(workflowrun.FieldContractRevisionLatest, field.TypeInt, value)
 	}
-	if value, ok := wruo.mutation.AddedContractRevisionLatestAvailable(); ok {
-		_spec.AddField(workflowrun.FieldContractRevisionLatestAvailable, field.TypeInt, value)
+	if value, ok := wruo.mutation.AddedContractRevisionLatest(); ok {
+		_spec.AddField(workflowrun.FieldContractRevisionLatest, field.TypeInt, value)
 	}
 	if wruo.mutation.WorkflowCleared() {
 		edge := &sqlgraph.EdgeSpec{

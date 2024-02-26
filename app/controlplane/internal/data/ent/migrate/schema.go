@@ -382,7 +382,7 @@ var (
 		{Name: "attestation_digest", Type: field.TypeString, Nullable: true},
 		{Name: "attestation_state", Type: field.TypeBytes, Nullable: true},
 		{Name: "contract_revision_used", Type: field.TypeInt},
-		{Name: "contract_revision_latest_available", Type: field.TypeInt},
+		{Name: "contract_revision_latest", Type: field.TypeInt},
 		{Name: "robot_account_workflowruns", Type: field.TypeUUID, Nullable: true},
 		{Name: "workflow_workflowruns", Type: field.TypeUUID, Nullable: true},
 		{Name: "workflow_run_contract_version", Type: field.TypeUUID, Nullable: true},

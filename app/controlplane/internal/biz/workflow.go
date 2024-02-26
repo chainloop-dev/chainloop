@@ -32,7 +32,7 @@ type Workflow struct {
 	LastRun                          *WorkflowRun
 	ID, ContractID, OrgID            uuid.UUID
 	// Latest available contract revision
-	LatestContractRevision int
+	ContractRevisionLatest int
 	// Public means that the associated workflow runs, attestations and materials
 	// are reachable by other users, regardless of their organization
 	// This field is also used to calculate if an user can download attestations/materials from the CAS

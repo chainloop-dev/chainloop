@@ -36,7 +36,7 @@ type WorkflowItem struct {
 	CreatedAt              *time.Time       `json:"createdAt"`
 	RunsCount              int32            `json:"runsCount"`
 	ContractID             string           `json:"contractID,omitempty"`
-	LatestContractRevision int32            `json:"latestContractRevision,omitempty"`
+	ContractRevisionLatest int32            `json:"contractRevisionLatest,omitempty"`
 	LastRun                *WorkflowRunItem `json:"lastRun,omitempty"`
 	// A public workflow means that any user can
 	// - access to all its workflow runs
@@ -78,7 +78,7 @@ func pbWorkflowItemToAction(wf *pb.WorkflowItem) *WorkflowItem {
 		Name: wf.Name, ID: wf.Id, CreatedAt: toTimePtr(wf.CreatedAt.AsTime()),
 		Project: wf.Project, Team: wf.Team, RunsCount: wf.RunsCount,
 		ContractID:             wf.ContractId,
-		LatestContractRevision: wf.LatestContractRevision,
+		ContractRevisionLatest: wf.ContractRevisionLatest,
 		LastRun:                pbWorkflowRunItemToAction(wf.LastRun),
 		Public:                 wf.Public,
 		Description:            wf.Description,

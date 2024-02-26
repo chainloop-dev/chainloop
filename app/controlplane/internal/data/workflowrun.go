@@ -55,7 +55,7 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 		SetRunURL(opts.RunURL).
 		SetRunnerType(opts.RunnerType).
 		AddCasBackendIDs(opts.Backends...).
-		SetContractRevisionLatestAvailable(opts.LatestRevision).
+		SetContractRevisionLatest(opts.LatestRevision).
 		SetContractRevisionUsed(opts.UsedRevision).
 		Save(ctx)
 	if err != nil {
@@ -215,7 +215,7 @@ func entWrToBizWr(wr *ent.WorkflowRun) *biz.WorkflowRun {
 		RunnerType:                      wr.RunnerType,
 		CASBackends:                     make([]*biz.CASBackend, 0),
 		ContractRevisionUsed:            wr.ContractRevisionUsed,
-		ContractRevisionLatestAvailable: wr.ContractRevisionLatestAvailable,
+		ContractRevisionLatestAvailable: wr.ContractRevisionLatest,
 	}
 
 	if wr.Attestation != nil {

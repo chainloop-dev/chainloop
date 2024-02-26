@@ -206,7 +206,7 @@ func entWFToBizWF(w *ent.Workflow, r *ent.WorkflowRun) (*biz.Workflow, error) {
 		if err != nil {
 			return nil, fmt.Errorf("finding contract version: %w", err)
 		}
-		wf.LatestContractRevision = lv.Revision
+		wf.ContractRevisionLatest = lv.Revision
 	}
 
 	if org := w.Edges.Organization; org != nil {

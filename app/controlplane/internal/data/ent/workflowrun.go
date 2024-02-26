@@ -44,8 +44,8 @@ type WorkflowRun struct {
 	AttestationState []byte `json:"attestation_state,omitempty"`
 	// ContractRevisionUsed holds the value of the "contract_revision_used" field.
 	ContractRevisionUsed int `json:"contract_revision_used,omitempty"`
-	// ContractRevisionLatestAvailable holds the value of the "contract_revision_latest_available" field.
-	ContractRevisionLatestAvailable int `json:"contract_revision_latest_available,omitempty"`
+	// ContractRevisionLatest holds the value of the "contract_revision_latest" field.
+	ContractRevisionLatest int `json:"contract_revision_latest,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the WorkflowRunQuery when eager-loading is set.
 	Edges                         WorkflowRunEdges `json:"edges"`
@@ -125,7 +125,7 @@ func (*WorkflowRun) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case workflowrun.FieldAttestation, workflowrun.FieldAttestationState:
 			values[i] = new([]byte)
-		case workflowrun.FieldContractRevisionUsed, workflowrun.FieldContractRevisionLatestAvailable:
+		case workflowrun.FieldContractRevisionUsed, workflowrun.FieldContractRevisionLatest:
 			values[i] = new(sql.NullInt64)
 		case workflowrun.FieldState, workflowrun.FieldReason, workflowrun.FieldRunURL, workflowrun.FieldRunnerType, workflowrun.FieldAttestationDigest:
 			values[i] = new(sql.NullString)
@@ -222,11 +222,11 @@ func (wr *WorkflowRun) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				wr.ContractRevisionUsed = int(value.Int64)
 			}
-		case workflowrun.FieldContractRevisionLatestAvailable:
+		case workflowrun.FieldContractRevisionLatest:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field contract_revision_latest_available", values[i])
+				return fmt.Errorf("unexpected type %T for field contract_revision_latest", values[i])
 			} else if value.Valid {
-				wr.ContractRevisionLatestAvailable = int(value.Int64)
+				wr.ContractRevisionLatest = int(value.Int64)
 			}
 		case workflowrun.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -335,8 +335,8 @@ func (wr *WorkflowRun) String() string {
 	builder.WriteString("contract_revision_used=")
 	builder.WriteString(fmt.Sprintf("%v", wr.ContractRevisionUsed))
 	builder.WriteString(", ")
-	builder.WriteString("contract_revision_latest_available=")
-	builder.WriteString(fmt.Sprintf("%v", wr.ContractRevisionLatestAvailable))
+	builder.WriteString("contract_revision_latest=")
+	builder.WriteString(fmt.Sprintf("%v", wr.ContractRevisionLatest))
 	builder.WriteByte(')')
 	return builder.String()
 }

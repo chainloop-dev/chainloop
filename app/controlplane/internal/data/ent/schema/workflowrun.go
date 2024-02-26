@@ -54,7 +54,8 @@ func (WorkflowRun) Fields() []ent.Field {
 		// The version of the contract that was used
 		field.Int("contract_revision_used"),
 		// The latest version of the contract that was available
-		field.Int("contract_revision_latest_available"),
+		// at the time of the initialization of the run
+		field.Int("contract_revision_latest"),
 	}
 }
 

@@ -37,8 +37,8 @@ const (
 	FieldAttestationState = "attestation_state"
 	// FieldContractRevisionUsed holds the string denoting the contract_revision_used field in the database.
 	FieldContractRevisionUsed = "contract_revision_used"
-	// FieldContractRevisionLatestAvailable holds the string denoting the contract_revision_latest_available field in the database.
-	FieldContractRevisionLatestAvailable = "contract_revision_latest_available"
+	// FieldContractRevisionLatest holds the string denoting the contract_revision_latest field in the database.
+	FieldContractRevisionLatest = "contract_revision_latest"
 	// EdgeWorkflow holds the string denoting the workflow edge name in mutations.
 	EdgeWorkflow = "workflow"
 	// EdgeRobotaccount holds the string denoting the robotaccount edge name in mutations.
@@ -90,7 +90,7 @@ var Columns = []string{
 	FieldAttestationDigest,
 	FieldAttestationState,
 	FieldContractRevisionUsed,
-	FieldContractRevisionLatestAvailable,
+	FieldContractRevisionLatest,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "workflow_runs"
@@ -189,9 +189,9 @@ func ByContractRevisionUsed(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldContractRevisionUsed, opts...).ToFunc()
 }
 
-// ByContractRevisionLatestAvailable orders the results by the contract_revision_latest_available field.
-func ByContractRevisionLatestAvailable(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldContractRevisionLatestAvailable, opts...).ToFunc()
+// ByContractRevisionLatest orders the results by the contract_revision_latest field.
+func ByContractRevisionLatest(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldContractRevisionLatest, opts...).ToFunc()
 }
 
 // ByWorkflowField orders the results by workflow field.
