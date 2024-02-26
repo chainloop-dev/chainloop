@@ -33,6 +33,8 @@ message WorkflowItem {
 
   WorkflowRunItem last_run = 7;
   string contract_id = 8;
+  // Current, latest revision of the contract
+  int32 contract_revision_latest = 11;
   // A public workflow means that any user can
   // - access to all its workflow runs
   // - their attestation and materials
@@ -51,6 +53,11 @@ message WorkflowRunItem {
   // string runner_type = 8;
   workflowcontract.v1.CraftingSchema.Runner.RunnerType runner_type = 8;
   WorkflowContractVersionItem contract_version = 9;
+
+  // The revision of the contract used for this run
+  int32 contract_revision_used = 10;
+  // The latest revision available for this contract at the time of the run
+  int32 contract_revision_latest = 11;
 }
 
 message AttestationItem {

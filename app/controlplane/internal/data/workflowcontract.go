@@ -69,8 +69,7 @@ func (r *WorkflowContractRepo) List(ctx context.Context, orgID uuid.UUID) ([]*bi
 		if err != nil {
 			return nil, err
 		}
-		res := entContractToBizContract(s, workflowIDs)
-		res.LatestRevision = latestV.Revision
+		res := entContractToBizContract(s, latestV, workflowIDs)
 
 		result = append(result, res)
 	}
@@ -99,8 +98,7 @@ func (r *WorkflowContractRepo) Create(ctx context.Context, opts *biz.ContractCre
 		return nil, err
 	}
 
-	res := entContractToBizContract(contract, nil)
-	res.LatestRevision = version.Revision
+	res := entContractToBizContract(contract, version, nil)
 	return res, nil
 }
 
@@ -148,7 +146,7 @@ func (r *WorkflowContractRepo) Describe(ctx context.Context, orgID, contractID u
 	if err != nil {
 		return nil, err
 	}
-	s := entContractToBizContract(contract, workflowIDs)
+	s := entContractToBizContract(contract, latestV, workflowIDs)
 
 	return &biz.WorkflowContractWithVersion{
 		Contract: s,
@@ -181,18 +179,18 @@ func (r *WorkflowContractRepo) Update(ctx context.Context, opts *biz.ContractUpd
 		}
 	}
 
-	latestVersion, err := latestVersion(ctx, contract)
+	lv, err := latestVersion(ctx, contract)
 	if err != nil {
 		return nil, err
 	}
 
 	// Create a revision only if we are providing a new contract and it has changed
-	if opts.ContractBody != nil && !bytes.Equal(latestVersion.Body, opts.ContractBody) {
+	if opts.ContractBody != nil && !bytes.Equal(lv.Body, opts.ContractBody) {
 		// TODO: Add pessimist locking to make sure we are incrementing the latest revision
-		latestVersion, err = tx.WorkflowContractVersion.Create().
+		lv, err = tx.WorkflowContractVersion.Create().
 			SetBody(opts.ContractBody).
 			SetContract(contract).
-			SetRevision(latestVersion.Revision + 1).
+			SetRevision(lv.Revision + 1).
 			Save(ctx)
 		if err != nil {
 			return nil, rollback(tx, err)
@@ -208,13 +206,19 @@ func (r *WorkflowContractRepo) Update(ctx context.Context, opts *biz.ContractUpd
 		return nil, err
 	}
 
-	v, err := entContractVersionToBizContractVersion(latestVersion)
+	// The transaction is committed, we can now return the result
+	contract, err = contractInOrg(ctx, r.data.db, opts.OrgID, opts.ContractID)
+	if err != nil {
+		return nil, err
+	}
+
+	v, err := entContractVersionToBizContractVersion(lv)
 	if err != nil {
 		return nil, err
 	}
 
 	return &biz.WorkflowContractWithVersion{
-		Contract: entContractToBizContract(contract, workflowIDs),
+		Contract: entContractToBizContract(contract, lv, workflowIDs),
 		Version:  v,
 	}, nil
 }
@@ -231,7 +235,13 @@ func (r *WorkflowContractRepo) FindByIDInOrg(ctx context.Context, orgID, contrac
 	if err != nil {
 		return nil, err
 	}
-	return entContractToBizContract(contract, workflowIDs), nil
+
+	latestV, err := latestVersion(ctx, contract)
+	if err != nil {
+		return nil, err
+	}
+
+	return entContractToBizContract(contract, latestV, workflowIDs), nil
 }
 
 func (r *WorkflowContractRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
@@ -282,10 +292,13 @@ func contractInOrgQuery(ctx context.Context, q *ent.OrganizationQuery, orgID, co
 		Only(ctx)
 }
 
-func entContractToBizContract(w *ent.WorkflowContract, workflowIDs []string) *biz.WorkflowContract {
-	return &biz.WorkflowContract{
+func entContractToBizContract(w *ent.WorkflowContract, version *ent.WorkflowContractVersion, workflowIDs []string) *biz.WorkflowContract {
+	c := &biz.WorkflowContract{
 		Name: w.Name, ID: w.ID, CreatedAt: toTimePtr(w.CreatedAt), WorkflowIDs: workflowIDs,
 	}
+
+	c.LatestRevision = version.Revision
+	return c
 }
 
 // get the list of workflows associated with a given contract

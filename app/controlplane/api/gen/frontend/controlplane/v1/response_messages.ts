@@ -53,6 +53,8 @@ export interface WorkflowItem {
   runsCount: number;
   lastRun?: WorkflowRunItem;
   contractId: string;
+  /** Current, latest revision of the contract */
+  contractRevisionLatest: number;
   /**
    * A public workflow means that any user can
    * - access to all its workflow runs
@@ -73,6 +75,10 @@ export interface WorkflowRunItem {
   /** string runner_type = 8; */
   runnerType: CraftingSchema_Runner_RunnerType;
   contractVersion?: WorkflowContractVersionItem;
+  /** The revision of the contract used for this run */
+  contractRevisionUsed: number;
+  /** The latest revision available for this contract at the time of the run */
+  contractRevisionLatest: number;
 }
 
 export interface AttestationItem {
@@ -228,6 +234,7 @@ function createBaseWorkflowItem(): WorkflowItem {
     runsCount: 0,
     lastRun: undefined,
     contractId: "",
+    contractRevisionLatest: 0,
     public: false,
     description: "",
   };
@@ -258,6 +265,9 @@ export const WorkflowItem = {
     }
     if (message.contractId !== "") {
       writer.uint32(66).string(message.contractId);
+    }
+    if (message.contractRevisionLatest !== 0) {
+      writer.uint32(88).int32(message.contractRevisionLatest);
     }
     if (message.public === true) {
       writer.uint32(72).bool(message.public);
@@ -331,6 +341,13 @@ export const WorkflowItem = {
 
           message.contractId = reader.string();
           continue;
+        case 11:
+          if (tag !== 88) {
+            break;
+          }
+
+          message.contractRevisionLatest = reader.int32();
+          continue;
         case 9:
           if (tag !== 72) {
             break;
@@ -364,6 +381,7 @@ export const WorkflowItem = {
       runsCount: isSet(object.runsCount) ? Number(object.runsCount) : 0,
       lastRun: isSet(object.lastRun) ? WorkflowRunItem.fromJSON(object.lastRun) : undefined,
       contractId: isSet(object.contractId) ? String(object.contractId) : "",
+      contractRevisionLatest: isSet(object.contractRevisionLatest) ? Number(object.contractRevisionLatest) : 0,
       public: isSet(object.public) ? Boolean(object.public) : false,
       description: isSet(object.description) ? String(object.description) : "",
     };
@@ -380,6 +398,8 @@ export const WorkflowItem = {
     message.lastRun !== undefined &&
       (obj.lastRun = message.lastRun ? WorkflowRunItem.toJSON(message.lastRun) : undefined);
     message.contractId !== undefined && (obj.contractId = message.contractId);
+    message.contractRevisionLatest !== undefined &&
+      (obj.contractRevisionLatest = Math.round(message.contractRevisionLatest));
     message.public !== undefined && (obj.public = message.public);
     message.description !== undefined && (obj.description = message.description);
     return obj;
@@ -401,6 +421,7 @@ export const WorkflowItem = {
       ? WorkflowRunItem.fromPartial(object.lastRun)
       : undefined;
     message.contractId = object.contractId ?? "";
+    message.contractRevisionLatest = object.contractRevisionLatest ?? 0;
     message.public = object.public ?? false;
     message.description = object.description ?? "";
     return message;
@@ -418,6 +439,8 @@ function createBaseWorkflowRunItem(): WorkflowRunItem {
     jobUrl: "",
     runnerType: 0,
     contractVersion: undefined,
+    contractRevisionUsed: 0,
+    contractRevisionLatest: 0,
   };
 }
 
@@ -449,6 +472,12 @@ export const WorkflowRunItem = {
     }
     if (message.contractVersion !== undefined) {
       WorkflowContractVersionItem.encode(message.contractVersion, writer.uint32(74).fork()).ldelim();
+    }
+    if (message.contractRevisionUsed !== 0) {
+      writer.uint32(80).int32(message.contractRevisionUsed);
+    }
+    if (message.contractRevisionLatest !== 0) {
+      writer.uint32(88).int32(message.contractRevisionLatest);
     }
     return writer;
   },
@@ -523,6 +552,20 @@ export const WorkflowRunItem = {
 
           message.contractVersion = WorkflowContractVersionItem.decode(reader, reader.uint32());
           continue;
+        case 10:
+          if (tag !== 80) {
+            break;
+          }
+
+          message.contractRevisionUsed = reader.int32();
+          continue;
+        case 11:
+          if (tag !== 88) {
+            break;
+          }
+
+          message.contractRevisionLatest = reader.int32();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -545,6 +588,8 @@ export const WorkflowRunItem = {
       contractVersion: isSet(object.contractVersion)
         ? WorkflowContractVersionItem.fromJSON(object.contractVersion)
         : undefined,
+      contractRevisionUsed: isSet(object.contractRevisionUsed) ? Number(object.contractRevisionUsed) : 0,
+      contractRevisionLatest: isSet(object.contractRevisionLatest) ? Number(object.contractRevisionLatest) : 0,
     };
   },
 
@@ -562,6 +607,9 @@ export const WorkflowRunItem = {
     message.contractVersion !== undefined && (obj.contractVersion = message.contractVersion
       ? WorkflowContractVersionItem.toJSON(message.contractVersion)
       : undefined);
+    message.contractRevisionUsed !== undefined && (obj.contractRevisionUsed = Math.round(message.contractRevisionUsed));
+    message.contractRevisionLatest !== undefined &&
+      (obj.contractRevisionLatest = Math.round(message.contractRevisionLatest));
     return obj;
   },
 
@@ -584,6 +632,8 @@ export const WorkflowRunItem = {
     message.contractVersion = (object.contractVersion !== undefined && object.contractVersion !== null)
       ? WorkflowContractVersionItem.fromPartial(object.contractVersion)
       : undefined;
+    message.contractRevisionUsed = object.contractRevisionUsed ?? 0;
+    message.contractRevisionLatest = object.contractRevisionLatest ?? 0;
     return message;
   },
 };

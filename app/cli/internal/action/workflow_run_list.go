@@ -28,15 +28,17 @@ type WorkflowRunList struct {
 }
 
 type WorkflowRunItem struct {
-	ID              string                       `json:"id"`
-	State           string                       `json:"state"`
-	Reason          string                       `json:"reason,omitempty"`
-	CreatedAt       *time.Time                   `json:"createdAt,omitempty"`
-	FinishedAt      *time.Time                   `json:"finishedAt,omitempty"`
-	Workflow        *WorkflowItem                `json:"workflow,omitempty"`
-	RunURL          string                       `json:"runURL,omitempty"`
-	RunnerType      string                       `json:"runnerType,omitempty"`
-	ContractVersion *WorkflowContractVersionItem `json:"contractVersion,omitempty"`
+	ID                     string                       `json:"id"`
+	State                  string                       `json:"state"`
+	Reason                 string                       `json:"reason,omitempty"`
+	CreatedAt              *time.Time                   `json:"createdAt,omitempty"`
+	FinishedAt             *time.Time                   `json:"finishedAt,omitempty"`
+	Workflow               *WorkflowItem                `json:"workflow,omitempty"`
+	RunURL                 string                       `json:"runURL,omitempty"`
+	RunnerType             string                       `json:"runnerType,omitempty"`
+	ContractVersion        *WorkflowContractVersionItem `json:"contractVersion,omitempty"`
+	ContractRevisionUsed   int                          `json:"contractRevisionUsed"`
+	ContractRevisionLatest int                          `json:"contractRevisionLatest"`
 }
 
 type PaginatedWorkflowRunItem struct {
@@ -93,9 +95,11 @@ func pbWorkflowRunItemToAction(in *pb.WorkflowRunItem) *WorkflowRunItem {
 
 	item := &WorkflowRunItem{
 		ID: in.Id, State: in.State, Reason: in.Reason, CreatedAt: toTimePtr(in.CreatedAt.AsTime()),
-		Workflow:   pbWorkflowItemToAction(in.Workflow),
-		RunURL:     in.GetJobUrl(),
-		RunnerType: humanizedRunnerType(in.GetRunnerType()),
+		Workflow:               pbWorkflowItemToAction(in.Workflow),
+		RunURL:                 in.GetJobUrl(),
+		RunnerType:             humanizedRunnerType(in.GetRunnerType()),
+		ContractRevisionUsed:   int(in.GetContractRevisionUsed()),
+		ContractRevisionLatest: int(in.GetContractRevisionLatest()),
 	}
 
 	if in.GetContractVersion() != nil {

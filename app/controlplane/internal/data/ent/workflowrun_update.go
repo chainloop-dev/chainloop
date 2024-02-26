@@ -173,6 +173,32 @@ func (wru *WorkflowRunUpdate) ClearAttestationState() *WorkflowRunUpdate {
 	return wru
 }
 
+// SetContractRevisionUsed sets the "contract_revision_used" field.
+func (wru *WorkflowRunUpdate) SetContractRevisionUsed(i int) *WorkflowRunUpdate {
+	wru.mutation.ResetContractRevisionUsed()
+	wru.mutation.SetContractRevisionUsed(i)
+	return wru
+}
+
+// AddContractRevisionUsed adds i to the "contract_revision_used" field.
+func (wru *WorkflowRunUpdate) AddContractRevisionUsed(i int) *WorkflowRunUpdate {
+	wru.mutation.AddContractRevisionUsed(i)
+	return wru
+}
+
+// SetContractRevisionLatest sets the "contract_revision_latest" field.
+func (wru *WorkflowRunUpdate) SetContractRevisionLatest(i int) *WorkflowRunUpdate {
+	wru.mutation.ResetContractRevisionLatest()
+	wru.mutation.SetContractRevisionLatest(i)
+	return wru
+}
+
+// AddContractRevisionLatest adds i to the "contract_revision_latest" field.
+func (wru *WorkflowRunUpdate) AddContractRevisionLatest(i int) *WorkflowRunUpdate {
+	wru.mutation.AddContractRevisionLatest(i)
+	return wru
+}
+
 // SetWorkflowID sets the "workflow" edge to the Workflow entity by ID.
 func (wru *WorkflowRunUpdate) SetWorkflowID(id uuid.UUID) *WorkflowRunUpdate {
 	wru.mutation.SetWorkflowID(id)
@@ -382,6 +408,18 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if wru.mutation.AttestationStateCleared() {
 		_spec.ClearField(workflowrun.FieldAttestationState, field.TypeBytes)
+	}
+	if value, ok := wru.mutation.ContractRevisionUsed(); ok {
+		_spec.SetField(workflowrun.FieldContractRevisionUsed, field.TypeInt, value)
+	}
+	if value, ok := wru.mutation.AddedContractRevisionUsed(); ok {
+		_spec.AddField(workflowrun.FieldContractRevisionUsed, field.TypeInt, value)
+	}
+	if value, ok := wru.mutation.ContractRevisionLatest(); ok {
+		_spec.SetField(workflowrun.FieldContractRevisionLatest, field.TypeInt, value)
+	}
+	if value, ok := wru.mutation.AddedContractRevisionLatest(); ok {
+		_spec.AddField(workflowrun.FieldContractRevisionLatest, field.TypeInt, value)
 	}
 	if wru.mutation.WorkflowCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -673,6 +711,32 @@ func (wruo *WorkflowRunUpdateOne) ClearAttestationState() *WorkflowRunUpdateOne 
 	return wruo
 }
 
+// SetContractRevisionUsed sets the "contract_revision_used" field.
+func (wruo *WorkflowRunUpdateOne) SetContractRevisionUsed(i int) *WorkflowRunUpdateOne {
+	wruo.mutation.ResetContractRevisionUsed()
+	wruo.mutation.SetContractRevisionUsed(i)
+	return wruo
+}
+
+// AddContractRevisionUsed adds i to the "contract_revision_used" field.
+func (wruo *WorkflowRunUpdateOne) AddContractRevisionUsed(i int) *WorkflowRunUpdateOne {
+	wruo.mutation.AddContractRevisionUsed(i)
+	return wruo
+}
+
+// SetContractRevisionLatest sets the "contract_revision_latest" field.
+func (wruo *WorkflowRunUpdateOne) SetContractRevisionLatest(i int) *WorkflowRunUpdateOne {
+	wruo.mutation.ResetContractRevisionLatest()
+	wruo.mutation.SetContractRevisionLatest(i)
+	return wruo
+}
+
+// AddContractRevisionLatest adds i to the "contract_revision_latest" field.
+func (wruo *WorkflowRunUpdateOne) AddContractRevisionLatest(i int) *WorkflowRunUpdateOne {
+	wruo.mutation.AddContractRevisionLatest(i)
+	return wruo
+}
+
 // SetWorkflowID sets the "workflow" edge to the Workflow entity by ID.
 func (wruo *WorkflowRunUpdateOne) SetWorkflowID(id uuid.UUID) *WorkflowRunUpdateOne {
 	wruo.mutation.SetWorkflowID(id)
@@ -912,6 +976,18 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 	}
 	if wruo.mutation.AttestationStateCleared() {
 		_spec.ClearField(workflowrun.FieldAttestationState, field.TypeBytes)
+	}
+	if value, ok := wruo.mutation.ContractRevisionUsed(); ok {
+		_spec.SetField(workflowrun.FieldContractRevisionUsed, field.TypeInt, value)
+	}
+	if value, ok := wruo.mutation.AddedContractRevisionUsed(); ok {
+		_spec.AddField(workflowrun.FieldContractRevisionUsed, field.TypeInt, value)
+	}
+	if value, ok := wruo.mutation.ContractRevisionLatest(); ok {
+		_spec.SetField(workflowrun.FieldContractRevisionLatest, field.TypeInt, value)
+	}
+	if value, ok := wruo.mutation.AddedContractRevisionLatest(); ok {
+		_spec.AddField(workflowrun.FieldContractRevisionLatest, field.TypeInt, value)
 	}
 	if wruo.mutation.WorkflowCleared() {
 		edge := &sqlgraph.EdgeSpec{

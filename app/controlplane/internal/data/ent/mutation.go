@@ -10384,31 +10384,35 @@ func (m *WorkflowContractVersionMutation) ResetEdge(name string) error {
 // WorkflowRunMutation represents an operation that mutates the WorkflowRun nodes in the graph.
 type WorkflowRunMutation struct {
 	config
-	op                      Op
-	typ                     string
-	id                      *uuid.UUID
-	created_at              *time.Time
-	finished_at             *time.Time
-	state                   *biz.WorkflowRunStatus
-	reason                  *string
-	run_url                 *string
-	runner_type             *string
-	attestation             **dsse.Envelope
-	attestation_digest      *string
-	attestation_state       *[]byte
-	clearedFields           map[string]struct{}
-	workflow                *uuid.UUID
-	clearedworkflow         bool
-	robotaccount            *uuid.UUID
-	clearedrobotaccount     bool
-	contract_version        *uuid.UUID
-	clearedcontract_version bool
-	cas_backends            map[uuid.UUID]struct{}
-	removedcas_backends     map[uuid.UUID]struct{}
-	clearedcas_backends     bool
-	done                    bool
-	oldValue                func(context.Context) (*WorkflowRun, error)
-	predicates              []predicate.WorkflowRun
+	op                          Op
+	typ                         string
+	id                          *uuid.UUID
+	created_at                  *time.Time
+	finished_at                 *time.Time
+	state                       *biz.WorkflowRunStatus
+	reason                      *string
+	run_url                     *string
+	runner_type                 *string
+	attestation                 **dsse.Envelope
+	attestation_digest          *string
+	attestation_state           *[]byte
+	contract_revision_used      *int
+	addcontract_revision_used   *int
+	contract_revision_latest    *int
+	addcontract_revision_latest *int
+	clearedFields               map[string]struct{}
+	workflow                    *uuid.UUID
+	clearedworkflow             bool
+	robotaccount                *uuid.UUID
+	clearedrobotaccount         bool
+	contract_version            *uuid.UUID
+	clearedcontract_version     bool
+	cas_backends                map[uuid.UUID]struct{}
+	removedcas_backends         map[uuid.UUID]struct{}
+	clearedcas_backends         bool
+	done                        bool
+	oldValue                    func(context.Context) (*WorkflowRun, error)
+	predicates                  []predicate.WorkflowRun
 }
 
 var _ ent.Mutation = (*WorkflowRunMutation)(nil)
@@ -10930,6 +10934,118 @@ func (m *WorkflowRunMutation) ResetAttestationState() {
 	delete(m.clearedFields, workflowrun.FieldAttestationState)
 }
 
+// SetContractRevisionUsed sets the "contract_revision_used" field.
+func (m *WorkflowRunMutation) SetContractRevisionUsed(i int) {
+	m.contract_revision_used = &i
+	m.addcontract_revision_used = nil
+}
+
+// ContractRevisionUsed returns the value of the "contract_revision_used" field in the mutation.
+func (m *WorkflowRunMutation) ContractRevisionUsed() (r int, exists bool) {
+	v := m.contract_revision_used
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldContractRevisionUsed returns the old "contract_revision_used" field's value of the WorkflowRun entity.
+// If the WorkflowRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowRunMutation) OldContractRevisionUsed(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldContractRevisionUsed is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldContractRevisionUsed requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldContractRevisionUsed: %w", err)
+	}
+	return oldValue.ContractRevisionUsed, nil
+}
+
+// AddContractRevisionUsed adds i to the "contract_revision_used" field.
+func (m *WorkflowRunMutation) AddContractRevisionUsed(i int) {
+	if m.addcontract_revision_used != nil {
+		*m.addcontract_revision_used += i
+	} else {
+		m.addcontract_revision_used = &i
+	}
+}
+
+// AddedContractRevisionUsed returns the value that was added to the "contract_revision_used" field in this mutation.
+func (m *WorkflowRunMutation) AddedContractRevisionUsed() (r int, exists bool) {
+	v := m.addcontract_revision_used
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetContractRevisionUsed resets all changes to the "contract_revision_used" field.
+func (m *WorkflowRunMutation) ResetContractRevisionUsed() {
+	m.contract_revision_used = nil
+	m.addcontract_revision_used = nil
+}
+
+// SetContractRevisionLatest sets the "contract_revision_latest" field.
+func (m *WorkflowRunMutation) SetContractRevisionLatest(i int) {
+	m.contract_revision_latest = &i
+	m.addcontract_revision_latest = nil
+}
+
+// ContractRevisionLatest returns the value of the "contract_revision_latest" field in the mutation.
+func (m *WorkflowRunMutation) ContractRevisionLatest() (r int, exists bool) {
+	v := m.contract_revision_latest
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldContractRevisionLatest returns the old "contract_revision_latest" field's value of the WorkflowRun entity.
+// If the WorkflowRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowRunMutation) OldContractRevisionLatest(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldContractRevisionLatest is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldContractRevisionLatest requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldContractRevisionLatest: %w", err)
+	}
+	return oldValue.ContractRevisionLatest, nil
+}
+
+// AddContractRevisionLatest adds i to the "contract_revision_latest" field.
+func (m *WorkflowRunMutation) AddContractRevisionLatest(i int) {
+	if m.addcontract_revision_latest != nil {
+		*m.addcontract_revision_latest += i
+	} else {
+		m.addcontract_revision_latest = &i
+	}
+}
+
+// AddedContractRevisionLatest returns the value that was added to the "contract_revision_latest" field in this mutation.
+func (m *WorkflowRunMutation) AddedContractRevisionLatest() (r int, exists bool) {
+	v := m.addcontract_revision_latest
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetContractRevisionLatest resets all changes to the "contract_revision_latest" field.
+func (m *WorkflowRunMutation) ResetContractRevisionLatest() {
+	m.contract_revision_latest = nil
+	m.addcontract_revision_latest = nil
+}
+
 // SetWorkflowID sets the "workflow" edge to the Workflow entity by id.
 func (m *WorkflowRunMutation) SetWorkflowID(id uuid.UUID) {
 	m.workflow = &id
@@ -11135,7 +11251,7 @@ func (m *WorkflowRunMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *WorkflowRunMutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 11)
 	if m.created_at != nil {
 		fields = append(fields, workflowrun.FieldCreatedAt)
 	}
@@ -11163,6 +11279,12 @@ func (m *WorkflowRunMutation) Fields() []string {
 	if m.attestation_state != nil {
 		fields = append(fields, workflowrun.FieldAttestationState)
 	}
+	if m.contract_revision_used != nil {
+		fields = append(fields, workflowrun.FieldContractRevisionUsed)
+	}
+	if m.contract_revision_latest != nil {
+		fields = append(fields, workflowrun.FieldContractRevisionLatest)
+	}
 	return fields
 }
 
@@ -11189,6 +11311,10 @@ func (m *WorkflowRunMutation) Field(name string) (ent.Value, bool) {
 		return m.AttestationDigest()
 	case workflowrun.FieldAttestationState:
 		return m.AttestationState()
+	case workflowrun.FieldContractRevisionUsed:
+		return m.ContractRevisionUsed()
+	case workflowrun.FieldContractRevisionLatest:
+		return m.ContractRevisionLatest()
 	}
 	return nil, false
 }
@@ -11216,6 +11342,10 @@ func (m *WorkflowRunMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldAttestationDigest(ctx)
 	case workflowrun.FieldAttestationState:
 		return m.OldAttestationState(ctx)
+	case workflowrun.FieldContractRevisionUsed:
+		return m.OldContractRevisionUsed(ctx)
+	case workflowrun.FieldContractRevisionLatest:
+		return m.OldContractRevisionLatest(ctx)
 	}
 	return nil, fmt.Errorf("unknown WorkflowRun field %s", name)
 }
@@ -11288,6 +11418,20 @@ func (m *WorkflowRunMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetAttestationState(v)
 		return nil
+	case workflowrun.FieldContractRevisionUsed:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetContractRevisionUsed(v)
+		return nil
+	case workflowrun.FieldContractRevisionLatest:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetContractRevisionLatest(v)
+		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun field %s", name)
 }
@@ -11295,13 +11439,26 @@ func (m *WorkflowRunMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *WorkflowRunMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.addcontract_revision_used != nil {
+		fields = append(fields, workflowrun.FieldContractRevisionUsed)
+	}
+	if m.addcontract_revision_latest != nil {
+		fields = append(fields, workflowrun.FieldContractRevisionLatest)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *WorkflowRunMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case workflowrun.FieldContractRevisionUsed:
+		return m.AddedContractRevisionUsed()
+	case workflowrun.FieldContractRevisionLatest:
+		return m.AddedContractRevisionLatest()
+	}
 	return nil, false
 }
 
@@ -11310,6 +11467,20 @@ func (m *WorkflowRunMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *WorkflowRunMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case workflowrun.FieldContractRevisionUsed:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddContractRevisionUsed(v)
+		return nil
+	case workflowrun.FieldContractRevisionLatest:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddContractRevisionLatest(v)
+		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun numeric field %s", name)
 }
@@ -11408,6 +11579,12 @@ func (m *WorkflowRunMutation) ResetField(name string) error {
 		return nil
 	case workflowrun.FieldAttestationState:
 		m.ResetAttestationState()
+		return nil
+	case workflowrun.FieldContractRevisionUsed:
+		m.ResetContractRevisionUsed()
+		return nil
+	case workflowrun.FieldContractRevisionLatest:
+		m.ResetContractRevisionLatest()
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun field %s", name)
