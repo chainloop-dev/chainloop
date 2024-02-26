@@ -206,16 +206,16 @@ func (r *WorkflowRunRepo) Expire(ctx context.Context, id uuid.UUID) error {
 
 func entWrToBizWr(wr *ent.WorkflowRun) *biz.WorkflowRun {
 	r := &biz.WorkflowRun{
-		ID:                              wr.ID,
-		CreatedAt:                       toTimePtr(wr.CreatedAt),
-		FinishedAt:                      toTimePtr(wr.FinishedAt),
-		State:                           string(wr.State),
-		Reason:                          wr.Reason,
-		RunURL:                          wr.RunURL,
-		RunnerType:                      wr.RunnerType,
-		CASBackends:                     make([]*biz.CASBackend, 0),
-		ContractRevisionUsed:            wr.ContractRevisionUsed,
-		ContractRevisionLatestAvailable: wr.ContractRevisionLatest,
+		ID:                     wr.ID,
+		CreatedAt:              toTimePtr(wr.CreatedAt),
+		FinishedAt:             toTimePtr(wr.FinishedAt),
+		State:                  string(wr.State),
+		Reason:                 wr.Reason,
+		RunURL:                 wr.RunURL,
+		RunnerType:             wr.RunnerType,
+		CASBackends:            make([]*biz.CASBackend, 0),
+		ContractRevisionUsed:   wr.ContractRevisionUsed,
+		ContractRevisionLatest: wr.ContractRevisionLatest,
 	}
 
 	if wr.Attestation != nil {

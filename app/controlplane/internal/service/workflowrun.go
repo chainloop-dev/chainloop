@@ -149,7 +149,7 @@ func bizWorkFlowRunToPb(wfr *biz.WorkflowRun) *pb.WorkflowRunItem {
 		JobUrl:                 wfr.RunURL,
 		RunnerType:             craftingpb.CraftingSchema_Runner_RunnerType(r),
 		ContractRevisionUsed:   int32(wfr.ContractRevisionUsed),
-		ContractRevisionLatest: int32(wfr.ContractRevisionLatestAvailable),
+		ContractRevisionLatest: int32(wfr.ContractRevisionLatest),
 	}
 
 	if wfr.FinishedAt != nil {

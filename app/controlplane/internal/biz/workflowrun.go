@@ -42,7 +42,7 @@ type WorkflowRun struct {
 	// The revision of the contract that was used
 	ContractRevisionUsed int
 	// The max revision of the contract at the time of the run
-	ContractRevisionLatestAvailable int
+	ContractRevisionLatest int
 }
 
 type Attestation struct {

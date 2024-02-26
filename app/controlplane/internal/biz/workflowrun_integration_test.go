@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
@@ -190,13 +191,44 @@ func (s *workflowRunIntegrationTestSuite) TestCreate() {
 			RunnerType: "runnerType", RunURL: "runURL", State: string(biz.WorkflowRunInitialized), ContractVersionID: s.contractVersion.Version.ID,
 			Workflow:             s.workflowOrg1,
 			CASBackends:          []*biz.CASBackend{s.casBackend},
-			ContractRevisionUsed: 1, ContractRevisionLatestAvailable: 1,
+			ContractRevisionUsed: 1, ContractRevisionLatest: 1,
 		}, run,
 			cmpopts.IgnoreFields(biz.WorkflowRun{}, "CreatedAt", "ID", "Workflow"),
 			cmpopts.IgnoreFields(biz.CASBackend{}, "CreatedAt", "ValidatedAt", "OrganizationID"),
 		); diff != "" {
 			assert.Failf("mismatch (-want +got):\n%s", diff)
 		}
+	})
+}
+
+func (s *workflowRunIntegrationTestSuite) TestContractInformation() {
+	ctx := context.Background()
+	s.Run("if it's the first revision of the contract it matches", func() {
+		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL",
+		})
+		s.NoError(err)
+		s.Equal(1, run.ContractRevisionUsed)
+		s.Equal(1, run.ContractRevisionLatest)
+	})
+
+	s.Run("if the contract gets a new revision but it's not used, it shows spread", func() {
+		updatedContractRevision, err := s.WorkflowContract.Update(ctx, s.org.ID, s.contractVersion.Contract.ID.String(), "new-name", &v1.CraftingSchema{
+			Runner: &v1.CraftingSchema_Runner{Type: v1.CraftingSchema_Runner_CIRCLECI_BUILD},
+		})
+		s.NoError(err)
+		// load the previous version of the contract
+		updatedContractRevision.Version = s.contractVersion.Version
+
+		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevision: updatedContractRevision, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL",
+		})
+		s.NoError(err)
+		// Shows that the latest available revision is 2, but the used one is 1
+		s.Equal(1, run.ContractRevisionUsed)
+		s.Equal(2, run.ContractRevisionLatest)
 	})
 }
 

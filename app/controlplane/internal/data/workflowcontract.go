@@ -179,18 +179,18 @@ func (r *WorkflowContractRepo) Update(ctx context.Context, opts *biz.ContractUpd
 		}
 	}
 
-	latestVersion, err := latestVersion(ctx, contract)
+	lv, err := latestVersion(ctx, contract)
 	if err != nil {
 		return nil, err
 	}
 
 	// Create a revision only if we are providing a new contract and it has changed
-	if opts.ContractBody != nil && !bytes.Equal(latestVersion.Body, opts.ContractBody) {
+	if opts.ContractBody != nil && !bytes.Equal(lv.Body, opts.ContractBody) {
 		// TODO: Add pessimist locking to make sure we are incrementing the latest revision
-		latestVersion, err = tx.WorkflowContractVersion.Create().
+		lv, err = tx.WorkflowContractVersion.Create().
 			SetBody(opts.ContractBody).
 			SetContract(contract).
-			SetRevision(latestVersion.Revision + 1).
+			SetRevision(lv.Revision + 1).
 			Save(ctx)
 		if err != nil {
 			return nil, rollback(tx, err)
@@ -206,13 +206,25 @@ func (r *WorkflowContractRepo) Update(ctx context.Context, opts *biz.ContractUpd
 		return nil, err
 	}
 
-	v, err := entContractVersionToBizContractVersion(latestVersion)
+	// The transaction is committed, we can now return the result
+	contract, err = contractInOrg(ctx, r.data.db, opts.OrgID, opts.ContractID)
+	if err != nil {
+		return nil, err
+	}
+
+	// reload latest version
+	lv, err = latestVersion(ctx, contract)
+	if err != nil {
+		return nil, err
+	}
+
+	v, err := entContractVersionToBizContractVersion(lv)
 	if err != nil {
 		return nil, err
 	}
 
 	return &biz.WorkflowContractWithVersion{
-		Contract: entContractToBizContract(contract, latestVersion, workflowIDs),
+		Contract: entContractToBizContract(contract, lv, workflowIDs),
 		Version:  v,
 	}, nil
 }
