@@ -1041,6 +1041,8 @@ func (m *WorkflowRunServiceListRequest) validate(all bool) error {
 
 	// no validation rules for WorkflowId
 
+	// no validation rules for Status
+
 	if all {
 		switch v := interface{}(m.GetPagination()).(type) {
 		case interface{ ValidateAll() error }:

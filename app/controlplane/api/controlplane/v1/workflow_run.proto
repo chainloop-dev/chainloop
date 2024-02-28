@@ -17,28 +17,28 @@ syntax = "proto3";
 
 package controlplane.v1;
 
-option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
-
-import "validate/validate.proto";
-import "controlplane/v1/response_messages.proto";
 import "controlplane/v1/pagination.proto";
+import "controlplane/v1/response_messages.proto";
+import "validate/validate.proto";
 import "workflowcontract/v1/crafting_schema.proto";
+
+option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
 // This service is used by the CLI to generate attestation
 service AttestationService {
-	rpc GetContract (AttestationServiceGetContractRequest) returns (AttestationServiceGetContractResponse);
-	rpc Init (AttestationServiceInitRequest) returns (AttestationServiceInitResponse);
-	rpc Store (AttestationServiceStoreRequest) returns (AttestationServiceStoreResponse);
+  rpc GetContract(AttestationServiceGetContractRequest) returns (AttestationServiceGetContractResponse);
+  rpc Init(AttestationServiceInitRequest) returns (AttestationServiceInitResponse);
+  rpc Store(AttestationServiceStoreRequest) returns (AttestationServiceStoreResponse);
   // There is another endpoint to get credentials via casCredentialsService.Get
   // This one is kept since it leverages robot-accounts in the context of a workflow
-	rpc GetUploadCreds (AttestationServiceGetUploadCredsRequest) returns (AttestationServiceGetUploadCredsResponse);
-	rpc Cancel (AttestationServiceCancelRequest) returns (AttestationServiceCancelResponse);
+  rpc GetUploadCreds(AttestationServiceGetUploadCredsRequest) returns (AttestationServiceGetUploadCredsResponse);
+  rpc Cancel(AttestationServiceCancelRequest) returns (AttestationServiceCancelResponse);
 }
 
 // Administrative service for the operator
 service WorkflowRunService {
-	rpc List (WorkflowRunServiceListRequest) returns (WorkflowRunServiceListResponse);
-	rpc View (WorkflowRunServiceViewRequest) returns (WorkflowRunServiceViewResponse);
+  rpc List(WorkflowRunServiceListRequest) returns (WorkflowRunServiceListResponse);
+  rpc View(WorkflowRunServiceViewRequest) returns (WorkflowRunServiceViewResponse);
 }
 
 message AttestationServiceGetContractRequest {
@@ -47,7 +47,7 @@ message AttestationServiceGetContractRequest {
 
 message AttestationServiceGetContractResponse {
   Result result = 1;
-  
+
   message Result {
     WorkflowItem workflow = 1;
     WorkflowContractVersionItem contract = 2;
@@ -62,7 +62,7 @@ message AttestationServiceInitRequest {
 
 message AttestationServiceInitResponse {
   Result result = 1;
-  
+
   message Result {
     WorkflowRunItem workflow_run = 2;
   }
@@ -76,7 +76,7 @@ message AttestationServiceStoreRequest {
 
 message AttestationServiceStoreResponse {
   Result result = 1;
-  
+
   message Result {
     // attestation digest
     string digest = 2;
@@ -85,21 +85,27 @@ message AttestationServiceStoreResponse {
 
 message AttestationServiceCancelRequest {
   string workflow_run_id = 1 [(validate.rules).string = {min_len: 1}];
-  TriggerType trigger = 2 [(validate.rules).enum = {not_in: [0]}];
+  TriggerType trigger = 2 [(validate.rules).enum = {
+    not_in: [0]
+  }];
   string reason = 3;
 
   enum TriggerType {
-      TRIGGER_TYPE_UNSPECIFIED = 0;
-      TRIGGER_TYPE_FAILURE = 1;
-      TRIGGER_TYPE_CANCELLATION = 2;
-  } 
+    TRIGGER_TYPE_UNSPECIFIED = 0;
+    TRIGGER_TYPE_FAILURE = 1;
+    TRIGGER_TYPE_CANCELLATION = 2;
+  }
 }
 
 message AttestationServiceCancelResponse {}
 
 message WorkflowRunServiceListRequest {
-  // Filter by workflow
+  // Filters
+  // by workflow
   string workflow_id = 1;
+  // by run status
+  RunStatus status = 3;
+  // pagination options
   PaginationRequest pagination = 2;
 }
 
@@ -112,7 +118,7 @@ message WorkflowRunServiceViewRequest {
   // It can search by either ID or digest
   oneof ref {
     option (validate.required) = true;
-    
+
     string id = 1 [(validate.rules).string.uuid = true];
     string digest = 2 [(validate.rules).string = {min_len: 1}];
   }
@@ -127,16 +133,15 @@ message WorkflowRunServiceViewResponse {
   }
 }
 
-
 message AttestationServiceGetUploadCredsRequest {
-    string workflow_run_id = 1;
+  string workflow_run_id = 1;
 }
 
 message AttestationServiceGetUploadCredsResponse {
   Result result = 1;
-  
+
   message Result {
     string token = 2;
-    CASBackendItem backend	 = 3;
+    CASBackendItem backend = 3;
   }
 }

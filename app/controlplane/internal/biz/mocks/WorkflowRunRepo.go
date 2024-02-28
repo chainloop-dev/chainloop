@@ -141,32 +141,32 @@ func (_m *WorkflowRunRepo) FindByIDInOrg(ctx context.Context, orgID uuid.UUID, I
 	return r0, r1
 }
 
-// List provides a mock function with given fields: ctx, orgID, workflowID, p
-func (_m *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, workflowID uuid.UUID, p *pagination.Options) ([]*biz.WorkflowRun, string, error) {
-	ret := _m.Called(ctx, orgID, workflowID, p)
+// List provides a mock function with given fields: ctx, orgID, f, p
+func (_m *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, f *biz.RunListFilters, p *pagination.Options) ([]*biz.WorkflowRun, string, error) {
+	ret := _m.Called(ctx, orgID, f, p)
 
 	var r0 []*biz.WorkflowRun
 	var r1 string
 	var r2 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, *pagination.Options) ([]*biz.WorkflowRun, string, error)); ok {
-		return rf(ctx, orgID, workflowID, p)
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, *biz.RunListFilters, *pagination.Options) ([]*biz.WorkflowRun, string, error)); ok {
+		return rf(ctx, orgID, f, p)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, *pagination.Options) []*biz.WorkflowRun); ok {
-		r0 = rf(ctx, orgID, workflowID, p)
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, *biz.RunListFilters, *pagination.Options) []*biz.WorkflowRun); ok {
+		r0 = rf(ctx, orgID, f, p)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]*biz.WorkflowRun)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID, *pagination.Options) string); ok {
-		r1 = rf(ctx, orgID, workflowID, p)
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, *biz.RunListFilters, *pagination.Options) string); ok {
+		r1 = rf(ctx, orgID, f, p)
 	} else {
 		r1 = ret.Get(1).(string)
 	}
 
-	if rf, ok := ret.Get(2).(func(context.Context, uuid.UUID, uuid.UUID, *pagination.Options) error); ok {
-		r2 = rf(ctx, orgID, workflowID, p)
+	if rf, ok := ret.Get(2).(func(context.Context, uuid.UUID, *biz.RunListFilters, *pagination.Options) error); ok {
+		r2 = rf(ctx, orgID, f, p)
 	} else {
 		r2 = ret.Error(2)
 	}

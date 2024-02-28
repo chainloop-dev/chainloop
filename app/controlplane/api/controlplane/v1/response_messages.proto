@@ -46,7 +46,10 @@ message WorkflowRunItem {
   string id = 1;
   google.protobuf.Timestamp created_at = 2;
   google.protobuf.Timestamp finished_at = 3;
-  string state = 4;
+  // TODO: use runStatus enum below
+  // deprecated field, use status instead
+  string state = 4 [deprecated = true];
+  RunStatus status = 12;
   string reason = 5;
   WorkflowItem workflow = 6;
   string job_url = 7;
@@ -58,6 +61,15 @@ message WorkflowRunItem {
   int32 contract_revision_used = 10;
   // The latest revision available for this contract at the time of the run
   int32 contract_revision_latest = 11;
+}
+
+enum RunStatus {
+  RUN_STATUS_UNSPECIFIED = 0;
+  RUN_STATUS_INITIALIZED = 1;
+  RUN_STATUS_SUCCEEDED = 2;
+  RUN_STATUS_FAILED = 3;
+  RUN_STATUS_EXPIRED = 4;
+  RUN_STATUS_CANCELLED = 5;
 }
 
 message AttestationItem {

@@ -298,6 +298,8 @@ func (m *WorkflowRunItem) validate(all bool) error {
 
 	// no validation rules for State
 
+	// no validation rules for Status
+
 	// no validation rules for Reason
 
 	if all {

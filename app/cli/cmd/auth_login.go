@@ -85,9 +85,6 @@ func interactiveAuth() error {
 
 	// Run server in background
 	http.HandleFunc(callbackURL.Path, a.handleCallback)
-	if err != nil {
-		return fmt.Errorf("parse listen address: %w", err)
-	}
 	go func() {
 		logger.Info().Msg("waiting for the authentication to be completed, please check your browser")
 
