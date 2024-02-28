@@ -109,7 +109,6 @@ func (s *userIntegrationTestSuite) TestCurrentOrg() {
 		_, err = s.User.CurrentOrg(ctx, s.userOne.ID)
 		s.ErrorContains(err, "user does not have any organization associated")
 	})
-
 }
 
 // Run the tests
