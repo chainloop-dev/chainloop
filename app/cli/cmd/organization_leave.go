@@ -17,7 +17,6 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
@@ -52,10 +51,6 @@ func newOrganizationLeaveCmd() *cobra.Command {
 				return fmt.Errorf("getting membership: %w", err)
 			} else if membership == nil {
 				return fmt.Errorf("organization %s not found", orgID)
-			}
-
-			if membership.Current {
-				return errors.New("can't leave the `current` organization. To leave this org, please switch to another one")
 			}
 
 			fmt.Printf("You are about to leave the organization %q\n", membership.Org.Name)

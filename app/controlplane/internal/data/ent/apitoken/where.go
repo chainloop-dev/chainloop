@@ -321,7 +321,7 @@ func HasOrganization() predicate.APIToken {
 	return predicate.APIToken(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, OrganizationTable, OrganizationColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, OrganizationTable, OrganizationColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})

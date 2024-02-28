@@ -157,7 +157,7 @@ func (atu *APITokenUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if atu.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: false,
+			Inverse: true,
 			Table:   apitoken.OrganizationTable,
 			Columns: []string{apitoken.OrganizationColumn},
 			Bidi:    false,
@@ -170,7 +170,7 @@ func (atu *APITokenUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if nodes := atu.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: false,
+			Inverse: true,
 			Table:   apitoken.OrganizationTable,
 			Columns: []string{apitoken.OrganizationColumn},
 			Bidi:    false,
@@ -360,7 +360,7 @@ func (atuo *APITokenUpdateOne) sqlSave(ctx context.Context) (_node *APIToken, er
 	if atuo.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: false,
+			Inverse: true,
 			Table:   apitoken.OrganizationTable,
 			Columns: []string{apitoken.OrganizationColumn},
 			Bidi:    false,
@@ -373,7 +373,7 @@ func (atuo *APITokenUpdateOne) sqlSave(ctx context.Context) (_node *APIToken, er
 	if nodes := atuo.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: false,
+			Inverse: true,
 			Table:   apitoken.OrganizationTable,
 			Columns: []string{apitoken.OrganizationColumn},
 			Bidi:    false,

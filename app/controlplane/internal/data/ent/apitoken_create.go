@@ -213,7 +213,7 @@ func (atc *APITokenCreate) createSpec() (*APIToken, *sqlgraph.CreateSpec) {
 	if nodes := atc.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: false,
+			Inverse: true,
 			Table:   apitoken.OrganizationTable,
 			Columns: []string{apitoken.OrganizationColumn},
 			Bidi:    false,

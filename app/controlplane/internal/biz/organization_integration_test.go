@@ -84,6 +84,16 @@ func (s *OrgIntegrationTestSuite) TestCreate() {
 	}
 }
 
+func (s *OrgIntegrationTestSuite) TestCreateAddsInlineCASBackend() {
+	ctx := context.Background()
+	org, err := s.Organization.CreateWithRandomName(ctx)
+	s.NoError(err)
+	// Creating an org also creates a new inline backend
+	b, err := s.CASBackend.FindDefaultBackend(ctx, org.ID)
+	s.NoError(err)
+	s.True(b.Inline)
+}
+
 func (s *OrgIntegrationTestSuite) TestUpdate() {
 	ctx := context.Background()
 

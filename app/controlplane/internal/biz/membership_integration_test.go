@@ -99,7 +99,7 @@ func (s *membershipIntegrationTestSuite) TestCreateMembership() {
 	user, err := s.User.FindOrCreateByEmail(ctx, "foo@test.com")
 	assert.NoError(err)
 
-	s.T().Run("Create default", func(t *testing.T) {
+	s.T().Run("Create current", func(t *testing.T) {
 		org, err := s.Organization.CreateWithRandomName(ctx)
 		assert.NoError(err)
 
@@ -107,14 +107,8 @@ func (s *membershipIntegrationTestSuite) TestCreateMembership() {
 		assert.NoError(err)
 		assert.Equal(true, m.Current, "Membership should be current")
 
-		wantUserID, err := uuid.Parse(user.ID)
-		assert.NoError(err)
-		assert.Equal(wantUserID, m.UserID, "User ID")
-
-		wantORGID, err := uuid.Parse(org.ID)
-		assert.NoError(err)
-		assert.Equal(wantORGID, m.OrganizationID, "Organization ID")
-
+		assert.Equal(user.ID, m.UserID.String(), "User ID")
+		assert.Equal(org.ID, m.OrganizationID.String(), "Organization ID")
 		assert.EqualValues(org, m.Org, "Embedded organization")
 	})
 
@@ -124,7 +118,26 @@ func (s *membershipIntegrationTestSuite) TestCreateMembership() {
 
 		m, err := s.Membership.Create(ctx, org.ID, user.ID, false)
 		assert.NoError(err)
-		assert.Equal(false, m.Current, "Membership should be current")
+		assert.Equal(false, m.Current, "Membership should not be current")
+	})
+
+	s.T().Run("current override", func(t *testing.T) {
+		org, err := s.Organization.CreateWithRandomName(ctx)
+		assert.NoError(err)
+		org2, err := s.Organization.CreateWithRandomName(ctx)
+		assert.NoError(err)
+
+		m, err := s.Membership.Create(ctx, org.ID, user.ID, true)
+		assert.NoError(err)
+		s.True(m.Current)
+		// Creating a new one will override the current status of the previous one
+		m, err = s.Membership.Create(ctx, org2.ID, user.ID, true)
+		assert.NoError(err)
+		s.True(m.Current)
+
+		m, err = s.Membership.FindByOrgAndUser(ctx, org.ID, user.ID)
+		assert.NoError(err)
+		s.False(m.Current)
 	})
 
 	s.T().Run("Invalid ORG", func(t *testing.T) {

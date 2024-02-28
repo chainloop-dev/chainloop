@@ -68,13 +68,12 @@ type AuthService struct {
 	authConfig        *conf.Auth
 	userUseCase       *biz.UserUseCase
 	orgUseCase        *biz.OrganizationUseCase
-	casBackendUseCase *biz.CASBackendUseCase
 	membershipUseCase *biz.MembershipUseCase
 	orgInvitesUseCase *biz.OrgInvitationUseCase
 	AuthURLs          *AuthURLs
 }
 
-func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC *biz.MembershipUseCase, cbUC *biz.CASBackendUseCase, inviteUC *biz.OrgInvitationUseCase, authConfig *conf.Auth, serverConfig *conf.Server, opts ...NewOpt) (*AuthService, error) {
+func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC *biz.MembershipUseCase, inviteUC *biz.OrgInvitationUseCase, authConfig *conf.Auth, serverConfig *conf.Server, opts ...NewOpt) (*AuthService, error) {
 	oidcConfig := authConfig.GetOidc()
 	if oidcConfig == nil {
 		return nil, errors.New("oauth configuration missing")
@@ -99,7 +98,6 @@ func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC
 		authConfig:        authConfig,
 		AuthURLs:          authURLs,
 		membershipUseCase: mUC,
-		casBackendUseCase: cbUC,
 		orgInvitesUseCase: inviteUC,
 	}, nil
 }
@@ -230,16 +228,6 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) (
 	// Accept any pending invites
 	if err := svc.orgInvitesUseCase.AcceptPendingInvitations(ctx, u.Email); err != nil {
 		return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
-	}
-
-	// Create a default inline CAS backend if none exists
-	backend, err := svc.casBackendUseCase.FindFallbackBackend(ctx, currentOrg.ID)
-	if err != nil && !biz.IsNotFound(err) {
-		return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
-	} else if backend == nil {
-		if _, err := svc.casBackendUseCase.CreateInlineFallbackBackend(ctx, currentOrg.ID); err != nil {
-			return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
-		}
 	}
 
 	// Set the expiration

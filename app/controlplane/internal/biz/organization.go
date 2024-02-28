@@ -111,6 +111,11 @@ func (uc *OrganizationUseCase) doCreate(ctx context.Context, name string) (*Orga
 		return nil, fmt.Errorf("failed to create organization: %w", err)
 	}
 
+	// Create inline CAS-backend
+	if _, err := uc.casBackendUseCase.CreateInlineFallbackBackend(ctx, org.ID); err != nil {
+		return nil, fmt.Errorf("failed to create fallback backend: %w", err)
+	}
+
 	return org, nil
 }
 

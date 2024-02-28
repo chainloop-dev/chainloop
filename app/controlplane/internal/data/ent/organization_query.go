@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/apitoken"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/integration"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/membership"
@@ -33,6 +34,7 @@ type OrganizationQuery struct {
 	withWorkflows         *WorkflowQuery
 	withCasBackends       *CASBackendQuery
 	withIntegrations      *IntegrationQuery
+	withAPITokens         *APITokenQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -172,6 +174,28 @@ func (oq *OrganizationQuery) QueryIntegrations() *IntegrationQuery {
 			sqlgraph.From(organization.Table, organization.FieldID, selector),
 			sqlgraph.To(integration.Table, integration.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, organization.IntegrationsTable, organization.IntegrationsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(oq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryAPITokens chains the current query on the "api_tokens" edge.
+func (oq *OrganizationQuery) QueryAPITokens() *APITokenQuery {
+	query := (&APITokenClient{config: oq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := oq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := oq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(organization.Table, organization.FieldID, selector),
+			sqlgraph.To(apitoken.Table, apitoken.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, organization.APITokensTable, organization.APITokensColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(oq.driver.Dialect(), step)
 		return fromU, nil
@@ -376,6 +400,7 @@ func (oq *OrganizationQuery) Clone() *OrganizationQuery {
 		withWorkflows:         oq.withWorkflows.Clone(),
 		withCasBackends:       oq.withCasBackends.Clone(),
 		withIntegrations:      oq.withIntegrations.Clone(),
+		withAPITokens:         oq.withAPITokens.Clone(),
 		// clone intermediate query.
 		sql:  oq.sql.Clone(),
 		path: oq.path,
@@ -434,6 +459,17 @@ func (oq *OrganizationQuery) WithIntegrations(opts ...func(*IntegrationQuery)) *
 		opt(query)
 	}
 	oq.withIntegrations = query
+	return oq
+}
+
+// WithAPITokens tells the query-builder to eager-load the nodes that are connected to
+// the "api_tokens" edge. The optional arguments are used to configure the query builder of the edge.
+func (oq *OrganizationQuery) WithAPITokens(opts ...func(*APITokenQuery)) *OrganizationQuery {
+	query := (&APITokenClient{config: oq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	oq.withAPITokens = query
 	return oq
 }
 
@@ -515,12 +551,13 @@ func (oq *OrganizationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	var (
 		nodes       = []*Organization{}
 		_spec       = oq.querySpec()
-		loadedTypes = [5]bool{
+		loadedTypes = [6]bool{
 			oq.withMemberships != nil,
 			oq.withWorkflowContracts != nil,
 			oq.withWorkflows != nil,
 			oq.withCasBackends != nil,
 			oq.withIntegrations != nil,
+			oq.withAPITokens != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -575,6 +612,13 @@ func (oq *OrganizationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 		if err := oq.loadIntegrations(ctx, query, nodes,
 			func(n *Organization) { n.Edges.Integrations = []*Integration{} },
 			func(n *Organization, e *Integration) { n.Edges.Integrations = append(n.Edges.Integrations, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := oq.withAPITokens; query != nil {
+		if err := oq.loadAPITokens(ctx, query, nodes,
+			func(n *Organization) { n.Edges.APITokens = []*APIToken{} },
+			func(n *Organization, e *APIToken) { n.Edges.APITokens = append(n.Edges.APITokens, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -731,6 +775,36 @@ func (oq *OrganizationQuery) loadIntegrations(ctx context.Context, query *Integr
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "organization_integrations" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (oq *OrganizationQuery) loadAPITokens(ctx context.Context, query *APITokenQuery, nodes []*Organization, init func(*Organization), assign func(*Organization, *APIToken)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Organization)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(apitoken.FieldOrganizationID)
+	}
+	query.Where(predicate.APIToken(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(organization.APITokensColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.OrganizationID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "organization_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}
