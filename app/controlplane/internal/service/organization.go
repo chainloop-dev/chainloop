@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -70,7 +70,8 @@ func (s *OrganizationService) Create(ctx context.Context, req *pb.OrganizationSe
 		return nil, err
 	}
 
-	org, err := s.orgUC.Create(ctx, req.Name)
+	// Create an organization with an associated inline CAS backend
+	org, err := s.orgUC.Create(ctx, req.Name, biz.WithCreateInlineBackend())
 	if err != nil {
 		return nil, handleUseCaseErr("organization", err, s.log)
 	}

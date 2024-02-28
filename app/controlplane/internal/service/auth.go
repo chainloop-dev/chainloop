@@ -211,8 +211,8 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) (
 
 	// If there is not, we create it and associate the user to it
 	if currentOrg == nil {
-		// Create an org
-		currentOrg, err = svc.orgUseCase.CreateWithRandomName(ctx)
+		// Create an org and an inline CAS backend
+		currentOrg, err = svc.orgUseCase.CreateWithRandomName(ctx, biz.WithCreateInlineBackend())
 		if err != nil {
 			return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
 		}
