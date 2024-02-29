@@ -2,5 +2,5 @@
   "name": "chainloop",
   "sdk": "go",
   "source": ".",
-  "engineVersion": "v0.9.10"
+  "engineVersion": "v0.10.0"
 }
