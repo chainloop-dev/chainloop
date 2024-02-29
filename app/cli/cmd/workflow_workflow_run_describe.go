@@ -198,7 +198,7 @@ func encodeAttestationOutput(run *action.WorkflowRunItemFull) error {
 	}
 
 	// It could not be encoded but for a reason that's not because it was a custom format
-	if err == nil && !errors.Is(err, ErrOutputFormatNotImplemented) {
+	if !errors.Is(err, ErrOutputFormatNotImplemented) {
 		return err
 	}
 

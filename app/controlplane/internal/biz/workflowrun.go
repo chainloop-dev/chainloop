@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@ type WorkflowRunRepo interface {
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*WorkflowRun, error)
 	MarkAsFinished(ctx context.Context, ID uuid.UUID, status WorkflowRunStatus, reason string) error
 	SaveAttestation(ctx context.Context, ID uuid.UUID, att *dsse.Envelope, digest string) error
-	List(ctx context.Context, orgID, workflowID uuid.UUID, p *pagination.Options) ([]*WorkflowRun, string, error)
+	List(ctx context.Context, orgID uuid.UUID, f *RunListFilters, p *pagination.Options) ([]*WorkflowRun, string, error)
 	// List the runs that have not finished and are older than a given time
 	ListNotFinishedOlderThan(ctx context.Context, olderThan time.Time) ([]*WorkflowRun, error)
 	// Set run as expired
@@ -256,22 +256,19 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, en
 	return uc.wfRunRepo.SaveAttestation(ctx, runID, envelope, digest)
 }
 
+type RunListFilters struct {
+	WorkflowID uuid.UUID
+	Status     WorkflowRunStatus
+}
+
 // List the workflowruns associated with an org and optionally filtered by a workflow
-func (uc *WorkflowRunUseCase) List(ctx context.Context, orgID, workflowID string, p *pagination.Options) ([]*WorkflowRun, string, error) {
+func (uc *WorkflowRunUseCase) List(ctx context.Context, orgID string, f *RunListFilters, p *pagination.Options) ([]*WorkflowRun, string, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
-		return nil, "", err
+		return nil, "", NewErrInvalidUUID(err)
 	}
 
-	var workflowUUID uuid.UUID
-	if workflowID != "" {
-		workflowUUID, err = uuid.Parse(workflowID)
-		if err != nil {
-			return nil, "", err
-		}
-	}
-
-	return uc.wfRunRepo.List(ctx, orgUUID, workflowUUID, p)
+	return uc.wfRunRepo.List(ctx, orgUUID, f, p)
 }
 
 // Returns the workflow run with the provided ID if it belongs to the org or its public

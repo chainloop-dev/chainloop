@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import (
 	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/pagination"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	creds "github.com/chainloop-dev/chainloop/internal/credentials/mocks"
 	"github.com/google/go-cmp/cmp"
@@ -32,6 +33,74 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
+
+func (s *workflowRunIntegrationTestSuite) TestList() {
+	// Create a finished run
+	finishedRun, err := s.WorkflowRun.Create(context.Background(),
+		&biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg2.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+		})
+	s.NoError(err)
+	err = s.WorkflowRun.MarkAsFinished(context.Background(), finishedRun.ID.String(), biz.WorkflowRunSuccess, "")
+	s.NoError(err)
+
+	testCases := []struct {
+		name    string
+		filters *biz.RunListFilters
+		want    []*biz.WorkflowRun
+		wantErr bool
+	}{
+		{
+			name:    "no filters",
+			filters: &biz.RunListFilters{},
+			want:    []*biz.WorkflowRun{s.runOrg2, s.runOrg2Public, finishedRun},
+		},
+		{
+			name:    "filter by workflow",
+			filters: &biz.RunListFilters{WorkflowID: s.workflowOrg2.ID},
+			want:    []*biz.WorkflowRun{s.runOrg2, finishedRun},
+		},
+		{
+			name:    "filter by status, no result",
+			filters: &biz.RunListFilters{Status: biz.WorkflowRunCancelled},
+			want:    []*biz.WorkflowRun{},
+		},
+		{
+			name:    "filter by status, 2 results",
+			filters: &biz.RunListFilters{Status: biz.WorkflowRunInitialized},
+			want:    []*biz.WorkflowRun{s.runOrg2, s.runOrg2Public},
+		},
+		{
+			name:    "filter by finished state and workflow with results",
+			filters: &biz.RunListFilters{Status: biz.WorkflowRunSuccess, WorkflowID: s.workflowOrg2.ID},
+			want:    []*biz.WorkflowRun{finishedRun},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.T().Run(tc.name, func(t *testing.T) {
+			got, _, err := s.WorkflowRun.List(context.Background(), s.org2.ID, tc.filters, &pagination.Options{Limit: 10})
+			if tc.wantErr {
+				s.Error(err)
+				return
+			}
+
+			s.NoError(err)
+			s.Len(got, len(tc.want))
+			gotIDs := make([]uuid.UUID, len(got))
+			for _, g := range got {
+				gotIDs = append(gotIDs, g.ID)
+			}
+
+			wantIDs := make([]uuid.UUID, len(tc.want))
+			for _, w := range tc.want {
+				wantIDs = append(wantIDs, w.ID)
+			}
+
+			s.ElementsMatch(wantIDs, gotIDs)
+		})
+	}
+}
 
 func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 	assert := assert.New(s.T())

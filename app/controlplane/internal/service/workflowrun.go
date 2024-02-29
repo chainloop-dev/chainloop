@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	craftingpb "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -25,6 +26,7 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	errors "github.com/go-kratos/kratos/v2/errors"
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -77,7 +79,27 @@ func (s *WorkflowRunService) List(ctx context.Context, req *pb.WorkflowRunServic
 		return nil, errors.InternalServer("invalid", "invalid pagination options")
 	}
 
-	workflowRuns, nextCursor, err := s.wrUseCase.List(ctx, currentOrg.ID, req.GetWorkflowId(), paginationOpts)
+	// Configure filters
+	filters := &biz.RunListFilters{}
+	// run status
+	if req.GetStatus() != pb.RunStatus_RUN_STATUS_UNSPECIFIED {
+		st, err := pbWorkflowRunStatusToBiz(req.GetStatus())
+		if err != nil {
+			return nil, errors.BadRequest("invalid run status", err.Error())
+		}
+		filters.Status = st
+	}
+
+	// Workflow ID
+	if req.GetWorkflowId() != "" {
+		workflowID, err := uuid.Parse(req.GetWorkflowId())
+		if err != nil {
+			return nil, errors.BadRequest("invalid workflow ID", err.Error())
+		}
+		filters.WorkflowID = workflowID
+	}
+
+	workflowRuns, nextCursor, err := s.wrUseCase.List(ctx, currentOrg.ID, filters, paginationOpts)
 	if err != nil {
 		return nil, sl.LogAndMaskErr(err, s.log)
 	}
@@ -141,10 +163,13 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 
 func bizWorkFlowRunToPb(wfr *biz.WorkflowRun) *pb.WorkflowRunItem {
 	r := craftingpb.CraftingSchema_Runner_RunnerType_value[wfr.RunnerType]
+
 	item := &pb.WorkflowRunItem{
-		Id:                     wfr.ID.String(),
-		CreatedAt:              timestamppb.New(*wfr.CreatedAt),
+		Id:        wfr.ID.String(),
+		CreatedAt: timestamppb.New(*wfr.CreatedAt),
+		// state is deprecated
 		State:                  wfr.State,
+		Status:                 bizWorkflowRunStatusToPb(biz.WorkflowRunStatus(wfr.State)),
 		Reason:                 wfr.Reason,
 		JobUrl:                 wfr.RunURL,
 		RunnerType:             craftingpb.CraftingSchema_Runner_RunnerType(r),
@@ -157,4 +182,39 @@ func bizWorkFlowRunToPb(wfr *biz.WorkflowRun) *pb.WorkflowRunItem {
 	}
 
 	return item
+}
+
+// Transform pb run status to biz run status
+func pbWorkflowRunStatusToBiz(st pb.RunStatus) (biz.WorkflowRunStatus, error) {
+	m := map[pb.RunStatus]biz.WorkflowRunStatus{
+		pb.RunStatus_RUN_STATUS_INITIALIZED: biz.WorkflowRunInitialized,
+		pb.RunStatus_RUN_STATUS_SUCCEEDED:   biz.WorkflowRunSuccess,
+		pb.RunStatus_RUN_STATUS_FAILED:      biz.WorkflowRunError,
+		pb.RunStatus_RUN_STATUS_EXPIRED:     biz.WorkflowRunExpired,
+		pb.RunStatus_RUN_STATUS_CANCELLED:   biz.WorkflowRunCancelled,
+	}
+
+	// not in the list
+	if _, ok := m[st]; !ok {
+		return "", fmt.Errorf("invalid run status: %s", st.String())
+	}
+
+	return m[st], nil
+}
+
+func bizWorkflowRunStatusToPb(st biz.WorkflowRunStatus) pb.RunStatus {
+	m := map[biz.WorkflowRunStatus]pb.RunStatus{
+		biz.WorkflowRunInitialized: pb.RunStatus_RUN_STATUS_INITIALIZED,
+		biz.WorkflowRunSuccess:     pb.RunStatus_RUN_STATUS_SUCCEEDED,
+		biz.WorkflowRunError:       pb.RunStatus_RUN_STATUS_FAILED,
+		biz.WorkflowRunExpired:     pb.RunStatus_RUN_STATUS_EXPIRED,
+		biz.WorkflowRunCancelled:   pb.RunStatus_RUN_STATUS_CANCELLED,
+	}
+
+	// not in the list
+	if _, ok := m[st]; !ok {
+		return pb.RunStatus_RUN_STATUS_UNSPECIFIED
+	}
+
+	return m[st]
 }

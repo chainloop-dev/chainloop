@@ -138,7 +138,7 @@ func (r *WorkflowRunRepo) MarkAsFinished(ctx context.Context, id uuid.UUID, stat
 }
 
 // List the runs in an organization, optionally filtered out by workflow
-func (r *WorkflowRunRepo) List(ctx context.Context, orgID, workflowID uuid.UUID, p *pagination.Options) (result []*biz.WorkflowRun, cursor string, err error) {
+func (r *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, filters *biz.RunListFilters, p *pagination.Options) (result []*biz.WorkflowRun, cursor string, err error) {
 	if p == nil {
 		return nil, "", errors.New("pagination options is required")
 	}
@@ -146,13 +146,19 @@ func (r *WorkflowRunRepo) List(ctx context.Context, orgID, workflowID uuid.UUID,
 	orgQuery := r.data.db.Organization.Query().Where(organization.ID(orgID))
 	// Skip the runs that have a workflow marked as deleted
 	wfQuery := orgQuery.QueryWorkflows().Where(workflow.DeletedAtIsNil())
-	if workflowID != uuid.Nil {
-		wfQuery = wfQuery.Where(workflow.ID(workflowID))
+	// Append the workflow filter if present
+	if filters != nil && filters.WorkflowID != uuid.Nil {
+		wfQuery = wfQuery.Where(workflow.ID(filters.WorkflowID))
 	}
 
 	wfRunsQuery := wfQuery.QueryWorkflowruns().
 		Order(ent.Desc(workflowrun.FieldCreatedAt)).
 		Limit(p.Limit + 1).WithWorkflow()
+
+	// Append the state filter if present, i.e only running
+	if filters != nil && filters.Status != "" {
+		wfRunsQuery = wfRunsQuery.Where(workflowrun.StateEQ(filters.Status))
+	}
 
 	if p.Cursor != nil {
 		wfRunsQuery = wfRunsQuery.Where(

@@ -11,6 +11,63 @@ import {
 
 export const protobufPackage = "controlplane.v1";
 
+export enum RunStatus {
+  RUN_STATUS_UNSPECIFIED = 0,
+  RUN_STATUS_INITIALIZED = 1,
+  RUN_STATUS_SUCCEEDED = 2,
+  RUN_STATUS_FAILED = 3,
+  RUN_STATUS_EXPIRED = 4,
+  RUN_STATUS_CANCELLED = 5,
+  UNRECOGNIZED = -1,
+}
+
+export function runStatusFromJSON(object: any): RunStatus {
+  switch (object) {
+    case 0:
+    case "RUN_STATUS_UNSPECIFIED":
+      return RunStatus.RUN_STATUS_UNSPECIFIED;
+    case 1:
+    case "RUN_STATUS_INITIALIZED":
+      return RunStatus.RUN_STATUS_INITIALIZED;
+    case 2:
+    case "RUN_STATUS_SUCCEEDED":
+      return RunStatus.RUN_STATUS_SUCCEEDED;
+    case 3:
+    case "RUN_STATUS_FAILED":
+      return RunStatus.RUN_STATUS_FAILED;
+    case 4:
+    case "RUN_STATUS_EXPIRED":
+      return RunStatus.RUN_STATUS_EXPIRED;
+    case 5:
+    case "RUN_STATUS_CANCELLED":
+      return RunStatus.RUN_STATUS_CANCELLED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return RunStatus.UNRECOGNIZED;
+  }
+}
+
+export function runStatusToJSON(object: RunStatus): string {
+  switch (object) {
+    case RunStatus.RUN_STATUS_UNSPECIFIED:
+      return "RUN_STATUS_UNSPECIFIED";
+    case RunStatus.RUN_STATUS_INITIALIZED:
+      return "RUN_STATUS_INITIALIZED";
+    case RunStatus.RUN_STATUS_SUCCEEDED:
+      return "RUN_STATUS_SUCCEEDED";
+    case RunStatus.RUN_STATUS_FAILED:
+      return "RUN_STATUS_FAILED";
+    case RunStatus.RUN_STATUS_EXPIRED:
+      return "RUN_STATUS_EXPIRED";
+    case RunStatus.RUN_STATUS_CANCELLED:
+      return "RUN_STATUS_CANCELLED";
+    case RunStatus.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export enum AllowListError {
   ALLOW_LIST_ERROR_UNSPECIFIED = 0,
   ALLOW_LIST_ERROR_NOT_IN_LIST = 1,
@@ -68,7 +125,14 @@ export interface WorkflowRunItem {
   id: string;
   createdAt?: Date;
   finishedAt?: Date;
+  /**
+   * TODO: use runStatus enum below
+   * deprecated field, use status instead
+   *
+   * @deprecated
+   */
   state: string;
+  status: RunStatus;
   reason: string;
   workflow?: WorkflowItem;
   jobUrl: string;
@@ -434,6 +498,7 @@ function createBaseWorkflowRunItem(): WorkflowRunItem {
     createdAt: undefined,
     finishedAt: undefined,
     state: "",
+    status: 0,
     reason: "",
     workflow: undefined,
     jobUrl: "",
@@ -457,6 +522,9 @@ export const WorkflowRunItem = {
     }
     if (message.state !== "") {
       writer.uint32(34).string(message.state);
+    }
+    if (message.status !== 0) {
+      writer.uint32(96).int32(message.status);
     }
     if (message.reason !== "") {
       writer.uint32(42).string(message.reason);
@@ -516,6 +584,13 @@ export const WorkflowRunItem = {
           }
 
           message.state = reader.string();
+          continue;
+        case 12:
+          if (tag !== 96) {
+            break;
+          }
+
+          message.status = reader.int32() as any;
           continue;
         case 5:
           if (tag !== 42) {
@@ -581,6 +656,7 @@ export const WorkflowRunItem = {
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
       finishedAt: isSet(object.finishedAt) ? fromJsonTimestamp(object.finishedAt) : undefined,
       state: isSet(object.state) ? String(object.state) : "",
+      status: isSet(object.status) ? runStatusFromJSON(object.status) : 0,
       reason: isSet(object.reason) ? String(object.reason) : "",
       workflow: isSet(object.workflow) ? WorkflowItem.fromJSON(object.workflow) : undefined,
       jobUrl: isSet(object.jobUrl) ? String(object.jobUrl) : "",
@@ -599,6 +675,7 @@ export const WorkflowRunItem = {
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
     message.finishedAt !== undefined && (obj.finishedAt = message.finishedAt.toISOString());
     message.state !== undefined && (obj.state = message.state);
+    message.status !== undefined && (obj.status = runStatusToJSON(message.status));
     message.reason !== undefined && (obj.reason = message.reason);
     message.workflow !== undefined &&
       (obj.workflow = message.workflow ? WorkflowItem.toJSON(message.workflow) : undefined);
@@ -623,6 +700,7 @@ export const WorkflowRunItem = {
     message.createdAt = object.createdAt ?? undefined;
     message.finishedAt = object.finishedAt ?? undefined;
     message.state = object.state ?? "";
+    message.status = object.status ?? 0;
     message.reason = object.reason ?? "";
     message.workflow = (object.workflow !== undefined && object.workflow !== null)
       ? WorkflowItem.fromPartial(object.workflow)
