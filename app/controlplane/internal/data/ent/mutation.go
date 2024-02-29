@@ -5034,6 +5034,9 @@ type OrganizationMutation struct {
 	integrations              map[uuid.UUID]struct{}
 	removedintegrations       map[uuid.UUID]struct{}
 	clearedintegrations       bool
+	api_tokens                map[uuid.UUID]struct{}
+	removedapi_tokens         map[uuid.UUID]struct{}
+	clearedapi_tokens         bool
 	done                      bool
 	oldValue                  func(context.Context) (*Organization, error)
 	predicates                []predicate.Organization
@@ -5485,6 +5488,60 @@ func (m *OrganizationMutation) ResetIntegrations() {
 	m.removedintegrations = nil
 }
 
+// AddAPITokenIDs adds the "api_tokens" edge to the APIToken entity by ids.
+func (m *OrganizationMutation) AddAPITokenIDs(ids ...uuid.UUID) {
+	if m.api_tokens == nil {
+		m.api_tokens = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.api_tokens[ids[i]] = struct{}{}
+	}
+}
+
+// ClearAPITokens clears the "api_tokens" edge to the APIToken entity.
+func (m *OrganizationMutation) ClearAPITokens() {
+	m.clearedapi_tokens = true
+}
+
+// APITokensCleared reports if the "api_tokens" edge to the APIToken entity was cleared.
+func (m *OrganizationMutation) APITokensCleared() bool {
+	return m.clearedapi_tokens
+}
+
+// RemoveAPITokenIDs removes the "api_tokens" edge to the APIToken entity by IDs.
+func (m *OrganizationMutation) RemoveAPITokenIDs(ids ...uuid.UUID) {
+	if m.removedapi_tokens == nil {
+		m.removedapi_tokens = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.api_tokens, ids[i])
+		m.removedapi_tokens[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedAPITokens returns the removed IDs of the "api_tokens" edge to the APIToken entity.
+func (m *OrganizationMutation) RemovedAPITokensIDs() (ids []uuid.UUID) {
+	for id := range m.removedapi_tokens {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// APITokensIDs returns the "api_tokens" edge IDs in the mutation.
+func (m *OrganizationMutation) APITokensIDs() (ids []uuid.UUID) {
+	for id := range m.api_tokens {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetAPITokens resets all changes to the "api_tokens" edge.
+func (m *OrganizationMutation) ResetAPITokens() {
+	m.api_tokens = nil
+	m.clearedapi_tokens = false
+	m.removedapi_tokens = nil
+}
+
 // Where appends a list predicates to the OrganizationMutation builder.
 func (m *OrganizationMutation) Where(ps ...predicate.Organization) {
 	m.predicates = append(m.predicates, ps...)
@@ -5635,7 +5692,7 @@ func (m *OrganizationMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *OrganizationMutation) AddedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.memberships != nil {
 		edges = append(edges, organization.EdgeMemberships)
 	}
@@ -5650,6 +5707,9 @@ func (m *OrganizationMutation) AddedEdges() []string {
 	}
 	if m.integrations != nil {
 		edges = append(edges, organization.EdgeIntegrations)
+	}
+	if m.api_tokens != nil {
+		edges = append(edges, organization.EdgeAPITokens)
 	}
 	return edges
 }
@@ -5688,13 +5748,19 @@ func (m *OrganizationMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case organization.EdgeAPITokens:
+		ids := make([]ent.Value, 0, len(m.api_tokens))
+		for id := range m.api_tokens {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *OrganizationMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.removedmemberships != nil {
 		edges = append(edges, organization.EdgeMemberships)
 	}
@@ -5709,6 +5775,9 @@ func (m *OrganizationMutation) RemovedEdges() []string {
 	}
 	if m.removedintegrations != nil {
 		edges = append(edges, organization.EdgeIntegrations)
+	}
+	if m.removedapi_tokens != nil {
+		edges = append(edges, organization.EdgeAPITokens)
 	}
 	return edges
 }
@@ -5747,13 +5816,19 @@ func (m *OrganizationMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case organization.EdgeAPITokens:
+		ids := make([]ent.Value, 0, len(m.removedapi_tokens))
+		for id := range m.removedapi_tokens {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *OrganizationMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.clearedmemberships {
 		edges = append(edges, organization.EdgeMemberships)
 	}
@@ -5768,6 +5843,9 @@ func (m *OrganizationMutation) ClearedEdges() []string {
 	}
 	if m.clearedintegrations {
 		edges = append(edges, organization.EdgeIntegrations)
+	}
+	if m.clearedapi_tokens {
+		edges = append(edges, organization.EdgeAPITokens)
 	}
 	return edges
 }
@@ -5786,6 +5864,8 @@ func (m *OrganizationMutation) EdgeCleared(name string) bool {
 		return m.clearedcas_backends
 	case organization.EdgeIntegrations:
 		return m.clearedintegrations
+	case organization.EdgeAPITokens:
+		return m.clearedapi_tokens
 	}
 	return false
 }
@@ -5816,6 +5896,9 @@ func (m *OrganizationMutation) ResetEdge(name string) error {
 		return nil
 	case organization.EdgeIntegrations:
 		m.ResetIntegrations()
+		return nil
+	case organization.EdgeAPITokens:
+		m.ResetAPITokens()
 		return nil
 	}
 	return fmt.Errorf("unknown Organization edge %s", name)

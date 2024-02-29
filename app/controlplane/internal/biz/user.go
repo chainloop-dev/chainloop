@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -110,6 +110,7 @@ func (uc *UserUseCase) FindByID(ctx context.Context, userID string) (*User, erro
 }
 
 // Find the organization associated with the user that's marked as current
+// If none is selected, it will pick the first one and set it as current
 func (uc *UserUseCase) CurrentOrg(ctx context.Context, userID string) (*Organization, error) {
 	memberships, err := uc.membershipUseCase.ByUser(ctx, userID)
 	if err != nil {
@@ -121,15 +122,25 @@ func (uc *UserUseCase) CurrentOrg(ctx context.Context, userID string) (*Organiza
 		return nil, errors.New("user does not have any organization associated")
 	}
 
-	// By default we set the first one
-	currentOrg := memberships[0].OrganizationID
+	var currentOrgID uuid.UUID
 	for _, m := range memberships {
 		// Override if it's being explicitly selected
 		if m.Current {
-			currentOrg = m.OrganizationID
+			currentOrgID = m.OrganizationID
 			break
 		}
 	}
 
-	return uc.organizationUseCase.FindByID(ctx, currentOrg.String())
+	if currentOrgID == uuid.Nil {
+		// If none is selected, we configure the first one
+		_, err := uc.membershipUseCase.SetCurrent(ctx, userID, memberships[0].ID.String())
+		if err != nil {
+			return nil, fmt.Errorf("error setting current org: %w", err)
+		}
+
+		// Call itself recursively now that we have a current org
+		return uc.CurrentOrg(ctx, userID)
+	}
+
+	return uc.organizationUseCase.FindByID(ctx, currentOrgID.String())
 }

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -82,6 +82,28 @@ func (s *OrgIntegrationTestSuite) TestCreate() {
 			}
 		})
 	}
+}
+
+func (s *OrgIntegrationTestSuite) TestCreateAddsInlineCASBackend() {
+	ctx := context.Background()
+	s.Run("by default it does not create it", func() {
+		org, err := s.Organization.CreateWithRandomName(ctx)
+		s.NoError(err)
+		// Creating an org also creates a new inline backend
+		b, err := s.CASBackend.FindDefaultBackend(ctx, org.ID)
+		s.Error(err)
+		s.Nil(b)
+	})
+
+	s.Run("with the option it creates it", func() {
+		org, err := s.Organization.Create(ctx, "with-inline", biz.WithCreateInlineBackend())
+		s.NoError(err)
+
+		// Creating an org also creates a new inline backend
+		b, err := s.CASBackend.FindDefaultBackend(ctx, org.ID)
+		s.NoError(err)
+		s.True(b.Inline)
+	})
 }
 
 func (s *OrgIntegrationTestSuite) TestUpdate() {

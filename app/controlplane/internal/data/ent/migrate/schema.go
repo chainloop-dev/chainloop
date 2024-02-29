@@ -24,10 +24,10 @@ var (
 		PrimaryKey: []*schema.Column{APITokensColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "api_tokens_organizations_organization",
+				Symbol:     "api_tokens_organizations_api_tokens",
 				Columns:    []*schema.Column{APITokensColumns[5]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 	}

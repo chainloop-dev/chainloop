@@ -46,6 +46,6 @@ func (APIToken) Fields() []ent.Field {
 
 func (APIToken) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("organization", Organization.Type).Unique().Required().Field("organization_id"),
+		edge.From("organization", Organization.Type).Field("organization_id").Ref("api_tokens").Unique().Required(),
 	}
 }

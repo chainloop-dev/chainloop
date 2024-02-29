@@ -416,7 +416,7 @@ func (c *APITokenClient) QueryOrganization(at *APIToken) *OrganizationQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(apitoken.Table, apitoken.FieldID, id),
 			sqlgraph.To(organization.Table, organization.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, apitoken.OrganizationTable, apitoken.OrganizationColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, apitoken.OrganizationTable, apitoken.OrganizationColumn),
 		)
 		fromV = sqlgraph.Neighbors(at.driver.Dialect(), step)
 		return fromV, nil
@@ -1531,6 +1531,22 @@ func (c *OrganizationClient) QueryIntegrations(o *Organization) *IntegrationQuer
 			sqlgraph.From(organization.Table, organization.FieldID, id),
 			sqlgraph.To(integration.Table, integration.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, organization.IntegrationsTable, organization.IntegrationsColumn),
+		)
+		fromV = sqlgraph.Neighbors(o.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAPITokens queries the api_tokens edge of a Organization.
+func (c *OrganizationClient) QueryAPITokens(o *Organization) *APITokenQuery {
+	query := (&APITokenClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := o.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(organization.Table, organization.FieldID, id),
+			sqlgraph.To(apitoken.Table, apitoken.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, organization.APITokensTable, organization.APITokensColumn),
 		)
 		fromV = sqlgraph.Neighbors(o.driver.Dialect(), step)
 		return fromV, nil

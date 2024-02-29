@@ -74,7 +74,7 @@ func (atq *APITokenQuery) QueryOrganization() *OrganizationQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(apitoken.Table, apitoken.FieldID, selector),
 			sqlgraph.To(organization.Table, organization.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, apitoken.OrganizationTable, apitoken.OrganizationColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, apitoken.OrganizationTable, apitoken.OrganizationColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(atq.driver.Dialect(), step)
 		return fromU, nil

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -107,7 +107,17 @@ func (uc *MembershipUseCase) Create(ctx context.Context, orgID, userID string, c
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	return uc.repo.Create(ctx, orgUUID, userUUID, current)
+	m, err := uc.repo.Create(ctx, orgUUID, userUUID, current)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create membership: %w", err)
+	}
+
+	if !current {
+		return m, nil
+	}
+
+	// Set the current membership again to make sure we uncheck the previous ones
+	return uc.repo.SetCurrent(ctx, m.ID)
 }
 
 func (uc *MembershipUseCase) ByUser(ctx context.Context, userID string) ([]*Membership, error) {
@@ -128,6 +138,8 @@ func (uc *MembershipUseCase) ByOrg(ctx context.Context, orgID string) ([]*Member
 	return uc.repo.FindByOrg(ctx, orgUUID)
 }
 
+// SetCurrent sets the current membership for the user
+// and unsets the previous one
 func (uc *MembershipUseCase) SetCurrent(ctx context.Context, userID, membershipID string) (*Membership, error) {
 	userUUID, err := uuid.Parse(userID)
 	if err != nil {
@@ -147,4 +159,25 @@ func (uc *MembershipUseCase) SetCurrent(ctx context.Context, userID, membershipI
 	}
 
 	return uc.repo.SetCurrent(ctx, mUUID)
+}
+
+func (uc *MembershipUseCase) FindByOrgAndUser(ctx context.Context, orgID, userID string) (*Membership, error) {
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	m, err := uc.repo.FindByOrgAndUser(ctx, orgUUID, userUUID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find membership: %w", err)
+	} else if m == nil {
+		return nil, NewErrNotFound("membership")
+	}
+
+	return m, nil
 }

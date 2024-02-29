@@ -40,9 +40,11 @@ type OrganizationEdges struct {
 	CasBackends []*CASBackend `json:"cas_backends,omitempty"`
 	// Integrations holds the value of the integrations edge.
 	Integrations []*Integration `json:"integrations,omitempty"`
+	// APITokens holds the value of the api_tokens edge.
+	APITokens []*APIToken `json:"api_tokens,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [5]bool
+	loadedTypes [6]bool
 }
 
 // MembershipsOrErr returns the Memberships value or an error if the edge
@@ -88,6 +90,15 @@ func (e OrganizationEdges) IntegrationsOrErr() ([]*Integration, error) {
 		return e.Integrations, nil
 	}
 	return nil, &NotLoadedError{edge: "integrations"}
+}
+
+// APITokensOrErr returns the APITokens value or an error if the edge
+// was not loaded in eager-loading.
+func (e OrganizationEdges) APITokensOrErr() ([]*APIToken, error) {
+	if e.loadedTypes[5] {
+		return e.APITokens, nil
+	}
+	return nil, &NotLoadedError{edge: "api_tokens"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -170,6 +181,11 @@ func (o *Organization) QueryCasBackends() *CASBackendQuery {
 // QueryIntegrations queries the "integrations" edge of the Organization entity.
 func (o *Organization) QueryIntegrations() *IntegrationQuery {
 	return NewOrganizationClient(o.config).QueryIntegrations(o)
+}
+
+// QueryAPITokens queries the "api_tokens" edge of the Organization entity.
+func (o *Organization) QueryAPITokens() *APITokenQuery {
+	return NewOrganizationClient(o.config).QueryAPITokens(o)
 }
 
 // Update returns a builder for updating this Organization.

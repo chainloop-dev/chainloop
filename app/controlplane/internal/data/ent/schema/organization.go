@@ -53,5 +53,6 @@ func (Organization) Edges() []ent.Edge {
 		edge.To("workflows", Workflow.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 		edge.To("cas_backends", CASBackend.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 		edge.To("integrations", Integration.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
+		edge.To("api_tokens", APIToken.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 	}
 }

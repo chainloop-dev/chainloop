@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -57,7 +57,20 @@ func NewOrganizationUseCase(repo OrganizationRepo, repoUC *CASBackendUseCase, iU
 
 const OrganizationRandomNameMaxTries = 10
 
-func (uc *OrganizationUseCase) CreateWithRandomName(ctx context.Context) (*Organization, error) {
+type createOptions struct {
+	createInlineBackend bool
+}
+
+type CreateOpt func(*createOptions)
+
+// Optionally create an inline CAS-backend
+func WithCreateInlineBackend() CreateOpt {
+	return func(o *createOptions) {
+		o.createInlineBackend = true
+	}
+}
+
+func (uc *OrganizationUseCase) CreateWithRandomName(ctx context.Context, opts ...CreateOpt) (*Organization, error) {
 	// Try 10 times to create a random name
 	for i := 0; i < OrganizationRandomNameMaxTries; i++ {
 		// Create a random name
@@ -66,7 +79,7 @@ func (uc *OrganizationUseCase) CreateWithRandomName(ctx context.Context) (*Organ
 			return nil, fmt.Errorf("failed to generate random name: %w", err)
 		}
 
-		org, err := uc.doCreate(ctx, name)
+		org, err := uc.doCreate(ctx, name, opts...)
 		if err != nil {
 			// We retry if the organization already exists
 			if errors.Is(err, ErrAlreadyExists) {
@@ -84,8 +97,8 @@ func (uc *OrganizationUseCase) CreateWithRandomName(ctx context.Context) (*Organ
 }
 
 // Create an organization with the given name
-func (uc *OrganizationUseCase) Create(ctx context.Context, name string) (*Organization, error) {
-	org, err := uc.doCreate(ctx, name)
+func (uc *OrganizationUseCase) Create(ctx context.Context, name string, opts ...CreateOpt) (*Organization, error) {
+	org, err := uc.doCreate(ctx, name, opts...)
 	if err != nil {
 		if errors.Is(err, ErrAlreadyExists) {
 			return nil, NewErrValidationStr("organization already exists")
@@ -99,16 +112,28 @@ func (uc *OrganizationUseCase) Create(ctx context.Context, name string) (*Organi
 
 var errOrgName = errors.New("org names must only contain lowercase letters, numbers, or hyphens. Examples of valid org names are \"myorg\", \"myorg-123\"")
 
-func (uc *OrganizationUseCase) doCreate(ctx context.Context, name string) (*Organization, error) {
+func (uc *OrganizationUseCase) doCreate(ctx context.Context, name string, opts ...CreateOpt) (*Organization, error) {
 	uc.logger.Infow("msg", "Creating organization", "name", name)
 
 	if err := ValidateOrgName(name); err != nil {
 		return nil, NewErrValidation(errOrgName)
 	}
 
+	options := &createOptions{}
+	for _, o := range opts {
+		o(options)
+	}
+
 	org, err := uc.orgRepo.Create(ctx, name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create organization: %w", err)
+	}
+
+	if options.createInlineBackend {
+		// Create inline CAS-backend
+		if _, err := uc.casBackendUseCase.CreateInlineFallbackBackend(ctx, org.ID); err != nil {
+			return nil, fmt.Errorf("failed to create fallback backend: %w", err)
+		}
 	}
 
 	return org, nil

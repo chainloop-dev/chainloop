@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -56,6 +56,59 @@ func (s *userIntegrationTestSuite) TestDeleteUser() {
 	gotMembership, err := s.Membership.ByUser(ctx, s.userOne.ID)
 	s.NoError(err)
 	s.Empty(gotMembership)
+}
+
+func (s *userIntegrationTestSuite) TestCurrentOrg() {
+	ctx := context.Background()
+	s.Run("if there is an associated, default org it's returned", func() {
+		// userOne has a default org
+		m, err := s.Membership.FindByOrgAndUser(ctx, s.sharedOrg.ID, s.userOne.ID)
+		s.NoError(err)
+		s.True(m.Current)
+
+		// and it's returned as currentOrg
+		got, err := s.User.CurrentOrg(ctx, s.userOne.ID)
+		s.NoError(err)
+		s.Equal(s.sharedOrg, got)
+	})
+
+	s.Run("they have more orgs but none of them is the default, it will return the first one as default", func() {
+		m, err := s.Membership.FindByOrgAndUser(ctx, s.sharedOrg.ID, s.userOne.ID)
+		s.NoError(err)
+		s.True(m.Current)
+		// leave the current org
+		err = s.Membership.DeleteWithOrg(ctx, s.userOne.ID, m.ID.String())
+		s.NoError(err)
+
+		// none of the orgs is marked as current
+		mems, _ := s.Membership.ByUser(ctx, s.userOne.ID)
+		s.Len(mems, 1)
+		s.False(mems[0].Current)
+
+		// asking for the current org will return the first one
+		got, err := s.User.CurrentOrg(ctx, s.userOne.ID)
+		s.NoError(err)
+		s.Equal(s.userOneOrg, got)
+
+		// and now the membership will be set as current
+		mems, _ = s.Membership.ByUser(ctx, s.userOne.ID)
+		s.Len(mems, 1)
+		s.True(mems[0].Current)
+	})
+
+	s.Run("it will fail if there are no membershipts", func() {
+		// none of the orgs is marked as current
+		mems, _ := s.Membership.ByUser(ctx, s.userOne.ID)
+		s.Len(mems, 1)
+		// leave the current org
+		err := s.Membership.DeleteWithOrg(ctx, s.userOne.ID, mems[0].ID.String())
+		s.NoError(err)
+		mems, _ = s.Membership.ByUser(ctx, s.userOne.ID)
+		s.Len(mems, 0)
+
+		_, err = s.User.CurrentOrg(ctx, s.userOne.ID)
+		s.ErrorContains(err, "user does not have any organization associated")
+	})
 }
 
 // Run the tests

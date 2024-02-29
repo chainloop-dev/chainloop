@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ func CheckOrgRequirements(uc biz.CASBackendReader) middleware.Middleware {
 			if err != nil && !biz.IsNotFound(err) {
 				return nil, fmt.Errorf("checking for CAS backends in the org: %w", err)
 			} else if repo == nil {
-				return nil, v1.ErrorCasBackendErrorReasonRequired("your organization does not have an CAS Backend configured yet")
+				return nil, v1.ErrorCasBackendErrorReasonRequired("your organization does not have a CAS Backend configured yet")
 			}
 
 			// 2 - Perform a validation if needed
