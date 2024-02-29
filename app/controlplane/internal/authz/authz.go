@@ -39,6 +39,7 @@ const (
 	// Actions
 	ActionRead   = "read"
 	ActionList   = "list"
+	ActionCreate = "create"
 	ActionUpdate = "update"
 	ActionDelete = "delete"
 
@@ -74,6 +75,7 @@ var (
 	PolicyReferrerRead = &Policy{ResourceReferrer, ActionRead}
 	// Artifact
 	PolicyArtifactDownload = &Policy{ResourceCASArtifact, ActionRead}
+	PolicyArtifactUpload   = &Policy{ResourceCASArtifact, ActionCreate}
 	// CAS backend
 	PolicyCASBackendList = &Policy{ResourceCASBackend, ActionList}
 	// Available integrations
@@ -97,9 +99,7 @@ var (
 	// Workflow
 	PolicyWorkflowList = &Policy{ResourceWorkflow, ActionList}
 	// User Membership
-	// List my memberships
-	PolicyUserMembershipList = &Policy{UserMembership, ActionList}
-	PolicyOrganizationRead   = &Policy{Organization, ActionRead}
+	PolicyOrganizationRead = &Policy{Organization, ActionRead}
 )
 
 // List of policies for each role
@@ -132,10 +132,14 @@ var rolesMap = map[Role][]*Policy{
 		PolicyWorkflowRunRead,
 		// Workflow
 		PolicyWorkflowList,
-		// Membership
-		PolicyUserMembershipList,
 		// Organization
 		PolicyOrganizationRead,
+	},
+	RoleAdmin: {
+		// We do a manual check in the artifact upload endpoint
+		// so we need the actual policy in place skipping it is not enough
+		PolicyArtifactUpload,
+		// + all the policies from the viewer role inherited automatically
 	},
 }
 
@@ -146,8 +150,9 @@ var ServerOperationsMap = map[string][]*Policy{
 	// Discover endpoint
 	"/controlplane.v1.ReferrerService/DiscoverPrivate": {PolicyReferrerRead},
 	// Download/Uploading artifacts
-	// TODO: this is not just downloading but also uploading
-	"/controlplane.v1.CASCredentialsService/Get": {PolicyArtifactDownload},
+	// There are no policies for the download endpoint, we do a manual check in the service layer
+	// to differentiate between upload and download requests
+	"/controlplane.v1.CASCredentialsService/Get": {},
 	// CAS Backend listing
 	"/controlplane.v1.CASBackendService/List": {PolicyCASBackendList},
 	// Available integrations
@@ -169,10 +174,14 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.WorkflowContractService/List":     {PolicyWorkflowContractList},
 	"/controlplane.v1.WorkflowContractService/Describe": {PolicyWorkflowContractRead},
 	"/controlplane.v1.WorkflowContractService/Update":   {PolicyWorkflowContractUpdate},
-	// List my memberships
-	"/controlplane.v1.OrganizationService/ListMemberships": {PolicyUserMembershipList},
 	// Get current information about an organization
 	"/controlplane.v1.ContextService/Current": {PolicyOrganizationRead, PolicyCASBackendList},
+	// Listing, create or selecting an organization does not have any required permissions,
+	// since all the permissions here are in the context of an organization
+	"/controlplane.v1.OrganizationService/Create":               {},
+	"/controlplane.v1.OrganizationService/SetCurrentMembership": {},
+	// NOTE: this is about listing my own memberships, not about listing all the memberships in the organization
+	"/controlplane.v1.OrganizationService/ListMemberships": {},
 }
 
 type SubjectAPIToken struct {
@@ -209,6 +218,10 @@ func (e *Enforcer) AddPolicies(sub *SubjectAPIToken, policies ...*Policy) error 
 	}
 
 	return nil
+}
+
+func (e *Enforcer) Enforce(sub string, p *Policy) (bool, error) {
+	return e.Enforcer.Enforce(sub, p.Resource, p.Action)
 }
 
 // Remove all the policies for the given subject
@@ -344,6 +357,12 @@ func syncRBACRoles(e *Enforcer) error {
 				return fmt.Errorf("failed to remove policy: %w", err)
 			}
 		}
+	}
+
+	// Finally we make sure that the admin role inherit all the policies from the viewer role
+	_, err := e.AddGroupingPolicy(string(RoleAdmin), string(RoleViewer))
+	if err != nil {
+		return fmt.Errorf("failed to add grouping policy: %w", err)
 	}
 
 	return nil

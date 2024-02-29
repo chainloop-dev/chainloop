@@ -30,13 +30,19 @@ import (
 )
 
 type Enforcer interface {
-	Enforce(...interface{}) (bool, error)
+	Enforce(sub string, p *authz.Policy) (bool, error)
 }
 
 // Check Authorization for the current API operation against the current user/token
 func WithAuthzMiddleware(enforcer Enforcer, logger *log.Helper) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
+			// Load the authorization subject from the context which might be related to a currentUser or an APItoken
+			subject := usercontext.CurrentAuthzSubject(ctx)
+			if subject == "" {
+				return nil, errorsAPI.Forbidden("forbidden", "missing authentication")
+			}
+
 			// Load the API operation from the context
 			t, ok := transport.FromServerContext(ctx)
 			if !ok {
@@ -48,13 +54,9 @@ func WithAuthzMiddleware(enforcer Enforcer, logger *log.Helper) middleware.Middl
 				return nil, errorsAPI.InternalServer("invalid request", "could not find API request")
 			}
 
-			// Load the authorization subject from the context which might be related to a currentUser or an APItoken
-			subject := usercontext.CurrentAuthzSubject(ctx)
-			if subject == "" {
-				return nil, errorsAPI.Forbidden("forbidden", "missing authentication")
-			}
-
-			// if the subject is the admin, we skip the authorization check for now
+			// We do not have all the policies related to an admin user defined yet
+			// so for now we skip the authorization check for admin users since they are allowed to do anything
+			// TODO: fillout the rest of the policies in authz.ServerOperationsMap and remove this check
 			if subject == string(authz.RoleAdmin) {
 				logger.Infow("msg", "[authZ] skipped", "sub", subject, "operation", apiOperation)
 				return handler(ctx, req)
@@ -80,7 +82,7 @@ func checkPolicies(subject, apiOperation string, enforcer Enforcer, logger *log.
 
 	// Ask AuthZ enforcer if the token meets all the policies defined in the map
 	for _, p := range policies {
-		ok, err := enforcer.Enforce(subject, p.Resource, p.Action)
+		ok, err := enforcer.Enforce(subject, p)
 		if err != nil {
 			return errorsAPI.InternalServer("internal error", err.Error())
 		}

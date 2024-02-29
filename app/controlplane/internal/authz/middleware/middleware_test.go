@@ -62,8 +62,6 @@ func (tr *mockTransport) ReplyHeader() transport.Header {
 	return nil
 }
 
-// - It's an user
-// - It's neither an user nor a token
 // - it's a token but unknown operation
 // - it's a token with known operation but wrong permissions
 // - it's a token with known operation and right permissions
@@ -80,11 +78,6 @@ func TestWithAuthMiddleware(t *testing.T) {
 		hasPermissions bool
 		wantErr        bool
 	}{
-		{
-			name:    "it's an user so authz is skipped",
-			hasUser: true,
-			wantErr: false,
-		},
 		{
 			name:    "neither an user nor a token is set",
 			wantErr: true,
@@ -113,21 +106,26 @@ func TestWithAuthMiddleware(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Set request context
 			ctx := context.Background()
+			var subject string
 			// User and token
 			if tc.hasUser {
 				ctx = usercontext.WithCurrentUser(ctx, u)
+				subject = "role:admin"
+				ctx = usercontext.WithAuthzSubject(ctx, subject)
 			}
 
 			if tc.hasToken {
 				ctx = usercontext.WithCurrentAPIToken(ctx, token)
+				s := authz.SubjectAPIToken{ID: token.ID}
+				subject = s.String()
+				ctx = usercontext.WithAuthzSubject(ctx, subject)
 			}
 
 			// Request information
 			ctx = transport.NewServerContext(ctx, &mockTransport{operation: tc.operationName})
 
 			e := mocks.NewEnforcer(t)
-			subject := authz.SubjectAPIToken{ID: token.ID}
-			e.On("Enforce", subject.String(), mock.Anything, mock.Anything).Maybe().Return(tc.hasPermissions, nil)
+			e.On("Enforce", subject, mock.Anything).Maybe().Return(tc.hasPermissions, nil)
 
 			m := WithAuthzMiddleware(e, logger)
 			_, err := m(emptyHandler)(ctx, nil)
