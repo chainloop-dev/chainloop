@@ -18,6 +18,7 @@ package data
 import (
 	"context"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/membership"
@@ -43,6 +44,9 @@ func (r *MembershipRepo) Create(ctx context.Context, orgID, userID uuid.UUID, cu
 		SetUserID(userID).
 		SetOrganizationID(orgID).
 		SetCurrent(current).
+		// Hardcoded for now to keep compatibility with current behavior
+		// in future patches this will be configurable
+		SetRole(authz.RoleAdmin).
 		Save(ctx)
 	if err != nil {
 		return nil, err

@@ -48,9 +48,7 @@ func (Membership) Fields() []ent.Field {
 				Default: "CURRENT_TIMESTAMP",
 			}),
 		// rbac role in the organization
-		field.Enum("role").
-			GoType(authz.Role("")).
-			Default(string(authz.RoleViewer)),
+		field.Enum("role").GoType(authz.Role("")),
 	}
 }
 

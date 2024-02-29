@@ -66,14 +66,6 @@ func (mu *MembershipUpdate) SetRole(a authz.Role) *MembershipUpdate {
 	return mu
 }
 
-// SetNillableRole sets the "role" field if the given value is not nil.
-func (mu *MembershipUpdate) SetNillableRole(a *authz.Role) *MembershipUpdate {
-	if a != nil {
-		mu.SetRole(*a)
-	}
-	return mu
-}
-
 // SetOrganizationID sets the "organization" edge to the Organization entity by ID.
 func (mu *MembershipUpdate) SetOrganizationID(id uuid.UUID) *MembershipUpdate {
 	mu.mutation.SetOrganizationID(id)
@@ -286,14 +278,6 @@ func (muo *MembershipUpdateOne) SetNillableUpdatedAt(t *time.Time) *MembershipUp
 // SetRole sets the "role" field.
 func (muo *MembershipUpdateOne) SetRole(a authz.Role) *MembershipUpdateOne {
 	muo.mutation.SetRole(a)
-	return muo
-}
-
-// SetNillableRole sets the "role" field if the given value is not nil.
-func (muo *MembershipUpdateOne) SetNillableRole(a *authz.Role) *MembershipUpdateOne {
-	if a != nil {
-		muo.SetRole(*a)
-	}
 	return muo
 }
 

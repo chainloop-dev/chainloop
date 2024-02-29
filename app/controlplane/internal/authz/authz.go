@@ -54,6 +54,8 @@ const (
 	ResourceRobotAccount          = "robot_account"
 	ResourceWorkflowRun           = "workflow_run"
 	ResourceWorkflow              = "workflow"
+	UserMembership                = "membership_user"
+	Organization                  = "organization"
 
 	// Roles
 	RoleViewer Role = "role:viewer"
@@ -94,6 +96,10 @@ var (
 	PolicyWorkflowRunRead = &Policy{ResourceWorkflowRun, ActionRead}
 	// Workflow
 	PolicyWorkflowList = &Policy{ResourceWorkflow, ActionList}
+	// User Membership
+	// List my memberships
+	PolicyUserMembershipList = &Policy{UserMembership, ActionList}
+	PolicyOrganizationRead   = &Policy{Organization, ActionRead}
 )
 
 // List of policies for each role
@@ -126,6 +132,10 @@ var rolesMap = map[Role][]*Policy{
 		PolicyWorkflowRunRead,
 		// Workflow
 		PolicyWorkflowList,
+		// Membership
+		PolicyUserMembershipList,
+		// Organization
+		PolicyOrganizationRead,
 	},
 }
 
@@ -133,15 +143,36 @@ var rolesMap = map[Role][]*Policy{
 // required to perform the operation
 // If it contains more than one policy, all of them need to be true
 var ServerOperationsMap = map[string][]*Policy{
+	// Discover endpoint
+	"/controlplane.v1.ReferrerService/DiscoverPrivate": {PolicyReferrerRead},
+	// Download/Uploading artifacts
+	// TODO: this is not just downloading but also uploading
+	"/controlplane.v1.CASCredentialsService/Get": {PolicyArtifactDownload},
+	// CAS Backend listing
+	"/controlplane.v1.CASBackendService/List": {PolicyCASBackendList},
+	// Available integrations
+	"/controlplane.v1.IntegrationsService/ListAvailable": {PolicyAvailableIntegrationList, PolicyAvailableIntegrationRead},
+	// Registered integrations
+	"/controlplane.v1.IntegrationsService/ListRegistrations": {PolicyRegisteredIntegrationList},
+	// Attached integrations
+	"/controlplane.v1.IntegrationsService/ListAttachments": {PolicyAttachedIntegrationList},
+	// Metrics
+	"/controlplane.v1.OrgMetricsService/.*": {PolicyOrgMetricsRead},
+	// Robot Account
+	"/controlplane.v1.RobotAccountService/List": {PolicyRobotAccountList},
+	// Workflows
+	"/controlplane.v1.WorkflowService/List": {PolicyWorkflowList},
+	// WorkflowRun
+	"/controlplane.v1.WorkflowRunService/List": {PolicyWorkflowRunList},
+	"/controlplane.v1.WorkflowRunService/View": {PolicyWorkflowRunRead},
 	// Workflow Contracts
 	"/controlplane.v1.WorkflowContractService/List":     {PolicyWorkflowContractList},
 	"/controlplane.v1.WorkflowContractService/Describe": {PolicyWorkflowContractRead},
 	"/controlplane.v1.WorkflowContractService/Update":   {PolicyWorkflowContractUpdate},
-	// Download/Uploading artifacts
-	// TODO: this is not just downloading but also uploading
-	"/controlplane.v1.CASCredentialsService/Get": {PolicyArtifactDownload},
-	// Discover endpoint
-	"/controlplane.v1.ReferrerService/DiscoverPrivate": {PolicyReferrerRead},
+	// List my memberships
+	"/controlplane.v1.OrganizationService/ListMemberships": {PolicyUserMembershipList},
+	// Get current information about an organization
+	"/controlplane.v1.ContextService/Current": {PolicyOrganizationRead, PolicyCASBackendList},
 }
 
 type SubjectAPIToken struct {

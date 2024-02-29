@@ -89,8 +89,6 @@ var (
 	DefaultID func() uuid.UUID
 )
 
-const DefaultRole authz.Role = "role:viewer"
-
 // RoleValidator is a validator for the "role" field enum values. It is called by the builders before save.
 func RoleValidator(r authz.Role) error {
 	switch r {

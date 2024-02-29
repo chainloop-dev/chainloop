@@ -72,14 +72,6 @@ func (mc *MembershipCreate) SetRole(a authz.Role) *MembershipCreate {
 	return mc
 }
 
-// SetNillableRole sets the "role" field if the given value is not nil.
-func (mc *MembershipCreate) SetNillableRole(a *authz.Role) *MembershipCreate {
-	if a != nil {
-		mc.SetRole(*a)
-	}
-	return mc
-}
-
 // SetID sets the "id" field.
 func (mc *MembershipCreate) SetID(u uuid.UUID) *MembershipCreate {
 	mc.mutation.SetID(u)
@@ -162,10 +154,6 @@ func (mc *MembershipCreate) defaults() {
 	if _, ok := mc.mutation.UpdatedAt(); !ok {
 		v := membership.DefaultUpdatedAt()
 		mc.mutation.SetUpdatedAt(v)
-	}
-	if _, ok := mc.mutation.Role(); !ok {
-		v := membership.DefaultRole
-		mc.mutation.SetRole(v)
 	}
 	if _, ok := mc.mutation.ID(); !ok {
 		v := membership.DefaultID()

@@ -17,9 +17,10 @@ package middleware
 
 import (
 	"context"
-	"fmt"
+	"errors"
+	"regexp"
 
-	"github.com/go-kratos/kratos/v2/errors"
+	errorsAPI "github.com/go-kratos/kratos/v2/errors"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
@@ -39,35 +40,34 @@ func WithAuthzMiddleware(enforcer Enforcer, logger *log.Helper) middleware.Middl
 			// Load the API operation from the context
 			t, ok := transport.FromServerContext(ctx)
 			if !ok {
-				return nil, errors.InternalServer("invalid request", "could not get transport from context")
+				return nil, errorsAPI.InternalServer("invalid request", "could not get transport from context")
 			}
 
 			apiOperation := t.Operation()
 			if apiOperation == "" {
-				return nil, errors.InternalServer("invalid request", "could not find API request")
+				return nil, errorsAPI.InternalServer("invalid request", "could not find API request")
 			}
 
 			var authzSubject string
-
-			// Currently authz is only implemented for API tokens
-			// we skip it if the currentUser is represented by a user
+			// If the user is logged in, we check the authorization based on the user's role
+			// we skip if it's an admin since in practice they can do anything. This is a temporary
 			if user := usercontext.CurrentUser(ctx); user != nil {
 				currentOrg := usercontext.CurrentOrg(ctx)
-				fmt.Println(currentOrg.MembershipRole)
-				// TODO: load the subject from the membership
-			} else if token := usercontext.CurrentAPIToken(ctx); token != nil {
-				subjectAPIToken := authz.SubjectAPIToken{ID: token.ID}
-				authzSubject = subjectAPIToken.String()
-			} else {
-				return nil, errors.Forbidden("forbidden", "missing auth")
+				if currentOrg.MembershipRole == string(authz.RoleAdmin) {
+					logger.Infow("msg", "[authZ] skipped", "sub", currentOrg.MembershipRole, "operation", apiOperation)
+					return handler(ctx, req)
+				}
+
+				authzSubject = currentOrg.MembershipRole
 			}
 
-			// For now we can skip the check if the subject is empty
-			// TODO: change once we enable authz for users
-			if authzSubject != "" {
-				if err := checkPolicies(authzSubject, apiOperation, enforcer, logger); err != nil {
-					return nil, err
-				}
+			if token := usercontext.CurrentAPIToken(ctx); token != nil {
+				subjectAPIToken := authz.SubjectAPIToken{ID: token.ID}
+				authzSubject = subjectAPIToken.String()
+			}
+
+			if err := checkPolicies(authzSubject, apiOperation, enforcer, logger); err != nil {
+				return nil, err
 			}
 
 			return handler(ctx, req)
@@ -78,23 +78,46 @@ func WithAuthzMiddleware(enforcer Enforcer, logger *log.Helper) middleware.Middl
 func checkPolicies(subject, apiOperation string, enforcer Enforcer, logger *log.Helper) error {
 	logger.Infow("msg", "[authZ] checking authorization", "sub", subject, "operation", apiOperation)
 	// If there is no entry in the map for this API operation, we deny access
-	policies, ok := authz.ServerOperationsMap[apiOperation]
-	if !ok {
-		return errors.Forbidden("forbidden", "operation not allowed")
+	policies, err := policiesLookup(apiOperation)
+	if err != nil {
+		return errorsAPI.Forbidden("forbidden", err.Error())
 	}
 
 	// Ask AuthZ enforcer if the token meets all the policies defined in the map
 	for _, p := range policies {
 		ok, err := enforcer.Enforce(subject, p.Resource, p.Action)
 		if err != nil {
-			return errors.InternalServer("internal error", err.Error())
+			return errorsAPI.InternalServer("internal error", err.Error())
 		}
 
 		if !ok {
 			logger.Infow("msg", "[authZ] policy not found", "sub", subject, "operation", apiOperation, "resource", p.Resource, "action", p.Action)
-			return errors.Forbidden("forbidden", "operation not allowed")
+			return errorsAPI.Forbidden("forbidden", "operation not allowed")
 		}
 	}
 
 	return nil
+}
+
+// policiesLookup returns the policies required for a given API operation
+// it performs a two run lookup
+// 1 - It checks if there is an entry in the map
+// 2 - if there is not, it runs a regex match in each key in case one of those keys contains a regex
+func policiesLookup(apiOperation string) ([]*authz.Policy, error) {
+	// Direct match
+	policies, found := authz.ServerOperationsMap[apiOperation]
+	if found {
+		return policies, nil
+	}
+
+	// second pass trying to match a regex
+	// i.e "/controlplane.v1.OrgMetricsService/.*" -> "/controlplane.v1.OrgMetricsService/Totals"
+	for k, policies := range authz.ServerOperationsMap {
+		found, _ := regexp.MatchString(k, apiOperation)
+		if found {
+			return policies, nil
+		}
+	}
+
+	return nil, errors.New("operation not allowed")
 }

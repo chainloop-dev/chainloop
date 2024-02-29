@@ -73,7 +73,7 @@ func (s *userIntegrationTestSuite) TestCurrentMembership() {
 		s.Equal(s.sharedOrg, got.Org)
 
 		// and it contains the default role
-		s.Equal(authz.RoleViewer, got.Role)
+		s.Equal(authz.RoleAdmin, got.Role)
 	})
 
 	s.Run("they have more orgs but none of them is the default, it will return the first one as default", func() {
