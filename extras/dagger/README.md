@@ -1,6 +1,6 @@
 # Chainloop Module for Dagger
 
-![dagger-tested-version](https://img.shields.io/badge/dagger%20version-v0.9.10-green)
+![dagger-tested-version](https://img.shields.io/badge/dagger%20version-v0.10.0-green)
 
 Daggerized version of [Chainloop](https://docs.chainloop.dev) that can be used to attest and collect pieces of evidence from your [Dagger](https://dagger.io/) pipelines.
 
