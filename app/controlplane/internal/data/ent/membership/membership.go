@@ -3,10 +3,12 @@
 package membership
 
 import (
+	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/google/uuid"
 )
 
@@ -21,6 +23,8 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
+	// FieldRole holds the string denoting the role field in the database.
+	FieldRole = "role"
 	// EdgeOrganization holds the string denoting the organization edge name in mutations.
 	EdgeOrganization = "organization"
 	// EdgeUser holds the string denoting the user edge name in mutations.
@@ -49,6 +53,7 @@ var Columns = []string{
 	FieldCurrent,
 	FieldCreatedAt,
 	FieldUpdatedAt,
+	FieldRole,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "memberships"
@@ -84,6 +89,18 @@ var (
 	DefaultID func() uuid.UUID
 )
 
+const DefaultRole authz.Role = "role:viewer"
+
+// RoleValidator is a validator for the "role" field enum values. It is called by the builders before save.
+func RoleValidator(r authz.Role) error {
+	switch r {
+	case "role:admin", "role:viewer":
+		return nil
+	default:
+		return fmt.Errorf("membership: invalid enum value for role field: %q", r)
+	}
+}
+
 // OrderOption defines the ordering options for the Membership queries.
 type OrderOption func(*sql.Selector)
 
@@ -105,6 +122,11 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByUpdatedAt orders the results by the updated_at field.
 func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
+}
+
+// ByRole orders the results by the role field.
+func ByRole(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRole, opts...).ToFunc()
 }
 
 // ByOrganizationField orders the results by organization field.

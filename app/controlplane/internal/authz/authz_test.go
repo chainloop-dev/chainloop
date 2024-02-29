@@ -149,9 +149,6 @@ func TestClearPolicies(t *testing.T) {
 	// Each have 2 items
 	got := enforcer.GetFilteredPolicy(0, sub.String())
 	assert.Len(t, got, 2)
-	// 4 in total
-	got = enforcer.GetPolicy()
-	assert.Len(t, got, 4)
 
 	// Clear all the policies for the subject
 	err = enforcer.ClearPolicies(sub)

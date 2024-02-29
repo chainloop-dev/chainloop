@@ -37,8 +37,9 @@ type User struct {
 }
 
 type Org struct {
-	ID, Name  string
-	CreatedAt *time.Time
+	ID, Name       string
+	CreatedAt      *time.Time
+	MembershipRole string
 }
 
 func WithCurrentUser(ctx context.Context, user *User) context.Context {
@@ -123,17 +124,17 @@ func setCurrentOrgAndUser(ctx context.Context, userUC biz.UserOrgFinder, userID 
 	}
 
 	// We load the current organization
-	org, err := userUC.CurrentOrg(ctx, userID)
+	membership, err := userUC.CurrentMembership(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	if org == nil {
+	if membership == nil {
 		logger.Warnf("user with id %s has no current organization", userID)
 		return nil, errors.New("org not found")
 	}
 
-	ctx = WithCurrentOrg(ctx, &Org{Name: org.Name, ID: org.ID, CreatedAt: org.CreatedAt})
+	ctx = WithCurrentOrg(ctx, &Org{Name: membership.Org.Name, ID: membership.Org.ID, CreatedAt: membership.CreatedAt, MembershipRole: string(membership.Role)})
 	ctx = WithCurrentUser(ctx, &User{Email: u.Email, ID: u.ID, CreatedAt: u.CreatedAt})
 
 	return ctx, nil

@@ -54,7 +54,11 @@ func (s *ContextService) Current(ctx context.Context, _ *pb.ContextServiceCurren
 		return nil, errors.NotFound("not found", "logged in user")
 	}
 
-	res := &pb.ContextServiceCurrentResponse_Result{CurrentOrg: bizOrgToPb((*biz.Organization)(currentOrg))}
+	res := &pb.ContextServiceCurrentResponse_Result{
+		CurrentOrg: bizOrgToPb(&biz.Organization{
+			ID: currentOrg.ID, Name: currentOrg.Name, CreatedAt: currentOrg.CreatedAt,
+		}),
+	}
 
 	if currentAPIToken != nil {
 		res.CurrentUser = &pb.User{

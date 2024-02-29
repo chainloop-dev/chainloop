@@ -165,7 +165,10 @@ func entMembershipToBiz(m *ent.Membership) *biz.Membership {
 		return nil
 	}
 
-	res := &biz.Membership{ID: m.ID, Current: m.Current, CreatedAt: toTimePtr(m.CreatedAt), UpdatedAt: toTimePtr(m.UpdatedAt)}
+	res := &biz.Membership{ID: m.ID,
+		Current: m.Current, CreatedAt: toTimePtr(m.CreatedAt), UpdatedAt: toTimePtr(m.UpdatedAt),
+		Role: m.Role,
+	}
 
 	if m.Edges.Organization != nil {
 		res.OrganizationID = m.Edges.Organization.ID

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
@@ -30,6 +31,7 @@ type Membership struct {
 	Current                    bool
 	CreatedAt, UpdatedAt       *time.Time
 	Org                        *Organization
+	Role                       authz.Role
 }
 
 type MembershipRepo interface {

@@ -11,6 +11,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/apitoken"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casbackend"
@@ -3731,6 +3732,7 @@ type MembershipMutation struct {
 	current             *bool
 	created_at          *time.Time
 	updated_at          *time.Time
+	role                *authz.Role
 	clearedFields       map[string]struct{}
 	organization        *uuid.UUID
 	clearedorganization bool
@@ -3953,6 +3955,42 @@ func (m *MembershipMutation) ResetUpdatedAt() {
 	m.updated_at = nil
 }
 
+// SetRole sets the "role" field.
+func (m *MembershipMutation) SetRole(a authz.Role) {
+	m.role = &a
+}
+
+// Role returns the value of the "role" field in the mutation.
+func (m *MembershipMutation) Role() (r authz.Role, exists bool) {
+	v := m.role
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRole returns the old "role" field's value of the Membership entity.
+// If the Membership object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MembershipMutation) OldRole(ctx context.Context) (v authz.Role, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRole is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRole requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRole: %w", err)
+	}
+	return oldValue.Role, nil
+}
+
+// ResetRole resets all changes to the "role" field.
+func (m *MembershipMutation) ResetRole() {
+	m.role = nil
+}
+
 // SetOrganizationID sets the "organization" edge to the Organization entity by id.
 func (m *MembershipMutation) SetOrganizationID(id uuid.UUID) {
 	m.organization = &id
@@ -4065,7 +4103,7 @@ func (m *MembershipMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *MembershipMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 4)
 	if m.current != nil {
 		fields = append(fields, membership.FieldCurrent)
 	}
@@ -4074,6 +4112,9 @@ func (m *MembershipMutation) Fields() []string {
 	}
 	if m.updated_at != nil {
 		fields = append(fields, membership.FieldUpdatedAt)
+	}
+	if m.role != nil {
+		fields = append(fields, membership.FieldRole)
 	}
 	return fields
 }
@@ -4089,6 +4130,8 @@ func (m *MembershipMutation) Field(name string) (ent.Value, bool) {
 		return m.CreatedAt()
 	case membership.FieldUpdatedAt:
 		return m.UpdatedAt()
+	case membership.FieldRole:
+		return m.Role()
 	}
 	return nil, false
 }
@@ -4104,6 +4147,8 @@ func (m *MembershipMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldCreatedAt(ctx)
 	case membership.FieldUpdatedAt:
 		return m.OldUpdatedAt(ctx)
+	case membership.FieldRole:
+		return m.OldRole(ctx)
 	}
 	return nil, fmt.Errorf("unknown Membership field %s", name)
 }
@@ -4133,6 +4178,13 @@ func (m *MembershipMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUpdatedAt(v)
+		return nil
+	case membership.FieldRole:
+		v, ok := value.(authz.Role)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRole(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Membership field %s", name)
@@ -4191,6 +4243,9 @@ func (m *MembershipMutation) ResetField(name string) error {
 		return nil
 	case membership.FieldUpdatedAt:
 		m.ResetUpdatedAt()
+		return nil
+	case membership.FieldRole:
+		m.ResetRole()
 		return nil
 	}
 	return fmt.Errorf("unknown Membership field %s", name)

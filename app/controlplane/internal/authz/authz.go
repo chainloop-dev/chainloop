@@ -33,6 +33,8 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 )
 
+type Role string
+
 const (
 	// Actions
 	ActionRead   = "read"
@@ -54,41 +56,10 @@ const (
 	ResourceWorkflow              = "workflow"
 
 	// Roles
-	RoleViewer = "role:viewer"
+	RoleViewer Role = "role:viewer"
+	// This role is currently a placeholder to skip authz checks
+	RoleAdmin Role = "role:admin"
 )
-
-// List of policies for each role
-// NOTE: roles are hierarchical, this means that the Admin Role can inherit all the policies from the Viewer Role
-// so we do not need to add them as well.
-var rolesMap = map[string][]*Policy{
-	RoleViewer: {
-		// Referrer
-		PolicyReferrerRead,
-		// Artifact
-		PolicyArtifactDownload,
-		// CAS backend
-		PolicyCASBackendList,
-		// Available integrations
-		PolicyAvailableIntegrationList,
-		PolicyAvailableIntegrationRead,
-		// Registered integrations
-		PolicyRegisteredIntegrationList,
-		// Attached integrations
-		PolicyAttachedIntegrationList,
-		// Metrics
-		PolicyOrgMetricsRead,
-		// Robot Account
-		PolicyRobotAccountList,
-		// Workflow Contract
-		PolicyWorkflowContractList,
-		PolicyWorkflowContractRead,
-		// WorkflowRun
-		PolicyWorkflowRunList,
-		PolicyWorkflowRunRead,
-		// Workflow
-		PolicyWorkflowList,
-	},
-}
 
 // resource, action tuple
 type Policy struct {
@@ -124,6 +95,54 @@ var (
 	// Workflow
 	PolicyWorkflowList = &Policy{ResourceWorkflow, ActionList}
 )
+
+// List of policies for each role
+// NOTE: roles are hierarchical, this means that the Admin Role can inherit all the policies from the Viewer Role
+// so we do not need to add them as well.
+var rolesMap = map[Role][]*Policy{
+	RoleViewer: {
+		// Referrer
+		PolicyReferrerRead,
+		// Artifact
+		PolicyArtifactDownload,
+		// CAS backend
+		PolicyCASBackendList,
+		// Available integrations
+		PolicyAvailableIntegrationList,
+		PolicyAvailableIntegrationRead,
+		// Registered integrations
+		PolicyRegisteredIntegrationList,
+		// Attached integrations
+		PolicyAttachedIntegrationList,
+		// Metrics
+		PolicyOrgMetricsRead,
+		// Robot Account
+		PolicyRobotAccountList,
+		// Workflow Contract
+		PolicyWorkflowContractList,
+		PolicyWorkflowContractRead,
+		// WorkflowRun
+		PolicyWorkflowRunList,
+		PolicyWorkflowRunRead,
+		// Workflow
+		PolicyWorkflowList,
+	},
+}
+
+// ServerOperationsMap is a map of server operations to the ResourceAction tuples that are
+// required to perform the operation
+// If it contains more than one policy, all of them need to be true
+var ServerOperationsMap = map[string][]*Policy{
+	// Workflow Contracts
+	"/controlplane.v1.WorkflowContractService/List":     {PolicyWorkflowContractList},
+	"/controlplane.v1.WorkflowContractService/Describe": {PolicyWorkflowContractRead},
+	"/controlplane.v1.WorkflowContractService/Update":   {PolicyWorkflowContractUpdate},
+	// Download/Uploading artifacts
+	// TODO: this is not just downloading but also uploading
+	"/controlplane.v1.CASCredentialsService/Get": {PolicyArtifactDownload},
+	// Discover endpoint
+	"/controlplane.v1.ReferrerService/DiscoverPrivate": {PolicyReferrerRead},
+}
 
 type SubjectAPIToken struct {
 	ID string
@@ -258,7 +277,7 @@ func syncRBACRoles(e *Enforcer) error {
 		for _, p := range policies {
 			// Add policies one by one to skip existing ones.
 			// This is because the bulk method AddPoliciesEx does not work well with the ent adapter
-			casbinPolicy := []string{role, p.Resource, p.Action}
+			casbinPolicy := []string{string(role), p.Resource, p.Action}
 			_, err := e.AddPolicy(casbinPolicy)
 			if err != nil {
 				return fmt.Errorf("failed to add policy: %w", err)
@@ -273,7 +292,7 @@ func syncRBACRoles(e *Enforcer) error {
 		policy := &Policy{Resource: gotPolicies[1], Action: gotPolicies[2]}
 
 		// Check if they exist in the map and if they don't, remove them
-		wantPolicies, ok := rolesMap[role]
+		wantPolicies, ok := rolesMap[Role(role)]
 		if !ok {
 			continue
 		}
@@ -297,4 +316,17 @@ func syncRBACRoles(e *Enforcer) error {
 	}
 
 	return nil
+}
+
+// Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues
+// so they can be added to the database schema
+func (Role) Values() (roles []string) {
+	for _, s := range []Role{
+		RoleAdmin,
+		RoleViewer,
+	} {
+		roles = append(roles, string(s))
+	}
+
+	return
 }

@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/membership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
@@ -55,6 +56,20 @@ func (mu *MembershipUpdate) SetUpdatedAt(t time.Time) *MembershipUpdate {
 func (mu *MembershipUpdate) SetNillableUpdatedAt(t *time.Time) *MembershipUpdate {
 	if t != nil {
 		mu.SetUpdatedAt(*t)
+	}
+	return mu
+}
+
+// SetRole sets the "role" field.
+func (mu *MembershipUpdate) SetRole(a authz.Role) *MembershipUpdate {
+	mu.mutation.SetRole(a)
+	return mu
+}
+
+// SetNillableRole sets the "role" field if the given value is not nil.
+func (mu *MembershipUpdate) SetNillableRole(a *authz.Role) *MembershipUpdate {
+	if a != nil {
+		mu.SetRole(*a)
 	}
 	return mu
 }
@@ -127,6 +142,11 @@ func (mu *MembershipUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (mu *MembershipUpdate) check() error {
+	if v, ok := mu.mutation.Role(); ok {
+		if err := membership.RoleValidator(v); err != nil {
+			return &ValidationError{Name: "role", err: fmt.Errorf(`ent: validator failed for field "Membership.role": %w`, err)}
+		}
+	}
 	if _, ok := mu.mutation.OrganizationID(); mu.mutation.OrganizationCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Membership.organization"`)
 	}
@@ -153,6 +173,9 @@ func (mu *MembershipUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := mu.mutation.UpdatedAt(); ok {
 		_spec.SetField(membership.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if value, ok := mu.mutation.Role(); ok {
+		_spec.SetField(membership.FieldRole, field.TypeEnum, value)
 	}
 	if mu.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -260,6 +283,20 @@ func (muo *MembershipUpdateOne) SetNillableUpdatedAt(t *time.Time) *MembershipUp
 	return muo
 }
 
+// SetRole sets the "role" field.
+func (muo *MembershipUpdateOne) SetRole(a authz.Role) *MembershipUpdateOne {
+	muo.mutation.SetRole(a)
+	return muo
+}
+
+// SetNillableRole sets the "role" field if the given value is not nil.
+func (muo *MembershipUpdateOne) SetNillableRole(a *authz.Role) *MembershipUpdateOne {
+	if a != nil {
+		muo.SetRole(*a)
+	}
+	return muo
+}
+
 // SetOrganizationID sets the "organization" edge to the Organization entity by ID.
 func (muo *MembershipUpdateOne) SetOrganizationID(id uuid.UUID) *MembershipUpdateOne {
 	muo.mutation.SetOrganizationID(id)
@@ -341,6 +378,11 @@ func (muo *MembershipUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (muo *MembershipUpdateOne) check() error {
+	if v, ok := muo.mutation.Role(); ok {
+		if err := membership.RoleValidator(v); err != nil {
+			return &ValidationError{Name: "role", err: fmt.Errorf(`ent: validator failed for field "Membership.role": %w`, err)}
+		}
+	}
 	if _, ok := muo.mutation.OrganizationID(); muo.mutation.OrganizationCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Membership.organization"`)
 	}
@@ -384,6 +426,9 @@ func (muo *MembershipUpdateOne) sqlSave(ctx context.Context) (_node *Membership,
 	}
 	if value, ok := muo.mutation.UpdatedAt(); ok {
 		_spec.SetField(membership.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if value, ok := muo.mutation.Role(); ok {
+		_spec.SetField(membership.FieldRole, field.TypeEnum, value)
 	}
 	if muo.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{

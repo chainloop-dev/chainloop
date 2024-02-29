@@ -19,6 +19,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
 
@@ -58,18 +59,21 @@ func (s *userIntegrationTestSuite) TestDeleteUser() {
 	s.Empty(gotMembership)
 }
 
-func (s *userIntegrationTestSuite) TestCurrentOrg() {
+func (s *userIntegrationTestSuite) TestCurrentMembership() {
 	ctx := context.Background()
-	s.Run("if there is an associated, default org it's returned", func() {
+	s.Run("if there is an associated, default org is returned", func() {
 		// userOne has a default org
 		m, err := s.Membership.FindByOrgAndUser(ctx, s.sharedOrg.ID, s.userOne.ID)
 		s.NoError(err)
 		s.True(m.Current)
 
 		// and it's returned as currentOrg
-		got, err := s.User.CurrentOrg(ctx, s.userOne.ID)
+		got, err := s.User.CurrentMembership(ctx, s.userOne.ID)
 		s.NoError(err)
-		s.Equal(s.sharedOrg, got)
+		s.Equal(s.sharedOrg, got.Org)
+
+		// and it contains the default role
+		s.Equal(authz.RoleViewer, got.Role)
 	})
 
 	s.Run("they have more orgs but none of them is the default, it will return the first one as default", func() {
@@ -86,9 +90,9 @@ func (s *userIntegrationTestSuite) TestCurrentOrg() {
 		s.False(mems[0].Current)
 
 		// asking for the current org will return the first one
-		got, err := s.User.CurrentOrg(ctx, s.userOne.ID)
+		got, err := s.User.CurrentMembership(ctx, s.userOne.ID)
 		s.NoError(err)
-		s.Equal(s.userOneOrg, got)
+		s.Equal(s.userOneOrg, got.Org)
 
 		// and now the membership will be set as current
 		mems, _ = s.Membership.ByUser(ctx, s.userOne.ID)
@@ -96,7 +100,7 @@ func (s *userIntegrationTestSuite) TestCurrentOrg() {
 		s.True(mems[0].Current)
 	})
 
-	s.Run("it will fail if there are no membershipts", func() {
+	s.Run("it will fail if there are no memberships", func() {
 		// none of the orgs is marked as current
 		mems, _ := s.Membership.ByUser(ctx, s.userOne.ID)
 		s.Len(mems, 1)
@@ -106,7 +110,7 @@ func (s *userIntegrationTestSuite) TestCurrentOrg() {
 		mems, _ = s.Membership.ByUser(ctx, s.userOne.ID)
 		s.Len(mems, 0)
 
-		_, err = s.User.CurrentOrg(ctx, s.userOne.ID)
+		_, err = s.User.CurrentMembership(ctx, s.userOne.ID)
 		s.ErrorContains(err, "user does not have any organization associated")
 	})
 }
