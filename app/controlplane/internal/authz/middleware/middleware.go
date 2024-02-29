@@ -48,25 +48,20 @@ func WithAuthzMiddleware(enforcer Enforcer, logger *log.Helper) middleware.Middl
 				return nil, errorsAPI.InternalServer("invalid request", "could not find API request")
 			}
 
-			var authzSubject string
-			// If the user is logged in, we check the authorization based on the user's role
-			// we skip if it's an admin since in practice they can do anything. This is a temporary
-			if user := usercontext.CurrentUser(ctx); user != nil {
-				currentOrg := usercontext.CurrentOrg(ctx)
-				if currentOrg.MembershipRole == string(authz.RoleAdmin) {
-					logger.Infow("msg", "[authZ] skipped", "sub", currentOrg.MembershipRole, "operation", apiOperation)
-					return handler(ctx, req)
-				}
-
-				authzSubject = currentOrg.MembershipRole
+			// Load the authorization subject from the context which might be related to a currentUser or an APItoken
+			subject := usercontext.CurrentAuthzSubject(ctx)
+			if subject == "" {
+				return nil, errorsAPI.Forbidden("forbidden", "missing authentication")
 			}
 
-			if token := usercontext.CurrentAPIToken(ctx); token != nil {
-				subjectAPIToken := authz.SubjectAPIToken{ID: token.ID}
-				authzSubject = subjectAPIToken.String()
+			// if the subject is the admin, we skip the authorization check for now
+			if subject == string(authz.RoleAdmin) {
+				logger.Infow("msg", "[authZ] skipped", "sub", subject, "operation", apiOperation)
+				return handler(ctx, req)
 			}
 
-			if err := checkPolicies(authzSubject, apiOperation, enforcer, logger); err != nil {
+			// Check the policies for the current API operation
+			if err := checkPolicies(subject, apiOperation, enforcer, logger); err != nil {
 				return nil, err
 			}
 

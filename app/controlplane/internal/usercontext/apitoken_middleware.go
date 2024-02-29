@@ -24,6 +24,7 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/golang-jwt/jwt/v4"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/apitoken"
 	"github.com/go-kratos/kratos/v2/middleware"
@@ -33,6 +34,19 @@ import (
 type APIToken struct {
 	ID        string
 	CreatedAt *time.Time
+}
+
+// Store the authorization subject
+func WithAuthzSubject(ctx context.Context, subject string) context.Context {
+	return context.WithValue(ctx, currentAuthzSubjectKey{}, subject)
+}
+
+func CurrentAuthzSubject(ctx context.Context) string {
+	res := ctx.Value(currentAuthzSubjectKey{})
+	if res == nil {
+		return ""
+	}
+	return res.(string)
 }
 
 func WithCurrentAPIToken(ctx context.Context, token *APIToken) context.Context {
@@ -48,6 +62,7 @@ func CurrentAPIToken(ctx context.Context) *APIToken {
 }
 
 type currentAPITokenCtxKey struct{}
+type currentAuthzSubjectKey struct{}
 
 // Middleware that injects the API-Token + organization to the context
 func WithCurrentAPITokenAndOrgMiddleware(apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, logger *log.Helper) middleware.Middleware {
@@ -114,7 +129,13 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 		return nil, errors.New("organization not found")
 	}
 
+	// Set the current organization and API-Token in the context
 	ctx = WithCurrentOrg(ctx, &Org{Name: org.Name, ID: org.ID, CreatedAt: org.CreatedAt})
 	ctx = WithCurrentAPIToken(ctx, &APIToken{ID: token.ID.String(), CreatedAt: token.CreatedAt})
+
+	// Set the authorization subject that will be used to check the policies
+	subjectAPIToken := authz.SubjectAPIToken{ID: token.ID.String()}
+	ctx = WithAuthzSubject(ctx, subjectAPIToken.String())
+
 	return ctx, nil
 }

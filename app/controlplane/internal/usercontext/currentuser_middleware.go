@@ -37,9 +37,8 @@ type User struct {
 }
 
 type Org struct {
-	ID, Name       string
-	CreatedAt      *time.Time
-	MembershipRole string
+	ID, Name  string
+	CreatedAt *time.Time
 }
 
 func WithCurrentUser(ctx context.Context, user *User) context.Context {
@@ -134,8 +133,11 @@ func setCurrentOrgAndUser(ctx context.Context, userUC biz.UserOrgFinder, userID 
 		return nil, errors.New("org not found")
 	}
 
-	ctx = WithCurrentOrg(ctx, &Org{Name: membership.Org.Name, ID: membership.Org.ID, CreatedAt: membership.CreatedAt, MembershipRole: string(membership.Role)})
+	ctx = WithCurrentOrg(ctx, &Org{Name: membership.Org.Name, ID: membership.Org.ID, CreatedAt: membership.CreatedAt})
 	ctx = WithCurrentUser(ctx, &User{Email: u.Email, ID: u.ID, CreatedAt: u.CreatedAt})
+
+	// Set the authorization subject that will be used to check the policies
+	ctx = WithAuthzSubject(ctx, string(membership.Role))
 
 	return ctx, nil
 }
