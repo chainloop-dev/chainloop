@@ -123,7 +123,7 @@ func TestWithCurrentUserAndOrgMiddleware(t *testing.T) {
 						// Check that the wrapped handler contains the user and org
 						assert.Equal(t, CurrentOrg(ctx).ID, wantMembership.Org.ID)
 						assert.Equal(t, CurrentUser(ctx).ID, wantUser.ID)
-						assert.Equal(t, CurrentAuthzSubject(ctx), authz.RoleViewer)
+						assert.Equal(t, CurrentAuthzSubject(ctx), string(authz.RoleViewer))
 					}
 
 					return nil, nil
