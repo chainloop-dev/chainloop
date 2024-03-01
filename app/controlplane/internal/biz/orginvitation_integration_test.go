@@ -30,6 +30,46 @@ import (
 
 const receiverEmail = "sarah@cyberdyne.io"
 
+func (s *OrgInvitationIntegrationTestSuite) TestList() {
+	ctx := context.Background()
+	inviteOrg1A, err := s.OrgInvitation.Create(ctx, s.org1.ID, s.user.ID, receiverEmail)
+	s.NoError(err)
+	inviteOrg1B, err := s.OrgInvitation.Create(ctx, s.org1.ID, s.user.ID, "another-email@cyberdyne.io")
+	s.NoError(err)
+	inviteOrg2A, err := s.OrgInvitation.Create(ctx, s.org2.ID, s.user.ID, receiverEmail)
+	s.NoError(err)
+
+	testCases := []struct {
+		name     string
+		orgID    string
+		expected []*biz.OrgInvitation
+	}{
+		{
+			name:     "org1",
+			orgID:    s.org1.ID,
+			expected: []*biz.OrgInvitation{inviteOrg1A, inviteOrg1B},
+		},
+		{
+			name:     "org2",
+			orgID:    s.org2.ID,
+			expected: []*biz.OrgInvitation{inviteOrg2A},
+		},
+		{
+			name:     "org3",
+			orgID:    s.org3.ID,
+			expected: []*biz.OrgInvitation{},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.T().Run(tc.name, func(t *testing.T) {
+			invites, err := s.OrgInvitation.ListBySenderAndOrg(ctx, s.user.ID, tc.orgID)
+			s.NoError(err)
+			s.Equal(tc.expected, invites)
+		})
+	}
+}
+
 func (s *OrgInvitationIntegrationTestSuite) TestCreate() {
 	s.T().Run("invalid org ID", func(t *testing.T) {
 		invite, err := s.OrgInvitation.Create(context.Background(), "deadbeef", s.user.ID, receiverEmail)
