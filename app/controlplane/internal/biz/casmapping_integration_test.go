@@ -387,9 +387,9 @@ func (s *casMappingIntegrationSuite) SetupTest() {
 
 	_, err = s.Membership.Create(ctx, s.org1.ID, s.userOrg1And2.ID)
 	assert.NoError(err)
-	_, err = s.Membership.Create(ctx, s.org2.ID, s.userOrg1And2.ID, biz.WithCurrentMembership())
+	_, err = s.Membership.Create(ctx, s.org2.ID, s.userOrg1And2.ID, biz.WithIsCurrent())
 	assert.NoError(err)
-	_, err = s.Membership.Create(ctx, s.org2.ID, s.userOrg2.ID, biz.WithCurrentMembership())
+	_, err = s.Membership.Create(ctx, s.org2.ID, s.userOrg2.ID, biz.WithIsCurrent())
 	assert.NoError(err)
 }
 

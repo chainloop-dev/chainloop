@@ -105,13 +105,13 @@ type membershipCreateOpts struct {
 
 type MembershipCreateOpt func(*membershipCreateOpts)
 
-func WithCurrentMembership() MembershipCreateOpt {
+func WithIsCurrent() MembershipCreateOpt {
 	return func(o *membershipCreateOpts) {
 		o.current = true
 	}
 }
 
-func WithRoleMembership(r authz.Role) MembershipCreateOpt {
+func WithRole(r authz.Role) MembershipCreateOpt {
 	return func(o *membershipCreateOpts) {
 		o.role = r
 	}

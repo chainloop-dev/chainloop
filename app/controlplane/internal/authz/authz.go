@@ -383,6 +383,7 @@ func syncRBACRoles(e *Enforcer) error {
 // so they can be added to the database schema
 func (Role) Values() (roles []string) {
 	for _, s := range []Role{
+		RoleOwner,
 		RoleAdmin,
 		RoleViewer,
 	} {

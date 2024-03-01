@@ -21,6 +21,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	errors "github.com/go-kratos/kratos/v2/errors"
@@ -76,7 +77,7 @@ func (s *OrganizationService) Create(ctx context.Context, req *pb.OrganizationSe
 		return nil, handleUseCaseErr("organization", err, s.log)
 	}
 
-	if _, err := s.membershipUC.Create(ctx, org.ID, currentUser.ID); err != nil {
+	if _, err := s.membershipUC.Create(ctx, org.ID, currentUser.ID, biz.WithRole(authz.RoleOwner)); err != nil {
 		return nil, handleUseCaseErr("organization", err, s.log)
 	}
 
