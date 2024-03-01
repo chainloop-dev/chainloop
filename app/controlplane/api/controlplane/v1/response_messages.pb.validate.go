@@ -1183,6 +1183,8 @@ func (m *OrgMembershipItem) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for Role
+
 	if len(errors) > 0 {
 		return OrgMembershipItemMultiError(errors)
 	}

@@ -180,7 +180,7 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.WorkflowContractService/Describe": {PolicyWorkflowContractRead},
 	"/controlplane.v1.WorkflowContractService/Update":   {PolicyWorkflowContractUpdate},
 	// Get current information about an organization
-	"/controlplane.v1.ContextService/Current": {PolicyOrganizationRead, PolicyCASBackendList},
+	"/controlplane.v1.ContextService/Current": {PolicyOrganizationRead},
 	// Listing, create or selecting an organization does not have any required permissions,
 	// since all the permissions here are in the context of an organization
 	"/controlplane.v1.OrganizationService/Create":               {},

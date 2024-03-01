@@ -134,9 +134,26 @@ func bizMembershipToPb(m *biz.Membership) *pb.OrgMembershipItem {
 	item := &pb.OrgMembershipItem{
 		Id: m.ID.String(), Current: m.Current,
 		CreatedAt: timestamppb.New(*m.CreatedAt),
-		UpdatedAt: timestamppb.New(*m.UpdatedAt),
 		Org:       bizOrgToPb(m.Org),
+		Role:      bizRoleToPb(m.Role),
+	}
+
+	if m.UpdatedAt != nil {
+		item.UpdatedAt = timestamppb.New(*m.UpdatedAt)
 	}
 
 	return item
+}
+
+func bizRoleToPb(r authz.Role) pb.MembershipRole {
+	switch r {
+	case authz.RoleOwner:
+		return pb.MembershipRole_MEMBERSHIP_ROLE_ORG_OWNER
+	case authz.RoleAdmin:
+		return pb.MembershipRole_MEMBERSHIP_ROLE_ORG_ADMIN
+	case authz.RoleViewer:
+		return pb.MembershipRole_MEMBERSHIP_ROLE_ORG_VIEWER
+	default:
+		return pb.MembershipRole_MEMBERSHIP_ROLE_UNSPECIFIED
+	}
 }

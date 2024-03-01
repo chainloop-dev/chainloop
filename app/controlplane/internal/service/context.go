@@ -29,13 +29,15 @@ type ContextService struct {
 	*service
 	pb.UnimplementedContextServiceServer
 
-	uc *biz.CASBackendUseCase
+	uc     *biz.CASBackendUseCase
+	userUC *biz.UserUseCase
 }
 
-func NewContextService(repoUC *biz.CASBackendUseCase, opts ...NewOpt) *ContextService {
+func NewContextService(repoUC *biz.CASBackendUseCase, uUC *biz.UserUseCase, opts ...NewOpt) *ContextService {
 	return &ContextService{
 		service: newService(opts...),
 		uc:      repoUC,
+		userUC:  uUC,
 	}
 }
 
@@ -54,12 +56,9 @@ func (s *ContextService) Current(ctx context.Context, _ *pb.ContextServiceCurren
 		return nil, errors.NotFound("not found", "logged in user")
 	}
 
-	res := &pb.ContextServiceCurrentResponse_Result{
-		CurrentOrg: bizOrgToPb(&biz.Organization{
-			ID: currentOrg.ID, Name: currentOrg.Name, CreatedAt: currentOrg.CreatedAt,
-		}),
-	}
+	res := &pb.ContextServiceCurrentResponse_Result{}
 
+	// Load user/API token info
 	if currentAPIToken != nil {
 		res.CurrentUser = &pb.User{
 			Id: currentAPIToken.ID, Email: "API-token@chainloop", CreatedAt: timestamppb.New(*currentAPIToken.CreatedAt),
@@ -70,6 +69,7 @@ func (s *ContextService) Current(ctx context.Context, _ *pb.ContextServiceCurren
 		}
 	}
 
+	// Add cas backend
 	backend, err := s.uc.FindDefaultBackend(ctx, currentOrg.ID)
 	if err != nil && !biz.IsNotFound(err) {
 		return nil, sl.LogAndMaskErr(err, s.log)
@@ -79,9 +79,19 @@ func (s *ContextService) Current(ctx context.Context, _ *pb.ContextServiceCurren
 		res.CurrentCasBackend = bizCASBackendToPb(backend)
 	}
 
-	return &pb.ContextServiceCurrentResponse{
-		Result: res,
-	}, nil
+	// Optionally add current membership
+	if currentUser != nil {
+		m, err := s.userUC.CurrentMembership(ctx, currentUser.ID)
+		if err != nil {
+			return nil, handleUseCaseErr("membership", err, s.log)
+		}
+
+		if m != nil {
+			res.CurrentMembership = bizMembershipToPb(m)
+		}
+	}
+
+	return &pb.ContextServiceCurrentResponse{Result: res}, nil
 }
 
 func bizOrgToPb(m *biz.Organization) *pb.OrgItem {

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,23 +16,24 @@
 syntax = "proto3";
 
 package controlplane.v1;
-option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
 import "controlplane/v1/response_messages.proto";
 
+option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
+
 service ContextService {
   // Get information about the current logged in context
-	rpc Current (ContextServiceCurrentRequest) returns (ContextServiceCurrentResponse);
+  rpc Current(ContextServiceCurrentRequest) returns (ContextServiceCurrentResponse);
 }
 
 message ContextServiceCurrentRequest {}
 
 message ContextServiceCurrentResponse {
   Result result = 1;
-  
+
   message Result {
     User current_user = 1;
-    OrgItem current_org = 2;
+    OrgMembershipItem current_membership = 2;
     CASBackendItem current_cas_backend = 3;
   }
 }

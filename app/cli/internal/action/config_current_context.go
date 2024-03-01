@@ -32,7 +32,7 @@ func NewConfigCurrentContext(cfg *ActionsOpts) *ConfigCurrentContext {
 
 type ConfigContextItem struct {
 	CurrentUser       *UserItem
-	CurrentOrg        *OrgItem
+	CurrentMembership *MembershipItem
 	CurrentCASBackend *CASBackendItem
 }
 
@@ -52,7 +52,7 @@ func (action *ConfigCurrentContext) Run() (*ConfigContextItem, error) {
 
 	return &ConfigContextItem{
 		CurrentUser:       pbUserItemToAction(res.GetCurrentUser()),
-		CurrentOrg:        pbOrgItemToAction(res.GetCurrentOrg()),
+		CurrentMembership: pbMembershipItemToAction(res.GetCurrentMembership()),
 		CurrentCASBackend: pbCASBackendItemToAction(res.GetCurrentCasBackend()),
 	}, nil
 }

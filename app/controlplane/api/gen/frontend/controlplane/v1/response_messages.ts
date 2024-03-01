@@ -68,6 +68,51 @@ export function runStatusToJSON(object: RunStatus): string {
   }
 }
 
+export enum MembershipRole {
+  MEMBERSHIP_ROLE_UNSPECIFIED = 0,
+  MEMBERSHIP_ROLE_ORG_VIEWER = 1,
+  MEMBERSHIP_ROLE_ORG_ADMIN = 2,
+  MEMBERSHIP_ROLE_ORG_OWNER = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function membershipRoleFromJSON(object: any): MembershipRole {
+  switch (object) {
+    case 0:
+    case "MEMBERSHIP_ROLE_UNSPECIFIED":
+      return MembershipRole.MEMBERSHIP_ROLE_UNSPECIFIED;
+    case 1:
+    case "MEMBERSHIP_ROLE_ORG_VIEWER":
+      return MembershipRole.MEMBERSHIP_ROLE_ORG_VIEWER;
+    case 2:
+    case "MEMBERSHIP_ROLE_ORG_ADMIN":
+      return MembershipRole.MEMBERSHIP_ROLE_ORG_ADMIN;
+    case 3:
+    case "MEMBERSHIP_ROLE_ORG_OWNER":
+      return MembershipRole.MEMBERSHIP_ROLE_ORG_OWNER;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return MembershipRole.UNRECOGNIZED;
+  }
+}
+
+export function membershipRoleToJSON(object: MembershipRole): string {
+  switch (object) {
+    case MembershipRole.MEMBERSHIP_ROLE_UNSPECIFIED:
+      return "MEMBERSHIP_ROLE_UNSPECIFIED";
+    case MembershipRole.MEMBERSHIP_ROLE_ORG_VIEWER:
+      return "MEMBERSHIP_ROLE_ORG_VIEWER";
+    case MembershipRole.MEMBERSHIP_ROLE_ORG_ADMIN:
+      return "MEMBERSHIP_ROLE_ORG_ADMIN";
+    case MembershipRole.MEMBERSHIP_ROLE_ORG_OWNER:
+      return "MEMBERSHIP_ROLE_ORG_OWNER";
+    case MembershipRole.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export enum AllowListError {
   ALLOW_LIST_ERROR_UNSPECIFIED = 0,
   ALLOW_LIST_ERROR_NOT_IN_LIST = 1,
@@ -215,6 +260,7 @@ export interface OrgMembershipItem {
   current: boolean;
   createdAt?: Date;
   updatedAt?: Date;
+  role: MembershipRole;
 }
 
 export interface OrgItem {
@@ -1550,7 +1596,7 @@ export const User = {
 };
 
 function createBaseOrgMembershipItem(): OrgMembershipItem {
-  return { id: "", org: undefined, current: false, createdAt: undefined, updatedAt: undefined };
+  return { id: "", org: undefined, current: false, createdAt: undefined, updatedAt: undefined, role: 0 };
 }
 
 export const OrgMembershipItem = {
@@ -1569,6 +1615,9 @@ export const OrgMembershipItem = {
     }
     if (message.updatedAt !== undefined) {
       Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(42).fork()).ldelim();
+    }
+    if (message.role !== 0) {
+      writer.uint32(48).int32(message.role);
     }
     return writer;
   },
@@ -1615,6 +1664,13 @@ export const OrgMembershipItem = {
 
           message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.role = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1631,6 +1687,7 @@ export const OrgMembershipItem = {
       current: isSet(object.current) ? Boolean(object.current) : false,
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
       updatedAt: isSet(object.updatedAt) ? fromJsonTimestamp(object.updatedAt) : undefined,
+      role: isSet(object.role) ? membershipRoleFromJSON(object.role) : 0,
     };
   },
 
@@ -1641,6 +1698,7 @@ export const OrgMembershipItem = {
     message.current !== undefined && (obj.current = message.current);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
     message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt.toISOString());
+    message.role !== undefined && (obj.role = membershipRoleToJSON(message.role));
     return obj;
   },
 
@@ -1655,6 +1713,7 @@ export const OrgMembershipItem = {
     message.current = object.current ?? false;
     message.createdAt = object.createdAt ?? undefined;
     message.updatedAt = object.updatedAt ?? undefined;
+    message.role = object.role ?? 0;
     return message;
   },
 };

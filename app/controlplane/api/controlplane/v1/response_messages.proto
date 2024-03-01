@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -135,6 +135,14 @@ message OrgMembershipItem {
   bool current = 3;
   google.protobuf.Timestamp created_at = 4;
   google.protobuf.Timestamp updated_at = 5;
+  MembershipRole role = 6;
+}
+
+enum MembershipRole {
+  MEMBERSHIP_ROLE_UNSPECIFIED = 0;
+  MEMBERSHIP_ROLE_ORG_VIEWER = 1;
+  MEMBERSHIP_ROLE_ORG_ADMIN = 2;
+  MEMBERSHIP_ROLE_ORG_OWNER = 3;
 }
 
 message OrgItem {
