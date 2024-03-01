@@ -39,11 +39,11 @@ func (s *membershipIntegrationTestSuite) TestDeleteWithOrg() {
 	sharedOrg, err := s.Organization.CreateWithRandomName(ctx)
 	s.NoError(err)
 
-	mUser, err := s.Membership.Create(ctx, userOrg.ID, user.ID, true)
+	mUser, err := s.Membership.Create(ctx, userOrg.ID, user.ID, biz.WithCurrentMembership())
 	s.NoError(err)
-	mUserSharedOrg, err := s.Membership.Create(ctx, sharedOrg.ID, user.ID, true)
+	mUserSharedOrg, err := s.Membership.Create(ctx, sharedOrg.ID, user.ID, biz.WithCurrentMembership())
 	s.NoError(err)
-	mUser2SharedOrg, err := s.Membership.Create(ctx, sharedOrg.ID, user2.ID, true)
+	mUser2SharedOrg, err := s.Membership.Create(ctx, sharedOrg.ID, user2.ID, biz.WithCurrentMembership())
 	s.NoError(err)
 
 	s.T().Run("invalid userID", func(t *testing.T) {
@@ -103,7 +103,7 @@ func (s *membershipIntegrationTestSuite) TestCreateMembership() {
 		org, err := s.Organization.CreateWithRandomName(ctx)
 		assert.NoError(err)
 
-		m, err := s.Membership.Create(ctx, org.ID, user.ID, true)
+		m, err := s.Membership.Create(ctx, org.ID, user.ID, biz.WithCurrentMembership())
 		assert.NoError(err)
 		assert.Equal(true, m.Current, "Membership should be current")
 
@@ -116,7 +116,7 @@ func (s *membershipIntegrationTestSuite) TestCreateMembership() {
 		org, err := s.Organization.CreateWithRandomName(ctx)
 		assert.NoError(err)
 
-		m, err := s.Membership.Create(ctx, org.ID, user.ID, false)
+		m, err := s.Membership.Create(ctx, org.ID, user.ID)
 		assert.NoError(err)
 		assert.Equal(false, m.Current, "Membership should not be current")
 	})
@@ -127,11 +127,11 @@ func (s *membershipIntegrationTestSuite) TestCreateMembership() {
 		org2, err := s.Organization.CreateWithRandomName(ctx)
 		assert.NoError(err)
 
-		m, err := s.Membership.Create(ctx, org.ID, user.ID, true)
+		m, err := s.Membership.Create(ctx, org.ID, user.ID, biz.WithCurrentMembership())
 		assert.NoError(err)
 		s.True(m.Current)
 		// Creating a new one will override the current status of the previous one
-		m, err = s.Membership.Create(ctx, org2.ID, user.ID, true)
+		m, err = s.Membership.Create(ctx, org2.ID, user.ID, biz.WithCurrentMembership())
 		assert.NoError(err)
 		s.True(m.Current)
 
@@ -141,7 +141,7 @@ func (s *membershipIntegrationTestSuite) TestCreateMembership() {
 	})
 
 	s.T().Run("Invalid ORG", func(t *testing.T) {
-		m, err := s.Membership.Create(ctx, uuid.NewString(), user.ID, false)
+		m, err := s.Membership.Create(ctx, uuid.NewString(), user.ID)
 		assert.Error(err)
 		assert.Nil(m)
 	})
@@ -149,7 +149,7 @@ func (s *membershipIntegrationTestSuite) TestCreateMembership() {
 	s.T().Run("Invalid User", func(t *testing.T) {
 		org, err := s.Organization.CreateWithRandomName(ctx)
 		assert.NoError(err)
-		m, err := s.Membership.Create(ctx, org.ID, uuid.NewString(), false)
+		m, err := s.Membership.Create(ctx, org.ID, uuid.NewString())
 		assert.Error(err)
 		assert.Nil(m)
 	})

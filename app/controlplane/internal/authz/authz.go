@@ -58,10 +58,15 @@ const (
 	UserMembership                = "membership_user"
 	Organization                  = "organization"
 
-	// Roles
-	RoleViewer Role = "role:viewer"
-	// This role is currently a placeholder to skip authz checks
-	RoleAdmin Role = "role:admin"
+	// We have for now three roles, viewer, admin and owner
+	// The owner of an org
+	// The administrator of an org
+	// The read only viewer of an org
+	// These roles are hierarchical
+	// This means that the Owner role inherits all the policies from Admin so from the Viewer Role
+	RoleOwner  Role = "role:org:owner"
+	RoleAdmin  Role = "role:org:admin"
+	RoleViewer Role = "role:org:viewer"
 )
 
 // resource, action tuple
@@ -359,8 +364,14 @@ func syncRBACRoles(e *Enforcer) error {
 		}
 	}
 
-	// Finally we make sure that the admin role inherit all the policies from the viewer role
+	// To finish we make sure that the admin role inherit all the policies from the viewer role
 	_, err := e.AddGroupingPolicy(string(RoleAdmin), string(RoleViewer))
+	if err != nil {
+		return fmt.Errorf("failed to add grouping policy: %w", err)
+	}
+
+	// same for the owner
+	_, err = e.AddGroupingPolicy(string(RoleOwner), string(RoleAdmin))
 	if err != nil {
 		return fmt.Errorf("failed to add grouping policy: %w", err)
 	}

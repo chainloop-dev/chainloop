@@ -218,7 +218,7 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) (
 		}
 
 		// Create membership
-		if _, err := svc.membershipUseCase.Create(ctx, currentOrg.ID, u.ID, true); err != nil {
+		if _, err := svc.membershipUseCase.Create(ctx, currentOrg.ID, u.ID, biz.WithCurrentMembership()); err != nil {
 			return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
 		}
 

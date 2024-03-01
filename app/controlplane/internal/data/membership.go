@@ -39,14 +39,12 @@ func NewMembershipRepo(data *Data, logger log.Logger) biz.MembershipRepo {
 	}
 }
 
-func (r *MembershipRepo) Create(ctx context.Context, orgID, userID uuid.UUID, current bool) (*biz.Membership, error) {
+func (r *MembershipRepo) Create(ctx context.Context, orgID, userID uuid.UUID, current bool, role authz.Role) (*biz.Membership, error) {
 	m, err := r.data.db.Membership.Create().
 		SetUserID(userID).
 		SetOrganizationID(orgID).
 		SetCurrent(current).
-		// Hardcoded for now to keep compatibility with current behavior
-		// in future patches this will be configurable
-		SetRole(authz.RoleAdmin).
+		SetRole(role).
 		Save(ctx)
 	if err != nil {
 		return nil, err

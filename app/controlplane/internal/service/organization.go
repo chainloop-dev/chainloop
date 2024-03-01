@@ -76,7 +76,7 @@ func (s *OrganizationService) Create(ctx context.Context, req *pb.OrganizationSe
 		return nil, handleUseCaseErr("organization", err, s.log)
 	}
 
-	if _, err := s.membershipUC.Create(ctx, org.ID, currentUser.ID, false); err != nil {
+	if _, err := s.membershipUC.Create(ctx, org.ID, currentUser.ID); err != nil {
 		return nil, handleUseCaseErr("organization", err, s.log)
 	}
 

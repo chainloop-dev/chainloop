@@ -40,7 +40,7 @@ type MembershipRepo interface {
 	FindByIDInUser(ctx context.Context, userID, ID uuid.UUID) (*Membership, error)
 	FindByOrgAndUser(ctx context.Context, orgID, userID uuid.UUID) (*Membership, error)
 	SetCurrent(ctx context.Context, ID uuid.UUID) (*Membership, error)
-	Create(ctx context.Context, orgID, userID uuid.UUID, current bool) (*Membership, error)
+	Create(ctx context.Context, orgID, userID uuid.UUID, current bool, role authz.Role) (*Membership, error)
 	Delete(ctx context.Context, ID uuid.UUID) error
 }
 
@@ -98,7 +98,35 @@ func (uc *MembershipUseCase) DeleteWithOrg(ctx context.Context, userID, membersh
 	return nil
 }
 
-func (uc *MembershipUseCase) Create(ctx context.Context, orgID, userID string, current bool) (*Membership, error) {
+type membershipCreateOpts struct {
+	current bool
+	role    authz.Role
+}
+
+type MembershipCreateOpt func(*membershipCreateOpts)
+
+func WithCurrentMembership() MembershipCreateOpt {
+	return func(o *membershipCreateOpts) {
+		o.current = true
+	}
+}
+
+func WithRoleMembership(r authz.Role) MembershipCreateOpt {
+	return func(o *membershipCreateOpts) {
+		o.role = r
+	}
+}
+
+func (uc *MembershipUseCase) Create(ctx context.Context, orgID, userID string, opts ...MembershipCreateOpt) (*Membership, error) {
+	cp := &membershipCreateOpts{
+		// Default role
+		role: authz.RoleViewer,
+	}
+
+	for _, o := range opts {
+		o(cp)
+	}
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -109,12 +137,12 @@ func (uc *MembershipUseCase) Create(ctx context.Context, orgID, userID string, c
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	m, err := uc.repo.Create(ctx, orgUUID, userUUID, current)
+	m, err := uc.repo.Create(ctx, orgUUID, userUUID, cp.current, cp.role)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create membership: %w", err)
 	}
 
-	if !current {
+	if !cp.current {
 		return m, nil
 	}
 

@@ -162,7 +162,7 @@ var (
 		{Name: "current", Type: field.TypeBool, Default: false},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "updated_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
-		{Name: "role", Type: field.TypeEnum, Enums: []string{"role:admin", "role:viewer"}},
+		{Name: "role", Type: field.TypeEnum, Enums: []string{"role:org:admin", "role:org:viewer"}},
 		{Name: "organization_memberships", Type: field.TypeUUID},
 		{Name: "user_memberships", Type: field.TypeUUID},
 	}

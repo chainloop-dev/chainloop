@@ -144,14 +144,14 @@ func (s *userIntegrationTestSuite) SetupTest() {
 	s.userOne, err = s.User.FindOrCreateByEmail(ctx, "user-1@test.com")
 	assert.NoError(err)
 	// Attach both orgs
-	_, err = s.Membership.Create(ctx, s.userOneOrg.ID, s.userOne.ID, true)
+	_, err = s.Membership.Create(ctx, s.userOneOrg.ID, s.userOne.ID)
 	assert.NoError(err)
-	_, err = s.Membership.Create(ctx, s.sharedOrg.ID, s.userOne.ID, true)
+	_, err = s.Membership.Create(ctx, s.sharedOrg.ID, s.userOne.ID, biz.WithCurrentMembership())
 	assert.NoError(err)
 
 	// Create User 2 and attach shared org
 	s.userTwo, err = s.User.FindOrCreateByEmail(ctx, "user-2@test.com")
 	assert.NoError(err)
-	_, err = s.Membership.Create(ctx, s.sharedOrg.ID, s.userTwo.ID, true)
+	_, err = s.Membership.Create(ctx, s.sharedOrg.ID, s.userTwo.ID, biz.WithCurrentMembership())
 	assert.NoError(err)
 }

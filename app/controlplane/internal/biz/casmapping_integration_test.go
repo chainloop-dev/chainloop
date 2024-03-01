@@ -385,11 +385,11 @@ func (s *casMappingIntegrationSuite) SetupTest() {
 	s.userOrg2, err = s.User.FindOrCreateByEmail(ctx, "foo-org2@test.com")
 	assert.NoError(err)
 
-	_, err = s.Membership.Create(ctx, s.org1.ID, s.userOrg1And2.ID, false)
+	_, err = s.Membership.Create(ctx, s.org1.ID, s.userOrg1And2.ID)
 	assert.NoError(err)
-	_, err = s.Membership.Create(ctx, s.org2.ID, s.userOrg1And2.ID, true)
+	_, err = s.Membership.Create(ctx, s.org2.ID, s.userOrg1And2.ID, biz.WithCurrentMembership())
 	assert.NoError(err)
-	_, err = s.Membership.Create(ctx, s.org2.ID, s.userOrg2.ID, true)
+	_, err = s.Membership.Create(ctx, s.org2.ID, s.userOrg2.ID, biz.WithCurrentMembership())
 	assert.NoError(err)
 }
 
