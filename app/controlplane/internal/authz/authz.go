@@ -321,6 +321,10 @@ func newEnforcer(a persist.Adapter) (*Enforcer, error) {
 // This is done by adding all the policies defined in the roles map
 // and removing all the policies that are not
 func syncRBACRoles(e *Enforcer) error {
+	return doSync(e, rolesMap)
+}
+
+func doSync(e *Enforcer, rolesMap map[Role][]*Policy) error {
 	// Add all the defined policies if they don't exist
 	for role, policies := range rolesMap {
 		for _, p := range policies {
@@ -340,13 +344,17 @@ func syncRBACRoles(e *Enforcer) error {
 		role := gotPolicies[0]
 		policy := &Policy{Resource: gotPolicies[1], Action: gotPolicies[2]}
 
-		// Check if they exist in the map and if they don't, remove them
 		wantPolicies, ok := rolesMap[Role(role)]
+		// if the role does not exist in the map, we can delete the policy
 		if !ok {
+			_, err := e.RemovePolicy(role, policy.Resource, policy.Action)
+			if err != nil {
+				return fmt.Errorf("failed to remove policy: %w", err)
+			}
 			continue
 		}
 
-		// Check if the policy is in the map
+		// We have the role in the map, so we now compare the policies
 		found := false
 		for _, p := range wantPolicies {
 			if p.Resource == policy.Resource && p.Action == policy.Action {
