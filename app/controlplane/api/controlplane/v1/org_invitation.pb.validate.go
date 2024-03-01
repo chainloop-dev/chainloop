@@ -61,17 +61,7 @@ func (m *OrgInvitationServiceCreateRequest) validate(all bool) error {
 
 	var errors []error
 
-	if err := m._validateUuid(m.GetOrganizationId()); err != nil {
-		err = OrgInvitationServiceCreateRequestValidationError{
-			field:  "OrganizationId",
-			reason: "value must be a valid UUID",
-			cause:  err,
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for OrganizationId
 
 	if err := m._validateEmail(m.GetReceiverEmail()); err != nil {
 		err = OrgInvitationServiceCreateRequestValidationError{
@@ -140,14 +130,6 @@ func (m *OrgInvitationServiceCreateRequest) _validateEmail(addr string) error {
 	}
 
 	return m._validateHostname(parts[1])
-}
-
-func (m *OrgInvitationServiceCreateRequest) _validateUuid(uuid string) error {
-	if matched := _org_invitation_uuidPattern.MatchString(uuid); !matched {
-		return errors.New("invalid uuid format")
-	}
-
-	return nil
 }
 
 // OrgInvitationServiceCreateRequestMultiError is an error wrapping multiple

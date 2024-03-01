@@ -43,8 +43,13 @@ func (s *OrgInvitationService) Create(ctx context.Context, req *pb.OrgInvitation
 		return nil, err
 	}
 
+	org, err := requireCurrentOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	// Validations and rbac checks are done in the biz layer
-	i, err := s.useCase.Create(ctx, req.OrganizationId, user.ID, req.ReceiverEmail)
+	i, err := s.useCase.Create(ctx, org.ID, user.ID, req.ReceiverEmail)
 	if err != nil {
 		return nil, handleUseCaseErr("invitation", err, s.log)
 	}
@@ -71,7 +76,12 @@ func (s *OrgInvitationService) ListSent(ctx context.Context, _ *pb.OrgInvitation
 		return nil, err
 	}
 
-	invitations, err := s.useCase.ListBySender(ctx, user.ID)
+	org, err := requireCurrentOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	invitations, err := s.useCase.ListBySenderAndOrg(ctx, user.ID, org.ID)
 	if err != nil {
 		return nil, handleUseCaseErr("invitation", err, s.log)
 	}

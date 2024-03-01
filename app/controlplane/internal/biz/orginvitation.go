@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ type OrgInvitationRepo interface {
 	PendingInvitation(ctx context.Context, orgID uuid.UUID, receiverEmail string) (*OrgInvitation, error)
 	PendingInvitations(ctx context.Context, receiverEmail string) ([]*OrgInvitation, error)
 	SoftDelete(ctx context.Context, id uuid.UUID) error
-	ListBySender(ctx context.Context, sender uuid.UUID) ([]*OrgInvitation, error)
+	ListBySenderAndOrg(ctx context.Context, sender, org uuid.UUID) ([]*OrgInvitation, error)
 	ChangeStatus(ctx context.Context, ID uuid.UUID, status OrgInvitationStatus) error
 }
 
@@ -87,14 +87,15 @@ func (uc *OrgInvitationUseCase) Create(ctx context.Context, orgID, senderID, rec
 		return nil, NewErrValidationStr("sender and receiver emails cannot be the same")
 	}
 
-	// 3 - Check if the user has permissions to invite to the org
+	// 3 - Check that the user is a member of the given org
+	// NOTE: this check is not necessary, as the user is already a member of the org
 	if membership, err := uc.mRepo.FindByOrgAndUser(ctx, orgUUID, senderUUID); err != nil {
 		return nil, fmt.Errorf("failed to find memberships: %w", err)
 	} else if membership == nil {
 		return nil, NewErrNotFound("user does not have permission to invite to this org")
 	}
 
-	// 4 - The receiver does not exist in the org already
+	// 4 - The receiver does exist in the org already
 	memberships, err := uc.mRepo.FindByOrg(ctx, orgUUID)
 	if err != nil {
 		return nil, fmt.Errorf("error finding memberships for user %s: %w", senderUUID.String(), err)
@@ -116,7 +117,7 @@ func (uc *OrgInvitationUseCase) Create(ctx context.Context, orgID, senderID, rec
 		return nil, NewErrValidationStr("invitation already exists for this user and org")
 	}
 
-	// 5 - Create the invitation
+	// 6 - Create the invitation
 	invitation, err := uc.repo.Create(ctx, orgUUID, senderUUID, receiverEmail)
 	if err != nil {
 		return nil, fmt.Errorf("error creating invitation: %w", err)
@@ -125,13 +126,18 @@ func (uc *OrgInvitationUseCase) Create(ctx context.Context, orgID, senderID, rec
 	return invitation, nil
 }
 
-func (uc *OrgInvitationUseCase) ListBySender(ctx context.Context, senderID string) ([]*OrgInvitation, error) {
+func (uc *OrgInvitationUseCase) ListBySenderAndOrg(ctx context.Context, senderID, orgID string) ([]*OrgInvitation, error) {
 	senderUUID, err := uuid.Parse(senderID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	return uc.repo.ListBySender(ctx, senderUUID)
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	return uc.repo.ListBySenderAndOrg(ctx, senderUUID, orgUUID)
 }
 
 // Revoke an invitation by ID only if the user is the one who created it

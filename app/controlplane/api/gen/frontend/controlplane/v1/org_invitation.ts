@@ -8,6 +8,11 @@ import { OrgItem, User } from "./response_messages";
 export const protobufPackage = "controlplane.v1";
 
 export interface OrgInvitationServiceCreateRequest {
+  /**
+   * organization is deprecated and not used anymore
+   *
+   * @deprecated
+   */
   organizationId: string;
   receiverEmail: string;
 }
