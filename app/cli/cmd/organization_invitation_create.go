@@ -23,13 +23,13 @@ import (
 )
 
 func newOrganizationInvitationCreateCmd() *cobra.Command {
-	var receiverEmail, organizationID string
+	var receiverEmail string
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Invite a User to an Organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			res, err := action.NewOrgInvitationCreate(actionOpts).Run(
-				context.Background(), organizationID, receiverEmail)
+				context.Background(), receiverEmail)
 			if err != nil {
 				return err
 			}
@@ -40,10 +40,6 @@ func newOrganizationInvitationCreateCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&receiverEmail, "receiver", "", "Email of the user to invite")
 	err := cmd.MarkFlagRequired("receiver")
-	cobra.CheckErr(err)
-
-	cmd.Flags().StringVar(&organizationID, "organization", "", "ID of the organization to invite the user to")
-	err = cmd.MarkFlagRequired("organization")
 	cobra.CheckErr(err)
 
 	return cmd
