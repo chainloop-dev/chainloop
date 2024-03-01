@@ -110,8 +110,8 @@ func (r *OrgInvitation) SoftDelete(ctx context.Context, id uuid.UUID) error {
 	return r.data.db.OrgInvitation.UpdateOneID(id).SetDeletedAt(time.Now()).Exec(ctx)
 }
 
-func (r *OrgInvitation) ListBySenderAndOrg(ctx context.Context, userID, OrgID uuid.UUID) ([]*biz.OrgInvitation, error) {
-	invite, err := r.query().Where(orginvitation.SenderID(userID), orginvitation.OrganizationID(OrgID)).All(ctx)
+func (r *OrgInvitation) ListBySenderAndOrg(ctx context.Context, userID, orgID uuid.UUID) ([]*biz.OrgInvitation, error) {
+	invite, err := r.query().Where(orginvitation.SenderID(userID), orginvitation.OrganizationID(orgID)).All(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error finding invites for user %s: %w", userID.String(), err)
 	}
