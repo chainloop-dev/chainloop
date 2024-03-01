@@ -20,9 +20,7 @@ import (
 	"io"
 	"os"
 	"testing"
-	"time"
 
-	"github.com/cenkalti/backoff/v4"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -248,59 +246,4 @@ func testEnforcer(t *testing.T) (*Enforcer, io.Closer) {
 	enforcer, err := NewFiletypeEnforcer(f.Name())
 	require.NoError(t, err)
 	return enforcer, f
-}
-
-// func TestMultiReplicaPropagation(t *testing.T) {
-// 	// Create two enforcers that share the same database
-// 	db := testhelpers.NewTestDatabase(t)
-// 	defer db.Close(t)
-//
-// 	enforcerA, err := NewDatabaseEnforcer(testhelpers.NewConfData(db, t).Database)
-// 	require.NoError(t, err)
-// 	enforcerB, err := NewDatabaseEnforcer(testhelpers.NewConfData(db, t).Database)
-// 	require.NoError(t, err)
-//
-// 	// Subject and policies to add
-// 	sub := &SubjectAPIToken{ID: uuid.NewString()}
-// 	want := []*Policy{PolicyWorkflowContractList, PolicyWorkflowContractRead}
-//
-// 	// Create policies in one enforcer
-// 	err = enforcerA.AddPolicies(sub, want...)
-// 	require.NoError(t, err)
-//
-// 	// Make sure it propagates to the other one
-// 	got := enforcerA.GetFilteredPolicy(0, sub.String())
-// 	assert.Len(t, got, 2)
-//
-// 	// it might take a bit for the policies to propagate to the other enforcer
-// 	err = fnWithRetry(func() error {
-// 		got = enforcerB.GetFilteredPolicy(0, sub.String())
-// 		if len(got) == 2 {
-// 			return nil
-// 		}
-// 		return fmt.Errorf("policies not propagated yet")
-// 	})
-// 	require.NoError(t, err)
-// 	assert.Len(t, got, 2)
-//
-// 	// Then delete them from the second one and check propagation again
-// 	require.NoError(t, enforcerB.ClearPolicies(sub))
-// 	assert.Len(t, enforcerB.GetFilteredPolicy(0, sub.String()), 0)
-//
-// 	// Make sure it propagates to the other one
-// 	err = fnWithRetry(func() error {
-// 		got = enforcerA.GetFilteredPolicy(0, sub.String())
-// 		if len(got) == 0 {
-// 			return nil
-// 		}
-//
-// 		return fmt.Errorf("policies not propagated yet")
-// 	})
-// 	require.NoError(t, err)
-// 	assert.Len(t, enforcerA.GetFilteredPolicy(0, sub.String()), 0)
-// }
-
-func fnWithRetry(f func() error) error {
-	// Max 1 seconds
-	return backoff.Retry(f, backoff.WithMaxRetries(backoff.NewConstantBackOff(100*time.Millisecond), 10))
 }
