@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ type MembershipItem struct {
 	CreatedAt *time.Time `json:"joinedAt"`
 	UpdatedAt *time.Time `json:"updatedAt"`
 	Org       *OrgItem
+	Role      string `json:"role"`
 }
 
 func NewMembershipList(cfg *ActionsOpts) *MembershipList {
@@ -71,11 +72,22 @@ func pbMembershipItemToAction(in *pb.OrgMembershipItem) *MembershipItem {
 		return nil
 	}
 
+	var role string
+	switch in.Role {
+	case pb.MembershipRole_MEMBERSHIP_ROLE_ORG_ADMIN:
+		role = "admin"
+	case pb.MembershipRole_MEMBERSHIP_ROLE_ORG_VIEWER:
+		role = "viewer"
+	case pb.MembershipRole_MEMBERSHIP_ROLE_ORG_OWNER:
+		role = "owner"
+	}
+
 	return &MembershipItem{
 		ID:        in.GetId(),
 		CreatedAt: toTimePtr(in.GetCreatedAt().AsTime()),
 		UpdatedAt: toTimePtr(in.GetCreatedAt().AsTime()),
 		Org:       pbOrgItemToAction(in.Org),
 		Current:   in.Current,
+		Role:      role,
 	}
 }

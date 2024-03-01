@@ -2,7 +2,7 @@
 import { grpc } from "@improbable-eng/grpc-web";
 import { BrowserHeaders } from "browser-headers";
 import _m0 from "protobufjs/minimal";
-import { CASBackendItem, OrgItem, User } from "./response_messages";
+import { CASBackendItem, OrgMembershipItem, User } from "./response_messages";
 
 export const protobufPackage = "controlplane.v1";
 
@@ -15,7 +15,7 @@ export interface ContextServiceCurrentResponse {
 
 export interface ContextServiceCurrentResponse_Result {
   currentUser?: User;
-  currentOrg?: OrgItem;
+  currentMembership?: OrgMembershipItem;
   currentCasBackend?: CASBackendItem;
 }
 
@@ -125,7 +125,7 @@ export const ContextServiceCurrentResponse = {
 };
 
 function createBaseContextServiceCurrentResponse_Result(): ContextServiceCurrentResponse_Result {
-  return { currentUser: undefined, currentOrg: undefined, currentCasBackend: undefined };
+  return { currentUser: undefined, currentMembership: undefined, currentCasBackend: undefined };
 }
 
 export const ContextServiceCurrentResponse_Result = {
@@ -133,8 +133,8 @@ export const ContextServiceCurrentResponse_Result = {
     if (message.currentUser !== undefined) {
       User.encode(message.currentUser, writer.uint32(10).fork()).ldelim();
     }
-    if (message.currentOrg !== undefined) {
-      OrgItem.encode(message.currentOrg, writer.uint32(18).fork()).ldelim();
+    if (message.currentMembership !== undefined) {
+      OrgMembershipItem.encode(message.currentMembership, writer.uint32(18).fork()).ldelim();
     }
     if (message.currentCasBackend !== undefined) {
       CASBackendItem.encode(message.currentCasBackend, writer.uint32(26).fork()).ldelim();
@@ -161,7 +161,7 @@ export const ContextServiceCurrentResponse_Result = {
             break;
           }
 
-          message.currentOrg = OrgItem.decode(reader, reader.uint32());
+          message.currentMembership = OrgMembershipItem.decode(reader, reader.uint32());
           continue;
         case 3:
           if (tag !== 26) {
@@ -182,7 +182,9 @@ export const ContextServiceCurrentResponse_Result = {
   fromJSON(object: any): ContextServiceCurrentResponse_Result {
     return {
       currentUser: isSet(object.currentUser) ? User.fromJSON(object.currentUser) : undefined,
-      currentOrg: isSet(object.currentOrg) ? OrgItem.fromJSON(object.currentOrg) : undefined,
+      currentMembership: isSet(object.currentMembership)
+        ? OrgMembershipItem.fromJSON(object.currentMembership)
+        : undefined,
       currentCasBackend: isSet(object.currentCasBackend)
         ? CASBackendItem.fromJSON(object.currentCasBackend)
         : undefined,
@@ -193,8 +195,9 @@ export const ContextServiceCurrentResponse_Result = {
     const obj: any = {};
     message.currentUser !== undefined &&
       (obj.currentUser = message.currentUser ? User.toJSON(message.currentUser) : undefined);
-    message.currentOrg !== undefined &&
-      (obj.currentOrg = message.currentOrg ? OrgItem.toJSON(message.currentOrg) : undefined);
+    message.currentMembership !== undefined && (obj.currentMembership = message.currentMembership
+      ? OrgMembershipItem.toJSON(message.currentMembership)
+      : undefined);
     message.currentCasBackend !== undefined &&
       (obj.currentCasBackend = message.currentCasBackend
         ? CASBackendItem.toJSON(message.currentCasBackend)
@@ -215,8 +218,8 @@ export const ContextServiceCurrentResponse_Result = {
     message.currentUser = (object.currentUser !== undefined && object.currentUser !== null)
       ? User.fromPartial(object.currentUser)
       : undefined;
-    message.currentOrg = (object.currentOrg !== undefined && object.currentOrg !== null)
-      ? OrgItem.fromPartial(object.currentOrg)
+    message.currentMembership = (object.currentMembership !== undefined && object.currentMembership !== null)
+      ? OrgMembershipItem.fromPartial(object.currentMembership)
       : undefined;
     message.currentCasBackend = (object.currentCasBackend !== undefined && object.currentCasBackend !== null)
       ? CASBackendItem.fromPartial(object.currentCasBackend)

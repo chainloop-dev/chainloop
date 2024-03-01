@@ -46,7 +46,11 @@ func contextTableOutput(config *action.ConfigContextItem) error {
 	gt.SetTitle("Current Context")
 	gt.AppendRow(table.Row{"Logged in as", config.CurrentUser.Email})
 	gt.AppendSeparator()
-	gt.AppendRow(table.Row{"Organization", fmt.Sprintf("%s (%s)", config.CurrentOrg.Name, config.CurrentOrg.ID)})
+
+	if m := config.CurrentMembership; m != nil {
+		gt.AppendRow(table.Row{"Organization", fmt.Sprintf("%s (role=%s)", m.Org.Name, m.Role)})
+	}
+
 	backend := config.CurrentCASBackend
 	if backend != nil {
 		gt.AppendSeparator()

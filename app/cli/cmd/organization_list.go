@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -49,10 +49,10 @@ func orgMembershipTableOutput(items []*action.MembershipItem) error {
 	}
 
 	t := newTableWriter()
-	t.AppendHeader(table.Row{"Org ID", "Org Name", "Current", "Joined At"})
+	t.AppendHeader(table.Row{"Org ID", "Org Name", "Current", "Role", "Joined At"})
 
 	for _, i := range items {
-		t.AppendRow(table.Row{i.Org.ID, i.Org.Name, i.Current, i.CreatedAt.Format(time.RFC822)})
+		t.AppendRow(table.Row{i.Org.ID, i.Org.Name, i.Current, i.Role, i.CreatedAt.Format(time.RFC822)})
 		t.AppendSeparator()
 	}
 

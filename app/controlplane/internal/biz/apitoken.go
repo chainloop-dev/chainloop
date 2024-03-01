@@ -74,6 +74,7 @@ func NewAPITokenUseCase(apiTokenRepo APITokenRepo, conf *conf.Auth, authzE *auth
 			authz.PolicyWorkflowContractList, authz.PolicyWorkflowContractRead, authz.PolicyWorkflowContractUpdate,
 			// to download artifacts and list referrers
 			authz.PolicyArtifactDownload, authz.PolicyReferrerRead,
+			authz.PolicyOrganizationRead,
 		},
 	}
 
