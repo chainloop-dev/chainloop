@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import (
 	"io"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	bizMocks "github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/mocks"
 	userjwtbuilder "github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/user"
@@ -81,7 +82,10 @@ func TestWithCurrentUserAndOrgMiddleware(t *testing.T) {
 	}
 
 	wantUser := &biz.User{ID: uuid.NewString()}
-	wantOrg := &biz.Organization{ID: uuid.NewString()}
+	wantMembership := &biz.Membership{
+		Org:  &biz.Organization{ID: uuid.NewString()},
+		Role: authz.RoleViewer,
+	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -103,9 +107,9 @@ func TestWithCurrentUserAndOrgMiddleware(t *testing.T) {
 			}
 
 			if tc.orgExist {
-				usecase.On("CurrentOrg", ctx, wantUser.ID).Return(wantOrg, nil)
+				usecase.On("CurrentMembership", ctx, wantUser.ID).Return(wantMembership, nil)
 			} else if tc.loggedIn {
-				usecase.On("CurrentOrg", ctx, wantUser.ID).Maybe().Return(nil, nil)
+				usecase.On("CurrentMembership", ctx, wantUser.ID).Maybe().Return(nil, nil)
 			}
 
 			m := WithCurrentUserAndOrgMiddleware(usecase, logger)
@@ -117,8 +121,9 @@ func TestWithCurrentUserAndOrgMiddleware(t *testing.T) {
 
 					if !tc.skipped {
 						// Check that the wrapped handler contains the user and org
-						assert.Equal(t, CurrentOrg(ctx).ID, wantOrg.ID)
+						assert.Equal(t, CurrentOrg(ctx).ID, wantMembership.Org.ID)
 						assert.Equal(t, CurrentUser(ctx).ID, wantUser.ID)
+						assert.Equal(t, CurrentAuthzSubject(ctx), string(authz.RoleViewer))
 					}
 
 					return nil, nil

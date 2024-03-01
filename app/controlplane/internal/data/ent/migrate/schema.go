@@ -162,6 +162,7 @@ var (
 		{Name: "current", Type: field.TypeBool, Default: false},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "updated_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "role", Type: field.TypeEnum, Enums: []string{"role:org:owner", "role:org:admin", "role:org:viewer"}},
 		{Name: "organization_memberships", Type: field.TypeUUID},
 		{Name: "user_memberships", Type: field.TypeUUID},
 	}
@@ -173,13 +174,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "memberships_organizations_memberships",
-				Columns:    []*schema.Column{MembershipsColumns[4]},
+				Columns:    []*schema.Column{MembershipsColumns[5]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "memberships_users_memberships",
-				Columns:    []*schema.Column{MembershipsColumns[5]},
+				Columns:    []*schema.Column{MembershipsColumns[6]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -188,7 +189,7 @@ var (
 			{
 				Name:    "membership_organization_memberships_user_memberships",
 				Unique:  true,
-				Columns: []*schema.Column{MembershipsColumns[4], MembershipsColumns[5]},
+				Columns: []*schema.Column{MembershipsColumns[5], MembershipsColumns[6]},
 			},
 		},
 	}

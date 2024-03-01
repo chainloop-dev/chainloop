@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
@@ -197,14 +198,16 @@ func (uc *OrgInvitationUseCase) AcceptPendingInvitations(ctx context.Context, re
 		}
 
 		// user is not a member of the org, create the membership
+		// Role hardcoded by default until we have a way to set it during invitation
+		role := authz.RoleAdmin
 		if !alreadyMember {
-			uc.logger.Infow("msg", "Adding member", "invitation_id", invitation.ID.String(), "org_id", invitation.Org.ID, "user_id", user.ID)
-			if _, err := uc.mRepo.Create(ctx, orgUUID, userUUID, false); err != nil {
+			uc.logger.Infow("msg", "Adding member", "invitation_id", invitation.ID.String(), "org_id", invitation.Org.ID, "user_id", user.ID, "role", role)
+			if _, err := uc.mRepo.Create(ctx, orgUUID, userUUID, false, role); err != nil {
 				return fmt.Errorf("error creating membership for user %s: %w", receiverEmail, err)
 			}
 		}
 
-		uc.logger.Infow("msg", "Accepting invitation", "invitation_id", invitation.ID.String(), "org_id", invitation.Org.ID, "user_id", user.ID)
+		uc.logger.Infow("msg", "Accepting invitation", "invitation_id", invitation.ID.String(), "org_id", invitation.Org.ID, "user_id", user.ID, "role", role)
 		// change the status of the invitation
 		if err := uc.repo.ChangeStatus(ctx, invitation.ID, OrgInvitationStatusAccepted); err != nil {
 			return fmt.Errorf("error changing status of invitation %s: %w", invitation.ID.String(), err)

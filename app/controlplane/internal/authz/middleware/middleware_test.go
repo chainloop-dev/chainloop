@@ -62,29 +62,18 @@ func (tr *mockTransport) ReplyHeader() transport.Header {
 	return nil
 }
 
-// - It's an user
-// - It's neither an user nor a token
-// - it's a token but unknown operation
-// - it's a token with known operation but wrong permissions
-// - it's a token with known operation and right permissions
 func TestWithAuthMiddleware(t *testing.T) {
-	u := &usercontext.User{Email: "sarah@cyberdyne.io", ID: "124"}
-	token := &usercontext.APIToken{ID: "deadbeef"}
 	logger := log.NewHelper(log.NewStdLogger(io.Discard))
 
 	testCases := []struct {
 		name           string
 		hasUser        bool
+		userRole       string
 		hasToken       bool
 		operationName  string
 		hasPermissions bool
 		wantErr        bool
 	}{
-		{
-			name:    "it's an user so authz is skipped",
-			hasUser: true,
-			wantErr: false,
-		},
 		{
 			name:    "neither an user nor a token is set",
 			wantErr: true,
@@ -107,27 +96,59 @@ func TestWithAuthMiddleware(t *testing.T) {
 			operationName:  "/controlplane.v1.WorkflowContractService/List",
 			hasPermissions: true,
 		},
+		{
+			name:           "there is user that's admin so it should be allowed even if it has no permissions",
+			hasUser:        true,
+			userRole:       "role:org:admin",
+			operationName:  "/controlplane.v1.WorkflowContractService/List",
+			hasPermissions: false,
+		},
+		{
+			name:           "same for owner",
+			hasUser:        true,
+			userRole:       "role:org:owner",
+			operationName:  "/controlplane.v1.WorkflowContractService/List",
+			hasPermissions: false,
+		},
+		{
+			name:           "but viewer requires permissions",
+			hasUser:        true,
+			userRole:       "role:org:viewer",
+			operationName:  "/controlplane.v1.WorkflowContractService/List",
+			hasPermissions: false,
+			wantErr:        true,
+		},
+		{
+			name:           "but viewer requires permissions, and now it has it",
+			hasUser:        true,
+			userRole:       "role:org:viewer",
+			operationName:  "/controlplane.v1.WorkflowContractService/List",
+			hasPermissions: true,
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Set request context
 			ctx := context.Background()
+			var subject string
 			// User and token
 			if tc.hasUser {
-				ctx = usercontext.WithCurrentUser(ctx, u)
+				subject = tc.userRole
+				ctx = usercontext.WithAuthzSubject(ctx, subject)
 			}
 
 			if tc.hasToken {
-				ctx = usercontext.WithCurrentAPIToken(ctx, token)
+				s := authz.SubjectAPIToken{ID: "deadbeef"}
+				subject = s.String()
+				ctx = usercontext.WithAuthzSubject(ctx, subject)
 			}
 
 			// Request information
 			ctx = transport.NewServerContext(ctx, &mockTransport{operation: tc.operationName})
 
 			e := mocks.NewEnforcer(t)
-			subject := authz.SubjectAPIToken{ID: token.ID}
-			e.On("Enforce", subject.String(), mock.Anything, mock.Anything).Maybe().Return(tc.hasPermissions, nil)
+			e.On("Enforce", subject, mock.Anything).Maybe().Return(tc.hasPermissions, nil)
 
 			m := WithAuthzMiddleware(e, logger)
 			_, err := m(emptyHandler)(ctx, nil)
@@ -135,6 +156,58 @@ func TestWithAuthMiddleware(t *testing.T) {
 			if tc.wantErr {
 				assert.Error(t, err)
 				assert.True(t, errors.IsForbidden(err))
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestPoliciesLookup(t *testing.T) {
+	testCases := []struct {
+		name      string
+		operation string
+		wantErr   bool
+	}{
+		{
+			name:    "empty operation",
+			wantErr: true,
+		},
+		{
+			name:      "operation not found",
+			operation: "non-existing-operation",
+			wantErr:   true,
+		},
+		{
+			name:      "operation found in first pass",
+			operation: "/controlplane.v1.WorkflowContractService/List",
+		},
+		{
+			name:      "operation found with regexp",
+			operation: "/controlplane.v1.OrgMetricsService/List",
+		},
+		{
+			name:      "operation found with regexp 2",
+			operation: "/controlplane.v1.OrgMetricsService/boom",
+		},
+		{
+			name:      "operation found with regexp, error wrong prefix",
+			operation: "/boom/controlplane.v1.OrgMetricsService",
+			wantErr:   true,
+		},
+		{
+			name:      "operation found with regexp, error not found",
+			operation: "/controlplane.v1.OrgMetricsService",
+			wantErr:   true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := policiesLookup(tc.operation)
+
+			if tc.wantErr {
+				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
 			}

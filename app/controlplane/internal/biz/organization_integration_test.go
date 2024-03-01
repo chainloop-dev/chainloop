@@ -226,7 +226,7 @@ func (s *OrgIntegrationTestSuite) SetupTest() {
 
 	s.user, err = s.User.FindOrCreateByEmail(ctx, "foo@test.com")
 	assert.NoError(err)
-	_, err = s.Membership.Create(ctx, s.org.ID, s.user.ID, true)
+	_, err = s.Membership.Create(ctx, s.org.ID, s.user.ID, biz.WithIsCurrent())
 	assert.NoError(err)
 
 	// Integration

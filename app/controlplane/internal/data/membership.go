@@ -18,6 +18,7 @@ package data
 import (
 	"context"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/membership"
@@ -38,11 +39,12 @@ func NewMembershipRepo(data *Data, logger log.Logger) biz.MembershipRepo {
 	}
 }
 
-func (r *MembershipRepo) Create(ctx context.Context, orgID, userID uuid.UUID, current bool) (*biz.Membership, error) {
+func (r *MembershipRepo) Create(ctx context.Context, orgID, userID uuid.UUID, current bool, role authz.Role) (*biz.Membership, error) {
 	m, err := r.data.db.Membership.Create().
 		SetUserID(userID).
 		SetOrganizationID(orgID).
 		SetCurrent(current).
+		SetRole(role).
 		Save(ctx)
 	if err != nil {
 		return nil, err
@@ -165,7 +167,10 @@ func entMembershipToBiz(m *ent.Membership) *biz.Membership {
 		return nil
 	}
 
-	res := &biz.Membership{ID: m.ID, Current: m.Current, CreatedAt: toTimePtr(m.CreatedAt), UpdatedAt: toTimePtr(m.UpdatedAt)}
+	res := &biz.Membership{ID: m.ID,
+		Current: m.Current, CreatedAt: toTimePtr(m.CreatedAt), UpdatedAt: toTimePtr(m.UpdatedAt),
+		Role: m.Role,
+	}
 
 	if m.Edges.Organization != nil {
 		res.OrganizationID = m.Edges.Organization.ID

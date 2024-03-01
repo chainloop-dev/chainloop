@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/membership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/user"
@@ -62,6 +63,12 @@ func (mc *MembershipCreate) SetNillableUpdatedAt(t *time.Time) *MembershipCreate
 	if t != nil {
 		mc.SetUpdatedAt(*t)
 	}
+	return mc
+}
+
+// SetRole sets the "role" field.
+func (mc *MembershipCreate) SetRole(a authz.Role) *MembershipCreate {
+	mc.mutation.SetRole(a)
 	return mc
 }
 
@@ -165,6 +172,14 @@ func (mc *MembershipCreate) check() error {
 	if _, ok := mc.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Membership.updated_at"`)}
 	}
+	if _, ok := mc.mutation.Role(); !ok {
+		return &ValidationError{Name: "role", err: errors.New(`ent: missing required field "Membership.role"`)}
+	}
+	if v, ok := mc.mutation.Role(); ok {
+		if err := membership.RoleValidator(v); err != nil {
+			return &ValidationError{Name: "role", err: fmt.Errorf(`ent: validator failed for field "Membership.role": %w`, err)}
+		}
+	}
 	if _, ok := mc.mutation.OrganizationID(); !ok {
 		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "Membership.organization"`)}
 	}
@@ -217,6 +232,10 @@ func (mc *MembershipCreate) createSpec() (*Membership, *sqlgraph.CreateSpec) {
 	if value, ok := mc.mutation.UpdatedAt(); ok {
 		_spec.SetField(membership.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
+	}
+	if value, ok := mc.mutation.Role(); ok {
+		_spec.SetField(membership.FieldRole, field.TypeEnum, value)
+		_node.Role = value
 	}
 	if nodes := mc.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

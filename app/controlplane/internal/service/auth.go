@@ -26,6 +26,7 @@ import (
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt"
@@ -217,8 +218,8 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) (
 			return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
 		}
 
-		// Create membership
-		if _, err := svc.membershipUseCase.Create(ctx, currentOrg.ID, u.ID, true); err != nil {
+		// Create membership as owner of the new org
+		if _, err := svc.membershipUseCase.Create(ctx, currentOrg.ID, u.ID, biz.WithIsCurrent(), biz.WithRole(authz.RoleOwner)); err != nil {
 			return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
 		}
 

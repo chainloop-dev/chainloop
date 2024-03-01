@@ -7,6 +7,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
 	"github.com/google/uuid"
 )
@@ -159,6 +160,36 @@ func UpdatedAtLT(v time.Time) predicate.Membership {
 // UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
 func UpdatedAtLTE(v time.Time) predicate.Membership {
 	return predicate.Membership(sql.FieldLTE(FieldUpdatedAt, v))
+}
+
+// RoleEQ applies the EQ predicate on the "role" field.
+func RoleEQ(v authz.Role) predicate.Membership {
+	vc := v
+	return predicate.Membership(sql.FieldEQ(FieldRole, vc))
+}
+
+// RoleNEQ applies the NEQ predicate on the "role" field.
+func RoleNEQ(v authz.Role) predicate.Membership {
+	vc := v
+	return predicate.Membership(sql.FieldNEQ(FieldRole, vc))
+}
+
+// RoleIn applies the In predicate on the "role" field.
+func RoleIn(vs ...authz.Role) predicate.Membership {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Membership(sql.FieldIn(FieldRole, v...))
+}
+
+// RoleNotIn applies the NotIn predicate on the "role" field.
+func RoleNotIn(vs ...authz.Role) predicate.Membership {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Membership(sql.FieldNotIn(FieldRole, v...))
 }
 
 // HasOrganization applies the HasEdge predicate on the "organization" edge.

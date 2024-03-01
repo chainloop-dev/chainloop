@@ -22,6 +22,7 @@ import (
 	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	errors "github.com/go-kratos/kratos/v2/errors"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 )
@@ -33,9 +34,10 @@ type CASCredentialsService struct {
 	casUC        *biz.CASCredentialsUseCase
 	casBackendUC *biz.CASBackendUseCase
 	casMappingUC *biz.CASMappingUseCase
+	authz        *authz.Enforcer
 }
 
-func NewCASCredentialsService(casUC *biz.CASCredentialsUseCase, casmUC *biz.CASMappingUseCase, casBUC *biz.CASBackendUseCase, opts ...NewOpt) *CASCredentialsService {
+func NewCASCredentialsService(casUC *biz.CASCredentialsUseCase, casmUC *biz.CASMappingUseCase, casBUC *biz.CASBackendUseCase, authz *authz.Enforcer, opts ...NewOpt) *CASCredentialsService {
 	return &CASCredentialsService{
 		service: newService(opts...),
 		casUC:   casUC,
@@ -43,6 +45,7 @@ func NewCASCredentialsService(casUC *biz.CASCredentialsUseCase, casmUC *biz.CASM
 		casMappingUC: casmUC,
 		// we use the casBackendUC to find the default upload backend
 		casBackendUC: casBUC,
+		authz:        authz,
 	}
 }
 
@@ -58,12 +61,27 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 		return nil, err
 	}
 
+	// Load the authz subject from the context
+	currentAuthzSubject, err := requireCurrentAuthzSubject(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	var role casJWT.Role
+	var policyToCheck *authz.Policy
 	switch req.GetRole() {
 	case pb.CASCredentialsServiceGetRequest_ROLE_DOWNLOADER:
 		role = casJWT.Downloader
+		policyToCheck = authz.PolicyArtifactDownload
 	case pb.CASCredentialsServiceGetRequest_ROLE_UPLOADER:
 		role = casJWT.Uploader
+		policyToCheck = authz.PolicyArtifactUpload
+	}
+
+	if ok, err := s.authz.Enforce(currentAuthzSubject, policyToCheck); err != nil {
+		return nil, sl.LogAndMaskErr(err, s.log)
+	} else if !ok {
+		return nil, errors.Forbidden("forbidden", "not allowed to perform this operation")
 	}
 
 	// Load the default CAS backend, we'll use it for uploads and as fallback on downloads

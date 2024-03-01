@@ -96,6 +96,15 @@ func requireCurrentOrg(ctx context.Context) (*usercontext.Org, error) {
 	return currentOrg, nil
 }
 
+func requireCurrentAuthzSubject(ctx context.Context) (string, error) {
+	sub := usercontext.CurrentAuthzSubject(ctx)
+	if sub == "" {
+		return "", errors.NotFound("not found", "authorization subject not set")
+	}
+
+	return sub, nil
+}
+
 func newService(opts ...NewOpt) *service {
 	s := &service{
 		log: log.NewHelper(log.NewStdLogger(io.Discard)),

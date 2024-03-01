@@ -33,17 +33,40 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 )
 
+type Role string
+
 const (
 	// Actions
 	ActionRead   = "read"
 	ActionList   = "list"
+	ActionCreate = "create"
 	ActionUpdate = "update"
 	ActionDelete = "delete"
 
 	// Resources
-	ResourceWorkflowContract = "workflow_contract"
-	ResourceCASArtifact      = "cas_artifact"
-	ResourceReferrer         = "referrer"
+	ResourceWorkflowContract      = "workflow_contract"
+	ResourceCASArtifact           = "cas_artifact"
+	ResourceCASBackend            = "cas_backend"
+	ResourceReferrer              = "referrer"
+	ResourceAvailableIntegration  = "integration_available"
+	ResourceRegisteredIntegration = "integration_registered"
+	ResourceAttachedIntegration   = "integration_attached"
+	ResourceOrgMetric             = "metrics_org"
+	ResourceRobotAccount          = "robot_account"
+	ResourceWorkflowRun           = "workflow_run"
+	ResourceWorkflow              = "workflow"
+	UserMembership                = "membership_user"
+	Organization                  = "organization"
+
+	// We have for now three roles, viewer, admin and owner
+	// The owner of an org
+	// The administrator of an org
+	// The read only viewer of an org
+	// These roles are hierarchical
+	// This means that the Owner role inherits all the policies from Admin so from the Viewer Role
+	RoleOwner  Role = "role:org:owner"
+	RoleAdmin  Role = "role:org:admin"
+	RoleViewer Role = "role:org:viewer"
 )
 
 // resource, action tuple
@@ -53,12 +76,118 @@ type Policy struct {
 }
 
 var (
+	// Referrer
+	PolicyReferrerRead = &Policy{ResourceReferrer, ActionRead}
+	// Artifact
+	PolicyArtifactDownload = &Policy{ResourceCASArtifact, ActionRead}
+	PolicyArtifactUpload   = &Policy{ResourceCASArtifact, ActionCreate}
+	// CAS backend
+	PolicyCASBackendList = &Policy{ResourceCASBackend, ActionList}
+	// Available integrations
+	PolicyAvailableIntegrationList = &Policy{ResourceAvailableIntegration, ActionList}
+	PolicyAvailableIntegrationRead = &Policy{ResourceAvailableIntegration, ActionRead}
+	// Registered integrations
+	PolicyRegisteredIntegrationList = &Policy{ResourceRegisteredIntegration, ActionList}
+	// Attached integrations
+	PolicyAttachedIntegrationList = &Policy{ResourceAttachedIntegration, ActionList}
+	// Org Metrics
+	PolicyOrgMetricsRead = &Policy{ResourceOrgMetric, ActionList}
+	// Robot Account
+	PolicyRobotAccountList = &Policy{ResourceRobotAccount, ActionList}
+	// Workflow Contract
 	PolicyWorkflowContractList   = &Policy{ResourceWorkflowContract, ActionList}
 	PolicyWorkflowContractRead   = &Policy{ResourceWorkflowContract, ActionRead}
 	PolicyWorkflowContractUpdate = &Policy{ResourceWorkflowContract, ActionUpdate}
-	PolicyArtifactDownload       = &Policy{ResourceCASArtifact, ActionRead}
-	PolicyReferrerRead           = &Policy{ResourceReferrer, ActionRead}
+	// WorkflowRun
+	PolicyWorkflowRunList = &Policy{ResourceWorkflowRun, ActionList}
+	PolicyWorkflowRunRead = &Policy{ResourceWorkflowRun, ActionRead}
+	// Workflow
+	PolicyWorkflowList = &Policy{ResourceWorkflow, ActionList}
+	// User Membership
+	PolicyOrganizationRead = &Policy{Organization, ActionRead}
 )
+
+// List of policies for each role
+// NOTE: roles are hierarchical, this means that the Admin Role can inherit all the policies from the Viewer Role
+// so we do not need to add them as well.
+var rolesMap = map[Role][]*Policy{
+	RoleViewer: {
+		// Referrer
+		PolicyReferrerRead,
+		// Artifact
+		PolicyArtifactDownload,
+		// CAS backend
+		PolicyCASBackendList,
+		// Available integrations
+		PolicyAvailableIntegrationList,
+		PolicyAvailableIntegrationRead,
+		// Registered integrations
+		PolicyRegisteredIntegrationList,
+		// Attached integrations
+		PolicyAttachedIntegrationList,
+		// Metrics
+		PolicyOrgMetricsRead,
+		// Robot Account
+		PolicyRobotAccountList,
+		// Workflow Contract
+		PolicyWorkflowContractList,
+		PolicyWorkflowContractRead,
+		// WorkflowRun
+		PolicyWorkflowRunList,
+		PolicyWorkflowRunRead,
+		// Workflow
+		PolicyWorkflowList,
+		// Organization
+		PolicyOrganizationRead,
+	},
+	RoleAdmin: {
+		// We do a manual check in the artifact upload endpoint
+		// so we need the actual policy in place skipping it is not enough
+		PolicyArtifactUpload,
+		// + all the policies from the viewer role inherited automatically
+	},
+}
+
+// ServerOperationsMap is a map of server operations to the ResourceAction tuples that are
+// required to perform the operation
+// If it contains more than one policy, all of them need to be true
+var ServerOperationsMap = map[string][]*Policy{
+	// Discover endpoint
+	"/controlplane.v1.ReferrerService/DiscoverPrivate": {PolicyReferrerRead},
+	// Download/Uploading artifacts
+	// There are no policies for the download endpoint, we do a manual check in the service layer
+	// to differentiate between upload and download requests
+	"/controlplane.v1.CASCredentialsService/Get": {},
+	// CAS Backend listing
+	"/controlplane.v1.CASBackendService/List": {PolicyCASBackendList},
+	// Available integrations
+	"/controlplane.v1.IntegrationsService/ListAvailable": {PolicyAvailableIntegrationList, PolicyAvailableIntegrationRead},
+	// Registered integrations
+	"/controlplane.v1.IntegrationsService/ListRegistrations": {PolicyRegisteredIntegrationList},
+	// Attached integrations
+	"/controlplane.v1.IntegrationsService/ListAttachments": {PolicyAttachedIntegrationList},
+	// Metrics
+	"/controlplane.v1.OrgMetricsService/.*": {PolicyOrgMetricsRead},
+	// Robot Account
+	"/controlplane.v1.RobotAccountService/List": {PolicyRobotAccountList},
+	// Workflows
+	"/controlplane.v1.WorkflowService/List": {PolicyWorkflowList},
+	// WorkflowRun
+	"/controlplane.v1.WorkflowRunService/List": {PolicyWorkflowRunList},
+	"/controlplane.v1.WorkflowRunService/View": {PolicyWorkflowRunRead},
+	// Workflow Contracts
+	"/controlplane.v1.WorkflowContractService/List":     {PolicyWorkflowContractList},
+	"/controlplane.v1.WorkflowContractService/Describe": {PolicyWorkflowContractRead},
+	"/controlplane.v1.WorkflowContractService/Update":   {PolicyWorkflowContractUpdate},
+	// Get current information about an organization
+	"/controlplane.v1.ContextService/Current": {PolicyOrganizationRead, PolicyCASBackendList},
+	// Listing, create or selecting an organization does not have any required permissions,
+	// since all the permissions here are in the context of an organization
+	"/controlplane.v1.OrganizationService/Create":               {},
+	"/controlplane.v1.OrganizationService/SetCurrentMembership": {},
+	// NOTE: this is about listing my own memberships, not about listing all the memberships in the organization
+	"/controlplane.v1.OrganizationService/ListMemberships": {},
+}
 
 type SubjectAPIToken struct {
 	ID string
@@ -94,6 +223,10 @@ func (e *Enforcer) AddPolicies(sub *SubjectAPIToken, policies ...*Policy) error 
 	}
 
 	return nil
+}
+
+func (e *Enforcer) Enforce(sub string, p *Policy) (bool, error) {
+	return e.Enforcer.Enforce(sub, p.Resource, p.Action)
 }
 
 // Remove all the policies for the given subject
@@ -176,5 +309,94 @@ func newEnforcer(a persist.Adapter) (*Enforcer, error) {
 		return nil, fmt.Errorf("failed to create enforcer: %w", err)
 	}
 
+	// Initialize the enforcer with the roles map
+	if err := syncRBACRoles(&Enforcer{enforcer}); err != nil {
+		return nil, fmt.Errorf("failed to sync roles: %w", err)
+	}
+
 	return &Enforcer{enforcer}, nil
+}
+
+// Load the roles map into the enforcer
+// This is done by adding all the policies defined in the roles map
+// and removing all the policies that are not
+func syncRBACRoles(e *Enforcer) error {
+	return doSync(e, rolesMap)
+}
+
+func doSync(e *Enforcer, rolesMap map[Role][]*Policy) error {
+	// Add all the defined policies if they don't exist
+	for role, policies := range rolesMap {
+		for _, p := range policies {
+			// Add policies one by one to skip existing ones.
+			// This is because the bulk method AddPoliciesEx does not work well with the ent adapter
+			casbinPolicy := []string{string(role), p.Resource, p.Action}
+			_, err := e.AddPolicy(casbinPolicy)
+			if err != nil {
+				return fmt.Errorf("failed to add policy: %w", err)
+			}
+		}
+	}
+
+	// Delete all the policies that are not in the roles map
+	// 1 - load the policies from the enforcer DB
+	for _, gotPolicies := range e.GetPolicy() {
+		role := gotPolicies[0]
+		policy := &Policy{Resource: gotPolicies[1], Action: gotPolicies[2]}
+
+		wantPolicies, ok := rolesMap[Role(role)]
+		// if the role does not exist in the map, we can delete the policy
+		if !ok {
+			_, err := e.RemovePolicy(role, policy.Resource, policy.Action)
+			if err != nil {
+				return fmt.Errorf("failed to remove policy: %w", err)
+			}
+			continue
+		}
+
+		// We have the role in the map, so we now compare the policies
+		found := false
+		for _, p := range wantPolicies {
+			if p.Resource == policy.Resource && p.Action == policy.Action {
+				found = true
+				break
+			}
+		}
+
+		// If the policy is not in the map, we remove it
+		if !found {
+			_, err := e.RemovePolicy(gotPolicies)
+			if err != nil {
+				return fmt.Errorf("failed to remove policy: %w", err)
+			}
+		}
+	}
+
+	// To finish we make sure that the admin role inherit all the policies from the viewer role
+	_, err := e.AddGroupingPolicy(string(RoleAdmin), string(RoleViewer))
+	if err != nil {
+		return fmt.Errorf("failed to add grouping policy: %w", err)
+	}
+
+	// same for the owner
+	_, err = e.AddGroupingPolicy(string(RoleOwner), string(RoleAdmin))
+	if err != nil {
+		return fmt.Errorf("failed to add grouping policy: %w", err)
+	}
+
+	return nil
+}
+
+// Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues
+// so they can be added to the database schema
+func (Role) Values() (roles []string) {
+	for _, s := range []Role{
+		RoleOwner,
+		RoleAdmin,
+		RoleViewer,
+	} {
+		roles = append(roles, string(s))
+	}
+
+	return
 }

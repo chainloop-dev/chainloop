@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -123,18 +123,21 @@ func setCurrentOrgAndUser(ctx context.Context, userUC biz.UserOrgFinder, userID 
 	}
 
 	// We load the current organization
-	org, err := userUC.CurrentOrg(ctx, userID)
+	membership, err := userUC.CurrentMembership(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	if org == nil {
+	if membership == nil {
 		logger.Warnf("user with id %s has no current organization", userID)
 		return nil, errors.New("org not found")
 	}
 
-	ctx = WithCurrentOrg(ctx, &Org{Name: org.Name, ID: org.ID, CreatedAt: org.CreatedAt})
+	ctx = WithCurrentOrg(ctx, &Org{Name: membership.Org.Name, ID: membership.Org.ID, CreatedAt: membership.CreatedAt})
 	ctx = WithCurrentUser(ctx, &User{Email: u.Email, ID: u.ID, CreatedAt: u.CreatedAt})
+
+	// Set the authorization subject that will be used to check the policies
+	ctx = WithAuthzSubject(ctx, string(membership.Role))
 
 	return ctx, nil
 }

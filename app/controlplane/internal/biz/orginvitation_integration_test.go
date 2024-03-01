@@ -232,15 +232,15 @@ func (s *OrgInvitationIntegrationTestSuite) SetupTest() {
 	s.user, err = s.User.FindOrCreateByEmail(ctx, "user-1@test.com")
 	assert.NoError(err)
 	// Attach both orgs
-	_, err = s.Membership.Create(ctx, s.org1.ID, s.user.ID, true)
+	_, err = s.Membership.Create(ctx, s.org1.ID, s.user.ID, biz.WithIsCurrent())
 	assert.NoError(err)
-	_, err = s.Membership.Create(ctx, s.org2.ID, s.user.ID, true)
+	_, err = s.Membership.Create(ctx, s.org2.ID, s.user.ID, biz.WithIsCurrent())
 	assert.NoError(err)
 
 	s.user2, err = s.User.FindOrCreateByEmail(ctx, "user-2@test.com")
 	assert.NoError(err)
-	_, err = s.Membership.Create(ctx, s.org1.ID, s.user2.ID, true)
+	_, err = s.Membership.Create(ctx, s.org1.ID, s.user2.ID)
 	assert.NoError(err)
-	_, err = s.Membership.Create(ctx, s.org3.ID, s.user2.ID, true)
+	_, err = s.Membership.Create(ctx, s.org3.ID, s.user2.ID, biz.WithIsCurrent())
 	assert.NoError(err)
 }

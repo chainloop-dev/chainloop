@@ -15,20 +15,20 @@ type UserOrgFinder struct {
 	mock.Mock
 }
 
-// CurrentOrg provides a mock function with given fields: ctx, userID
-func (_m *UserOrgFinder) CurrentOrg(ctx context.Context, userID string) (*biz.Organization, error) {
+// CurrentMembership provides a mock function with given fields: ctx, userID
+func (_m *UserOrgFinder) CurrentMembership(ctx context.Context, userID string) (*biz.Membership, error) {
 	ret := _m.Called(ctx, userID)
 
-	var r0 *biz.Organization
+	var r0 *biz.Membership
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (*biz.Organization, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string) (*biz.Membership, error)); ok {
 		return rf(ctx, userID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) *biz.Organization); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string) *biz.Membership); ok {
 		r0 = rf(ctx, userID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*biz.Organization)
+			r0 = ret.Get(0).(*biz.Membership)
 		}
 	}
 

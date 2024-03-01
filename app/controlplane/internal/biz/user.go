@@ -40,7 +40,7 @@ type UserRepo interface {
 
 type UserOrgFinder interface {
 	FindByID(ctx context.Context, userID string) (*User, error)
-	CurrentOrg(ctx context.Context, userID string) (*Organization, error)
+	CurrentMembership(ctx context.Context, userID string) (*Membership, error)
 }
 
 type UserUseCase struct {
@@ -109,9 +109,9 @@ func (uc *UserUseCase) FindByID(ctx context.Context, userID string) (*User, erro
 	return uc.userRepo.FindByID(ctx, userUUID)
 }
 
-// Find the organization associated with the user that's marked as current
+// Find the membership associated with the user that's marked as current
 // If none is selected, it will pick the first one and set it as current
-func (uc *UserUseCase) CurrentOrg(ctx context.Context, userID string) (*Organization, error) {
+func (uc *UserUseCase) CurrentMembership(ctx context.Context, userID string) (*Membership, error) {
 	memberships, err := uc.membershipUseCase.ByUser(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -122,25 +122,18 @@ func (uc *UserUseCase) CurrentOrg(ctx context.Context, userID string) (*Organiza
 		return nil, errors.New("user does not have any organization associated")
 	}
 
-	var currentOrgID uuid.UUID
 	for _, m := range memberships {
 		// Override if it's being explicitly selected
 		if m.Current {
-			currentOrgID = m.OrganizationID
-			break
+			return m, nil
 		}
 	}
 
-	if currentOrgID == uuid.Nil {
-		// If none is selected, we configure the first one
-		_, err := uc.membershipUseCase.SetCurrent(ctx, userID, memberships[0].ID.String())
-		if err != nil {
-			return nil, fmt.Errorf("error setting current org: %w", err)
-		}
-
-		// Call itself recursively now that we have a current org
-		return uc.CurrentOrg(ctx, userID)
+	// If none is selected, we configure the first one
+	m, err := uc.membershipUseCase.SetCurrent(ctx, userID, memberships[0].ID.String())
+	if err != nil {
+		return nil, fmt.Errorf("error setting current org: %w", err)
 	}
 
-	return uc.organizationUseCase.FindByID(ctx, currentOrgID.String())
+	return m, nil
 }

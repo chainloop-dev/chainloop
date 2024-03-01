@@ -23,6 +23,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/google/uuid"
 )
 
@@ -46,6 +47,8 @@ func (Membership) Fields() []ent.Field {
 			Annotations(&entsql.Annotation{
 				Default: "CURRENT_TIMESTAMP",
 			}),
+		// rbac role in the organization
+		field.Enum("role").GoType(authz.Role("")),
 	}
 }
 

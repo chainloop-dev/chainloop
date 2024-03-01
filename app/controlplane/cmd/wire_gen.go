@@ -137,7 +137,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	attestationService := service.NewAttestationService(newAttestationServiceOpts)
 	workflowContractService := service.NewWorkflowSchemaService(workflowContractUseCase, v2...)
 	contextService := service.NewContextService(casBackendUseCase, v2...)
-	casCredentialsService := service.NewCASCredentialsService(casCredentialsUseCase, casMappingUseCase, casBackendUseCase, v2...)
+	casCredentialsService := service.NewCASCredentialsService(casCredentialsUseCase, casMappingUseCase, casBackendUseCase, enforcer, v2...)
 	orgMetricsRepo := data.NewOrgMetricsRepo(dataData, logger)
 	orgMetricsUseCase, err := biz.NewOrgMetricsUseCase(orgMetricsRepo, logger)
 	if err != nil {
