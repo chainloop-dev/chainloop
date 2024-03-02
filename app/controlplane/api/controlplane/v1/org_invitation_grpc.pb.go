@@ -47,7 +47,7 @@ type OrgInvitationServiceClient interface {
 	Create(ctx context.Context, in *OrgInvitationServiceCreateRequest, opts ...grpc.CallOption) (*OrgInvitationServiceCreateResponse, error)
 	// Revoke an invitation.
 	Revoke(ctx context.Context, in *OrgInvitationServiceRevokeRequest, opts ...grpc.CallOption) (*OrgInvitationServiceRevokeResponse, error)
-	// List all invitations sent by the current user.
+	// List all invitations in the current org
 	ListSent(ctx context.Context, in *OrgInvitationServiceListSentRequest, opts ...grpc.CallOption) (*OrgInvitationServiceListSentResponse, error)
 }
 
@@ -94,7 +94,7 @@ type OrgInvitationServiceServer interface {
 	Create(context.Context, *OrgInvitationServiceCreateRequest) (*OrgInvitationServiceCreateResponse, error)
 	// Revoke an invitation.
 	Revoke(context.Context, *OrgInvitationServiceRevokeRequest) (*OrgInvitationServiceRevokeResponse, error)
-	// List all invitations sent by the current user.
+	// List all invitations in the current org
 	ListSent(context.Context, *OrgInvitationServiceListSentRequest) (*OrgInvitationServiceListSentResponse, error)
 	mustEmbedUnimplementedOrgInvitationServiceServer()
 }

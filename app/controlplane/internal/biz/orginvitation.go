@@ -48,7 +48,7 @@ type OrgInvitationRepo interface {
 	PendingInvitation(ctx context.Context, orgID uuid.UUID, receiverEmail string) (*OrgInvitation, error)
 	PendingInvitations(ctx context.Context, receiverEmail string) ([]*OrgInvitation, error)
 	SoftDelete(ctx context.Context, id uuid.UUID) error
-	ListBySenderAndOrg(ctx context.Context, sender, org uuid.UUID) ([]*OrgInvitation, error)
+	ListByOrg(ctx context.Context, org uuid.UUID) ([]*OrgInvitation, error)
 	ChangeStatus(ctx context.Context, ID uuid.UUID, status OrgInvitationStatus) error
 }
 
@@ -126,32 +126,27 @@ func (uc *OrgInvitationUseCase) Create(ctx context.Context, orgID, senderID, rec
 	return invitation, nil
 }
 
-func (uc *OrgInvitationUseCase) ListBySenderAndOrg(ctx context.Context, senderID, orgID string) ([]*OrgInvitation, error) {
-	senderUUID, err := uuid.Parse(senderID)
-	if err != nil {
-		return nil, NewErrInvalidUUID(err)
-	}
-
+func (uc *OrgInvitationUseCase) ListByOrg(ctx context.Context, orgID string) ([]*OrgInvitation, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	return uc.repo.ListBySenderAndOrg(ctx, senderUUID, orgUUID)
+	return uc.repo.ListByOrg(ctx, orgUUID)
 }
 
 // Revoke an invitation by ID only if the user is the one who created it
-func (uc *OrgInvitationUseCase) Revoke(ctx context.Context, senderID, invitationID string) error {
+func (uc *OrgInvitationUseCase) Revoke(ctx context.Context, orgID, invitationID string) error {
 	invitationUUID, err := uuid.Parse(invitationID)
 	if err != nil {
 		return NewErrInvalidUUID(err)
 	}
 
-	// We care only about invitations that are pending and sent by the user
+	// We care only about pending invitations in the given org
 	m, err := uc.repo.FindByID(ctx, invitationUUID)
 	if err != nil {
 		return fmt.Errorf("error finding invitation %s: %w", invitationID, err)
-	} else if m == nil || m.Sender.ID != senderID {
+	} else if m == nil || m.Org.ID != orgID {
 		return NewErrNotFound("invitation")
 	}
 

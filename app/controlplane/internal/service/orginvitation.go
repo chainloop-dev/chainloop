@@ -58,12 +58,12 @@ func (s *OrgInvitationService) Create(ctx context.Context, req *pb.OrgInvitation
 }
 
 func (s *OrgInvitationService) Revoke(ctx context.Context, req *pb.OrgInvitationServiceRevokeRequest) (*pb.OrgInvitationServiceRevokeResponse, error) {
-	user, err := requireCurrentUser(ctx)
+	org, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := s.useCase.Revoke(ctx, user.ID, req.Id); err != nil {
+	if err := s.useCase.Revoke(ctx, org.ID, req.Id); err != nil {
 		return nil, handleUseCaseErr("invitation", err, s.log)
 	}
 
@@ -71,17 +71,12 @@ func (s *OrgInvitationService) Revoke(ctx context.Context, req *pb.OrgInvitation
 }
 
 func (s *OrgInvitationService) ListSent(ctx context.Context, _ *pb.OrgInvitationServiceListSentRequest) (*pb.OrgInvitationServiceListSentResponse, error) {
-	user, err := requireCurrentUser(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	org, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	invitations, err := s.useCase.ListBySenderAndOrg(ctx, user.ID, org.ID)
+	invitations, err := s.useCase.ListByOrg(ctx, org.ID)
 	if err != nil {
 		return nil, handleUseCaseErr("invitation", err, s.log)
 	}

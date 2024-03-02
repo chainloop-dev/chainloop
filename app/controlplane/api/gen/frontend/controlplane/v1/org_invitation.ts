@@ -543,7 +543,7 @@ export interface OrgInvitationService {
     request: DeepPartial<OrgInvitationServiceRevokeRequest>,
     metadata?: grpc.Metadata,
   ): Promise<OrgInvitationServiceRevokeResponse>;
-  /** List all invitations sent by the current user. */
+  /** List all invitations in the current org */
   ListSent(
     request: DeepPartial<OrgInvitationServiceListSentRequest>,
     metadata?: grpc.Metadata,
