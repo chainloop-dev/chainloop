@@ -34,7 +34,8 @@ func (s *OrgInvitationIntegrationTestSuite) TestList() {
 	ctx := context.Background()
 	inviteOrg1A, err := s.OrgInvitation.Create(ctx, s.org1.ID, s.user.ID, receiverEmail)
 	s.NoError(err)
-	inviteOrg1B, err := s.OrgInvitation.Create(ctx, s.org1.ID, s.user.ID, "another-email@cyberdyne.io")
+	// same org but another user
+	inviteOrg1B, err := s.OrgInvitation.Create(ctx, s.org1.ID, s.user2.ID, "another-email@cyberdyne.io")
 	s.NoError(err)
 	inviteOrg2A, err := s.OrgInvitation.Create(ctx, s.org2.ID, s.user.ID, receiverEmail)
 	s.NoError(err)
@@ -63,7 +64,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestList() {
 
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
-			invites, err := s.OrgInvitation.ListBySenderAndOrg(ctx, s.user.ID, tc.orgID)
+			invites, err := s.OrgInvitation.ListByOrg(ctx, tc.orgID)
 			s.NoError(err)
 			s.Equal(tc.expected, invites)
 		})
@@ -198,21 +199,21 @@ func (s *OrgInvitationIntegrationTestSuite) TestAcceptPendingInvitations() {
 
 func (s *OrgInvitationIntegrationTestSuite) TestRevoke() {
 	s.T().Run("invalid ID", func(t *testing.T) {
-		err := s.OrgInvitation.Revoke(context.Background(), s.user.ID, "deadbeef")
+		err := s.OrgInvitation.Revoke(context.Background(), s.org1.ID, "deadbeef")
 		s.Error(err)
 		s.True(biz.IsErrInvalidUUID(err))
 	})
 
 	s.T().Run("invitation not found", func(t *testing.T) {
-		err := s.OrgInvitation.Revoke(context.Background(), s.user.ID, uuid.NewString())
+		err := s.OrgInvitation.Revoke(context.Background(), s.org1.ID, uuid.NewString())
 		s.Error(err)
 		s.True(biz.IsNotFound(err))
 	})
 
-	s.T().Run("invitation not created by this user", func(t *testing.T) {
-		invite, err := s.OrgInvitation.Create(context.Background(), s.org1.ID, s.user2.ID, "anotheremail@cyberdyne.io")
-		require.NoError(s.T(), err)
-		err = s.OrgInvitation.Revoke(context.Background(), s.user.ID, invite.ID.String())
+	s.T().Run("invitation in another org", func(t *testing.T) {
+		_, err := s.OrgInvitation.Create(context.Background(), s.org2.ID, s.user.ID, receiverEmail)
+		s.NoError(err)
+		err = s.OrgInvitation.Revoke(context.Background(), s.org1.ID, uuid.NewString())
 		s.Error(err)
 		s.True(biz.IsNotFound(err))
 	})
@@ -223,8 +224,8 @@ func (s *OrgInvitationIntegrationTestSuite) TestRevoke() {
 		err = s.OrgInvitation.AcceptInvitation(context.Background(), invite.ID.String())
 		require.NoError(s.T(), err)
 
-		// It's in accepted state now
-		err = s.OrgInvitation.Revoke(context.Background(), s.user.ID, invite.ID.String())
+		// It's in accepted state now so it can not be revoked
+		err = s.OrgInvitation.Revoke(context.Background(), s.org1.ID, invite.ID.String())
 		s.Error(err)
 		s.ErrorContains(err, "not in pending state")
 		s.True(biz.IsErrValidation(err))
@@ -233,9 +234,9 @@ func (s *OrgInvitationIntegrationTestSuite) TestRevoke() {
 	s.T().Run("happy path", func(t *testing.T) {
 		invite, err := s.OrgInvitation.Create(context.Background(), s.org1.ID, s.user.ID, receiverEmail)
 		require.NoError(s.T(), err)
-		err = s.OrgInvitation.Revoke(context.Background(), s.user.ID, invite.ID.String())
+		err = s.OrgInvitation.Revoke(context.Background(), s.org1.ID, invite.ID.String())
 		s.NoError(err)
-		err = s.OrgInvitation.Revoke(context.Background(), s.user.ID, invite.ID.String())
+		err = s.OrgInvitation.Revoke(context.Background(), s.org1.ID, invite.ID.String())
 		s.Error(err)
 		s.True(biz.IsNotFound(err))
 	})
