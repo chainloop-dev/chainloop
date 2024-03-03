@@ -22,26 +22,29 @@ import "validate/validate.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
-service OrganizationService {
-  rpc Create(OrganizationServiceCreateRequest) returns (OrganizationServiceCreateResponse);
-  rpc Update(OrganizationServiceUpdateRequest) returns (OrganizationServiceUpdateResponse);
+service UserService {
+  // User Membership management
+  rpc ListMemberships(UserServiceListMembershipsRequest) returns (UserServiceListMembershipsResponse);
+  rpc DeleteMembership(DeleteMembershipRequest) returns (DeleteMembershipResponse);
+  rpc SetCurrentMembership(SetCurrentMembershipRequest) returns (SetCurrentMembershipResponse);
 }
 
-message OrganizationServiceCreateRequest {
-  string name = 1 [(validate.rules).string.min_len = 1];
+message UserServiceListMembershipsRequest {}
+
+message UserServiceListMembershipsResponse {
+  repeated OrgMembershipItem result = 1;
 }
 
-message OrganizationServiceCreateResponse {
-  OrgItem result = 1;
+message SetCurrentMembershipRequest {
+  string membership_id = 1 [(validate.rules).string.uuid = true];
 }
 
-message OrganizationServiceUpdateRequest {
-  string id = 1 [(validate.rules).string.uuid = true];
-  // "optional" allow us to detect if the value is explicitly set
-  // and not just the default balue
-  optional string name = 2;
+message SetCurrentMembershipResponse {
+  OrgMembershipItem result = 1;
 }
 
-message OrganizationServiceUpdateResponse {
-  OrgItem result = 1;
+message DeleteMembershipRequest {
+  string membership_id = 1 [(validate.rules).string.uuid = true];
 }
+
+message DeleteMembershipResponse {}

@@ -34,23 +34,14 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	OrganizationService_ListMemberships_FullMethodName      = "/controlplane.v1.OrganizationService/ListMemberships"
-	OrganizationService_DeleteMembership_FullMethodName     = "/controlplane.v1.OrganizationService/DeleteMembership"
-	OrganizationService_SetCurrentMembership_FullMethodName = "/controlplane.v1.OrganizationService/SetCurrentMembership"
-	OrganizationService_Create_FullMethodName               = "/controlplane.v1.OrganizationService/Create"
-	OrganizationService_Update_FullMethodName               = "/controlplane.v1.OrganizationService/Update"
+	OrganizationService_Create_FullMethodName = "/controlplane.v1.OrganizationService/Create"
+	OrganizationService_Update_FullMethodName = "/controlplane.v1.OrganizationService/Update"
 )
 
 // OrganizationServiceClient is the client API for OrganizationService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type OrganizationServiceClient interface {
-	// Mermbership management
-	// List the organizations this user has access to
-	ListMemberships(ctx context.Context, in *OrganizationServiceListMembershipsRequest, opts ...grpc.CallOption) (*OrganizationServiceListMembershipsResponse, error)
-	DeleteMembership(ctx context.Context, in *DeleteMembershipRequest, opts ...grpc.CallOption) (*DeleteMembershipResponse, error)
-	SetCurrentMembership(ctx context.Context, in *SetCurrentMembershipRequest, opts ...grpc.CallOption) (*SetCurrentMembershipResponse, error)
-	// Organization management
 	Create(ctx context.Context, in *OrganizationServiceCreateRequest, opts ...grpc.CallOption) (*OrganizationServiceCreateResponse, error)
 	Update(ctx context.Context, in *OrganizationServiceUpdateRequest, opts ...grpc.CallOption) (*OrganizationServiceUpdateResponse, error)
 }
@@ -61,33 +52,6 @@ type organizationServiceClient struct {
 
 func NewOrganizationServiceClient(cc grpc.ClientConnInterface) OrganizationServiceClient {
 	return &organizationServiceClient{cc}
-}
-
-func (c *organizationServiceClient) ListMemberships(ctx context.Context, in *OrganizationServiceListMembershipsRequest, opts ...grpc.CallOption) (*OrganizationServiceListMembershipsResponse, error) {
-	out := new(OrganizationServiceListMembershipsResponse)
-	err := c.cc.Invoke(ctx, OrganizationService_ListMemberships_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *organizationServiceClient) DeleteMembership(ctx context.Context, in *DeleteMembershipRequest, opts ...grpc.CallOption) (*DeleteMembershipResponse, error) {
-	out := new(DeleteMembershipResponse)
-	err := c.cc.Invoke(ctx, OrganizationService_DeleteMembership_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *organizationServiceClient) SetCurrentMembership(ctx context.Context, in *SetCurrentMembershipRequest, opts ...grpc.CallOption) (*SetCurrentMembershipResponse, error) {
-	out := new(SetCurrentMembershipResponse)
-	err := c.cc.Invoke(ctx, OrganizationService_SetCurrentMembership_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *organizationServiceClient) Create(ctx context.Context, in *OrganizationServiceCreateRequest, opts ...grpc.CallOption) (*OrganizationServiceCreateResponse, error) {
@@ -112,12 +76,6 @@ func (c *organizationServiceClient) Update(ctx context.Context, in *Organization
 // All implementations must embed UnimplementedOrganizationServiceServer
 // for forward compatibility
 type OrganizationServiceServer interface {
-	// Mermbership management
-	// List the organizations this user has access to
-	ListMemberships(context.Context, *OrganizationServiceListMembershipsRequest) (*OrganizationServiceListMembershipsResponse, error)
-	DeleteMembership(context.Context, *DeleteMembershipRequest) (*DeleteMembershipResponse, error)
-	SetCurrentMembership(context.Context, *SetCurrentMembershipRequest) (*SetCurrentMembershipResponse, error)
-	// Organization management
 	Create(context.Context, *OrganizationServiceCreateRequest) (*OrganizationServiceCreateResponse, error)
 	Update(context.Context, *OrganizationServiceUpdateRequest) (*OrganizationServiceUpdateResponse, error)
 	mustEmbedUnimplementedOrganizationServiceServer()
@@ -127,15 +85,6 @@ type OrganizationServiceServer interface {
 type UnimplementedOrganizationServiceServer struct {
 }
 
-func (UnimplementedOrganizationServiceServer) ListMemberships(context.Context, *OrganizationServiceListMembershipsRequest) (*OrganizationServiceListMembershipsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListMemberships not implemented")
-}
-func (UnimplementedOrganizationServiceServer) DeleteMembership(context.Context, *DeleteMembershipRequest) (*DeleteMembershipResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteMembership not implemented")
-}
-func (UnimplementedOrganizationServiceServer) SetCurrentMembership(context.Context, *SetCurrentMembershipRequest) (*SetCurrentMembershipResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SetCurrentMembership not implemented")
-}
 func (UnimplementedOrganizationServiceServer) Create(context.Context, *OrganizationServiceCreateRequest) (*OrganizationServiceCreateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
 }
@@ -153,60 +102,6 @@ type UnsafeOrganizationServiceServer interface {
 
 func RegisterOrganizationServiceServer(s grpc.ServiceRegistrar, srv OrganizationServiceServer) {
 	s.RegisterService(&OrganizationService_ServiceDesc, srv)
-}
-
-func _OrganizationService_ListMemberships_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(OrganizationServiceListMembershipsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(OrganizationServiceServer).ListMemberships(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: OrganizationService_ListMemberships_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(OrganizationServiceServer).ListMemberships(ctx, req.(*OrganizationServiceListMembershipsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _OrganizationService_DeleteMembership_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteMembershipRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(OrganizationServiceServer).DeleteMembership(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: OrganizationService_DeleteMembership_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(OrganizationServiceServer).DeleteMembership(ctx, req.(*DeleteMembershipRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _OrganizationService_SetCurrentMembership_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SetCurrentMembershipRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(OrganizationServiceServer).SetCurrentMembership(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: OrganizationService_SetCurrentMembership_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(OrganizationServiceServer).SetCurrentMembership(ctx, req.(*SetCurrentMembershipRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _OrganizationService_Create_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -252,18 +147,6 @@ var OrganizationService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "controlplane.v1.OrganizationService",
 	HandlerType: (*OrganizationServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "ListMemberships",
-			Handler:    _OrganizationService_ListMemberships_Handler,
-		},
-		{
-			MethodName: "DeleteMembership",
-			Handler:    _OrganizationService_DeleteMembership_Handler,
-		},
-		{
-			MethodName: "SetCurrentMembership",
-			Handler:    _OrganizationService_SetCurrentMembership_Handler,
-		},
 		{
 			MethodName: "Create",
 			Handler:    _OrganizationService_Create_Handler,

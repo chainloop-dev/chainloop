@@ -163,6 +163,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		return nil, nil, err
 	}
 	attestationStateService := service.NewAttestationStateService(attestationStateUseCase, v2...)
+	userService := service.NewUserService(membershipUseCase, organizationUseCase, v2...)
 	opts := &server.Opts{
 		UserUseCase:          userUseCase,
 		RobotAccountUseCase:  robotAccountUseCase,
@@ -189,6 +190,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		ReferrerSvc:          referrerService,
 		APITokenSvc:          apiTokenService,
 		AttestationStateSvc:  attestationStateService,
+		UserSvc:              userService,
 		Logger:               logger,
 		ServerConfig:         confServer,
 		AuthConfig:           auth,

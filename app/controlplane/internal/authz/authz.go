@@ -186,7 +186,7 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.OrganizationService/Create":               {},
 	"/controlplane.v1.OrganizationService/SetCurrentMembership": {},
 	// NOTE: this is about listing my own memberships, not about listing all the memberships in the organization
-	"/controlplane.v1.OrganizationService/ListMemberships": {},
+	"/controlplane.v1.UserService/ListMemberships": {},
 }
 
 type SubjectAPIToken struct {
