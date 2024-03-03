@@ -31,7 +31,7 @@ func NewMembershipDelete(cfg *ActionsOpts) *MembershipDelete {
 }
 
 func (action *MembershipDelete) Run(ctx context.Context, membershipID string) error {
-	client := pb.NewOrganizationServiceClient(action.cfg.CPConnection)
+	client := pb.NewUserServiceClient(action.cfg.CPConnection)
 	if _, err := client.DeleteMembership(ctx, &pb.DeleteMembershipRequest{MembershipId: membershipID}); err != nil {
 		return fmt.Errorf("deleting membership: %w", err)
 	}
