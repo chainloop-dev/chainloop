@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/orginvitation"
@@ -81,6 +82,20 @@ func (oic *OrgInvitationCreate) SetOrganizationID(u uuid.UUID) *OrgInvitationCre
 // SetSenderID sets the "sender_id" field.
 func (oic *OrgInvitationCreate) SetSenderID(u uuid.UUID) *OrgInvitationCreate {
 	oic.mutation.SetSenderID(u)
+	return oic
+}
+
+// SetRole sets the "role" field.
+func (oic *OrgInvitationCreate) SetRole(a authz.Role) *OrgInvitationCreate {
+	oic.mutation.SetRole(a)
+	return oic
+}
+
+// SetNillableRole sets the "role" field if the given value is not nil.
+func (oic *OrgInvitationCreate) SetNillableRole(a *authz.Role) *OrgInvitationCreate {
+	if a != nil {
+		oic.SetRole(*a)
+	}
 	return oic
 }
 
@@ -179,6 +194,11 @@ func (oic *OrgInvitationCreate) check() error {
 	if _, ok := oic.mutation.SenderID(); !ok {
 		return &ValidationError{Name: "sender_id", err: errors.New(`ent: missing required field "OrgInvitation.sender_id"`)}
 	}
+	if v, ok := oic.mutation.Role(); ok {
+		if err := orginvitation.RoleValidator(v); err != nil {
+			return &ValidationError{Name: "role", err: fmt.Errorf(`ent: validator failed for field "OrgInvitation.role": %w`, err)}
+		}
+	}
 	if _, ok := oic.mutation.OrganizationID(); !ok {
 		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "OrgInvitation.organization"`)}
 	}
@@ -235,6 +255,10 @@ func (oic *OrgInvitationCreate) createSpec() (*OrgInvitation, *sqlgraph.CreateSp
 	if value, ok := oic.mutation.DeletedAt(); ok {
 		_spec.SetField(orginvitation.FieldDeletedAt, field.TypeTime, value)
 		_node.DeletedAt = value
+	}
+	if value, ok := oic.mutation.Role(); ok {
+		_spec.SetField(orginvitation.FieldRole, field.TypeEnum, value)
+		_node.Role = value
 	}
 	if nodes := oic.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

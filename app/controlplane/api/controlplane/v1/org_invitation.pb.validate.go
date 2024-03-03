@@ -75,6 +75,17 @@ func (m *OrgInvitationServiceCreateRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	if _, ok := MembershipRole_name[int32(m.GetRole())]; !ok {
+		err := OrgInvitationServiceCreateRequestValidationError{
+			field:  "Role",
+			reason: "value must be one of the defined enum values",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if len(errors) > 0 {
 		return OrgInvitationServiceCreateRequestMultiError(errors)
 	}
@@ -929,6 +940,8 @@ func (m *OrgInvitationItem) validate(all bool) error {
 	}
 
 	// no validation rules for Status
+
+	// no validation rules for Role
 
 	if len(errors) > 0 {
 		return OrgInvitationItemMultiError(errors)

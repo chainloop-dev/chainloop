@@ -3,7 +3,7 @@ import { grpc } from "@improbable-eng/grpc-web";
 import { BrowserHeaders } from "browser-headers";
 import _m0 from "protobufjs/minimal";
 import { Timestamp } from "../../google/protobuf/timestamp";
-import { OrgItem, User } from "./response_messages";
+import { MembershipRole, membershipRoleFromJSON, membershipRoleToJSON, OrgItem, User } from "./response_messages";
 
 export const protobufPackage = "controlplane.v1";
 
@@ -15,6 +15,7 @@ export interface OrgInvitationServiceCreateRequest {
    */
   organizationId: string;
   receiverEmail: string;
+  role: MembershipRole;
 }
 
 export interface OrgInvitationServiceCreateResponse {
@@ -42,10 +43,11 @@ export interface OrgInvitationItem {
   sender?: User;
   organization?: OrgItem;
   status: string;
+  role: MembershipRole;
 }
 
 function createBaseOrgInvitationServiceCreateRequest(): OrgInvitationServiceCreateRequest {
-  return { organizationId: "", receiverEmail: "" };
+  return { organizationId: "", receiverEmail: "", role: 0 };
 }
 
 export const OrgInvitationServiceCreateRequest = {
@@ -55,6 +57,9 @@ export const OrgInvitationServiceCreateRequest = {
     }
     if (message.receiverEmail !== "") {
       writer.uint32(18).string(message.receiverEmail);
+    }
+    if (message.role !== 0) {
+      writer.uint32(24).int32(message.role);
     }
     return writer;
   },
@@ -80,6 +85,13 @@ export const OrgInvitationServiceCreateRequest = {
 
           message.receiverEmail = reader.string();
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.role = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -93,6 +105,7 @@ export const OrgInvitationServiceCreateRequest = {
     return {
       organizationId: isSet(object.organizationId) ? String(object.organizationId) : "",
       receiverEmail: isSet(object.receiverEmail) ? String(object.receiverEmail) : "",
+      role: isSet(object.role) ? membershipRoleFromJSON(object.role) : 0,
     };
   },
 
@@ -100,6 +113,7 @@ export const OrgInvitationServiceCreateRequest = {
     const obj: any = {};
     message.organizationId !== undefined && (obj.organizationId = message.organizationId);
     message.receiverEmail !== undefined && (obj.receiverEmail = message.receiverEmail);
+    message.role !== undefined && (obj.role = membershipRoleToJSON(message.role));
     return obj;
   },
 
@@ -115,6 +129,7 @@ export const OrgInvitationServiceCreateRequest = {
     const message = createBaseOrgInvitationServiceCreateRequest();
     message.organizationId = object.organizationId ?? "";
     message.receiverEmail = object.receiverEmail ?? "";
+    message.role = object.role ?? 0;
     return message;
   },
 };
@@ -405,7 +420,15 @@ export const OrgInvitationServiceListSentResponse = {
 };
 
 function createBaseOrgInvitationItem(): OrgInvitationItem {
-  return { id: "", createdAt: undefined, receiverEmail: "", sender: undefined, organization: undefined, status: "" };
+  return {
+    id: "",
+    createdAt: undefined,
+    receiverEmail: "",
+    sender: undefined,
+    organization: undefined,
+    status: "",
+    role: 0,
+  };
 }
 
 export const OrgInvitationItem = {
@@ -427,6 +450,9 @@ export const OrgInvitationItem = {
     }
     if (message.status !== "") {
       writer.uint32(50).string(message.status);
+    }
+    if (message.role !== 0) {
+      writer.uint32(56).int32(message.role);
     }
     return writer;
   },
@@ -480,6 +506,13 @@ export const OrgInvitationItem = {
 
           message.status = reader.string();
           continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.role = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -497,6 +530,7 @@ export const OrgInvitationItem = {
       sender: isSet(object.sender) ? User.fromJSON(object.sender) : undefined,
       organization: isSet(object.organization) ? OrgItem.fromJSON(object.organization) : undefined,
       status: isSet(object.status) ? String(object.status) : "",
+      role: isSet(object.role) ? membershipRoleFromJSON(object.role) : 0,
     };
   },
 
@@ -509,6 +543,7 @@ export const OrgInvitationItem = {
     message.organization !== undefined &&
       (obj.organization = message.organization ? OrgItem.toJSON(message.organization) : undefined);
     message.status !== undefined && (obj.status = message.status);
+    message.role !== undefined && (obj.role = membershipRoleToJSON(message.role));
     return obj;
   },
 
@@ -528,6 +563,7 @@ export const OrgInvitationItem = {
       ? OrgItem.fromPartial(object.organization)
       : undefined;
     message.status = object.status ?? "";
+    message.role = object.role ?? 0;
     return message;
   },
 };

@@ -8,6 +8,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/google/uuid"
 )
@@ -29,6 +30,8 @@ const (
 	FieldOrganizationID = "organization_id"
 	// FieldSenderID holds the string denoting the sender_id field in the database.
 	FieldSenderID = "sender_id"
+	// FieldRole holds the string denoting the role field in the database.
+	FieldRole = "role"
 	// EdgeOrganization holds the string denoting the organization edge name in mutations.
 	EdgeOrganization = "organization"
 	// EdgeSender holds the string denoting the sender edge name in mutations.
@@ -60,6 +63,7 @@ var Columns = []string{
 	FieldDeletedAt,
 	FieldOrganizationID,
 	FieldSenderID,
+	FieldRole,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -88,6 +92,16 @@ func StatusValidator(s biz.OrgInvitationStatus) error {
 		return nil
 	default:
 		return fmt.Errorf("orginvitation: invalid enum value for status field: %q", s)
+	}
+}
+
+// RoleValidator is a validator for the "role" field enum values. It is called by the builders before save.
+func RoleValidator(r authz.Role) error {
+	switch r {
+	case "role:org:owner", "role:org:admin", "role:org:viewer":
+		return nil
+	default:
+		return fmt.Errorf("orginvitation: invalid enum value for role field: %q", r)
 	}
 }
 
@@ -127,6 +141,11 @@ func ByOrganizationID(opts ...sql.OrderTermOption) OrderOption {
 // BySenderID orders the results by the sender_id field.
 func BySenderID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSenderID, opts...).ToFunc()
+}
+
+// ByRole orders the results by the role field.
+func ByRole(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRole, opts...).ToFunc()
 }
 
 // ByOrganizationField orders the results by organization field.

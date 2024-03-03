@@ -50,10 +50,10 @@ func orgInvitationTableOutput(items []*action.OrgInvitationItem) error {
 	}
 
 	t := newTableWriter()
-	t.AppendHeader(table.Row{"ID", "Receiver Email", "Status", "Created At"})
+	t.AppendHeader(table.Row{"ID", "Receiver Email", "Role", "Status", "Created At"})
 
 	for _, i := range items {
-		t.AppendRow(table.Row{i.ID, i.ReceiverEmail, i.Status, i.CreatedAt.Format(time.RFC822)})
+		t.AppendRow(table.Row{i.ID, i.ReceiverEmail, i.Role, i.Status, i.CreatedAt.Format(time.RFC822)})
 		t.AppendSeparator()
 	}
 

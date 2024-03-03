@@ -36,6 +36,7 @@ message OrgInvitationServiceCreateRequest {
   // organization is deprecated and not used anymore
   string organization_id = 1 [deprecated = true];
   string receiver_email = 2 [(validate.rules).string.email = true];
+  MembershipRole role = 3 [(validate.rules).enum.defined_only = true];
 }
 
 message OrgInvitationServiceCreateResponse {
@@ -61,4 +62,5 @@ message OrgInvitationItem {
   User sender = 4;
   OrgItem organization = 5;
   string status = 6;
+  MembershipRole role = 7;
 }

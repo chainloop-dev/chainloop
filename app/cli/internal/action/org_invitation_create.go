@@ -29,10 +29,11 @@ func NewOrgInvitationCreate(cfg *ActionsOpts) *OrgInvitationCreate {
 	return &OrgInvitationCreate{cfg}
 }
 
-func (action *OrgInvitationCreate) Run(ctx context.Context, receiver string) (*OrgInvitationItem, error) {
+func (action *OrgInvitationCreate) Run(ctx context.Context, receiver, role string) (*OrgInvitationItem, error) {
 	client := pb.NewOrgInvitationServiceClient(action.cfg.CPConnection)
 	resp, err := client.Create(ctx, &pb.OrgInvitationServiceCreateRequest{
 		ReceiverEmail: receiver,
+		Role:          stringToPbRole(Role(role)),
 	})
 
 	if err != nil {

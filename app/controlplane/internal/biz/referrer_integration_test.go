@@ -379,13 +379,13 @@ func (s *referrerIntegrationTestSuite) SetupTest() {
 	require.NoError(s.T(), err)
 	_, err = s.Membership.Create(ctx, s.org1.ID, s.user.ID)
 	require.NoError(s.T(), err)
-	_, err = s.Membership.Create(ctx, s.org2.ID, s.user.ID, biz.WithIsCurrent())
+	_, err = s.Membership.Create(ctx, s.org2.ID, s.user.ID, biz.WithCurrentMembership())
 	require.NoError(s.T(), err)
 
 	// user 2 has access to only org 2
 	s.user2, err = s.User.FindOrCreateByEmail(ctx, "user-2@test.com")
 	require.NoError(s.T(), err)
-	_, err = s.Membership.Create(ctx, s.org2.ID, s.user2.ID, biz.WithIsCurrent())
+	_, err = s.Membership.Create(ctx, s.org2.ID, s.user2.ID, biz.WithCurrentMembership())
 	require.NoError(s.T(), err)
 
 	s.sharedEnabledUC, err = biz.NewReferrerUseCase(s.Repos.Referrer, s.Repos.Workflow, s.Repos.Membership,

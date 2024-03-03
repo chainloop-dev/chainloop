@@ -219,7 +219,7 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) (
 		}
 
 		// Create membership as owner of the new org
-		if _, err := svc.membershipUseCase.Create(ctx, currentOrg.ID, u.ID, biz.WithIsCurrent(), biz.WithRole(authz.RoleOwner)); err != nil {
+		if _, err := svc.membershipUseCase.Create(ctx, currentOrg.ID, u.ID, biz.WithCurrentMembership(), biz.WithMembershipRole(authz.RoleOwner)); err != nil {
 			return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
 		}
 

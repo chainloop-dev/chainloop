@@ -7,6 +7,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
 	"github.com/google/uuid"
@@ -305,6 +306,46 @@ func SenderIDIn(vs ...uuid.UUID) predicate.OrgInvitation {
 // SenderIDNotIn applies the NotIn predicate on the "sender_id" field.
 func SenderIDNotIn(vs ...uuid.UUID) predicate.OrgInvitation {
 	return predicate.OrgInvitation(sql.FieldNotIn(FieldSenderID, vs...))
+}
+
+// RoleEQ applies the EQ predicate on the "role" field.
+func RoleEQ(v authz.Role) predicate.OrgInvitation {
+	vc := v
+	return predicate.OrgInvitation(sql.FieldEQ(FieldRole, vc))
+}
+
+// RoleNEQ applies the NEQ predicate on the "role" field.
+func RoleNEQ(v authz.Role) predicate.OrgInvitation {
+	vc := v
+	return predicate.OrgInvitation(sql.FieldNEQ(FieldRole, vc))
+}
+
+// RoleIn applies the In predicate on the "role" field.
+func RoleIn(vs ...authz.Role) predicate.OrgInvitation {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.OrgInvitation(sql.FieldIn(FieldRole, v...))
+}
+
+// RoleNotIn applies the NotIn predicate on the "role" field.
+func RoleNotIn(vs ...authz.Role) predicate.OrgInvitation {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.OrgInvitation(sql.FieldNotIn(FieldRole, v...))
+}
+
+// RoleIsNil applies the IsNil predicate on the "role" field.
+func RoleIsNil() predicate.OrgInvitation {
+	return predicate.OrgInvitation(sql.FieldIsNull(FieldRole))
+}
+
+// RoleNotNil applies the NotNil predicate on the "role" field.
+func RoleNotNil() predicate.OrgInvitation {
+	return predicate.OrgInvitation(sql.FieldNotNull(FieldRole))
 }
 
 // HasOrganization applies the HasEdge predicate on the "organization" edge.
