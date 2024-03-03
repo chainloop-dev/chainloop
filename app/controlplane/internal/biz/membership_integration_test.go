@@ -47,22 +47,22 @@ func (s *membershipIntegrationTestSuite) TestDeleteWithOrg() {
 	s.NoError(err)
 
 	s.T().Run("invalid userID", func(t *testing.T) {
-		err := s.Membership.DeleteWithOrg(ctx, "invalid", mUser.ID.String())
+		err := s.Membership.LeaveAndDeleteOrg(ctx, "invalid", mUser.ID.String())
 		s.True(biz.IsErrInvalidUUID(err))
 	})
 
 	s.T().Run("invalid orgID", func(t *testing.T) {
-		err := s.Membership.DeleteWithOrg(ctx, user.ID, "invalid")
+		err := s.Membership.LeaveAndDeleteOrg(ctx, user.ID, "invalid")
 		s.True(biz.IsErrInvalidUUID(err))
 	})
 
 	s.T().Run("membership ID from another user", func(t *testing.T) {
-		err := s.Membership.DeleteWithOrg(ctx, user.ID, mUser2SharedOrg.ID.String())
+		err := s.Membership.LeaveAndDeleteOrg(ctx, user.ID, mUser2SharedOrg.ID.String())
 		s.True(biz.IsNotFound(err))
 	})
 
 	s.T().Run("delete the membership when the only member", func(t *testing.T) {
-		err := s.Membership.DeleteWithOrg(ctx, user.ID, mUser.ID.String())
+		err := s.Membership.LeaveAndDeleteOrg(ctx, user.ID, mUser.ID.String())
 		s.NoError(err)
 		// The org should also be deleted
 		_, err = s.Organization.FindByID(ctx, userOrg.ID)
@@ -70,7 +70,7 @@ func (s *membershipIntegrationTestSuite) TestDeleteWithOrg() {
 	})
 
 	s.T().Run("delete the membership when there are more than 1 member", func(t *testing.T) {
-		err := s.Membership.DeleteWithOrg(ctx, user.ID, mUserSharedOrg.ID.String())
+		err := s.Membership.LeaveAndDeleteOrg(ctx, user.ID, mUserSharedOrg.ID.String())
 		s.NoError(err)
 		// The org should not be deleted
 		got, err := s.Organization.FindByID(ctx, sharedOrg.ID)
@@ -80,11 +80,11 @@ func (s *membershipIntegrationTestSuite) TestDeleteWithOrg() {
 		members, err := s.Membership.ByOrg(ctx, got.ID)
 		s.NoError(err)
 		s.Len(members, 1)
-		s.Equal(user2.ID, members[0].UserID.String())
+		s.Equal(user2.ID, members[0].User.ID)
 	})
 
 	s.T().Run("we can remove the latest member", func(t *testing.T) {
-		err := s.Membership.DeleteWithOrg(ctx, user2.ID, mUser2SharedOrg.ID.String())
+		err := s.Membership.LeaveAndDeleteOrg(ctx, user2.ID, mUser2SharedOrg.ID.String())
 		s.NoError(err)
 		_, err = s.Organization.FindByID(ctx, sharedOrg.ID)
 		s.True(biz.IsNotFound(err))
@@ -107,7 +107,7 @@ func (s *membershipIntegrationTestSuite) TestCreateMembership() {
 		assert.NoError(err)
 		assert.Equal(true, m.Current, "Membership should be current")
 
-		assert.Equal(user.ID, m.UserID.String(), "User ID")
+		assert.Equal(user.ID, m.User.ID, "User ID")
 		assert.Equal(org.ID, m.OrganizationID.String(), "Organization ID")
 		assert.EqualValues(org, m.Org, "Embedded organization")
 	})

@@ -17,11 +17,13 @@ package data
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/membership"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/user"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
@@ -120,6 +122,19 @@ func (r *MembershipRepo) FindByIDInUser(ctx context.Context, userID, membershipI
 	return entMembershipToBiz(m), nil
 }
 
+func (r *MembershipRepo) FindByIDInOrg(ctx context.Context, orgID, membershipID uuid.UUID) (*biz.Membership, error) {
+	m, err := r.data.db.Organization.Query().Where(organization.ID(orgID)).
+		QueryMemberships().
+		Where(membership.ID(membershipID)).
+		WithUser().
+		WithOrganization().Only(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, err
+	}
+
+	return entMembershipToBiz(m), nil
+}
+
 func (r *MembershipRepo) SetCurrent(ctx context.Context, membershipID uuid.UUID) (*biz.Membership, error) {
 	// Load membership to find user
 	m, err := r.loadMembership(ctx, membershipID)
@@ -157,6 +172,19 @@ func (r *MembershipRepo) SetCurrent(ctx context.Context, membershipID uuid.UUID)
 	return entMembershipToBiz(m), nil
 }
 
+func (r *MembershipRepo) SetRole(ctx context.Context, membershipID uuid.UUID, role authz.Role) (*biz.Membership, error) {
+	if err := r.data.db.Membership.UpdateOneID(membershipID).SetRole(role).Exec(ctx); err != nil {
+		return nil, fmt.Errorf("failed to update membership: %w", err)
+	}
+
+	m, err := r.loadMembership(ctx, membershipID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load membership: %w", err)
+	}
+
+	return entMembershipToBiz(m), nil
+}
+
 // Delete deletes a membership by ID.
 func (r *MembershipRepo) Delete(ctx context.Context, id uuid.UUID) error {
 	return r.data.db.Membership.DeleteOneID(id).Exec(ctx)
@@ -178,8 +206,7 @@ func entMembershipToBiz(m *ent.Membership) *biz.Membership {
 	}
 
 	if m.Edges.User != nil {
-		res.UserID = m.Edges.User.ID
-		res.UserEmail = m.Edges.User.Email
+		res.User = entUserToBizUser(m.Edges.User)
 	}
 
 	return res

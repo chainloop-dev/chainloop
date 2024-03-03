@@ -129,7 +129,7 @@ func (uc *OrgInvitationUseCase) Create(ctx context.Context, orgID, senderID, rec
 	}
 
 	for _, m := range memberships {
-		if m.UserEmail == receiverEmail {
+		if m.User != nil && m.User.Email == receiverEmail {
 			return nil, NewErrValidationStr("user already exists in the org")
 		}
 	}

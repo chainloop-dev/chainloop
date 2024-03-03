@@ -38,6 +38,756 @@ var (
 // define the regex for a UUID once up-front
 var _organization_uuidPattern = regexp.MustCompile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 
+// Validate checks the field values on
+// OrganizationServiceListMembershipsRequest with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *OrganizationServiceListMembershipsRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// OrganizationServiceListMembershipsRequest with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in
+// OrganizationServiceListMembershipsRequestMultiError, or nil if none found.
+func (m *OrganizationServiceListMembershipsRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *OrganizationServiceListMembershipsRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return OrganizationServiceListMembershipsRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// OrganizationServiceListMembershipsRequestMultiError is an error wrapping
+// multiple validation errors returned by
+// OrganizationServiceListMembershipsRequest.ValidateAll() if the designated
+// constraints aren't met.
+type OrganizationServiceListMembershipsRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m OrganizationServiceListMembershipsRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m OrganizationServiceListMembershipsRequestMultiError) AllErrors() []error { return m }
+
+// OrganizationServiceListMembershipsRequestValidationError is the validation
+// error returned by OrganizationServiceListMembershipsRequest.Validate if the
+// designated constraints aren't met.
+type OrganizationServiceListMembershipsRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e OrganizationServiceListMembershipsRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e OrganizationServiceListMembershipsRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e OrganizationServiceListMembershipsRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e OrganizationServiceListMembershipsRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e OrganizationServiceListMembershipsRequestValidationError) ErrorName() string {
+	return "OrganizationServiceListMembershipsRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e OrganizationServiceListMembershipsRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sOrganizationServiceListMembershipsRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = OrganizationServiceListMembershipsRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = OrganizationServiceListMembershipsRequestValidationError{}
+
+// Validate checks the field values on
+// OrganizationServiceListMembershipsResponse with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *OrganizationServiceListMembershipsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// OrganizationServiceListMembershipsResponse with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in
+// OrganizationServiceListMembershipsResponseMultiError, or nil if none found.
+func (m *OrganizationServiceListMembershipsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *OrganizationServiceListMembershipsResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetResult() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, OrganizationServiceListMembershipsResponseValidationError{
+						field:  fmt.Sprintf("Result[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, OrganizationServiceListMembershipsResponseValidationError{
+						field:  fmt.Sprintf("Result[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return OrganizationServiceListMembershipsResponseValidationError{
+					field:  fmt.Sprintf("Result[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return OrganizationServiceListMembershipsResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// OrganizationServiceListMembershipsResponseMultiError is an error wrapping
+// multiple validation errors returned by
+// OrganizationServiceListMembershipsResponse.ValidateAll() if the designated
+// constraints aren't met.
+type OrganizationServiceListMembershipsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m OrganizationServiceListMembershipsResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m OrganizationServiceListMembershipsResponseMultiError) AllErrors() []error { return m }
+
+// OrganizationServiceListMembershipsResponseValidationError is the validation
+// error returned by OrganizationServiceListMembershipsResponse.Validate if
+// the designated constraints aren't met.
+type OrganizationServiceListMembershipsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e OrganizationServiceListMembershipsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e OrganizationServiceListMembershipsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e OrganizationServiceListMembershipsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e OrganizationServiceListMembershipsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e OrganizationServiceListMembershipsResponseValidationError) ErrorName() string {
+	return "OrganizationServiceListMembershipsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e OrganizationServiceListMembershipsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sOrganizationServiceListMembershipsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = OrganizationServiceListMembershipsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = OrganizationServiceListMembershipsResponseValidationError{}
+
+// Validate checks the field values on
+// OrganizationServiceDeleteMembershipRequest with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *OrganizationServiceDeleteMembershipRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// OrganizationServiceDeleteMembershipRequest with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in
+// OrganizationServiceDeleteMembershipRequestMultiError, or nil if none found.
+func (m *OrganizationServiceDeleteMembershipRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *OrganizationServiceDeleteMembershipRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if err := m._validateUuid(m.GetMembershipId()); err != nil {
+		err = OrganizationServiceDeleteMembershipRequestValidationError{
+			field:  "MembershipId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return OrganizationServiceDeleteMembershipRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *OrganizationServiceDeleteMembershipRequest) _validateUuid(uuid string) error {
+	if matched := _organization_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
+	}
+
+	return nil
+}
+
+// OrganizationServiceDeleteMembershipRequestMultiError is an error wrapping
+// multiple validation errors returned by
+// OrganizationServiceDeleteMembershipRequest.ValidateAll() if the designated
+// constraints aren't met.
+type OrganizationServiceDeleteMembershipRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m OrganizationServiceDeleteMembershipRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m OrganizationServiceDeleteMembershipRequestMultiError) AllErrors() []error { return m }
+
+// OrganizationServiceDeleteMembershipRequestValidationError is the validation
+// error returned by OrganizationServiceDeleteMembershipRequest.Validate if
+// the designated constraints aren't met.
+type OrganizationServiceDeleteMembershipRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e OrganizationServiceDeleteMembershipRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e OrganizationServiceDeleteMembershipRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e OrganizationServiceDeleteMembershipRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e OrganizationServiceDeleteMembershipRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e OrganizationServiceDeleteMembershipRequestValidationError) ErrorName() string {
+	return "OrganizationServiceDeleteMembershipRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e OrganizationServiceDeleteMembershipRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sOrganizationServiceDeleteMembershipRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = OrganizationServiceDeleteMembershipRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = OrganizationServiceDeleteMembershipRequestValidationError{}
+
+// Validate checks the field values on
+// OrganizationServiceDeleteMembershipResponse with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *OrganizationServiceDeleteMembershipResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// OrganizationServiceDeleteMembershipResponse with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in
+// OrganizationServiceDeleteMembershipResponseMultiError, or nil if none found.
+func (m *OrganizationServiceDeleteMembershipResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *OrganizationServiceDeleteMembershipResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return OrganizationServiceDeleteMembershipResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// OrganizationServiceDeleteMembershipResponseMultiError is an error wrapping
+// multiple validation errors returned by
+// OrganizationServiceDeleteMembershipResponse.ValidateAll() if the designated
+// constraints aren't met.
+type OrganizationServiceDeleteMembershipResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m OrganizationServiceDeleteMembershipResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m OrganizationServiceDeleteMembershipResponseMultiError) AllErrors() []error { return m }
+
+// OrganizationServiceDeleteMembershipResponseValidationError is the validation
+// error returned by OrganizationServiceDeleteMembershipResponse.Validate if
+// the designated constraints aren't met.
+type OrganizationServiceDeleteMembershipResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e OrganizationServiceDeleteMembershipResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e OrganizationServiceDeleteMembershipResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e OrganizationServiceDeleteMembershipResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e OrganizationServiceDeleteMembershipResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e OrganizationServiceDeleteMembershipResponseValidationError) ErrorName() string {
+	return "OrganizationServiceDeleteMembershipResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e OrganizationServiceDeleteMembershipResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sOrganizationServiceDeleteMembershipResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = OrganizationServiceDeleteMembershipResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = OrganizationServiceDeleteMembershipResponseValidationError{}
+
+// Validate checks the field values on
+// OrganizationServiceUpdateMembershipRequest with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *OrganizationServiceUpdateMembershipRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// OrganizationServiceUpdateMembershipRequest with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in
+// OrganizationServiceUpdateMembershipRequestMultiError, or nil if none found.
+func (m *OrganizationServiceUpdateMembershipRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *OrganizationServiceUpdateMembershipRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if err := m._validateUuid(m.GetMembershipId()); err != nil {
+		err = OrganizationServiceUpdateMembershipRequestValidationError{
+			field:  "MembershipId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if _, ok := MembershipRole_name[int32(m.GetRole())]; !ok {
+		err := OrganizationServiceUpdateMembershipRequestValidationError{
+			field:  "Role",
+			reason: "value must be one of the defined enum values",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return OrganizationServiceUpdateMembershipRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *OrganizationServiceUpdateMembershipRequest) _validateUuid(uuid string) error {
+	if matched := _organization_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
+	}
+
+	return nil
+}
+
+// OrganizationServiceUpdateMembershipRequestMultiError is an error wrapping
+// multiple validation errors returned by
+// OrganizationServiceUpdateMembershipRequest.ValidateAll() if the designated
+// constraints aren't met.
+type OrganizationServiceUpdateMembershipRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m OrganizationServiceUpdateMembershipRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m OrganizationServiceUpdateMembershipRequestMultiError) AllErrors() []error { return m }
+
+// OrganizationServiceUpdateMembershipRequestValidationError is the validation
+// error returned by OrganizationServiceUpdateMembershipRequest.Validate if
+// the designated constraints aren't met.
+type OrganizationServiceUpdateMembershipRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e OrganizationServiceUpdateMembershipRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e OrganizationServiceUpdateMembershipRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e OrganizationServiceUpdateMembershipRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e OrganizationServiceUpdateMembershipRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e OrganizationServiceUpdateMembershipRequestValidationError) ErrorName() string {
+	return "OrganizationServiceUpdateMembershipRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e OrganizationServiceUpdateMembershipRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sOrganizationServiceUpdateMembershipRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = OrganizationServiceUpdateMembershipRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = OrganizationServiceUpdateMembershipRequestValidationError{}
+
+// Validate checks the field values on
+// OrganizationServiceUpdateMembershipResponse with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *OrganizationServiceUpdateMembershipResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// OrganizationServiceUpdateMembershipResponse with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in
+// OrganizationServiceUpdateMembershipResponseMultiError, or nil if none found.
+func (m *OrganizationServiceUpdateMembershipResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *OrganizationServiceUpdateMembershipResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetResult()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, OrganizationServiceUpdateMembershipResponseValidationError{
+					field:  "Result",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, OrganizationServiceUpdateMembershipResponseValidationError{
+					field:  "Result",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetResult()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return OrganizationServiceUpdateMembershipResponseValidationError{
+				field:  "Result",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return OrganizationServiceUpdateMembershipResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// OrganizationServiceUpdateMembershipResponseMultiError is an error wrapping
+// multiple validation errors returned by
+// OrganizationServiceUpdateMembershipResponse.ValidateAll() if the designated
+// constraints aren't met.
+type OrganizationServiceUpdateMembershipResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m OrganizationServiceUpdateMembershipResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m OrganizationServiceUpdateMembershipResponseMultiError) AllErrors() []error { return m }
+
+// OrganizationServiceUpdateMembershipResponseValidationError is the validation
+// error returned by OrganizationServiceUpdateMembershipResponse.Validate if
+// the designated constraints aren't met.
+type OrganizationServiceUpdateMembershipResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e OrganizationServiceUpdateMembershipResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e OrganizationServiceUpdateMembershipResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e OrganizationServiceUpdateMembershipResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e OrganizationServiceUpdateMembershipResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e OrganizationServiceUpdateMembershipResponseValidationError) ErrorName() string {
+	return "OrganizationServiceUpdateMembershipResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e OrganizationServiceUpdateMembershipResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sOrganizationServiceUpdateMembershipResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = OrganizationServiceUpdateMembershipResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = OrganizationServiceUpdateMembershipResponseValidationError{}
+
 // Validate checks the field values on OrganizationServiceCreateRequest with
 // the rules defined in the proto definition for this message. If any rules
 // are violated, the first error encountered is returned, or nil if there are

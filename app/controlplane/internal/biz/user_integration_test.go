@@ -81,7 +81,7 @@ func (s *userIntegrationTestSuite) TestCurrentMembership() {
 		s.NoError(err)
 		s.True(m.Current)
 		// leave the current org
-		err = s.Membership.DeleteWithOrg(ctx, s.userOne.ID, m.ID.String())
+		err = s.Membership.LeaveAndDeleteOrg(ctx, s.userOne.ID, m.ID.String())
 		s.NoError(err)
 
 		// none of the orgs is marked as current
@@ -105,7 +105,7 @@ func (s *userIntegrationTestSuite) TestCurrentMembership() {
 		mems, _ := s.Membership.ByUser(ctx, s.userOne.ID)
 		s.Len(mems, 1)
 		// leave the current org
-		err := s.Membership.DeleteWithOrg(ctx, s.userOne.ID, mems[0].ID.String())
+		err := s.Membership.LeaveAndDeleteOrg(ctx, s.userOne.ID, mems[0].ID.String())
 		s.NoError(err)
 		mems, _ = s.Membership.ByUser(ctx, s.userOne.ID)
 		s.Len(mems, 0)

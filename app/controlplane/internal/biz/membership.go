@@ -26,20 +26,22 @@ import (
 )
 
 type Membership struct {
-	ID, UserID, OrganizationID uuid.UUID
-	UserEmail                  string
-	Current                    bool
-	CreatedAt, UpdatedAt       *time.Time
-	Org                        *Organization
-	Role                       authz.Role
+	ID, OrganizationID   uuid.UUID
+	Current              bool
+	CreatedAt, UpdatedAt *time.Time
+	Org                  *Organization
+	User                 *User
+	Role                 authz.Role
 }
 
 type MembershipRepo interface {
 	FindByUser(ctx context.Context, userID uuid.UUID) ([]*Membership, error)
 	FindByOrg(ctx context.Context, orgID uuid.UUID) ([]*Membership, error)
 	FindByIDInUser(ctx context.Context, userID, ID uuid.UUID) (*Membership, error)
+	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*Membership, error)
 	FindByOrgAndUser(ctx context.Context, orgID, userID uuid.UUID) (*Membership, error)
 	SetCurrent(ctx context.Context, ID uuid.UUID) (*Membership, error)
+	SetRole(ctx context.Context, ID uuid.UUID, role authz.Role) (*Membership, error)
 	Create(ctx context.Context, orgID, userID uuid.UUID, current bool, role authz.Role) (*Membership, error)
 	Delete(ctx context.Context, ID uuid.UUID) error
 }
@@ -54,9 +56,9 @@ func NewMembershipUseCase(repo MembershipRepo, orgUC *OrganizationUseCase, logge
 	return &MembershipUseCase{repo, orgUC, log.NewHelper(logger)}
 }
 
-// Delete deletes a membership from the database
+// LeaveAndDeleteOrg deletes a membership from the database associated with the current user
 // and the associated org if the user is the only member
-func (uc *MembershipUseCase) DeleteWithOrg(ctx context.Context, userID, membershipID string) error {
+func (uc *MembershipUseCase) LeaveAndDeleteOrg(ctx context.Context, userID, membershipID string) error {
 	membershipUUID, err := uuid.Parse(membershipID)
 	if err != nil {
 		return NewErrInvalidUUID(err)
@@ -96,6 +98,67 @@ func (uc *MembershipUseCase) DeleteWithOrg(ctx context.Context, userID, membersh
 	}
 
 	return nil
+}
+
+// DeleteOther just deletes a membership from the database
+// but ensures that the user is not deleting itself from the org
+func (uc *MembershipUseCase) DeleteOther(ctx context.Context, orgID, userID, membershipID string) error {
+	membershipUUID, err := uuid.Parse(membershipID)
+	if err != nil {
+		return NewErrInvalidUUID(err)
+	}
+
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return NewErrInvalidUUID(err)
+	}
+
+	m, err := uc.repo.FindByIDInOrg(ctx, orgUUID, membershipUUID)
+	if err != nil {
+		return fmt.Errorf("failed to find membership: %w", err)
+	} else if m == nil {
+		return NewErrNotFound("membership")
+	}
+
+	if m.User.ID == userID {
+		return NewErrValidationStr("cannot delete yourself from the org")
+	}
+
+	uc.logger.Infow("msg", "Deleting membership", "org_id", orgID, "membership_id", m.ID.String())
+	if err := uc.repo.Delete(ctx, membershipUUID); err != nil {
+		return fmt.Errorf("failed to delete membership: %w", err)
+	}
+
+	return nil
+}
+
+func (uc *MembershipUseCase) UpdateRole(ctx context.Context, orgID, userID, membershipID string, role authz.Role) (*Membership, error) {
+	// If it has ben overrode by the user, validate it
+	if role == "" {
+		return nil, NewErrValidationStr("role is required")
+	}
+	membershipUUID, err := uuid.Parse(membershipID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	m, err := uc.repo.FindByIDInOrg(ctx, orgUUID, membershipUUID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find membership: %w", err)
+	} else if m == nil {
+		return nil, NewErrNotFound("membership")
+	}
+
+	if m.User.ID == userID {
+		return nil, NewErrValidationStr("cannot update yourself")
+	}
+
+	return uc.repo.SetRole(ctx, membershipUUID, role)
 }
 
 type membershipCreateOpts struct {

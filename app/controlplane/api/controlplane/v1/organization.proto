@@ -25,6 +25,35 @@ option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/con
 service OrganizationService {
   rpc Create(OrganizationServiceCreateRequest) returns (OrganizationServiceCreateResponse);
   rpc Update(OrganizationServiceUpdateRequest) returns (OrganizationServiceUpdateResponse);
+
+  // List members in the organization
+  rpc ListMemberships(OrganizationServiceListMembershipsRequest) returns (OrganizationServiceListMembershipsResponse);
+  // Delete member from the organization
+  // Currently the currentUser can not delete himself from this endpoint
+  // for that she needs to use the UserService endpoint instead
+  rpc DeleteMembership(OrganizationServiceDeleteMembershipRequest) returns (OrganizationServiceDeleteMembershipResponse);
+  rpc UpdateMembership(OrganizationServiceUpdateMembershipRequest) returns (OrganizationServiceUpdateMembershipResponse);
+}
+
+message OrganizationServiceListMembershipsRequest {}
+
+message OrganizationServiceListMembershipsResponse {
+  repeated OrgMembershipItem result = 1;
+}
+
+message OrganizationServiceDeleteMembershipRequest {
+  string membership_id = 1 [(validate.rules).string.uuid = true];
+}
+
+message OrganizationServiceDeleteMembershipResponse {}
+
+message OrganizationServiceUpdateMembershipRequest {
+  string membership_id = 1 [(validate.rules).string.uuid = true];
+  MembershipRole role = 2 [(validate.rules).enum.defined_only = true];
+}
+
+message OrganizationServiceUpdateMembershipResponse {
+  OrgMembershipItem result = 1;
 }
 
 message OrganizationServiceCreateRequest {
