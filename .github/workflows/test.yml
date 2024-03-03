@@ -38,14 +38,14 @@ jobs:
 
       # Generate any possible migration from a schema change that way
       # we can detect any migration file that has not been checked in to git
-      # This could happen if the developer ran make generate but didn't run make migration_new
+      # This could happen if the developer ran make generate but didn't run make migration_sync
       - name: Generate migrations
         if: ${{ matrix.app == 'controlplane' }}
         run: |
           wget -q https://release.ariga.io/atlas/atlas-linux-amd64-latest -O /tmp/atlas
           sudo install /tmp/atlas /usr/local/bin/atlas
 
-          make -C app/controlplane migration_new
+          make -C app/controlplane migration_sync
 
       # Check that the generated ent code is up to date
       # see https://entgo.io/docs/ci/

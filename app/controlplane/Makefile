@@ -33,9 +33,9 @@ migration_apply: check-atlas-tool migration_hash
 	atlas migrate status --dir ${local_migrations_dir} --url ${local_db}
 	atlas migrate apply --dir ${local_migrations_dir} --url ${local_db}
 
-.PHONY: migration_update
-# generate updated migration files if needed from the current ent schema
-migration_update: check-atlas-tool migration_hash
+.PHONY: migration_sync
+# sync migration files with the current ent schema
+migration_sync: check-atlas-tool migration_hash
 	atlas migrate diff --dir ${local_migrations_dir} --to "ent://internal/data/ent/schema" --dev-url "docker://postgres/15/test?search_path=public"
 
 .PHONY: migration_new
@@ -66,7 +66,7 @@ lint: check-golangci-lint-tool check-buf-tool
 
 .PHONY: generate
 # generate proto bindings, wire injectors, and ent models
-generate: check-wire-tool api config migration_update
+generate: check-wire-tool api config migration_sync
 	go generate ./...
 
 .PHONY: all
