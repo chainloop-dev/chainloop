@@ -22,6 +22,7 @@ import (
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/google/uuid"
 )
@@ -46,6 +47,8 @@ func (OrgInvitation) Fields() []ent.Field {
 		// edge fields to be able to access to them directly
 		field.UUID("organization_id", uuid.UUID{}),
 		field.UUID("sender_id", uuid.UUID{}),
+		// Role that will be assigned to the user when they accept the invitation
+		field.Enum("role").GoType(authz.Role("")).Optional(),
 	}
 }
 

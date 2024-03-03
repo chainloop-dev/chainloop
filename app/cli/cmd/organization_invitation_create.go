@@ -17,19 +17,32 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
 )
 
 func newOrganizationInvitationCreateCmd() *cobra.Command {
-	var receiverEmail string
+	var receiverEmail, role string
+
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Invite a User to an Organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			var found bool
+			for _, r := range action.AvailableRoles {
+				if string(r) == role {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return fmt.Errorf("role %q is not available. Available roles are %s", role, action.AvailableRoles)
+			}
+
 			res, err := action.NewOrgInvitationCreate(actionOpts).Run(
-				context.Background(), receiverEmail)
+				context.Background(), receiverEmail, role)
 			if err != nil {
 				return err
 			}
@@ -40,6 +53,8 @@ func newOrganizationInvitationCreateCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&receiverEmail, "receiver", "", "Email of the user to invite")
 	err := cmd.MarkFlagRequired("receiver")
+
+	cmd.Flags().StringVar(&role, "role", string(action.RoleViewer), fmt.Sprintf("Role of the user in the organization, available %s", action.AvailableRoles))
 	cobra.CheckErr(err)
 
 	return cmd

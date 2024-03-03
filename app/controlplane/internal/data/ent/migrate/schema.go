@@ -200,6 +200,7 @@ var (
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"accepted", "pending"}, Default: "pending"},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "role", Type: field.TypeEnum, Nullable: true, Enums: []string{"role:org:owner", "role:org:admin", "role:org:viewer"}},
 		{Name: "organization_id", Type: field.TypeUUID},
 		{Name: "sender_id", Type: field.TypeUUID},
 	}
@@ -211,13 +212,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "org_invitations_organizations_organization",
-				Columns:    []*schema.Column{OrgInvitationsColumns[5]},
+				Columns:    []*schema.Column{OrgInvitationsColumns[6]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "org_invitations_users_sender",
-				Columns:    []*schema.Column{OrgInvitationsColumns[6]},
+				Columns:    []*schema.Column{OrgInvitationsColumns[7]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},

@@ -40,10 +40,11 @@ type OrgInvitation struct {
 	ReceiverEmail string
 	CreatedAt     *time.Time
 	Status        OrgInvitationStatus
+	Role          authz.Role
 }
 
 type OrgInvitationRepo interface {
-	Create(ctx context.Context, orgID, senderID uuid.UUID, receiverEmail string) (*OrgInvitation, error)
+	Create(ctx context.Context, orgID, senderID uuid.UUID, receiverEmail string, role authz.Role) (*OrgInvitation, error)
 	FindByID(ctx context.Context, ID uuid.UUID) (*OrgInvitation, error)
 	PendingInvitation(ctx context.Context, orgID uuid.UUID, receiverEmail string) (*OrgInvitation, error)
 	PendingInvitations(ctx context.Context, receiverEmail string) ([]*OrgInvitation, error)
@@ -59,10 +60,36 @@ func NewOrgInvitationUseCase(r OrgInvitationRepo, mRepo MembershipRepo, uRepo Us
 	}, nil
 }
 
-func (uc *OrgInvitationUseCase) Create(ctx context.Context, orgID, senderID, receiverEmail string) (*OrgInvitation, error) {
+type invitationCreateOpts struct {
+	role authz.Role
+}
+
+type InvitationCreateOpt func(*invitationCreateOpts)
+
+func WithInvitationRole(r authz.Role) InvitationCreateOpt {
+	return func(o *invitationCreateOpts) {
+		o.role = r
+	}
+}
+
+func (uc *OrgInvitationUseCase) Create(ctx context.Context, orgID, senderID, receiverEmail string, createOpts ...InvitationCreateOpt) (*OrgInvitation, error) {
 	// 1 - Static Validation
 	if receiverEmail == "" {
 		return nil, NewErrValidationStr("receiver email is required")
+	}
+
+	// Default to viewer role
+	opts := &invitationCreateOpts{
+		role: authz.RoleViewer,
+	}
+
+	for _, o := range createOpts {
+		o(opts)
+	}
+
+	// If it has ben overrode by the user, validate it
+	if opts.role == "" {
+		return nil, NewErrValidationStr("role is required")
 	}
 
 	orgUUID, err := uuid.Parse(orgID)
@@ -118,7 +145,7 @@ func (uc *OrgInvitationUseCase) Create(ctx context.Context, orgID, senderID, rec
 	}
 
 	// 6 - Create the invitation
-	invitation, err := uc.repo.Create(ctx, orgUUID, senderUUID, receiverEmail)
+	invitation, err := uc.repo.Create(ctx, orgUUID, senderUUID, receiverEmail, opts.role)
 	if err != nil {
 		return nil, fmt.Errorf("error creating invitation: %w", err)
 	}
@@ -199,8 +226,8 @@ func (uc *OrgInvitationUseCase) AcceptPendingInvitations(ctx context.Context, re
 		}
 
 		// user is not a member of the org, create the membership
-		// Role hardcoded by default until we have a way to set it during invitation
-		role := authz.RoleAdmin
+		// role was defined during the invitation
+		role := invitation.Role
 		if !alreadyMember {
 			uc.logger.Infow("msg", "Adding member", "invitation_id", invitation.ID.String(), "org_id", invitation.Org.ID, "user_id", user.ID, "role", role)
 			if _, err := uc.mRepo.Create(ctx, orgUUID, userUUID, false, role); err != nil {

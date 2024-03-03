@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/orginvitation"
@@ -39,10 +40,11 @@ func NewOrgInvitation(data *Data, logger log.Logger) biz.OrgInvitationRepo {
 	}
 }
 
-func (r *OrgInvitation) Create(ctx context.Context, orgID, senderID uuid.UUID, receiverEmail string) (*biz.OrgInvitation, error) {
+func (r *OrgInvitation) Create(ctx context.Context, orgID, senderID uuid.UUID, receiverEmail string, role authz.Role) (*biz.OrgInvitation, error) {
 	invite, err := r.data.db.OrgInvitation.Create().
 		SetOrganizationID(orgID).
 		SetSenderID(senderID).
+		SetRole(role).
 		SetReceiverEmail(receiverEmail).
 		Save(ctx)
 
@@ -134,6 +136,7 @@ func entInviteToBiz(i *ent.OrgInvitation) *biz.OrgInvitation {
 		ReceiverEmail: i.ReceiverEmail,
 		CreatedAt:     toTimePtr(i.CreatedAt),
 		Status:        i.Status,
+		Role:          i.Role,
 	}
 
 	if i.Edges.Organization != nil {

@@ -33,6 +33,7 @@ type OrgInvitationItem struct {
 	Sender        *UserItem  `json:"sender"`
 	Status        string     `json:"status"`
 	CreatedAt     *time.Time `json:"createdAt"`
+	Role          Role       `json:"role"`
 }
 
 func NewOrgInvitationListSent(cfg *ActionsOpts) *OrgInvitationListSent {
@@ -66,5 +67,6 @@ func pbOrgInvitationItemToAction(in *pb.OrgInvitationItem) *OrgInvitationItem {
 		Sender:        pbUserItemToAction(in.Sender),
 		CreatedAt:     toTimePtr(in.CreatedAt.AsTime()),
 		Status:        in.Status,
+		Role:          pbRoleToString(in.Role),
 	}
 }

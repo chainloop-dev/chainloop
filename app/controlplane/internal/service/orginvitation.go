@@ -49,7 +49,7 @@ func (s *OrgInvitationService) Create(ctx context.Context, req *pb.OrgInvitation
 	}
 
 	// Validations and rbac checks are done in the biz layer
-	i, err := s.useCase.Create(ctx, org.ID, user.ID, req.ReceiverEmail)
+	i, err := s.useCase.Create(ctx, org.ID, user.ID, req.ReceiverEmail, biz.WithInvitationRole(pbRoleToBiz(req.Role)))
 	if err != nil {
 		return nil, handleUseCaseErr("invitation", err, s.log)
 	}
@@ -94,5 +94,6 @@ func bizInvitationToPB(e *biz.OrgInvitation) *pb.OrgInvitationItem {
 		Id: e.ID.String(), CreatedAt: timestamppb.New(*e.CreatedAt),
 		ReceiverEmail: e.ReceiverEmail, Status: string(e.Status),
 		Organization: bizOrgToPb(e.Org), Sender: bizUserToPb(e.Sender),
+		Role: bizRoleToPb(e.Role),
 	}
 }

@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/orginvitation"
@@ -78,6 +79,26 @@ func (oiu *OrgInvitationUpdate) SetSenderID(u uuid.UUID) *OrgInvitationUpdate {
 	return oiu
 }
 
+// SetRole sets the "role" field.
+func (oiu *OrgInvitationUpdate) SetRole(a authz.Role) *OrgInvitationUpdate {
+	oiu.mutation.SetRole(a)
+	return oiu
+}
+
+// SetNillableRole sets the "role" field if the given value is not nil.
+func (oiu *OrgInvitationUpdate) SetNillableRole(a *authz.Role) *OrgInvitationUpdate {
+	if a != nil {
+		oiu.SetRole(*a)
+	}
+	return oiu
+}
+
+// ClearRole clears the value of the "role" field.
+func (oiu *OrgInvitationUpdate) ClearRole() *OrgInvitationUpdate {
+	oiu.mutation.ClearRole()
+	return oiu
+}
+
 // SetOrganization sets the "organization" edge to the Organization entity.
 func (oiu *OrgInvitationUpdate) SetOrganization(o *Organization) *OrgInvitationUpdate {
 	return oiu.SetOrganizationID(o.ID)
@@ -139,6 +160,11 @@ func (oiu *OrgInvitationUpdate) check() error {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "OrgInvitation.status": %w`, err)}
 		}
 	}
+	if v, ok := oiu.mutation.Role(); ok {
+		if err := orginvitation.RoleValidator(v); err != nil {
+			return &ValidationError{Name: "role", err: fmt.Errorf(`ent: validator failed for field "OrgInvitation.role": %w`, err)}
+		}
+	}
 	if _, ok := oiu.mutation.OrganizationID(); oiu.mutation.OrganizationCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "OrgInvitation.organization"`)
 	}
@@ -168,6 +194,12 @@ func (oiu *OrgInvitationUpdate) sqlSave(ctx context.Context) (n int, err error) 
 	}
 	if oiu.mutation.DeletedAtCleared() {
 		_spec.ClearField(orginvitation.FieldDeletedAt, field.TypeTime)
+	}
+	if value, ok := oiu.mutation.Role(); ok {
+		_spec.SetField(orginvitation.FieldRole, field.TypeEnum, value)
+	}
+	if oiu.mutation.RoleCleared() {
+		_spec.ClearField(orginvitation.FieldRole, field.TypeEnum)
 	}
 	if oiu.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -293,6 +325,26 @@ func (oiuo *OrgInvitationUpdateOne) SetSenderID(u uuid.UUID) *OrgInvitationUpdat
 	return oiuo
 }
 
+// SetRole sets the "role" field.
+func (oiuo *OrgInvitationUpdateOne) SetRole(a authz.Role) *OrgInvitationUpdateOne {
+	oiuo.mutation.SetRole(a)
+	return oiuo
+}
+
+// SetNillableRole sets the "role" field if the given value is not nil.
+func (oiuo *OrgInvitationUpdateOne) SetNillableRole(a *authz.Role) *OrgInvitationUpdateOne {
+	if a != nil {
+		oiuo.SetRole(*a)
+	}
+	return oiuo
+}
+
+// ClearRole clears the value of the "role" field.
+func (oiuo *OrgInvitationUpdateOne) ClearRole() *OrgInvitationUpdateOne {
+	oiuo.mutation.ClearRole()
+	return oiuo
+}
+
 // SetOrganization sets the "organization" edge to the Organization entity.
 func (oiuo *OrgInvitationUpdateOne) SetOrganization(o *Organization) *OrgInvitationUpdateOne {
 	return oiuo.SetOrganizationID(o.ID)
@@ -367,6 +419,11 @@ func (oiuo *OrgInvitationUpdateOne) check() error {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "OrgInvitation.status": %w`, err)}
 		}
 	}
+	if v, ok := oiuo.mutation.Role(); ok {
+		if err := orginvitation.RoleValidator(v); err != nil {
+			return &ValidationError{Name: "role", err: fmt.Errorf(`ent: validator failed for field "OrgInvitation.role": %w`, err)}
+		}
+	}
 	if _, ok := oiuo.mutation.OrganizationID(); oiuo.mutation.OrganizationCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "OrgInvitation.organization"`)
 	}
@@ -413,6 +470,12 @@ func (oiuo *OrgInvitationUpdateOne) sqlSave(ctx context.Context) (_node *OrgInvi
 	}
 	if oiuo.mutation.DeletedAtCleared() {
 		_spec.ClearField(orginvitation.FieldDeletedAt, field.TypeTime)
+	}
+	if value, ok := oiuo.mutation.Role(); ok {
+		_spec.SetField(orginvitation.FieldRole, field.TypeEnum, value)
+	}
+	if oiuo.mutation.RoleCleared() {
+		_spec.ClearField(orginvitation.FieldRole, field.TypeEnum)
 	}
 	if oiuo.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{

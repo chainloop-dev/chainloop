@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/orginvitation"
@@ -33,6 +34,8 @@ type OrgInvitation struct {
 	OrganizationID uuid.UUID `json:"organization_id,omitempty"`
 	// SenderID holds the value of the "sender_id" field.
 	SenderID uuid.UUID `json:"sender_id,omitempty"`
+	// Role holds the value of the "role" field.
+	Role authz.Role `json:"role,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the OrgInvitationQuery when eager-loading is set.
 	Edges        OrgInvitationEdges `json:"edges"`
@@ -81,7 +84,7 @@ func (*OrgInvitation) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case orginvitation.FieldReceiverEmail, orginvitation.FieldStatus:
+		case orginvitation.FieldReceiverEmail, orginvitation.FieldStatus, orginvitation.FieldRole:
 			values[i] = new(sql.NullString)
 		case orginvitation.FieldCreatedAt, orginvitation.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
@@ -143,6 +146,12 @@ func (oi *OrgInvitation) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field sender_id", values[i])
 			} else if value != nil {
 				oi.SenderID = *value
+			}
+		case orginvitation.FieldRole:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field role", values[i])
+			} else if value.Valid {
+				oi.Role = authz.Role(value.String)
 			}
 		default:
 			oi.selectValues.Set(columns[i], values[i])
@@ -207,6 +216,9 @@ func (oi *OrgInvitation) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("sender_id=")
 	builder.WriteString(fmt.Sprintf("%v", oi.SenderID))
+	builder.WriteString(", ")
+	builder.WriteString("role=")
+	builder.WriteString(fmt.Sprintf("%v", oi.Role))
 	builder.WriteByte(')')
 	return builder.String()
 }

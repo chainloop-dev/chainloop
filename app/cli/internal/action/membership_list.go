@@ -17,6 +17,7 @@ package action
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
@@ -37,7 +38,7 @@ type MembershipItem struct {
 	CreatedAt *time.Time `json:"joinedAt"`
 	UpdatedAt *time.Time `json:"updatedAt"`
 	Org       *OrgItem
-	Role      string `json:"role"`
+	Role      Role `json:"role"`
 }
 
 func NewMembershipList(cfg *ActionsOpts) *MembershipList {
@@ -72,22 +73,60 @@ func pbMembershipItemToAction(in *pb.OrgMembershipItem) *MembershipItem {
 		return nil
 	}
 
-	var role string
-	switch in.Role {
-	case pb.MembershipRole_MEMBERSHIP_ROLE_ORG_ADMIN:
-		role = "admin"
-	case pb.MembershipRole_MEMBERSHIP_ROLE_ORG_VIEWER:
-		role = "viewer"
-	case pb.MembershipRole_MEMBERSHIP_ROLE_ORG_OWNER:
-		role = "owner"
-	}
-
 	return &MembershipItem{
 		ID:        in.GetId(),
 		CreatedAt: toTimePtr(in.GetCreatedAt().AsTime()),
 		UpdatedAt: toTimePtr(in.GetCreatedAt().AsTime()),
 		Org:       pbOrgItemToAction(in.Org),
 		Current:   in.Current,
-		Role:      role,
+		Role:      pbRoleToString(in.Role),
 	}
+}
+
+type Role string
+
+const (
+	RoleAdmin  Role = "admin"
+	RoleOwner  Role = "owner"
+	RoleViewer Role = "viewer"
+)
+
+type Roles []Role
+
+var AvailableRoles = Roles{
+	RoleAdmin,
+	RoleOwner,
+	RoleViewer,
+}
+
+func (roles Roles) String() string {
+	result := make([]string, 0, len(roles))
+	for _, role := range roles {
+		result = append(result, string(role))
+	}
+	return strings.Join(result, ", ")
+}
+
+func pbRoleToString(role pb.MembershipRole) Role {
+	switch role {
+	case pb.MembershipRole_MEMBERSHIP_ROLE_ORG_ADMIN:
+		return RoleAdmin
+	case pb.MembershipRole_MEMBERSHIP_ROLE_ORG_VIEWER:
+		return RoleViewer
+	case pb.MembershipRole_MEMBERSHIP_ROLE_ORG_OWNER:
+		return RoleOwner
+	}
+	return ""
+}
+
+func stringToPbRole(role Role) pb.MembershipRole {
+	switch role {
+	case RoleAdmin:
+		return pb.MembershipRole_MEMBERSHIP_ROLE_ORG_ADMIN
+	case RoleViewer:
+		return pb.MembershipRole_MEMBERSHIP_ROLE_ORG_VIEWER
+	case RoleOwner:
+		return pb.MembershipRole_MEMBERSHIP_ROLE_ORG_OWNER
+	}
+	return pb.MembershipRole_MEMBERSHIP_ROLE_UNSPECIFIED
 }
