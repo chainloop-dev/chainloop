@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,11 +15,11 @@
 
 syntax = "proto3";
 
-option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf;conf";
-
+import "credentials/v1/config.proto";
 import "google/protobuf/duration.proto";
 import "validate/validate.proto";
-import "credentials/v1/config.proto";
+
+option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf;conf";
 
 message Bootstrap {
   Server server = 1;
@@ -62,7 +62,7 @@ message ReferrerSharedIndex {
   // If the shared, public index feature is enabled
   bool enabled = 1;
   // list of organizations uuids that are allowed to appear in the shared referrer index
-  // think of it as a list of trusted publishers 
+  // think of it as a list of trusted publishers
   repeated string allowed_orgs = 2;
 }
 
@@ -105,6 +105,8 @@ message Data {
 message Auth {
   // Authentication creates a JWT that uses this secret for signing
   string generated_jws_hmac_secret = 2;
+  // allow_list is a list of allowed email addresses or domains
+  // for example ["@chainloop.dev", "foo@mycompany.org"]
   repeated string allow_list = 3;
   string cas_robot_account_private_key_path = 4;
   OIDC oidc = 6;

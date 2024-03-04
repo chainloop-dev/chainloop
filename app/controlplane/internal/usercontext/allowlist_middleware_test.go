@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,33 +24,74 @@ import (
 )
 
 func TestCheckUserInAllowList(t *testing.T) {
-	u := &User{Email: "sarah@cyberdyne.io", ID: "124"}
+	const email = "sarah@cyberdyne.io"
+	allowList := []string{
+		"foo@foo.com",
+		"sarah@cyberdyne.io",
+		// it can also contain domains
+		"@cyberdyne.io",
+		"@dyson-industries.io",
+	}
+
 	testCases := []struct {
 		name      string
 		allowList []string
-		user      *User
+		email     string
 		wantErr   bool
 	}{
 		{
 			name:      "empty allow list",
-			user:      u,
+			email:     email,
 			allowList: []string{},
 		},
 		{
 			name:      "user not in allow list",
-			user:      u,
-			allowList: []string{"foo@foo.com"},
+			email:     email,
+			allowList: []string{"nothere@cyberdyne.io"},
 			wantErr:   true,
 		},
 		{
 			name:      "context missing, no user loaded",
-			allowList: []string{"foo@foo.com"},
+			allowList: allowList,
 			wantErr:   true,
 		},
 		{
 			name:      "user in allow list",
-			user:      u,
-			allowList: []string{"sarah@cyberdyne.io"},
+			email:     email,
+			allowList: allowList,
+		},
+		{
+			name:      "user in one of the valid domains",
+			email:     "miguel@dyson-industries.io",
+			allowList: allowList,
+		},
+		{
+			name:      "user in one of the valid domains",
+			email:     "john@dyson-industries.io",
+			allowList: allowList,
+		},
+		{
+			name:      "and can use modifiers",
+			email:     "john+chainloop@dyson-industries.io",
+			allowList: allowList,
+		},
+		{
+			name:      "it needs to be an email",
+			email:     "dyson-industries.io",
+			allowList: allowList,
+			wantErr:   true,
+		},
+		{
+			name:      "domain position is important",
+			email:     "dyson-industries.io@john",
+			allowList: allowList,
+			wantErr:   true,
+		},
+		{
+			name:      "and can't be typosquated",
+			email:     "john@dyson-industriesss.io",
+			allowList: allowList,
+			wantErr:   true,
 		},
 	}
 
@@ -58,8 +99,9 @@ func TestCheckUserInAllowList(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			m := CheckUserInAllowList(tc.allowList)
 			ctx := context.Background()
-			if tc.user != nil {
-				ctx = WithCurrentUser(ctx, tc.user)
+			if tc.email != "" {
+				u := &User{Email: tc.email, ID: "124"}
+				ctx = WithCurrentUser(ctx, u)
 			}
 
 			_, err := m(emptyHandler)(ctx, nil)
