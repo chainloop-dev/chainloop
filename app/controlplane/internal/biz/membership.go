@@ -56,7 +56,7 @@ func NewMembershipUseCase(repo MembershipRepo, orgUC *OrganizationUseCase, logge
 	return &MembershipUseCase{repo, orgUC, log.NewHelper(logger)}
 }
 
-// LeaveAndDeleteOrg deletes a membership from the database associated with the current user
+// LeaveAndDeleteOrg deletes a membership (and the org i) from the database associated with the current user
 // and the associated org if the user is the only member
 func (uc *MembershipUseCase) LeaveAndDeleteOrg(ctx context.Context, userID, membershipID string) error {
 	membershipUUID, err := uuid.Parse(membershipID)
@@ -137,6 +137,7 @@ func (uc *MembershipUseCase) UpdateRole(ctx context.Context, orgID, userID, memb
 	if role == "" {
 		return nil, NewErrValidationStr("role is required")
 	}
+
 	membershipUUID, err := uuid.Parse(membershipID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)

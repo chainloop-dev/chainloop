@@ -19,6 +19,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
 
@@ -26,6 +27,46 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
+
+func (s *membershipIntegrationTestSuite) TestByOrg() {
+	ctx := context.Background()
+	user, err := s.User.FindOrCreateByEmail(ctx, "foo@test.com")
+	s.NoError(err)
+	user2, err := s.User.FindOrCreateByEmail(ctx, "foo-2@test.com")
+	s.NoError(err)
+	userOrg, err := s.Organization.CreateWithRandomName(ctx)
+	s.NoError(err)
+	sharedOrg, err := s.Organization.CreateWithRandomName(ctx)
+	s.NoError(err)
+
+	_, err = s.Membership.Create(ctx, userOrg.ID, user.ID, biz.WithCurrentMembership())
+	s.NoError(err)
+	_, err = s.Membership.Create(ctx, sharedOrg.ID, user.ID, biz.WithCurrentMembership())
+	s.NoError(err)
+	_, err = s.Membership.Create(ctx, sharedOrg.ID, user2.ID, biz.WithCurrentMembership())
+	s.NoError(err)
+
+	s.T().Run("org 1", func(t *testing.T) {
+		memberships, err := s.Membership.ByOrg(ctx, userOrg.ID)
+		s.NoError(err)
+		s.Len(memberships, 1)
+		s.Equal(memberships[0].OrganizationID.String(), userOrg.ID)
+		s.Equal(memberships[0].User.Email, user.Email)
+		s.Equal(memberships[0].Role, authz.RoleViewer)
+	})
+
+	s.T().Run("shared org", func(t *testing.T) {
+		memberships, err := s.Membership.ByOrg(ctx, sharedOrg.ID)
+		s.NoError(err)
+		s.Len(memberships, 2)
+	})
+
+	s.T().Run("non existing org", func(t *testing.T) {
+		memberships, err := s.Membership.ByOrg(ctx, uuid.NewString())
+		s.NoError(err)
+		s.Len(memberships, 0)
+	})
+}
 
 func (s *membershipIntegrationTestSuite) TestDeleteWithOrg() {
 	ctx := context.Background()
@@ -88,6 +129,87 @@ func (s *membershipIntegrationTestSuite) TestDeleteWithOrg() {
 		s.NoError(err)
 		_, err = s.Organization.FindByID(ctx, sharedOrg.ID)
 		s.True(biz.IsNotFound(err))
+	})
+}
+
+func (s *membershipIntegrationTestSuite) TestDeleteOther() {
+	ctx := context.Background()
+
+	user, err := s.User.FindOrCreateByEmail(ctx, "foo@test.com")
+	s.NoError(err)
+	user2, err := s.User.FindOrCreateByEmail(ctx, "foo-2@test.com")
+	s.NoError(err)
+	otherOrg, err := s.Organization.CreateWithRandomName(ctx)
+	s.NoError(err)
+	sharedOrg, err := s.Organization.CreateWithRandomName(ctx)
+	s.NoError(err)
+
+	mUser2SharedOrg, err := s.Membership.Create(ctx, sharedOrg.ID, user2.ID, biz.WithCurrentMembership())
+	s.NoError(err)
+
+	s.T().Run("I can not delete my own membership", func(t *testing.T) {
+		err := s.Membership.DeleteOther(ctx, sharedOrg.ID, user2.ID, mUser2SharedOrg.ID.String())
+		s.ErrorContains(err, "cannot delete yourself from the org")
+	})
+
+	s.T().Run("I can't find the membership", func(t *testing.T) {
+		err := s.Membership.DeleteOther(ctx, otherOrg.ID, user2.ID, mUser2SharedOrg.ID.String())
+		s.True(biz.IsNotFound(err))
+	})
+
+	s.T().Run("I can delete other user membership", func(t *testing.T) {
+		memberships, err := s.Membership.ByOrg(ctx, sharedOrg.ID)
+		s.NoError(err)
+		s.Len(memberships, 1)
+
+		err = s.Membership.DeleteOther(ctx, sharedOrg.ID, user.ID, mUser2SharedOrg.ID.String())
+		s.NoError(err)
+
+		memberships, err = s.Membership.ByOrg(ctx, sharedOrg.ID)
+		s.NoError(err)
+		s.Len(memberships, 0)
+	})
+}
+
+func (s *membershipIntegrationTestSuite) TestUpdateRole() {
+	ctx := context.Background()
+
+	user, err := s.User.FindOrCreateByEmail(ctx, "foo@test.com")
+	s.NoError(err)
+	user2, err := s.User.FindOrCreateByEmail(ctx, "foo-2@test.com")
+	s.NoError(err)
+	otherOrg, err := s.Organization.CreateWithRandomName(ctx)
+	s.NoError(err)
+	sharedOrg, err := s.Organization.CreateWithRandomName(ctx)
+	s.NoError(err)
+	mUser2SharedOrg, err := s.Membership.Create(ctx, sharedOrg.ID, user2.ID, biz.WithCurrentMembership())
+	s.NoError(err)
+
+	// empty role
+	s.T().Run("a role is required", func(t *testing.T) {
+		_, err := s.Membership.UpdateRole(ctx, sharedOrg.ID, user.ID, mUser2SharedOrg.ID.String(), "")
+		s.ErrorContains(err, "role is required")
+	})
+
+	s.T().Run("I can not update my own membership", func(t *testing.T) {
+		_, err := s.Membership.UpdateRole(ctx, sharedOrg.ID, user2.ID, mUser2SharedOrg.ID.String(), authz.RoleAdmin)
+		s.ErrorContains(err, "cannot update yourself")
+	})
+
+	s.T().Run("I can't find the membership in another org", func(t *testing.T) {
+		_, err := s.Membership.UpdateRole(ctx, otherOrg.ID, user.ID, mUser2SharedOrg.ID.String(), authz.RoleAdmin)
+		s.True(biz.IsNotFound(err))
+	})
+
+	s.T().Run("I can update other roles", func(t *testing.T) {
+		memberships, err := s.Membership.ByOrg(ctx, sharedOrg.ID)
+		s.NoError(err)
+		s.Len(memberships, 1)
+		s.Equal(authz.RoleViewer, memberships[0].Role)
+
+		got, err := s.Membership.UpdateRole(ctx, sharedOrg.ID, user.ID, mUser2SharedOrg.ID.String(), authz.RoleAdmin)
+		s.NoError(err)
+		s.Equal(authz.RoleAdmin, got.Role)
 	})
 }
 
