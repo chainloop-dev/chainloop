@@ -1,0 +1,49 @@
+schemaVersion: v1
+# Arbitrary set of annotations can be added to the contract and will be part of the attestation
+annotations:
+  - name: version
+    value: oss # if the value is left empty, it will be required and resolved at attestation time
+# Three required and one optional materials of three different kinds
+materials:
+  # CONTAINER_IMAGE kinds will get resolved to retrieve their repository digest
+  - type: CONTAINER_IMAGE
+    name:
+      skynet-control-plane
+      # The output flag indicates that the material will be part of the attestation subject
+    output: true
+    # Arbitrary annotations can be added to the material
+    annotations:
+      - name: component
+        value: control-plane
+      # The value can be left empty so it can be provided at attestation time
+      - name: asset
+  # ARTIFACT kinds will first get uploaded to your artifact registry via the built-in Content Addressable Storage (CAS)
+  - type: ARTIFACT
+    name: rootfs
+  # Optional dockerfile
+  - type: ARTIFACT
+    name: dockerfile
+    optional: true
+  # SBOMs will be uploaded to the artifact registry and referenced in the attestation
+  # Both SBOM_CYCLONEDX_JSON and SBOM_SPDX_JSON are supported
+  - type: SBOM_CYCLONEDX_JSON
+    name: skynet-sbom
+  # CSAF_VEX and OPENVEX are supported
+  - type: OPENVEX
+    name: disclosure
+  # And static analysis reports in SARIF format
+  - type: SARIF
+    name: static-out
+  # STRING kind materials will be injected as simple keypairs
+  - type: STRING
+    name: build-ref
+
+# Env vars we want the system to resolve and inject during attestation initialization
+# Additional ones can be inherited from the specified runner context below
+envAllowList:
+  - CUSTOM_VAR
+
+# Enforce in what runner context the attestation must happen
+# If not specified, the attestation crafting process is allowed to run anywhere
+runner:
+  type: "GITHUB_ACTION"

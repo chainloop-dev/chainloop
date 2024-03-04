@@ -1,0 +1,175 @@
+---
+sidebar_position: 1
+title: Workflow Contract
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import CodeBlock from "@theme/CodeBlock";
+import WorkflowContractIntro from "../../partials/_workflow-contract-intro.mdx";
+import ContractYAML from "!!raw-loader!/examples/contracts/skynet/contract.yaml";
+import ContractCUE from "!!raw-loader!/examples/contracts/skynet/contract.cue";
+// See https://github.com/webpack-contrib/raw-loader/issues/91#issuecomment-648830498
+import ContractJSON from "/examples/contracts/skynet/contract.json.raw!=!raw-loader!/examples/contracts/skynet/contract.json";
+
+<WorkflowContractIntro />
+
+A full example of a Workflow Contract looks like
+
+<Tabs>
+  <TabItem value="yaml" label="yaml" default>
+    <CodeBlock language="yaml" title="skynet.contract.yaml" showLineNumbers>
+      {ContractYAML}
+    </CodeBlock>
+  </TabItem>
+  <TabItem value="cue" label="cue">
+    <CodeBlock language="cue" title="skynet.contract.cue" showLineNumbers>
+      {ContractCUE}
+    </CodeBlock>
+  </TabItem>
+  <TabItem value="json" label="json">
+    <CodeBlock language="json" title="skynet.contract.json" showLineNumbers>
+      {ContractJSON}
+    </CodeBlock>
+  </TabItem>
+</Tabs>
+
+## Contract Schema
+
+| Name                            | Required | Description                                                                                                                                                                  |
+| ------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `schemaVersion`                 | yes      | Version of the schema, it needs to be `v1`                                                                                                                                   |
+| [`materials`](#material-schema) | no       | List of [materials](#material-schema) to be added to the attestation                                                                                                         |
+| `envAllowList`                  | no       | List of environment variables that will be resolved and injected in the attestation                                                                                          |
+| [`runner`](#runner-context)     | no       | Specific runner type associated with this contract. If not set, this contract will be valid to be run `anywhere` but you'll miss out some of [its benefits](#runner-context) |
+| `annotations`                   | no       | Name/Value pairs of arbitrary annotations that will be added to the attestation. **If the value is not provided, it will be required during the attestation process.**       |
+
+## Material Schema
+
+Chainloop supports the collection of the following pieces of evidence types:
+
+- [Container Image Reference](https://github.com/opencontainers/image-spec)
+- [CycloneDX SBOM](https://github.com/CycloneDX/specification)
+- [SPDX SBOM](https://spdx.dev/specifications/)
+- [CSAF VEX](https://docs.oasis-open.org/csaf/csaf/v2.0/os/csaf-v2.0-os.html)
+- [OpenVEX](https://github.com/openvex)
+- [SARIF](https://docs.oasis-open.org/sarif/sarif/v2.1.0/)
+- [JUnit](https://www.ibm.com/docs/en/developer-for-zos/14.1?topic=formats-junit-xml-format)
+- Generic Artifact Types
+- Key-Value metadata pairs
+
+To learn more on how to add them to your contract, refer to the `type` section below.
+
+| Name          | Required | Default | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------- | -------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `name`        | yes      |         | unique identifier of the artifact                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `type`        | yes      |         | <ul><li>`STRING` values will be injected in the attestation verbatim</li><li>`ARTIFACT` kinds will get uploaded to your OCI registry via the the built-in Content Addressable Storage proxy (CAS) and then referenced by their **content digest**</li><li>`CONTAINER_IMAGE` kinds will get resolved and referenced by **repository digest**</li><li>`SBOM_CYCLONEDX_JSON` or `SBOM_SPDX_JSON` will store and attach the Software Bill Of Materials (SBOM) to the attestation.</li><li>`JUNIT_XML` will validate, store and attach the JUnit XML file to the attestation.</li><li>`OPENVEX` or `CSAF_VEX` for vulnerability disclosures</li><li>`SARIF` for static analysis</li></ul> |
+| `output`      | no       | `false` | If set to `true` the artifact will get injected in the `subject` section of the [in-toto statement](https://github.com/slsa-framework/slsa/blob/main/docs/attestation-model.md#overview).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `optional`    | no       | `false` | if set to `true`, providing this artifact during attestation will be optional. This is **useful for soft rollouts of new requirements**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `annotations` | no       |         | Name/Value pairs of arbitrary annotations that will be added to the attestation. **If the value is not provided, it will be required during the attestation process.**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+
+## Runner Context
+
+:::info
+New runner contexts will be added over time. If yours is not implemented yet, please [contact us](https://chainloop.dev/contact)
+:::
+
+An **optional** runner type can be provided in a workflow contract.
+
+```yaml title=skynet.contract.yaml showLineNumbers
+schemaVersion: v1
+materials:
+  - type: CONTAINER_IMAGE
+    name: skynet-control-plane
+envAllowList:
+  - CUSTOM_VAR
+# highlight-start
+runner:
+  type: "GITHUB_ACTION"
+# highlight-end
+```
+
+It has the following effect on the attestation process.
+
+- **Require** the attestation process to be executed in the target runner type unless the `--dry-run` flag is set during initialization.
+- **A link to the workload** (i.e Github Action Run link) **will be recorded** both in the attestation and in the control plane during initialization.
+- An additional set of environment variables will be resolved in addition to the ones defined in the contract [`envAllowList`](/getting-started/workflow-definition#add-materials-to-the-contract).
+
+Currently, we support the following runner types
+
+### `GITHUB_ACTION`
+
+The following environment variables will be automatically added to the attestation. For more information on what they do refer to [this link](https://docs.github.com/en/actions/learn-github-actions/environment-variables#default-environment-variables).
+
+- `GITHUB_ACTOR`
+- `GITHUB_REF`
+- `GITHUB_REPOSITORY`
+- `GITHUB_REPOSITORY_OWNER`
+- `GITHUB_RUN_ID`
+- `GITHUB_SHA`
+- `RUNNER_NAME`
+- `RUNNER_OS`
+
+A link to the Github Action will be recorded in the control plane too during initialization.
+
+### `GITLAB_PIPELINE`
+
+The following environment variables will be automatically added to the attestation. More information about what they mean in [Gitlab's official documentation](https://docs.gitlab.com/ee/ci/variables/predefined_variables.html)
+
+- `GITLAB_USER_EMAIL`
+- `GITLAB_USER_LOGIN`
+- `CI_PROJECT_URL`
+- `CI_COMMIT_SHA`
+- `CI_JOB_URL`
+- `CI_PIPELINE_URL`
+- `CI_RUNNER_VERSION`
+- `CI_RUNNER_DESCRIPTION`
+- `CI_COMMIT_REF_NAME`
+
+A link to the Gitlab CI job will be recorded in the control plane too, during initialization.
+
+### `AZURE_PIPELINE`
+
+The following environment variables will be automatically added to the attestation. For more information on what they mean, refer to [this link](https://learn.microsoft.com/en-us/azure/devops/pipelines/build/variables?view=azure-devops&tabs=yaml).
+
+- `BUILD_REQUESTEDFOREMAIL`
+- `BUILD_REQUESTEDFOR`
+- `BUILD_REPOSITORY_URI`
+- `BUILD_REPOSITORY_NAME`
+- `BUILD_BUILDID`
+- `BUILD_BUILDNUMBER`
+- `BUILD_BUILDURI`
+- `BUILD_REASON`
+- `AGENT_VERSION`
+- `TF_BUILD`
+
+A link to the Azure Pipeline build will be recorded in the control plane too during initialization.
+
+### `JENKINS_JOB`
+
+The following environment variables will be automatically added to the attestation. For more information on how to use Jenkins environment variables, refer to [the official Jenkins documentation](https://www.jenkins.io/doc/book/pipeline/jenkinsfile/#using-environment-variables).
+
+- `JOB_NAME`
+- `BUILD_URL`
+- `GIT_BRANCH` (optional)
+- `GIT_COMMIT` (optional)
+- `AGENT_WORKDIR`
+- `NODE_NAME`
+
+A link to the build will be recorded in the control plane too, during initialization.
+
+### `CIRCLECI_BUILD`
+
+The following environment variables will be automatically added to the attestation. For more information on their meaning, refer to [the official CircleCI documentation](https://circleci.com/docs/variables/).
+
+- `CIRCLE_BUILD_URL`
+- `CIRCLE_JOB`
+- `CIRCLE_BRANCH` (optional)
+- `CIRCLE_NODE_TOTAL`
+- `CIRCLE_NODE_INDEX`
+
+A link to the CircleCI build will be recorded in the control plane too, during initialization.
+
+:::tip
+Remember, if all the **env variables** that you need are not defined in the context, you can extend such list via the `envAllowList` option.
+:::

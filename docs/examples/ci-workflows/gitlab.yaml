@@ -1,0 +1,89 @@
+# Example of Gitlab Pipeline that
+# - Builds a go binary and associated container image using go-releaser
+# - Extract a CycloneDX SBOM using Syft
+# - Stores the required materials stated in this Chainloop contract
+#   https://github.com/chainloop-dev/chainloop/blob/main/docs/examples/contracts/container-image-sbom/gitlab.yaml
+# - Pushes the resulting attestation to the control plane
+stages:
+  - release
+
+variables:
+  # Service account associated to this workflow in Chainloop's control plane
+  CHAINLOOP_ROBOT_ACCOUNT: $CHAINLOOP_ROBOT_ACCOUNT
+  # Private key and passphrase to be used to sign the resulting attestation
+  CHAINLOOP_SIGNING_KEY: $COSIGN_PRIVATE_KEY
+  CHAINLOOP_SIGNING_PASSWORD: $COSIGN_PASSWORD
+
+  # This job pushed container images to Gitlab OCI registry
+  DOCKER_REGISTRY: $CI_REGISTRY
+  DOCKER_USERNAME: $CI_REGISTRY_USER
+  DOCKER_PASSWORD: $CI_REGISTRY_PASSWORD
+
+  # Used by go-releaser to generate signed artifacts
+  COSIGN_PASSWORD: $COSIGN_PASSWORD
+  COSIGN_PRIVATE_KEY: $COSIGN_PRIVATE_KEY
+
+  # Disable shallow cloning so that goreleaser can diff between tags to
+  # generate a changelog.
+  GIT_DEPTH: 0
+
+  GITLAB_TOKEN: $CI_JOB_TOKEN
+
+# Download and store Chainloop CLI as an artifact since the next phase uses docker:stable
+# runner image has not capabilities (wget/curl) to install it
+download_chainloop:
+  stage: release
+  only:
+    refs:
+      - tags
+  script:
+    # We need to install it in the current path in order to be archived
+    - curl -sfL https://docs.chainloop.dev/install.sh | bash -s -- --path .
+  artifacts:
+    paths:
+      - chainloop
+    expire_in: 5 mins
+
+release:
+  stage: release
+  image: docker:stable
+  services:
+    - docker:dind
+  needs:
+    - job: download_chainloop
+  only:
+    refs:
+      - tags
+
+  before_script:
+    # Initialize attestation
+    - ./chainloop att init
+
+    # Install Syft
+    - wget --no-verbose https://raw.githubusercontent.com/anchore/syft/main/install.sh -O - | sh -s -- -b /usr/local/bin
+
+  script:
+    # Both CI_JOB_TOKEN and GITLAB_TOKEN required to be passed as env variables
+    # https://github.com/goreleaser/goreleaser/blob/8ebefd251e0eddd3c294b4d45b6e637783a252f3/internal/client/gitlab.go#L500
+    - |
+      docker run --rm --privileged \
+        -v $PWD:/tmp/release-job \
+        -w /tmp/release-job \
+        -v /var/run/docker.sock:/var/run/docker.sock \
+        -e DOCKER_USERNAME -e DOCKER_PASSWORD -e DOCKER_REGISTRY \
+        -e CI_JOB_TOKEN -e GITLAB_TOKEN \
+        -e COSIGN_PASSWORD -e COSIGN_PRIVATE_KEY \
+        goreleaser/goreleaser release --rm-dist
+
+    # Build sbom
+    - syft packages registry.gitlab.com/chainloop-dev/integration-demo:$CI_COMMIT_REF_NAME -o cyclonedx-json --file sbom.cyclonedx.json
+
+    # Add attestation
+    - ./chainloop attestation add --name sbom --value sbom.cyclonedx.json
+    - ./chainloop attestation add --name image --value registry.gitlab.com/chainloop-dev/integration-demo:$CI_COMMIT_REF_NAME
+
+    # Finish attestation
+    - ./chainloop attestation push --key env://CHAINLOOP_SIGNING_KEY --graceful-exit=false
+
+  after_script:
+    - ./chainloop attestation reset || true

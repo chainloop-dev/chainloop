@@ -1,0 +1,16 @@
+[build]
+publish = "build"
+command = "npm run build"
+
+[[redirects]]
+  from = "/blog/*"
+  to = "https://chainloop.dev/blog/:splat"
+  status = 302
+  force = true
+
+
+[[redirects]]
+  from = "/blog"
+  to = "https://chainloop.dev/blog"
+  status = 302
+  force = true
