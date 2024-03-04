@@ -183,10 +183,14 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.ContextService/Current": {PolicyOrganizationRead},
 	// Listing, create or selecting an organization does not have any required permissions,
 	// since all the permissions here are in the context of an organization
-	"/controlplane.v1.OrganizationService/Create":               {},
-	"/controlplane.v1.OrganizationService/SetCurrentMembership": {},
+	// Create new organization
+	"/controlplane.v1.OrganizationService/Create": {},
 	// NOTE: this is about listing my own memberships, not about listing all the memberships in the organization
 	"/controlplane.v1.UserService/ListMemberships": {},
+	// Set the current organization for the current user
+	"/controlplane.v1.UserService/SetCurrentMembership": {},
+	// Leave the organization
+	"/controlplane.v1.UserService/DeleteMembership": {},
 }
 
 type SubjectAPIToken struct {
