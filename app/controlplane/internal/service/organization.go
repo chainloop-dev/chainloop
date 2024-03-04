@@ -72,3 +72,59 @@ func (s *OrganizationService) Update(ctx context.Context, req *pb.OrganizationSe
 
 	return &pb.OrganizationServiceUpdateResponse{Result: bizOrgToPb(org)}, nil
 }
+
+func (s *OrganizationService) ListMemberships(ctx context.Context, _ *pb.OrganizationServiceListMembershipsRequest) (*pb.OrganizationServiceListMembershipsResponse, error) {
+	currentOrg, err := requireCurrentOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	memberships, err := s.membershipUC.ByOrg(ctx, currentOrg.ID)
+	if err != nil {
+		return nil, handleUseCaseErr("organization", err, s.log)
+	}
+
+	result := make([]*pb.OrgMembershipItem, 0, len(memberships))
+	for _, m := range memberships {
+		result = append(result, bizMembershipToPb(m))
+	}
+
+	return &pb.OrganizationServiceListMembershipsResponse{Result: result}, nil
+}
+
+func (s *OrganizationService) DeleteMembership(ctx context.Context, req *pb.OrganizationServiceDeleteMembershipRequest) (*pb.OrganizationServiceDeleteMembershipResponse, error) {
+	currentOrg, err := requireCurrentOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	currentUser, err := requireCurrentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.membershipUC.DeleteOther(ctx, currentOrg.ID, currentUser.ID, req.MembershipId); err != nil {
+		return nil, handleUseCaseErr("organization", err, s.log)
+	}
+
+	return &pb.OrganizationServiceDeleteMembershipResponse{}, nil
+}
+
+func (s *OrganizationService) UpdateMembership(ctx context.Context, req *pb.OrganizationServiceUpdateMembershipRequest) (*pb.OrganizationServiceUpdateMembershipResponse, error) {
+	currentOrg, err := requireCurrentOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	currentUser, err := requireCurrentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	m, err := s.membershipUC.UpdateRole(ctx, currentOrg.ID, currentUser.ID, req.MembershipId, pbRoleToBiz(req.Role))
+	if err != nil {
+		return nil, handleUseCaseErr("membership", err, s.log)
+	}
+
+	return &pb.OrganizationServiceUpdateMembershipResponse{Result: bizMembershipToPb(m)}, nil
+}

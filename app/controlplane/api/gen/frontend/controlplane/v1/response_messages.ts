@@ -257,6 +257,7 @@ export interface User {
 export interface OrgMembershipItem {
   id: string;
   org?: OrgItem;
+  user?: User;
   current: boolean;
   createdAt?: Date;
   updatedAt?: Date;
@@ -1596,7 +1597,15 @@ export const User = {
 };
 
 function createBaseOrgMembershipItem(): OrgMembershipItem {
-  return { id: "", org: undefined, current: false, createdAt: undefined, updatedAt: undefined, role: 0 };
+  return {
+    id: "",
+    org: undefined,
+    user: undefined,
+    current: false,
+    createdAt: undefined,
+    updatedAt: undefined,
+    role: 0,
+  };
 }
 
 export const OrgMembershipItem = {
@@ -1606,6 +1615,9 @@ export const OrgMembershipItem = {
     }
     if (message.org !== undefined) {
       OrgItem.encode(message.org, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.user !== undefined) {
+      User.encode(message.user, writer.uint32(58).fork()).ldelim();
     }
     if (message.current === true) {
       writer.uint32(24).bool(message.current);
@@ -1642,6 +1654,13 @@ export const OrgMembershipItem = {
           }
 
           message.org = OrgItem.decode(reader, reader.uint32());
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.user = User.decode(reader, reader.uint32());
           continue;
         case 3:
           if (tag !== 24) {
@@ -1684,6 +1703,7 @@ export const OrgMembershipItem = {
     return {
       id: isSet(object.id) ? String(object.id) : "",
       org: isSet(object.org) ? OrgItem.fromJSON(object.org) : undefined,
+      user: isSet(object.user) ? User.fromJSON(object.user) : undefined,
       current: isSet(object.current) ? Boolean(object.current) : false,
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
       updatedAt: isSet(object.updatedAt) ? fromJsonTimestamp(object.updatedAt) : undefined,
@@ -1695,6 +1715,7 @@ export const OrgMembershipItem = {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
     message.org !== undefined && (obj.org = message.org ? OrgItem.toJSON(message.org) : undefined);
+    message.user !== undefined && (obj.user = message.user ? User.toJSON(message.user) : undefined);
     message.current !== undefined && (obj.current = message.current);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
     message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt.toISOString());
@@ -1710,6 +1731,7 @@ export const OrgMembershipItem = {
     const message = createBaseOrgMembershipItem();
     message.id = object.id ?? "";
     message.org = (object.org !== undefined && object.org !== null) ? OrgItem.fromPartial(object.org) : undefined;
+    message.user = (object.user !== undefined && object.user !== null) ? User.fromPartial(object.user) : undefined;
     message.current = object.current ?? false;
     message.createdAt = object.createdAt ?? undefined;
     message.updatedAt = object.updatedAt ?? undefined;

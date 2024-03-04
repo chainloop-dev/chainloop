@@ -218,7 +218,7 @@ func requireCurrentUserMatcher() selector.MatchFunc {
 
 func requireFullyConfiguredOrgMatcher() selector.MatchFunc {
 	// We do not need to remove other endpoints since this matcher is called once the requireCurrentUserMatcher one has passed
-	const skipRegexp = "controlplane.v1.OCIRepositoryService/.*|controlplane.v1.ContextService/Current|/controlplane.v1.OrganizationService/.*|/controlplane.v1.AuthService/DeleteAccount|controlplane.v1.CASBackendService/.*"
+	const skipRegexp = "controlplane.v1.OCIRepositoryService/.*|controlplane.v1.ContextService/Current|/controlplane.v1.OrganizationService/.*|/controlplane.v1.AuthService/DeleteAccount|controlplane.v1.CASBackendService/.*|/controlplane.v1.UserService/.*"
 
 	return func(ctx context.Context, operation string) bool {
 		r := regexp.MustCompile(skipRegexp)

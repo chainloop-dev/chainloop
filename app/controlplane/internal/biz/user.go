@@ -76,7 +76,7 @@ func (uc *UserUseCase) DeleteUser(ctx context.Context, userID string) error {
 
 	// Iterate on user memberships, delete org if the user is the only member
 	for _, m := range memberships {
-		if err := uc.membershipUseCase.DeleteWithOrg(ctx, userID, m.ID.String()); err != nil {
+		if err := uc.membershipUseCase.LeaveAndDeleteOrg(ctx, userID, m.ID.String()); err != nil {
 			return fmt.Errorf("failed to delete membership: %w", err)
 		}
 	}
