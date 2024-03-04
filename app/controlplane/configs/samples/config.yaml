@@ -17,6 +17,7 @@ auth:
   # Optional allow list
   # allow_list:
   #   - miguel@chainloop.dev
+  #   - @my-domain.com # This will allow any email from this domain
 
 # CAS server where the controlplane will push artifacts to
 cas_server:
