@@ -21,19 +21,24 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
-type MembershipDelete struct {
+type MembershipUpdate struct {
 	cfg *ActionsOpts
 }
 
-func NewMembershipDelete(cfg *ActionsOpts) *MembershipDelete {
-	return &MembershipDelete{cfg}
+func NewMembershipUpdate(cfg *ActionsOpts) *MembershipUpdate {
+	return &MembershipUpdate{cfg}
 }
 
-func (action *MembershipDelete) Run(ctx context.Context, membershipID string) error {
+// List organizations for the current user
+func (action *MembershipUpdate) ChangeRole(ctx context.Context, membershipID, role string) (*MembershipItem, error) {
 	client := pb.NewOrganizationServiceClient(action.cfg.CPConnection)
-	if _, err := client.DeleteMembership(ctx, &pb.OrganizationServiceDeleteMembershipRequest{MembershipId: membershipID}); err != nil {
-		return err
+	resp, err := client.UpdateMembership(ctx, &pb.OrganizationServiceUpdateMembershipRequest{
+		MembershipId: membershipID,
+		Role:         stringToPbRole(Role(role)),
+	})
+	if err != nil {
+		return nil, err
 	}
 
-	return nil
+	return pbMembershipItemToAction(resp.Result), nil
 }
