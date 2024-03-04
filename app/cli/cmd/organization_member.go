@@ -25,7 +25,12 @@ func newOrganizationMemberCmd() *cobra.Command {
 		Short: "Organization members management",
 	}
 
-	cmd.AddCommand(newOrganizationMemberList(), newOrganizationMemberUpdateCmd(), newOrganizationMemberDeleteCmd())
+	cmd.AddCommand(
+		newOrganizationMemberList(),
+		newOrganizationMemberUpdateCmd(),
+		newOrganizationMemberDeleteCmd(),
+		newOrganizationInvitationCmd(),
+	)
 
 	return cmd
 }
