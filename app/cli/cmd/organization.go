@@ -33,7 +33,6 @@ func newOrganizationCmd() *cobra.Command {
 		newOrganizationSet(),
 		newOrganizationLeaveCmd(),
 		newOrganizationDescribeCmd(),
-		newOrganizationInvitationCmd(),
 		newOrganizationAPITokenCmd(),
 		newOrganizationMemberCmd(),
 	)
