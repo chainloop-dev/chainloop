@@ -24,54 +24,53 @@ import (
 )
 
 // Get the membership entry associated to the current user for the given organization
-func membershipFromOrg(ctx context.Context, orgID string) (*action.MembershipItem, error) {
-	memberships, err := action.NewMembershipList(actionOpts).ListOrgs(ctx)
+func loadMembershipCurrentOrg(ctx context.Context, membershipID string) (*action.MembershipItem, error) {
+	memberships, err := action.NewMembershipList(actionOpts).ListMembers(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("listing memberships: %w", err)
 	}
 
 	for _, m := range memberships {
-		if m.Org.ID == orgID {
+		if m.ID == membershipID {
 			return m, nil
 		}
 	}
 
-	return nil, fmt.Errorf("organization %s not found", orgID)
+	return nil, fmt.Errorf("membership %s not found", membershipID)
 }
 
-func newOrganizationLeaveCmd() *cobra.Command {
-	var orgID string
+func newOrganizationMemberDeleteCmd() *cobra.Command {
+	var membershipID string
+
 	cmd := &cobra.Command{
-		Use:   "leave",
-		Short: "leave an organization",
+		Use:   "delete",
+		Short: "Remove a member from the current organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			// To find the membership ID, we need to iterate and filter by org
-			membership, err := membershipFromOrg(ctx, orgID)
+			m, err := loadMembershipCurrentOrg(ctx, membershipID)
 			if err != nil {
 				return fmt.Errorf("getting membership: %w", err)
-			} else if membership == nil {
-				return fmt.Errorf("organization %s not found", orgID)
 			}
 
-			fmt.Printf("You are about to leave the organization %q\n", membership.Org.Name)
+			fmt.Printf("You are about to remove the user %q from the organization %q\n", m.User.Email, m.Org.Name)
 
 			// Ask for confirmation
 			if err := confirmDeletion(); err != nil {
 				return err
 			}
 
-			// Membership deletion
-			if err := action.NewMembershipLeave(actionOpts).Run(ctx, membership.ID); err != nil {
-				return fmt.Errorf("deleting membership: %w", err)
+			if err := action.NewMembershipDelete(actionOpts).Run(ctx, membershipID); err != nil {
+				return err
 			}
 
-			logger.Info().Msg("Membership deleted")
+			logger.Info().Msg("Member deleted")
 			return nil
 		},
 	}
 
-	cmd.Flags().StringVar(&orgID, "id", "", "organization ID to leave")
-	cobra.CheckErr(cmd.MarkFlagRequired("id"))
+	cmd.Flags().StringVar(&membershipID, "id", "", "Membership ID")
+	err := cmd.MarkFlagRequired("id")
+	cobra.CheckErr(err)
+
 	return cmd
 }

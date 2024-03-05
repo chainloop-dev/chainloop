@@ -30,7 +30,7 @@ func newOrganizationList() *cobra.Command {
 		Aliases: []string{"ls"},
 		Short:   "List the organizations this user has access to",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewMembershipList(actionOpts).Run()
+			res, err := action.NewMembershipList(actionOpts).ListOrgs(cmd.Context())
 			if err != nil {
 				return err
 			}

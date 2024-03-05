@@ -29,9 +29,9 @@ func NewMembershipSet(cfg *ActionsOpts) *MembershipSetCurrent {
 	return &MembershipSetCurrent{cfg}
 }
 
-func (action *MembershipSetCurrent) Run(id string) (*MembershipItem, error) {
+func (action *MembershipSetCurrent) Run(ctx context.Context, id string) (*MembershipItem, error) {
 	client := pb.NewUserServiceClient(action.cfg.CPConnection)
-	resp, err := client.SetCurrentMembership(context.Background(), &pb.SetCurrentMembershipRequest{MembershipId: id})
+	resp, err := client.SetCurrentMembership(ctx, &pb.SetCurrentMembershipRequest{MembershipId: id})
 	if err != nil {
 		return nil, err
 	}

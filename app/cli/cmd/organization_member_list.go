@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,39 +17,45 @@ package cmd
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 )
 
-func newOrganizationSet() *cobra.Command {
-	var orgID string
-
+func newOrganizationMemberList() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "set",
-		Short: "Set the current organization associated with this user",
+		Use:     "list",
+		Aliases: []string{"ls"},
+		Short:   "List the members of the current organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-			// To find the membership ID, we need to iterate and filter by org
-			membership, err := membershipFromOrg(ctx, orgID)
-			if err != nil {
-				return fmt.Errorf("getting membership: %w", err)
-			} else if membership == nil {
-				return fmt.Errorf("organization %s not found", orgID)
-			}
-
-			m, err := action.NewMembershipSet(actionOpts).Run(ctx, membership.ID)
+			res, err := action.NewMembershipList(actionOpts).ListMembers(cmd.Context())
 			if err != nil {
 				return err
 			}
 
-			logger.Info().Msg("Organization switched!")
-			return encodeOutput([]*action.MembershipItem{m}, orgMembershipTableOutput)
+			return encodeOutput(res, orgMembershipsTableOutput)
 		},
 	}
 
-	cmd.Flags().StringVar(&orgID, "id", "", "organization ID to make the switch")
-	cobra.CheckErr(cmd.MarkFlagRequired("id"))
-
 	return cmd
+}
+
+func orgMembershipsTableOutput(items []*action.MembershipItem) error {
+	if len(items) == 0 {
+		fmt.Println("you have no access to any organization yet")
+		return nil
+	}
+
+	t := newTableWriter()
+	t.AppendHeader(table.Row{"ID", "Email", "Role", "Joined At"})
+
+	for _, i := range items {
+		t.AppendRow(table.Row{i.ID, i.User.Email, i.Role, i.CreatedAt.Format(time.RFC822)})
+		t.AppendSeparator()
+	}
+
+	t.Render()
+	return nil
 }

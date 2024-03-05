@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2023 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,17 +21,17 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
-type MembershipDelete struct {
+type MembershipLeave struct {
 	cfg *ActionsOpts
 }
 
-func NewMembershipDelete(cfg *ActionsOpts) *MembershipDelete {
-	return &MembershipDelete{cfg}
+func NewMembershipLeave(cfg *ActionsOpts) *MembershipLeave {
+	return &MembershipLeave{cfg}
 }
 
-func (action *MembershipDelete) Run(ctx context.Context, membershipID string) error {
-	client := pb.NewOrganizationServiceClient(action.cfg.CPConnection)
-	if _, err := client.DeleteMembership(ctx, &pb.OrganizationServiceDeleteMembershipRequest{MembershipId: membershipID}); err != nil {
+func (action *MembershipLeave) Run(ctx context.Context, membershipID string) error {
+	client := pb.NewUserServiceClient(action.cfg.CPConnection)
+	if _, err := client.DeleteMembership(ctx, &pb.DeleteMembershipRequest{MembershipId: membershipID}); err != nil {
 		return err
 	}
 

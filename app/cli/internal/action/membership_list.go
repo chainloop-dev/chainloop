@@ -38,6 +38,7 @@ type MembershipItem struct {
 	CreatedAt *time.Time `json:"joinedAt"`
 	UpdatedAt *time.Time `json:"updatedAt"`
 	Org       *OrgItem
+	User      *UserItem
 	Role      Role `json:"role"`
 }
 
@@ -45,9 +46,26 @@ func NewMembershipList(cfg *ActionsOpts) *MembershipList {
 	return &MembershipList{cfg}
 }
 
-func (action *MembershipList) Run() ([]*MembershipItem, error) {
+// List organizations for the current user
+func (action *MembershipList) ListOrgs(ctx context.Context) ([]*MembershipItem, error) {
 	client := pb.NewUserServiceClient(action.cfg.CPConnection)
-	resp, err := client.ListMemberships(context.Background(), &pb.UserServiceListMembershipsRequest{})
+	resp, err := client.ListMemberships(ctx, &pb.UserServiceListMembershipsRequest{})
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*MembershipItem, 0, len(resp.Result))
+	for _, p := range resp.Result {
+		result = append(result, pbMembershipItemToAction(p))
+	}
+
+	return result, nil
+}
+
+// List members of the current organization
+func (action *MembershipList) ListMembers(ctx context.Context) ([]*MembershipItem, error) {
+	client := pb.NewOrganizationServiceClient(action.cfg.CPConnection)
+	resp, err := client.ListMemberships(ctx, &pb.OrganizationServiceListMembershipsRequest{})
 	if err != nil {
 		return nil, err
 	}
@@ -80,6 +98,7 @@ func pbMembershipItemToAction(in *pb.OrgMembershipItem) *MembershipItem {
 		Org:       pbOrgItemToAction(in.Org),
 		Current:   in.Current,
 		Role:      pbRoleToString(in.Role),
+		User:      pbUserItemToAction(in.User),
 	}
 }
 

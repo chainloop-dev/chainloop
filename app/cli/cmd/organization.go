@@ -35,6 +35,7 @@ func newOrganizationCmd() *cobra.Command {
 		newOrganizationDescribeCmd(),
 		newOrganizationInvitationCmd(),
 		newOrganizationAPITokenCmd(),
+		newOrganizationMemberCmd(),
 	)
 	return cmd
 }
