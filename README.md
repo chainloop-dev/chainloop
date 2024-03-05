@@ -109,7 +109,7 @@ Operators can set up third-party integrations such as [Dependency-Track](https:/
 
 Ops can mix and match with different integrations while **not requiring developers to make any changes on their side**!
 
-To learn more and to find the list of available integrations, check our [integrations page](./docs/integrations.md).
+To learn more and to find the list of available integrations, check our [integrations page](./devel/integrations.md).
 
 ### Role-tailored experience
 
