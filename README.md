@@ -11,13 +11,13 @@
 
 ## What is it?
 
-Chainloop is an open-source software supply chain control plane, a single source of truth for artifacts plus a declarative attestation process.
+Chainloop is an open-source Software Supply Chain control plane, a single source of truth for metadata and artifacts, plus a declarative attestation process.
 
-With Chainloop, SecOps teams can declaratively state the attestation and artifacts expectations for their organization’s CI/CD workflows, while also resting assured that the latest standards and best practices are put in place.
+With Chainloop, SecOps teams can declaratively state the pieces of evidence and artifact expectations for their organization’s CI/CD workflows. At the same time, they can rest assured that the metadata will reach the desired destination for storage and analysis, always meeting the latest standards and best practices.
 
-Developer teams, on the other hand, do not need to become security experts, the attestation crafting tool will guide them with guardrails and a familiar developer experience.
+On the other hand, developer teams do not need to become security experts. The attestation crafting tool will guide them with guardrails and a familiar developer experience.
 
-To learn more about the project motivation please look at [this blog post](https://docs.chainloop.dev/blog/introducing-chainloop) and see it in action in [this video](https://docs.chainloop.dev/blog/software-supply-chain-attestation-easy-way#see-it-in-action).
+To learn more about the project motivation please look at [our documentation](https://docs.chainloop.dev) and see it in action in [this video](https://www.youtube.com/watch?v=GfSR2ZkZ3as).
 
 ## Getting started
 
@@ -87,7 +87,7 @@ Craft and store attestation metadata and artifacts via a single integration poin
 
 ![Chainloop Overview](./docs/img/overview-1.png)
 
-The result is having a SLSA level 3 compliant single Source of truth for artifacts and attestation built on OSS standards such as [Sigstore](https://www.sigstore.dev/), [in-toto](https://in-toto.io/), [SLSA](https://slsa.dev) and [OCI](https://github.com/opencontainers/image-spec/blob/main/spec.md).
+The result is having a SLSA level 3 compliant single Source of truth for metadata, artifacts and attestations built on OSS standards such as [Sigstore](https://www.sigstore.dev/), [in-toto](https://in-toto.io/), [SLSA](https://slsa.dev) and [OCI](https://github.com/opencontainers/image-spec/blob/main/spec.md).
 
 Chainloop also makes sure the crafting of artifacts and attestation follows **best practices and meets the requirements** declared in their associated Workflow Contract.
 
@@ -101,9 +101,9 @@ You can think of it as an [**API for your organization's Software Supply Chain**
 
 ![Chainloop Contracts](./docs/img/overview-3.png)
 
-### Third-Party Integration fan-out
+### We meet you where you are with third-party integrations
 
-Operators can set up third-party integrations such as [Dependency-Track](https://docs.chainloop.dev/guides/dependency-track) for SBOM analysis or an OCI registry for storage of the received artifacts and attestation metadata.
+Operators can set up third-party integrations such as [Dependency-Track](https://docs.chainloop.dev/guides/dependency-track), or [Guac](https://docs.chainloop.dev/guides/guac/) for SBOM analysis or a storage backend such as an OCI registry, or cloud blob storage to place the received artifacts, pieces of evidence and attestation metadata.
 
 ![Chainloop Overview](./docs/img/overview-2.png)
 
