@@ -5,7 +5,7 @@ module-init:
 
 .PHONY: lint
 lint: check-dagger-tool module-init
-	golangci-lint run
+	cd ./src && golangci-lint run
 
 .PHONY: check-dagger-tool
 check-dagger-tool:
