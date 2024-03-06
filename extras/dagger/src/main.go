@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const chainloopVersion = "v0.66.0"
+const chainloopVersion = "v0.75.2"
 
 type Chainloop struct {
 	Token *Secret
