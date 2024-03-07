@@ -1040,3 +1040,257 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = WorkflowServiceListResponseValidationError{}
+
+// Validate checks the field values on WorkflowServiceViewRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *WorkflowServiceViewRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on WorkflowServiceViewRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// WorkflowServiceViewRequestMultiError, or nil if none found.
+func (m *WorkflowServiceViewRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *WorkflowServiceViewRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if err := m._validateUuid(m.GetId()); err != nil {
+		err = WorkflowServiceViewRequestValidationError{
+			field:  "Id",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return WorkflowServiceViewRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *WorkflowServiceViewRequest) _validateUuid(uuid string) error {
+	if matched := _workflow_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
+	}
+
+	return nil
+}
+
+// WorkflowServiceViewRequestMultiError is an error wrapping multiple
+// validation errors returned by WorkflowServiceViewRequest.ValidateAll() if
+// the designated constraints aren't met.
+type WorkflowServiceViewRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m WorkflowServiceViewRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m WorkflowServiceViewRequestMultiError) AllErrors() []error { return m }
+
+// WorkflowServiceViewRequestValidationError is the validation error returned
+// by WorkflowServiceViewRequest.Validate if the designated constraints aren't met.
+type WorkflowServiceViewRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e WorkflowServiceViewRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e WorkflowServiceViewRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e WorkflowServiceViewRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e WorkflowServiceViewRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e WorkflowServiceViewRequestValidationError) ErrorName() string {
+	return "WorkflowServiceViewRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e WorkflowServiceViewRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sWorkflowServiceViewRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = WorkflowServiceViewRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = WorkflowServiceViewRequestValidationError{}
+
+// Validate checks the field values on WorkflowServiceViewResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *WorkflowServiceViewResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on WorkflowServiceViewResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// WorkflowServiceViewResponseMultiError, or nil if none found.
+func (m *WorkflowServiceViewResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *WorkflowServiceViewResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetResult()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, WorkflowServiceViewResponseValidationError{
+					field:  "Result",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, WorkflowServiceViewResponseValidationError{
+					field:  "Result",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetResult()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return WorkflowServiceViewResponseValidationError{
+				field:  "Result",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return WorkflowServiceViewResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// WorkflowServiceViewResponseMultiError is an error wrapping multiple
+// validation errors returned by WorkflowServiceViewResponse.ValidateAll() if
+// the designated constraints aren't met.
+type WorkflowServiceViewResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m WorkflowServiceViewResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m WorkflowServiceViewResponseMultiError) AllErrors() []error { return m }
+
+// WorkflowServiceViewResponseValidationError is the validation error returned
+// by WorkflowServiceViewResponse.Validate if the designated constraints
+// aren't met.
+type WorkflowServiceViewResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e WorkflowServiceViewResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e WorkflowServiceViewResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e WorkflowServiceViewResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e WorkflowServiceViewResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e WorkflowServiceViewResponseValidationError) ErrorName() string {
+	return "WorkflowServiceViewResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e WorkflowServiceViewResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sWorkflowServiceViewResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = WorkflowServiceViewResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = WorkflowServiceViewResponseValidationError{}

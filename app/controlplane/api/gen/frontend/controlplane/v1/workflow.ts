@@ -50,6 +50,14 @@ export interface WorkflowServiceListResponse {
   result: WorkflowItem[];
 }
 
+export interface WorkflowServiceViewRequest {
+  id: string;
+}
+
+export interface WorkflowServiceViewResponse {
+  result?: WorkflowItem;
+}
+
 function createBaseWorkflowServiceCreateRequest(): WorkflowServiceCreateRequest {
   return { name: "", project: "", schemaId: "", team: "", description: "" };
 }
@@ -607,6 +615,120 @@ export const WorkflowServiceListResponse = {
   },
 };
 
+function createBaseWorkflowServiceViewRequest(): WorkflowServiceViewRequest {
+  return { id: "" };
+}
+
+export const WorkflowServiceViewRequest = {
+  encode(message: WorkflowServiceViewRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): WorkflowServiceViewRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseWorkflowServiceViewRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): WorkflowServiceViewRequest {
+    return { id: isSet(object.id) ? String(object.id) : "" };
+  },
+
+  toJSON(message: WorkflowServiceViewRequest): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<WorkflowServiceViewRequest>, I>>(base?: I): WorkflowServiceViewRequest {
+    return WorkflowServiceViewRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<WorkflowServiceViewRequest>, I>>(object: I): WorkflowServiceViewRequest {
+    const message = createBaseWorkflowServiceViewRequest();
+    message.id = object.id ?? "";
+    return message;
+  },
+};
+
+function createBaseWorkflowServiceViewResponse(): WorkflowServiceViewResponse {
+  return { result: undefined };
+}
+
+export const WorkflowServiceViewResponse = {
+  encode(message: WorkflowServiceViewResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.result !== undefined) {
+      WorkflowItem.encode(message.result, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): WorkflowServiceViewResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseWorkflowServiceViewResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.result = WorkflowItem.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): WorkflowServiceViewResponse {
+    return { result: isSet(object.result) ? WorkflowItem.fromJSON(object.result) : undefined };
+  },
+
+  toJSON(message: WorkflowServiceViewResponse): unknown {
+    const obj: any = {};
+    message.result !== undefined && (obj.result = message.result ? WorkflowItem.toJSON(message.result) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<WorkflowServiceViewResponse>, I>>(base?: I): WorkflowServiceViewResponse {
+    return WorkflowServiceViewResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<WorkflowServiceViewResponse>, I>>(object: I): WorkflowServiceViewResponse {
+    const message = createBaseWorkflowServiceViewResponse();
+    message.result = (object.result !== undefined && object.result !== null)
+      ? WorkflowItem.fromPartial(object.result)
+      : undefined;
+    return message;
+  },
+};
+
 export interface WorkflowService {
   Create(
     request: DeepPartial<WorkflowServiceCreateRequest>,
@@ -620,6 +742,10 @@ export interface WorkflowService {
     request: DeepPartial<WorkflowServiceListRequest>,
     metadata?: grpc.Metadata,
   ): Promise<WorkflowServiceListResponse>;
+  View(
+    request: DeepPartial<WorkflowServiceViewRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<WorkflowServiceViewResponse>;
   Delete(
     request: DeepPartial<WorkflowServiceDeleteRequest>,
     metadata?: grpc.Metadata,
@@ -634,6 +760,7 @@ export class WorkflowServiceClientImpl implements WorkflowService {
     this.Create = this.Create.bind(this);
     this.Update = this.Update.bind(this);
     this.List = this.List.bind(this);
+    this.View = this.View.bind(this);
     this.Delete = this.Delete.bind(this);
   }
 
@@ -656,6 +783,13 @@ export class WorkflowServiceClientImpl implements WorkflowService {
     metadata?: grpc.Metadata,
   ): Promise<WorkflowServiceListResponse> {
     return this.rpc.unary(WorkflowServiceListDesc, WorkflowServiceListRequest.fromPartial(request), metadata);
+  }
+
+  View(
+    request: DeepPartial<WorkflowServiceViewRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<WorkflowServiceViewResponse> {
+    return this.rpc.unary(WorkflowServiceViewDesc, WorkflowServiceViewRequest.fromPartial(request), metadata);
   }
 
   Delete(
@@ -727,6 +861,29 @@ export const WorkflowServiceListDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = WorkflowServiceListResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const WorkflowServiceViewDesc: UnaryMethodDefinitionish = {
+  methodName: "View",
+  service: WorkflowServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return WorkflowServiceViewRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = WorkflowServiceViewResponse.decode(data);
       return {
         ...value,
         toObject() {

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ const (
 	WorkflowService_Create_FullMethodName = "/controlplane.v1.WorkflowService/Create"
 	WorkflowService_Update_FullMethodName = "/controlplane.v1.WorkflowService/Update"
 	WorkflowService_List_FullMethodName   = "/controlplane.v1.WorkflowService/List"
+	WorkflowService_View_FullMethodName   = "/controlplane.v1.WorkflowService/View"
 	WorkflowService_Delete_FullMethodName = "/controlplane.v1.WorkflowService/Delete"
 )
 
@@ -47,6 +48,7 @@ type WorkflowServiceClient interface {
 	Create(ctx context.Context, in *WorkflowServiceCreateRequest, opts ...grpc.CallOption) (*WorkflowServiceCreateResponse, error)
 	Update(ctx context.Context, in *WorkflowServiceUpdateRequest, opts ...grpc.CallOption) (*WorkflowServiceUpdateResponse, error)
 	List(ctx context.Context, in *WorkflowServiceListRequest, opts ...grpc.CallOption) (*WorkflowServiceListResponse, error)
+	View(ctx context.Context, in *WorkflowServiceViewRequest, opts ...grpc.CallOption) (*WorkflowServiceViewResponse, error)
 	Delete(ctx context.Context, in *WorkflowServiceDeleteRequest, opts ...grpc.CallOption) (*WorkflowServiceDeleteResponse, error)
 }
 
@@ -85,6 +87,15 @@ func (c *workflowServiceClient) List(ctx context.Context, in *WorkflowServiceLis
 	return out, nil
 }
 
+func (c *workflowServiceClient) View(ctx context.Context, in *WorkflowServiceViewRequest, opts ...grpc.CallOption) (*WorkflowServiceViewResponse, error) {
+	out := new(WorkflowServiceViewResponse)
+	err := c.cc.Invoke(ctx, WorkflowService_View_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *workflowServiceClient) Delete(ctx context.Context, in *WorkflowServiceDeleteRequest, opts ...grpc.CallOption) (*WorkflowServiceDeleteResponse, error) {
 	out := new(WorkflowServiceDeleteResponse)
 	err := c.cc.Invoke(ctx, WorkflowService_Delete_FullMethodName, in, out, opts...)
@@ -101,6 +112,7 @@ type WorkflowServiceServer interface {
 	Create(context.Context, *WorkflowServiceCreateRequest) (*WorkflowServiceCreateResponse, error)
 	Update(context.Context, *WorkflowServiceUpdateRequest) (*WorkflowServiceUpdateResponse, error)
 	List(context.Context, *WorkflowServiceListRequest) (*WorkflowServiceListResponse, error)
+	View(context.Context, *WorkflowServiceViewRequest) (*WorkflowServiceViewResponse, error)
 	Delete(context.Context, *WorkflowServiceDeleteRequest) (*WorkflowServiceDeleteResponse, error)
 	mustEmbedUnimplementedWorkflowServiceServer()
 }
@@ -117,6 +129,9 @@ func (UnimplementedWorkflowServiceServer) Update(context.Context, *WorkflowServi
 }
 func (UnimplementedWorkflowServiceServer) List(context.Context, *WorkflowServiceListRequest) (*WorkflowServiceListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
+}
+func (UnimplementedWorkflowServiceServer) View(context.Context, *WorkflowServiceViewRequest) (*WorkflowServiceViewResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method View not implemented")
 }
 func (UnimplementedWorkflowServiceServer) Delete(context.Context, *WorkflowServiceDeleteRequest) (*WorkflowServiceDeleteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
@@ -188,6 +203,24 @@ func _WorkflowService_List_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _WorkflowService_View_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WorkflowServiceViewRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkflowServiceServer).View(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorkflowService_View_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkflowServiceServer).View(ctx, req.(*WorkflowServiceViewRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _WorkflowService_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(WorkflowServiceDeleteRequest)
 	if err := dec(in); err != nil {
@@ -224,6 +257,10 @@ var WorkflowService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _WorkflowService_List_Handler,
+		},
+		{
+			MethodName: "View",
+			Handler:    _WorkflowService_View_Handler,
 		},
 		{
 			MethodName: "Delete",

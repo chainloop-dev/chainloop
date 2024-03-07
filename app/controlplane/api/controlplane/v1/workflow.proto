@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ service WorkflowService {
   rpc Create(WorkflowServiceCreateRequest) returns (WorkflowServiceCreateResponse);
   rpc Update(WorkflowServiceUpdateRequest) returns (WorkflowServiceUpdateResponse);
   rpc List(WorkflowServiceListRequest) returns (WorkflowServiceListResponse);
+  rpc View(WorkflowServiceViewRequest) returns (WorkflowServiceViewResponse);
   rpc Delete(WorkflowServiceDeleteRequest) returns (WorkflowServiceDeleteResponse);
 }
 
@@ -66,4 +67,12 @@ message WorkflowServiceDeleteResponse {}
 message WorkflowServiceListRequest {}
 message WorkflowServiceListResponse {
   repeated WorkflowItem result = 1;
+}
+
+message WorkflowServiceViewRequest {
+  string id = 1 [(validate.rules).string.uuid = true];
+}
+
+message WorkflowServiceViewResponse {
+  WorkflowItem result = 1;
 }
