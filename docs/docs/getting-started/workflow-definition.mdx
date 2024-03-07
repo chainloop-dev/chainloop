@@ -116,7 +116,7 @@ Update the name and schema, notice the revision increment
 $ chainloop workflow contract update \
    --id fd489047-67f1-45d4-9f3b-27eba4051929 \
    --name skynet-contract \
-   -f https://raw.githubusercontent.com/chainloop-dev/docs/main/examples/contracts/skynet/contract.yaml
+   -f https://raw.githubusercontent.com/chainloop-dev/chainloop/main/docs/examples/contracts/skynet/contract.yaml
 
 ┌─────────────────────────────────────────────────────────────┐
 │ Contract                                                    │
@@ -180,7 +180,7 @@ We have everything we need to integrate our CI with Chainloop!
 
 ### CAS Backend
 
-As part of an attestation process, you might want to collect different pieces of evidence such as Software Bill Of Materials (SBOMs), test results, runner logs, etc and then attach them to the final in-toto attestation. 
+As part of an attestation process, you might want to collect different pieces of evidence such as Software Bill Of Materials (SBOMs), test results, runner logs, etc and then attach them to the final in-toto attestation.
 
 By default, Chainloop comes pre-configured with what we call an `inline` backend. The inline backend **embeds** the pieces of evidence in the resulting attestations.
 This is useful to get started quickly but since the metadata is embedded in the attestation, their size is limited.

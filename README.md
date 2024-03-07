@@ -30,25 +30,25 @@ See the [getting started guide](https://docs.chainloop.dev/getting-started/insta
 To **install the latest version** for macOS, Linux or Windows (using [WSL](https://learn.microsoft.com/en-us/windows/wsl/install)) just choose one of the following installation methods.
 
 ```bash
-curl -sfL https://raw.githubusercontent.com/chainloop-dev/docs/main/static/install.sh | bash -s
+curl -sfL https://raw.githubusercontent.com/chainloop-dev/chainloop/main/docs/static/install.sh | bash -s
 ```
 
 you can retrieve a specific version with
 
 ```bash
-curl -sfL https://raw.githubusercontent.com/chainloop-dev/docs/main/static/install.sh | bash -s -- --version v0.8.95
+curl -sfL https://raw.githubusercontent.com/chainloop-dev/chainloop/main/docs/static/install.sh | bash -s -- --version v0.8.95
 ```
 
 and customize the install path (default to /usr/local/bin)
 
 ```bash
-curl -sfL https://raw.githubusercontent.com/chainloop-dev/docs/main/static/install.sh | bash -s -- --path /my-path
+curl -sfL https://raw.githubusercontent.com/chainloop-dev/chainloop/main/docs/static/install.sh | bash -s -- --path /my-path
 ```
 
 if [`cosign`](https://docs.sigstore.dev/cosign) is present in your system, in addition to the checksum check, a signature verification will be performed. This behavior can be enforced via the `--force-verification` flag.
 
 ```bash
-curl -sfL https://raw.githubusercontent.com/chainloop-dev/docs/main/static/install.sh | bash -s -- --force-verification
+curl -sfL https://raw.githubusercontent.com/chainloop-dev/chainloop/main/docs/static/install.sh | bash -s -- --force-verification
 ```
 
 ### Deploy Chainloop (optional)
