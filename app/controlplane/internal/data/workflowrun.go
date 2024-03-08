@@ -138,7 +138,7 @@ func (r *WorkflowRunRepo) MarkAsFinished(ctx context.Context, id uuid.UUID, stat
 }
 
 // List the runs in an organization, optionally filtered out by workflow
-func (r *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, filters *biz.RunListFilters, p *pagination.Options) (result []*biz.WorkflowRun, cursor string, err error) {
+func (r *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, filters *biz.RunListFilters, p *pagination.CursorOptions) (result []*biz.WorkflowRun, cursor string, err error) {
 	if p == nil {
 		return nil, "", errors.New("pagination options is required")
 	}

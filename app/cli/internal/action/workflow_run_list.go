@@ -64,7 +64,7 @@ func (action *WorkflowRunList) Run(opts *WorkflowRunListOpts) (*PaginatedWorkflo
 	resp, err := client.List(context.Background(),
 		&pb.WorkflowRunServiceListRequest{
 			WorkflowId: opts.WorkflowID,
-			Pagination: &pb.PaginationRequest{
+			Pagination: &pb.CursorPaginationRequest{
 				Limit:  int32(opts.Pagination.Limit),
 				Cursor: opts.Pagination.NextCursor,
 			},

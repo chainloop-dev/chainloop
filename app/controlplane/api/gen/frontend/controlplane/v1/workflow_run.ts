@@ -7,7 +7,7 @@ import {
   craftingSchema_Runner_RunnerTypeFromJSON,
   craftingSchema_Runner_RunnerTypeToJSON,
 } from "../../workflowcontract/v1/crafting_schema";
-import { PaginationRequest, PaginationResponse } from "./pagination";
+import { CursorPaginationRequest, CursorPaginationResponse } from "./pagination";
 import {
   AttestationItem,
   CASBackendItem,
@@ -124,12 +124,12 @@ export interface WorkflowRunServiceListRequest {
   /** by run status */
   status: RunStatus;
   /** pagination options */
-  pagination?: PaginationRequest;
+  pagination?: CursorPaginationRequest;
 }
 
 export interface WorkflowRunServiceListResponse {
   result: WorkflowRunItem[];
-  pagination?: PaginationResponse;
+  pagination?: CursorPaginationResponse;
 }
 
 export interface WorkflowRunServiceViewRequest {
@@ -919,7 +919,7 @@ export const WorkflowRunServiceListRequest = {
       writer.uint32(24).int32(message.status);
     }
     if (message.pagination !== undefined) {
-      PaginationRequest.encode(message.pagination, writer.uint32(18).fork()).ldelim();
+      CursorPaginationRequest.encode(message.pagination, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -950,7 +950,7 @@ export const WorkflowRunServiceListRequest = {
             break;
           }
 
-          message.pagination = PaginationRequest.decode(reader, reader.uint32());
+          message.pagination = CursorPaginationRequest.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -965,7 +965,7 @@ export const WorkflowRunServiceListRequest = {
     return {
       workflowId: isSet(object.workflowId) ? String(object.workflowId) : "",
       status: isSet(object.status) ? runStatusFromJSON(object.status) : 0,
-      pagination: isSet(object.pagination) ? PaginationRequest.fromJSON(object.pagination) : undefined,
+      pagination: isSet(object.pagination) ? CursorPaginationRequest.fromJSON(object.pagination) : undefined,
     };
   },
 
@@ -974,7 +974,7 @@ export const WorkflowRunServiceListRequest = {
     message.workflowId !== undefined && (obj.workflowId = message.workflowId);
     message.status !== undefined && (obj.status = runStatusToJSON(message.status));
     message.pagination !== undefined &&
-      (obj.pagination = message.pagination ? PaginationRequest.toJSON(message.pagination) : undefined);
+      (obj.pagination = message.pagination ? CursorPaginationRequest.toJSON(message.pagination) : undefined);
     return obj;
   },
 
@@ -989,7 +989,7 @@ export const WorkflowRunServiceListRequest = {
     message.workflowId = object.workflowId ?? "";
     message.status = object.status ?? 0;
     message.pagination = (object.pagination !== undefined && object.pagination !== null)
-      ? PaginationRequest.fromPartial(object.pagination)
+      ? CursorPaginationRequest.fromPartial(object.pagination)
       : undefined;
     return message;
   },
@@ -1005,7 +1005,7 @@ export const WorkflowRunServiceListResponse = {
       WorkflowRunItem.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     if (message.pagination !== undefined) {
-      PaginationResponse.encode(message.pagination, writer.uint32(18).fork()).ldelim();
+      CursorPaginationResponse.encode(message.pagination, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -1029,7 +1029,7 @@ export const WorkflowRunServiceListResponse = {
             break;
           }
 
-          message.pagination = PaginationResponse.decode(reader, reader.uint32());
+          message.pagination = CursorPaginationResponse.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1043,7 +1043,7 @@ export const WorkflowRunServiceListResponse = {
   fromJSON(object: any): WorkflowRunServiceListResponse {
     return {
       result: Array.isArray(object?.result) ? object.result.map((e: any) => WorkflowRunItem.fromJSON(e)) : [],
-      pagination: isSet(object.pagination) ? PaginationResponse.fromJSON(object.pagination) : undefined,
+      pagination: isSet(object.pagination) ? CursorPaginationResponse.fromJSON(object.pagination) : undefined,
     };
   },
 
@@ -1055,7 +1055,7 @@ export const WorkflowRunServiceListResponse = {
       obj.result = [];
     }
     message.pagination !== undefined &&
-      (obj.pagination = message.pagination ? PaginationResponse.toJSON(message.pagination) : undefined);
+      (obj.pagination = message.pagination ? CursorPaginationResponse.toJSON(message.pagination) : undefined);
     return obj;
   },
 
@@ -1069,7 +1069,7 @@ export const WorkflowRunServiceListResponse = {
     const message = createBaseWorkflowRunServiceListResponse();
     message.result = object.result?.map((e) => WorkflowRunItem.fromPartial(e)) || [];
     message.pagination = (object.pagination !== undefined && object.pagination !== null)
-      ? PaginationResponse.fromPartial(object.pagination)
+      ? CursorPaginationResponse.fromPartial(object.pagination)
       : undefined;
     return message;
   },
