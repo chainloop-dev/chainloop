@@ -2,7 +2,12 @@
 import { grpc } from "@improbable-eng/grpc-web";
 import { BrowserHeaders } from "browser-headers";
 import _m0 from "protobufjs/minimal";
-import { WorkflowItem } from "./response_messages";
+import {
+  CraftingSchema_Runner_RunnerType,
+  craftingSchema_Runner_RunnerTypeFromJSON,
+  craftingSchema_Runner_RunnerTypeToJSON,
+} from "../../workflowcontract/v1/crafting_schema";
+import { RunStatus, runStatusFromJSON, runStatusToJSON, WorkflowItem } from "./response_messages";
 
 export const protobufPackage = "controlplane.v1";
 
@@ -55,6 +60,26 @@ export interface OrgMetricsServiceTotalsRequest {
   timeWindow: MetricsTimeWindow;
 }
 
+export interface OrgMetricsServiceTotalsResponse {
+  result?: OrgMetricsServiceTotalsResponse_Result;
+}
+
+export interface OrgMetricsServiceTotalsResponse_Result {
+  runsTotal: number;
+  runsTotalByStatus: MetricsStatusCount[];
+  runsTotalByRunnerType: MetricsRunnerCount[];
+}
+
+export interface MetricsStatusCount {
+  count: number;
+  status: RunStatus;
+}
+
+export interface MetricsRunnerCount {
+  count: number;
+  runnerType: CraftingSchema_Runner_RunnerType;
+}
+
 export interface TopWorkflowsByRunsCountRequest {
   /** top x number of runs to return */
   numWorkflows: number;
@@ -67,35 +92,7 @@ export interface TopWorkflowsByRunsCountResponse {
 
 export interface TopWorkflowsByRunsCountResponse_TotalByStatus {
   workflow?: WorkflowItem;
-  /** Status -> [initialized, error, success] */
-  runsTotalByStatus: { [key: string]: number };
-}
-
-export interface TopWorkflowsByRunsCountResponse_TotalByStatus_RunsTotalByStatusEntry {
-  key: string;
-  value: number;
-}
-
-export interface OrgMetricsServiceTotalsResponse {
-  result?: OrgMetricsServiceTotalsResponse_Result;
-}
-
-export interface OrgMetricsServiceTotalsResponse_Result {
-  runsTotal: number;
-  /** Status -> [initialized, error, success] */
-  runsTotalByStatus: { [key: string]: number };
-  /** runner_type -> [generic, github_action, ...] */
-  runsTotalByRunnerType: { [key: string]: number };
-}
-
-export interface OrgMetricsServiceTotalsResponse_Result_RunsTotalByStatusEntry {
-  key: string;
-  value: number;
-}
-
-export interface OrgMetricsServiceTotalsResponse_Result_RunsTotalByRunnerTypeEntry {
-  key: string;
-  value: number;
+  runsTotalByStatus: MetricsStatusCount[];
 }
 
 function createBaseOrgMetricsServiceTotalsRequest(): OrgMetricsServiceTotalsRequest {
@@ -152,6 +149,313 @@ export const OrgMetricsServiceTotalsRequest = {
   ): OrgMetricsServiceTotalsRequest {
     const message = createBaseOrgMetricsServiceTotalsRequest();
     message.timeWindow = object.timeWindow ?? 0;
+    return message;
+  },
+};
+
+function createBaseOrgMetricsServiceTotalsResponse(): OrgMetricsServiceTotalsResponse {
+  return { result: undefined };
+}
+
+export const OrgMetricsServiceTotalsResponse = {
+  encode(message: OrgMetricsServiceTotalsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.result !== undefined) {
+      OrgMetricsServiceTotalsResponse_Result.encode(message.result, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): OrgMetricsServiceTotalsResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseOrgMetricsServiceTotalsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.result = OrgMetricsServiceTotalsResponse_Result.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): OrgMetricsServiceTotalsResponse {
+    return {
+      result: isSet(object.result) ? OrgMetricsServiceTotalsResponse_Result.fromJSON(object.result) : undefined,
+    };
+  },
+
+  toJSON(message: OrgMetricsServiceTotalsResponse): unknown {
+    const obj: any = {};
+    message.result !== undefined &&
+      (obj.result = message.result ? OrgMetricsServiceTotalsResponse_Result.toJSON(message.result) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<OrgMetricsServiceTotalsResponse>, I>>(base?: I): OrgMetricsServiceTotalsResponse {
+    return OrgMetricsServiceTotalsResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<OrgMetricsServiceTotalsResponse>, I>>(
+    object: I,
+  ): OrgMetricsServiceTotalsResponse {
+    const message = createBaseOrgMetricsServiceTotalsResponse();
+    message.result = (object.result !== undefined && object.result !== null)
+      ? OrgMetricsServiceTotalsResponse_Result.fromPartial(object.result)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseOrgMetricsServiceTotalsResponse_Result(): OrgMetricsServiceTotalsResponse_Result {
+  return { runsTotal: 0, runsTotalByStatus: [], runsTotalByRunnerType: [] };
+}
+
+export const OrgMetricsServiceTotalsResponse_Result = {
+  encode(message: OrgMetricsServiceTotalsResponse_Result, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.runsTotal !== 0) {
+      writer.uint32(8).int32(message.runsTotal);
+    }
+    for (const v of message.runsTotalByStatus) {
+      MetricsStatusCount.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    for (const v of message.runsTotalByRunnerType) {
+      MetricsRunnerCount.encode(v!, writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): OrgMetricsServiceTotalsResponse_Result {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseOrgMetricsServiceTotalsResponse_Result();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.runsTotal = reader.int32();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.runsTotalByStatus.push(MetricsStatusCount.decode(reader, reader.uint32()));
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.runsTotalByRunnerType.push(MetricsRunnerCount.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): OrgMetricsServiceTotalsResponse_Result {
+    return {
+      runsTotal: isSet(object.runsTotal) ? Number(object.runsTotal) : 0,
+      runsTotalByStatus: Array.isArray(object?.runsTotalByStatus)
+        ? object.runsTotalByStatus.map((e: any) => MetricsStatusCount.fromJSON(e))
+        : [],
+      runsTotalByRunnerType: Array.isArray(object?.runsTotalByRunnerType)
+        ? object.runsTotalByRunnerType.map((e: any) => MetricsRunnerCount.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: OrgMetricsServiceTotalsResponse_Result): unknown {
+    const obj: any = {};
+    message.runsTotal !== undefined && (obj.runsTotal = Math.round(message.runsTotal));
+    if (message.runsTotalByStatus) {
+      obj.runsTotalByStatus = message.runsTotalByStatus.map((e) => e ? MetricsStatusCount.toJSON(e) : undefined);
+    } else {
+      obj.runsTotalByStatus = [];
+    }
+    if (message.runsTotalByRunnerType) {
+      obj.runsTotalByRunnerType = message.runsTotalByRunnerType.map((e) =>
+        e ? MetricsRunnerCount.toJSON(e) : undefined
+      );
+    } else {
+      obj.runsTotalByRunnerType = [];
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<OrgMetricsServiceTotalsResponse_Result>, I>>(
+    base?: I,
+  ): OrgMetricsServiceTotalsResponse_Result {
+    return OrgMetricsServiceTotalsResponse_Result.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<OrgMetricsServiceTotalsResponse_Result>, I>>(
+    object: I,
+  ): OrgMetricsServiceTotalsResponse_Result {
+    const message = createBaseOrgMetricsServiceTotalsResponse_Result();
+    message.runsTotal = object.runsTotal ?? 0;
+    message.runsTotalByStatus = object.runsTotalByStatus?.map((e) => MetricsStatusCount.fromPartial(e)) || [];
+    message.runsTotalByRunnerType = object.runsTotalByRunnerType?.map((e) => MetricsRunnerCount.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseMetricsStatusCount(): MetricsStatusCount {
+  return { count: 0, status: 0 };
+}
+
+export const MetricsStatusCount = {
+  encode(message: MetricsStatusCount, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.count !== 0) {
+      writer.uint32(8).int32(message.count);
+    }
+    if (message.status !== 0) {
+      writer.uint32(16).int32(message.status);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): MetricsStatusCount {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMetricsStatusCount();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.count = reader.int32();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.status = reader.int32() as any;
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MetricsStatusCount {
+    return {
+      count: isSet(object.count) ? Number(object.count) : 0,
+      status: isSet(object.status) ? runStatusFromJSON(object.status) : 0,
+    };
+  },
+
+  toJSON(message: MetricsStatusCount): unknown {
+    const obj: any = {};
+    message.count !== undefined && (obj.count = Math.round(message.count));
+    message.status !== undefined && (obj.status = runStatusToJSON(message.status));
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<MetricsStatusCount>, I>>(base?: I): MetricsStatusCount {
+    return MetricsStatusCount.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<MetricsStatusCount>, I>>(object: I): MetricsStatusCount {
+    const message = createBaseMetricsStatusCount();
+    message.count = object.count ?? 0;
+    message.status = object.status ?? 0;
+    return message;
+  },
+};
+
+function createBaseMetricsRunnerCount(): MetricsRunnerCount {
+  return { count: 0, runnerType: 0 };
+}
+
+export const MetricsRunnerCount = {
+  encode(message: MetricsRunnerCount, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.count !== 0) {
+      writer.uint32(8).int32(message.count);
+    }
+    if (message.runnerType !== 0) {
+      writer.uint32(16).int32(message.runnerType);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): MetricsRunnerCount {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMetricsRunnerCount();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.count = reader.int32();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.runnerType = reader.int32() as any;
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MetricsRunnerCount {
+    return {
+      count: isSet(object.count) ? Number(object.count) : 0,
+      runnerType: isSet(object.runnerType) ? craftingSchema_Runner_RunnerTypeFromJSON(object.runnerType) : 0,
+    };
+  },
+
+  toJSON(message: MetricsRunnerCount): unknown {
+    const obj: any = {};
+    message.count !== undefined && (obj.count = Math.round(message.count));
+    message.runnerType !== undefined && (obj.runnerType = craftingSchema_Runner_RunnerTypeToJSON(message.runnerType));
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<MetricsRunnerCount>, I>>(base?: I): MetricsRunnerCount {
+    return MetricsRunnerCount.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<MetricsRunnerCount>, I>>(object: I): MetricsRunnerCount {
+    const message = createBaseMetricsRunnerCount();
+    message.count = object.count ?? 0;
+    message.runnerType = object.runnerType ?? 0;
     return message;
   },
 };
@@ -296,7 +600,7 @@ export const TopWorkflowsByRunsCountResponse = {
 };
 
 function createBaseTopWorkflowsByRunsCountResponse_TotalByStatus(): TopWorkflowsByRunsCountResponse_TotalByStatus {
-  return { workflow: undefined, runsTotalByStatus: {} };
+  return { workflow: undefined, runsTotalByStatus: [] };
 }
 
 export const TopWorkflowsByRunsCountResponse_TotalByStatus = {
@@ -304,12 +608,9 @@ export const TopWorkflowsByRunsCountResponse_TotalByStatus = {
     if (message.workflow !== undefined) {
       WorkflowItem.encode(message.workflow, writer.uint32(10).fork()).ldelim();
     }
-    Object.entries(message.runsTotalByStatus).forEach(([key, value]) => {
-      TopWorkflowsByRunsCountResponse_TotalByStatus_RunsTotalByStatusEntry.encode(
-        { key: key as any, value },
-        writer.uint32(18).fork(),
-      ).ldelim();
-    });
+    for (const v of message.runsTotalByStatus) {
+      MetricsStatusCount.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
     return writer;
   },
 
@@ -332,13 +633,7 @@ export const TopWorkflowsByRunsCountResponse_TotalByStatus = {
             break;
           }
 
-          const entry2 = TopWorkflowsByRunsCountResponse_TotalByStatus_RunsTotalByStatusEntry.decode(
-            reader,
-            reader.uint32(),
-          );
-          if (entry2.value !== undefined) {
-            message.runsTotalByStatus[entry2.key] = entry2.value;
-          }
+          message.runsTotalByStatus.push(MetricsStatusCount.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -352,12 +647,9 @@ export const TopWorkflowsByRunsCountResponse_TotalByStatus = {
   fromJSON(object: any): TopWorkflowsByRunsCountResponse_TotalByStatus {
     return {
       workflow: isSet(object.workflow) ? WorkflowItem.fromJSON(object.workflow) : undefined,
-      runsTotalByStatus: isObject(object.runsTotalByStatus)
-        ? Object.entries(object.runsTotalByStatus).reduce<{ [key: string]: number }>((acc, [key, value]) => {
-          acc[key] = Number(value);
-          return acc;
-        }, {})
-        : {},
+      runsTotalByStatus: Array.isArray(object?.runsTotalByStatus)
+        ? object.runsTotalByStatus.map((e: any) => MetricsStatusCount.fromJSON(e))
+        : [],
     };
   },
 
@@ -365,11 +657,10 @@ export const TopWorkflowsByRunsCountResponse_TotalByStatus = {
     const obj: any = {};
     message.workflow !== undefined &&
       (obj.workflow = message.workflow ? WorkflowItem.toJSON(message.workflow) : undefined);
-    obj.runsTotalByStatus = {};
     if (message.runsTotalByStatus) {
-      Object.entries(message.runsTotalByStatus).forEach(([k, v]) => {
-        obj.runsTotalByStatus[k] = Math.round(v);
-      });
+      obj.runsTotalByStatus = message.runsTotalByStatus.map((e) => e ? MetricsStatusCount.toJSON(e) : undefined);
+    } else {
+      obj.runsTotalByStatus = [];
     }
     return obj;
   },
@@ -387,450 +678,7 @@ export const TopWorkflowsByRunsCountResponse_TotalByStatus = {
     message.workflow = (object.workflow !== undefined && object.workflow !== null)
       ? WorkflowItem.fromPartial(object.workflow)
       : undefined;
-    message.runsTotalByStatus = Object.entries(object.runsTotalByStatus ?? {}).reduce<{ [key: string]: number }>(
-      (acc, [key, value]) => {
-        if (value !== undefined) {
-          acc[key] = Number(value);
-        }
-        return acc;
-      },
-      {},
-    );
-    return message;
-  },
-};
-
-function createBaseTopWorkflowsByRunsCountResponse_TotalByStatus_RunsTotalByStatusEntry(): TopWorkflowsByRunsCountResponse_TotalByStatus_RunsTotalByStatusEntry {
-  return { key: "", value: 0 };
-}
-
-export const TopWorkflowsByRunsCountResponse_TotalByStatus_RunsTotalByStatusEntry = {
-  encode(
-    message: TopWorkflowsByRunsCountResponse_TotalByStatus_RunsTotalByStatusEntry,
-    writer: _m0.Writer = _m0.Writer.create(),
-  ): _m0.Writer {
-    if (message.key !== "") {
-      writer.uint32(10).string(message.key);
-    }
-    if (message.value !== 0) {
-      writer.uint32(16).int32(message.value);
-    }
-    return writer;
-  },
-
-  decode(
-    input: _m0.Reader | Uint8Array,
-    length?: number,
-  ): TopWorkflowsByRunsCountResponse_TotalByStatus_RunsTotalByStatusEntry {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseTopWorkflowsByRunsCountResponse_TotalByStatus_RunsTotalByStatusEntry();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.key = reader.string();
-          continue;
-        case 2:
-          if (tag !== 16) {
-            break;
-          }
-
-          message.value = reader.int32();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): TopWorkflowsByRunsCountResponse_TotalByStatus_RunsTotalByStatusEntry {
-    return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? Number(object.value) : 0 };
-  },
-
-  toJSON(message: TopWorkflowsByRunsCountResponse_TotalByStatus_RunsTotalByStatusEntry): unknown {
-    const obj: any = {};
-    message.key !== undefined && (obj.key = message.key);
-    message.value !== undefined && (obj.value = Math.round(message.value));
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<TopWorkflowsByRunsCountResponse_TotalByStatus_RunsTotalByStatusEntry>, I>>(
-    base?: I,
-  ): TopWorkflowsByRunsCountResponse_TotalByStatus_RunsTotalByStatusEntry {
-    return TopWorkflowsByRunsCountResponse_TotalByStatus_RunsTotalByStatusEntry.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<TopWorkflowsByRunsCountResponse_TotalByStatus_RunsTotalByStatusEntry>, I>>(
-    object: I,
-  ): TopWorkflowsByRunsCountResponse_TotalByStatus_RunsTotalByStatusEntry {
-    const message = createBaseTopWorkflowsByRunsCountResponse_TotalByStatus_RunsTotalByStatusEntry();
-    message.key = object.key ?? "";
-    message.value = object.value ?? 0;
-    return message;
-  },
-};
-
-function createBaseOrgMetricsServiceTotalsResponse(): OrgMetricsServiceTotalsResponse {
-  return { result: undefined };
-}
-
-export const OrgMetricsServiceTotalsResponse = {
-  encode(message: OrgMetricsServiceTotalsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.result !== undefined) {
-      OrgMetricsServiceTotalsResponse_Result.encode(message.result, writer.uint32(10).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): OrgMetricsServiceTotalsResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseOrgMetricsServiceTotalsResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.result = OrgMetricsServiceTotalsResponse_Result.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): OrgMetricsServiceTotalsResponse {
-    return {
-      result: isSet(object.result) ? OrgMetricsServiceTotalsResponse_Result.fromJSON(object.result) : undefined,
-    };
-  },
-
-  toJSON(message: OrgMetricsServiceTotalsResponse): unknown {
-    const obj: any = {};
-    message.result !== undefined &&
-      (obj.result = message.result ? OrgMetricsServiceTotalsResponse_Result.toJSON(message.result) : undefined);
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<OrgMetricsServiceTotalsResponse>, I>>(base?: I): OrgMetricsServiceTotalsResponse {
-    return OrgMetricsServiceTotalsResponse.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<OrgMetricsServiceTotalsResponse>, I>>(
-    object: I,
-  ): OrgMetricsServiceTotalsResponse {
-    const message = createBaseOrgMetricsServiceTotalsResponse();
-    message.result = (object.result !== undefined && object.result !== null)
-      ? OrgMetricsServiceTotalsResponse_Result.fromPartial(object.result)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseOrgMetricsServiceTotalsResponse_Result(): OrgMetricsServiceTotalsResponse_Result {
-  return { runsTotal: 0, runsTotalByStatus: {}, runsTotalByRunnerType: {} };
-}
-
-export const OrgMetricsServiceTotalsResponse_Result = {
-  encode(message: OrgMetricsServiceTotalsResponse_Result, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.runsTotal !== 0) {
-      writer.uint32(8).int32(message.runsTotal);
-    }
-    Object.entries(message.runsTotalByStatus).forEach(([key, value]) => {
-      OrgMetricsServiceTotalsResponse_Result_RunsTotalByStatusEntry.encode(
-        { key: key as any, value },
-        writer.uint32(18).fork(),
-      ).ldelim();
-    });
-    Object.entries(message.runsTotalByRunnerType).forEach(([key, value]) => {
-      OrgMetricsServiceTotalsResponse_Result_RunsTotalByRunnerTypeEntry.encode(
-        { key: key as any, value },
-        writer.uint32(26).fork(),
-      ).ldelim();
-    });
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): OrgMetricsServiceTotalsResponse_Result {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseOrgMetricsServiceTotalsResponse_Result();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.runsTotal = reader.int32();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          const entry2 = OrgMetricsServiceTotalsResponse_Result_RunsTotalByStatusEntry.decode(reader, reader.uint32());
-          if (entry2.value !== undefined) {
-            message.runsTotalByStatus[entry2.key] = entry2.value;
-          }
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          const entry3 = OrgMetricsServiceTotalsResponse_Result_RunsTotalByRunnerTypeEntry.decode(
-            reader,
-            reader.uint32(),
-          );
-          if (entry3.value !== undefined) {
-            message.runsTotalByRunnerType[entry3.key] = entry3.value;
-          }
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): OrgMetricsServiceTotalsResponse_Result {
-    return {
-      runsTotal: isSet(object.runsTotal) ? Number(object.runsTotal) : 0,
-      runsTotalByStatus: isObject(object.runsTotalByStatus)
-        ? Object.entries(object.runsTotalByStatus).reduce<{ [key: string]: number }>((acc, [key, value]) => {
-          acc[key] = Number(value);
-          return acc;
-        }, {})
-        : {},
-      runsTotalByRunnerType: isObject(object.runsTotalByRunnerType)
-        ? Object.entries(object.runsTotalByRunnerType).reduce<{ [key: string]: number }>((acc, [key, value]) => {
-          acc[key] = Number(value);
-          return acc;
-        }, {})
-        : {},
-    };
-  },
-
-  toJSON(message: OrgMetricsServiceTotalsResponse_Result): unknown {
-    const obj: any = {};
-    message.runsTotal !== undefined && (obj.runsTotal = Math.round(message.runsTotal));
-    obj.runsTotalByStatus = {};
-    if (message.runsTotalByStatus) {
-      Object.entries(message.runsTotalByStatus).forEach(([k, v]) => {
-        obj.runsTotalByStatus[k] = Math.round(v);
-      });
-    }
-    obj.runsTotalByRunnerType = {};
-    if (message.runsTotalByRunnerType) {
-      Object.entries(message.runsTotalByRunnerType).forEach(([k, v]) => {
-        obj.runsTotalByRunnerType[k] = Math.round(v);
-      });
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<OrgMetricsServiceTotalsResponse_Result>, I>>(
-    base?: I,
-  ): OrgMetricsServiceTotalsResponse_Result {
-    return OrgMetricsServiceTotalsResponse_Result.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<OrgMetricsServiceTotalsResponse_Result>, I>>(
-    object: I,
-  ): OrgMetricsServiceTotalsResponse_Result {
-    const message = createBaseOrgMetricsServiceTotalsResponse_Result();
-    message.runsTotal = object.runsTotal ?? 0;
-    message.runsTotalByStatus = Object.entries(object.runsTotalByStatus ?? {}).reduce<{ [key: string]: number }>(
-      (acc, [key, value]) => {
-        if (value !== undefined) {
-          acc[key] = Number(value);
-        }
-        return acc;
-      },
-      {},
-    );
-    message.runsTotalByRunnerType = Object.entries(object.runsTotalByRunnerType ?? {}).reduce<
-      { [key: string]: number }
-    >((acc, [key, value]) => {
-      if (value !== undefined) {
-        acc[key] = Number(value);
-      }
-      return acc;
-    }, {});
-    return message;
-  },
-};
-
-function createBaseOrgMetricsServiceTotalsResponse_Result_RunsTotalByStatusEntry(): OrgMetricsServiceTotalsResponse_Result_RunsTotalByStatusEntry {
-  return { key: "", value: 0 };
-}
-
-export const OrgMetricsServiceTotalsResponse_Result_RunsTotalByStatusEntry = {
-  encode(
-    message: OrgMetricsServiceTotalsResponse_Result_RunsTotalByStatusEntry,
-    writer: _m0.Writer = _m0.Writer.create(),
-  ): _m0.Writer {
-    if (message.key !== "") {
-      writer.uint32(10).string(message.key);
-    }
-    if (message.value !== 0) {
-      writer.uint32(16).int32(message.value);
-    }
-    return writer;
-  },
-
-  decode(
-    input: _m0.Reader | Uint8Array,
-    length?: number,
-  ): OrgMetricsServiceTotalsResponse_Result_RunsTotalByStatusEntry {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseOrgMetricsServiceTotalsResponse_Result_RunsTotalByStatusEntry();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.key = reader.string();
-          continue;
-        case 2:
-          if (tag !== 16) {
-            break;
-          }
-
-          message.value = reader.int32();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): OrgMetricsServiceTotalsResponse_Result_RunsTotalByStatusEntry {
-    return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? Number(object.value) : 0 };
-  },
-
-  toJSON(message: OrgMetricsServiceTotalsResponse_Result_RunsTotalByStatusEntry): unknown {
-    const obj: any = {};
-    message.key !== undefined && (obj.key = message.key);
-    message.value !== undefined && (obj.value = Math.round(message.value));
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<OrgMetricsServiceTotalsResponse_Result_RunsTotalByStatusEntry>, I>>(
-    base?: I,
-  ): OrgMetricsServiceTotalsResponse_Result_RunsTotalByStatusEntry {
-    return OrgMetricsServiceTotalsResponse_Result_RunsTotalByStatusEntry.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<OrgMetricsServiceTotalsResponse_Result_RunsTotalByStatusEntry>, I>>(
-    object: I,
-  ): OrgMetricsServiceTotalsResponse_Result_RunsTotalByStatusEntry {
-    const message = createBaseOrgMetricsServiceTotalsResponse_Result_RunsTotalByStatusEntry();
-    message.key = object.key ?? "";
-    message.value = object.value ?? 0;
-    return message;
-  },
-};
-
-function createBaseOrgMetricsServiceTotalsResponse_Result_RunsTotalByRunnerTypeEntry(): OrgMetricsServiceTotalsResponse_Result_RunsTotalByRunnerTypeEntry {
-  return { key: "", value: 0 };
-}
-
-export const OrgMetricsServiceTotalsResponse_Result_RunsTotalByRunnerTypeEntry = {
-  encode(
-    message: OrgMetricsServiceTotalsResponse_Result_RunsTotalByRunnerTypeEntry,
-    writer: _m0.Writer = _m0.Writer.create(),
-  ): _m0.Writer {
-    if (message.key !== "") {
-      writer.uint32(10).string(message.key);
-    }
-    if (message.value !== 0) {
-      writer.uint32(16).int32(message.value);
-    }
-    return writer;
-  },
-
-  decode(
-    input: _m0.Reader | Uint8Array,
-    length?: number,
-  ): OrgMetricsServiceTotalsResponse_Result_RunsTotalByRunnerTypeEntry {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseOrgMetricsServiceTotalsResponse_Result_RunsTotalByRunnerTypeEntry();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.key = reader.string();
-          continue;
-        case 2:
-          if (tag !== 16) {
-            break;
-          }
-
-          message.value = reader.int32();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): OrgMetricsServiceTotalsResponse_Result_RunsTotalByRunnerTypeEntry {
-    return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? Number(object.value) : 0 };
-  },
-
-  toJSON(message: OrgMetricsServiceTotalsResponse_Result_RunsTotalByRunnerTypeEntry): unknown {
-    const obj: any = {};
-    message.key !== undefined && (obj.key = message.key);
-    message.value !== undefined && (obj.value = Math.round(message.value));
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<OrgMetricsServiceTotalsResponse_Result_RunsTotalByRunnerTypeEntry>, I>>(
-    base?: I,
-  ): OrgMetricsServiceTotalsResponse_Result_RunsTotalByRunnerTypeEntry {
-    return OrgMetricsServiceTotalsResponse_Result_RunsTotalByRunnerTypeEntry.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<OrgMetricsServiceTotalsResponse_Result_RunsTotalByRunnerTypeEntry>, I>>(
-    object: I,
-  ): OrgMetricsServiceTotalsResponse_Result_RunsTotalByRunnerTypeEntry {
-    const message = createBaseOrgMetricsServiceTotalsResponse_Result_RunsTotalByRunnerTypeEntry();
-    message.key = object.key ?? "";
-    message.value = object.value ?? 0;
+    message.runsTotalByStatus = object.runsTotalByStatus?.map((e) => MetricsStatusCount.fromPartial(e)) || [];
     return message;
   },
 };
@@ -1019,10 +867,6 @@ export type DeepPartial<T> = T extends Builtin ? T
 type KeysOfUnion<T> = T extends T ? keyof T : never;
 export type Exact<P, I extends P> = P extends Builtin ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
-
-function isObject(value: any): boolean {
-  return typeof value === "object" && value !== null;
-}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

@@ -61,8 +61,8 @@ func (s *OrgMetricsService) Totals(ctx context.Context, req *pb.OrgMetricsServic
 
 	return &pb.OrgMetricsServiceTotalsResponse{Result: &pb.OrgMetricsServiceTotalsResponse_Result{
 		RunsTotal:             totals,
-		RunsTotalByStatus:     totalsByStatus,
-		RunsTotalByRunnerType: totalsByRunnerType,
+		RunsTotalByStatus:     totalByStatusToPb(totalsByStatus),
+		RunsTotalByRunnerType: totalByRunnerTypeToPb(totalsByRunnerType),
 	}}, nil
 }
 
@@ -81,9 +81,27 @@ func (s *OrgMetricsService) TopWorkflowsByRunsCount(ctx context.Context, req *pb
 	for _, r := range res {
 		result = append(result, &pb.TopWorkflowsByRunsCountResponse_TotalByStatus{
 			Workflow:          bizWorkflowToPb(r.Workflow),
-			RunsTotalByStatus: r.ByStatus,
+			RunsTotalByStatus: totalByStatusToPb(r.ByStatus),
 		})
 	}
 
 	return &pb.TopWorkflowsByRunsCountResponse{Result: result}, nil
+}
+
+func totalByStatusToPb(in map[string]int32) []*pb.MetricsStatusCount {
+	resp := make([]*pb.MetricsStatusCount, 0, len(in))
+	for k, v := range in {
+		resp = append(resp, &pb.MetricsStatusCount{Status: bizWorkflowRunStatusToPb(biz.WorkflowRunStatus(k)), Count: v})
+	}
+
+	return resp
+}
+
+func totalByRunnerTypeToPb(in map[string]int32) []*pb.MetricsRunnerCount {
+	resp := make([]*pb.MetricsRunnerCount, 0, len(in))
+	for k, v := range in {
+		resp = append(resp, &pb.MetricsRunnerCount{RunnerType: bizRunnerToPb(k), Count: v})
+	}
+
+	return resp
 }

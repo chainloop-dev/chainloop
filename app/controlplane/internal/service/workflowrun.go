@@ -161,9 +161,12 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 	return &pb.WorkflowRunServiceViewResponse{Result: res}, nil
 }
 
-func bizWorkFlowRunToPb(wfr *biz.WorkflowRun) *pb.WorkflowRunItem {
-	r := craftingpb.CraftingSchema_Runner_RunnerType_value[wfr.RunnerType]
+func bizRunnerToPb(runner string) craftingpb.CraftingSchema_Runner_RunnerType {
+	runnerType := craftingpb.CraftingSchema_Runner_RunnerType_value[runner]
+	return craftingpb.CraftingSchema_Runner_RunnerType(runnerType)
+}
 
+func bizWorkFlowRunToPb(wfr *biz.WorkflowRun) *pb.WorkflowRunItem {
 	item := &pb.WorkflowRunItem{
 		Id:        wfr.ID.String(),
 		CreatedAt: timestamppb.New(*wfr.CreatedAt),
@@ -172,7 +175,7 @@ func bizWorkFlowRunToPb(wfr *biz.WorkflowRun) *pb.WorkflowRunItem {
 		Status:                 bizWorkflowRunStatusToPb(biz.WorkflowRunStatus(wfr.State)),
 		Reason:                 wfr.Reason,
 		JobUrl:                 wfr.RunURL,
-		RunnerType:             craftingpb.CraftingSchema_Runner_RunnerType(r),
+		RunnerType:             bizRunnerToPb(wfr.RunnerType),
 		ContractRevisionUsed:   int32(wfr.ContractRevisionUsed),
 		ContractRevisionLatest: int32(wfr.ContractRevisionLatest),
 	}
