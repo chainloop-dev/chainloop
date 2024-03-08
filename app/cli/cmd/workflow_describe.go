@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,16 +16,29 @@
 package cmd
 
 import (
+	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
 )
 
-func newWorkflowCmd() *cobra.Command {
+func newWorkflowDescribeCmd() *cobra.Command {
+	var workflowID string
+
 	cmd := &cobra.Command{
-		Use:     "workflow",
-		Aliases: []string{"wf"},
-		Short:   "Workflow, contracts, robot-accounts and runs management in the control plane",
+		Use:   "describe",
+		Short: "Describe an existing workflow",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			wf, err := action.NewWorkflowDescribe(actionOpts).Run(cmd.Context(), workflowID)
+			if err != nil {
+				return err
+			}
+
+			return encodeOutput([]*action.WorkflowItem{wf}, WorkflowListTableOutput)
+		},
 	}
 
-	cmd.AddCommand(newWorkflowListCmd(), newWorkflowDescribeCmd(), newWorkflowCreateCmd(), newWorkflowUpdateCmd(), newWorkflowDeleteCmd(), newWorkflowRobotAccountCmd(), newWorkflowWorkflowRunCmd(), newWorkflowContractCmd(), newAttachedIntegrationCmd())
+	cmd.Flags().StringVar(&workflowID, "id", "", "workflow id")
+	err := cmd.MarkFlagRequired("id")
+	cobra.CheckErr(err)
+
 	return cmd
 }

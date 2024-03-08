@@ -164,7 +164,14 @@ func (uc *WorkflowUseCase) FindByIDInOrg(ctx context.Context, orgID, workflowID 
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	return uc.wfRepo.GetOrgScoped(ctx, orgUUID, workflowUUID)
+	wf, err := uc.wfRepo.GetOrgScoped(ctx, orgUUID, workflowUUID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get workflow: %w", err)
+	} else if wf == nil {
+		return nil, NewErrNotFound("workflow in organization")
+	}
+
+	return wf, nil
 }
 
 // Delete soft-deletes the entry

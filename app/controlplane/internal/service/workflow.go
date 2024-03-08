@@ -20,8 +20,6 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
-	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
-	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -57,7 +55,7 @@ func (s *WorkflowService) Create(ctx context.Context, req *pb.WorkflowServiceCre
 
 	p, err := s.useCase.Create(ctx, createOpts)
 	if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr("workflow", err, s.log)
 	}
 
 	workflow := bizWorkflowToPb(p)
@@ -84,7 +82,7 @@ func (s *WorkflowService) Update(ctx context.Context, req *pb.WorkflowServiceUpd
 
 	p, err := s.useCase.Update(ctx, currentOrg.ID, req.Id, updateOpts)
 	if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr("workflow", err, s.log)
 	}
 
 	workflow := bizWorkflowToPb(p)
@@ -103,8 +101,7 @@ func (s *WorkflowService) List(ctx context.Context, _ *pb.WorkflowServiceListReq
 
 	workflows, err := s.useCase.List(ctx, currentOrg.ID)
 	if err != nil {
-		s.log.Error(err)
-		return nil, errors.NotFound("list issue", "error listing the workflows")
+		return nil, handleUseCaseErr("workflow", err, s.log)
 	}
 
 	result := make([]*pb.WorkflowItem, 0, len(workflows))
@@ -122,11 +119,24 @@ func (s *WorkflowService) Delete(ctx context.Context, req *pb.WorkflowServiceDel
 	}
 
 	if err := s.useCase.Delete(ctx, currentOrg.ID, req.Id); err != nil {
-		s.log.Error(err)
-		return nil, errors.NotFound("can't delete", "workflow not found")
+		return nil, handleUseCaseErr("workflow", err, s.log)
 	}
 
 	return &pb.WorkflowServiceDeleteResponse{}, nil
+}
+
+func (s *WorkflowService) View(ctx context.Context, req *pb.WorkflowServiceViewRequest) (*pb.WorkflowServiceViewResponse, error) {
+	currentOrg, err := requireCurrentOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	wf, err := s.useCase.FindByIDInOrg(ctx, currentOrg.ID, req.Id)
+	if err != nil {
+		return nil, handleUseCaseErr("workflow", err, s.log)
+	}
+
+	return &pb.WorkflowServiceViewResponse{Result: bizWorkflowToPb(wf)}, nil
 }
 
 func bizWorkflowToPb(wf *biz.Workflow) *pb.WorkflowItem {
