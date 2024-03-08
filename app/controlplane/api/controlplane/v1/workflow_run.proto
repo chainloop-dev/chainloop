@@ -106,12 +106,12 @@ message WorkflowRunServiceListRequest {
   // by run status
   RunStatus status = 3;
   // pagination options
-  PaginationRequest pagination = 2;
+  CursorPaginationRequest pagination = 2;
 }
 
 message WorkflowRunServiceListResponse {
   repeated WorkflowRunItem result = 1;
-  PaginationResponse pagination = 2;
+  CursorPaginationResponse pagination = 2;
 }
 
 message WorkflowRunServiceViewRequest {

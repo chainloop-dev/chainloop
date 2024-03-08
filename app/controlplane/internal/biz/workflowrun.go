@@ -72,7 +72,7 @@ type WorkflowRunRepo interface {
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*WorkflowRun, error)
 	MarkAsFinished(ctx context.Context, ID uuid.UUID, status WorkflowRunStatus, reason string) error
 	SaveAttestation(ctx context.Context, ID uuid.UUID, att *dsse.Envelope, digest string) error
-	List(ctx context.Context, orgID uuid.UUID, f *RunListFilters, p *pagination.Options) ([]*WorkflowRun, string, error)
+	List(ctx context.Context, orgID uuid.UUID, f *RunListFilters, p *pagination.CursorOptions) ([]*WorkflowRun, string, error)
 	// List the runs that have not finished and are older than a given time
 	ListNotFinishedOlderThan(ctx context.Context, olderThan time.Time) ([]*WorkflowRun, error)
 	// Set run as expired
@@ -262,7 +262,7 @@ type RunListFilters struct {
 }
 
 // List the workflowruns associated with an org and optionally filtered by a workflow
-func (uc *WorkflowRunUseCase) List(ctx context.Context, orgID string, f *RunListFilters, p *pagination.Options) ([]*WorkflowRun, string, error) {
+func (uc *WorkflowRunUseCase) List(ctx context.Context, orgID string, f *RunListFilters, p *pagination.CursorOptions) ([]*WorkflowRun, string, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, "", NewErrInvalidUUID(err)

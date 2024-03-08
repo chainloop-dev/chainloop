@@ -35,22 +35,22 @@ var (
 	_ = sort.Sort
 )
 
-// Validate checks the field values on PaginationResponse with the rules
+// Validate checks the field values on CursorPaginationResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *PaginationResponse) Validate() error {
+func (m *CursorPaginationResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on PaginationResponse with the rules
-// defined in the proto definition for this message. If any rules are
+// ValidateAll checks the field values on CursorPaginationResponse with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// PaginationResponseMultiError, or nil if none found.
-func (m *PaginationResponse) ValidateAll() error {
+// CursorPaginationResponseMultiError, or nil if none found.
+func (m *CursorPaginationResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *PaginationResponse) validate(all bool) error {
+func (m *CursorPaginationResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -60,19 +60,19 @@ func (m *PaginationResponse) validate(all bool) error {
 	// no validation rules for NextCursor
 
 	if len(errors) > 0 {
-		return PaginationResponseMultiError(errors)
+		return CursorPaginationResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// PaginationResponseMultiError is an error wrapping multiple validation errors
-// returned by PaginationResponse.ValidateAll() if the designated constraints
-// aren't met.
-type PaginationResponseMultiError []error
+// CursorPaginationResponseMultiError is an error wrapping multiple validation
+// errors returned by CursorPaginationResponse.ValidateAll() if the designated
+// constraints aren't met.
+type CursorPaginationResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m PaginationResponseMultiError) Error() string {
+func (m CursorPaginationResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -81,11 +81,11 @@ func (m PaginationResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m PaginationResponseMultiError) AllErrors() []error { return m }
+func (m CursorPaginationResponseMultiError) AllErrors() []error { return m }
 
-// PaginationResponseValidationError is the validation error returned by
-// PaginationResponse.Validate if the designated constraints aren't met.
-type PaginationResponseValidationError struct {
+// CursorPaginationResponseValidationError is the validation error returned by
+// CursorPaginationResponse.Validate if the designated constraints aren't met.
+type CursorPaginationResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -93,24 +93,24 @@ type PaginationResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e PaginationResponseValidationError) Field() string { return e.field }
+func (e CursorPaginationResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e PaginationResponseValidationError) Reason() string { return e.reason }
+func (e CursorPaginationResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e PaginationResponseValidationError) Cause() error { return e.cause }
+func (e CursorPaginationResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e PaginationResponseValidationError) Key() bool { return e.key }
+func (e CursorPaginationResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e PaginationResponseValidationError) ErrorName() string {
-	return "PaginationResponseValidationError"
+func (e CursorPaginationResponseValidationError) ErrorName() string {
+	return "CursorPaginationResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e PaginationResponseValidationError) Error() string {
+func (e CursorPaginationResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -122,14 +122,14 @@ func (e PaginationResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sPaginationResponse.%s: %s%s",
+		"invalid %sCursorPaginationResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = PaginationResponseValidationError{}
+var _ error = CursorPaginationResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -137,24 +137,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = PaginationResponseValidationError{}
+} = CursorPaginationResponseValidationError{}
 
-// Validate checks the field values on PaginationRequest with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
-func (m *PaginationRequest) Validate() error {
+// Validate checks the field values on CursorPaginationRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CursorPaginationRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on PaginationRequest with the rules
-// defined in the proto definition for this message. If any rules are
+// ValidateAll checks the field values on CursorPaginationRequest with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// PaginationRequestMultiError, or nil if none found.
-func (m *PaginationRequest) ValidateAll() error {
+// CursorPaginationRequestMultiError, or nil if none found.
+func (m *CursorPaginationRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *PaginationRequest) validate(all bool) error {
+func (m *CursorPaginationRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -166,7 +166,7 @@ func (m *PaginationRequest) validate(all bool) error {
 	if m.GetLimit() != 0 {
 
 		if val := m.GetLimit(); val < 2 || val > 100 {
-			err := PaginationRequestValidationError{
+			err := CursorPaginationRequestValidationError{
 				field:  "Limit",
 				reason: "value must be inside range [2, 100]",
 			}
@@ -179,19 +179,19 @@ func (m *PaginationRequest) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return PaginationRequestMultiError(errors)
+		return CursorPaginationRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// PaginationRequestMultiError is an error wrapping multiple validation errors
-// returned by PaginationRequest.ValidateAll() if the designated constraints
-// aren't met.
-type PaginationRequestMultiError []error
+// CursorPaginationRequestMultiError is an error wrapping multiple validation
+// errors returned by CursorPaginationRequest.ValidateAll() if the designated
+// constraints aren't met.
+type CursorPaginationRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m PaginationRequestMultiError) Error() string {
+func (m CursorPaginationRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -200,11 +200,11 @@ func (m PaginationRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m PaginationRequestMultiError) AllErrors() []error { return m }
+func (m CursorPaginationRequestMultiError) AllErrors() []error { return m }
 
-// PaginationRequestValidationError is the validation error returned by
-// PaginationRequest.Validate if the designated constraints aren't met.
-type PaginationRequestValidationError struct {
+// CursorPaginationRequestValidationError is the validation error returned by
+// CursorPaginationRequest.Validate if the designated constraints aren't met.
+type CursorPaginationRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -212,24 +212,24 @@ type PaginationRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e PaginationRequestValidationError) Field() string { return e.field }
+func (e CursorPaginationRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e PaginationRequestValidationError) Reason() string { return e.reason }
+func (e CursorPaginationRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e PaginationRequestValidationError) Cause() error { return e.cause }
+func (e CursorPaginationRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e PaginationRequestValidationError) Key() bool { return e.key }
+func (e CursorPaginationRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e PaginationRequestValidationError) ErrorName() string {
-	return "PaginationRequestValidationError"
+func (e CursorPaginationRequestValidationError) ErrorName() string {
+	return "CursorPaginationRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e PaginationRequestValidationError) Error() string {
+func (e CursorPaginationRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -241,14 +241,14 @@ func (e PaginationRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sPaginationRequest.%s: %s%s",
+		"invalid %sCursorPaginationRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = PaginationRequestValidationError{}
+var _ error = CursorPaginationRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -256,4 +256,4 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = PaginationRequestValidationError{}
+} = CursorPaginationRequestValidationError{}
