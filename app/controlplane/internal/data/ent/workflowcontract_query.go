@@ -30,6 +30,7 @@ type WorkflowContractQuery struct {
 	withOrganization *OrganizationQuery
 	withWorkflows    *WorkflowQuery
 	withFKs          bool
+	modifiers        []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -466,6 +467,9 @@ func (wcq *WorkflowContractQuery) sqlAll(ctx context.Context, hooks ...queryHook
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
+	if len(wcq.modifiers) > 0 {
+		_spec.Modifiers = wcq.modifiers
+	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
@@ -595,6 +599,9 @@ func (wcq *WorkflowContractQuery) loadWorkflows(ctx context.Context, query *Work
 
 func (wcq *WorkflowContractQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := wcq.querySpec()
+	if len(wcq.modifiers) > 0 {
+		_spec.Modifiers = wcq.modifiers
+	}
 	_spec.Node.Columns = wcq.ctx.Fields
 	if len(wcq.ctx.Fields) > 0 {
 		_spec.Unique = wcq.ctx.Unique != nil && *wcq.ctx.Unique
@@ -657,6 +664,9 @@ func (wcq *WorkflowContractQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	if wcq.ctx.Unique != nil && *wcq.ctx.Unique {
 		selector.Distinct()
 	}
+	for _, m := range wcq.modifiers {
+		m(selector)
+	}
 	for _, p := range wcq.predicates {
 		p(selector)
 	}
@@ -672,6 +682,12 @@ func (wcq *WorkflowContractQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (wcq *WorkflowContractQuery) Modify(modifiers ...func(s *sql.Selector)) *WorkflowContractSelect {
+	wcq.modifiers = append(wcq.modifiers, modifiers...)
+	return wcq.Select()
 }
 
 // WorkflowContractGroupBy is the group-by builder for WorkflowContract entities.
@@ -762,4 +778,10 @@ func (wcs *WorkflowContractSelect) sqlScan(ctx context.Context, root *WorkflowCo
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (wcs *WorkflowContractSelect) Modify(modifiers ...func(s *sql.Selector)) *WorkflowContractSelect {
+	wcs.modifiers = append(wcs.modifiers, modifiers...)
+	return wcs
 }

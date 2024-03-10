@@ -19,8 +19,9 @@ import (
 // WorkflowContractVersionUpdate is the builder for updating WorkflowContractVersion entities.
 type WorkflowContractVersionUpdate struct {
 	config
-	hooks    []Hook
-	mutation *WorkflowContractVersionMutation
+	hooks     []Hook
+	mutation  *WorkflowContractVersionMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // Where appends a list predicates to the WorkflowContractVersionUpdate builder.
@@ -86,6 +87,12 @@ func (wcvu *WorkflowContractVersionUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (wcvu *WorkflowContractVersionUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *WorkflowContractVersionUpdate {
+	wcvu.modifiers = append(wcvu.modifiers, modifiers...)
+	return wcvu
+}
+
 func (wcvu *WorkflowContractVersionUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := sqlgraph.NewUpdateSpec(workflowcontractversion.Table, workflowcontractversion.Columns, sqlgraph.NewFieldSpec(workflowcontractversion.FieldID, field.TypeUUID))
 	if ps := wcvu.mutation.predicates; len(ps) > 0 {
@@ -124,6 +131,7 @@ func (wcvu *WorkflowContractVersionUpdate) sqlSave(ctx context.Context) (n int, 
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(wcvu.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, wcvu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{workflowcontractversion.Label}
@@ -139,9 +147,10 @@ func (wcvu *WorkflowContractVersionUpdate) sqlSave(ctx context.Context) (n int, 
 // WorkflowContractVersionUpdateOne is the builder for updating a single WorkflowContractVersion entity.
 type WorkflowContractVersionUpdateOne struct {
 	config
-	fields   []string
-	hooks    []Hook
-	mutation *WorkflowContractVersionMutation
+	fields    []string
+	hooks     []Hook
+	mutation  *WorkflowContractVersionMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // SetContractID sets the "contract" edge to the WorkflowContract entity by ID.
@@ -214,6 +223,12 @@ func (wcvuo *WorkflowContractVersionUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (wcvuo *WorkflowContractVersionUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *WorkflowContractVersionUpdateOne {
+	wcvuo.modifiers = append(wcvuo.modifiers, modifiers...)
+	return wcvuo
+}
+
 func (wcvuo *WorkflowContractVersionUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowContractVersion, err error) {
 	_spec := sqlgraph.NewUpdateSpec(workflowcontractversion.Table, workflowcontractversion.Columns, sqlgraph.NewFieldSpec(workflowcontractversion.FieldID, field.TypeUUID))
 	id, ok := wcvuo.mutation.ID()
@@ -269,6 +284,7 @@ func (wcvuo *WorkflowContractVersionUpdateOne) sqlSave(ctx context.Context) (_no
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(wcvuo.modifiers...)
 	_node = &WorkflowContractVersion{config: wcvuo.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues

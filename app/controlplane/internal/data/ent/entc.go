@@ -29,7 +29,7 @@ import (
 
 func main() {
 	err := entc.Generate("./schema", &gen.Config{
-		Features: []gen.Feature{gen.FeatureVersionedMigration},
+		Features: []gen.Feature{gen.FeatureVersionedMigration, gen.FeatureModifier},
 	}, entc.Extensions(entviz.Extension{}))
 	if err != nil {
 		log.Fatalf("running ent codegen: %v", err)

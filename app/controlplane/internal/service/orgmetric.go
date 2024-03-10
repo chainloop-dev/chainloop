@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ func (s *OrgMetricsService) Totals(ctx context.Context, req *pb.OrgMetricsServic
 	}
 
 	// totals
+	// TODO: Merge it to a single request
 	totals, err := s.uc.RunsTotal(ctx, currentOrg.ID, *req.TimeWindow.ToDuration())
 	if err != nil {
 		return nil, sl.LogAndMaskErr(err, s.log)
@@ -86,6 +87,30 @@ func (s *OrgMetricsService) TopWorkflowsByRunsCount(ctx context.Context, req *pb
 	}
 
 	return &pb.TopWorkflowsByRunsCountResponse{Result: result}, nil
+}
+
+func (s *OrgMetricsService) DailyRunsCount(ctx context.Context, req *pb.DailyRunsCountRequest) (*pb.DailyRunsCountResponse, error) {
+	org, err := requireCurrentOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	metricsByDay, err := s.uc.DailyRunsCount(ctx, org.ID, req.WorkflowId, *req.TimeWindow.ToDuration())
+	if err != nil {
+		return nil, handleUseCaseErr("metrics", err, s.log)
+	}
+
+	var res = make([]*pb.DailyRunsCountResponse_TotalByDay, 0, len(metricsByDay))
+	for _, m := range metricsByDay {
+		for _, stateMetrics := range m.Totals {
+			res = append(res, &pb.DailyRunsCountResponse_TotalByDay{
+				Date:    m.Date.Format("2006-01-02"),
+				Metrics: &pb.MetricsStatusCount{Status: bizWorkflowRunStatusToPb(biz.WorkflowRunStatus(stateMetrics.Status)), Count: stateMetrics.Count},
+			})
+		}
+	}
+
+	return &pb.DailyRunsCountResponse{Result: res}, nil
 }
 
 func totalByStatusToPb(in map[string]int32) []*pb.MetricsStatusCount {

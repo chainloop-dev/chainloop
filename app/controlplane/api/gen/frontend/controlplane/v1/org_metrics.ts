@@ -13,9 +13,10 @@ export const protobufPackage = "controlplane.v1";
 
 export enum MetricsTimeWindow {
   METRICS_TIME_WINDOW_UNSPECIFIED = 0,
-  METRICS_TIME_WINDOW_LAST_30_DAYS = 1,
+  METRICS_TIME_WINDOW_LAST_DAY = 1,
   METRICS_TIME_WINDOW_LAST_7_DAYS = 2,
-  METRICS_TIME_WINDOW_LAST_DAY = 3,
+  METRICS_TIME_WINDOW_LAST_30_DAYS = 3,
+  METRICS_TIME_WINDOW_LAST_90_DAYS = 4,
   UNRECOGNIZED = -1,
 }
 
@@ -25,14 +26,17 @@ export function metricsTimeWindowFromJSON(object: any): MetricsTimeWindow {
     case "METRICS_TIME_WINDOW_UNSPECIFIED":
       return MetricsTimeWindow.METRICS_TIME_WINDOW_UNSPECIFIED;
     case 1:
-    case "METRICS_TIME_WINDOW_LAST_30_DAYS":
-      return MetricsTimeWindow.METRICS_TIME_WINDOW_LAST_30_DAYS;
+    case "METRICS_TIME_WINDOW_LAST_DAY":
+      return MetricsTimeWindow.METRICS_TIME_WINDOW_LAST_DAY;
     case 2:
     case "METRICS_TIME_WINDOW_LAST_7_DAYS":
       return MetricsTimeWindow.METRICS_TIME_WINDOW_LAST_7_DAYS;
     case 3:
-    case "METRICS_TIME_WINDOW_LAST_DAY":
-      return MetricsTimeWindow.METRICS_TIME_WINDOW_LAST_DAY;
+    case "METRICS_TIME_WINDOW_LAST_30_DAYS":
+      return MetricsTimeWindow.METRICS_TIME_WINDOW_LAST_30_DAYS;
+    case 4:
+    case "METRICS_TIME_WINDOW_LAST_90_DAYS":
+      return MetricsTimeWindow.METRICS_TIME_WINDOW_LAST_90_DAYS;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -44,16 +48,34 @@ export function metricsTimeWindowToJSON(object: MetricsTimeWindow): string {
   switch (object) {
     case MetricsTimeWindow.METRICS_TIME_WINDOW_UNSPECIFIED:
       return "METRICS_TIME_WINDOW_UNSPECIFIED";
-    case MetricsTimeWindow.METRICS_TIME_WINDOW_LAST_30_DAYS:
-      return "METRICS_TIME_WINDOW_LAST_30_DAYS";
-    case MetricsTimeWindow.METRICS_TIME_WINDOW_LAST_7_DAYS:
-      return "METRICS_TIME_WINDOW_LAST_7_DAYS";
     case MetricsTimeWindow.METRICS_TIME_WINDOW_LAST_DAY:
       return "METRICS_TIME_WINDOW_LAST_DAY";
+    case MetricsTimeWindow.METRICS_TIME_WINDOW_LAST_7_DAYS:
+      return "METRICS_TIME_WINDOW_LAST_7_DAYS";
+    case MetricsTimeWindow.METRICS_TIME_WINDOW_LAST_30_DAYS:
+      return "METRICS_TIME_WINDOW_LAST_30_DAYS";
+    case MetricsTimeWindow.METRICS_TIME_WINDOW_LAST_90_DAYS:
+      return "METRICS_TIME_WINDOW_LAST_90_DAYS";
     case MetricsTimeWindow.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
+}
+
+/** Get the dayly count of runs by status */
+export interface DailyRunsCountRequest {
+  workflowId?: string | undefined;
+  timeWindow: MetricsTimeWindow;
+}
+
+export interface DailyRunsCountResponse {
+  result: DailyRunsCountResponse_TotalByDay[];
+}
+
+export interface DailyRunsCountResponse_TotalByDay {
+  /** string format: "YYYY-MM-DD" */
+  date: string;
+  metrics?: MetricsStatusCount;
 }
 
 export interface OrgMetricsServiceTotalsRequest {
@@ -94,6 +116,219 @@ export interface TopWorkflowsByRunsCountResponse_TotalByStatus {
   workflow?: WorkflowItem;
   runsTotalByStatus: MetricsStatusCount[];
 }
+
+function createBaseDailyRunsCountRequest(): DailyRunsCountRequest {
+  return { workflowId: undefined, timeWindow: 0 };
+}
+
+export const DailyRunsCountRequest = {
+  encode(message: DailyRunsCountRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.workflowId !== undefined) {
+      writer.uint32(10).string(message.workflowId);
+    }
+    if (message.timeWindow !== 0) {
+      writer.uint32(16).int32(message.timeWindow);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DailyRunsCountRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDailyRunsCountRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.workflowId = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.timeWindow = reader.int32() as any;
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DailyRunsCountRequest {
+    return {
+      workflowId: isSet(object.workflowId) ? String(object.workflowId) : undefined,
+      timeWindow: isSet(object.timeWindow) ? metricsTimeWindowFromJSON(object.timeWindow) : 0,
+    };
+  },
+
+  toJSON(message: DailyRunsCountRequest): unknown {
+    const obj: any = {};
+    message.workflowId !== undefined && (obj.workflowId = message.workflowId);
+    message.timeWindow !== undefined && (obj.timeWindow = metricsTimeWindowToJSON(message.timeWindow));
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<DailyRunsCountRequest>, I>>(base?: I): DailyRunsCountRequest {
+    return DailyRunsCountRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<DailyRunsCountRequest>, I>>(object: I): DailyRunsCountRequest {
+    const message = createBaseDailyRunsCountRequest();
+    message.workflowId = object.workflowId ?? undefined;
+    message.timeWindow = object.timeWindow ?? 0;
+    return message;
+  },
+};
+
+function createBaseDailyRunsCountResponse(): DailyRunsCountResponse {
+  return { result: [] };
+}
+
+export const DailyRunsCountResponse = {
+  encode(message: DailyRunsCountResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.result) {
+      DailyRunsCountResponse_TotalByDay.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DailyRunsCountResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDailyRunsCountResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.result.push(DailyRunsCountResponse_TotalByDay.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DailyRunsCountResponse {
+    return {
+      result: Array.isArray(object?.result)
+        ? object.result.map((e: any) => DailyRunsCountResponse_TotalByDay.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: DailyRunsCountResponse): unknown {
+    const obj: any = {};
+    if (message.result) {
+      obj.result = message.result.map((e) => e ? DailyRunsCountResponse_TotalByDay.toJSON(e) : undefined);
+    } else {
+      obj.result = [];
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<DailyRunsCountResponse>, I>>(base?: I): DailyRunsCountResponse {
+    return DailyRunsCountResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<DailyRunsCountResponse>, I>>(object: I): DailyRunsCountResponse {
+    const message = createBaseDailyRunsCountResponse();
+    message.result = object.result?.map((e) => DailyRunsCountResponse_TotalByDay.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseDailyRunsCountResponse_TotalByDay(): DailyRunsCountResponse_TotalByDay {
+  return { date: "", metrics: undefined };
+}
+
+export const DailyRunsCountResponse_TotalByDay = {
+  encode(message: DailyRunsCountResponse_TotalByDay, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.date !== "") {
+      writer.uint32(10).string(message.date);
+    }
+    if (message.metrics !== undefined) {
+      MetricsStatusCount.encode(message.metrics, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DailyRunsCountResponse_TotalByDay {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDailyRunsCountResponse_TotalByDay();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.date = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.metrics = MetricsStatusCount.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DailyRunsCountResponse_TotalByDay {
+    return {
+      date: isSet(object.date) ? String(object.date) : "",
+      metrics: isSet(object.metrics) ? MetricsStatusCount.fromJSON(object.metrics) : undefined,
+    };
+  },
+
+  toJSON(message: DailyRunsCountResponse_TotalByDay): unknown {
+    const obj: any = {};
+    message.date !== undefined && (obj.date = message.date);
+    message.metrics !== undefined &&
+      (obj.metrics = message.metrics ? MetricsStatusCount.toJSON(message.metrics) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<DailyRunsCountResponse_TotalByDay>, I>>(
+    base?: I,
+  ): DailyRunsCountResponse_TotalByDay {
+    return DailyRunsCountResponse_TotalByDay.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<DailyRunsCountResponse_TotalByDay>, I>>(
+    object: I,
+  ): DailyRunsCountResponse_TotalByDay {
+    const message = createBaseDailyRunsCountResponse_TotalByDay();
+    message.date = object.date ?? "";
+    message.metrics = (object.metrics !== undefined && object.metrics !== null)
+      ? MetricsStatusCount.fromPartial(object.metrics)
+      : undefined;
+    return message;
+  },
+};
 
 function createBaseOrgMetricsServiceTotalsRequest(): OrgMetricsServiceTotalsRequest {
   return { timeWindow: 0 };
@@ -692,6 +927,10 @@ export interface OrgMetricsService {
     request: DeepPartial<TopWorkflowsByRunsCountRequest>,
     metadata?: grpc.Metadata,
   ): Promise<TopWorkflowsByRunsCountResponse>;
+  DailyRunsCount(
+    request: DeepPartial<DailyRunsCountRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<DailyRunsCountResponse>;
 }
 
 export class OrgMetricsServiceClientImpl implements OrgMetricsService {
@@ -701,6 +940,7 @@ export class OrgMetricsServiceClientImpl implements OrgMetricsService {
     this.rpc = rpc;
     this.Totals = this.Totals.bind(this);
     this.TopWorkflowsByRunsCount = this.TopWorkflowsByRunsCount.bind(this);
+    this.DailyRunsCount = this.DailyRunsCount.bind(this);
   }
 
   Totals(
@@ -719,6 +959,13 @@ export class OrgMetricsServiceClientImpl implements OrgMetricsService {
       TopWorkflowsByRunsCountRequest.fromPartial(request),
       metadata,
     );
+  }
+
+  DailyRunsCount(
+    request: DeepPartial<DailyRunsCountRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<DailyRunsCountResponse> {
+    return this.rpc.unary(OrgMetricsServiceDailyRunsCountDesc, DailyRunsCountRequest.fromPartial(request), metadata);
   }
 }
 
@@ -760,6 +1007,29 @@ export const OrgMetricsServiceTopWorkflowsByRunsCountDesc: UnaryMethodDefinition
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = TopWorkflowsByRunsCountResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const OrgMetricsServiceDailyRunsCountDesc: UnaryMethodDefinitionish = {
+  methodName: "DailyRunsCount",
+  service: OrgMetricsServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return DailyRunsCountRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = DailyRunsCountResponse.decode(data);
       return {
         ...value,
         toObject() {

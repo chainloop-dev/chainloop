@@ -27,6 +27,7 @@ type IntegrationAttachmentQuery struct {
 	withIntegration *IntegrationQuery
 	withWorkflow    *WorkflowQuery
 	withFKs         bool
+	modifiers       []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -428,6 +429,9 @@ func (iaq *IntegrationAttachmentQuery) sqlAll(ctx context.Context, hooks ...quer
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
+	if len(iaq.modifiers) > 0 {
+		_spec.Modifiers = iaq.modifiers
+	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
@@ -519,6 +523,9 @@ func (iaq *IntegrationAttachmentQuery) loadWorkflow(ctx context.Context, query *
 
 func (iaq *IntegrationAttachmentQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := iaq.querySpec()
+	if len(iaq.modifiers) > 0 {
+		_spec.Modifiers = iaq.modifiers
+	}
 	_spec.Node.Columns = iaq.ctx.Fields
 	if len(iaq.ctx.Fields) > 0 {
 		_spec.Unique = iaq.ctx.Unique != nil && *iaq.ctx.Unique
@@ -581,6 +588,9 @@ func (iaq *IntegrationAttachmentQuery) sqlQuery(ctx context.Context) *sql.Select
 	if iaq.ctx.Unique != nil && *iaq.ctx.Unique {
 		selector.Distinct()
 	}
+	for _, m := range iaq.modifiers {
+		m(selector)
+	}
 	for _, p := range iaq.predicates {
 		p(selector)
 	}
@@ -596,6 +606,12 @@ func (iaq *IntegrationAttachmentQuery) sqlQuery(ctx context.Context) *sql.Select
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (iaq *IntegrationAttachmentQuery) Modify(modifiers ...func(s *sql.Selector)) *IntegrationAttachmentSelect {
+	iaq.modifiers = append(iaq.modifiers, modifiers...)
+	return iaq.Select()
 }
 
 // IntegrationAttachmentGroupBy is the group-by builder for IntegrationAttachment entities.
@@ -686,4 +702,10 @@ func (ias *IntegrationAttachmentSelect) sqlScan(ctx context.Context, root *Integ
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (ias *IntegrationAttachmentSelect) Modify(modifiers ...func(s *sql.Selector)) *IntegrationAttachmentSelect {
+	ias.modifiers = append(ias.modifiers, modifiers...)
+	return ias
 }

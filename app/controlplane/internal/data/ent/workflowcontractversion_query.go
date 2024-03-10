@@ -25,6 +25,7 @@ type WorkflowContractVersionQuery struct {
 	predicates   []predicate.WorkflowContractVersion
 	withContract *WorkflowContractQuery
 	withFKs      bool
+	modifiers    []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -391,6 +392,9 @@ func (wcvq *WorkflowContractVersionQuery) sqlAll(ctx context.Context, hooks ...q
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
+	if len(wcvq.modifiers) > 0 {
+		_spec.Modifiers = wcvq.modifiers
+	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
@@ -444,6 +448,9 @@ func (wcvq *WorkflowContractVersionQuery) loadContract(ctx context.Context, quer
 
 func (wcvq *WorkflowContractVersionQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := wcvq.querySpec()
+	if len(wcvq.modifiers) > 0 {
+		_spec.Modifiers = wcvq.modifiers
+	}
 	_spec.Node.Columns = wcvq.ctx.Fields
 	if len(wcvq.ctx.Fields) > 0 {
 		_spec.Unique = wcvq.ctx.Unique != nil && *wcvq.ctx.Unique
@@ -506,6 +513,9 @@ func (wcvq *WorkflowContractVersionQuery) sqlQuery(ctx context.Context) *sql.Sel
 	if wcvq.ctx.Unique != nil && *wcvq.ctx.Unique {
 		selector.Distinct()
 	}
+	for _, m := range wcvq.modifiers {
+		m(selector)
+	}
 	for _, p := range wcvq.predicates {
 		p(selector)
 	}
@@ -521,6 +531,12 @@ func (wcvq *WorkflowContractVersionQuery) sqlQuery(ctx context.Context) *sql.Sel
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (wcvq *WorkflowContractVersionQuery) Modify(modifiers ...func(s *sql.Selector)) *WorkflowContractVersionSelect {
+	wcvq.modifiers = append(wcvq.modifiers, modifiers...)
+	return wcvq.Select()
 }
 
 // WorkflowContractVersionGroupBy is the group-by builder for WorkflowContractVersion entities.
@@ -611,4 +627,10 @@ func (wcvs *WorkflowContractVersionSelect) sqlScan(ctx context.Context, root *Wo
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (wcvs *WorkflowContractVersionSelect) Modify(modifiers ...func(s *sql.Selector)) *WorkflowContractVersionSelect {
+	wcvs.modifiers = append(wcvs.modifiers, modifiers...)
+	return wcvs
 }

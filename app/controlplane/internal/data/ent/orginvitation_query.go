@@ -26,6 +26,7 @@ type OrgInvitationQuery struct {
 	predicates       []predicate.OrgInvitation
 	withOrganization *OrganizationQuery
 	withSender       *UserQuery
+	modifiers        []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -420,6 +421,9 @@ func (oiq *OrgInvitationQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
+	if len(oiq.modifiers) > 0 {
+		_spec.Modifiers = oiq.modifiers
+	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
@@ -505,6 +509,9 @@ func (oiq *OrgInvitationQuery) loadSender(ctx context.Context, query *UserQuery,
 
 func (oiq *OrgInvitationQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := oiq.querySpec()
+	if len(oiq.modifiers) > 0 {
+		_spec.Modifiers = oiq.modifiers
+	}
 	_spec.Node.Columns = oiq.ctx.Fields
 	if len(oiq.ctx.Fields) > 0 {
 		_spec.Unique = oiq.ctx.Unique != nil && *oiq.ctx.Unique
@@ -573,6 +580,9 @@ func (oiq *OrgInvitationQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	if oiq.ctx.Unique != nil && *oiq.ctx.Unique {
 		selector.Distinct()
 	}
+	for _, m := range oiq.modifiers {
+		m(selector)
+	}
 	for _, p := range oiq.predicates {
 		p(selector)
 	}
@@ -588,6 +598,12 @@ func (oiq *OrgInvitationQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (oiq *OrgInvitationQuery) Modify(modifiers ...func(s *sql.Selector)) *OrgInvitationSelect {
+	oiq.modifiers = append(oiq.modifiers, modifiers...)
+	return oiq.Select()
 }
 
 // OrgInvitationGroupBy is the group-by builder for OrgInvitation entities.
@@ -678,4 +694,10 @@ func (ois *OrgInvitationSelect) sqlScan(ctx context.Context, root *OrgInvitation
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (ois *OrgInvitationSelect) Modify(modifiers ...func(s *sql.Selector)) *OrgInvitationSelect {
+	ois.modifiers = append(ois.modifiers, modifiers...)
+	return ois
 }

@@ -17,8 +17,9 @@ import (
 // CASMappingUpdate is the builder for updating CASMapping entities.
 type CASMappingUpdate struct {
 	config
-	hooks    []Hook
-	mutation *CASMappingMutation
+	hooks     []Hook
+	mutation  *CASMappingMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // Where appends a list predicates to the CASMappingUpdate builder.
@@ -70,6 +71,12 @@ func (cmu *CASMappingUpdate) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (cmu *CASMappingUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *CASMappingUpdate {
+	cmu.modifiers = append(cmu.modifiers, modifiers...)
+	return cmu
+}
+
 func (cmu *CASMappingUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := cmu.check(); err != nil {
 		return n, err
@@ -82,6 +89,7 @@ func (cmu *CASMappingUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	_spec.AddModifiers(cmu.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, cmu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{casmapping.Label}
@@ -97,9 +105,10 @@ func (cmu *CASMappingUpdate) sqlSave(ctx context.Context) (n int, err error) {
 // CASMappingUpdateOne is the builder for updating a single CASMapping entity.
 type CASMappingUpdateOne struct {
 	config
-	fields   []string
-	hooks    []Hook
-	mutation *CASMappingMutation
+	fields    []string
+	hooks     []Hook
+	mutation  *CASMappingMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // Mutation returns the CASMappingMutation object of the builder.
@@ -158,6 +167,12 @@ func (cmuo *CASMappingUpdateOne) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (cmuo *CASMappingUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *CASMappingUpdateOne {
+	cmuo.modifiers = append(cmuo.modifiers, modifiers...)
+	return cmuo
+}
+
 func (cmuo *CASMappingUpdateOne) sqlSave(ctx context.Context) (_node *CASMapping, err error) {
 	if err := cmuo.check(); err != nil {
 		return _node, err
@@ -187,6 +202,7 @@ func (cmuo *CASMappingUpdateOne) sqlSave(ctx context.Context) (_node *CASMapping
 			}
 		}
 	}
+	_spec.AddModifiers(cmuo.modifiers...)
 	_node = &CASMapping{config: cmuo.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues

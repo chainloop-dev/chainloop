@@ -21,6 +21,7 @@ import (
 	"sort"
 	"time"
 
+	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
@@ -170,4 +171,64 @@ func (repo *OrgMetricsRepo) TopWorkflowsByRunsCount(ctx context.Context, orgID u
 	}
 
 	return result[0:numWorkflows], nil
+}
+
+func (repo *OrgMetricsRepo) DailyRunsCount(ctx context.Context, orgID, workflowID uuid.UUID, tw time.Duration) ([]*biz.DayRunsCount, error) {
+	var runsByStateAndDay []struct {
+		State     string
+		Count     int32
+		CreatedAt time.Time `sql:"creation_day"`
+	}
+
+	// Get workflow runs grouped by state and day
+	q := orgScopedQuery(repo.data.db, orgID).QueryWorkflows()
+	// optionally filter by workflowID
+	if workflowID != uuid.Nil {
+		q = q.Where(workflow.ID(workflowID))
+	}
+
+	err := q.QueryWorkflowruns().
+		Where(workflowrun.CreatedAtGTE(time.Now().Add(-tw))).
+		// group by day and state
+		Modify(func(s *sql.Selector) {
+			s.GroupBy("creation_day", workflowrun.FieldState)
+			s.Select(
+				sql.Count("*"),
+				sql.As(fmt.Sprintf("Date(%s)", workflowrun.FieldCreatedAt), "creation_day"),
+				workflowrun.FieldState)
+		}).
+		Scan(ctx, &runsByStateAndDay)
+	if err != nil {
+		return nil, err
+	}
+
+	// format tne date in string format
+	m := make(map[string]*biz.DayRunsCount)
+	for _, r := range runsByStateAndDay {
+		date := r.CreatedAt.Format("2006-01-02")
+		// It does not exist yet, so we create it
+		if _, ok := m[date]; !ok {
+			m[date] = &biz.DayRunsCount{Date: r.CreatedAt, Totals: []*biz.ByStatusCount{
+				{Status: r.State, Count: r.Count},
+			}}
+			// If it exists we just append the information about the new state associated to the same day
+		} else {
+			m[date].Totals = append(m[date].Totals, &biz.ByStatusCount{Status: r.State, Count: r.Count})
+		}
+	}
+
+	// sort map by date
+	var keys = make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	res := make([]*biz.DayRunsCount, 0, len(m))
+	for _, k := range keys {
+		res = append(res, m[k])
+	}
+
+	return res, nil
 }

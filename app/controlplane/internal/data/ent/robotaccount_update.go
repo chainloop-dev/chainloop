@@ -21,8 +21,9 @@ import (
 // RobotAccountUpdate is the builder for updating RobotAccount entities.
 type RobotAccountUpdate struct {
 	config
-	hooks    []Hook
-	mutation *RobotAccountMutation
+	hooks     []Hook
+	mutation  *RobotAccountMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // Where appends a list predicates to the RobotAccountUpdate builder.
@@ -150,6 +151,12 @@ func (rau *RobotAccountUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (rau *RobotAccountUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *RobotAccountUpdate {
+	rau.modifiers = append(rau.modifiers, modifiers...)
+	return rau
+}
+
 func (rau *RobotAccountUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := sqlgraph.NewUpdateSpec(robotaccount.Table, robotaccount.Columns, sqlgraph.NewFieldSpec(robotaccount.FieldID, field.TypeUUID))
 	if ps := rau.mutation.predicates; len(ps) > 0 {
@@ -242,6 +249,7 @@ func (rau *RobotAccountUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(rau.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, rau.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{robotaccount.Label}
@@ -257,9 +265,10 @@ func (rau *RobotAccountUpdate) sqlSave(ctx context.Context) (n int, err error) {
 // RobotAccountUpdateOne is the builder for updating a single RobotAccount entity.
 type RobotAccountUpdateOne struct {
 	config
-	fields   []string
-	hooks    []Hook
-	mutation *RobotAccountMutation
+	fields    []string
+	hooks     []Hook
+	mutation  *RobotAccountMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // SetName sets the "name" field.
@@ -394,6 +403,12 @@ func (rauo *RobotAccountUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (rauo *RobotAccountUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *RobotAccountUpdateOne {
+	rauo.modifiers = append(rauo.modifiers, modifiers...)
+	return rauo
+}
+
 func (rauo *RobotAccountUpdateOne) sqlSave(ctx context.Context) (_node *RobotAccount, err error) {
 	_spec := sqlgraph.NewUpdateSpec(robotaccount.Table, robotaccount.Columns, sqlgraph.NewFieldSpec(robotaccount.FieldID, field.TypeUUID))
 	id, ok := rauo.mutation.ID()
@@ -503,6 +518,7 @@ func (rauo *RobotAccountUpdateOne) sqlSave(ctx context.Context) (_node *RobotAcc
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(rauo.modifiers...)
 	_node = &RobotAccount{config: rauo.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues

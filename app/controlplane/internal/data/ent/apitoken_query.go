@@ -24,6 +24,7 @@ type APITokenQuery struct {
 	inters           []Interceptor
 	predicates       []predicate.APIToken
 	withOrganization *OrganizationQuery
+	modifiers        []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -383,6 +384,9 @@ func (atq *APITokenQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*AP
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
+	if len(atq.modifiers) > 0 {
+		_spec.Modifiers = atq.modifiers
+	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
@@ -433,6 +437,9 @@ func (atq *APITokenQuery) loadOrganization(ctx context.Context, query *Organizat
 
 func (atq *APITokenQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := atq.querySpec()
+	if len(atq.modifiers) > 0 {
+		_spec.Modifiers = atq.modifiers
+	}
 	_spec.Node.Columns = atq.ctx.Fields
 	if len(atq.ctx.Fields) > 0 {
 		_spec.Unique = atq.ctx.Unique != nil && *atq.ctx.Unique
@@ -498,6 +505,9 @@ func (atq *APITokenQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	if atq.ctx.Unique != nil && *atq.ctx.Unique {
 		selector.Distinct()
 	}
+	for _, m := range atq.modifiers {
+		m(selector)
+	}
 	for _, p := range atq.predicates {
 		p(selector)
 	}
@@ -513,6 +523,12 @@ func (atq *APITokenQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (atq *APITokenQuery) Modify(modifiers ...func(s *sql.Selector)) *APITokenSelect {
+	atq.modifiers = append(atq.modifiers, modifiers...)
+	return atq.Select()
 }
 
 // APITokenGroupBy is the group-by builder for APIToken entities.
@@ -603,4 +619,10 @@ func (ats *APITokenSelect) sqlScan(ctx context.Context, root *APITokenQuery, v a
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (ats *APITokenSelect) Modify(modifiers ...func(s *sql.Selector)) *APITokenSelect {
+	ats.modifiers = append(ats.modifiers, modifiers...)
+	return ats
 }

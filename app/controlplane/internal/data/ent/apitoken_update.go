@@ -20,8 +20,9 @@ import (
 // APITokenUpdate is the builder for updating APIToken entities.
 type APITokenUpdate struct {
 	config
-	hooks    []Hook
-	mutation *APITokenMutation
+	hooks     []Hook
+	mutation  *APITokenMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // Where appends a list predicates to the APITokenUpdate builder.
@@ -127,6 +128,12 @@ func (atu *APITokenUpdate) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (atu *APITokenUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *APITokenUpdate {
+	atu.modifiers = append(atu.modifiers, modifiers...)
+	return atu
+}
+
 func (atu *APITokenUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := atu.check(); err != nil {
 		return n, err
@@ -183,6 +190,7 @@ func (atu *APITokenUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(atu.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, atu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{apitoken.Label}
@@ -198,9 +206,10 @@ func (atu *APITokenUpdate) sqlSave(ctx context.Context) (n int, err error) {
 // APITokenUpdateOne is the builder for updating a single APIToken entity.
 type APITokenUpdateOne struct {
 	config
-	fields   []string
-	hooks    []Hook
-	mutation *APITokenMutation
+	fields    []string
+	hooks     []Hook
+	mutation  *APITokenMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // SetDescription sets the "description" field.
@@ -313,6 +322,12 @@ func (atuo *APITokenUpdateOne) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (atuo *APITokenUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *APITokenUpdateOne {
+	atuo.modifiers = append(atuo.modifiers, modifiers...)
+	return atuo
+}
+
 func (atuo *APITokenUpdateOne) sqlSave(ctx context.Context) (_node *APIToken, err error) {
 	if err := atuo.check(); err != nil {
 		return _node, err
@@ -386,6 +401,7 @@ func (atuo *APITokenUpdateOne) sqlSave(ctx context.Context) (_node *APIToken, er
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(atuo.modifiers...)
 	_node = &APIToken{config: atuo.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues

@@ -28,6 +28,7 @@ type IntegrationQuery struct {
 	withAttachments  *IntegrationAttachmentQuery
 	withOrganization *OrganizationQuery
 	withFKs          bool
+	modifiers        []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -429,6 +430,9 @@ func (iq *IntegrationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
+	if len(iq.modifiers) > 0 {
+		_spec.Modifiers = iq.modifiers
+	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
@@ -520,6 +524,9 @@ func (iq *IntegrationQuery) loadOrganization(ctx context.Context, query *Organiz
 
 func (iq *IntegrationQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := iq.querySpec()
+	if len(iq.modifiers) > 0 {
+		_spec.Modifiers = iq.modifiers
+	}
 	_spec.Node.Columns = iq.ctx.Fields
 	if len(iq.ctx.Fields) > 0 {
 		_spec.Unique = iq.ctx.Unique != nil && *iq.ctx.Unique
@@ -582,6 +589,9 @@ func (iq *IntegrationQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	if iq.ctx.Unique != nil && *iq.ctx.Unique {
 		selector.Distinct()
 	}
+	for _, m := range iq.modifiers {
+		m(selector)
+	}
 	for _, p := range iq.predicates {
 		p(selector)
 	}
@@ -597,6 +607,12 @@ func (iq *IntegrationQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (iq *IntegrationQuery) Modify(modifiers ...func(s *sql.Selector)) *IntegrationSelect {
+	iq.modifiers = append(iq.modifiers, modifiers...)
+	return iq.Select()
 }
 
 // IntegrationGroupBy is the group-by builder for Integration entities.
@@ -687,4 +703,10 @@ func (is *IntegrationSelect) sqlScan(ctx context.Context, root *IntegrationQuery
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (is *IntegrationSelect) Modify(modifiers ...func(s *sql.Selector)) *IntegrationSelect {
+	is.modifiers = append(is.modifiers, modifiers...)
+	return is
 }

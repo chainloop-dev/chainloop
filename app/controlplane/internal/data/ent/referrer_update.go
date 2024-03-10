@@ -19,8 +19,9 @@ import (
 // ReferrerUpdate is the builder for updating Referrer entities.
 type ReferrerUpdate struct {
 	config
-	hooks    []Hook
-	mutation *ReferrerMutation
+	hooks     []Hook
+	mutation  *ReferrerMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // Where appends a list predicates to the ReferrerUpdate builder.
@@ -133,6 +134,12 @@ func (ru *ReferrerUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (ru *ReferrerUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *ReferrerUpdate {
+	ru.modifiers = append(ru.modifiers, modifiers...)
+	return ru
+}
+
 func (ru *ReferrerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := sqlgraph.NewUpdateSpec(referrer.Table, referrer.Columns, sqlgraph.NewFieldSpec(referrer.FieldID, field.TypeUUID))
 	if ps := ru.mutation.predicates; len(ps) > 0 {
@@ -238,6 +245,7 @@ func (ru *ReferrerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(ru.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, ru.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{referrer.Label}
@@ -253,9 +261,10 @@ func (ru *ReferrerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 // ReferrerUpdateOne is the builder for updating a single Referrer entity.
 type ReferrerUpdateOne struct {
 	config
-	fields   []string
-	hooks    []Hook
-	mutation *ReferrerMutation
+	fields    []string
+	hooks     []Hook
+	mutation  *ReferrerMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // AddReferenceIDs adds the "references" edge to the Referrer entity by IDs.
@@ -373,6 +382,12 @@ func (ruo *ReferrerUpdateOne) ExecX(ctx context.Context) {
 	if err := ruo.Exec(ctx); err != nil {
 		panic(err)
 	}
+}
+
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (ruo *ReferrerUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *ReferrerUpdateOne {
+	ruo.modifiers = append(ruo.modifiers, modifiers...)
+	return ruo
 }
 
 func (ruo *ReferrerUpdateOne) sqlSave(ctx context.Context) (_node *Referrer, err error) {
@@ -497,6 +512,7 @@ func (ruo *ReferrerUpdateOne) sqlSave(ctx context.Context) (_node *Referrer, err
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(ruo.modifiers...)
 	_node = &Referrer{config: ruo.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues

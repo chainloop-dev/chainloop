@@ -27,6 +27,7 @@ type ReferrerQuery struct {
 	withReferredBy *ReferrerQuery
 	withReferences *ReferrerQuery
 	withWorkflows  *WorkflowQuery
+	modifiers      []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -456,6 +457,9 @@ func (rq *ReferrerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ref
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
+	if len(rq.modifiers) > 0 {
+		_spec.Modifiers = rq.modifiers
+	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
@@ -675,6 +679,9 @@ func (rq *ReferrerQuery) loadWorkflows(ctx context.Context, query *WorkflowQuery
 
 func (rq *ReferrerQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := rq.querySpec()
+	if len(rq.modifiers) > 0 {
+		_spec.Modifiers = rq.modifiers
+	}
 	_spec.Node.Columns = rq.ctx.Fields
 	if len(rq.ctx.Fields) > 0 {
 		_spec.Unique = rq.ctx.Unique != nil && *rq.ctx.Unique
@@ -737,6 +744,9 @@ func (rq *ReferrerQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	if rq.ctx.Unique != nil && *rq.ctx.Unique {
 		selector.Distinct()
 	}
+	for _, m := range rq.modifiers {
+		m(selector)
+	}
 	for _, p := range rq.predicates {
 		p(selector)
 	}
@@ -752,6 +762,12 @@ func (rq *ReferrerQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (rq *ReferrerQuery) Modify(modifiers ...func(s *sql.Selector)) *ReferrerSelect {
+	rq.modifiers = append(rq.modifiers, modifiers...)
+	return rq.Select()
 }
 
 // ReferrerGroupBy is the group-by builder for Referrer entities.
@@ -842,4 +858,10 @@ func (rs *ReferrerSelect) sqlScan(ctx context.Context, root *ReferrerQuery, v an
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (rs *ReferrerSelect) Modify(modifiers ...func(s *sql.Selector)) *ReferrerSelect {
+	rs.modifiers = append(rs.modifiers, modifiers...)
+	return rs
 }

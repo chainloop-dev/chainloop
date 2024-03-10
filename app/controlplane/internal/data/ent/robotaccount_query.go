@@ -28,6 +28,7 @@ type RobotAccountQuery struct {
 	withWorkflow     *WorkflowQuery
 	withWorkflowruns *WorkflowRunQuery
 	withFKs          bool
+	modifiers        []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -429,6 +430,9 @@ func (raq *RobotAccountQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
+	if len(raq.modifiers) > 0 {
+		_spec.Modifiers = raq.modifiers
+	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
@@ -520,6 +524,9 @@ func (raq *RobotAccountQuery) loadWorkflowruns(ctx context.Context, query *Workf
 
 func (raq *RobotAccountQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := raq.querySpec()
+	if len(raq.modifiers) > 0 {
+		_spec.Modifiers = raq.modifiers
+	}
 	_spec.Node.Columns = raq.ctx.Fields
 	if len(raq.ctx.Fields) > 0 {
 		_spec.Unique = raq.ctx.Unique != nil && *raq.ctx.Unique
@@ -582,6 +589,9 @@ func (raq *RobotAccountQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	if raq.ctx.Unique != nil && *raq.ctx.Unique {
 		selector.Distinct()
 	}
+	for _, m := range raq.modifiers {
+		m(selector)
+	}
 	for _, p := range raq.predicates {
 		p(selector)
 	}
@@ -597,6 +607,12 @@ func (raq *RobotAccountQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (raq *RobotAccountQuery) Modify(modifiers ...func(s *sql.Selector)) *RobotAccountSelect {
+	raq.modifiers = append(raq.modifiers, modifiers...)
+	return raq.Select()
 }
 
 // RobotAccountGroupBy is the group-by builder for RobotAccount entities.
@@ -687,4 +703,10 @@ func (ras *RobotAccountSelect) sqlScan(ctx context.Context, root *RobotAccountQu
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (ras *RobotAccountSelect) Modify(modifiers ...func(s *sql.Selector)) *RobotAccountSelect {
+	ras.modifiers = append(ras.modifiers, modifiers...)
+	return ras
 }

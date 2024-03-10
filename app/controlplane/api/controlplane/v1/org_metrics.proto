@@ -26,6 +26,26 @@ option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/con
 service OrgMetricsService {
   rpc Totals(OrgMetricsServiceTotalsRequest) returns (OrgMetricsServiceTotalsResponse);
   rpc TopWorkflowsByRunsCount(TopWorkflowsByRunsCountRequest) returns (TopWorkflowsByRunsCountResponse);
+  rpc DailyRunsCount(DailyRunsCountRequest) returns (DailyRunsCountResponse);
+}
+
+// Get the dayly count of runs by status
+message DailyRunsCountRequest {
+  optional string workflow_id = 1 [(validate.rules).string.uuid = true];
+
+  MetricsTimeWindow time_window = 2 [(validate.rules).enum = {
+    not_in: [0]
+  }];
+}
+
+message DailyRunsCountResponse {
+  repeated TotalByDay result = 1;
+
+  message TotalByDay {
+    // string format: "YYYY-MM-DD"
+    string date = 1;
+    MetricsStatusCount metrics = 2;
+  }
 }
 
 message OrgMetricsServiceTotalsRequest {
@@ -76,7 +96,8 @@ message TopWorkflowsByRunsCountResponse {
 
 enum MetricsTimeWindow {
   METRICS_TIME_WINDOW_UNSPECIFIED = 0;
-  METRICS_TIME_WINDOW_LAST_30_DAYS = 1;
+  METRICS_TIME_WINDOW_LAST_DAY = 1;
   METRICS_TIME_WINDOW_LAST_7_DAYS = 2;
-  METRICS_TIME_WINDOW_LAST_DAY = 3;
+  METRICS_TIME_WINDOW_LAST_30_DAYS = 3;
+  METRICS_TIME_WINDOW_LAST_90_DAYS = 4;
 }
