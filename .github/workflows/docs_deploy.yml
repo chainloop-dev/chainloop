@@ -57,13 +57,3 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
       NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-
-  # Attest the uploaded artifacts listed in .chainloop.yaml
-  chainloop:
-    uses: chainloop-dev/labs/.github/workflows/chainloop.yml@main
-    needs: deploy_docs
-    secrets:
-      api_token: ${{ secrets.CHAINLOOP_ROBOT_ACCOUNT }}
-      signing_key: ${{ secrets.COSIGN_KEY }}
-      signing_key_password: ${{ secrets.COSIGN_PASSWORD }}
-      working_dir: docs
