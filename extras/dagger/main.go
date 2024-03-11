@@ -12,7 +12,78 @@ var (
 	chainloopVersion = "v0.75.2"
 )
 
-type Chainloop struct {}
+type Chainloop struct{}
+
+// A Chainloop attestation
+// https://docs.chainloop.dev/how-does-it-work/#contract-based-attestation
+type Attestation struct {
+	AttestationID string
+
+	repository *Directory
+
+	// +private
+	Token *Secret
+
+	// +private
+	RegistryAuth RegistryAuth
+}
+
+// Configuration for a container registry client
+type RegistryAuth struct {
+	// Address of the registry
+	Address string
+	// Username to use when authenticating to the registry
+	Username string
+	// Password to use when authenticating to the registry
+	Password *Secret
+}
+
+// Initialize a new attestation
+func (m *Chainloop) Init(
+	ctx context.Context,
+	// Chainloop API token
+	token *Secret,
+	// Workflow Contract revision, default is the latest
+	// +optional
+	contractRevision string,
+	// Path to the source repository to be attested
+	// +optional
+	repository *Directory,
+) (*Attestation, error) {
+	att := &Attestation{
+		Token:      token,
+		repository: repository,
+	}
+	// Append the contract revision to the args if provided
+	args := []string{
+		"attestation", "init", "--remote-state", "-o", "json",
+	}
+
+	if contractRevision != "" {
+		args = append(args,
+			"--contract-revision", contractRevision,
+		)
+	}
+
+	info, err := att.
+		Container(0).
+		WithExec(args).
+		Stdout(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("attestation init: %w", err)
+	}
+
+	var resp struct {
+		AttestationID string
+	}
+	if err := json.Unmarshal([]byte(info), &resp); err != nil {
+		return nil, fmt.Errorf("unmarshal attestation init response: %w", err)
+	}
+
+	att.AttestationID = resp.AttestationID
+
+	return att, nil
+}
 
 // Resume an attestation from its identifier
 func (m *Chainloop) Resume(
@@ -23,75 +94,8 @@ func (m *Chainloop) Resume(
 ) *Attestation {
 	return &Attestation{
 		AttestationID: attestationID,
-		Token: token,
+		Token:         token,
 	}
-}
-
-// Initialize a new attestation
-func (m *Chainloop) Init(
-	ctx context.Context,
-	// Workflow Contract revision, default is the latest
-	// +optional
-	contractRevision string,
-	// Path to the source repository to be attested
-	// +optional
-	source *Directory,
-	// Chainloop API token
-	// +optional
-	token *Secret,
-) (*Attestation, error) {
-	att := &Attestation{
-		Token: token,
-		Source: source,
-	}
-	// Append the contract revision to the args if provided
-	args := []string{
-		"attestation", "init", "--remote-state", "-o", "json",
-	}
-	if contractRevision != "" {
-		args = append(args,
-			"--contract-revision", contractRevision,
-		)
-	}
-	info, err := att.
-		Container(0).
-		WithExec(args).
-		Stdout(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("attestation init: %w", err)
-	}
-	var resp struct {
-		AttestationID string
-	}
-	if err := json.Unmarshal([]byte(info), &resp); err != nil {
-		return nil, fmt.Errorf("unmarshal attestation init response: %w", err)
-	}
-	att.AttestationID = resp.AttestationID
-	return att, nil
-}
-
-// A Chainloop attestation
-// https://docs.chainloop.dev/how-does-it-work/#contract-based-attestation
-type Attestation struct {
-	AttestationID string `json:"AttestationID"`
-
-	Source *Directory
-
-	// +private
-	Token *Secret
-
-	// +private
-	Registry RegistryClient
-}
-
-// Configuration for a container registry client
-type RegistryClient struct {
-	// Address of the registry
-	Address string
-	// Username to use when authenticating to the registry
-	Username string
-	// Password to use when authenticating to the registry
-	Password *Secret
 }
 
 // Check the attestation status
@@ -108,8 +112,9 @@ func (att *Attestation) Status(ctx context.Context) (string, error) {
 }
 
 // Attach credentials for a container registry.
-// Chainloop will use them to query the registry for container image material.
-func (att *Attestation) WithRegistry(
+// Chainloop will use them to query the registry for container image pieces of evidences
+func (att *Attestation) WithRegistryAuth(
+	_ context.Context,
 	// Registry address.
 	// Example: "index.docker.io"
 	address string,
@@ -118,20 +123,20 @@ func (att *Attestation) WithRegistry(
 	// Registry password
 	password *Secret,
 ) *Attestation {
-	att.Registry.Address = address
-	att.Registry.Username = username
-	att.Registry.Password = password
+	att.RegistryAuth.Address = address
+	att.RegistryAuth.Username = username
+	att.RegistryAuth.Password = password
 	return att
 }
 
-// Add a blob of text to the attestation
-func (att *Attestation) AddBlob(
+// Add a raw string piece of evidence to the attestation
+func (att *Attestation) AddRawEvidence(
 	ctx context.Context,
 	// Material name.
 	//   Example: "my-blob"
 	name string,
 	// The contents of the blob
-	contents string,
+	value string,
 ) (*Attestation, error) {
 	_, err := att.
 		Container(0).
@@ -140,30 +145,32 @@ func (att *Attestation) AddBlob(
 			"--remote-state",
 			"--attestation-id", att.AttestationID,
 			"--name", name,
-			"--value", contents,
+			"--value", value,
 		}).
 		Stdout(ctx)
 	return att, err
 }
 
-// Add a file to the attestation
-func (att *Attestation) AddFile(
+// Add a file type piece of evidence to the attestation
+func (att *Attestation) AddFileEvidence(
 	ctx context.Context,
-	// Material name.
+	// Evidence name.
 	//  Example: "my-binary"
 	name string,
 	// The file to add
-	file *File,
+	path *File,
 ) (*Attestation, error) {
-	filename, err := file.Name(ctx)
+	filename, err := path.Name(ctx)
 	if err != nil {
 		return att, err
 	}
+
 	mountPath := "/tmp/attestation/" + filename
+
 	_, err = att.
 		Container(0).
 		// Preserve the filename inside the container
-		WithFile(mountPath, file).
+		WithFile(mountPath, path).
 		WithExec([]string{
 			"attestation", "add",
 			"--remote-state",
@@ -172,13 +179,12 @@ func (att *Attestation) AddFile(
 			"--value", mountPath,
 		}).
 		Sync(ctx)
+
 	return att, err
 }
 
 func (att *Attestation) Debug() *Terminal {
-	return att.
-		Container(0).
-		Terminal()
+	return att.Container(0).Terminal()
 }
 
 // Build an ephemeral container with everything needed to process the attestation
@@ -194,23 +200,30 @@ func (att *Attestation) Container(
 		From(fmt.Sprintf("ghcr.io/chainloop-dev/chainloop/cli:%s", chainloopVersion)).
 		WithEntrypoint([]string{"/chainloop"}). // Be explicit to prepare for possible API change
 		WithEnvVariable("CHAINLOOP_DAGGER_CLIENT", chainloopVersion)
+
 	if att.Token != nil {
 		ctr = ctr.WithSecretVariable("CHAINLOOP_ROBOT_ACCOUNT", att.Token)
 	}
-	if att.Source != nil {
-		ctr = ctr.WithMountedDirectory(".", att.Source)
+
+	if att.repository != nil {
+		ctr = ctr.WithDirectory(".", att.repository)
 	}
-	if addr := att.Registry.Address; addr != "" {
+
+	if addr := att.RegistryAuth.Address; addr != "" {
 		ctr = ctr.WithEnvVariable("CHAINLOOP_REGISTRY_SERVER", addr)
 	}
-	if user := att.Registry.Username; user != "" {
+
+	if user := att.RegistryAuth.Username; user != "" {
 		ctr = ctr.WithEnvVariable("CHAINLOOP_REGISTRY_USERNAME", user)
 	}
-	if pw := att.Registry.Password; pw != nil {
+
+	if pw := att.RegistryAuth.Password; pw != nil {
 		ctr = ctr.WithSecretVariable("CHAINLOOP_REGISTRY_USERNAME", pw)
 	}
+
 	// Cache TTL
-	ctr = ctr.WithEnvVariable("DAGGER_CACHE_KEY", time.Now().Truncate(time.Duration(ttl) * time.Second).String())
+	ctr = ctr.WithEnvVariable("DAGGER_CACHE_KEY", time.Now().Truncate(time.Duration(ttl)*time.Second).String())
+
 	return ctr
 }
 
@@ -263,12 +276,15 @@ func (att *Attestation) reset(ctx context.Context,
 		"--remote-state",
 		"--attestation-id", att.AttestationID,
 	}
+
 	if reason != "" {
 		args = append(args, "--reason", reason)
 	}
+
 	if trigger != "" {
 		args = append(args, "--trigger", trigger)
 	}
+
 	_, err := att.
 		Container(0).
 		WithExec(args).

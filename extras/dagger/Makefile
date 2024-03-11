@@ -1,11 +1,11 @@
 .PHONY: module-init
 module-init:
 	# Generate dagger.gen.go and querybuilder required files 
-	dagger develop
+	dagger develop -m ../..
 
 .PHONY: lint
 lint: check-dagger-tool module-init
-	cd ./src && golangci-lint run
+	golangci-lint run
 
 .PHONY: check-dagger-tool
 check-dagger-tool:
