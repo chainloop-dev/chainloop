@@ -218,7 +218,7 @@ func (att *Attestation) Container(
 	}
 
 	if pw := att.RegistryAuth.Password; pw != nil {
-		ctr = ctr.WithSecretVariable("CHAINLOOP_REGISTRY_USERNAME", pw)
+		ctr = ctr.WithSecretVariable("CHAINLOOP_REGISTRY_PASSWORD", pw)
 	}
 
 	// Cache TTL
