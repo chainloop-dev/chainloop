@@ -74,7 +74,7 @@ func (s *WorkflowRunService) List(ctx context.Context, req *pb.WorkflowRunServic
 	}
 
 	p := req.GetPagination()
-	paginationOpts, err := pagination.New(p.GetCursor(), int(p.GetLimit()))
+	paginationOpts, err := pagination.NewCursor(p.GetCursor(), int(p.GetLimit()))
 	if err != nil {
 		return nil, errors.InternalServer("invalid", "invalid pagination options")
 	}
@@ -114,8 +114,8 @@ func (s *WorkflowRunService) List(ctx context.Context, req *pb.WorkflowRunServic
 	return &pb.WorkflowRunServiceListResponse{Result: result, Pagination: bizCursorToPb(nextCursor)}, nil
 }
 
-func bizCursorToPb(cursor string) *pb.PaginationResponse {
-	return &pb.PaginationResponse{NextCursor: cursor}
+func bizCursorToPb(cursor string) *pb.CursorPaginationResponse {
+	return &pb.CursorPaginationResponse{NextCursor: cursor}
 }
 
 const workflowRunEntity = "Workflow Run"

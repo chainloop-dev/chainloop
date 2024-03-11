@@ -3,32 +3,32 @@ import _m0 from "protobufjs/minimal";
 
 export const protobufPackage = "controlplane.v1";
 
-export interface PaginationResponse {
+export interface CursorPaginationResponse {
   nextCursor: string;
 }
 
-export interface PaginationRequest {
+export interface CursorPaginationRequest {
   cursor: string;
   /** Limit pagination to 100 */
   limit: number;
 }
 
-function createBasePaginationResponse(): PaginationResponse {
+function createBaseCursorPaginationResponse(): CursorPaginationResponse {
   return { nextCursor: "" };
 }
 
-export const PaginationResponse = {
-  encode(message: PaginationResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const CursorPaginationResponse = {
+  encode(message: CursorPaginationResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.nextCursor !== "") {
       writer.uint32(10).string(message.nextCursor);
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): PaginationResponse {
+  decode(input: _m0.Reader | Uint8Array, length?: number): CursorPaginationResponse {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePaginationResponse();
+    const message = createBaseCursorPaginationResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -48,33 +48,33 @@ export const PaginationResponse = {
     return message;
   },
 
-  fromJSON(object: any): PaginationResponse {
+  fromJSON(object: any): CursorPaginationResponse {
     return { nextCursor: isSet(object.nextCursor) ? String(object.nextCursor) : "" };
   },
 
-  toJSON(message: PaginationResponse): unknown {
+  toJSON(message: CursorPaginationResponse): unknown {
     const obj: any = {};
     message.nextCursor !== undefined && (obj.nextCursor = message.nextCursor);
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<PaginationResponse>, I>>(base?: I): PaginationResponse {
-    return PaginationResponse.fromPartial(base ?? {});
+  create<I extends Exact<DeepPartial<CursorPaginationResponse>, I>>(base?: I): CursorPaginationResponse {
+    return CursorPaginationResponse.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<PaginationResponse>, I>>(object: I): PaginationResponse {
-    const message = createBasePaginationResponse();
+  fromPartial<I extends Exact<DeepPartial<CursorPaginationResponse>, I>>(object: I): CursorPaginationResponse {
+    const message = createBaseCursorPaginationResponse();
     message.nextCursor = object.nextCursor ?? "";
     return message;
   },
 };
 
-function createBasePaginationRequest(): PaginationRequest {
+function createBaseCursorPaginationRequest(): CursorPaginationRequest {
   return { cursor: "", limit: 0 };
 }
 
-export const PaginationRequest = {
-  encode(message: PaginationRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const CursorPaginationRequest = {
+  encode(message: CursorPaginationRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.cursor !== "") {
       writer.uint32(10).string(message.cursor);
     }
@@ -84,10 +84,10 @@ export const PaginationRequest = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): PaginationRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): CursorPaginationRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePaginationRequest();
+    const message = createBaseCursorPaginationRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -114,26 +114,26 @@ export const PaginationRequest = {
     return message;
   },
 
-  fromJSON(object: any): PaginationRequest {
+  fromJSON(object: any): CursorPaginationRequest {
     return {
       cursor: isSet(object.cursor) ? String(object.cursor) : "",
       limit: isSet(object.limit) ? Number(object.limit) : 0,
     };
   },
 
-  toJSON(message: PaginationRequest): unknown {
+  toJSON(message: CursorPaginationRequest): unknown {
     const obj: any = {};
     message.cursor !== undefined && (obj.cursor = message.cursor);
     message.limit !== undefined && (obj.limit = Math.round(message.limit));
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<PaginationRequest>, I>>(base?: I): PaginationRequest {
-    return PaginationRequest.fromPartial(base ?? {});
+  create<I extends Exact<DeepPartial<CursorPaginationRequest>, I>>(base?: I): CursorPaginationRequest {
+    return CursorPaginationRequest.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<PaginationRequest>, I>>(object: I): PaginationRequest {
-    const message = createBasePaginationRequest();
+  fromPartial<I extends Exact<DeepPartial<CursorPaginationRequest>, I>>(object: I): CursorPaginationRequest {
+    const message = createBaseCursorPaginationRequest();
     message.cursor = object.cursor ?? "";
     message.limit = object.limit ?? 0;
     return message;

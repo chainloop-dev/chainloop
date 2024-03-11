@@ -79,7 +79,7 @@ func (s *workflowRunIntegrationTestSuite) TestList() {
 
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
-			got, _, err := s.WorkflowRun.List(context.Background(), s.org2.ID, tc.filters, &pagination.Options{Limit: 10})
+			got, _, err := s.WorkflowRun.List(context.Background(), s.org2.ID, tc.filters, &pagination.CursorOptions{Limit: 10})
 			if tc.wantErr {
 				s.Error(err)
 				return

@@ -142,16 +142,16 @@ func (_m *WorkflowRunRepo) FindByIDInOrg(ctx context.Context, orgID uuid.UUID, I
 }
 
 // List provides a mock function with given fields: ctx, orgID, f, p
-func (_m *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, f *biz.RunListFilters, p *pagination.Options) ([]*biz.WorkflowRun, string, error) {
+func (_m *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, f *biz.RunListFilters, p *pagination.CursorOptions) ([]*biz.WorkflowRun, string, error) {
 	ret := _m.Called(ctx, orgID, f, p)
 
 	var r0 []*biz.WorkflowRun
 	var r1 string
 	var r2 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, *biz.RunListFilters, *pagination.Options) ([]*biz.WorkflowRun, string, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, *biz.RunListFilters, *pagination.CursorOptions) ([]*biz.WorkflowRun, string, error)); ok {
 		return rf(ctx, orgID, f, p)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, *biz.RunListFilters, *pagination.Options) []*biz.WorkflowRun); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, *biz.RunListFilters, *pagination.CursorOptions) []*biz.WorkflowRun); ok {
 		r0 = rf(ctx, orgID, f, p)
 	} else {
 		if ret.Get(0) != nil {
@@ -159,13 +159,13 @@ func (_m *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, f *biz.Run
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, *biz.RunListFilters, *pagination.Options) string); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, *biz.RunListFilters, *pagination.CursorOptions) string); ok {
 		r1 = rf(ctx, orgID, f, p)
 	} else {
 		r1 = ret.Get(1).(string)
 	}
 
-	if rf, ok := ret.Get(2).(func(context.Context, uuid.UUID, *biz.RunListFilters, *pagination.Options) error); ok {
+	if rf, ok := ret.Get(2).(func(context.Context, uuid.UUID, *biz.RunListFilters, *pagination.CursorOptions) error); ok {
 		r2 = rf(ctx, orgID, f, p)
 	} else {
 		r2 = ret.Error(2)

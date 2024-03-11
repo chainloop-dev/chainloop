@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,18 +17,20 @@ syntax = "proto3";
 
 package controlplane.v1;
 
-option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
-
 import "validate/validate.proto";
 
-message PaginationResponse {
-  string next_cursor = 1; 
+option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
+
+message CursorPaginationResponse {
+  string next_cursor = 1;
 }
 
-message PaginationRequest {
+message CursorPaginationRequest {
   string cursor = 1;
   // Limit pagination to 100
-  int32 limit = 3 [(validate.rules).int32 = {ignore_empty: true, gte: 2, lte: 100}];;
+  int32 limit = 3 [(validate.rules).int32 = {
+    ignore_empty: true,
+    gte: 2,
+    lte: 100
+  }];
 }
-
-
