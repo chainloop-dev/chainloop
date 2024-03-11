@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -167,8 +167,24 @@ func loginHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) (int
 	// Wether the token should be short lived or not
 	setOauthCookie(w, cookieLongLived, r.URL.Query().Get(oauth.QueryParamLongLived))
 
-	url := svc.authenticator.AuthCodeURL(state)
-	http.Redirect(w, r, url, http.StatusFound)
+	authorizationURI := svc.authenticator.AuthCodeURL(state)
+
+	// Add the connection parameter to the authorization URL if needed
+	// ?connection is useful for example in auth0 to know which connection to use
+	// https://auth0.com/docs/api/authentication#login
+	connectionStr := r.URL.Query().Get(oauth.QueryParamAuth0Connection)
+	if connectionStr != "" {
+		uri, err := url.Parse(authorizationURI)
+		if err != nil {
+			return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
+		}
+		q := uri.Query()
+		q.Set("connection", connectionStr)
+		uri.RawQuery = q.Encode()
+		authorizationURI = uri.String()
+	}
+
+	http.Redirect(w, r, authorizationURI, http.StatusFound)
 	return http.StatusTemporaryRedirect, nil
 }
 

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package oauth
 const (
 	// URL query params used in the OAuth flow
 	// Shared in a parent module so both clients and servers can use them
-	QueryParamCallback  = "callback"
-	QueryParamLongLived = "long-lived"
+	QueryParamCallback        = "callback"
+	QueryParamLongLived       = "long-lived"
+	QueryParamAuth0Connection = "connection"
 )
