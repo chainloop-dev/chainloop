@@ -21,8 +21,9 @@ import (
 // IntegrationAttachmentUpdate is the builder for updating IntegrationAttachment entities.
 type IntegrationAttachmentUpdate struct {
 	config
-	hooks    []Hook
-	mutation *IntegrationAttachmentMutation
+	hooks     []Hook
+	mutation  *IntegrationAttachmentMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // Where appends a list predicates to the IntegrationAttachmentUpdate builder.
@@ -140,6 +141,12 @@ func (iau *IntegrationAttachmentUpdate) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (iau *IntegrationAttachmentUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *IntegrationAttachmentUpdate {
+	iau.modifiers = append(iau.modifiers, modifiers...)
+	return iau
+}
+
 func (iau *IntegrationAttachmentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := iau.check(); err != nil {
 		return n, err
@@ -222,6 +229,7 @@ func (iau *IntegrationAttachmentUpdate) sqlSave(ctx context.Context) (n int, err
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(iau.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, iau.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{integrationattachment.Label}
@@ -237,9 +245,10 @@ func (iau *IntegrationAttachmentUpdate) sqlSave(ctx context.Context) (n int, err
 // IntegrationAttachmentUpdateOne is the builder for updating a single IntegrationAttachment entity.
 type IntegrationAttachmentUpdateOne struct {
 	config
-	fields   []string
-	hooks    []Hook
-	mutation *IntegrationAttachmentMutation
+	fields    []string
+	hooks     []Hook
+	mutation  *IntegrationAttachmentMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // SetConfiguration sets the "configuration" field.
@@ -364,6 +373,12 @@ func (iauo *IntegrationAttachmentUpdateOne) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (iauo *IntegrationAttachmentUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *IntegrationAttachmentUpdateOne {
+	iauo.modifiers = append(iauo.modifiers, modifiers...)
+	return iauo
+}
+
 func (iauo *IntegrationAttachmentUpdateOne) sqlSave(ctx context.Context) (_node *IntegrationAttachment, err error) {
 	if err := iauo.check(); err != nil {
 		return _node, err
@@ -463,6 +478,7 @@ func (iauo *IntegrationAttachmentUpdateOne) sqlSave(ctx context.Context) (_node 
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(iauo.modifiers...)
 	_node = &IntegrationAttachment{config: iauo.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues

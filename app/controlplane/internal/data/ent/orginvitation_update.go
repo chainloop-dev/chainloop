@@ -23,8 +23,9 @@ import (
 // OrgInvitationUpdate is the builder for updating OrgInvitation entities.
 type OrgInvitationUpdate struct {
 	config
-	hooks    []Hook
-	mutation *OrgInvitationMutation
+	hooks     []Hook
+	mutation  *OrgInvitationMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // Where appends a list predicates to the OrgInvitationUpdate builder.
@@ -174,6 +175,12 @@ func (oiu *OrgInvitationUpdate) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (oiu *OrgInvitationUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *OrgInvitationUpdate {
+	oiu.modifiers = append(oiu.modifiers, modifiers...)
+	return oiu
+}
+
 func (oiu *OrgInvitationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := oiu.check(); err != nil {
 		return n, err
@@ -259,6 +266,7 @@ func (oiu *OrgInvitationUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(oiu.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, oiu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{orginvitation.Label}
@@ -274,9 +282,10 @@ func (oiu *OrgInvitationUpdate) sqlSave(ctx context.Context) (n int, err error) 
 // OrgInvitationUpdateOne is the builder for updating a single OrgInvitation entity.
 type OrgInvitationUpdateOne struct {
 	config
-	fields   []string
-	hooks    []Hook
-	mutation *OrgInvitationMutation
+	fields    []string
+	hooks     []Hook
+	mutation  *OrgInvitationMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // SetStatus sets the "status" field.
@@ -433,6 +442,12 @@ func (oiuo *OrgInvitationUpdateOne) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (oiuo *OrgInvitationUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *OrgInvitationUpdateOne {
+	oiuo.modifiers = append(oiuo.modifiers, modifiers...)
+	return oiuo
+}
+
 func (oiuo *OrgInvitationUpdateOne) sqlSave(ctx context.Context) (_node *OrgInvitation, err error) {
 	if err := oiuo.check(); err != nil {
 		return _node, err
@@ -535,6 +550,7 @@ func (oiuo *OrgInvitationUpdateOne) sqlSave(ctx context.Context) (_node *OrgInvi
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(oiuo.modifiers...)
 	_node = &OrgInvitation{config: oiuo.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues

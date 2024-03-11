@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	OrgMetricsService_Totals_FullMethodName                  = "/controlplane.v1.OrgMetricsService/Totals"
 	OrgMetricsService_TopWorkflowsByRunsCount_FullMethodName = "/controlplane.v1.OrgMetricsService/TopWorkflowsByRunsCount"
+	OrgMetricsService_DailyRunsCount_FullMethodName          = "/controlplane.v1.OrgMetricsService/DailyRunsCount"
 )
 
 // OrgMetricsServiceClient is the client API for OrgMetricsService service.
@@ -44,6 +45,7 @@ const (
 type OrgMetricsServiceClient interface {
 	Totals(ctx context.Context, in *OrgMetricsServiceTotalsRequest, opts ...grpc.CallOption) (*OrgMetricsServiceTotalsResponse, error)
 	TopWorkflowsByRunsCount(ctx context.Context, in *TopWorkflowsByRunsCountRequest, opts ...grpc.CallOption) (*TopWorkflowsByRunsCountResponse, error)
+	DailyRunsCount(ctx context.Context, in *DailyRunsCountRequest, opts ...grpc.CallOption) (*DailyRunsCountResponse, error)
 }
 
 type orgMetricsServiceClient struct {
@@ -72,12 +74,22 @@ func (c *orgMetricsServiceClient) TopWorkflowsByRunsCount(ctx context.Context, i
 	return out, nil
 }
 
+func (c *orgMetricsServiceClient) DailyRunsCount(ctx context.Context, in *DailyRunsCountRequest, opts ...grpc.CallOption) (*DailyRunsCountResponse, error) {
+	out := new(DailyRunsCountResponse)
+	err := c.cc.Invoke(ctx, OrgMetricsService_DailyRunsCount_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // OrgMetricsServiceServer is the server API for OrgMetricsService service.
 // All implementations must embed UnimplementedOrgMetricsServiceServer
 // for forward compatibility
 type OrgMetricsServiceServer interface {
 	Totals(context.Context, *OrgMetricsServiceTotalsRequest) (*OrgMetricsServiceTotalsResponse, error)
 	TopWorkflowsByRunsCount(context.Context, *TopWorkflowsByRunsCountRequest) (*TopWorkflowsByRunsCountResponse, error)
+	DailyRunsCount(context.Context, *DailyRunsCountRequest) (*DailyRunsCountResponse, error)
 	mustEmbedUnimplementedOrgMetricsServiceServer()
 }
 
@@ -90,6 +102,9 @@ func (UnimplementedOrgMetricsServiceServer) Totals(context.Context, *OrgMetricsS
 }
 func (UnimplementedOrgMetricsServiceServer) TopWorkflowsByRunsCount(context.Context, *TopWorkflowsByRunsCountRequest) (*TopWorkflowsByRunsCountResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TopWorkflowsByRunsCount not implemented")
+}
+func (UnimplementedOrgMetricsServiceServer) DailyRunsCount(context.Context, *DailyRunsCountRequest) (*DailyRunsCountResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DailyRunsCount not implemented")
 }
 func (UnimplementedOrgMetricsServiceServer) mustEmbedUnimplementedOrgMetricsServiceServer() {}
 
@@ -140,6 +155,24 @@ func _OrgMetricsService_TopWorkflowsByRunsCount_Handler(srv interface{}, ctx con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _OrgMetricsService_DailyRunsCount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DailyRunsCountRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrgMetricsServiceServer).DailyRunsCount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrgMetricsService_DailyRunsCount_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrgMetricsServiceServer).DailyRunsCount(ctx, req.(*DailyRunsCountRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // OrgMetricsService_ServiceDesc is the grpc.ServiceDesc for OrgMetricsService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -154,6 +187,10 @@ var OrgMetricsService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "TopWorkflowsByRunsCount",
 			Handler:    _OrgMetricsService_TopWorkflowsByRunsCount_Handler,
+		},
+		{
+			MethodName: "DailyRunsCount",
+			Handler:    _OrgMetricsService_DailyRunsCount_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

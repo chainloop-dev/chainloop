@@ -25,8 +25,9 @@ import (
 // WorkflowUpdate is the builder for updating Workflow entities.
 type WorkflowUpdate struct {
 	config
-	hooks    []Hook
-	mutation *WorkflowMutation
+	hooks     []Hook
+	mutation  *WorkflowMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // Where appends a list predicates to the WorkflowUpdate builder.
@@ -377,6 +378,12 @@ func (wu *WorkflowUpdate) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (wu *WorkflowUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *WorkflowUpdate {
+	wu.modifiers = append(wu.modifiers, modifiers...)
+	return wu
+}
+
 func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := wu.check(); err != nil {
 		return n, err
@@ -663,6 +670,7 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(wu.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, wu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{workflow.Label}
@@ -678,9 +686,10 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 // WorkflowUpdateOne is the builder for updating a single Workflow entity.
 type WorkflowUpdateOne struct {
 	config
-	fields   []string
-	hooks    []Hook
-	mutation *WorkflowMutation
+	fields    []string
+	hooks     []Hook
+	mutation  *WorkflowMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // SetName sets the "name" field.
@@ -1038,6 +1047,12 @@ func (wuo *WorkflowUpdateOne) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (wuo *WorkflowUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *WorkflowUpdateOne {
+	wuo.modifiers = append(wuo.modifiers, modifiers...)
+	return wuo
+}
+
 func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err error) {
 	if err := wuo.check(); err != nil {
 		return _node, err
@@ -1341,6 +1356,7 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(wuo.modifiers...)
 	_node = &Workflow{config: wuo.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues

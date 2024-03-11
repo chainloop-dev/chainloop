@@ -29,6 +29,7 @@ type CASMappingQuery struct {
 	withWorkflowRun  *WorkflowRunQuery
 	withOrganization *OrganizationQuery
 	withFKs          bool
+	modifiers        []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -465,6 +466,9 @@ func (cmq *CASMappingQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
+	if len(cmq.modifiers) > 0 {
+		_spec.Modifiers = cmq.modifiers
+	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
@@ -594,6 +598,9 @@ func (cmq *CASMappingQuery) loadOrganization(ctx context.Context, query *Organiz
 
 func (cmq *CASMappingQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := cmq.querySpec()
+	if len(cmq.modifiers) > 0 {
+		_spec.Modifiers = cmq.modifiers
+	}
 	_spec.Node.Columns = cmq.ctx.Fields
 	if len(cmq.ctx.Fields) > 0 {
 		_spec.Unique = cmq.ctx.Unique != nil && *cmq.ctx.Unique
@@ -656,6 +663,9 @@ func (cmq *CASMappingQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	if cmq.ctx.Unique != nil && *cmq.ctx.Unique {
 		selector.Distinct()
 	}
+	for _, m := range cmq.modifiers {
+		m(selector)
+	}
 	for _, p := range cmq.predicates {
 		p(selector)
 	}
@@ -671,6 +681,12 @@ func (cmq *CASMappingQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (cmq *CASMappingQuery) Modify(modifiers ...func(s *sql.Selector)) *CASMappingSelect {
+	cmq.modifiers = append(cmq.modifiers, modifiers...)
+	return cmq.Select()
 }
 
 // CASMappingGroupBy is the group-by builder for CASMapping entities.
@@ -761,4 +777,10 @@ func (cms *CASMappingSelect) sqlScan(ctx context.Context, root *CASMappingQuery,
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (cms *CASMappingSelect) Modify(modifiers ...func(s *sql.Selector)) *CASMappingSelect {
+	cms.modifiers = append(cms.modifiers, modifiers...)
+	return cms
 }

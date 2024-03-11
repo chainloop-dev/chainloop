@@ -28,6 +28,7 @@ type CASBackendQuery struct {
 	withOrganization *OrganizationQuery
 	withWorkflowRun  *WorkflowRunQuery
 	withFKs          bool
+	modifiers        []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -429,6 +430,9 @@ func (cbq *CASBackendQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
+	if len(cbq.modifiers) > 0 {
+		_spec.Modifiers = cbq.modifiers
+	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
@@ -550,6 +554,9 @@ func (cbq *CASBackendQuery) loadWorkflowRun(ctx context.Context, query *Workflow
 
 func (cbq *CASBackendQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := cbq.querySpec()
+	if len(cbq.modifiers) > 0 {
+		_spec.Modifiers = cbq.modifiers
+	}
 	_spec.Node.Columns = cbq.ctx.Fields
 	if len(cbq.ctx.Fields) > 0 {
 		_spec.Unique = cbq.ctx.Unique != nil && *cbq.ctx.Unique
@@ -612,6 +619,9 @@ func (cbq *CASBackendQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	if cbq.ctx.Unique != nil && *cbq.ctx.Unique {
 		selector.Distinct()
 	}
+	for _, m := range cbq.modifiers {
+		m(selector)
+	}
 	for _, p := range cbq.predicates {
 		p(selector)
 	}
@@ -627,6 +637,12 @@ func (cbq *CASBackendQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (cbq *CASBackendQuery) Modify(modifiers ...func(s *sql.Selector)) *CASBackendSelect {
+	cbq.modifiers = append(cbq.modifiers, modifiers...)
+	return cbq.Select()
 }
 
 // CASBackendGroupBy is the group-by builder for CASBackend entities.
@@ -717,4 +733,10 @@ func (cbs *CASBackendSelect) sqlScan(ctx context.Context, root *CASBackendQuery,
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (cbs *CASBackendSelect) Modify(modifiers ...func(s *sql.Selector)) *CASBackendSelect {
+	cbs.modifiers = append(cbs.modifiers, modifiers...)
+	return cbs
 }

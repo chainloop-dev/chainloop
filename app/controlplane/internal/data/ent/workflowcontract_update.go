@@ -22,8 +22,9 @@ import (
 // WorkflowContractUpdate is the builder for updating WorkflowContract entities.
 type WorkflowContractUpdate struct {
 	config
-	hooks    []Hook
-	mutation *WorkflowContractMutation
+	hooks     []Hook
+	mutation  *WorkflowContractMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // Where appends a list predicates to the WorkflowContractUpdate builder.
@@ -187,6 +188,12 @@ func (wcu *WorkflowContractUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (wcu *WorkflowContractUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *WorkflowContractUpdate {
+	wcu.modifiers = append(wcu.modifiers, modifiers...)
+	return wcu
+}
+
 func (wcu *WorkflowContractUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := sqlgraph.NewUpdateSpec(workflowcontract.Table, workflowcontract.Columns, sqlgraph.NewFieldSpec(workflowcontract.FieldID, field.TypeUUID))
 	if ps := wcu.mutation.predicates; len(ps) > 0 {
@@ -324,6 +331,7 @@ func (wcu *WorkflowContractUpdate) sqlSave(ctx context.Context) (n int, err erro
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(wcu.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, wcu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{workflowcontract.Label}
@@ -339,9 +347,10 @@ func (wcu *WorkflowContractUpdate) sqlSave(ctx context.Context) (n int, err erro
 // WorkflowContractUpdateOne is the builder for updating a single WorkflowContract entity.
 type WorkflowContractUpdateOne struct {
 	config
-	fields   []string
-	hooks    []Hook
-	mutation *WorkflowContractMutation
+	fields    []string
+	hooks     []Hook
+	mutation  *WorkflowContractMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // SetName sets the "name" field.
@@ -512,6 +521,12 @@ func (wcuo *WorkflowContractUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (wcuo *WorkflowContractUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *WorkflowContractUpdateOne {
+	wcuo.modifiers = append(wcuo.modifiers, modifiers...)
+	return wcuo
+}
+
 func (wcuo *WorkflowContractUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowContract, err error) {
 	_spec := sqlgraph.NewUpdateSpec(workflowcontract.Table, workflowcontract.Columns, sqlgraph.NewFieldSpec(workflowcontract.FieldID, field.TypeUUID))
 	id, ok := wcuo.mutation.ID()
@@ -666,6 +681,7 @@ func (wcuo *WorkflowContractUpdateOne) sqlSave(ctx context.Context) (_node *Work
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(wcuo.modifiers...)
 	_node = &WorkflowContract{config: wcuo.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues

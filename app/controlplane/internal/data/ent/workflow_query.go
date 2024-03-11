@@ -36,6 +36,7 @@ type WorkflowQuery struct {
 	withIntegrationAttachments *IntegrationAttachmentQuery
 	withReferrers              *ReferrerQuery
 	withFKs                    bool
+	modifiers                  []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -577,6 +578,9 @@ func (wq *WorkflowQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Wor
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
+	if len(wq.modifiers) > 0 {
+		_spec.Modifiers = wq.modifiers
+	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
@@ -849,6 +853,9 @@ func (wq *WorkflowQuery) loadReferrers(ctx context.Context, query *ReferrerQuery
 
 func (wq *WorkflowQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := wq.querySpec()
+	if len(wq.modifiers) > 0 {
+		_spec.Modifiers = wq.modifiers
+	}
 	_spec.Node.Columns = wq.ctx.Fields
 	if len(wq.ctx.Fields) > 0 {
 		_spec.Unique = wq.ctx.Unique != nil && *wq.ctx.Unique
@@ -914,6 +921,9 @@ func (wq *WorkflowQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	if wq.ctx.Unique != nil && *wq.ctx.Unique {
 		selector.Distinct()
 	}
+	for _, m := range wq.modifiers {
+		m(selector)
+	}
 	for _, p := range wq.predicates {
 		p(selector)
 	}
@@ -929,6 +939,12 @@ func (wq *WorkflowQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (wq *WorkflowQuery) Modify(modifiers ...func(s *sql.Selector)) *WorkflowSelect {
+	wq.modifiers = append(wq.modifiers, modifiers...)
+	return wq.Select()
 }
 
 // WorkflowGroupBy is the group-by builder for Workflow entities.
@@ -1019,4 +1035,10 @@ func (ws *WorkflowSelect) sqlScan(ctx context.Context, root *WorkflowQuery, v an
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (ws *WorkflowSelect) Modify(modifiers ...func(s *sql.Selector)) *WorkflowSelect {
+	ws.modifiers = append(ws.modifiers, modifiers...)
+	return ws
 }

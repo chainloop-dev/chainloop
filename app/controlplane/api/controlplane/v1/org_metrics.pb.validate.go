@@ -17,6 +17,8 @@ import (
 	"unicode/utf8"
 
 	"google.golang.org/protobuf/types/known/anypb"
+
+	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 )
 
 // ensure the imports are used
@@ -33,7 +35,289 @@ var (
 	_ = (*mail.Address)(nil)
 	_ = anypb.Any{}
 	_ = sort.Sort
+
+	_ = v1.CraftingSchema_Runner_RunnerType(0)
 )
+
+// define the regex for a UUID once up-front
+var _org_metrics_uuidPattern = regexp.MustCompile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+
+// Validate checks the field values on DailyRunsCountRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *DailyRunsCountRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DailyRunsCountRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DailyRunsCountRequestMultiError, or nil if none found.
+func (m *DailyRunsCountRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DailyRunsCountRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if _, ok := _DailyRunsCountRequest_TimeWindow_NotInLookup[m.GetTimeWindow()]; ok {
+		err := DailyRunsCountRequestValidationError{
+			field:  "TimeWindow",
+			reason: "value must not be in list [METRICS_TIME_WINDOW_UNSPECIFIED]",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.WorkflowId != nil {
+
+		if err := m._validateUuid(m.GetWorkflowId()); err != nil {
+			err = DailyRunsCountRequestValidationError{
+				field:  "WorkflowId",
+				reason: "value must be a valid UUID",
+				cause:  err,
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return DailyRunsCountRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *DailyRunsCountRequest) _validateUuid(uuid string) error {
+	if matched := _org_metrics_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
+	}
+
+	return nil
+}
+
+// DailyRunsCountRequestMultiError is an error wrapping multiple validation
+// errors returned by DailyRunsCountRequest.ValidateAll() if the designated
+// constraints aren't met.
+type DailyRunsCountRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DailyRunsCountRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DailyRunsCountRequestMultiError) AllErrors() []error { return m }
+
+// DailyRunsCountRequestValidationError is the validation error returned by
+// DailyRunsCountRequest.Validate if the designated constraints aren't met.
+type DailyRunsCountRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DailyRunsCountRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DailyRunsCountRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DailyRunsCountRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DailyRunsCountRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DailyRunsCountRequestValidationError) ErrorName() string {
+	return "DailyRunsCountRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DailyRunsCountRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDailyRunsCountRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DailyRunsCountRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DailyRunsCountRequestValidationError{}
+
+var _DailyRunsCountRequest_TimeWindow_NotInLookup = map[MetricsTimeWindow]struct{}{
+	0: {},
+}
+
+// Validate checks the field values on DailyRunsCountResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *DailyRunsCountResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DailyRunsCountResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DailyRunsCountResponseMultiError, or nil if none found.
+func (m *DailyRunsCountResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DailyRunsCountResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetResult() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, DailyRunsCountResponseValidationError{
+						field:  fmt.Sprintf("Result[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, DailyRunsCountResponseValidationError{
+						field:  fmt.Sprintf("Result[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return DailyRunsCountResponseValidationError{
+					field:  fmt.Sprintf("Result[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return DailyRunsCountResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// DailyRunsCountResponseMultiError is an error wrapping multiple validation
+// errors returned by DailyRunsCountResponse.ValidateAll() if the designated
+// constraints aren't met.
+type DailyRunsCountResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DailyRunsCountResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DailyRunsCountResponseMultiError) AllErrors() []error { return m }
+
+// DailyRunsCountResponseValidationError is the validation error returned by
+// DailyRunsCountResponse.Validate if the designated constraints aren't met.
+type DailyRunsCountResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DailyRunsCountResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DailyRunsCountResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DailyRunsCountResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DailyRunsCountResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DailyRunsCountResponseValidationError) ErrorName() string {
+	return "DailyRunsCountResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DailyRunsCountResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDailyRunsCountResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DailyRunsCountResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DailyRunsCountResponseValidationError{}
 
 // Validate checks the field values on OrgMetricsServiceTotalsRequest with the
 // rules defined in the proto definition for this message. If any rules are
@@ -152,6 +436,350 @@ var _ interface {
 var _OrgMetricsServiceTotalsRequest_TimeWindow_NotInLookup = map[MetricsTimeWindow]struct{}{
 	0: {},
 }
+
+// Validate checks the field values on OrgMetricsServiceTotalsResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *OrgMetricsServiceTotalsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on OrgMetricsServiceTotalsResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// OrgMetricsServiceTotalsResponseMultiError, or nil if none found.
+func (m *OrgMetricsServiceTotalsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *OrgMetricsServiceTotalsResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetResult()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, OrgMetricsServiceTotalsResponseValidationError{
+					field:  "Result",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, OrgMetricsServiceTotalsResponseValidationError{
+					field:  "Result",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetResult()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return OrgMetricsServiceTotalsResponseValidationError{
+				field:  "Result",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return OrgMetricsServiceTotalsResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// OrgMetricsServiceTotalsResponseMultiError is an error wrapping multiple
+// validation errors returned by OrgMetricsServiceTotalsResponse.ValidateAll()
+// if the designated constraints aren't met.
+type OrgMetricsServiceTotalsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m OrgMetricsServiceTotalsResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m OrgMetricsServiceTotalsResponseMultiError) AllErrors() []error { return m }
+
+// OrgMetricsServiceTotalsResponseValidationError is the validation error
+// returned by OrgMetricsServiceTotalsResponse.Validate if the designated
+// constraints aren't met.
+type OrgMetricsServiceTotalsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e OrgMetricsServiceTotalsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e OrgMetricsServiceTotalsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e OrgMetricsServiceTotalsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e OrgMetricsServiceTotalsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e OrgMetricsServiceTotalsResponseValidationError) ErrorName() string {
+	return "OrgMetricsServiceTotalsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e OrgMetricsServiceTotalsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sOrgMetricsServiceTotalsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = OrgMetricsServiceTotalsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = OrgMetricsServiceTotalsResponseValidationError{}
+
+// Validate checks the field values on MetricsStatusCount with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MetricsStatusCount) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MetricsStatusCount with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// MetricsStatusCountMultiError, or nil if none found.
+func (m *MetricsStatusCount) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MetricsStatusCount) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Count
+
+	// no validation rules for Status
+
+	if len(errors) > 0 {
+		return MetricsStatusCountMultiError(errors)
+	}
+
+	return nil
+}
+
+// MetricsStatusCountMultiError is an error wrapping multiple validation errors
+// returned by MetricsStatusCount.ValidateAll() if the designated constraints
+// aren't met.
+type MetricsStatusCountMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MetricsStatusCountMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MetricsStatusCountMultiError) AllErrors() []error { return m }
+
+// MetricsStatusCountValidationError is the validation error returned by
+// MetricsStatusCount.Validate if the designated constraints aren't met.
+type MetricsStatusCountValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MetricsStatusCountValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MetricsStatusCountValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MetricsStatusCountValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MetricsStatusCountValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MetricsStatusCountValidationError) ErrorName() string {
+	return "MetricsStatusCountValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MetricsStatusCountValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMetricsStatusCount.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MetricsStatusCountValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MetricsStatusCountValidationError{}
+
+// Validate checks the field values on MetricsRunnerCount with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MetricsRunnerCount) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MetricsRunnerCount with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// MetricsRunnerCountMultiError, or nil if none found.
+func (m *MetricsRunnerCount) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MetricsRunnerCount) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Count
+
+	// no validation rules for RunnerType
+
+	if len(errors) > 0 {
+		return MetricsRunnerCountMultiError(errors)
+	}
+
+	return nil
+}
+
+// MetricsRunnerCountMultiError is an error wrapping multiple validation errors
+// returned by MetricsRunnerCount.ValidateAll() if the designated constraints
+// aren't met.
+type MetricsRunnerCountMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MetricsRunnerCountMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MetricsRunnerCountMultiError) AllErrors() []error { return m }
+
+// MetricsRunnerCountValidationError is the validation error returned by
+// MetricsRunnerCount.Validate if the designated constraints aren't met.
+type MetricsRunnerCountValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MetricsRunnerCountValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MetricsRunnerCountValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MetricsRunnerCountValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MetricsRunnerCountValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MetricsRunnerCountValidationError) ErrorName() string {
+	return "MetricsRunnerCountValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MetricsRunnerCountValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMetricsRunnerCount.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MetricsRunnerCountValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MetricsRunnerCountValidationError{}
 
 // Validate checks the field values on TopWorkflowsByRunsCountRequest with the
 // rules defined in the proto definition for this message. If any rules are
@@ -419,51 +1047,54 @@ var _ interface {
 	ErrorName() string
 } = TopWorkflowsByRunsCountResponseValidationError{}
 
-// Validate checks the field values on OrgMetricsServiceTotalsResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *OrgMetricsServiceTotalsResponse) Validate() error {
+// Validate checks the field values on DailyRunsCountResponse_TotalByDay with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *DailyRunsCountResponse_TotalByDay) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on OrgMetricsServiceTotalsResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// OrgMetricsServiceTotalsResponseMultiError, or nil if none found.
-func (m *OrgMetricsServiceTotalsResponse) ValidateAll() error {
+// ValidateAll checks the field values on DailyRunsCountResponse_TotalByDay
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// DailyRunsCountResponse_TotalByDayMultiError, or nil if none found.
+func (m *DailyRunsCountResponse_TotalByDay) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *OrgMetricsServiceTotalsResponse) validate(all bool) error {
+func (m *DailyRunsCountResponse_TotalByDay) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
 	var errors []error
 
+	// no validation rules for Date
+
 	if all {
-		switch v := interface{}(m.GetResult()).(type) {
+		switch v := interface{}(m.GetMetrics()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, OrgMetricsServiceTotalsResponseValidationError{
-					field:  "Result",
+				errors = append(errors, DailyRunsCountResponse_TotalByDayValidationError{
+					field:  "Metrics",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, OrgMetricsServiceTotalsResponseValidationError{
-					field:  "Result",
+				errors = append(errors, DailyRunsCountResponse_TotalByDayValidationError{
+					field:  "Metrics",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetResult()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetMetrics()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return OrgMetricsServiceTotalsResponseValidationError{
-				field:  "Result",
+			return DailyRunsCountResponse_TotalByDayValidationError{
+				field:  "Metrics",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -471,19 +1102,20 @@ func (m *OrgMetricsServiceTotalsResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return OrgMetricsServiceTotalsResponseMultiError(errors)
+		return DailyRunsCountResponse_TotalByDayMultiError(errors)
 	}
 
 	return nil
 }
 
-// OrgMetricsServiceTotalsResponseMultiError is an error wrapping multiple
-// validation errors returned by OrgMetricsServiceTotalsResponse.ValidateAll()
-// if the designated constraints aren't met.
-type OrgMetricsServiceTotalsResponseMultiError []error
+// DailyRunsCountResponse_TotalByDayMultiError is an error wrapping multiple
+// validation errors returned by
+// DailyRunsCountResponse_TotalByDay.ValidateAll() if the designated
+// constraints aren't met.
+type DailyRunsCountResponse_TotalByDayMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m OrgMetricsServiceTotalsResponseMultiError) Error() string {
+func (m DailyRunsCountResponse_TotalByDayMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -492,12 +1124,12 @@ func (m OrgMetricsServiceTotalsResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m OrgMetricsServiceTotalsResponseMultiError) AllErrors() []error { return m }
+func (m DailyRunsCountResponse_TotalByDayMultiError) AllErrors() []error { return m }
 
-// OrgMetricsServiceTotalsResponseValidationError is the validation error
-// returned by OrgMetricsServiceTotalsResponse.Validate if the designated
+// DailyRunsCountResponse_TotalByDayValidationError is the validation error
+// returned by DailyRunsCountResponse_TotalByDay.Validate if the designated
 // constraints aren't met.
-type OrgMetricsServiceTotalsResponseValidationError struct {
+type DailyRunsCountResponse_TotalByDayValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -505,24 +1137,24 @@ type OrgMetricsServiceTotalsResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e OrgMetricsServiceTotalsResponseValidationError) Field() string { return e.field }
+func (e DailyRunsCountResponse_TotalByDayValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e OrgMetricsServiceTotalsResponseValidationError) Reason() string { return e.reason }
+func (e DailyRunsCountResponse_TotalByDayValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e OrgMetricsServiceTotalsResponseValidationError) Cause() error { return e.cause }
+func (e DailyRunsCountResponse_TotalByDayValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e OrgMetricsServiceTotalsResponseValidationError) Key() bool { return e.key }
+func (e DailyRunsCountResponse_TotalByDayValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e OrgMetricsServiceTotalsResponseValidationError) ErrorName() string {
-	return "OrgMetricsServiceTotalsResponseValidationError"
+func (e DailyRunsCountResponse_TotalByDayValidationError) ErrorName() string {
+	return "DailyRunsCountResponse_TotalByDayValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e OrgMetricsServiceTotalsResponseValidationError) Error() string {
+func (e DailyRunsCountResponse_TotalByDayValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -534,14 +1166,14 @@ func (e OrgMetricsServiceTotalsResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sOrgMetricsServiceTotalsResponse.%s: %s%s",
+		"invalid %sDailyRunsCountResponse_TotalByDay.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = OrgMetricsServiceTotalsResponseValidationError{}
+var _ error = DailyRunsCountResponse_TotalByDayValidationError{}
 
 var _ interface {
 	Field() string
@@ -549,7 +1181,183 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = OrgMetricsServiceTotalsResponseValidationError{}
+} = DailyRunsCountResponse_TotalByDayValidationError{}
+
+// Validate checks the field values on OrgMetricsServiceTotalsResponse_Result
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *OrgMetricsServiceTotalsResponse_Result) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// OrgMetricsServiceTotalsResponse_Result with the rules defined in the proto
+// definition for this message. If any rules are violated, the result is a
+// list of violation errors wrapped in
+// OrgMetricsServiceTotalsResponse_ResultMultiError, or nil if none found.
+func (m *OrgMetricsServiceTotalsResponse_Result) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *OrgMetricsServiceTotalsResponse_Result) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for RunsTotal
+
+	for idx, item := range m.GetRunsTotalByStatus() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, OrgMetricsServiceTotalsResponse_ResultValidationError{
+						field:  fmt.Sprintf("RunsTotalByStatus[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, OrgMetricsServiceTotalsResponse_ResultValidationError{
+						field:  fmt.Sprintf("RunsTotalByStatus[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return OrgMetricsServiceTotalsResponse_ResultValidationError{
+					field:  fmt.Sprintf("RunsTotalByStatus[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	for idx, item := range m.GetRunsTotalByRunnerType() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, OrgMetricsServiceTotalsResponse_ResultValidationError{
+						field:  fmt.Sprintf("RunsTotalByRunnerType[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, OrgMetricsServiceTotalsResponse_ResultValidationError{
+						field:  fmt.Sprintf("RunsTotalByRunnerType[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return OrgMetricsServiceTotalsResponse_ResultValidationError{
+					field:  fmt.Sprintf("RunsTotalByRunnerType[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return OrgMetricsServiceTotalsResponse_ResultMultiError(errors)
+	}
+
+	return nil
+}
+
+// OrgMetricsServiceTotalsResponse_ResultMultiError is an error wrapping
+// multiple validation errors returned by
+// OrgMetricsServiceTotalsResponse_Result.ValidateAll() if the designated
+// constraints aren't met.
+type OrgMetricsServiceTotalsResponse_ResultMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m OrgMetricsServiceTotalsResponse_ResultMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m OrgMetricsServiceTotalsResponse_ResultMultiError) AllErrors() []error { return m }
+
+// OrgMetricsServiceTotalsResponse_ResultValidationError is the validation
+// error returned by OrgMetricsServiceTotalsResponse_Result.Validate if the
+// designated constraints aren't met.
+type OrgMetricsServiceTotalsResponse_ResultValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e OrgMetricsServiceTotalsResponse_ResultValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e OrgMetricsServiceTotalsResponse_ResultValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e OrgMetricsServiceTotalsResponse_ResultValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e OrgMetricsServiceTotalsResponse_ResultValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e OrgMetricsServiceTotalsResponse_ResultValidationError) ErrorName() string {
+	return "OrgMetricsServiceTotalsResponse_ResultValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e OrgMetricsServiceTotalsResponse_ResultValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sOrgMetricsServiceTotalsResponse_Result.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = OrgMetricsServiceTotalsResponse_ResultValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = OrgMetricsServiceTotalsResponse_ResultValidationError{}
 
 // Validate checks the field values on
 // TopWorkflowsByRunsCountResponse_TotalByStatus with the rules defined in the
@@ -604,7 +1412,39 @@ func (m *TopWorkflowsByRunsCountResponse_TotalByStatus) validate(all bool) error
 		}
 	}
 
-	// no validation rules for RunsTotalByStatus
+	for idx, item := range m.GetRunsTotalByStatus() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, TopWorkflowsByRunsCountResponse_TotalByStatusValidationError{
+						field:  fmt.Sprintf("RunsTotalByStatus[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, TopWorkflowsByRunsCountResponse_TotalByStatusValidationError{
+						field:  fmt.Sprintf("RunsTotalByStatus[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return TopWorkflowsByRunsCountResponse_TotalByStatusValidationError{
+					field:  fmt.Sprintf("RunsTotalByStatus[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	if len(errors) > 0 {
 		return TopWorkflowsByRunsCountResponse_TotalByStatusMultiError(errors)
@@ -690,115 +1530,3 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = TopWorkflowsByRunsCountResponse_TotalByStatusValidationError{}
-
-// Validate checks the field values on OrgMetricsServiceTotalsResponse_Result
-// with the rules defined in the proto definition for this message. If any
-// rules are violated, the first error encountered is returned, or nil if
-// there are no violations.
-func (m *OrgMetricsServiceTotalsResponse_Result) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on
-// OrgMetricsServiceTotalsResponse_Result with the rules defined in the proto
-// definition for this message. If any rules are violated, the result is a
-// list of violation errors wrapped in
-// OrgMetricsServiceTotalsResponse_ResultMultiError, or nil if none found.
-func (m *OrgMetricsServiceTotalsResponse_Result) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *OrgMetricsServiceTotalsResponse_Result) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for RunsTotal
-
-	// no validation rules for RunsTotalByStatus
-
-	// no validation rules for RunsTotalByRunnerType
-
-	if len(errors) > 0 {
-		return OrgMetricsServiceTotalsResponse_ResultMultiError(errors)
-	}
-
-	return nil
-}
-
-// OrgMetricsServiceTotalsResponse_ResultMultiError is an error wrapping
-// multiple validation errors returned by
-// OrgMetricsServiceTotalsResponse_Result.ValidateAll() if the designated
-// constraints aren't met.
-type OrgMetricsServiceTotalsResponse_ResultMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m OrgMetricsServiceTotalsResponse_ResultMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m OrgMetricsServiceTotalsResponse_ResultMultiError) AllErrors() []error { return m }
-
-// OrgMetricsServiceTotalsResponse_ResultValidationError is the validation
-// error returned by OrgMetricsServiceTotalsResponse_Result.Validate if the
-// designated constraints aren't met.
-type OrgMetricsServiceTotalsResponse_ResultValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e OrgMetricsServiceTotalsResponse_ResultValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e OrgMetricsServiceTotalsResponse_ResultValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e OrgMetricsServiceTotalsResponse_ResultValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e OrgMetricsServiceTotalsResponse_ResultValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e OrgMetricsServiceTotalsResponse_ResultValidationError) ErrorName() string {
-	return "OrgMetricsServiceTotalsResponse_ResultValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e OrgMetricsServiceTotalsResponse_ResultValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sOrgMetricsServiceTotalsResponse_Result.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = OrgMetricsServiceTotalsResponse_ResultValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = OrgMetricsServiceTotalsResponse_ResultValidationError{}

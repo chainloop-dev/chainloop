@@ -32,6 +32,7 @@ type WorkflowRunQuery struct {
 	withContractVersion *WorkflowContractVersionQuery
 	withCasBackends     *CASBackendQuery
 	withFKs             bool
+	modifiers           []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -503,6 +504,9 @@ func (wrq *WorkflowRunQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
+	if len(wrq.modifiers) > 0 {
+		_spec.Modifiers = wrq.modifiers
+	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
@@ -700,6 +704,9 @@ func (wrq *WorkflowRunQuery) loadCasBackends(ctx context.Context, query *CASBack
 
 func (wrq *WorkflowRunQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := wrq.querySpec()
+	if len(wrq.modifiers) > 0 {
+		_spec.Modifiers = wrq.modifiers
+	}
 	_spec.Node.Columns = wrq.ctx.Fields
 	if len(wrq.ctx.Fields) > 0 {
 		_spec.Unique = wrq.ctx.Unique != nil && *wrq.ctx.Unique
@@ -762,6 +769,9 @@ func (wrq *WorkflowRunQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	if wrq.ctx.Unique != nil && *wrq.ctx.Unique {
 		selector.Distinct()
 	}
+	for _, m := range wrq.modifiers {
+		m(selector)
+	}
 	for _, p := range wrq.predicates {
 		p(selector)
 	}
@@ -777,6 +787,12 @@ func (wrq *WorkflowRunQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (wrq *WorkflowRunQuery) Modify(modifiers ...func(s *sql.Selector)) *WorkflowRunSelect {
+	wrq.modifiers = append(wrq.modifiers, modifiers...)
+	return wrq.Select()
 }
 
 // WorkflowRunGroupBy is the group-by builder for WorkflowRun entities.
@@ -867,4 +883,10 @@ func (wrs *WorkflowRunSelect) sqlScan(ctx context.Context, root *WorkflowRunQuer
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (wrs *WorkflowRunSelect) Modify(modifiers ...func(s *sql.Selector)) *WorkflowRunSelect {
+	wrs.modifiers = append(wrs.modifiers, modifiers...)
+	return wrs
 }

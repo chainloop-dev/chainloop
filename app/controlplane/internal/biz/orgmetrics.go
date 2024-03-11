@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,6 +35,17 @@ type OrgMetricsRepo interface {
 	RunsByStatusTotal(ctx context.Context, orgID uuid.UUID, timeWindow time.Duration) (map[string]int32, error)
 	RunsByRunnerTypeTotal(ctx context.Context, orgID uuid.UUID, timeWindow time.Duration) (map[string]int32, error)
 	TopWorkflowsByRunsCount(ctx context.Context, orgID uuid.UUID, numWorkflows int, timeWindow time.Duration) ([]*TopWorkflowsByRunsCountItem, error)
+	DailyRunsCount(ctx context.Context, orgID, workflowID uuid.UUID, timeWindow time.Duration) ([]*DayRunsCount, error)
+}
+
+type DayRunsCount struct {
+	Date   time.Time
+	Totals []*ByStatusCount
+}
+
+type ByStatusCount struct {
+	Status string
+	Count  int32
 }
 
 func NewOrgMetricsUseCase(r OrgMetricsRepo, l log.Logger) (*OrgMetricsUseCase, error) {
@@ -66,6 +77,25 @@ func (uc *OrgMetricsUseCase) RunsTotalByRunnerType(ctx context.Context, orgID st
 	}
 
 	return uc.repo.RunsByRunnerTypeTotal(ctx, orgUUID, timeWindow)
+}
+
+// DailyRunsCount returns the number of runs per day within the provided time window (from now)
+// Optionally filtered by workflowID
+func (uc *OrgMetricsUseCase) DailyRunsCount(ctx context.Context, orgID string, workflowID *string, timeWindow time.Duration) ([]*DayRunsCount, error) {
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	var workflowUUID uuid.UUID
+	if workflowID != nil {
+		workflowUUID, err = uuid.Parse(*workflowID)
+		if err != nil {
+			return nil, NewErrInvalidUUID(err)
+		}
+	}
+
+	return uc.repo.DailyRunsCount(ctx, orgUUID, workflowUUID, timeWindow)
 }
 
 type TopWorkflowsByRunsCountItem struct {

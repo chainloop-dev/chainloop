@@ -22,8 +22,9 @@ import (
 // CASBackendUpdate is the builder for updating CASBackend entities.
 type CASBackendUpdate struct {
 	config
-	hooks    []Hook
-	mutation *CASBackendMutation
+	hooks     []Hook
+	mutation  *CASBackendMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // Where appends a list predicates to the CASBackendUpdate builder.
@@ -218,6 +219,12 @@ func (cbu *CASBackendUpdate) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (cbu *CASBackendUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *CASBackendUpdate {
+	cbu.modifiers = append(cbu.modifiers, modifiers...)
+	return cbu
+}
+
 func (cbu *CASBackendUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := cbu.check(); err != nil {
 		return n, err
@@ -328,6 +335,7 @@ func (cbu *CASBackendUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(cbu.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, cbu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{casbackend.Label}
@@ -343,9 +351,10 @@ func (cbu *CASBackendUpdate) sqlSave(ctx context.Context) (n int, err error) {
 // CASBackendUpdateOne is the builder for updating a single CASBackend entity.
 type CASBackendUpdateOne struct {
 	config
-	fields   []string
-	hooks    []Hook
-	mutation *CASBackendMutation
+	fields    []string
+	hooks     []Hook
+	mutation  *CASBackendMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // SetDescription sets the "description" field.
@@ -547,6 +556,12 @@ func (cbuo *CASBackendUpdateOne) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (cbuo *CASBackendUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *CASBackendUpdateOne {
+	cbuo.modifiers = append(cbuo.modifiers, modifiers...)
+	return cbuo
+}
+
 func (cbuo *CASBackendUpdateOne) sqlSave(ctx context.Context) (_node *CASBackend, err error) {
 	if err := cbuo.check(); err != nil {
 		return _node, err
@@ -674,6 +689,7 @@ func (cbuo *CASBackendUpdateOne) sqlSave(ctx context.Context) (_node *CASBackend
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(cbuo.modifiers...)
 	_node = &CASBackend{config: cbuo.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues

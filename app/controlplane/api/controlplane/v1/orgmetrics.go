@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,13 +20,22 @@ import "time"
 func (tw MetricsTimeWindow) ToDuration() *time.Duration {
 	var d time.Duration
 
+	var (
+		day     = 24 * time.Hour
+		week    = 7 * day
+		month   = 30 * day
+		quarter = 3 * month
+	)
+
 	switch tw {
+	case MetricsTimeWindow_METRICS_TIME_WINDOW_LAST_90_DAYS:
+		d = quarter
 	case MetricsTimeWindow_METRICS_TIME_WINDOW_LAST_30_DAYS:
-		d = 30 * 24 * time.Hour
+		d = month
 	case MetricsTimeWindow_METRICS_TIME_WINDOW_LAST_7_DAYS:
-		d = 7 * 24 * time.Hour
+		d = week
 	case MetricsTimeWindow_METRICS_TIME_WINDOW_LAST_DAY:
-		d = 24 * time.Hour
+		d = day
 	}
 
 	return &d

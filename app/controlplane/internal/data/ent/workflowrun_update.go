@@ -25,8 +25,9 @@ import (
 // WorkflowRunUpdate is the builder for updating WorkflowRun entities.
 type WorkflowRunUpdate struct {
 	config
-	hooks    []Hook
-	mutation *WorkflowRunMutation
+	hooks     []Hook
+	mutation  *WorkflowRunMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // Where appends a list predicates to the WorkflowRunUpdate builder.
@@ -352,6 +353,12 @@ func (wru *WorkflowRunUpdate) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (wru *WorkflowRunUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *WorkflowRunUpdate {
+	wru.modifiers = append(wru.modifiers, modifiers...)
+	return wru
+}
+
 func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := wru.check(); err != nil {
 		return n, err
@@ -553,6 +560,7 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(wru.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, wru.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{workflowrun.Label}
@@ -568,9 +576,10 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 // WorkflowRunUpdateOne is the builder for updating a single WorkflowRun entity.
 type WorkflowRunUpdateOne struct {
 	config
-	fields   []string
-	hooks    []Hook
-	mutation *WorkflowRunMutation
+	fields    []string
+	hooks     []Hook
+	mutation  *WorkflowRunMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // SetFinishedAt sets the "finished_at" field.
@@ -903,6 +912,12 @@ func (wruo *WorkflowRunUpdateOne) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (wruo *WorkflowRunUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *WorkflowRunUpdateOne {
+	wruo.modifiers = append(wruo.modifiers, modifiers...)
+	return wruo
+}
+
 func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowRun, err error) {
 	if err := wruo.check(); err != nil {
 		return _node, err
@@ -1121,6 +1136,7 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(wruo.modifiers...)
 	_node = &WorkflowRun{config: wruo.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
