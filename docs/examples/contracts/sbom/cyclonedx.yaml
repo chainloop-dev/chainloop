@@ -1,0 +1,7 @@
+schemaVersion: v1
+materials:
+  # SBOMs will be uploaded to the CAS Backend of your choice, such as an OCI registry and referenced in the attestation
+  # Additionally they can be sent to any downstream integration for analysis
+  # i.e https://docs.chainloop.dev/guides/dependency-track/
+  - type: SBOM_CYCLONEDX_JSON
+    name: skynet-sbom

@@ -1,0 +1,5 @@
+# Empty Chainloop contract valid for a workflow run in a Azure Pipeline
+schemaVersion: "v1"
+# See https://docs.chainloop.dev/reference/operator/contract#runner-context
+runner:
+  type: "AZURE_PIPELINE"

@@ -1,0 +1,13 @@
+schemaVersion: v1
+
+# Require both a container image reference and a CycloneDX SBOM with the attestation happening in Gitlab
+materials:
+  - type: CONTAINER_IMAGE
+    name: image
+    output: true
+
+  - type: SBOM_CYCLONEDX_JSON
+    name: sbom
+
+runner:
+  type: "GITLAB_PIPELINE"

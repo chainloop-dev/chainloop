@@ -1,0 +1,86 @@
+# Example of GitHub action that 
+# - Builds a go binary and associated container image using go-releaser
+# - Extract a CycloneDX SBOM using Syft
+# - Stores the required materials stated in this Chainloop contract
+#   https://github.com/chainloop-dev/chainloop/blob/main/docs/examples/contracts/skynet/contract.yaml
+# - Pushes the resulting attestation to the control plane
+name: Release
+on:
+  push:
+    tags:
+      - "v*.*.*"
+jobs:
+  release:
+    env:
+      # Version of Chainloop to install
+      CHAINLOOP_VERSION: 0.15.0
+      # Export robot-account env variable
+      CHAINLOOP_ROBOT_ACCOUNT: ${{ secrets.CHAINLOOP_WF_RELEASE }}
+    name: "Release binary and container images"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # required for goreleaser
+    steps:
+      # Cosign is used to verify the Chainloop binary (optional)
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v2.5.0
+
+      - name: Install Chainloop
+        run: |
+          curl -sfL https://docs.chainloop.dev/install.sh | bash -s -- --version v${{ env.CHAINLOOP_VERSION }}
+
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Initialize Attestation
+        run: |
+          chainloop attestation init --contract-revision 1
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: "1.19"
+
+      # Generate SBOM using syft in cycloneDX format
+      - uses: anchore/sbom-action@v0
+        with:
+          image: ****.dkr.ecr.us-east-1.amazonaws.com/container-image:${{ github.ref_name }}
+          format: cyclonedx-json
+          output-file: /tmp/skynet.cyclonedx.json
+
+      - name: Add Attestation Artifacts
+        run: |
+          # Add binaries created by goreleaser
+          chainloop attestation add --name [binary-name] --value [binary-path]
+
+          # Created container image
+          chainloop attestation add --name control-plane-image --value ****.dkr.ecr.us-east-1.amazonaws.com/container-image:${{ github.ref_name }}
+
+          # This is just an example of adding a key/val material type
+          # Alternatively, GITHUB_SHA could have been added to the contract env variables allowList
+          chainloop attestation add --name build-ref --value ${GITHUB_SHA}
+
+          # Attach SBOM
+          chainloop attestation add --name skynet-sbom --value /tmp/skynet.cyclonedx.json
+
+      - name: Finish and Record Attestation
+        if: ${{ success() }}
+        run: |
+          chainloop attestation status --full
+          # Note that these commands are using CHAINLOOP_ROBOT_ACCOUNT env variable to authenticate
+          chainloop attestation push --key env://CHAINLOOP_SIGNING_KEY
+        env:
+          CHAINLOOP_SIGNING_KEY: ${{ secrets.COSIGN_KEY }}
+          CHAINLOOP_SIGNING_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+
+      - name: Mark attestation as failed
+        if: ${{ failure() }}
+        run: |
+          chainloop attestation reset
+
+      - name: Mark attestation as cancelled
+        if: ${{ cancelled() }}
+        run: |
+          chainloop attestation reset --trigger cancellation

@@ -1,0 +1,4 @@
+schemaVersion: v1
+materials:
+  - type: SARIF
+    name: static-output

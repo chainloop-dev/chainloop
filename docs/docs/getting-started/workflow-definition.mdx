@@ -1,0 +1,194 @@
+---
+sidebar_position: 3
+title: Workflow Creation
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import CodeBlock from "@theme/CodeBlock";
+import ContractYAML from "!!raw-loader!/examples/contracts/skynet/contract.yaml";
+import ContractCUE from "!!raw-loader!/examples/contracts/skynet/contract.cue";
+// See https://github.com/webpack-contrib/raw-loader/issues/91#issuecomment-648830498
+import ContractJSON from "/examples/contracts/skynet/contract.json.raw!=!raw-loader!/examples/contracts/skynet/contract.json";
+import WorkflowContractIntro from "../partials/_workflow-contract-intro.mdx";
+
+Next, let's introduce two of the most important entities in Chainloop's control plane, **workflows** and **workflow contracts**.
+
+### Workflows
+
+A workflow represents the identity of any automation, any CI/CD workflow you want to register in the Control Plane, so you can receive their attestation and artifacts. **A Workflow is associated with a Workflow Contract**, explained next.
+
+### Workflow Contracts
+
+<WorkflowContractIntro />
+
+### Robot Accounts
+
+A robot account is a long-lasting, though revokable, **secret token associated with a Workflow**. It's meant to be used in the target CI/CD pipeline during the attestation process. This token along with the crafting CLI are the only two things development/Apps teams need for the integration.
+
+## Workflow and Contract creation
+
+Let's say that we have a CI pipeline that we want to **integrate with Chainloop** so we can get **visibility** on as well as make it **SLSA compliant via signed attestation/artifacts**.
+
+To achieve that, we will need to
+
+- Create a new Workflow Contract (optional)
+- Create a Workflow associated with a new or existing Contract
+- Create a Robot account for that Workflow so the integration can happen in the CI.
+
+### Workflow Create
+
+Let's create a Workflow for our `build and test` CI pipeline
+
+```bash
+$ chainloop workflow create \
+    --name "build-and-test" \
+    --project "skynet" \
+    --team "cyberdyne core"
+┌──────────────────────────────────────┬────────────────┬─────────┬────────────────┬─────────────────────┬────────┬─────────────────┐
+│ ID                                   │ NAME           │ PROJECT │ TEAM           │ CREATED AT          │ # RUNS │ LAST RUN STATUS │
+├──────────────────────────────────────┼────────────────┼─────────┼────────────────┼─────────────────────┼────────┼─────────────────┤
+│ 2d289d33-8241-47b7-9ea2-8bd8b7c126f8 │ build-and-test │ skynet  │ cyberdyne core │ 01 Nov 22 23:09 UTC │      0 │                 │
+└──────────────────────────────────────┴────────────────┴─────────┴────────────────┴─────────────────────┴────────┴─────────────────┘
+```
+
+By default, if no contract is provided, a new, empty one will be created
+
+```bash
+$ chainloop workflow contract describe --id fd489047-67f1-45d4-9f3b-27eba4051929
+┌─────────────────────────────────────────────────────────────┐
+│ Contract                                                    │
+├──────────────────────┬──────────────────────────────────────┤
+│ Name                 │ build-and-test generated schema      │
+├──────────────────────┼──────────────────────────────────────┤
+│ ID                   │ fd489047-67f1-45d4-9f3b-27eba4051929 │
+├──────────────────────┼──────────────────────────────────────┤
+│ Associated Workflows │ 2d289d33-8241-47b7-9ea2-8bd8b7c126f8 │
+├──────────────────────┼──────────────────────────────────────┤
+│ Revision number      │ 1                                    │
+├──────────────────────┼──────────────────────────────────────┤
+│ Revision Created At  │ 01 Nov 22 23:09 UTC                  │
+└──────────────────────┴──────────────────────────────────────┘
+┌─────────────────────────┐
+│ {                       │
+│   "schemaVersion": "v1" │
+│ }                       │
+└─────────────────────────┘
+```
+
+### Add materials to the Contract
+
+We are going to update the contract with the materials we expect the attestation for this specific workflow to contain
+
+- built container image as output
+- rootfs directory used during build
+- dockerfile (optional)
+- commit sha
+- Software Bill Of Materials in CycloneDX format
+- A custom env variable to be resolved
+- Github Action as [target runner context](/reference/operator/contract#runner-context). This means that this contract is valid only for that platform.
+
+:::note
+Setting the runner context type is optional, see [runner contexts](/reference/operator/contract#runner-context) for more information.
+:::
+
+<Tabs>
+  <TabItem value="yaml" label="yaml" default>
+    <CodeBlock language="yaml" title="skynet.contract.yaml" showLineNumbers>
+      {ContractYAML}
+    </CodeBlock>
+  </TabItem>
+  <TabItem value="cue" label="cue">
+    <CodeBlock language="cue" title="skynet.contract.cue" showLineNumbers>
+      {ContractCUE}
+    </CodeBlock>
+  </TabItem>
+  <TabItem value="json" label="json">
+    <CodeBlock language="json" title="skynet.contract.json" showLineNumbers>
+      {ContractJSON}
+    </CodeBlock>
+  </TabItem>
+</Tabs>
+
+Update the name and schema, notice the revision increment
+
+```bash
+$ chainloop workflow contract update \
+   --id fd489047-67f1-45d4-9f3b-27eba4051929 \
+   --name skynet-contract \
+   -f https://raw.githubusercontent.com/chainloop-dev/chainloop/main/docs/examples/contracts/skynet/contract.yaml
+
+┌─────────────────────────────────────────────────────────────┐
+│ Contract                                                    │
+├──────────────────────┬──────────────────────────────────────┤
+│ Name                 │ skynet-contract                      │
+├──────────────────────┼──────────────────────────────────────┤
+│ ID                   │ fd489047-67f1-45d4-9f3b-27eba4051929 │
+├──────────────────────┼──────────────────────────────────────┤
+│ Associated Workflows │ 2d289d33-8241-47b7-9ea2-8bd8b7c126f8 │
+├──────────────────────┼──────────────────────────────────────┤
+│ Revision number      │ 2                                    │
+├──────────────────────┼──────────────────────────────────────┤
+│ Revision Created At  │ 02 Nov 22 09:08 UTC                  │
+└──────────────────────┴──────────────────────────────────────┘
+┌───────────────────────────────────────┐
+│ {                                     │
+│   "schemaVersion": "v1",              │
+│   "materials": [                      │
+│     {                                 │
+│       "type": "CONTAINER_IMAGE",      │
+│       "name": "skynet-control-plane", │
+│       "output": true                  │
+...
+```
+
+:::note
+We could have reached the same result by first creating the contract via `chainloop workflow contract create -f ...` and then attaching it during workflow creation `chainloop workflow create ... --contract deadbeef`
+:::
+
+### Robot Account creation
+
+The final step is to create a robot account that will be shared with the development team so they can start the integration.
+
+:::note
+
+- Robot accounts are attached to a single workflow. If you create another workflow, another robot account must be created.
+- You can have more than one robot account associated with a workflow.
+- Accounts can be revoked via `chainloop workflow robot-account revoke` command
+
+:::
+
+```bash
+$ chainloop workflow robot-account create \
+    --workflow 2d289d33-8241-47b7-9ea2-8bd8b7c126f8 \
+    --name prod-ci
+
+┌──────────────────────────────────────┬─────────┬──────────────────────────────────────┬─────────────────────┬────────────┐
+│ ID                                   │ NAME    │ WORKFLOW ID                          │ CREATED AT          │ REVOKED AT │
+├──────────────────────────────────────┼─────────┼──────────────────────────────────────┼─────────────────────┼────────────┤
+│ 4f2376fa-48c8-4e46-a921-977ec44486a9 │ prod-ci │ 2d289d33-8241-47b7-9ea2-8bd8b7c126f8 │ 01 Nov 22 23:43 UTC │            │
+└──────────────────────────────────────┴─────────┴──────────────────────────────────────┴─────────────────────┴────────────┘
+
+Save the following token since it will not printed again:
+
+ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.REDACTED.lXdvZusJgHyeHDl39RGPNxxrmTUZBN0_QAbJU5ZVxR8
+```
+
+We have everything we need to integrate our CI with Chainloop!
+
+## Optional setup
+
+### CAS Backend
+
+As part of an attestation process, you might want to collect different pieces of evidence such as Software Bill Of Materials (SBOMs), test results, runner logs, etc and then attach them to the final in-toto attestation.
+
+By default, Chainloop comes pre-configured with what we call an `inline` backend. The inline backend **embeds** the pieces of evidence in the resulting attestations.
+This is useful to get started quickly but since the metadata is embedded in the attestation, their size is limited.
+
+We recommend that once you get closer to a production-ready setup, you [switch to a more robust backend](/reference/operator/cas-backend#oci-registry).
+
+Refer to [CAS Backends section](/reference/operator/cas-backend) for more information.
+
+### Third-Party integrations
+
+Optionally you can enable third-party integrations such as [DependencyTrack](/guides/dependency-track) so the received Software Bill Of Materials (SBOMs) are forwarded there for analysis.

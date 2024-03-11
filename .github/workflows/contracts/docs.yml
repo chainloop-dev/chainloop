@@ -1,0 +1,13 @@
+# Chainloop workflow associated with .github/workflows/deploy.yml
+# https://docs.chainloop.dev/reference/operator/contract
+schemaVersion: v1
+materials:
+  - type: ARTIFACT
+    name: built-site
+    output: true
+  - type: SBOM_CYCLONEDX_JSON
+    name: sbom-cdx
+  - type: SBOM_SPDX_JSON
+    name: sbom-spdx
+runner:
+  type: GITHUB_ACTION

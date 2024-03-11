@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:generate go run main.go --dir ../../core --integrations-index-path ../../../../../docs/integrations.md
+//go:generate go run main.go --dir ../../core --integrations-index-path ../../../../../devel/integrations.md
 
 package main
 
@@ -162,7 +162,7 @@ func main() {
 
 func init() {
 	flag.StringVar(&pluginsDir, "dir", "", "base directory for plugins i.e ./core")
-	flag.StringVar(&integrationsIndexPath, "integrations-index-path", "", "integrations list markdown file i.e docs/integrations.md")
+	flag.StringVar(&integrationsIndexPath, "integrations-index-path", "", "integrations list markdown file i.e devel/integrations.md")
 	flag.Parse()
 }
 
