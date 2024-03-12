@@ -120,7 +120,7 @@ func (att *Attestation) Status(ctx context.Context) (string, error) {
 //	if err := att.Sync(ctx); err != nil {
 //		return nil, err
 //	}
-func (att *Attestation) Sync(ctx context.Context) error {
+func (att *Attestation) Sync(_ context.Context) error {
 	return nil
 }
 
