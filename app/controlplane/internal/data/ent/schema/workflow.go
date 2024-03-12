@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import (
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
 )
 
@@ -64,5 +65,12 @@ func (Workflow) Edges() []ent.Edge {
 
 		// M2M. referrer can be part of multiple workflows
 		edge.From("referrers", Referrer.Type).Ref("workflows"),
+	}
+}
+
+func (Workflow) Indexes() []ent.Index {
+	return []ent.Index{
+		// names are unique within an organization
+		index.Fields("name").Edges("organization").Unique(),
 	}
 }

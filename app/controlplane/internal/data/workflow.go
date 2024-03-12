@@ -63,7 +63,11 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 		SetDescription(opts.Description).
 		Save(ctx)
 	if err != nil {
-		return nil, err
+		if ent.IsConstraintError(err) {
+			return nil, biz.ErrAlreadyExists
+		}
+
+		return nil, fmt.Errorf("failed to create workflow: %w", err)
 	}
 
 	// Reload the object to include the relations
@@ -88,7 +92,12 @@ func (r *WorkflowRepo) Update(ctx context.Context, id uuid.UUID, opts *biz.Workf
 	}
 
 	wf, err := req.Save(ctx)
+
 	if err != nil {
+		if ent.IsConstraintError(err) {
+			return nil, biz.ErrAlreadyExists
+		}
+
 		return nil, fmt.Errorf("failed to update workflow: %w", err)
 	}
 
