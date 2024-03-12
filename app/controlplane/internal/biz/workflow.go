@@ -77,6 +77,17 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 		return nil, errors.New("workflow name is required")
 	}
 
+	// validate format of the name and the project
+	if err := ValidateIsDNS1123(opts.Name); err != nil {
+		return nil, NewErrValidation(err)
+	}
+
+	if opts.Project != "" {
+		if err := ValidateIsDNS1123(opts.Project); err != nil {
+			return nil, NewErrValidation(err)
+		}
+	}
+
 	contract, err := uc.findOrCreateContract(ctx, opts.OrgID, opts.ContractID, opts.Project, opts.Name)
 	if err != nil {
 		return nil, err
@@ -84,7 +95,16 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 
 	// Set the potential new schemaID
 	opts.ContractID = contract.ID.String()
-	return uc.wfRepo.Create(ctx, opts)
+	wf, err := uc.wfRepo.Create(ctx, opts)
+	if err != nil {
+		if errors.Is(err, ErrAlreadyExists) {
+			return nil, NewErrValidationStr("that name is already taken")
+		}
+
+		return nil, fmt.Errorf("failed to create workflow: %w", err)
+	}
+
+	return wf, nil
 }
 
 func (uc *WorkflowUseCase) Update(ctx context.Context, orgID, workflowID string, opts *WorkflowUpdateOpts) (*Workflow, error) {
@@ -98,6 +118,19 @@ func (uc *WorkflowUseCase) Update(ctx context.Context, orgID, workflowID string,
 		return nil, NewErrInvalidUUID(err)
 	}
 
+	if opts.Name != nil {
+		// validate format of the name and the project
+		if err := ValidateIsDNS1123(*opts.Name); err != nil {
+			return nil, NewErrValidation(err)
+		}
+	}
+
+	if opts.Project != nil {
+		if err := ValidateIsDNS1123(*opts.Project); err != nil {
+			return nil, NewErrValidation(err)
+		}
+	}
+
 	// make sure that the workflow is for the provided org
 	if wf, err := uc.wfRepo.GetOrgScoped(ctx, orgUUID, workflowUUID); err != nil {
 		return nil, err
@@ -107,6 +140,10 @@ func (uc *WorkflowUseCase) Update(ctx context.Context, orgID, workflowID string,
 
 	wf, err := uc.wfRepo.Update(ctx, workflowUUID, opts)
 	if err != nil {
+		if errors.Is(err, ErrAlreadyExists) {
+			return nil, NewErrValidationStr("that name is already taken")
+		}
+
 		return nil, fmt.Errorf("failed to update workflow: %w", err)
 	} else if wf == nil {
 		return nil, NewErrNotFound("workflow")

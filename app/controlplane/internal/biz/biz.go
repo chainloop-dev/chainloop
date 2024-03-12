@@ -78,7 +78,7 @@ func ValidateIsDNS1123(name string) error {
 	if len(err) > 0 {
 		errMsg := ""
 		for _, e := range err {
-			errMsg += e + "\n"
+			errMsg += fmt.Sprintf("%q: %s\n", name, e)
 		}
 
 		return errors.New(errMsg)

@@ -326,6 +326,13 @@ var (
 				OnDelete:   schema.NoAction,
 			},
 		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "workflow_name_organization_id",
+				Unique:  true,
+				Columns: []*schema.Column{WorkflowsColumns[1], WorkflowsColumns[9]},
+			},
+		},
 	}
 	// WorkflowContractsColumns holds the columns for the "workflow_contracts" table.
 	WorkflowContractsColumns = []*schema.Column{
