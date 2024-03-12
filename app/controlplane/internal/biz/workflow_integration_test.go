@@ -57,7 +57,7 @@ func (s *workflowIntegrationTestSuite) TestContractLatestAvailable() {
 func (s *workflowIntegrationTestSuite) TestUpdate() {
 	ctx := context.Background()
 	const (
-		name        = "test workflow"
+		name        = "test-workflow"
 		team        = "test team"
 		project     = "test project"
 		description = "test description"
