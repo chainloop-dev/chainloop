@@ -17,6 +17,7 @@ export interface WorkflowContractServiceListResponse {
 export interface WorkflowContractServiceCreateRequest {
   name: string;
   v1?: CraftingSchema | undefined;
+  description?: string | undefined;
 }
 
 export interface WorkflowContractServiceCreateResponse {
@@ -27,6 +28,7 @@ export interface WorkflowContractServiceUpdateRequest {
   id: string;
   name: string;
   v1?: CraftingSchema | undefined;
+  description?: string | undefined;
 }
 
 export interface WorkflowContractServiceUpdateResponse {
@@ -174,7 +176,7 @@ export const WorkflowContractServiceListResponse = {
 };
 
 function createBaseWorkflowContractServiceCreateRequest(): WorkflowContractServiceCreateRequest {
-  return { name: "", v1: undefined };
+  return { name: "", v1: undefined, description: undefined };
 }
 
 export const WorkflowContractServiceCreateRequest = {
@@ -184,6 +186,9 @@ export const WorkflowContractServiceCreateRequest = {
     }
     if (message.v1 !== undefined) {
       CraftingSchema.encode(message.v1, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.description !== undefined) {
+      writer.uint32(26).string(message.description);
     }
     return writer;
   },
@@ -209,6 +214,13 @@ export const WorkflowContractServiceCreateRequest = {
 
           message.v1 = CraftingSchema.decode(reader, reader.uint32());
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -222,6 +234,7 @@ export const WorkflowContractServiceCreateRequest = {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       v1: isSet(object.v1) ? CraftingSchema.fromJSON(object.v1) : undefined,
+      description: isSet(object.description) ? String(object.description) : undefined,
     };
   },
 
@@ -229,6 +242,7 @@ export const WorkflowContractServiceCreateRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.v1 !== undefined && (obj.v1 = message.v1 ? CraftingSchema.toJSON(message.v1) : undefined);
+    message.description !== undefined && (obj.description = message.description);
     return obj;
   },
 
@@ -244,6 +258,7 @@ export const WorkflowContractServiceCreateRequest = {
     const message = createBaseWorkflowContractServiceCreateRequest();
     message.name = object.name ?? "";
     message.v1 = (object.v1 !== undefined && object.v1 !== null) ? CraftingSchema.fromPartial(object.v1) : undefined;
+    message.description = object.description ?? undefined;
     return message;
   },
 };
@@ -312,7 +327,7 @@ export const WorkflowContractServiceCreateResponse = {
 };
 
 function createBaseWorkflowContractServiceUpdateRequest(): WorkflowContractServiceUpdateRequest {
-  return { id: "", name: "", v1: undefined };
+  return { id: "", name: "", v1: undefined, description: undefined };
 }
 
 export const WorkflowContractServiceUpdateRequest = {
@@ -325,6 +340,9 @@ export const WorkflowContractServiceUpdateRequest = {
     }
     if (message.v1 !== undefined) {
       CraftingSchema.encode(message.v1, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.description !== undefined) {
+      writer.uint32(34).string(message.description);
     }
     return writer;
   },
@@ -357,6 +375,13 @@ export const WorkflowContractServiceUpdateRequest = {
 
           message.v1 = CraftingSchema.decode(reader, reader.uint32());
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -371,6 +396,7 @@ export const WorkflowContractServiceUpdateRequest = {
       id: isSet(object.id) ? String(object.id) : "",
       name: isSet(object.name) ? String(object.name) : "",
       v1: isSet(object.v1) ? CraftingSchema.fromJSON(object.v1) : undefined,
+      description: isSet(object.description) ? String(object.description) : undefined,
     };
   },
 
@@ -379,6 +405,7 @@ export const WorkflowContractServiceUpdateRequest = {
     message.id !== undefined && (obj.id = message.id);
     message.name !== undefined && (obj.name = message.name);
     message.v1 !== undefined && (obj.v1 = message.v1 ? CraftingSchema.toJSON(message.v1) : undefined);
+    message.description !== undefined && (obj.description = message.description);
     return obj;
   },
 
@@ -395,6 +422,7 @@ export const WorkflowContractServiceUpdateRequest = {
     message.id = object.id ?? "";
     message.name = object.name ?? "";
     message.v1 = (object.v1 !== undefined && object.v1 !== null) ? CraftingSchema.fromPartial(object.v1) : undefined;
+    message.description = object.description ?? undefined;
     return message;
   },
 };

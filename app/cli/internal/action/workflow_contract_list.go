@@ -29,6 +29,7 @@ type WorkflowContractList struct {
 
 type WorkflowContractItem struct {
 	Name           string     `json:"name"`
+	Description    string     `json:"description,omitempty"`
 	ID             string     `json:"id"`
 	LatestRevision int        `json:"latestRevision,omitempty"`
 	CreatedAt      *time.Time `json:"createdAt"`
@@ -64,7 +65,7 @@ func (action *WorkflowContractList) Run() ([]*WorkflowContractItem, error) {
 func pbWorkflowContractItemToAction(in *pb.WorkflowContractItem) *WorkflowContractItem {
 	return &WorkflowContractItem{
 		Name: in.GetName(), ID: in.GetId(), LatestRevision: int(in.GetLatestRevision()),
-		CreatedAt: toTimePtr(in.GetCreatedAt().AsTime()), WorkflowIDs: in.WorkflowIds,
+		CreatedAt: toTimePtr(in.GetCreatedAt().AsTime()), WorkflowIDs: in.WorkflowIds, Description: in.GetDescription(),
 	}
 }
 

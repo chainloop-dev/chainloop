@@ -48,11 +48,11 @@ func newWorkflowCreateCmd() *cobra.Command {
 			// If it's provided by the UUID we skip this
 			if contract != "" {
 				if !isValidUUID(contract) {
-					ccreateResp, err := action.NewWorkflowContractCreate(actionOpts).Run(fmt.Sprintf("%s/%s", project, workflowName), contract)
+					createResp, err := action.NewWorkflowContractCreate(actionOpts).Run(fmt.Sprintf("%s/%s", project, workflowName), nil, contract)
 					if err != nil {
 						return err
 					}
-					contract = ccreateResp.ID
+					contract = createResp.ID
 				}
 			}
 

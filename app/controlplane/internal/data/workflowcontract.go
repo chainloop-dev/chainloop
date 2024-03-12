@@ -83,7 +83,10 @@ func (r *WorkflowContractRepo) Create(ctx context.Context, opts *biz.ContractCre
 		return nil, err
 	}
 
-	contract, err := tx.WorkflowContract.Create().SetName(opts.Name).SetOrganizationID(opts.OrgID).Save(ctx)
+	contract, err := tx.WorkflowContract.Create().
+		SetName(opts.Name).SetOrganizationID(opts.OrgID).
+		SetNillableDescription(opts.Description).
+		Save(ctx)
 	if err != nil {
 		return nil, rollback(tx, err)
 	}
@@ -171,12 +174,14 @@ func (r *WorkflowContractRepo) Update(ctx context.Context, opts *biz.ContractUpd
 		return nil, nil
 	}
 
-	// if name is provided we also update the contract
+	updateContract := contract.Update().SetNillableDescription(opts.Description)
 	if opts.Name != "" {
-		contract, err = contract.Update().SetName(opts.Name).Save(ctx)
-		if err != nil {
-			return nil, rollback(tx, err)
-		}
+		updateContract = updateContract.SetName(opts.Name)
+	}
+
+	contract, err = updateContract.Save(ctx)
+	if err != nil {
+		return nil, rollback(tx, err)
 	}
 
 	lv, err := latestVersion(ctx, contract)
@@ -300,7 +305,7 @@ func contractInOrgQuery(ctx context.Context, q *ent.OrganizationQuery, orgID, co
 
 func entContractToBizContract(w *ent.WorkflowContract, version *ent.WorkflowContractVersion, workflowIDs []string) *biz.WorkflowContract {
 	c := &biz.WorkflowContract{
-		Name: w.Name, ID: w.ID, CreatedAt: toTimePtr(w.CreatedAt), WorkflowIDs: workflowIDs,
+		Name: w.Name, ID: w.ID, CreatedAt: toTimePtr(w.CreatedAt), WorkflowIDs: workflowIDs, Description: w.Description,
 	}
 
 	c.LatestRevision = version.Revision

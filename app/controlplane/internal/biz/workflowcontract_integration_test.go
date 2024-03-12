@@ -79,7 +79,9 @@ func (s *workflowContractIntegrationTestSuite) TestUpdate() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			contract, err := s.WorkflowContract.Update(ctx, tc.OrgID, tc.ID, tc.contractName, tc.inputSchema)
+			contract, err := s.WorkflowContract.Update(ctx, tc.OrgID, tc.ID,
+				&biz.WorkflowContractUpdateOpts{Name: tc.contractName, Schema: tc.inputSchema},
+			)
 			if tc.wantErrMsg != "" {
 				s.ErrorContains(err, tc.wantErrMsg)
 				return

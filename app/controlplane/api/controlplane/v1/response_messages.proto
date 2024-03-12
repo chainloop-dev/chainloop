@@ -108,6 +108,7 @@ message AttestationItem {
 message WorkflowContractItem {
   string id = 1;
   string name = 2;
+  string description = 6;
   google.protobuf.Timestamp created_at = 3;
   int32 latest_revision = 4;
   // Workflows associated with this contract

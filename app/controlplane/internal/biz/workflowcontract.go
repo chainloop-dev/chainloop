@@ -30,6 +30,7 @@ import (
 type WorkflowContract struct {
 	ID             uuid.UUID
 	Name           string
+	Description    string
 	LatestRevision int
 	CreatedAt      *time.Time
 	// WorkflowIDs is the list of workflows associated with this contract
@@ -61,12 +62,14 @@ type WorkflowContractRepo interface {
 type ContractCreateOpts struct {
 	Name         string
 	OrgID        uuid.UUID
+	Description  *string
 	ContractBody []byte
 }
 
 type ContractUpdateOpts struct {
 	Name              string
 	OrgID, ContractID uuid.UUID
+	Description       *string
 	ContractBody      []byte
 }
 
@@ -105,6 +108,7 @@ func (uc *WorkflowContractUseCase) FindByIDInOrg(ctx context.Context, orgID, con
 type WorkflowContractCreateOpts struct {
 	OrgID, Name string
 	Schema      *schemav1.CraftingSchema
+	Description *string
 	// Make sure that the name is unique in the organization
 	AddUniquePrefix bool
 }
@@ -142,7 +146,7 @@ func (uc *WorkflowContractUseCase) Create(ctx context.Context, opts *WorkflowCon
 
 	// Create a workflow with a unique name if needed
 	args := &ContractCreateOpts{
-		OrgID: orgUUID, Name: opts.Name,
+		OrgID: orgUUID, Name: opts.Name, Description: opts.Description,
 		ContractBody: rawSchema,
 	}
 
@@ -222,7 +226,17 @@ func (uc *WorkflowContractUseCase) FindVersionByID(ctx context.Context, versionI
 	return r, nil
 }
 
-func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, contractID, name string, schema *schemav1.CraftingSchema) (*WorkflowContractWithVersion, error) {
+type WorkflowContractUpdateOpts struct {
+	Name        string
+	Schema      *schemav1.CraftingSchema
+	Description *string
+}
+
+func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, contractID string, opts *WorkflowContractUpdateOpts) (*WorkflowContractWithVersion, error) {
+	if opts == nil {
+		return nil, NewErrValidationStr("no update options provided")
+	}
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, err
@@ -233,18 +247,20 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, contractID
 		return nil, err
 	}
 
-	if err := ValidateIsDNS1123(name); err != nil {
-		return nil, NewErrValidation(err)
+	if opts.Name != "" {
+		if err := ValidateIsDNS1123(opts.Name); err != nil {
+			return nil, NewErrValidation(err)
+		}
 	}
 
-	rawSchema, err := proto.Marshal(schema)
+	rawSchema, err := proto.Marshal(opts.Schema)
 	if err != nil {
 		return nil, err
 	}
 
-	opts := &ContractUpdateOpts{OrgID: orgUUID, ContractID: contractUUID, ContractBody: rawSchema, Name: name}
+	args := &ContractUpdateOpts{OrgID: orgUUID, ContractID: contractUUID, ContractBody: rawSchema, Name: opts.Name, Description: opts.Description}
 
-	c, err := uc.repo.Update(ctx, opts)
+	c, err := uc.repo.Update(ctx, args)
 	if err != nil {
 		if errors.Is(err, ErrAlreadyExists) {
 			return nil, NewErrValidationStr("name already taken")

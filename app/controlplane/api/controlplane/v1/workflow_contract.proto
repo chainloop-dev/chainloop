@@ -17,44 +17,49 @@ syntax = "proto3";
 
 package controlplane.v1;
 
-option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
-
 import "controlplane/v1/response_messages.proto";
 import "validate/validate.proto";
 import "workflowcontract/v1/crafting_schema.proto";
 
+option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
+
 service WorkflowContractService {
-	rpc List (WorkflowContractServiceListRequest) returns (WorkflowContractServiceListResponse);
-	rpc Create (WorkflowContractServiceCreateRequest) returns (WorkflowContractServiceCreateResponse);
-	rpc Update (WorkflowContractServiceUpdateRequest) returns (WorkflowContractServiceUpdateResponse);
-	rpc Describe (WorkflowContractServiceDescribeRequest) returns (WorkflowContractServiceDescribeResponse);
-	rpc Delete (WorkflowContractServiceDeleteRequest) returns (WorkflowContractServiceDeleteResponse);
+  rpc List(WorkflowContractServiceListRequest) returns (WorkflowContractServiceListResponse);
+  rpc Create(WorkflowContractServiceCreateRequest) returns (WorkflowContractServiceCreateResponse);
+  rpc Update(WorkflowContractServiceUpdateRequest) returns (WorkflowContractServiceUpdateResponse);
+  rpc Describe(WorkflowContractServiceDescribeRequest) returns (WorkflowContractServiceDescribeResponse);
+  rpc Delete(WorkflowContractServiceDeleteRequest) returns (WorkflowContractServiceDeleteResponse);
 }
 
 message WorkflowContractServiceListRequest {}
 
 message WorkflowContractServiceListResponse {
-	repeated WorkflowContractItem result = 1;
+  repeated WorkflowContractItem result = 1;
 }
 
 message WorkflowContractServiceCreateRequest {
-  string name = 1 [(validate.rules).string = {min_len: 1}]; 
+  string name = 1 [(validate.rules).string = {min_len: 1}];
   // Ready to support multiple schema versions
   oneof contract {
     workflowcontract.v1.CraftingSchema v1 = 2;
   }
+
+  optional string description = 3;
 }
 
 message WorkflowContractServiceCreateResponse {
-	WorkflowContractItem result = 1;
+  WorkflowContractItem result = 1;
 }
 
 message WorkflowContractServiceUpdateRequest {
   string id = 1 [(validate.rules).string.uuid = true];
   string name = 2;
+
   oneof contract {
     workflowcontract.v1.CraftingSchema v1 = 3;
   }
+
+  optional string description = 4;
 }
 
 message WorkflowContractServiceUpdateResponse {
@@ -77,7 +82,6 @@ message WorkflowContractServiceDescribeResponse {
     WorkflowContractVersionItem revision = 2;
   }
 }
-
 
 message WorkflowContractServiceDeleteRequest {
   string id = 1 [(validate.rules).string.uuid = true];
