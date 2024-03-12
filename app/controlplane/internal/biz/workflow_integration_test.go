@@ -59,7 +59,7 @@ func (s *workflowIntegrationTestSuite) TestUpdate() {
 	const (
 		name        = "test-workflow"
 		team        = "test team"
-		project     = "test project"
+		project     = "test-project"
 		description = "test description"
 	)
 
