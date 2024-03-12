@@ -127,7 +127,7 @@ func (s *workflowContractIntegrationTestSuite) TestCreate() {
 		{
 			name:       "existing contract name",
 			opts:       &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: "name"},
-			wantErrMsg: "already exists",
+			wantErrMsg: "taken",
 		},
 		{
 			name: "can create same name in different org",
