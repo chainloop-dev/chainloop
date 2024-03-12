@@ -19,6 +19,7 @@ import (
 	"context"
 	"testing"
 
+	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
 	"github.com/google/uuid"
@@ -33,7 +34,9 @@ func (s *workflowContractIntegrationTestSuite) TestUpdate() {
 		name         string
 		contractName string
 		OrgID, ID    string
+		inputSchema  *schemav1.CraftingSchema
 		wantErrMsg   string
+		wantRevision int
 	}{
 		{
 			name:         "non-existing contract",
@@ -50,16 +53,33 @@ func (s *workflowContractIntegrationTestSuite) TestUpdate() {
 			wantErrMsg:   "RFC 1123",
 		},
 		{
-			name:         "existing contract valid name",
+			name:         "existing contract valid name, does not bump revision",
 			contractName: "valid-name",
 			OrgID:        s.org.ID,
 			ID:           s.contractOrg1.ID.String(),
+			wantRevision: 1,
+		},
+		{
+			name:         "updating schema bumps revision",
+			OrgID:        s.org.ID,
+			ID:           s.contractOrg1.ID.String(),
+			contractName: "valid-name",
+			inputSchema:  &schemav1.CraftingSchema{SchemaVersion: "v123"},
+			wantRevision: 2,
+		},
+		{
+			name:         "updating with same schema DOES NOT bump revision",
+			OrgID:        s.org.ID,
+			ID:           s.contractOrg1.ID.String(),
+			contractName: "valid-name",
+			inputSchema:  &schemav1.CraftingSchema{SchemaVersion: "v123"},
+			wantRevision: 2,
 		},
 	}
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			contract, err := s.WorkflowContract.Update(ctx, tc.OrgID, tc.ID, tc.contractName, nil)
+			contract, err := s.WorkflowContract.Update(ctx, tc.OrgID, tc.ID, tc.contractName, tc.inputSchema)
 			if tc.wantErrMsg != "" {
 				s.ErrorContains(err, tc.wantErrMsg)
 				return
@@ -67,6 +87,7 @@ func (s *workflowContractIntegrationTestSuite) TestUpdate() {
 
 			require.NoError(s.T(), err)
 			s.Equal(tc.contractName, contract.Contract.Name)
+			s.Equal(tc.wantRevision, contract.Version.Revision)
 		})
 	}
 }
