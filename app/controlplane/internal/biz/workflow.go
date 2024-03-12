@@ -122,7 +122,12 @@ func (uc *WorkflowUseCase) findOrCreateContract(ctx context.Context, orgID, cont
 	}
 
 	// No contractID has been provided so we create a new one
-	contractName := fmt.Sprintf("%s-%s", project, name)
+	contractName := name
+	// Project might be empty
+	if project != "" {
+		contractName = fmt.Sprintf("%s-%s", project, name)
+	}
+
 	return uc.contractUC.Create(ctx, &WorkflowContractCreateOpts{OrgID: orgID, Name: contractName, AddUniquePrefix: true})
 }
 
