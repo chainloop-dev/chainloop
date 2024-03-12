@@ -155,7 +155,7 @@ func (uc *WorkflowContractUseCase) Create(ctx context.Context, opts *WorkflowCon
 
 	if err != nil {
 		if errors.Is(err, ErrAlreadyExists) {
-			return nil, NewErrValidationStr("that name is already taken")
+			return nil, NewErrValidationStr("name already taken")
 		}
 
 		return nil, fmt.Errorf("failed to create contract: %w", err)
@@ -189,7 +189,7 @@ func (uc *WorkflowContractUseCase) createWithUniqueName(ctx context.Context, opt
 		return c, nil
 	}
 
-	return nil, NewErrValidationStr("that name is already taken")
+	return nil, NewErrValidationStr("name already taken")
 }
 
 func (uc *WorkflowContractUseCase) Describe(ctx context.Context, orgID, contractID string, revision int) (*WorkflowContractWithVersion, error) {
@@ -247,7 +247,7 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, contractID
 	c, err := uc.repo.Update(ctx, opts)
 	if err != nil {
 		if errors.Is(err, ErrAlreadyExists) {
-			return nil, NewErrValidationStr("that name is already taken")
+			return nil, NewErrValidationStr("name already taken")
 		}
 
 		return nil, fmt.Errorf("failed to update contract: %w", err)
