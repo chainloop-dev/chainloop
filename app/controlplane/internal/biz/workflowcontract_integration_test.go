@@ -152,7 +152,6 @@ func (s *workflowContractIntegrationTestSuite) TestCreate() {
 			s.NotEmpty(contract.CreatedAt)
 		})
 	}
-
 }
 
 // Run the tests
