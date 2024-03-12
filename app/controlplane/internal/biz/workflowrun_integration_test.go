@@ -336,7 +336,7 @@ func (s *workflowRunIntegrationTestSuite) TestUpdate() {
 			name:         "updating with same schema but different name DOES NOT bump revision either",
 			contractID:   s.contractVersion.Contract.ID.String(),
 			inputSchema:  &schemav1.CraftingSchema{SchemaVersion: "v123"},
-			inputName:    "new new name",
+			inputName:    "new-new-name",
 			wantRevision: 2,
 		},
 	}
