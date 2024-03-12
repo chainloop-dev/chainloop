@@ -317,7 +317,7 @@ func (s *workflowRunIntegrationTestSuite) TestUpdate() {
 		{
 			name:         "update only name does not bump revision",
 			contractID:   s.contractVersion.Contract.ID.String(),
-			inputName:    "new name",
+			inputName:    "new-name",
 			wantRevision: 1,
 		},
 		{
