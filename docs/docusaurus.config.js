@@ -109,6 +109,34 @@ ${content.replaceAll("./img/fanout.png", "/img/fanout.png")}`,
         },
       },
     ],
+    // Dagger module guide
+    // yarn run docusaurus download-remote-dagger-module
+    [
+      "docusaurus-plugin-remote-content",
+      {
+        name: "dagger-module",
+        noRuntimeDownloads: true,
+        performCleanup: false,
+        sourceBaseUrl:
+          "https://raw.githubusercontent.com/chainloop-dev/chainloop/main/extras/dagger",
+        outDir: "docs/guides/dagger", // the base directory to output to.
+        documents: ["README.md"], // the file names to download
+        modifyContent: (filename, content) => {
+          if (filename.includes("README")) {
+            return {
+              content: `---
+title: Use Dagger With Chainloop
+---
+
+${content}
+ `,
+            };
+          }
+
+          return undefined;
+        },
+      },
+    ],
     // Helm Chart readme
     // yarn run docusaurus download-remote-deployment-readme
     [
