@@ -111,6 +111,19 @@ func (att *Attestation) Status(ctx context.Context) (string, error) {
 		Stdout(ctx)
 }
 
+// Sync will force the client to send an actual query to the chainloop control plane
+// This is specially important to be run right after Init
+// for example
+//
+//	att := chainloop.Init(ctx, token, "main")
+//
+//	if err := att.Sync(ctx); err != nil {
+//		return nil, err
+//	}
+func (att *Attestation) Sync(ctx context.Context) error {
+	return nil
+}
+
 // Attach credentials for a container registry.
 // Chainloop will use them to query the registry for container image pieces of evidences
 func (att *Attestation) WithRegistryAuth(
