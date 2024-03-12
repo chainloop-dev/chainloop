@@ -49,7 +49,7 @@ func (s *organizationTestSuite) TestCreateWithRandomName() {
 	s.Run("if it runs out of tries, it fails", func() {
 		ctx := context.Background()
 		// the first one fails because it already exists
-		repo.On("Create", ctx, mock.Anything).Times(biz.OrganizationRandomNameMaxTries).Return(nil, biz.ErrAlreadyExists)
+		repo.On("Create", ctx, mock.Anything).Times(biz.RandomNameMaxTries).Return(nil, biz.ErrAlreadyExists)
 		got, err := uc.CreateWithRandomName(ctx)
 		s.Error(err)
 		s.Nil(got)
@@ -78,7 +78,7 @@ func (s *organizationTestSuite) TestValidateOrgName() {
 
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
-			err := biz.ValidateOrgName(tc.name)
+			err := biz.ValidateIsDNS1123(tc.name)
 			if tc.expectedError {
 				s.Error(err)
 			} else {

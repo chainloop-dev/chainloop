@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -102,35 +102,94 @@ func (uc *WorkflowContractUseCase) FindByIDInOrg(ctx context.Context, orgID, con
 	return uc.repo.FindByIDInOrg(ctx, orgUUID, contractUUID)
 }
 
+type WorkflowContractCreateOpts struct {
+	OrgID, Name string
+	Schema      *schemav1.CraftingSchema
+	// Make sure that the name is unique in the organization
+	AddUniquePrefix bool
+}
+
 // we currently only support schema v1
-func (uc *WorkflowContractUseCase) Create(ctx context.Context, orgID, name string, schema *schemav1.CraftingSchema) (*WorkflowContract, error) {
-	orgUUID, err := uuid.Parse(orgID)
+func (uc *WorkflowContractUseCase) Create(ctx context.Context, opts *WorkflowContractCreateOpts) (*WorkflowContract, error) {
+	if opts.OrgID == "" || opts.Name == "" {
+		return nil, NewErrValidationStr("organization and name are required")
+	}
+
+	orgUUID, err := uuid.Parse(opts.OrgID)
 	if err != nil {
 		return nil, err
+	}
+
+	if err := ValidateIsDNS1123(opts.Name); err != nil {
+		return nil, NewErrValidation(err)
 	}
 
 	// If no schema is provided we create an empty one
-	if schema == nil {
-		schema = &schemav1.CraftingSchema{
+	if opts.Schema == nil {
+		opts.Schema = &schemav1.CraftingSchema{
 			SchemaVersion: "v1",
-		}
-
-		if err := schema.ValidateAll(); err != nil {
-			return nil, err
 		}
 	}
 
-	rawSchema, err := proto.Marshal(schema)
+	if err := opts.Schema.ValidateAll(); err != nil {
+		return nil, err
+	}
+
+	rawSchema, err := proto.Marshal(opts.Schema)
 	if err != nil {
 		return nil, err
 	}
 
-	opts := &ContractCreateOpts{
-		OrgID: orgUUID, Name: name,
+	// Create a workflow with a unique name if needed
+	args := &ContractCreateOpts{
+		OrgID: orgUUID, Name: opts.Name,
 		ContractBody: rawSchema,
 	}
 
-	return uc.repo.Create(ctx, opts)
+	var c *WorkflowContract
+	if opts.AddUniquePrefix {
+		c, err = uc.createWithUniqueName(ctx, args)
+	} else {
+		c, err = uc.repo.Create(ctx, args)
+	}
+
+	if err != nil {
+		if errors.Is(err, ErrAlreadyExists) {
+			return nil, NewErrValidationStr("that contract name already exists")
+		}
+
+		return nil, fmt.Errorf("failed to create contract: %w", err)
+	}
+
+	return c, nil
+}
+
+func (uc *WorkflowContractUseCase) createWithUniqueName(ctx context.Context, opts *ContractCreateOpts) (*WorkflowContract, error) {
+	originalName := opts.Name
+
+	for i := 0; i < RandomNameMaxTries; i++ {
+		// append a suffix
+		if i > 0 {
+			var err error
+			opts.Name, err = generateValidDNS1123WithSuffix(originalName)
+			if err != nil {
+				return nil, fmt.Errorf("failed to generate random name: %w", err)
+			}
+		}
+
+		c, err := uc.repo.Create(ctx, opts)
+		if err != nil {
+			if errors.Is(err, ErrAlreadyExists) {
+				continue
+			}
+
+			return nil, fmt.Errorf("failed to create contract: %w", err)
+		}
+
+		return c, nil
+	}
+
+	return nil, NewErrValidationStr("that contract name already exists")
 }
 
 func (uc *WorkflowContractUseCase) Describe(ctx context.Context, orgID, contractID string, revision int) (*WorkflowContractWithVersion, error) {
@@ -174,6 +233,10 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, contractID
 		return nil, err
 	}
 
+	if err := ValidateIsDNS1123(name); err != nil {
+		return nil, NewErrValidation(err)
+	}
+
 	rawSchema, err := proto.Marshal(schema)
 	if err != nil {
 		return nil, err
@@ -182,11 +245,17 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, contractID
 	opts := &ContractUpdateOpts{OrgID: orgUUID, ContractID: contractUUID, ContractBody: rawSchema, Name: name}
 
 	c, err := uc.repo.Update(ctx, opts)
-	if c == nil {
+	if err != nil {
+		if errors.Is(err, ErrAlreadyExists) {
+			return nil, NewErrValidationStr("that contract name already exists")
+		}
+
+		return nil, fmt.Errorf("failed to update contract: %w", err)
+	} else if c == nil {
 		return nil, NewErrNotFound("contract")
 	}
 
-	return c, err
+	return c, nil
 }
 
 // Delete soft-deletes the entry

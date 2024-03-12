@@ -23,7 +23,7 @@ import (
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
-	"k8s.io/apimachinery/pkg/util/validation"
+	"github.com/moby/moby/pkg/namesgenerator"
 )
 
 type Organization struct {
@@ -55,7 +55,7 @@ func NewOrganizationUseCase(repo OrganizationRepo, repoUC *CASBackendUseCase, iU
 	}
 }
 
-const OrganizationRandomNameMaxTries = 10
+const RandomNameMaxTries = 10
 
 type createOptions struct {
 	createInlineBackend bool
@@ -72,9 +72,10 @@ func WithCreateInlineBackend() CreateOpt {
 
 func (uc *OrganizationUseCase) CreateWithRandomName(ctx context.Context, opts ...CreateOpt) (*Organization, error) {
 	// Try 10 times to create a random name
-	for i := 0; i < OrganizationRandomNameMaxTries; i++ {
+	for i := 0; i < RandomNameMaxTries; i++ {
 		// Create a random name
-		name, err := generateRandomName()
+		prefix := namesgenerator.GetRandomName(0)
+		name, err := generateValidDNS1123WithSuffix(prefix)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate random name: %w", err)
 		}
@@ -115,7 +116,7 @@ var errOrgName = errors.New("org names must only contain lowercase letters, numb
 func (uc *OrganizationUseCase) doCreate(ctx context.Context, name string, opts ...CreateOpt) (*Organization, error) {
 	uc.logger.Infow("msg", "Creating organization", "name", name)
 
-	if err := ValidateOrgName(name); err != nil {
+	if err := ValidateIsDNS1123(name); err != nil {
 		return nil, NewErrValidation(errOrgName)
 	}
 
@@ -139,22 +140,6 @@ func (uc *OrganizationUseCase) doCreate(ctx context.Context, name string, opts .
 	return org, nil
 }
 
-func ValidateOrgName(name string) error {
-	// The same validation done by Kubernetes for their namespace name
-	// https://github.com/kubernetes/apimachinery/blob/fa98d6eaedb4caccd69fc07d90bbb6a1e551f00f/pkg/api/validation/generic.go#L63
-	err := validation.IsDNS1123Label(name)
-	if len(err) > 0 {
-		errMsg := ""
-		for _, e := range err {
-			errMsg += e + "\n"
-		}
-
-		return errors.New(errMsg)
-	}
-
-	return nil
-}
-
 func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgID string, name *string) (*Organization, error) {
 	userUUID, err := uuid.Parse(userID)
 	if err != nil {
@@ -168,7 +153,7 @@ func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgID string,
 
 	// We validate the name to get ready for the name to become identifiers
 	if name != nil {
-		if err := ValidateOrgName(*name); err != nil {
+		if err := ValidateIsDNS1123(*name); err != nil {
 			return nil, NewErrValidation(errOrgName)
 		}
 	}
@@ -185,7 +170,7 @@ func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgID string,
 	org, err := uc.orgRepo.Update(ctx, orgUUID, name)
 	if err != nil {
 		if errors.Is(err, ErrAlreadyExists) {
-			return nil, NewErrValidationStr("an organization with that name already exists")
+			return nil, NewErrValidationStr("a organization with that name already exists")
 		}
 
 		return nil, fmt.Errorf("failed to update organization: %w", err)

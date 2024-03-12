@@ -266,6 +266,12 @@ func rollback(tx *ent.Tx, err error) error {
 	if rerr := tx.Rollback(); rerr != nil {
 		err = fmt.Errorf("%w: %w", err, rerr)
 	}
+
+	// If the error is a constraint error, we return a more specific error to indicate the client that's a duplicate
+	if ent.IsConstraintError(err) {
+		return biz.ErrAlreadyExists
+	}
+
 	return err
 }
 
