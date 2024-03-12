@@ -72,7 +72,12 @@ ${content.replaceAll("../../../docs/img/", "/img/")}`,
         sourceBaseUrl:
           "https://raw.githubusercontent.com/chainloop-dev/chainloop/main/docs/img",
         outDir: "static/img",
-        documents: ["fanout.png", "fanout-sdk.png"],
+        documents: [
+          "fanout.png",
+          "fanout-sdk.png",
+          "fanout-execute-materials.png",
+          "fanout-execute.png",
+        ],
         requestConfig: { responseType: "arraybuffer" },
       },
     ],
@@ -85,7 +90,7 @@ ${content.replaceAll("../../../docs/img/", "/img/")}`,
         noRuntimeDownloads: true,
         performCleanup: false,
         sourceBaseUrl:
-          "https://raw.githubusercontent.com/chainloop-dev/chainloop/main/docs",
+          "https://raw.githubusercontent.com/chainloop-dev/chainloop/main/devel",
         outDir: "docs/integrations",
         documents: ["integrations.md"],
         modifyContent: (filename, content) => {

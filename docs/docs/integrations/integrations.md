@@ -15,11 +15,11 @@ Below you can find the list of currently available integrations. If you can't fi
 
 | ID | Version | Description | Material Requirement |
 | --- | --- | --- | --- |
-| [dependency-track](https://github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/core/dependency-track/v1/README.md) | 1.2 | Send CycloneDX SBOMs to your Dependency-Track instance | SBOM_CYCLONEDX_JSON |
-| [smtp](https://github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/core/smtp/v1/README.md) | 1.0 | Send emails with information about a received attestation |  |
-| [oci-registry](https://github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/core/oci-registry/v1/README.md) | 1.0 | Send attestations to a compatible OCI registry |  |
+| [dependency-track](https://github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/core/dependency-track/v1/README.md) | 1.4 | Send CycloneDX SBOMs to your Dependency-Track instance | SBOM_CYCLONEDX_JSON |
 | [discord-webhook](https://github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/core/discord-webhook/v1/README.md) | 1.1 | Send attestations to Discord |  |
 | [guac](https://github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/core/guac/v1/README.md) | 1.0 | Export Attestation and SBOMs metadata to a blob storage backend so guacsec/guac can consume it | SBOM_CYCLONEDX_JSON, SBOM_SPDX_JSON |
+| [slack-webhook](https://github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/core/slack-webhook/v1/README.md) | 1.0 | Send attestations to Slack |  |
+| [smtp](https://github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/core/smtp/v1/README.md) | 1.0 | Send emails with information about a received attestation |  |
 
 ## How to use integrations
 
