@@ -91,6 +91,8 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 	contract, err := uc.findOrCreateContract(ctx, opts.OrgID, opts.ContractID, opts.Project, opts.Name)
 	if err != nil {
 		return nil, err
+	} else if contract == nil {
+		return nil, NewErrNotFound("contract")
 	}
 
 	// Set the potential new schemaID
@@ -109,7 +111,7 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 
 func (uc *WorkflowUseCase) Update(ctx context.Context, orgID, workflowID string, opts *WorkflowUpdateOpts) (*Workflow, error) {
 	if opts == nil {
-		return nil, NewErrValidationStr("no update options provided")
+		return nil, NewErrValidationStr("no updates provided")
 	}
 
 	orgUUID, err := uuid.Parse(orgID)

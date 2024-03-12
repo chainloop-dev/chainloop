@@ -55,6 +55,72 @@ func (s *workflowIntegrationTestSuite) TestContractLatestAvailable() {
 	})
 }
 
+func (s *workflowIntegrationTestSuite) TestCreate() {
+	ctx := context.Background()
+	testCases := []struct {
+		name       string
+		opts       *biz.WorkflowCreateOpts
+		wantErrMsg string
+	}{
+		{
+			name:       "org missing",
+			opts:       &biz.WorkflowCreateOpts{Name: "name"},
+			wantErrMsg: "required",
+		},
+		{
+			name:       "name missing",
+			opts:       &biz.WorkflowCreateOpts{OrgID: s.org.ID},
+			wantErrMsg: "required",
+		},
+		{
+			name:       "invalid name",
+			opts:       &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "this/not/valid"},
+			wantErrMsg: "RFC 1123",
+		},
+		{
+			name:       "another invalid name",
+			opts:       &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "this-not Valid"},
+			wantErrMsg: "RFC 1123",
+		},
+		{
+			name:       " invalid project name",
+			opts:       &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "valid", Project: "this-not Valid"},
+			wantErrMsg: "RFC 1123",
+		},
+		{
+			name:       "non-existing contract",
+			opts:       &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name", ContractID: uuid.Generate().String()},
+			wantErrMsg: "not found",
+		},
+		{
+			name: "can create it with just the name and the org",
+			opts: &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name"},
+		},
+		{
+			name: "with all items",
+			opts: &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "another-name", Project: "project", Team: "team", Description: "description"},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			got, err := s.Workflow.Create(ctx, tc.opts)
+			if tc.wantErrMsg != "" {
+				s.ErrorContains(err, tc.wantErrMsg)
+				return
+			}
+
+			require.NoError(s.T(), err)
+			s.NotEmpty(got.ID)
+			s.NotEmpty(got.CreatedAt)
+			s.Equal(tc.opts.Name, got.Name)
+			s.Equal(tc.opts.Description, got.Description)
+			s.Equal(tc.opts.Team, got.Team)
+			s.Equal(tc.opts.Project, got.Project)
+		})
+	}
+}
+
 func (s *workflowIntegrationTestSuite) TestUpdate() {
 	ctx := context.Background()
 	const (
@@ -90,10 +156,11 @@ func (s *workflowIntegrationTestSuite) TestUpdate() {
 	testCases := []struct {
 		name string
 		// if not set, it will use the workflow we create on each run
-		id      string
-		updates *biz.WorkflowUpdateOpts
-		want    *biz.Workflow
-		wantErr bool
+		id         string
+		updates    *biz.WorkflowUpdateOpts
+		want       *biz.Workflow
+		wantErr    bool
+		wantErrMsg string
 	}{
 		{
 			name:    "non existing workflow",
@@ -108,8 +175,21 @@ func (s *workflowIntegrationTestSuite) TestUpdate() {
 			wantErr: true,
 		},
 		{
-			name:    "no updates",
-			wantErr: true,
+			name:       "no updates",
+			wantErr:    true,
+			wantErrMsg: "no updates provided",
+		},
+		{
+			name:       "invalid name",
+			wantErr:    true,
+			wantErrMsg: "RFC 1123",
+			updates:    &biz.WorkflowUpdateOpts{Name: toPtrS(" no no ")},
+		},
+		{
+			name:       "invalid Project",
+			wantErr:    true,
+			wantErrMsg: "RFC 1123",
+			updates:    &biz.WorkflowUpdateOpts{Project: toPtrS(" no no ")},
 		},
 		{
 			name:    "update name",
@@ -157,6 +237,10 @@ func (s *workflowIntegrationTestSuite) TestUpdate() {
 			got, err := s.Workflow.Update(ctx, s.org.ID, workflowID, tc.updates)
 			if tc.wantErr {
 				s.Error(err)
+				if tc.wantErrMsg != "" {
+					s.Contains(err.Error(), tc.wantErrMsg)
+				}
+
 				return
 			}
 			s.NoError(err)
