@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package biz_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -72,8 +73,15 @@ func (s *workflowIntegrationTestSuite) TestUpdate() {
 		s.False(workflow.Public)
 	})
 
-	s.Run("can't update a workflow in another org", func() {
+	s.Run("can't update if no changes are provided", func() {
 		got, err := s.Workflow.Update(ctx, org2.ID, workflow.ID.String(), nil)
+		s.True(biz.IsErrValidation(err))
+		s.Error(err)
+		s.Nil(got)
+	})
+
+	s.Run("can't update a workflow in another org", func() {
+		got, err := s.Workflow.Update(ctx, org2.ID, workflow.ID.String(), &biz.WorkflowUpdateOpts{Name: toPtrS("new-name")})
 		s.True(biz.IsNotFound(err))
 		s.Error(err)
 		s.Nil(got)
@@ -90,54 +98,55 @@ func (s *workflowIntegrationTestSuite) TestUpdate() {
 		{
 			name:    "non existing workflow",
 			id:      uuid.Generate().String(),
-			updates: &biz.WorkflowUpdateOpts{Name: toPtrS("new name")},
+			updates: &biz.WorkflowUpdateOpts{Name: toPtrS("new-name")},
 			wantErr: true,
 		},
 		{
 			name:    "invalid uuid",
 			id:      "deadbeef",
-			updates: &biz.WorkflowUpdateOpts{Name: toPtrS("new name")},
+			updates: &biz.WorkflowUpdateOpts{Name: toPtrS("new-name")},
 			wantErr: true,
 		},
 		{
-			name: "no updates",
-			want: &biz.Workflow{Name: name, Team: team, Project: project, Public: false, Description: description},
+			name:    "no updates",
+			wantErr: true,
 		},
 		{
 			name:    "update name",
-			updates: &biz.WorkflowUpdateOpts{Name: toPtrS("new name")},
-			want:    &biz.Workflow{Name: "new name", Description: description, Team: team, Project: project, Public: false},
+			updates: &biz.WorkflowUpdateOpts{Name: toPtrS("new-name")},
+			want:    &biz.Workflow{Name: "new-name", Description: description, Team: team, Project: project, Public: false},
 		},
 		{
 			name:    "update description",
 			updates: &biz.WorkflowUpdateOpts{Description: toPtrS("new description")},
-			want:    &biz.Workflow{Name: name, Description: "new description", Team: team, Project: project, Public: false},
+			want:    &biz.Workflow{Description: "new description", Team: team, Project: project, Public: false},
 		},
 		{
 			name:    "update visibility",
 			updates: &biz.WorkflowUpdateOpts{Public: toPtrBool(true)},
-			want:    &biz.Workflow{Name: name, Description: description, Team: team, Project: project, Public: true},
+			want:    &biz.Workflow{Description: description, Team: team, Project: project, Public: true},
 		},
 		{
 			name:    "update all options",
-			updates: &biz.WorkflowUpdateOpts{Name: toPtrS("new name"), Project: toPtrS("new project"), Team: toPtrS("new team"), Public: toPtrBool(true)},
-			want:    &biz.Workflow{Name: "new name", Description: description, Team: "new team", Project: "new project", Public: true},
+			updates: &biz.WorkflowUpdateOpts{Name: toPtrS("new-name-2"), Project: toPtrS("new-project"), Team: toPtrS("new team"), Public: toPtrBool(true)},
+			want:    &biz.Workflow{Name: "new-name-2", Description: description, Team: "new team", Project: "new-project", Public: true},
 		},
 		{
 			name:    "name can't be emptied",
 			updates: &biz.WorkflowUpdateOpts{Name: toPtrS("")},
-			want:    &biz.Workflow{Name: name, Team: team, Project: project, Description: description},
+			wantErr: true,
 		},
 		{
 			name:    "but other opts can",
 			updates: &biz.WorkflowUpdateOpts{Team: toPtrS(""), Project: toPtrS(""), Description: toPtrS("")},
-			want:    &biz.Workflow{Name: name, Team: "", Project: "", Description: ""},
+			want:    &biz.Workflow{Team: "", Project: "", Description: ""},
 		},
 	}
 
-	for _, tc := range testCases {
+	for i, tc := range testCases {
 		s.Run(tc.name, func() {
-			workflow, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Description: description, Name: name, Team: team, Project: project, OrgID: s.org.ID})
+			wfName := fmt.Sprintf("%s-%d", name, i)
+			workflow, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Description: description, Name: wfName, Team: team, Project: project, OrgID: s.org.ID})
 			require.NoError(s.T(), err)
 
 			workflowID := tc.id
@@ -153,9 +162,15 @@ func (s *workflowIntegrationTestSuite) TestUpdate() {
 			s.NoError(err)
 
 			if diff := cmp.Diff(tc.want, got,
-				cmpopts.IgnoreFields(biz.Workflow{}, "CreatedAt", "ID", "OrgID", "ContractID", "ContractRevisionLatest"),
+				cmpopts.IgnoreFields(biz.Workflow{}, "Name", "CreatedAt", "ID", "OrgID", "ContractID", "ContractRevisionLatest"),
 			); diff != "" {
 				s.Failf("mismatch (-want +got):\n%s", diff)
+			}
+
+			if tc.want.Name != "" {
+				s.Equal(tc.want.Name, got.Name)
+			} else {
+				s.Equal(wfName, got.Name)
 			}
 		})
 	}

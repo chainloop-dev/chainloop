@@ -108,6 +108,10 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 }
 
 func (uc *WorkflowUseCase) Update(ctx context.Context, orgID, workflowID string, opts *WorkflowUpdateOpts) (*Workflow, error) {
+	if opts == nil {
+		return nil, NewErrValidationStr("no update options provided")
+	}
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -125,7 +129,7 @@ func (uc *WorkflowUseCase) Update(ctx context.Context, orgID, workflowID string,
 		}
 	}
 
-	if opts.Project != nil {
+	if opts.Project != nil && *opts.Project != "" {
 		if err := ValidateIsDNS1123(*opts.Project); err != nil {
 			return nil, NewErrValidation(err)
 		}
