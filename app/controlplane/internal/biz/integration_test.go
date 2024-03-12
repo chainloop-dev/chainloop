@@ -193,7 +193,7 @@ func (s *testSuite) SetupTest() {
 	assert.NoError(err)
 
 	// Workflow
-	s.workflow, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test workflow", OrgID: s.org.ID})
+	s.workflow, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test-workflow", OrgID: s.org.ID})
 	assert.NoError(err)
 
 	// Integration configuration

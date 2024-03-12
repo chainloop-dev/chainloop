@@ -22,6 +22,7 @@ import (
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
 )
 
@@ -54,5 +55,12 @@ func (WorkflowContract) Edges() []ent.Edge {
 			Unique(),
 		// A contract can be associated to multiple workflows
 		edge.From("workflows", Workflow.Type).Ref("contract"),
+	}
+}
+
+func (WorkflowContract) Indexes() []ent.Index {
+	return []ent.Index{
+		// names are unique within an organization
+		index.Fields("name").Edges("organization").Unique(),
 	}
 }

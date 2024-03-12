@@ -20,7 +20,6 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
-	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	errors "github.com/go-kratos/kratos/v2/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -47,7 +46,7 @@ func (s *WorkflowContractService) List(ctx context.Context, _ *pb.WorkflowContra
 
 	contracts, err := s.contractUseCase.List(ctx, currentOrg.ID)
 	if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr("contract", err, s.log)
 	}
 
 	result := make([]*pb.WorkflowContractItem, 0, len(contracts))
@@ -66,7 +65,7 @@ func (s *WorkflowContractService) Describe(ctx context.Context, req *pb.Workflow
 
 	contractWithVersion, err := s.contractUseCase.Describe(ctx, currentOrg.ID, req.GetId(), int(req.GetRevision()))
 	if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr("contract", err, s.log)
 	} else if contractWithVersion == nil {
 		return nil, errors.NotFound("not found", "contract not found")
 	}
@@ -86,9 +85,9 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 	}
 
 	// Currently supporting only v1 version
-	schema, err := s.contractUseCase.Create(ctx, currentOrg.ID, req.Name, req.GetV1())
+	schema, err := s.contractUseCase.Create(ctx, &biz.WorkflowContractCreateOpts{OrgID: currentOrg.ID, Name: req.Name, Schema: req.GetV1()})
 	if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr("contract", err, s.log)
 	}
 
 	return &pb.WorkflowContractServiceCreateResponse{Result: bizWorkFlowContractToPb(schema)}, nil
@@ -102,10 +101,7 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 
 	schemaWithVersion, err := s.contractUseCase.Update(ctx, currentOrg.ID, req.GetId(), req.GetName(), req.GetV1())
 	if err != nil {
-		if biz.IsNotFound(err) {
-			return nil, errors.NotFound("not found", "contract not found")
-		}
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr("contract", err, s.log)
 	}
 
 	result := &pb.WorkflowContractServiceUpdateResponse_Result{
@@ -123,13 +119,7 @@ func (s *WorkflowContractService) Delete(ctx context.Context, req *pb.WorkflowCo
 	}
 
 	if err := s.contractUseCase.Delete(ctx, currentOrg.ID, req.Id); err != nil {
-		if biz.IsNotFound(err) {
-			return nil, errors.NotFound("not found", "contract not found")
-		} else if biz.IsErrValidation(err) {
-			return nil, err
-		}
-
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr("contract", err, s.log)
 	}
 
 	return &pb.WorkflowContractServiceDeleteResponse{}, nil

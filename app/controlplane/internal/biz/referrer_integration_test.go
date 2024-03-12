@@ -371,7 +371,7 @@ func (s *referrerIntegrationTestSuite) SetupTest() {
 
 	s.workflow1, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "wf", Team: "team", OrgID: s.org1.ID})
 	require.NoError(s.T(), err)
-	s.workflow2, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "wf from org 2", Team: "team", OrgID: s.org2.ID})
+	s.workflow2, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "wf-from-org-2", Team: "team", OrgID: s.org2.ID})
 	require.NoError(s.T(), err)
 
 	// user 1 has access to org 1 and 2
