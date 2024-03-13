@@ -9,6 +9,14 @@ on:
 concurrency: "deploy-to-prod"
 
 jobs:
+  chainloop_init:
+    name: Chainloop Init
+    uses: chainloop-dev/labs/.github/workflows/chainloop_init.yml@7f4de29435dc009326587051f507d2cd8c77d28b
+    secrets:
+      api_token: ${{ secrets.CHAINLOOP_ROBOT_ACCOUNT }}
+    with:
+      chainloop_labs_branch: 7f4de29435dc009326587051f507d2cd8c77d28b
+
   deploy_docs:
     name: Deploy Documentation
     runs-on: ubuntu-latest
@@ -16,7 +24,7 @@ jobs:
       run:
         working-directory: ./docs
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           sparse-checkout: |
             docs
@@ -27,7 +35,7 @@ jobs:
           # Install Syft
           wget --no-verbose https://raw.githubusercontent.com/anchore/syft/main/install.sh -O - | sh -s -- -b /usr/local/bin
 
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
 
@@ -57,3 +65,16 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
       NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+
+  chainloop_push:
+    name: Chainloop Push
+    uses: chainloop-dev/labs/.github/workflows/chainloop_push.yml@7f4de29435dc009326587051f507d2cd8c77d28b
+    needs:
+      - deploy_docs
+    secrets:
+      api_token: ${{ secrets.CHAINLOOP_ROBOT_ACCOUNT_DOCS_RELEASE }}
+      signing_key: ${{ secrets.COSIGN_KEY }}
+      signing_key_password: ${{ secrets.COSIGN_PASSWORD }}
+    with:
+      attestation_name: "docs"
+      chainloop_labs_branch: 7f4de29435dc009326587051f507d2cd8c77d28b
