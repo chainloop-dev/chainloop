@@ -31,30 +31,38 @@ func (s *workflowContractIntegrationTestSuite) TestUpdate() {
 	ctx := context.Background()
 
 	testCases := []struct {
-		name         string
-		contractName string
-		OrgID, ID    string
-		inputSchema  *schemav1.CraftingSchema
-		wantErrMsg   string
-		wantRevision int
+		name            string
+		OrgID, ID       string
+		input           *biz.WorkflowContractUpdateOpts
+		inputSchema     *schemav1.CraftingSchema
+		wantErrMsg      string
+		wantRevision    int
+		wantName        string
+		wantDescription string
 	}{
 		{
-			name:         "non-existing contract",
-			contractName: "non-existing",
-			OrgID:        s.org.ID,
-			ID:           uuid.NewString(),
-			wantErrMsg:   "not found",
+			name:       "non-updates",
+			wantErrMsg: "no updates",
 		},
 		{
-			name:         "existing contract invalid name",
-			contractName: "invalid name",
-			OrgID:        s.org.ID,
-			ID:           s.contractOrg1.ID.String(),
-			wantErrMsg:   "RFC 1123",
+			name:       "non-existing contract",
+			wantName:   "non-existing",
+			OrgID:      s.org.ID,
+			input:      &biz.WorkflowContractUpdateOpts{},
+			ID:         uuid.NewString(),
+			wantErrMsg: "not found",
+		},
+		{
+			name:       "existing contract invalid name",
+			input:      &biz.WorkflowContractUpdateOpts{Name: "invalid name"},
+			OrgID:      s.org.ID,
+			ID:         s.contractOrg1.ID.String(),
+			wantErrMsg: "RFC 1123",
 		},
 		{
 			name:         "existing contract valid name, does not bump revision",
-			contractName: "valid-name",
+			input:        &biz.WorkflowContractUpdateOpts{Name: "valid-name"},
+			wantName:     "valid-name",
 			OrgID:        s.org.ID,
 			ID:           s.contractOrg1.ID.String(),
 			wantRevision: 1,
@@ -63,30 +71,46 @@ func (s *workflowContractIntegrationTestSuite) TestUpdate() {
 			name:         "updating schema bumps revision",
 			OrgID:        s.org.ID,
 			ID:           s.contractOrg1.ID.String(),
-			contractName: "valid-name",
-			inputSchema:  &schemav1.CraftingSchema{SchemaVersion: "v123"},
+			wantName:     "valid-name",
+			input:        &biz.WorkflowContractUpdateOpts{Schema: &schemav1.CraftingSchema{SchemaVersion: "v123"}},
 			wantRevision: 2,
 		},
 		{
 			name:         "updating with same schema DOES NOT bump revision",
 			OrgID:        s.org.ID,
 			ID:           s.contractOrg1.ID.String(),
-			contractName: "valid-name",
-			inputSchema:  &schemav1.CraftingSchema{SchemaVersion: "v123"},
+			input:        &biz.WorkflowContractUpdateOpts{Schema: &schemav1.CraftingSchema{SchemaVersion: "v123"}},
+			wantName:     "valid-name",
 			wantRevision: 2,
+		},
+		{
+			name:            "you can update the description",
+			OrgID:           s.org.ID,
+			ID:              s.contractOrg1.ID.String(),
+			input:           &biz.WorkflowContractUpdateOpts{Description: toPtrS("new description")},
+			wantName:        "valid-name",
+			wantDescription: "new description",
+			wantRevision:    2,
 		},
 	}
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			contract, err := s.WorkflowContract.Update(ctx, tc.OrgID, tc.ID, tc.contractName, tc.inputSchema)
+			contract, err := s.WorkflowContract.Update(ctx, tc.OrgID, tc.ID, tc.input)
 			if tc.wantErrMsg != "" {
 				s.ErrorContains(err, tc.wantErrMsg)
 				return
 			}
-
 			require.NoError(s.T(), err)
-			s.Equal(tc.contractName, contract.Contract.Name)
+
+			if tc.wantName != "" {
+				s.Equal(tc.wantName, contract.Contract.Name)
+			}
+
+			if tc.wantDescription != "" {
+				s.Equal(tc.wantDescription, contract.Contract.Description)
+			}
+
 			s.Equal(tc.wantRevision, contract.Version.Revision)
 		})
 	}
@@ -96,52 +120,61 @@ func (s *workflowContractIntegrationTestSuite) TestCreate() {
 	ctx := context.Background()
 
 	testCases := []struct {
-		name       string
-		opts       *biz.WorkflowContractCreateOpts
-		wantErrMsg string
+		name            string
+		input           *biz.WorkflowContractCreateOpts
+		wantErrMsg      string
+		wantName        string
+		wantDescription string
 	}{
 		{
 			name:       "org missing",
-			opts:       &biz.WorkflowContractCreateOpts{Name: "name"},
+			input:      &biz.WorkflowContractCreateOpts{Name: "name"},
 			wantErrMsg: "required",
 		},
 		{
 			name:       "name missing",
-			opts:       &biz.WorkflowContractCreateOpts{OrgID: s.org.ID},
+			input:      &biz.WorkflowContractCreateOpts{OrgID: s.org.ID},
 			wantErrMsg: "required",
 		},
 		{
 			name:       "invalid name",
-			opts:       &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: "this/not/valid"},
+			input:      &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: "this/not/valid"},
 			wantErrMsg: "RFC 1123",
 		},
 		{
 			name:       "another invalid name",
-			opts:       &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: "this-not Valid"},
+			input:      &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: "this-not Valid"},
 			wantErrMsg: "RFC 1123",
 		},
 		{
-			name: "non-existing contract name",
-			opts: &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: "name"},
+			name:  "non-existing contract name",
+			input: &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: "name"},
 		},
 		{
 			name:       "existing contract name",
-			opts:       &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: "name"},
+			input:      &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: "name"},
 			wantErrMsg: "taken",
 		},
 		{
-			name: "can create same name in different org",
-			opts: &biz.WorkflowContractCreateOpts{OrgID: s.org2.ID, Name: "name"},
+			name:     "can create same name in different org",
+			input:    &biz.WorkflowContractCreateOpts{OrgID: s.org2.ID, Name: "name"},
+			wantName: "name",
 		},
 		{
-			name: "or ask to generate a random name",
-			opts: &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: "name", AddUniquePrefix: true},
+			name:  "or ask to generate a random name",
+			input: &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: "name", AddUniquePrefix: true},
+		},
+		{
+			name:            "you can include a description",
+			input:           &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: "name-2", Description: toPtrS("description")},
+			wantName:        "name-2",
+			wantDescription: "description",
 		},
 	}
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			contract, err := s.WorkflowContract.Create(ctx, tc.opts)
+			contract, err := s.WorkflowContract.Create(ctx, tc.input)
 			if tc.wantErrMsg != "" {
 				s.ErrorContains(err, tc.wantErrMsg)
 				return
@@ -150,6 +183,14 @@ func (s *workflowContractIntegrationTestSuite) TestCreate() {
 			require.NoError(s.T(), err)
 			s.NotEmpty(contract.ID)
 			s.NotEmpty(contract.CreatedAt)
+
+			if tc.wantDescription != "" {
+				s.Equal(tc.wantDescription, contract.Description)
+			}
+
+			if tc.wantName != "" {
+				s.Equal(tc.wantName, contract.Name)
+			}
 		})
 	}
 }

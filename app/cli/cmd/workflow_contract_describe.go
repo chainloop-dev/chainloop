@@ -97,6 +97,8 @@ func contractDescribeTableOutput(contractWithVersion *action.WorkflowContractWit
 	t.SetTitle("Contract")
 	t.AppendRow(table.Row{"Name", c.Name})
 	t.AppendSeparator()
+	t.AppendRow(table.Row{"Description", c.Description})
+	t.AppendSeparator()
 	t.AppendRow(table.Row{"ID", c.ID})
 	t.AppendSeparator()
 	t.AppendRow(table.Row{"Associated Workflows", strings.Join(c.WorkflowIDs, ", ")})

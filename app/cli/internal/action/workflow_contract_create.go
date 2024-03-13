@@ -30,10 +30,13 @@ func NewWorkflowContractCreate(cfg *ActionsOpts) *WorkflowContractCreate {
 	return &WorkflowContractCreate{cfg}
 }
 
-func (action *WorkflowContractCreate) Run(name, contractPath string) (*WorkflowContractItem, error) {
+func (action *WorkflowContractCreate) Run(name string, description *string, contractPath string) (*WorkflowContractItem, error) {
 	client := pb.NewWorkflowContractServiceClient(action.cfg.CPConnection)
 
-	request := &pb.WorkflowContractServiceCreateRequest{Name: name}
+	request := &pb.WorkflowContractServiceCreateRequest{
+		Name: name, Description: description,
+	}
+
 	if contractPath != "" {
 		contract, err := crafter.LoadSchema(contractPath)
 		if err != nil {

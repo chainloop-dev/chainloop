@@ -9361,6 +9361,7 @@ type WorkflowContractMutation struct {
 	name                *string
 	created_at          *time.Time
 	deleted_at          *time.Time
+	description         *string
 	clearedFields       map[string]struct{}
 	versions            map[uuid.UUID]struct{}
 	removedversions     map[uuid.UUID]struct{}
@@ -9600,6 +9601,55 @@ func (m *WorkflowContractMutation) ResetDeletedAt() {
 	delete(m.clearedFields, workflowcontract.FieldDeletedAt)
 }
 
+// SetDescription sets the "description" field.
+func (m *WorkflowContractMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *WorkflowContractMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the WorkflowContract entity.
+// If the WorkflowContract object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowContractMutation) OldDescription(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of the "description" field.
+func (m *WorkflowContractMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[workflowcontract.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *WorkflowContractMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[workflowcontract.FieldDescription]
+	return ok
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *WorkflowContractMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, workflowcontract.FieldDescription)
+}
+
 // AddVersionIDs adds the "versions" edge to the WorkflowContractVersion entity by ids.
 func (m *WorkflowContractMutation) AddVersionIDs(ids ...uuid.UUID) {
 	if m.versions == nil {
@@ -9781,7 +9831,7 @@ func (m *WorkflowContractMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *WorkflowContractMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 4)
 	if m.name != nil {
 		fields = append(fields, workflowcontract.FieldName)
 	}
@@ -9790,6 +9840,9 @@ func (m *WorkflowContractMutation) Fields() []string {
 	}
 	if m.deleted_at != nil {
 		fields = append(fields, workflowcontract.FieldDeletedAt)
+	}
+	if m.description != nil {
+		fields = append(fields, workflowcontract.FieldDescription)
 	}
 	return fields
 }
@@ -9805,6 +9858,8 @@ func (m *WorkflowContractMutation) Field(name string) (ent.Value, bool) {
 		return m.CreatedAt()
 	case workflowcontract.FieldDeletedAt:
 		return m.DeletedAt()
+	case workflowcontract.FieldDescription:
+		return m.Description()
 	}
 	return nil, false
 }
@@ -9820,6 +9875,8 @@ func (m *WorkflowContractMutation) OldField(ctx context.Context, name string) (e
 		return m.OldCreatedAt(ctx)
 	case workflowcontract.FieldDeletedAt:
 		return m.OldDeletedAt(ctx)
+	case workflowcontract.FieldDescription:
+		return m.OldDescription(ctx)
 	}
 	return nil, fmt.Errorf("unknown WorkflowContract field %s", name)
 }
@@ -9849,6 +9906,13 @@ func (m *WorkflowContractMutation) SetField(name string, value ent.Value) error 
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDeletedAt(v)
+		return nil
+	case workflowcontract.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowContract field %s", name)
@@ -9883,6 +9947,9 @@ func (m *WorkflowContractMutation) ClearedFields() []string {
 	if m.FieldCleared(workflowcontract.FieldDeletedAt) {
 		fields = append(fields, workflowcontract.FieldDeletedAt)
 	}
+	if m.FieldCleared(workflowcontract.FieldDescription) {
+		fields = append(fields, workflowcontract.FieldDescription)
+	}
 	return fields
 }
 
@@ -9900,6 +9967,9 @@ func (m *WorkflowContractMutation) ClearField(name string) error {
 	case workflowcontract.FieldDeletedAt:
 		m.ClearDeletedAt()
 		return nil
+	case workflowcontract.FieldDescription:
+		m.ClearDescription()
+		return nil
 	}
 	return fmt.Errorf("unknown WorkflowContract nullable field %s", name)
 }
@@ -9916,6 +9986,9 @@ func (m *WorkflowContractMutation) ResetField(name string) error {
 		return nil
 	case workflowcontract.FieldDeletedAt:
 		m.ResetDeletedAt()
+		return nil
+	case workflowcontract.FieldDescription:
+		m.ResetDescription()
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowContract field %s", name)

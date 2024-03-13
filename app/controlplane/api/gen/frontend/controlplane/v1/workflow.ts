@@ -19,7 +19,7 @@ export interface WorkflowServiceUpdateRequest {
   id: string;
   /**
    * "optional" allow us to detect if the value is explicitly set
-   * and not just the default balue
+   * and not just the default value
    */
   name?: string | undefined;
   project?: string | undefined;

@@ -59,6 +59,26 @@ func (wcu *WorkflowContractUpdate) ClearDeletedAt() *WorkflowContractUpdate {
 	return wcu
 }
 
+// SetDescription sets the "description" field.
+func (wcu *WorkflowContractUpdate) SetDescription(s string) *WorkflowContractUpdate {
+	wcu.mutation.SetDescription(s)
+	return wcu
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (wcu *WorkflowContractUpdate) SetNillableDescription(s *string) *WorkflowContractUpdate {
+	if s != nil {
+		wcu.SetDescription(*s)
+	}
+	return wcu
+}
+
+// ClearDescription clears the value of the "description" field.
+func (wcu *WorkflowContractUpdate) ClearDescription() *WorkflowContractUpdate {
+	wcu.mutation.ClearDescription()
+	return wcu
+}
+
 // AddVersionIDs adds the "versions" edge to the WorkflowContractVersion entity by IDs.
 func (wcu *WorkflowContractUpdate) AddVersionIDs(ids ...uuid.UUID) *WorkflowContractUpdate {
 	wcu.mutation.AddVersionIDs(ids...)
@@ -211,6 +231,12 @@ func (wcu *WorkflowContractUpdate) sqlSave(ctx context.Context) (n int, err erro
 	}
 	if wcu.mutation.DeletedAtCleared() {
 		_spec.ClearField(workflowcontract.FieldDeletedAt, field.TypeTime)
+	}
+	if value, ok := wcu.mutation.Description(); ok {
+		_spec.SetField(workflowcontract.FieldDescription, field.TypeString, value)
+	}
+	if wcu.mutation.DescriptionCleared() {
+		_spec.ClearField(workflowcontract.FieldDescription, field.TypeString)
 	}
 	if wcu.mutation.VersionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -376,6 +402,26 @@ func (wcuo *WorkflowContractUpdateOne) SetNillableDeletedAt(t *time.Time) *Workf
 // ClearDeletedAt clears the value of the "deleted_at" field.
 func (wcuo *WorkflowContractUpdateOne) ClearDeletedAt() *WorkflowContractUpdateOne {
 	wcuo.mutation.ClearDeletedAt()
+	return wcuo
+}
+
+// SetDescription sets the "description" field.
+func (wcuo *WorkflowContractUpdateOne) SetDescription(s string) *WorkflowContractUpdateOne {
+	wcuo.mutation.SetDescription(s)
+	return wcuo
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (wcuo *WorkflowContractUpdateOne) SetNillableDescription(s *string) *WorkflowContractUpdateOne {
+	if s != nil {
+		wcuo.SetDescription(*s)
+	}
+	return wcuo
+}
+
+// ClearDescription clears the value of the "description" field.
+func (wcuo *WorkflowContractUpdateOne) ClearDescription() *WorkflowContractUpdateOne {
+	wcuo.mutation.ClearDescription()
 	return wcuo
 }
 
@@ -561,6 +607,12 @@ func (wcuo *WorkflowContractUpdateOne) sqlSave(ctx context.Context) (_node *Work
 	}
 	if wcuo.mutation.DeletedAtCleared() {
 		_spec.ClearField(workflowcontract.FieldDeletedAt, field.TypeTime)
+	}
+	if value, ok := wcuo.mutation.Description(); ok {
+		_spec.SetField(workflowcontract.FieldDescription, field.TypeString, value)
+	}
+	if wcuo.mutation.DescriptionCleared() {
+		_spec.ClearField(workflowcontract.FieldDescription, field.TypeString)
 	}
 	if wcuo.mutation.VersionsCleared() {
 		edge := &sqlgraph.EdgeSpec{

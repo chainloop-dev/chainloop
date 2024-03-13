@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -85,7 +85,10 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 	}
 
 	// Currently supporting only v1 version
-	schema, err := s.contractUseCase.Create(ctx, &biz.WorkflowContractCreateOpts{OrgID: currentOrg.ID, Name: req.Name, Schema: req.GetV1()})
+	schema, err := s.contractUseCase.Create(ctx, &biz.WorkflowContractCreateOpts{
+		OrgID: currentOrg.ID,
+		Name:  req.Name, Description: req.Description,
+		Schema: req.GetV1()})
 	if err != nil {
 		return nil, handleUseCaseErr("contract", err, s.log)
 	}
@@ -99,7 +102,12 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 		return nil, err
 	}
 
-	schemaWithVersion, err := s.contractUseCase.Update(ctx, currentOrg.ID, req.GetId(), req.GetName(), req.GetV1())
+	schemaWithVersion, err := s.contractUseCase.Update(ctx, currentOrg.ID, req.GetId(),
+		&biz.WorkflowContractUpdateOpts{
+			Name:        req.GetName(),
+			Schema:      req.GetV1(),
+			Description: req.Description,
+		})
 	if err != nil {
 		return nil, handleUseCaseErr("contract", err, s.log)
 	}
@@ -132,6 +140,7 @@ func bizWorkFlowContractToPb(schema *biz.WorkflowContract) *pb.WorkflowContractI
 		Name:           schema.Name,
 		LatestRevision: int32(schema.LatestRevision),
 		WorkflowIds:    schema.WorkflowIDs,
+		Description:    schema.Description,
 	}
 }
 

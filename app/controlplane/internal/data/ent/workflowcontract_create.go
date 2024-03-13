@@ -58,6 +58,20 @@ func (wcc *WorkflowContractCreate) SetNillableDeletedAt(t *time.Time) *WorkflowC
 	return wcc
 }
 
+// SetDescription sets the "description" field.
+func (wcc *WorkflowContractCreate) SetDescription(s string) *WorkflowContractCreate {
+	wcc.mutation.SetDescription(s)
+	return wcc
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (wcc *WorkflowContractCreate) SetNillableDescription(s *string) *WorkflowContractCreate {
+	if s != nil {
+		wcc.SetDescription(*s)
+	}
+	return wcc
+}
+
 // SetID sets the "id" field.
 func (wcc *WorkflowContractCreate) SetID(u uuid.UUID) *WorkflowContractCreate {
 	wcc.mutation.SetID(u)
@@ -220,6 +234,10 @@ func (wcc *WorkflowContractCreate) createSpec() (*WorkflowContract, *sqlgraph.Cr
 	if value, ok := wcc.mutation.DeletedAt(); ok {
 		_spec.SetField(workflowcontract.FieldDeletedAt, field.TypeTime, value)
 		_node.DeletedAt = value
+	}
+	if value, ok := wcc.mutation.Description(); ok {
+		_spec.SetField(workflowcontract.FieldDescription, field.TypeString, value)
+		_node.Description = value
 	}
 	if nodes := wcc.mutation.VersionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

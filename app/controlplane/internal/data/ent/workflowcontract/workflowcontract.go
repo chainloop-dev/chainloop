@@ -21,6 +21,8 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldDeletedAt holds the string denoting the deleted_at field in the database.
 	FieldDeletedAt = "deleted_at"
+	// FieldDescription holds the string denoting the description field in the database.
+	FieldDescription = "description"
 	// EdgeVersions holds the string denoting the versions edge name in mutations.
 	EdgeVersions = "versions"
 	// EdgeOrganization holds the string denoting the organization edge name in mutations.
@@ -58,6 +60,7 @@ var Columns = []string{
 	FieldName,
 	FieldCreatedAt,
 	FieldDeletedAt,
+	FieldDescription,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "workflow_contracts"
@@ -109,6 +112,11 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByDeletedAt orders the results by the deleted_at field.
 func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDeletedAt, opts...).ToFunc()
+}
+
+// ByDescription orders the results by the description field.
+func ByDescription(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDescription, opts...).ToFunc()
 }
 
 // ByVersionsCount orders the results by versions count.

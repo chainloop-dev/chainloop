@@ -646,6 +646,8 @@ func (m *WorkflowContractItem) validate(all bool) error {
 
 	// no validation rules for Name
 
+	// no validation rules for Description
+
 	if all {
 		switch v := interface{}(m.GetCreatedAt()).(type) {
 		case interface{ ValidateAll() error }:

@@ -25,6 +25,8 @@ type WorkflowContract struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// DeletedAt holds the value of the "deleted_at" field.
 	DeletedAt time.Time `json:"deleted_at,omitempty"`
+	// Description holds the value of the "description" field.
+	Description string `json:"description,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the WorkflowContractQuery when eager-loading is set.
 	Edges                           WorkflowContractEdges `json:"edges"`
@@ -81,7 +83,7 @@ func (*WorkflowContract) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case workflowcontract.FieldName:
+		case workflowcontract.FieldName, workflowcontract.FieldDescription:
 			values[i] = new(sql.NullString)
 		case workflowcontract.FieldCreatedAt, workflowcontract.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
@@ -127,6 +129,12 @@ func (wc *WorkflowContract) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field deleted_at", values[i])
 			} else if value.Valid {
 				wc.DeletedAt = value.Time
+			}
+		case workflowcontract.FieldDescription:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field description", values[i])
+			} else if value.Valid {
+				wc.Description = value.String
 			}
 		case workflowcontract.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -194,6 +202,9 @@ func (wc *WorkflowContract) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("deleted_at=")
 	builder.WriteString(wc.DeletedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("description=")
+	builder.WriteString(wc.Description)
 	builder.WriteByte(')')
 	return builder.String()
 }

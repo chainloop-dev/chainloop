@@ -340,6 +340,7 @@ var (
 		{Name: "name", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "organization_workflow_contracts", Type: field.TypeUUID, Nullable: true},
 	}
 	// WorkflowContractsTable holds the schema information for the "workflow_contracts" table.
@@ -350,7 +351,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "workflow_contracts_organizations_workflow_contracts",
-				Columns:    []*schema.Column{WorkflowContractsColumns[4]},
+				Columns:    []*schema.Column{WorkflowContractsColumns[5]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -359,7 +360,7 @@ var (
 			{
 				Name:    "workflowcontract_name_organization_workflow_contracts",
 				Unique:  true,
-				Columns: []*schema.Column{WorkflowContractsColumns[1], WorkflowContractsColumns[4]},
+				Columns: []*schema.Column{WorkflowContractsColumns[1], WorkflowContractsColumns[5]},
 			},
 		},
 	}

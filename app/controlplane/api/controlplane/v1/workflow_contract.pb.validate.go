@@ -362,6 +362,10 @@ func (m *WorkflowContractServiceCreateRequest) validate(all bool) error {
 		_ = v // ensures v is used
 	}
 
+	if m.Description != nil {
+		// no validation rules for Description
+	}
+
 	if len(errors) > 0 {
 		return WorkflowContractServiceCreateRequestMultiError(errors)
 	}
@@ -659,6 +663,10 @@ func (m *WorkflowContractServiceUpdateRequest) validate(all bool) error {
 
 	default:
 		_ = v // ensures v is used
+	}
+
+	if m.Description != nil {
+		// no validation rules for Description
 	}
 
 	if len(errors) > 0 {

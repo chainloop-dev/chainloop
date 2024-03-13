@@ -235,6 +235,7 @@ export interface AttestationItem_Material_AnnotationsEntry {
 export interface WorkflowContractItem {
   id: string;
   name: string;
+  description: string;
   createdAt?: Date;
   latestRevision: number;
   /** Workflows associated with this contract */
@@ -1302,7 +1303,7 @@ export const AttestationItem_Material_AnnotationsEntry = {
 };
 
 function createBaseWorkflowContractItem(): WorkflowContractItem {
-  return { id: "", name: "", createdAt: undefined, latestRevision: 0, workflowIds: [] };
+  return { id: "", name: "", description: "", createdAt: undefined, latestRevision: 0, workflowIds: [] };
 }
 
 export const WorkflowContractItem = {
@@ -1312,6 +1313,9 @@ export const WorkflowContractItem = {
     }
     if (message.name !== "") {
       writer.uint32(18).string(message.name);
+    }
+    if (message.description !== "") {
+      writer.uint32(50).string(message.description);
     }
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(26).fork()).ldelim();
@@ -1345,6 +1349,13 @@ export const WorkflowContractItem = {
           }
 
           message.name = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.description = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
@@ -1380,6 +1391,7 @@ export const WorkflowContractItem = {
     return {
       id: isSet(object.id) ? String(object.id) : "",
       name: isSet(object.name) ? String(object.name) : "",
+      description: isSet(object.description) ? String(object.description) : "",
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
       latestRevision: isSet(object.latestRevision) ? Number(object.latestRevision) : 0,
       workflowIds: Array.isArray(object?.workflowIds) ? object.workflowIds.map((e: any) => String(e)) : [],
@@ -1390,6 +1402,7 @@ export const WorkflowContractItem = {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
     message.name !== undefined && (obj.name = message.name);
+    message.description !== undefined && (obj.description = message.description);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
     message.latestRevision !== undefined && (obj.latestRevision = Math.round(message.latestRevision));
     if (message.workflowIds) {
@@ -1408,6 +1421,7 @@ export const WorkflowContractItem = {
     const message = createBaseWorkflowContractItem();
     message.id = object.id ?? "";
     message.name = object.name ?? "";
+    message.description = object.description ?? "";
     message.createdAt = object.createdAt ?? undefined;
     message.latestRevision = object.latestRevision ?? 0;
     message.workflowIds = object.workflowIds?.map((e) => e) || [];

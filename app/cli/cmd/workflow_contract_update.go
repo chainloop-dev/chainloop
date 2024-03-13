@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import (
 )
 
 func newWorkflowContractUpdateCmd() *cobra.Command {
-	var contractID, name, contractPath string
+	var contractID, name, description, contractPath string
 
 	cmd := &cobra.Command{
 		Use:   "update",
@@ -35,7 +35,12 @@ func newWorkflowContractUpdateCmd() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewWorkflowContractUpdate(actionOpts).Run(contractID, name, contractPath)
+			var desc *string
+			if cmd.Flags().Changed("description") {
+				desc = &description
+			}
+
+			res, err := action.NewWorkflowContractUpdate(actionOpts).Run(contractID, name, desc, contractPath)
 			if err != nil {
 				return err
 			}
@@ -51,6 +56,7 @@ func newWorkflowContractUpdateCmd() *cobra.Command {
 
 	cmd.Flags().StringVarP(&contractPath, "contract", "f", "", "path or URL to the contract schema")
 	cmd.Flags().StringVar(&name, "name", "", "name of the contract")
+	cmd.Flags().StringVar(&description, "description", "", "description of the contract")
 
 	return cmd
 }

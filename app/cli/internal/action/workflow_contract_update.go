@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,10 +30,10 @@ func NewWorkflowContractUpdate(cfg *ActionsOpts) *WorkflowContractUpdate {
 	return &WorkflowContractUpdate{cfg}
 }
 
-func (action *WorkflowContractUpdate) Run(contractID, name, contractPath string) (*WorkflowContractWithVersionItem, error) {
+func (action *WorkflowContractUpdate) Run(contractID, name string, description *string, contractPath string) (*WorkflowContractWithVersionItem, error) {
 	client := pb.NewWorkflowContractServiceClient(action.cfg.CPConnection)
 
-	request := &pb.WorkflowContractServiceUpdateRequest{Id: contractID, Name: name}
+	request := &pb.WorkflowContractServiceUpdateRequest{Id: contractID, Name: name, Description: description}
 	if contractPath != "" {
 		contract, err := crafter.LoadSchema(contractPath)
 		if err != nil {

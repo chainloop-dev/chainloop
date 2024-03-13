@@ -123,7 +123,7 @@ type WorkflowServiceUpdateRequest struct {
 
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	// "optional" allow us to detect if the value is explicitly set
-	// and not just the default balue
+	// and not just the default value
 	Name        *string `protobuf:"bytes,2,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Project     *string `protobuf:"bytes,3,opt,name=project,proto3,oneof" json:"project,omitempty"`
 	Team        *string `protobuf:"bytes,4,opt,name=team,proto3,oneof" json:"team,omitempty"`
