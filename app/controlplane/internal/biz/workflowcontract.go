@@ -234,7 +234,7 @@ type WorkflowContractUpdateOpts struct {
 
 func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, contractID string, opts *WorkflowContractUpdateOpts) (*WorkflowContractWithVersion, error) {
 	if opts == nil {
-		return nil, NewErrValidationStr("no update options provided")
+		return nil, NewErrValidationStr("no updates provided")
 	}
 
 	orgUUID, err := uuid.Parse(orgID)
