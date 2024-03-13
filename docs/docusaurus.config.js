@@ -72,7 +72,12 @@ ${content.replaceAll("../../../docs/img/", "/img/")}`,
         sourceBaseUrl:
           "https://raw.githubusercontent.com/chainloop-dev/chainloop/main/docs/img",
         outDir: "static/img",
-        documents: ["fanout.png", "fanout-sdk.png"],
+        documents: [
+          "fanout.png",
+          "fanout-sdk.png",
+          "fanout-execute-materials.png",
+          "fanout-execute.png",
+        ],
         requestConfig: { responseType: "arraybuffer" },
       },
     ],
@@ -85,7 +90,7 @@ ${content.replaceAll("../../../docs/img/", "/img/")}`,
         noRuntimeDownloads: true,
         performCleanup: false,
         sourceBaseUrl:
-          "https://raw.githubusercontent.com/chainloop-dev/chainloop/main/docs",
+          "https://raw.githubusercontent.com/chainloop-dev/chainloop/main/devel",
         outDir: "docs/integrations",
         documents: ["integrations.md"],
         modifyContent: (filename, content) => {
@@ -97,6 +102,34 @@ image: /img/fanout.png
 ---
 
 ${content.replaceAll("./img/fanout.png", "/img/fanout.png")}`,
+            };
+          }
+
+          return undefined;
+        },
+      },
+    ],
+    // Dagger module guide
+    // yarn run docusaurus download-remote-dagger-module
+    [
+      "docusaurus-plugin-remote-content",
+      {
+        name: "dagger-module",
+        noRuntimeDownloads: true,
+        performCleanup: false,
+        sourceBaseUrl:
+          "https://raw.githubusercontent.com/chainloop-dev/chainloop/main/extras/dagger",
+        outDir: "docs/guides/dagger", // the base directory to output to.
+        documents: ["README.md"], // the file names to download
+        modifyContent: (filename, content) => {
+          if (filename.includes("README")) {
+            return {
+              content: `---
+title: Use Dagger With Chainloop
+---
+
+${content}
+ `,
             };
           }
 
