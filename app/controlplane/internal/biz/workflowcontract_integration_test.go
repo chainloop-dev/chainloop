@@ -116,6 +116,27 @@ func (s *workflowContractIntegrationTestSuite) TestUpdate() {
 	}
 }
 
+func (s *workflowContractIntegrationTestSuite) TestCreateDuplicatedName() {
+	ctx := context.Background()
+
+	const contractName = "name"
+	contract, err := s.WorkflowContract.Create(ctx, &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: contractName})
+	require.NoError(s.T(), err)
+
+	s.Run("can't create a contract with the same name", func() {
+		_, err := s.WorkflowContract.Create(ctx, &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: contractName})
+		s.ErrorContains(err, "name already taken")
+	})
+
+	s.Run("but if we delete it we can", func() {
+		err = s.WorkflowContract.Delete(ctx, s.org.ID, contract.ID.String())
+		require.NoError(s.T(), err)
+
+		_, err := s.WorkflowContract.Create(ctx, &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: contractName})
+		require.NoError(s.T(), err)
+	})
+}
+
 func (s *workflowContractIntegrationTestSuite) TestCreate() {
 	ctx := context.Background()
 
