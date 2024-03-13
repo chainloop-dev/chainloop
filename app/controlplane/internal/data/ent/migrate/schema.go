@@ -3,6 +3,7 @@
 package migrate
 
 import (
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/dialect/sql/schema"
 	"entgo.io/ent/schema/field"
 )
@@ -331,6 +332,9 @@ var (
 				Name:    "workflow_name_organization_id",
 				Unique:  true,
 				Columns: []*schema.Column{WorkflowsColumns[1], WorkflowsColumns[9]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "deleted_at IS NULL",
+				},
 			},
 		},
 	}
@@ -361,6 +365,9 @@ var (
 				Name:    "workflowcontract_name_organization_workflow_contracts",
 				Unique:  true,
 				Columns: []*schema.Column{WorkflowContractsColumns[1], WorkflowContractsColumns[5]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "deleted_at IS NULL",
+				},
 			},
 		},
 	}

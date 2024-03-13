@@ -56,6 +56,27 @@ func (s *workflowIntegrationTestSuite) TestContractLatestAvailable() {
 	})
 }
 
+func (s *workflowIntegrationTestSuite) TestCreateDuplicatedName() {
+	ctx := context.Background()
+
+	const workflowName = "name"
+	existingWorkflow, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: workflowName})
+	require.NoError(s.T(), err)
+
+	s.Run("can't create a workflow with the same name", func() {
+		_, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: workflowName})
+		s.ErrorContains(err, "name already taken")
+	})
+
+	s.Run("but if we delete it we can", func() {
+		err = s.Workflow.Delete(ctx, s.org.ID, existingWorkflow.ID.String())
+		require.NoError(s.T(), err)
+
+		_, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: workflowName})
+		require.NoError(s.T(), err)
+	})
+}
+
 func (s *workflowIntegrationTestSuite) TestCreate() {
 	ctx := context.Background()
 	testCases := []struct {
