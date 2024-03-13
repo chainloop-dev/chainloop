@@ -11,7 +11,7 @@ SET name = regexp_replace(
 -- and project
 UPDATE workflows
 SET project = regexp_replace(
-             lower(name), 
+             lower(project),
              '[^a-z0-9-]', 
              '-', 
              'g'

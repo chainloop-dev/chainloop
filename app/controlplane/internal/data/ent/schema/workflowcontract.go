@@ -61,7 +61,9 @@ func (WorkflowContract) Edges() []ent.Edge {
 
 func (WorkflowContract) Indexes() []ent.Index {
 	return []ent.Index{
-		// names are unique within an organization
-		index.Fields("name").Edges("organization").Unique(),
+		// names are unique within a organization and affects only to non-deleted items
+		index.Fields("name").Edges("organization").Unique().Annotations(
+			entsql.IndexWhere("deleted_at IS NULL"),
+		),
 	}
 }
