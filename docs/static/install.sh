@@ -11,7 +11,7 @@ NC='\033[0m' # No Color aka reset
 VERSION=""
 FORCE_VERIFICATION=false
 INSTALL_PATH=/usr/local/bin
-PUBLIC_KEY_URL="https://raw.githubusercontent.com/chainloop-dev/docs/c5b7b9be051d8d3b9f48153c6e3ccf569e6990e8/static/cosign-releases.pub"
+PUBLIC_KEY_URL="https://raw.githubusercontent.com/chainloop-dev/chainloop/01ad13af08950b7bfbc83569bea207aeb4e1a285/docs/static/cosign-releases.pub"
 
 # Print in colors - 0=green, 1=red, 2=neutral
 # e.g. fancy_print 0 "All is great"
