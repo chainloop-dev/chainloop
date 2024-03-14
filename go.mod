@@ -73,7 +73,7 @@ require (
 	github.com/casbin/ent-adapter v0.3.0
 	github.com/in-toto/attestation v0.1.1-0.20231010121940-09a03152c04a
 	github.com/invopop/jsonschema v0.7.0
-	github.com/jackc/pgx/v5 v5.4.3
+	github.com/jackc/pgx/v5 v5.5.4
 	github.com/muesli/reflow v0.3.0
 	github.com/openvex/go-vex v0.2.5
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
