@@ -8,7 +8,13 @@ title: Use Dagger With Chainloop
 
 Daggerized version of [Chainloop](https://docs.chainloop.dev) that can be used to attest and collect pieces of evidence from your [Dagger](https://dagger.io/) pipelines.
 
+<iframe width="100%" height="500"
+    src="https://www.youtube.com/embed/s-ZtU8PvNmk"
+    frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen>
+</iframe>
+
 ## Prerequisites
+
 
 - This module requires existing familiarity with Chainloop and its attestation process. Please refer to [this guide](https://docs.chainloop.dev/getting-started/attestation-crafting) to learn more.
 - You need a `token` (aka workflow robot account) [previously generated](https://docs.chainloop.dev/getting-started/workflow-definition#robot-account-creation) by your Chainloop administrator.
