@@ -103,6 +103,7 @@ var (
 	PolicyWorkflowRunRead = &Policy{ResourceWorkflowRun, ActionRead}
 	// Workflow
 	PolicyWorkflowList = &Policy{ResourceWorkflow, ActionList}
+	PolicyWorkflowRead = &Policy{ResourceWorkflow, ActionRead}
 	// User Membership
 	PolicyOrganizationRead = &Policy{Organization, ActionRead}
 )
@@ -137,6 +138,7 @@ var rolesMap = map[Role][]*Policy{
 		PolicyWorkflowRunRead,
 		// Workflow
 		PolicyWorkflowList,
+		PolicyWorkflowRead,
 		// Organization
 		PolicyOrganizationRead,
 	},
@@ -172,6 +174,7 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.RobotAccountService/List": {PolicyRobotAccountList},
 	// Workflows
 	"/controlplane.v1.WorkflowService/List": {PolicyWorkflowList},
+	"/controlplane.v1.WorkflowService/View": {PolicyWorkflowRead},
 	// WorkflowRun
 	"/controlplane.v1.WorkflowRunService/List": {PolicyWorkflowRunList},
 	"/controlplane.v1.WorkflowRunService/View": {PolicyWorkflowRunRead},
