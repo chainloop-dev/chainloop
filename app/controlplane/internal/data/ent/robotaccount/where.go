@@ -71,6 +71,11 @@ func RevokedAt(v time.Time) predicate.RobotAccount {
 	return predicate.RobotAccount(sql.FieldEQ(FieldRevokedAt, v))
 }
 
+// OrganizationID applies equality check predicate on the "organization_id" field. It's identical to OrganizationIDEQ.
+func OrganizationID(v uuid.UUID) predicate.RobotAccount {
+	return predicate.RobotAccount(sql.FieldEQ(FieldOrganizationID, v))
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.RobotAccount {
 	return predicate.RobotAccount(sql.FieldEQ(FieldName, v))
@@ -226,6 +231,26 @@ func RevokedAtNotNil() predicate.RobotAccount {
 	return predicate.RobotAccount(sql.FieldNotNull(FieldRevokedAt))
 }
 
+// OrganizationIDEQ applies the EQ predicate on the "organization_id" field.
+func OrganizationIDEQ(v uuid.UUID) predicate.RobotAccount {
+	return predicate.RobotAccount(sql.FieldEQ(FieldOrganizationID, v))
+}
+
+// OrganizationIDNEQ applies the NEQ predicate on the "organization_id" field.
+func OrganizationIDNEQ(v uuid.UUID) predicate.RobotAccount {
+	return predicate.RobotAccount(sql.FieldNEQ(FieldOrganizationID, v))
+}
+
+// OrganizationIDIn applies the In predicate on the "organization_id" field.
+func OrganizationIDIn(vs ...uuid.UUID) predicate.RobotAccount {
+	return predicate.RobotAccount(sql.FieldIn(FieldOrganizationID, vs...))
+}
+
+// OrganizationIDNotIn applies the NotIn predicate on the "organization_id" field.
+func OrganizationIDNotIn(vs ...uuid.UUID) predicate.RobotAccount {
+	return predicate.RobotAccount(sql.FieldNotIn(FieldOrganizationID, vs...))
+}
+
 // HasWorkflow applies the HasEdge predicate on the "workflow" edge.
 func HasWorkflow() predicate.RobotAccount {
 	return predicate.RobotAccount(func(s *sql.Selector) {
@@ -264,6 +289,29 @@ func HasWorkflowruns() predicate.RobotAccount {
 func HasWorkflowrunsWith(preds ...predicate.WorkflowRun) predicate.RobotAccount {
 	return predicate.RobotAccount(func(s *sql.Selector) {
 		step := newWorkflowrunsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasOrganization applies the HasEdge predicate on the "organization" edge.
+func HasOrganization() predicate.RobotAccount {
+	return predicate.RobotAccount(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, OrganizationTable, OrganizationColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasOrganizationWith applies the HasEdge predicate on the "organization" edge with a given conditions (other predicates).
+func HasOrganizationWith(preds ...predicate.Organization) predicate.RobotAccount {
+	return predicate.RobotAccount(func(s *sql.Selector) {
+		step := newOrganizationStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

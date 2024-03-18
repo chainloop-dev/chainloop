@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ type RobotAccount struct {
 }
 
 type RobotAccountRepo interface {
-	Create(ctx context.Context, name string, workflowID uuid.UUID) (*RobotAccount, error)
+	Create(ctx context.Context, name string, orgID, workflowID uuid.UUID) (*RobotAccount, error)
 	List(ctx context.Context, workflowID uuid.UUID, includeRevoked bool) ([]*RobotAccount, error)
 	FindByID(ctx context.Context, ID uuid.UUID) (*RobotAccount, error)
 	Revoke(ctx context.Context, orgID, ID uuid.UUID) error
@@ -75,7 +75,7 @@ func (uc *RobotAccountUseCase) Create(ctx context.Context, name string, orgID, w
 		return nil, NewErrNotFound("workflow")
 	}
 
-	res, err := uc.robotAccountRepo.Create(ctx, name, workflowUUID)
+	res, err := uc.robotAccountRepo.Create(ctx, name, orgUUID, workflowUUID)
 	if err != nil {
 		return nil, err
 	}

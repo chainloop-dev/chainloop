@@ -6949,6 +6949,8 @@ type RobotAccountMutation struct {
 	workflowruns        map[uuid.UUID]struct{}
 	removedworkflowruns map[uuid.UUID]struct{}
 	clearedworkflowruns bool
+	organization        *uuid.UUID
+	clearedorganization bool
 	done                bool
 	oldValue            func(context.Context) (*RobotAccount, error)
 	predicates          []predicate.RobotAccount
@@ -7179,6 +7181,42 @@ func (m *RobotAccountMutation) ResetRevokedAt() {
 	delete(m.clearedFields, robotaccount.FieldRevokedAt)
 }
 
+// SetOrganizationID sets the "organization_id" field.
+func (m *RobotAccountMutation) SetOrganizationID(u uuid.UUID) {
+	m.organization = &u
+}
+
+// OrganizationID returns the value of the "organization_id" field in the mutation.
+func (m *RobotAccountMutation) OrganizationID() (r uuid.UUID, exists bool) {
+	v := m.organization
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOrganizationID returns the old "organization_id" field's value of the RobotAccount entity.
+// If the RobotAccount object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RobotAccountMutation) OldOrganizationID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOrganizationID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOrganizationID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOrganizationID: %w", err)
+	}
+	return oldValue.OrganizationID, nil
+}
+
+// ResetOrganizationID resets all changes to the "organization_id" field.
+func (m *RobotAccountMutation) ResetOrganizationID() {
+	m.organization = nil
+}
+
 // SetWorkflowID sets the "workflow" edge to the Workflow entity by id.
 func (m *RobotAccountMutation) SetWorkflowID(id uuid.UUID) {
 	m.workflow = &id
@@ -7272,6 +7310,32 @@ func (m *RobotAccountMutation) ResetWorkflowruns() {
 	m.removedworkflowruns = nil
 }
 
+// ClearOrganization clears the "organization" edge to the Organization entity.
+func (m *RobotAccountMutation) ClearOrganization() {
+	m.clearedorganization = true
+}
+
+// OrganizationCleared reports if the "organization" edge to the Organization entity was cleared.
+func (m *RobotAccountMutation) OrganizationCleared() bool {
+	return m.clearedorganization
+}
+
+// OrganizationIDs returns the "organization" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OrganizationID instead. It exists only for internal usage by the builders.
+func (m *RobotAccountMutation) OrganizationIDs() (ids []uuid.UUID) {
+	if id := m.organization; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOrganization resets all changes to the "organization" edge.
+func (m *RobotAccountMutation) ResetOrganization() {
+	m.organization = nil
+	m.clearedorganization = false
+}
+
 // Where appends a list predicates to the RobotAccountMutation builder.
 func (m *RobotAccountMutation) Where(ps ...predicate.RobotAccount) {
 	m.predicates = append(m.predicates, ps...)
@@ -7306,7 +7370,7 @@ func (m *RobotAccountMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RobotAccountMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 4)
 	if m.name != nil {
 		fields = append(fields, robotaccount.FieldName)
 	}
@@ -7315,6 +7379,9 @@ func (m *RobotAccountMutation) Fields() []string {
 	}
 	if m.revoked_at != nil {
 		fields = append(fields, robotaccount.FieldRevokedAt)
+	}
+	if m.organization != nil {
+		fields = append(fields, robotaccount.FieldOrganizationID)
 	}
 	return fields
 }
@@ -7330,6 +7397,8 @@ func (m *RobotAccountMutation) Field(name string) (ent.Value, bool) {
 		return m.CreatedAt()
 	case robotaccount.FieldRevokedAt:
 		return m.RevokedAt()
+	case robotaccount.FieldOrganizationID:
+		return m.OrganizationID()
 	}
 	return nil, false
 }
@@ -7345,6 +7414,8 @@ func (m *RobotAccountMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldCreatedAt(ctx)
 	case robotaccount.FieldRevokedAt:
 		return m.OldRevokedAt(ctx)
+	case robotaccount.FieldOrganizationID:
+		return m.OldOrganizationID(ctx)
 	}
 	return nil, fmt.Errorf("unknown RobotAccount field %s", name)
 }
@@ -7374,6 +7445,13 @@ func (m *RobotAccountMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetRevokedAt(v)
+		return nil
+	case robotaccount.FieldOrganizationID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOrganizationID(v)
 		return nil
 	}
 	return fmt.Errorf("unknown RobotAccount field %s", name)
@@ -7442,18 +7520,24 @@ func (m *RobotAccountMutation) ResetField(name string) error {
 	case robotaccount.FieldRevokedAt:
 		m.ResetRevokedAt()
 		return nil
+	case robotaccount.FieldOrganizationID:
+		m.ResetOrganizationID()
+		return nil
 	}
 	return fmt.Errorf("unknown RobotAccount field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RobotAccountMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.workflow != nil {
 		edges = append(edges, robotaccount.EdgeWorkflow)
 	}
 	if m.workflowruns != nil {
 		edges = append(edges, robotaccount.EdgeWorkflowruns)
+	}
+	if m.organization != nil {
+		edges = append(edges, robotaccount.EdgeOrganization)
 	}
 	return edges
 }
@@ -7472,13 +7556,17 @@ func (m *RobotAccountMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case robotaccount.EdgeOrganization:
+		if id := m.organization; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *RobotAccountMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.removedworkflowruns != nil {
 		edges = append(edges, robotaccount.EdgeWorkflowruns)
 	}
@@ -7501,12 +7589,15 @@ func (m *RobotAccountMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RobotAccountMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedworkflow {
 		edges = append(edges, robotaccount.EdgeWorkflow)
 	}
 	if m.clearedworkflowruns {
 		edges = append(edges, robotaccount.EdgeWorkflowruns)
+	}
+	if m.clearedorganization {
+		edges = append(edges, robotaccount.EdgeOrganization)
 	}
 	return edges
 }
@@ -7519,6 +7610,8 @@ func (m *RobotAccountMutation) EdgeCleared(name string) bool {
 		return m.clearedworkflow
 	case robotaccount.EdgeWorkflowruns:
 		return m.clearedworkflowruns
+	case robotaccount.EdgeOrganization:
+		return m.clearedorganization
 	}
 	return false
 }
@@ -7529,6 +7622,9 @@ func (m *RobotAccountMutation) ClearEdge(name string) error {
 	switch name {
 	case robotaccount.EdgeWorkflow:
 		m.ClearWorkflow()
+		return nil
+	case robotaccount.EdgeOrganization:
+		m.ClearOrganization()
 		return nil
 	}
 	return fmt.Errorf("unknown RobotAccount unique edge %s", name)
@@ -7543,6 +7639,9 @@ func (m *RobotAccountMutation) ResetEdge(name string) error {
 		return nil
 	case robotaccount.EdgeWorkflowruns:
 		m.ResetWorkflowruns()
+		return nil
+	case robotaccount.EdgeOrganization:
+		m.ResetOrganization()
 		return nil
 	}
 	return fmt.Errorf("unknown RobotAccount edge %s", name)

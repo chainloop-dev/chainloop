@@ -266,6 +266,7 @@ var (
 		{Name: "name", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "revoked_at", Type: field.TypeTime, Nullable: true},
+		{Name: "organization_id", Type: field.TypeUUID},
 		{Name: "workflow_robotaccounts", Type: field.TypeUUID, Nullable: true},
 	}
 	// RobotAccountsTable holds the schema information for the "robot_accounts" table.
@@ -275,8 +276,14 @@ var (
 		PrimaryKey: []*schema.Column{RobotAccountsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "robot_accounts_workflows_robotaccounts",
+				Symbol:     "robot_accounts_organizations_organization",
 				Columns:    []*schema.Column{RobotAccountsColumns[4]},
+				RefColumns: []*schema.Column{OrganizationsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "robot_accounts_workflows_robotaccounts",
+				Columns:    []*schema.Column{RobotAccountsColumns[5]},
 				RefColumns: []*schema.Column{WorkflowsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -565,7 +572,8 @@ func init() {
 	MembershipsTable.ForeignKeys[1].RefTable = UsersTable
 	OrgInvitationsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	OrgInvitationsTable.ForeignKeys[1].RefTable = UsersTable
-	RobotAccountsTable.ForeignKeys[0].RefTable = WorkflowsTable
+	RobotAccountsTable.ForeignKeys[0].RefTable = OrganizationsTable
+	RobotAccountsTable.ForeignKeys[1].RefTable = WorkflowsTable
 	WorkflowsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	WorkflowsTable.ForeignKeys[1].RefTable = WorkflowContractsTable
 	WorkflowContractsTable.ForeignKeys[0].RefTable = OrganizationsTable

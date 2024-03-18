@@ -40,6 +40,8 @@ func (RobotAccount) Fields() []ent.Field {
 			Immutable().
 			Annotations(&entsql.Annotation{Default: "CURRENT_TIMESTAMP"}),
 		field.Time("revoked_at").Optional(),
+		// edge fields to be able to access to them directly
+		field.UUID("organization_id", uuid.UUID{}),
 	}
 }
 
@@ -52,5 +54,6 @@ func (RobotAccount) Edges() []ent.Edge {
 
 		// WorkflowRuns have a reference to the used key for reference
 		edge.To("workflowruns", WorkflowRun.Type),
+		edge.To("organization", Organization.Type).Unique().Required().Field("organization_id").Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 	}
 }

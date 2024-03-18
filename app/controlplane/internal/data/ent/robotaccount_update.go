@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
@@ -58,6 +59,12 @@ func (rau *RobotAccountUpdate) ClearRevokedAt() *RobotAccountUpdate {
 	return rau
 }
 
+// SetOrganizationID sets the "organization_id" field.
+func (rau *RobotAccountUpdate) SetOrganizationID(u uuid.UUID) *RobotAccountUpdate {
+	rau.mutation.SetOrganizationID(u)
+	return rau
+}
+
 // SetWorkflowID sets the "workflow" edge to the Workflow entity by ID.
 func (rau *RobotAccountUpdate) SetWorkflowID(id uuid.UUID) *RobotAccountUpdate {
 	rau.mutation.SetWorkflowID(id)
@@ -92,6 +99,11 @@ func (rau *RobotAccountUpdate) AddWorkflowruns(w ...*WorkflowRun) *RobotAccountU
 	return rau.AddWorkflowrunIDs(ids...)
 }
 
+// SetOrganization sets the "organization" edge to the Organization entity.
+func (rau *RobotAccountUpdate) SetOrganization(o *Organization) *RobotAccountUpdate {
+	return rau.SetOrganizationID(o.ID)
+}
+
 // Mutation returns the RobotAccountMutation object of the builder.
 func (rau *RobotAccountUpdate) Mutation() *RobotAccountMutation {
 	return rau.mutation
@@ -124,6 +136,12 @@ func (rau *RobotAccountUpdate) RemoveWorkflowruns(w ...*WorkflowRun) *RobotAccou
 	return rau.RemoveWorkflowrunIDs(ids...)
 }
 
+// ClearOrganization clears the "organization" edge to the Organization entity.
+func (rau *RobotAccountUpdate) ClearOrganization() *RobotAccountUpdate {
+	rau.mutation.ClearOrganization()
+	return rau
+}
+
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (rau *RobotAccountUpdate) Save(ctx context.Context) (int, error) {
 	return withHooks(ctx, rau.sqlSave, rau.mutation, rau.hooks)
@@ -151,6 +169,14 @@ func (rau *RobotAccountUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (rau *RobotAccountUpdate) check() error {
+	if _, ok := rau.mutation.OrganizationID(); rau.mutation.OrganizationCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "RobotAccount.organization"`)
+	}
+	return nil
+}
+
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
 func (rau *RobotAccountUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *RobotAccountUpdate {
 	rau.modifiers = append(rau.modifiers, modifiers...)
@@ -158,6 +184,9 @@ func (rau *RobotAccountUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *
 }
 
 func (rau *RobotAccountUpdate) sqlSave(ctx context.Context) (n int, err error) {
+	if err := rau.check(); err != nil {
+		return n, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(robotaccount.Table, robotaccount.Columns, sqlgraph.NewFieldSpec(robotaccount.FieldID, field.TypeUUID))
 	if ps := rau.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -249,6 +278,35 @@ func (rau *RobotAccountUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if rau.mutation.OrganizationCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   robotaccount.OrganizationTable,
+			Columns: []string{robotaccount.OrganizationColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := rau.mutation.OrganizationIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   robotaccount.OrganizationTable,
+			Columns: []string{robotaccount.OrganizationColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	_spec.AddModifiers(rau.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, rau.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -297,6 +355,12 @@ func (rauo *RobotAccountUpdateOne) ClearRevokedAt() *RobotAccountUpdateOne {
 	return rauo
 }
 
+// SetOrganizationID sets the "organization_id" field.
+func (rauo *RobotAccountUpdateOne) SetOrganizationID(u uuid.UUID) *RobotAccountUpdateOne {
+	rauo.mutation.SetOrganizationID(u)
+	return rauo
+}
+
 // SetWorkflowID sets the "workflow" edge to the Workflow entity by ID.
 func (rauo *RobotAccountUpdateOne) SetWorkflowID(id uuid.UUID) *RobotAccountUpdateOne {
 	rauo.mutation.SetWorkflowID(id)
@@ -331,6 +395,11 @@ func (rauo *RobotAccountUpdateOne) AddWorkflowruns(w ...*WorkflowRun) *RobotAcco
 	return rauo.AddWorkflowrunIDs(ids...)
 }
 
+// SetOrganization sets the "organization" edge to the Organization entity.
+func (rauo *RobotAccountUpdateOne) SetOrganization(o *Organization) *RobotAccountUpdateOne {
+	return rauo.SetOrganizationID(o.ID)
+}
+
 // Mutation returns the RobotAccountMutation object of the builder.
 func (rauo *RobotAccountUpdateOne) Mutation() *RobotAccountMutation {
 	return rauo.mutation
@@ -361,6 +430,12 @@ func (rauo *RobotAccountUpdateOne) RemoveWorkflowruns(w ...*WorkflowRun) *RobotA
 		ids[i] = w[i].ID
 	}
 	return rauo.RemoveWorkflowrunIDs(ids...)
+}
+
+// ClearOrganization clears the "organization" edge to the Organization entity.
+func (rauo *RobotAccountUpdateOne) ClearOrganization() *RobotAccountUpdateOne {
+	rauo.mutation.ClearOrganization()
+	return rauo
 }
 
 // Where appends a list predicates to the RobotAccountUpdate builder.
@@ -403,6 +478,14 @@ func (rauo *RobotAccountUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (rauo *RobotAccountUpdateOne) check() error {
+	if _, ok := rauo.mutation.OrganizationID(); rauo.mutation.OrganizationCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "RobotAccount.organization"`)
+	}
+	return nil
+}
+
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
 func (rauo *RobotAccountUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *RobotAccountUpdateOne {
 	rauo.modifiers = append(rauo.modifiers, modifiers...)
@@ -410,6 +493,9 @@ func (rauo *RobotAccountUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder
 }
 
 func (rauo *RobotAccountUpdateOne) sqlSave(ctx context.Context) (_node *RobotAccount, err error) {
+	if err := rauo.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(robotaccount.Table, robotaccount.Columns, sqlgraph.NewFieldSpec(robotaccount.FieldID, field.TypeUUID))
 	id, ok := rauo.mutation.ID()
 	if !ok {
@@ -511,6 +597,35 @@ func (rauo *RobotAccountUpdateOne) sqlSave(ctx context.Context) (_node *RobotAcc
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if rauo.mutation.OrganizationCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   robotaccount.OrganizationTable,
+			Columns: []string{robotaccount.OrganizationColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := rauo.mutation.OrganizationIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   robotaccount.OrganizationTable,
+			Columns: []string{robotaccount.OrganizationColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

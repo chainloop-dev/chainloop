@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowrun"
@@ -54,6 +55,12 @@ func (rac *RobotAccountCreate) SetNillableRevokedAt(t *time.Time) *RobotAccountC
 	if t != nil {
 		rac.SetRevokedAt(*t)
 	}
+	return rac
+}
+
+// SetOrganizationID sets the "organization_id" field.
+func (rac *RobotAccountCreate) SetOrganizationID(u uuid.UUID) *RobotAccountCreate {
+	rac.mutation.SetOrganizationID(u)
 	return rac
 }
 
@@ -103,6 +110,11 @@ func (rac *RobotAccountCreate) AddWorkflowruns(w ...*WorkflowRun) *RobotAccountC
 		ids[i] = w[i].ID
 	}
 	return rac.AddWorkflowrunIDs(ids...)
+}
+
+// SetOrganization sets the "organization" edge to the Organization entity.
+func (rac *RobotAccountCreate) SetOrganization(o *Organization) *RobotAccountCreate {
+	return rac.SetOrganizationID(o.ID)
 }
 
 // Mutation returns the RobotAccountMutation object of the builder.
@@ -157,6 +169,12 @@ func (rac *RobotAccountCreate) check() error {
 	}
 	if _, ok := rac.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "RobotAccount.created_at"`)}
+	}
+	if _, ok := rac.mutation.OrganizationID(); !ok {
+		return &ValidationError{Name: "organization_id", err: errors.New(`ent: missing required field "RobotAccount.organization_id"`)}
+	}
+	if _, ok := rac.mutation.OrganizationID(); !ok {
+		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "RobotAccount.organization"`)}
 	}
 	return nil
 }
@@ -236,6 +254,23 @@ func (rac *RobotAccountCreate) createSpec() (*RobotAccount, *sqlgraph.CreateSpec
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := rac.mutation.OrganizationIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   robotaccount.OrganizationTable,
+			Columns: []string{robotaccount.OrganizationColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.OrganizationID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

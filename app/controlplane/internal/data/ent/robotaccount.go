@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
 	"github.com/google/uuid"
@@ -25,6 +26,8 @@ type RobotAccount struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// RevokedAt holds the value of the "revoked_at" field.
 	RevokedAt time.Time `json:"revoked_at,omitempty"`
+	// OrganizationID holds the value of the "organization_id" field.
+	OrganizationID uuid.UUID `json:"organization_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the RobotAccountQuery when eager-loading is set.
 	Edges                  RobotAccountEdges `json:"edges"`
@@ -38,9 +41,11 @@ type RobotAccountEdges struct {
 	Workflow *Workflow `json:"workflow,omitempty"`
 	// Workflowruns holds the value of the workflowruns edge.
 	Workflowruns []*WorkflowRun `json:"workflowruns,omitempty"`
+	// Organization holds the value of the organization edge.
+	Organization *Organization `json:"organization,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // WorkflowOrErr returns the Workflow value or an error if the edge
@@ -65,6 +70,19 @@ func (e RobotAccountEdges) WorkflowrunsOrErr() ([]*WorkflowRun, error) {
 	return nil, &NotLoadedError{edge: "workflowruns"}
 }
 
+// OrganizationOrErr returns the Organization value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e RobotAccountEdges) OrganizationOrErr() (*Organization, error) {
+	if e.loadedTypes[2] {
+		if e.Organization == nil {
+			// Edge was loaded but was not found.
+			return nil, &NotFoundError{label: organization.Label}
+		}
+		return e.Organization, nil
+	}
+	return nil, &NotLoadedError{edge: "organization"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*RobotAccount) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -74,7 +92,7 @@ func (*RobotAccount) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case robotaccount.FieldCreatedAt, robotaccount.FieldRevokedAt:
 			values[i] = new(sql.NullTime)
-		case robotaccount.FieldID:
+		case robotaccount.FieldID, robotaccount.FieldOrganizationID:
 			values[i] = new(uuid.UUID)
 		case robotaccount.ForeignKeys[0]: // workflow_robotaccounts
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
@@ -117,6 +135,12 @@ func (ra *RobotAccount) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				ra.RevokedAt = value.Time
 			}
+		case robotaccount.FieldOrganizationID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field organization_id", values[i])
+			} else if value != nil {
+				ra.OrganizationID = *value
+			}
 		case robotaccount.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field workflow_robotaccounts", values[i])
@@ -145,6 +169,11 @@ func (ra *RobotAccount) QueryWorkflow() *WorkflowQuery {
 // QueryWorkflowruns queries the "workflowruns" edge of the RobotAccount entity.
 func (ra *RobotAccount) QueryWorkflowruns() *WorkflowRunQuery {
 	return NewRobotAccountClient(ra.config).QueryWorkflowruns(ra)
+}
+
+// QueryOrganization queries the "organization" edge of the RobotAccount entity.
+func (ra *RobotAccount) QueryOrganization() *OrganizationQuery {
+	return NewRobotAccountClient(ra.config).QueryOrganization(ra)
 }
 
 // Update returns a builder for updating this RobotAccount.
@@ -178,6 +207,9 @@ func (ra *RobotAccount) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("revoked_at=")
 	builder.WriteString(ra.RevokedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("organization_id=")
+	builder.WriteString(fmt.Sprintf("%v", ra.OrganizationID))
 	builder.WriteByte(')')
 	return builder.String()
 }

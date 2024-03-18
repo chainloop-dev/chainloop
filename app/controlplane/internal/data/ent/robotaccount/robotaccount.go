@@ -21,10 +21,14 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldRevokedAt holds the string denoting the revoked_at field in the database.
 	FieldRevokedAt = "revoked_at"
+	// FieldOrganizationID holds the string denoting the organization_id field in the database.
+	FieldOrganizationID = "organization_id"
 	// EdgeWorkflow holds the string denoting the workflow edge name in mutations.
 	EdgeWorkflow = "workflow"
 	// EdgeWorkflowruns holds the string denoting the workflowruns edge name in mutations.
 	EdgeWorkflowruns = "workflowruns"
+	// EdgeOrganization holds the string denoting the organization edge name in mutations.
+	EdgeOrganization = "organization"
 	// Table holds the table name of the robotaccount in the database.
 	Table = "robot_accounts"
 	// WorkflowTable is the table that holds the workflow relation/edge.
@@ -41,6 +45,13 @@ const (
 	WorkflowrunsInverseTable = "workflow_runs"
 	// WorkflowrunsColumn is the table column denoting the workflowruns relation/edge.
 	WorkflowrunsColumn = "robot_account_workflowruns"
+	// OrganizationTable is the table that holds the organization relation/edge.
+	OrganizationTable = "robot_accounts"
+	// OrganizationInverseTable is the table name for the Organization entity.
+	// It exists in this package in order to avoid circular dependency with the "organization" package.
+	OrganizationInverseTable = "organizations"
+	// OrganizationColumn is the table column denoting the organization relation/edge.
+	OrganizationColumn = "organization_id"
 )
 
 // Columns holds all SQL columns for robotaccount fields.
@@ -49,6 +60,7 @@ var Columns = []string{
 	FieldName,
 	FieldCreatedAt,
 	FieldRevokedAt,
+	FieldOrganizationID,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "robot_accounts"
@@ -102,6 +114,11 @@ func ByRevokedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRevokedAt, opts...).ToFunc()
 }
 
+// ByOrganizationID orders the results by the organization_id field.
+func ByOrganizationID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOrganizationID, opts...).ToFunc()
+}
+
 // ByWorkflowField orders the results by workflow field.
 func ByWorkflowField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -122,6 +139,13 @@ func ByWorkflowruns(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newWorkflowrunsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByOrganizationField orders the results by organization field.
+func ByOrganizationField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newOrganizationStep(), sql.OrderByField(field, opts...))
+	}
+}
 func newWorkflowStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -134,5 +158,12 @@ func newWorkflowrunsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(WorkflowrunsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, WorkflowrunsTable, WorkflowrunsColumn),
+	)
+}
+func newOrganizationStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(OrganizationInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, OrganizationTable, OrganizationColumn),
 	)
 }

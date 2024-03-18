@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
@@ -27,6 +28,7 @@ type RobotAccountQuery struct {
 	predicates       []predicate.RobotAccount
 	withWorkflow     *WorkflowQuery
 	withWorkflowruns *WorkflowRunQuery
+	withOrganization *OrganizationQuery
 	withFKs          bool
 	modifiers        []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
@@ -102,6 +104,28 @@ func (raq *RobotAccountQuery) QueryWorkflowruns() *WorkflowRunQuery {
 			sqlgraph.From(robotaccount.Table, robotaccount.FieldID, selector),
 			sqlgraph.To(workflowrun.Table, workflowrun.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, robotaccount.WorkflowrunsTable, robotaccount.WorkflowrunsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(raq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryOrganization chains the current query on the "organization" edge.
+func (raq *RobotAccountQuery) QueryOrganization() *OrganizationQuery {
+	query := (&OrganizationClient{config: raq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := raq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := raq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(robotaccount.Table, robotaccount.FieldID, selector),
+			sqlgraph.To(organization.Table, organization.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, robotaccount.OrganizationTable, robotaccount.OrganizationColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(raq.driver.Dialect(), step)
 		return fromU, nil
@@ -303,6 +327,7 @@ func (raq *RobotAccountQuery) Clone() *RobotAccountQuery {
 		predicates:       append([]predicate.RobotAccount{}, raq.predicates...),
 		withWorkflow:     raq.withWorkflow.Clone(),
 		withWorkflowruns: raq.withWorkflowruns.Clone(),
+		withOrganization: raq.withOrganization.Clone(),
 		// clone intermediate query.
 		sql:  raq.sql.Clone(),
 		path: raq.path,
@@ -328,6 +353,17 @@ func (raq *RobotAccountQuery) WithWorkflowruns(opts ...func(*WorkflowRunQuery)) 
 		opt(query)
 	}
 	raq.withWorkflowruns = query
+	return raq
+}
+
+// WithOrganization tells the query-builder to eager-load the nodes that are connected to
+// the "organization" edge. The optional arguments are used to configure the query builder of the edge.
+func (raq *RobotAccountQuery) WithOrganization(opts ...func(*OrganizationQuery)) *RobotAccountQuery {
+	query := (&OrganizationClient{config: raq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	raq.withOrganization = query
 	return raq
 }
 
@@ -410,9 +446,10 @@ func (raq *RobotAccountQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 		nodes       = []*RobotAccount{}
 		withFKs     = raq.withFKs
 		_spec       = raq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			raq.withWorkflow != nil,
 			raq.withWorkflowruns != nil,
+			raq.withOrganization != nil,
 		}
 	)
 	if raq.withWorkflow != nil {
@@ -452,6 +489,12 @@ func (raq *RobotAccountQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 		if err := raq.loadWorkflowruns(ctx, query, nodes,
 			func(n *RobotAccount) { n.Edges.Workflowruns = []*WorkflowRun{} },
 			func(n *RobotAccount, e *WorkflowRun) { n.Edges.Workflowruns = append(n.Edges.Workflowruns, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := raq.withOrganization; query != nil {
+		if err := raq.loadOrganization(ctx, query, nodes, nil,
+			func(n *RobotAccount, e *Organization) { n.Edges.Organization = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -521,6 +564,35 @@ func (raq *RobotAccountQuery) loadWorkflowruns(ctx context.Context, query *Workf
 	}
 	return nil
 }
+func (raq *RobotAccountQuery) loadOrganization(ctx context.Context, query *OrganizationQuery, nodes []*RobotAccount, init func(*RobotAccount), assign func(*RobotAccount, *Organization)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*RobotAccount)
+	for i := range nodes {
+		fk := nodes[i].OrganizationID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(organization.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "organization_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 
 func (raq *RobotAccountQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := raq.querySpec()
@@ -549,6 +621,9 @@ func (raq *RobotAccountQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != robotaccount.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if raq.withOrganization != nil {
+			_spec.Node.AddColumnOnce(robotaccount.FieldOrganizationID)
 		}
 	}
 	if ps := raq.predicates; len(ps) > 0 {

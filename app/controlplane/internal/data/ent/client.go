@@ -1870,6 +1870,22 @@ func (c *RobotAccountClient) QueryWorkflowruns(ra *RobotAccount) *WorkflowRunQue
 	return query
 }
 
+// QueryOrganization queries the organization edge of a RobotAccount.
+func (c *RobotAccountClient) QueryOrganization(ra *RobotAccount) *OrganizationQuery {
+	query := (&OrganizationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := ra.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(robotaccount.Table, robotaccount.FieldID, id),
+			sqlgraph.To(organization.Table, organization.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, robotaccount.OrganizationTable, robotaccount.OrganizationColumn),
+		)
+		fromV = sqlgraph.Neighbors(ra.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *RobotAccountClient) Hooks() []Hook {
 	return c.hooks.RobotAccount
