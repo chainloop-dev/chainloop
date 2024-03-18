@@ -2,8 +2,8 @@
 # It maps the material names with location in disk so they get automatically attested
 docs:
   - name: sbom-cdx
-    path: reports/sbom.cyclonedx.json
+    path: docs/reports/sbom.cyclonedx.json
   - name: sbom-spdx
-    path: reports/sbom.spdx.json
+    path: docs/reports/sbom.spdx.json
   - name: built-site
-    path: reports/build.tar.gz
+    path: docs/reports/build.tar.gz

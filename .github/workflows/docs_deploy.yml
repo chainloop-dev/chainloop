@@ -51,9 +51,21 @@ jobs:
       - name: Generate reports
         run: |
           mkdir -p reports
-          syft packages . -o cyclonedx-json --file reports/sbom.cyclonedx.json
-          syft packages . -o spdx-json --file reports/sbom.spdx.json
           tar -czf reports/build.tar.gz build
+
+      - uses: anchore/sbom-action@c6aed38a4323b393d05372c58a74c39ae8386d02 # v0.15.6
+        with:
+          path: .
+          format: cyclonedx-json
+          artifact-name: sbom.cyclonedx.json
+          output-file: docs/reports/sbom.cyclonedx.json
+
+      - uses: anchore/sbom-action@c6aed38a4323b393d05372c58a74c39ae8386d02 # v0.15.6
+        with:
+          path: .
+          format: spdx-json
+          artifact-name: sbom.spdx.json
+          output-file: docs/reports/sbom.spdx.json
   
       # Upload artifacts so they are shared with the chainloop job
       - uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
