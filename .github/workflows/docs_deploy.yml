@@ -57,14 +57,14 @@ jobs:
         with:
           path: .
           format: cyclonedx-json
-          artifact-name: sbom.cyclonedx.json
+          upload-artifact: false
           output-file: docs/reports/sbom.cyclonedx.json
 
       - uses: anchore/sbom-action@c6aed38a4323b393d05372c58a74c39ae8386d02 # v0.15.6
         with:
           path: .
           format: spdx-json
-          artifact-name: sbom.spdx.json
+          upload-artifact: false
           output-file: docs/reports/sbom.spdx.json
   
       # Upload artifacts so they are shared with the chainloop job
@@ -77,6 +77,15 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
       NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+
+  debug:
+    name: debug
+    runs-on: ubuntu-latest
+    needs:
+      - deploy_docs
+    steps:
+      - name: List files
+        run: ls -la; ls -la docs; ls -la docs/reports
 
   chainloop_push:
     name: Chainloop Push
