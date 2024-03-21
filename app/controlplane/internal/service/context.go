@@ -20,7 +20,6 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
-	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	errors "github.com/go-kratos/kratos/v2/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -72,7 +71,7 @@ func (s *ContextService) Current(ctx context.Context, _ *pb.ContextServiceCurren
 	// Add cas backend
 	backend, err := s.uc.FindDefaultBackend(ctx, currentOrg.ID)
 	if err != nil && !biz.IsNotFound(err) {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	if backend != nil {
@@ -83,7 +82,7 @@ func (s *ContextService) Current(ctx context.Context, _ *pb.ContextServiceCurren
 	if currentUser != nil {
 		m, err := s.userUC.CurrentMembership(ctx, currentUser.ID)
 		if err != nil {
-			return nil, handleUseCaseErr("membership", err, s.log)
+			return nil, handleUseCaseErr(err, s.log)
 		}
 
 		if m != nil {

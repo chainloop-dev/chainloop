@@ -49,7 +49,7 @@ func (s *AttestationStateService) Initialized(ctx context.Context, req *cpAPI.At
 
 	initialized, err := s.uc.Initialized(ctx, robotAccount.WorkflowID, req.WorkflowRunId)
 	if err != nil {
-		return nil, handleUseCaseErr("state", err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &cpAPI.AttestationStateServiceInitializedResponse{
@@ -70,7 +70,7 @@ func (s *AttestationStateService) Save(ctx context.Context, req *cpAPI.Attestati
 	}
 
 	if err := s.uc.Save(ctx, robotAccount.WorkflowID, req.WorkflowRunId, req.AttestationState, encryptionPassphrase); err != nil {
-		return nil, handleUseCaseErr("state", err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &cpAPI.AttestationStateServiceSaveResponse{}, nil
@@ -89,7 +89,7 @@ func (s *AttestationStateService) Read(ctx context.Context, req *cpAPI.Attestati
 
 	state, err := s.uc.Read(ctx, robotAccount.WorkflowID, req.WorkflowRunId, encryptionPassphrase)
 	if err != nil {
-		return nil, handleUseCaseErr("state", err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &cpAPI.AttestationStateServiceReadResponse{
@@ -106,7 +106,7 @@ func (s *AttestationStateService) Reset(ctx context.Context, req *cpAPI.Attestat
 	}
 
 	if err := s.uc.Reset(ctx, robotAccount.WorkflowID, req.WorkflowRunId); err != nil {
-		return nil, handleUseCaseErr("state", err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &cpAPI.AttestationStateServiceResetResponse{}, nil

@@ -22,7 +22,6 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
-	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	errors "github.com/go-kratos/kratos/v2/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -95,7 +94,7 @@ func (s *IntegrationsService) Register(ctx context.Context, req *pb.Integrations
 			return nil, errors.BadRequest("wrong validation", err.Error())
 		}
 
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &pb.IntegrationsServiceRegisterResponse{Result: bizIntegrationToPb(i)}, nil
@@ -112,7 +111,7 @@ func (s *IntegrationsService) Attach(ctx context.Context, req *pb.IntegrationsSe
 		if biz.IsNotFound(err) {
 			return nil, errors.NotFound("not found", err.Error())
 		}
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	// lookup the integration
@@ -134,12 +133,12 @@ func (s *IntegrationsService) Attach(ctx context.Context, req *pb.IntegrationsSe
 			return nil, errors.BadRequest("wrong validation", err.Error())
 		}
 
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	result, err := s.bizIntegrationAttachmentToPb(ctx, res, org.ID)
 	if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &pb.IntegrationsServiceAttachResponse{Result: result}, nil
@@ -153,7 +152,7 @@ func (s *IntegrationsService) ListRegistrations(ctx context.Context, _ *pb.Integ
 
 	integrations, err := s.integrationUC.List(ctx, org.ID)
 	if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	result := make([]*pb.RegisteredIntegrationItem, 0, len(integrations))
@@ -172,7 +171,7 @@ func (s *IntegrationsService) DescribeRegistration(ctx context.Context, req *pb.
 
 	i, err := s.integrationUC.FindByIDInOrg(ctx, org.ID, req.Id)
 	if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	} else if i == nil {
 		return nil, errors.NotFound("not found", "integration not found")
 	}
@@ -190,7 +189,7 @@ func (s *IntegrationsService) Deregister(ctx context.Context, req *pb.Integratio
 	if err != nil && biz.IsNotFound(err) {
 		return nil, errors.NotFound("not found", err.Error())
 	} else if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &pb.IntegrationsServiceDeregisterResponse{}, nil
@@ -204,14 +203,14 @@ func (s *IntegrationsService) ListAttachments(ctx context.Context, req *pb.ListA
 
 	integrations, err := s.integrationUC.ListAttachments(ctx, org.ID, req.GetWorkflowId())
 	if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	result := make([]*pb.IntegrationAttachmentItem, 0, len(integrations))
 	for _, i := range integrations {
 		r, err := s.bizIntegrationAttachmentToPb(ctx, i, org.ID)
 		if err != nil {
-			return nil, sl.LogAndMaskErr(err, s.log)
+			return nil, handleUseCaseErr(err, s.log)
 		}
 		result = append(result, r)
 	}
@@ -230,7 +229,7 @@ func (s *IntegrationsService) Detach(ctx context.Context, req *pb.IntegrationsSe
 			return nil, errors.NotFound("not found", err.Error())
 		}
 
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &pb.IntegrationsServiceDetachResponse{}, nil

@@ -20,7 +20,6 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
-	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 )
 
 type OrgMetricsService struct {
@@ -47,17 +46,17 @@ func (s *OrgMetricsService) Totals(ctx context.Context, req *pb.OrgMetricsServic
 	// TODO: Merge it to a single request
 	totals, err := s.uc.RunsTotal(ctx, currentOrg.ID, *req.TimeWindow.ToDuration())
 	if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	totalsByStatus, err := s.uc.RunsTotalByStatus(ctx, currentOrg.ID, *req.TimeWindow.ToDuration())
 	if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	totalsByRunnerType, err := s.uc.RunsTotalByRunnerType(ctx, currentOrg.ID, *req.TimeWindow.ToDuration())
 	if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &pb.OrgMetricsServiceTotalsResponse{Result: &pb.OrgMetricsServiceTotalsResponse_Result{
@@ -75,7 +74,7 @@ func (s *OrgMetricsService) TopWorkflowsByRunsCount(ctx context.Context, req *pb
 
 	res, err := s.uc.TopWorkflowsByRunsCount(ctx, currentOrg.ID, int(req.GetNumWorkflows()), *req.TimeWindow.ToDuration())
 	if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	var result = []*pb.TopWorkflowsByRunsCountResponse_TotalByStatus{}
@@ -97,7 +96,7 @@ func (s *OrgMetricsService) DailyRunsCount(ctx context.Context, req *pb.DailyRun
 
 	metricsByDay, err := s.uc.DailyRunsCount(ctx, org.ID, req.WorkflowId, *req.TimeWindow.ToDuration())
 	if err != nil {
-		return nil, handleUseCaseErr("metrics", err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	var res = make([]*pb.DailyRunsCountResponse_TotalByDay, 0, len(metricsByDay))

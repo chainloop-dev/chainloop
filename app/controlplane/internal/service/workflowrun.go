@@ -24,7 +24,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/pagination"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
-	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	errors "github.com/go-kratos/kratos/v2/errors"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -67,7 +66,7 @@ func (s *WorkflowRunService) List(ctx context.Context, req *pb.WorkflowRunServic
 	if req.GetWorkflowId() != "" {
 		wf, err := s.workflowUseCase.FindByIDInOrg(ctx, currentOrg.ID, req.GetWorkflowId())
 		if err != nil {
-			return nil, handleUseCaseErr(workflowRunEntity, err, s.log)
+			return nil, handleUseCaseErr(err, s.log)
 		} else if wf == nil {
 			return nil, errors.NotFound("not found", "workflow not found")
 		}
@@ -101,7 +100,7 @@ func (s *WorkflowRunService) List(ctx context.Context, req *pb.WorkflowRunServic
 
 	workflowRuns, nextCursor, err := s.wrUseCase.List(ctx, currentOrg.ID, filters, paginationOpts)
 	if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	result := make([]*pb.WorkflowRunItem, 0, len(workflowRuns))
@@ -118,8 +117,6 @@ func bizCursorToPb(cursor string) *pb.CursorPaginationResponse {
 	return &pb.CursorPaginationResponse{NextCursor: cursor}
 }
 
-const workflowRunEntity = "Workflow Run"
-
 func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServiceViewRequest) (*pb.WorkflowRunServiceViewResponse, error) {
 	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
@@ -131,23 +128,23 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 	if req.GetId() != "" {
 		run, err = s.wrUseCase.GetByIDInOrgOrPublic(ctx, currentOrg.ID, req.GetId())
 		if err != nil {
-			return nil, handleUseCaseErr(workflowRunEntity, err, s.log)
+			return nil, handleUseCaseErr(err, s.log)
 		}
 	} else if req.GetDigest() != "" {
 		run, err = s.wrUseCase.GetByDigestInOrgOrPublic(ctx, currentOrg.ID, req.GetDigest())
 		if err != nil {
-			return nil, handleUseCaseErr(workflowRunEntity, err, s.log)
+			return nil, handleUseCaseErr(err, s.log)
 		}
 	}
 
 	attestation, err := bizAttestationToPb(run.Attestation)
 	if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	contractVersion, err := s.workflowContractUseCase.FindVersionByID(ctx, run.ContractVersionID.String())
 	if err != nil {
-		return nil, handleUseCaseErr(workflowRunEntity, err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	wr := bizWorkFlowRunToPb(run)

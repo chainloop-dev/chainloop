@@ -30,7 +30,6 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
-	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 
 	errors "github.com/go-kratos/kratos/v2/errors"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
@@ -148,7 +147,7 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 
 	run, err := s.wrUseCase.Create(ctx, opts)
 	if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	wRun := bizWorkFlowRunToPb(run)
@@ -176,12 +175,12 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	// see sigstore's dsse signer/verifier helpers
 	envelope := &dsse.Envelope{}
 	if err := json.Unmarshal(req.Attestation, envelope); err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	wRun, err := s.wrUseCase.GetByIDInOrgOrPublic(ctx, robotAccount.OrgID, req.WorkflowRunId)
 	if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	} else if wRun == nil {
 		return nil, errors.NotFound("not found", "workflow run not found")
 	}
@@ -212,31 +211,31 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 			}, b)
 
 		if err != nil {
-			_ = sl.LogAndMaskErr(err, s.log)
+			_ = handleUseCaseErr(err, s.log)
 		}
 	}
 
 	// Store the attestation including the digest in the CAS backend (if exists)
 	if err := s.wrUseCase.SaveAttestation(ctx, req.WorkflowRunId, envelope, digestInCAS); err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	// Store the exploded attestation referrer information in the DB
 	if err := s.referrerUseCase.ExtractAndPersist(ctx, envelope, robotAccount.WorkflowID); err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	if !casBackend.Inline {
 		// Store the mappings in the DB
 		references, err := s.casMappingUseCase.LookupDigestsInAttestation(envelope)
 		if err != nil {
-			return nil, sl.LogAndMaskErr(err, s.log)
+			return nil, handleUseCaseErr(err, s.log)
 		}
 
 		for _, ref := range references {
 			s.log.Infow("msg", "creating CAS mapping", "name", ref.Name, "digest", ref.Digest, "workflowRun", req.WorkflowRunId, "casBackend", casBackend.ID.String())
 			if _, err := s.casMappingUseCase.Create(ctx, ref.Digest, casBackend.ID.String(), req.WorkflowRunId); err != nil {
-				return nil, sl.LogAndMaskErr(err, s.log)
+				return nil, handleUseCaseErr(err, s.log)
 			}
 		}
 	}
@@ -251,12 +250,12 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 			DownloadSecretName:  secretName,
 			WorkflowRunID:       req.WorkflowRunId,
 		}); err != nil {
-			_ = sl.LogAndMaskErr(err, s.log)
+			_ = handleUseCaseErr(err, s.log)
 		}
 	}()
 
 	if err := s.wrUseCase.MarkAsFinished(ctx, req.WorkflowRunId, biz.WorkflowRunSuccess, ""); err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &cpAPI.AttestationServiceStoreResponse{
@@ -316,7 +315,7 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 		s.log.Warn("DEPRECATED: using main repository to get upload creds")
 		backend, err = s.casUC.FindDefaultBackend(ctx, wf.OrgID.String())
 		if err != nil && !biz.IsNotFound(err) {
-			return nil, sl.LogAndMaskErr(err, s.log)
+			return nil, handleUseCaseErr(err, s.log)
 		} else if backend == nil {
 			return nil, errors.NotFound("not found", "main repository not found")
 		}
@@ -324,7 +323,7 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 		// This is the new mode, where the CAS backend ref is stored in the workflow run since initialization
 		wRun, err := s.wrUseCase.GetByIDInOrgOrPublic(ctx, robotAccount.OrgID, req.WorkflowRunId)
 		if err != nil {
-			return nil, sl.LogAndMaskErr(err, s.log)
+			return nil, handleUseCaseErr(err, s.log)
 		} else if wRun == nil {
 			return nil, errors.NotFound("not found", "workflow run not found")
 		}
@@ -344,7 +343,7 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 		ref := &biz.CASCredsOpts{BackendType: string(backend.Provider), SecretPath: backend.SecretName, Role: casJWT.Uploader}
 		t, err := s.casCredsUseCase.GenerateTemporaryCredentials(ref)
 		if err != nil {
-			return nil, sl.LogAndMaskErr(err, s.log)
+			return nil, handleUseCaseErr(err, s.log)
 		}
 
 		resp.Token = t

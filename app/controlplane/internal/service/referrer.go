@@ -65,7 +65,7 @@ func (s *ReferrerService) DiscoverPrivate(ctx context.Context, req *pb.ReferrerS
 		referrer, err = s.referrerUC.GetFromRoot(ctx, req.GetDigest(), req.GetKind(), []uuid.UUID{orgUUID})
 	}
 	if err != nil {
-		return nil, handleUseCaseErr("referrer discovery", err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &pb.ReferrerServiceDiscoverPrivateResponse{
@@ -76,7 +76,7 @@ func (s *ReferrerService) DiscoverPrivate(ctx context.Context, req *pb.ReferrerS
 func (s *ReferrerService) DiscoverPublicShared(ctx context.Context, req *pb.DiscoverPublicSharedRequest) (*pb.DiscoverPublicSharedResponse, error) {
 	res, err := s.referrerUC.GetFromRootInPublicSharedIndex(ctx, req.GetDigest(), req.GetKind())
 	if err != nil {
-		return nil, handleUseCaseErr("referrer discovery", err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &pb.DiscoverPublicSharedResponse{

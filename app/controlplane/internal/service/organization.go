@@ -49,11 +49,11 @@ func (s *OrganizationService) Create(ctx context.Context, req *pb.OrganizationSe
 	// Create an organization with an associated inline CAS backend
 	org, err := s.orgUC.Create(ctx, req.Name, biz.WithCreateInlineBackend())
 	if err != nil {
-		return nil, handleUseCaseErr("organization", err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	if _, err := s.membershipUC.Create(ctx, org.ID, currentUser.ID, biz.WithMembershipRole(authz.RoleOwner)); err != nil {
-		return nil, handleUseCaseErr("organization", err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &pb.OrganizationServiceCreateResponse{Result: bizOrgToPb(org)}, nil
@@ -67,7 +67,7 @@ func (s *OrganizationService) Update(ctx context.Context, req *pb.OrganizationSe
 
 	org, err := s.orgUC.Update(ctx, currentUser.ID, req.Id, req.Name)
 	if err != nil {
-		return nil, handleUseCaseErr("organization", err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &pb.OrganizationServiceUpdateResponse{Result: bizOrgToPb(org)}, nil
@@ -81,7 +81,7 @@ func (s *OrganizationService) ListMemberships(ctx context.Context, _ *pb.Organiz
 
 	memberships, err := s.membershipUC.ByOrg(ctx, currentOrg.ID)
 	if err != nil {
-		return nil, handleUseCaseErr("organization", err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	result := make([]*pb.OrgMembershipItem, 0, len(memberships))
@@ -104,7 +104,7 @@ func (s *OrganizationService) DeleteMembership(ctx context.Context, req *pb.Orga
 	}
 
 	if err := s.membershipUC.DeleteOther(ctx, currentOrg.ID, currentUser.ID, req.MembershipId); err != nil {
-		return nil, handleUseCaseErr("organization", err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &pb.OrganizationServiceDeleteMembershipResponse{}, nil
@@ -123,7 +123,7 @@ func (s *OrganizationService) UpdateMembership(ctx context.Context, req *pb.Orga
 
 	m, err := s.membershipUC.UpdateRole(ctx, currentOrg.ID, currentUser.ID, req.MembershipId, pbRoleToBiz(req.Role))
 	if err != nil {
-		return nil, handleUseCaseErr("membership", err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &pb.OrganizationServiceUpdateMembershipResponse{Result: bizMembershipToPb(m)}, nil

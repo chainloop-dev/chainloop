@@ -20,7 +20,6 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
-	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -49,7 +48,7 @@ func (s *RobotAccountService) Create(ctx context.Context, req *pb.RobotAccountSe
 	if err != nil && biz.IsNotFound(err) {
 		return nil, errors.NotFound("not found", err.Error())
 	} else if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &pb.RobotAccountServiceCreateResponse{
@@ -69,7 +68,7 @@ func (s *RobotAccountService) List(ctx context.Context, req *pb.RobotAccountServ
 	if err != nil && biz.IsNotFound(err) {
 		return nil, errors.NotFound("not found", err.Error())
 	} else if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	result := make([]*pb.RobotAccountServiceListResponse_RobotAccountItem, 0, len(robotAccounts))
@@ -97,7 +96,7 @@ func (s *RobotAccountService) Revoke(ctx context.Context, req *pb.RobotAccountSe
 	}
 
 	if err := s.robotAccountUseCase.Revoke(ctx, currentOrg.ID, req.Id); err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &pb.RobotAccountServiceRevokeResponse{}, nil
