@@ -17,7 +17,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"io"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
@@ -130,14 +129,16 @@ func WithLogger(logger log.Logger) NewOpt {
 	}
 }
 
-func handleUseCaseErr(entity string, err error, l *log.Helper) error {
+func handleUseCaseErr(err error, l *log.Helper) error {
 	switch {
+	case errors.Is(err, context.Canceled):
+		return errors.ClientClosed("client closed", err.Error())
 	case biz.IsErrValidation(err) || biz.IsErrInvalidUUID(err):
-		return errors.BadRequest(fmt.Sprintf("invalid %s", entity), err.Error())
+		return errors.BadRequest("invalid", err.Error())
 	case biz.IsNotFound(err):
-		return errors.NotFound(fmt.Sprintf("%s not found", entity), err.Error())
+		return errors.NotFound("not found", err.Error())
 	case biz.IsErrUnauthorized(err):
-		return errors.Forbidden(fmt.Sprintf("unauthorized %s", entity), err.Error())
+		return errors.Forbidden("unauthorized", err.Error())
 	default:
 		return servicelogger.LogAndMaskErr(err, l)
 	}

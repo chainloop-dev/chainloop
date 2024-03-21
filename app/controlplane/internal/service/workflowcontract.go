@@ -46,7 +46,7 @@ func (s *WorkflowContractService) List(ctx context.Context, _ *pb.WorkflowContra
 
 	contracts, err := s.contractUseCase.List(ctx, currentOrg.ID)
 	if err != nil {
-		return nil, handleUseCaseErr("contract", err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	result := make([]*pb.WorkflowContractItem, 0, len(contracts))
@@ -65,7 +65,7 @@ func (s *WorkflowContractService) Describe(ctx context.Context, req *pb.Workflow
 
 	contractWithVersion, err := s.contractUseCase.Describe(ctx, currentOrg.ID, req.GetId(), int(req.GetRevision()))
 	if err != nil {
-		return nil, handleUseCaseErr("contract", err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	} else if contractWithVersion == nil {
 		return nil, errors.NotFound("not found", "contract not found")
 	}
@@ -90,7 +90,7 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 		Name:  req.Name, Description: req.Description,
 		Schema: req.GetV1()})
 	if err != nil {
-		return nil, handleUseCaseErr("contract", err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &pb.WorkflowContractServiceCreateResponse{Result: bizWorkFlowContractToPb(schema)}, nil
@@ -109,7 +109,7 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 			Description: req.Description,
 		})
 	if err != nil {
-		return nil, handleUseCaseErr("contract", err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	result := &pb.WorkflowContractServiceUpdateResponse_Result{
@@ -127,7 +127,7 @@ func (s *WorkflowContractService) Delete(ctx context.Context, req *pb.WorkflowCo
 	}
 
 	if err := s.contractUseCase.Delete(ctx, currentOrg.ID, req.Id); err != nil {
-		return nil, handleUseCaseErr("contract", err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &pb.WorkflowContractServiceDeleteResponse{}, nil

@@ -28,7 +28,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/internal/oauth"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
-	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	kerrors "github.com/go-kratos/kratos/v2/errors"
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
@@ -95,7 +94,7 @@ func (s *CASRedirectService) GetDownloadURL(ctx context.Context, req *pb.GetDown
 			return nil, kerrors.BadRequest("invalid", err.Error())
 		}
 
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	backend := mapping.CASBackend
@@ -108,7 +107,7 @@ func (s *CASRedirectService) GetDownloadURL(ctx context.Context, req *pb.GetDown
 	// Create an URL to download the artifact from the CAS backend
 	downloadBase, err := url.Parse(s.casServerConf.GetDownloadUrl())
 	if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	// 1 - append the digest /download/[digest]
@@ -119,7 +118,7 @@ func (s *CASRedirectService) GetDownloadURL(ctx context.Context, req *pb.GetDown
 		ref := &biz.CASCredsOpts{BackendType: string(backend.Provider), SecretPath: backend.SecretName, Role: casJWT.Downloader}
 		t, err := s.casCredsUseCase.GenerateTemporaryCredentials(ref)
 		if err != nil {
-			return nil, sl.LogAndMaskErr(err, s.log)
+			return nil, handleUseCaseErr(err, s.log)
 		}
 
 		q := downloadURL.Query()

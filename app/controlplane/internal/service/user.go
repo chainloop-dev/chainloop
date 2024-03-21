@@ -23,7 +23,6 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
-	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	errors "github.com/go-kratos/kratos/v2/errors"
 )
 
@@ -53,7 +52,7 @@ func (s *UserService) ListMemberships(ctx context.Context, _ *pb.UserServiceList
 	if err != nil && biz.IsNotFound(err) {
 		return nil, errors.NotFound("not found", err.Error())
 	} else if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	result := make([]*pb.OrgMembershipItem, 0, len(memberships))
@@ -74,7 +73,7 @@ func (s *UserService) SetCurrentMembership(ctx context.Context, req *pb.SetCurre
 	if err != nil && biz.IsNotFound(err) {
 		return nil, errors.NotFound("not found", err.Error())
 	} else if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &pb.SetCurrentMembershipResponse{Result: bizMembershipToPb(m)}, nil
@@ -90,7 +89,7 @@ func (s *UserService) DeleteMembership(ctx context.Context, req *pb.DeleteMember
 	if err != nil && biz.IsNotFound(err) {
 		return nil, errors.NotFound("not found", err.Error())
 	} else if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &pb.DeleteMembershipResponse{}, nil

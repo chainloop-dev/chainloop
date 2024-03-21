@@ -21,8 +21,6 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
-	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
-	"github.com/go-kratos/kratos/v2/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -53,10 +51,8 @@ func (s *APITokenService) Create(ctx context.Context, req *pb.APITokenServiceCre
 	}
 
 	token, err := s.APITokenUseCase.Create(ctx, req.Description, expiresIn, currentOrg.ID)
-	if err != nil && biz.IsNotFound(err) {
-		return nil, errors.NotFound("not found", err.Error())
-	} else if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &pb.APITokenServiceCreateResponse{
@@ -74,10 +70,8 @@ func (s *APITokenService) List(ctx context.Context, req *pb.APITokenServiceListR
 	}
 
 	tokens, err := s.APITokenUseCase.List(ctx, currentOrg.ID, req.IncludeRevoked)
-	if err != nil && biz.IsNotFound(err) {
-		return nil, errors.NotFound("not found", err.Error())
-	} else if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	result := make([]*pb.APITokenItem, 0, len(tokens))
@@ -95,7 +89,7 @@ func (s *APITokenService) Revoke(ctx context.Context, req *pb.APITokenServiceRev
 	}
 
 	if err := s.APITokenUseCase.Revoke(ctx, currentOrg.ID, req.Id); err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &pb.APITokenServiceRevokeResponse{}, nil

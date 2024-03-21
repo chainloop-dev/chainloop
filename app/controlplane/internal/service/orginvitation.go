@@ -51,7 +51,7 @@ func (s *OrgInvitationService) Create(ctx context.Context, req *pb.OrgInvitation
 	// Validations and rbac checks are done in the biz layer
 	i, err := s.useCase.Create(ctx, org.ID, user.ID, req.ReceiverEmail, biz.WithInvitationRole(pbRoleToBiz(req.Role)))
 	if err != nil {
-		return nil, handleUseCaseErr("invitation", err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &pb.OrgInvitationServiceCreateResponse{Result: bizInvitationToPB(i)}, nil
@@ -64,7 +64,7 @@ func (s *OrgInvitationService) Revoke(ctx context.Context, req *pb.OrgInvitation
 	}
 
 	if err := s.useCase.Revoke(ctx, org.ID, req.Id); err != nil {
-		return nil, handleUseCaseErr("invitation", err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &pb.OrgInvitationServiceRevokeResponse{}, nil
@@ -78,7 +78,7 @@ func (s *OrgInvitationService) ListSent(ctx context.Context, _ *pb.OrgInvitation
 
 	invitations, err := s.useCase.ListByOrg(ctx, org.ID)
 	if err != nil {
-		return nil, handleUseCaseErr("invitation", err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	res := []*pb.OrgInvitationItem{}

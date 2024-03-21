@@ -19,7 +19,6 @@ import (
 	"context"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
 	errors "github.com/go-kratos/kratos/v2/errors"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
@@ -79,7 +78,7 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 	}
 
 	if ok, err := s.authz.Enforce(currentAuthzSubject, policyToCheck); err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	} else if !ok {
 		return nil, errors.Forbidden("forbidden", "not allowed to perform this operation")
 	}
@@ -87,7 +86,7 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 	// Load the default CAS backend, we'll use it for uploads and as fallback on downloads
 	backend, err := s.casBackendUC.FindDefaultBackend(ctx, currentOrg.ID)
 	if err != nil && !biz.IsNotFound(err) {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	} else if backend == nil {
 		return nil, errors.NotFound("not found", "main CAS backend not found")
 	}
@@ -109,7 +108,7 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 				return nil, errors.BadRequest("invalid", err.Error())
 			}
 
-			return nil, sl.LogAndMaskErr(err, s.log)
+			return nil, handleUseCaseErr(err, s.log)
 		}
 
 		if mapping != nil {
@@ -125,7 +124,7 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 	ref := &biz.CASCredsOpts{BackendType: string(backend.Provider), SecretPath: backend.SecretName, Role: role}
 	t, err := s.casUC.GenerateTemporaryCredentials(ref)
 	if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &pb.CASCredentialsServiceGetResponse{
