@@ -53,14 +53,14 @@ jobs:
           mkdir -p reports
           tar -czf reports/build.tar.gz build
 
-      - uses: anchore/sbom-action@c6aed38a4323b393d05372c58a74c39ae8386d02 # v0.15.6
+      - uses: anchore/sbom-action@a5afbb185c4d9799c758f05e496032af75ae9128
         with:
           path: .
           format: cyclonedx-json
           upload-artifact: false
           output-file: docs/reports/sbom.cyclonedx.json
 
-      - uses: anchore/sbom-action@c6aed38a4323b393d05372c58a74c39ae8386d02 # v0.15.6
+      - uses: anchore/sbom-action@a5afbb185c4d9799c758f05e496032af75ae9128
         with:
           path: .
           format: spdx-json
@@ -77,25 +77,6 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
       NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-
-  debug:
-    name: debug
-    runs-on: ubuntu-latest
-    needs:
-      - deploy_docs
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          sparse-checkout: |
-            .chainloop.yml
-
-      - name: Download all workflow run artifacts
-        uses: actions/download-artifact@v4
-
-      - name: List files
-        run: ls -las; ls -las docs; ls -las docs/reports
 
   chainloop_push:
     name: Chainloop Push
