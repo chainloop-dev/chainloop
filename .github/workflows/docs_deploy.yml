@@ -24,7 +24,7 @@ jobs:
       run:
         working-directory: ./docs
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@cd7d8d697e10461458bc61a30d094dc601a8b017
         with:
           sparse-checkout: |
             docs
@@ -35,7 +35,7 @@ jobs:
           # Install Syft
           wget --no-verbose https://raw.githubusercontent.com/anchore/syft/main/install.sh -O - | sh -s -- -b /usr/local/bin
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@c2ac33f2c62f978d6c944d9648125a294e56dc0b
         with:
           node-version: 18
 
@@ -68,7 +68,7 @@ jobs:
           output-file: docs/reports/sbom.spdx.json
   
       # Upload artifacts so they are shared with the chainloop job
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ef09cdac3e2d3e60d8ccadda691f4f1cec5035cb
         with:
           name: reports
           path: docs/reports/*
