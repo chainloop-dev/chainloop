@@ -29,8 +29,8 @@ func newWorkflowContractUpdateCmd() *cobra.Command {
 		Use:   "update",
 		Short: "Update an existing contract",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if contractPath == "" && name == "" {
-				return errors.New("at least the name or the new contract revision must be provided")
+			if contractPath == "" && name == "" && description == "" {
+				return errors.New("no updates provided")
 			}
 			return nil
 		},
