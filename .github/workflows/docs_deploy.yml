@@ -2,7 +2,7 @@ name: Deploy Documentation
 
 on:
   push:
-    tags: ['v*.*.*']
+    tags: ["v*.*.*"]
   workflow_dispatch:
 
 # Limit to a single workflow
@@ -24,7 +24,7 @@ jobs:
       run:
         working-directory: ./docs
     steps:
-      - uses: actions/checkout@cd7d8d697e10461458bc61a30d094dc601a8b017
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           sparse-checkout: |
             docs
@@ -35,7 +35,7 @@ jobs:
           # Install Syft
           wget --no-verbose https://raw.githubusercontent.com/anchore/syft/main/install.sh -O - | sh -s -- -b /usr/local/bin
 
-      - uses: actions/setup-node@c2ac33f2c62f978d6c944d9648125a294e56dc0b
+      - uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
         with:
           node-version: 18
 
@@ -66,7 +66,7 @@ jobs:
           format: spdx-json
           upload-artifact: false
           output-file: docs/reports/sbom.spdx.json
-  
+
       # Upload artifacts so they are shared with the chainloop job
       - uses: actions/upload-artifact@ef09cdac3e2d3e60d8ccadda691f4f1cec5035cb
         with:

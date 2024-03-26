@@ -258,7 +258,7 @@ jobs:
           curl -sfL https://docs.chainloop.dev/install.sh | bash -s -- --version v${{ env.CHAINLOOP_VERSION }}
       # highlight-end
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
