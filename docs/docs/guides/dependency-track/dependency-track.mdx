@@ -60,11 +60,11 @@ This is done via the `chainloop integration registered add` command but first le
 ```bash
 $ chainloop integration available describe --id dependency-track
 
-┌─────────────────┬─────────┬────────────────────────────────────────────────────────┐
-│ ID              │ VERSION │ DESCRIPTION                                            │
-├─────────────────┼─────────┼────────────────────────────────────────────────────────┤
-│ dependencytrack │ 0.2     │ Send CycloneDX SBOMs to your Dependency-Track instance │
-└─────────────────┴─────────┴────────────────────────────────────────────────────────┘
+┌──────────────────┬─────────┬──────────────────────┬────────────────────────────────────────────────────────┐
+│ ID               │ VERSION │ MATERIAL REQUIREMENT │ DESCRIPTION                                            │
+├──────────────────┼─────────┼──────────────────────┼────────────────────────────────────────────────────────┤
+│ dependency-track │ 1.4     │ SBOM_CYCLONEDX_JSON  │ Send CycloneDX SBOMs to your Dependency-Track instance │
+└──────────────────┴─────────┴──────────────────────┴────────────────────────────────────────────────────────┘
 ┌──────────────────────────────────────────────────────────────────────────────────────┐
 │ Registration inputs                                                                  │
 ├─────────────────┬──────────────┬──────────┬──────────────────────────────────────────┤
@@ -106,24 +106,25 @@ The attachment is done via `chainloop integration attached add` command. But as 
 ```bash
 $ chainloop integration available describe --id dependency-track
 
-┌─────────────────┬─────────┬────────────────────────────────────────────────────────┐
-│ ID              │ VERSION │ DESCRIPTION                                            │                                      
-├─────────────────┼─────────┼────────────────────────────────────────────────────────┤                         
-│ dependencytrack │ 0.2     │ Send CycloneDX SBOMs to your Dependency-Track instance │           
-└─────────────────┴─────────┴────────────────────────────────────────────────────────┘
+┌──────────────────┬─────────┬──────────────────────┬────────────────────────────────────────────────────────┐
+│ ID               │ VERSION │ MATERIAL REQUIREMENT │ DESCRIPTION                                            │
+├──────────────────┼─────────┼──────────────────────┼────────────────────────────────────────────────────────┤
+│ dependency-track │ 1.4     │ SBOM_CYCLONEDX_JSON  │ Send CycloneDX SBOMs to your Dependency-Track instance │
+└──────────────────┴─────────┴──────────────────────┴────────────────────────────────────────────────────────┘
 ...
 ┌───────────────────────────────────────────────────────────────────────────────────────────┐
 │ Attachment inputs                                                                         │
 ├─────────────┬────────┬──────────┬─────────────────────────────────────────────────────────┤
 │ FIELD       │ TYPE   │ REQUIRED │ DESCRIPTION                                             │
 ├─────────────┼────────┼──────────┼─────────────────────────────────────────────────────────┤
+│ parentID    │ string │ no       │ ID of parent project to create a new project under      │
 │ projectID   │ string │ no       │ The ID of the existing project to send the SBOMs to     │
 │ projectName │ string │ no       │ The name of the project to create and send the SBOMs to │
 └─────────────┴────────┴──────────┴─────────────────────────────────────────────────────────┘
 
 ```
 
-During the attachment process, you can decide whether to send the SBOMs to a specific project `projectID` or create a new one defined by the provided `projectName`. For the latter to work, you need to make sure that the integration was setup with `--allow-project-auto-create` option.
+During the attachment process, you can decide whether to send the SBOMs to a specific project `projectID` or create a new one defined by the provided `projectName`. For the latter to work, you need to make sure that the integration was setup with `--allow-project-auto-create` option. Furthermore, you can request the new project is created as a child of an existing one `parentID`, to enable you to group projects in Dependency Track.
 
 :::note
 The workflowID can be found by running `chainloop workflow list`
