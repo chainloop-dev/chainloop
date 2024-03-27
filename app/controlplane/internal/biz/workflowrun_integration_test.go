@@ -208,13 +208,13 @@ func (s *workflowRunIntegrationTestSuite) TestGetByDigestInOrgOrPublic() {
 		{
 			name:           "can't access workflowRun from other org",
 			orgID:          s.org.ID,
-			digest:         validDigest2,
+			digest:         s.digestAttOrg2,
 			errTypeChecker: biz.IsNotFound,
 		},
 		{
 			name:   "can access workflowRun from other org if public",
 			orgID:  s.org.ID,
-			digest: validDigest3,
+			digest: s.digestAttPublic,
 		},
 	}
 
@@ -306,7 +306,7 @@ type workflowRunTestData struct {
 	runOrg1, runOrg2, runOrg2Public                *biz.WorkflowRun
 	robotAccount                                   *biz.RobotAccount
 	contractVersion                                *biz.WorkflowContractWithVersion
-	digestAtt1                                     string
+	digestAtt1, digestAttOrg2, digestAttPublic     string
 }
 
 // extract this setup to a helper function so it can be used from other test suites
@@ -355,7 +355,7 @@ func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, 
 			WorkflowID: s.workflowOrg2.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
 		})
 	assert.NoError(err)
-	_, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2.ID.String(), &dsse.Envelope{PayloadType: "test2"})
+	s.digestAttOrg2, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2.ID.String(), &dsse.Envelope{PayloadType: "test2"})
 	assert.NoError(err)
 
 	s.runOrg2Public, err = suite.WorkflowRun.Create(ctx,
@@ -363,7 +363,7 @@ func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, 
 			WorkflowID: s.workflowPublicOrg2.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
 		})
 	assert.NoError(err)
-	_, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2Public.ID.String(), &dsse.Envelope{PayloadType: "test3"})
+	s.digestAttPublic, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2Public.ID.String(), &dsse.Envelope{PayloadType: "test3"})
 	assert.NoError(err)
 }
 
