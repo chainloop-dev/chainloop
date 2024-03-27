@@ -167,6 +167,10 @@ func (r *WorkflowContractRepo) Update(ctx context.Context, opts *biz.ContractUpd
 
 	contract, err := contractInOrgTx(ctx, tx, opts.OrgID, opts.ContractID)
 	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+
 		return nil, rollback(tx, err)
 	}
 
