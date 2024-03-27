@@ -203,7 +203,7 @@ func (s *workflowRunIntegrationTestSuite) TestGetByDigestInOrgOrPublic() {
 		{
 			name:   "existing workflowRun in org1",
 			orgID:  s.org.ID,
-			digest: validDigest,
+			digest: s.digestAtt1,
 		},
 		{
 			name:           "can't access workflowRun from other org",
@@ -306,6 +306,7 @@ type workflowRunTestData struct {
 	runOrg1, runOrg2, runOrg2Public                *biz.WorkflowRun
 	robotAccount                                   *biz.RobotAccount
 	contractVersion                                *biz.WorkflowContractWithVersion
+	digestAtt1                                     string
 }
 
 // extract this setup to a helper function so it can be used from other test suites
@@ -345,7 +346,8 @@ func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, 
 			WorkflowID: s.workflowOrg1.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
 		})
 	assert.NoError(err)
-	_, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg1.ID.String(), &dsse.Envelope{})
+	s.digestAtt1, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg1.ID.String(), &dsse.Envelope{PayloadType: "test"})
+
 	assert.NoError(err)
 
 	s.runOrg2, err = suite.WorkflowRun.Create(ctx,
@@ -353,7 +355,7 @@ func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, 
 			WorkflowID: s.workflowOrg2.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
 		})
 	assert.NoError(err)
-	_, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2.ID.String(), &dsse.Envelope{})
+	_, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2.ID.String(), &dsse.Envelope{PayloadType: "test2"})
 	assert.NoError(err)
 
 	s.runOrg2Public, err = suite.WorkflowRun.Create(ctx,
@@ -361,7 +363,7 @@ func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, 
 			WorkflowID: s.workflowPublicOrg2.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
 		})
 	assert.NoError(err)
-	_, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2Public.ID.String(), &dsse.Envelope{})
+	_, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2Public.ID.String(), &dsse.Envelope{PayloadType: "test3"})
 	assert.NoError(err)
 }
 
