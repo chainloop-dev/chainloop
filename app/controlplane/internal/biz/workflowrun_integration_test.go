@@ -109,7 +109,7 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 	validEnvelope := &dsse.Envelope{}
 
 	s.T().Run("non existing workflowRun", func(t *testing.T) {
-		err := s.WorkflowRun.SaveAttestation(ctx, uuid.NewString(), validEnvelope, validDigest)
+		_, err := s.WorkflowRun.SaveAttestation(ctx, uuid.NewString(), validEnvelope)
 		assert.Error(err)
 		assert.True(biz.IsNotFound(err))
 	})
@@ -120,28 +120,15 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 		})
 		assert.NoError(err)
 
-		err = s.WorkflowRun.SaveAttestation(ctx, run.ID.String(), validEnvelope, validDigest)
+		d, err := s.WorkflowRun.SaveAttestation(ctx, run.ID.String(), validEnvelope)
 		assert.NoError(err)
+		wantDigest := "sha256:f845058d865c3d4d491c9019f6afe9c543ad2cd11b31620cc512e341fb03d3d8"
+		assert.Equal(wantDigest, d)
 
 		// Retrieve attestation ref from storage and compare
 		r, err := s.WorkflowRun.GetByIDInOrgOrPublic(ctx, s.org.ID, run.ID.String())
 		assert.NoError(err)
-		assert.Equal(r.Attestation, &biz.Attestation{Envelope: validEnvelope, Digest: validDigest})
-	})
-
-	s.T().Run("valid workflowRun attestation not stored in CAS", func(t *testing.T) {
-		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
-			WorkflowID: s.workflowOrg1.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
-		})
-		assert.NoError(err)
-
-		err = s.WorkflowRun.SaveAttestation(ctx, run.ID.String(), validEnvelope, "")
-		assert.NoError(err)
-
-		// Retrieve attestation ref from storage and compare
-		r, err := s.WorkflowRun.GetByIDInOrgOrPublic(ctx, s.org.ID, run.ID.String())
-		assert.NoError(err)
-		assert.Equal(r.Attestation, &biz.Attestation{Envelope: validEnvelope, Digest: ""})
+		assert.Equal(r.Attestation, &biz.Attestation{Envelope: validEnvelope, Digest: wantDigest})
 	})
 }
 
@@ -358,21 +345,24 @@ func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, 
 			WorkflowID: s.workflowOrg1.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
 		})
 	assert.NoError(err)
-	assert.NoError(suite.WorkflowRun.SaveAttestation(ctx, s.runOrg1.ID.String(), &dsse.Envelope{}, validDigest))
+	_, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg1.ID.String(), &dsse.Envelope{})
+	assert.NoError(err)
 
 	s.runOrg2, err = suite.WorkflowRun.Create(ctx,
 		&biz.WorkflowRunCreateOpts{
 			WorkflowID: s.workflowOrg2.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
 		})
 	assert.NoError(err)
-	assert.NoError(suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2.ID.String(), &dsse.Envelope{}, validDigest2))
+	_, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2.ID.String(), &dsse.Envelope{})
+	assert.NoError(err)
 
 	s.runOrg2Public, err = suite.WorkflowRun.Create(ctx,
 		&biz.WorkflowRunCreateOpts{
 			WorkflowID: s.workflowPublicOrg2.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
 		})
 	assert.NoError(err)
-	assert.NoError(suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2Public.ID.String(), &dsse.Envelope{}, validDigest3))
+	_, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2Public.ID.String(), &dsse.Envelope{})
+	assert.NoError(err)
 }
 
 func (s *workflowRunIntegrationTestSuite) SetupTest() {
