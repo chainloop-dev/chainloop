@@ -32,7 +32,8 @@ import (
 )
 
 const (
-	validDigest       = "sha256:3b0f04c276be095e62f3ac03b9991913c37df1fcd44548e75069adce313aba4d"
+	// This is the digest of the empty envelope
+	validDigest       = "sha256:f845058d865c3d4d491c9019f6afe9c543ad2cd11b31620cc512e341fb03d3d8"
 	validDigest2      = "sha256:2b0f04c276be095e62f3ac03b9991913c37df1fcd44548e75069adce313aba4d"
 	validDigest3      = "sha256:1b0f04c276be095e62f3ac03b9991913c37df1fcd44548e75069adce313aba4d"
 	validDigestPublic = "sha256:8b0f04c276be095e62f3ac03b9991913c37df1fcd44548e75069adce313aba4d"

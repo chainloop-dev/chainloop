@@ -241,19 +241,23 @@ func (uc *WorkflowRunUseCase) MarkAsFinished(ctx context.Context, id string, sta
 	return uc.wfRunRepo.MarkAsFinished(ctx, runID, status, reason)
 }
 
-func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, envelope *dsse.Envelope, digest string) error {
+func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, envelope *dsse.Envelope) (string, error) {
 	runID, err := uuid.Parse(id)
 	if err != nil {
-		return NewErrInvalidUUID(err)
+		return "", NewErrInvalidUUID(err)
 	}
 
-	if digest != "" {
-		if _, err = v1.NewHash(digest); err != nil {
-			return NewErrValidation(fmt.Errorf("invalid digest format: %w", err))
-		}
+	// Calculate the digest
+	_, digest, err := jsonEnvelopeWithDigest(envelope)
+	if err != nil {
+		return "", NewErrValidation(fmt.Errorf("marshaling the envelope: %w", err))
 	}
 
-	return uc.wfRunRepo.SaveAttestation(ctx, runID, envelope, digest)
+	if err := uc.wfRunRepo.SaveAttestation(ctx, runID, envelope, digest.String()); err != nil {
+		return "", fmt.Errorf("saving attestation: %w", err)
+	}
+
+	return digest.String(), nil
 }
 
 type RunListFilters struct {

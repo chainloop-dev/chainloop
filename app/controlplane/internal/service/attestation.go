@@ -193,7 +193,6 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	casBackend := wRun.CASBackends[0]
 
 	// If we have an external CAS backend, we will push there the attestation
-	var digestInCAS string
 	if !casBackend.Inline {
 		b := backoff.NewExponentialBackOff()
 		b.MaxElapsedTime = 1 * time.Minute
@@ -205,8 +204,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 				if err != nil {
 					return err
 				}
-				digestInCAS = d.String()
-				s.log.Infow("msg", "attestation uploaded to CAS", "digest", digestInCAS, "runID", req.WorkflowRunId)
+				s.log.Infow("msg", "attestation uploaded to CAS", "digest", d.String(), "runID", req.WorkflowRunId)
 				return nil
 			}, b)
 
@@ -216,7 +214,8 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	}
 
 	// Store the attestation including the digest in the CAS backend (if exists)
-	if err := s.wrUseCase.SaveAttestation(ctx, req.WorkflowRunId, envelope, digestInCAS); err != nil {
+	digest, err := s.wrUseCase.SaveAttestation(ctx, req.WorkflowRunId, envelope)
+	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
@@ -259,7 +258,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	}
 
 	return &cpAPI.AttestationServiceStoreResponse{
-		Result: &cpAPI.AttestationServiceStoreResponse_Result{Digest: digestInCAS},
+		Result: &cpAPI.AttestationServiceStoreResponse_Result{Digest: digest},
 	}, nil
 }
 
