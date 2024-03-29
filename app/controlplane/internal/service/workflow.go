@@ -51,6 +51,7 @@ func (s *WorkflowService) Create(ctx context.Context, req *pb.WorkflowServiceCre
 		Team:        req.GetTeam(),
 		ContractID:  req.GetSchemaId(),
 		Description: req.GetDescription(),
+		Public:      req.GetPublic(),
 	}
 
 	p, err := s.useCase.Create(ctx, createOpts)

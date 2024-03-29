@@ -88,6 +88,8 @@ func (m *WorkflowServiceCreateRequest) validate(all bool) error {
 
 	// no validation rules for Description
 
+	// no validation rules for Public
+
 	if len(errors) > 0 {
 		return WorkflowServiceCreateRequestMultiError(errors)
 	}

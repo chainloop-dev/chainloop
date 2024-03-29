@@ -13,6 +13,7 @@ export interface WorkflowServiceCreateRequest {
   schemaId: string;
   team: string;
   description: string;
+  public: boolean;
 }
 
 export interface WorkflowServiceUpdateRequest {
@@ -59,7 +60,7 @@ export interface WorkflowServiceViewResponse {
 }
 
 function createBaseWorkflowServiceCreateRequest(): WorkflowServiceCreateRequest {
-  return { name: "", project: "", schemaId: "", team: "", description: "" };
+  return { name: "", project: "", schemaId: "", team: "", description: "", public: false };
 }
 
 export const WorkflowServiceCreateRequest = {
@@ -78,6 +79,9 @@ export const WorkflowServiceCreateRequest = {
     }
     if (message.description !== "") {
       writer.uint32(42).string(message.description);
+    }
+    if (message.public === true) {
+      writer.uint32(48).bool(message.public);
     }
     return writer;
   },
@@ -124,6 +128,13 @@ export const WorkflowServiceCreateRequest = {
 
           message.description = reader.string();
           continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.public = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -140,6 +151,7 @@ export const WorkflowServiceCreateRequest = {
       schemaId: isSet(object.schemaId) ? String(object.schemaId) : "",
       team: isSet(object.team) ? String(object.team) : "",
       description: isSet(object.description) ? String(object.description) : "",
+      public: isSet(object.public) ? Boolean(object.public) : false,
     };
   },
 
@@ -150,6 +162,7 @@ export const WorkflowServiceCreateRequest = {
     message.schemaId !== undefined && (obj.schemaId = message.schemaId);
     message.team !== undefined && (obj.team = message.team);
     message.description !== undefined && (obj.description = message.description);
+    message.public !== undefined && (obj.public = message.public);
     return obj;
   },
 
@@ -164,6 +177,7 @@ export const WorkflowServiceCreateRequest = {
     message.schemaId = object.schemaId ?? "";
     message.team = object.team ?? "";
     message.description = object.description ?? "";
+    message.public = object.public ?? false;
     return message;
   },
 };

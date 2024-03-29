@@ -37,6 +37,7 @@ message WorkflowServiceCreateRequest {
   string schema_id = 3;
   string team = 4;
   string description = 5;
+  bool public = 6;
 }
 
 message WorkflowServiceUpdateRequest {
