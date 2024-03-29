@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ func (s *referrerIntegrationTestSuite) TestGetFromRootInPublicSharedIndex() {
 	require.NoError(s.T(), json.Unmarshal(attJSON, &envelope))
 
 	wantReferrerAtt := &biz.Referrer{
-		Digest:       "sha256:ad704d286bcad6e155e71c33d48247931231338396acbcd9769087530085b2a2",
+		Digest:       "sha256:de36d470d792499b1489fc0e6623300fc8822b8f0d2981bb5ec563f8dde723c7",
 		Kind:         "ATTESTATION",
 		Downloadable: true,
 	}
@@ -116,7 +116,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 	require.NoError(s.T(), json.Unmarshal(attJSON, &envelope))
 
 	wantReferrerAtt := &biz.Referrer{
-		Digest:       "sha256:ad704d286bcad6e155e71c33d48247931231338396acbcd9769087530085b2a2",
+		Digest:       "sha256:de36d470d792499b1489fc0e6623300fc8822b8f0d2981bb5ec563f8dde723c7",
 		Kind:         "ATTESTATION",
 		Downloadable: true,
 	}
@@ -186,7 +186,12 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		s.Equal(wantReferrerAtt.Downloadable, got.Downloadable)
 		s.Equal(wantReferrerAtt.Kind, got.Kind)
 		// It has metadata
-		s.Equal(map[string]string{"name": "test-new-types"}, got.Metadata)
+		s.Equal(map[string]string{
+			"name":         "test-new-types",
+			"project":      "test",
+			"team":         "my-team",
+			"organization": "my-org",
+		}, got.Metadata)
 		// it has all the references
 		require.Len(t, got.References, 6)
 
@@ -316,9 +321,9 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		// it should be referenced by two attestations since it's subject of both
 		require.Len(t, got.References, 2)
 		s.Equal("ATTESTATION", got.References[0].Kind)
-		s.Equal(wantReferrerAtt.Digest, got.References[0].Digest)
+		s.Equal("sha256:c90ccaab0b2cfda9980836aef407f62d747680ea9793ddc6ad2e2d7ab615933d", got.References[0].Digest)
 		s.Equal("ATTESTATION", got.References[1].Kind)
-		s.Equal("sha256:c90ccaab0b2cfda9980836aef407f62d747680ea9793ddc6ad2e2d7ab615933d", got.References[1].Digest)
+		s.Equal("sha256:de36d470d792499b1489fc0e6623300fc8822b8f0d2981bb5ec563f8dde723c7", got.References[1].Digest)
 	})
 
 	s.T().Run("if all associated workflows are private, the referrer is private", func(t *testing.T) {
