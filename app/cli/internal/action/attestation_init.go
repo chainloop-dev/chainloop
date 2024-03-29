@@ -127,6 +127,7 @@ func (action *AttestationInit) Run(ctx context.Context, contractRevision int) (s
 
 		workflowRun := runResp.GetResult().GetWorkflowRun()
 		workflowMeta.WorkflowRunId = workflowRun.GetId()
+		workflowMeta.Organization = runResp.GetResult().GetOrganization()
 		action.Logger.Debug().Str("workflow-run-id", workflowRun.GetId()).Msg("attestation initialized in the control plane")
 		attestationID = workflowRun.GetId()
 	}

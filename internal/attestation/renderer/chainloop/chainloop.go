@@ -80,6 +80,7 @@ type Metadata struct {
 	FinishedAt    *time.Time `json:"finishedAt"`
 	WorkflowRunID string     `json:"workflowRunID"`
 	WorkflowID    string     `json:"workflowID"`
+	Organization  string     `json:"organization"`
 }
 
 type Maintainer struct {
@@ -126,6 +127,7 @@ func getChainloopMeta(att *v1.Attestation) *Metadata {
 		Project:       wfMeta.GetProject(),
 		WorkflowRunID: wfMeta.GetWorkflowRunId(),
 		WorkflowID:    wfMeta.GetWorkflowId(),
+		Organization:  wfMeta.GetOrganization(),
 	}
 }
 

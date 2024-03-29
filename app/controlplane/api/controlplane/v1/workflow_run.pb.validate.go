@@ -2087,6 +2087,8 @@ func (m *AttestationServiceInitResponse_Result) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for Organization
+
 	if len(errors) > 0 {
 		return AttestationServiceInitResponse_ResultMultiError(errors)
 	}

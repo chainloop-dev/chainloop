@@ -17,103 +17,105 @@ syntax = "proto3";
 
 package attestation.v1;
 
+import "google/protobuf/timestamp.proto";
+import "validate/validate.proto";
+import "workflowcontract/v1/crafting_schema.proto";
+
 option go_package = "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1";
 
-import "workflowcontract/v1/crafting_schema.proto";
-import "validate/validate.proto";
-import "google/protobuf/timestamp.proto";
-
 message Attestation {
-    google.protobuf.Timestamp initialized_at = 1 [(validate.rules).timestamp.required = true];
-    google.protobuf.Timestamp finished_at = 2;
+  google.protobuf.Timestamp initialized_at = 1 [(validate.rules).timestamp.required = true];
+  google.protobuf.Timestamp finished_at = 2;
 
-    WorkflowMetadata workflow = 3 [(validate.rules).message.required = true];
+  WorkflowMetadata workflow = 3 [(validate.rules).message.required = true];
 
-    map<string, Material> materials = 4; 
-    // Annotations for the attestation
-    map<string, string> annotations = 5 [(validate.rules).map.values.string.min_len = 1];
+  map<string, Material> materials = 4;
+  // Annotations for the attestation
+  map<string, string> annotations = 5 [(validate.rules).map.values.string.min_len = 1];
 
-    message Material {
-        oneof m {
-            KeyVal string = 1;
-            ContainerImage container_image = 2;
-            Artifact artifact = 3;
-        }
-
-        google.protobuf.Timestamp added_at = 5;
-        workflowcontract.v1.CraftingSchema.Material.MaterialType material_type = 6; 
-
-        // Whether the material has been uploaded to the CAS
-        bool uploaded_to_cas = 7;
-        // If the material content has been injected inline in the attestation
-        // leveraging a form of inline CAS 
-        bool inline_cas = 8;
-
-        // Annotations for the material
-        map<string, string> annotations = 9 [(validate.rules).map.values.string.min_len = 1];
-
-        message KeyVal {
-            string id = 1 [(validate.rules).string.min_len = 1];
-            string value = 2 [(validate.rules).string.min_len = 1];
-        }
-
-        message ContainerImage {
-            string id = 1 [(validate.rules).string.min_len = 1];
-            string name = 2 [(validate.rules).string.min_len = 1];
-            string digest = 3 [(validate.rules).string.min_len = 1];
-            bool is_subject = 4;
-        }
-
-        message Artifact {
-            // ID of the artifact
-            string id = 1 [(validate.rules).string.min_len = 1];
-            // filename, use for record purposes
-            string name = 2 [(validate.rules).string.min_len = 1];
-            // the digest is enough to retrieve the artifact since it's stored in a CAS
-            // which also has annotated the fileName
-            string digest = 3 [(validate.rules).string.min_len = 1];
-            bool is_subject = 4;
-            // Inline content of the artifact. 
-            // This is optional and is used for small artifacts that can be stored inline in the attestation
-            bytes content = 5;
-        }
+  message Material {
+    oneof m {
+      KeyVal string = 1;
+      ContainerImage container_image = 2;
+      Artifact artifact = 3;
     }
 
-    // List of env variables
-    map<string, string> env_vars = 6; 
-    string runner_url = 7; 
-    workflowcontract.v1.CraftingSchema.Runner.RunnerType runner_type = 8; 
+    google.protobuf.Timestamp added_at = 5;
+    workflowcontract.v1.CraftingSchema.Material.MaterialType material_type = 6;
 
-    // Head Commit of the environment where the attestation was executed (optional)
-    Commit head = 9;
+    // Whether the material has been uploaded to the CAS
+    bool uploaded_to_cas = 7;
+    // If the material content has been injected inline in the attestation
+    // leveraging a form of inline CAS
+    bool inline_cas = 8;
+
+    // Annotations for the material
+    map<string, string> annotations = 9 [(validate.rules).map.values.string.min_len = 1];
+
+    message KeyVal {
+      string id = 1 [(validate.rules).string.min_len = 1];
+      string value = 2 [(validate.rules).string.min_len = 1];
+    }
+
+    message ContainerImage {
+      string id = 1 [(validate.rules).string.min_len = 1];
+      string name = 2 [(validate.rules).string.min_len = 1];
+      string digest = 3 [(validate.rules).string.min_len = 1];
+      bool is_subject = 4;
+    }
+
+    message Artifact {
+      // ID of the artifact
+      string id = 1 [(validate.rules).string.min_len = 1];
+      // filename, use for record purposes
+      string name = 2 [(validate.rules).string.min_len = 1];
+      // the digest is enough to retrieve the artifact since it's stored in a CAS
+      // which also has annotated the fileName
+      string digest = 3 [(validate.rules).string.min_len = 1];
+      bool is_subject = 4;
+      // Inline content of the artifact.
+      // This is optional and is used for small artifacts that can be stored inline in the attestation
+      bytes content = 5;
+    }
+  }
+
+  // List of env variables
+  map<string, string> env_vars = 6;
+  string runner_url = 7;
+  workflowcontract.v1.CraftingSchema.Runner.RunnerType runner_type = 8;
+
+  // Head Commit of the environment where the attestation was executed (optional)
+  Commit head = 9;
 }
 
 message Commit {
-    string hash = 1 [(validate.rules).string.min_len = 1];
-    string author_email = 2 [(validate.rules).string.min_len = 1];
-    string author_name = 3 [(validate.rules).string.min_len = 1];
-    string message = 4 [(validate.rules).string.min_len = 1];
-    google.protobuf.Timestamp date = 5;
-    repeated Remote remotes = 6;
+  string hash = 1 [(validate.rules).string.min_len = 1];
+  string author_email = 2 [(validate.rules).string.min_len = 1];
+  string author_name = 3 [(validate.rules).string.min_len = 1];
+  string message = 4 [(validate.rules).string.min_len = 1];
+  google.protobuf.Timestamp date = 5;
+  repeated Remote remotes = 6;
 
-    message Remote {
-        string name = 1 [(validate.rules).string.min_len = 1];
-        string url = 2 [(validate.rules).string.min_len = 1];
-    }
+  message Remote {
+    string name = 1 [(validate.rules).string.min_len = 1];
+    string url = 2 [(validate.rules).string.min_len = 1];
+  }
 }
 
 // Intermediate information that will get stored in the system while the run is being executed
 message CraftingState {
-    workflowcontract.v1.CraftingSchema input_schema = 1;
-    Attestation attestation = 2;
-    bool dry_run = 3;
+  workflowcontract.v1.CraftingSchema input_schema = 1;
+  Attestation attestation = 2;
+  bool dry_run = 3;
 }
 
 message WorkflowMetadata {
-    string name = 1 [(validate.rules).string.min_len = 1];
-    string project = 2;
-    string team = 3;
-    string workflow_id = 5 [(validate.rules).string.min_len = 1];
-    string workflow_run_id = 6; // Not required since we might be doing a dry-run
-    string schema_revision = 7 [(validate.rules).string.min_len = 1];
+  string name = 1 [(validate.rules).string.min_len = 1];
+  string project = 2;
+  string team = 3;
+  string workflow_id = 5 [(validate.rules).string.min_len = 1];
+  string workflow_run_id = 6; // Not required since we might be doing a dry-run
+  string schema_revision = 7 [(validate.rules).string.min_len = 1];
+  // organization name
+  string organization = 8 [(validate.rules).string.min_len = 1];
 }

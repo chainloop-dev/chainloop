@@ -124,6 +124,8 @@ export interface WorkflowMetadata {
   /** Not required since we might be doing a dry-run */
   workflowRunId: string;
   schemaRevision: string;
+  /** organization name */
+  organization: string;
 }
 
 function createBaseAttestation(): Attestation {
@@ -1402,7 +1404,7 @@ export const CraftingState = {
 };
 
 function createBaseWorkflowMetadata(): WorkflowMetadata {
-  return { name: "", project: "", team: "", workflowId: "", workflowRunId: "", schemaRevision: "" };
+  return { name: "", project: "", team: "", workflowId: "", workflowRunId: "", schemaRevision: "", organization: "" };
 }
 
 export const WorkflowMetadata = {
@@ -1424,6 +1426,9 @@ export const WorkflowMetadata = {
     }
     if (message.schemaRevision !== "") {
       writer.uint32(58).string(message.schemaRevision);
+    }
+    if (message.organization !== "") {
+      writer.uint32(66).string(message.organization);
     }
     return writer;
   },
@@ -1477,6 +1482,13 @@ export const WorkflowMetadata = {
 
           message.schemaRevision = reader.string();
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.organization = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1494,6 +1506,7 @@ export const WorkflowMetadata = {
       workflowId: isSet(object.workflowId) ? String(object.workflowId) : "",
       workflowRunId: isSet(object.workflowRunId) ? String(object.workflowRunId) : "",
       schemaRevision: isSet(object.schemaRevision) ? String(object.schemaRevision) : "",
+      organization: isSet(object.organization) ? String(object.organization) : "",
     };
   },
 
@@ -1505,6 +1518,7 @@ export const WorkflowMetadata = {
     message.workflowId !== undefined && (obj.workflowId = message.workflowId);
     message.workflowRunId !== undefined && (obj.workflowRunId = message.workflowRunId);
     message.schemaRevision !== undefined && (obj.schemaRevision = message.schemaRevision);
+    message.organization !== undefined && (obj.organization = message.organization);
     return obj;
   },
 
@@ -1520,6 +1534,7 @@ export const WorkflowMetadata = {
     message.workflowId = object.workflowId ?? "";
     message.workflowRunId = object.workflowRunId ?? "";
     message.schemaRevision = object.schemaRevision ?? "";
+    message.organization = object.organization ?? "";
     return message;
   },
 };

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -50,6 +50,7 @@ type AttestationService struct {
 	attestationUseCase      *biz.AttestationUseCase
 	casMappingUseCase       *biz.CASMappingUseCase
 	referrerUseCase         *biz.ReferrerUseCase
+	orgUseCase              *biz.OrganizationUseCase
 }
 
 type NewAttestationServiceOpts struct {
@@ -64,6 +65,7 @@ type NewAttestationServiceOpts struct {
 	FanoutDispatcher   *dispatcher.FanOutDispatcher
 	CASMappingUseCase  *biz.CASMappingUseCase
 	ReferrerUC         *biz.ReferrerUseCase
+	OrgUC              *biz.OrganizationUseCase
 	Opts               []NewOpt
 }
 
@@ -81,6 +83,7 @@ func NewAttestationService(opts *NewAttestationServiceOpts) *AttestationService 
 		attestationUseCase:      opts.AttestationUC,
 		casMappingUseCase:       opts.CASMappingUseCase,
 		referrerUseCase:         opts.ReferrerUC,
+		orgUseCase:              opts.OrgUC,
 	}
 }
 
@@ -150,10 +153,17 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
+	// Find the organization
+	org, err := s.orgUseCase.FindByID(ctx, robotAccount.OrgID)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
 	wRun := bizWorkFlowRunToPb(run)
 	wRun.Workflow = bizWorkflowToPb(wf)
 	resp := &cpAPI.AttestationServiceInitResponse_Result{
-		WorkflowRun: wRun,
+		WorkflowRun:  wRun,
+		Organization: org.Name,
 	}
 
 	return &cpAPI.AttestationServiceInitResponse{Result: resp}, nil
