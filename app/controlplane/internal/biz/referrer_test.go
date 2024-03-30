@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -94,7 +94,10 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 					Kind:         "ATTESTATION",
 					Downloadable: true,
 					Metadata: map[string]string{
-						"name": "only-sbom",
+						"name":         "only-sbom",
+						"organization": "",
+						"team":         "",
+						"project":      "foo",
 					},
 					Annotations: map[string]string{
 						"branch":   "stable",
@@ -137,7 +140,10 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 						},
 					},
 					Metadata: map[string]string{
-						"name": "test",
+						"name":         "test",
+						"organization": "",
+						"team":         "",
+						"project":      "bar",
 					},
 					Annotations: map[string]string{
 						"version": "oss",
@@ -165,7 +171,10 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 					Kind:         "ATTESTATION",
 					Downloadable: true,
 					Metadata: map[string]string{
-						"name": "only-sbom",
+						"name":         "only-sbom",
+						"organization": "",
+						"team":         "",
+						"project":      "foo",
 					},
 					Annotations: map[string]string{
 						"branch":   "stable",
@@ -212,11 +221,14 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 					Downloadable: true,
 				},
 				{
-					Digest:       "sha256:ad704d286bcad6e155e71c33d48247931231338396acbcd9769087530085b2a2",
+					Digest:       "sha256:de36d470d792499b1489fc0e6623300fc8822b8f0d2981bb5ec563f8dde723c7",
 					Kind:         "ATTESTATION",
 					Downloadable: true,
 					Metadata: map[string]string{
-						"name": "test-new-types",
+						"name":         "test-new-types",
+						"organization": "my-org",
+						"team":         "my-team",
+						"project":      "test",
 					},
 					References: []*Referrer{
 						{
@@ -251,7 +263,7 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 					// the container image is a subject in the attestation
 					References: []*Referrer{
 						{
-							Digest: "sha256:ad704d286bcad6e155e71c33d48247931231338396acbcd9769087530085b2a2",
+							Digest: "sha256:de36d470d792499b1489fc0e6623300fc8822b8f0d2981bb5ec563f8dde723c7",
 							Kind:   "ATTESTATION",
 						},
 					},
@@ -262,7 +274,7 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 					// the git commit a subject in the attestation
 					References: []*Referrer{
 						{
-							Digest: "sha256:ad704d286bcad6e155e71c33d48247931231338396acbcd9769087530085b2a2",
+							Digest: "sha256:de36d470d792499b1489fc0e6623300fc8822b8f0d2981bb5ec563f8dde723c7",
 							Kind:   "ATTESTATION",
 						},
 					},
