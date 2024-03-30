@@ -30,6 +30,7 @@
     "finishedAt": "2023-10-20T12:58:10.562093962Z",
     "workflow": {
       "name": "test-new-types",
+      "organization": "my-org",
       "project": "test",
       "workflowId": "ab98be70-041b-4a82-97f3-daa56f61262b",
       "workflowRunId": "f97a0680-e64b-478a-9eea-df8864fa27f8",
@@ -93,7 +94,7 @@
       "authorName": "John Connor",
       "date": "2023-10-26T17:09:20Z",
       "message": "chatGPT wrapper",
-       "remotes": [
+      "remotes": [
         {
           "name": "upstream",
           "url": "git@cyberdyne.internal:skynet.git"

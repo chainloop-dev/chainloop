@@ -4,7 +4,7 @@
     {
       "name": "chainloop.workflow.test-new-types",
       "digest": {
-        "sha256": "bdc8d3103339a32e480358487088013f1eb3974a866aedf5e42402de0271c97b"
+        "sha256": "524b370dd444326d8150f5a8176bd4d57bb2052a1b77471d1fcb9fcc0983c958"
       }
     },
     {
@@ -18,11 +18,11 @@
         "date": "2023-10-26T17:09:20Z",
         "message": "chatGPT wrapper",
         "remotes": [
-           {
-             "name": "upstream",
-             "url": "git@cyberdyne.internal:skynet.git"
-           }
-         ]
+          {
+            "name": "upstream",
+            "url": "git@cyberdyne.internal:skynet.git"
+          }
+        ]
       }
     },
     {
@@ -105,7 +105,8 @@
       "project": "test",
       "team": "",
       "workflowID": "ab98be70-041b-4a82-97f3-daa56f61262b",
-      "workflowRunID": "f97a0680-e64b-478a-9eea-df8864fa27f8"
+      "workflowRunID": "f97a0680-e64b-478a-9eea-df8864fa27f8",
+      "organization": "my-org"
     },
     "runnerType": "RUNNER_TYPE_UNSPECIFIED"
   }
