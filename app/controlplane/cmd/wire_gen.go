@@ -132,6 +132,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		FanoutDispatcher:   fanOutDispatcher,
 		CASMappingUseCase:  casMappingUseCase,
 		ReferrerUC:         referrerUseCase,
+		OrgUC:              organizationUseCase,
 		Opts:               v2,
 	}
 	attestationService := service.NewAttestationService(newAttestationServiceOpts)

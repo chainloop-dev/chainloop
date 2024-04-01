@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,9 +16,7 @@
 package biz
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -29,7 +27,6 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
-	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/uuid"
 	v1 "github.com/in-toto/attestation/go/v1"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
@@ -250,16 +247,9 @@ func (r *Referrer) MapID() string {
 // 4 - creating link between the attestation and the materials/subjects as needed
 // see tests for examples
 func extractReferrers(att *dsse.Envelope) ([]*Referrer, error) {
-	// Calculate the attestation hash
-	jsonAtt, err := json.Marshal(att)
+	_, h, err := jsonEnvelopeWithDigest(att)
 	if err != nil {
 		return nil, fmt.Errorf("marshaling attestation: %w", err)
-	}
-
-	// Calculate the attestation hash
-	h, _, err := cr_v1.SHA256(bytes.NewBuffer(jsonAtt))
-	if err != nil {
-		return nil, fmt.Errorf("calculating attestation hash: %w", err)
 	}
 
 	referrersMap := make(map[string]*Referrer)
@@ -284,8 +274,11 @@ func extractReferrers(att *dsse.Envelope) ([]*Referrer, error) {
 	// We add both annotations and workflow metadata
 	attestationReferrer.Annotations = predicate.GetAnnotations()
 	attestationReferrer.Metadata = map[string]string{
-		// workflow name
-		"name": predicate.GetMetadata().Name,
+		// workflow name, team and project
+		"name":         predicate.GetMetadata().Name,
+		"team":         predicate.GetMetadata().Team,
+		"project":      predicate.GetMetadata().Project,
+		"organization": predicate.GetMetadata().Organization,
 	}
 
 	// Create new referrers for each material

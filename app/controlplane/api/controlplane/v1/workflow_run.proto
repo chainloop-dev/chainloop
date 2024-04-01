@@ -65,6 +65,8 @@ message AttestationServiceInitResponse {
 
   message Result {
     WorkflowRunItem workflow_run = 2;
+    // organization name
+    string organization = 3;
   }
 }
 

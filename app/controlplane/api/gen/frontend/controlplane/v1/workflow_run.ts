@@ -46,6 +46,8 @@ export interface AttestationServiceInitResponse {
 
 export interface AttestationServiceInitResponse_Result {
   workflowRun?: WorkflowRunItem;
+  /** organization name */
+  organization: string;
 }
 
 export interface AttestationServiceStoreRequest {
@@ -513,13 +515,16 @@ export const AttestationServiceInitResponse = {
 };
 
 function createBaseAttestationServiceInitResponse_Result(): AttestationServiceInitResponse_Result {
-  return { workflowRun: undefined };
+  return { workflowRun: undefined, organization: "" };
 }
 
 export const AttestationServiceInitResponse_Result = {
   encode(message: AttestationServiceInitResponse_Result, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.workflowRun !== undefined) {
       WorkflowRunItem.encode(message.workflowRun, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.organization !== "") {
+      writer.uint32(26).string(message.organization);
     }
     return writer;
   },
@@ -538,6 +543,13 @@ export const AttestationServiceInitResponse_Result = {
 
           message.workflowRun = WorkflowRunItem.decode(reader, reader.uint32());
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.organization = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -548,13 +560,17 @@ export const AttestationServiceInitResponse_Result = {
   },
 
   fromJSON(object: any): AttestationServiceInitResponse_Result {
-    return { workflowRun: isSet(object.workflowRun) ? WorkflowRunItem.fromJSON(object.workflowRun) : undefined };
+    return {
+      workflowRun: isSet(object.workflowRun) ? WorkflowRunItem.fromJSON(object.workflowRun) : undefined,
+      organization: isSet(object.organization) ? String(object.organization) : "",
+    };
   },
 
   toJSON(message: AttestationServiceInitResponse_Result): unknown {
     const obj: any = {};
     message.workflowRun !== undefined &&
       (obj.workflowRun = message.workflowRun ? WorkflowRunItem.toJSON(message.workflowRun) : undefined);
+    message.organization !== undefined && (obj.organization = message.organization);
     return obj;
   },
 
@@ -571,6 +587,7 @@ export const AttestationServiceInitResponse_Result = {
     message.workflowRun = (object.workflowRun !== undefined && object.workflowRun !== null)
       ? WorkflowRunItem.fromPartial(object.workflowRun)
       : undefined;
+    message.organization = object.organization ?? "";
     return message;
   },
 };
