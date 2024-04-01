@@ -35,31 +35,78 @@ import (
 
 func (s *testSuite) TestCreate() {
 	const kind = "my-integration"
-	const name = "another-registration"
-	const description = "my registration description"
 	assert := assert.New(s.T())
 
 	// Mocked integration that will return both generic configuration and credentials
 	integration := integrationMocks.NewFanOut(s.T())
 
 	ctx := context.Background()
-	integration.On("Describe").Return(&sdk.IntegrationInfo{ID: kind})
-	integration.On("ValidateRegistrationRequest", mock.Anything).Return(nil)
+	integration.On("Describe").Return(&sdk.IntegrationInfo{ID: kind}).Maybe()
+	integration.On("ValidateRegistrationRequest", mock.Anything).Maybe().Return(nil)
 	integration.On("Register", ctx, mock.Anything).Return(&sdk.RegistrationResponse{
 		Configuration: s.config, Credentials: &sdk.Credentials{
 			Password: "key", URL: "host"},
-	}, nil)
+	}, nil).Maybe()
 
-	got, err := s.Integration.RegisterAndSave(ctx, s.org.ID, name, description, integration, s.configStruct)
-	require.NoError(s.T(), err)
-	assert.Equal(kind, got.Kind)
-	assert.Equal(description, got.Description)
-	assert.Equal(name, got.Name)
+	testCases := []struct {
+		caseName    string
+		orgID       string
+		name        string
+		description string
+		wantErrMsg  string
+	}{
+		{
+			caseName:   "org missing",
+			wantErrMsg: "required",
+		},
+		{
+			caseName:   "name missing",
+			orgID:      s.org.ID,
+			wantErrMsg: "required",
+		},
+		{
+			caseName:   "invalid name",
+			orgID:      s.org.ID,
+			name:       "invalid name",
+			wantErrMsg: "RFC 1123",
+		},
+		{
+			caseName: "with valid name",
+			orgID:    s.org.ID,
+			name:     "valid-name",
+		},
+		{
+			caseName:    "with valid name and description",
+			orgID:       s.org.ID,
+			name:        "valid-name-2",
+			description: "valid description",
+		},
+		{
+			caseName:   "with duplicated name",
+			orgID:      s.org.ID,
+			name:       "valid-name",
+			wantErrMsg: "name already taken",
+		},
+	}
 
-	// Check configuration was stored
-	assert.Equal(s.config, got.Config)
-	// Check credential was stored
-	assert.Equal("stored-integration-secret", got.SecretName)
+	for _, tc := range testCases {
+		s.Run(tc.caseName, func() {
+			got, err := s.Integration.RegisterAndSave(ctx, tc.orgID, tc.name, tc.description, integration, s.configStruct)
+			if tc.wantErrMsg != "" {
+				s.ErrorContains(err, tc.wantErrMsg)
+				return
+			}
+
+			require.NoError(s.T(), err)
+			assert.Equal(kind, got.Kind)
+			assert.Equal(tc.name, got.Name)
+			assert.Equal(tc.description, got.Description)
+			// Check configuration was stored
+			assert.Equal(s.config, got.Config)
+			// Check credential was stored
+			assert.Equal("stored-integration-secret", got.SecretName)
+		})
+	}
 }
 
 func (s *testSuite) TestAttachWorkflow() {
