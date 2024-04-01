@@ -17,6 +17,7 @@ package data
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
@@ -41,6 +42,7 @@ func NewIntegrationRepo(data *Data, logger log.Logger) biz.IntegrationRepo {
 
 func (r *IntegrationRepo) Create(ctx context.Context, opts *biz.IntegrationCreateOpts) (*biz.Integration, error) {
 	integration, err := r.data.db.Integration.Create().
+		SetName(opts.Name).
 		SetOrganizationID(opts.OrgID).
 		SetKind(opts.Kind).
 		SetDescription(opts.Description).
@@ -49,7 +51,11 @@ func (r *IntegrationRepo) Create(ctx context.Context, opts *biz.IntegrationCreat
 		Save(ctx)
 
 	if err != nil {
-		return nil, err
+		if ent.IsConstraintError(err) {
+			return nil, biz.ErrAlreadyExists
+		}
+
+		return nil, fmt.Errorf("failed to create registration: %w", err)
 	}
 
 	return entIntegrationToBiz(integration), nil
@@ -113,6 +119,7 @@ func entIntegrationToBiz(i *ent.Integration) *biz.Integration {
 
 	return &biz.Integration{
 		ID:          i.ID,
+		Name:        i.Name,
 		Kind:        i.Kind,
 		Description: i.Description,
 		CreatedAt:   toTimePtr(i.CreatedAt),

@@ -37,10 +37,10 @@ Currently, this integration only supports [Google Cloud Storage](https://cloud.g
 To get started, you need to register the plugin in your Chainloop organization.
 
 ```sh
-$ chainloop integration registered add guac --opt bucket=[my-bucket-name] --opt credentials=[credentials-content] --opt provider=gcs
+$ chainloop integration registered add guac --name [my-registration] --opt bucket=[my-bucket-name] --opt credentials=[credentials-content] --opt provider=gcs
 
 # Example
-$ chainloop integration registered add guac --opt bucket=test-guac --opt credentials="$(cat ./service-account-devel.json)" --opt provider=gcs
+$ chainloop integration registered add guac --name [my-registration] --opt bucket=test-guac --opt credentials="$(cat ./service-account-devel.json)" --opt provider=gcs
 ```
 
 ### Attachment

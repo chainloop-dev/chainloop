@@ -61,6 +61,17 @@ func (m *IntegrationsServiceRegisterRequest) validate(all bool) error {
 
 	var errors []error
 
+	if utf8.RuneCountInString(m.GetName()) < 1 {
+		err := IntegrationsServiceRegisterRequestValidationError{
+			field:  "Name",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if utf8.RuneCountInString(m.GetPluginId()) < 1 {
 		err := IntegrationsServiceRegisterRequestValidationError{
 			field:  "PluginId",
@@ -2153,6 +2164,8 @@ func (m *RegisteredIntegrationItem) validate(all bool) error {
 	var errors []error
 
 	// no validation rules for Id
+
+	// no validation rules for Name
 
 	// no validation rules for Kind
 

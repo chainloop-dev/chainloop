@@ -79,6 +79,7 @@ In the console output we can see a registration section that indicates that 3 pa
 
 ```sh
 $ chainloop integration registered add oci-registry \
+    --name [unique-registration-name] \
     # i.e us-east1-docker.pkg.dev/my-project/chainloop-cas-devel
     --opt repository=[region]-docker.pkg.dev/[my-project]/[my-repository] \
     --opt username=_json_key \

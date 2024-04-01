@@ -32,6 +32,12 @@ func (iu *IntegrationUpdate) Where(ps ...predicate.Integration) *IntegrationUpda
 	return iu
 }
 
+// SetName sets the "name" field.
+func (iu *IntegrationUpdate) SetName(s string) *IntegrationUpdate {
+	iu.mutation.SetName(s)
+	return iu
+}
+
 // SetDescription sets the "description" field.
 func (iu *IntegrationUpdate) SetDescription(s string) *IntegrationUpdate {
 	iu.mutation.SetDescription(s)
@@ -195,6 +201,9 @@ func (iu *IntegrationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := iu.mutation.Name(); ok {
+		_spec.SetField(integration.FieldName, field.TypeString, value)
+	}
 	if value, ok := iu.mutation.Description(); ok {
 		_spec.SetField(integration.FieldDescription, field.TypeString, value)
 	}
@@ -307,6 +316,12 @@ type IntegrationUpdateOne struct {
 	hooks     []Hook
 	mutation  *IntegrationMutation
 	modifiers []func(*sql.UpdateBuilder)
+}
+
+// SetName sets the "name" field.
+func (iuo *IntegrationUpdateOne) SetName(s string) *IntegrationUpdateOne {
+	iuo.mutation.SetName(s)
+	return iuo
 }
 
 // SetDescription sets the "description" field.
@@ -501,6 +516,9 @@ func (iuo *IntegrationUpdateOne) sqlSave(ctx context.Context) (_node *Integratio
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := iuo.mutation.Name(); ok {
+		_spec.SetField(integration.FieldName, field.TypeString, value)
 	}
 	if value, ok := iuo.mutation.Description(); ok {
 		_spec.SetField(integration.FieldDescription, field.TypeString, value)

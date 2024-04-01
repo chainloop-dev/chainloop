@@ -6,13 +6,13 @@ Send attestations to Discord using webhooks.
 1. To get started, you need to register the plugin in your Chainloop organization.
 
 ```console
-$ chainloop integration registered add discord-webhook --opt webhook=[webhookURL]
+$ chainloop integration registered add discord-webhook --name [my-registration] --opt webhook=[webhookURL]
 ```
 
 optionally you can specify a custom username
 
 ```console
-$ chainloop integration registered add discord-webhook --opt webhook=[webhookURL] --opt username=[username]
+$ chainloop integration registered add discord-webhook --name [my-registration] --opt webhook=[webhookURL] --opt username=[username]
 ```
 
 2. Attach the integration to your workflow.

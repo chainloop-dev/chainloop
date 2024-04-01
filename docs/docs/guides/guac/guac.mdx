@@ -83,10 +83,10 @@ $ chainloop integration available describe --id guac
 Only `bucket` and `credentials` are required, let's register our integration by running `chainloop integration registered add guac [opts]`
 
 ```sh
-$ chainloop integration registered add guac --opt bucket=[my-bucket-name] --opt credentials=[credentials-content] --opt provider=gcs
+$ chainloop integration registered add guac --name [my-registration] --opt bucket=[my-bucket-name] --opt credentials=[credentials-content] --opt provider=gcs
 
 # Example
-$ chainloop integration registered add guac --opt bucket=test-guac --opt credentials="$(cat ./service-account-devel.json)" --opt provider=gcs
+$ chainloop integration registered add guac --name [my-registration] --opt bucket=test-guac --opt credentials="$(cat ./service-account-devel.json)" --opt provider=gcs
 
 ┌──────────────────────────────────────┬──────────────────────────────────────┬─────────────────┬──────────────────────────────────────────┬─────────────────────┐
 │ ID                                   │ DESCRIPTION                          │ KIND            │ CONFIG                                   │ CREATED AT          │

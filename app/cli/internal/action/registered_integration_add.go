@@ -31,7 +31,7 @@ func NewRegisteredIntegrationAdd(cfg *ActionsOpts) *RegisteredIntegrationAdd {
 	return &RegisteredIntegrationAdd{cfg}
 }
 
-func (action *RegisteredIntegrationAdd) Run(pluginID, description string, options map[string]any) (*RegisteredIntegrationItem, error) {
+func (action *RegisteredIntegrationAdd) Run(pluginID, name, description string, options map[string]any) (*RegisteredIntegrationItem, error) {
 	// Transform to structpb for transport
 	requestConfig, err := structpb.NewStruct(options)
 	if err != nil {
@@ -40,6 +40,7 @@ func (action *RegisteredIntegrationAdd) Run(pluginID, description string, option
 
 	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
 	i, err := client.Register(context.Background(), &pb.IntegrationsServiceRegisterRequest{
+		Name:        name,
 		PluginId:    pluginID,
 		Config:      requestConfig,
 		Description: description,

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,9 +22,11 @@ import (
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
 )
 
+// Registered integration
 type Integration struct {
 	ent.Schema
 }
@@ -32,6 +34,7 @@ type Integration struct {
 func (Integration) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique().Immutable(),
+		field.String("name"),
 		field.String("kind").Immutable(),
 		field.String("description").Optional(),
 		field.String("secret_name").Immutable(),
@@ -49,5 +52,14 @@ func (Integration) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("attachments", IntegrationAttachment.Type).Ref("integration"),
 		edge.From("organization", Organization.Type).Ref("integrations").Unique().Required(),
+	}
+}
+
+func (Integration) Indexes() []ent.Index {
+	return []ent.Index{
+		// names are unique within a organization and affects only to non-deleted items
+		index.Fields("name").Edges("organization").Unique().Annotations(
+			entsql.IndexWhere("deleted_at IS NULL"),
+		),
 	}
 }

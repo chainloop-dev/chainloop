@@ -23,6 +23,12 @@ type IntegrationCreate struct {
 	hooks    []Hook
 }
 
+// SetName sets the "name" field.
+func (ic *IntegrationCreate) SetName(s string) *IntegrationCreate {
+	ic.mutation.SetName(s)
+	return ic
+}
+
 // SetKind sets the "kind" field.
 func (ic *IntegrationCreate) SetKind(s string) *IntegrationCreate {
 	ic.mutation.SetKind(s)
@@ -170,6 +176,9 @@ func (ic *IntegrationCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (ic *IntegrationCreate) check() error {
+	if _, ok := ic.mutation.Name(); !ok {
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Integration.name"`)}
+	}
 	if _, ok := ic.mutation.Kind(); !ok {
 		return &ValidationError{Name: "kind", err: errors.New(`ent: missing required field "Integration.kind"`)}
 	}
@@ -216,6 +225,10 @@ func (ic *IntegrationCreate) createSpec() (*Integration, *sqlgraph.CreateSpec) {
 	if id, ok := ic.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
+	}
+	if value, ok := ic.mutation.Name(); ok {
+		_spec.SetField(integration.FieldName, field.TypeString, value)
+		_node.Name = value
 	}
 	if value, ok := ic.mutation.Kind(); ok {
 		_spec.SetField(integration.FieldKind, field.TypeString, value)

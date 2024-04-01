@@ -251,7 +251,7 @@ func (s *dispatcherTestSuite) SetupTest() {
 	config, _ := structpb.NewStruct(map[string]interface{}{"TestProperty": "testValue"})
 
 	s.cdxIntegrationBackend = &mockedIntegration{FanOutPlugin: customImplementation, FanOutIntegration: b}
-	s.cdxIntegration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "", s.cdxIntegrationBackend, config)
+	s.cdxIntegration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "sbom-integration", "", s.cdxIntegrationBackend, config)
 	require.NoError(s.T(), err)
 
 	b, err = sdk.NewFanOut(
@@ -265,7 +265,7 @@ func (s *dispatcherTestSuite) SetupTest() {
 	require.NoError(s.T(), err)
 
 	s.containerIntegrationBackend = &mockedIntegration{FanOutPlugin: customImplementation, FanOutIntegration: b}
-	s.containerIntegration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "", s.containerIntegrationBackend, config)
+	s.containerIntegration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "container-integration", "", s.containerIntegrationBackend, config)
 	require.NoError(s.T(), err)
 
 	// Attestation integration
@@ -279,7 +279,7 @@ func (s *dispatcherTestSuite) SetupTest() {
 	require.NoError(s.T(), err)
 
 	s.ociIntegrationBackend = &mockedIntegration{FanOutPlugin: customImplementation, FanOutIntegration: b}
-	s.ociIntegration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "", s.ociIntegrationBackend, config)
+	s.ociIntegration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "oci-integration", "", s.ociIntegrationBackend, config)
 	require.NoError(s.T(), err)
 
 	// Attach all the integrations to the workflow

@@ -41,6 +41,8 @@ type Integration struct {
 	ID uuid.UUID
 	// Kind is the type of the integration, it matches the registered plugin ID
 	Kind string
+	// Name is a unique identifier for the integration registration
+	Name string
 	// Description is a human readable description of the integration registration
 	// It helps to differentiate different instances of the same kind
 	Description string
@@ -57,6 +59,9 @@ type IntegrationAndAttachment struct {
 }
 
 type IntegrationCreateOpts struct {
+	// Unique name of the registration
+	// used to declaratively reference the integration
+	Name                          string
 	Kind, Description, SecretName string
 	OrgID                         uuid.UUID
 	Config                        []byte
@@ -101,7 +106,16 @@ func NewIntegrationUseCase(opts *NewIntegrationUseCaseOpts) *IntegrationUseCase 
 }
 
 // Persist the secret and integration with its configuration in the database
-func (uc *IntegrationUseCase) RegisterAndSave(ctx context.Context, orgID, description string, i sdk.FanOut, regConfig *structpb.Struct) (*Integration, error) {
+func (uc *IntegrationUseCase) RegisterAndSave(ctx context.Context, orgID, name, description string, i sdk.FanOut, regConfig *structpb.Struct) (*Integration, error) {
+	if name == "" {
+		return nil, NewErrValidationStr("name is required")
+	}
+
+	// validate format of the name
+	if err := ValidateIsDNS1123(name); err != nil {
+		return nil, NewErrValidation(err)
+	}
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -133,10 +147,20 @@ func (uc *IntegrationUseCase) RegisterAndSave(ctx context.Context, orgID, descri
 	}
 
 	// Persist the integration configuration
-	return uc.integrationRepo.Create(ctx, &IntegrationCreateOpts{
+	reg, err := uc.integrationRepo.Create(ctx, &IntegrationCreateOpts{
+		Name:  name,
 		OrgID: orgUUID, Kind: i.Describe().ID, Description: description,
 		SecretName: secretID, Config: registrationResponse.Configuration,
 	})
+	if err != nil {
+		if errors.Is(err, ErrAlreadyExists) {
+			return nil, NewErrValidationStr("name already taken")
+		}
+
+		return nil, fmt.Errorf("failed to register integration: %w", err)
+	}
+
+	return reg, nil
 }
 
 type AttachOpts struct {
