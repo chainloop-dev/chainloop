@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -87,7 +87,7 @@ func newAttestationPushCmd() *cobra.Command {
 			}
 
 			if res.Digest != "" {
-				cmd.Printf("\nAttestation Digest: %s\n", res.Digest)
+				logger.Info().Msgf("Attestation Digest: %s", res.Digest)
 			}
 
 			return nil
