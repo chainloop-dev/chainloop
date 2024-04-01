@@ -25,7 +25,7 @@ import (
 
 func newWorkflowCreateCmd() *cobra.Command {
 	var workflowName, description, project, team, contract string
-	var skipRACreate bool
+	var skipRACreate, public bool
 
 	cmd := &cobra.Command{
 		Use:   "create",
@@ -58,6 +58,7 @@ func newWorkflowCreateCmd() *cobra.Command {
 
 			opts := &action.NewWorkflowCreateOpts{
 				Name: workflowName, Team: team, Project: project, ContractID: contract, Description: description,
+				Public: public,
 			}
 
 			workflow, err := action.NewWorkflowCreate(actionOpts).Run(opts)
@@ -115,6 +116,7 @@ func newWorkflowCreateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&contract, "contract", "", "the ID of an existing contract or the path/URL to a contract file. If not provided an empty one will be created.")
 
 	cmd.Flags().BoolVarP(&skipRACreate, "skip-robot-account-create", "s", false, "Skip creating a Robot Account for this workflow.")
+	cmd.Flags().BoolVar(&public, "public", false, "is the workflow public")
 
 	cmd.Flags().SortFlags = false
 
