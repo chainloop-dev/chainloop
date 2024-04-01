@@ -7,7 +7,7 @@ Send attestations to Slack using webhooks.
 1. To get started, you need to register the plugin in your Chainloop organization.
 
 ```console
-$ chainloop integration registered add slack-webhook --opt webhook=[webhookURL]
+$ chainloop integration registered add slack-webhook --name [my-registration] --opt webhook=[webhookURL]
 ```
 
 2. Attach the integration to your workflow.

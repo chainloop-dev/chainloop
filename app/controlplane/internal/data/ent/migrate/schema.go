@@ -106,6 +106,7 @@ var (
 	// IntegrationsColumns holds the columns for the "integrations" table.
 	IntegrationsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "name", Type: field.TypeString},
 		{Name: "kind", Type: field.TypeString},
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "secret_name", Type: field.TypeString},
@@ -122,9 +123,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "integrations_organizations_integrations",
-				Columns:    []*schema.Column{IntegrationsColumns[7]},
+				Columns:    []*schema.Column{IntegrationsColumns[8]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "integration_name_organization_integrations",
+				Unique:  true,
+				Columns: []*schema.Column{IntegrationsColumns[1], IntegrationsColumns[8]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "deleted_at IS NULL",
+				},
 			},
 		},
 	}

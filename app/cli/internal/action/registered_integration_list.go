@@ -30,8 +30,10 @@ type RegisteredIntegrationList struct {
 
 type RegisteredIntegrationItem struct {
 	ID string `json:"id"`
+	// Registration name used for declarative configuration
+	Name string `json:"name"`
 	// Integration backend kind, i.e slack, pagerduty, etc
-	Kind string `json:"name"`
+	Kind string `json:"kind"`
 	// Integration description for display and differentiation purposes
 	Description string                 `json:"description"`
 	CreatedAt   *time.Time             `json:"createdAt"`
@@ -68,7 +70,7 @@ func pbRegisteredIntegrationItemToAction(in *pb.RegisteredIntegrationItem) (*Reg
 	}
 
 	i := &RegisteredIntegrationItem{
-		Kind: in.GetKind(), ID: in.GetId(),
+		Kind: in.GetKind(), ID: in.GetId(), Name: in.GetName(),
 		Description: in.GetDescription(),
 		CreatedAt:   toTimePtr(in.GetCreatedAt().AsTime()),
 	}

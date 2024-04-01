@@ -19,6 +19,8 @@ type Integration struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
+	// Name holds the value of the "name" field.
+	Name string `json:"name,omitempty"`
 	// Kind holds the value of the "kind" field.
 	Kind string `json:"kind,omitempty"`
 	// Description holds the value of the "description" field.
@@ -78,7 +80,7 @@ func (*Integration) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case integration.FieldConfiguration:
 			values[i] = new([]byte)
-		case integration.FieldKind, integration.FieldDescription, integration.FieldSecretName:
+		case integration.FieldName, integration.FieldKind, integration.FieldDescription, integration.FieldSecretName:
 			values[i] = new(sql.NullString)
 		case integration.FieldCreatedAt, integration.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
@@ -106,6 +108,12 @@ func (i *Integration) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[j])
 			} else if value != nil {
 				i.ID = *value
+			}
+		case integration.FieldName:
+			if value, ok := values[j].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field name", values[j])
+			} else if value.Valid {
+				i.Name = value.String
 			}
 		case integration.FieldKind:
 			if value, ok := values[j].(*sql.NullString); !ok {
@@ -196,6 +204,9 @@ func (i *Integration) String() string {
 	var builder strings.Builder
 	builder.WriteString("Integration(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", i.ID))
+	builder.WriteString("name=")
+	builder.WriteString(i.Name)
+	builder.WriteString(", ")
 	builder.WriteString("kind=")
 	builder.WriteString(i.Kind)
 	builder.WriteString(", ")

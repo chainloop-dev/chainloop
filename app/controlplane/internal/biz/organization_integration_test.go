@@ -240,7 +240,7 @@ func (s *OrgIntegrationTestSuite) SetupTest() {
 	config, err := structpb.NewStruct(map[string]interface{}{"firstName": "John"})
 	assert.NoError(err)
 
-	_, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "", integration, config)
+	_, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "my-registration", "", integration, config)
 	assert.NoError(err)
 
 	// OCI repository

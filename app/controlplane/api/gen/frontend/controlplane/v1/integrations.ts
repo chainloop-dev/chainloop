@@ -9,6 +9,8 @@ import { WorkflowItem } from "./response_messages";
 export const protobufPackage = "controlplane.v1";
 
 export interface IntegrationsServiceRegisterRequest {
+  /** unique, DNS-like name for the registration */
+  name: string;
   /**
    * Kind of integration to register
    * This should match the ID of an existing plugin
@@ -95,6 +97,8 @@ export interface ListAttachmentsResponse {
 
 export interface RegisteredIntegrationItem {
   id: string;
+  /** unique, DNS-like name for the registration */
+  name: string;
   kind: string;
   /** Description of the registration, used for display purposes */
   description: string;
@@ -120,11 +124,14 @@ export interface IntegrationsServiceDeregisterResponse {
 }
 
 function createBaseIntegrationsServiceRegisterRequest(): IntegrationsServiceRegisterRequest {
-  return { pluginId: "", config: undefined, description: "" };
+  return { name: "", pluginId: "", config: undefined, description: "" };
 }
 
 export const IntegrationsServiceRegisterRequest = {
   encode(message: IntegrationsServiceRegisterRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(42).string(message.name);
+    }
     if (message.pluginId !== "") {
       writer.uint32(10).string(message.pluginId);
     }
@@ -144,6 +151,13 @@ export const IntegrationsServiceRegisterRequest = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
         case 1:
           if (tag !== 10) {
             break;
@@ -176,6 +190,7 @@ export const IntegrationsServiceRegisterRequest = {
 
   fromJSON(object: any): IntegrationsServiceRegisterRequest {
     return {
+      name: isSet(object.name) ? String(object.name) : "",
       pluginId: isSet(object.pluginId) ? String(object.pluginId) : "",
       config: isObject(object.config) ? object.config : undefined,
       description: isSet(object.description) ? String(object.description) : "",
@@ -184,6 +199,7 @@ export const IntegrationsServiceRegisterRequest = {
 
   toJSON(message: IntegrationsServiceRegisterRequest): unknown {
     const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
     message.pluginId !== undefined && (obj.pluginId = message.pluginId);
     message.config !== undefined && (obj.config = message.config);
     message.description !== undefined && (obj.description = message.description);
@@ -200,6 +216,7 @@ export const IntegrationsServiceRegisterRequest = {
     object: I,
   ): IntegrationsServiceRegisterRequest {
     const message = createBaseIntegrationsServiceRegisterRequest();
+    message.name = object.name ?? "";
     message.pluginId = object.pluginId ?? "";
     message.config = object.config ?? undefined;
     message.description = object.description ?? "";
@@ -1202,13 +1219,16 @@ export const ListAttachmentsResponse = {
 };
 
 function createBaseRegisteredIntegrationItem(): RegisteredIntegrationItem {
-  return { id: "", kind: "", description: "", createdAt: undefined, config: new Uint8Array(0) };
+  return { id: "", name: "", kind: "", description: "", createdAt: undefined, config: new Uint8Array(0) };
 }
 
 export const RegisteredIntegrationItem = {
   encode(message: RegisteredIntegrationItem, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.id !== "") {
       writer.uint32(10).string(message.id);
+    }
+    if (message.name !== "") {
+      writer.uint32(50).string(message.name);
     }
     if (message.kind !== "") {
       writer.uint32(18).string(message.kind);
@@ -1238,6 +1258,13 @@ export const RegisteredIntegrationItem = {
           }
 
           message.id = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.name = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
@@ -1279,6 +1306,7 @@ export const RegisteredIntegrationItem = {
   fromJSON(object: any): RegisteredIntegrationItem {
     return {
       id: isSet(object.id) ? String(object.id) : "",
+      name: isSet(object.name) ? String(object.name) : "",
       kind: isSet(object.kind) ? String(object.kind) : "",
       description: isSet(object.description) ? String(object.description) : "",
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
@@ -1289,6 +1317,7 @@ export const RegisteredIntegrationItem = {
   toJSON(message: RegisteredIntegrationItem): unknown {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
+    message.name !== undefined && (obj.name = message.name);
     message.kind !== undefined && (obj.kind = message.kind);
     message.description !== undefined && (obj.description = message.description);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
@@ -1304,6 +1333,7 @@ export const RegisteredIntegrationItem = {
   fromPartial<I extends Exact<DeepPartial<RegisteredIntegrationItem>, I>>(object: I): RegisteredIntegrationItem {
     const message = createBaseRegisteredIntegrationItem();
     message.id = object.id ?? "";
+    message.name = object.name ?? "";
     message.kind = object.kind ?? "";
     message.description = object.description ?? "";
     message.createdAt = object.createdAt ?? undefined;

@@ -56,6 +56,11 @@ func IDLTE(id uuid.UUID) predicate.Integration {
 	return predicate.Integration(sql.FieldLTE(FieldID, id))
 }
 
+// Name applies equality check predicate on the "name" field. It's identical to NameEQ.
+func Name(v string) predicate.Integration {
+	return predicate.Integration(sql.FieldEQ(FieldName, v))
+}
+
 // Kind applies equality check predicate on the "kind" field. It's identical to KindEQ.
 func Kind(v string) predicate.Integration {
 	return predicate.Integration(sql.FieldEQ(FieldKind, v))
@@ -84,6 +89,71 @@ func Configuration(v []byte) predicate.Integration {
 // DeletedAt applies equality check predicate on the "deleted_at" field. It's identical to DeletedAtEQ.
 func DeletedAt(v time.Time) predicate.Integration {
 	return predicate.Integration(sql.FieldEQ(FieldDeletedAt, v))
+}
+
+// NameEQ applies the EQ predicate on the "name" field.
+func NameEQ(v string) predicate.Integration {
+	return predicate.Integration(sql.FieldEQ(FieldName, v))
+}
+
+// NameNEQ applies the NEQ predicate on the "name" field.
+func NameNEQ(v string) predicate.Integration {
+	return predicate.Integration(sql.FieldNEQ(FieldName, v))
+}
+
+// NameIn applies the In predicate on the "name" field.
+func NameIn(vs ...string) predicate.Integration {
+	return predicate.Integration(sql.FieldIn(FieldName, vs...))
+}
+
+// NameNotIn applies the NotIn predicate on the "name" field.
+func NameNotIn(vs ...string) predicate.Integration {
+	return predicate.Integration(sql.FieldNotIn(FieldName, vs...))
+}
+
+// NameGT applies the GT predicate on the "name" field.
+func NameGT(v string) predicate.Integration {
+	return predicate.Integration(sql.FieldGT(FieldName, v))
+}
+
+// NameGTE applies the GTE predicate on the "name" field.
+func NameGTE(v string) predicate.Integration {
+	return predicate.Integration(sql.FieldGTE(FieldName, v))
+}
+
+// NameLT applies the LT predicate on the "name" field.
+func NameLT(v string) predicate.Integration {
+	return predicate.Integration(sql.FieldLT(FieldName, v))
+}
+
+// NameLTE applies the LTE predicate on the "name" field.
+func NameLTE(v string) predicate.Integration {
+	return predicate.Integration(sql.FieldLTE(FieldName, v))
+}
+
+// NameContains applies the Contains predicate on the "name" field.
+func NameContains(v string) predicate.Integration {
+	return predicate.Integration(sql.FieldContains(FieldName, v))
+}
+
+// NameHasPrefix applies the HasPrefix predicate on the "name" field.
+func NameHasPrefix(v string) predicate.Integration {
+	return predicate.Integration(sql.FieldHasPrefix(FieldName, v))
+}
+
+// NameHasSuffix applies the HasSuffix predicate on the "name" field.
+func NameHasSuffix(v string) predicate.Integration {
+	return predicate.Integration(sql.FieldHasSuffix(FieldName, v))
+}
+
+// NameEqualFold applies the EqualFold predicate on the "name" field.
+func NameEqualFold(v string) predicate.Integration {
+	return predicate.Integration(sql.FieldEqualFold(FieldName, v))
+}
+
+// NameContainsFold applies the ContainsFold predicate on the "name" field.
+func NameContainsFold(v string) predicate.Integration {
+	return predicate.Integration(sql.FieldContainsFold(FieldName, v))
 }
 
 // KindEQ applies the EQ predicate on the "kind" field.

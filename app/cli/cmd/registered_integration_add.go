@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,12 +29,12 @@ import (
 
 func newRegisteredIntegrationAddCmd() *cobra.Command {
 	var options []string
-	var integrationDescription string
+	var integrationDescription, integrationName string
 
 	cmd := &cobra.Command{
-		Use:     "add INTEGRATION_ID --options key=value,key=value",
+		Use:     "add INTEGRATION_ID --name [registration-name] --options key=value,key=value",
 		Short:   "Register a new instance of an integration",
-		Example: `  chainloop integration registered add dependencytrack --opt instance=https://deptrack.company.com,apiKey=1234567890 --opt username=chainloop`,
+		Example: `  chainloop integration registered add dependencytrack --name send-to-prod --opt instance=https://deptrack.company.com,apiKey=1234567890 --opt username=chainloop`,
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Retrieve schema for validation and options marshaling
@@ -57,7 +57,7 @@ func newRegisteredIntegrationAddCmd() *cobra.Command {
 				return err
 			}
 
-			res, err := action.NewRegisteredIntegrationAdd(actionOpts).Run(args[0], integrationDescription, opts)
+			res, err := action.NewRegisteredIntegrationAdd(actionOpts).Run(args[0], integrationName, integrationDescription, opts)
 			if err != nil {
 				return err
 			}
@@ -65,6 +65,10 @@ func newRegisteredIntegrationAddCmd() *cobra.Command {
 			return encodeOutput([]*action.RegisteredIntegrationItem{res}, registeredIntegrationListTableOutput)
 		},
 	}
+
+	cmd.Flags().StringVar(&integrationName, "name", "", "unique registration name, i.e my-registration, sboms-to-prod, etc.")
+	err := cmd.MarkFlagRequired("name")
+	cobra.CheckErr(err)
 
 	cmd.Flags().StringVar(&integrationDescription, "description", "", "integration registration description")
 	// StringSlice seems to struggle with comma-separated values such as p12 jsonKeys provided as passwords

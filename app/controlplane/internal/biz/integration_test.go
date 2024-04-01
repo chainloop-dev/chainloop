@@ -28,12 +28,14 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func (s *testSuite) TestCreate() {
 	const kind = "my-integration"
+	const name = "another-registration"
 	const description = "my registration description"
 	assert := assert.New(s.T())
 
@@ -48,10 +50,11 @@ func (s *testSuite) TestCreate() {
 			Password: "key", URL: "host"},
 	}, nil)
 
-	got, err := s.Integration.RegisterAndSave(ctx, s.org.ID, description, integration, s.configStruct)
-	assert.NoError(err)
+	got, err := s.Integration.RegisterAndSave(ctx, s.org.ID, name, description, integration, s.configStruct)
+	require.NoError(s.T(), err)
 	assert.Equal(kind, got.Kind)
 	assert.Equal(description, got.Description)
+	assert.Equal(name, got.Name)
 
 	// Check configuration was stored
 	assert.Equal(s.config, got.Config)
@@ -209,7 +212,7 @@ func (s *testSuite) SetupTest() {
 	fanOut.On("Register", ctx, mock.Anything).Return(&sdk.RegistrationResponse{Configuration: s.config}, nil)
 	s.fanOutIntegration = fanOut
 
-	s.integration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "my integration instance", fanOut, s.configStruct)
+	s.integration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "my-registration", "my integration instance", fanOut, s.configStruct)
 	assert.NoError(err)
 }
 
