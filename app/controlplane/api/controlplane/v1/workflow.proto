@@ -49,6 +49,7 @@ message WorkflowServiceUpdateRequest {
   optional string team = 4;
   optional bool public = 5;
   optional string description = 6;
+  optional string schema_id = 7;
 }
 
 message WorkflowServiceUpdateResponse {

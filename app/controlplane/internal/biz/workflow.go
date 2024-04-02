@@ -58,8 +58,8 @@ type WorkflowCreateOpts struct {
 }
 
 type WorkflowUpdateOpts struct {
-	Name, Project, Team, Description *string
-	Public                           *bool
+	Name, Project, Team, Description, ContractID *string
+	Public                                       *bool
 }
 
 type WorkflowUseCase struct {
@@ -142,6 +142,15 @@ func (uc *WorkflowUseCase) Update(ctx context.Context, orgID, workflowID string,
 		return nil, err
 	} else if wf == nil {
 		return nil, NewErrNotFound("workflow in organization")
+	}
+
+	// Double check that the contract exists
+	if opts.ContractID != nil {
+		if c, err := uc.contractUC.FindByIDInOrg(ctx, orgID, *opts.ContractID); err != nil {
+			return nil, err
+		} else if c == nil {
+			return nil, NewErrNotFound("contract")
+		}
 	}
 
 	wf, err := uc.wfRepo.Update(ctx, workflowUUID, opts)

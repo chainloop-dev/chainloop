@@ -23,7 +23,7 @@ import (
 )
 
 func newWorkflowUpdateCmd() *cobra.Command {
-	var workflowID, name, description, project, team string
+	var workflowID, name, description, project, team, contractID string
 	var public bool
 
 	cmd := &cobra.Command{
@@ -48,6 +48,10 @@ func newWorkflowUpdateCmd() *cobra.Command {
 				opts.Description = &description
 			}
 
+			if cmd.Flags().Changed("contract") {
+				opts.ContractID = &contractID
+			}
+
 			res, err := action.NewWorkflowUpdate(actionOpts).Run(context.Background(), workflowID, opts)
 			if err != nil {
 				return err
@@ -67,6 +71,7 @@ func newWorkflowUpdateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&team, "team", "", "team name")
 	cmd.Flags().StringVar(&project, "project", "", "project name")
 	cmd.Flags().BoolVar(&public, "public", false, "is the workflow public")
+	cmd.Flags().StringVar(&contractID, "contract", "", "the ID of an existing contract")
 
 	return cmd
 }

@@ -91,6 +91,15 @@ func (r *WorkflowRepo) Update(ctx context.Context, id uuid.UUID, opts *biz.Workf
 		req = req.SetName(*opts.Name)
 	}
 
+	// Update the contract if provided
+	if opts.ContractID != nil {
+		contractUUID, err := uuid.Parse(*opts.ContractID)
+		if err != nil {
+			return nil, err
+		}
+		req = req.SetContractID(contractUUID)
+	}
+
 	wf, err := req.Save(ctx)
 
 	if err != nil {

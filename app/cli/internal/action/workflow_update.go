@@ -30,8 +30,8 @@ func NewWorkflowUpdate(cfg *ActionsOpts) *WorkflowUpdate {
 }
 
 type NewWorkflowUpdateOpts struct {
-	Name, Description, Project, Team *string
-	Public                           *bool
+	Name, Description, Project, Team, ContractID *string
+	Public                                       *bool
 }
 
 func (action *WorkflowUpdate) Run(ctx context.Context, id string, opts *NewWorkflowUpdateOpts) (*WorkflowItem, error) {
@@ -40,7 +40,8 @@ func (action *WorkflowUpdate) Run(ctx context.Context, id string, opts *NewWorkf
 		Id:   id,
 		Name: opts.Name, Description: opts.Description,
 		Project: opts.Project, Team: opts.Team,
-		Public: opts.Public,
+		Public:   opts.Public,
+		SchemaId: opts.ContractID,
 	})
 
 	if err != nil {
