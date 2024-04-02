@@ -225,6 +225,10 @@ func (m *WorkflowServiceUpdateRequest) validate(all bool) error {
 		// no validation rules for Description
 	}
 
+	if m.SchemaId != nil {
+		// no validation rules for SchemaId
+	}
+
 	if len(errors) > 0 {
 		return WorkflowServiceUpdateRequestMultiError(errors)
 	}

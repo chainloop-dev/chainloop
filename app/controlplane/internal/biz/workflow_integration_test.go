@@ -157,6 +157,12 @@ func (s *workflowIntegrationTestSuite) TestUpdate() {
 	workflow, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: name, OrgID: s.org.ID})
 	require.NoError(s.T(), err)
 
+	// Create two contracts in two different orgs
+	contract1, err := s.WorkflowContract.Create(ctx, &biz.WorkflowContractCreateOpts{Name: "contract-1", OrgID: s.org.ID})
+	require.NoError(s.T(), err)
+	contract2, err := s.WorkflowContract.Create(ctx, &biz.WorkflowContractCreateOpts{Name: "contract-2", OrgID: org2.ID})
+	require.NoError(s.T(), err)
+
 	s.Run("by default the workflow is private", func() {
 		s.False(workflow.Public)
 	})
@@ -236,6 +242,16 @@ func (s *workflowIntegrationTestSuite) TestUpdate() {
 		{
 			name:    "name can't be emptied",
 			updates: &biz.WorkflowUpdateOpts{Name: toPtrS("")},
+			wantErr: true,
+		},
+		{
+			name:    "can update contract",
+			updates: &biz.WorkflowUpdateOpts{ContractID: toPtrS(contract1.ID.String())},
+			want:    &biz.Workflow{Description: description, Team: team, Project: project, ContractID: contract2.ID},
+		},
+		{
+			name:    "can not update contract in another org",
+			updates: &biz.WorkflowUpdateOpts{ContractID: toPtrS(contract2.ID.String())},
 			wantErr: true,
 		},
 		{

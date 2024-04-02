@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -79,6 +79,7 @@ func (s *WorkflowService) Update(ctx context.Context, req *pb.WorkflowServiceUpd
 		Team:        req.Team,
 		Public:      req.Public,
 		Description: req.Description,
+		ContractID:  req.SchemaId,
 	}
 
 	p, err := s.useCase.Update(ctx, currentOrg.ID, req.Id, updateOpts)

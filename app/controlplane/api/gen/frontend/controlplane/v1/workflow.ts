@@ -27,6 +27,7 @@ export interface WorkflowServiceUpdateRequest {
   team?: string | undefined;
   public?: boolean | undefined;
   description?: string | undefined;
+  schemaId?: string | undefined;
 }
 
 export interface WorkflowServiceUpdateResponse {
@@ -183,7 +184,15 @@ export const WorkflowServiceCreateRequest = {
 };
 
 function createBaseWorkflowServiceUpdateRequest(): WorkflowServiceUpdateRequest {
-  return { id: "", name: undefined, project: undefined, team: undefined, public: undefined, description: undefined };
+  return {
+    id: "",
+    name: undefined,
+    project: undefined,
+    team: undefined,
+    public: undefined,
+    description: undefined,
+    schemaId: undefined,
+  };
 }
 
 export const WorkflowServiceUpdateRequest = {
@@ -205,6 +214,9 @@ export const WorkflowServiceUpdateRequest = {
     }
     if (message.description !== undefined) {
       writer.uint32(50).string(message.description);
+    }
+    if (message.schemaId !== undefined) {
+      writer.uint32(58).string(message.schemaId);
     }
     return writer;
   },
@@ -258,6 +270,13 @@ export const WorkflowServiceUpdateRequest = {
 
           message.description = reader.string();
           continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.schemaId = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -275,6 +294,7 @@ export const WorkflowServiceUpdateRequest = {
       team: isSet(object.team) ? String(object.team) : undefined,
       public: isSet(object.public) ? Boolean(object.public) : undefined,
       description: isSet(object.description) ? String(object.description) : undefined,
+      schemaId: isSet(object.schemaId) ? String(object.schemaId) : undefined,
     };
   },
 
@@ -286,6 +306,7 @@ export const WorkflowServiceUpdateRequest = {
     message.team !== undefined && (obj.team = message.team);
     message.public !== undefined && (obj.public = message.public);
     message.description !== undefined && (obj.description = message.description);
+    message.schemaId !== undefined && (obj.schemaId = message.schemaId);
     return obj;
   },
 
@@ -301,6 +322,7 @@ export const WorkflowServiceUpdateRequest = {
     message.team = object.team ?? undefined;
     message.public = object.public ?? undefined;
     message.description = object.description ?? undefined;
+    message.schemaId = object.schemaId ?? undefined;
     return message;
   },
 };
