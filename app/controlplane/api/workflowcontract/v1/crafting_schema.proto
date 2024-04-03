@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -51,9 +51,12 @@ message CraftingSchema {
   }
 
   message Material {
-    MaterialType type = 1 [(validate.rules).enum = {
-      not_in: [0]
-    }];
+    MaterialType type = 1 [
+      (validate.rules).enum = {
+        not_in: [0]
+      },
+      (validate.rules).enum.defined_only = true
+    ];
     string name = 2 [(validate.rules).string.pattern = "^[\\w|-]+$"]; // Single word optionally separated with _ or -
     bool optional = 3;
     // If a material is set as output it will get added to the subject in the statement

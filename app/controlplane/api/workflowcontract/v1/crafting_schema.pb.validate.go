@@ -507,6 +507,17 @@ func (m *CraftingSchema_Material) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	if _, ok := CraftingSchema_Material_MaterialType_name[int32(m.GetType())]; !ok {
+		err := CraftingSchema_MaterialValidationError{
+			field:  "Type",
+			reason: "value must be one of the defined enum values",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if !_CraftingSchema_Material_Name_Pattern.MatchString(m.GetName()) {
 		err := CraftingSchema_MaterialValidationError{
 			field:  "Name",
