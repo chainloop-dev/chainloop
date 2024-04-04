@@ -35,9 +35,12 @@ message CraftingSchema {
   repeated Annotation annotations = 5;
 
   message Runner {
-    RunnerType type = 1 [(validate.rules).enum = {
-      not_in: [0]
-    }];
+    RunnerType type = 1 [
+      (validate.rules).enum = {
+        not_in: [0]
+      },
+      (validate.rules).enum.defined_only = true
+    ];
 
     enum RunnerType {
       RUNNER_TYPE_UNSPECIFIED = 0;

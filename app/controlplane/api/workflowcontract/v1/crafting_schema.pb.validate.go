@@ -390,6 +390,17 @@ func (m *CraftingSchema_Runner) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	if _, ok := CraftingSchema_Runner_RunnerType_name[int32(m.GetType())]; !ok {
+		err := CraftingSchema_RunnerValidationError{
+			field:  "Type",
+			reason: "value must be one of the defined enum values",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if len(errors) > 0 {
 		return CraftingSchema_RunnerMultiError(errors)
 	}
