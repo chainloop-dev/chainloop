@@ -1,4 +1,4 @@
-FROM golang:1.22.1@sha256:46a86b411554728154e56f9719426a47e5ded3cab7adb1ecb22a988f486e99ae AS builder
+FROM golang:1.22.2@sha256:c4fb952e712efd8f787bcd8e53fd66d1d83b7dc26adabc218e9eac1dbf776bdf AS builder
 
 FROM scratch
 
