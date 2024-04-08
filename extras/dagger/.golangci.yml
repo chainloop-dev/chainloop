@@ -1,6 +1,6 @@
 run:
   skip-dirs:
-    querybuilder
+    internal
   skip-files:
     dagger.gen.go
 
