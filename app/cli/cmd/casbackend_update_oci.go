@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,6 +35,9 @@ func newCASBackendUpdateOCICmd() *cobra.Command {
 			description, err := cmd.Flags().GetString("description")
 			cobra.CheckErr(err)
 
+			name, err := cmd.Flags().GetString("name")
+			cobra.CheckErr(err)
+
 			// If we are overriding the default we ask for confirmation
 			if isDefault {
 				if confirmed, err := confirmDefaultCASBackendOverride(actionOpts, backendID); err != nil {
@@ -55,6 +58,7 @@ func newCASBackendUpdateOCICmd() *cobra.Command {
 
 			opts := &action.NewCASBackendUpdateOpts{
 				ID:          backendID,
+				Name:        name,
 				Description: description,
 				Credentials: map[string]any{
 					"username": username,

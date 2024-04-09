@@ -33,6 +33,12 @@ func (cbu *CASBackendUpdate) Where(ps ...predicate.CASBackend) *CASBackendUpdate
 	return cbu
 }
 
+// SetName sets the "name" field.
+func (cbu *CASBackendUpdate) SetName(s string) *CASBackendUpdate {
+	cbu.mutation.SetName(s)
+	return cbu
+}
+
 // SetDescription sets the "description" field.
 func (cbu *CASBackendUpdate) SetDescription(s string) *CASBackendUpdate {
 	cbu.mutation.SetDescription(s)
@@ -237,6 +243,9 @@ func (cbu *CASBackendUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := cbu.mutation.Name(); ok {
+		_spec.SetField(casbackend.FieldName, field.TypeString, value)
+	}
 	if value, ok := cbu.mutation.Description(); ok {
 		_spec.SetField(casbackend.FieldDescription, field.TypeString, value)
 	}
@@ -355,6 +364,12 @@ type CASBackendUpdateOne struct {
 	hooks     []Hook
 	mutation  *CASBackendMutation
 	modifiers []func(*sql.UpdateBuilder)
+}
+
+// SetName sets the "name" field.
+func (cbuo *CASBackendUpdateOne) SetName(s string) *CASBackendUpdateOne {
+	cbuo.mutation.SetName(s)
+	return cbuo
 }
 
 // SetDescription sets the "description" field.
@@ -590,6 +605,9 @@ func (cbuo *CASBackendUpdateOne) sqlSave(ctx context.Context) (_node *CASBackend
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := cbuo.mutation.Name(); ok {
+		_spec.SetField(casbackend.FieldName, field.TypeString, value)
 	}
 	if value, ok := cbuo.mutation.Description(); ok {
 		_spec.SetField(casbackend.FieldDescription, field.TypeString, value)

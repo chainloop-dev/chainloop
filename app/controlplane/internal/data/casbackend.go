@@ -146,10 +146,15 @@ func (r *CASBackendRepo) Update(ctx context.Context, opts *biz.CASBackendUpdateO
 	}
 
 	// 2 - Chain the list of updates
+	// TODO: allow setting values as empty, currently it's not possible.
+	// We do it in other models by providing pointers to string + setNillableX methods
 	updateChain := tx.CASBackend.UpdateOneID(opts.ID).SetDefault(opts.Default)
-	// If description is provided we set it
 	if opts.Description != "" {
 		updateChain = updateChain.SetDescription(opts.Description)
+	}
+
+	if opts.Name != "" {
+		updateChain = updateChain.SetName(opts.Name)
 	}
 
 	// If secretName is provided we set it

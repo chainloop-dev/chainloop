@@ -62,7 +62,9 @@ message CASBackendServiceCreateResponse {
 message CASBackendServiceUpdateRequest {
   // UUID of the workflow to attach
   string id = 1 [(validate.rules).string.uuid = true];
-  // Descriptive name
+  // unique name
+  string name = 5;
+  // Description
   string description = 2;
   // Set as default in your organization
   bool default = 3;

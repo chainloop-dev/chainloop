@@ -255,7 +255,7 @@ func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name, location, 
 }
 
 // Update will update credentials, description or default status
-func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id, description string, creds any, defaultB bool) (*CASBackend, error) {
+func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id, name, description string, creds any, defaultB bool) (*CASBackend, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -264,6 +264,13 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id, description 
 	uuid, err := uuid.Parse(id)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
+	}
+
+	if name != "" {
+		// validate format of the name and the project
+		if err := ValidateIsDNS1123(name); err != nil {
+			return nil, NewErrValidation(err)
+		}
 	}
 
 	before, err := uc.repo.FindByIDInOrg(ctx, orgUUID, uuid)
@@ -285,7 +292,7 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id, description 
 	after, err := uc.repo.Update(ctx, &CASBackendUpdateOpts{
 		ID: uuid,
 		CASBackendOpts: &CASBackendOpts{
-			SecretName: secretName, Default: defaultB, Description: description, OrgID: orgUUID,
+			SecretName: secretName, Default: defaultB, Description: description, OrgID: orgUUID, Name: name,
 		},
 	})
 	if err != nil {

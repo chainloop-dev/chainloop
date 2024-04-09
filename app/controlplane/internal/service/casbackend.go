@@ -125,7 +125,7 @@ func (s *CASBackendService) Update(ctx context.Context, req *pb.CASBackendServic
 	}
 
 	// For now we only support one backend which is set as default
-	res, err := s.uc.Update(ctx, currentOrg.ID, req.Id, req.Description, creds, req.Default)
+	res, err := s.uc.Update(ctx, currentOrg.ID, req.Id, req.Name, req.Description, creds, req.Default)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}

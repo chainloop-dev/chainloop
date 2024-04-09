@@ -84,7 +84,9 @@ export interface CASBackendServiceCreateResponse {
 export interface CASBackendServiceUpdateRequest {
   /** UUID of the workflow to attach */
   id: string;
-  /** Descriptive name */
+  /** unique name */
+  name: string;
+  /** Description */
   description: string;
   /** Set as default in your organization */
   default: boolean;
@@ -395,13 +397,16 @@ export const CASBackendServiceCreateResponse = {
 };
 
 function createBaseCASBackendServiceUpdateRequest(): CASBackendServiceUpdateRequest {
-  return { id: "", description: "", default: false, credentials: undefined };
+  return { id: "", name: "", description: "", default: false, credentials: undefined };
 }
 
 export const CASBackendServiceUpdateRequest = {
   encode(message: CASBackendServiceUpdateRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.id !== "") {
       writer.uint32(10).string(message.id);
+    }
+    if (message.name !== "") {
+      writer.uint32(42).string(message.name);
     }
     if (message.description !== "") {
       writer.uint32(18).string(message.description);
@@ -428,6 +433,13 @@ export const CASBackendServiceUpdateRequest = {
           }
 
           message.id = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.name = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
@@ -462,6 +474,7 @@ export const CASBackendServiceUpdateRequest = {
   fromJSON(object: any): CASBackendServiceUpdateRequest {
     return {
       id: isSet(object.id) ? String(object.id) : "",
+      name: isSet(object.name) ? String(object.name) : "",
       description: isSet(object.description) ? String(object.description) : "",
       default: isSet(object.default) ? Boolean(object.default) : false,
       credentials: isObject(object.credentials) ? object.credentials : undefined,
@@ -471,6 +484,7 @@ export const CASBackendServiceUpdateRequest = {
   toJSON(message: CASBackendServiceUpdateRequest): unknown {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
+    message.name !== undefined && (obj.name = message.name);
     message.description !== undefined && (obj.description = message.description);
     message.default !== undefined && (obj.default = message.default);
     message.credentials !== undefined && (obj.credentials = message.credentials);
@@ -486,6 +500,7 @@ export const CASBackendServiceUpdateRequest = {
   ): CASBackendServiceUpdateRequest {
     const message = createBaseCASBackendServiceUpdateRequest();
     message.id = object.id ?? "";
+    message.name = object.name ?? "";
     message.description = object.description ?? "";
     message.default = object.default ?? false;
     message.credentials = object.credentials ?? undefined;

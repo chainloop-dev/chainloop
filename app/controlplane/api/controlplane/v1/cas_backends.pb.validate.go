@@ -624,6 +624,8 @@ func (m *CASBackendServiceUpdateRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for Name
+
 	// no validation rules for Description
 
 	// no validation rules for Default
