@@ -160,6 +160,8 @@ var ServerOperationsMap = map[string][]*Policy{
 	// There are no policies for the download endpoint, we do a manual check in the service layer
 	// to differentiate between upload and download requests
 	"/controlplane.v1.CASCredentialsService/Get": {},
+	// We have an endpoint to generate a download URL
+	"/controlplane.v1.CASRedirectService/DownloadRedirect": {PolicyArtifactDownload},
 	// CAS Backend listing
 	"/controlplane.v1.CASBackendService/List": {PolicyCASBackendList},
 	// Available integrations
