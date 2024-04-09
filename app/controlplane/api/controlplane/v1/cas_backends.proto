@@ -17,18 +17,18 @@ syntax = "proto3";
 
 package controlplane.v1;
 
+import "controlplane/v1/response_messages.proto";
+import "errors/errors.proto";
+import "google/protobuf/struct.proto";
+import "validate/validate.proto";
+
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
-import "controlplane/v1/response_messages.proto";
-import "validate/validate.proto";
-import "google/protobuf/struct.proto";
-import "errors/errors.proto";
-
 service CASBackendService {
-	rpc List (CASBackendServiceListRequest) returns (CASBackendServiceListResponse);
-	rpc Create (CASBackendServiceCreateRequest) returns (CASBackendServiceCreateResponse);
-	rpc Update (CASBackendServiceUpdateRequest) returns (CASBackendServiceUpdateResponse);
-	rpc Delete (CASBackendServiceDeleteRequest) returns (CASBackendServiceDeleteResponse);
+  rpc List(CASBackendServiceListRequest) returns (CASBackendServiceListResponse);
+  rpc Create(CASBackendServiceCreateRequest) returns (CASBackendServiceCreateResponse);
+  rpc Update(CASBackendServiceUpdateRequest) returns (CASBackendServiceUpdateResponse);
+  rpc Delete(CASBackendServiceDeleteRequest) returns (CASBackendServiceDeleteResponse);
 }
 
 message CASBackendServiceListRequest {}
@@ -38,35 +38,36 @@ message CASBackendServiceListResponse {
 }
 
 message CASBackendServiceCreateRequest {
-	// Location, e.g. bucket name, OCI bucket name, ...
-	string location = 1 [(validate.rules).string.min_len = 1];
-	// Type of the backend, OCI, S3, ...
-	string provider = 2 [(validate.rules).string.min_len = 1];
-	// Descriptive name
-	string description = 3;
-	// Set as default in your organization
-	bool default = 4;
-	// Arbitrary configuration for the integration
-	google.protobuf.Struct credentials = 5 [(validate.rules).message.required = true];
+  // Location, e.g. bucket name, OCI bucket name, ...
+  string location = 1 [(validate.rules).string.min_len = 1];
+  // Type of the backend, OCI, S3, ...
+  string provider = 2 [(validate.rules).string.min_len = 1];
+  // Descriptive name
+  string description = 3;
+  // Set as default in your organization
+  bool default = 4;
+  // Arbitrary configuration for the integration
+  google.protobuf.Struct credentials = 5 [(validate.rules).message.required = true];
+  string name = 6 [(validate.rules).string.min_len = 1];
 }
 
 message CASBackendServiceCreateResponse {
   CASBackendItem result = 1;
 }
 
-// Update a CAS backend is limited to 
+// Update a CAS backend is limited to
 // - description
 // - set is as default
 // - rotate credentials
 message CASBackendServiceUpdateRequest {
-	// UUID of the workflow to attach
-	string id = 1 [(validate.rules).string.uuid = true];
-	// Descriptive name
-	string description = 2;
-	// Set as default in your organization
-	bool default = 3;
-	// Credentials, useful for rotation
-	google.protobuf.Struct credentials = 4;
+  // UUID of the workflow to attach
+  string id = 1 [(validate.rules).string.uuid = true];
+  // Descriptive name
+  string description = 2;
+  // Set as default in your organization
+  bool default = 3;
+  // Credentials, useful for rotation
+  google.protobuf.Struct credentials = 4;
 }
 
 message CASBackendServiceUpdateResponse {

@@ -83,7 +83,7 @@ func (s *CASBackendService) Create(ctx context.Context, req *pb.CASBackendServic
 	}
 
 	// For now we only support one backend which is set as default
-	res, err := s.uc.Create(ctx, currentOrg.ID, req.Location, req.Description, biz.CASBackendProvider(req.Provider), creds, req.Default)
+	res, err := s.uc.Create(ctx, currentOrg.ID, req.Name, req.Location, req.Description, biz.CASBackendProvider(req.Provider), creds, req.Default)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -151,6 +151,7 @@ func (s *CASBackendService) Delete(ctx context.Context, req *pb.CASBackendServic
 func bizCASBackendToPb(in *biz.CASBackend) *pb.CASBackendItem {
 	r := &pb.CASBackendItem{
 		Id: in.ID.String(), Location: in.Location, Description: in.Description,
+		Name:        in.Name,
 		CreatedAt:   timestamppb.New(*in.CreatedAt),
 		ValidatedAt: timestamppb.New(*in.ValidatedAt),
 		Provider:    string(in.Provider),

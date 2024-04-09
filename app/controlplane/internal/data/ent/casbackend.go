@@ -22,6 +22,8 @@ type CASBackend struct {
 	ID uuid.UUID `json:"id,omitempty"`
 	// Location holds the value of the "location" field.
 	Location string `json:"location,omitempty"`
+	// Name holds the value of the "name" field.
+	Name string `json:"name,omitempty"`
 	// Provider holds the value of the "provider" field.
 	Provider biz.CASBackendProvider `json:"provider,omitempty"`
 	// Description holds the value of the "description" field.
@@ -87,7 +89,7 @@ func (*CASBackend) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case casbackend.FieldDefault, casbackend.FieldFallback:
 			values[i] = new(sql.NullBool)
-		case casbackend.FieldLocation, casbackend.FieldProvider, casbackend.FieldDescription, casbackend.FieldSecretName, casbackend.FieldValidationStatus:
+		case casbackend.FieldLocation, casbackend.FieldName, casbackend.FieldProvider, casbackend.FieldDescription, casbackend.FieldSecretName, casbackend.FieldValidationStatus:
 			values[i] = new(sql.NullString)
 		case casbackend.FieldCreatedAt, casbackend.FieldValidatedAt, casbackend.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
@@ -121,6 +123,12 @@ func (cb *CASBackend) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field location", values[i])
 			} else if value.Valid {
 				cb.Location = value.String
+			}
+		case casbackend.FieldName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field name", values[i])
+			} else if value.Valid {
+				cb.Name = value.String
 			}
 		case casbackend.FieldProvider:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -231,6 +239,9 @@ func (cb *CASBackend) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v, ", cb.ID))
 	builder.WriteString("location=")
 	builder.WriteString(cb.Location)
+	builder.WriteString(", ")
+	builder.WriteString("name=")
+	builder.WriteString(cb.Name)
 	builder.WriteString(", ")
 	builder.WriteString("provider=")
 	builder.WriteString(fmt.Sprintf("%v", cb.Provider))

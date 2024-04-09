@@ -52,7 +52,7 @@ func casBackendListTableOutput(backends []*action.CASBackendItem) error {
 	}
 
 	t := newTableWriter()
-	header := table.Row{"ID", "Location", "Provider", "Description", "Limits", "Default"}
+	header := table.Row{"ID", "Name", "Location", "Provider", "Description", "Limits", "Default"}
 	if full {
 		header = append(header, "Validation Status", "Created At", "Validated At")
 	}
@@ -64,7 +64,7 @@ func casBackendListTableOutput(backends []*action.CASBackendItem) error {
 			limits = fmt.Sprintf("MaxSize: %s", bytefmt.ByteSize(uint64(b.Limits.MaxBytes)))
 		}
 
-		r := table.Row{b.ID, wrap.String(b.Location, 35), b.Provider, wrap.String(b.Description, 35), limits, b.Default}
+		r := table.Row{b.ID, b.Name, wrap.String(b.Location, 35), b.Provider, wrap.String(b.Description, 35), limits, b.Default}
 		if full {
 			r = append(r, b.ValidationStatus,
 				b.CreatedAt.Format(time.RFC822),

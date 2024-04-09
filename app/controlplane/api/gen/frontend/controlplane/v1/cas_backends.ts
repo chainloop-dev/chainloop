@@ -68,6 +68,7 @@ export interface CASBackendServiceCreateRequest {
   default: boolean;
   /** Arbitrary configuration for the integration */
   credentials?: { [key: string]: any };
+  name: string;
 }
 
 export interface CASBackendServiceCreateResponse {
@@ -209,7 +210,7 @@ export const CASBackendServiceListResponse = {
 };
 
 function createBaseCASBackendServiceCreateRequest(): CASBackendServiceCreateRequest {
-  return { location: "", provider: "", description: "", default: false, credentials: undefined };
+  return { location: "", provider: "", description: "", default: false, credentials: undefined, name: "" };
 }
 
 export const CASBackendServiceCreateRequest = {
@@ -228,6 +229,9 @@ export const CASBackendServiceCreateRequest = {
     }
     if (message.credentials !== undefined) {
       Struct.encode(Struct.wrap(message.credentials), writer.uint32(42).fork()).ldelim();
+    }
+    if (message.name !== "") {
+      writer.uint32(50).string(message.name);
     }
     return writer;
   },
@@ -274,6 +278,13 @@ export const CASBackendServiceCreateRequest = {
 
           message.credentials = Struct.unwrap(Struct.decode(reader, reader.uint32()));
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -290,6 +301,7 @@ export const CASBackendServiceCreateRequest = {
       description: isSet(object.description) ? String(object.description) : "",
       default: isSet(object.default) ? Boolean(object.default) : false,
       credentials: isObject(object.credentials) ? object.credentials : undefined,
+      name: isSet(object.name) ? String(object.name) : "",
     };
   },
 
@@ -300,6 +312,7 @@ export const CASBackendServiceCreateRequest = {
     message.description !== undefined && (obj.description = message.description);
     message.default !== undefined && (obj.default = message.default);
     message.credentials !== undefined && (obj.credentials = message.credentials);
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
@@ -316,6 +329,7 @@ export const CASBackendServiceCreateRequest = {
     message.description = object.description ?? "";
     message.default = object.default ?? false;
     message.credentials = object.credentials ?? undefined;
+    message.name = object.name ?? "";
     return message;
   },
 };

@@ -31,6 +31,9 @@ func newCASBackendAddAWSS3Cmd() *cobra.Command {
 			isDefault, err := cmd.Flags().GetBool("default")
 			cobra.CheckErr(err)
 
+			name, err := cmd.Flags().GetString("name")
+			cobra.CheckErr(err)
+
 			description, err := cmd.Flags().GetString("description")
 			cobra.CheckErr(err)
 
@@ -44,6 +47,7 @@ func newCASBackendAddAWSS3Cmd() *cobra.Command {
 			}
 
 			opts := &action.NewCASBackendAddOpts{
+				Name:        name,
 				Location:    bucketName,
 				Provider:    s3.ProviderID,
 				Description: description,

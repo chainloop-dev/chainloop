@@ -19,6 +19,8 @@ const (
 	FieldID = "id"
 	// FieldLocation holds the string denoting the location field in the database.
 	FieldLocation = "location"
+	// FieldName holds the string denoting the name field in the database.
+	FieldName = "name"
 	// FieldProvider holds the string denoting the provider field in the database.
 	FieldProvider = "provider"
 	// FieldDescription holds the string denoting the description field in the database.
@@ -61,6 +63,7 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldLocation,
+	FieldName,
 	FieldProvider,
 	FieldDescription,
 	FieldSecretName,
@@ -145,6 +148,11 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 // ByLocation orders the results by the location field.
 func ByLocation(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldLocation, opts...).ToFunc()
+}
+
+// ByName orders the results by the name field.
+func ByName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldName, opts...).ToFunc()
 }
 
 // ByProvider orders the results by the provider field.

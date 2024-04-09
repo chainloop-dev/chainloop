@@ -40,6 +40,9 @@ func newCASBackendAddCmd() *cobra.Command {
 
 	cmd.PersistentFlags().Bool("default", false, "set the backend as default in your organization")
 	cmd.PersistentFlags().String("description", "", "descriptive information for this registration")
+	cmd.PersistentFlags().String("name", "", "CAS backend name")
+	err := cmd.MarkPersistentFlagRequired("name")
+	cobra.CheckErr(err)
 
 	cmd.AddCommand(newCASBackendAddOCICmd(), newCASBackendAddAzureBlobStorageCmd(), newCASBackendAddAWSS3Cmd())
 	return cmd

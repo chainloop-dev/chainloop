@@ -49,6 +49,7 @@ var CASBackendValidationFailed CASBackendValidationStatus = "Invalid"
 
 type CASBackend struct {
 	ID                                uuid.UUID
+	Name                              string
 	Location, Description, SecretName string
 	CreatedAt, ValidatedAt            *time.Time
 	OrganizationID                    uuid.UUID
@@ -71,10 +72,10 @@ type CASBackendLimits struct {
 }
 
 type CASBackendOpts struct {
-	OrgID                             uuid.UUID
-	Location, SecretName, Description string
-	Provider                          CASBackendProvider
-	Default                           bool
+	OrgID                                   uuid.UUID
+	Location, SecretName, Description, Name string
+	Provider                                CASBackendProvider
+	Default                                 bool
 }
 
 type CASBackendCreateOpts struct {
@@ -192,6 +193,7 @@ func (uc *CASBackendUseCase) CreateInlineFallbackBackend(ctx context.Context, or
 	return uc.repo.Create(ctx, &CASBackendCreateOpts{
 		Fallback: true,
 		CASBackendOpts: &CASBackendOpts{
+			Name:     "default-inline",
 			Provider: CASBackendInline, Default: true,
 			Description: "Embed artifacts content in the attestation (fallback)",
 			OrgID:       orgUUID,
@@ -217,10 +219,15 @@ func (uc *CASBackendUseCase) defaultFallbackBackend(ctx context.Context, orgID s
 	return uc.repo.Update(ctx, &CASBackendUpdateOpts{ID: backend.ID, CASBackendOpts: &CASBackendOpts{Default: true}})
 }
 
-func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, location, description string, provider CASBackendProvider, creds any, defaultB bool) (*CASBackend, error) {
+func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name, location, description string, provider CASBackendProvider, creds any, defaultB bool) (*CASBackend, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
+	}
+
+	// validate format of the name and the project
+	if err := ValidateIsDNS1123(name); err != nil {
+		return nil, NewErrValidation(err)
 	}
 
 	secretName, err := uc.credsRW.SaveCredentials(ctx, orgID, creds)
@@ -228,13 +235,23 @@ func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, location, descri
 		return nil, fmt.Errorf("storing the credentials: %w", err)
 	}
 
-	return uc.repo.Create(ctx, &CASBackendCreateOpts{
+	backend, err := uc.repo.Create(ctx, &CASBackendCreateOpts{
 		CASBackendOpts: &CASBackendOpts{
 			Location: location, SecretName: secretName, Provider: provider, Default: defaultB,
 			Description: description,
 			OrgID:       orgUUID,
+			Name:        name,
 		},
 	})
+
+	if err != nil {
+		if errors.Is(err, ErrAlreadyExists) {
+			return nil, NewErrValidationStr("name already taken")
+		}
+		return nil, fmt.Errorf("failed to create CAS backend: %w", err)
+	}
+
+	return backend, nil
 }
 
 // Update will update credentials, description or default status

@@ -35,6 +35,9 @@ func newCASBackendAddAzureBlobStorageCmd() *cobra.Command {
 			isDefault, err := cmd.Flags().GetBool("default")
 			cobra.CheckErr(err)
 
+			name, err := cmd.Flags().GetString("name")
+			cobra.CheckErr(err)
+
 			description, err := cmd.Flags().GetString("description")
 			cobra.CheckErr(err)
 
@@ -48,6 +51,7 @@ func newCASBackendAddAzureBlobStorageCmd() *cobra.Command {
 			}
 
 			opts := &action.NewCASBackendAddOpts{
+				Name:        name,
 				Location:    fmt.Sprintf("%s/%s", storageAccountName, container),
 				Provider:    azureblob.ProviderID,
 				Description: description,

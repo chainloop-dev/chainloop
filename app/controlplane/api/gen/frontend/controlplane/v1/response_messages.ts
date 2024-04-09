@@ -273,6 +273,7 @@ export interface OrgItem {
 
 export interface CASBackendItem {
   id: string;
+  name: string;
   /** e.g. myregistry.io/myrepo s3 bucket and so on */
   location: string;
   description: string;
@@ -1841,6 +1842,7 @@ export const OrgItem = {
 function createBaseCASBackendItem(): CASBackendItem {
   return {
     id: "",
+    name: "",
     location: "",
     description: "",
     createdAt: undefined,
@@ -1857,6 +1859,9 @@ export const CASBackendItem = {
   encode(message: CASBackendItem, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.id !== "") {
       writer.uint32(10).string(message.id);
+    }
+    if (message.name !== "") {
+      writer.uint32(90).string(message.name);
     }
     if (message.location !== "") {
       writer.uint32(18).string(message.location);
@@ -1901,6 +1906,13 @@ export const CASBackendItem = {
           }
 
           message.id = reader.string();
+          continue;
+        case 11:
+          if (tag !== 90) {
+            break;
+          }
+
+          message.name = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
@@ -1977,6 +1989,7 @@ export const CASBackendItem = {
   fromJSON(object: any): CASBackendItem {
     return {
       id: isSet(object.id) ? String(object.id) : "",
+      name: isSet(object.name) ? String(object.name) : "",
       location: isSet(object.location) ? String(object.location) : "",
       description: isSet(object.description) ? String(object.description) : "",
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
@@ -1994,6 +2007,7 @@ export const CASBackendItem = {
   toJSON(message: CASBackendItem): unknown {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
+    message.name !== undefined && (obj.name = message.name);
     message.location !== undefined && (obj.location = message.location);
     message.description !== undefined && (obj.description = message.description);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
@@ -2015,6 +2029,7 @@ export const CASBackendItem = {
   fromPartial<I extends Exact<DeepPartial<CASBackendItem>, I>>(object: I): CASBackendItem {
     const message = createBaseCASBackendItem();
     message.id = object.id ?? "";
+    message.name = object.name ?? "";
     message.location = object.location ?? "";
     message.description = object.description ?? "";
     message.createdAt = object.createdAt ?? undefined;

@@ -102,6 +102,7 @@ func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateO
 
 	// 2 - create the new backend and set it as default if needed
 	backend, err := tx.CASBackend.Create().
+		SetName(opts.Name).
 		SetOrganizationID(opts.OrgID).
 		SetLocation(opts.Location).
 		SetDescription(opts.Description).
@@ -111,6 +112,10 @@ func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateO
 		SetSecretName(opts.SecretName).
 		Save(ctx)
 	if err != nil {
+		if ent.IsConstraintError(err) {
+			return nil, biz.ErrAlreadyExists
+		}
+
 		return nil, fmt.Errorf("failed to create backend: %w", err)
 	}
 
@@ -227,6 +232,7 @@ func entCASBackendToBiz(backend *ent.CASBackend) *biz.CASBackend {
 
 	r := &biz.CASBackend{
 		ID:               backend.ID,
+		Name:             backend.Name,
 		Location:         backend.Location,
 		Description:      backend.Description,
 		SecretName:       backend.SecretName,

@@ -22,6 +22,7 @@ import (
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/google/uuid"
 )
@@ -37,6 +38,7 @@ func (CASBackend) Fields() []ent.Field {
 		// NOTE: neither the location nor the provider can be updated
 		// CAS backend location, i.e S3 bucket name, OCI repository name
 		field.String("location").Immutable(),
+		field.String("name").Immutable(),
 		field.Enum("provider").GoType(biz.CASBackendProvider("")).Immutable(),
 		field.String("description").Optional(),
 		field.String("secret_name"),
@@ -61,5 +63,14 @@ func (CASBackend) Edges() []ent.Edge {
 		edge.From("organization", Organization.Type).Ref("cas_backends").Unique().Required(),
 		// WorkflowRuns might be associated with multiple CASBackends
 		edge.From("workflow_run", WorkflowRun.Type).Ref("cas_backends"),
+	}
+}
+
+func (CASBackend) Indexes() []ent.Index {
+	return []ent.Index{
+		// names are unique within a organization and affects only to non-deleted items
+		index.Fields("name").Edges("organization").Unique().Annotations(
+			entsql.IndexWhere("deleted_at IS NULL"),
+		),
 	}
 }
