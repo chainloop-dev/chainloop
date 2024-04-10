@@ -339,16 +339,16 @@ func (s *casMappingIntegrationSuite) SetupTest() {
 	// Create casBackend in the database
 	s.org1, err = s.Organization.Create(ctx, "testing-org-1-with-one0backend")
 	assert.NoError(err)
-	s.casBackend1, err = s.CASBackend.Create(ctx, s.org1.ID, "my-location", "backend 1 description", backendType, nil, true)
+	s.casBackend1, err = s.CASBackend.Create(ctx, s.org1.ID, randomName(), "my-location", "backend 1 description", backendType, nil, true)
 	assert.NoError(err)
 	s.org2, err = s.Organization.Create(ctx, "testing-org-2")
 	assert.NoError(err)
-	s.casBackend2, err = s.CASBackend.Create(ctx, s.org2.ID, "my-location", "backend 1 description", backendType, nil, true)
+	s.casBackend2, err = s.CASBackend.Create(ctx, s.org2.ID, randomName(), "my-location", "backend 1 description", backendType, nil, true)
 	assert.NoError(err)
 	// Create casBackend associated with an org which users are not member of
 	s.orgNoUsers, err = s.Organization.Create(ctx, "org-without-users")
 	assert.NoError(err)
-	s.casBackend3, err = s.CASBackend.Create(ctx, s.orgNoUsers.ID, "my-location", "backend 1 description", backendType, nil, true)
+	s.casBackend3, err = s.CASBackend.Create(ctx, s.orgNoUsers.ID, randomName(), "my-location", "backend 1 description", backendType, nil, true)
 	assert.NoError(err)
 
 	// Create workflowRun in the database

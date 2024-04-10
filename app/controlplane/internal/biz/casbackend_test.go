@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -126,19 +126,19 @@ func (s *casBackendTestSuite) TestPerformValidation() {
 	t := s.T()
 	validRepo := &biz.CASBackend{ID: s.validUUID, ValidationStatus: biz.CASBackendValidationOK, Provider: backendType}
 
-	t.Run("invalid uuid", func(t *testing.T) {
+	t.Run("invalid uuid", func(_ *testing.T) {
 		err := s.useCase.PerformValidation(context.Background(), s.invalidUUID)
 		assert.True(biz.IsErrInvalidUUID(err))
 	})
 
-	t.Run("not found", func(t *testing.T) {
+	t.Run("not found", func(_ *testing.T) {
 		s.repo.On("FindByID", mock.Anything, s.validUUID).Return(nil, nil)
 		err := s.useCase.PerformValidation(context.Background(), s.validUUID.String())
 		assert.True(biz.IsNotFound(err))
 		s.resetMock()
 	})
 
-	t.Run("proper provider credentials missing, set validation status => invalid", func(t *testing.T) {
+	t.Run("proper provider credentials missing, set validation status => invalid", func(_ *testing.T) {
 		s.repo.On("FindByID", mock.Anything, s.validUUID).Return(validRepo, nil)
 		s.repo.On("UpdateValidationStatus", mock.Anything, s.validUUID, biz.CASBackendValidationFailed).Return(nil)
 
@@ -148,7 +148,7 @@ func (s *casBackendTestSuite) TestPerformValidation() {
 		s.resetMock()
 	})
 
-	t.Run("invalid credentials, set validation status => invalid", func(t *testing.T) {
+	t.Run("invalid credentials, set validation status => invalid", func(_ *testing.T) {
 		s.repo.On("FindByID", mock.Anything, s.validUUID).Return(validRepo, nil)
 		s.repo.On("UpdateValidationStatus", mock.Anything, s.validUUID, biz.CASBackendValidationFailed).Return(nil)
 		s.credsRW.On("ReadCredentials", mock.Anything, mock.Anything, mock.Anything).Return(nil)
@@ -159,7 +159,7 @@ func (s *casBackendTestSuite) TestPerformValidation() {
 		s.resetMock()
 	})
 
-	t.Run("valid credentials, set validation status => ok", func(t *testing.T) {
+	t.Run("valid credentials, set validation status => ok", func(_ *testing.T) {
 		s.repo.On("FindByID", mock.Anything, s.validUUID).Return(validRepo, nil)
 		s.repo.On("UpdateValidationStatus", mock.Anything, s.validUUID, biz.CASBackendValidationOK).Return(nil)
 		s.credsRW.On("ReadCredentials", mock.Anything, mock.Anything, mock.Anything).Return(nil)
