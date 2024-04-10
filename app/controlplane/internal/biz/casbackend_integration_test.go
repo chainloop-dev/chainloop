@@ -36,6 +36,61 @@ const location = "my-location"
 const description = "my-description"
 const backendType = oci.ProviderID
 
+func (s *CASBackendIntegrationTestSuite) TestUniqueNameDuringCreate() {
+	orgID, err := uuid.Parse(s.orgOne.ID)
+	require.NoError(s.T(), err)
+
+	testCases := []struct {
+		name       string
+		opts       *biz.CASBackendOpts
+		wantErrMsg string
+	}{
+		{
+			name:       "org missing",
+			opts:       &biz.CASBackendOpts{Name: "name"},
+			wantErrMsg: "required",
+		},
+		{
+			name:       "name missing",
+			opts:       &biz.CASBackendOpts{OrgID: orgID},
+			wantErrMsg: "required",
+		},
+		{
+			name:       "invalid name",
+			opts:       &biz.CASBackendOpts{OrgID: orgID, Name: "this/not/valid"},
+			wantErrMsg: "RFC 1123",
+		},
+		{
+			name:       "another invalid name",
+			opts:       &biz.CASBackendOpts{OrgID: orgID, Name: "this-not Valid"},
+			wantErrMsg: "RFC 1123",
+		},
+		{
+			name: "can create it with just the name and the org",
+			opts: &biz.CASBackendOpts{OrgID: orgID, Name: "name"},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			orgID := tc.opts.OrgID.String()
+			if uuid.Nil == tc.opts.OrgID {
+				orgID = ""
+			}
+
+			got, err := s.CASBackend.Create(context.Background(), orgID, tc.opts.Name, location, description, backendType, nil, true)
+			if tc.wantErrMsg != "" {
+				s.ErrorContains(err, tc.wantErrMsg)
+				return
+			}
+
+			require.NoError(s.T(), err)
+			s.NotEmpty(got.ID)
+			s.Equal(tc.opts.Name, got.Name)
+		})
+	}
+}
+
 func (s *CASBackendIntegrationTestSuite) TestCreate() {
 	assert := assert.New(s.T())
 	orgID := s.orgOne.ID

@@ -220,6 +220,10 @@ func (uc *CASBackendUseCase) defaultFallbackBackend(ctx context.Context, orgID s
 }
 
 func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name, location, description string, provider CASBackendProvider, creds any, defaultB bool) (*CASBackend, error) {
+	if orgID == "" || name == "" {
+		return nil, NewErrValidationStr("organization and name are required")
+	}
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
