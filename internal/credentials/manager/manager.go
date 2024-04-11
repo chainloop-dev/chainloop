@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/bufbuild/protovalidate-go"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	api "github.com/chainloop-dev/chainloop/internal/credentials/api/credentials/v1"
 	"github.com/chainloop-dev/chainloop/internal/credentials/aws"
@@ -27,6 +28,7 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/credentials/gcp"
 	"github.com/chainloop-dev/chainloop/internal/credentials/vault"
 	"github.com/go-kratos/kratos/v2/log"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 func NewFromConfig(conf *api.Credentials, role credentials.Role, l log.Logger) (credentials.ReaderWriter, error) {
@@ -53,8 +55,17 @@ func NewFromConfig(conf *api.Credentials, role credentials.Role, l log.Logger) (
 	return nil, errors.New("no credentials manager configuration found")
 }
 
+func validateConfig(msg protoreflect.ProtoMessage) error {
+	validator, err := protovalidate.New()
+	if err != nil {
+		return fmt.Errorf("creating validator: %w", err)
+	}
+
+	return validator.Validate(msg)
+}
+
 func newAzureKBManager(conf *api.Credentials_AzureKeyVault, prefix string, r credentials.Role, l log.Logger) (*azurekv.Manager, error) {
-	if err := conf.ValidateAll(); err != nil {
+	if err := validateConfig(conf); err != nil {
 		return nil, fmt.Errorf("uncompleted configuration for Azure Key Vault: %w", err)
 	}
 
@@ -87,7 +98,7 @@ func newAzureKBManager(conf *api.Credentials_AzureKeyVault, prefix string, r cre
 }
 
 func newAWSCredentialsManager(conf *api.Credentials_AWSSecretManager, prefix string, r credentials.Role, l log.Logger) (*aws.Manager, error) {
-	if err := conf.ValidateAll(); err != nil {
+	if err := validateConfig(conf); err != nil {
 		return nil, fmt.Errorf("uncompleted configuration for AWS secret manager: %w", err)
 	}
 
@@ -108,7 +119,7 @@ func newAWSCredentialsManager(conf *api.Credentials_AWSSecretManager, prefix str
 }
 
 func newVaultCredentialsManager(conf *api.Credentials_Vault, prefix string, r credentials.Role, l log.Logger) (*vault.Manager, error) {
-	if err := conf.ValidateAll(); err != nil {
+	if err := validateConfig(conf); err != nil {
 		return nil, fmt.Errorf("uncompleted configuration for Vault secret manager: %w", err)
 	}
 
@@ -128,7 +139,7 @@ func newVaultCredentialsManager(conf *api.Credentials_Vault, prefix string, r cr
 }
 
 func newGCPCredentialsManager(conf *api.Credentials_GCPSecretManager, prefix string, r credentials.Role, l log.Logger) (*gcp.Manager, error) {
-	if err := conf.ValidateAll(); err != nil {
+	if err := validateConfig(conf); err != nil {
 		return nil, fmt.Errorf("uncompleted configuration for GCP secret manager: %w", err)
 	}
 
