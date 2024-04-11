@@ -299,12 +299,12 @@ func (atq *APITokenQuery) WithOrganization(opts ...func(*OrganizationQuery)) *AP
 // Example:
 //
 //	var v []struct {
-//		Description string `json:"description,omitempty"`
+//		Name string `json:"name,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.APIToken.Query().
-//		GroupBy(apitoken.FieldDescription).
+//		GroupBy(apitoken.FieldName).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (atq *APITokenQuery) GroupBy(field string, fields ...string) *APITokenGroupBy {
@@ -322,11 +322,11 @@ func (atq *APITokenQuery) GroupBy(field string, fields ...string) *APITokenGroup
 // Example:
 //
 //	var v []struct {
-//		Description string `json:"description,omitempty"`
+//		Name string `json:"name,omitempty"`
 //	}
 //
 //	client.APIToken.Query().
-//		Select(apitoken.FieldDescription).
+//		Select(apitoken.FieldName).
 //		Scan(ctx, &v)
 func (atq *APITokenQuery) Select(fields ...string) *APITokenSelect {
 	atq.ctx.Fields = append(atq.ctx.Fields, fields...)

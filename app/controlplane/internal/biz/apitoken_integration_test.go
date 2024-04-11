@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,17 +32,21 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+func randomName() string {
+	return fmt.Sprintf("name-%s", uuid.New().String())
+}
+
 func (s *apiTokenTestSuite) TestCreate() {
 	ctx := context.Background()
-	s.T().Run("invalid org ID", func(t *testing.T) {
-		token, err := s.APIToken.Create(ctx, nil, nil, "deadbeef")
+	s.Run("invalid org ID", func() {
+		token, err := s.APIToken.Create(ctx, randomName(), nil, nil, "deadbeef")
 		s.Error(err)
 		s.True(biz.IsErrInvalidUUID(err))
 		s.Nil(token)
 	})
 
-	s.T().Run("happy path without expiration nor description", func(t *testing.T) {
-		token, err := s.APIToken.Create(ctx, nil, nil, s.org.ID)
+	s.Run("happy path without expiration nor description", func() {
+		token, err := s.APIToken.Create(ctx, randomName(), nil, nil, s.org.ID)
 		s.NoError(err)
 		s.NotNil(token.ID)
 		s.Equal(s.org.ID, token.OrganizationID.String())
@@ -52,19 +56,67 @@ func (s *apiTokenTestSuite) TestCreate() {
 		s.NotNil(token.JWT)
 	})
 
-	s.T().Run("happy path with description and expiration", func(t *testing.T) {
-		token, err := s.APIToken.Create(ctx, toPtrS("tokenStr"), toPtrDuration(24*time.Hour), s.org.ID)
+	s.Run("happy path with description and expiration", func() {
+		token, err := s.APIToken.Create(ctx, randomName(), toPtrS("tokenStr"), toPtrDuration(24*time.Hour), s.org.ID)
 		s.NoError(err)
 		s.Equal(s.org.ID, token.OrganizationID.String())
 		s.Equal("tokenStr", token.Description)
 		s.NotNil(token.ExpiresAt)
 		s.Nil(token.RevokedAt)
 	})
+
+	s.Run("testing name uniqueness", func() {
+		testCases := []struct {
+			name       string
+			tokenName  string
+			wantErrMsg string
+		}{
+			{
+				name:       "name missing",
+				tokenName:  "",
+				wantErrMsg: "required",
+			},
+			{
+				name:       "invalid name",
+				tokenName:  "this/not/valid",
+				wantErrMsg: "RFC 1123",
+			},
+			{
+				name:       "another invalid name",
+				tokenName:  "this-not Valid",
+				wantErrMsg: "RFC 1123",
+			},
+			{
+				name:      "can create it with just the name",
+				tokenName: "my-name",
+			},
+			{
+				name:       "handle duplicates",
+				tokenName:  "my-name",
+				wantErrMsg: "name already taken",
+			},
+		}
+
+		for _, tc := range testCases {
+			s.Run(tc.name, func() {
+				token, err := s.APIToken.Create(ctx, tc.tokenName, nil, nil, s.org.ID)
+				if tc.wantErrMsg != "" {
+					s.Error(err)
+					s.Contains(err.Error(), tc.wantErrMsg)
+					s.Nil(token)
+					return
+				}
+
+				s.NoError(err)
+				s.NotNil(token)
+			})
+		}
+	})
 }
 
 func (s *apiTokenTestSuite) TestAuthzPolicies() {
 	// a new token has a new set of policies associated
-	token, err := s.APIToken.Create(context.Background(), nil, nil, s.org.ID)
+	token, err := s.APIToken.Create(context.Background(), randomName(), nil, nil, s.org.ID)
 	require.NoError(s.T(), err)
 
 	subject := (&authz.SubjectAPIToken{ID: token.ID.String()}).String()
@@ -82,37 +134,37 @@ func (s *apiTokenTestSuite) TestAuthzPolicies() {
 func (s *apiTokenTestSuite) TestRevoke() {
 	ctx := context.Background()
 
-	s.T().Run("invalid org ID", func(t *testing.T) {
+	s.Run("invalid org ID", func() {
 		err := s.APIToken.Revoke(ctx, "deadbeef", s.t1.ID.String())
 		s.Error(err)
 		s.True(biz.IsErrInvalidUUID(err))
 	})
 
-	s.T().Run("invalid token ID", func(t *testing.T) {
+	s.Run("invalid token ID", func() {
 		err := s.APIToken.Revoke(ctx, s.org.ID, "deadbeef")
 		s.Error(err)
 		s.True(biz.IsErrInvalidUUID(err))
 	})
 
-	s.T().Run("token not found in org", func(t *testing.T) {
+	s.Run("token not found in org", func() {
 		err := s.APIToken.Revoke(ctx, s.org.ID, s.t3.ID.String())
 		s.Error(err)
 		s.True(biz.IsNotFound(err))
 	})
 
-	s.T().Run("the revoked token also get its policies cleared", func(t *testing.T) {
+	s.Run("the revoked token also get its policies cleared", func() {
 		sub := (&authz.SubjectAPIToken{ID: s.t2.ID.String()}).String()
 		// It has the default policies
 		gotPolicies := s.Enforcer.GetFilteredPolicy(0, sub)
-		assert.Len(t, gotPolicies, len(s.APIToken.DefaultAuthzPolicies))
+		s.Len(gotPolicies, len(s.APIToken.DefaultAuthzPolicies))
 		err := s.APIToken.Revoke(ctx, s.org.ID, s.t2.ID.String())
 		s.NoError(err)
 		// once revoked, the policies are cleared
 		gotPolicies = s.Enforcer.GetFilteredPolicy(0, sub)
-		assert.Len(t, gotPolicies, 0)
+		s.Len(gotPolicies, 0)
 	})
 
-	s.T().Run("token can be revoked once", func(t *testing.T) {
+	s.Run("token can be revoked once", func() {
 		err := s.APIToken.Revoke(ctx, s.org.ID, s.t1.ID.String())
 		s.NoError(err)
 		tokens, err := s.APIToken.List(ctx, s.org.ID, true)
@@ -131,20 +183,20 @@ func (s *apiTokenTestSuite) TestRevoke() {
 func (s *apiTokenTestSuite) TestFindByID() {
 	ctx := context.Background()
 
-	s.T().Run("invalid ID", func(t *testing.T) {
+	s.Run("invalid ID", func() {
 		_, err := s.APIToken.FindByID(ctx, "deadbeef")
 		s.Error(err)
 		s.True(biz.IsErrInvalidUUID(err))
 	})
 
-	s.T().Run("token not found", func(t *testing.T) {
+	s.Run("token not found", func() {
 		token, err := s.APIToken.FindByID(ctx, uuid.NewString())
 		s.Error(err)
 		s.True(biz.IsNotFound(err))
 		s.Nil(token)
 	})
 
-	s.T().Run("token is found", func(t *testing.T) {
+	s.Run("token is found", func() {
 		token, err := s.APIToken.FindByID(ctx, s.t1.ID.String())
 		s.NoError(err)
 		s.Equal(s.t1.ID, token.ID)
@@ -153,14 +205,14 @@ func (s *apiTokenTestSuite) TestFindByID() {
 
 func (s *apiTokenTestSuite) TestList() {
 	ctx := context.Background()
-	s.T().Run("invalid org ID", func(t *testing.T) {
+	s.Run("invalid org ID", func() {
 		tokens, err := s.APIToken.List(ctx, "deadbeef", false)
 		s.Error(err)
 		s.True(biz.IsErrInvalidUUID(err))
 		s.Nil(tokens)
 	})
 
-	s.T().Run("returns empty list", func(t *testing.T) {
+	s.Run("returns empty list", func() {
 		emptyOrg, err := s.Organization.CreateWithRandomName(ctx)
 		require.NoError(s.T(), err)
 		tokens, err := s.APIToken.List(ctx, emptyOrg.ID, false)
@@ -168,13 +220,16 @@ func (s *apiTokenTestSuite) TestList() {
 		s.Len(tokens, 0)
 	})
 
-	s.T().Run("returns the tokens for that org", func(t *testing.T) {
+	s.Run("returns the tokens for that org", func() {
 		var err error
 		tokens, err := s.APIToken.List(ctx, s.org.ID, false)
 		s.NoError(err)
 		require.Len(s.T(), tokens, 2)
 		s.Equal(s.t1.ID, tokens[0].ID)
 		s.Equal(s.t2.ID, tokens[1].ID)
+		// It has a name set
+		s.NotEmpty(tokens[1].Name)
+		s.Equal(s.t2.Name, tokens[1].Name)
 
 		tokens, err = s.APIToken.List(ctx, s.org2.ID, false)
 		s.NoError(err)
@@ -182,7 +237,7 @@ func (s *apiTokenTestSuite) TestList() {
 		s.Equal(s.t3.ID, tokens[0].ID)
 	})
 
-	s.T().Run("doesn't return revoked by default", func(t *testing.T) {
+	s.Run("doesn't return revoked by default", func() {
 		// revoke one token
 		err := s.APIToken.Revoke(ctx, s.org.ID, s.t1.ID.String())
 		require.NoError(s.T(), err)
@@ -192,7 +247,7 @@ func (s *apiTokenTestSuite) TestList() {
 		s.Equal(s.t2.ID, tokens[0].ID)
 	})
 
-	s.T().Run("doesn't return revoked unless requested", func(t *testing.T) {
+	s.Run("doesn't return revoked unless requested", func() {
 		// revoke one token
 		tokens, err := s.APIToken.List(ctx, s.org.ID, true)
 		s.NoError(err)
@@ -203,7 +258,7 @@ func (s *apiTokenTestSuite) TestList() {
 }
 
 func (s *apiTokenTestSuite) TestGeneratedJWT() {
-	token, err := s.APIToken.Create(context.Background(), nil, toPtrDuration(24*time.Hour), s.org.ID)
+	token, err := s.APIToken.Create(context.Background(), randomName(), nil, toPtrDuration(24*time.Hour), s.org.ID)
 	s.NoError(err)
 	require.NotNil(s.T(), token)
 
@@ -246,11 +301,11 @@ func (s *apiTokenTestSuite) SetupTest() {
 	assert.NoError(err)
 
 	// Create 2 tokens for org 1
-	s.t1, err = s.APIToken.Create(ctx, nil, nil, s.org.ID)
+	s.t1, err = s.APIToken.Create(ctx, randomName(), nil, nil, s.org.ID)
 	require.NoError(s.T(), err)
-	s.t2, err = s.APIToken.Create(ctx, nil, nil, s.org.ID)
+	s.t2, err = s.APIToken.Create(ctx, randomName(), nil, nil, s.org.ID)
 	require.NoError(s.T(), err)
 	// and 1 token for org 2
-	s.t3, err = s.APIToken.Create(ctx, nil, nil, s.org2.ID)
+	s.t3, err = s.APIToken.Create(ctx, randomName(), nil, nil, s.org2.ID)
 	require.NoError(s.T(), err)
 }

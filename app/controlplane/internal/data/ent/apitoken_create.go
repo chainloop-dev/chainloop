@@ -22,6 +22,12 @@ type APITokenCreate struct {
 	hooks    []Hook
 }
 
+// SetName sets the "name" field.
+func (atc *APITokenCreate) SetName(s string) *APITokenCreate {
+	atc.mutation.SetName(s)
+	return atc
+}
+
 // SetDescription sets the "description" field.
 func (atc *APITokenCreate) SetDescription(s string) *APITokenCreate {
 	atc.mutation.SetDescription(s)
@@ -150,6 +156,9 @@ func (atc *APITokenCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (atc *APITokenCreate) check() error {
+	if _, ok := atc.mutation.Name(); !ok {
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "APIToken.name"`)}
+	}
 	if _, ok := atc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "APIToken.created_at"`)}
 	}
@@ -193,6 +202,10 @@ func (atc *APITokenCreate) createSpec() (*APIToken, *sqlgraph.CreateSpec) {
 	if id, ok := atc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
+	}
+	if value, ok := atc.mutation.Name(); ok {
+		_spec.SetField(apitoken.FieldName, field.TypeString, value)
+		_node.Name = value
 	}
 	if value, ok := atc.mutation.Description(); ok {
 		_spec.SetField(apitoken.FieldDescription, field.TypeString, value)

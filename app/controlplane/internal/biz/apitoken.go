@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package biz
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -32,6 +33,7 @@ import (
 // API Token is used for unattended access to the control plane API.
 type APIToken struct {
 	ID          uuid.UUID
+	Name        string
 	Description string
 	// This is the JWT value returned only during creation
 	JWT string
@@ -45,7 +47,7 @@ type APIToken struct {
 }
 
 type APITokenRepo interface {
-	Create(ctx context.Context, description *string, expiresAt *time.Time, organizationID uuid.UUID) (*APIToken, error)
+	Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID uuid.UUID) (*APIToken, error)
 	// List all the tokens optionally filtering it by organization and including revoked tokens
 	List(ctx context.Context, orgID *uuid.UUID, includeRevoked bool) ([]*APIToken, error)
 	Revoke(ctx context.Context, orgID, ID uuid.UUID) error
@@ -93,10 +95,19 @@ func NewAPITokenUseCase(apiTokenRepo APITokenRepo, conf *conf.Auth, authzE *auth
 }
 
 // expires in is a string that can be parsed by time.ParseDuration
-func (uc *APITokenUseCase) Create(ctx context.Context, description *string, expiresIn *time.Duration, orgID string) (*APIToken, error) {
+func (uc *APITokenUseCase) Create(ctx context.Context, name string, description *string, expiresIn *time.Duration, orgID string) (*APIToken, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
+	}
+
+	if name == "" {
+		return nil, NewErrValidationStr("name is required")
+	}
+
+	// validate format of the name and the project
+	if err := ValidateIsDNS1123(name); err != nil {
+		return nil, NewErrValidation(err)
 	}
 
 	// If expiration is provided we store it
@@ -109,8 +120,11 @@ func (uc *APITokenUseCase) Create(ctx context.Context, description *string, expi
 
 	// NOTE: the expiration time is stored just for reference, it's also encoded in the JWT
 	// We store it since Chainloop will not have access to the JWT to check the expiration once created
-	token, err := uc.apiTokenRepo.Create(ctx, description, expiresAt, orgUUID)
+	token, err := uc.apiTokenRepo.Create(ctx, name, description, expiresAt, orgUUID)
 	if err != nil {
+		if errors.Is(err, ErrAlreadyExists) {
+			return nil, NewErrValidationStr("name already taken")
+		}
 		return nil, fmt.Errorf("storing token: %w", err)
 	}
 

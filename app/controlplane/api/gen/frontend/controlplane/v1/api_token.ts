@@ -8,6 +8,7 @@ import { Timestamp } from "../../google/protobuf/timestamp";
 export const protobufPackage = "controlplane.v1";
 
 export interface APITokenServiceCreateRequest {
+  name: string;
   description?: string | undefined;
   expiresIn?: Duration | undefined;
 }
@@ -38,6 +39,7 @@ export interface APITokenServiceListResponse {
 
 export interface APITokenItem {
   id: string;
+  name: string;
   description: string;
   organizationId: string;
   createdAt?: Date;
@@ -46,11 +48,14 @@ export interface APITokenItem {
 }
 
 function createBaseAPITokenServiceCreateRequest(): APITokenServiceCreateRequest {
-  return { description: undefined, expiresIn: undefined };
+  return { name: "", description: undefined, expiresIn: undefined };
 }
 
 export const APITokenServiceCreateRequest = {
   encode(message: APITokenServiceCreateRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(26).string(message.name);
+    }
     if (message.description !== undefined) {
       writer.uint32(10).string(message.description);
     }
@@ -67,6 +72,13 @@ export const APITokenServiceCreateRequest = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
         case 1:
           if (tag !== 10) {
             break;
@@ -92,6 +104,7 @@ export const APITokenServiceCreateRequest = {
 
   fromJSON(object: any): APITokenServiceCreateRequest {
     return {
+      name: isSet(object.name) ? String(object.name) : "",
       description: isSet(object.description) ? String(object.description) : undefined,
       expiresIn: isSet(object.expiresIn) ? Duration.fromJSON(object.expiresIn) : undefined,
     };
@@ -99,6 +112,7 @@ export const APITokenServiceCreateRequest = {
 
   toJSON(message: APITokenServiceCreateRequest): unknown {
     const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
     message.description !== undefined && (obj.description = message.description);
     message.expiresIn !== undefined &&
       (obj.expiresIn = message.expiresIn ? Duration.toJSON(message.expiresIn) : undefined);
@@ -111,6 +125,7 @@ export const APITokenServiceCreateRequest = {
 
   fromPartial<I extends Exact<DeepPartial<APITokenServiceCreateRequest>, I>>(object: I): APITokenServiceCreateRequest {
     const message = createBaseAPITokenServiceCreateRequest();
+    message.name = object.name ?? "";
     message.description = object.description ?? undefined;
     message.expiresIn = (object.expiresIn !== undefined && object.expiresIn !== null)
       ? Duration.fromPartial(object.expiresIn)
@@ -478,6 +493,7 @@ export const APITokenServiceListResponse = {
 function createBaseAPITokenItem(): APITokenItem {
   return {
     id: "",
+    name: "",
     description: "",
     organizationId: "",
     createdAt: undefined,
@@ -490,6 +506,9 @@ export const APITokenItem = {
   encode(message: APITokenItem, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.id !== "") {
       writer.uint32(10).string(message.id);
+    }
+    if (message.name !== "") {
+      writer.uint32(58).string(message.name);
     }
     if (message.description !== "") {
       writer.uint32(18).string(message.description);
@@ -522,6 +541,13 @@ export const APITokenItem = {
           }
 
           message.id = reader.string();
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.name = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
@@ -570,6 +596,7 @@ export const APITokenItem = {
   fromJSON(object: any): APITokenItem {
     return {
       id: isSet(object.id) ? String(object.id) : "",
+      name: isSet(object.name) ? String(object.name) : "",
       description: isSet(object.description) ? String(object.description) : "",
       organizationId: isSet(object.organizationId) ? String(object.organizationId) : "",
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
@@ -581,6 +608,7 @@ export const APITokenItem = {
   toJSON(message: APITokenItem): unknown {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
+    message.name !== undefined && (obj.name = message.name);
     message.description !== undefined && (obj.description = message.description);
     message.organizationId !== undefined && (obj.organizationId = message.organizationId);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
@@ -596,6 +624,7 @@ export const APITokenItem = {
   fromPartial<I extends Exact<DeepPartial<APITokenItem>, I>>(object: I): APITokenItem {
     const message = createBaseAPITokenItem();
     message.id = object.id ?? "";
+    message.name = object.name ?? "";
     message.description = object.description ?? "";
     message.organizationId = object.organizationId ?? "";
     message.createdAt = object.createdAt ?? undefined;

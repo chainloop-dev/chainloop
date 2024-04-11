@@ -65,6 +65,7 @@ type APITokenMutation struct {
 	op                  Op
 	typ                 string
 	id                  *uuid.UUID
+	name                *string
 	description         *string
 	created_at          *time.Time
 	expires_at          *time.Time
@@ -179,6 +180,42 @@ func (m *APITokenMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
+}
+
+// SetName sets the "name" field.
+func (m *APITokenMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *APITokenMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the APIToken entity.
+// If the APIToken object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APITokenMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *APITokenMutation) ResetName() {
+	m.name = nil
 }
 
 // SetDescription sets the "description" field.
@@ -460,7 +497,10 @@ func (m *APITokenMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *APITokenMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
+	if m.name != nil {
+		fields = append(fields, apitoken.FieldName)
+	}
 	if m.description != nil {
 		fields = append(fields, apitoken.FieldDescription)
 	}
@@ -484,6 +524,8 @@ func (m *APITokenMutation) Fields() []string {
 // schema.
 func (m *APITokenMutation) Field(name string) (ent.Value, bool) {
 	switch name {
+	case apitoken.FieldName:
+		return m.Name()
 	case apitoken.FieldDescription:
 		return m.Description()
 	case apitoken.FieldCreatedAt:
@@ -503,6 +545,8 @@ func (m *APITokenMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *APITokenMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
+	case apitoken.FieldName:
+		return m.OldName(ctx)
 	case apitoken.FieldDescription:
 		return m.OldDescription(ctx)
 	case apitoken.FieldCreatedAt:
@@ -522,6 +566,13 @@ func (m *APITokenMutation) OldField(ctx context.Context, name string) (ent.Value
 // type.
 func (m *APITokenMutation) SetField(name string, value ent.Value) error {
 	switch name {
+	case apitoken.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
 	case apitoken.FieldDescription:
 		v, ok := value.(string)
 		if !ok {
@@ -627,6 +678,9 @@ func (m *APITokenMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *APITokenMutation) ResetField(name string) error {
 	switch name {
+	case apitoken.FieldName:
+		m.ResetName()
+		return nil
 	case apitoken.FieldDescription:
 		m.ResetDescription()
 		return nil

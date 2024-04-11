@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,10 +33,10 @@ func NewAPITokenCreate(cfg *ActionsOpts) *APITokenCreate {
 	return &APITokenCreate{cfg}
 }
 
-func (action *APITokenCreate) Run(ctx context.Context, description string, expiresIn *time.Duration) (*APITokenItem, error) {
+func (action *APITokenCreate) Run(ctx context.Context, name, description string, expiresIn *time.Duration) (*APITokenItem, error) {
 	client := pb.NewAPITokenServiceClient(action.cfg.CPConnection)
 
-	req := &pb.APITokenServiceCreateRequest{Description: &description}
+	req := &pb.APITokenServiceCreateRequest{Name: name, Description: &description}
 	if expiresIn != nil {
 		req.ExpiresIn = durationpb.New(*expiresIn)
 	}
@@ -59,6 +59,7 @@ func (action *APITokenCreate) Run(ctx context.Context, description string, expir
 
 type APITokenItem struct {
 	ID          string `json:"id"`
+	Name        string `json:"name"`
 	Description string `json:"description"`
 	// JWT is returned only during the creation
 	JWT       string     `json:"jwt,omitempty"`
@@ -74,6 +75,7 @@ func pbAPITokenItemToAPITokenItem(p *pb.APITokenItem) *APITokenItem {
 
 	item := &APITokenItem{
 		ID:          p.Id,
+		Name:        p.Name,
 		Description: p.Description,
 		CreatedAt:   toTimePtr(p.CreatedAt.AsTime()),
 	}

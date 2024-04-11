@@ -50,7 +50,7 @@ func (s *APITokenService) Create(ctx context.Context, req *pb.APITokenServiceCre
 		*expiresIn = req.ExpiresIn.AsDuration()
 	}
 
-	token, err := s.APITokenUseCase.Create(ctx, req.Description, expiresIn, currentOrg.ID)
+	token, err := s.APITokenUseCase.Create(ctx, req.Name, req.Description, expiresIn, currentOrg.ID)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -97,7 +97,9 @@ func (s *APITokenService) Revoke(ctx context.Context, req *pb.APITokenServiceRev
 
 func apiTokenBizToPb(in *biz.APIToken) *pb.APITokenItem {
 	res := &pb.APITokenItem{
-		Id: in.ID.String(), Description: in.Description, OrganizationId: in.OrganizationID.String(),
+		Id:          in.ID.String(),
+		Name:        in.Name,
+		Description: in.Description, OrganizationId: in.OrganizationID.String(),
 		CreatedAt: timestamppb.New(*in.CreatedAt),
 	}
 

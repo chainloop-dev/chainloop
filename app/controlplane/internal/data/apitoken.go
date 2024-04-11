@@ -40,13 +40,18 @@ func NewAPITokenRepo(data *Data, logger log.Logger) biz.APITokenRepo {
 }
 
 // Persist the APIToken to the database.
-func (r *APITokenRepo) Create(ctx context.Context, description *string, expiresAt *time.Time, organizationID uuid.UUID) (*biz.APIToken, error) {
+func (r *APITokenRepo) Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID uuid.UUID) (*biz.APIToken, error) {
 	token, err := r.data.db.APIToken.Create().
+		SetName(name).
 		SetNillableDescription(description).
 		SetNillableExpiresAt(expiresAt).
 		SetOrganizationID(organizationID).
 		Save(ctx)
 	if err != nil {
+		if ent.IsConstraintError(err) {
+			return nil, biz.ErrAlreadyExists
+		}
+
 		return nil, fmt.Errorf("saving APIToken: %w", err)
 	}
 
@@ -107,6 +112,7 @@ func (r *APITokenRepo) Revoke(ctx context.Context, orgID, id uuid.UUID) error {
 func entAPITokenToBiz(t *ent.APIToken) *biz.APIToken {
 	return &biz.APIToken{
 		ID:             t.ID,
+		Name:           t.Name,
 		Description:    t.Description,
 		CreatedAt:      toTimePtr(t.CreatedAt),
 		ExpiresAt:      toTimePtr(t.ExpiresAt),
