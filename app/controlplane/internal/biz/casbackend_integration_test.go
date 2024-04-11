@@ -164,10 +164,6 @@ func (s *CASBackendIntegrationTestSuite) TestCreateOverride() {
 	assert.False(b1.Default)
 }
 
-func randomName() string {
-	return uuid.New().String()
-}
-
 func (s *CASBackendIntegrationTestSuite) TestUpdate() {
 	assert := assert.New(s.T())
 
