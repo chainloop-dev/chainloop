@@ -18,10 +18,8 @@ server:
 
 credentials_service:
   # we will check that we can read there
-  secret_prefix: chainloop-devel
   # Remember to run vault via docker compose up
   vault:
-    address: ${VAULT_ADDRESS:http://0.0.0.0:8200}
     token: ${VAULT_TOKEN:notasecret}
 
 auth:

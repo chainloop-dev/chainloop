@@ -20,6 +20,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/bufbuild/protovalidate-go"
 	"github.com/getsentry/sentry-go"
 	flag "github.com/spf13/pflag"
 
@@ -87,6 +88,16 @@ func main() {
 
 	var bc conf.Bootstrap
 	if err := c.Scan(&bc); err != nil {
+		panic(err)
+	}
+
+	// validate configuration
+	validator, err := protovalidate.New()
+	if err != nil {
+		panic(err)
+	}
+
+	if err := validator.Validate(&bc); err != nil {
 		panic(err)
 	}
 

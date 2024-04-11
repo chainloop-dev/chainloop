@@ -17,7 +17,7 @@ syntax = "proto3";
 
 import "credentials/v1/config.proto";
 import "google/protobuf/duration.proto";
-import "validate/validate.proto";
+import "buf/validate/validate.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf;conf";
 
@@ -45,7 +45,7 @@ message Bootstrap {
 
   message CASServer {
     // CAS server GRPC endpoint
-    Server.GRPC grpc = 1 [(validate.rules).message.required = true];
+    Server.GRPC grpc = 1 [(buf.validate.field).required = true];
     // insecure is used to connect to the CAS server in development
     bool insecure = 2;
     // CAS server external http(s) download endpoint
@@ -83,7 +83,7 @@ message Server {
   }
   message GRPC {
     string network = 1;
-    string addr = 2 [(validate.rules).string.min_len = 1];
+    string addr = 2 [(buf.validate.field).string.min_len = 1];
     google.protobuf.Duration timeout = 3;
     TLS tls_config = 4;
   }

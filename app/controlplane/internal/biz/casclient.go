@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+
+	"github.com/bufbuild/protovalidate-go"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
@@ -152,8 +154,12 @@ func (uc *CASClientUseCase) IsReady(ctx context.Context) (bool, error) {
 		return false, errors.New("missing CAS server configuration")
 	}
 
-	err := uc.casServerConf.ValidateAll()
+	v, err := protovalidate.New()
 	if err != nil {
+		return false, fmt.Errorf("failed to create validator: %w", err)
+	}
+
+	if err := v.Validate(uc.casServerConf); err != nil {
 		return false, fmt.Errorf("invalid CAS client configuration: %w", err)
 	}
 
