@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ func newWorkflowCreateCmd() *cobra.Command {
 			// If it's provided by the UUID we skip this
 			if contract != "" {
 				if !isValidUUID(contract) {
-					createResp, err := action.NewWorkflowContractCreate(actionOpts).Run(fmt.Sprintf("%s/%s", project, workflowName), nil, contract)
+					createResp, err := action.NewWorkflowContractCreate(actionOpts).Run(fmt.Sprintf("%s-%s", project, workflowName), nil, contract)
 					if err != nil {
 						return err
 					}
