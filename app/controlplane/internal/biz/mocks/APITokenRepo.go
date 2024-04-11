@@ -19,25 +19,25 @@ type APITokenRepo struct {
 	mock.Mock
 }
 
-// Create provides a mock function with given fields: ctx, description, expiresAt, organizationID
-func (_m *APITokenRepo) Create(ctx context.Context, description *string, expiresAt *time.Time, organizationID uuid.UUID) (*biz.APIToken, error) {
-	ret := _m.Called(ctx, description, expiresAt, organizationID)
+// Create provides a mock function with given fields: ctx, name, description, expiresAt, organizationID
+func (_m *APITokenRepo) Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID uuid.UUID) (*biz.APIToken, error) {
+	ret := _m.Called(ctx, name, description, expiresAt, organizationID)
 
 	var r0 *biz.APIToken
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, *string, *time.Time, uuid.UUID) (*biz.APIToken, error)); ok {
-		return rf(ctx, description, expiresAt, organizationID)
+	if rf, ok := ret.Get(0).(func(context.Context, string, *string, *time.Time, uuid.UUID) (*biz.APIToken, error)); ok {
+		return rf(ctx, name, description, expiresAt, organizationID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, *string, *time.Time, uuid.UUID) *biz.APIToken); ok {
-		r0 = rf(ctx, description, expiresAt, organizationID)
+	if rf, ok := ret.Get(0).(func(context.Context, string, *string, *time.Time, uuid.UUID) *biz.APIToken); ok {
+		r0 = rf(ctx, name, description, expiresAt, organizationID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*biz.APIToken)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, *string, *time.Time, uuid.UUID) error); ok {
-		r1 = rf(ctx, description, expiresAt, organizationID)
+	if rf, ok := ret.Get(1).(func(context.Context, string, *string, *time.Time, uuid.UUID) error); ok {
+		r1 = rf(ctx, name, description, expiresAt, organizationID)
 	} else {
 		r1 = ret.Error(1)
 	}

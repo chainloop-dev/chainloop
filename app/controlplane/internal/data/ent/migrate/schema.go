@@ -12,6 +12,7 @@ var (
 	// APITokensColumns holds the columns for the "api_tokens" table.
 	APITokensColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "name", Type: field.TypeString},
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "expires_at", Type: field.TypeTime, Nullable: true},
@@ -26,9 +27,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "api_tokens_organizations_api_tokens",
-				Columns:    []*schema.Column{APITokensColumns[5]},
+				Columns:    []*schema.Column{APITokensColumns[6]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "apitoken_name_organization_id",
+				Unique:  true,
+				Columns: []*schema.Column{APITokensColumns[1], APITokensColumns[6]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "revoked_at IS NULL",
+				},
 			},
 		},
 	}

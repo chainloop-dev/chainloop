@@ -19,6 +19,8 @@ type APIToken struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
+	// Name holds the value of the "name" field.
+	Name string `json:"name,omitempty"`
 	// Description holds the value of the "description" field.
 	Description string `json:"description,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -62,7 +64,7 @@ func (*APIToken) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case apitoken.FieldDescription:
+		case apitoken.FieldName, apitoken.FieldDescription:
 			values[i] = new(sql.NullString)
 		case apitoken.FieldCreatedAt, apitoken.FieldExpiresAt, apitoken.FieldRevokedAt:
 			values[i] = new(sql.NullTime)
@@ -88,6 +90,12 @@ func (at *APIToken) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				at.ID = *value
+			}
+		case apitoken.FieldName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field name", values[i])
+			} else if value.Valid {
+				at.Name = value.String
 			}
 		case apitoken.FieldDescription:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -160,6 +168,9 @@ func (at *APIToken) String() string {
 	var builder strings.Builder
 	builder.WriteString("APIToken(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", at.ID))
+	builder.WriteString("name=")
+	builder.WriteString(at.Name)
+	builder.WriteString(", ")
 	builder.WriteString("description=")
 	builder.WriteString(at.Description)
 	builder.WriteString(", ")

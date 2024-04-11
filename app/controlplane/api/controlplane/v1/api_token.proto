@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,19 +17,21 @@ syntax = "proto3";
 
 package controlplane.v1;
 
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "validate/validate.proto";
+
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
-import "validate/validate.proto";
-import "google/protobuf/timestamp.proto";
-import "google/protobuf/duration.proto";
-
 service APITokenService {
-	rpc Create (APITokenServiceCreateRequest) returns (APITokenServiceCreateResponse);
-	rpc List (APITokenServiceListRequest) returns (APITokenServiceListResponse);
-	rpc Revoke (APITokenServiceRevokeRequest) returns (APITokenServiceRevokeResponse);
+  rpc Create(APITokenServiceCreateRequest) returns (APITokenServiceCreateResponse);
+  rpc List(APITokenServiceListRequest) returns (APITokenServiceListResponse);
+  rpc Revoke(APITokenServiceRevokeRequest) returns (APITokenServiceRevokeResponse);
 }
 
 message APITokenServiceCreateRequest {
+  string name = 3 [(validate.rules).string.min_len = 1];
+
   optional string description = 1;
   optional google.protobuf.Duration expires_in = 2;
 }
@@ -38,8 +40,8 @@ message APITokenServiceCreateResponse {
   APITokenFull result = 1;
 
   message APITokenFull {
-      APITokenItem item = 1;
-      string jwt = 2;
+    APITokenItem item = 1;
+    string jwt = 2;
   }
 }
 
@@ -59,6 +61,7 @@ message APITokenServiceListResponse {
 
 message APITokenItem {
   string id = 1;
+  string name = 7;
   string description = 2;
   string organization_id = 3;
   google.protobuf.Timestamp created_at = 4;

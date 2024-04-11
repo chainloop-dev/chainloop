@@ -31,7 +31,7 @@ func init() {
 	apitokenFields := schema.APIToken{}.Fields()
 	_ = apitokenFields
 	// apitokenDescCreatedAt is the schema descriptor for created_at field.
-	apitokenDescCreatedAt := apitokenFields[2].Descriptor()
+	apitokenDescCreatedAt := apitokenFields[3].Descriptor()
 	// apitoken.DefaultCreatedAt holds the default value on creation for the created_at field.
 	apitoken.DefaultCreatedAt = apitokenDescCreatedAt.Default.(func() time.Time)
 	// apitokenDescID is the schema descriptor for id field.

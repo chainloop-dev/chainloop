@@ -50,7 +50,7 @@ func (s *APITokenService) Create(ctx context.Context, req *pb.APITokenServiceCre
 		*expiresIn = req.ExpiresIn.AsDuration()
 	}
 
-	token, err := s.APITokenUseCase.Create(ctx, req.Description, expiresIn, currentOrg.ID)
+	token, err := s.APITokenUseCase.Create(ctx, req.Name, req.Description, expiresIn, currentOrg.ID)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
