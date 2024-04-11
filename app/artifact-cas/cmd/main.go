@@ -145,6 +145,10 @@ func main() {
 	}
 }
 
+func newProtoValidator() (*protovalidate.Validator, error) {
+	return protovalidate.New()
+}
+
 func initSentry(c *conf.Bootstrap, logger log.Logger) (cleanupFunc func(), err error) {
 	cleanupFunc = func() {
 		sentry.Flush(2 * time.Second)
