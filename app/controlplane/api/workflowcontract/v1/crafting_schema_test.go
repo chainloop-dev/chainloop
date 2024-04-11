@@ -20,8 +20,10 @@ package v1_test
 import (
 	"testing"
 
+	"github.com/bufbuild/protovalidate-go"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValidateAnnotations(t *testing.T) {
@@ -70,6 +72,9 @@ func TestValidateAnnotations(t *testing.T) {
 		},
 	}
 
+	validator, err := protovalidate.New()
+	require.NoError(t, err)
+
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			annotation := &v1.Annotation{
@@ -77,7 +82,7 @@ func TestValidateAnnotations(t *testing.T) {
 				Value: tc.value,
 			}
 
-			err := annotation.ValidateAll()
+			err := validator.Validate(annotation)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return

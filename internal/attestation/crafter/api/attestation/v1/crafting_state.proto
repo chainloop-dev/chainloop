@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,21 +17,21 @@ syntax = "proto3";
 
 package attestation.v1;
 
+import "buf/validate/validate.proto";
 import "google/protobuf/timestamp.proto";
-import "validate/validate.proto";
 import "workflowcontract/v1/crafting_schema.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1";
 
 message Attestation {
-  google.protobuf.Timestamp initialized_at = 1 [(validate.rules).timestamp.required = true];
+  google.protobuf.Timestamp initialized_at = 1 [(buf.validate.field).required = true];
   google.protobuf.Timestamp finished_at = 2;
 
-  WorkflowMetadata workflow = 3 [(validate.rules).message.required = true];
+  WorkflowMetadata workflow = 3 [(buf.validate.field).required = true];
 
   map<string, Material> materials = 4;
   // Annotations for the attestation
-  map<string, string> annotations = 5 [(validate.rules).map.values.string.min_len = 1];
+  map<string, string> annotations = 5 [(buf.validate.field).map.values.string.min_len = 1];
 
   message Material {
     oneof m {
@@ -50,28 +50,28 @@ message Attestation {
     bool inline_cas = 8;
 
     // Annotations for the material
-    map<string, string> annotations = 9 [(validate.rules).map.values.string.min_len = 1];
+    map<string, string> annotations = 9 [(buf.validate.field).map.values.string.min_len = 1];
 
     message KeyVal {
-      string id = 1 [(validate.rules).string.min_len = 1];
-      string value = 2 [(validate.rules).string.min_len = 1];
+      string id = 1 [(buf.validate.field).string.min_len = 1];
+      string value = 2 [(buf.validate.field).string.min_len = 1];
     }
 
     message ContainerImage {
-      string id = 1 [(validate.rules).string.min_len = 1];
-      string name = 2 [(validate.rules).string.min_len = 1];
-      string digest = 3 [(validate.rules).string.min_len = 1];
+      string id = 1 [(buf.validate.field).string.min_len = 1];
+      string name = 2 [(buf.validate.field).string.min_len = 1];
+      string digest = 3 [(buf.validate.field).string.min_len = 1];
       bool is_subject = 4;
     }
 
     message Artifact {
       // ID of the artifact
-      string id = 1 [(validate.rules).string.min_len = 1];
+      string id = 1 [(buf.validate.field).string.min_len = 1];
       // filename, use for record purposes
-      string name = 2 [(validate.rules).string.min_len = 1];
+      string name = 2 [(buf.validate.field).string.min_len = 1];
       // the digest is enough to retrieve the artifact since it's stored in a CAS
       // which also has annotated the fileName
-      string digest = 3 [(validate.rules).string.min_len = 1];
+      string digest = 3 [(buf.validate.field).string.min_len = 1];
       bool is_subject = 4;
       // Inline content of the artifact.
       // This is optional and is used for small artifacts that can be stored inline in the attestation
@@ -89,16 +89,16 @@ message Attestation {
 }
 
 message Commit {
-  string hash = 1 [(validate.rules).string.min_len = 1];
-  string author_email = 2 [(validate.rules).string.min_len = 1];
-  string author_name = 3 [(validate.rules).string.min_len = 1];
-  string message = 4 [(validate.rules).string.min_len = 1];
+  string hash = 1 [(buf.validate.field).string.min_len = 1];
+  string author_email = 2 [(buf.validate.field).string.min_len = 1];
+  string author_name = 3 [(buf.validate.field).string.min_len = 1];
+  string message = 4 [(buf.validate.field).string.min_len = 1];
   google.protobuf.Timestamp date = 5;
   repeated Remote remotes = 6;
 
   message Remote {
-    string name = 1 [(validate.rules).string.min_len = 1];
-    string url = 2 [(validate.rules).string.min_len = 1];
+    string name = 1 [(buf.validate.field).string.min_len = 1];
+    string url = 2 [(buf.validate.field).string.min_len = 1];
   }
 }
 
@@ -110,12 +110,12 @@ message CraftingState {
 }
 
 message WorkflowMetadata {
-  string name = 1 [(validate.rules).string.min_len = 1];
+  string name = 1 [(buf.validate.field).string.min_len = 1];
   string project = 2;
   string team = 3;
-  string workflow_id = 5 [(validate.rules).string.min_len = 1];
+  string workflow_id = 5 [(buf.validate.field).string.min_len = 1];
   string workflow_run_id = 6; // Not required since we might be doing a dry-run
-  string schema_revision = 7 [(validate.rules).string.min_len = 1];
+  string schema_revision = 7 [(buf.validate.field).string.min_len = 1];
   // organization name
-  string organization = 8 [(validate.rules).string.min_len = 1];
+  string organization = 8 [(buf.validate.field).string.min_len = 1];
 }

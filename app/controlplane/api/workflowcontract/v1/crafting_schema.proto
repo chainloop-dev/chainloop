@@ -17,7 +17,7 @@ syntax = "proto3";
 
 package workflowcontract.v1;
 
-import "validate/validate.proto";
+import "buf/validate/validate.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1";
 
@@ -25,7 +25,7 @@ option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/wor
 // that defines the schema of the workflowRun
 message CraftingSchema {
   // Version of the schema, do not confuse with the revision of the content
-  string schema_version = 1 [(validate.rules).string.const = "v1"];
+  string schema_version = 1 [(buf.validate.field).string.const = "v1"];
   repeated Material materials = 2;
   repeated string env_allow_list = 3;
   Runner runner = 4;
@@ -36,10 +36,10 @@ message CraftingSchema {
 
   message Runner {
     RunnerType type = 1 [
-      (validate.rules).enum = {
+      (buf.validate.field).enum = {
         not_in: [0]
       },
-      (validate.rules).enum.defined_only = true
+      (buf.validate.field).enum.defined_only = true
     ];
 
     enum RunnerType {
@@ -55,12 +55,12 @@ message CraftingSchema {
 
   message Material {
     MaterialType type = 1 [
-      (validate.rules).enum = {
+      (buf.validate.field).enum = {
         not_in: [0]
       },
-      (validate.rules).enum.defined_only = true
+      (buf.validate.field).enum.defined_only = true
     ];
-    string name = 2 [(validate.rules).string.pattern = "^[\\w|-]+$"]; // Single word optionally separated with _ or -
+    string name = 2 [(buf.validate.field).string.pattern = "^[\\w|-]+$"]; // Single word optionally separated with _ or -
     bool optional = 3;
     // If a material is set as output it will get added to the subject in the statement
     bool output = 4;
@@ -88,7 +88,7 @@ message CraftingSchema {
 }
 
 message Annotation {
-  string name = 1 [(validate.rules).string.pattern = "^[\\w]+$"]; // Single word optionally separated with _
+  string name = 1 [(buf.validate.field).string.pattern = "^[\\w]+$"]; // Single word optionally separated with _
   // This value can be set in the contract or provided during the attestation
   string value = 2;
 }

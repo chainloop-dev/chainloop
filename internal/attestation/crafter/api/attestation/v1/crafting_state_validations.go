@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package v1
 import (
 	"fmt"
 	"strings"
+
+	"github.com/bufbuild/protovalidate-go"
 )
 
 // Custom validations
@@ -25,9 +27,13 @@ import (
 // ValidateComplete makes sure that the crafting state has been completed
 // before it gets passed to the renderer
 func (state *CraftingState) ValidateComplete() error {
-	// Schema defined errors
-	if err := state.ValidateAll(); err != nil {
-		return err
+	validator, err := protovalidate.New()
+	if err != nil {
+		return fmt.Errorf("could not create validator: %w", err)
+	}
+
+	if err := validator.Validate(state); err != nil {
+		return fmt.Errorf("invalid crafting state: %w", err)
 	}
 
 	// Semantic errors

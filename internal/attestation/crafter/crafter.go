@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"cuelang.org/go/cue/cuecontext"
+	"github.com/bufbuild/protovalidate-go"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	api "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/materials"
@@ -63,6 +64,7 @@ type Crafter struct {
 	stateManager  StateManager
 	// Authn is used to authenticate with the OCI registry
 	ociRegistryAuth authn.Keychain
+	validator       *protovalidate.Validator
 }
 
 var ErrAttestationStateNotLoaded = errors.New("crafting state not loaded")
@@ -99,6 +101,11 @@ func WithOCIAuth(server, username, password string) NewOpt {
 func NewCrafter(stateManager StateManager, opts ...NewOpt) (*Crafter, error) {
 	noopLogger := zerolog.Nop()
 
+	validator, err := protovalidate.New()
+	if err != nil {
+		return nil, fmt.Errorf("creating proto validator: %w", err)
+	}
+
 	cw, _ := os.Getwd()
 	c := &Crafter{
 		logger:       &noopLogger,
@@ -106,6 +113,7 @@ func NewCrafter(stateManager StateManager, opts ...NewOpt) (*Crafter, error) {
 		stateManager: stateManager,
 		// By default we authenticate with the current user's keychain (i.e ~/.docker/config.json)
 		ociRegistryAuth: authn.DefaultKeychain,
+		validator:       validator,
 	}
 
 	for _, opt := range opts {
@@ -188,8 +196,13 @@ func LoadSchema(pathOrURI string) (*schemaapi.CraftingSchema, error) {
 		return nil, err
 	}
 
+	validator, err := protovalidate.New()
+	if err != nil {
+		return nil, fmt.Errorf("could not create validator: %w", err)
+	}
+
 	// Proto validations
-	if err := schema.ValidateAll(); err != nil {
+	if err := validator.Validate(schema); err != nil {
 		return nil, err
 	}
 
@@ -485,7 +498,7 @@ func (c *Crafter) AddMaterial(ctx context.Context, attestationID, key, value str
 		}
 	}
 
-	if err := mt.Validate(); err != nil {
+	if err := c.validator.Validate(mt); err != nil {
 		return fmt.Errorf("validation error: %w", err)
 	}
 

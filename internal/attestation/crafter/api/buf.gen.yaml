@@ -3,6 +3,3 @@ plugins:
   - name: go
     out: .
     opt: paths=source_relative
-  - name: validate
-    out: .
-    opt: paths=source_relative,lang=go

@@ -5,6 +5,7 @@ breaking:
 deps:
   - buf.build/googleapis/googleapis
   - buf.build/envoyproxy/protoc-gen-validate:45685e052c7e406b9fbd441fc7a568a5
+  - buf.build/bufbuild/protovalidate
   - buf.build/kratos-go/kratos
 lint:
   use:

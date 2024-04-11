@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/bytefmt"
+	"github.com/bufbuild/protovalidate-go"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	api "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
@@ -140,7 +141,12 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 	var crafter Craftable
 	var err error
 
-	if err := materialSchema.ValidateAll(); err != nil {
+	validator, err := protovalidate.New()
+	if err != nil {
+		return nil, fmt.Errorf("could not create validator: %w", err)
+	}
+
+	if err := validator.Validate(materialSchema); err != nil {
 		return nil, fmt.Errorf("validating material: %w", err)
 	}
 
