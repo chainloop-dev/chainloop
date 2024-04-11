@@ -27,7 +27,11 @@ func wireApp(confServer *conf.Server, auth *conf.Auth, reader credentials.Reader
 	v := serviceOpts(logger)
 	byteStreamService := service.NewByteStreamService(providers, v...)
 	resourceService := service.NewResourceService(providers, v...)
-	grpcServer, err := server.NewGRPCServer(confServer, auth, byteStreamService, resourceService, providers, logger)
+	validator, err := newProtoValidator()
+	if err != nil {
+		return nil, nil, err
+	}
+	grpcServer, err := server.NewGRPCServer(confServer, auth, byteStreamService, resourceService, providers, validator, logger)
 	if err != nil {
 		return nil, nil, err
 	}

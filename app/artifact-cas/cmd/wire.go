@@ -39,6 +39,7 @@ func wireApp(*conf.Server, *conf.Auth, credentials.Reader, log.Logger) (*app, fu
 			loader.LoadProviders,
 			newApp,
 			serviceOpts,
+			newProtoValidator,
 		),
 	)
 }

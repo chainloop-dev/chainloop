@@ -13,9 +13,6 @@ plugins:
   - name: go-http
     out: .
     opt: paths=source_relative
-  - name: validate
-    out: .
-    opt: paths=source_relative,lang=go
   - plugin: buf.build/community/stephenh-ts-proto:v1.151.1
     out: ./gen/frontend
     opt:

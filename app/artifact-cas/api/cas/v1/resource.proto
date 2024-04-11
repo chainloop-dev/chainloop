@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,23 +16,26 @@
 syntax = "proto3";
 
 package cas.v1;
+
+import "buf/validate/validate.proto";
+
 option go_package = "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1;v1";
 
 service ResourceService {
-	rpc Describe (ResourceServiceDescribeRequest) returns (ResourceServiceDescribeResponse);
+  rpc Describe(ResourceServiceDescribeRequest) returns (ResourceServiceDescribeResponse);
 }
 
 message ResourceServiceDescribeRequest {
-	string digest = 1;
+  string digest = 1 [(buf.validate.field).string.min_len = 1];
 }
 
 message ResourceServiceDescribeResponse {
-	CASResource result = 1;
+  CASResource result = 1;
 }
 
 message CASResource {
-	string file_name = 1;
-	string digest = 2;
-	// size in bytes
-	int64 size = 3;
+  string file_name = 1;
+  string digest = 2;
+  // size in bytes
+  int64 size = 3;
 }

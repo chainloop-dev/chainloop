@@ -35,17 +35,18 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/genproto/googleapis/bytestream"
 
+	"github.com/bufbuild/protovalidate-go"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware/logging"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
-	"github.com/go-kratos/kratos/v2/middleware/validate"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	protovalidateMiddleware "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/protovalidate"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 )
 
 // NewGRPCServer new a gRPC server.
-func NewGRPCServer(c *conf.Server, authConf *conf.Auth, byteService *service.ByteStreamService, rSvc *service.ResourceService, providers backend.Providers, logger log.Logger) (*grpc.Server, error) {
+func NewGRPCServer(c *conf.Server, authConf *conf.Auth, byteService *service.ByteStreamService, rSvc *service.ResourceService, providers backend.Providers, validator *protovalidate.Validator, logger log.Logger) (*grpc.Server, error) {
 	log := log.NewHelper(logger)
 	// Load the key on initialization instead of on every request
 	// TODO: implement jwks endpoint
@@ -81,7 +82,6 @@ func NewGRPCServer(c *conf.Server, authConf *conf.Auth, byteService *service.Byt
 					jwtMiddleware.WithSigningMethod(casJWT.SigningMethod),
 					jwtMiddleware.WithClaims(func() jwt.Claims { return &casJWT.Claims{} })),
 			).Match(requireAuthentication()).Build(),
-			validate.Validator(),
 		),
 
 		// Streaming interceptors
@@ -90,7 +90,10 @@ func NewGRPCServer(c *conf.Server, authConf *conf.Auth, byteService *service.Byt
 			// grpc prometheus metrics
 			grpc_prometheus.StreamServerInterceptor,
 		),
-		grpc.UnaryInterceptor(grpc_prometheus.UnaryServerInterceptor),
+		grpc.UnaryInterceptor(
+			grpc_prometheus.UnaryServerInterceptor,
+			protovalidateMiddleware.UnaryServerInterceptor(validator),
+		),
 	}
 
 	// Opt-in histogram metrics for the interceptor
