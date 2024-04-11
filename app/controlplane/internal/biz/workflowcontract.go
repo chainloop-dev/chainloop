@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bufbuild/protovalidate-go"
 	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
@@ -135,7 +136,12 @@ func (uc *WorkflowContractUseCase) Create(ctx context.Context, opts *WorkflowCon
 		}
 	}
 
-	if err := opts.Schema.ValidateAll(); err != nil {
+	validator, err := protovalidate.New()
+	if err != nil {
+		return nil, fmt.Errorf("could not create validator: %w", err)
+	}
+
+	if err := validator.Validate(opts.Schema); err != nil {
 		return nil, err
 	}
 
