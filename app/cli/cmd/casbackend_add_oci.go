@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,6 +32,9 @@ func newCASBackendAddOCICmd() *cobra.Command {
 			isDefault, err := cmd.Flags().GetBool("default")
 			cobra.CheckErr(err)
 
+			name, err := cmd.Flags().GetString("name")
+			cobra.CheckErr(err)
+
 			description, err := cmd.Flags().GetString("description")
 			cobra.CheckErr(err)
 
@@ -45,6 +48,7 @@ func newCASBackendAddOCICmd() *cobra.Command {
 			}
 
 			opts := &action.NewCASBackendAddOpts{
+				Name:     name,
 				Location: repo, Description: description,
 				Provider: "OCI",
 				Credentials: map[string]any{

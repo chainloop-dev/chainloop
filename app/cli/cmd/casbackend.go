@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -40,6 +40,9 @@ func newCASBackendAddCmd() *cobra.Command {
 
 	cmd.PersistentFlags().Bool("default", false, "set the backend as default in your organization")
 	cmd.PersistentFlags().String("description", "", "descriptive information for this registration")
+	cmd.PersistentFlags().String("name", "", "CAS backend name")
+	err := cmd.MarkPersistentFlagRequired("name")
+	cobra.CheckErr(err)
 
 	cmd.AddCommand(newCASBackendAddOCICmd(), newCASBackendAddAzureBlobStorageCmd(), newCASBackendAddAWSS3Cmd())
 	return cmd
@@ -53,6 +56,7 @@ func newCASBackendUpdateCmd() *cobra.Command {
 
 	cmd.PersistentFlags().Bool("default", false, "set the backend as default in your organization")
 	cmd.PersistentFlags().String("description", "", "descriptive information for this registration")
+	cmd.PersistentFlags().String("name", "", "CAS backend name")
 
 	cmd.AddCommand(newCASBackendUpdateOCICmd(), newCASBackendUpdateInlineCmd(), newCASBackendUpdateAzureBlobCmd(), newCASBackendUpdateAWSS3Cmd())
 	return cmd

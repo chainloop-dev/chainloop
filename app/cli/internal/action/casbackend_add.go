@@ -28,6 +28,7 @@ type CASBackendAdd struct {
 }
 
 type NewCASBackendAddOpts struct {
+	Name        string
 	Location    string
 	Provider    string
 	Description string
@@ -48,6 +49,7 @@ func (action *CASBackendAdd) Run(opts *NewCASBackendAddOpts) (*CASBackendItem, e
 
 	client := pb.NewCASBackendServiceClient(action.cfg.CPConnection)
 	resp, err := client.Create(context.Background(), &pb.CASBackendServiceCreateRequest{
+		Name:        opts.Name,
 		Location:    opts.Location,
 		Provider:    opts.Provider,
 		Description: opts.Description,

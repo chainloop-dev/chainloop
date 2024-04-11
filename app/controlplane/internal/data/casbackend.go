@@ -102,6 +102,7 @@ func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateO
 
 	// 2 - create the new backend and set it as default if needed
 	backend, err := tx.CASBackend.Create().
+		SetName(opts.Name).
 		SetOrganizationID(opts.OrgID).
 		SetLocation(opts.Location).
 		SetDescription(opts.Description).
@@ -111,6 +112,10 @@ func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateO
 		SetSecretName(opts.SecretName).
 		Save(ctx)
 	if err != nil {
+		if ent.IsConstraintError(err) {
+			return nil, biz.ErrAlreadyExists
+		}
+
 		return nil, fmt.Errorf("failed to create backend: %w", err)
 	}
 
@@ -141,10 +146,15 @@ func (r *CASBackendRepo) Update(ctx context.Context, opts *biz.CASBackendUpdateO
 	}
 
 	// 2 - Chain the list of updates
+	// TODO: allow setting values as empty, currently it's not possible.
+	// We do it in other models by providing pointers to string + setNillableX methods
 	updateChain := tx.CASBackend.UpdateOneID(opts.ID).SetDefault(opts.Default)
-	// If description is provided we set it
 	if opts.Description != "" {
 		updateChain = updateChain.SetDescription(opts.Description)
+	}
+
+	if opts.Name != "" {
+		updateChain = updateChain.SetName(opts.Name)
 	}
 
 	// If secretName is provided we set it
@@ -227,6 +237,7 @@ func entCASBackendToBiz(backend *ent.CASBackend) *biz.CASBackend {
 
 	r := &biz.CASBackend{
 		ID:               backend.ID,
+		Name:             backend.Name,
 		Location:         backend.Location,
 		Description:      backend.Description,
 		SecretName:       backend.SecretName,

@@ -36,6 +36,7 @@ var (
 	CasBackendsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "location", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
 		{Name: "provider", Type: field.TypeEnum, Enums: []string{"AzureBlob", "OCI", "INLINE", "AWS-S3"}},
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "secret_name", Type: field.TypeString},
@@ -55,9 +56,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "cas_backends_organizations_cas_backends",
-				Columns:    []*schema.Column{CasBackendsColumns[11]},
+				Columns:    []*schema.Column{CasBackendsColumns[12]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "casbackend_name_organization_cas_backends",
+				Unique:  true,
+				Columns: []*schema.Column{CasBackendsColumns[2], CasBackendsColumns[12]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "deleted_at IS NULL",
+				},
 			},
 		},
 	}

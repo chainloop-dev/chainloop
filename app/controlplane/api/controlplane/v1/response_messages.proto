@@ -155,6 +155,7 @@ message OrgItem {
 
 message CASBackendItem {
   string id = 1;
+  string name = 11;
   // e.g. myregistry.io/myrepo s3 bucket and so on
   string location = 2;
   string description = 3;

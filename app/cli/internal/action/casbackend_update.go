@@ -29,6 +29,7 @@ type CASBackendUpdate struct {
 
 type NewCASBackendUpdateOpts struct {
 	ID          string
+	Name        string
 	Description string
 	Default     bool
 	Credentials map[string]any
@@ -52,6 +53,7 @@ func (action *CASBackendUpdate) Run(opts *NewCASBackendUpdateOpts) (*CASBackendI
 	client := pb.NewCASBackendServiceClient(action.cfg.CPConnection)
 	resp, err := client.Update(context.Background(), &pb.CASBackendServiceUpdateRequest{
 		Id:          opts.ID,
+		Name:        opts.Name,
 		Description: opts.Description,
 		Default:     opts.Default,
 		Credentials: credentials,

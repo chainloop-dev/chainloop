@@ -77,7 +77,7 @@ func (s *organizationTestSuite) TestValidateOrgName() {
 	}
 
 	for _, tc := range testCases {
-		s.T().Run(tc.name, func(t *testing.T) {
+		s.T().Run(tc.name, func(_ *testing.T) {
 			err := biz.ValidateIsDNS1123(tc.name)
 			if tc.expectedError {
 				s.Error(err)

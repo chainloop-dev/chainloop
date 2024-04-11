@@ -366,6 +366,17 @@ func (m *CASBackendServiceCreateRequest) validate(all bool) error {
 		}
 	}
 
+	if utf8.RuneCountInString(m.GetName()) < 1 {
+		err := CASBackendServiceCreateRequestValidationError{
+			field:  "Name",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if len(errors) > 0 {
 		return CASBackendServiceCreateRequestMultiError(errors)
 	}
@@ -612,6 +623,8 @@ func (m *CASBackendServiceUpdateRequest) validate(all bool) error {
 		}
 		errors = append(errors, err)
 	}
+
+	// no validation rules for Name
 
 	// no validation rules for Description
 

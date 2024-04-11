@@ -30,6 +30,12 @@ func (cbc *CASBackendCreate) SetLocation(s string) *CASBackendCreate {
 	return cbc
 }
 
+// SetName sets the "name" field.
+func (cbc *CASBackendCreate) SetName(s string) *CASBackendCreate {
+	cbc.mutation.SetName(s)
+	return cbc
+}
+
 // SetProvider sets the "provider" field.
 func (cbc *CASBackendCreate) SetProvider(bbp biz.CASBackendProvider) *CASBackendCreate {
 	cbc.mutation.SetProvider(bbp)
@@ -246,6 +252,9 @@ func (cbc *CASBackendCreate) check() error {
 	if _, ok := cbc.mutation.Location(); !ok {
 		return &ValidationError{Name: "location", err: errors.New(`ent: missing required field "CASBackend.location"`)}
 	}
+	if _, ok := cbc.mutation.Name(); !ok {
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "CASBackend.name"`)}
+	}
 	if _, ok := cbc.mutation.Provider(); !ok {
 		return &ValidationError{Name: "provider", err: errors.New(`ent: missing required field "CASBackend.provider"`)}
 	}
@@ -318,6 +327,10 @@ func (cbc *CASBackendCreate) createSpec() (*CASBackend, *sqlgraph.CreateSpec) {
 	if value, ok := cbc.mutation.Location(); ok {
 		_spec.SetField(casbackend.FieldLocation, field.TypeString, value)
 		_node.Location = value
+	}
+	if value, ok := cbc.mutation.Name(); ok {
+		_spec.SetField(casbackend.FieldName, field.TypeString, value)
+		_node.Name = value
 	}
 	if value, ok := cbc.mutation.Provider(); ok {
 		_spec.SetField(casbackend.FieldProvider, field.TypeEnum, value)
