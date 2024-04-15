@@ -59,12 +59,7 @@ func (s *WorkflowService) Create(ctx context.Context, req *pb.WorkflowServiceCre
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
-	workflow := bizWorkflowToPb(p)
-	if err := workflow.ValidateAll(); err != nil {
-		return nil, err
-	}
-
-	return &pb.WorkflowServiceCreateResponse{Result: workflow}, nil
+	return &pb.WorkflowServiceCreateResponse{Result: bizWorkflowToPb(p)}, nil
 }
 
 func (s *WorkflowService) Update(ctx context.Context, req *pb.WorkflowServiceUpdateRequest) (*pb.WorkflowServiceUpdateResponse, error) {
@@ -87,12 +82,7 @@ func (s *WorkflowService) Update(ctx context.Context, req *pb.WorkflowServiceUpd
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
-	workflow := bizWorkflowToPb(p)
-	if err := workflow.ValidateAll(); err != nil {
-		return nil, err
-	}
-
-	return &pb.WorkflowServiceUpdateResponse{Result: workflow}, nil
+	return &pb.WorkflowServiceUpdateResponse{Result: bizWorkflowToPb(p)}, nil
 }
 
 func (s *WorkflowService) List(ctx context.Context, _ *pb.WorkflowServiceListRequest) (*pb.WorkflowServiceListResponse, error) {

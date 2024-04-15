@@ -19,7 +19,7 @@ package controlplane.v1;
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
-import "validate/validate.proto";
+import "buf/validate/validate.proto";
 import "google/protobuf/timestamp.proto";
 
 service RobotAccountService {
@@ -30,7 +30,7 @@ service RobotAccountService {
 
 message RobotAccountServiceCreateRequest {
   string name = 1; 
-  string workflow_id = 2 [(validate.rules).string.uuid = true];
+  string workflow_id = 2 [(buf.validate.field).string.uuid = true];
 }
 
 message RobotAccountServiceCreateResponse {
@@ -48,13 +48,13 @@ message RobotAccountServiceCreateResponse {
 }
 
 message RobotAccountServiceRevokeRequest {
-  string id = 1 [(validate.rules).string.uuid = true];
+  string id = 1 [(buf.validate.field).string.uuid = true];
 }
 
 message RobotAccountServiceRevokeResponse {}
 
 message RobotAccountServiceListRequest {
-  string workflow_id = 1 [(validate.rules).string.uuid = true];
+  string workflow_id = 1 [(buf.validate.field).string.uuid = true];
   bool include_revoked = 2;
 }
 

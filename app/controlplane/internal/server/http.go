@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,9 +16,17 @@
 package server
 
 import (
+	"context"
+	"errors"
+
+	"github.com/bufbuild/protovalidate-go"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
+	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 
 	h "net/http"
 
@@ -28,8 +36,12 @@ import (
 
 // NewHTTPServer new a HTTP server.
 func NewHTTPServer(opts *Opts, grpcSrv *grpc.Server) (*http.Server, error) {
+	middlewares := craftMiddleware(opts)
+	// important, the validation middleware should be the last one
+	middlewares = append(middlewares, protoValidateHTTPMiddleware(opts.Validator))
+
 	var serverOpts = []http.ServerOption{
-		http.Middleware(craftMiddleware(opts)...),
+		http.Middleware(middlewares...),
 	}
 
 	if v := opts.ServerConfig.Http.Network; v != "" {
@@ -70,4 +82,23 @@ func NewHTTPServer(opts *Opts, grpcSrv *grpc.Server) (*http.Server, error) {
 	})
 
 	return wrappedServer, nil
+}
+
+// Custom kraos middleware based on the protovalidate middleware
+// https://pkg.go.dev/github.com/grpc-ecosystem/go-grpc-middleware/v2@v2.1.0/interceptors/protovalidate#UnaryServerInterceptor
+// but tailored specifically for the http server
+func protoValidateHTTPMiddleware(validator *protovalidate.Validator) middleware.Middleware {
+	return func(handler middleware.Handler) middleware.Handler {
+		return func(ctx context.Context, req interface{}) (reply interface{}, err error) {
+			switch msg := req.(type) {
+			case proto.Message:
+				if err = validator.Validate(msg); err != nil {
+					return nil, status.Error(codes.InvalidArgument, err.Error())
+				}
+			default:
+				return nil, errors.New("unsupported message type")
+			}
+			return handler(ctx, req)
+		}
+	}
 }

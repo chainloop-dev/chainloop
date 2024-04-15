@@ -19,7 +19,7 @@ package controlplane.v1;
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
-import "validate/validate.proto";
+import "buf/validate/validate.proto";
 import "attestation/v1/crafting_state.proto";
 
 // API to remotely store and retrieve attestation state
@@ -32,7 +32,7 @@ service AttestationStateService {
 }
 
 message AttestationStateServiceInitializedRequest {
-  string workflow_run_id = 1 [(validate.rules).string = {min_len: 1}];
+  string workflow_run_id = 1 [(buf.validate.field).string = {min_len: 1}];
 }
 
 message AttestationStateServiceInitializedResponse {
@@ -44,14 +44,14 @@ message AttestationStateServiceInitializedResponse {
 }
 
 message AttestationStateServiceSaveRequest {
-  string workflow_run_id = 1 [(validate.rules).string = {min_len: 1}];
-  attestation.v1.CraftingState attestation_state = 2 [(validate.rules).message.required = true];
+  string workflow_run_id = 1 [(buf.validate.field).string = {min_len: 1}];
+  attestation.v1.CraftingState attestation_state = 2 [(buf.validate.field).required = true];
 }
 
 message AttestationStateServiceSaveResponse {}
 
 message AttestationStateServiceReadRequest {
-  string workflow_run_id = 1 [(validate.rules).string = {min_len: 1}];
+  string workflow_run_id = 1 [(buf.validate.field).string = {min_len: 1}];
 }
 
 message AttestationStateServiceReadResponse {
@@ -63,7 +63,7 @@ message AttestationStateServiceReadResponse {
 }
 
 message AttestationStateServiceResetRequest {
-  string workflow_run_id = 1 [(validate.rules).string = {min_len: 1}];
+  string workflow_run_id = 1 [(buf.validate.field).string = {min_len: 1}];
 }
 
 message AttestationStateServiceResetResponse {}

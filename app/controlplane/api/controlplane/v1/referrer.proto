@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@ syntax = "proto3";
 
 package controlplane.v1;
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
-import "validate/validate.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
@@ -33,14 +33,14 @@ service ReferrerService {
 }
 
 message ReferrerServiceDiscoverPrivateRequest {
-  string digest = 1 [(validate.rules).string = {min_len: 1}];
+  string digest = 1 [(buf.validate.field).string = {min_len: 1}];
   // Optional kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...
   // Used to filter and resolve ambiguities
   string kind = 2;
 }
 
 message DiscoverPublicSharedRequest {
-  string digest = 1 [(validate.rules).string = {min_len: 1}];
+  string digest = 1 [(buf.validate.field).string = {min_len: 1}];
   // Optional kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...
   // Used to filter and resolve ambiguities
   string kind = 2;

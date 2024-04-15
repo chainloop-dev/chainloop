@@ -19,7 +19,7 @@ package controlplane.v1;
 
 import "controlplane/v1/response_messages.proto";
 import "google/protobuf/timestamp.proto";
-import "validate/validate.proto";
+import "buf/validate/validate.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
@@ -35,8 +35,8 @@ service OrgInvitationService {
 message OrgInvitationServiceCreateRequest {
   // organization is deprecated and not used anymore
   string organization_id = 1 [deprecated = true];
-  string receiver_email = 2 [(validate.rules).string.email = true];
-  MembershipRole role = 3 [(validate.rules).enum.defined_only = true];
+  string receiver_email = 2 [(buf.validate.field).string.email = true];
+  MembershipRole role = 3 [(buf.validate.field).enum.defined_only = true];
 }
 
 message OrgInvitationServiceCreateResponse {
@@ -44,7 +44,7 @@ message OrgInvitationServiceCreateResponse {
 }
 
 message OrgInvitationServiceRevokeRequest {
-  string id = 1 [(validate.rules).string.uuid = true];
+  string id = 1 [(buf.validate.field).string.uuid = true];
 }
 
 message OrgInvitationServiceRevokeResponse {}

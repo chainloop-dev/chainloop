@@ -17,7 +17,7 @@ syntax = "proto3";
 
 package controlplane.v1;
 
-import "validate/validate.proto";
+import "buf/validate/validate.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
@@ -28,9 +28,11 @@ message CursorPaginationResponse {
 message CursorPaginationRequest {
   string cursor = 1;
   // Limit pagination to 100
-  int32 limit = 3 [(validate.rules).int32 = {
-    ignore_empty: true,
-    gte: 2,
-    lte: 100
-  }];
+  int32 limit = 3 [
+    (buf.validate.field).int32 = {
+      gte: 2,
+      lte: 100
+    },
+    (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED
+  ];
 }

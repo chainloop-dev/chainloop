@@ -165,6 +165,11 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	attestationStateService := service.NewAttestationStateService(attestationStateUseCase, v2...)
 	userService := service.NewUserService(membershipUseCase, organizationUseCase, v2...)
+	validator, err := newProtoValidator()
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
 	opts := &server.Opts{
 		UserUseCase:          userUseCase,
 		RobotAccountUseCase:  robotAccountUseCase,
@@ -197,6 +202,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		AuthConfig:           auth,
 		Credentials:          readerWriter,
 		Enforcer:             enforcer,
+		Validator:            validator,
 	}
 	grpcServer, err := server.NewGRPCServer(opts)
 	if err != nil {

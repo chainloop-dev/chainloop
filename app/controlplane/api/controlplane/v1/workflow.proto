@@ -18,7 +18,7 @@ syntax = "proto3";
 package controlplane.v1;
 
 import "controlplane/v1/response_messages.proto";
-import "validate/validate.proto";
+import "buf/validate/validate.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
@@ -31,8 +31,8 @@ service WorkflowService {
 }
 
 message WorkflowServiceCreateRequest {
-  string name = 1 [(validate.rules).string = {min_len: 1}];
-  string project = 2 [(validate.rules).string = {min_len: 1}];
+  string name = 1 [(buf.validate.field).string = {min_len: 1}];
+  string project = 2 [(buf.validate.field).string = {min_len: 1}];
   // The ID of the workload schema to be associated with, if no provided one will be created for you
   string schema_id = 3;
   string team = 4;
@@ -41,7 +41,7 @@ message WorkflowServiceCreateRequest {
 }
 
 message WorkflowServiceUpdateRequest {
-  string id = 1 [(validate.rules).string.uuid = true];
+  string id = 1 [(buf.validate.field).string.uuid = true];
   // "optional" allow us to detect if the value is explicitly set
   // and not just the default value
   optional string name = 2;
@@ -61,7 +61,7 @@ message WorkflowServiceCreateResponse {
 }
 
 message WorkflowServiceDeleteRequest {
-  string id = 1 [(validate.rules).string.uuid = true];
+  string id = 1 [(buf.validate.field).string.uuid = true];
 }
 
 message WorkflowServiceDeleteResponse {}
@@ -72,7 +72,7 @@ message WorkflowServiceListResponse {
 }
 
 message WorkflowServiceViewRequest {
-  string id = 1 [(validate.rules).string.uuid = true];
+  string id = 1 [(buf.validate.field).string.uuid = true];
 }
 
 message WorkflowServiceViewResponse {
