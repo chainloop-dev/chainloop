@@ -19,7 +19,6 @@ require (
 	github.com/coreos/go-oidc/v3 v3.10.0
 	github.com/docker/distribution v2.8.3+incompatible
 	github.com/docker/go-connections v0.4.0
-	github.com/envoyproxy/protoc-gen-validate v1.0.4
 	github.com/getsentry/sentry-go v0.23.0
 	github.com/go-kratos/kratos/contrib/log/zap/v2 v2.0.0-20230823024326-a09f4d8ebba9
 	github.com/go-kratos/kratos/v2 v2.7.0
