@@ -21,8 +21,6 @@ import (
 	"fmt"
 	"regexp"
 
-	protovalidateMiddleware "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/protovalidate"
-
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	authzMiddleware "github.com/chainloop-dev/chainloop/app/controlplane/internal/authz/middleware"
@@ -46,6 +44,7 @@ import (
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	"github.com/go-kratos/kratos/v2/middleware/selector"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
+	protovalidateMiddleware "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/protovalidate"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 )
 
@@ -154,7 +153,7 @@ func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
 func craftMiddleware(opts *Opts) []middleware.Middleware {
 	middlewares := []middleware.Middleware{
 		recovery.Recovery(
-			recovery.WithHandler(func(_ context.Context, _, err interface{}) error {
+			recovery.WithHandler(func(_ context.Context, req, err interface{}) error {
 				sentry.CaptureMessage(fmt.Sprintf("%v", err))
 				return errors.InternalServer("internal error", "there was an internal error")
 			}),
