@@ -40,7 +40,7 @@ message ReferrerServiceDiscoverPrivateRequest {
 }
 
 message DiscoverPublicSharedRequest {
-  string digest = 1 [(buf.validate.field).string = {min_len: 2}];
+  string digest = 1 [(buf.validate.field).string = {min_len: 1}];
   // Optional kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...
   // Used to filter and resolve ambiguities
   string kind = 2;
