@@ -214,3 +214,7 @@ func initSentry(c *conf.Bootstrap, logger log.Logger) (cleanupFunc func(), err e
 
 	return
 }
+
+func newProtoValidator() (*protovalidate.Validator, error) {
+	return protovalidate.New()
+}

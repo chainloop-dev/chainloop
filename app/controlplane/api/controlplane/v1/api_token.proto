@@ -19,7 +19,7 @@ package controlplane.v1;
 
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
-import "validate/validate.proto";
+import "buf/validate/validate.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
@@ -30,7 +30,7 @@ service APITokenService {
 }
 
 message APITokenServiceCreateRequest {
-  string name = 3 [(validate.rules).string.min_len = 1];
+  string name = 3 [(buf.validate.field).string.min_len = 1];
 
   optional string description = 1;
   optional google.protobuf.Duration expires_in = 2;
@@ -46,7 +46,7 @@ message APITokenServiceCreateResponse {
 }
 
 message APITokenServiceRevokeRequest {
-  string id = 1 [(validate.rules).string.uuid = true];
+  string id = 1 [(buf.validate.field).string.uuid = true];
 }
 
 message APITokenServiceRevokeResponse {}

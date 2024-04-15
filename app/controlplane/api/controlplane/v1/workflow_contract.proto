@@ -18,7 +18,7 @@ syntax = "proto3";
 package controlplane.v1;
 
 import "controlplane/v1/response_messages.proto";
-import "validate/validate.proto";
+import "buf/validate/validate.proto";
 import "workflowcontract/v1/crafting_schema.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
@@ -38,7 +38,7 @@ message WorkflowContractServiceListResponse {
 }
 
 message WorkflowContractServiceCreateRequest {
-  string name = 1 [(validate.rules).string = {min_len: 1}];
+  string name = 1 [(buf.validate.field).string = {min_len: 1}];
   // Ready to support multiple schema versions
   oneof contract {
     workflowcontract.v1.CraftingSchema v1 = 2;
@@ -52,7 +52,7 @@ message WorkflowContractServiceCreateResponse {
 }
 
 message WorkflowContractServiceUpdateRequest {
-  string id = 1 [(validate.rules).string.uuid = true];
+  string id = 1 [(buf.validate.field).string.uuid = true];
   string name = 2;
 
   oneof contract {
@@ -71,7 +71,7 @@ message WorkflowContractServiceUpdateResponse {
 }
 
 message WorkflowContractServiceDescribeRequest {
-  string id = 1 [(validate.rules).string.uuid = true];
+  string id = 1 [(buf.validate.field).string.uuid = true];
   int32 revision = 2;
 }
 
@@ -84,7 +84,7 @@ message WorkflowContractServiceDescribeResponse {
 }
 
 message WorkflowContractServiceDeleteRequest {
-  string id = 1 [(validate.rules).string.uuid = true];
+  string id = 1 [(buf.validate.field).string.uuid = true];
 }
 
 message WorkflowContractServiceDeleteResponse {}

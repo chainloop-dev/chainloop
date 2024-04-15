@@ -20,7 +20,7 @@ package controlplane.v1;
 import "controlplane/v1/response_messages.proto";
 import "errors/errors.proto";
 import "google/protobuf/struct.proto";
-import "validate/validate.proto";
+import "buf/validate/validate.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
@@ -39,16 +39,16 @@ message CASBackendServiceListResponse {
 
 message CASBackendServiceCreateRequest {
   // Location, e.g. bucket name, OCI bucket name, ...
-  string location = 1 [(validate.rules).string.min_len = 1];
+  string location = 1 [(buf.validate.field).string.min_len = 1];
   // Type of the backend, OCI, S3, ...
-  string provider = 2 [(validate.rules).string.min_len = 1];
+  string provider = 2 [(buf.validate.field).string.min_len = 1];
   // Descriptive name
   string description = 3;
   // Set as default in your organization
   bool default = 4;
   // Arbitrary configuration for the integration
-  google.protobuf.Struct credentials = 5 [(validate.rules).message.required = true];
-  string name = 6 [(validate.rules).string.min_len = 1];
+  google.protobuf.Struct credentials = 5 [(buf.validate.field).required = true];
+  string name = 6 [(buf.validate.field).string.min_len = 1];
 }
 
 message CASBackendServiceCreateResponse {
@@ -61,7 +61,7 @@ message CASBackendServiceCreateResponse {
 // - rotate credentials
 message CASBackendServiceUpdateRequest {
   // UUID of the workflow to attach
-  string id = 1 [(validate.rules).string.uuid = true];
+  string id = 1 [(buf.validate.field).string.uuid = true];
   // unique name
   string name = 5;
   // Description
@@ -77,7 +77,7 @@ message CASBackendServiceUpdateResponse {
 }
 
 message CASBackendServiceDeleteRequest {
-  string id = 1 [(validate.rules).string.uuid = true];
+  string id = 1 [(buf.validate.field).string.uuid = true];
 }
 
 message CASBackendServiceDeleteResponse {}

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"regexp"
 
+	protovalidateMiddleware "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/protovalidate"
+
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	authzMiddleware "github.com/chainloop-dev/chainloop/app/controlplane/internal/authz/middleware"
@@ -28,6 +30,8 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/user"
+
+	"github.com/bufbuild/protovalidate-go"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
@@ -41,7 +45,6 @@ import (
 	"github.com/go-kratos/kratos/v2/middleware/logging"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	"github.com/go-kratos/kratos/v2/middleware/selector"
-	"github.com/go-kratos/kratos/v2/middleware/validate"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 )
@@ -81,6 +84,7 @@ type Opts struct {
 	AuthConfig   *conf.Auth
 	Credentials  credentials.ReaderWriter
 	Enforcer     *authz.Enforcer
+	Validator    *protovalidate.Validator
 }
 
 // NewGRPCServer new a gRPC server.
@@ -90,7 +94,10 @@ func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
 
 	var serverOpts = []grpc.ServerOption{
 		grpc.Middleware(craftMiddleware(opts)...),
-		grpc.UnaryInterceptor(grpc_prometheus.UnaryServerInterceptor),
+		grpc.UnaryInterceptor(
+			grpc_prometheus.UnaryServerInterceptor,
+			protovalidateMiddleware.UnaryServerInterceptor(opts.Validator),
+		),
 	}
 
 	if v := opts.ServerConfig.Grpc.Network; v != "" {
@@ -147,7 +154,7 @@ func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
 func craftMiddleware(opts *Opts) []middleware.Middleware {
 	middlewares := []middleware.Middleware{
 		recovery.Recovery(
-			recovery.WithHandler(func(ctx context.Context, req, err interface{}) error {
+			recovery.WithHandler(func(_ context.Context, _, err interface{}) error {
 				sentry.CaptureMessage(fmt.Sprintf("%v", err))
 				return errors.InternalServer("internal error", "there was an internal error")
 			}),
@@ -163,7 +170,7 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 		selector.Server(
 			// 1 - Extract the currentUser/API token from the JWT
 			// NOTE: this works because both currentUser and API tokens JWT use the same signing method and secret
-			jwtMiddleware.Server(func(token *jwt.Token) (interface{}, error) {
+			jwtMiddleware.Server(func(_ *jwt.Token) (interface{}, error) {
 				return []byte(opts.AuthConfig.GeneratedJwsHmacSecret), nil
 			},
 				jwtMiddleware.WithSigningMethod(user.SigningMethod),
@@ -187,7 +194,7 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 		// if we require a robot account
 		selector.Server(
 			// 1 - Extract the robot account from the JWT
-			jwtMiddleware.Server(func(token *jwt.Token) (interface{}, error) {
+			jwtMiddleware.Server(func(_ *jwt.Token) (interface{}, error) {
 				// TODO: add support to multiple signing methods and keys
 				return []byte(opts.AuthConfig.GeneratedJwsHmacSecret), nil
 			},
@@ -198,9 +205,6 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 			usercontext.WithCurrentRobotAccount(opts.RobotAccountUseCase, logHelper),
 		).Match(requireRobotAccountMatcher()).Build(),
 	)
-
-	// Rest of middlewares
-	middlewares = append(middlewares, validate.Validator())
 
 	return middlewares
 }

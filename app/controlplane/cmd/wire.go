@@ -52,6 +52,7 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.Availabl
 			dispatcher.New,
 			authz.NewDatabaseEnforcer,
 			newApp,
+			newProtoValidator,
 		),
 	)
 }

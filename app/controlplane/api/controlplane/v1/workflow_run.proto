@@ -19,7 +19,7 @@ package controlplane.v1;
 
 import "controlplane/v1/pagination.proto";
 import "controlplane/v1/response_messages.proto";
-import "validate/validate.proto";
+import "buf/validate/validate.proto";
 import "workflowcontract/v1/crafting_schema.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
@@ -72,8 +72,8 @@ message AttestationServiceInitResponse {
 
 message AttestationServiceStoreRequest {
   // encoded DSEE envelope
-  bytes attestation = 1 [(validate.rules).bytes.min_len = 1];
-  string workflow_run_id = 2 [(validate.rules).string = {min_len: 1}];
+  bytes attestation = 1 [(buf.validate.field).bytes.min_len = 1];
+  string workflow_run_id = 2 [(buf.validate.field).string = {min_len: 1}];
 }
 
 message AttestationServiceStoreResponse {
@@ -86,8 +86,8 @@ message AttestationServiceStoreResponse {
 }
 
 message AttestationServiceCancelRequest {
-  string workflow_run_id = 1 [(validate.rules).string = {min_len: 1}];
-  TriggerType trigger = 2 [(validate.rules).enum = {
+  string workflow_run_id = 1 [(buf.validate.field).string = {min_len: 1}];
+  TriggerType trigger = 2 [(buf.validate.field).enum = {
     not_in: [0]
   }];
   string reason = 3;
@@ -119,10 +119,10 @@ message WorkflowRunServiceListResponse {
 message WorkflowRunServiceViewRequest {
   // It can search by either ID or digest
   oneof ref {
-    option (validate.required) = true;
+    option (buf.validate.oneof).required = true;
 
-    string id = 1 [(validate.rules).string.uuid = true];
-    string digest = 2 [(validate.rules).string = {min_len: 1}];
+    string id = 1 [(buf.validate.field).string.uuid = true];
+    string digest = 2 [(buf.validate.field).string = {min_len: 1}];
   }
 }
 

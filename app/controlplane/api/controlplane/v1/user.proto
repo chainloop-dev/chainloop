@@ -18,7 +18,7 @@ syntax = "proto3";
 package controlplane.v1;
 
 import "controlplane/v1/response_messages.proto";
-import "validate/validate.proto";
+import "buf/validate/validate.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
@@ -36,7 +36,7 @@ message UserServiceListMembershipsResponse {
 }
 
 message SetCurrentMembershipRequest {
-  string membership_id = 1 [(validate.rules).string.uuid = true];
+  string membership_id = 1 [(buf.validate.field).string.uuid = true];
 }
 
 message SetCurrentMembershipResponse {
@@ -44,7 +44,7 @@ message SetCurrentMembershipResponse {
 }
 
 message DeleteMembershipRequest {
-  string membership_id = 1 [(validate.rules).string.uuid = true];
+  string membership_id = 1 [(buf.validate.field).string.uuid = true];
 }
 
 message DeleteMembershipResponse {}

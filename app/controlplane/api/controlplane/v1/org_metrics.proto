@@ -18,7 +18,7 @@ syntax = "proto3";
 package controlplane.v1;
 
 import "controlplane/v1/response_messages.proto";
-import "validate/validate.proto";
+import "buf/validate/validate.proto";
 import "workflowcontract/v1/crafting_schema.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
@@ -31,9 +31,9 @@ service OrgMetricsService {
 
 // Get the dayly count of runs by status
 message DailyRunsCountRequest {
-  optional string workflow_id = 1 [(validate.rules).string.uuid = true];
+  optional string workflow_id = 1 [(buf.validate.field).string.uuid = true];
 
-  MetricsTimeWindow time_window = 2 [(validate.rules).enum = {
+  MetricsTimeWindow time_window = 2 [(buf.validate.field).enum = {
     not_in: [0]
   }];
 }
@@ -49,7 +49,7 @@ message DailyRunsCountResponse {
 }
 
 message OrgMetricsServiceTotalsRequest {
-  MetricsTimeWindow time_window = 1 [(validate.rules).enum = {
+  MetricsTimeWindow time_window = 1 [(buf.validate.field).enum = {
     not_in: [0]
   }];
 }
@@ -76,11 +76,11 @@ message MetricsRunnerCount {
 
 message TopWorkflowsByRunsCountRequest {
   // top x number of runs to return
-  int32 num_workflows = 1 [(validate.rules).int32 = {
+  int32 num_workflows = 1 [(buf.validate.field).int32 = {
     gte: 1,
     lte: 20
   }];
-  MetricsTimeWindow time_window = 2 [(validate.rules).enum = {
+  MetricsTimeWindow time_window = 2 [(buf.validate.field).enum = {
     not_in: [0]
   }];
 }

@@ -20,7 +20,7 @@ package controlplane.v1;
 import "controlplane/v1/response_messages.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
-import "validate/validate.proto";
+import "buf/validate/validate.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
@@ -49,12 +49,12 @@ service IntegrationsService {
 
 message IntegrationsServiceRegisterRequest {
   // unique, DNS-like name for the registration
-  string name = 5 [(validate.rules).string = {min_len: 1}];
+  string name = 5 [(buf.validate.field).string = {min_len: 1}];
   // Kind of integration to register
   // This should match the ID of an existing plugin
-  string plugin_id = 1 [(validate.rules).string.min_len = 1];
+  string plugin_id = 1 [(buf.validate.field).string.min_len = 1];
   // Arbitrary configuration for the integration
-  google.protobuf.Struct config = 3 [(validate.rules).message.required = true];
+  google.protobuf.Struct config = 3 [(buf.validate.field).required = true];
   // Description of the registration, used for display purposes
   string description = 4;
 }
@@ -65,11 +65,11 @@ message IntegrationsServiceRegisterResponse {
 
 message IntegrationsServiceAttachRequest {
   // UUID of the workflow to attach
-  string workflow_id = 1 [(validate.rules).string.uuid = true];
+  string workflow_id = 1 [(buf.validate.field).string.uuid = true];
   // UUID of the integration registration to attach
-  string integration_id = 2 [(validate.rules).string.uuid = true];
+  string integration_id = 2 [(buf.validate.field).string.uuid = true];
   // Arbitrary configuration for the integration
-  google.protobuf.Struct config = 4 [(validate.rules).message.required = true];
+  google.protobuf.Struct config = 4 [(buf.validate.field).required = true];
 }
 
 message IntegrationsServiceAttachResponse {
@@ -108,7 +108,7 @@ message IntegrationsServiceListRegistrationsResponse {
 }
 
 message IntegrationsServiceDescribeRegistrationRequest {
-  string id = 1 [(validate.rules).string.uuid = true];
+  string id = 1 [(buf.validate.field).string.uuid = true];
 }
 
 message IntegrationsServiceDescribeRegistrationResponse {
@@ -116,7 +116,7 @@ message IntegrationsServiceDescribeRegistrationResponse {
 }
 
 message IntegrationsServiceDetachRequest {
-  string id = 1 [(validate.rules).string.uuid = true];
+  string id = 1 [(buf.validate.field).string.uuid = true];
 }
 
 message IntegrationsServiceDetachResponse {}
@@ -152,7 +152,7 @@ message IntegrationAttachmentItem {
 }
 
 message IntegrationsServiceDeregisterRequest {
-  string id = 1 [(validate.rules).string.uuid = true];
+  string id = 1 [(buf.validate.field).string.uuid = true];
 }
 
 message IntegrationsServiceDeregisterResponse {}

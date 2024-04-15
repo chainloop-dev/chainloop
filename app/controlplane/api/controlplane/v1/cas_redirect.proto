@@ -19,7 +19,7 @@ package controlplane.v1;
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
-import "validate/validate.proto";
+import "buf/validate/validate.proto";
 
 service CASRedirectService {
 	// Retrieve the URL to download an artifact in CAS
@@ -27,7 +27,7 @@ service CASRedirectService {
 }
 
 message GetDownloadURLRequest {
-  string digest = 1 [(validate.rules).string = {min_len: 1}];
+  string digest = 1 [(buf.validate.field).string = {min_len: 1}];
 }
 
 message GetDownloadURLResponse {
