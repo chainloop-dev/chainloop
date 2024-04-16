@@ -44,8 +44,11 @@ func (s *workflowIntegrationTestSuite) TestContractLatestAvailable() {
 	})
 
 	s.Run("it will increment if the contract is updated", func() {
-		_, err := s.WorkflowContract.Update(ctx, s.org.ID, workflow.ContractID.String(),
-			&biz.WorkflowContractUpdateOpts{Name: "new-name", Schema: &v1.CraftingSchema{
+		contract, err := s.WorkflowContract.FindByIDInOrg(ctx, s.org.ID, workflow.ContractID.String())
+		require.NoError(s.T(), err)
+
+		_, err = s.WorkflowContract.Update(ctx, s.org.ID, contract.Name,
+			&biz.WorkflowContractUpdateOpts{Schema: &v1.CraftingSchema{
 				Runner: &v1.CraftingSchema_Runner{Type: v1.CraftingSchema_Runner_CIRCLECI_BUILD},
 			}})
 		s.NoError(err)

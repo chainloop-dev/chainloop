@@ -269,8 +269,8 @@ func (s *workflowRunIntegrationTestSuite) TestContractInformation() {
 	})
 
 	s.Run("if the contract gets a new revision but it's not used, it shows spread", func() {
-		updatedContractRevision, err := s.WorkflowContract.Update(ctx, s.org.ID, s.contractVersion.Contract.ID.String(),
-			&biz.WorkflowContractUpdateOpts{Name: "new-name", Schema: &schemav1.CraftingSchema{
+		updatedContractRevision, err := s.WorkflowContract.Update(ctx, s.org.ID, s.contractVersion.Contract.Name,
+			&biz.WorkflowContractUpdateOpts{Schema: &schemav1.CraftingSchema{
 				Runner: &schemav1.CraftingSchema_Runner{Type: schemav1.CraftingSchema_Runner_CIRCLECI_BUILD},
 			}})
 		s.NoError(err)
