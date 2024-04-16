@@ -58,10 +58,8 @@ message WorkflowContractServiceUpdateRequest {
   // and we'll drop the id field in the future
   option (buf.validate.message).cel = {
     id: "either-name-or-id-required",
-    expression:
-      "!has(this.id) && !has(this.name)"
-      "? 'either name or id are required'"
-      ": ''"
+    message: "either name or id are required",
+    expression: "has(this.id) || has(this.name)"
   };
 
   // Maintained for backward compatibility until we mover all identifiers to name
