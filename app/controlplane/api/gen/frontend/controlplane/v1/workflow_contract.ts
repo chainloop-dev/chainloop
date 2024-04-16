@@ -25,7 +25,14 @@ export interface WorkflowContractServiceCreateResponse {
 }
 
 export interface WorkflowContractServiceUpdateRequest {
+  /**
+   * Maintained for backward compatibility until we mover all identifiers to name
+   * Moving forward, the contract name will be used as the identifier
+   *
+   * @deprecated
+   */
   id: string;
+  /** Name is the identifier of the contract */
   name: string;
   v1?: CraftingSchema | undefined;
   description?: string | undefined;

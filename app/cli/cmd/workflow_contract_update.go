@@ -32,6 +32,7 @@ func newWorkflowContractUpdateCmd() *cobra.Command {
 			if contractPath == "" && name == "" && description == "" {
 				return errors.New("no updates provided")
 			}
+
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -51,11 +52,13 @@ func newWorkflowContractUpdateCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&contractID, "id", "", "contract ID")
-	err := cmd.MarkFlagRequired("id")
+	err := cmd.Flags().MarkDeprecated("id", "use --name instead")
 	cobra.CheckErr(err)
 
 	cmd.Flags().StringVarP(&contractPath, "contract", "f", "", "path or URL to the contract schema")
 	cmd.Flags().StringVar(&name, "name", "", "name of the contract")
+
+	cobra.CheckErr(err)
 	cmd.Flags().StringVar(&description, "description", "", "description of the contract")
 
 	return cmd

@@ -35,7 +35,7 @@ type WorkflowContract struct {
 func (WorkflowContract) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),
-		field.String("name"),
+		field.String("name").Immutable(),
 		field.Time("created_at").
 			Default(time.Now).
 			Immutable().

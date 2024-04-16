@@ -31,64 +31,44 @@ func (s *workflowContractIntegrationTestSuite) TestUpdate() {
 	ctx := context.Background()
 
 	testCases := []struct {
-		name            string
-		OrgID, ID       string
-		input           *biz.WorkflowContractUpdateOpts
-		inputSchema     *schemav1.CraftingSchema
-		wantErrMsg      string
-		wantRevision    int
-		wantName        string
-		wantDescription string
+		name                string
+		orgID, contractName string
+		input               *biz.WorkflowContractUpdateOpts
+		inputSchema         *schemav1.CraftingSchema
+		wantErrMsg          string
+		wantRevision        int
+		wantDescription     string
 	}{
 		{
 			name:       "non-updates",
 			wantErrMsg: "no updates",
 		},
 		{
-			name:       "non-existing contract",
-			wantName:   "non-existing",
-			OrgID:      s.org.ID,
-			input:      &biz.WorkflowContractUpdateOpts{},
-			ID:         uuid.NewString(),
-			wantErrMsg: "not found",
-		},
-		{
-			name:       "existing contract invalid name",
-			input:      &biz.WorkflowContractUpdateOpts{Name: "invalid name"},
-			OrgID:      s.org.ID,
-			ID:         s.contractOrg1.ID.String(),
-			wantErrMsg: "RFC 1123",
-		},
-		{
-			name:         "existing contract valid name, does not bump revision",
-			input:        &biz.WorkflowContractUpdateOpts{Name: "valid-name"},
-			wantName:     "valid-name",
-			OrgID:        s.org.ID,
-			ID:           s.contractOrg1.ID.String(),
-			wantRevision: 1,
+			name:         "non-existing contract",
+			orgID:        s.org.ID,
+			input:        &biz.WorkflowContractUpdateOpts{},
+			contractName: uuid.NewString(),
+			wantErrMsg:   "not found",
 		},
 		{
 			name:         "updating schema bumps revision",
-			OrgID:        s.org.ID,
-			ID:           s.contractOrg1.ID.String(),
-			wantName:     "valid-name",
+			orgID:        s.org.ID,
+			contractName: s.contractOrg1.Name,
 			input:        &biz.WorkflowContractUpdateOpts{Schema: &schemav1.CraftingSchema{SchemaVersion: "v123"}},
 			wantRevision: 2,
 		},
 		{
 			name:         "updating with same schema DOES NOT bump revision",
-			OrgID:        s.org.ID,
-			ID:           s.contractOrg1.ID.String(),
+			orgID:        s.org.ID,
+			contractName: s.contractOrg1.Name,
 			input:        &biz.WorkflowContractUpdateOpts{Schema: &schemav1.CraftingSchema{SchemaVersion: "v123"}},
-			wantName:     "valid-name",
 			wantRevision: 2,
 		},
 		{
-			name:            "you can update the description",
-			OrgID:           s.org.ID,
-			ID:              s.contractOrg1.ID.String(),
+			name:            "updating description bumps revision",
+			orgID:           s.org.ID,
+			contractName:    s.contractOrg1.Name,
 			input:           &biz.WorkflowContractUpdateOpts{Description: toPtrS("new description")},
-			wantName:        "valid-name",
 			wantDescription: "new description",
 			wantRevision:    2,
 		},
@@ -96,16 +76,12 @@ func (s *workflowContractIntegrationTestSuite) TestUpdate() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			contract, err := s.WorkflowContract.Update(ctx, tc.OrgID, tc.ID, tc.input)
+			contract, err := s.WorkflowContract.Update(ctx, tc.orgID, tc.contractName, tc.input)
 			if tc.wantErrMsg != "" {
 				s.ErrorContains(err, tc.wantErrMsg)
 				return
 			}
 			require.NoError(s.T(), err)
-
-			if tc.wantName != "" {
-				s.Equal(tc.wantName, contract.Contract.Name)
-			}
 
 			if tc.wantDescription != "" {
 				s.Equal(tc.wantDescription, contract.Contract.Description)

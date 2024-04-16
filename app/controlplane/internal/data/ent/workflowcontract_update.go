@@ -33,12 +33,6 @@ func (wcu *WorkflowContractUpdate) Where(ps ...predicate.WorkflowContract) *Work
 	return wcu
 }
 
-// SetName sets the "name" field.
-func (wcu *WorkflowContractUpdate) SetName(s string) *WorkflowContractUpdate {
-	wcu.mutation.SetName(s)
-	return wcu
-}
-
 // SetDeletedAt sets the "deleted_at" field.
 func (wcu *WorkflowContractUpdate) SetDeletedAt(t time.Time) *WorkflowContractUpdate {
 	wcu.mutation.SetDeletedAt(t)
@@ -223,9 +217,6 @@ func (wcu *WorkflowContractUpdate) sqlSave(ctx context.Context) (n int, err erro
 			}
 		}
 	}
-	if value, ok := wcu.mutation.Name(); ok {
-		_spec.SetField(workflowcontract.FieldName, field.TypeString, value)
-	}
 	if value, ok := wcu.mutation.DeletedAt(); ok {
 		_spec.SetField(workflowcontract.FieldDeletedAt, field.TypeTime, value)
 	}
@@ -377,12 +368,6 @@ type WorkflowContractUpdateOne struct {
 	hooks     []Hook
 	mutation  *WorkflowContractMutation
 	modifiers []func(*sql.UpdateBuilder)
-}
-
-// SetName sets the "name" field.
-func (wcuo *WorkflowContractUpdateOne) SetName(s string) *WorkflowContractUpdateOne {
-	wcuo.mutation.SetName(s)
-	return wcuo
 }
 
 // SetDeletedAt sets the "deleted_at" field.
@@ -598,9 +583,6 @@ func (wcuo *WorkflowContractUpdateOne) sqlSave(ctx context.Context) (_node *Work
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := wcuo.mutation.Name(); ok {
-		_spec.SetField(workflowcontract.FieldName, field.TypeString, value)
 	}
 	if value, ok := wcuo.mutation.DeletedAt(); ok {
 		_spec.SetField(workflowcontract.FieldDeletedAt, field.TypeTime, value)

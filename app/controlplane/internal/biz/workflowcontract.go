@@ -56,7 +56,7 @@ type WorkflowContractRepo interface {
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*WorkflowContract, error)
 	Describe(ctx context.Context, orgID, contractID uuid.UUID, revision int) (*WorkflowContractWithVersion, error)
 	FindVersionByID(ctx context.Context, versionID uuid.UUID) (*WorkflowContractVersion, error)
-	Update(ctx context.Context, opts *ContractUpdateOpts) (*WorkflowContractWithVersion, error)
+	Update(ctx context.Context, orgID uuid.UUID, name string, opts *ContractUpdateOpts) (*WorkflowContractWithVersion, error)
 	SoftDelete(ctx context.Context, contractID uuid.UUID) error
 }
 
@@ -68,10 +68,8 @@ type ContractCreateOpts struct {
 }
 
 type ContractUpdateOpts struct {
-	Name              string
-	OrgID, ContractID uuid.UUID
-	Description       *string
-	ContractBody      []byte
+	Description  *string
+	ContractBody []byte
 }
 
 type WorkflowContractUseCase struct {
@@ -233,12 +231,11 @@ func (uc *WorkflowContractUseCase) FindVersionByID(ctx context.Context, versionI
 }
 
 type WorkflowContractUpdateOpts struct {
-	Name        string
 	Schema      *schemav1.CraftingSchema
 	Description *string
 }
 
-func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, contractID string, opts *WorkflowContractUpdateOpts) (*WorkflowContractWithVersion, error) {
+func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name string, opts *WorkflowContractUpdateOpts) (*WorkflowContractWithVersion, error) {
 	if opts == nil {
 		return nil, NewErrValidationStr("no updates provided")
 	}
@@ -248,30 +245,14 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, contractID
 		return nil, err
 	}
 
-	contractUUID, err := uuid.Parse(contractID)
-	if err != nil {
-		return nil, err
-	}
-
-	if opts.Name != "" {
-		if err := ValidateIsDNS1123(opts.Name); err != nil {
-			return nil, NewErrValidation(err)
-		}
-	}
-
 	rawSchema, err := proto.Marshal(opts.Schema)
 	if err != nil {
 		return nil, err
 	}
 
-	args := &ContractUpdateOpts{OrgID: orgUUID, ContractID: contractUUID, ContractBody: rawSchema, Name: opts.Name, Description: opts.Description}
-
-	c, err := uc.repo.Update(ctx, args)
+	args := &ContractUpdateOpts{ContractBody: rawSchema, Description: opts.Description}
+	c, err := uc.repo.Update(ctx, orgUUID, name, args)
 	if err != nil {
-		if errors.Is(err, ErrAlreadyExists) {
-			return nil, NewErrValidationStr("name already taken")
-		}
-
 		return nil, fmt.Errorf("failed to update contract: %w", err)
 	} else if c == nil {
 		return nil, NewErrNotFound("contract")
