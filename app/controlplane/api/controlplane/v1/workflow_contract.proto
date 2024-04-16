@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@ syntax = "proto3";
 
 package controlplane.v1;
 
-import "controlplane/v1/response_messages.proto";
 import "buf/validate/validate.proto";
+import "controlplane/v1/response_messages.proto";
 import "workflowcontract/v1/crafting_schema.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
@@ -52,8 +52,38 @@ message WorkflowContractServiceCreateResponse {
 }
 
 message WorkflowContractServiceUpdateRequest {
-  string id = 1 [(buf.validate.field).string.uuid = true];
-  string name = 2;
+  // TODO: remove once the id is fully removed
+  // Checks that either name or id is provided
+  // NOTE: we did not use oneof in this case because we don't want to break compatibility with other clients
+  // and we'll drop the id field in the future
+  option (buf.validate.message).cel = {
+    id: "either-name-or-id-required",
+    expression:
+      "!has(this.id) && !has(this.name)"
+      "? 'either name or id are required'"
+      ": ''"
+  };
+
+  // Maintained for backward compatibility until we mover all identifiers to name
+  // Moving forward, the contract name will be used as the identifier
+  string id = 1 [
+    deprecated = true,
+    (buf.validate.field) = {
+      string: {uuid: true},
+      ignore_empty: true,
+    }
+  ];
+
+  // Name is the identifier of the contract
+  string name = 2 [(buf.validate.field) = {
+    ignore_empty: true,
+    // NOTE: validations can not be shared yet https://github.com/bufbuild/protovalidate/issues/51
+    cel: {
+      message: "name must be a valid DNS-1123 subdomain",
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
+      id: "name.dns-1123",
+    },
+  }];
 
   oneof contract {
     workflowcontract.v1.CraftingSchema v1 = 3;

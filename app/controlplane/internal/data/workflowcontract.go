@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -117,7 +117,7 @@ func (r *WorkflowContractRepo) FindVersionByID(ctx context.Context, versionID uu
 }
 
 func (r *WorkflowContractRepo) Describe(ctx context.Context, orgID, contractID uuid.UUID, revision int) (*biz.WorkflowContractWithVersion, error) {
-	contract, err := contractInOrg(ctx, r.data.db, orgID, contractID)
+	contract, err := contractInOrg(ctx, r.data.db, orgID, &contractID, nil)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	} else if contract == nil {
@@ -158,14 +158,14 @@ func (r *WorkflowContractRepo) Describe(ctx context.Context, orgID, contractID u
 }
 
 // Update will add a new version of the contract.
-// NOTE: ContractVersions are imutable
-func (r *WorkflowContractRepo) Update(ctx context.Context, opts *biz.ContractUpdateOpts) (*biz.WorkflowContractWithVersion, error) {
-	tx, err := r.data.db.Tx(ctx)
+// NOTE: ContractVersions are immutable
+func (r *WorkflowContractRepo) Update(ctx context.Context, orgID uuid.UUID, name string, opts *biz.ContractUpdateOpts) (*biz.WorkflowContractWithVersion, error) {
+	tx, err := r.data.db.Debug().Tx(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	contract, err := contractInOrgTx(ctx, tx, opts.OrgID, opts.ContractID)
+	contract, err := contractInOrgTx(ctx, tx, orgID, nil, &name)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, nil
@@ -178,12 +178,7 @@ func (r *WorkflowContractRepo) Update(ctx context.Context, opts *biz.ContractUpd
 		return nil, nil
 	}
 
-	updateContract := contract.Update().SetNillableDescription(opts.Description)
-	if opts.Name != "" {
-		updateContract = updateContract.SetName(opts.Name)
-	}
-
-	contract, err = updateContract.Save(ctx)
+	contract, err = contract.Update().SetNillableDescription(opts.Description).Save(ctx)
 	if err != nil {
 		return nil, rollback(tx, err)
 	}
@@ -216,7 +211,7 @@ func (r *WorkflowContractRepo) Update(ctx context.Context, opts *biz.ContractUpd
 	}
 
 	// The transaction is committed, we can now return the result
-	contract, err = contractInOrg(ctx, r.data.db, opts.OrgID, opts.ContractID)
+	contract, err = contractInOrg(ctx, r.data.db, orgID, nil, &name)
 	if err != nil {
 		return nil, err
 	}
@@ -233,7 +228,7 @@ func (r *WorkflowContractRepo) Update(ctx context.Context, opts *biz.ContractUpd
 }
 
 func (r *WorkflowContractRepo) FindByIDInOrg(ctx context.Context, orgID, contractID uuid.UUID) (*biz.WorkflowContract, error) {
-	contract, err := contractInOrg(ctx, r.data.db, orgID, contractID)
+	contract, err := contractInOrg(ctx, r.data.db, orgID, &contractID, nil)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	} else if contract == nil {
@@ -288,23 +283,37 @@ func latestVersion(ctx context.Context, contract *ent.WorkflowContract) (*ent.Wo
 	return contract.QueryVersions().Order(ent.Desc(workflowcontractversion.FieldRevision)).First(ctx)
 }
 
-func contractInOrg(ctx context.Context, client *ent.Client, orgID, contractID uuid.UUID) (*ent.WorkflowContract, error) {
-	return contractInOrgQuery(ctx, client.Organization.Query(), orgID, contractID)
+func contractInOrg(ctx context.Context, client *ent.Client, orgID uuid.UUID, contractID *uuid.UUID, name *string) (*ent.WorkflowContract, error) {
+	return contractInOrgQuery(ctx, client.Organization.Query(), orgID, contractID, name)
 }
 
-func contractInOrgTx(ctx context.Context, tx *ent.Tx, orgID, contractID uuid.UUID) (*ent.WorkflowContract, error) {
-	return contractInOrgQuery(ctx, tx.Organization.Query(), orgID, contractID)
+func contractInOrgTx(ctx context.Context, tx *ent.Tx, orgID uuid.UUID, contractID *uuid.UUID, name *string) (*ent.WorkflowContract, error) {
+	return contractInOrgQuery(ctx, tx.Organization.Query(), orgID, contractID, name)
 }
 
-func contractInOrgQuery(ctx context.Context, q *ent.OrganizationQuery, orgID, contractID uuid.UUID) (*ent.WorkflowContract, error) {
-	return q.
+// It can be loaded via by ID or name
+func contractInOrgQuery(ctx context.Context, q *ent.OrganizationQuery, orgID uuid.UUID, contractID *uuid.UUID, name *string) (*ent.WorkflowContract, error) {
+	if contractID == nil && name == nil {
+		return nil, fmt.Errorf("either contractID or name must be provided")
+	}
+
+	query := q.
 		Where(organization.ID(orgID)).
 		QueryWorkflowContracts().
+		Where(workflowcontract.DeletedAtIsNil()).
 		WithWorkflows(func(q *ent.WorkflowQuery) {
 			q.Where(workflow.DeletedAtIsNil())
-		}).
-		Where(workflowcontract.ID(contractID), workflowcontract.DeletedAtIsNil()).
-		Only(ctx)
+		})
+
+	if contractID != nil {
+		query = query.Where(workflowcontract.ID(*contractID))
+	}
+
+	if name != nil {
+		query = query.Where(workflowcontract.NameEQ(*name))
+	}
+
+	return query.Only(ctx)
 }
 
 func entContractToBizContract(w *ent.WorkflowContract, version *ent.WorkflowContractVersion, workflowIDs []string) *biz.WorkflowContract {

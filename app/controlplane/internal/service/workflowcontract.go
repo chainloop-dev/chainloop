@@ -102,9 +102,19 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 		return nil, err
 	}
 
-	schemaWithVersion, err := s.contractUseCase.Update(ctx, currentOrg.ID, req.GetId(),
+	// TODO: remove once we do no longer support updating by ID
+	var name = req.GetName()
+	if name == "" && req.GetId() != "" {
+		// find the name from the ID
+		contract, err := s.contractUseCase.FindByIDInOrg(ctx, currentOrg.ID, req.GetId())
+		if err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+		name = contract.Name
+	}
+
+	schemaWithVersion, err := s.contractUseCase.Update(ctx, currentOrg.ID, name,
 		&biz.WorkflowContractUpdateOpts{
-			Name:        req.GetName(),
 			Schema:      req.GetV1(),
 			Description: req.Description,
 		})
