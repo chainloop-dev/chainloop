@@ -77,6 +77,11 @@ func TestHelmChartCraft(t *testing.T) {
 			wantErr:  "no such file or directory",
 		},
 		{
+			name:     "empty tarball",
+			filePath: "./testdata/missing-empty.tgz",
+			wantErr:  "missing required files in the helm chart: Chart.yaml and values.yaml",
+		},
+		{
 			name:     "missing Chart.yaml file",
 			filePath: "./testdata/missing-chartyaml.tgz",
 			wantErr:  "missing required files in the helm chart: Chart.yaml and values.yaml",

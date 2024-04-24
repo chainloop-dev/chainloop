@@ -32,8 +32,10 @@ import (
 )
 
 const (
-	ChartFileName      = "Chart.yaml"
-	ValuesYamlFileName = "values.yaml"
+	// chartFileName is the name of the Chart.yaml file in the helm chart
+	chartFileName = "Chart.yaml"
+	// chartValuesYamlFileName is the name of the values.yaml file in the helm chart
+	chartValuesYamlFileName = "values.yaml"
 )
 
 type HelmChartCrafter struct {
@@ -71,7 +73,7 @@ func (c *HelmChartCrafter) Craft(ctx context.Context, filepath string) (*api.Att
 	tarReader := tar.NewReader(uncompressedStream)
 
 	// Flags to track whether required files are found
-	chartFileValid, chartValuesValid := false, false
+	var chartFileValid, chartValuesValid bool
 
 	// Iterate through the files in the tar archive
 	for {
@@ -89,14 +91,16 @@ func (c *HelmChartCrafter) Craft(ctx context.Context, filepath string) (*api.Att
 			continue // Skip if it's not a regular file
 		}
 
-		// Validate Chart.yaml and values.yaml files
-		if strings.Contains(header.Name, ChartFileName) {
-			if err := validateYamlFile(tarReader); err != nil {
+		// Validate Chart.yaml and values.yaml files. The files will have prepended the path of the directory
+		// it was compressed from. So, we can check if the file name contains the required file names
+		// Ex: helm-chart/Chart.yaml, helm-chart/values.yaml
+		if strings.Contains(header.Name, chartFileName) {
+			if err := c.validateYamlFile(tarReader); err != nil {
 				return nil, fmt.Errorf("invalid Chart.yaml file: %w", err)
 			}
 			chartFileValid = true
-		} else if strings.Contains(header.Name, ValuesYamlFileName) {
-			if err := validateYamlFile(tarReader); err != nil {
+		} else if strings.Contains(header.Name, chartValuesYamlFileName) {
+			if err := c.validateYamlFile(tarReader); err != nil {
 				return nil, fmt.Errorf("invalid values.yaml file: %w", err)
 			}
 			chartValuesValid = true
@@ -118,7 +122,7 @@ func (c *HelmChartCrafter) Craft(ctx context.Context, filepath string) (*api.Att
 }
 
 // validateYamlFile validates the YAML file just by trying to unmarshal it
-func validateYamlFile(r io.Reader) error {
+func (c *HelmChartCrafter) validateYamlFile(r io.Reader) error {
 	v := make(map[string]interface{})
 	if err := yaml.NewDecoder(r).Decode(v); err != nil {
 		return fmt.Errorf("failed to unmarshal YAML file: %w", err)
