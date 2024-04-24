@@ -91,6 +91,9 @@ func (r *RobotAccountRepo) Revoke(ctx context.Context, orgID, id uuid.UUID) erro
 		QueryRobotaccounts().Where(robotaccount.ID(id)).Where(robotaccount.RevokedAtIsNil()).
 		First(ctx)
 	if err != nil {
+		if ent.IsNotFound(err) {
+			return biz.NewErrNotFound("robot account")
+		}
 		return err
 	}
 
