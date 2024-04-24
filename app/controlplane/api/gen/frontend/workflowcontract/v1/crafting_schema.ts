@@ -119,6 +119,7 @@ export enum CraftingSchema_Material_MaterialType {
    * https://github.com/microsoft/sarif-tutorials/blob/main/docs/1-Introduction.md
    */
   SARIF = 9,
+  HELM_CHART = 10,
   UNRECOGNIZED = -1,
 }
 
@@ -154,6 +155,9 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 9:
     case "SARIF":
       return CraftingSchema_Material_MaterialType.SARIF;
+    case 10:
+    case "HELM_CHART":
+      return CraftingSchema_Material_MaterialType.HELM_CHART;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -183,6 +187,8 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "CSAF_VEX";
     case CraftingSchema_Material_MaterialType.SARIF:
       return "SARIF";
+    case CraftingSchema_Material_MaterialType.HELM_CHART:
+      return "HELM_CHART";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

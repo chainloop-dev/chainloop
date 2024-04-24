@@ -83,6 +83,7 @@ message CraftingSchema {
       // Static analysis output format
       // https://github.com/microsoft/sarif-tutorials/blob/main/docs/1-Introduction.md
       SARIF = 9;
+      HELM_CHART = 10;
     }
   }
 }

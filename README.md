@@ -130,6 +130,7 @@ Chainloop supports the collection of the following pieces of evidence types:
 - [OpenVEX](https://github.com/openvex)
 - [SARIF](https://docs.oasis-open.org/sarif/sarif/v2.1.0/)
 - [JUnit](https://www.ibm.com/docs/en/developer-for-zos/14.1?topic=formats-junit-xml-format)
+- [Helm Charts](https://helm.sh/docs/topics/charts/)
 - Generic Artifact Types
 - Key-Value metadata pairs
 
