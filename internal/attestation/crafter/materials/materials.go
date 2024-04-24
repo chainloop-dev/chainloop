@@ -169,6 +169,8 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 		crafter, err = NewCSAFVEXCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_SARIF:
 		crafter, err = NewSARIFCrafter(materialSchema, casBackend, logger)
+	case schemaapi.CraftingSchema_Material_HELM_CHART:
+		crafter, err = NewHelmChartCrafter(materialSchema, casBackend, logger)
 	default:
 		return nil, fmt.Errorf("material of type %q not supported yet", materialSchema.Type)
 	}
