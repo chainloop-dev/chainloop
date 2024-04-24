@@ -67,6 +67,7 @@ jobs:
         if: ${{ failure() }}
         run: |
           chainloop attestation reset
+
       - name: Mark attestation as cancelled
         if: ${{ cancelled() }}
         run: |
