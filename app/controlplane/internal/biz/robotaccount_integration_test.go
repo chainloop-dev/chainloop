@@ -21,24 +21,24 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
-	"github.com/stretchr/testify/assert"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
 )
 
 func (s *robotAccountTestSuite) TestRevoke() {
 	ctx := context.Background()
 	s.Run("returns an error if org ID format is not valid", func() {
-		err := s.RobotAccount.Revoke(ctx, "not_valid_uuid", "52597CC8-21BF-45C4-B30B-AE2879556CE1")
+		err := s.RobotAccount.Revoke(ctx, "not_valid_uuid", uuid.NewString())
 		s.ErrorAs(err, &biz.ErrInvalidUUID{})
 	})
 
 	s.Run("returns an error if robot account ID format is not valid", func() {
-		err := s.RobotAccount.Revoke(ctx, "991B156A-7636-44D2-97B0-E97070E626DC", "not_valid_uuid")
+		err := s.RobotAccount.Revoke(ctx, uuid.NewString(), "not_valid_uuid")
 		s.ErrorAs(err, &biz.ErrInvalidUUID{})
 	})
 
 	s.Run("returns a Not Found if robot account cannot be found", func() {
-		err := s.RobotAccount.Revoke(ctx, s.org.ID, "DCF3895A-22BE-49D0-99D4-0A76835D0BD1")
+		err := s.RobotAccount.Revoke(ctx, s.org.ID, uuid.NewString())
 		s.ErrorAs(err, &biz.ErrNotFound{})
 	})
 
@@ -66,20 +66,18 @@ func TestRobotAccountUseCase(t *testing.T) {
 }
 
 func (s *robotAccountTestSuite) SetupTest() {
-	t := s.T()
 	var err error
-	assert := assert.New(s.T())
 	ctx := context.Background()
 
-	s.TestingUseCases = testhelpers.NewTestingUseCases(t)
+	s.TestingUseCases = testhelpers.NewTestingUseCases(s.T())
 	s.org, err = s.Organization.CreateWithRandomName(ctx)
-	assert.NoError(err)
+	s.NoError(err)
 
 	wf, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{
 		Name:  "myworkflow",
 		OrgID: s.org.ID,
 	})
-	assert.NoError(err)
+	s.NoError(err)
 	s.ra, err = s.RobotAccount.Create(ctx, "myRobotAccount", s.org.ID, wf.ID.String())
-	assert.NoError(err)
+	s.NoError(err)
 }
