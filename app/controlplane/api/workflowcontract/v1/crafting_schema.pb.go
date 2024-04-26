@@ -115,8 +115,8 @@ const (
 	// https://github.com/microsoft/sarif-tutorials/blob/main/docs/1-Introduction.md
 	CraftingSchema_Material_SARIF      CraftingSchema_Material_MaterialType = 9
 	CraftingSchema_Material_HELM_CHART CraftingSchema_Material_MaterialType = 10
-	// Evidences are materials that are not meant to be subject of attestations, but still uploaded
-	// to the CAS, like the ARTIFACT type.
+	// Pieces of evidences represent generic, additional context that don't fit
+	// into one of the well known material types. For example, a custom approval report (in json), ...
 	CraftingSchema_Material_EVIDENCE CraftingSchema_Material_MaterialType = 11
 )
 

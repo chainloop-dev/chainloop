@@ -121,8 +121,8 @@ export enum CraftingSchema_Material_MaterialType {
   SARIF = 9,
   HELM_CHART = 10,
   /**
-   * EVIDENCE - Evidences are materials that are not meant to be subject of attestations, but still uploaded
-   * to the CAS, like the ARTIFACT type.
+   * EVIDENCE - Pieces of evidences represent generic, additional context that don't fit
+   * into one of the well known material types. For example, a custom approval report (in json), ...
    */
   EVIDENCE = 11,
   UNRECOGNIZED = -1,

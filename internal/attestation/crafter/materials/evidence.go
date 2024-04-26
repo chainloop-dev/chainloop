@@ -30,6 +30,9 @@ type EvidenceCrafter struct {
 	backend *casclient.CASBackend
 }
 
+// NewEvidenceCrafter generates a new Evidence material.
+// Pieces of evidences represent generic, additional context that don't fit
+// into one of the well known material types. For example, a custom approval report (in json), ...
 func NewEvidenceCrafter(schema *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, l *zerolog.Logger) (*EvidenceCrafter, error) {
 	if schema.Type != schemaapi.CraftingSchema_Material_EVIDENCE {
 		return nil, fmt.Errorf("material type is not evidence")
