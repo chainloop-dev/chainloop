@@ -244,7 +244,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		require.Len(t, got.OrgIDs, 2)
 	})
 
-	s.T().Run("you can ask for info about materials that are subjects", func(t *testing.T) {
+	s.T().Run("subject materials are returned connected to the attestation", func(t *testing.T) {
 		got, err := s.Referrer.GetFromRootUser(ctx, wantReferrerContainerImage.Digest, "", s.user.ID)
 		s.NoError(err)
 		// parent i.e attestation
@@ -258,14 +258,13 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		s.Equal(wantReferrerAtt.Downloadable, got.References[0].Downloadable)
 	})
 
-	s.T().Run("it might not have references", func(t *testing.T) {
+	s.T().Run("non-subject materials also are connected to the attestation", func(t *testing.T) {
 		got, err := s.Referrer.GetFromRootUser(ctx, wantReferrerSarif.Digest, "", s.user.ID)
 		s.NoError(err)
-		// parent i.e attestation
-		s.Equal(wantReferrerSarif.Digest, got.Digest)
-		s.Equal(wantReferrerSarif.Downloadable, got.Downloadable)
-		s.Equal(wantReferrerSarif.Kind, got.Kind)
-		require.Len(t, got.References, 0)
+		require.Len(t, got.References, 1)
+		s.Equal(wantReferrerAtt.Digest, got.References[0].Digest)
+		s.Equal(wantReferrerAtt.Kind, got.References[0].Kind)
+		s.Equal(wantReferrerAtt.Downloadable, got.References[0].Downloadable)
 	})
 
 	s.T().Run("or it does not exist", func(t *testing.T) {
