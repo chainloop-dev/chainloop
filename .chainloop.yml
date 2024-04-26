@@ -7,3 +7,7 @@ docs:
     path: reports/sbom.spdx.json
   - name: built-site
     path: reports/build.tar.gz
+
+scorecards:
+  - name: sarif-results
+    path: metadata/results.sarif
