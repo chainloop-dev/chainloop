@@ -131,7 +131,8 @@ Chainloop supports the collection of the following pieces of evidence types:
 - [SARIF](https://docs.oasis-open.org/sarif/sarif/v2.1.0/)
 - [JUnit](https://www.ibm.com/docs/en/developer-for-zos/14.1?topic=formats-junit-xml-format)
 - [Helm Chart](https://helm.sh/docs/topics/charts/)
-- Generic Artifact Types
+- Artifact Type: It represents a software artifact.
+- Custom Evidence Type: Custom piece of evidence that doesn't fit in any other category, for instance, an approval report in json format, etc.
 - Key-Value metadata pairs
 
 During the attestation process, these pieces of evidence will get uploaded to the [Content Addressable Storage](https://docs.chainloop.dev/reference/operator/cas-backend/) (if applicable) and referenced in a [SLSA](https://slsa.dev) attestation.
