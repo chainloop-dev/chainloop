@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewArtifactCrafter(t *testing.T) {
+func TestNewEvidenceCrafter(t *testing.T) {
 	testCases := []struct {
 		name    string
 		input   *contractAPI.CraftingSchema_Material
@@ -40,7 +40,7 @@ func TestNewArtifactCrafter(t *testing.T) {
 		{
 			name: "happy path",
 			input: &contractAPI.CraftingSchema_Material{
-				Type: contractAPI.CraftingSchema_Material_ARTIFACT,
+				Type: contractAPI.CraftingSchema_Material_EVIDENCE,
 			},
 		},
 		{
@@ -54,7 +54,7 @@ func TestNewArtifactCrafter(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := materials.NewArtifactCrafter(tc.input, nil, nil)
+			_, err := materials.NewEvidenceCrafter(tc.input, nil, nil)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return
@@ -65,11 +65,11 @@ func TestNewArtifactCrafter(t *testing.T) {
 	}
 }
 
-func TestArtifactCraft(t *testing.T) {
+func TestEvidenceCraft(t *testing.T) {
 	assert := assert.New(t)
 	schema := &contractAPI.CraftingSchema_Material{
 		Name: "test",
-		Type: contractAPI.CraftingSchema_Material_ARTIFACT,
+		Type: contractAPI.CraftingSchema_Material_EVIDENCE,
 	}
 
 	l := zerolog.Nop()
@@ -84,12 +84,12 @@ func TestArtifactCraft(t *testing.T) {
 
 	backend := &casclient.CASBackend{Uploader: uploader}
 
-	crafter, err := materials.NewArtifactCrafter(schema, backend, &l)
+	crafter, err := materials.NewEvidenceCrafter(schema, backend, &l)
 	require.NoError(t, err)
 
 	got, err := crafter.Craft(context.TODO(), "./testdata/simple.txt")
 	assert.NoError(err)
-	assert.Equal(contractAPI.CraftingSchema_Material_ARTIFACT.String(), got.MaterialType.String())
+	assert.Equal(contractAPI.CraftingSchema_Material_EVIDENCE.String(), got.MaterialType.String())
 	assert.True(got.UploadedToCas)
 
 	// The result includes the digest reference
@@ -98,23 +98,23 @@ func TestArtifactCraft(t *testing.T) {
 	})
 }
 
-func TestArtifactCraftInline(t *testing.T) {
+func TestEvidenceCraftInline(t *testing.T) {
 	assert := assert.New(t)
 	schema := &contractAPI.CraftingSchema_Material{
 		Name: "test",
-		Type: contractAPI.CraftingSchema_Material_ARTIFACT,
+		Type: contractAPI.CraftingSchema_Material_EVIDENCE,
 	}
 	l := zerolog.Nop()
 
 	t.Run("inline without size limit", func(t *testing.T) {
 		backend := &casclient.CASBackend{}
 
-		crafter, err := materials.NewArtifactCrafter(schema, backend, &l)
+		crafter, err := materials.NewEvidenceCrafter(schema, backend, &l)
 		require.NoError(t, err)
 
 		got, err := crafter.Craft(context.TODO(), "./testdata/simple.txt")
 		assert.NoError(err)
-		assertMaterial(t, got)
+		assertEvidenceMaterial(t, got)
 	})
 
 	t.Run("backend with size limit", func(t *testing.T) {
@@ -122,12 +122,12 @@ func TestArtifactCraftInline(t *testing.T) {
 			MaxSize: 100 * bytefmt.BYTE,
 		}
 
-		crafter, err := materials.NewArtifactCrafter(schema, backend, &l)
+		crafter, err := materials.NewEvidenceCrafter(schema, backend, &l)
 		require.NoError(t, err)
 
 		got, err := crafter.Craft(context.TODO(), "./testdata/simple.txt")
 		assert.NoError(err)
-		assertMaterial(t, got)
+		assertEvidenceMaterial(t, got)
 	})
 
 	t.Run("backend with size limit too small", func(t *testing.T) {
@@ -135,7 +135,7 @@ func TestArtifactCraftInline(t *testing.T) {
 			MaxSize: bytefmt.BYTE,
 		}
 
-		crafter, err := materials.NewArtifactCrafter(schema, backend, &l)
+		crafter, err := materials.NewEvidenceCrafter(schema, backend, &l)
 		require.NoError(t, err)
 
 		_, err = crafter.Craft(context.TODO(), "./testdata/simple.txt")
@@ -143,7 +143,7 @@ func TestArtifactCraftInline(t *testing.T) {
 	})
 }
 
-func assertMaterial(t *testing.T, got *attestationApi.Attestation_Material) {
+func assertEvidenceMaterial(t *testing.T, got *attestationApi.Attestation_Material) {
 	assert := assert.New(t)
 	// Not uploaded to CAS
 	assert.False(got.UploadedToCas)

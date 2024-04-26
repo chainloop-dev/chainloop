@@ -84,6 +84,10 @@ message CraftingSchema {
       // https://github.com/microsoft/sarif-tutorials/blob/main/docs/1-Introduction.md
       SARIF = 9;
       HELM_CHART = 10;
+
+      // Pieces of evidences represent generic, additional context that don't fit
+      // into one of the well known material types. For example, a custom approval report (in json), ...
+      EVIDENCE = 11;
     }
   }
 }
