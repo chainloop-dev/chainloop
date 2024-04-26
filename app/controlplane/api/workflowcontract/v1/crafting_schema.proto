@@ -84,6 +84,10 @@ message CraftingSchema {
       // https://github.com/microsoft/sarif-tutorials/blob/main/docs/1-Introduction.md
       SARIF = 9;
       HELM_CHART = 10;
+
+      // Evidences are materials that are not meant to be subject of attestations, but still uploaded
+      // to the CAS, like the ARTIFACT type.
+      EVIDENCE = 11;
     }
   }
 }

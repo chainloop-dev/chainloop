@@ -120,6 +120,11 @@ export enum CraftingSchema_Material_MaterialType {
    */
   SARIF = 9,
   HELM_CHART = 10,
+  /**
+   * EVIDENCE - Evidences are materials that are not meant to be subject of attestations, but still uploaded
+   * to the CAS, like the ARTIFACT type.
+   */
+  EVIDENCE = 11,
   UNRECOGNIZED = -1,
 }
 
@@ -158,6 +163,9 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 10:
     case "HELM_CHART":
       return CraftingSchema_Material_MaterialType.HELM_CHART;
+    case 11:
+    case "EVIDENCE":
+      return CraftingSchema_Material_MaterialType.EVIDENCE;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -189,6 +197,8 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "SARIF";
     case CraftingSchema_Material_MaterialType.HELM_CHART:
       return "HELM_CHART";
+    case CraftingSchema_Material_MaterialType.EVIDENCE:
+      return "EVIDENCE";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
