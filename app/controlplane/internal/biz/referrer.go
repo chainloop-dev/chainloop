@@ -305,7 +305,10 @@ func extractReferrers(att *dsse.Envelope) ([]*Referrer, error) {
 
 		materialReferrer := referrersMap[materialRef]
 
-		// Add the reference to the attestation
+		// We create a bidirectional link between the attestation and the material
+		// material -> attestation (1-1)
+		materialReferrer.References = []*Referrer{{Digest: attestationReferrer.Digest, Kind: attestationReferrer.Kind}}
+		// attestation -> material (1-N)
 		attestationReferrer.References = append(attestationReferrer.References, &Referrer{
 			Digest: materialReferrer.Digest, Kind: materialReferrer.Kind,
 		})
@@ -317,6 +320,8 @@ func extractReferrers(att *dsse.Envelope) ([]*Referrer, error) {
 		return nil, fmt.Errorf("extracting predicate: %w", err)
 	}
 
+	// Materials can also be subjects, but there are cases that we will have a subject that is not a material
+	// For example, a git head commit, that's why we need to also add the subjects as referrers (if needed)
 	for _, subject := range statement.Subject {
 		subjectReferrer, err := intotoSubjectToReferrer(subject)
 		if err != nil {
@@ -329,7 +334,7 @@ func extractReferrers(att *dsse.Envelope) ([]*Referrer, error) {
 
 		subjectRef := newRef(subjectReferrer.Digest, subjectReferrer.Kind)
 
-		// check if we already have a referrer for this digest and set it otherwise
+		// check if we already have a referrer for this digest, if not, we create it with bidirectional links like above
 		// this is the case for example for git.Head ones
 		if _, ok := referrersMap[subjectRef]; !ok {
 			referrersMap[subjectRef] = subjectReferrer
@@ -338,10 +343,10 @@ func extractReferrers(att *dsse.Envelope) ([]*Referrer, error) {
 				&Referrer{
 					Digest: subjectReferrer.Digest, Kind: subjectReferrer.Kind,
 				})
-		}
 
-		// Update referrer to point to the attestation
-		referrersMap[subjectRef].References = []*Referrer{{Digest: attestationReferrer.Digest, Kind: attestationReferrer.Kind}}
+			// Update referrer to point to the attestation
+			referrersMap[subjectRef].References = []*Referrer{{Digest: attestationReferrer.Digest, Kind: attestationReferrer.Kind}}
+		}
 	}
 
 	// Return a sorted list of referrers
