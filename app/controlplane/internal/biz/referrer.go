@@ -334,19 +334,22 @@ func extractReferrers(att *dsse.Envelope) ([]*Referrer, error) {
 
 		subjectRef := newRef(subjectReferrer.Digest, subjectReferrer.Kind)
 
-		// check if we already have a referrer for this digest, if not, we create it with bidirectional links like above
-		// this is the case for example for git.Head ones
-		if _, ok := referrersMap[subjectRef]; !ok {
-			referrersMap[subjectRef] = subjectReferrer
-			// add it to the list of of attestation-referenced digests
-			attestationReferrer.References = append(attestationReferrer.References,
-				&Referrer{
-					Digest: subjectReferrer.Digest, Kind: subjectReferrer.Kind,
-				})
-
-			// Update referrer to point to the attestation
-			referrersMap[subjectRef].References = []*Referrer{{Digest: attestationReferrer.Digest, Kind: attestationReferrer.Kind}}
+		// check if we already have a referrer for this digest and skip if it's the case
+		if _, ok := referrersMap[subjectRef]; ok {
+			continue
 		}
+
+		// We are now in the case where a subject is not a material, i.e a git head commit, we need to add it to the referrers
+		// with a bidirectional link to the attestation like we did for the materials
+		referrersMap[subjectRef] = subjectReferrer
+		// add it to the list of of attestation-referenced digests
+		attestationReferrer.References = append(attestationReferrer.References,
+			&Referrer{
+				Digest: subjectReferrer.Digest, Kind: subjectReferrer.Kind,
+			})
+
+		// Update referrer to point to the attestation
+		referrersMap[subjectRef].References = []*Referrer{{Digest: attestationReferrer.Digest, Kind: attestationReferrer.Kind}}
 	}
 
 	// Return a sorted list of referrers
