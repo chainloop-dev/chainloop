@@ -20,6 +20,8 @@ jobs:
   deploy_docs:
     name: Deploy Documentation
     runs-on: ubuntu-latest
+    needs:
+      - chainloop_init
     defaults:
       run:
         working-directory: ./docs
