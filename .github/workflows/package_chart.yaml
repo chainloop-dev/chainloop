@@ -46,7 +46,16 @@ jobs:
 
       - name: Add Attestation (Helm Chart)
         run: |
+          export PACKAGED_VERSION=$(cat ./deployment/chainloop/Chart.yaml | yq .appVersion)
+          export CONTAINER_CP=$(cat deployment/chainloop/values.yaml | yq .controlplane.image.repository)
+          export CONTAINER_CAS=$(cat deployment/chainloop/values.yaml | yq .cas.image.repository)
+
+          # Attest Chart
           chainloop attestation add --name helm-chart --value chainloop*.tgz
+          # Attest Control plane image
+          chainloop attestation add --name control-plane-image --value "${CONTAINER_CP}:${PACKAGED_VERSION}"
+          # Attest CAS image
+          chainloop attestation add --name artifact-cas-image --value "${CONTAINER_CAS}:${PACKAGED_VERSION}"
 
       - name: Push Chart
         run: |
