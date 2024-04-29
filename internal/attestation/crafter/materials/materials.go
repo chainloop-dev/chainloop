@@ -16,6 +16,7 @@
 package materials
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -43,9 +44,52 @@ type crafterCommon struct {
 	input  *schemaapi.CraftingSchema_Material
 }
 
-// uploadAndCraft uploads the artifact to CAS and crafts the material
+func uploadAndCraftFromBytes(ctx context.Context, input *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, filename string, artifactData []byte, h cr_v1.Hash, l *zerolog.Logger) (*api.Attestation_Material, error) {
+	l.Debug().Str("filename", filename).Str("digest", h.String()).
+		Str("size", bytefmt.ByteSize(uint64(len(artifactData)))).
+		Str("max_size", bytefmt.ByteSize(uint64(backend.MaxSize))).
+		Str("backend", backend.Name).Msg("crafting file")
+
+	// If there is a max size set and the file is bigger than that, return an error
+	if backend.MaxSize > 0 && int64(len(artifactData)) > backend.MaxSize {
+		return nil, fmt.Errorf("this file is too big for the %s CAS backend, please contact your administrator: fileSize=%s, maxSize=%s", backend.Name, bytefmt.ByteSize(uint64(len(artifactData))), bytefmt.ByteSize(uint64(backend.MaxSize)))
+	}
+
+	material := &api.Attestation_Material{
+		MaterialType: input.Type,
+		M: &api.Attestation_Material_Artifact_{
+			Artifact: &api.Attestation_Material_Artifact{
+				Id:        input.Name,
+				Name:      filename,
+				Digest:    h.String(),
+				IsSubject: input.Output,
+			},
+		},
+	}
+
+	// 2 - Upload the file to CAS
+	if backend.Uploader != nil {
+		l.Debug().Str("backend", backend.Name).Msg("uploading")
+
+		_, err := backend.Uploader.Upload(ctx, bytes.NewReader(artifactData), h.String(), filename)
+		if err != nil {
+			return nil, fmt.Errorf("uploading material: %w", err)
+		}
+
+		material.UploadedToCas = true
+	} else {
+		l.Debug().Str("backend", backend.Name).Msg("storing inline")
+		// or store it inline if no uploader is provided
+		material.InlineCas = true
+		material.GetArtifact().Content = artifactData
+	}
+
+	return material, nil
+}
+
+// uploadAndCraftFromFile uploads the artifact to CAS and crafts the material
 // this function is used by all the uploadable artifacts crafters (SBOMs, JUnit, and more in the future)
-func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, artifactPath string, l *zerolog.Logger) (*api.Attestation_Material, error) {
+func uploadAndCraftFromFile(ctx context.Context, input *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, artifactPath string, l *zerolog.Logger) (*api.Attestation_Material, error) {
 	// 1 - Check the file can be stored in the provided CAS backend
 	result, err := fileStats(artifactPath)
 	if err != nil {

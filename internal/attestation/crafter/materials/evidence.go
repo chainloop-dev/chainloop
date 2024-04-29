@@ -44,5 +44,5 @@ func NewEvidenceCrafter(schema *schemaapi.CraftingSchema_Material, backend *casc
 
 // Craft will calculate the digest of the artifact, simulate an upload and return the material definition
 func (i *EvidenceCrafter) Craft(ctx context.Context, artifactPath string) (*api.Attestation_Material, error) {
-	return uploadAndCraft(ctx, i.input, i.backend, artifactPath, i.logger)
+	return uploadAndCraftFromFile(ctx, i.input, i.backend, artifactPath, i.logger)
 }

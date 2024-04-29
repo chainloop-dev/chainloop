@@ -62,5 +62,5 @@ func (i *CyclonedxJSONCrafter) Craft(ctx context.Context, filePath string) (*api
 		return nil, fmt.Errorf("invalid cyclonedx sbom file: %w", ErrInvalidMaterialType)
 	}
 
-	return uploadAndCraft(ctx, i.input, i.backend, filePath, i.logger)
+	return uploadAndCraftFromFile(ctx, i.input, i.backend, filePath, i.logger)
 }

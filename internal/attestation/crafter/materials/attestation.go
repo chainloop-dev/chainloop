@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	api "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
@@ -62,5 +63,7 @@ func (i *AttestationCrafter) Craft(ctx context.Context, artifactPath string) (*a
 		return nil, fmt.Errorf("extracting predicate from envelope: %w", err)
 	}
 
-	return uploadAndCraft(ctx, i.input, i.backend, artifactPath, i.logger)
+	jsonContent, h, err := JsonEnvelopeWithDigest(&dsseEnvelope)
+
+	return uploadAndCraftFromBytes(ctx, i.input, i.backend, filepath.Base(artifactPath), jsonContent, h, i.logger)
 }
