@@ -23,7 +23,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/maps"
 )
 
 func newWorkflowWorkflowRunListCmd() *cobra.Command {
@@ -72,7 +71,7 @@ func newWorkflowWorkflowRunListCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&workflowID, "workflow", "", "workflow ID")
 	cmd.Flags().BoolVar(&full, "full", false, "full report")
-	cmd.Flags().StringVar(&status, "status", "", fmt.Sprintf("filter by workflow run status: %v", maps.Keys(action.WorkflowRunStatus())))
+	cmd.Flags().StringVar(&status, "status", "", fmt.Sprintf("filter by workflow run status: %v", listAvailableWorkflowStatusFlag()))
 	// Add pagination flags
 	paginationOpts.AddFlags(cmd)
 
@@ -109,4 +108,15 @@ func workflowRunListTableOutput(runs []*action.WorkflowRunItem) error {
 	t.Render()
 
 	return nil
+}
+
+// listAvailableWorkflowStatusFlag returns a list of available workflow status flags
+func listAvailableWorkflowStatusFlag() []string {
+	m := action.WorkflowRunStatus()
+	r := make([]string, 0, len(m))
+	for k := range m {
+		r = append(r, k)
+	}
+
+	return r
 }
