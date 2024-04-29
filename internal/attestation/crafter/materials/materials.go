@@ -173,6 +173,8 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 		crafter, err = NewHelmChartCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_EVIDENCE:
 		crafter, err = NewEvidenceCrafter(materialSchema, casBackend, logger)
+	case schemaapi.CraftingSchema_Material_ATTESTATION:
+		crafter, err = NewAttestationCrafter(materialSchema, casBackend, logger)
 	default:
 		return nil, fmt.Errorf("material of type %q not supported yet", materialSchema.Type)
 	}

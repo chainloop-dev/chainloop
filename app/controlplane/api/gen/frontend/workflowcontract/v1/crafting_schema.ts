@@ -125,6 +125,8 @@ export enum CraftingSchema_Material_MaterialType {
    * into one of the well known material types. For example, a custom approval report (in json), ...
    */
   EVIDENCE = 11,
+  /** ATTESTATION - Chainloop attestation coming from a different workflow. */
+  ATTESTATION = 12,
   UNRECOGNIZED = -1,
 }
 
@@ -166,6 +168,9 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 11:
     case "EVIDENCE":
       return CraftingSchema_Material_MaterialType.EVIDENCE;
+    case 12:
+    case "ATTESTATION":
+      return CraftingSchema_Material_MaterialType.ATTESTATION;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -199,6 +204,8 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "HELM_CHART";
     case CraftingSchema_Material_MaterialType.EVIDENCE:
       return "EVIDENCE";
+    case CraftingSchema_Material_MaterialType.ATTESTATION:
+      return "ATTESTATION";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
