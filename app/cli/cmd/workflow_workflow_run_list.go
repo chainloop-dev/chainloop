@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"fmt"
+	"golang.org/x/exp/maps"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
@@ -71,7 +72,7 @@ func newWorkflowWorkflowRunListCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&workflowID, "workflow", "", "workflow ID")
 	cmd.Flags().BoolVar(&full, "full", false, "full report")
-	cmd.Flags().StringVar(&status, "status", "", fmt.Sprintf("filter by workflow run status: %v", action.WorkflowRunStatus))
+	cmd.Flags().StringVar(&status, "status", "", fmt.Sprintf("filter by workflow run status: %v", maps.Keys(action.WorkflowRunStatus())))
 	// Add pagination flags
 	paginationOpts.AddFlags(cmd)
 

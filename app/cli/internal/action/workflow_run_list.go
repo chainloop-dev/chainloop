@@ -17,7 +17,7 @@ package action
 
 import (
 	"context"
-	"slices"
+	"strings"
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
@@ -25,7 +25,15 @@ import (
 )
 
 // WorkflowRunStatus represents the status of a workflow run
-var WorkflowRunStatus = []string{"INITIALIZED", "SUCCEEDED", "FAILED", "EXPIRED", "CANCELLED"}
+var WorkflowRunStatus = func() map[string]pb.RunStatus {
+	res := make(map[string]pb.RunStatus)
+	for k, v := range pb.RunStatus_value {
+		if k != "RUN_STATUS_UNSPECIFIED" {
+			res[strings.Replace(k, "RUN_STATUS_", "", 1)] = pb.RunStatus(v)
+		}
+	}
+	return res
+}
 
 type WorkflowRunList struct {
 	cfg *ActionsOpts
@@ -74,8 +82,8 @@ func (action *WorkflowRunList) Run(opts *WorkflowRunListOpts) (*PaginatedWorkflo
 		},
 	}
 
-	if opts.Status != "" || slices.Contains(WorkflowRunStatus, opts.Status) {
-		req.Status = transformWorkflowRunStatus(opts.Status)
+	if v, ok := WorkflowRunStatus()[opts.Status]; ok {
+		req.Status = v
 	}
 
 	resp, err := client.List(context.Background(), req)
@@ -96,24 +104,6 @@ func (action *WorkflowRunList) Run(opts *WorkflowRunListOpts) (*PaginatedWorkflo
 	}
 
 	return res, nil
-}
-
-// pbWorkflowRunItemToAction converts a pb.WorkflowRunItem to a pb.RunStatus item
-func transformWorkflowRunStatus(status string) pb.RunStatus {
-	switch status {
-	case "INITIALIZED":
-		return pb.RunStatus_RUN_STATUS_INITIALIZED
-	case "SUCCEEDED":
-		return pb.RunStatus_RUN_STATUS_SUCCEEDED
-	case "FAILED":
-		return pb.RunStatus_RUN_STATUS_FAILED
-	case "EXPIRED":
-		return pb.RunStatus_RUN_STATUS_EXPIRED
-	case "CANCELLED":
-		return pb.RunStatus_RUN_STATUS_CANCELLED
-	default:
-		return pb.RunStatus_RUN_STATUS_UNSPECIFIED
-	}
 }
 
 func pbWorkflowRunItemToAction(in *pb.WorkflowRunItem) *WorkflowRunItem {
