@@ -20,6 +20,9 @@ jobs:
       actions: read
       contents: read
       security-events: write
+    env:
+      CHAINLOOP_VERSION: 0.83.0
+      CHAINLOOP_ROBOT_ACCOUNT: ${{ secrets.CHAINLOOP_ROBOT_ACCOUNT_CODEQL }}
 
     strategy:
       fail-fast: false
@@ -27,8 +30,18 @@ jobs:
         language: ["go"]
 
     steps:
+      - name: Install Chainloop
+        if: ${{ github.event_name != 'pull_request' }}
+        run: |
+          curl -sfL https://raw.githubusercontent.com/chainloop-dev/chainloop/01ad13af08950b7bfbc83569bea207aeb4e1a285/docs/static/install.sh | bash -s -- --version v${{ env.CHAINLOOP_VERSION }}
+
       - name: Checkout repository
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Initialize Attestation
+        if: ${{ github.event_name != 'pull_request' }}
+        run: |
+          chainloop attestation init
 
       - name: Set up Go
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
@@ -45,6 +58,30 @@ jobs:
         uses: github/codeql-action/autobuild@6a28655e3dcb49cb0840ea372fd6d17733edd8a4 # v2.21.8
 
       - name: Perform CodeQL Analysis
+        id: codeqlresults
         uses: github/codeql-action/analyze@6a28655e3dcb49cb0840ea372fd6d17733edd8a4 # v2.21.8
         with:
           category: "/language:${{matrix.language}}"
+
+      - name: Add Attestation (Sarif results)
+        run: |
+          chainloop attestation add --name sarif-results --value ${{steps.codeqlresults.outputs.sarif-output}}/go.sarif
+
+      - name: Finish and Record Attestation
+        if: ${{ success() && github.event_name != 'pull_request' }}
+        run: |
+          chainloop attestation status --full
+          chainloop attestation push --key env://CHAINLOOP_SIGNING_KEY
+        env:
+          CHAINLOOP_SIGNING_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+          CHAINLOOP_SIGNING_KEY: ${{ secrets.COSIGN_KEY }}
+
+      - name: Mark attestation as failed
+        if: ${{ failure() && github.event_name != 'pull_request' }}
+        run: |
+          chainloop attestation reset
+
+      - name: Mark attestation as cancelled
+        if: ${{ cancelled() && github.event_name != 'pull_request' }}
+        run: |
+          chainloop attestation reset --trigger cancellation
