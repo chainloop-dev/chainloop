@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/pagination"
-	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/materials"
+	"github.com/chainloop-dev/chainloop/internal/attestation"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 
 	"github.com/go-kratos/kratos/v2/log"
@@ -249,7 +249,7 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, en
 	}
 
 	// Calculate the digest
-	_, digest, err := materials.JSONEnvelopeWithDigest(envelope)
+	_, digest, err := attestation.JSONEnvelopeWithDigest(envelope)
 	if err != nil {
 		return "", NewErrValidation(fmt.Errorf("marshaling the envelope: %w", err))
 	}

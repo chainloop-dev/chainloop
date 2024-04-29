@@ -113,7 +113,6 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 			// Mock uploader
 			uploader := mUploader.NewUploader(t)
 			if tc.wantErr == "" {
-
 				uploader.On("Upload", context.TODO(), mock.Anything,
 					tc.wantDigest,
 					filepath.Base(tc.filePath)).

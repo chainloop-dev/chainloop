@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/internal/attestation"
 	api "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
@@ -60,10 +61,12 @@ func (i *AttestationCrafter) Craft(ctx context.Context, artifactPath string) (*a
 
 	_, err = chainloop.ExtractPredicate(&dsseEnvelope)
 	if err != nil {
-		return nil, fmt.Errorf("extracting predicate from envelope: %w", err)
+		return nil, fmt.Errorf("the provided file does not seem to be a chainloop-generated attestation: %w", err)
 	}
 
-	jsonContent, h, err := JSONEnvelopeWithDigest(&dsseEnvelope)
+	// regenerate the json from the parsed data, just to remove any formating from the incoming json and preserve
+	// the digest
+	jsonContent, h, err := attestation.JSONEnvelopeWithDigest(&dsseEnvelope)
 	if err != nil {
 		return nil, fmt.Errorf("creating CAS payload: %w", err)
 	}

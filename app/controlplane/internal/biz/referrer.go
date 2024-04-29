@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
-	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/materials"
+	"github.com/chainloop-dev/chainloop/internal/attestation"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
@@ -248,7 +248,7 @@ func (r *Referrer) MapID() string {
 // 4 - creating link between the attestation and the materials/subjects as needed
 // see tests for examples
 func extractReferrers(att *dsse.Envelope) ([]*Referrer, error) {
-	_, h, err := materials.JSONEnvelopeWithDigest(att)
+	_, h, err := attestation.JSONEnvelopeWithDigest(att)
 	if err != nil {
 		return nil, fmt.Errorf("marshaling attestation: %w", err)
 	}
