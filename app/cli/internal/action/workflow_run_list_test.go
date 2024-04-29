@@ -79,7 +79,7 @@ func (s *workflowRunListSuite) TestHumanizedRunnerType() {
 	)
 
 	for _, testCase := range testCases {
-		s.T().Run(testCase.name, func(t *testing.T) {
+		s.Run(testCase.name, func() {
 			result := humanizedRunnerType(testCase.testInput)
 			s.Equal(testCase.expectedOutput, result)
 		})

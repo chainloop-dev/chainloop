@@ -17,11 +17,23 @@ package action
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 )
+
+// WorkflowRunStatus represents the status of a workflow run
+var WorkflowRunStatus = func() map[string]pb.RunStatus {
+	res := make(map[string]pb.RunStatus)
+	for k, v := range pb.RunStatus_value {
+		if k != "RUN_STATUS_UNSPECIFIED" {
+			res[strings.Replace(k, "RUN_STATUS_", "", 1)] = pb.RunStatus(v)
+		}
+	}
+	return res
+}
 
 type WorkflowRunList struct {
 	cfg *ActionsOpts
@@ -53,6 +65,7 @@ func NewWorkflowRunList(cfg *ActionsOpts) *WorkflowRunList {
 type WorkflowRunListOpts struct {
 	WorkflowID string
 	Pagination *PaginationOpts
+	Status     string
 }
 type PaginationOpts struct {
 	Limit      int
@@ -61,14 +74,19 @@ type PaginationOpts struct {
 
 func (action *WorkflowRunList) Run(opts *WorkflowRunListOpts) (*PaginatedWorkflowRunItem, error) {
 	client := pb.NewWorkflowRunServiceClient(action.cfg.CPConnection)
-	resp, err := client.List(context.Background(),
-		&pb.WorkflowRunServiceListRequest{
-			WorkflowId: opts.WorkflowID,
-			Pagination: &pb.CursorPaginationRequest{
-				Limit:  int32(opts.Pagination.Limit),
-				Cursor: opts.Pagination.NextCursor,
-			},
-		})
+	req := &pb.WorkflowRunServiceListRequest{
+		WorkflowId: opts.WorkflowID,
+		Pagination: &pb.CursorPaginationRequest{
+			Limit:  int32(opts.Pagination.Limit),
+			Cursor: opts.Pagination.NextCursor,
+		},
+	}
+
+	if v, ok := WorkflowRunStatus()[opts.Status]; ok {
+		req.Status = v
+	}
+
+	resp, err := client.List(context.Background(), req)
 	if err != nil {
 		return nil, err
 	}
