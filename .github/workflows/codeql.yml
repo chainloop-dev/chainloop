@@ -64,6 +64,7 @@ jobs:
           category: "/language:${{matrix.language}}"
 
       - name: Add Attestation (Sarif results)
+        if: ${{ github.event_name != 'pull_request' }}
         run: |
           chainloop attestation add --name sarif-results --value ${{steps.codeqlresults.outputs.sarif-output}}/go.sarif
 
