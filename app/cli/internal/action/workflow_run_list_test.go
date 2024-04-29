@@ -128,9 +128,6 @@ func (s *workflowRunListSuite) TestTransformWorkflowRunStatus() {
 		s.T().Run(testCase.name, func(_ *testing.T) {
 			result := transformWorkflowRunStatus(testCase.testInput)
 			s.Equal(testCase.expectedOutput, result)
-			if result != testCase.expectedOutput {
-				s.Equal(testCase.expectedOutput, result)
-			}
 		})
 	}
 }
