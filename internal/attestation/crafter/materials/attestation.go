@@ -63,7 +63,10 @@ func (i *AttestationCrafter) Craft(ctx context.Context, artifactPath string) (*a
 		return nil, fmt.Errorf("extracting predicate from envelope: %w", err)
 	}
 
-	jsonContent, h, err := JsonEnvelopeWithDigest(&dsseEnvelope)
+	jsonContent, h, err := JSONEnvelopeWithDigest(&dsseEnvelope)
+	if err != nil {
+		return nil, fmt.Errorf("creating CAS payload: %w", err)
+	}
 
 	return uploadAndCraftFromBytes(ctx, i.input, i.backend, filepath.Base(artifactPath), jsonContent, h, i.logger)
 }

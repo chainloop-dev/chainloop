@@ -249,7 +249,7 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, en
 	}
 
 	// Calculate the digest
-	_, digest, err := materials.JsonEnvelopeWithDigest(envelope)
+	_, digest, err := materials.JSONEnvelopeWithDigest(envelope)
 	if err != nil {
 		return "", NewErrValidation(fmt.Errorf("marshaling the envelope: %w", err))
 	}

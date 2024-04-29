@@ -28,6 +28,7 @@ import (
 	mUploader "github.com/chainloop-dev/chainloop/internal/casclient/mocks"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -109,7 +110,8 @@ func TestAttestationCraft(t *testing.T) {
 
 	// Mock uploader
 	uploader := mUploader.NewUploader(t)
-	uploader.On("UploadFile", context.TODO(), "./testdata/attestation.json").
+	uploader.On("Upload",
+		context.TODO(), mock.Anything, "sha256:30f98082cf71a990787755b360443711735de4041f27bf4a49d61bb8e6f29e92", "attestation.json").
 		Return(&casclient.UpDownStatus{
 			Digest:   "deadbeef",
 			Filename: "attestation.json",
@@ -127,8 +129,10 @@ func TestAttestationCraft(t *testing.T) {
 
 	// The result includes the digest reference
 	assert.Equal(&attestationApi.Attestation_Material_Artifact{
-		Id: "test", Digest: "sha256:3911ab20e43d801d35459c53168f6cba66d50af99dcc9e12aeb84a95c0d231df", Name: "attestation.json",
+		Id: "test", Digest: "sha256:30f98082cf71a990787755b360443711735de4041f27bf4a49d61bb8e6f29e92", Name: "attestation.json",
 	}, got.GetArtifact())
+
+	uploader.AssertExpectations(t)
 }
 
 func TestAttestationCraftInline(t *testing.T) {

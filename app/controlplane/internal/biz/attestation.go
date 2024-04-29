@@ -47,7 +47,7 @@ func NewAttestationUseCase(client CASClient, logger log.Logger) *AttestationUseC
 
 func (uc *AttestationUseCase) UploadToCAS(ctx context.Context, envelope *dsse.Envelope, backend *CASBackend, workflowRunID string) (*cr_v1.Hash, error) {
 	filename := fmt.Sprintf("attestation-%s.json", workflowRunID)
-	jsonContent, h, err := materials.JsonEnvelopeWithDigest(envelope)
+	jsonContent, h, err := materials.JSONEnvelopeWithDigest(envelope)
 	if err != nil {
 		return nil, fmt.Errorf("marshaling the envelope: %w", err)
 	}
