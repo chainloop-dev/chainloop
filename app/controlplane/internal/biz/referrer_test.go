@@ -79,6 +79,21 @@ func (s *referrerTestSuite) TestInitialization() {
 }
 
 func (s *referrerTestSuite) TestExtractReferrers() {
+	var fullAttReferrer = &Referrer{
+		Digest: "sha256:1a077137aef7ca208b80c339769d0d7eecacc2850368e56e834cda1750ce413a",
+		Kind:   "ATTESTATION",
+	}
+
+	var withDuplicatedRefferer = &Referrer{
+		Digest: "sha256:47e94045e8ffb5ea9a4939a03a21c5ad26f4ea7d463ac6ec46dac15349f45b3f",
+		Kind:   "ATTESTATION",
+	}
+
+	var withGitSubject = &Referrer{
+		Digest: "sha256:de36d470d792499b1489fc0e6623300fc8822b8f0d2981bb5ec563f8dde723c7",
+		Kind:   "ATTESTATION",
+	}
+
 	testCases := []struct {
 		name      string
 		inputPath string
@@ -86,11 +101,11 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 		want      []*Referrer
 	}{
 		{
-			name:      "basic",
+			name:      "all materials linked bidirectionally to the attestation",
 			inputPath: "testdata/attestations/full.json",
 			want: []*Referrer{
 				{
-					Digest:       "sha256:1a077137aef7ca208b80c339769d0d7eecacc2850368e56e834cda1750ce413a",
+					Digest:       fullAttReferrer.Digest,
 					Kind:         "ATTESTATION",
 					Downloadable: true,
 					Metadata: map[string]string{
@@ -117,11 +132,14 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 				{
 					Digest: "sha256:264f55a6ff9cec2f4742a9faacc033b29f65c04dd4480e71e23579d484288d61",
 					Kind:   "CONTAINER_IMAGE",
+					// There is a link back to the attestation
+					References: []*Referrer{fullAttReferrer},
 				},
 				{
 					Digest:       "sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c",
 					Kind:         "SBOM_CYCLONEDX_JSON",
 					Downloadable: true,
+					References:   []*Referrer{fullAttReferrer},
 				},
 			},
 		},
@@ -167,7 +185,7 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 			inputPath: "testdata/attestations/with-duplicated-sha.json",
 			want: []*Referrer{
 				{
-					Digest:       "sha256:47e94045e8ffb5ea9a4939a03a21c5ad26f4ea7d463ac6ec46dac15349f45b3f",
+					Digest:       withDuplicatedRefferer.Digest,
 					Kind:         "ATTESTATION",
 					Downloadable: true,
 					Metadata: map[string]string{
@@ -196,18 +214,21 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 					},
 				},
 				{
-					Digest: "sha256:264f55a6ff9cec2f4742a9faacc033b29f65c04dd4480e71e23579d484288d61",
-					Kind:   "CONTAINER_IMAGE",
+					Digest:     "sha256:264f55a6ff9cec2f4742a9faacc033b29f65c04dd4480e71e23579d484288d61",
+					Kind:       "CONTAINER_IMAGE",
+					References: []*Referrer{withDuplicatedRefferer},
 				},
 				{
 					Digest:       "sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c",
 					Kind:         "SBOM_CYCLONEDX_JSON",
 					Downloadable: true,
+					References:   []*Referrer{withDuplicatedRefferer},
 				},
 				{
 					Digest:       "sha256:264f55a6ff9cec2f4742a9faacc033b29f65c04dd4480e71e23579d484288d61",
 					Kind:         "SBOM_CYCLONEDX_JSON",
 					Downloadable: true,
+					References:   []*Referrer{withDuplicatedRefferer},
 				},
 			},
 		},
@@ -215,13 +236,15 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 			name:      "with git subject",
 			inputPath: "testdata/attestations/with-git-subject.json",
 			want: []*Referrer{
+				// NOTE: the result is sorted by kind
 				{
 					Digest:       "sha256:385c4188b9c080499413f2e0fa0b3951ed107b5f0cb35c2f2b1f07a7be9a7512",
 					Kind:         "ARTIFACT",
 					Downloadable: true,
+					References:   []*Referrer{withGitSubject},
 				},
 				{
-					Digest:       "sha256:de36d470d792499b1489fc0e6623300fc8822b8f0d2981bb5ec563f8dde723c7",
+					Digest:       withGitSubject.Digest,
 					Kind:         "ATTESTATION",
 					Downloadable: true,
 					Metadata: map[string]string{
@@ -260,10 +283,9 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 				{
 					Digest: "sha256:fbd9335f55d83d8aaf9ab1a539b0f2a87b444e8c54f34c9a1ca9d7df15605db4",
 					Kind:   "CONTAINER_IMAGE",
-					// the container image is a subject in the attestation
 					References: []*Referrer{
 						{
-							Digest: "sha256:de36d470d792499b1489fc0e6623300fc8822b8f0d2981bb5ec563f8dde723c7",
+							Digest: withGitSubject.Digest,
 							Kind:   "ATTESTATION",
 						},
 					},
@@ -274,7 +296,7 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 					// the git commit a subject in the attestation
 					References: []*Referrer{
 						{
-							Digest: "sha256:de36d470d792499b1489fc0e6623300fc8822b8f0d2981bb5ec563f8dde723c7",
+							Digest: withGitSubject.Digest,
 							Kind:   "ATTESTATION",
 						},
 					},
@@ -283,23 +305,26 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 					Digest:       "sha256:b4bd86d5855f94bcac0a92d3100ae7b85d050bd2e5fb9037a200e5f5f0b073a2",
 					Kind:         "OPENVEX",
 					Downloadable: true,
+					References:   []*Referrer{withGitSubject},
 				},
 				{
 					Digest:       "sha256:c4a63494f9289dd9fd44f841efb4f5b52765c2de6332f2d86e5f6c0340b40a95",
 					Kind:         "SARIF",
 					Downloadable: true,
+					References:   []*Referrer{withGitSubject},
 				},
 				{
 					Digest:       "sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c",
 					Kind:         "SBOM_CYCLONEDX_JSON",
 					Downloadable: true,
+					References:   []*Referrer{withGitSubject},
 				},
 			},
 		},
 	}
 
 	for _, tc := range testCases {
-		s.T().Run(tc.name, func(t *testing.T) {
+		s.Run(tc.name, func() {
 			// Load attestation
 			attJSON, err := os.ReadFile(tc.inputPath)
 			require.NoError(s.T(), err)
@@ -313,7 +338,7 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 			}
 
 			require.NoError(s.T(), err)
-			assert.Equal(s.T(), tc.want, got)
+			s.Equal(tc.want, got)
 		})
 	}
 }
