@@ -59,7 +59,7 @@ func newWorkflowWorkflowRunListCmd() *cobra.Command {
 				return nil
 			}
 
-			logger.Info().Msg("Pagination options \n\n")
+			logger.Info().Msg("Pagination options \n")
 
 			if next != "" {
 				logger.Info().Msgf("--next %s\n", next)
