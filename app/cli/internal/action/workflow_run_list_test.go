@@ -80,7 +80,7 @@ func (s *workflowRunListSuite) TestHumanizedRunnerType() {
 	)
 
 	for _, testCase := range testCases {
-		s.T().Run(testCase.name, func(t *testing.T) {
+		s.T().Run(testCase.name, func(_ *testing.T) {
 			result := humanizedRunnerType(testCase.testInput)
 			s.Equal(testCase.expectedOutput, result)
 		})
@@ -91,7 +91,7 @@ func TestWorkflowRunlist(t *testing.T) {
 	suite.Run(t, new(workflowRunListSuite))
 }
 
-func TestTransformWorkflowRunStatus(t *testing.T) {
+func (s *workflowRunListSuite) TestTransformWorkflowRunStatus() {
 	testCases := []struct {
 		name           string
 		testInput      string
@@ -125,10 +125,11 @@ func TestTransformWorkflowRunStatus(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
+		s.T().Run(testCase.name, func(_ *testing.T) {
 			result := transformWorkflowRunStatus(testCase.testInput)
+			s.Equal(testCase.expectedOutput, result)
 			if result != testCase.expectedOutput {
-				t.Errorf("Expected %v, got %v", testCase.expectedOutput, result)
+				s.Equal(testCase.expectedOutput, result)
 			}
 		})
 	}
