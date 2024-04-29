@@ -17,11 +17,15 @@ package action
 
 import (
 	"context"
+	"slices"
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 )
+
+// WorkflowRunStatus represents the status of a workflow run
+var WorkflowRunStatus = []string{"INITIALIZED", "SUCCEEDED", "FAILED", "EXPIRED", "CANCELLED"}
 
 type WorkflowRunList struct {
 	cfg *ActionsOpts
@@ -53,6 +57,7 @@ func NewWorkflowRunList(cfg *ActionsOpts) *WorkflowRunList {
 type WorkflowRunListOpts struct {
 	WorkflowID string
 	Pagination *PaginationOpts
+	Status     string
 }
 type PaginationOpts struct {
 	Limit      int
@@ -61,14 +66,19 @@ type PaginationOpts struct {
 
 func (action *WorkflowRunList) Run(opts *WorkflowRunListOpts) (*PaginatedWorkflowRunItem, error) {
 	client := pb.NewWorkflowRunServiceClient(action.cfg.CPConnection)
-	resp, err := client.List(context.Background(),
-		&pb.WorkflowRunServiceListRequest{
-			WorkflowId: opts.WorkflowID,
-			Pagination: &pb.CursorPaginationRequest{
-				Limit:  int32(opts.Pagination.Limit),
-				Cursor: opts.Pagination.NextCursor,
-			},
-		})
+	req := &pb.WorkflowRunServiceListRequest{
+		WorkflowId: opts.WorkflowID,
+		Pagination: &pb.CursorPaginationRequest{
+			Limit:  int32(opts.Pagination.Limit),
+			Cursor: opts.Pagination.NextCursor,
+		},
+	}
+
+	if opts.Status != "" || slices.Contains(WorkflowRunStatus, opts.Status) {
+		req.Status = transformWorkflowRunStatus(opts.Status)
+	}
+
+	resp, err := client.List(context.Background(), req)
 	if err != nil {
 		return nil, err
 	}
@@ -86,6 +96,24 @@ func (action *WorkflowRunList) Run(opts *WorkflowRunListOpts) (*PaginatedWorkflo
 	}
 
 	return res, nil
+}
+
+// pbWorkflowRunItemToAction converts a pb.WorkflowRunItem to a pb.RunStatus item
+func transformWorkflowRunStatus(status string) pb.RunStatus {
+	switch status {
+	case "INITIALIZED":
+		return pb.RunStatus_RUN_STATUS_INITIALIZED
+	case "SUCCEEDED":
+		return pb.RunStatus_RUN_STATUS_SUCCEEDED
+	case "FAILED":
+		return pb.RunStatus_RUN_STATUS_FAILED
+	case "EXPIRED":
+		return pb.RunStatus_RUN_STATUS_EXPIRED
+	case "CANCELLED":
+		return pb.RunStatus_RUN_STATUS_CANCELLED
+	default:
+		return pb.RunStatus_RUN_STATUS_UNSPECIFIED
+	}
 }
 
 func pbWorkflowRunItemToAction(in *pb.WorkflowRunItem) *WorkflowRunItem {

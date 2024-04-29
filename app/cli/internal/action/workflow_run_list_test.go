@@ -18,6 +18,7 @@ package action
 import (
 	"testing"
 
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/stretchr/testify/suite"
 )
@@ -88,4 +89,47 @@ func (s *workflowRunListSuite) TestHumanizedRunnerType() {
 
 func TestWorkflowRunlist(t *testing.T) {
 	suite.Run(t, new(workflowRunListSuite))
+}
+
+func TestTransformWorkflowRunStatus(t *testing.T) {
+	testCases := []struct {
+		name           string
+		testInput      string
+		expectedOutput pb.RunStatus
+	}{
+		{
+			name:           "initialized status",
+			testInput:      "INITIALIZED",
+			expectedOutput: pb.RunStatus_RUN_STATUS_INITIALIZED,
+		}, {
+			name:           "succeeded status",
+			testInput:      "SUCCEEDED",
+			expectedOutput: pb.RunStatus_RUN_STATUS_SUCCEEDED,
+		}, {
+			name:           "failed status",
+			testInput:      "FAILED",
+			expectedOutput: pb.RunStatus_RUN_STATUS_FAILED,
+		}, {
+			name:           "expired status",
+			testInput:      "EXPIRED",
+			expectedOutput: pb.RunStatus_RUN_STATUS_EXPIRED,
+		}, {
+			name:           "cancelled status",
+			testInput:      "CANCELLED",
+			expectedOutput: pb.RunStatus_RUN_STATUS_CANCELLED,
+		}, {
+			name:           "unknown status",
+			testInput:      "UNKNOWN",
+			expectedOutput: pb.RunStatus_RUN_STATUS_UNSPECIFIED,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			result := transformWorkflowRunStatus(testCase.testInput)
+			if result != testCase.expectedOutput {
+				t.Errorf("Expected %v, got %v", testCase.expectedOutput, result)
+			}
+		})
+	}
 }
