@@ -18,6 +18,7 @@ package materials_test
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 
 	contractAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -27,6 +28,7 @@ import (
 	mUploader "github.com/chainloop-dev/chainloop/internal/casclient/mocks"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -102,7 +104,8 @@ func TestCSAFVEXCraft(t *testing.T) {
 			// Mock uploader
 			uploader := mUploader.NewUploader(t)
 			if tc.wantErr == "" {
-				uploader.On("UploadFile", context.TODO(), tc.filePath).
+				uploader.On("Upload", context.TODO(), mock.Anything,
+					"sha256:c27087147fa040909e0ef1b522386608af545b0a163c30c9f11c3d753676fa44", filepath.Base(tc.filePath)).
 					Return(&casclient.UpDownStatus{
 						Digest:   "deadbeef",
 						Filename: "vex.json",

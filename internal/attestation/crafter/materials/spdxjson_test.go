@@ -18,6 +18,7 @@ package materials_test
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 
 	contractAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -27,6 +28,7 @@ import (
 	mUploader "github.com/chainloop-dev/chainloop/internal/casclient/mocks"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -102,7 +104,9 @@ func TestSPDXJSONCraft(t *testing.T) {
 			// Mock uploader
 			uploader := mUploader.NewUploader(t)
 			if tc.wantErr == "" {
-				uploader.On("UploadFile", context.TODO(), tc.filePath).
+				uploader.On("Upload", context.TODO(), mock.Anything,
+					"sha256:fe2636fb6c698a29a315278b762b2000efd5959afe776ee4f79f1ed523365a33",
+					filepath.Base(tc.filePath)).
 					Return(&casclient.UpDownStatus{
 						Digest:   "deadbeef",
 						Filename: "sbom-spdx.json",

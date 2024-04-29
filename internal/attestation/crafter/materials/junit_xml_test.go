@@ -18,6 +18,7 @@ package materials_test
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 
 	contractAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -27,6 +28,7 @@ import (
 	mUploader "github.com/chainloop-dev/chainloop/internal/casclient/mocks"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -103,7 +105,9 @@ func TestJUnitXMLCraft(t *testing.T) {
 			// Mock uploader
 			uploader := mUploader.NewUploader(t)
 			if tc.wantErr == "" {
-				uploader.On("UploadFile", context.TODO(), tc.filePath).
+				uploader.On("Upload", context.TODO(), mock.Anything,
+					"sha256:e9c941b25c06d8bd98205122cbc827504c6d03d37b7f4afd7ed03b3eeec789e2",
+					filepath.Base(tc.filePath)).
 					Return(&casclient.UpDownStatus{
 						Digest:   "deadbeef",
 						Filename: "test.xml",
