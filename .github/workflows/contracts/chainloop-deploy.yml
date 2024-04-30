@@ -1,0 +1,7 @@
+schemaVersion: v1
+runner:
+  type: GITHUB_ACTION
+materials:
+  - type: HELM_CHART
+    name: helm-chart
+    output: true
