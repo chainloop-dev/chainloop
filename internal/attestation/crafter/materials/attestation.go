@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation"
@@ -58,7 +59,7 @@ func (i *AttestationCrafter) Craft(ctx context.Context, artifactPath string) (*a
 		return nil, fmt.Errorf("artifact is not a valid DSEE Envelope: %w", err)
 	}
 
-	_, err = chainloop.ExtractPredicate(&dsseEnvelope)
+	predicate, err := chainloop.ExtractPredicate(&dsseEnvelope)
 	if err != nil {
 		return nil, fmt.Errorf("the provided file does not seem to be a chainloop-generated attestation: %w", err)
 	}
@@ -71,7 +72,10 @@ func (i *AttestationCrafter) Craft(ctx context.Context, artifactPath string) (*a
 	}
 
 	// Create a temp file with this content and upload to the CAS
-	file, err := os.CreateTemp("", "attestation-*.json")
+	dir := os.TempDir()
+	filename := fmt.Sprintf("%s-%s-attestation.json", predicate.GetMetadata().Name, predicate.GetMetadata().WorkflowRunID)
+
+	file, err := os.Create(path.Join(dir, filename))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp file: %w", err)
 	}
