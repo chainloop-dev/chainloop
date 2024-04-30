@@ -61,6 +61,10 @@ func (a *ArtifactDownload) Run(downloadPath, outputFile, digest string) error {
 		return fmt.Errorf("artifact with digest %s not found", h)
 	}
 
+	if downloadPath != "" && outputFile != "" {
+		return errors.New("both downloadPath and outputFile cannot be set at the same time")
+	}
+
 	if downloadPath == "" {
 		downloadPath, err = os.Getwd()
 		if err != nil {
