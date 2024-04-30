@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -88,7 +87,7 @@ func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Materia
 	} else {
 		l.Debug().Str("backend", backend.Name).Msg("storing inline")
 		// or store it inline if no uploader is provided
-		content, err := ioutil.ReadAll(result.r)
+		content, err := io.ReadAll(result.r)
 		if err != nil {
 			return nil, fmt.Errorf("reading file: %w", err)
 		}
@@ -173,6 +172,8 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 		crafter, err = NewHelmChartCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_EVIDENCE:
 		crafter, err = NewEvidenceCrafter(materialSchema, casBackend, logger)
+	case schemaapi.CraftingSchema_Material_ATTESTATION:
+		crafter, err = NewAttestationCrafter(materialSchema, casBackend, logger)
 	default:
 		return nil, fmt.Errorf("material of type %q not supported yet", materialSchema.Type)
 	}

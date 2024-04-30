@@ -18,10 +18,10 @@ package biz
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 
+	"github.com/chainloop-dev/chainloop/internal/attestation"
 	"github.com/chainloop-dev/chainloop/internal/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 
@@ -47,7 +47,7 @@ func NewAttestationUseCase(client CASClient, logger log.Logger) *AttestationUseC
 
 func (uc *AttestationUseCase) UploadToCAS(ctx context.Context, envelope *dsse.Envelope, backend *CASBackend, workflowRunID string) (*cr_v1.Hash, error) {
 	filename := fmt.Sprintf("attestation-%s.json", workflowRunID)
-	jsonContent, h, err := jsonEnvelopeWithDigest(envelope)
+	jsonContent, h, err := attestation.JSONEnvelopeWithDigest(envelope)
 	if err != nil {
 		return nil, fmt.Errorf("marshaling the envelope: %w", err)
 	}
@@ -57,19 +57,4 @@ func (uc *AttestationUseCase) UploadToCAS(ctx context.Context, envelope *dsse.En
 	}
 
 	return &h, nil
-}
-
-// jsonEnvelopeWithDigest returns the JSON content of the envelope and its digest.
-func jsonEnvelopeWithDigest(envelope *dsse.Envelope) ([]byte, cr_v1.Hash, error) {
-	jsonContent, err := json.Marshal(envelope)
-	if err != nil {
-		return nil, cr_v1.Hash{}, fmt.Errorf("marshaling the envelope: %w", err)
-	}
-
-	h, _, err := cr_v1.SHA256(bytes.NewBuffer(jsonContent))
-	if err != nil {
-		return nil, cr_v1.Hash{}, fmt.Errorf("calculating the digest: %w", err)
-	}
-
-	return jsonContent, h, nil
 }

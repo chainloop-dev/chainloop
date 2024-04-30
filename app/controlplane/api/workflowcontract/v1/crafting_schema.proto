@@ -88,6 +88,9 @@ message CraftingSchema {
       // Pieces of evidences represent generic, additional context that don't fit
       // into one of the well known material types. For example, a custom approval report (in json), ...
       EVIDENCE = 11;
+
+      // Chainloop attestation coming from a different workflow.
+      ATTESTATION = 12;
     }
   }
 }
