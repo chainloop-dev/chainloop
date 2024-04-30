@@ -6,6 +6,8 @@ name: Sync Chainloop Workflow contracts
 on:
   push:
     branches: [ "main" ]
+  paths:
+    - '.github/workflows/contracts/**'
   schedule:
     - cron: "0 0 * * *" # daily at midnight
 
