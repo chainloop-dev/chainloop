@@ -109,10 +109,7 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 	assert := assert.New(s.T())
 	ctx := context.Background()
 
-	attJSON, err := os.ReadFile("testdata/attestations/full.json")
-	require.NoError(s.T(), err)
-	var validEnvelope *dsse.Envelope
-	require.NoError(s.T(), json.Unmarshal(attJSON, &validEnvelope))
+	validEnvelope := testEnvelope(s.T(), "testdata/attestations/full.json")
 
 	s.T().Run("non existing workflowRun", func(t *testing.T) {
 		_, err := s.WorkflowRun.SaveAttestation(ctx, uuid.NewString(), validEnvelope)
@@ -315,16 +312,19 @@ type workflowRunTestData struct {
 	digestAtt1, digestAttOrg2, digestAttPublic     string
 }
 
+func testEnvelope(t *testing.T, path string) *dsse.Envelope {
+	attJSON, err := os.ReadFile(path)
+	require.NoError(t, err)
+	var envelope *dsse.Envelope
+	require.NoError(t, json.Unmarshal(attJSON, &envelope))
+	return envelope
+}
+
 // extract this setup to a helper function so it can be used from other test suites
 func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, s *workflowRunTestData) {
 	var err error
 	assert := assert.New(t)
 	ctx := context.Background()
-
-	attJSON, err := os.ReadFile("testdata/attestations/full.json")
-	require.NoError(t, err)
-	var envelope *dsse.Envelope
-	require.NoError(t, json.Unmarshal(attJSON, &envelope))
 
 	s.org, err = suite.Organization.Create(ctx, "testing-org")
 	assert.NoError(err)
@@ -357,7 +357,7 @@ func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, 
 			WorkflowID: s.workflowOrg1.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
 		})
 	assert.NoError(err)
-	s.digestAtt1, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg1.ID.String(), envelope)
+	s.digestAtt1, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg1.ID.String(), testEnvelope(t, "testdata/attestations/full.json"))
 
 	assert.NoError(err)
 
@@ -366,7 +366,7 @@ func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, 
 			WorkflowID: s.workflowOrg2.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
 		})
 	assert.NoError(err)
-	s.digestAttOrg2, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2.ID.String(), envelope)
+	s.digestAttOrg2, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2.ID.String(), testEnvelope(t, "testdata/attestations/empty.json"))
 	assert.NoError(err)
 
 	s.runOrg2Public, err = suite.WorkflowRun.Create(ctx,
@@ -374,7 +374,7 @@ func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, 
 			WorkflowID: s.workflowPublicOrg2.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
 		})
 	assert.NoError(err)
-	s.digestAttPublic, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2Public.ID.String(), envelope)
+	s.digestAttPublic, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2Public.ID.String(), testEnvelope(t, "testdata/attestations/with-string.json"))
 	assert.NoError(err)
 }
 
