@@ -24,8 +24,10 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/pagination"
 	"github.com/chainloop-dev/chainloop/internal/attestation"
+	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/go-kratos/kratos/v2/log"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/uuid"
@@ -246,6 +248,26 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, en
 	runID, err := uuid.Parse(id)
 	if err != nil {
 		return "", NewErrInvalidUUID(err)
+	}
+
+	// extract statement to run some validations in the content
+	predicate, err := chainloop.ExtractPredicate(envelope)
+	if err != nil {
+		return "", fmt.Errorf("extracting predicate: %w", err)
+	}
+
+	// Run some validations on the predicate
+	// Attestations can include dependent attestations and we want to make sure they exist in the system
+	// Find any material of kind attestation and make sure they exist already
+	for _, m := range predicate.GetMaterials() {
+		if m.Type == schemaapi.CraftingSchema_Material_ATTESTATION.String() {
+			run, err := uc.wfRunRepo.FindByAttestationDigest(ctx, m.Hash.String())
+			if err != nil {
+				return "", fmt.Errorf("finding attestation: %w", err)
+			} else if run == nil {
+				return "", NewErrValidation(fmt.Errorf("dependent attestation not found: %s", m.Hash))
+			}
+		}
 	}
 
 	// Calculate the digest
