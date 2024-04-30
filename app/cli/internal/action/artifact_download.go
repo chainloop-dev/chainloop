@@ -35,18 +35,20 @@ import (
 type ArtifactDownload struct {
 	*ActionsOpts
 	artifactsCASConn *grpc.ClientConn
+	stdout           io.Writer
 }
 
 type ArtifactDownloadOpts struct {
 	*ActionsOpts
 	ArtifactsCASConn *grpc.ClientConn
+	Stdout           io.Writer
 }
 
 func NewArtifactDownload(opts *ArtifactDownloadOpts) *ArtifactDownload {
-	return &ArtifactDownload{opts.ActionsOpts, opts.ArtifactsCASConn}
+	return &ArtifactDownload{opts.ActionsOpts, opts.ArtifactsCASConn, opts.Stdout}
 }
 
-func (a *ArtifactDownload) Run(downloadPath, digest string) error {
+func (a *ArtifactDownload) Run(downloadPath, outputFile, digest string) error {
 	h, err := crv1.NewHash(digest)
 	if err != nil {
 		return fmt.Errorf("invalid digest: %w", err)
@@ -59,26 +61,40 @@ func (a *ArtifactDownload) Run(downloadPath, digest string) error {
 		return fmt.Errorf("artifact with digest %s not found", h)
 	}
 
+	if downloadPath != "" && outputFile != "" {
+		return errors.New("both downloadPath and outputFile cannot be set at the same time")
+	}
+
 	if downloadPath == "" {
-		var err error
 		downloadPath, err = os.Getwd()
 		if err != nil {
 			return fmt.Errorf("getting current dir: %w", err)
 		}
 	}
 
-	downloadPath = path.Join(downloadPath, info.Filename)
-	f, err := os.Create(downloadPath)
-	if err != nil {
-		return fmt.Errorf("creating destination file: %w", err)
+	// Determine output destination
+	outputPath := path.Join(downloadPath, info.Filename)
+	if outputFile != "" && outputFile != "-" {
+		outputPath = outputFile
 	}
-	defer f.Close()
+
+	// Open output file
+	var f io.Writer
+	if outputFile == "-" {
+		f = a.stdout
+	} else {
+		f, err = os.Create(outputPath)
+		if err != nil {
+			return fmt.Errorf("creating destination file: %w", err)
+		}
+		defer f.(*os.File).Close()
+
+		a.Logger.Info().Str("name", outputFile).Str("to", outputPath).Msg("downloading file")
+	}
 
 	// Calculate the checksum as we write it to a file
 	hash := sha256.New()
 	w := io.MultiWriter(f, hash)
-
-	a.Logger.Info().Str("name", info.Filename).Str("to", downloadPath).Msg("downloading file")
 
 	// render progress bar
 	go renderOperationStatus(ctx, client.ProgressStatus, info.Size)
@@ -108,6 +124,8 @@ func renderOperationStatus(ctx context.Context, progressChan casclient.ProgressS
 	pw.Style().Visibility.ETA = true
 	pw.Style().Visibility.Speed = true
 	pw.SetUpdateFrequency(progress.DefaultUpdateFrequency)
+	// Render to stderr to avoid interfering with the output if the flag --output is set to "-"
+	pw.SetOutputWriter(os.Stderr)
 
 	var tracker *progress.Tracker
 	go pw.Render()
