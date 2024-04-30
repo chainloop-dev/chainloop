@@ -16,6 +16,8 @@
 package cmd
 
 import (
+	"errors"
+
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/spf13/cobra"
@@ -31,6 +33,10 @@ func newArtifactDownloadCmd() *cobra.Command {
 		Short: "download an artifact",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			var err error
+
+			if err := validateFlags(downloadPath, outputFile); err != nil {
+				return err
+			}
 
 			// Retrieve temporary credentials for uploading
 			artifactCASConn, err = wrappedArtifactConn(actionOpts.CPConnection,
@@ -66,4 +72,13 @@ func newArtifactDownloadCmd() *cobra.Command {
 	cmd.Flags().StringVar(&outputFile, "output", "", "The `file` to write a single asset to (use \"-\" to write to standard output")
 
 	return cmd
+}
+
+// validateFlags checks if the flags are valid
+func validateFlags(downloadPath, outputFile string) error {
+	if downloadPath != "" && outputFile != "" {
+		return errors.New("cannot specify both --path and --output flags at the same time")
+	}
+
+	return nil
 }

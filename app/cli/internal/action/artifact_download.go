@@ -71,7 +71,7 @@ func (a *ArtifactDownload) Run(downloadPath, outputFile, digest string) error {
 	// Determine output destination
 	outputPath := path.Join(downloadPath, info.Filename)
 	if outputFile != "" && outputFile != "-" {
-		outputPath = path.Join(downloadPath, outputFile)
+		outputPath = outputFile
 	}
 
 	// Open output file
