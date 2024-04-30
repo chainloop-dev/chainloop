@@ -16,6 +16,7 @@
 package action
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -35,8 +36,8 @@ type AttestationPushOpts struct {
 }
 
 type AttestationResult struct {
-	Digest   string         `json:"digest"`
-	Envelope *dsse.Envelope `json:"envelope"`
+	Digest   string `json:"digest"`
+	Envelope string `json:"envelope"`
 }
 
 type AttestationPush struct {
@@ -129,7 +130,14 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 		return nil, err
 	}
 
-	attestationResult := &AttestationResult{Envelope: envelope}
+	var rawEnvelope bytes.Buffer
+	encoder := json.NewEncoder(&rawEnvelope)
+	encoder.SetIndent("", "   ")
+	if err := encoder.Encode(envelope); err != nil {
+		return nil, fmt.Errorf("failed to encode output: %w", err)
+	}
+
+	attestationResult := &AttestationResult{Envelope: rawEnvelope.String()}
 
 	action.Logger.Debug().Msg("render completed")
 	if action.c.CraftingState.DryRun {
