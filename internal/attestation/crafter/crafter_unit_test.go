@@ -34,6 +34,49 @@ type crafterUnitSuite struct {
 	suite.Suite
 }
 
+func (s *crafterUnitSuite) TestSanitizeRemoteURI() {
+	testCases := []struct {
+		name    string
+		uri     string
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "ssh",
+			uri:  "git@cyberdyne.com:skynet.git",
+			want: "git@cyberdyne.com:skynet.git",
+		},
+		{
+			name: "https",
+			uri:  "https://cyberdyne.com/skynet.git",
+			want: "https://cyberdyne.com/skynet.git",
+		},
+		{
+			name: "https with user",
+			uri:  "https://demo-user:pass@cyberdyne.com/skynet.git",
+			want: "https://cyberdyne.com/skynet.git",
+		},
+		{
+			name:    "invalid uri",
+			uri:     "https://demo-user@pass:cyberdyne.com/skynet.git",
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			got, err := sanitizeRemoteURL(tc.uri)
+			if tc.wantErr {
+				s.Error(err)
+				return
+			}
+
+			require.NoError(s.T(), err)
+			s.Equal(tc.want, got)
+		})
+	}
+}
+
 func (s *crafterUnitSuite) TestGitRepoHead() {
 	initRepo := func(withCommit bool) func(string) (*HeadCommit, error) {
 		return func(repoPath string) (*HeadCommit, error) {

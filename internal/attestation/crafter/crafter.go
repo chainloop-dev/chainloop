@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -340,13 +341,35 @@ func gracefulGitRepoHead(path string) (*HeadCommit, error) {
 			continue
 		}
 
+		remoteURI, err := sanitizeRemoteURL(r.Config().URLs[0])
+		if err != nil {
+			return nil, fmt.Errorf("sanitizing remote url: %w", err)
+		}
+
 		c.Remotes = append(c.Remotes, &CommitRemote{
 			Name: r.Config().Name,
-			URL:  r.Config().URLs[0],
+			URL:  remoteURI,
 		})
 	}
 
 	return c, nil
+}
+
+// Clear any basic auth credentials from the remote URL
+func sanitizeRemoteURL(remoteURL string) (string, error) {
+	uri, err := url.Parse(remoteURL)
+	if err != nil {
+		// check if it's a valid git@ url
+		if strings.HasPrefix(remoteURL, "git@") {
+			return remoteURL, nil
+		}
+
+		return "", fmt.Errorf("parsing remote url: %w", err)
+	}
+
+	// clear basic auth credentials
+	uri.User = nil
+	return uri.String(), nil
 }
 
 func initialCraftingState(cwd string, schema *schemaapi.CraftingSchema, wf *api.WorkflowMetadata, dryRun bool, runnerType schemaapi.CraftingSchema_Runner_RunnerType, jobURL string) (*api.CraftingState, error) {
