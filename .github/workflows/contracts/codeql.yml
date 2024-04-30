@@ -1,0 +1,7 @@
+schemaVersion: v1
+runner:
+  type: GITHUB_ACTION
+materials:
+  - type: SARIF
+    name: sarif-results
+    output: true

@@ -1,0 +1,13 @@
+schemaVersion: v1
+runner:
+  type: GITHUB_ACTION
+materials:
+  - type: HELM_CHART
+    name: helm-chart
+    output: true
+  - type: CONTAINER_IMAGE
+    name: control-plane-image
+    output: true
+  - type: CONTAINER_IMAGE
+    name: artifact-cas-image
+    output: true
