@@ -16,8 +16,6 @@
 package materials
 
 import (
-	"bufio"
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -44,56 +42,43 @@ type crafterCommon struct {
 	input  *schemaapi.CraftingSchema_Material
 }
 
-func uploadAndCraftFromBytes(ctx context.Context, input *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, filename string, artifactData []byte, h cr_v1.Hash, l *zerolog.Logger) (*api.Attestation_Material, error) {
-	// If there is a max size set and the file is bigger than that, return an error
-	if backend.MaxSize > 0 && int64(len(artifactData)) > backend.MaxSize {
-		return nil, fmt.Errorf("this file is too big for the %s CAS backend, please contact your administrator: fileSize=%s, maxSize=%s", backend.Name, bytefmt.ByteSize(uint64(len(artifactData))), bytefmt.ByteSize(uint64(backend.MaxSize)))
-	}
-	return uploadAndCraft(ctx, input, backend, bytes.NewBuffer(artifactData), filename, h.String(), l)
-}
-
-// uploadAndCraftFromFile uploads the artifact to CAS and crafts the material
+// uploadAndCraft uploads the artifact to CAS and crafts the material
 // this function is used by all the uploadable artifacts crafters (SBOMs, JUnit, and more in the future)
-func uploadAndCraftFromFile(ctx context.Context, input *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, artifactPath string, l *zerolog.Logger) (*api.Attestation_Material, error) {
+func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, artifactPath string, l *zerolog.Logger) (*api.Attestation_Material, error) {
+	// 1 - Check the file can be stored in the provided CAS backend
 	result, err := fileStats(artifactPath)
 	if err != nil {
 		return nil, fmt.Errorf("getting file stats: %w", err)
 	}
 	defer result.r.Close()
 
+	l.Debug().Str("filename", result.filename).Str("digest", result.digest).Str("path", artifactPath).
+		Str("size", bytefmt.ByteSize(uint64(result.size))).
+		Str("max_size", bytefmt.ByteSize(uint64(backend.MaxSize))).
+		Str("backend", backend.Name).Msg("crafting file")
+
 	// If there is a max size set and the file is bigger than that, return an error
 	if backend.MaxSize > 0 && result.size > backend.MaxSize {
 		return nil, fmt.Errorf("this file is too big for the %s CAS backend, please contact your administrator: fileSize=%s, maxSize=%s", backend.Name, bytefmt.ByteSize(uint64(result.size)), bytefmt.ByteSize(uint64(backend.MaxSize)))
 	}
-
-	return uploadAndCraft(ctx, input, backend, result.r, result.filename, result.digest, l)
-}
-
-func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, reader io.Reader, filename, hash string, l *zerolog.Logger) (*api.Attestation_Material, error) {
-	buf := bufio.NewReader(reader)
-
-	l.Debug().Str("filename", filename).Str("digest", hash).
-		Str("size", bytefmt.ByteSize(uint64(buf.Size()))).
-		Str("max_size", bytefmt.ByteSize(uint64(backend.MaxSize))).
-		Str("backend", backend.Name).Msg("crafting file")
 
 	material := &api.Attestation_Material{
 		MaterialType: input.Type,
 		M: &api.Attestation_Material_Artifact_{
 			Artifact: &api.Attestation_Material_Artifact{
 				Id:        input.Name,
-				Name:      filename,
-				Digest:    hash,
+				Name:      result.filename,
+				Digest:    result.digest,
 				IsSubject: input.Output,
 			},
 		},
 	}
 
-	// Upload the file to CAS
+	// 2 - Upload the file to CAS
 	if backend.Uploader != nil {
 		l.Debug().Str("backend", backend.Name).Msg("uploading")
 
-		_, err := backend.Uploader.Upload(ctx, buf, hash, filename)
+		_, err = backend.Uploader.UploadFile(ctx, artifactPath)
 		if err != nil {
 			return nil, fmt.Errorf("uploading material: %w", err)
 		}
@@ -102,13 +87,13 @@ func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Materia
 	} else {
 		l.Debug().Str("backend", backend.Name).Msg("storing inline")
 		// or store it inline if no uploader is provided
-		material.InlineCas = true
-
-		data, err := io.ReadAll(buf)
+		content, err := io.ReadAll(result.r)
 		if err != nil {
-			return nil, fmt.Errorf("reading material: %w", err)
+			return nil, fmt.Errorf("reading file: %w", err)
 		}
-		material.GetArtifact().Content = data
+
+		material.InlineCas = true
+		material.GetArtifact().Content = content
 	}
 
 	return material, nil

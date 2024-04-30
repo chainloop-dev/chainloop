@@ -118,7 +118,7 @@ func (c *HelmChartCrafter) Craft(ctx context.Context, filepath string) (*api.Att
 	}
 
 	// Upload and craft the chart
-	return uploadAndCraftFromFile(ctx, c.input, c.backend, filepath, c.logger)
+	return uploadAndCraft(ctx, c.input, c.backend, filepath, c.logger)
 }
 
 // validateYamlFile validates the YAML file just by trying to unmarshal it

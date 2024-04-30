@@ -54,5 +54,5 @@ func (i *CSAFVEXCrafter) Craft(ctx context.Context, filepath string) (*api.Attes
 		return nil, fmt.Errorf("invalid CSAF VEX file: %w", ErrInvalidMaterialType)
 	}
 
-	return uploadAndCraftFromFile(ctx, i.input, i.backend, filepath, i.logger)
+	return uploadAndCraft(ctx, i.input, i.backend, filepath, i.logger)
 }

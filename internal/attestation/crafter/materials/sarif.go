@@ -54,5 +54,5 @@ func (i *SARIFCrafter) Craft(ctx context.Context, filepath string) (*api.Attesta
 		return nil, fmt.Errorf("invalid SARIF file: %w", ErrInvalidMaterialType)
 	}
 
-	return uploadAndCraftFromFile(ctx, i.input, i.backend, filepath, i.logger)
+	return uploadAndCraft(ctx, i.input, i.backend, filepath, i.logger)
 }

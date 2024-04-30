@@ -28,7 +28,6 @@ import (
 	mUploader "github.com/chainloop-dev/chainloop/internal/casclient/mocks"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -77,8 +76,7 @@ func TestEvidenceCraft(t *testing.T) {
 
 	// Mock uploader
 	uploader := mUploader.NewUploader(t)
-	uploader.On("Upload", context.TODO(), mock.Anything,
-		"sha256:54181dfe59340b318253e59f7695f547c5c10d071cb75001170a389061349918", "simple.txt").
+	uploader.On("UploadFile", context.TODO(), "./testdata/simple.txt").
 		Return(&casclient.UpDownStatus{
 			Digest:   "deadbeef",
 			Filename: "simple.txt",

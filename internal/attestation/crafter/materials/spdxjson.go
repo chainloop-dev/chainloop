@@ -58,5 +58,5 @@ func (i *SPDXJSONCrafter) Craft(ctx context.Context, filePath string) (*api.Atte
 		return nil, fmt.Errorf("invalid spdx sbom file: %w", ErrInvalidMaterialType)
 	}
 
-	return uploadAndCraftFromFile(ctx, i.input, i.backend, filePath, i.logger)
+	return uploadAndCraft(ctx, i.input, i.backend, filePath, i.logger)
 }

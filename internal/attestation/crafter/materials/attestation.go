@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation"
@@ -66,10 +65,22 @@ func (i *AttestationCrafter) Craft(ctx context.Context, artifactPath string) (*a
 
 	// regenerate the json from the parsed data, just to remove any formating from the incoming json and preserve
 	// the digest
-	jsonContent, h, err := attestation.JSONEnvelopeWithDigest(&dsseEnvelope)
+	jsonContent, _, err := attestation.JSONEnvelopeWithDigest(&dsseEnvelope)
 	if err != nil {
 		return nil, fmt.Errorf("creating CAS payload: %w", err)
 	}
 
-	return uploadAndCraftFromBytes(ctx, i.input, i.backend, filepath.Base(artifactPath), jsonContent, h, i.logger)
+	// Create a temp file with this content and upload to the CAS
+	file, err := os.CreateTemp("", "attestation-*.json")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temp file: %w", err)
+	}
+	defer file.Close()
+	defer os.Remove(file.Name())
+
+	if _, err := file.Write(jsonContent); err != nil {
+		return nil, fmt.Errorf("failed to write JSON payload: %w", err)
+	}
+
+	return uploadAndCraft(ctx, i.input, i.backend, file.Name(), i.logger)
 }

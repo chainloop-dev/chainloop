@@ -60,5 +60,5 @@ func (i *OpenVEXCrafter) Craft(ctx context.Context, filePath string) (*api.Attes
 		return nil, fmt.Errorf("invalid OpenVEX file: %w", ErrInvalidMaterialType)
 	}
 
-	return uploadAndCraftFromFile(ctx, i.input, i.backend, filePath, i.logger)
+	return uploadAndCraft(ctx, i.input, i.backend, filePath, i.logger)
 }

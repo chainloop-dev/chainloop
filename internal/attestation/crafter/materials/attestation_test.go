@@ -22,7 +22,6 @@ import (
 
 	"code.cloudfoundry.org/bytefmt"
 	contractAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	attestationApi "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/materials"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
 	mUploader "github.com/chainloop-dev/chainloop/internal/casclient/mocks"
@@ -110,8 +109,7 @@ func TestAttestationCraft(t *testing.T) {
 
 	// Mock uploader
 	uploader := mUploader.NewUploader(t)
-	uploader.On("Upload",
-		context.TODO(), mock.Anything, "sha256:30f98082cf71a990787755b360443711735de4041f27bf4a49d61bb8e6f29e92", "attestation.json").
+	uploader.On("UploadFile", context.TODO(), mock.Anything).
 		Return(&casclient.UpDownStatus{
 			Digest:   "deadbeef",
 			Filename: "attestation.json",
@@ -128,9 +126,8 @@ func TestAttestationCraft(t *testing.T) {
 	assert.True(got.UploadedToCas)
 
 	// The result includes the digest reference
-	assert.Equal(&attestationApi.Attestation_Material_Artifact{
-		Id: "test", Digest: "sha256:30f98082cf71a990787755b360443711735de4041f27bf4a49d61bb8e6f29e92", Name: "attestation.json",
-	}, got.GetArtifact())
+	assert.Equal("test", got.GetArtifact().Id)
+	assert.Equal("sha256:30f98082cf71a990787755b360443711735de4041f27bf4a49d61bb8e6f29e92", got.GetArtifact().Digest)
 
 	uploader.AssertExpectations(t)
 }
