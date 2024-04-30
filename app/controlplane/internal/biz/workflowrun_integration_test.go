@@ -17,6 +17,8 @@ package biz_test
 
 import (
 	"context"
+	"encoding/json"
+	"os"
 	"testing"
 
 	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -31,6 +33,7 @@ import (
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -106,7 +109,7 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 	assert := assert.New(s.T())
 	ctx := context.Background()
 
-	validEnvelope := &dsse.Envelope{}
+	validEnvelope := testEnvelope(s.T(), "testdata/attestations/full.json")
 
 	s.T().Run("non existing workflowRun", func(t *testing.T) {
 		_, err := s.WorkflowRun.SaveAttestation(ctx, uuid.NewString(), validEnvelope)
@@ -122,7 +125,7 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 
 		d, err := s.WorkflowRun.SaveAttestation(ctx, run.ID.String(), validEnvelope)
 		assert.NoError(err)
-		wantDigest := "sha256:f845058d865c3d4d491c9019f6afe9c543ad2cd11b31620cc512e341fb03d3d8"
+		wantDigest := "sha256:1a077137aef7ca208b80c339769d0d7eecacc2850368e56e834cda1750ce413a"
 		assert.Equal(wantDigest, d)
 
 		// Retrieve attestation ref from storage and compare
@@ -309,6 +312,14 @@ type workflowRunTestData struct {
 	digestAtt1, digestAttOrg2, digestAttPublic     string
 }
 
+func testEnvelope(t *testing.T, path string) *dsse.Envelope {
+	attJSON, err := os.ReadFile(path)
+	require.NoError(t, err)
+	var envelope *dsse.Envelope
+	require.NoError(t, json.Unmarshal(attJSON, &envelope))
+	return envelope
+}
+
 // extract this setup to a helper function so it can be used from other test suites
 func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, s *workflowRunTestData) {
 	var err error
@@ -346,7 +357,7 @@ func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, 
 			WorkflowID: s.workflowOrg1.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
 		})
 	assert.NoError(err)
-	s.digestAtt1, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg1.ID.String(), &dsse.Envelope{PayloadType: "test"})
+	s.digestAtt1, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg1.ID.String(), testEnvelope(t, "testdata/attestations/full.json"))
 
 	assert.NoError(err)
 
@@ -355,7 +366,7 @@ func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, 
 			WorkflowID: s.workflowOrg2.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
 		})
 	assert.NoError(err)
-	s.digestAttOrg2, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2.ID.String(), &dsse.Envelope{PayloadType: "test2"})
+	s.digestAttOrg2, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2.ID.String(), testEnvelope(t, "testdata/attestations/empty.json"))
 	assert.NoError(err)
 
 	s.runOrg2Public, err = suite.WorkflowRun.Create(ctx,
@@ -363,7 +374,7 @@ func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, 
 			WorkflowID: s.workflowPublicOrg2.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
 		})
 	assert.NoError(err)
-	s.digestAttPublic, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2Public.ID.String(), &dsse.Envelope{PayloadType: "test3"})
+	s.digestAttPublic, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2Public.ID.String(), testEnvelope(t, "testdata/attestations/with-string.json"))
 	assert.NoError(err)
 }
 
