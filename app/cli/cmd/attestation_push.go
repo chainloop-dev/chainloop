@@ -82,10 +82,16 @@ func newAttestationPushCmd() *cobra.Command {
 				return newGracefulError(err)
 			}
 
-			if err := encodeJSON(res.Envelope); err != nil {
-				return err
+			// NOTE: we are not moving yet to full table by default
+			// to maintain backward compatibility
+			if flagOutputFormat == formatJSON {
+				return encodeJSON(res)
 			}
 
+			// default to mix of json and text to stdout and stderr by default
+			// kept to maintain backward compatibility
+			// TODO: in the future we'll render either a table or a proper report
+			fmt.Println(res.Envelope)
 			if res.Digest != "" {
 				logger.Info().Msgf("Attestation Digest: %s", res.Digest)
 			}
