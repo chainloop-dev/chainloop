@@ -1,5 +1,10 @@
 ## Chainloop contracts
 
+
+> **Disclaimer**: All contracts stored in the `.github/workflows/contracts` folder are a showcase of the Chainloop
+internal build, package, release pipeline managed by the core maintainers of how to maintain contracts declaratively from a git repository. Real contracts should be stored
+in a different repository and managed by the sec/ops team.
+
 In this folder all contracts of Chainloop repository are kept as a reference and are the source of truth.
 
 On every push to the `main` branch of the repository, all files contained in `.github/workflows/contracts`
