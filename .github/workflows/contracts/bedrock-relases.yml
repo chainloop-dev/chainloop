@@ -13,7 +13,6 @@ materials:
     output: true
   - type: ARTIFACT
     name: chainloop-plugin-discord-webhook-linux-amd64
-    output: false
   - type: CONTAINER_IMAGE
     name: control-plane-image
     output: true
@@ -22,13 +21,11 @@ materials:
     output: true
   - type: SBOM_CYCLONEDX_JSON
     name: sbom-control-plane
-    output: false
     annotations:
       - name: component
         value: control-plane
   - type: SBOM_CYCLONEDX_JSON
     name: sbom-artifact-cas
-    output: false
     annotations:
       - name: component
         value: cas
@@ -37,7 +34,5 @@ materials:
     output: true
   - type: ARTIFACT
     name: chainloop-plugin-smtp-linux-amd64
-    output: false
   - type: ARTIFACT
     name: chainloop-plugin-dependency-track-linux-amd64
-    output: false
