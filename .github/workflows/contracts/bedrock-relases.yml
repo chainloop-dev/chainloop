@@ -32,3 +32,12 @@ materials:
     annotations:
       - name: component
         value: cas
+  - type: ARTIFACT
+    name: cli-linux-arm64
+    output: true
+  - type: ARTIFACT
+    name: chainloop-plugin-smtp-linux-amd64
+    output: false
+  - type: ARTIFACT
+    name: chainloop-plugin-dependency-track-linux-amd64
+    output: false
