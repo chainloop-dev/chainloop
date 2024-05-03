@@ -297,7 +297,7 @@ func extractReferrers(att *dsse.Envelope, repo ReferrerRepo) ([]*Referrer, error
 		// stored in the system. This is so we can ensure that the attestations nodes are created through
 		// an attestation process, not as a referenced provided by the user
 		if material.Type == referrerAttestationType {
-			if exists, err := repo.Exists(context.Background(), material.Hash.String(), WithKind(referrerAttestationType)); err != nil {
+			if exists, err := repo.Exist(context.Background(), material.Hash.String(), WithKind(referrerAttestationType)); err != nil {
 				return nil, fmt.Errorf("checking if attestation exists: %w", err)
 			} else if !exists {
 				return nil, fmt.Errorf("attestation material does not exist %q", material.Hash.String())
