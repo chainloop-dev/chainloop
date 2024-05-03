@@ -219,6 +219,7 @@ var (
 	AnnotationMaterialName      = prefixed("material.name")
 	AnnotationMaterialCAS       = prefixed("material.cas")
 	annotationMaterialInlineCAS = prefixed("material.cas.inline")
+	annotationContainerTag      = prefixed("material.image.tag")
 )
 
 func prefixed(name string) string {

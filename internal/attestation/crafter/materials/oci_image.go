@@ -65,6 +65,7 @@ func (i *OCIImageCrafter) Craft(_ context.Context, imageRef string) (*api.Attest
 		M: &api.Attestation_Material_ContainerImage_{
 			ContainerImage: &api.Attestation_Material_ContainerImage{
 				Id: i.input.Name, Name: repoName, Digest: remoteRef.DigestStr(), IsSubject: i.input.Output,
+				Tag: ref.Identifier(),
 			},
 		},
 	}, nil

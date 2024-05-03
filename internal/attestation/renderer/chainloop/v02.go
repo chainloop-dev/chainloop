@@ -213,6 +213,11 @@ func outputMaterials(att *v1.Attestation, onlyOutput bool) ([]*intoto.ResourceDe
 			AnnotationMaterialName: mdefName,
 		}
 
+		// Set the special annotations for container images
+		if artifactType == schemaapi.CraftingSchema_Material_CONTAINER_IMAGE {
+			annotationsM[annotationContainerTag] = mdef.GetContainerImage().GetTag()
+		}
+
 		// Custom annotations, it does not override the built-in ones
 		for k, v := range mdef.Annotations {
 			_, ok := annotationsM[k]

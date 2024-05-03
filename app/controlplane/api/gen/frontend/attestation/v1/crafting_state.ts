@@ -70,6 +70,8 @@ export interface Attestation_Material_ContainerImage {
   name: string;
   digest: string;
   isSubject: boolean;
+  /** provided tag */
+  tag: string;
 }
 
 export interface Attestation_Material_Artifact {
@@ -837,7 +839,7 @@ export const Attestation_Material_KeyVal = {
 };
 
 function createBaseAttestation_Material_ContainerImage(): Attestation_Material_ContainerImage {
-  return { id: "", name: "", digest: "", isSubject: false };
+  return { id: "", name: "", digest: "", isSubject: false, tag: "" };
 }
 
 export const Attestation_Material_ContainerImage = {
@@ -853,6 +855,9 @@ export const Attestation_Material_ContainerImage = {
     }
     if (message.isSubject === true) {
       writer.uint32(32).bool(message.isSubject);
+    }
+    if (message.tag !== "") {
+      writer.uint32(42).string(message.tag);
     }
     return writer;
   },
@@ -892,6 +897,13 @@ export const Attestation_Material_ContainerImage = {
 
           message.isSubject = reader.bool();
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.tag = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -907,6 +919,7 @@ export const Attestation_Material_ContainerImage = {
       name: isSet(object.name) ? String(object.name) : "",
       digest: isSet(object.digest) ? String(object.digest) : "",
       isSubject: isSet(object.isSubject) ? Boolean(object.isSubject) : false,
+      tag: isSet(object.tag) ? String(object.tag) : "",
     };
   },
 
@@ -916,6 +929,7 @@ export const Attestation_Material_ContainerImage = {
     message.name !== undefined && (obj.name = message.name);
     message.digest !== undefined && (obj.digest = message.digest);
     message.isSubject !== undefined && (obj.isSubject = message.isSubject);
+    message.tag !== undefined && (obj.tag = message.tag);
     return obj;
   },
 
@@ -933,6 +947,7 @@ export const Attestation_Material_ContainerImage = {
     message.name = object.name ?? "";
     message.digest = object.digest ?? "";
     message.isSubject = object.isSubject ?? false;
+    message.tag = object.tag ?? "";
     return message;
   },
 };
