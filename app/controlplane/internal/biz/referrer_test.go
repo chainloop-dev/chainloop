@@ -331,7 +331,7 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 			var envelope *dsse.Envelope
 			require.NoError(s.T(), json.Unmarshal(attJSON, &envelope))
 
-			got, err := extractReferrers(envelope)
+			got, err := extractReferrers(envelope, nil)
 			if tc.expectErr {
 				s.Error(err)
 				return

@@ -24,8 +24,11 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/testhelpers"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
+	"github.com/chainloop-dev/chainloop/internal/credentials"
+	creds "github.com/chainloop-dev/chainloop/internal/credentials/mocks"
 	"github.com/google/uuid"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -108,12 +111,39 @@ func (s *referrerIntegrationTestSuite) TestGetFromRootInPublicSharedIndex() {
 	})
 }
 
+func (s *referrerIntegrationTestSuite) TestExtractAndPersistsDependentAttestation() {
+	envelope := testEnvelope(s.T(), "testdata/attestations/with-dependent-attestation.json")
+	ctx := context.Background()
+
+	const (
+		wantReferrerAtt  = "sha256:950c7b4c65447a3b86b6f769515005e7c44a67c8193bff790750eadf13207fbb"
+		wantDependentAtt = "sha256:2dc17f7c933d20e06b49250a582a3d19bdfbadba9c4e5f3f856af6f261db79d4"
+	)
+
+	s.Run("creation fails because the dependent attestation doesn't exist yet", func() {
+		err := s.Referrer.ExtractAndPersist(ctx, envelope, s.workflow1.ID.String())
+		s.ErrorContains(err, "attestation material does not exist")
+	})
+
+	s.Run("if the dependent attestation exists we ingest it", func() {
+		// We store the dependent attestation
+		dependentAtt := testEnvelope(s.T(), "testdata/attestations/dependent-attestation.json")
+		err := s.Referrer.ExtractAndPersist(ctx, dependentAtt, s.workflow1.ID.String())
+		require.NoError(s.T(), err)
+
+		err = s.Referrer.ExtractAndPersist(ctx, envelope, s.workflow1.ID.String())
+		s.NoError(err)
+		got, err := s.Referrer.GetFromRootUser(ctx, wantReferrerAtt, "ATTESTATION", s.user.ID)
+		s.NoError(err)
+		// It has a commit and an attestation
+		require.Len(s.T(), got.References, 2)
+		s.Equal(wantDependentAtt, got.References[1].Digest)
+	})
+}
+
 func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 	// Load attestation
-	attJSON, err := os.ReadFile("testdata/attestations/with-git-subject.json")
-	require.NoError(s.T(), err)
-	var envelope *dsse.Envelope
-	require.NoError(s.T(), json.Unmarshal(attJSON, &envelope))
+	envelope := testEnvelope(s.T(), "testdata/attestations/with-git-subject.json")
 
 	wantReferrerAtt := &biz.Referrer{
 		Digest:       "sha256:de36d470d792499b1489fc0e6623300fc8822b8f0d2981bb5ec563f8dde723c7",
@@ -218,7 +248,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 	})
 
 	s.T().Run("but another workflow can be attached", func(t *testing.T) {
-		err = s.Referrer.ExtractAndPersist(ctx, envelope, s.workflow2.ID.String())
+		err := s.Referrer.ExtractAndPersist(ctx, envelope, s.workflow2.ID.String())
 		s.NoError(err)
 		got, err := s.Referrer.GetFromRootUser(ctx, wantReferrerAtt.Digest, "", s.user.ID)
 		s.NoError(err)
@@ -237,7 +267,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 	})
 
 	s.T().Run("and now user2 has access to it since it has access to workflow2 in org2", func(t *testing.T) {
-		err = s.Referrer.ExtractAndPersist(ctx, envelope, s.workflow2.ID.String())
+		err := s.Referrer.ExtractAndPersist(ctx, envelope, s.workflow2.ID.String())
 		s.NoError(err)
 		got, err := s.Referrer.GetFromRootUser(ctx, wantReferrerAtt.Digest, "", s.user2.ID)
 		s.NoError(err)
@@ -274,19 +304,14 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 	})
 
 	s.T().Run("it should NOT fail storing the attestation with the same material twice with different types", func(t *testing.T) {
-		attJSON, err = os.ReadFile("testdata/attestations/with-duplicated-sha.json")
-		require.NoError(s.T(), err)
-		require.NoError(s.T(), json.Unmarshal(attJSON, &envelope))
+		envelope := testEnvelope(s.T(), "testdata/attestations/with-duplicated-sha.json")
 
 		err := s.Referrer.ExtractAndPersist(ctx, envelope, s.workflow1.ID.String())
 		s.NoError(err)
 	})
 
 	s.T().Run("it should fail on retrieval if we have stored two referrers with same digest (for two different types)", func(t *testing.T) {
-		// this attestation contains a material with same digest than the container image from git-subject.json
-		attJSON, err = os.ReadFile("testdata/attestations/same-digest-than-git-subject.json")
-		require.NoError(s.T(), err)
-		require.NoError(s.T(), json.Unmarshal(attJSON, &envelope))
+		envelope := testEnvelope(s.T(), "testdata/attestations/same-digest-than-git-subject.json")
 
 		// storing will not fail since it's the a different artifact type
 		err := s.Referrer.ExtractAndPersist(ctx, envelope, s.workflow1.ID.String())
@@ -356,11 +381,15 @@ type referrerIntegrationTestSuite struct {
 	org1UUID, org2UUID   uuid.UUID
 	user, user2          *biz.User
 	sharedEnabledUC      *biz.ReferrerUseCase
+	run                  *biz.WorkflowRun
 }
 
 func (s *referrerIntegrationTestSuite) SetupTest() {
-	s.TestingUseCases = testhelpers.NewTestingUseCases(s.T())
+	credsWriter := creds.NewReaderWriter(s.T())
 	ctx := context.Background()
+	credsWriter.On("SaveCredentials", ctx, mock.Anything, &credentials.OCIKeypair{Repo: "repo", Username: "username", Password: "pass"}).Return("stored-OCI-secret", nil)
+
+	s.TestingUseCases = testhelpers.NewTestingUseCases(s.T(), testhelpers.WithCredsReaderWriter(credsWriter))
 
 	var err error
 	s.org1, err = s.Organization.CreateWithRandomName(ctx)
@@ -397,6 +426,25 @@ func (s *referrerIntegrationTestSuite) SetupTest() {
 			Enabled:     true,
 			AllowedOrgs: []string{s.org1.ID},
 		}, nil)
+	require.NoError(s.T(), err)
+
+	// Robot account
+	robotAccount, err := s.RobotAccount.Create(ctx, "name", s.org1.ID, s.workflow1.ID.String())
+	require.NoError(s.T(), err)
+
+	// Find contract revision
+	contractVersion, err := s.WorkflowContract.Describe(ctx, s.org1.ID, s.workflow1.ContractID.String(), 0)
+	require.NoError(s.T(), err)
+
+	casBackend, err := s.CASBackend.CreateOrUpdate(ctx, s.org1.ID, "repo", "username", "pass", backendType, true)
+	require.NoError(s.T(), err)
+
+	// Let's create 3 runs, one in org1 and 2 in org2 (one public)
+	s.run, err = s.WorkflowRun.Create(ctx,
+		&biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflow1.ID.String(), RobotaccountID: robotAccount.ID.String(), ContractRevision: contractVersion, CASBackendID: casBackend.ID,
+		})
+
 	require.NoError(s.T(), err)
 }
 

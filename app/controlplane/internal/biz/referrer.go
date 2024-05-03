@@ -72,6 +72,9 @@ type ReferrerRepo interface {
 	// For example if sha:deadbeef represents an attestation, the result will contain the attestation + materials associated to it
 	// OrgIDs represent an allowList of organizations where the referrers should be looked for
 	GetFromRoot(ctx context.Context, digest string, orgIDS []uuid.UUID, filters ...GetFromRootFilter) (*StoredReferrer, error)
+	// Check if a given referrer by digest exist.
+	// The query can be scoped further down if needed by providing the kind or visibility status
+	Exist(ctx context.Context, digest string, filters ...GetFromRootFilter) (bool, error)
 }
 
 type Referrer struct {
@@ -132,7 +135,7 @@ func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envel
 		return NewErrNotFound("workflow")
 	}
 
-	referrers, err := extractReferrers(att)
+	referrers, err := extractReferrers(att, s.repo)
 	if err != nil {
 		return fmt.Errorf("extracting referrers: %w", err)
 	}
@@ -247,7 +250,7 @@ func (r *Referrer) MapID() string {
 // 3 - and the subjects (some of them)
 // 4 - creating link between the attestation and the materials/subjects as needed
 // see tests for examples
-func extractReferrers(att *dsse.Envelope) ([]*Referrer, error) {
+func extractReferrers(att *dsse.Envelope, repo ReferrerRepo) ([]*Referrer, error) {
 	_, h, err := attestation.JSONEnvelopeWithDigest(att)
 	if err != nil {
 		return nil, fmt.Errorf("marshaling attestation: %w", err)
@@ -288,6 +291,17 @@ func extractReferrers(att *dsse.Envelope) ([]*Referrer, error) {
 		// Skip materials that don't have a digest
 		if material.Hash == nil {
 			continue
+		}
+
+		// If we are inserting an attestation as a dependent, we want to make sure it already exists
+		// stored in the system. This is so we can ensure that the attestations nodes are created through
+		// an attestation process, not as a referenced provided by the user
+		if material.Type == referrerAttestationType {
+			if exists, err := repo.Exists(context.Background(), material.Hash.String(), WithKind(referrerAttestationType)); err != nil {
+				return nil, fmt.Errorf("checking if attestation exists: %w", err)
+			} else if !exists {
+				return nil, fmt.Errorf("attestation material does not exist %q", material.Hash.String())
+			}
 		}
 
 		// Create its referrer entry if it doesn't exist yet
