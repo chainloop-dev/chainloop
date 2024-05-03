@@ -262,8 +262,8 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		got, err = s.Referrer.GetFromRootUser(ctx, wantReferrerAtt.Digest, "", s.user.ID)
 		s.NoError(err)
 		require.Len(t, got.OrgIDs, 2)
-		s.Equal([]uuid.UUID{s.org1UUID, s.org2UUID}, got.OrgIDs)
-		s.Equal([]uuid.UUID{s.workflow1.ID, s.workflow2.ID}, got.WorkflowIDs)
+		s.Equal([]uuid.UUID{s.org2UUID, s.org1UUID}, got.OrgIDs)
+		s.Equal([]uuid.UUID{s.workflow2.ID, s.workflow1.ID}, got.WorkflowIDs)
 	})
 
 	s.T().Run("and now user2 has access to it since it has access to workflow2 in org2", func(t *testing.T) {
@@ -354,7 +354,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		got, err := s.Referrer.GetFromRootUser(ctx, wantReferrerAtt.Digest, "", s.user.ID)
 		s.NoError(err)
 		s.False(got.InPublicWorkflow)
-		s.Equal([]uuid.UUID{s.workflow1.ID, s.workflow2.ID}, got.WorkflowIDs)
+		s.Equal([]uuid.UUID{s.workflow2.ID, s.workflow1.ID}, got.WorkflowIDs)
 		for _, r := range got.References {
 			s.False(r.InPublicWorkflow)
 		}
@@ -439,7 +439,6 @@ func (s *referrerIntegrationTestSuite) SetupTest() {
 	casBackend, err := s.CASBackend.CreateOrUpdate(ctx, s.org1.ID, "repo", "username", "pass", backendType, true)
 	require.NoError(s.T(), err)
 
-	// Let's create 3 runs, one in org1 and 2 in org2 (one public)
 	s.run, err = s.WorkflowRun.Create(ctx,
 		&biz.WorkflowRunCreateOpts{
 			WorkflowID: s.workflow1.ID.String(), RobotaccountID: robotAccount.ID.String(), ContractRevision: contractVersion, CASBackendID: casBackend.ID,
