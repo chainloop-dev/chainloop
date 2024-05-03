@@ -116,6 +116,26 @@ func (r *ReferrerRepo) Save(ctx context.Context, referrers []*biz.Referrer, work
 	return nil
 }
 
+// Check if a given referrer by digest exist. The query can be scoped further down if needed by providing the kind or visibility status
+func (r *ReferrerRepo) Exist(ctx context.Context, digest string, filters ...biz.GetFromRootFilter) (bool, error) {
+	opts := &biz.GetFromRootFilters{}
+	for _, f := range filters {
+		f(opts)
+	}
+
+	query := r.data.db.Referrer.Query().Where(referrer.DigestEQ(digest))
+	// We might be filtering by the rootKind, this will prevent ambiguity
+	if opts.RootKind != nil {
+		query = query.Where(referrer.Kind(*opts.RootKind))
+	}
+
+	if opts.Public != nil {
+		query = query.WithWorkflows(func(q *ent.WorkflowQuery) { q.Where(workflow.PublicEQ(*opts.Public)) })
+	}
+
+	return query.Exist(ctx)
+}
+
 func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string, orgIDs []uuid.UUID, filters ...biz.GetFromRootFilter) (*biz.StoredReferrer, error) {
 	opts := &biz.GetFromRootFilters{}
 	for _, f := range filters {
