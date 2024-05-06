@@ -62,6 +62,8 @@ message Attestation {
       string name = 2 [(buf.validate.field).string.min_len = 1];
       string digest = 3 [(buf.validate.field).string.min_len = 1];
       bool is_subject = 4;
+      // provided tag
+      string tag = 5;
     }
 
     message Artifact {

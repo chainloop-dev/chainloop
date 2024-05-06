@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -211,6 +211,13 @@ func outputMaterials(att *v1.Attestation, onlyOutput bool) ([]*intoto.ResourceDe
 		annotationsM := map[string]interface{}{
 			AnnotationMaterialType: artifactType.String(),
 			AnnotationMaterialName: mdefName,
+		}
+
+		// Set the special annotations for container images
+		if artifactType == schemaapi.CraftingSchema_Material_CONTAINER_IMAGE {
+			if tag := mdef.GetContainerImage().GetTag(); tag != "" {
+				annotationsM[annotationContainerTag] = tag
+			}
 		}
 
 		// Custom annotations, it does not override the built-in ones

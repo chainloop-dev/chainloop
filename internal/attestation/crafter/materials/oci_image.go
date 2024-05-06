@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -65,6 +65,7 @@ func (i *OCIImageCrafter) Craft(_ context.Context, imageRef string) (*api.Attest
 		M: &api.Attestation_Material_ContainerImage_{
 			ContainerImage: &api.Attestation_Material_ContainerImage{
 				Id: i.input.Name, Name: repoName, Digest: remoteRef.DigestStr(), IsSubject: i.input.Output,
+				Tag: ref.Identifier(),
 			},
 		},
 	}, nil

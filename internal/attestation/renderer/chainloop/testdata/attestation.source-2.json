@@ -42,7 +42,8 @@
           "id": "image",
           "name": "index.docker.io/bitnami/nginx",
           "digest": "sha256:fbd9335f55d83d8aaf9ab1a539b0f2a87b444e8c54f34c9a1ca9d7df15605db4",
-          "isSubject": true
+          "isSubject": true,
+          "tag": "devel"
         },
         "addedAt": "2023-10-20T12:57:52.459112368Z",
         "materialType": "CONTAINER_IMAGE"
