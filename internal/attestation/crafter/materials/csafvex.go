@@ -17,12 +17,13 @@ package materials
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"os"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	api "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
-	"github.com/openvex/go-vex/pkg/csaf"
 	"github.com/rs/zerolog"
 )
 
@@ -44,13 +45,22 @@ func NewCSAFVEXCrafter(materialSchema *schemaapi.CraftingSchema_Material, backen
 
 func (i *CSAFVEXCrafter) Craft(ctx context.Context, filepath string) (*api.Attestation_Material, error) {
 	i.logger.Debug().Str("path", filepath).Msg("decoding CSAF VEX file")
-	doc, err := csaf.Open(filepath)
-	// parse doesn't fail if the provided file is a valid JSON, but not a valid CSAF VEX file
-	if err != nil || doc.Document.Title == "" {
-		if err != nil {
-			i.logger.Debug().Err(err).Msg("error decoding file")
-		}
 
+	fh, err := os.Open(filepath)
+	if err != nil {
+		return nil, fmt.Errorf("csaf: failed to open document: %w", err)
+	}
+	defer fh.Close()
+
+	doc := &Vex{}
+	err = json.NewDecoder(fh).Decode(doc)
+	if err != nil {
+		i.logger.Debug().Err(err).Msg("error decoding file")
+
+		return nil, fmt.Errorf("invalid CSAF VEX file: %w", ErrInvalidMaterialType)
+	}
+
+	if err = doc.ValidateDocument(); err != nil {
 		return nil, fmt.Errorf("invalid CSAF VEX file: %w", ErrInvalidMaterialType)
 	}
 

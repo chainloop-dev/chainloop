@@ -77,7 +77,7 @@ require (
 	github.com/invopop/jsonschema v0.7.0
 	github.com/jackc/pgx/v5 v5.5.4
 	github.com/muesli/reflow v0.3.0
-	github.com/openvex/go-vex v0.2.5
+	github.com/openvex/go-vex v0.2.6-0.20240506020847-46399d425c68
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	google.golang.org/genproto/googleapis/api v0.0.0-20240401170217-c3f982113cda
 	google.golang.org/genproto/googleapis/bytestream v0.0.0-20240318140521-94a12d6c2237
@@ -135,7 +135,7 @@ require (
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	github.com/nozzle/throttler v0.0.0-20180817012639-2ea982251481 // indirect
 	github.com/oklog/run v1.1.0 // indirect
-	github.com/package-url/packageurl-go v0.1.1 // indirect
+	github.com/package-url/packageurl-go v0.1.2 // indirect
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pkg/xattr v0.4.9 // indirect

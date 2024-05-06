@@ -78,7 +78,7 @@ func TestCSAFVEXCraft(t *testing.T) {
 		{
 			name:     "invalid path",
 			filePath: "./testdata/non-existing.json",
-			wantErr:  "unexpected material type",
+			wantErr:  "csaf: failed to open document",
 		},
 		{
 			name:     "invalid artifact type",
