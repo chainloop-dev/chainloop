@@ -57,7 +57,7 @@ func (i *CSAFCrafter) Craft(ctx context.Context, filepath string) (*api.Attestat
 	var v interface{}
 	if err := json.Unmarshal(f, &v); err != nil {
 		i.logger.Debug().Err(err).Msg("error decoding file")
-		return nil, fmt.Errorf("invalid casf file: %w", ErrInvalidMaterialType)
+		return nil, fmt.Errorf("invalid CSAF file: %w", ErrInvalidMaterialType)
 	}
 
 	// The validator will try in cascade the different schemas since CSAF specification
