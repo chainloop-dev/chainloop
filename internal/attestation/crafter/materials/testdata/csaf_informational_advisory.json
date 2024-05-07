@@ -1,0 +1,103 @@
+{
+  "document": {
+    "aggregate_severity": {
+      "namespace": "https://access.redhat.com/security/updates/classification/",
+      "text": "Low"
+    },
+    "category": "csaf_informational_advisory",
+    "csaf_version": "2.0",
+    "distribution": {
+      "text": "Copyright \u00a9 2022 Red Hat, Inc. All rights reserved.",
+      "tlp": {
+        "label": "WHITE",
+        "url": "https://www.first.org/tlp/"
+      }
+    },
+    "lang": "en",
+    "notes": [
+      {
+        "category": "summary",
+        "text": "This is the one-month notification for the end of the maintenance phase for Red Hat OpenShift Enterprise 3.6 and 3.7. This notification applies only to customers with subscriptions for Red Hat OpenShift Enterprise 3.6 and 3.7.",
+        "title": "Topic"
+      },
+      {
+        "category": "general",
+        "text": "As part of the maintenance phase, qualified security patches of Critical or Important impact, as well as select mission-critical bug-fix patches, were released for Red Hat OpenShift Enterprise 3.6 and 3.7.\n\nAfter July 31st, 2019, customers will not receive those updates.\n\nRed Hat OpenShift Container Platform Life Cycle Policy can be found under:\n\nhttps://access.redhat.com/support/policy/updates/openshift",
+        "title": "Details"
+      },
+      {
+        "category": "legal_disclaimer",
+        "text": "This content is licensed under the Creative Commons Attribution 4.0 International License (https://creativecommons.org/licenses/by/4.0/). If you distribute this content, or a modified version of it, you must provide attribution to Red Hat Inc. and provide a link to the original.",
+        "title": "Terms of Use"
+      }
+    ],
+    "publisher": {
+      "category": "vendor",
+      "contact_details": "https://access.redhat.com/security/team/contact/",
+      "name": "Red Hat Product Security",
+      "namespace": "https://www.redhat.com"
+    },
+    "references": [
+      {
+        "category": "self",
+        "summary": "https://access.redhat.com/errata/RHSA-2019:1862",
+        "url": "https://access.redhat.com/errata/RHSA-2019:1862"
+      },
+      {
+        "category": "external",
+        "summary": "https://access.redhat.com/security/updates/classification/#low",
+        "url": "https://access.redhat.com/security/updates/classification/#low"
+      },
+      {
+        "category": "external",
+        "summary": "https://access.redhat.com/articles/3532971",
+        "url": "https://access.redhat.com/articles/3532971"
+      },
+      {
+        "category": "self",
+        "summary": "Canonical URL",
+        "url": "https://access.redhat.com/security/data/csaf/beta/2019/rhsa-2019_1862.json"
+      }
+    ],
+    "title": "Red Hat Security Advisory: Red Hat OpenShift Enterprise one-month end-of-life notice",
+    "tracking": {
+      "current_release_date": "2019-07-26T06:38:00Z",
+      "generator": {
+        "date": "2022-05-17T17:18:00Z",
+        "engine": {
+          "name": "Red Hat SDEngine",
+          "version": "3.5.0"
+        }
+      },
+      "id": "RHSA-2019:1862",
+      "initial_release_date": "2019-07-26T06:38:00Z",
+      "revision_history": [
+        {
+          "date": "2019-07-26T06:38:00Z",
+          "number": "1",
+          "summary": "Current version"
+        }
+      ],
+      "status": "final",
+      "version": "1"
+    }
+  },
+  "product_tree": {
+    "branches": [
+      {
+        "branches": [
+          {
+            "category": "product_family",
+            "name": "Red Hat OpenShift Enterprise",
+            "product": {
+              "name": "Red Hat OpenShift Enterprise",
+              "product_id": "Red Hat OpenShift Enterprise"
+            }
+          }
+        ],
+        "category": "vendor",
+        "name": "Red Hat"
+      }
+    ]
+  }
+}

@@ -91,6 +91,9 @@ message CraftingSchema {
 
       // Chainloop attestation coming from a different workflow.
       ATTESTATION = 12;
+      CSAF_INFORMATIONAL_ADVISORY = 13;
+      CSAF_SECURITY_ADVISORY = 14;
+      CSAF_SECURITY_INCIDENT_RESPONSE = 15;
     }
   }
 }

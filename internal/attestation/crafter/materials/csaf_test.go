@@ -18,6 +18,7 @@ package materials_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	contractAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -30,16 +31,34 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewCSAFVEXCrafter(t *testing.T) {
+func TestNewCSAFCrafter(t *testing.T) {
 	testCases := []struct {
 		name    string
 		input   *contractAPI.CraftingSchema_Material
 		wantErr bool
 	}{
 		{
-			name: "happy path",
+			name: "happy path VEX",
 			input: &contractAPI.CraftingSchema_Material{
 				Type: contractAPI.CraftingSchema_Material_CSAF_VEX,
+			},
+		},
+		{
+			name: "happy path Informational Advisory",
+			input: &contractAPI.CraftingSchema_Material{
+				Type: contractAPI.CraftingSchema_Material_CSAF_INFORMATIONAL_ADVISORY,
+			},
+		},
+		{
+			name: "happy path Security Advisory",
+			input: &contractAPI.CraftingSchema_Material{
+				Type: contractAPI.CraftingSchema_Material_CSAF_SECURITY_ADVISORY,
+			},
+		},
+		{
+			name: "happy path Security Incident Response",
+			input: &contractAPI.CraftingSchema_Material{
+				Type: contractAPI.CraftingSchema_Material_CSAF_SECURITY_INCIDENT_RESPONSE,
 			},
 		},
 		{
@@ -53,7 +72,7 @@ func TestNewCSAFVEXCrafter(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := materials.NewCSAFVEXCrafter(tc.input, nil, nil)
+			_, err := materials.NewCSAFCrafter(tc.input, nil, nil)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return
@@ -64,11 +83,12 @@ func TestNewCSAFVEXCrafter(t *testing.T) {
 	}
 }
 
-func TestCSAFVEXCraft(t *testing.T) {
+func TestCSAFCraft(t *testing.T) {
 	testCases := []struct {
 		name     string
 		filePath string
 		wantErr  string
+		digest   string
 	}{
 		{
 			name:     "non-expected json file",
@@ -88,6 +108,22 @@ func TestCSAFVEXCraft(t *testing.T) {
 		{
 			name:     "valid artifact type",
 			filePath: "./testdata/csaf_vex_v0.2.0.json",
+			digest:   "sha256:d38f293e130fbb01d72b1df0b53a9eb1f0b50dd2053665db881d56ed9f4107c2",
+		},
+		{
+			name:     "2.0 security advisory",
+			filePath: "./testdata/csaf_security_advisory.json",
+			digest:   "sha256:f1b3429e94e2e3b470402fa436b89f432d5209c6c8a12164cfccc90ec2637324",
+		},
+		{
+			name:     "2.0 informational advisory",
+			filePath: "./testdata/csaf_informational_advisory.json",
+			digest:   "sha256:015fc9b32648fec3f5b719ef52161aef130eba164b187289ea65d3fa4d7e2f2a",
+		},
+		{
+			name:     "2.0 security incident response",
+			filePath: "./testdata/csaf_security_incident_response.json",
+			digest:   "sha256:01674c1f6fbea901989369f73c6ba66a5f2c39cc57b542bb9cfbfddcc4106a2e",
 		},
 	}
 
@@ -110,7 +146,7 @@ func TestCSAFVEXCraft(t *testing.T) {
 			}
 
 			backend := &casclient.CASBackend{Uploader: uploader}
-			crafter, err := materials.NewCSAFVEXCrafter(schema, backend, &l)
+			crafter, err := materials.NewCSAFCrafter(schema, backend, &l)
 			require.NoError(t, err)
 
 			got, err := crafter.Craft(context.TODO(), tc.filePath)
@@ -125,7 +161,7 @@ func TestCSAFVEXCraft(t *testing.T) {
 
 			// // The result includes the digest reference
 			assert.Equal(&attestationApi.Attestation_Material_Artifact{
-				Id: "test", Digest: "sha256:c27087147fa040909e0ef1b522386608af545b0a163c30c9f11c3d753676fa44", Name: "csaf_vex_v0.2.0.json",
+				Id: "test", Digest: tc.digest, Name: strings.Split(tc.filePath, "/")[2],
 			}, got.GetArtifact())
 		})
 	}

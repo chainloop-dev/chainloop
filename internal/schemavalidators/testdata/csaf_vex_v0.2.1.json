@@ -1,0 +1,450 @@
+{
+  "document": {
+    "category": "csaf_vex",
+    "csaf_version": "2.1",
+    "notes": [
+      {
+        "category": "summary",
+        "text": "Example Company VEX document. Unofficial content for demonstration purposes only.",
+        "title": "Author comment"
+      }
+    ],
+    "publisher": {
+      "category": "vendor",
+      "name": "Example Company ProductCERT",
+      "namespace": "https://psirt.example.com"
+    },
+    "title": "Example VEX Document Use Case 3 - Multiple statuses",
+    "tracking": {
+      "current_release_date": "2022-03-03T11:00:00.000Z",
+      "generator": {
+        "date": "2022-03-03T11:00:00.000Z",
+        "engine": {
+          "name": "Secvisogram",
+          "version": "1.11.0"
+        }
+      },
+      "id": "2022-EVD-UC-03-MS-001",
+      "initial_release_date": "2022-03-03T11:00:00.000Z",
+      "revision_history": [
+        {
+          "date": "2022-03-03T11:00:00.000Z",
+          "number": "1",
+          "summary": "Initial version."
+        }
+      ],
+      "status": "final",
+      "version": "1"
+    }
+  },
+  "product_tree": {
+    "branches": [
+      {
+        "branches": [
+          {
+            "branches": [
+              {
+                "category": "product_version",
+                "name": "17.4",
+                "product": {
+                  "name": "Example Company GHI 17.4",
+                  "product_id": "CSAFPID-0001"
+                }
+              }
+            ],
+            "category": "product_name",
+            "name": "GHI"
+          }
+        ],
+        "category": "vendor",
+        "name": "Example Company"
+      }
+    ]
+  },
+  "vulnerabilities": [
+    {
+      "cve": "CVE-2020-11896",
+      "notes": [
+        {
+          "category": "description",
+          "text": "The Treck TCP/IP stack before 6.0.1.66 allows Remote Code Execution, related to IPv4 tunneling.",
+          "title": "CVE description"
+        }
+      ],
+      "product_status": {
+        "under_investigation": [
+          "CSAFPID-0001"
+        ]
+      }
+    },
+    {
+      "cve": "CVE-2020-11897",
+      "notes": [
+        {
+          "category": "description",
+          "text": "The Treck TCP/IP stack before 5.0.1.35 has an Out-of-Bounds Write via multiple malformed IPv6 packets.",
+          "title": "CVE description"
+        }
+      ],
+      "product_status": {
+        "known_not_affected": [
+          "CSAFPID-0001"
+        ]
+      },
+      "threats": [
+        {
+          "category": "impact",
+          "details": "IPv6 is not supported and code is not present.",
+          "product_ids": [
+            "CSAFPID-0001"
+          ]
+        }
+      ]
+    },
+    {
+      "cve": "CVE-2020-11898",
+      "notes": [
+        {
+          "category": "description",
+          "text": "The Treck TCP/IP stack before 6.0.1.66 improperly handles an IPv4/ICMPv4 Length Parameter Inconsistency, which might allow remote attackers to trigger an information leak.",
+          "title": "CVE description"
+        }
+      ],
+      "product_status": {
+        "known_affected": [
+          "CSAFPID-0001"
+        ]
+      },
+      "remediations": [
+        {
+          "category": "none_available",
+          "details": "We are working to integrate the upstream patches in our code.",
+          "product_ids": [
+            "CSAFPID-0001"
+          ]
+        }
+      ]
+    },
+    {
+      "cve": "CVE-2020-11899",
+      "notes": [
+        {
+          "category": "description",
+          "text": "The Treck TCP/IP stack before 6.0.1.66 has an IPv6 Out-of-bounds Read.",
+          "title": "CVE description"
+        }
+      ],
+      "product_status": {
+        "known_not_affected": [
+          "CSAFPID-0001"
+        ]
+      },
+      "threats": [
+        {
+          "category": "impact",
+          "details": "IPv6 is not supported and code is not present.",
+          "product_ids": [
+            "CSAFPID-0001"
+          ]
+        }
+      ]
+    },
+    {
+      "cve": "CVE-2020-11900",
+      "notes": [
+        {
+          "category": "description",
+          "text": "The Treck TCP/IP stack before 6.0.1.41 has an IPv4 tunneling Double Free.",
+          "title": "CVE description"
+        }
+      ],
+      "product_status": {
+        "under_investigation": [
+          "CSAFPID-0001"
+        ]
+      }
+    },
+    {
+      "cve": "CVE-2020-11901",
+      "notes": [
+        {
+          "category": "description",
+          "text": "The Treck TCP/IP stack before 6.0.1.66 allows Remote Code execution via a single invalid DNS response.",
+          "title": "CVE description"
+        }
+      ],
+      "product_status": {
+        "fixed": [
+          "CSAFPID-0001"
+        ]
+      }
+    },
+    {
+      "cve": "CVE-2020-11902",
+      "notes": [
+        {
+          "category": "description",
+          "text": "The Treck TCP/IP stack before 6.0.1.66 has an IPv6OverIPv4 tunneling Out-of-bounds Read.",
+          "title": "CVE description"
+        }
+      ],
+      "product_status": {
+        "known_not_affected": [
+          "CSAFPID-0001"
+        ]
+      },
+      "threats": [
+        {
+          "category": "impact",
+          "details": "IPv6 is not supported and code is not present.",
+          "product_ids": [
+            "CSAFPID-0001"
+          ]
+        }
+      ]
+    },
+    {
+      "cve": "CVE-2020-11903",
+      "notes": [
+        {
+          "category": "description",
+          "text": "The Treck TCP/IP stack before 6.0.1.28 has a DHCP Out-of-bounds Read.",
+          "title": "CVE description"
+        }
+      ],
+      "product_status": {
+        "under_investigation": [
+          "CSAFPID-0001"
+        ]
+      }
+    },
+    {
+      "cve": "CVE-2020-11904",
+      "notes": [
+        {
+          "category": "description",
+          "text": "The Treck TCP/IP stack before 6.0.1.66 has an Integer Overflow during Memory Allocation that causes an Out-of-Bounds Write.",
+          "title": "CVE description"
+        }
+      ],
+      "product_status": {
+        "under_investigation": [
+          "CSAFPID-0001"
+        ]
+      }
+    },
+    {
+      "cve": "CVE-2020-11905",
+      "notes": [
+        {
+          "category": "description",
+          "text": "The Treck TCP/IP stack before 6.0.1.66 has a DHCPv6 Out-of-bounds Read.",
+          "title": "CVE description"
+        }
+      ],
+      "product_status": {
+        "known_not_affected": [
+          "CSAFPID-0001"
+        ]
+      },
+      "threats": [
+        {
+          "category": "impact",
+          "details": "IPv6 is not supported and code is not present.",
+          "product_ids": [
+            "CSAFPID-0001"
+          ]
+        }
+      ]
+    },
+    {
+      "cve": "CVE-2020-11906",
+      "notes": [
+        {
+          "category": "description",
+          "text": "The Treck TCP/IP stack before 6.0.1.66 has an Ethernet Link Layer Integer Underflow.",
+          "title": "CVE description"
+        }
+      ],
+      "product_status": {
+        "known_not_affected": [
+          "CSAFPID-0001"
+        ]
+      },
+      "threats": [
+        {
+          "category": "impact",
+          "details": "This code was re-written. The vulnerable code is not present.",
+          "product_ids": [
+            "CSAFPID-0001"
+          ]
+        }
+      ]
+    },
+    {
+      "cve": "CVE-2020-11907",
+      "notes": [
+        {
+          "category": "description",
+          "text": "The Treck TCP/IP stack before 6.0.1.66 improperly handles a Length Parameter Inconsistency in TCP.",
+          "title": "CVE description"
+        }
+      ],
+      "product_status": {
+        "known_affected": [
+          "CSAFPID-0001"
+        ]
+      },
+      "remediations": [
+        {
+          "category": "none_available",
+          "details": "We are working to integrate the upstream patches in our code.",
+          "product_ids": [
+            "CSAFPID-0001"
+          ]
+        }
+      ]
+    },
+    {
+      "cve": "CVE-2020-11908",
+      "notes": [
+        {
+          "category": "description",
+          "text": "The Treck TCP/IP stack before 4.7.1.27 mishandles '\\0' termination in DHCP.",
+          "title": "CVE description"
+        }
+      ],
+      "product_status": {
+        "under_investigation": [
+          "CSAFPID-0001"
+        ]
+      }
+    },
+    {
+      "cve": "CVE-2020-11909",
+      "notes": [
+        {
+          "category": "description",
+          "text": "The Treck TCP/IP stack before 6.0.1.66 has an IPv4 Integer Underflow.",
+          "title": "CVE description"
+        }
+      ],
+      "product_status": {
+        "known_affected": [
+          "CSAFPID-0001"
+        ]
+      },
+      "remediations": [
+        {
+          "category": "none_available",
+          "details": "We are working to integrate the upstream patches in our code.",
+          "product_ids": [
+            "CSAFPID-0001"
+          ]
+        }
+      ]
+    },
+    {
+      "cve": "CVE-2020-11910",
+      "notes": [
+        {
+          "category": "description",
+          "text": "The Treck TCP/IP stack before 6.0.1.66 has an ICMPv4 Out-of-bounds Read.",
+          "title": "CVE description"
+        }
+      ],
+      "product_status": {
+        "known_affected": [
+          "CSAFPID-0001"
+        ]
+      },
+      "remediations": [
+        {
+          "category": "none_available",
+          "details": "We are working to integrate the upstream patches in our code.",
+          "product_ids": [
+            "CSAFPID-0001"
+          ]
+        }
+      ]
+    },
+    {
+      "cve": "CVE-2020-11911",
+      "notes": [
+        {
+          "category": "description",
+          "text": "The Treck TCP/IP stack before 6.0.1.66 has Improper ICMPv4 Access Control.",
+          "title": "CVE description"
+        }
+      ],
+      "product_status": {
+        "known_affected": [
+          "CSAFPID-0001"
+        ]
+      },
+      "remediations": [
+        {
+          "category": "none_available",
+          "details": "We are working to integrate the upstream patches in our code.",
+          "product_ids": [
+            "CSAFPID-0001"
+          ]
+        }
+      ]
+    },
+    {
+      "cve": "CVE-2020-11912",
+      "notes": [
+        {
+          "category": "description",
+          "text": "The Treck TCP/IP stack before 6.0.1.66 has a TCP Out-of-bounds Read.",
+          "title": "CVE description"
+        }
+      ],
+      "product_status": {
+        "fixed": [
+          "CSAFPID-0001"
+        ]
+      }
+    },
+    {
+      "cve": "CVE-2020-11913",
+      "notes": [
+        {
+          "category": "description",
+          "text": "The Treck TCP/IP stack before 6.0.1.66 has an IPv6 Out-of-bounds Read.",
+          "title": "CVE description"
+        }
+      ],
+      "product_status": {
+        "known_not_affected": [
+          "CSAFPID-0001"
+        ]
+      },
+      "threats": [
+        {
+          "category": "impact",
+          "details": "IPv6 is not supported and code is not present.",
+          "product_ids": [
+            "CSAFPID-0001"
+          ]
+        }
+      ]
+    },
+    {
+      "cve": "CVE-2020-11914",
+      "notes": [
+        {
+          "category": "description",
+          "text": "The Treck TCP/IP stack before 6.0.1.66 has an ARP Out-of-bounds Read.",
+          "title": "CVE description"
+        }
+      ],
+      "product_status": {
+        "fixed": [
+          "CSAFPID-0001"
+        ]
+      }
+    }
+  ]
+}

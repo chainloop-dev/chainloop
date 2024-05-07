@@ -127,6 +127,9 @@ export enum CraftingSchema_Material_MaterialType {
   EVIDENCE = 11,
   /** ATTESTATION - Chainloop attestation coming from a different workflow. */
   ATTESTATION = 12,
+  CSAF_INFORMATIONAL_ADVISORY = 13,
+  CSAF_SECURITY_ADVISORY = 14,
+  CSAF_SECURITY_INCIDENT_RESPONSE = 15,
   UNRECOGNIZED = -1,
 }
 
@@ -171,6 +174,15 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 12:
     case "ATTESTATION":
       return CraftingSchema_Material_MaterialType.ATTESTATION;
+    case 13:
+    case "CSAF_INFORMATIONAL_ADVISORY":
+      return CraftingSchema_Material_MaterialType.CSAF_INFORMATIONAL_ADVISORY;
+    case 14:
+    case "CSAF_SECURITY_ADVISORY":
+      return CraftingSchema_Material_MaterialType.CSAF_SECURITY_ADVISORY;
+    case 15:
+    case "CSAF_SECURITY_INCIDENT_RESPONSE":
+      return CraftingSchema_Material_MaterialType.CSAF_SECURITY_INCIDENT_RESPONSE;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -206,6 +218,12 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "EVIDENCE";
     case CraftingSchema_Material_MaterialType.ATTESTATION:
       return "ATTESTATION";
+    case CraftingSchema_Material_MaterialType.CSAF_INFORMATIONAL_ADVISORY:
+      return "CSAF_INFORMATIONAL_ADVISORY";
+    case CraftingSchema_Material_MaterialType.CSAF_SECURITY_ADVISORY:
+      return "CSAF_SECURITY_ADVISORY";
+    case CraftingSchema_Material_MaterialType.CSAF_SECURITY_INCIDENT_RESPONSE:
+      return "CSAF_SECURITY_INCIDENT_RESPONSE";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
