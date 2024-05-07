@@ -17,13 +17,14 @@ package materials
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 
-	cdx "github.com/CycloneDX/cyclonedx-go"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	api "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
+	"github.com/chainloop-dev/chainloop/internal/schemavalidators"
 	"github.com/rs/zerolog"
 )
 
@@ -44,21 +45,21 @@ func NewCyclonedxJSONCrafter(materialSchema *schemaapi.CraftingSchema_Material, 
 }
 
 func (i *CyclonedxJSONCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
-	f, err := os.Open(filePath)
+	f, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("can't open the file: %w", err)
 	}
-	defer f.Close()
 
-	// Decode the file to check it's a valid CycloneDX BOM
-	bom := new(cdx.BOM)
-	decoder := cdx.NewBOMDecoder(f, cdx.BOMFileFormatJSON)
-	if err = decoder.Decode(bom); err != nil {
+	var v interface{}
+	if err := json.Unmarshal(f, &v); err != nil {
 		i.logger.Debug().Err(err).Msg("error decoding file")
 		return nil, fmt.Errorf("invalid cyclonedx sbom file: %w", ErrInvalidMaterialType)
 	}
 
-	if bom.Metadata == nil {
+	// Setting the version to empty string to validate against the latest version of the schema
+	err = schemavalidators.ValidateCycloneDX(v, "")
+	if err != nil {
+		i.logger.Debug().Err(err).Msgf("error decoding file: %#v", err)
 		return nil, fmt.Errorf("invalid cyclonedx sbom file: %w", ErrInvalidMaterialType)
 	}
 
