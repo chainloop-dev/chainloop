@@ -44,6 +44,7 @@ type WorkflowRepo interface {
 	Update(ctx context.Context, id uuid.UUID, opts *WorkflowUpdateOpts) (*Workflow, error)
 	List(ctx context.Context, orgID uuid.UUID) ([]*Workflow, error)
 	GetOrgScoped(ctx context.Context, orgID, workflowID uuid.UUID) (*Workflow, error)
+	GetOrgScopedByName(ctx context.Context, orgID uuid.UUID, workflowName string) (*Workflow, error)
 	IncRunsCounter(ctx context.Context, workflowID uuid.UUID) error
 	FindByID(ctx context.Context, workflowID uuid.UUID) (*Workflow, error)
 	SoftDelete(ctx context.Context, workflowID uuid.UUID) error
@@ -226,6 +227,24 @@ func (uc *WorkflowUseCase) FindByIDInOrg(ctx context.Context, orgID, workflowID 
 		return nil, fmt.Errorf("failed to get workflow: %w", err)
 	} else if wf == nil {
 		return nil, NewErrNotFound("workflow in organization")
+	}
+
+	return wf, nil
+}
+
+func (uc *WorkflowUseCase) FindByNameInOrg(ctx context.Context, orgID, workflowName string) (*Workflow, error) {
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	if workflowName == "" {
+		return nil, NewErrValidationStr("empty workflow name")
+	}
+
+	wf, err := uc.wfRepo.GetOrgScopedByName(ctx, orgUUID, workflowName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get workflow: %w", err)
 	}
 
 	return wf, nil

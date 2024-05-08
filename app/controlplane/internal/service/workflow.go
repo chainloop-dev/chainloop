@@ -123,7 +123,12 @@ func (s *WorkflowService) View(ctx context.Context, req *pb.WorkflowServiceViewR
 		return nil, err
 	}
 
-	wf, err := s.useCase.FindByIDInOrg(ctx, currentOrg.ID, req.Id)
+	var wf *biz.Workflow
+	if req.Name != nil {
+		wf, err = s.useCase.FindByNameInOrg(ctx, currentOrg.ID, *req.Name)
+	}
+
+	wf, err = s.useCase.FindByIDInOrg(ctx, currentOrg.ID, req.Id)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
