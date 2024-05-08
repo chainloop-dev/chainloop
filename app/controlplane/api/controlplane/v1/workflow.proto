@@ -72,7 +72,30 @@ message WorkflowServiceListResponse {
 }
 
 message WorkflowServiceViewRequest {
-  string id = 1 [(buf.validate.field).string.uuid = true];
+  string id = 1 [
+    deprecated = true,
+    (buf.validate.field) = {
+      string: {uuid: true},
+      ignore_empty: true,
+    }
+  ];
+
+  string name = 2 [
+    (buf.validate.field) = {
+      ignore_empty: true,
+      cel: {
+        message: "name must be a valid DNS-1123 subdomain",
+        expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
+        id: "name.dns-1123",
+      },
+    }
+  ];
+
+  option (buf.validate.message).cel = {
+    id: "either-name-or-id-required",
+    message: "either name or id are required",
+    expression: "has(this.id) || has(this.name)"
+  };
 }
 
 message WorkflowServiceViewResponse {

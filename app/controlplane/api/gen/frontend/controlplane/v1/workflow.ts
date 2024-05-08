@@ -53,7 +53,9 @@ export interface WorkflowServiceListResponse {
 }
 
 export interface WorkflowServiceViewRequest {
+  /** @deprecated */
   id: string;
+  name: string;
 }
 
 export interface WorkflowServiceViewResponse {
@@ -652,13 +654,16 @@ export const WorkflowServiceListResponse = {
 };
 
 function createBaseWorkflowServiceViewRequest(): WorkflowServiceViewRequest {
-  return { id: "" };
+  return { id: "", name: "" };
 }
 
 export const WorkflowServiceViewRequest = {
   encode(message: WorkflowServiceViewRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.id !== "") {
       writer.uint32(10).string(message.id);
+    }
+    if (message.name !== "") {
+      writer.uint32(18).string(message.name);
     }
     return writer;
   },
@@ -677,6 +682,13 @@ export const WorkflowServiceViewRequest = {
 
           message.id = reader.string();
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -687,12 +699,13 @@ export const WorkflowServiceViewRequest = {
   },
 
   fromJSON(object: any): WorkflowServiceViewRequest {
-    return { id: isSet(object.id) ? String(object.id) : "" };
+    return { id: isSet(object.id) ? String(object.id) : "", name: isSet(object.name) ? String(object.name) : "" };
   },
 
   toJSON(message: WorkflowServiceViewRequest): unknown {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
@@ -703,6 +716,7 @@ export const WorkflowServiceViewRequest = {
   fromPartial<I extends Exact<DeepPartial<WorkflowServiceViewRequest>, I>>(object: I): WorkflowServiceViewRequest {
     const message = createBaseWorkflowServiceViewRequest();
     message.id = object.id ?? "";
+    message.name = object.name ?? "";
     return message;
   },
 };
