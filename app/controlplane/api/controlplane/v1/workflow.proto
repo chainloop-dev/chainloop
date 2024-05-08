@@ -72,7 +72,7 @@ message WorkflowServiceListResponse {
 }
 
 message WorkflowServiceViewRequest {
-  string id = 1 [(buf.validate.field).string.uuid = true];
+  optional string id = 1;
   optional string name = 2;
 }
 

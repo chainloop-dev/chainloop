@@ -53,7 +53,7 @@ export interface WorkflowServiceListResponse {
 }
 
 export interface WorkflowServiceViewRequest {
-  id: string;
+  id?: string | undefined;
   name?: string | undefined;
 }
 
@@ -653,12 +653,12 @@ export const WorkflowServiceListResponse = {
 };
 
 function createBaseWorkflowServiceViewRequest(): WorkflowServiceViewRequest {
-  return { id: "", name: undefined };
+  return { id: undefined, name: undefined };
 }
 
 export const WorkflowServiceViewRequest = {
   encode(message: WorkflowServiceViewRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.id !== "") {
+    if (message.id !== undefined) {
       writer.uint32(10).string(message.id);
     }
     if (message.name !== undefined) {
@@ -699,7 +699,7 @@ export const WorkflowServiceViewRequest = {
 
   fromJSON(object: any): WorkflowServiceViewRequest {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
+      id: isSet(object.id) ? String(object.id) : undefined,
       name: isSet(object.name) ? String(object.name) : undefined,
     };
   },
@@ -717,7 +717,7 @@ export const WorkflowServiceViewRequest = {
 
   fromPartial<I extends Exact<DeepPartial<WorkflowServiceViewRequest>, I>>(object: I): WorkflowServiceViewRequest {
     const message = createBaseWorkflowServiceViewRequest();
-    message.id = object.id ?? "";
+    message.id = object.id ?? undefined;
     message.name = object.name ?? undefined;
     return message;
   },

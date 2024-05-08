@@ -154,7 +154,11 @@ func (r *WorkflowRepo) GetOrgScoped(ctx context.Context, orgID, workflowID uuid.
 		WithContract().WithOrganization().
 		Order(ent.Desc(workflow.FieldCreatedAt)).
 		Only(ctx)
-	if err != nil && !ent.IsNotFound(err) {
+
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, biz.NewErrNotFound("workflow")
+		}
 		return nil, err
 	}
 

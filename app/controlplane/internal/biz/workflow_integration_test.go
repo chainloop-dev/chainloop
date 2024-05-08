@@ -59,6 +59,28 @@ func (s *workflowIntegrationTestSuite) TestContractLatestAvailable() {
 	})
 }
 
+func (s *workflowIntegrationTestSuite) TestView() {
+	s.Run("finds by id in org", func() {
+		wf, err := s.Workflow.FindByIDInOrg(context.TODO(), s.org.ID, s.wf.ID.String())
+		s.NoError(err)
+		s.Equal(s.wf.ID, wf.ID)
+	})
+
+	s.Run("finds by name in org", func() {
+		wf, err := s.Workflow.FindByNameInOrg(context.TODO(), s.org.ID, s.wf.Name)
+		s.NoError(err)
+		s.Equal(s.wf.ID, wf.ID)
+	})
+
+	s.Run("fails if workflow belongs to a different org", func() {
+		org2, err := s.Organization.CreateWithRandomName(context.Background())
+		require.NoError(s.T(), err)
+
+		_, err = s.Workflow.FindByNameInOrg(context.TODO(), org2.ID, s.wf.Name)
+		s.Error(err)
+	})
+}
+
 func (s *workflowIntegrationTestSuite) TestCreateDuplicatedName() {
 	ctx := context.Background()
 
@@ -310,6 +332,7 @@ func TestWorkflowUseCase(t *testing.T) {
 type workflowIntegrationTestSuite struct {
 	testhelpers.UseCasesEachTestSuite
 	org *biz.Organization
+	wf  *biz.Workflow
 }
 
 func (s *workflowIntegrationTestSuite) SetupTest() {
@@ -319,6 +342,13 @@ func (s *workflowIntegrationTestSuite) SetupTest() {
 
 	ctx := context.Background()
 	s.org, err = s.Organization.CreateWithRandomName(ctx)
+	assert.NoError(err)
+
+	s.wf, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{
+		Name:    "my-workflow",
+		Project: "my-project",
+		OrgID:   s.org.ID,
+	})
 	assert.NoError(err)
 }
 
