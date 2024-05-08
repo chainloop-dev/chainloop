@@ -1,0 +1,319 @@
+{
+  "document": {
+    "aggregate_severity": {
+      "namespace": "https://access.redhat.com/security/updates/classification/",
+      "text": "Critical"
+    },
+    "category": "csaf_security_advisory",
+    "csaf_version": "2.0",
+    "distribution": {
+      "text": "Copyright \u00a9 2022 Red Hat, Inc. All rights reserved.",
+      "tlp": {
+        "label": "WHITE",
+        "url": "https://www.first.org/tlp/"
+      }
+    },
+    "lang": "en",
+    "notes": [
+      {
+        "category": "summary",
+        "text": "Red Hat OpenShift Container Platform release 4.6.52 is now available with\nupdates to packages and images that fix several bugs and add enhancements.\n\nRed Hat Product Security has rated this update as having a security impact of Critical. A Common Vulnerability Scoring System (CVSS) base score, which gives a detailed severity rating, is available for each vulnerability from the CVE link(s) in the References section.",
+        "title": "Topic"
+      },
+      {
+        "category": "general",
+        "text": "Red Hat OpenShift Container Platform is Red Hat's cloud computing\nKubernetes application platform solution designed for on-premise or private\ncloud deployments.\n\nSecurity Fix(es):\n\n* kube-reporting/hive: Incomplete fix for log4j CVE-2021-44228 and CVE-2021-45046 (CVE-2021-4125)\n\n* log4j: Remote code execution in Log4j 1.x when application is configured to use JMSAppender (CVE-2021-4104)\n\nFor more details about the security issue(s), including the impact, a CVSS score, acknowledgments, and other related information, refer to the CVE page(s) listed in the References section.",
+        "title": "Details"
+      },
+      {
+        "category": "legal_disclaimer",
+        "text": "This content is licensed under the Creative Commons Attribution 4.0 International License (https://creativecommons.org/licenses/by/4.0/). If you distribute this content, or a modified version of it, you must provide attribution to Red Hat Inc. and provide a link to the original.",
+        "title": "Terms of Use"
+      }
+    ],
+    "publisher": {
+      "category": "vendor",
+      "contact_details": "https://access.redhat.com/security/team/contact/",
+      "name": "Red Hat Product Security",
+      "namespace": "https://www.redhat.com"
+    },
+    "references": [
+      {
+        "category": "self",
+        "summary": "https://access.redhat.com/errata/RHSA-2021:5186",
+        "url": "https://access.redhat.com/errata/RHSA-2021:5186"
+      },
+      {
+        "category": "external",
+        "summary": "https://access.redhat.com/security/updates/classification/#critical",
+        "url": "https://access.redhat.com/security/updates/classification/#critical"
+      },
+      {
+        "category": "external",
+        "summary": "https://access.redhat.com/security/vulnerabilities/RHSB-2021-009",
+        "url": "https://access.redhat.com/security/vulnerabilities/RHSB-2021-009"
+      },
+      {
+        "category": "self",
+        "summary": "Canonical URL",
+        "url": "https://access.redhat.com/security/data/csaf/beta/2021/rhsa-2021_5186.json"
+      }
+    ],
+    "title": "Red Hat Security Advisory: OpenShift Container Platform 4.6.52 security update",
+    "tracking": {
+      "current_release_date": "2021-12-16T22:34:00Z",
+      "generator": {
+        "date": "2022-03-23T20:31:00Z",
+        "engine": {
+          "name": "Red Hat SDEngine",
+          "version": "3.4.3"
+        }
+      },
+      "id": "RHSA-2021:5186",
+      "initial_release_date": "2021-12-16T22:34:00Z",
+      "revision_history": [
+        {
+          "date": "2021-12-16T22:34:00Z",
+          "number": "1",
+          "summary": "Current version"
+        }
+      ],
+      "status": "final",
+      "version": "1"
+    }
+  },
+  "product_tree": {
+    "branches": [
+      {
+        "branches": [
+          {
+            "branches": [
+              {
+                "category": "product_name",
+                "name": "Red Hat OpenShift Container Platform 4.6",
+                "product": {
+                  "name": "Red Hat OpenShift Container Platform 4.6",
+                  "product_id": "8Base-RHOSE-4.6",
+                  "product_identification_helper": {
+                    "cpe": "cpe:/a:redhat:openshift:4.6::el8"
+                  }
+                }
+              }
+            ],
+            "category": "product_family",
+            "name": "Red Hat OpenShift Enterprise"
+          },
+          {
+            "category": "product_version",
+            "name": "openshift4/ose-metering-ansible-operator-bundle:v4.6.0.202112161349.p0.gd74112d.assembly.art3595-1",
+            "product": {
+              "name": "openshift4/ose-metering-ansible-operator-bundle:v4.6.0.202112161349.p0.gd74112d.assembly.art3595-1",
+              "product_id": "openshift4/ose-metering-ansible-operator-bundle:v4.6.0.202112161349.p0.gd74112d.assembly.art3595-1"
+            }
+          },
+          {
+            "category": "product_version",
+            "name": "openshift4/ose-metering-ansible-operator:v4.6.0-202112161349.p0.gd74112d.assembly.art3595",
+            "product": {
+              "name": "openshift4/ose-metering-ansible-operator:v4.6.0-202112161349.p0.gd74112d.assembly.art3595",
+              "product_id": "openshift4/ose-metering-ansible-operator:v4.6.0-202112161349.p0.gd74112d.assembly.art3595"
+            }
+          },
+          {
+            "category": "product_version",
+            "name": "openshift4/ose-metering-hive:v4.6.0-202112160147.p0.gf139e12.assembly.stream",
+            "product": {
+              "name": "openshift4/ose-metering-hive:v4.6.0-202112160147.p0.gf139e12.assembly.stream",
+              "product_id": "openshift4/ose-metering-hive:v4.6.0-202112160147.p0.gf139e12.assembly.stream"
+            }
+          }
+        ],
+        "category": "vendor",
+        "name": "Red Hat"
+      }
+    ],
+    "relationships": [
+      {
+        "category": "default_component_of",
+        "full_product_name": {
+          "name": "openshift4/ose-metering-ansible-operator-bundle:v4.6.0.202112161349.p0.gd74112d.assembly.art3595-1 as a component of Red Hat OpenShift Container Platform 4.6",
+          "product_id": "8Base-RHOSE-4.6:openshift4/ose-metering-ansible-operator-bundle:v4.6.0.202112161349.p0.gd74112d.assembly.art3595-1"
+        },
+        "product_reference": "openshift4/ose-metering-ansible-operator-bundle:v4.6.0.202112161349.p0.gd74112d.assembly.art3595-1",
+        "relates_to_product_reference": "8Base-RHOSE-4.6"
+      },
+      {
+        "category": "default_component_of",
+        "full_product_name": {
+          "name": "openshift4/ose-metering-ansible-operator:v4.6.0-202112161349.p0.gd74112d.assembly.art3595 as a component of Red Hat OpenShift Container Platform 4.6",
+          "product_id": "8Base-RHOSE-4.6:openshift4/ose-metering-ansible-operator:v4.6.0-202112161349.p0.gd74112d.assembly.art3595"
+        },
+        "product_reference": "openshift4/ose-metering-ansible-operator:v4.6.0-202112161349.p0.gd74112d.assembly.art3595",
+        "relates_to_product_reference": "8Base-RHOSE-4.6"
+      },
+      {
+        "category": "default_component_of",
+        "full_product_name": {
+          "name": "openshift4/ose-metering-hive:v4.6.0-202112160147.p0.gf139e12.assembly.stream as a component of Red Hat OpenShift Container Platform 4.6",
+          "product_id": "8Base-RHOSE-4.6:openshift4/ose-metering-hive:v4.6.0-202112160147.p0.gf139e12.assembly.stream"
+        },
+        "product_reference": "openshift4/ose-metering-hive:v4.6.0-202112160147.p0.gf139e12.assembly.stream",
+        "relates_to_product_reference": "8Base-RHOSE-4.6"
+      }
+    ]
+  },
+  "vulnerabilities": [
+    {
+      "cve": "CVE-2021-4104",
+      "cwe": {
+        "id": "CWE-20",
+        "name": "Improper Input Validation"
+      },
+      "discovery_date": "2021-12-13T00:00:00Z",
+      "ids": [
+        {
+          "system_name": "Red Hat Bugzilla",
+          "text": "https://bugzilla.redhat.com/show_bug.cgi?id=2031667"
+        }
+      ],
+      "notes": [
+        {
+          "category": "general",
+          "text": "log4j: Remote code execution in Log4j 1.x when application is configured to use JMSAppender",
+          "title": "Vulnerability Description"
+        }
+      ],
+      "product_status": {
+        "fixed": [
+          "8Base-RHOSE-4.6:openshift4/ose-metering-hive:v4.6.0-202112160147.p0.gf139e12.assembly.stream"
+        ],
+        "known_not_affected": [
+          "8Base-RHOSE-4.6:openshift4/ose-metering-ansible-operator-bundle:v4.6.0.202112161349.p0.gd74112d.assembly.art3595-1",
+          "8Base-RHOSE-4.6:openshift4/ose-metering-ansible-operator:v4.6.0-202112161349.p0.gd74112d.assembly.art3595"
+        ]
+      },
+      "references": [
+        {
+          "category": "external",
+          "summary": "https://github.com/apache/logging-log4j2/pull/608#issuecomment-990494126",
+          "url": "https://github.com/apache/logging-log4j2/pull/608#issuecomment-990494126"
+        },
+        {
+          "category": "external",
+          "summary": "https://github.com/apache/logging-log4j2/pull/608#issuecomment-991723301",
+          "url": "https://github.com/apache/logging-log4j2/pull/608#issuecomment-991723301"
+        },
+        {
+          "category": "external",
+          "summary": "https://lists.apache.org/thread/0x4zvtq92yggdgvwfgsftqrj4xx5w0nx",
+          "url": "https://lists.apache.org/thread/0x4zvtq92yggdgvwfgsftqrj4xx5w0nx"
+        },
+        {
+          "category": "external",
+          "summary": "https://www.openwall.com/lists/oss-security/2021/12/13/1",
+          "url": "https://www.openwall.com/lists/oss-security/2021/12/13/1"
+        },
+        {
+          "category": "external",
+          "summary": "CVE-2021-4104",
+          "url": "https://access.redhat.com/security/cve/CVE-2021-4104"
+        },
+        {
+          "category": "external",
+          "summary": "bz#2031667: CVE-2021-4104 log4j: Remote code execution in Log4j 1.x when application is configured to use JMSAppender",
+          "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2031667"
+        }
+      ],
+      "release_date": "2021-12-10T00:00:00Z",
+      "remediations": [
+        {
+          "category": "vendor_fix",
+          "details": "For OpenShift Container Platform 4.6 see the following documentation, which\nwill be updated shortly for this release, for important instructions on how\nto upgrade your cluster and fully apply this asynchronous errata update:\n\nhttps://docs.openshift.com/container-platform/4.6/release_notes/ocp-4-6-release-notes.html\n\nDetails on how to access this content are available at\nhttps://docs.openshift.com/container-platform/4.6/updating/updating-cluster-cli.html",
+          "product_ids": [
+            "8Base-RHOSE-4.6:openshift4/ose-metering-hive:v4.6.0-202112160147.p0.gf139e12.assembly.stream",
+            "8Base-RHOSE-4.6:openshift4/ose-metering-ansible-operator-bundle:v4.6.0.202112161349.p0.gd74112d.assembly.art3595-1",
+            "8Base-RHOSE-4.6:openshift4/ose-metering-ansible-operator:v4.6.0-202112161349.p0.gd74112d.assembly.art3595"
+          ],
+          "url": "https://access.redhat.com/errata/RHSA-2021:5186"
+        }
+      ],
+      "threats": [
+        {
+          "category": "impact",
+          "date": "2021-12-13T00:00:00Z",
+          "details": "Moderate"
+        }
+      ],
+      "title": "CVE-2021-4104 log4j: Remote code execution in Log4j 1.x when application is configured to use JMSAppender"
+    },
+    {
+      "cve": "CVE-2021-4125",
+      "discovery_date": "2021-12-16T00:00:00Z",
+      "ids": [
+        {
+          "system_name": "Red Hat Bugzilla",
+          "text": "https://bugzilla.redhat.com/show_bug.cgi?id=2033121"
+        }
+      ],
+      "notes": [
+        {
+          "category": "general",
+          "text": "kube-reporting/hive: Incomplete fix for log4j CVE-2021-44228 and CVE-2021-45046",
+          "title": "Vulnerability Description"
+        }
+      ],
+      "product_status": {
+        "fixed": [
+          "8Base-RHOSE-4.6:openshift4/ose-metering-hive:v4.6.0-202112160147.p0.gf139e12.assembly.stream"
+        ],
+        "known_not_affected": [
+          "8Base-RHOSE-4.6:openshift4/ose-metering-ansible-operator-bundle:v4.6.0.202112161349.p0.gd74112d.assembly.art3595-1",
+          "8Base-RHOSE-4.6:openshift4/ose-metering-ansible-operator:v4.6.0-202112161349.p0.gd74112d.assembly.art3595"
+        ]
+      },
+      "references": [
+        {
+          "category": "external",
+          "summary": "https://access.redhat.com/security/cve/CVE-2021-44228",
+          "url": "https://access.redhat.com/security/cve/CVE-2021-44228"
+        },
+        {
+          "category": "external",
+          "summary": "https://access.redhat.com/security/cve/CVE-2021-45046",
+          "url": "https://access.redhat.com/security/cve/CVE-2021-45046"
+        },
+        {
+          "category": "external",
+          "summary": "CVE-2021-4125",
+          "url": "https://access.redhat.com/security/cve/CVE-2021-4125"
+        },
+        {
+          "category": "external",
+          "summary": "bz#2033121: CVE-2021-4125 kube-reporting/hive: Incomplete fix for log4j CVE-2021-44228 and CVE-2021-45046",
+          "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2033121"
+        }
+      ],
+      "release_date": "2021-12-16T00:00:00Z",
+      "remediations": [
+        {
+          "category": "vendor_fix",
+          "details": "For OpenShift Container Platform 4.6 see the following documentation, which\nwill be updated shortly for this release, for important instructions on how\nto upgrade your cluster and fully apply this asynchronous errata update:\n\nhttps://docs.openshift.com/container-platform/4.6/release_notes/ocp-4-6-release-notes.html\n\nDetails on how to access this content are available at\nhttps://docs.openshift.com/container-platform/4.6/updating/updating-cluster-cli.html",
+          "product_ids": [
+            "8Base-RHOSE-4.6:openshift4/ose-metering-hive:v4.6.0-202112160147.p0.gf139e12.assembly.stream",
+            "8Base-RHOSE-4.6:openshift4/ose-metering-ansible-operator-bundle:v4.6.0.202112161349.p0.gd74112d.assembly.art3595-1",
+            "8Base-RHOSE-4.6:openshift4/ose-metering-ansible-operator:v4.6.0-202112161349.p0.gd74112d.assembly.art3595"
+          ],
+          "url": "https://access.redhat.com/errata/RHSA-2021:5186"
+        }
+      ],
+      "threats": [
+        {
+          "category": "impact",
+          "date": "2021-12-16T00:00:00Z",
+          "details": "Critical"
+        }
+      ],
+      "title": "CVE-2021-4125 kube-reporting/hive: Incomplete fix for log4j CVE-2021-44228 and CVE-2021-45046"
+    }
+  ]
+}

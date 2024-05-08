@@ -49,7 +49,7 @@ func TestValidateCycloneDX1_5(t *testing.T) {
 			filePath: "./testdata/sbom.cyclonedx-1.5.json",
 		},
 		{
-			name:     "1.6 version",
+			name:     "1.6 version error when parsing 1.6 specific fields",
 			filePath: "./testdata/sbom.cyclonedx-1.6.json",
 			wantErr:  "value must be one of \"application\", \"framework\", \"library\",",
 		},
@@ -113,6 +113,63 @@ func TestValidateCycloneDX1_6(t *testing.T) {
 			require.NoError(t, json.Unmarshal(f, &v))
 
 			err = schemavalidators.ValidateCycloneDX(v, "1.6")
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestValidateCSAF_2_0(t *testing.T) {
+	testCases := []struct {
+		name     string
+		filePath string
+		wantErr  string
+	}{
+		{
+			name:     "invalid sbom format",
+			filePath: "./testdata/sbom-spdx.json",
+			wantErr:  "missing properties: 'document'",
+		},
+		{
+			name:     "invalid csaf format",
+			filePath: "./testdata/openvex_v0.2.0.json",
+			wantErr:  "missing properties: 'document'",
+		},
+		{
+			name:     "2.0 vex",
+			filePath: "./testdata/csaf_vex_v0.2.0.json",
+		},
+		{
+			name:     "2.0 security advisory",
+			filePath: "./testdata/csaf_security_advisory.json",
+		},
+		{
+			name:     "2.0 informational advisory",
+			filePath: "./testdata/csaf_informational_advisory.json",
+		},
+		{
+			name:     "2.0 security incident response",
+			filePath: "./testdata/csaf_security_incident_response.json",
+		},
+		{
+			name:     "2.1 vex",
+			filePath: "./testdata/csaf_vex_v0.2.1.json",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			f, err := os.ReadFile(tc.filePath)
+			require.NoError(t, err)
+
+			var v interface{}
+			require.NoError(t, json.Unmarshal(f, &v))
+
+			err = schemavalidators.ValidateCSAF(v)
 			if tc.wantErr != "" {
 				require.ErrorContains(t, err, tc.wantErr)
 				return

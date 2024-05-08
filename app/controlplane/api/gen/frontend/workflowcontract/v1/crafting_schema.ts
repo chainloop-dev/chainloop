@@ -112,14 +112,12 @@ export enum CraftingSchema_Material_MaterialType {
   JUNIT_XML = 6,
   /** OPENVEX - https://github.com/openvex/spec */
   OPENVEX = 7,
-  /** CSAF_VEX - https://docs.oasis-open.org/csaf/csaf/v2.0/cs03/csaf-v2.0-cs03.html */
-  CSAF_VEX = 8,
   /**
-   * SARIF - Static analysis output format
+   * HELM_CHART - Static analysis output format
    * https://github.com/microsoft/sarif-tutorials/blob/main/docs/1-Introduction.md
    */
-  SARIF = 9,
   HELM_CHART = 10,
+  SARIF = 9,
   /**
    * EVIDENCE - Pieces of evidences represent generic, additional context that don't fit
    * into one of the well known material types. For example, a custom approval report (in json), ...
@@ -127,6 +125,11 @@ export enum CraftingSchema_Material_MaterialType {
   EVIDENCE = 11,
   /** ATTESTATION - Chainloop attestation coming from a different workflow. */
   ATTESTATION = 12,
+  /** CSAF_VEX - https://docs.oasis-open.org/csaf/csaf/v2.0/cs03/csaf-v2.0-cs03.html */
+  CSAF_VEX = 8,
+  CSAF_INFORMATIONAL_ADVISORY = 13,
+  CSAF_SECURITY_ADVISORY = 14,
+  CSAF_SECURITY_INCIDENT_RESPONSE = 15,
   UNRECOGNIZED = -1,
 }
 
@@ -156,21 +159,30 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 7:
     case "OPENVEX":
       return CraftingSchema_Material_MaterialType.OPENVEX;
-    case 8:
-    case "CSAF_VEX":
-      return CraftingSchema_Material_MaterialType.CSAF_VEX;
-    case 9:
-    case "SARIF":
-      return CraftingSchema_Material_MaterialType.SARIF;
     case 10:
     case "HELM_CHART":
       return CraftingSchema_Material_MaterialType.HELM_CHART;
+    case 9:
+    case "SARIF":
+      return CraftingSchema_Material_MaterialType.SARIF;
     case 11:
     case "EVIDENCE":
       return CraftingSchema_Material_MaterialType.EVIDENCE;
     case 12:
     case "ATTESTATION":
       return CraftingSchema_Material_MaterialType.ATTESTATION;
+    case 8:
+    case "CSAF_VEX":
+      return CraftingSchema_Material_MaterialType.CSAF_VEX;
+    case 13:
+    case "CSAF_INFORMATIONAL_ADVISORY":
+      return CraftingSchema_Material_MaterialType.CSAF_INFORMATIONAL_ADVISORY;
+    case 14:
+    case "CSAF_SECURITY_ADVISORY":
+      return CraftingSchema_Material_MaterialType.CSAF_SECURITY_ADVISORY;
+    case 15:
+    case "CSAF_SECURITY_INCIDENT_RESPONSE":
+      return CraftingSchema_Material_MaterialType.CSAF_SECURITY_INCIDENT_RESPONSE;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -196,16 +208,22 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "JUNIT_XML";
     case CraftingSchema_Material_MaterialType.OPENVEX:
       return "OPENVEX";
-    case CraftingSchema_Material_MaterialType.CSAF_VEX:
-      return "CSAF_VEX";
-    case CraftingSchema_Material_MaterialType.SARIF:
-      return "SARIF";
     case CraftingSchema_Material_MaterialType.HELM_CHART:
       return "HELM_CHART";
+    case CraftingSchema_Material_MaterialType.SARIF:
+      return "SARIF";
     case CraftingSchema_Material_MaterialType.EVIDENCE:
       return "EVIDENCE";
     case CraftingSchema_Material_MaterialType.ATTESTATION:
       return "ATTESTATION";
+    case CraftingSchema_Material_MaterialType.CSAF_VEX:
+      return "CSAF_VEX";
+    case CraftingSchema_Material_MaterialType.CSAF_INFORMATIONAL_ADVISORY:
+      return "CSAF_INFORMATIONAL_ADVISORY";
+    case CraftingSchema_Material_MaterialType.CSAF_SECURITY_ADVISORY:
+      return "CSAF_SECURITY_ADVISORY";
+    case CraftingSchema_Material_MaterialType.CSAF_SECURITY_INCIDENT_RESPONSE:
+      return "CSAF_SECURITY_INCIDENT_RESPONSE";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
