@@ -72,7 +72,6 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 		return nil, fmt.Errorf("failed to create workflow: %w", err)
 	}
 
-	// Reload the object to include the relations
 	return r.FindByID(ctx, wf.ID)
 }
 

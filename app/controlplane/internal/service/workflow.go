@@ -125,6 +125,8 @@ func (s *WorkflowService) View(ctx context.Context, req *pb.WorkflowServiceViewR
 	}
 
 	var wf *biz.Workflow
+
+	// nolint:gocritic
 	if req.Name != nil {
 		wf, err = s.useCase.FindByNameInOrg(ctx, currentOrg.ID, *req.Name)
 	} else if req.Id != nil {
