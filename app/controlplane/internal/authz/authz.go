@@ -57,6 +57,7 @@ const (
 	ResourceWorkflow              = "workflow"
 	UserMembership                = "membership_user"
 	Organization                  = "organization"
+	ResourceAttestation           = "attestation"
 
 	// We have for now three roles, viewer, admin and owner
 	// The owner of an org
@@ -102,10 +103,15 @@ var (
 	PolicyWorkflowRunList = &Policy{ResourceWorkflowRun, ActionList}
 	PolicyWorkflowRunRead = &Policy{ResourceWorkflowRun, ActionRead}
 	// Workflow
-	PolicyWorkflowList = &Policy{ResourceWorkflow, ActionList}
-	PolicyWorkflowRead = &Policy{ResourceWorkflow, ActionRead}
+	PolicyWorkflowCreate = &Policy{ResourceWorkflow, ActionCreate}
+	PolicyWorkflowList   = &Policy{ResourceWorkflow, ActionList}
+	PolicyWorkflowRead   = &Policy{ResourceWorkflow, ActionRead}
 	// User Membership
 	PolicyOrganizationRead = &Policy{Organization, ActionRead}
+	// Attestation
+	PolicyAttestationCreate = &Policy{ResourceAttestation, ActionCreate}
+	PolicyAttestationRead   = &Policy{ResourceAttestation, ActionRead}
+	PolicyAttestationList   = &Policy{ResourceAttestation, ActionList}
 )
 
 // List of policies for each role
