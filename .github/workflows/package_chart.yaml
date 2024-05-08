@@ -18,7 +18,7 @@ jobs:
     permissions:
       packages: write
     env:
-      CHAINLOOP_VERSION: 0.83.0 # Min version that includes HELM_CHART material type
+      CHAINLOOP_VERSION: 0.86.0
       CHAINLOOP_ROBOT_ACCOUNT: ${{ secrets.CHAINLOOP_ROBOT_ACCOUNT_CHART_PACKAGE }}
     steps:
       - name: Install Chainloop
