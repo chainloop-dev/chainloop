@@ -41,10 +41,7 @@ func NewCSAFVEXCrafter(materialSchema *schemaapi.CraftingSchema_Material, backen
 		return nil, fmt.Errorf("material type is not CSAF_VEX format")
 	}
 
-	return &CSAFCrafter{
-		backend:       backend,
-		crafterCommon: &crafterCommon{logger: l, input: materialSchema},
-	}, nil
+	return baseCSAFCrafter(materialSchema, backend, l)
 }
 
 // NewCSAFInformationalAdvisoryCrafter creates a new CSAF Informational Advisory crafter
@@ -53,10 +50,7 @@ func NewCSAFInformationalAdvisoryCrafter(materialSchema *schemaapi.CraftingSchem
 		return nil, fmt.Errorf("material type is not CSAF_INFORMATIONAL_ADVISORY format")
 	}
 
-	return &CSAFCrafter{
-		backend:       backend,
-		crafterCommon: &crafterCommon{logger: l, input: materialSchema},
-	}, nil
+	return baseCSAFCrafter(materialSchema, backend, l)
 }
 
 // NewCSAFSecurityIncidentResponseCrafter creates a new CSAF Security Incident Response crafter
@@ -65,10 +59,7 @@ func NewCSAFSecurityIncidentResponseCrafter(materialSchema *schemaapi.CraftingSc
 		return nil, fmt.Errorf("material type is not CSAF_SECURITY_INCIDENT_RESPONSE format")
 	}
 
-	return &CSAFCrafter{
-		backend:       backend,
-		crafterCommon: &crafterCommon{logger: l, input: materialSchema},
-	}, nil
+	return baseCSAFCrafter(materialSchema, backend, l)
 }
 
 // NewCSAFSecurityAdvisoryCrafter creates a new CSAF Security Advisory crafter
@@ -77,6 +68,11 @@ func NewCSAFSecurityAdvisoryCrafter(materialSchema *schemaapi.CraftingSchema_Mat
 		return nil, fmt.Errorf("material type is not CSAF_SECURITY_ADVISORY format")
 	}
 
+	return baseCSAFCrafter(materialSchema, backend, l)
+}
+
+// NewCSAFCrafter creates a new CSAF crafter
+func baseCSAFCrafter(materialSchema *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, l *zerolog.Logger) (*CSAFCrafter, error) {
 	return &CSAFCrafter{
 		backend:       backend,
 		crafterCommon: &crafterCommon{logger: l, input: materialSchema},
