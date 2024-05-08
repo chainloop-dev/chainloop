@@ -72,7 +72,21 @@ func TestNewCSAFCrafter(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := materials.NewCSAFCrafter(tc.input, nil, nil)
+			var err error
+			switch tc.input.Type {
+			case contractAPI.CraftingSchema_Material_CSAF_VEX:
+				_, err = materials.NewCSAFVEXCrafter(tc.input, nil, nil)
+			case contractAPI.CraftingSchema_Material_CSAF_INFORMATIONAL_ADVISORY:
+				_, err = materials.NewCSAFInformationalAdvisoryCrafter(tc.input, nil, nil)
+			case contractAPI.CraftingSchema_Material_CSAF_SECURITY_ADVISORY:
+				_, err = materials.NewCSAFSecurityAdvisoryCrafter(tc.input, nil, nil)
+			case contractAPI.CraftingSchema_Material_CSAF_SECURITY_INCIDENT_RESPONSE:
+				_, err = materials.NewCSAFSecurityIncidentResponseCrafter(tc.input, nil, nil)
+			default:
+				// For example VEX crafter so, we fail if the material is not ok
+				_, err = materials.NewCSAFVEXCrafter(tc.input, nil, nil)
+			}
+
 			if tc.wantErr {
 				assert.Error(t, err)
 				return
@@ -146,7 +160,20 @@ func TestCSAFCraft(t *testing.T) {
 			}
 
 			backend := &casclient.CASBackend{Uploader: uploader}
-			crafter, err := materials.NewCSAFCrafter(schema, backend, &l)
+
+			var crafter *materials.CSAFCrafter
+			var err error
+			switch schema.Type {
+			case contractAPI.CraftingSchema_Material_CSAF_VEX:
+				crafter, err = materials.NewCSAFVEXCrafter(schema, backend, &l)
+			case contractAPI.CraftingSchema_Material_CSAF_INFORMATIONAL_ADVISORY:
+				crafter, err = materials.NewCSAFInformationalAdvisoryCrafter(schema, backend, &l)
+			case contractAPI.CraftingSchema_Material_CSAF_SECURITY_ADVISORY:
+				crafter, err = materials.NewCSAFSecurityAdvisoryCrafter(schema, backend, &l)
+			case contractAPI.CraftingSchema_Material_CSAF_SECURITY_INCIDENT_RESPONSE:
+				crafter, err = materials.NewCSAFSecurityIncidentResponseCrafter(schema, backend, &l)
+			}
+
 			require.NoError(t, err)
 
 			got, err := crafter.Craft(context.TODO(), tc.filePath)

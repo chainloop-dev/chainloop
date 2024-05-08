@@ -33,12 +33,42 @@ type CSAFCrafter struct {
 	*crafterCommon
 }
 
-func NewCSAFCrafter(materialSchema *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, l *zerolog.Logger) (*CSAFCrafter, error) {
-	if materialSchema.Type != schemaapi.CraftingSchema_Material_CSAF_VEX &&
-		materialSchema.Type != schemaapi.CraftingSchema_Material_CSAF_INFORMATIONAL_ADVISORY &&
-		materialSchema.Type != schemaapi.CraftingSchema_Material_CSAF_SECURITY_ADVISORY &&
-		materialSchema.Type != schemaapi.CraftingSchema_Material_CSAF_SECURITY_INCIDENT_RESPONSE {
-		return nil, fmt.Errorf("material type is none of: CSAF_VEX, CSAF_INFORMATIONAL_ADVISORY, CSAF_SECURITY_ADVISORY, CSAF_SECURITY_INCIDENT_RESPONSE format")
+func NewCSAFVEXCrafter(materialSchema *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, l *zerolog.Logger) (*CSAFCrafter, error) {
+	if materialSchema.Type != schemaapi.CraftingSchema_Material_CSAF_VEX {
+		return nil, fmt.Errorf("material type is not CSAF_VEX format")
+	}
+
+	return &CSAFCrafter{
+		backend:       backend,
+		crafterCommon: &crafterCommon{logger: l, input: materialSchema},
+	}, nil
+}
+
+func NewCSAFInformationalAdvisoryCrafter(materialSchema *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, l *zerolog.Logger) (*CSAFCrafter, error) {
+	if materialSchema.Type != schemaapi.CraftingSchema_Material_CSAF_INFORMATIONAL_ADVISORY {
+		return nil, fmt.Errorf("material type is not CSAF_INFORMATIONAL_ADVISORY format")
+	}
+
+	return &CSAFCrafter{
+		backend:       backend,
+		crafterCommon: &crafterCommon{logger: l, input: materialSchema},
+	}, nil
+}
+
+func NewCSAFSecurityIncidentResponseCrafter(materialSchema *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, l *zerolog.Logger) (*CSAFCrafter, error) {
+	if materialSchema.Type != schemaapi.CraftingSchema_Material_CSAF_SECURITY_INCIDENT_RESPONSE {
+		return nil, fmt.Errorf("material type is not CSAF_SECURITY_INCIDENT_RESPONSE format")
+	}
+
+	return &CSAFCrafter{
+		backend:       backend,
+		crafterCommon: &crafterCommon{logger: l, input: materialSchema},
+	}, nil
+}
+
+func NewCSAFSecurityAdvisoryCrafter(materialSchema *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, l *zerolog.Logger) (*CSAFCrafter, error) {
+	if materialSchema.Type != schemaapi.CraftingSchema_Material_CSAF_SECURITY_ADVISORY {
+		return nil, fmt.Errorf("material type is not CSAF_SECURITY_ADVISORY format")
 	}
 
 	return &CSAFCrafter{

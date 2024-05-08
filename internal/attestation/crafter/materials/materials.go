@@ -164,11 +164,14 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 		crafter, err = NewJUnitXMLCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_OPENVEX:
 		crafter, err = NewOpenVEXCrafter(materialSchema, casBackend, logger)
-	case schemaapi.CraftingSchema_Material_CSAF_VEX,
-		schemaapi.CraftingSchema_Material_CSAF_INFORMATIONAL_ADVISORY,
-		schemaapi.CraftingSchema_Material_CSAF_SECURITY_ADVISORY,
-		schemaapi.CraftingSchema_Material_CSAF_SECURITY_INCIDENT_RESPONSE:
-		crafter, err = NewCSAFCrafter(materialSchema, casBackend, logger)
+	case schemaapi.CraftingSchema_Material_CSAF_VEX:
+		crafter, err = NewCSAFVEXCrafter(materialSchema, casBackend, logger)
+	case schemaapi.CraftingSchema_Material_CSAF_INFORMATIONAL_ADVISORY:
+		crafter, err = NewCSAFInformationalAdvisoryCrafter(materialSchema, casBackend, logger)
+	case schemaapi.CraftingSchema_Material_CSAF_SECURITY_ADVISORY:
+		crafter, err = NewCSAFSecurityAdvisoryCrafter(materialSchema, casBackend, logger)
+	case schemaapi.CraftingSchema_Material_CSAF_SECURITY_INCIDENT_RESPONSE:
+		crafter, err = NewCSAFSecurityIncidentResponseCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_SARIF:
 		crafter, err = NewSARIFCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_HELM_CHART:
