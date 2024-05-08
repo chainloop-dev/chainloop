@@ -21,7 +21,7 @@ jobs:
       contents: read
       security-events: write
     env:
-      CHAINLOOP_VERSION: 0.83.0
+      CHAINLOOP_VERSION: 0.86.0
       CHAINLOOP_ROBOT_ACCOUNT: ${{ secrets.CHAINLOOP_ROBOT_ACCOUNT_CODEQL }}
 
     strategy:

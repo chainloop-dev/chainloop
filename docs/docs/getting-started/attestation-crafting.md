@@ -237,7 +237,7 @@ jobs:
     env:
       # highlight-start
       # Version of Chainloop to install
-      CHAINLOOP_VERSION: 0.15.0
+      CHAINLOOP_VERSION: 0.86.0
       # Export robot-account env variable
       # Used by the CLI to authenticate with the control plane
       CHAINLOOP_ROBOT_ACCOUNT: ${{ secrets.CHAINLOOP_WF_RELEASE }}
