@@ -133,6 +133,15 @@ func TestCSAFCraft(t *testing.T) {
 			},
 		},
 		{
+			name:     "valid json file invalid artifact",
+			filePath: "./testdata/random.json",
+			wantErr:  "unexpected material type",
+			schema: &contractAPI.CraftingSchema_Material{
+				Name: "test",
+				Type: contractAPI.CraftingSchema_Material_CSAF_VEX,
+			},
+		},
+		{
 			name:     "valid artifact type",
 			filePath: "./testdata/csaf_vex_v0.2.0.json",
 			digest:   "sha256:d38f293e130fbb01d72b1df0b53a9eb1f0b50dd2053665db881d56ed9f4107c2",
