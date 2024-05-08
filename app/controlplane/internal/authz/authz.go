@@ -192,6 +192,12 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.WorkflowContractService/Update":   {PolicyWorkflowContractUpdate},
 	// Get current information about an organization
 	"/controlplane.v1.ContextService/Current": {PolicyOrganizationRead},
+	// Attestations
+	"/controlplane.v1.AttestationService/GetContract":    {PolicyAttestationRead},
+	"/controlplane.v1.AttestationService/Init":           {PolicyAttestationCreate},
+	"/controlplane.v1.AttestationService/Store":          {PolicyAttestationCreate},
+	"/controlplane.v1.AttestationService/GetUploadCreds": {PolicyAttestationRead},
+	"/controlplane.v1.AttestationService/Cancel":         {PolicyAttestationCreate},
 	// Listing, create or selecting an organization does not have any required permissions,
 	// since all the permissions here are in the context of an organization
 	// Create new organization

@@ -125,6 +125,27 @@ func TestWithAuthMiddleware(t *testing.T) {
 			operationName:  "/controlplane.v1.WorkflowContractService/List",
 			hasPermissions: true,
 		},
+		{
+			name:           "api token has permissions to perform an attestation",
+			hasToken:       true,
+			operationName:  "/controlplane.v1.AttestationService/Init",
+			hasPermissions: true,
+		},
+		{
+			name:           "same for owner with attestations",
+			hasUser:        true,
+			userRole:       "role:org:owner",
+			operationName:  "/controlplane.v1.AttestationService/Init",
+			hasPermissions: false,
+		},
+		{
+			name:           "but no for a viewer with attestations",
+			hasUser:        true,
+			userRole:       "role:org:viewer",
+			operationName:  "/controlplane.v1.AttestationService/Init",
+			hasPermissions: false,
+			wantErr:        true,
+		},
 	}
 
 	for _, tc := range testCases {

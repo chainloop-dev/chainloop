@@ -79,6 +79,8 @@ func NewAPITokenUseCase(apiTokenRepo APITokenRepo, conf *conf.Auth, authzE *auth
 			// to download artifacts and list referrers
 			authz.PolicyArtifactDownload, authz.PolicyReferrerRead,
 			authz.PolicyOrganizationRead,
+			// Add permissions to attestation management
+			authz.PolicyAttestationList, authz.PolicyAttestationCreate, authz.PolicyAttestationRead,
 		},
 	}
 
