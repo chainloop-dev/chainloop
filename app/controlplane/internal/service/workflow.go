@@ -127,10 +127,10 @@ func (s *WorkflowService) View(ctx context.Context, req *pb.WorkflowServiceViewR
 	var wf *biz.Workflow
 
 	// nolint:gocritic
-	if req.Name != nil {
-		wf, err = s.useCase.FindByNameInOrg(ctx, currentOrg.ID, *req.Name)
-	} else if req.Id != nil {
-		wf, err = s.useCase.FindByIDInOrg(ctx, currentOrg.ID, *req.Id)
+	if req.Name != "" {
+		wf, err = s.useCase.FindByNameInOrg(ctx, currentOrg.ID, req.Name)
+	} else if req.Id != "" {
+		wf, err = s.useCase.FindByIDInOrg(ctx, currentOrg.ID, req.Id)
 	} else {
 		return nil, errors.BadRequest("invalid", "either workflow ID or Name is required")
 	}
