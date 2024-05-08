@@ -147,9 +147,6 @@ var rolesMap = map[Role][]*Policy{
 		PolicyWorkflowRead,
 		// Organization
 		PolicyOrganizationRead,
-		// Attestation
-		PolicyAttestationRead,
-		PolicyAttestationList,
 	},
 	RoleAdmin: {
 		// We do a manual check in the artifact upload endpoint
