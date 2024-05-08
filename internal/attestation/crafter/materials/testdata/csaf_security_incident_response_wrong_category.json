@@ -4,7 +4,7 @@
       "namespace": "https://access.redhat.com/security/updates/classification/",
       "text": "Low"
     },
-    "category": "csaf_security_incident_response",
+    "category": "random",
     "csaf_version": "2.0",
     "distribution": {
       "text": "Copyright \u00a9 2022 Red Hat, Inc. All rights reserved.",

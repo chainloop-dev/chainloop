@@ -103,49 +103,84 @@ func TestCSAFCraft(t *testing.T) {
 		filePath string
 		wantErr  string
 		digest   string
+		schema   *contractAPI.CraftingSchema_Material
 	}{
 		{
 			name:     "non-expected json file",
 			filePath: "./testdata/sbom.cyclonedx.json",
 			wantErr:  "unexpected material type",
+			schema: &contractAPI.CraftingSchema_Material{
+				Name: "test",
+				Type: contractAPI.CraftingSchema_Material_CSAF_VEX,
+			},
 		},
 		{
 			name:     "invalid path",
 			filePath: "./testdata/non-existing.json",
 			wantErr:  "unexpected material type",
+			schema: &contractAPI.CraftingSchema_Material{
+				Name: "test",
+				Type: contractAPI.CraftingSchema_Material_CSAF_VEX,
+			},
 		},
 		{
 			name:     "invalid artifact type",
 			filePath: "./testdata/simple.txt",
 			wantErr:  "unexpected material type",
+			schema: &contractAPI.CraftingSchema_Material{
+				Name: "test",
+				Type: contractAPI.CraftingSchema_Material_CSAF_VEX,
+			},
 		},
 		{
 			name:     "valid artifact type",
 			filePath: "./testdata/csaf_vex_v0.2.0.json",
 			digest:   "sha256:d38f293e130fbb01d72b1df0b53a9eb1f0b50dd2053665db881d56ed9f4107c2",
+			schema: &contractAPI.CraftingSchema_Material{
+				Name: "test",
+				Type: contractAPI.CraftingSchema_Material_CSAF_VEX,
+			},
 		},
 		{
 			name:     "2.0 security advisory",
 			filePath: "./testdata/csaf_security_advisory.json",
 			digest:   "sha256:f1b3429e94e2e3b470402fa436b89f432d5209c6c8a12164cfccc90ec2637324",
+			schema: &contractAPI.CraftingSchema_Material{
+				Name: "test",
+				Type: contractAPI.CraftingSchema_Material_CSAF_SECURITY_ADVISORY,
+			},
 		},
 		{
 			name:     "2.0 informational advisory",
 			filePath: "./testdata/csaf_informational_advisory.json",
 			digest:   "sha256:015fc9b32648fec3f5b719ef52161aef130eba164b187289ea65d3fa4d7e2f2a",
+			schema: &contractAPI.CraftingSchema_Material{
+				Name: "test",
+				Type: contractAPI.CraftingSchema_Material_CSAF_INFORMATIONAL_ADVISORY,
+			},
 		},
 		{
 			name:     "2.0 security incident response",
 			filePath: "./testdata/csaf_security_incident_response.json",
+			digest:   "sha256:0d43f36bf36f8c80c3c85df6c6903764ebea2464abd6e01b353c945d2c46e986",
+			schema: &contractAPI.CraftingSchema_Material{
+				Name: "test",
+				Type: contractAPI.CraftingSchema_Material_CSAF_SECURITY_INCIDENT_RESPONSE,
+			},
+		},
+		{
+			name:     "2.0 security incident response wrong category",
+			filePath: "./testdata/csaf_security_incident_response_wrong_category.json",
 			digest:   "sha256:01674c1f6fbea901989369f73c6ba66a5f2c39cc57b542bb9cfbfddcc4106a2e",
+			wantErr:  "invalid CSAF",
+			schema: &contractAPI.CraftingSchema_Material{
+				Name: "test",
+				Type: contractAPI.CraftingSchema_Material_CSAF_INFORMATIONAL_ADVISORY,
+			},
 		},
 	}
 
 	assert := assert.New(t)
-	schema := &contractAPI.CraftingSchema_Material{
-		Name: "test",
-		Type: contractAPI.CraftingSchema_Material_CSAF_VEX,
-	}
 	l := zerolog.Nop()
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -163,15 +198,15 @@ func TestCSAFCraft(t *testing.T) {
 
 			var crafter *materials.CSAFCrafter
 			var err error
-			switch schema.Type {
+			switch tc.schema.Type {
 			case contractAPI.CraftingSchema_Material_CSAF_VEX:
-				crafter, err = materials.NewCSAFVEXCrafter(schema, backend, &l)
+				crafter, err = materials.NewCSAFVEXCrafter(tc.schema, backend, &l)
 			case contractAPI.CraftingSchema_Material_CSAF_INFORMATIONAL_ADVISORY:
-				crafter, err = materials.NewCSAFInformationalAdvisoryCrafter(schema, backend, &l)
+				crafter, err = materials.NewCSAFInformationalAdvisoryCrafter(tc.schema, backend, &l)
 			case contractAPI.CraftingSchema_Material_CSAF_SECURITY_ADVISORY:
-				crafter, err = materials.NewCSAFSecurityAdvisoryCrafter(schema, backend, &l)
+				crafter, err = materials.NewCSAFSecurityAdvisoryCrafter(tc.schema, backend, &l)
 			case contractAPI.CraftingSchema_Material_CSAF_SECURITY_INCIDENT_RESPONSE:
-				crafter, err = materials.NewCSAFSecurityIncidentResponseCrafter(schema, backend, &l)
+				crafter, err = materials.NewCSAFSecurityIncidentResponseCrafter(tc.schema, backend, &l)
 			}
 
 			require.NoError(t, err)
@@ -183,7 +218,7 @@ func TestCSAFCraft(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			assert.Equal(contractAPI.CraftingSchema_Material_CSAF_VEX.String(), got.MaterialType.String())
+			assert.Equal(tc.schema.Type.String(), got.MaterialType.String())
 			assert.True(got.UploadedToCas)
 
 			// // The result includes the digest reference

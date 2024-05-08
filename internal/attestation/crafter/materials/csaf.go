@@ -28,11 +28,19 @@ import (
 	"github.com/rs/zerolog"
 )
 
+const (
+	CategorySecurityIncidentResponse = "csaf_security_incident_response"
+	CategoryInformationalAdvisory    = "csaf_informational_advisory"
+	CategorySecurityAdvisory         = "csaf_security_advisory"
+	CategoryVEX                      = "csaf_vex"
+)
+
 // CSAFCrafter is a crafter for CSAF VEX, CSAF Informational Advisory, CSAF Security Incident Response, and CSAF Security Advisory
 // material types. It implements the Crafter interface.
 type CSAFCrafter struct {
 	backend *casclient.CASBackend
 	*crafterCommon
+	category string
 }
 
 // NewCSAFVEXCrafter creates a new CSAF VEX crafter
@@ -41,7 +49,7 @@ func NewCSAFVEXCrafter(materialSchema *schemaapi.CraftingSchema_Material, backen
 		return nil, fmt.Errorf("material type is not CSAF_VEX format")
 	}
 
-	return baseCSAFCrafter(materialSchema, backend, l)
+	return baseCSAFCrafter(materialSchema, backend, CategoryVEX, l)
 }
 
 // NewCSAFInformationalAdvisoryCrafter creates a new CSAF Informational Advisory crafter
@@ -50,7 +58,7 @@ func NewCSAFInformationalAdvisoryCrafter(materialSchema *schemaapi.CraftingSchem
 		return nil, fmt.Errorf("material type is not CSAF_INFORMATIONAL_ADVISORY format")
 	}
 
-	return baseCSAFCrafter(materialSchema, backend, l)
+	return baseCSAFCrafter(materialSchema, backend, CategoryInformationalAdvisory, l)
 }
 
 // NewCSAFSecurityIncidentResponseCrafter creates a new CSAF Security Incident Response crafter
@@ -59,7 +67,7 @@ func NewCSAFSecurityIncidentResponseCrafter(materialSchema *schemaapi.CraftingSc
 		return nil, fmt.Errorf("material type is not CSAF_SECURITY_INCIDENT_RESPONSE format")
 	}
 
-	return baseCSAFCrafter(materialSchema, backend, l)
+	return baseCSAFCrafter(materialSchema, backend, CategorySecurityIncidentResponse, l)
 }
 
 // NewCSAFSecurityAdvisoryCrafter creates a new CSAF Security Advisory crafter
@@ -68,14 +76,15 @@ func NewCSAFSecurityAdvisoryCrafter(materialSchema *schemaapi.CraftingSchema_Mat
 		return nil, fmt.Errorf("material type is not CSAF_SECURITY_ADVISORY format")
 	}
 
-	return baseCSAFCrafter(materialSchema, backend, l)
+	return baseCSAFCrafter(materialSchema, backend, CategorySecurityAdvisory, l)
 }
 
 // NewCSAFCrafter creates a new CSAF crafter
-func baseCSAFCrafter(materialSchema *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, l *zerolog.Logger) (*CSAFCrafter, error) {
+func baseCSAFCrafter(materialSchema *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, category string, l *zerolog.Logger) (*CSAFCrafter, error) {
 	return &CSAFCrafter{
 		backend:       backend,
 		crafterCommon: &crafterCommon{logger: l, input: materialSchema},
+		category:      category,
 	}, nil
 }
 
@@ -90,6 +99,17 @@ func (i *CSAFCrafter) Craft(ctx context.Context, filepath string) (*api.Attestat
 	if err := json.Unmarshal(f, &v); err != nil {
 		i.logger.Debug().Err(err).Msg("error decoding file")
 		return nil, fmt.Errorf("invalid CSAF file: %w", ErrInvalidMaterialType)
+	}
+
+	// Validate the CSAF file against the specified category.
+	document, docExists := v.(map[string]interface{})["document"]
+	if docExists {
+		documentMap, docMapOk := document.(map[string]interface{})
+		category, categoryExists := documentMap["category"].(string)
+
+		if docMapOk && categoryExists && category != "" && category != i.category {
+			return nil, fmt.Errorf("invalid CSAF category field in file, expected: %v", i.category)
+		}
 	}
 
 	// The validator will try in cascade the different schemas since CSAF specification
