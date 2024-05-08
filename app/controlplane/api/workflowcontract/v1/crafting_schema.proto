@@ -78,12 +78,10 @@ message CraftingSchema {
       JUNIT_XML = 6;
       // https://github.com/openvex/spec
       OPENVEX = 7;
-      // https://docs.oasis-open.org/csaf/csaf/v2.0/cs03/csaf-v2.0-cs03.html
-      CSAF_VEX = 8;
       // Static analysis output format
       // https://github.com/microsoft/sarif-tutorials/blob/main/docs/1-Introduction.md
-      SARIF = 9;
       HELM_CHART = 10;
+      SARIF = 9;
 
       // Pieces of evidences represent generic, additional context that don't fit
       // into one of the well known material types. For example, a custom approval report (in json), ...
@@ -91,6 +89,8 @@ message CraftingSchema {
 
       // Chainloop attestation coming from a different workflow.
       ATTESTATION = 12;
+      // https://docs.oasis-open.org/csaf/csaf/v2.0/cs03/csaf-v2.0-cs03.html
+      CSAF_VEX = 8;
       CSAF_INFORMATIONAL_ADVISORY = 13;
       CSAF_SECURITY_ADVISORY = 14;
       CSAF_SECURITY_INCIDENT_RESPONSE = 15;
