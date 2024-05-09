@@ -20,6 +20,7 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -123,7 +124,17 @@ func (s *WorkflowService) View(ctx context.Context, req *pb.WorkflowServiceViewR
 		return nil, err
 	}
 
-	wf, err := s.useCase.FindByIDInOrg(ctx, currentOrg.ID, req.Id)
+	var wf *biz.Workflow
+
+	// nolint:gocritic
+	if req.Name != "" {
+		wf, err = s.useCase.FindByNameInOrg(ctx, currentOrg.ID, req.Name)
+	} else if req.Id != "" {
+		wf, err = s.useCase.FindByIDInOrg(ctx, currentOrg.ID, req.Id)
+	} else {
+		return nil, errors.BadRequest("invalid", "either workflow ID or Name is required")
+	}
+
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}

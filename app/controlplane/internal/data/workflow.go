@@ -34,6 +34,8 @@ type WorkflowRepo struct {
 	log  *log.Helper
 }
 
+var _ biz.WorkflowRepo = (*WorkflowRepo)(nil)
+
 func NewWorkflowRepo(data *Data, logger log.Logger) biz.WorkflowRepo {
 	return &WorkflowRepo{
 		data: data,
@@ -70,7 +72,6 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 		return nil, fmt.Errorf("failed to create workflow: %w", err)
 	}
 
-	// Reload the object to include the relations
 	return r.FindByID(ctx, wf.ID)
 }
 
@@ -144,7 +145,7 @@ func (r *WorkflowRepo) List(ctx context.Context, orgID uuid.UUID) ([]*biz.Workfl
 	return result, nil
 }
 
-// Get a workflow making sure it belongs to a given org
+// GetOrgScoped Gets a workflow making sure it belongs to a given org
 func (r *WorkflowRepo) GetOrgScoped(ctx context.Context, orgID, workflowID uuid.UUID) (*biz.Workflow, error) {
 	workflow, err := orgScopedQuery(r.data.db, orgID).
 		QueryWorkflows().
@@ -152,10 +153,12 @@ func (r *WorkflowRepo) GetOrgScoped(ctx context.Context, orgID, workflowID uuid.
 		WithContract().WithOrganization().
 		Order(ent.Desc(workflow.FieldCreatedAt)).
 		Only(ctx)
-	if err != nil && !ent.IsNotFound(err) {
+
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, biz.NewErrNotFound("workflow")
+		}
 		return nil, err
-	} else if workflow == nil {
-		return nil, nil
 	}
 
 	// Not efficient, we need to do a query limit = 1 grouped by workflowID
@@ -165,6 +168,30 @@ func (r *WorkflowRepo) GetOrgScoped(ctx context.Context, orgID, workflowID uuid.
 	}
 
 	return entWFToBizWF(workflow, lastRun)
+}
+
+// GetOrgScopedByName Gets a workflow by name making sure it belongs to a given org
+func (r *WorkflowRepo) GetOrgScopedByName(ctx context.Context, orgID uuid.UUID, workflowName string) (*biz.Workflow, error) {
+	wf, err := orgScopedQuery(r.data.db, orgID).QueryWorkflows().
+		Where(workflow.Name(workflowName), workflow.DeletedAtIsNil()).
+		WithContract().WithOrganization().
+		Order(ent.Desc(workflow.FieldCreatedAt)).
+		Only(ctx)
+
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, biz.NewErrNotFound("workflow")
+		}
+		return nil, err
+	}
+
+	// Not efficient, we need to do a query limit = 1 grouped by workflowID
+	lastRun, err := getLastRun(ctx, wf)
+	if err != nil {
+		return nil, err
+	}
+
+	return entWFToBizWF(wf, lastRun)
 }
 
 func (r *WorkflowRepo) IncRunsCounter(ctx context.Context, workflowID uuid.UUID) error {
