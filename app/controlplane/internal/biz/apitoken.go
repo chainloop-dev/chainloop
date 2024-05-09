@@ -74,6 +74,8 @@ func NewAPITokenUseCase(apiTokenRepo APITokenRepo, conf *conf.Auth, authzE *auth
 		DefaultAuthzPolicies: []*authz.Policy{
 			// Add permissions to workflow run
 			authz.PolicyWorkflowRunList, authz.PolicyWorkflowRunRead,
+			// To read and create workflows
+			authz.PolicyWorkflowRead, authz.PolicyWorkflowCreate,
 			// Add permissions to workflow contract management
 			authz.PolicyWorkflowContractList, authz.PolicyWorkflowContractRead, authz.PolicyWorkflowContractUpdate,
 			// to download artifacts and list referrers

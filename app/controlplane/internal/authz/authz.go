@@ -18,10 +18,9 @@ package authz
 
 import (
 	"context"
+	_ "embed"
 	"errors"
 	"fmt"
-
-	_ "embed"
 
 	psqlwatcher "github.com/IguteChung/casbin-psql-watcher"
 	"github.com/casbin/casbin/v2"
@@ -102,8 +101,9 @@ var (
 	PolicyWorkflowRunList = &Policy{ResourceWorkflowRun, ActionList}
 	PolicyWorkflowRunRead = &Policy{ResourceWorkflowRun, ActionRead}
 	// Workflow
-	PolicyWorkflowList = &Policy{ResourceWorkflow, ActionList}
-	PolicyWorkflowRead = &Policy{ResourceWorkflow, ActionRead}
+	PolicyWorkflowCreate = &Policy{ResourceWorkflow, ActionCreate}
+	PolicyWorkflowList   = &Policy{ResourceWorkflow, ActionList}
+	PolicyWorkflowRead   = &Policy{ResourceWorkflow, ActionRead}
 	// User Membership
 	PolicyOrganizationRead = &Policy{Organization, ActionRead}
 )
