@@ -141,7 +141,7 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 
 	// Create workflowRun
 	opts := &biz.WorkflowRunCreateOpts{
-		WorkflowID: robotAccount.WorkflowID, RobotaccountID: robotAccount.ID,
+		WorkflowID:       robotAccount.WorkflowID,
 		ContractRevision: contractVersion,
 		RunnerRunURL:     req.GetJobUrl(),
 		RunnerType:       req.GetRunner().String(),

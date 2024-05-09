@@ -14,7 +14,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowcontractversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowrun"
@@ -219,25 +218,6 @@ func (wru *WorkflowRunUpdate) SetWorkflow(w *Workflow) *WorkflowRunUpdate {
 	return wru.SetWorkflowID(w.ID)
 }
 
-// SetRobotaccountID sets the "robotaccount" edge to the RobotAccount entity by ID.
-func (wru *WorkflowRunUpdate) SetRobotaccountID(id uuid.UUID) *WorkflowRunUpdate {
-	wru.mutation.SetRobotaccountID(id)
-	return wru
-}
-
-// SetNillableRobotaccountID sets the "robotaccount" edge to the RobotAccount entity by ID if the given value is not nil.
-func (wru *WorkflowRunUpdate) SetNillableRobotaccountID(id *uuid.UUID) *WorkflowRunUpdate {
-	if id != nil {
-		wru = wru.SetRobotaccountID(*id)
-	}
-	return wru
-}
-
-// SetRobotaccount sets the "robotaccount" edge to the RobotAccount entity.
-func (wru *WorkflowRunUpdate) SetRobotaccount(r *RobotAccount) *WorkflowRunUpdate {
-	return wru.SetRobotaccountID(r.ID)
-}
-
 // SetContractVersionID sets the "contract_version" edge to the WorkflowContractVersion entity by ID.
 func (wru *WorkflowRunUpdate) SetContractVersionID(id uuid.UUID) *WorkflowRunUpdate {
 	wru.mutation.SetContractVersionID(id)
@@ -280,12 +260,6 @@ func (wru *WorkflowRunUpdate) Mutation() *WorkflowRunMutation {
 // ClearWorkflow clears the "workflow" edge to the Workflow entity.
 func (wru *WorkflowRunUpdate) ClearWorkflow() *WorkflowRunUpdate {
 	wru.mutation.ClearWorkflow()
-	return wru
-}
-
-// ClearRobotaccount clears the "robotaccount" edge to the RobotAccount entity.
-func (wru *WorkflowRunUpdate) ClearRobotaccount() *WorkflowRunUpdate {
-	wru.mutation.ClearRobotaccount()
 	return wru
 }
 
@@ -450,35 +424,6 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if wru.mutation.RobotaccountCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   workflowrun.RobotaccountTable,
-			Columns: []string{workflowrun.RobotaccountColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(robotaccount.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := wru.mutation.RobotaccountIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   workflowrun.RobotaccountTable,
-			Columns: []string{workflowrun.RobotaccountColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(robotaccount.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -765,25 +710,6 @@ func (wruo *WorkflowRunUpdateOne) SetWorkflow(w *Workflow) *WorkflowRunUpdateOne
 	return wruo.SetWorkflowID(w.ID)
 }
 
-// SetRobotaccountID sets the "robotaccount" edge to the RobotAccount entity by ID.
-func (wruo *WorkflowRunUpdateOne) SetRobotaccountID(id uuid.UUID) *WorkflowRunUpdateOne {
-	wruo.mutation.SetRobotaccountID(id)
-	return wruo
-}
-
-// SetNillableRobotaccountID sets the "robotaccount" edge to the RobotAccount entity by ID if the given value is not nil.
-func (wruo *WorkflowRunUpdateOne) SetNillableRobotaccountID(id *uuid.UUID) *WorkflowRunUpdateOne {
-	if id != nil {
-		wruo = wruo.SetRobotaccountID(*id)
-	}
-	return wruo
-}
-
-// SetRobotaccount sets the "robotaccount" edge to the RobotAccount entity.
-func (wruo *WorkflowRunUpdateOne) SetRobotaccount(r *RobotAccount) *WorkflowRunUpdateOne {
-	return wruo.SetRobotaccountID(r.ID)
-}
-
 // SetContractVersionID sets the "contract_version" edge to the WorkflowContractVersion entity by ID.
 func (wruo *WorkflowRunUpdateOne) SetContractVersionID(id uuid.UUID) *WorkflowRunUpdateOne {
 	wruo.mutation.SetContractVersionID(id)
@@ -826,12 +752,6 @@ func (wruo *WorkflowRunUpdateOne) Mutation() *WorkflowRunMutation {
 // ClearWorkflow clears the "workflow" edge to the Workflow entity.
 func (wruo *WorkflowRunUpdateOne) ClearWorkflow() *WorkflowRunUpdateOne {
 	wruo.mutation.ClearWorkflow()
-	return wruo
-}
-
-// ClearRobotaccount clears the "robotaccount" edge to the RobotAccount entity.
-func (wruo *WorkflowRunUpdateOne) ClearRobotaccount() *WorkflowRunUpdateOne {
-	wruo.mutation.ClearRobotaccount()
 	return wruo
 }
 
@@ -1026,35 +946,6 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if wruo.mutation.RobotaccountCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   workflowrun.RobotaccountTable,
-			Columns: []string{workflowrun.RobotaccountColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(robotaccount.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := wruo.mutation.RobotaccountIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   workflowrun.RobotaccountTable,
-			Columns: []string{workflowrun.RobotaccountColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(robotaccount.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

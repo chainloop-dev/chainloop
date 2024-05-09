@@ -12,7 +12,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowrun"
 	"github.com/google/uuid"
 )
 
@@ -88,21 +87,6 @@ func (rac *RobotAccountCreate) SetNillableWorkflowID(id *uuid.UUID) *RobotAccoun
 // SetWorkflow sets the "workflow" edge to the Workflow entity.
 func (rac *RobotAccountCreate) SetWorkflow(w *Workflow) *RobotAccountCreate {
 	return rac.SetWorkflowID(w.ID)
-}
-
-// AddWorkflowrunIDs adds the "workflowruns" edge to the WorkflowRun entity by IDs.
-func (rac *RobotAccountCreate) AddWorkflowrunIDs(ids ...uuid.UUID) *RobotAccountCreate {
-	rac.mutation.AddWorkflowrunIDs(ids...)
-	return rac
-}
-
-// AddWorkflowruns adds the "workflowruns" edges to the WorkflowRun entity.
-func (rac *RobotAccountCreate) AddWorkflowruns(w ...*WorkflowRun) *RobotAccountCreate {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
-	}
-	return rac.AddWorkflowrunIDs(ids...)
 }
 
 // Mutation returns the RobotAccountMutation object of the builder.
@@ -220,22 +204,6 @@ func (rac *RobotAccountCreate) createSpec() (*RobotAccount, *sqlgraph.CreateSpec
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.workflow_robotaccounts = &nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := rac.mutation.WorkflowrunsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   robotaccount.WorkflowrunsTable,
-			Columns: []string{robotaccount.WorkflowrunsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

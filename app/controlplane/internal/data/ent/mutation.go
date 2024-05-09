@@ -7099,21 +7099,18 @@ func (m *ReferrerMutation) ResetEdge(name string) error {
 // RobotAccountMutation represents an operation that mutates the RobotAccount nodes in the graph.
 type RobotAccountMutation struct {
 	config
-	op                  Op
-	typ                 string
-	id                  *uuid.UUID
-	name                *string
-	created_at          *time.Time
-	revoked_at          *time.Time
-	clearedFields       map[string]struct{}
-	workflow            *uuid.UUID
-	clearedworkflow     bool
-	workflowruns        map[uuid.UUID]struct{}
-	removedworkflowruns map[uuid.UUID]struct{}
-	clearedworkflowruns bool
-	done                bool
-	oldValue            func(context.Context) (*RobotAccount, error)
-	predicates          []predicate.RobotAccount
+	op              Op
+	typ             string
+	id              *uuid.UUID
+	name            *string
+	created_at      *time.Time
+	revoked_at      *time.Time
+	clearedFields   map[string]struct{}
+	workflow        *uuid.UUID
+	clearedworkflow bool
+	done            bool
+	oldValue        func(context.Context) (*RobotAccount, error)
+	predicates      []predicate.RobotAccount
 }
 
 var _ ent.Mutation = (*RobotAccountMutation)(nil)
@@ -7380,60 +7377,6 @@ func (m *RobotAccountMutation) ResetWorkflow() {
 	m.clearedworkflow = false
 }
 
-// AddWorkflowrunIDs adds the "workflowruns" edge to the WorkflowRun entity by ids.
-func (m *RobotAccountMutation) AddWorkflowrunIDs(ids ...uuid.UUID) {
-	if m.workflowruns == nil {
-		m.workflowruns = make(map[uuid.UUID]struct{})
-	}
-	for i := range ids {
-		m.workflowruns[ids[i]] = struct{}{}
-	}
-}
-
-// ClearWorkflowruns clears the "workflowruns" edge to the WorkflowRun entity.
-func (m *RobotAccountMutation) ClearWorkflowruns() {
-	m.clearedworkflowruns = true
-}
-
-// WorkflowrunsCleared reports if the "workflowruns" edge to the WorkflowRun entity was cleared.
-func (m *RobotAccountMutation) WorkflowrunsCleared() bool {
-	return m.clearedworkflowruns
-}
-
-// RemoveWorkflowrunIDs removes the "workflowruns" edge to the WorkflowRun entity by IDs.
-func (m *RobotAccountMutation) RemoveWorkflowrunIDs(ids ...uuid.UUID) {
-	if m.removedworkflowruns == nil {
-		m.removedworkflowruns = make(map[uuid.UUID]struct{})
-	}
-	for i := range ids {
-		delete(m.workflowruns, ids[i])
-		m.removedworkflowruns[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedWorkflowruns returns the removed IDs of the "workflowruns" edge to the WorkflowRun entity.
-func (m *RobotAccountMutation) RemovedWorkflowrunsIDs() (ids []uuid.UUID) {
-	for id := range m.removedworkflowruns {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// WorkflowrunsIDs returns the "workflowruns" edge IDs in the mutation.
-func (m *RobotAccountMutation) WorkflowrunsIDs() (ids []uuid.UUID) {
-	for id := range m.workflowruns {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetWorkflowruns resets all changes to the "workflowruns" edge.
-func (m *RobotAccountMutation) ResetWorkflowruns() {
-	m.workflowruns = nil
-	m.clearedworkflowruns = false
-	m.removedworkflowruns = nil
-}
-
 // Where appends a list predicates to the RobotAccountMutation builder.
 func (m *RobotAccountMutation) Where(ps ...predicate.RobotAccount) {
 	m.predicates = append(m.predicates, ps...)
@@ -7610,12 +7553,9 @@ func (m *RobotAccountMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RobotAccountMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 1)
 	if m.workflow != nil {
 		edges = append(edges, robotaccount.EdgeWorkflow)
-	}
-	if m.workflowruns != nil {
-		edges = append(edges, robotaccount.EdgeWorkflowruns)
 	}
 	return edges
 }
@@ -7628,47 +7568,27 @@ func (m *RobotAccountMutation) AddedIDs(name string) []ent.Value {
 		if id := m.workflow; id != nil {
 			return []ent.Value{*id}
 		}
-	case robotaccount.EdgeWorkflowruns:
-		ids := make([]ent.Value, 0, len(m.workflowruns))
-		for id := range m.workflowruns {
-			ids = append(ids, id)
-		}
-		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *RobotAccountMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.removedworkflowruns != nil {
-		edges = append(edges, robotaccount.EdgeWorkflowruns)
-	}
+	edges := make([]string, 0, 1)
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *RobotAccountMutation) RemovedIDs(name string) []ent.Value {
-	switch name {
-	case robotaccount.EdgeWorkflowruns:
-		ids := make([]ent.Value, 0, len(m.removedworkflowruns))
-		for id := range m.removedworkflowruns {
-			ids = append(ids, id)
-		}
-		return ids
-	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RobotAccountMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 1)
 	if m.clearedworkflow {
 		edges = append(edges, robotaccount.EdgeWorkflow)
-	}
-	if m.clearedworkflowruns {
-		edges = append(edges, robotaccount.EdgeWorkflowruns)
 	}
 	return edges
 }
@@ -7679,8 +7599,6 @@ func (m *RobotAccountMutation) EdgeCleared(name string) bool {
 	switch name {
 	case robotaccount.EdgeWorkflow:
 		return m.clearedworkflow
-	case robotaccount.EdgeWorkflowruns:
-		return m.clearedworkflowruns
 	}
 	return false
 }
@@ -7702,9 +7620,6 @@ func (m *RobotAccountMutation) ResetEdge(name string) error {
 	switch name {
 	case robotaccount.EdgeWorkflow:
 		m.ResetWorkflow()
-		return nil
-	case robotaccount.EdgeWorkflowruns:
-		m.ResetWorkflowruns()
 		return nil
 	}
 	return fmt.Errorf("unknown RobotAccount edge %s", name)
@@ -10849,8 +10764,6 @@ type WorkflowRunMutation struct {
 	clearedFields               map[string]struct{}
 	workflow                    *uuid.UUID
 	clearedworkflow             bool
-	robotaccount                *uuid.UUID
-	clearedrobotaccount         bool
 	contract_version            *uuid.UUID
 	clearedcontract_version     bool
 	cas_backends                map[uuid.UUID]struct{}
@@ -11531,45 +11444,6 @@ func (m *WorkflowRunMutation) ResetWorkflow() {
 	m.clearedworkflow = false
 }
 
-// SetRobotaccountID sets the "robotaccount" edge to the RobotAccount entity by id.
-func (m *WorkflowRunMutation) SetRobotaccountID(id uuid.UUID) {
-	m.robotaccount = &id
-}
-
-// ClearRobotaccount clears the "robotaccount" edge to the RobotAccount entity.
-func (m *WorkflowRunMutation) ClearRobotaccount() {
-	m.clearedrobotaccount = true
-}
-
-// RobotaccountCleared reports if the "robotaccount" edge to the RobotAccount entity was cleared.
-func (m *WorkflowRunMutation) RobotaccountCleared() bool {
-	return m.clearedrobotaccount
-}
-
-// RobotaccountID returns the "robotaccount" edge ID in the mutation.
-func (m *WorkflowRunMutation) RobotaccountID() (id uuid.UUID, exists bool) {
-	if m.robotaccount != nil {
-		return *m.robotaccount, true
-	}
-	return
-}
-
-// RobotaccountIDs returns the "robotaccount" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// RobotaccountID instead. It exists only for internal usage by the builders.
-func (m *WorkflowRunMutation) RobotaccountIDs() (ids []uuid.UUID) {
-	if id := m.robotaccount; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetRobotaccount resets all changes to the "robotaccount" edge.
-func (m *WorkflowRunMutation) ResetRobotaccount() {
-	m.robotaccount = nil
-	m.clearedrobotaccount = false
-}
-
 // SetContractVersionID sets the "contract_version" edge to the WorkflowContractVersion entity by id.
 func (m *WorkflowRunMutation) SetContractVersionID(id uuid.UUID) {
 	m.contract_version = &id
@@ -12038,12 +11912,9 @@ func (m *WorkflowRunMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *WorkflowRunMutation) AddedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 3)
 	if m.workflow != nil {
 		edges = append(edges, workflowrun.EdgeWorkflow)
-	}
-	if m.robotaccount != nil {
-		edges = append(edges, workflowrun.EdgeRobotaccount)
 	}
 	if m.contract_version != nil {
 		edges = append(edges, workflowrun.EdgeContractVersion)
@@ -12062,10 +11933,6 @@ func (m *WorkflowRunMutation) AddedIDs(name string) []ent.Value {
 		if id := m.workflow; id != nil {
 			return []ent.Value{*id}
 		}
-	case workflowrun.EdgeRobotaccount:
-		if id := m.robotaccount; id != nil {
-			return []ent.Value{*id}
-		}
 	case workflowrun.EdgeContractVersion:
 		if id := m.contract_version; id != nil {
 			return []ent.Value{*id}
@@ -12082,7 +11949,7 @@ func (m *WorkflowRunMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *WorkflowRunMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 3)
 	if m.removedcas_backends != nil {
 		edges = append(edges, workflowrun.EdgeCasBackends)
 	}
@@ -12105,12 +11972,9 @@ func (m *WorkflowRunMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *WorkflowRunMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 3)
 	if m.clearedworkflow {
 		edges = append(edges, workflowrun.EdgeWorkflow)
-	}
-	if m.clearedrobotaccount {
-		edges = append(edges, workflowrun.EdgeRobotaccount)
 	}
 	if m.clearedcontract_version {
 		edges = append(edges, workflowrun.EdgeContractVersion)
@@ -12127,8 +11991,6 @@ func (m *WorkflowRunMutation) EdgeCleared(name string) bool {
 	switch name {
 	case workflowrun.EdgeWorkflow:
 		return m.clearedworkflow
-	case workflowrun.EdgeRobotaccount:
-		return m.clearedrobotaccount
 	case workflowrun.EdgeContractVersion:
 		return m.clearedcontract_version
 	case workflowrun.EdgeCasBackends:
@@ -12144,9 +12006,6 @@ func (m *WorkflowRunMutation) ClearEdge(name string) error {
 	case workflowrun.EdgeWorkflow:
 		m.ClearWorkflow()
 		return nil
-	case workflowrun.EdgeRobotaccount:
-		m.ClearRobotaccount()
-		return nil
 	case workflowrun.EdgeContractVersion:
 		m.ClearContractVersion()
 		return nil
@@ -12160,9 +12019,6 @@ func (m *WorkflowRunMutation) ResetEdge(name string) error {
 	switch name {
 	case workflowrun.EdgeWorkflow:
 		m.ResetWorkflow()
-		return nil
-	case workflowrun.EdgeRobotaccount:
-		m.ResetRobotaccount()
 		return nil
 	case workflowrun.EdgeContractVersion:
 		m.ResetContractVersion()

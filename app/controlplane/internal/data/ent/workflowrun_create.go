@@ -12,7 +12,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casbackend"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowcontractversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowrun"
@@ -180,25 +179,6 @@ func (wrc *WorkflowRunCreate) SetNillableWorkflowID(id *uuid.UUID) *WorkflowRunC
 // SetWorkflow sets the "workflow" edge to the Workflow entity.
 func (wrc *WorkflowRunCreate) SetWorkflow(w *Workflow) *WorkflowRunCreate {
 	return wrc.SetWorkflowID(w.ID)
-}
-
-// SetRobotaccountID sets the "robotaccount" edge to the RobotAccount entity by ID.
-func (wrc *WorkflowRunCreate) SetRobotaccountID(id uuid.UUID) *WorkflowRunCreate {
-	wrc.mutation.SetRobotaccountID(id)
-	return wrc
-}
-
-// SetNillableRobotaccountID sets the "robotaccount" edge to the RobotAccount entity by ID if the given value is not nil.
-func (wrc *WorkflowRunCreate) SetNillableRobotaccountID(id *uuid.UUID) *WorkflowRunCreate {
-	if id != nil {
-		wrc = wrc.SetRobotaccountID(*id)
-	}
-	return wrc
-}
-
-// SetRobotaccount sets the "robotaccount" edge to the RobotAccount entity.
-func (wrc *WorkflowRunCreate) SetRobotaccount(r *RobotAccount) *WorkflowRunCreate {
-	return wrc.SetRobotaccountID(r.ID)
 }
 
 // SetContractVersionID sets the "contract_version" edge to the WorkflowContractVersion entity by ID.
@@ -397,23 +377,6 @@ func (wrc *WorkflowRunCreate) createSpec() (*WorkflowRun, *sqlgraph.CreateSpec) 
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.workflow_workflowruns = &nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := wrc.mutation.RobotaccountIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   workflowrun.RobotaccountTable,
-			Columns: []string{workflowrun.RobotaccountColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(robotaccount.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.robot_account_workflowruns = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := wrc.mutation.ContractVersionIDs(); len(nodes) > 0 {

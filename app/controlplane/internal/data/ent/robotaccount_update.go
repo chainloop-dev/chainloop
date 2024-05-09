@@ -14,7 +14,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowrun"
 	"github.com/google/uuid"
 )
 
@@ -77,21 +76,6 @@ func (rau *RobotAccountUpdate) SetWorkflow(w *Workflow) *RobotAccountUpdate {
 	return rau.SetWorkflowID(w.ID)
 }
 
-// AddWorkflowrunIDs adds the "workflowruns" edge to the WorkflowRun entity by IDs.
-func (rau *RobotAccountUpdate) AddWorkflowrunIDs(ids ...uuid.UUID) *RobotAccountUpdate {
-	rau.mutation.AddWorkflowrunIDs(ids...)
-	return rau
-}
-
-// AddWorkflowruns adds the "workflowruns" edges to the WorkflowRun entity.
-func (rau *RobotAccountUpdate) AddWorkflowruns(w ...*WorkflowRun) *RobotAccountUpdate {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
-	}
-	return rau.AddWorkflowrunIDs(ids...)
-}
-
 // Mutation returns the RobotAccountMutation object of the builder.
 func (rau *RobotAccountUpdate) Mutation() *RobotAccountMutation {
 	return rau.mutation
@@ -101,27 +85,6 @@ func (rau *RobotAccountUpdate) Mutation() *RobotAccountMutation {
 func (rau *RobotAccountUpdate) ClearWorkflow() *RobotAccountUpdate {
 	rau.mutation.ClearWorkflow()
 	return rau
-}
-
-// ClearWorkflowruns clears all "workflowruns" edges to the WorkflowRun entity.
-func (rau *RobotAccountUpdate) ClearWorkflowruns() *RobotAccountUpdate {
-	rau.mutation.ClearWorkflowruns()
-	return rau
-}
-
-// RemoveWorkflowrunIDs removes the "workflowruns" edge to WorkflowRun entities by IDs.
-func (rau *RobotAccountUpdate) RemoveWorkflowrunIDs(ids ...uuid.UUID) *RobotAccountUpdate {
-	rau.mutation.RemoveWorkflowrunIDs(ids...)
-	return rau
-}
-
-// RemoveWorkflowruns removes "workflowruns" edges to WorkflowRun entities.
-func (rau *RobotAccountUpdate) RemoveWorkflowruns(w ...*WorkflowRun) *RobotAccountUpdate {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
-	}
-	return rau.RemoveWorkflowrunIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -204,51 +167,6 @@ func (rau *RobotAccountUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if rau.mutation.WorkflowrunsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   robotaccount.WorkflowrunsTable,
-			Columns: []string{robotaccount.WorkflowrunsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := rau.mutation.RemovedWorkflowrunsIDs(); len(nodes) > 0 && !rau.mutation.WorkflowrunsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   robotaccount.WorkflowrunsTable,
-			Columns: []string{robotaccount.WorkflowrunsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := rau.mutation.WorkflowrunsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   robotaccount.WorkflowrunsTable,
-			Columns: []string{robotaccount.WorkflowrunsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	_spec.AddModifiers(rau.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, rau.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -316,21 +234,6 @@ func (rauo *RobotAccountUpdateOne) SetWorkflow(w *Workflow) *RobotAccountUpdateO
 	return rauo.SetWorkflowID(w.ID)
 }
 
-// AddWorkflowrunIDs adds the "workflowruns" edge to the WorkflowRun entity by IDs.
-func (rauo *RobotAccountUpdateOne) AddWorkflowrunIDs(ids ...uuid.UUID) *RobotAccountUpdateOne {
-	rauo.mutation.AddWorkflowrunIDs(ids...)
-	return rauo
-}
-
-// AddWorkflowruns adds the "workflowruns" edges to the WorkflowRun entity.
-func (rauo *RobotAccountUpdateOne) AddWorkflowruns(w ...*WorkflowRun) *RobotAccountUpdateOne {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
-	}
-	return rauo.AddWorkflowrunIDs(ids...)
-}
-
 // Mutation returns the RobotAccountMutation object of the builder.
 func (rauo *RobotAccountUpdateOne) Mutation() *RobotAccountMutation {
 	return rauo.mutation
@@ -340,27 +243,6 @@ func (rauo *RobotAccountUpdateOne) Mutation() *RobotAccountMutation {
 func (rauo *RobotAccountUpdateOne) ClearWorkflow() *RobotAccountUpdateOne {
 	rauo.mutation.ClearWorkflow()
 	return rauo
-}
-
-// ClearWorkflowruns clears all "workflowruns" edges to the WorkflowRun entity.
-func (rauo *RobotAccountUpdateOne) ClearWorkflowruns() *RobotAccountUpdateOne {
-	rauo.mutation.ClearWorkflowruns()
-	return rauo
-}
-
-// RemoveWorkflowrunIDs removes the "workflowruns" edge to WorkflowRun entities by IDs.
-func (rauo *RobotAccountUpdateOne) RemoveWorkflowrunIDs(ids ...uuid.UUID) *RobotAccountUpdateOne {
-	rauo.mutation.RemoveWorkflowrunIDs(ids...)
-	return rauo
-}
-
-// RemoveWorkflowruns removes "workflowruns" edges to WorkflowRun entities.
-func (rauo *RobotAccountUpdateOne) RemoveWorkflowruns(w ...*WorkflowRun) *RobotAccountUpdateOne {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
-	}
-	return rauo.RemoveWorkflowrunIDs(ids...)
 }
 
 // Where appends a list predicates to the RobotAccountUpdate builder.
@@ -466,51 +348,6 @@ func (rauo *RobotAccountUpdateOne) sqlSave(ctx context.Context) (_node *RobotAcc
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if rauo.mutation.WorkflowrunsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   robotaccount.WorkflowrunsTable,
-			Columns: []string{robotaccount.WorkflowrunsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := rauo.mutation.RemovedWorkflowrunsIDs(); len(nodes) > 0 && !rauo.mutation.WorkflowrunsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   robotaccount.WorkflowrunsTable,
-			Columns: []string{robotaccount.WorkflowrunsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := rauo.mutation.WorkflowrunsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   robotaccount.WorkflowrunsTable,
-			Columns: []string{robotaccount.WorkflowrunsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

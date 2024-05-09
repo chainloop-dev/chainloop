@@ -428,10 +428,6 @@ func (s *referrerIntegrationTestSuite) SetupTest() {
 		}, nil)
 	require.NoError(s.T(), err)
 
-	// Robot account
-	robotAccount, err := s.RobotAccount.Create(ctx, "name", s.org1.ID, s.workflow1.ID.String())
-	require.NoError(s.T(), err)
-
 	// Find contract revision
 	contractVersion, err := s.WorkflowContract.Describe(ctx, s.org1.ID, s.workflow1.ContractID.String(), 0)
 	require.NoError(s.T(), err)
@@ -441,7 +437,7 @@ func (s *referrerIntegrationTestSuite) SetupTest() {
 
 	s.run, err = s.WorkflowRun.Create(ctx,
 		&biz.WorkflowRunCreateOpts{
-			WorkflowID: s.workflow1.ID.String(), RobotaccountID: robotAccount.ID.String(), ContractRevision: contractVersion, CASBackendID: casBackend.ID,
+			WorkflowID: s.workflow1.ID.String(), ContractRevision: contractVersion, CASBackendID: casBackend.ID,
 		})
 
 	require.NoError(s.T(), err)

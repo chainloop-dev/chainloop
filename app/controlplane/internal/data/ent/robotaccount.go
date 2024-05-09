@@ -36,11 +36,9 @@ type RobotAccount struct {
 type RobotAccountEdges struct {
 	// Workflow holds the value of the workflow edge.
 	Workflow *Workflow `json:"workflow,omitempty"`
-	// Workflowruns holds the value of the workflowruns edge.
-	Workflowruns []*WorkflowRun `json:"workflowruns,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [1]bool
 }
 
 // WorkflowOrErr returns the Workflow value or an error if the edge
@@ -54,15 +52,6 @@ func (e RobotAccountEdges) WorkflowOrErr() (*Workflow, error) {
 		return e.Workflow, nil
 	}
 	return nil, &NotLoadedError{edge: "workflow"}
-}
-
-// WorkflowrunsOrErr returns the Workflowruns value or an error if the edge
-// was not loaded in eager-loading.
-func (e RobotAccountEdges) WorkflowrunsOrErr() ([]*WorkflowRun, error) {
-	if e.loadedTypes[1] {
-		return e.Workflowruns, nil
-	}
-	return nil, &NotLoadedError{edge: "workflowruns"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -140,11 +129,6 @@ func (ra *RobotAccount) Value(name string) (ent.Value, error) {
 // QueryWorkflow queries the "workflow" edge of the RobotAccount entity.
 func (ra *RobotAccount) QueryWorkflow() *WorkflowQuery {
 	return NewRobotAccountClient(ra.config).QueryWorkflow(ra)
-}
-
-// QueryWorkflowruns queries the "workflowruns" edge of the RobotAccount entity.
-func (ra *RobotAccount) QueryWorkflowruns() *WorkflowRunQuery {
-	return NewRobotAccountClient(ra.config).QueryWorkflowruns(ra)
 }
 
 // Update returns a builder for updating this RobotAccount.

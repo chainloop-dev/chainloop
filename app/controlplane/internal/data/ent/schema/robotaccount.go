@@ -49,8 +49,5 @@ func (RobotAccount) Edges() []ent.Edge {
 		edge.From("workflow", Workflow.Type).
 			Ref("robotaccounts").
 			Unique(),
-
-		// WorkflowRuns have a reference to the used key for reference
-		edge.To("workflowruns", WorkflowRun.Type),
 	}
 }
