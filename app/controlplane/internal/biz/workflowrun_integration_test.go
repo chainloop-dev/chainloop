@@ -41,7 +41,7 @@ func (s *workflowRunIntegrationTestSuite) TestList() {
 	// Create a finished run
 	finishedRun, err := s.WorkflowRun.Create(context.Background(),
 		&biz.WorkflowRunCreateOpts{
-			WorkflowID: s.workflowOrg2.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			WorkflowID: s.workflowOrg2.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
 		})
 	s.NoError(err)
 	err = s.WorkflowRun.MarkAsFinished(context.Background(), finishedRun.ID.String(), biz.WorkflowRunSuccess, "")
@@ -119,7 +119,7 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 
 	s.T().Run("valid workflowRun", func(t *testing.T) {
 		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
-			WorkflowID: s.workflowOrg1.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
 		})
 		assert.NoError(err)
 
@@ -241,7 +241,7 @@ func (s *workflowRunIntegrationTestSuite) TestCreate() {
 
 	s.T().Run("valid workflowRun", func(t *testing.T) {
 		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
-			WorkflowID: s.workflowOrg1.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
 			RunnerType: "runnerType", RunnerRunURL: "runURL",
 		})
 		assert.NoError(err)
@@ -263,7 +263,7 @@ func (s *workflowRunIntegrationTestSuite) TestContractInformation() {
 	ctx := context.Background()
 	s.Run("if it's the first revision of the contract it matches", func() {
 		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
-			WorkflowID: s.workflowOrg1.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
 			RunnerType: "runnerType", RunnerRunURL: "runURL",
 		})
 		s.NoError(err)
@@ -281,7 +281,7 @@ func (s *workflowRunIntegrationTestSuite) TestContractInformation() {
 		updatedContractRevision.Version = s.contractVersion.Version
 
 		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
-			WorkflowID: s.workflowOrg1.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevision: updatedContractRevision, CASBackendID: s.casBackend.ID,
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: updatedContractRevision, CASBackendID: s.casBackend.ID,
 			RunnerType: "runnerType", RunnerRunURL: "runURL",
 		})
 		s.NoError(err)
@@ -307,7 +307,6 @@ type workflowRunTestData struct {
 	casBackend                                     *biz.CASBackend
 	workflowOrg1, workflowOrg2, workflowPublicOrg2 *biz.Workflow
 	runOrg1, runOrg2, runOrg2Public                *biz.WorkflowRun
-	robotAccount                                   *biz.RobotAccount
 	contractVersion                                *biz.WorkflowContractWithVersion
 	digestAtt1, digestAttOrg2, digestAttPublic     string
 }
@@ -340,10 +339,6 @@ func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, 
 	s.workflowPublicOrg2, err = suite.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test-public-workflow", OrgID: s.org2.ID, Public: true})
 	assert.NoError(err)
 
-	// Robot account
-	s.robotAccount, err = suite.RobotAccount.Create(ctx, "name", s.org.ID, s.workflowOrg1.ID.String())
-	assert.NoError(err)
-
 	// Find contract revision
 	s.contractVersion, err = suite.WorkflowContract.Describe(ctx, s.org.ID, s.workflowOrg1.ContractID.String(), 0)
 	assert.NoError(err)
@@ -354,7 +349,7 @@ func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, 
 	// Let's create 3 runs, one in org1 and 2 in org2 (one public)
 	s.runOrg1, err = suite.WorkflowRun.Create(ctx,
 		&biz.WorkflowRunCreateOpts{
-			WorkflowID: s.workflowOrg1.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
 		})
 	assert.NoError(err)
 	s.digestAtt1, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg1.ID.String(), testEnvelope(t, "testdata/attestations/full.json"))
@@ -363,7 +358,7 @@ func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, 
 
 	s.runOrg2, err = suite.WorkflowRun.Create(ctx,
 		&biz.WorkflowRunCreateOpts{
-			WorkflowID: s.workflowOrg2.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			WorkflowID: s.workflowOrg2.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
 		})
 	assert.NoError(err)
 	s.digestAttOrg2, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2.ID.String(), testEnvelope(t, "testdata/attestations/empty.json"))
@@ -371,7 +366,7 @@ func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, 
 
 	s.runOrg2Public, err = suite.WorkflowRun.Create(ctx,
 		&biz.WorkflowRunCreateOpts{
-			WorkflowID: s.workflowPublicOrg2.ID.String(), RobotaccountID: s.robotAccount.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			WorkflowID: s.workflowPublicOrg2.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
 		})
 	assert.NoError(err)
 	s.digestAttPublic, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2Public.ID.String(), testEnvelope(t, "testdata/attestations/with-string.json"))

@@ -359,22 +359,18 @@ func (s *casMappingIntegrationSuite) SetupTest() {
 	publicWorkflow, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test-workflow-public", OrgID: s.org1.ID, Public: true})
 	assert.NoError(err)
 
-	// Robot account
-	robotAccount, err := s.RobotAccount.Create(ctx, "name", s.org1.ID, workflow.ID.String())
-	assert.NoError(err)
-
 	// Find contract revision
 	contractVersion, err := s.WorkflowContract.Describe(ctx, s.org1.ID, workflow.ContractID.String(), 0)
 	assert.NoError(err)
 
 	s.workflowRun, err = s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
-		WorkflowID: workflow.ID.String(), RobotaccountID: robotAccount.ID.String(), ContractRevision: contractVersion, CASBackendID: s.casBackend1.ID,
+		WorkflowID: workflow.ID.String(), ContractRevision: contractVersion, CASBackendID: s.casBackend1.ID,
 		RunnerType: "runnerType", RunnerRunURL: "runURL",
 	})
 	assert.NoError(err)
 
 	s.publicWorkflowRun, err = s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
-		WorkflowID: publicWorkflow.ID.String(), RobotaccountID: robotAccount.ID.String(), ContractRevision: contractVersion, CASBackendID: s.casBackend1.ID,
+		WorkflowID: publicWorkflow.ID.String(), ContractRevision: contractVersion, CASBackendID: s.casBackend1.ID,
 		RunnerType: "runnerType", RunnerRunURL: "runURL",
 	})
 	assert.NoError(err)
