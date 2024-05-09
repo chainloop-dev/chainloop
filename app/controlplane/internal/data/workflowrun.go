@@ -49,7 +49,6 @@ func NewWorkflowRunRepo(data *Data, logger log.Logger) biz.WorkflowRunRepo {
 func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoCreateOpts) (*biz.WorkflowRun, error) {
 	// Find the contract to calculate the revisions
 	p, err := r.data.db.WorkflowRun.Create().
-		SetRobotaccountID(opts.RobotaccountID).
 		SetWorkflowID(opts.WorkflowID).
 		SetContractVersionID(opts.SchemaVersionID).
 		SetRunURL(opts.RunURL).

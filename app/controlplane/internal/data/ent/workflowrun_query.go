@@ -13,7 +13,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/predicate"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowcontractversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowrun"
@@ -28,7 +27,6 @@ type WorkflowRunQuery struct {
 	inters              []Interceptor
 	predicates          []predicate.WorkflowRun
 	withWorkflow        *WorkflowQuery
-	withRobotaccount    *RobotAccountQuery
 	withContractVersion *WorkflowContractVersionQuery
 	withCasBackends     *CASBackendQuery
 	withFKs             bool
@@ -84,28 +82,6 @@ func (wrq *WorkflowRunQuery) QueryWorkflow() *WorkflowQuery {
 			sqlgraph.From(workflowrun.Table, workflowrun.FieldID, selector),
 			sqlgraph.To(workflow.Table, workflow.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, workflowrun.WorkflowTable, workflowrun.WorkflowColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(wrq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryRobotaccount chains the current query on the "robotaccount" edge.
-func (wrq *WorkflowRunQuery) QueryRobotaccount() *RobotAccountQuery {
-	query := (&RobotAccountClient{config: wrq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := wrq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := wrq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(workflowrun.Table, workflowrun.FieldID, selector),
-			sqlgraph.To(robotaccount.Table, robotaccount.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, workflowrun.RobotaccountTable, workflowrun.RobotaccountColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(wrq.driver.Dialect(), step)
 		return fromU, nil
@@ -350,7 +326,6 @@ func (wrq *WorkflowRunQuery) Clone() *WorkflowRunQuery {
 		inters:              append([]Interceptor{}, wrq.inters...),
 		predicates:          append([]predicate.WorkflowRun{}, wrq.predicates...),
 		withWorkflow:        wrq.withWorkflow.Clone(),
-		withRobotaccount:    wrq.withRobotaccount.Clone(),
 		withContractVersion: wrq.withContractVersion.Clone(),
 		withCasBackends:     wrq.withCasBackends.Clone(),
 		// clone intermediate query.
@@ -367,17 +342,6 @@ func (wrq *WorkflowRunQuery) WithWorkflow(opts ...func(*WorkflowQuery)) *Workflo
 		opt(query)
 	}
 	wrq.withWorkflow = query
-	return wrq
-}
-
-// WithRobotaccount tells the query-builder to eager-load the nodes that are connected to
-// the "robotaccount" edge. The optional arguments are used to configure the query builder of the edge.
-func (wrq *WorkflowRunQuery) WithRobotaccount(opts ...func(*RobotAccountQuery)) *WorkflowRunQuery {
-	query := (&RobotAccountClient{config: wrq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	wrq.withRobotaccount = query
 	return wrq
 }
 
@@ -482,14 +446,13 @@ func (wrq *WorkflowRunQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 		nodes       = []*WorkflowRun{}
 		withFKs     = wrq.withFKs
 		_spec       = wrq.querySpec()
-		loadedTypes = [4]bool{
+		loadedTypes = [3]bool{
 			wrq.withWorkflow != nil,
-			wrq.withRobotaccount != nil,
 			wrq.withContractVersion != nil,
 			wrq.withCasBackends != nil,
 		}
 	)
-	if wrq.withWorkflow != nil || wrq.withRobotaccount != nil || wrq.withContractVersion != nil {
+	if wrq.withWorkflow != nil || wrq.withContractVersion != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -519,12 +482,6 @@ func (wrq *WorkflowRunQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	if query := wrq.withWorkflow; query != nil {
 		if err := wrq.loadWorkflow(ctx, query, nodes, nil,
 			func(n *WorkflowRun, e *Workflow) { n.Edges.Workflow = e }); err != nil {
-			return nil, err
-		}
-	}
-	if query := wrq.withRobotaccount; query != nil {
-		if err := wrq.loadRobotaccount(ctx, query, nodes, nil,
-			func(n *WorkflowRun, e *RobotAccount) { n.Edges.Robotaccount = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -569,38 +526,6 @@ func (wrq *WorkflowRunQuery) loadWorkflow(ctx context.Context, query *WorkflowQu
 		nodes, ok := nodeids[n.ID]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "workflow_workflowruns" returned %v`, n.ID)
-		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
-	}
-	return nil
-}
-func (wrq *WorkflowRunQuery) loadRobotaccount(ctx context.Context, query *RobotAccountQuery, nodes []*WorkflowRun, init func(*WorkflowRun), assign func(*WorkflowRun, *RobotAccount)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*WorkflowRun)
-	for i := range nodes {
-		if nodes[i].robot_account_workflowruns == nil {
-			continue
-		}
-		fk := *nodes[i].robot_account_workflowruns
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
-	}
-	if len(ids) == 0 {
-		return nil
-	}
-	query.Where(robotaccount.IDIn(ids...))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "robot_account_workflowruns" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)

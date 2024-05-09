@@ -1854,22 +1854,6 @@ func (c *RobotAccountClient) QueryWorkflow(ra *RobotAccount) *WorkflowQuery {
 	return query
 }
 
-// QueryWorkflowruns queries the workflowruns edge of a RobotAccount.
-func (c *RobotAccountClient) QueryWorkflowruns(ra *RobotAccount) *WorkflowRunQuery {
-	query := (&WorkflowRunClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := ra.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(robotaccount.Table, robotaccount.FieldID, id),
-			sqlgraph.To(workflowrun.Table, workflowrun.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, robotaccount.WorkflowrunsTable, robotaccount.WorkflowrunsColumn),
-		)
-		fromV = sqlgraph.Neighbors(ra.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // Hooks returns the client hooks.
 func (c *RobotAccountClient) Hooks() []Hook {
 	return c.hooks.RobotAccount
@@ -2645,22 +2629,6 @@ func (c *WorkflowRunClient) QueryWorkflow(wr *WorkflowRun) *WorkflowQuery {
 			sqlgraph.From(workflowrun.Table, workflowrun.FieldID, id),
 			sqlgraph.To(workflow.Table, workflow.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, workflowrun.WorkflowTable, workflowrun.WorkflowColumn),
-		)
-		fromV = sqlgraph.Neighbors(wr.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryRobotaccount queries the robotaccount edge of a WorkflowRun.
-func (c *WorkflowRunClient) QueryRobotaccount(wr *WorkflowRun) *RobotAccountQuery {
-	query := (&RobotAccountClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := wr.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(workflowrun.Table, workflowrun.FieldID, id),
-			sqlgraph.To(robotaccount.Table, robotaccount.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, workflowrun.RobotaccountTable, workflowrun.RobotaccountColumn),
 		)
 		fromV = sqlgraph.Neighbors(wr.driver.Dialect(), step)
 		return fromV, nil

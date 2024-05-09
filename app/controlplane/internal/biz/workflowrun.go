@@ -160,28 +160,23 @@ func (uc *WorkflowRunExpirerUseCase) ExpirationSweep(ctx context.Context, olderT
 }
 
 type WorkflowRunCreateOpts struct {
-	WorkflowID, RobotaccountID string
-	ContractRevision           *WorkflowContractWithVersion
-	RunnerRunURL               string
-	RunnerType                 string
-	CASBackendID               uuid.UUID
+	WorkflowID       string
+	ContractRevision *WorkflowContractWithVersion
+	RunnerRunURL     string
+	RunnerType       string
+	CASBackendID     uuid.UUID
 }
 
 type WorkflowRunRepoCreateOpts struct {
-	WorkflowID, RobotaccountID, SchemaVersionID uuid.UUID
-	RunURL, RunnerType                          string
-	Backends                                    []uuid.UUID
-	LatestRevision, UsedRevision                int
+	WorkflowID, SchemaVersionID  uuid.UUID
+	RunURL, RunnerType           string
+	Backends                     []uuid.UUID
+	LatestRevision, UsedRevision int
 }
 
 // Create will add a new WorkflowRun, associate it to a schemaVersion and increment the counter in the associated workflow
 func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreateOpts) (*WorkflowRun, error) {
 	workflowUUID, err := uuid.Parse(opts.WorkflowID)
-	if err != nil {
-		return nil, err
-	}
-
-	robotaccountUUID, err := uuid.Parse(opts.RobotaccountID)
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +196,6 @@ func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreat
 	run, err := uc.wfRunRepo.Create(ctx,
 		&WorkflowRunRepoCreateOpts{
 			WorkflowID:      workflowUUID,
-			RobotaccountID:  robotaccountUUID,
 			SchemaVersionID: contractRevision.Version.ID,
 			RunURL:          opts.RunnerRunURL,
 			RunnerType:      opts.RunnerType,

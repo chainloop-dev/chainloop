@@ -41,8 +41,6 @@ const (
 	FieldContractRevisionLatest = "contract_revision_latest"
 	// EdgeWorkflow holds the string denoting the workflow edge name in mutations.
 	EdgeWorkflow = "workflow"
-	// EdgeRobotaccount holds the string denoting the robotaccount edge name in mutations.
-	EdgeRobotaccount = "robotaccount"
 	// EdgeContractVersion holds the string denoting the contract_version edge name in mutations.
 	EdgeContractVersion = "contract_version"
 	// EdgeCasBackends holds the string denoting the cas_backends edge name in mutations.
@@ -56,13 +54,6 @@ const (
 	WorkflowInverseTable = "workflows"
 	// WorkflowColumn is the table column denoting the workflow relation/edge.
 	WorkflowColumn = "workflow_workflowruns"
-	// RobotaccountTable is the table that holds the robotaccount relation/edge.
-	RobotaccountTable = "workflow_runs"
-	// RobotaccountInverseTable is the table name for the RobotAccount entity.
-	// It exists in this package in order to avoid circular dependency with the "robotaccount" package.
-	RobotaccountInverseTable = "robot_accounts"
-	// RobotaccountColumn is the table column denoting the robotaccount relation/edge.
-	RobotaccountColumn = "robot_account_workflowruns"
 	// ContractVersionTable is the table that holds the contract_version relation/edge.
 	ContractVersionTable = "workflow_runs"
 	// ContractVersionInverseTable is the table name for the WorkflowContractVersion entity.
@@ -96,7 +87,6 @@ var Columns = []string{
 // ForeignKeys holds the SQL foreign-keys that are owned by the "workflow_runs"
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
-	"robot_account_workflowruns",
 	"workflow_workflowruns",
 	"workflow_run_contract_version",
 }
@@ -201,13 +191,6 @@ func ByWorkflowField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
-// ByRobotaccountField orders the results by robotaccount field.
-func ByRobotaccountField(field string, opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newRobotaccountStep(), sql.OrderByField(field, opts...))
-	}
-}
-
 // ByContractVersionField orders the results by contract_version field.
 func ByContractVersionField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -233,13 +216,6 @@ func newWorkflowStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(WorkflowInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, WorkflowTable, WorkflowColumn),
-	)
-}
-func newRobotaccountStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(RobotaccountInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, true, RobotaccountTable, RobotaccountColumn),
 	)
 }
 func newContractVersionStep() *sqlgraph.Step {

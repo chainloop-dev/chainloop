@@ -440,7 +440,6 @@ var (
 		{Name: "attestation_state", Type: field.TypeBytes, Nullable: true},
 		{Name: "contract_revision_used", Type: field.TypeInt},
 		{Name: "contract_revision_latest", Type: field.TypeInt},
-		{Name: "robot_account_workflowruns", Type: field.TypeUUID, Nullable: true},
 		{Name: "workflow_workflowruns", Type: field.TypeUUID, Nullable: true},
 		{Name: "workflow_run_contract_version", Type: field.TypeUUID, Nullable: true},
 	}
@@ -451,20 +450,14 @@ var (
 		PrimaryKey: []*schema.Column{WorkflowRunsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "workflow_runs_robot_accounts_workflowruns",
-				Columns:    []*schema.Column{WorkflowRunsColumns[12]},
-				RefColumns: []*schema.Column{RobotAccountsColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-			{
 				Symbol:     "workflow_runs_workflows_workflowruns",
-				Columns:    []*schema.Column{WorkflowRunsColumns[13]},
+				Columns:    []*schema.Column{WorkflowRunsColumns[12]},
 				RefColumns: []*schema.Column{WorkflowsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "workflow_runs_workflow_contract_versions_contract_version",
-				Columns:    []*schema.Column{WorkflowRunsColumns[14]},
+				Columns:    []*schema.Column{WorkflowRunsColumns[13]},
 				RefColumns: []*schema.Column{WorkflowContractVersionsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -603,9 +596,8 @@ func init() {
 	WorkflowsTable.ForeignKeys[1].RefTable = WorkflowContractsTable
 	WorkflowContractsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	WorkflowContractVersionsTable.ForeignKeys[0].RefTable = WorkflowContractsTable
-	WorkflowRunsTable.ForeignKeys[0].RefTable = RobotAccountsTable
-	WorkflowRunsTable.ForeignKeys[1].RefTable = WorkflowsTable
-	WorkflowRunsTable.ForeignKeys[2].RefTable = WorkflowContractVersionsTable
+	WorkflowRunsTable.ForeignKeys[0].RefTable = WorkflowsTable
+	WorkflowRunsTable.ForeignKeys[1].RefTable = WorkflowContractVersionsTable
 	ReferrerReferencesTable.ForeignKeys[0].RefTable = ReferrersTable
 	ReferrerReferencesTable.ForeignKeys[1].RefTable = ReferrersTable
 	ReferrerWorkflowsTable.ForeignKeys[0].RefTable = ReferrersTable

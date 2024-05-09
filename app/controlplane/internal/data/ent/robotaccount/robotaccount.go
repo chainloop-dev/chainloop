@@ -23,8 +23,6 @@ const (
 	FieldRevokedAt = "revoked_at"
 	// EdgeWorkflow holds the string denoting the workflow edge name in mutations.
 	EdgeWorkflow = "workflow"
-	// EdgeWorkflowruns holds the string denoting the workflowruns edge name in mutations.
-	EdgeWorkflowruns = "workflowruns"
 	// Table holds the table name of the robotaccount in the database.
 	Table = "robot_accounts"
 	// WorkflowTable is the table that holds the workflow relation/edge.
@@ -34,13 +32,6 @@ const (
 	WorkflowInverseTable = "workflows"
 	// WorkflowColumn is the table column denoting the workflow relation/edge.
 	WorkflowColumn = "workflow_robotaccounts"
-	// WorkflowrunsTable is the table that holds the workflowruns relation/edge.
-	WorkflowrunsTable = "workflow_runs"
-	// WorkflowrunsInverseTable is the table name for the WorkflowRun entity.
-	// It exists in this package in order to avoid circular dependency with the "workflowrun" package.
-	WorkflowrunsInverseTable = "workflow_runs"
-	// WorkflowrunsColumn is the table column denoting the workflowruns relation/edge.
-	WorkflowrunsColumn = "robot_account_workflowruns"
 )
 
 // Columns holds all SQL columns for robotaccount fields.
@@ -108,31 +99,10 @@ func ByWorkflowField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newWorkflowStep(), sql.OrderByField(field, opts...))
 	}
 }
-
-// ByWorkflowrunsCount orders the results by workflowruns count.
-func ByWorkflowrunsCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newWorkflowrunsStep(), opts...)
-	}
-}
-
-// ByWorkflowruns orders the results by workflowruns terms.
-func ByWorkflowruns(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newWorkflowrunsStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
 func newWorkflowStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(WorkflowInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, WorkflowTable, WorkflowColumn),
-	)
-}
-func newWorkflowrunsStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(WorkflowrunsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, WorkflowrunsTable, WorkflowrunsColumn),
 	)
 }

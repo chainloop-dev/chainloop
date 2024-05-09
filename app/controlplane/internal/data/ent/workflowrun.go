@@ -11,7 +11,6 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowcontractversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data/ent/workflowrun"
@@ -49,7 +48,6 @@ type WorkflowRun struct {
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the WorkflowRunQuery when eager-loading is set.
 	Edges                         WorkflowRunEdges `json:"edges"`
-	robot_account_workflowruns    *uuid.UUID
 	workflow_workflowruns         *uuid.UUID
 	workflow_run_contract_version *uuid.UUID
 	selectValues                  sql.SelectValues
@@ -59,15 +57,13 @@ type WorkflowRun struct {
 type WorkflowRunEdges struct {
 	// Workflow holds the value of the workflow edge.
 	Workflow *Workflow `json:"workflow,omitempty"`
-	// Robotaccount holds the value of the robotaccount edge.
-	Robotaccount *RobotAccount `json:"robotaccount,omitempty"`
 	// ContractVersion holds the value of the contract_version edge.
 	ContractVersion *WorkflowContractVersion `json:"contract_version,omitempty"`
 	// CasBackends holds the value of the cas_backends edge.
 	CasBackends []*CASBackend `json:"cas_backends,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [3]bool
 }
 
 // WorkflowOrErr returns the Workflow value or an error if the edge
@@ -83,23 +79,10 @@ func (e WorkflowRunEdges) WorkflowOrErr() (*Workflow, error) {
 	return nil, &NotLoadedError{edge: "workflow"}
 }
 
-// RobotaccountOrErr returns the Robotaccount value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e WorkflowRunEdges) RobotaccountOrErr() (*RobotAccount, error) {
-	if e.loadedTypes[1] {
-		if e.Robotaccount == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: robotaccount.Label}
-		}
-		return e.Robotaccount, nil
-	}
-	return nil, &NotLoadedError{edge: "robotaccount"}
-}
-
 // ContractVersionOrErr returns the ContractVersion value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e WorkflowRunEdges) ContractVersionOrErr() (*WorkflowContractVersion, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[1] {
 		if e.ContractVersion == nil {
 			// Edge was loaded but was not found.
 			return nil, &NotFoundError{label: workflowcontractversion.Label}
@@ -112,7 +95,7 @@ func (e WorkflowRunEdges) ContractVersionOrErr() (*WorkflowContractVersion, erro
 // CasBackendsOrErr returns the CasBackends value or an error if the edge
 // was not loaded in eager-loading.
 func (e WorkflowRunEdges) CasBackendsOrErr() ([]*CASBackend, error) {
-	if e.loadedTypes[3] {
+	if e.loadedTypes[2] {
 		return e.CasBackends, nil
 	}
 	return nil, &NotLoadedError{edge: "cas_backends"}
@@ -133,11 +116,9 @@ func (*WorkflowRun) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullTime)
 		case workflowrun.FieldID:
 			values[i] = new(uuid.UUID)
-		case workflowrun.ForeignKeys[0]: // robot_account_workflowruns
+		case workflowrun.ForeignKeys[0]: // workflow_workflowruns
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
-		case workflowrun.ForeignKeys[1]: // workflow_workflowruns
-			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
-		case workflowrun.ForeignKeys[2]: // workflow_run_contract_version
+		case workflowrun.ForeignKeys[1]: // workflow_run_contract_version
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			values[i] = new(sql.UnknownType)
@@ -230,19 +211,12 @@ func (wr *WorkflowRun) assignValues(columns []string, values []any) error {
 			}
 		case workflowrun.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
-				return fmt.Errorf("unexpected type %T for field robot_account_workflowruns", values[i])
-			} else if value.Valid {
-				wr.robot_account_workflowruns = new(uuid.UUID)
-				*wr.robot_account_workflowruns = *value.S.(*uuid.UUID)
-			}
-		case workflowrun.ForeignKeys[1]:
-			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field workflow_workflowruns", values[i])
 			} else if value.Valid {
 				wr.workflow_workflowruns = new(uuid.UUID)
 				*wr.workflow_workflowruns = *value.S.(*uuid.UUID)
 			}
-		case workflowrun.ForeignKeys[2]:
+		case workflowrun.ForeignKeys[1]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field workflow_run_contract_version", values[i])
 			} else if value.Valid {
@@ -265,11 +239,6 @@ func (wr *WorkflowRun) Value(name string) (ent.Value, error) {
 // QueryWorkflow queries the "workflow" edge of the WorkflowRun entity.
 func (wr *WorkflowRun) QueryWorkflow() *WorkflowQuery {
 	return NewWorkflowRunClient(wr.config).QueryWorkflow(wr)
-}
-
-// QueryRobotaccount queries the "robotaccount" edge of the WorkflowRun entity.
-func (wr *WorkflowRun) QueryRobotaccount() *RobotAccountQuery {
-	return NewWorkflowRunClient(wr.config).QueryRobotaccount(wr)
 }
 
 // QueryContractVersion queries the "contract_version" edge of the WorkflowRun entity.
