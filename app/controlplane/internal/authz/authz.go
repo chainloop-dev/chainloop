@@ -101,8 +101,10 @@ var (
 	PolicyWorkflowRunList = &Policy{ResourceWorkflowRun, ActionList}
 	PolicyWorkflowRunRead = &Policy{ResourceWorkflowRun, ActionRead}
 	// Workflow
-	PolicyWorkflowList = &Policy{ResourceWorkflow, ActionList}
-	PolicyWorkflowRead = &Policy{ResourceWorkflow, ActionRead}
+	PolicyWorkflowList   = &Policy{ResourceWorkflow, ActionList}
+	PolicyWorkflowRead   = &Policy{ResourceWorkflow, ActionRead}
+	PolicyWorkflowCreate = &Policy{ResourceWorkflow, ActionCreate}
+
 	// User Membership
 	PolicyOrganizationRead = &Policy{Organization, ActionRead}
 )
