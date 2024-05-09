@@ -18,10 +18,9 @@ package authz
 
 import (
 	"context"
+	_ "embed"
 	"errors"
 	"fmt"
-
-	_ "embed"
 
 	psqlwatcher "github.com/IguteChung/casbin-psql-watcher"
 	"github.com/casbin/casbin/v2"
@@ -181,8 +180,9 @@ var ServerOperationsMap = map[string][]*Policy{
 	// Robot Account
 	"/controlplane.v1.RobotAccountService/List": {PolicyRobotAccountList},
 	// Workflows
-	"/controlplane.v1.WorkflowService/List": {PolicyWorkflowList},
-	"/controlplane.v1.WorkflowService/View": {PolicyWorkflowRead},
+	"/controlplane.v1.WorkflowService/List":   {PolicyWorkflowList},
+	"/controlplane.v1.WorkflowService/View":   {PolicyWorkflowRead},
+	"/controlplane.v1.WorkflowService/Create": {PolicyWorkflowCreate},
 	// WorkflowRun
 	"/controlplane.v1.WorkflowRunService/List": {PolicyWorkflowRunList},
 	"/controlplane.v1.WorkflowRunService/View": {PolicyWorkflowRunRead},
