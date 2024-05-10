@@ -150,7 +150,7 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 		return attestationResult, nil
 	}
 
-	attestationResult.Digest, err = pushToControlPlane(ctx, action.ActionsOpts.CPConnection, envelope, action.c.CraftingState.Attestation.GetWorkflow().GetWorkflowRunId())
+	attestationResult.Digest, err = pushToControlPlane(ctx, action.ActionsOpts.CPConnection, envelope, action.c.CraftingState.Attestation.GetWorkflow().GetWorkflowRunId(), action.c.CraftingState.Attestation.GetWorkflow().GetName())
 	if err != nil {
 		return nil, fmt.Errorf("pushing to control plane: %w", err)
 	}
@@ -165,7 +165,7 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	return attestationResult, nil
 }
 
-func pushToControlPlane(ctx context.Context, conn *grpc.ClientConn, envelope *dsse.Envelope, workflowRunID string) (string, error) {
+func pushToControlPlane(ctx context.Context, conn *grpc.ClientConn, envelope *dsse.Envelope, workflowRunID string, workflowName string) (string, error) {
 	encodedAttestation, err := encodeEnvelope(envelope)
 	if err != nil {
 		return "", fmt.Errorf("encoding attestation: %w", err)
@@ -175,6 +175,7 @@ func pushToControlPlane(ctx context.Context, conn *grpc.ClientConn, envelope *ds
 	resp, err := client.Store(ctx, &pb.AttestationServiceStoreRequest{
 		Attestation:   encodedAttestation,
 		WorkflowRunId: workflowRunID,
+		WorkflowName:  workflowName,
 	})
 
 	if err != nil {

@@ -82,6 +82,7 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 	creds, err := client.GetUploadCreds(ctx,
 		&pb.AttestationServiceGetUploadCredsRequest{
 			WorkflowRunId: action.c.CraftingState.GetAttestation().GetWorkflow().GetWorkflowRunId(),
+			WorkflowName:  action.c.CraftingState.GetAttestation().GetWorkflow().GetName(),
 		},
 	)
 	if err != nil {
