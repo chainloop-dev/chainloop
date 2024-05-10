@@ -19,12 +19,11 @@ import (
 	"context"
 	"errors"
 
-	"github.com/go-kratos/kratos/v2/log"
-
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/robotaccount"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
+	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware"
-	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 )
 
 type RobotAccount struct {
@@ -50,14 +49,19 @@ type currentRobotAccountCtxKey struct{}
 func WithCurrentRobotAccount(robotAccountUseCase *biz.RobotAccountUseCase, logger *log.Helper) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
-			rawClaims, ok := jwtMiddleware.FromContext(ctx)
+			authInfo, ok := attjwtmiddleware.FromJWTAuthContext(ctx)
 			// If not found means that there is no currentUser
 			if !ok {
 				logger.Warn("couldn't extract robot account, JWT parser middleware not running before this one?")
 				return nil, errors.New("can't extract info from the token")
 			}
 
-			claims, ok := rawClaims.(*robotaccount.CustomClaims)
+			// If the token is not a robot account token, we don't need to do anything
+			if authInfo.ProviderKey != attjwtmiddleware.RobotAccountProviderKey {
+				return handler(ctx, req)
+			}
+
+			claims, ok := authInfo.Claims.(*robotaccount.CustomClaims)
 			if !ok {
 				return nil, errors.New("error mapping the claims")
 			}

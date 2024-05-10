@@ -47,6 +47,7 @@ type WorkflowRepo interface {
 	GetOrgScopedByName(ctx context.Context, orgID uuid.UUID, workflowName string) (*Workflow, error)
 	IncRunsCounter(ctx context.Context, workflowID uuid.UUID) error
 	FindByID(ctx context.Context, workflowID uuid.UUID) (*Workflow, error)
+	FindByName(ctx context.Context, workflowName string) (*Workflow, error)
 	SoftDelete(ctx context.Context, workflowID uuid.UUID) error
 }
 
@@ -209,6 +210,14 @@ func (uc *WorkflowUseCase) FindByID(ctx context.Context, workflowID string) (*Wo
 	}
 
 	return uc.wfRepo.FindByID(ctx, workflowUUID)
+}
+
+func (uc *WorkflowUseCase) FindByName(ctx context.Context, workflowName string) (*Workflow, error) {
+	if workflowName == "" {
+		return nil, NewErrValidationStr("empty workflow name")
+	}
+
+	return uc.wfRepo.FindByName(ctx, workflowName)
 }
 
 func (uc *WorkflowUseCase) FindByIDInOrg(ctx context.Context, orgID, workflowID string) (*Workflow, error) {

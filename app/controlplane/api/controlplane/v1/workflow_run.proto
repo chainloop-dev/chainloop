@@ -43,6 +43,9 @@ service WorkflowRunService {
 
 message AttestationServiceGetContractRequest {
   int32 contract_revision = 1;
+  // This parameter is not needed by Robot Account since they have the workflowID embedded.
+  // API Tokens will send the parameter explicitly
+  string workflow_name = 2;
 }
 
 message AttestationServiceGetContractResponse {
@@ -58,6 +61,9 @@ message AttestationServiceInitRequest {
   int32 contract_revision = 1;
   string job_url = 2;
   workflowcontract.v1.CraftingSchema.Runner.RunnerType runner = 3;
+  // This parameter is not needed by Robot Account since they have the workflowID embedded.
+  // API Tokens will send the parameter explicitly
+  string workflow_name = 4;
 }
 
 message AttestationServiceInitResponse {
@@ -74,6 +80,9 @@ message AttestationServiceStoreRequest {
   // encoded DSEE envelope
   bytes attestation = 1 [(buf.validate.field).bytes.min_len = 1];
   string workflow_run_id = 2 [(buf.validate.field).string = {min_len: 1}];
+  // This parameter is not needed by Robot Account since they have the workflowID embedded.
+  // API Tokens will send the parameter explicitly
+  string workflow_name = 3;
 }
 
 message AttestationServiceStoreResponse {
@@ -91,6 +100,9 @@ message AttestationServiceCancelRequest {
     not_in: [0]
   }];
   string reason = 3;
+  // This parameter is not needed by Robot Account since they have the workflowID embedded.
+  // API Tokens will send the parameter explicitly
+  string workflow_name = 4;
 
   enum TriggerType {
     TRIGGER_TYPE_UNSPECIFIED = 0;
@@ -137,6 +149,9 @@ message WorkflowRunServiceViewResponse {
 
 message AttestationServiceGetUploadCredsRequest {
   string workflow_run_id = 1;
+  // This parameter is not needed by Robot Account since they have the workflowID embedded.
+  // API Tokens will send the parameter explicitly
+  string workflow_name = 2;
 }
 
 message AttestationServiceGetUploadCredsResponse {

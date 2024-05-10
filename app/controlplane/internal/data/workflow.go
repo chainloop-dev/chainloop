@@ -203,10 +203,32 @@ func (r *WorkflowRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Workflo
 		Where(workflow.DeletedAtIsNil(), workflow.ID(id)).
 		WithContract().WithOrganization().
 		Only(ctx)
-	if err != nil && !ent.IsNotFound(err) {
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, biz.NewErrNotFound("workflow")
+		}
 		return nil, err
-	} else if workflow == nil {
-		return nil, nil
+	}
+
+	// Not efficient, we need to do a query limit = 1 grouped by workflowID
+	lastRun, err := getLastRun(ctx, workflow)
+	if err != nil {
+		return nil, err
+	}
+
+	return entWFToBizWF(workflow, lastRun)
+}
+
+func (r *WorkflowRepo) FindByName(ctx context.Context, name string) (*biz.Workflow, error) {
+	workflow, err := r.data.db.Workflow.Query().
+		Where(workflow.DeletedAtIsNil(), workflow.Name(name)).
+		WithContract().WithOrganization().
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, biz.NewErrNotFound("workflow")
+		}
+		return nil, err
 	}
 
 	// Not efficient, we need to do a query limit = 1 grouped by workflowID

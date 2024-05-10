@@ -88,9 +88,9 @@ func NewAttestationService(opts *NewAttestationServiceOpts) *AttestationService 
 }
 
 func (s *AttestationService) GetContract(ctx context.Context, req *cpAPI.AttestationServiceGetContractRequest) (*cpAPI.AttestationServiceGetContractResponse, error) {
-	robotAccount := usercontext.CurrentRobotAccount(ctx)
-	if robotAccount == nil {
-		return nil, errors.NotFound("not found", "robot account not found")
+	robotAccount, err := s.completeRobotAccount(ctx, req.GetWorkflowName())
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	// Find workflow
@@ -114,9 +114,9 @@ func (s *AttestationService) GetContract(ctx context.Context, req *cpAPI.Attesta
 }
 
 func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationServiceInitRequest) (*cpAPI.AttestationServiceInitResponse, error) {
-	robotAccount := usercontext.CurrentRobotAccount(ctx)
-	if robotAccount == nil {
-		return nil, errors.NotFound("not found", "robot account not found")
+	robotAccount, err := s.completeRobotAccount(ctx, req.GetWorkflowName())
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	// Find workflow
@@ -170,9 +170,9 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 }
 
 func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationServiceStoreRequest) (*cpAPI.AttestationServiceStoreResponse, error) {
-	robotAccount := usercontext.CurrentRobotAccount(ctx)
-	if robotAccount == nil {
-		return nil, errors.NotFound("not found", "robot account not found")
+	robotAccount, err := s.completeRobotAccount(ctx, req.GetWorkflowName())
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	// Check that provided workflowRun belongs to workflow encoded in the robot account
@@ -273,9 +273,9 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 }
 
 func (s *AttestationService) Cancel(ctx context.Context, req *cpAPI.AttestationServiceCancelRequest) (*cpAPI.AttestationServiceCancelResponse, error) {
-	robotAccount := usercontext.CurrentRobotAccount(ctx)
-	if robotAccount == nil {
-		return nil, errors.NotFound("not found", "robot account not found")
+	robotAccount, err := s.completeRobotAccount(ctx, req.GetWorkflowName())
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	// Check that provided workflowRun belongs to workflow encoded in the robot account
@@ -303,9 +303,9 @@ func (s *AttestationService) Cancel(ctx context.Context, req *cpAPI.AttestationS
 // There is another endpoint to get credentials via casCredentialsService.Get
 // This one is kept since it leverages robot-accounts in the context of a workflow
 func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.AttestationServiceGetUploadCredsRequest) (*cpAPI.AttestationServiceGetUploadCredsResponse, error) {
-	robotAccount := usercontext.CurrentRobotAccount(ctx)
-	if robotAccount == nil {
-		return nil, errors.NotFound("not found", "robot account not found")
+	robotAccount, err := s.completeRobotAccount(ctx, req.GetWorkflowName())
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	// Find workflow in DB to extract the organization
@@ -359,6 +359,31 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 	}
 
 	return &cpAPI.AttestationServiceGetUploadCredsResponse{Result: resp}, nil
+}
+
+// completeRobotAccount auxiliary method to complete a RobotAccount instance. This is needed since when coming from
+// an API Token request, the only information we have set is the workflow name not the ID
+func (s *AttestationService) completeRobotAccount(ctx context.Context, workflowName string) (*usercontext.RobotAccount, error) {
+	robotAccount := usercontext.CurrentRobotAccount(ctx)
+	if robotAccount == nil {
+		return nil, errors.NotFound("not found", "neither robot account nor API token found")
+	}
+
+	// If WorkflowID is not set and no workflowName is provided, return BadRequest.
+	if workflowName == "" && robotAccount.WorkflowID == "" {
+		return nil, errors.BadRequest("bad request", "when using an API Token, workflow name is required as parameter")
+	}
+
+	// If WorkflowID is not set, retrieve it using the workflow name.
+	if robotAccount.WorkflowID == "" {
+		workflow, err := s.workflowUseCase.FindByName(ctx, workflowName)
+		if err != nil {
+			return nil, fmt.Errorf("error retrieving the workflow: %w", err)
+		}
+		robotAccount.WorkflowID = workflow.ID.String()
+	}
+
+	return robotAccount, nil
 }
 
 func bizAttestationToPb(att *biz.Attestation) (*cpAPI.AttestationItem, error) {
