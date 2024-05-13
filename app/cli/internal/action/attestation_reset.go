@@ -61,7 +61,6 @@ func (action *AttestationReset) Run(ctx context.Context, attestationID, trigger,
 		client := pb.NewAttestationServiceClient(action.CPConnection)
 		if _, err := client.Cancel(context.Background(), &pb.AttestationServiceCancelRequest{
 			WorkflowRunId: action.c.CraftingState.GetAttestation().GetWorkflow().GetWorkflowRunId(),
-			WorkflowName:  action.c.CraftingState.GetAttestation().GetWorkflow().GetName(),
 			Reason:        reason,
 			Trigger:       parseTrigger(trigger),
 		}); err != nil {
