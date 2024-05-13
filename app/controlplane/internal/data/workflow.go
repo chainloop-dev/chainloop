@@ -219,27 +219,6 @@ func (r *WorkflowRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Workflo
 	return entWFToBizWF(workflow, lastRun)
 }
 
-func (r *WorkflowRepo) FindByName(ctx context.Context, name string) (*biz.Workflow, error) {
-	workflow, err := r.data.db.Workflow.Query().
-		Where(workflow.DeletedAtIsNil(), workflow.Name(name)).
-		WithContract().WithOrganization().
-		Only(ctx)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return nil, biz.NewErrNotFound("workflow")
-		}
-		return nil, err
-	}
-
-	// Not efficient, we need to do a query limit = 1 grouped by workflowID
-	lastRun, err := getLastRun(ctx, workflow)
-	if err != nil {
-		return nil, err
-	}
-
-	return entWFToBizWF(workflow, lastRun)
-}
-
 func (r *WorkflowRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
 	tx, err := r.data.db.Tx(ctx)
 	if err != nil {

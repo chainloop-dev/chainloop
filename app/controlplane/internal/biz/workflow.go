@@ -47,7 +47,6 @@ type WorkflowRepo interface {
 	GetOrgScopedByName(ctx context.Context, orgID uuid.UUID, workflowName string) (*Workflow, error)
 	IncRunsCounter(ctx context.Context, workflowID uuid.UUID) error
 	FindByID(ctx context.Context, workflowID uuid.UUID) (*Workflow, error)
-	FindByName(ctx context.Context, workflowName string) (*Workflow, error)
 	SoftDelete(ctx context.Context, workflowID uuid.UUID) error
 }
 
