@@ -102,8 +102,8 @@ func WithCurrentAPITokenAndOrgMiddleware(apiTokenUC *biz.APITokenUseCase, orgUC 
 	}
 }
 
-// WithCurrentAPITokenAndRobotAccountMiddleware injects the API-Token, organization + robot account to the context
-func WithCurrentAPITokenAndRobotAccountMiddleware(apiTokenUC *biz.APITokenUseCase, logger *log.Helper) middleware.Middleware {
+// WithAttestationContextFromAPIToken injects the API-Token, organization + robot account to the context
+func WithAttestationContextFromAPIToken(apiTokenUC *biz.APITokenUseCase, logger *log.Helper) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			authInfo, ok := attjwtmiddleware.FromJWTAuthContext(ctx)

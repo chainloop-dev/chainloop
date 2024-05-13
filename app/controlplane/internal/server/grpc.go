@@ -201,9 +201,9 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 				attjwtmiddleware.NewAPITokenProvider(opts.AuthConfig.GeneratedJwsHmacSecret),
 			),
 			// 2.a - Set its workflow and organization in the context
-			usercontext.WithCurrentRobotAccount(opts.RobotAccountUseCase, logHelper),
+			usercontext.WithAttestationContextFromRobotAccount(opts.RobotAccountUseCase, logHelper),
 			// 2.b - Set its API token and Robot Account as alternative to the user
-			usercontext.WithCurrentAPITokenAndRobotAccountMiddleware(opts.APITokenUseCase, logHelper),
+			usercontext.WithAttestationContextFromAPIToken(opts.APITokenUseCase, logHelper),
 		).Match(requireRobotAccountMatcher()).Build(),
 	)
 

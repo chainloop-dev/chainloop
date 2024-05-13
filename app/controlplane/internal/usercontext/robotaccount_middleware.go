@@ -45,8 +45,8 @@ func CurrentRobotAccount(ctx context.Context) *RobotAccount {
 
 type currentRobotAccountCtxKey struct{}
 
-// Middleware that injects the current user to the context
-func WithCurrentRobotAccount(robotAccountUseCase *biz.RobotAccountUseCase, logger *log.Helper) middleware.Middleware {
+// WithAttestationContextFromRobotAccount Middleware that injects the current user to the context
+func WithAttestationContextFromRobotAccount(robotAccountUseCase *biz.RobotAccountUseCase, logger *log.Helper) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			authInfo, ok := attjwtmiddleware.FromJWTAuthContext(ctx)
