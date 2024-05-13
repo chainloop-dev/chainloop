@@ -100,18 +100,22 @@ func (s *AttestationService) GetContract(ctx context.Context, req *cpAPI.Attesta
 
 	// If WorkflowID is not set, retrieve it using the workflow name. This is needed since when coming from
 	// an API Token request, the only information we have set is the workflow name not the ID
+	var wf *biz.Workflow
+	var err error
 	if robotAccount.WorkflowID == "" {
-		workflow, err := s.workflowUseCase.FindByNameInOrg(ctx, robotAccount.OrgID, req.GetWorkflowName())
+		wf, err = s.workflowUseCase.FindByNameInOrg(ctx, robotAccount.OrgID, req.GetWorkflowName())
 		if err != nil {
 			return nil, fmt.Errorf("error retrieving the workflow: %w", err)
 		}
-		robotAccount.WorkflowID = workflow.ID.String()
+		robotAccount.WorkflowID = wf.ID.String()
 	}
 
 	// Find workflow
-	wf, err := s.workflowUseCase.FindByID(ctx, robotAccount.WorkflowID)
-	if err != nil {
-		return nil, errors.NotFound("not found", "workflow not found")
+	if wf == nil {
+		wf, err = s.workflowUseCase.FindByID(ctx, robotAccount.WorkflowID)
+		if err != nil {
+			return nil, errors.NotFound("not found", "workflow not found")
+		}
 	}
 
 	// Find contract revision
@@ -131,13 +135,32 @@ func (s *AttestationService) GetContract(ctx context.Context, req *cpAPI.Attesta
 func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationServiceInitRequest) (*cpAPI.AttestationServiceInitResponse, error) {
 	robotAccount := usercontext.CurrentRobotAccount(ctx)
 	if robotAccount == nil {
-		return nil, errors.NotFound("not found", "robot account not found")
+		return nil, errors.NotFound("not found", "neither robot account nor API token found")
+	}
+
+	// If WorkflowID is not set and no workflowName is provided, return BadRequest.
+	if req.GetWorkflowName() == "" && robotAccount.WorkflowID == "" {
+		return nil, errors.BadRequest("bad request", "when using an API Token, workflow name is required as parameter")
+	}
+
+	// If WorkflowID is not set, retrieve it using the workflow name. This is needed since when coming from
+	// an API Token request, the only information we have set is the workflow name not the ID
+	var wf *biz.Workflow
+	var err error
+	if robotAccount.WorkflowID == "" {
+		wf, err = s.workflowUseCase.FindByNameInOrg(ctx, robotAccount.OrgID, req.GetWorkflowName())
+		if err != nil {
+			return nil, fmt.Errorf("error retrieving the workflow: %w", err)
+		}
+		robotAccount.WorkflowID = wf.ID.String()
 	}
 
 	// Find workflow
-	wf, err := s.workflowUseCase.FindByID(ctx, robotAccount.WorkflowID)
-	if err != nil {
-		return nil, errors.NotFound("not found", "workflow not found")
+	if wf == nil {
+		wf, err = s.workflowUseCase.FindByID(ctx, robotAccount.WorkflowID)
+		if err != nil {
+			return nil, errors.NotFound("not found", "workflow not found")
+		}
 	}
 
 	// Find contract revision

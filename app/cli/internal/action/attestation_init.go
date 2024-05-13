@@ -122,6 +122,7 @@ func (action *AttestationInit) Run(ctx context.Context, contractRevision int, wo
 				Runner:           discoveredRunner.ID(),
 				JobUrl:           discoveredRunner.RunURI(),
 				ContractRevision: int32(contractRevision),
+				WorkflowName:     workflow.GetName(),
 			},
 		)
 		if err != nil {
