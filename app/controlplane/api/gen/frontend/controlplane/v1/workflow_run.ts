@@ -43,11 +43,6 @@ export interface AttestationServiceInitRequest {
   contractRevision: number;
   jobUrl: string;
   runner: CraftingSchema_Runner_RunnerType;
-  /**
-   * This parameter is not needed by Robot Account since they have the workflowID embedded.
-   * API Tokens will send the parameter explicitly
-   */
-  workflowName: string;
 }
 
 export interface AttestationServiceInitResponse {
@@ -64,11 +59,6 @@ export interface AttestationServiceStoreRequest {
   /** encoded DSEE envelope */
   attestation: Uint8Array;
   workflowRunId: string;
-  /**
-   * This parameter is not needed by Robot Account since they have the workflowID embedded.
-   * API Tokens will send the parameter explicitly
-   */
-  workflowName: string;
 }
 
 export interface AttestationServiceStoreResponse {
@@ -84,11 +74,6 @@ export interface AttestationServiceCancelRequest {
   workflowRunId: string;
   trigger: AttestationServiceCancelRequest_TriggerType;
   reason: string;
-  /**
-   * This parameter is not needed by Robot Account since they have the workflowID embedded.
-   * API Tokens will send the parameter explicitly
-   */
-  workflowName: string;
 }
 
 export enum AttestationServiceCancelRequest_TriggerType {
@@ -170,11 +155,6 @@ export interface WorkflowRunServiceViewResponse_Result {
 
 export interface AttestationServiceGetUploadCredsRequest {
   workflowRunId: string;
-  /**
-   * This parameter is not needed by Robot Account since they have the workflowID embedded.
-   * API Tokens will send the parameter explicitly
-   */
-  workflowName: string;
 }
 
 export interface AttestationServiceGetUploadCredsResponse {
@@ -408,7 +388,7 @@ export const AttestationServiceGetContractResponse_Result = {
 };
 
 function createBaseAttestationServiceInitRequest(): AttestationServiceInitRequest {
-  return { contractRevision: 0, jobUrl: "", runner: 0, workflowName: "" };
+  return { contractRevision: 0, jobUrl: "", runner: 0 };
 }
 
 export const AttestationServiceInitRequest = {
@@ -421,9 +401,6 @@ export const AttestationServiceInitRequest = {
     }
     if (message.runner !== 0) {
       writer.uint32(24).int32(message.runner);
-    }
-    if (message.workflowName !== "") {
-      writer.uint32(34).string(message.workflowName);
     }
     return writer;
   },
@@ -456,13 +433,6 @@ export const AttestationServiceInitRequest = {
 
           message.runner = reader.int32() as any;
           continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.workflowName = reader.string();
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -477,7 +447,6 @@ export const AttestationServiceInitRequest = {
       contractRevision: isSet(object.contractRevision) ? Number(object.contractRevision) : 0,
       jobUrl: isSet(object.jobUrl) ? String(object.jobUrl) : "",
       runner: isSet(object.runner) ? craftingSchema_Runner_RunnerTypeFromJSON(object.runner) : 0,
-      workflowName: isSet(object.workflowName) ? String(object.workflowName) : "",
     };
   },
 
@@ -486,7 +455,6 @@ export const AttestationServiceInitRequest = {
     message.contractRevision !== undefined && (obj.contractRevision = Math.round(message.contractRevision));
     message.jobUrl !== undefined && (obj.jobUrl = message.jobUrl);
     message.runner !== undefined && (obj.runner = craftingSchema_Runner_RunnerTypeToJSON(message.runner));
-    message.workflowName !== undefined && (obj.workflowName = message.workflowName);
     return obj;
   },
 
@@ -501,7 +469,6 @@ export const AttestationServiceInitRequest = {
     message.contractRevision = object.contractRevision ?? 0;
     message.jobUrl = object.jobUrl ?? "";
     message.runner = object.runner ?? 0;
-    message.workflowName = object.workflowName ?? "";
     return message;
   },
 };
@@ -646,7 +613,7 @@ export const AttestationServiceInitResponse_Result = {
 };
 
 function createBaseAttestationServiceStoreRequest(): AttestationServiceStoreRequest {
-  return { attestation: new Uint8Array(0), workflowRunId: "", workflowName: "" };
+  return { attestation: new Uint8Array(0), workflowRunId: "" };
 }
 
 export const AttestationServiceStoreRequest = {
@@ -656,9 +623,6 @@ export const AttestationServiceStoreRequest = {
     }
     if (message.workflowRunId !== "") {
       writer.uint32(18).string(message.workflowRunId);
-    }
-    if (message.workflowName !== "") {
-      writer.uint32(26).string(message.workflowName);
     }
     return writer;
   },
@@ -684,13 +648,6 @@ export const AttestationServiceStoreRequest = {
 
           message.workflowRunId = reader.string();
           continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.workflowName = reader.string();
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -704,7 +661,6 @@ export const AttestationServiceStoreRequest = {
     return {
       attestation: isSet(object.attestation) ? bytesFromBase64(object.attestation) : new Uint8Array(0),
       workflowRunId: isSet(object.workflowRunId) ? String(object.workflowRunId) : "",
-      workflowName: isSet(object.workflowName) ? String(object.workflowName) : "",
     };
   },
 
@@ -713,7 +669,6 @@ export const AttestationServiceStoreRequest = {
     message.attestation !== undefined &&
       (obj.attestation = base64FromBytes(message.attestation !== undefined ? message.attestation : new Uint8Array(0)));
     message.workflowRunId !== undefined && (obj.workflowRunId = message.workflowRunId);
-    message.workflowName !== undefined && (obj.workflowName = message.workflowName);
     return obj;
   },
 
@@ -727,7 +682,6 @@ export const AttestationServiceStoreRequest = {
     const message = createBaseAttestationServiceStoreRequest();
     message.attestation = object.attestation ?? new Uint8Array(0);
     message.workflowRunId = object.workflowRunId ?? "";
-    message.workflowName = object.workflowName ?? "";
     return message;
   },
 };
@@ -856,7 +810,7 @@ export const AttestationServiceStoreResponse_Result = {
 };
 
 function createBaseAttestationServiceCancelRequest(): AttestationServiceCancelRequest {
-  return { workflowRunId: "", trigger: 0, reason: "", workflowName: "" };
+  return { workflowRunId: "", trigger: 0, reason: "" };
 }
 
 export const AttestationServiceCancelRequest = {
@@ -869,9 +823,6 @@ export const AttestationServiceCancelRequest = {
     }
     if (message.reason !== "") {
       writer.uint32(26).string(message.reason);
-    }
-    if (message.workflowName !== "") {
-      writer.uint32(34).string(message.workflowName);
     }
     return writer;
   },
@@ -904,13 +855,6 @@ export const AttestationServiceCancelRequest = {
 
           message.reason = reader.string();
           continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.workflowName = reader.string();
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -925,7 +869,6 @@ export const AttestationServiceCancelRequest = {
       workflowRunId: isSet(object.workflowRunId) ? String(object.workflowRunId) : "",
       trigger: isSet(object.trigger) ? attestationServiceCancelRequest_TriggerTypeFromJSON(object.trigger) : 0,
       reason: isSet(object.reason) ? String(object.reason) : "",
-      workflowName: isSet(object.workflowName) ? String(object.workflowName) : "",
     };
   },
 
@@ -934,7 +877,6 @@ export const AttestationServiceCancelRequest = {
     message.workflowRunId !== undefined && (obj.workflowRunId = message.workflowRunId);
     message.trigger !== undefined && (obj.trigger = attestationServiceCancelRequest_TriggerTypeToJSON(message.trigger));
     message.reason !== undefined && (obj.reason = message.reason);
-    message.workflowName !== undefined && (obj.workflowName = message.workflowName);
     return obj;
   },
 
@@ -949,7 +891,6 @@ export const AttestationServiceCancelRequest = {
     message.workflowRunId = object.workflowRunId ?? "";
     message.trigger = object.trigger ?? 0;
     message.reason = object.reason ?? "";
-    message.workflowName = object.workflowName ?? "";
     return message;
   },
 };
@@ -1387,16 +1328,13 @@ export const WorkflowRunServiceViewResponse_Result = {
 };
 
 function createBaseAttestationServiceGetUploadCredsRequest(): AttestationServiceGetUploadCredsRequest {
-  return { workflowRunId: "", workflowName: "" };
+  return { workflowRunId: "" };
 }
 
 export const AttestationServiceGetUploadCredsRequest = {
   encode(message: AttestationServiceGetUploadCredsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.workflowRunId !== "") {
       writer.uint32(10).string(message.workflowRunId);
-    }
-    if (message.workflowName !== "") {
-      writer.uint32(18).string(message.workflowName);
     }
     return writer;
   },
@@ -1415,13 +1353,6 @@ export const AttestationServiceGetUploadCredsRequest = {
 
           message.workflowRunId = reader.string();
           continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.workflowName = reader.string();
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1432,16 +1363,12 @@ export const AttestationServiceGetUploadCredsRequest = {
   },
 
   fromJSON(object: any): AttestationServiceGetUploadCredsRequest {
-    return {
-      workflowRunId: isSet(object.workflowRunId) ? String(object.workflowRunId) : "",
-      workflowName: isSet(object.workflowName) ? String(object.workflowName) : "",
-    };
+    return { workflowRunId: isSet(object.workflowRunId) ? String(object.workflowRunId) : "" };
   },
 
   toJSON(message: AttestationServiceGetUploadCredsRequest): unknown {
     const obj: any = {};
     message.workflowRunId !== undefined && (obj.workflowRunId = message.workflowRunId);
-    message.workflowName !== undefined && (obj.workflowName = message.workflowName);
     return obj;
   },
 
@@ -1456,7 +1383,6 @@ export const AttestationServiceGetUploadCredsRequest = {
   ): AttestationServiceGetUploadCredsRequest {
     const message = createBaseAttestationServiceGetUploadCredsRequest();
     message.workflowRunId = object.workflowRunId ?? "";
-    message.workflowName = object.workflowName ?? "";
     return message;
   },
 };
