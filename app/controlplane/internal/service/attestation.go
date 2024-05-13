@@ -114,9 +114,9 @@ func (s *AttestationService) GetContract(ctx context.Context, req *cpAPI.Attesta
 }
 
 func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationServiceInitRequest) (*cpAPI.AttestationServiceInitResponse, error) {
-	robotAccount, err := s.completeRobotAccount(ctx, req.GetWorkflowName())
-	if err != nil {
-		return nil, fmt.Errorf("%w", err)
+	robotAccount := usercontext.CurrentRobotAccount(ctx)
+	if robotAccount == nil {
+		return nil, errors.NotFound("not found", "robot account not found")
 	}
 
 	// Find workflow
@@ -170,9 +170,9 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 }
 
 func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationServiceStoreRequest) (*cpAPI.AttestationServiceStoreResponse, error) {
-	robotAccount, err := s.completeRobotAccount(ctx, req.GetWorkflowName())
-	if err != nil {
-		return nil, fmt.Errorf("%w", err)
+	robotAccount := usercontext.CurrentRobotAccount(ctx)
+	if robotAccount == nil {
+		return nil, errors.NotFound("not found", "robot account not found")
 	}
 
 	// Check that provided workflowRun belongs to workflow encoded in the robot account
@@ -273,9 +273,9 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 }
 
 func (s *AttestationService) Cancel(ctx context.Context, req *cpAPI.AttestationServiceCancelRequest) (*cpAPI.AttestationServiceCancelResponse, error) {
-	robotAccount, err := s.completeRobotAccount(ctx, req.GetWorkflowName())
-	if err != nil {
-		return nil, fmt.Errorf("%w", err)
+	robotAccount := usercontext.CurrentRobotAccount(ctx)
+	if robotAccount == nil {
+		return nil, errors.NotFound("not found", "robot account not found")
 	}
 
 	// Check that provided workflowRun belongs to workflow encoded in the robot account
@@ -303,9 +303,9 @@ func (s *AttestationService) Cancel(ctx context.Context, req *cpAPI.AttestationS
 // There is another endpoint to get credentials via casCredentialsService.Get
 // This one is kept since it leverages robot-accounts in the context of a workflow
 func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.AttestationServiceGetUploadCredsRequest) (*cpAPI.AttestationServiceGetUploadCredsResponse, error) {
-	robotAccount, err := s.completeRobotAccount(ctx, req.GetWorkflowName())
-	if err != nil {
-		return nil, fmt.Errorf("%w", err)
+	robotAccount := usercontext.CurrentRobotAccount(ctx)
+	if robotAccount == nil {
+		return nil, errors.NotFound("not found", "robot account not found")
 	}
 
 	// Find workflow in DB to extract the organization
