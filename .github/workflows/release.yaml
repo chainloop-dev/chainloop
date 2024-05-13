@@ -106,7 +106,7 @@ jobs:
           # Binaries x86_64
           # TODO: add the rest of binaries
           # NOTE that we are not making the attestation fail if the material is not found. We will fail on "att push"
-          echo -n '${{ steps.release.outputs.artifacts }}' | jq -r '.[] | select(.type=="Binary" and .goos=="linux") | { "name": "\(.extra.ID)-\(.goos)-\(.goarch)", "path":"\(.path)"} | @base64' | while read i; do
+          echo -n '${{ steps.release.outputs.artifacts }}' | jq -r '.[] | select(.type=="Binary") | { "name": "\(.extra.ID)-\(.goos)-\(.goarch)", "path":"\(.path)"} | @base64' | while read i; do
               BINARY_NAME=$(echo "${i}" | base64 --decode | jq -r ${1} .name)
               BINARY_PATH=$(echo "${i}" | base64 --decode | jq -r ${1} .path)
               chainloop attestation add --name ${BINARY_NAME} --value ${BINARY_PATH} || true

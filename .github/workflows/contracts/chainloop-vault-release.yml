@@ -36,3 +36,9 @@ materials:
     name: chainloop-plugin-smtp-linux-amd64
   - type: ARTIFACT
     name: chainloop-plugin-dependency-track-linux-amd64
+  - type: ARTIFACT
+    name: cli-darwin-arm64
+    output: true
+  - type: ARTIFACT
+    name: cli-darwin-amd64
+    output: true
