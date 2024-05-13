@@ -18,6 +18,7 @@ package attjwtmiddleware
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/apitoken"
@@ -43,13 +44,14 @@ const (
 )
 
 var (
-	ErrMissingJwtToken        = errorsAPI.Unauthorized(reason, "JWT token is missing")
-	ErrMissingKeyFunc         = errorsAPI.Unauthorized(reason, "keyFunc is missing")
-	ErrTokenInvalid           = errorsAPI.Unauthorized(reason, "Token is invalid")
-	ErrTokenExpired           = errorsAPI.Unauthorized(reason, "JWT token has expired")
-	ErrTokenParseFail         = errorsAPI.Unauthorized(reason, "Fail to parse JWT token ")
-	ErrUnSupportSigningMethod = errorsAPI.Unauthorized(reason, "Wrong signing method")
-	ErrWrongContext           = errorsAPI.Unauthorized(reason, "Wrong context for middleware")
+	ErrMissingJwtToken           = errorsAPI.Unauthorized(reason, "JWT token is missing")
+	ErrMissingKeyFunc            = errorsAPI.Unauthorized(reason, "keyFunc is missing")
+	ErrMissingVerifyAudienceFunc = errorsAPI.Unauthorized(reason, "verifyAudienceFunc is missing")
+	ErrTokenInvalid              = errorsAPI.Unauthorized(reason, "Token is invalid")
+	ErrTokenExpired              = errorsAPI.Unauthorized(reason, "JWT token has expired")
+	ErrTokenParseFail            = errorsAPI.Unauthorized(reason, "Fail to parse JWT token ")
+	ErrUnSupportSigningMethod    = errorsAPI.Unauthorized(reason, "Wrong signing method")
+	ErrWrongContext              = errorsAPI.Unauthorized(reason, "Wrong context for middleware")
 )
 
 // NewRobotAccountProvider return the configuration to validate and verify token issued for Robot Accounts
@@ -86,12 +88,7 @@ func NewAPITokenProvider(signingSecret string) JWTOption {
 			if !ok {
 				return false
 			}
-			for _, aud := range []string{apitoken.Audience} {
-				if claims.VerifyAudience(aud, true) {
-					return true
-				}
-			}
-			return false
+			return claims.VerifyAudience(apitoken.Audience, true)
 		}),
 		WithSigningMethod(user.SigningMethod),
 		WithKeyFunc(func(_ *jwt.Token) (interface{}, error) {
@@ -161,8 +158,8 @@ func withTokenProvider(providerKey string, opts ...TokenProviderOption) JWTOptio
 }
 
 // WithJWTMulti creates a custom JWT middleware that configured with different token providers
-// tries to run all validations from an incoming token. If you of the providers matches the expected audience
-// it gets parsed and sent down to the next middleware
+// tries to run all validations from an incoming token. If one of the providers matches the expected audience
+// it gets parsed and sent down to the next middleware. If none matches an error is returned
 func WithJWTMulti(opts ...JWTOption) middleware.Middleware {
 	o := &options{}
 	for _, opt := range opts {
@@ -191,9 +188,11 @@ func WithJWTMulti(opts ...JWTOption) middleware.Middleware {
 							continue
 						}
 
-						return nil, err
+						return nil, fmt.Errorf("couldn't match JWT provider: %w", err)
 					}
 
+					// When reached this point, one match has happened meaning the auth context
+					// can continue.
 					ctx := newJWTAuthContext(ctx, JWTAuthContext{
 						Claims:      tokenInfo.Claims,
 						ProviderKey: provider.providerKey,
@@ -220,6 +219,10 @@ func WithJWTMulti(opts ...JWTOption) middleware.Middleware {
 func runProviderValidator(provider providerOption, jwtToken string) (*jwt.Token, error) {
 	if provider.keyFunc == nil {
 		return nil, ErrMissingKeyFunc
+	}
+
+	if provider.verifyAudienceFunc == nil {
+		return nil, ErrMissingVerifyAudienceFunc
 	}
 
 	var (
@@ -257,6 +260,9 @@ func runProviderValidator(provider providerOption, jwtToken string) (*jwt.Token,
 		return nil, ErrUnSupportSigningMethod
 	}
 
+	// Once the token is valid and verified, let's check for its audience. If the token's audience matches
+	// the one on the provider, we return the token information meaning there is a match and that we can continue.
+	// On the other hand if the verification fails, we continue with the list of the providers if any, otherwise we fail.
 	if provider.verifyAudienceFunc(tokenInfo) {
 		return tokenInfo, nil
 	}
