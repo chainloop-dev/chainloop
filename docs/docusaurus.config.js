@@ -24,6 +24,15 @@ const config = {
 
   plugins: [
     [
+      "posthog-docusaurus",
+      {
+        apiKey: "phc_TWWW19kEiD6sEejlHKWcICQ5Vc06vZUTYia8WdPB0A0",
+        appUrl: "https://crb.chainloop.dev",
+        ui_host: "https://us.i.posthog.com",
+        enableInDevelopment: false,
+      },
+    ],
+    [
       "@docusaurus/plugin-ideal-image",
       {
         disableInDev: false,
