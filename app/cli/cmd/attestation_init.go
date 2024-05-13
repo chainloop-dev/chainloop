@@ -18,8 +18,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"os"
-
 	"github.com/spf13/cobra"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
@@ -40,7 +38,7 @@ func newAttestationInitCmd() *cobra.Command {
 			useWorkflowRobotAccount: "true",
 		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if os.Getenv(robotAccountEnvVarName) != "" && workflowName != "" {
+			if robotAccount != "" && workflowName != "" {
 				logger.Warn().Msg("When CHAINLOOP_ROBOT_ACCOUNT env variable is set and --workflow-name passed, the workflow name will be ignored")
 			}
 
@@ -91,7 +89,7 @@ func newAttestationInitCmd() *cobra.Command {
 	cmd.Flags().BoolVarP(&force, "replace", "f", false, "replace any existing in-progress attestation")
 	cmd.Flags().BoolVar(&attestationDryRun, "dry-run", false, "do not record attestation in the control plane, useful for development")
 	cmd.Flags().IntVar(&contractRevision, "contract-revision", 0, "revision of the contract to retrieve, \"latest\" by default")
-	cmd.Flags().StringVar(&workflowName, "workflow-name", "", "name of the workflow to run the attestation")
+	cmd.Flags().StringVar(&workflowName, "workflow-name", "", "name of the workflow to run the attestation. This is ignored when authentication is based on Robot Account")
 
 	return cmd
 }
