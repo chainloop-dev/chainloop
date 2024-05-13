@@ -18,17 +18,20 @@ package cmd
 import (
 	"errors"
 	"fmt"
-
-	"github.com/spf13/cobra"
+	"os"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/spf13/cobra"
 )
+
+const workflowNameEnvVarName = "CHAINLOOP_WORKFLOW_NAME"
 
 func newAttestationInitCmd() *cobra.Command {
 	var (
 		force             bool
 		contractRevision  int
 		attestationDryRun bool
+		workflowName      string
 	)
 
 	cmd := &cobra.Command{
@@ -50,7 +53,7 @@ func newAttestationInitCmd() *cobra.Command {
 			}
 
 			// Initialize it
-			attestationID, err := a.Run(cmd.Context(), contractRevision)
+			attestationID, err := a.Run(cmd.Context(), contractRevision, workflowName)
 			if err != nil {
 				if errors.Is(err, action.ErrAttestationAlreadyExist) {
 					return err
@@ -82,6 +85,10 @@ func newAttestationInitCmd() *cobra.Command {
 	cmd.Flags().BoolVarP(&force, "replace", "f", false, "replace any existing in-progress attestation")
 	cmd.Flags().BoolVar(&attestationDryRun, "dry-run", false, "do not record attestation in the control plane, useful for development")
 	cmd.Flags().IntVar(&contractRevision, "contract-revision", 0, "revision of the contract to retrieve, \"latest\" by default")
+	cmd.Flags().StringVar(&workflowName, "workflow-name", "", "name of the workflow to run the attestation. This is ignored when authentication is based on Robot Account")
+	if workflowName == "" {
+		workflowName = os.Getenv(workflowNameEnvVarName)
+	}
 
 	return cmd
 }
