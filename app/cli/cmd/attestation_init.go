@@ -18,6 +18,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -37,6 +38,13 @@ func newAttestationInitCmd() *cobra.Command {
 		Short: "start attestation crafting process",
 		Annotations: map[string]string{
 			useWorkflowRobotAccount: "true",
+		},
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if os.Getenv(robotAccountEnvVarName) != "" && workflowName != "" {
+				logger.Warn().Msg("When CHAINLOOP_ROBOT_ACCOUNT env variable is set and --workflow-name passed, the workflow name will be ignored")
+			}
+
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			a, err := action.NewAttestationInit(
