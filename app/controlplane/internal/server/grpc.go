@@ -26,17 +26,17 @@ import (
 	authzMiddleware "github.com/chainloop-dev/chainloop/app/controlplane/internal/authz/middleware"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/user"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
 
 	"github.com/bufbuild/protovalidate-go"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	"github.com/getsentry/sentry-go"
-	jwt "github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v4"
 
-	errors "github.com/go-kratos/kratos/v2/errors"
+	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware"
 	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
@@ -58,6 +58,7 @@ type Opts struct {
 	ReferrerUseCase      *biz.ReferrerUseCase
 	APITokenUseCase      *biz.APITokenUseCase
 	OrganizationUserCase *biz.OrganizationUseCase
+	WorkflowUseCase      *biz.WorkflowUseCase
 	// Services
 	WorkflowSvc         *service.WorkflowService
 	AuthSvc             *service.AuthService
@@ -192,16 +193,17 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 	middlewares = append(middlewares,
 		// if we require a robot account
 		selector.Server(
-			// 1 - Extract the robot account from the JWT
-			jwtMiddleware.Server(func(_ *jwt.Token) (interface{}, error) {
-				// TODO: add support to multiple signing methods and keys
-				return []byte(opts.AuthConfig.GeneratedJwsHmacSecret), nil
-			},
-				jwtMiddleware.WithSigningMethod(robotaccount.SigningMethod),
-				jwtMiddleware.WithClaims(func() jwt.Claims { return &robotaccount.CustomClaims{} }),
+			// 1 - Extract information from the JWT by using the claims
+			attjwtmiddleware.WithJWTMulti(
+				// Robot account provider
+				attjwtmiddleware.NewRobotAccountProvider(opts.AuthConfig.GeneratedJwsHmacSecret),
+				// API Token provider
+				attjwtmiddleware.NewAPITokenProvider(opts.AuthConfig.GeneratedJwsHmacSecret),
 			),
-			// 2 - Set its workflow and organization in the context
-			usercontext.WithCurrentRobotAccount(opts.RobotAccountUseCase, logHelper),
+			// 2.a - Set its workflow and organization in the context
+			usercontext.WithAttestationContextFromRobotAccount(opts.RobotAccountUseCase, logHelper),
+			// 2.b - Set its API token and Robot Account as alternative to the user
+			usercontext.WithAttestationContextFromAPIToken(opts.APITokenUseCase, logHelper),
 		).Match(requireRobotAccountMatcher()).Build(),
 	)
 

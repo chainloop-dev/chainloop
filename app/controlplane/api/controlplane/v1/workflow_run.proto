@@ -43,6 +43,9 @@ service WorkflowRunService {
 
 message AttestationServiceGetContractRequest {
   int32 contract_revision = 1;
+  // This parameter is not needed by Robot Account since they have the workflowID embedded.
+  // API Tokens will send the parameter explicitly
+  string workflow_name = 2;
 }
 
 message AttestationServiceGetContractResponse {

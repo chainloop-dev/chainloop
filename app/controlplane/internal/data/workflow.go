@@ -203,10 +203,11 @@ func (r *WorkflowRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Workflo
 		Where(workflow.DeletedAtIsNil(), workflow.ID(id)).
 		WithContract().WithOrganization().
 		Only(ctx)
-	if err != nil && !ent.IsNotFound(err) {
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, biz.NewErrNotFound("workflow")
+		}
 		return nil, err
-	} else if workflow == nil {
-		return nil, nil
 	}
 
 	// Not efficient, we need to do a query limit = 1 grouped by workflowID

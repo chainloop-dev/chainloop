@@ -90,7 +90,22 @@ func NewAttestationService(opts *NewAttestationServiceOpts) *AttestationService 
 func (s *AttestationService) GetContract(ctx context.Context, req *cpAPI.AttestationServiceGetContractRequest) (*cpAPI.AttestationServiceGetContractResponse, error) {
 	robotAccount := usercontext.CurrentRobotAccount(ctx)
 	if robotAccount == nil {
-		return nil, errors.NotFound("not found", "robot account not found")
+		return nil, errors.NotFound("not found", "neither robot account nor API token found")
+	}
+
+	// If WorkflowID is not set and no workflowName is provided, return BadRequest.
+	if req.GetWorkflowName() == "" && robotAccount.WorkflowID == "" {
+		return nil, errors.BadRequest("bad request", "when using an API Token, workflow name is required as parameter")
+	}
+
+	// If WorkflowID is not set, retrieve it using the workflow name. This is needed since when coming from
+	// an API Token request, the only information we have set is the workflow name not the ID
+	if robotAccount.WorkflowID == "" {
+		workflow, err := s.workflowUseCase.FindByNameInOrg(ctx, robotAccount.OrgID, req.GetWorkflowName())
+		if err != nil {
+			return nil, fmt.Errorf("error retrieving the workflow: %w", err)
+		}
+		robotAccount.WorkflowID = workflow.ID.String()
 	}
 
 	// Find workflow

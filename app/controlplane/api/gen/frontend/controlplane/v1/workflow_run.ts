@@ -23,6 +23,11 @@ export const protobufPackage = "controlplane.v1";
 
 export interface AttestationServiceGetContractRequest {
   contractRevision: number;
+  /**
+   * This parameter is not needed by Robot Account since they have the workflowID embedded.
+   * API Tokens will send the parameter explicitly
+   */
+  workflowName: string;
 }
 
 export interface AttestationServiceGetContractResponse {
@@ -162,13 +167,16 @@ export interface AttestationServiceGetUploadCredsResponse_Result {
 }
 
 function createBaseAttestationServiceGetContractRequest(): AttestationServiceGetContractRequest {
-  return { contractRevision: 0 };
+  return { contractRevision: 0, workflowName: "" };
 }
 
 export const AttestationServiceGetContractRequest = {
   encode(message: AttestationServiceGetContractRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.contractRevision !== 0) {
       writer.uint32(8).int32(message.contractRevision);
+    }
+    if (message.workflowName !== "") {
+      writer.uint32(18).string(message.workflowName);
     }
     return writer;
   },
@@ -187,6 +195,13 @@ export const AttestationServiceGetContractRequest = {
 
           message.contractRevision = reader.int32();
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.workflowName = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -197,12 +212,16 @@ export const AttestationServiceGetContractRequest = {
   },
 
   fromJSON(object: any): AttestationServiceGetContractRequest {
-    return { contractRevision: isSet(object.contractRevision) ? Number(object.contractRevision) : 0 };
+    return {
+      contractRevision: isSet(object.contractRevision) ? Number(object.contractRevision) : 0,
+      workflowName: isSet(object.workflowName) ? String(object.workflowName) : "",
+    };
   },
 
   toJSON(message: AttestationServiceGetContractRequest): unknown {
     const obj: any = {};
     message.contractRevision !== undefined && (obj.contractRevision = Math.round(message.contractRevision));
+    message.workflowName !== undefined && (obj.workflowName = message.workflowName);
     return obj;
   },
 
@@ -217,6 +236,7 @@ export const AttestationServiceGetContractRequest = {
   ): AttestationServiceGetContractRequest {
     const message = createBaseAttestationServiceGetContractRequest();
     message.contractRevision = object.contractRevision ?? 0;
+    message.workflowName = object.workflowName ?? "";
     return message;
   },
 };

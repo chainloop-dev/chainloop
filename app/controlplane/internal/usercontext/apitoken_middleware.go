@@ -27,6 +27,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/apitoken"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
 	"github.com/go-kratos/kratos/v2/middleware"
 	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 )
@@ -99,6 +100,74 @@ func WithCurrentAPITokenAndOrgMiddleware(apiTokenUC *biz.APITokenUseCase, orgUC 
 			return handler(ctx, req)
 		}
 	}
+}
+
+// WithAttestationContextFromAPIToken injects the API-Token, organization + robot account to the context
+func WithAttestationContextFromAPIToken(apiTokenUC *biz.APITokenUseCase, logger *log.Helper) middleware.Middleware {
+	return func(handler middleware.Handler) middleware.Handler {
+		return func(ctx context.Context, req interface{}) (interface{}, error) {
+			authInfo, ok := attjwtmiddleware.FromJWTAuthContext(ctx)
+			// If not found means that there is no currentUser set in the context
+			if !ok {
+				logger.Warn("couldn't extract org/user, JWT parser middleware not running before this one?")
+				return nil, errors.New("can't extract JWT info from the context")
+			}
+
+			// If the token is not an API token, we don't need to do anything
+			if authInfo.ProviderKey != attjwtmiddleware.APITokenProviderKey {
+				return handler(ctx, req)
+			}
+
+			genericClaims, ok := authInfo.Claims.(jwt.MapClaims)
+			if !ok {
+				return nil, errors.New("error mapping the claims")
+			}
+
+			// We've received an API-token, double check its audience
+			if !genericClaims.VerifyAudience(apitoken.Audience, true) {
+				return nil, errors.New("unexpected token, invalid audience")
+			}
+
+			var err error
+			tokenID, ok := genericClaims["jti"].(string)
+			if !ok || tokenID == "" {
+				return nil, errors.New("error mapping the API-token claims")
+			}
+
+			ctx, err = setRobotAccountFromAPIToken(ctx, apiTokenUC, tokenID)
+			if err != nil {
+				return nil, errors.New("error extracting organization from APIToken")
+			}
+
+			logger.Infow("msg", "[authN] processed credentials", "id", tokenID, "type", "API-token")
+
+			return handler(ctx, req)
+		}
+	}
+}
+
+func setRobotAccountFromAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCase, tokenID string) (context.Context, error) {
+	if tokenID == "" {
+		return nil, errors.New("error retrieving the key ID from the API token")
+	}
+
+	// Check that the token exists and is not revoked
+	token, err := apiTokenUC.FindByID(ctx, tokenID)
+	if err != nil {
+		return nil, fmt.Errorf("error retrieving the API token: %w", err)
+	} else if token == nil {
+		return nil, errors.New("API token not found")
+	}
+
+	// Note: Expiration time does not need to be checked because that's done at the JWT
+	// verification layer, which happens before this middleware is called
+	if token.RevokedAt != nil {
+		return nil, errors.New("API token revoked")
+	}
+
+	ctx = withRobotAccount(ctx, &RobotAccount{OrgID: token.OrganizationID.String()})
+
+	return ctx, nil
 }
 
 // Set the current organization and API-Token in the context
