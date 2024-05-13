@@ -123,21 +123,23 @@ func WithAttestationContextFromAPIToken(apiTokenUC *biz.APITokenUseCase, logger 
 				return nil, errors.New("error mapping the claims")
 			}
 
-			// We've received an API-token
-			if genericClaims.VerifyAudience(apitoken.Audience, true) {
-				var err error
-				tokenID, ok := genericClaims["jti"].(string)
-				if !ok || tokenID == "" {
-					return nil, errors.New("error mapping the API-token claims")
-				}
-
-				ctx, err = setRobotAccountFromAPIToken(ctx, apiTokenUC, tokenID)
-				if err != nil {
-					return nil, fmt.Errorf("error setting current org and robot account: %w", err)
-				}
-
-				logger.Infow("msg", "[authN] processed credentials", "id", tokenID, "type", "API-token")
+			// We've received an API-token, double check its audience
+			if !genericClaims.VerifyAudience(apitoken.Audience, true) {
+				return nil, errors.New("unexpected token, invalid audience")
 			}
+
+			var err error
+			tokenID, ok := genericClaims["jti"].(string)
+			if !ok || tokenID == "" {
+				return nil, errors.New("error mapping the API-token claims")
+			}
+
+			ctx, err = setRobotAccountFromAPIToken(ctx, apiTokenUC, tokenID)
+			if err != nil {
+				return nil, fmt.Errorf("error setting current org and robot account: %w", err)
+			}
+
+			logger.Infow("msg", "[authN] processed credentials", "id", tokenID, "type", "API-token")
 
 			return handler(ctx, req)
 		}
