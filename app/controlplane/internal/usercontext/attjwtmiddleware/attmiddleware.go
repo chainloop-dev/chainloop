@@ -52,9 +52,9 @@ var (
 	ErrWrongContext           = errorsAPI.Unauthorized(reason, "Wrong context for middleware")
 )
 
-// NewAttestationRobotAccountProvider return the configuration to validate and verify token issued for Robot Accounts
-func NewAttestationRobotAccountProvider(signingSecret string) JWTOption {
-	return WithTokenProvider(
+// NewRobotAccountProvider return the configuration to validate and verify token issued for Robot Accounts
+func NewRobotAccountProvider(signingSecret string) JWTOption {
+	return withTokenProvider(
 		RobotAccountProviderKey,
 		WithClaims(func() jwt.Claims { return &robotaccount.CustomClaims{} }),
 		WithVerifyAudienceFunc(func(token *jwt.Token) bool {
@@ -77,9 +77,9 @@ func NewAttestationRobotAccountProvider(signingSecret string) JWTOption {
 	)
 }
 
-// NewAttestationAPITokenProvider return the configuration to validate and verify token issued for API Tokens
-func NewAttestationAPITokenProvider(signingSecret string) JWTOption {
-	return WithTokenProvider(
+// NewAPITokenProvider return the configuration to validate and verify token issued for API Tokens
+func NewAPITokenProvider(signingSecret string) JWTOption {
+	return withTokenProvider(
 		APITokenProviderKey,
 		WithVerifyAudienceFunc(func(token *jwt.Token) bool {
 			claims, ok := token.Claims.(jwt.MapClaims)
@@ -148,7 +148,7 @@ type options struct {
 	tokenProviders []providerOption
 }
 
-func WithTokenProvider(providerKey string, opts ...TokenProviderOption) JWTOption {
+func withTokenProvider(providerKey string, opts ...TokenProviderOption) JWTOption {
 	op := &providerOption{
 		providerKey: providerKey,
 	}
@@ -160,10 +160,10 @@ func WithTokenProvider(providerKey string, opts ...TokenProviderOption) JWTOptio
 	}
 }
 
-// WithAttestationTokenMiddleware creates a custom JWT middleware that configured with different token providers
+// WithJWTMulti creates a custom JWT middleware that configured with different token providers
 // tries to run all validations from an incoming token. If you of the providers matches the expected audience
 // it gets parsed and sent down to the next middleware
-func WithAttestationTokenMiddleware(opts ...JWTOption) middleware.Middleware {
+func WithJWTMulti(opts ...JWTOption) middleware.Middleware {
 	o := &options{}
 	for _, opt := range opts {
 		opt(o)
@@ -209,7 +209,14 @@ func WithAttestationTokenMiddleware(opts ...JWTOption) middleware.Middleware {
 	}
 }
 
-// runProviderValidator runs the token parser for the given provider
+// runProviderValidator runs the token parser for the given provider. Main logic of the code is taken from:
+// https://github.com/go-kratos/kratos/blob/d0d5761f9ca89271231f23e1aad452362c3c09f9/middleware/auth/jwt/jwt.go#L86
+// The main differences are:
+//   - Always tries to parse with claims. The code is the one in charge of populating empty claims if not passed.
+//   - Given a custom providerOption, if the token is valid and verified it tries to match its audience with any included
+//     on such provider to check the token is expected by at least one provider.
+//
+// The information return by the function is the actual decoded jwt.Token ready to be operated with.
 func runProviderValidator(provider providerOption, jwtToken string) (*jwt.Token, error) {
 	if provider.keyFunc == nil {
 		return nil, ErrMissingKeyFunc

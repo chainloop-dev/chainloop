@@ -212,14 +212,6 @@ func (uc *WorkflowUseCase) FindByID(ctx context.Context, workflowID string) (*Wo
 	return uc.wfRepo.FindByID(ctx, workflowUUID)
 }
 
-func (uc *WorkflowUseCase) FindByName(ctx context.Context, workflowName string) (*Workflow, error) {
-	if workflowName == "" {
-		return nil, NewErrValidationStr("empty workflow name")
-	}
-
-	return uc.wfRepo.FindByName(ctx, workflowName)
-}
-
 func (uc *WorkflowUseCase) FindByIDInOrg(ctx context.Context, orgID, workflowID string) (*Workflow, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {

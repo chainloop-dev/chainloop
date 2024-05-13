@@ -94,31 +94,31 @@ func TestAttestationAPITokenProvider(t *testing.T) {
 			wantErr:        true,
 			expectedError:  "unexpected token, invalid audience",
 			tokenHeader:    newTokenHeader("Authorization", "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE3MTUzMjY4NzIsImV4cCI6MTc0Njg2Mjg3MiwiYXVkIjoicmFuZG9tLmF1ZGllbmNlIiwic3ViIjoicmFuZG9tIHJhbmRvbSJ9.2tw4BWUAH_ISlk6rFTIQoDSxGEpUesmKae9pD3ck-_I"),
-			tokenProviders: []attjwtmiddleware.JWTOption{attjwtmiddleware.NewAttestationRobotAccountProvider(signingKey)},
+			tokenProviders: []attjwtmiddleware.JWTOption{attjwtmiddleware.NewRobotAccountProvider(signingKey)},
 		},
 		{
 			name:           "invalid token",
 			wantErr:        true,
 			expectedError:  "UNAUTHORIZED message",
 			tokenHeader:    newTokenHeader("Authorization", "Bearer eyJhbGciOiJIUzI1NiJ9.eyJSb2xlIjoiQWRtaW4iLCJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkphdmFJblVzZSIsImV4cCI6MTcxNTMzMjUwOSwiaWF0IjoxNzE1MzMyNTA5fQ.41X6FyZ5xo0ckpkOkQbe2wLpFZ4Emtb8aMy_-3ZFs6Y"),
-			tokenProviders: []attjwtmiddleware.JWTOption{attjwtmiddleware.NewAttestationRobotAccountProvider(signingKey)},
+			tokenProviders: []attjwtmiddleware.JWTOption{attjwtmiddleware.NewRobotAccountProvider(signingKey)},
 		},
 		{
 			name:           "valid robot account token",
 			tokenHeader:    newTokenHeader("Authorization", "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE3MTUzMjY4NzIsImV4cCI6MTc0Njg2Mjg3MiwiYXVkIjoiYXR0ZXN0YXRpb25zLmNoYWlubG9vcCIsInN1YiI6InJhbmRvbSByYW5kb20ifQ._8EU10CtgVtfD6NEQCP4Uco7FAZ1mvqgsjuPkZNa0pc"),
-			tokenProviders: []attjwtmiddleware.JWTOption{attjwtmiddleware.NewAttestationRobotAccountProvider(signingKey)},
+			tokenProviders: []attjwtmiddleware.JWTOption{attjwtmiddleware.NewRobotAccountProvider(signingKey)},
 		},
 		{
 			name:           "valid api token",
 			tokenHeader:    newTokenHeader("Authorization", "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE3MTUzMjY4NzIsImV4cCI6MTc0Njg2Mjg3MiwiYXVkIjoiYXBpLXRva2VuLWF1dGguY2hhaW5sb29wIiwic3ViIjoicmFuZG9tIHJhbmRvbSJ9.MHBtf4cKu2d8KDS5M5d-uKHYBbLEYOdhvacNFIB3MHI"),
-			tokenProviders: []attjwtmiddleware.JWTOption{attjwtmiddleware.NewAttestationAPITokenProvider(signingKey)},
+			tokenProviders: []attjwtmiddleware.JWTOption{attjwtmiddleware.NewAPITokenProvider(signingKey)},
 		},
 		{
 			name:        "token validates when multiple providers are set",
 			tokenHeader: newTokenHeader("Authorization", "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE3MTUzMjY4NzIsImV4cCI6MTc0Njg2Mjg3MiwiYXVkIjoiYXBpLXRva2VuLWF1dGguY2hhaW5sb29wIiwic3ViIjoicmFuZG9tIHJhbmRvbSJ9.MHBtf4cKu2d8KDS5M5d-uKHYBbLEYOdhvacNFIB3MHI"),
 			tokenProviders: []attjwtmiddleware.JWTOption{
-				attjwtmiddleware.NewAttestationRobotAccountProvider(signingKey),
-				attjwtmiddleware.NewAttestationAPITokenProvider(signingKey),
+				attjwtmiddleware.NewRobotAccountProvider(signingKey),
+				attjwtmiddleware.NewAPITokenProvider(signingKey),
 			},
 		},
 	}
@@ -127,7 +127,7 @@ func TestAttestationAPITokenProvider(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := transport.NewServerContext(context.Background(), &mockTransport{reqHeader: tc.tokenHeader})
 
-			m := attjwtmiddleware.WithAttestationTokenMiddleware(tc.tokenProviders...)
+			m := attjwtmiddleware.WithJWTMulti(tc.tokenProviders...)
 			_, err := m(emptyHandler)(ctx, nil)
 
 			if tc.wantErr {

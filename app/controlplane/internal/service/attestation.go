@@ -376,7 +376,7 @@ func (s *AttestationService) completeRobotAccount(ctx context.Context, workflowN
 
 	// If WorkflowID is not set, retrieve it using the workflow name.
 	if robotAccount.WorkflowID == "" {
-		workflow, err := s.workflowUseCase.FindByName(ctx, workflowName)
+		workflow, err := s.workflowUseCase.FindByNameInOrg(ctx, robotAccount.OrgID, workflowName)
 		if err != nil {
 			return nil, fmt.Errorf("error retrieving the workflow: %w", err)
 		}

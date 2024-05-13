@@ -194,11 +194,11 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 		// if we require a robot account
 		selector.Server(
 			// 1 - Extract information from the JWT by using the claims
-			attjwtmiddleware.WithAttestationTokenMiddleware(
+			attjwtmiddleware.WithJWTMulti(
 				// Robot account provider
-				attjwtmiddleware.NewAttestationRobotAccountProvider(opts.AuthConfig.GeneratedJwsHmacSecret),
+				attjwtmiddleware.NewRobotAccountProvider(opts.AuthConfig.GeneratedJwsHmacSecret),
 				// API Token provider
-				attjwtmiddleware.NewAttestationAPITokenProvider(opts.AuthConfig.GeneratedJwsHmacSecret),
+				attjwtmiddleware.NewAPITokenProvider(opts.AuthConfig.GeneratedJwsHmacSecret),
 			),
 			// 2.a - Set its workflow and organization in the context
 			usercontext.WithCurrentRobotAccount(opts.RobotAccountUseCase, logHelper),
