@@ -24,7 +24,7 @@ import (
 )
 
 var (
-	robotAccount              string
+	attAPIToken               string
 	useAttestationRemoteState bool
 	GracefulExit              bool
 	// attestationID is the unique identifier of the in-progress attestation
@@ -34,7 +34,6 @@ var (
 
 // Legacy env variable
 const robotAccountEnvVarName = "CHAINLOOP_ROBOT_ACCOUNT"
-const tokenEnvVarName = "CHAINLOOP_TOKEN"
 
 func newAttestationCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -56,19 +55,23 @@ func newAttestationCmd() *cobra.Command {
 				return cmd.MarkFlagRequired("attestation-id")
 			}
 
+			if os.Getenv(tokenEnvVarName) != "" && os.Getenv(robotAccountEnvVarName) != "" {
+				return fmt.Errorf("both %s and %s env variables cannot be set at the same time", tokenEnvVarName, robotAccountEnvVarName)
+			}
+
 			return nil
 		},
 	}
 
-	cmd.PersistentFlags().StringVarP(&robotAccount, "token", "t", "", fmt.Sprintf("auth token. NOTE: You can also use the env variable %s", tokenEnvVarName))
+	cmd.PersistentFlags().StringVarP(&attAPIToken, "token", "t", "", fmt.Sprintf("auth token. NOTE: You can also use the env variable %s", tokenEnvVarName))
 	// We do not use viper in this case because we do not want this token to be saved in the config file
 	// Instead we load the env variable manually
-	if robotAccount == "" {
+	if attAPIToken == "" {
 		// Check first the new env variable
-		robotAccount = os.Getenv(tokenEnvVarName)
+		attAPIToken = os.Getenv(tokenEnvVarName)
 		// If it stills not set, use the legacy one for some time
-		if robotAccount == "" {
-			robotAccount = os.Getenv(robotAccountEnvVarName)
+		if attAPIToken == "" {
+			attAPIToken = os.Getenv(robotAccountEnvVarName)
 		}
 	}
 
