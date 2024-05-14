@@ -163,6 +163,8 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.CASCredentialsService/Get": {},
 	// We have an endpoint to generate a download URL
 	"/controlplane.v1.CASRedirectService/DownloadRedirect": {PolicyArtifactDownload},
+	// Or to retrieve a download url
+	"/controlplane.v1.CASRedirectService/GetDownloadURL": {PolicyArtifactDownload},
 	// CAS Backend listing
 	"/controlplane.v1.CASBackendService/List": {PolicyCASBackendList},
 	// Available integrations
