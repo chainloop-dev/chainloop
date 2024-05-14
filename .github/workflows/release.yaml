@@ -42,7 +42,7 @@ jobs:
         run: |
           sudo wget -q https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 -O /usr/local/bin/jq
           sudo chmod u+x /usr/local/bin/jq
-#
+
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
