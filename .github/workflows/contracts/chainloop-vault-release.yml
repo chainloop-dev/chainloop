@@ -42,3 +42,6 @@ materials:
   - type: ARTIFACT
     name: cli-darwin-amd64
     output: true
+  - type: ARTIFACT
+    name: source-code
+    output: true

@@ -27,6 +27,7 @@ jobs:
       CHAINLOOP_ROBOT_ACCOUNT: ${{ secrets.CHAINLOOP_ROBOT_ACCOUNT }}
       CONTAINER_IMAGE_CP: ghcr.io/chainloop-dev/chainloop/control-plane:${{ github.ref_name }}
       CONTAINER_IMAGE_CAS: ghcr.io/chainloop-dev/chainloop/artifact-cas:${{ github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
     steps:
       - name: Install Cosign
         uses: sigstore/cosign-installer@ef6a6b364bbad08abd36a5f8af60b595d12702f8 # main
@@ -41,7 +42,7 @@ jobs:
         run: |
           sudo wget -q https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 -O /usr/local/bin/jq
           sudo chmod u+x /usr/local/bin/jq
-
+#
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
@@ -111,6 +112,16 @@ jobs:
               BINARY_PATH=$(echo "${i}" | base64 --decode | jq -r ${1} .path)
               chainloop attestation add --name ${BINARY_NAME} --value ${BINARY_PATH} || true
             done
+
+      - name: Add Attestation Artifacts (source code)
+        run: |
+          # When the trigger of the action is a release, github.ref contains refs/tags/<tag_name>
+          # Reference: https://docs.github.com/en/actions/learn-github-actions/contexts#github-context
+
+          tag=$(echo -n ${{github.ref}} | cut -d / -f3)
+          version=$(echo -n $tag | sed 's/v//g')
+          gh release download $tag -A tar.gz -D /tmp
+          chainloop attestation add --name source-code --value "/tmp/chainloop-$version.tar.gz"
 
       - name: Finish and Record Attestation
         if: ${{ success() }}
