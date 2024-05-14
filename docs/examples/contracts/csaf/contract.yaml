@@ -1,0 +1,14 @@
+schemaVersion: v1
+materials:
+  # Refs: https://docs.oasis-open.org/csaf/csaf/v2.0/os/csaf-v2.0-os.html#45-profile-5-vex
+  - type: CSAF_VEX
+    name: vex-disclosure
+  # Refs: https://docs.oasis-open.org/csaf/csaf/v2.0/os/csaf-v2.0-os.html#43-profile-3-informational-advisory
+  - type: CSAF_INFORMATIONAL_ADVISORY
+    name: informational-advisory
+  # Refs: https://docs.oasis-open.org/csaf/csaf/v2.0/os/csaf-v2.0-os.html#44-profile-4-security-advisory
+  - type: CSAF_SECURITY_ADVISORY
+    name: security-advisory
+  # Refs: https://docs.oasis-open.org/csaf/csaf/v2.0/os/csaf-v2.0-os.html#42-profile-2-security-incident-response
+  - type: CSAF_SECURITY_INCIDENT_RESPONSE
+    name: security-incident-response
