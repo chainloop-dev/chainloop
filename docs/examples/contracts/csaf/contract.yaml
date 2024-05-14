@@ -1,6 +1,4 @@
 schemaVersion: v1
-runner:
-  type: GITHUB_ACTION
 materials:
   # Refs: https://docs.oasis-open.org/csaf/csaf/v2.0/os/csaf-v2.0-os.html#45-profile-5-vex
   - type: CSAF_VEX
