@@ -32,7 +32,9 @@ var (
 	attestationID string
 )
 
+// Legacy env variable
 const robotAccountEnvVarName = "CHAINLOOP_ROBOT_ACCOUNT"
+const tokenEnvVarName = "CHAINLOOP_TOKEN"
 
 func newAttestationCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -58,11 +60,16 @@ func newAttestationCmd() *cobra.Command {
 		},
 	}
 
-	cmd.PersistentFlags().StringVarP(&robotAccount, "token", "t", "", fmt.Sprintf("robot account token. NOTE: You can also use the env variable %s", robotAccountEnvVarName))
+	cmd.PersistentFlags().StringVarP(&robotAccount, "token", "t", "", fmt.Sprintf("auth token. NOTE: You can also use the env variable %s", tokenEnvVarName))
 	// We do not use viper in this case because we do not want this token to be saved in the config file
 	// Instead we load the env variable manually
 	if robotAccount == "" {
-		robotAccount = os.Getenv(robotAccountEnvVarName)
+		// Check first the new env variable
+		robotAccount = os.Getenv(tokenEnvVarName)
+		// If it stills not set, use the legacy one for some time
+		if robotAccount == "" {
+			robotAccount = os.Getenv(robotAccountEnvVarName)
+		}
 	}
 
 	cmd.PersistentFlags().BoolVar(&GracefulExit, "graceful-exit", false, "exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0")

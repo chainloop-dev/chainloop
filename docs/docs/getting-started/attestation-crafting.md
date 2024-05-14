@@ -64,19 +64,19 @@ To create an attestation two things are required, the Chainloop crafting tool an
 
 The crafting tool is currently bundled within Chainloop command line tool. To install it just follow the [installation](installation) instructions.
 
-The robot account was created during the [previous step](./workflow-definition#robot-account-creation) and it's required during all the stages of the crafting process. It can be provided via the `--token` flag or the `$CHAINLOOP_ROBOT_ACCOUNT` environment variable.
+The robot account was created during the [previous step](./workflow-definition#robot-account-creation) and it's required during all the stages of the crafting process. It can be provided via the `--token` flag or the `$CHAINLOOP_TOKEN` environment variable.
 
 ### Initialization
 
 ```bash
-$ export CHAINLOOP_ROBOT_ACCOUNT=deadbeef
+$ export CHAINLOOP_TOKEN=deadbeef
 ```
 
 #### Options
 
 `chainloop attestation init` supports the following options
 
-- `--token` robot account provided by the SecOps team. Alternatively, you can set the `CHAINLOOP_ROBOT_ACCOUNT` environment variable.
+- `--token` auth token provided by the SecOps team. Alternatively, you can set the `CHAINLOOP_TOKEN` environment variable.
 - `--revision` of the contract (default: `latest`)
 - `--dry-run`; do not store the attestation in the Control plane, and do not fail if the runner context or required env variables can not be resolved. Useful for development (default: `false`)
 
