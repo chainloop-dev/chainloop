@@ -71,12 +71,14 @@ require (
 	github.com/bufbuild/protovalidate-go v0.6.1
 	github.com/casbin/casbin/v2 v2.81.0
 	github.com/casbin/ent-adapter v0.3.0
+	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.1.0
 	github.com/in-toto/attestation v0.1.1-0.20231010121940-09a03152c04a
 	github.com/invopop/jsonschema v0.7.0
 	github.com/jackc/pgx/v5 v5.5.4
 	github.com/muesli/reflow v0.3.0
 	github.com/openvex/go-vex v0.2.5
+	github.com/posthog/posthog-go v0.0.0-20240327112532-87b23fe11103
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	google.golang.org/genproto/googleapis/api v0.0.0-20240401170217-c3f982113cda
 	google.golang.org/genproto/googleapis/bytestream v0.0.0-20240318140521-94a12d6c2237
