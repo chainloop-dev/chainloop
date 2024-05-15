@@ -63,11 +63,11 @@ func NewRunner(t schemaapi.CraftingSchema_Runner_RunnerType) SupportedRunner {
 	return runners.NewGeneric()
 }
 
-// Discover the runner environment
+// DiscoverRunner the runner environment
 // This method does a simple check to see which runner is available in the environment
 // by iterating over the different runners and performing duck-typing checks
 // If more than one runner is detected, we default to generic since its an incongruent result
-func discoverRunner(logger zerolog.Logger) SupportedRunner {
+func DiscoverRunner(logger zerolog.Logger) SupportedRunner {
 	detected := []SupportedRunner{}
 	for _, r := range RunnersMap {
 		if r.CheckEnv() {
@@ -94,7 +94,7 @@ func discoverRunner(logger zerolog.Logger) SupportedRunner {
 }
 
 func DiscoverAndEnforceRunner(enforcedRunnerType schemaapi.CraftingSchema_Runner_RunnerType, dryRun bool, logger zerolog.Logger) (SupportedRunner, error) {
-	discoveredRunner := discoverRunner(logger)
+	discoveredRunner := DiscoverRunner(logger)
 
 	logger.Debug().
 		Str("discovered", discoveredRunner.ID().String()).
