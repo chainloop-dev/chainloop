@@ -58,7 +58,7 @@ INF API token provided to the command line
 │ 0cfff272-2a7d-43cf-bbb0-087043fc028c │ release-demo-wf │ core    │ 13 May 24 11:08 UTC │        │                 │
 └──────────────────────────────────────┴─────────────────┴─────────┴─────────────────────┴────────┴─────────────────┘
 ```
-The flag `--skip-robot-account-create` prevents the creation of a robot account that will be of no use. Once the workflow is created, the attestation process remains pretty much the same:
+The flag `--skip-robot-account-create` prevents the creation of a robot account that will be of no use since we will be using `CHAINLOOP_TOKEN` instead. Once the workflow is created, the attestation process remains pretty much the same:
 ```bash
 $ chainloop attestation init --workflow-name release-demo-wf --token $API_TOKEN
 INF Attestation initialized! now you can check its status or add materials to it

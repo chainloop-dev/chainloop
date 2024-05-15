@@ -32,7 +32,7 @@ func newAttestationPushCmd() *cobra.Command {
 		Example: `  chainloop attestation push --key <key path>|<env://VAR_NAME> --token [robot-account-token] --annotation key=value,key2=val2
 
   # sign the resulting attestation using a cosign key present in the filesystem and stdin for the passphrase
-  # NOTE that the --token flag can be replaced by having the CHAINLOOP_ROBOT_ACCOUNT env variable
+  # NOTE that the --token flag can be replaced by having the CHAINLOOP_TOKEN env variable
   chainloop attestation push --key cosign.key --token [robot-account-token]
 
   # or retrieve the key from an environment variable containing the private key
