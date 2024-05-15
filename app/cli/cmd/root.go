@@ -46,7 +46,7 @@ const (
 	useWorkflowRobotAccount = "withWorkflowRobotAccount"
 	appName                 = "chainloop"
 	//nolint:gosec
-	apiTokenEnvVarName = "CHAINLOOP_API_TOKEN"
+	tokenEnvVarName = "CHAINLOOP_TOKEN"
 )
 
 func NewRootCmd(l zerolog.Logger) *cobra.Command {
@@ -104,11 +104,11 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 	rootCmd.PersistentFlags().StringVarP(&flagOutputFormat, "output", "o", "table", "Output format, valid options are json and table")
 
 	// Override the oauth authentication requirement for the CLI by providing an API token
-	rootCmd.PersistentFlags().StringVarP(&apiToken, "token", "t", "", fmt.Sprintf("API token. NOTE: Alternatively use the env variable %s", apiTokenEnvVarName))
+	rootCmd.PersistentFlags().StringVarP(&apiToken, "token", "t", "", fmt.Sprintf("API token. NOTE: Alternatively use the env variable %s", tokenEnvVarName))
 	// We do not use viper in this case because we do not want this token to be saved in the config file
 	// Instead we load the env variable manually
 	if apiToken == "" {
-		apiToken = os.Getenv(apiTokenEnvVarName)
+		apiToken = os.Getenv(tokenEnvVarName)
 	}
 
 	rootCmd.AddCommand(newWorkflowCmd(), newAuthCmd(), NewVersionCmd(),
@@ -195,13 +195,11 @@ func loadControlplaneAuthToken(cmd *cobra.Command) (string, error) {
 	// If the CMD uses a robot account instead of the regular auth token we override it
 	// TODO: the attestation CLI should get split from this one
 	if _, ok := cmd.Annotations[useWorkflowRobotAccount]; ok {
-		if robotAccount != "" {
-			logger.Debug().Msg("loaded token from robot account")
-		} else {
-			return "", newGracefulError(ErrRobotAccountRequired)
+		if attAPIToken == "" {
+			return "", newGracefulError(ErrAttestationTokenRequired)
 		}
 
-		return robotAccount, nil
+		return attAPIToken, nil
 	}
 
 	// override if token is passed as a flag/env variable
