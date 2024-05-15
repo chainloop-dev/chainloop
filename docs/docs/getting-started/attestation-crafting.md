@@ -76,9 +76,10 @@ $ export CHAINLOOP_TOKEN=deadbeef
 
 `chainloop attestation init` supports the following options
 
-- `--token` auth token provided by the SecOps team. Alternatively, you can set the `CHAINLOOP_TOKEN` environment variable.
-- `--revision` of the contract (default: `latest`)
-- `--dry-run`; do not store the attestation in the Control plane, and do not fail if the runner context or required env variables can not be resolved. Useful for development (default: `false`)
+- `--token` token provided by the SecOps team. Alternatively, you can set the `CHAINLOOP_TOKEN` environment variable.
+- `--revision` of the contract (default: `latest`).
+- `--workflow-name` name of the workflow to run the attestation. This is ignored when authentication is based on robot account and needed for api tokens.
+- `--dry-run`; do not store the attestation in the Control plane, and do not fail if the runner context or required env variables can not be resolved. Useful for development (default: `false`).
 
 To initialize a new crafting process just run `attestation init` and the system will retrieve the latest version (if no specific revision is set via the `--revision` flag) of the contract.
 

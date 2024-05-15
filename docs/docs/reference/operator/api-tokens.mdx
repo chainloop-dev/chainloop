@@ -4,7 +4,7 @@ title: Controlplane API Tokens
 
 The Chainloop CLI is used to interact with the Chainloop Control Plane supports two authentication methods.
 
-### User Authentication
+## User Authentication
 
 - Meant for interactive use
 - Associated with an user account
@@ -12,14 +12,15 @@ The Chainloop CLI is used to interact with the Chainloop Control Plane supports 
 
 They can be obtained by running the `chainloop auth login` command.
 
-### API tokens
+## API tokens
 
 Alternatively, you can create Service Accounts (API Tokens) that
 
 - Are meant for non-interactive use, i.e automation
 - Are associated with a organization
 - Have a customizable expiry time that can be manually revoked
-- supports ACL for fine-grained access control (SOON)
+- Can operate with [Chainloop Workflows](../../getting-started/workflow-definition) and [Attestations](../../getting-started/attestation-crafting)
+- Supports ACL for fine-grained access control (SOON)
 
 You can operate on your organization API tokens using the `chainloop organization api-token` command.
 
@@ -43,4 +44,31 @@ and then they can be used by the CLI by either setting `CHAINLOOP_TOKEN` environ
 
 ```
 chainloop workflow list --token <your-token>
+```
+
+### Attestations
+
+API Tokens can be used to perform attestations, the only requirement is that the operator should create a workflow prior to run the attestation and an api token. Example:
+```bash
+$ chainloop wf create --name release-demo-wf --description "Showcase of API Token creating wf" --project core --token $API_TOKEN --skip-robot-account-create
+INF API token provided to the command line
+┌──────────────────────────────────────┬─────────────────┬─────────┬─────────────────────┬────────┬─────────────────┐
+│ ID                                   │ NAME            │ PROJECT │ CREATED AT          │ RUNNER │ LAST RUN STATUS │
+├──────────────────────────────────────┼─────────────────┼─────────┼─────────────────────┼────────┼─────────────────┤
+│ 0cfff272-2a7d-43cf-bbb0-087043fc028c │ release-demo-wf │ core    │ 13 May 24 11:08 UTC │        │                 │
+└──────────────────────────────────────┴─────────────────┴─────────┴─────────────────────┴────────┴─────────────────┘
+```
+The flag `--skip-robot-account-create` prevents the creation of a robot account that will be of no use since we will be using `CHAINLOOP_TOKEN` instead. Once the workflow is created, the attestation process remains pretty much the same:
+```bash
+$ chainloop attestation init --workflow-name release-demo-wf --token $API_TOKEN
+INF Attestation initialized! now you can check its status or add materials to it
+┌───────────────────┬──────────────────────────────────────┐
+│ Initialized At    │ 13 May 24 12:23 UTC                  │
+├───────────────────┼──────────────────────────────────────┤
+│ Attestation ID    │ 810472ab-484f-4499-8805-f2024d2b4a47 │
+│ Name              │ release-demo-wf                      │
+│ Team              │                                      │
+│ Project           │ core                                 │
+│ Contract Revision │ 1                                    │
+└───────────────────┴──────────────────────────────────────┘
 ```
