@@ -36,4 +36,4 @@ func newGracefulError(err error) error {
 
 var ErrAttestationNotInitialized = errors.New("attestation not yet initialized, execute the init command first")
 var ErrAttestationAlreadyExist = errors.New("attestation already initialized, to override it use the --replace flag`")
-var ErrRobotAccountRequired = errors.New("robot account token required, please provide it via the pre-defined env variable or command flag")
+var ErrAttestationTokenRequired = errors.New("token required, please provide it via the pre-defined env variable or command flag")

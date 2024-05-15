@@ -195,10 +195,8 @@ func loadControlplaneAuthToken(cmd *cobra.Command) (string, error) {
 	// If the CMD uses a robot account instead of the regular auth token we override it
 	// TODO: the attestation CLI should get split from this one
 	if _, ok := cmd.Annotations[useWorkflowRobotAccount]; ok {
-		if attAPIToken != "" {
-			logger.Debug().Msg("loaded token from robot account")
-		} else {
-			return "", newGracefulError(ErrRobotAccountRequired)
+		if attAPIToken == "" {
+			return "", newGracefulError(ErrAttestationTokenRequired)
 		}
 
 		return attAPIToken, nil
