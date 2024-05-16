@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -67,12 +67,15 @@ func NewBuilder(opts ...NewOpt) (*Builder, error) {
 }
 
 // it can both expire and being revoked, revocation is performed by checking the keyID against our revocation list
-func (ra *Builder) GenerateJWT(keyID string, expiresAt *time.Time) (string, error) {
-	claims := jwt.RegisteredClaims{
-		// Key identifier so we can check it's revocation status
-		ID:       keyID,
-		Issuer:   ra.issuer,
-		Audience: jwt.ClaimStrings{Audience},
+func (ra *Builder) GenerateJWT(orgID, keyID string, expiresAt *time.Time) (string, error) {
+	claims := CustomClaims{
+		orgID,
+		jwt.RegisteredClaims{
+			// Key identifier so we can check it's revocation status
+			ID:       keyID,
+			Issuer:   ra.issuer,
+			Audience: jwt.ClaimStrings{Audience},
+		},
 	}
 
 	// optional expiration value, i.e 30 days
@@ -82,4 +85,9 @@ func (ra *Builder) GenerateJWT(keyID string, expiresAt *time.Time) (string, erro
 
 	resultToken := jwt.NewWithClaims(SigningMethod, claims)
 	return resultToken.SignedString([]byte(ra.hmacSecret))
+}
+
+type CustomClaims struct {
+	OrgID string `json:"org_id"`
+	jwt.RegisteredClaims
 }
