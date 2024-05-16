@@ -214,6 +214,26 @@ func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreat
 	return run, nil
 }
 
+// ExistsInOrganization checks if the given workflowRunID exists in the given orgID
+func (uc *WorkflowRunUseCase) ExistsInOrganization(ctx context.Context, orgID, id string) (bool, error) {
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return false, err
+	}
+
+	runUUID, err := uuid.Parse(id)
+	if err != nil {
+		return false, err
+	}
+
+	_, err = uc.wfRunRepo.FindByIDInOrg(ctx, orgUUID, runUUID)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
 // The workflowRun belongs to the provided workflowRun
 func (uc *WorkflowRunUseCase) ExistsInWorkflow(ctx context.Context, workflowID, id string) (bool, error) {
 	runUUID, err := uuid.Parse(id)
@@ -290,6 +310,30 @@ func (uc *WorkflowRunUseCase) List(ctx context.Context, orgID string, f *RunList
 	}
 
 	return uc.wfRunRepo.List(ctx, orgUUID, f, p)
+}
+
+// GetByIDInOrg Returns the workflow run with the provided ID if it belongs to the org
+func (uc *WorkflowRunUseCase) GetByIDInOrg(ctx context.Context, orgID, runID string) (*WorkflowRun, error) {
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	runUUID, err := uuid.Parse(runID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	wfRun, err := uc.wfRunRepo.FindByID(ctx, runUUID)
+	if err != nil {
+		return nil, fmt.Errorf("finding workflow run: %w", err)
+	}
+
+	if wfRun == nil || (wfRun.Workflow.OrgID != orgUUID) {
+		return nil, NewErrNotFound("workflow run")
+	}
+
+	return wfRun, nil
 }
 
 // Returns the workflow run with the provided ID if it belongs to the org or its public
