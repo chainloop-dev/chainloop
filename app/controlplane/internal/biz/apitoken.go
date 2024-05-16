@@ -81,6 +81,8 @@ func NewAPITokenUseCase(apiTokenRepo APITokenRepo, conf *conf.Auth, authzE *auth
 			// to download artifacts and list referrers
 			authz.PolicyArtifactDownload, authz.PolicyReferrerRead,
 			authz.PolicyOrganizationRead,
+			// to create robot accounts
+			authz.PolicyRobotAccountCreate,
 		},
 	}
 

@@ -92,7 +92,8 @@ var (
 	// Org Metrics
 	PolicyOrgMetricsRead = &Policy{ResourceOrgMetric, ActionList}
 	// Robot Account
-	PolicyRobotAccountList = &Policy{ResourceRobotAccount, ActionList}
+	PolicyRobotAccountList   = &Policy{ResourceRobotAccount, ActionList}
+	PolicyRobotAccountCreate = &Policy{ResourceRobotAccount, ActionCreate}
 	// Workflow Contract
 	PolicyWorkflowContractList   = &Policy{ResourceWorkflowContract, ActionList}
 	PolicyWorkflowContractRead   = &Policy{ResourceWorkflowContract, ActionRead}
@@ -176,7 +177,8 @@ var ServerOperationsMap = map[string][]*Policy{
 	// Metrics
 	"/controlplane.v1.OrgMetricsService/.*": {PolicyOrgMetricsRead},
 	// Robot Account
-	"/controlplane.v1.RobotAccountService/List": {PolicyRobotAccountList},
+	"/controlplane.v1.RobotAccountService/List":   {PolicyRobotAccountList},
+	"/controlplane.v1.RobotAccountService/Create": {PolicyRobotAccountCreate},
 	// Workflows
 	"/controlplane.v1.WorkflowService/List":   {PolicyWorkflowList},
 	"/controlplane.v1.WorkflowService/View":   {PolicyWorkflowRead},
