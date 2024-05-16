@@ -149,7 +149,7 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 
 	// Create workflowRun
 	opts := &biz.WorkflowRunCreateOpts{
-		WorkflowID:       robotAccount.WorkflowID,
+		WorkflowID:       wf.ID.String(),
 		ContractRevision: contractVersion,
 		RunnerRunURL:     req.GetJobUrl(),
 		RunnerType:       req.GetRunner().String(),
@@ -184,7 +184,8 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	}
 
 	// This will make sure the provided workflowRunID belongs to the org encoded in the robot account
-	if _, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, robotAccount.WorkflowID, "", req.WorkflowRunId); err != nil {
+	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, robotAccount.WorkflowID, "", req.WorkflowRunId)
+	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
@@ -238,7 +239,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	}
 
 	// Store the exploded attestation referrer information in the DB
-	if err := s.referrerUseCase.ExtractAndPersist(ctx, envelope, robotAccount.WorkflowID); err != nil {
+	if err := s.referrerUseCase.ExtractAndPersist(ctx, envelope, wf.ID.String()); err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
@@ -262,7 +263,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	// Run integrations dispatcher
 	go func() {
 		if err := s.integrationDispatcher.Run(context.TODO(), &dispatcher.RunOpts{
-			Envelope: envelope, OrgID: robotAccount.OrgID, WorkflowID: robotAccount.WorkflowID,
+			Envelope: envelope, OrgID: robotAccount.OrgID, WorkflowID: wf.ID.String(),
 			DownloadBackendType: string(casBackend.Provider),
 			DownloadSecretName:  secretName,
 			WorkflowRunID:       req.WorkflowRunId,
