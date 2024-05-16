@@ -16,6 +16,7 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -24,6 +25,7 @@ import (
 	"github.com/adrg/xdg"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/chainloop-dev/chainloop/internal/grpcconn"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -46,8 +48,18 @@ const (
 	useWorkflowRobotAccount = "withWorkflowRobotAccount"
 	appName                 = "chainloop"
 	//nolint:gosec
-	tokenEnvVarName = "CHAINLOOP_TOKEN"
+	tokenEnvVarName      = "CHAINLOOP_TOKEN"
+	robotAccountAudience = "attestations.chainloop"
+	userAudience         = "user-auth.chainloop"
+	//nolint:gosec
+	apiTokenAudience = "api-token-auth.chainloop"
 )
+
+type AuthenticationToken struct{}
+type ParsedToken struct {
+	ID   string
+	Type string
+}
 
 func NewRootCmd(l zerolog.Logger) *cobra.Command {
 	rootCmd := &cobra.Command{
@@ -79,6 +91,15 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 			}
 
 			actionOpts = newActionOpts(logger, conn)
+
+			// For telemetry reasons we parse the token to know the type of token is being used when executing the CLI
+			// Once we have the token type we can send it to the telemetry service by injecting it on the context
+			token, err := parseToken(apiToken)
+			if err != nil {
+				logger.Debug().Err(err).Msg("parsing token for telemetry")
+			}
+
+			cmd.SetContext(context.WithValue(cmd.Context(), AuthenticationToken{}, token))
 
 			return nil
 		},
@@ -210,4 +231,54 @@ func loadControlplaneAuthToken(cmd *cobra.Command) (string, error) {
 
 	// loaded from config file, previously stored via "auth login"
 	return viper.GetString(confOptions.authToken.viperKey), nil
+}
+
+// parseToken the token and return the type of token. At the moment in Chainloop we have 3 types of tokens:
+// 1. Robot account token
+// 2. User account token
+// 3. API token
+// Each one of them have an associated audience claim that we use to identify the type of token. If the token is not
+// present, nor we cannot match it with one of the expected audience, return nil.
+func parseToken(token string) (*ParsedToken, error) {
+	if token == "" {
+		return &ParsedToken{}, nil
+	}
+
+	// Create a parser without claims validation
+	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
+
+	// Parse the token without verification
+	parsedToken, _, err := parser.ParseUnverified(token, jwt.MapClaims{})
+	if err != nil {
+		return nil, err
+	}
+
+	// Extract claims
+	claims := parsedToken.Claims.(jwt.MapClaims)
+
+	// Get the audience claim
+	if val, ok := claims["aud"]; ok && val != nil {
+		// Chainloop tokens have only one audience in an array
+		aud, ok := val.([]interface{})
+		if !ok {
+			return nil, nil
+		}
+		if len(aud) == 0 {
+			return nil, nil
+		}
+
+		switch aud[0].(string) {
+		case apiTokenAudience:
+			return &ParsedToken{Type: "api-token"}, nil
+		case userAudience:
+			userID := claims["user_id"].(string)
+			return &ParsedToken{Type: "user", ID: userID}, nil
+		case robotAccountAudience:
+			return &ParsedToken{Type: "robot-account"}, nil
+		default:
+			return nil, nil
+		}
+	}
+
+	return nil, nil
 }
