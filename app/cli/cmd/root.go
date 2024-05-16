@@ -91,7 +91,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 
 			actionOpts = newActionOpts(logger, conn)
 
-			token, err := ParseToken(apiToken)
+			token, err := parseToken(apiToken)
 			if err != nil {
 				logger.Debug().Err(err).Msg("parsing token for telemetry")
 			}
@@ -231,8 +231,8 @@ func loadControlplaneAuthToken(cmd *cobra.Command) (string, error) {
 	return viper.GetString(confOptions.authToken.viperKey), nil
 }
 
-// ParseToken the token and return the type of token
-func ParseToken(token string) (*ParsedToken, error) {
+// parseToken the token and return the type of token
+func parseToken(token string) (*ParsedToken, error) {
 	if token == "" {
 		return &ParsedToken{}, nil
 	}
