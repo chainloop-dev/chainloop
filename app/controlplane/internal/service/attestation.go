@@ -213,9 +213,17 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
 
-	// Check that provided workflowRun belongs to workflow encoded in the robot account
-	if exists, err := s.wrUseCase.ExistsInWorkflow(ctx, robotAccount.WorkflowID, req.WorkflowRunId); err != nil || !exists {
-		return nil, errors.NotFound("not found", "workflowRun not found")
+	if robotAccount.WorkflowID == "" {
+		wr, err := s.wrUseCase.GetByIDInOrgOrPublic(ctx, robotAccount.OrgID, req.WorkflowRunId)
+		if err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+		robotAccount.WorkflowID = wr.Workflow.ID.String()
+	} else {
+		// Check that provided workflowRun belongs to workflow encoded in the robot account
+		if exists, err := s.wrUseCase.ExistsInWorkflow(ctx, robotAccount.WorkflowID, req.WorkflowRunId); err != nil || !exists {
+			return nil, errors.NotFound("not found", "workflowRun not found")
+		}
 	}
 
 	// Decode the envelope through json encoding but
@@ -316,9 +324,16 @@ func (s *AttestationService) Cancel(ctx context.Context, req *cpAPI.AttestationS
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
 
-	// Check that provided workflowRun belongs to workflow encoded in the robot account
-	if exists, err := s.wrUseCase.ExistsInWorkflow(ctx, robotAccount.WorkflowID, req.WorkflowRunId); err != nil || !exists {
-		return nil, errors.NotFound("not found", "workflowRun not found")
+	if robotAccount.WorkflowID == "" {
+		_, err := s.wrUseCase.GetByIDInOrgOrPublic(ctx, robotAccount.OrgID, req.WorkflowRunId)
+		if err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+	} else {
+		// Check that provided workflowRun belongs to workflow encoded in the robot account
+		if exists, err := s.wrUseCase.ExistsInWorkflow(ctx, robotAccount.WorkflowID, req.WorkflowRunId); err != nil || !exists {
+			return nil, errors.NotFound("not found", "workflowRun not found")
+		}
 	}
 
 	var status biz.WorkflowRunStatus
@@ -344,6 +359,14 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 	robotAccount := usercontext.CurrentRobotAccount(ctx)
 	if robotAccount == nil {
 		return nil, errors.NotFound("not found", "robot account not found")
+	}
+
+	if robotAccount.WorkflowID == "" {
+		wr, err := s.wrUseCase.GetByIDInOrgOrPublic(ctx, robotAccount.OrgID, req.WorkflowRunId)
+		if err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+		robotAccount.WorkflowID = wr.Workflow.ID.String()
 	}
 
 	// Find workflow in DB to extract the organization
