@@ -100,7 +100,7 @@ func workflowRunDescribeTableOutput(run *action.WorkflowRunItemFull) error {
 	}
 	gt.AppendRow(table.Row{"State", wr.State})
 	if wr.Reason != "" {
-		gt.AppendRow(table.Row{"Failure Reason", wr.State})
+		gt.AppendRow(table.Row{"Failure Reason", wr.Reason})
 	}
 	gt.AppendRow(table.Row{"Runner Link", wr.RunURL})
 
