@@ -29,7 +29,8 @@ curl -sfL https://docs.chainloop.dev/install.sh | bash -s
 you can retrieve a specific version with
 
 ```bash
-curl -sfL https://docs.chainloop.dev/install.sh | bash -s -- --version v0.1.2
+# You can find all the available versions at https://github.com/chainloop-dev/chainloop/releases
+curl -sfL https://docs.chainloop.dev/install.sh | bash -s -- --version vx.x.x
 ```
 
 and customize the install path (default to /usr/local/bin)
