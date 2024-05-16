@@ -51,7 +51,8 @@ const (
 	tokenEnvVarName      = "CHAINLOOP_TOKEN"
 	robotAccountAudience = "attestations.chainloop"
 	userAudience         = "user-auth.chainloop"
-	apiTokenAudience     = "api-token-auth.chainloop"
+	//nolint:gosec
+	apiTokenAudience = "api-token-auth.chainloop"
 )
 
 type AuthenticationToken struct{}
