@@ -16,6 +16,7 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -24,6 +25,7 @@ import (
 	"github.com/adrg/xdg"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/chainloop-dev/chainloop/internal/grpcconn"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -46,8 +48,17 @@ const (
 	useWorkflowRobotAccount = "withWorkflowRobotAccount"
 	appName                 = "chainloop"
 	//nolint:gosec
-	tokenEnvVarName = "CHAINLOOP_TOKEN"
+	tokenEnvVarName      = "CHAINLOOP_TOKEN"
+	robotAccountAudience = "attestations.chainloop"
+	userAudience         = "user-auth.chainloop"
+	apiTokenAudience     = "api-token-auth.chainloop"
 )
+
+type AuthenticationToken struct{}
+type ParsedToken struct {
+	ID   string
+	Type string
+}
 
 func NewRootCmd(l zerolog.Logger) *cobra.Command {
 	rootCmd := &cobra.Command{
@@ -79,6 +90,14 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 			}
 
 			actionOpts = newActionOpts(logger, conn)
+
+			token, err := ParseToken(apiToken)
+			if err != nil {
+				logger.Debug().Err(err).Msg("parsing token for telemetry")
+			}
+
+			// Inject the authentication token into the command context
+			cmd.SetContext(context.WithValue(cmd.Context(), AuthenticationToken{}, token))
 
 			return nil
 		},
@@ -210,4 +229,49 @@ func loadControlplaneAuthToken(cmd *cobra.Command) (string, error) {
 
 	// loaded from config file, previously stored via "auth login"
 	return viper.GetString(confOptions.authToken.viperKey), nil
+}
+
+// ParseToken the token and return the type of token
+func ParseToken(token string) (*ParsedToken, error) {
+	if token == "" {
+		return &ParsedToken{}, nil
+	}
+
+	// Create a parser without claims validation
+	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
+
+	// Parse the token without verification
+	parsedToken, _, err := parser.ParseUnverified(token, jwt.MapClaims{})
+	if err != nil {
+		return nil, err
+	}
+
+	// Extract claims
+	claims := parsedToken.Claims.(jwt.MapClaims)
+
+	// Get the audience claim
+	if val, ok := claims["aud"]; ok && val != nil {
+		// Chainloop tokens have only one audience in an array
+		aud, ok := val.([]interface{})
+		if !ok {
+			return &ParsedToken{}, nil
+		}
+		if len(aud) == 0 {
+			return &ParsedToken{}, nil
+		}
+
+		switch aud[0].(string) {
+		case apiTokenAudience:
+			return &ParsedToken{Type: "api-token"}, nil
+		case userAudience:
+			userID := claims["user_id"].(string)
+			return &ParsedToken{Type: "user", ID: userID}, nil
+		case robotAccountAudience:
+			return &ParsedToken{Type: "robot-account"}, nil
+		default:
+			return &ParsedToken{}, nil
+		}
+	}
+
+	return &ParsedToken{}, nil
 }
