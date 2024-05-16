@@ -165,7 +165,7 @@ func setRobotAccountFromAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUs
 		return nil, errors.New("API token revoked")
 	}
 
-	ctx = withRobotAccount(ctx, &RobotAccount{OrgID: token.OrganizationID.String()})
+	ctx = withRobotAccount(ctx, &RobotAccount{OrgID: token.OrganizationID.String(), ProviderKey: attjwtmiddleware.APITokenProviderKey})
 
 	return ctx, nil
 }

@@ -27,6 +27,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
@@ -93,9 +94,8 @@ func (s *AttestationService) GetContract(ctx context.Context, req *cpAPI.Attesta
 		return nil, errors.NotFound("not found", "neither robot account nor API token found")
 	}
 
-	// If WorkflowID is not set and no workflowName is provided, return BadRequest.
-	if req.GetWorkflowName() == "" && robotAccount.WorkflowID == "" {
-		return nil, errors.BadRequest("bad request", "when using an API Token, workflow name is required as parameter")
+	if err := checkAuthRequirements(robotAccount, req.GetWorkflowName()); err != nil {
+		return nil, err
 	}
 
 	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, robotAccount.WorkflowID, req.GetWorkflowName(), "")
@@ -123,9 +123,8 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		return nil, errors.NotFound("not found", "neither robot account nor API token found")
 	}
 
-	// If WorkflowID is not set and no workflowName is provided, return BadRequest.
-	if req.GetWorkflowName() == "" && robotAccount.WorkflowID == "" {
-		return nil, errors.BadRequest("bad request", "when using an API Token, workflow name is required as parameter")
+	if err := checkAuthRequirements(robotAccount, req.GetWorkflowName()); err != nil {
+		return nil, err
 	}
 
 	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, robotAccount.WorkflowID, req.GetWorkflowName(), "")
@@ -457,4 +456,19 @@ func (s *AttestationService) findWorkflowFromTokenOrNameOrRunID(ctx context.Cont
 	}
 
 	return nil, biz.NewErrValidationStr("workflowName or workflowRunId must be provided")
+}
+
+func checkAuthRequirements(attToken *usercontext.RobotAccount, workflowName string) error {
+	if attToken == nil {
+		return errors.Forbidden("forbidden", "authentication not found")
+	}
+
+	// For API tokens we do not support explicit workflowName. It is inside the token
+	if attToken.ProviderKey == attjwtmiddleware.APITokenProviderKey && workflowName == "" {
+		return errors.BadRequest("bad request", "when using an API Token, workflow name is required as parameter")
+	} else if attToken.ProviderKey == attjwtmiddleware.RobotAccountProviderKey && workflowName != "" {
+		return errors.BadRequest("bad request", "workflow name is not compatible with robot-account based attestations")
+	}
+
+	return nil
 }

@@ -122,7 +122,8 @@ func (action *AttestationInit) Run(ctx context.Context, contractRevision int, wo
 				Runner:           discoveredRunner.ID(),
 				JobUrl:           discoveredRunner.RunURI(),
 				ContractRevision: int32(contractRevision),
-				WorkflowName:     workflow.GetName(),
+				// send the workflow name explicitly provided by the user to detect that functional case
+				WorkflowName: workflowName,
 			},
 		)
 		if err != nil {
