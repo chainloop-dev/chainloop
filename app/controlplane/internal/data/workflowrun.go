@@ -102,7 +102,7 @@ func (r *WorkflowRunRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	} else if run == nil {
-		return nil, nil
+		return nil, biz.NewErrNotFound("workflow run")
 	}
 
 	return entWrToBizWr(run), nil

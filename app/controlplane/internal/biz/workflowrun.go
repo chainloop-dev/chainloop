@@ -313,6 +313,21 @@ func (uc *WorkflowRunUseCase) GetByIDInOrgOrPublic(ctx context.Context, orgID, r
 	return workflowRunInOrgOrPublic(wfrun, orgUUID)
 }
 
+// Returns the workflow run with the provided ID if it belongs to the org
+func (uc *WorkflowRunUseCase) GetByIDInOrg(ctx context.Context, orgID, runID string) (*WorkflowRun, error) {
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	runUUID, err := uuid.Parse(runID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	return uc.wfRunRepo.FindByIDInOrg(ctx, orgUUID, runUUID)
+}
+
 func (uc *WorkflowRunUseCase) GetByDigestInOrgOrPublic(ctx context.Context, orgID, digest string) (*WorkflowRun, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {

@@ -98,24 +98,9 @@ func (s *AttestationService) GetContract(ctx context.Context, req *cpAPI.Attesta
 		return nil, errors.BadRequest("bad request", "when using an API Token, workflow name is required as parameter")
 	}
 
-	// If WorkflowID is not set, retrieve it using the workflow name. This is needed since when coming from
-	// an API Token request, the only information we have set is the workflow name not the ID
-	var wf *biz.Workflow
-	var err error
-	if robotAccount.WorkflowID == "" {
-		wf, err = s.workflowUseCase.FindByNameInOrg(ctx, robotAccount.OrgID, req.GetWorkflowName())
-		if err != nil {
-			return nil, fmt.Errorf("error retrieving the workflow: %w", err)
-		}
-		robotAccount.WorkflowID = wf.ID.String()
-	}
-
-	// Find workflow
-	if wf == nil {
-		wf, err = s.workflowUseCase.FindByID(ctx, robotAccount.WorkflowID)
-		if err != nil {
-			return nil, errors.NotFound("not found", "workflow not found")
-		}
+	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, robotAccount.WorkflowID, req.GetWorkflowName(), "")
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	// Find contract revision
@@ -143,24 +128,9 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		return nil, errors.BadRequest("bad request", "when using an API Token, workflow name is required as parameter")
 	}
 
-	// If WorkflowID is not set, retrieve it using the workflow name. This is needed since when coming from
-	// an API Token request, the only information we have set is the workflow name not the ID
-	var wf *biz.Workflow
-	var err error
-	if robotAccount.WorkflowID == "" {
-		wf, err = s.workflowUseCase.FindByNameInOrg(ctx, robotAccount.OrgID, req.GetWorkflowName())
-		if err != nil {
-			return nil, fmt.Errorf("error retrieving the workflow: %w", err)
-		}
-		robotAccount.WorkflowID = wf.ID.String()
-	}
-
-	// Find workflow
-	if wf == nil {
-		wf, err = s.workflowUseCase.FindByID(ctx, robotAccount.WorkflowID)
-		if err != nil {
-			return nil, errors.NotFound("not found", "workflow not found")
-		}
+	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, robotAccount.WorkflowID, req.GetWorkflowName(), "")
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	// Find contract revision
@@ -213,8 +183,13 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
 
+	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, robotAccount.WorkflowID, "", req.WorkflowRunId)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
 	// Check that provided workflowRun belongs to workflow encoded in the robot account
-	if exists, err := s.wrUseCase.ExistsInWorkflow(ctx, robotAccount.WorkflowID, req.WorkflowRunId); err != nil || !exists {
+	if exists, err := s.wrUseCase.ExistsInWorkflow(ctx, wf.ID.String(), req.WorkflowRunId); err != nil || !exists {
 		return nil, errors.NotFound("not found", "workflowRun not found")
 	}
 
@@ -316,8 +291,12 @@ func (s *AttestationService) Cancel(ctx context.Context, req *cpAPI.AttestationS
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
 
-	// Check that provided workflowRun belongs to workflow encoded in the robot account
-	if exists, err := s.wrUseCase.ExistsInWorkflow(ctx, robotAccount.WorkflowID, req.WorkflowRunId); err != nil || !exists {
+	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, robotAccount.WorkflowID, "", req.WorkflowRunId)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	if exists, err := s.wrUseCase.ExistsInWorkflow(ctx, wf.ID.String(), req.WorkflowRunId); err != nil || !exists {
 		return nil, errors.NotFound("not found", "workflowRun not found")
 	}
 
@@ -346,12 +325,6 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
 
-	// Find workflow in DB to extract the organization
-	wf, err := s.workflowUseCase.FindByID(ctx, robotAccount.WorkflowID)
-	if err != nil {
-		return nil, errors.NotFound("not found", "workflow not found")
-	}
-
 	// Find the CAS backend associated with this workflowRun, that's the one that will be used to upload the materials
 	// NOTE: currently we only support one backend per workflowRun but this will change in the future
 
@@ -360,7 +333,7 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 	var backend *biz.CASBackend
 	if req.WorkflowRunId == "" {
 		s.log.Warn("DEPRECATED: using main repository to get upload creds")
-		backend, err = s.casUC.FindDefaultBackend(ctx, wf.OrgID.String())
+		backend, err := s.casUC.FindDefaultBackend(ctx, robotAccount.OrgID)
 		if err != nil && !biz.IsNotFound(err) {
 			return nil, handleUseCaseErr(err, s.log)
 		} else if backend == nil {
@@ -463,4 +436,33 @@ func extractMaterials(in []*chainloop.NormalizedMaterial) ([]*cpAPI.AttestationI
 	}
 
 	return res, nil
+}
+
+// Cascade-based way of retrieving the workflow from the robot-account, the workflow_name or the run_ID
+func (s *AttestationService) findWorkflowFromTokenOrNameOrRunID(ctx context.Context, orgID string, workflowID, workflowName, runID string) (*biz.Workflow, error) {
+	if orgID == "" {
+		return nil, biz.NewErrValidationStr("orgID must be provided")
+	}
+
+	// This is the case of the workflowID encoded in the robot account
+	if workflowID != "" {
+		return s.workflowUseCase.FindByIDInOrg(ctx, orgID, workflowID)
+	}
+
+	// This is the case when the workflow if found by name
+	if workflowName != "" {
+		return s.workflowUseCase.FindByNameInOrg(ctx, orgID, workflowName)
+	}
+
+	// This is the case when the workflow is found by its reference to the run
+	if runID != "" {
+		run, err := s.wrUseCase.GetByIDInOrg(ctx, orgID, runID)
+		if err != nil {
+			return nil, fmt.Errorf("error retrieving the workflow run: %w", err)
+		}
+
+		return run.Workflow, nil
+	}
+
+	return nil, biz.NewErrValidationStr("workflowName or workflowRunId must be provided")
 }
