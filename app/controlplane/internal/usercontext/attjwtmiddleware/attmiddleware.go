@@ -83,11 +83,13 @@ func NewRobotAccountProvider(signingSecret string) JWTOption {
 func NewAPITokenProvider(signingSecret string) JWTOption {
 	return withTokenProvider(
 		APITokenProviderKey,
+		WithClaims(func() jwt.Claims { return &apitoken.CustomClaims{} }),
 		WithVerifyAudienceFunc(func(token *jwt.Token) bool {
-			claims, ok := token.Claims.(jwt.MapClaims)
+			claims, ok := token.Claims.(*apitoken.CustomClaims)
 			if !ok {
 				return false
 			}
+
 			return claims.VerifyAudience(apitoken.Audience, true)
 		}),
 		WithSigningMethod(user.SigningMethod),

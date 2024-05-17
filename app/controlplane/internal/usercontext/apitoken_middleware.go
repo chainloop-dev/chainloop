@@ -118,23 +118,22 @@ func WithAttestationContextFromAPIToken(apiTokenUC *biz.APITokenUseCase, logger 
 				return handler(ctx, req)
 			}
 
-			genericClaims, ok := authInfo.Claims.(jwt.MapClaims)
+			claims, ok := authInfo.Claims.(*apitoken.CustomClaims)
 			if !ok {
 				return nil, errors.New("error mapping the claims")
 			}
 
 			// We've received an API-token, double check its audience
-			if !genericClaims.VerifyAudience(apitoken.Audience, true) {
+			if !claims.VerifyAudience(apitoken.Audience, true) {
 				return nil, errors.New("unexpected token, invalid audience")
 			}
 
-			var err error
-			tokenID, ok := genericClaims["jti"].(string)
-			if !ok || tokenID == "" {
+			tokenID := claims.ID
+			if tokenID == "" {
 				return nil, errors.New("error mapping the API-token claims")
 			}
 
-			ctx, err = setRobotAccountFromAPIToken(ctx, apiTokenUC, tokenID)
+			ctx, err := setRobotAccountFromAPIToken(ctx, apiTokenUC, tokenID)
 			if err != nil {
 				return nil, errors.New("error extracting organization from APIToken")
 			}

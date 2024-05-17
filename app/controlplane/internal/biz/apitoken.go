@@ -135,7 +135,7 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 	}
 
 	// generate the JWT
-	token.JWT, err = uc.jwtBuilder.GenerateJWT(token.ID.String(), expiresAt)
+	token.JWT, err = uc.jwtBuilder.GenerateJWT(token.OrganizationID.String(), token.ID.String(), expiresAt)
 	if err != nil {
 		return nil, fmt.Errorf("generating jwt: %w", err)
 	}

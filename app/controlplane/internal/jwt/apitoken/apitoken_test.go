@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -70,24 +70,22 @@ func TestNewBuilder(t *testing.T) {
 func TestGenerateJWT(t *testing.T) {
 	const hmacSecret = "my-secret"
 
-	b, err := NewBuilder(
-		WithIssuer("my-issuer"),
-		WithKeySecret(hmacSecret),
-	)
+	b, err := NewBuilder(WithIssuer("my-issuer"), WithKeySecret(hmacSecret))
 	require.NoError(t, err)
 
-	token, err := b.GenerateJWT("key-id", toPtrTime(time.Now().Add(1*time.Hour)))
+	token, err := b.GenerateJWT("org-id", "key-id", toPtrTime(time.Now().Add(1*time.Hour)))
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
 
 	// Verify signature and check claims
-	claims := &jwt.RegisteredClaims{}
+	claims := &CustomClaims{}
 	tokenInfo, err := jwt.ParseWithClaims(token, claims, func(_ *jwt.Token) (interface{}, error) {
 		return []byte(hmacSecret), nil
 	})
 
 	require.NoError(t, err)
 	assert.True(t, tokenInfo.Valid)
+	assert.Equal(t, "org-id", claims.OrgID)
 	assert.Equal(t, "key-id", claims.ID)
 	assert.Equal(t, "my-issuer", claims.Issuer)
 	assert.Contains(t, claims.Audience, Audience)
