@@ -135,7 +135,7 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 }
 
 func craftingStateToMaterials(craftingState *v1.CraftingState) ([]AttestationStatusResultMaterial, error) {
-	var materials []AttestationStatusResultMaterial
+	materials := make([]AttestationStatusResultMaterial, len(craftingState.InputSchema.Materials))
 	for _, m := range craftingState.InputSchema.Materials {
 		materialResult := AttestationStatusResultMaterial{
 			Material: &Material{
