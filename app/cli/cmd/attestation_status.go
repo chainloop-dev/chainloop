@@ -51,7 +51,7 @@ func newAttestationStatusCmd() *cobra.Command {
 				return err
 			}
 
-			return encodeOutput(res, attestationStatusTableOutput)
+			return encodeOutput(res, func(result *action.AttestationStatusResult) error { return attestationStatusTableOutput(res, false) })
 		},
 	}
 
@@ -61,7 +61,7 @@ func newAttestationStatusCmd() *cobra.Command {
 	return cmd
 }
 
-func attestationStatusTableOutput(status *action.AttestationStatusResult) error {
+func attestationStatusTableOutput(status *action.AttestationStatusResult, full bool) error {
 	// General info table
 	gt := newTableWriter()
 	gt.AppendRow(table.Row{"Initialized At", status.InitializedAt.Format(time.RFC822)})
@@ -90,11 +90,11 @@ func attestationStatusTableOutput(status *action.AttestationStatusResult) error 
 
 	gt.Render()
 
-	if err := materialsTable(status); err != nil {
+	if err := materialsTable(status, full); err != nil {
 		return err
 	}
 
-	if err := envVarsTable(status); err != nil {
+	if err := envVarsTable(status, full); err != nil {
 		return err
 	}
 
@@ -105,7 +105,7 @@ func attestationStatusTableOutput(status *action.AttestationStatusResult) error 
 	return nil
 }
 
-func envVarsTable(status *action.AttestationStatusResult) error {
+func envVarsTable(status *action.AttestationStatusResult, full bool) error {
 	if len(status.EnvVars) == 0 && len(status.RunnerContext.EnvVars) == 0 {
 		return nil
 	}
@@ -138,7 +138,7 @@ func envVarsTable(status *action.AttestationStatusResult) error {
 
 	return nil
 }
-func materialsTable(status *action.AttestationStatusResult) error {
+func materialsTable(status *action.AttestationStatusResult, full bool) error {
 	if len(status.Materials) == 0 {
 		return nil
 	}

@@ -88,10 +88,9 @@ func newAttestationPushCmd() *cobra.Command {
 				return encodeJSON(res)
 			}
 
-			// default to mix of json and text to stdout and stderr by default
-			// kept to maintain backward compatibility
-			// TODO: in the future we'll render either a table or a proper report
-			fmt.Println(res.Envelope)
+			if err := attestationStatusTableOutput(res.Status, true); err != nil {
+				return fmt.Errorf("failed to render materials table: %w", err)
+			}
 			if res.Digest != "" {
 				logger.Info().Msgf("Attestation Digest: %s", res.Digest)
 			}

@@ -36,8 +36,10 @@ type AttestationPushOpts struct {
 }
 
 type AttestationResult struct {
-	Digest   string `json:"digest"`
-	Envelope string `json:"envelope"`
+	Digest    string                            `json:"digest"`
+	Envelope  string                            `json:"envelope"`
+	Materials []AttestationStatusResultMaterial `json:"materials"`
+	Status    *AttestationStatusResult          `json:"status"`
 }
 
 type AttestationPush struct {
@@ -66,6 +68,16 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 		return nil, fmt.Errorf("checking if attestation is already initialized: %w", err)
 	} else if !initialized {
 		return nil, ErrAttestationNotInitialized
+	}
+
+	// Retrieve attestation status
+	statusAction, err := NewAttestationStatus(&AttestationStatusOpts{ActionsOpts: action.ActionsOpts})
+	if err != nil {
+		return nil, fmt.Errorf("creating status action: %w", err)
+	}
+	attestationStatus, err := statusAction.Run(ctx, attestationID)
+	if err != nil {
+		return nil, fmt.Errorf("creating running status action: %w", err)
 	}
 
 	if err := action.c.LoadCraftingState(ctx, attestationID); err != nil {
@@ -137,7 +149,13 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 		return nil, fmt.Errorf("failed to encode output: %w", err)
 	}
 
-	attestationResult := &AttestationResult{Envelope: rawEnvelope.String()}
+	attestationResult := &AttestationResult{Envelope: rawEnvelope.String(), Status: attestationStatus}
+
+	// Add materials
+	attestationResult.Materials, err = craftingStateToMaterials(action.c.CraftingState)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve materials: %w", err)
+	}
 
 	action.Logger.Debug().Msg("render completed")
 	if action.c.CraftingState.DryRun {
