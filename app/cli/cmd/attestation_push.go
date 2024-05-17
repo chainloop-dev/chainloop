@@ -82,15 +82,10 @@ func newAttestationPushCmd() *cobra.Command {
 				return newGracefulError(err)
 			}
 
-			// NOTE: we are not moving yet to full table by default
-			// to maintain backward compatibility
-			if flagOutputFormat == formatJSON {
-				return encodeJSON(res)
+			if err := encodeOutput(res.Status, fullStatusTable); err != nil {
+				return fmt.Errorf("failed to render output: %w", err)
 			}
 
-			if err := attestationStatusTableOutput(res.Status, true); err != nil {
-				return fmt.Errorf("failed to render materials table: %w", err)
-			}
 			if res.Digest != "" {
 				logger.Info().Msgf("Attestation Digest: %s", res.Digest)
 			}

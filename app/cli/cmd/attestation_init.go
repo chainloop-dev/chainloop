@@ -77,7 +77,7 @@ func newAttestationInitCmd() *cobra.Command {
 				return newGracefulError(err)
 			}
 
-			return encodeOutput(res, func(result *action.AttestationStatusResult) error { return attestationStatusTableOutput(res, false) })
+			return encodeOutput(res, simpleStatusTable)
 		},
 	}
 

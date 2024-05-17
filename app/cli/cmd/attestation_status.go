@@ -51,7 +51,7 @@ func newAttestationStatusCmd() *cobra.Command {
 				return err
 			}
 
-			return encodeOutput(res, func(result *action.AttestationStatusResult) error { return attestationStatusTableOutput(res, false) })
+			return encodeOutput(res, simpleStatusTable)
 		},
 	}
 
@@ -59,6 +59,14 @@ func newAttestationStatusCmd() *cobra.Command {
 	flagAttestationID(cmd)
 
 	return cmd
+}
+
+func simpleStatusTable(status *action.AttestationStatusResult) error {
+	return attestationStatusTableOutput(status, false)
+}
+
+func fullStatusTable(status *action.AttestationStatusResult) error {
+	return attestationStatusTableOutput(status, true)
 }
 
 func attestationStatusTableOutput(status *action.AttestationStatusResult, full bool) error {
