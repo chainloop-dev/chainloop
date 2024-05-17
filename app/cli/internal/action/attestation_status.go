@@ -100,9 +100,24 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 	}
 
 	// Materials
-	var err error
-	if res.Materials, err = craftingStateToMaterials(c.CraftingState); err != nil {
-		return nil, fmt.Errorf("failed to retrieve materials: %w", err)
+	for _, m := range c.CraftingState.InputSchema.Materials {
+		materialResult := &AttestationStatusResultMaterial{
+			Material: &Material{
+				Name: m.Name, Type: m.Type.String(),
+				Annotations: pbAnnotationsToAction(m.Annotations),
+			},
+			IsOutput: m.Output, Required: !m.Optional,
+		}
+
+		// If it has been added already we load the value
+		if cm, found := c.CraftingState.Attestation.Materials[m.Name]; found {
+			if err := setMaterialValue(cm, materialResult.Material); err != nil {
+				return nil, err
+			}
+			materialResult.Set = true
+		}
+
+		res.Materials = append(res.Materials, *materialResult)
 	}
 
 	// User defined env variables
@@ -132,31 +147,6 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 	}
 
 	return res, nil
-}
-
-func craftingStateToMaterials(craftingState *v1.CraftingState) ([]AttestationStatusResultMaterial, error) {
-	materials := make([]AttestationStatusResultMaterial, len(craftingState.InputSchema.Materials))
-	for _, m := range craftingState.InputSchema.Materials {
-		materialResult := AttestationStatusResultMaterial{
-			Material: &Material{
-				Name: m.Name, Type: m.Type.String(),
-				Annotations: pbAnnotationsToAction(m.Annotations),
-			},
-			IsOutput: m.Output, Required: !m.Optional,
-		}
-
-		// If it has been added already we load the value
-		if cm, found := craftingState.Attestation.Materials[m.Name]; found {
-			if err := setMaterialValue(cm, materialResult.Material); err != nil {
-				return nil, err
-			}
-			materialResult.Set = true
-		}
-
-		materials = append(materials, materialResult)
-	}
-
-	return materials, nil
 }
 
 func pbAnnotationsToAction(in []*pbc.Annotation) []*Annotation {

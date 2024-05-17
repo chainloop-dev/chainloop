@@ -36,10 +36,9 @@ type AttestationPushOpts struct {
 }
 
 type AttestationResult struct {
-	Digest    string                            `json:"digest"`
-	Envelope  string                            `json:"envelope"`
-	Materials []AttestationStatusResultMaterial `json:"materials"`
-	Status    *AttestationStatusResult          `json:"status"`
+	Digest   string                   `json:"digest"`
+	Envelope string                   `json:"envelope"`
+	Status   *AttestationStatusResult `json:"status"`
 }
 
 type AttestationPush struct {
@@ -150,12 +149,6 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	}
 
 	attestationResult := &AttestationResult{Envelope: rawEnvelope.String(), Status: attestationStatus}
-
-	// Add materials
-	attestationResult.Materials, err = craftingStateToMaterials(action.c.CraftingState)
-	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve materials: %w", err)
-	}
 
 	action.Logger.Debug().Msg("render completed")
 	if action.c.CraftingState.DryRun {
