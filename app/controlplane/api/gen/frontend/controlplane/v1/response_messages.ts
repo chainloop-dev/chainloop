@@ -220,6 +220,8 @@ export interface AttestationItem_Material {
   /** Material type, i.e ARTIFACT */
   type: string;
   annotations: { [key: string]: string };
+  /** in the case of a container image, the tag of the attested image */
+  tag: string;
   hash: string;
   /** it's been uploaded to an actual CAS backend */
   uploadedToCas: boolean;
@@ -1059,6 +1061,7 @@ function createBaseAttestationItem_Material(): AttestationItem_Material {
     filename: "",
     type: "",
     annotations: {},
+    tag: "",
     hash: "",
     uploadedToCas: false,
     embeddedInline: false,
@@ -1082,6 +1085,9 @@ export const AttestationItem_Material = {
     Object.entries(message.annotations).forEach(([key, value]) => {
       AttestationItem_Material_AnnotationsEntry.encode({ key: key as any, value }, writer.uint32(34).fork()).ldelim();
     });
+    if (message.tag !== "") {
+      writer.uint32(74).string(message.tag);
+    }
     if (message.hash !== "") {
       writer.uint32(42).string(message.hash);
     }
@@ -1139,6 +1145,13 @@ export const AttestationItem_Material = {
             message.annotations[entry4.key] = entry4.value;
           }
           continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.tag = reader.string();
+          continue;
         case 5:
           if (tag !== 42) {
             break;
@@ -1181,6 +1194,7 @@ export const AttestationItem_Material = {
           return acc;
         }, {})
         : {},
+      tag: isSet(object.tag) ? String(object.tag) : "",
       hash: isSet(object.hash) ? String(object.hash) : "",
       uploadedToCas: isSet(object.uploadedToCas) ? Boolean(object.uploadedToCas) : false,
       embeddedInline: isSet(object.embeddedInline) ? Boolean(object.embeddedInline) : false,
@@ -1199,6 +1213,7 @@ export const AttestationItem_Material = {
         obj.annotations[k] = v;
       });
     }
+    message.tag !== undefined && (obj.tag = message.tag);
     message.hash !== undefined && (obj.hash = message.hash);
     message.uploadedToCas !== undefined && (obj.uploadedToCas = message.uploadedToCas);
     message.embeddedInline !== undefined && (obj.embeddedInline = message.embeddedInline);
@@ -1224,6 +1239,7 @@ export const AttestationItem_Material = {
       },
       {},
     );
+    message.tag = object.tag ?? "";
     message.hash = object.hash ?? "";
     message.uploadedToCas = object.uploadedToCas ?? false;
     message.embeddedInline = object.embeddedInline ?? false;

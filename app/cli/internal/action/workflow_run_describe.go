@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -55,6 +55,7 @@ type Material struct {
 	Name           string        `json:"name"`
 	Value          string        `json:"value"`
 	Hash           string        `json:"hash"`
+	Tag            string        `json:"tag"`
 	Filename       string        `json:"filename"`
 	Type           string        `json:"type"`
 	Annotations    []*Annotation `json:"annotations,omitempty"`
@@ -173,6 +174,7 @@ func materialPBToAction(in *pb.AttestationItem_Material) *Material {
 		Value:          in.Value,
 		Type:           in.Type,
 		Hash:           in.Hash,
+		Tag:            in.Tag,
 		UploadedToCAS:  in.UploadedToCas,
 		Filename:       in.Filename,
 		EmbeddedInline: in.EmbeddedInline,

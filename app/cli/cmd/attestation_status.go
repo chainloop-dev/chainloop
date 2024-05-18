@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -157,7 +157,11 @@ func materialsTable(status *action.AttestationStatusResult) error {
 
 		if full {
 			if m.Value != "" {
-				mt.AppendRow(table.Row{"Value", wrap.String(m.Value, 100)})
+				v := m.Value
+				if m.Tag != "" {
+					v = fmt.Sprintf("%s:%s", v, m.Tag)
+				}
+				mt.AppendRow(table.Row{"Value", wrap.String(v, 100)})
 			}
 
 			if m.Hash != "" {

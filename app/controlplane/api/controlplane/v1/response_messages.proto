@@ -97,6 +97,8 @@ message AttestationItem {
     // Material type, i.e ARTIFACT
     string type = 3;
     map<string, string> annotations = 4;
+    // in the case of a container image, the tag of the attested image
+    string tag = 9;
     string hash = 5;
     // it's been uploaded to an actual CAS backend
     bool uploaded_to_cas = 6;
