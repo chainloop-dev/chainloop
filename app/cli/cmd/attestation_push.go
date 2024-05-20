@@ -82,10 +82,12 @@ func newAttestationPushCmd() *cobra.Command {
 				return newGracefulError(err)
 			}
 
+			// In JSON format, we encode the full attestation
 			if flagOutputFormat == formatJSON {
 				return encodeJSON(res)
 			}
 
+			// In TABLE format, we render the attestation status
 			if err := encodeOutput(res.Status, fullStatusTable); err != nil {
 				return fmt.Errorf("failed to render output: %w", err)
 			}
