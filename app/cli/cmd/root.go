@@ -348,6 +348,7 @@ func recordCommand(executedCmd *cobra.Command, authInfo *parsedToken) error {
 	telemetryClient, err := posthog.NewClient(posthogAPIKey, posthogEndpoint)
 	if err != nil {
 		logger.Debug().Err(err).Msgf("creating telemetry client: %v", err)
+		return nil
 	}
 
 	cmdTracker := telemetry.NewCommandTracker(telemetryClient)
