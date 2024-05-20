@@ -1,0 +1,33 @@
+---
+title: CLI Telemetry
+---
+
+By default, the Chainloop CLI sends telemetry data to chainloop.dev. This helps us enhance Chainloop by gaining insights into its usage.
+Telemetry is optional and can be turned off at any time. If you can keep telemetry enabled, we appreciate it! This will assist us in better understanding Chainloop's usage and improving your experience.
+
+## What data is collected?
+The following information is included in telemetry:
+
+- Chainloop CLI version
+- System information (OS, ARCH)
+- CI/CD environment (if detected)
+- Platform hashed URL
+- Command run
+- Anonymous device ID
+- Internal User ID and organization ID (if logged in)
+
+## Can Chainloop telemetry be deactivated?
+
+Chainloop implements the Console [Do Not Track (DNT) standard](https://consoledonottrack.com). As a result, you can deactivate the telemetry by setting the environment variable DO_NOT_TRACK=1 before running the Chainloop CLI.
+
+
+## What do we use to collect telemetry data?
+
+We use [PostHog](https://posthog.com/). PostHog is an open-source product analytics platform that allows us to collect and analyze telemetry data.
+We did it in such a way that anyone can set up their own PostHog instance and use it to collect telemetry. To do so
+compile Chainloop CLI from its source code and set up the following linker flags to the Golang compiler:
+
+```sh
+-X github.com/chainloop-dev/chainloop/app/cli/cmd.posthogAPIKey=$POSTHOG_API_KEY
+-X github.com/chainloop-dev/chainloop/app/cli/cmd.posthogEndpoint=$POSTHOG_ENDPOINT
+```

@@ -25,38 +25,68 @@ func TestParseToken(t *testing.T) {
 	tests := []struct {
 		name  string
 		token string
-		want  ParsedToken
+		want  *parsedToken
 	}{
 		{
 			name:  "robot account",
-			token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvcmdfaWQiOiI5M2QwMjI3NS04NTNjLTRhZDYtOWQ2MC04ZjU2MmIxMjNmZDIiLCJ3b3JrZmxvd19pZCI6IjM1ZTZkOGIwLWE0OGYtNDFmYS05YmU3LWQ1OTM5YjJkZGUyNiIsImlzcyI6ImNwLmNoYWlubG9vcCIsImF1ZCI6WyJhdHRlc3RhdGlvbnMuY2hhaW5sb29wIl0sImp0aSI6IjQ4YWVhMWNiLTk5MGUtNDM2OS1hOTFhLTczNTIzNzk1NjhiNSJ9.aYPAPK-AauJpxRGEapV2ejwxhyhmFej6S79Ni-xJ4Q0",
-			want: ParsedToken{
-				Type: "robot-account",
+			token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvcmdfaWQiOiJkZGRiODIwMS1lYWI2LTRlNjEtOTIwMS1mMTJiNDdjMDE4OTIiLCJ3b3JrZmxvd19pZCI6ImY0NmIzMDc5LTMwOGYtNGIwNC1hYjYwLTY3NDNmOGUzMGQzMyIsImlzcyI6ImNwLmNoYWlubG9vcCIsImF1ZCI6WyJhdHRlc3RhdGlvbnMuY2hhaW5sb29wIl0sImp0aSI6IjkzODI5NDE1LTA1ODYtNDFkYS05NTJkLTkyYTRjNDk1ZWEyMCJ9.3Af2C62PiODbEknhv47j0LHLuAgWLqvTrfmIzFjwPCM",
+			want: &parsedToken{
+				id:        "93829415-0586-41da-952d-92a4c495ea20",
+				tokenType: "robot-account",
+				orgID:     "dddb8201-eab6-4e61-9201-f12b47c01892",
 			},
 		},
 		{
 			name:  "user account",
 			token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiYmMwYjIxOTktY2E4NS00MmFiLWE4NTctMDQyZTljMTA5ZDQzIiwiaXNzIjoiY3AuY2hhaW5sb29wIiwiYXVkIjpbInVzZXItYXV0aC5jaGFpbmxvb3AiXSwiZXhwIjoxNzE1OTM1MjUwfQ.ounYshGtagtYQsVIzNeE0ztVYRXrmjFSpdmaTF4QvyY",
-			want: ParsedToken{
-				ID:   "bc0b2199-ca85-42ab-a857-042e9c109d43",
-				Type: "user",
+			want: &parsedToken{
+				id:        "bc0b2199-ca85-42ab-a857-042e9c109d43",
+				tokenType: "user",
 			},
 		},
 		{
 			name:  "api token",
-			token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjcC5jaGFpbmxvb3AiLCJhdWQiOlsiYXBpLXRva2VuLWF1dGguY2hhaW5sb29wIl0sImp0aSI6IjE0NTQ5MzUwLTFjNGItNDdlYi05NDZkLWY2MjJhZWYyMDk0MyJ9.BPzuNxSwx10h22fJ3ocAOEIjsq9OOlk9p8fSoCwqSmM",
-			want: ParsedToken{
-				Type: "api-token",
+			token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvcmdfaWQiOiJkZGRiODIwMS1lYWI2LTRlNjEtOTIwMS1mMTJiNDdjMDE4OTIiLCJpc3MiOiJjcC5jaGFpbmxvb3AiLCJhdWQiOlsiYXBpLXRva2VuLWF1dGguY2hhaW5sb29wIl0sImp0aSI6IjRiMGYwZGQ0LTQ1MzgtNDI2OS05MmE5LWFiNWIwZmNlMDI1OCJ9.yMgsoe4CcqYoNp0xtrvvSGj1Y74HeqxoxS5sw8pdnQ8",
+			want: &parsedToken{
+				id:        "4b0f0dd4-4538-4269-92a9-ab5b0fce0258",
+				tokenType: "api-token",
+				orgID:     "dddb8201-eab6-4e61-9201-f12b47c01892",
 			},
+		},
+		{
+			name:  "old api token (without orgID)",
+			token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjcC5jaGFpbmxvb3AiLCJhdWQiOlsiYXBpLXRva2VuLWF1dGguY2hhaW5sb29wIl0sImp0aSI6ImQ0ZTBlZTVlLTk3MTMtNDFkMi05ZmVhLTBiZGIxNDAzMzA4MSJ9.IOd3JIHPwfo9ihU20kvRwLIQJcQtTvp-ajlGqlCD4Es",
+			want: &parsedToken{
+				id:        "d4e0ee5e-9713-41d2-9fea-0bdb14033081",
+				tokenType: "api-token",
+			},
+		},
+		{
+			name:  "old robot account",
+			token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvcmdfaWQiOiI5M2QwMjI3NS04NTNjLTRhZDYtOWQ2MC04ZjU2MmIxMjNmZDIiLCJ3b3JrZmxvd19pZCI6IjM1ZTZkOGIwLWE0OGYtNDFmYS05YmU3LWQ1OTM5YjJkZGUyNiIsImlzcyI6ImNwLmNoYWlubG9vcCIsImF1ZCI6WyJhdHRlc3RhdGlvbnMuY2hhaW5sb29wIl0sImp0aSI6ImUxZDUzOGQxLWI2MWQtNGY4MC1iZWQzLWM3MGE1NzRlOWI2NiJ9.81WltZtOno26oNydJ-YtHRwAIEmD2B4RgChhsS4yYVk",
+			want: &parsedToken{
+				id:        "e1d538d1-b61d-4f80-bed3-c70a574e9b66",
+				tokenType: "robot-account",
+				orgID:     "93d02275-853c-4ad6-9d60-8f562b123fd2",
+			},
+		},
+		{
+			name:  "totally random token",
+			token: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE3MTYxOTE2ODQsImV4cCI6MTc0NzcyNzY4NCwiYXVkIjoid3d3LmV4YW1wbGUuY29tIiwic3ViIjoianJvY2tldEBleGFtcGxlLmNvbSIsIkdpdmVuTmFtZSI6IkpvaG5ueSIsIlN1cm5hbWUiOiJSb2NrZXQiLCJFbWFpbCI6Impyb2NrZXRAZXhhbXBsZS5jb20iLCJSb2xlIjpbIk1hbmFnZXIiLCJQcm9qZWN0IEFkbWluaXN0cmF0b3IiXX0.5UnBivwkQCG4qWgi-gWkJ-Dsd7-A9G_EVEvswODc7Kk",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := parseToken(tt.token)
 			assert.NoError(t, err)
+			if tt.want == nil {
+				assert.Nil(t, got)
+				return
+			}
 
-			assert.Equal(t, tt.want.ID, got.ID)
-			assert.Equal(t, tt.want.Type, got.Type)
+			assert.Equal(t, tt.want.id, got.id)
+			assert.Equal(t, tt.want.tokenType, got.tokenType)
+			assert.Equal(t, tt.want.orgID, got.orgID)
 		})
 	}
 }

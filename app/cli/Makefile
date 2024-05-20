@@ -3,7 +3,11 @@ VERSION=$(shell git describe --tags --always)
 .PHONY: build
 # build
 build:
-	mkdir -p bin/ && go build -ldflags "-X github.com/chainloop-dev/chainloop/app/cli/cmd.Version=$(VERSION)" -o ./bin/chainloop ./main.go
+	mkdir -p bin/ && go build -ldflags \
+    		  "-X github.com/chainloop-dev/chainloop/app/cli/cmd.Version=$(VERSION) \
+    		  -X github.com/chainloop-dev/chainloop/app/cli/cmd.posthogAPIKey=${POSTHOG_API_KEY} \
+    		  -X github.com/chainloop-dev/chainloop/app/cli/cmd.posthogEndpoint=${POSTHOG_ENDPOINT}" \
+    		  -o ./bin/chainloop ./main.go
 
 .PHONY: test
 # test
