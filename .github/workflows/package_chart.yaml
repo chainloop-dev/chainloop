@@ -12,28 +12,14 @@ permissions:
   contents: read
 
 jobs:
-  # This reusable workflow inspects if the given workflow_name exists on Chainloop. If the Workflow does not exist
-  # it will create one with an empty contract ready for operators to be filled. Otherwise, if found, it will just
-  # be ignored and the process will continue. For this to work it's using a pre-created API Token
-  onboard_workflow:
-    name: Onboard Chainloop Workflow
-    uses: chainloop-dev/labs/.github/workflows/chainloop_onboard.yml@4173e015dbd5dc2a8802555c268da63d57bbe576
-    with:
-      project: "chainloop"
-      workflow_name: "chainloop-vault-helm-package"
-    secrets:
-      api_token: ${{ secrets.CHAINLOOP_API_TOKEN }}
-
   package:
     name: Package and push Helm Chart
     runs-on: ubuntu-latest
-    needs: onboard_workflow
     permissions:
       packages: write
     env:
-      CHAINLOOP_VERSION: 0.87.2
-      CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_API_TOKEN }}
-      CHAINLOOP_WORKFLOW_NAME: ${{ needs.onboard_workflow.outputs.workflow_name }}
+      CHAINLOOP_VERSION: 0.86.0
+      CHAINLOOP_ROBOT_ACCOUNT: ${{ secrets.CHAINLOOP_ROBOT_ACCOUNT_CHART_PACKAGE }}
     steps:
       - name: Install Chainloop
         run: |
@@ -53,7 +39,7 @@ jobs:
 
       - name: Initialize Attestation
         run: |
-          chainloop attestation init --workflow-name ${CHAINLOOP_WORKFLOW_NAME}
+          chainloop attestation init
 
       - name: Package Chart
         run: helm package deployment/chainloop/
