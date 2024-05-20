@@ -2,6 +2,7 @@ name: Package Helm Chart
 
 on:
   # Only push Helm Chart if the deployment templates have changed
+  pull_request:
   push:
     branches:
       - main
@@ -31,7 +32,7 @@ jobs:
     permissions:
       packages: write
     env:
-      CHAINLOOP_VERSION: 0.87.2
+      CHAINLOOP_VERSION: 0.88.0
       CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_API_TOKEN }}
       CHAINLOOP_WORKFLOW_NAME: ${{ needs.onboard_workflow.outputs.workflow_name }}
     steps:
