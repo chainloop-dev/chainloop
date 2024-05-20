@@ -417,6 +417,7 @@ func extractMaterials(in []*chainloop.NormalizedMaterial) ([]*cpAPI.AttestationI
 			Value:          m.Value,
 			UploadedToCas:  m.UploadedToCAS,
 			EmbeddedInline: m.EmbeddedInline,
+			Tag:            m.Tag,
 		}
 
 		if m.Hash != nil {

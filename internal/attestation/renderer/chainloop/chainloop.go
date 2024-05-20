@@ -53,6 +53,8 @@ type NormalizedMaterial struct {
 	Value string
 	// Hash of the Material
 	Hash *crv1.Hash
+	// Tag of the container image
+	Tag string
 	// Whether the Material was uploaded and available for download from CAS
 	UploadedToCAS bool
 	// Whether the Material was embedded inline in the attestation

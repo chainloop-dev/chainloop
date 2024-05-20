@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -115,6 +115,7 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 				return nil, err
 			}
 			materialResult.Set = true
+			materialResult.Tag = cm.GetContainerImage().GetTag()
 		}
 
 		res.Materials = append(res.Materials, *materialResult)

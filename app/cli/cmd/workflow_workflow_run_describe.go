@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -155,8 +155,12 @@ func predicateV1Table(att *action.WorkflowRunAttestationItem) {
 			}
 
 			// We do not want to show the value if it is a file
-			if !m.EmbeddedInline && m.UploadedToCAS {
-				mt.AppendRow(table.Row{"Value", wrap.String(m.Value, 100)})
+			if !m.EmbeddedInline && m.UploadedToCAS || m.Type == "CONTAINER_IMAGE" {
+				v := m.Value
+				if m.Tag != "" {
+					v = fmt.Sprintf("%s:%s", v, m.Tag)
+				}
+				mt.AppendRow(table.Row{"Value", wrap.String(v, 100)})
 			}
 
 			if m.Hash != "" {

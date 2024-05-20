@@ -329,6 +329,11 @@ func normalizeMaterial(material *intoto.ResourceDescriptor) (*NormalizedMaterial
 		m.EmbeddedInline = true
 	}
 
+	// Extract the container image tag if it's set in the annotations
+	if v, ok := mAnnotationsMap[annotationContainerTag]; ok && v.GetStringValue() != "" {
+		m.Tag = v.GetStringValue()
+	}
+
 	// In the case of an artifact type or derivative the filename is set and the inline content if any
 	if m.EmbeddedInline || m.UploadedToCAS {
 		m.Filename = material.Name
