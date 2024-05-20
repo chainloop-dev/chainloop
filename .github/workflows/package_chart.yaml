@@ -2,7 +2,6 @@ name: Package Helm Chart
 
 on:
   # Only push Helm Chart if the deployment templates have changed
-  pull_request:
   push:
     branches:
       - main
