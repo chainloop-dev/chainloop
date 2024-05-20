@@ -338,9 +338,12 @@ func parseToken(token string) (*parsedToken, error) {
 }
 
 var (
-	// Posthog API key and endpoint to be injected in the build process
-	posthogAPIKey   = ""
-	posthogEndpoint = ""
+	// Posthog API key and endpoint are not sensitive information it represents Chainloop's Posthog instance.
+	// It can be overridden by the user if they want to use their own instance of Posthog or deactivated by setting
+	// DO_NOT_TRACK=1 more information that can be found at: https://github.com/chainloop-dev/chainloop/blob/main/docs/docs/reference/operator/cli-telemetry.mdx
+	// nolint:gosec
+	posthogAPIKey   = "phc_TWWW19kEiD6sEejlHKWcICQ5Vc06vZUTYia8WdPB0A0"
+	posthogEndpoint = "https://crb.chainloop.dev"
 )
 
 // recordCommand sends the command to the telemetry service
