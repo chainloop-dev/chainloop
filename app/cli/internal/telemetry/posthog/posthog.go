@@ -53,6 +53,10 @@ type Tracker struct {
 
 // TrackEvent sends an event to the PostHog server.
 func (p *Tracker) TrackEvent(_ context.Context, eventName string, id string, tags telemetry.Tags) error {
+	if p == nil {
+		return nil
+	}
+
 	defer p.client.Close()
 	msg := posthog.Capture{
 		DistinctId: id,
