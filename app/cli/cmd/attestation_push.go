@@ -93,7 +93,7 @@ func newAttestationPushCmd() *cobra.Command {
 			}
 
 			if res.Digest != "" {
-				logger.Info().Msgf("Attestation Digest: %s", res.Digest)
+				fmt.Printf("Attestation Digest: %s", res.Digest)
 			}
 
 			return nil
