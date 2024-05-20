@@ -53,14 +53,49 @@ type Tracker struct {
 
 // TrackEvent sends an event to the PostHog server.
 func (p *Tracker) TrackEvent(_ context.Context, eventName string, id string, tags telemetry.Tags) error {
+	defer p.client.Close()
 	msg := posthog.Capture{
 		DistinctId: id,
 		Event:      eventName,
+		Properties: posthog.NewProperties(),
 	}
 
+	// Set the tags as properties.
 	for k, v := range tags {
 		msg.Properties.Set(k, v)
 	}
 
-	return p.client.Enqueue(msg)
+	// Assign the installation ID if available as a group.
+	// It creates a new group named cp_installation where the values are the cp_url_hash.
+	if tags["cp_url_hash"] != "" {
+		msg.Groups = posthog.
+			NewGroups().
+			Set("cp_installation", tags["cp_url_hash"])
+	}
+	// It creates a new group named org_id where the values are the org_id.
+	if tags["org_id"] != "" {
+		msg.Groups = posthog.
+			NewGroups().
+			Set("organization", tags["org_id"])
+	}
+	// Assign an alias to the userID in the following cases:
+	// - The machine ID is available and different from the userID.
+	// - The userID is different from the default one.
+	// An alias can help to track the same user across different devices even when it was not logged in.
+	if (tags["machine_id"] != "" && tags["machine_id"] != id) || id != telemetry.UnrecognisedUserID {
+		if err := p.client.Enqueue(posthog.Alias{
+			DistinctId: id,
+			Alias:      tags["machine_id"],
+		}); err != nil {
+			return fmt.Errorf("failed to track event: %w", err)
+		}
+	}
+
+	// Enqueue the event.
+	err := p.client.Enqueue(msg)
+	if err != nil {
+		return fmt.Errorf("failed to track event: %w", err)
+	}
+
+	return nil
 }

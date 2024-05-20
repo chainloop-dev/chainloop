@@ -31,6 +31,7 @@ func main() {
 	logger := zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr, FormatTimestamp: func(interface{}) string { return "" }})
 	rootCmd := cmd.NewRootCmd(logger)
 
+	// Run the command
 	if err := rootCmd.Execute(); err != nil {
 		msg, exitCode := errorInfo(err, logger)
 		logger.Error().Msg(msg)

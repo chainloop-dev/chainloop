@@ -26,6 +26,7 @@ import (
 )
 
 const commandTrackerEventName = "command_executed"
+const UnrecognisedUserID = "unrecognised"
 
 // Tags represents a collection of event tags.
 type Tags map[string]string
@@ -49,26 +50,55 @@ func NewCommandTracker(client Client) *CommandTracker {
 
 // Track sends a command event to the telemetry.Client.
 func (t *CommandTracker) Track(ctx context.Context, cmd string, tags Tags) error {
+	// Ensure a valid client is available.
 	if t.client == nil {
 		return nil
 	}
 
-	computedTags := loadDefaultTags()
-	// Add on top of the default tags the ones passed as argument.
-	// TODO: Add a way to avoid the override default tags.
-	for k, v := range tags {
-		computedTags[k] = v
-	}
+	// Load default tags and merge with user-provided tags.
+	computedTags := mergeTags(loadDefaultTags(), tags)
+
+	// Set the command tag.
 	computedTags["command"] = cmd
 
-	var id string
-	id, err := machineid.ProtectedID("chainloop")
-	if err != nil {
-		// If the machine ID is not available, use a default ID otherwise the underlying library will fail.
-		id = "default-id"
+	// Determine the user ID.
+	id := determineUserID(computedTags)
+
+	// Track the event with computed tags.
+	return t.client.TrackEvent(ctx, commandTrackerEventName, id, computedTags)
+}
+
+// Merges two tag maps.
+func mergeTags(defaultTags, userTags Tags) Tags {
+	result := make(Tags)
+	for k, v := range defaultTags {
+		result[k] = v
+	}
+	for k, v := range userTags {
+		result[k] = v
+	}
+	return result
+}
+
+// determineUserID Determines the user ID using available information or generates a random one.
+func determineUserID(tags Tags) string {
+	// Get the machine ID.
+	machineID, _ := machineid.ProtectedID("chainloop")
+	tags["machine_id"] = machineID
+
+	// Check if user ID is provided in tags.
+	// This won't happen in the unauthenticated case scenario.
+	if userID, ok := tags["user_id"]; ok && userID != "" {
+		return userID
 	}
 
-	return t.client.TrackEvent(ctx, commandTrackerEventName, id, computedTags)
+	// If machine ID is available, return it.
+	if machineID != "" {
+		return machineID
+	}
+
+	// Return an unrecognised user ID.
+	return UnrecognisedUserID
 }
 
 // loadDefaultTags returns a map of default tags that are added to every event.

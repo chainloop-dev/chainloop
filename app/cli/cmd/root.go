@@ -16,14 +16,18 @@
 package cmd
 
 import (
-	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync"
 
 	"github.com/adrg/xdg"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry/posthog"
 	"github.com/chainloop-dev/chainloop/internal/grpcconn"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/rs/zerolog"
@@ -53,12 +57,16 @@ const (
 	userAudience         = "user-auth.chainloop"
 	//nolint:gosec
 	apiTokenAudience = "api-token-auth.chainloop"
+	// Follow the convention stated on https://consoledonottrack.com/
+	doNotTrackEnv = "DO_NOT_TRACK"
 )
 
-type AuthenticationToken struct{}
-type ParsedToken struct {
-	ID   string
-	Type string
+var telemetryWg sync.WaitGroup
+
+type parsedToken struct {
+	id        string
+	orgID     string
+	tokenType string
 }
 
 func NewRootCmd(l zerolog.Logger) *cobra.Command {
@@ -92,14 +100,27 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 
 			actionOpts = newActionOpts(logger, conn)
 
-			// For telemetry reasons we parse the token to know the type of token is being used when executing the CLI
-			// Once we have the token type we can send it to the telemetry service by injecting it on the context
-			token, err := parseToken(apiToken)
-			if err != nil {
-				logger.Debug().Err(err).Msg("parsing token for telemetry")
-			}
+			if !isTelemetryDisabled() {
+				logger.Debug().Msg("Telemetry enabled, to disable it use DO_NOT_TRACK=1")
 
-			cmd.SetContext(context.WithValue(cmd.Context(), AuthenticationToken{}, token))
+				telemetryWg.Add(1)
+				go func() {
+					defer telemetryWg.Done()
+
+					// For telemetry reasons we parse the token to know the type of token is being used when executing the CLI
+					// Once we have the token type we can send it to the telemetry service by injecting it on the context
+					token, err := parseToken(apiToken)
+					if err != nil {
+						logger.Debug().Err(err).Msg("parsing token for telemetry")
+						return
+					}
+
+					err = recordCommand(cmd, token)
+					if err != nil {
+						logger.Debug().Err(err).Msg("sending command to telemetry")
+					}
+				}()
+			}
 
 			return nil
 		},
@@ -143,6 +164,16 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 
 func init() {
 	cobra.OnInitialize(initConfigFile)
+	// Using the cobra.OnFinalize because the hooks don't work on error
+	cobra.OnFinalize(func() {
+		// In some cases the command is faster than the telemetry, in that case we wait
+		telemetryWg.Wait()
+	})
+}
+
+// isTelemetryDisabled checks if the telemetry is disabled by the user or if we are running a development version
+func isTelemetryDisabled() bool {
+	return os.Getenv(doNotTrackEnv) == "1" || os.Getenv(doNotTrackEnv) == "true" || Version == devVersion
 }
 
 func initLogger(logger zerolog.Logger) (zerolog.Logger, error) {
@@ -239,46 +270,125 @@ func loadControlplaneAuthToken(cmd *cobra.Command) (string, error) {
 // 3. API token
 // Each one of them have an associated audience claim that we use to identify the type of token. If the token is not
 // present, nor we cannot match it with one of the expected audience, return nil.
-func parseToken(token string) (*ParsedToken, error) {
+func parseToken(token string) (*parsedToken, error) {
 	if token == "" {
-		return &ParsedToken{}, nil
+		return nil, nil
 	}
 
 	// Create a parser without claims validation
 	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
 
 	// Parse the token without verification
-	parsedToken, _, err := parser.ParseUnverified(token, jwt.MapClaims{})
+	t, _, err := parser.ParseUnverified(token, jwt.MapClaims{})
 	if err != nil {
 		return nil, err
 	}
 
-	// Extract claims
-	claims := parsedToken.Claims.(jwt.MapClaims)
-
-	// Get the audience claim
-	if val, ok := claims["aud"]; ok && val != nil {
-		// Chainloop tokens have only one audience in an array
-		aud, ok := val.([]interface{})
-		if !ok {
-			return nil, nil
-		}
-		if len(aud) == 0 {
-			return nil, nil
-		}
-
-		switch aud[0].(string) {
-		case apiTokenAudience:
-			return &ParsedToken{Type: "api-token"}, nil
-		case userAudience:
-			userID := claims["user_id"].(string)
-			return &ParsedToken{Type: "user", ID: userID}, nil
-		case robotAccountAudience:
-			return &ParsedToken{Type: "robot-account"}, nil
-		default:
-			return nil, nil
-		}
+	// Extract generic claims otherwise, we would have to parse
+	// the token again to get the claims for each type
+	claims, ok := t.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, nil
 	}
 
-	return nil, nil
+	// Get the audience claim
+	val, ok := claims["aud"]
+	if !ok || val == nil {
+		return nil, nil
+	}
+
+	// Ensure audience is an array of interfaces
+	// Chainloop only has one audience per token
+	aud, ok := val.([]interface{})
+	if !ok || len(aud) == 0 {
+		return nil, nil
+	}
+
+	// Initialize parsedToken
+	pToken := &parsedToken{}
+
+	// Determine the type of token based on the audience.
+	switch aud[0].(string) {
+	case apiTokenAudience:
+		pToken.tokenType = "api-token"
+		if tokenID, ok := claims["jti"].(string); ok {
+			pToken.id = tokenID
+		}
+		if orgID, ok := claims["org_id"].(string); ok {
+			pToken.orgID = orgID
+		}
+	case userAudience:
+		pToken.tokenType = "user"
+		if userID, ok := claims["user_id"].(string); ok {
+			pToken.id = userID
+		}
+	case robotAccountAudience:
+		pToken.tokenType = "robot-account"
+		if tokenID, ok := claims["jti"].(string); ok {
+			pToken.id = tokenID
+		}
+		if orgID, ok := claims["org_id"].(string); ok {
+			pToken.orgID = orgID
+		}
+	default:
+		return nil, nil
+	}
+
+	return pToken, nil
+}
+
+var (
+	// Posthog API key and endpoint to be injected in the build process
+	posthogAPIKey   = ""
+	posthogEndpoint = ""
+)
+
+// recordCommand sends the command to the telemetry service
+func recordCommand(executedCmd *cobra.Command, authInfo *parsedToken) error {
+	telemetryClient, err := posthog.NewClient(posthogAPIKey, posthogEndpoint)
+	if err != nil {
+		logger.Debug().Err(err).Msgf("creating telemetry client: %v", err)
+	}
+
+	cmdTracker := telemetry.NewCommandTracker(telemetryClient)
+	tags := telemetry.Tags{
+		"cli_version":      Version,
+		"cp_url_hash":      hashControlPlaneURL(),
+		"chainloop_source": "cli",
+	}
+
+	// It tries to extract the token from the context and add it to the tags. If it fails, it will ignore it.
+	if authInfo != nil {
+		tags["token_type"] = authInfo.tokenType
+		tags["user_id"] = authInfo.id
+		tags["org_id"] = authInfo.orgID
+	}
+
+	if err = cmdTracker.Track(executedCmd.Context(), extractCmdLineFromCommand(executedCmd), tags); err != nil {
+		return fmt.Errorf("sending event: %w", err)
+	}
+
+	return nil
+}
+
+// extractCmdLineFromCommand returns the full command hierarchy as a string from a cobra.Command
+func extractCmdLineFromCommand(cmd *cobra.Command) string {
+	var cmdHierarchy []string
+	currentCmd := cmd
+	// While the current command is not the root command, keep iteration.
+	// This is done to get the full hierarchy of the command and remove the root command from the hierarchy.
+	for currentCmd.Use != "chainloop" {
+		cmdHierarchy = append([]string{currentCmd.Use}, cmdHierarchy...)
+		currentCmd = currentCmd.Parent()
+	}
+
+	cmdLine := strings.Join(cmdHierarchy, " ")
+	return cmdLine
+}
+
+// hashControlPlaneURL returns a hash of the control plane URL
+func hashControlPlaneURL() string {
+	url := viper.GetString("control-plane.API")
+
+	return fmt.Sprintf("%x", sha256.Sum256([]byte(url)))
 }
