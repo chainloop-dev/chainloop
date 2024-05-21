@@ -103,13 +103,8 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 	// 1. Populate the materials that are defined in the contract schema
 	// 2. Populate the materials that are not defined in the contract schema, added inline in the attestation
 	// In order to avoid duplicates, we keep track of the visited materials
-	visitedMaterials := make(map[string]struct{})
-	if err := action.populateContractMaterials(res, visitedMaterials); err != nil {
-		return nil, fmt.Errorf("adding materials from the contract: %w", err)
-	}
-
-	if err := action.populateAdditionalMaterials(res, visitedMaterials); err != nil {
-		return nil, fmt.Errorf("adding materials outisde the contract: %w", err)
+	if err := populateMaterials(c.CraftingState, res); err != nil {
+		return nil, fmt.Errorf("populating materials: %w", err)
 	}
 
 	// User defined env variables
@@ -141,9 +136,27 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 	return res, nil
 }
 
+// populateMaterials populates the materials in the attestation result regardless of where they are defined
+// (contract schema or inline in the attestation)
+func populateMaterials(craftingState *v1.CraftingState, res *AttestationStatusResult) error {
+	visitedMaterials := make(map[string]struct{})
+	attsMaterials := craftingState.GetAttestation().GetMaterials()
+	inputSchemaMaterials := craftingState.GetInputSchema().GetMaterials()
+
+	if err := populateContractMaterials(inputSchemaMaterials, attsMaterials, res, visitedMaterials); err != nil {
+		return fmt.Errorf("adding materials from the contract: %w", err)
+	}
+
+	if err := populateAdditionalMaterials(attsMaterials, res, visitedMaterials); err != nil {
+		return fmt.Errorf("adding materials outside the contract: %w", err)
+	}
+
+	return nil
+}
+
 // populateContractMaterials populates the materials that are defined in the contract schema
-func (action *AttestationStatus) populateContractMaterials(res *AttestationStatusResult, visitedMaterials map[string]struct{}) error {
-	for _, m := range action.c.CraftingState.InputSchema.Materials {
+func populateContractMaterials(inputSchemaMaterials []*pbc.CraftingSchema_Material, attsMaterial map[string]*v1.Attestation_Material, res *AttestationStatusResult, visitedMaterials map[string]struct{}) error {
+	for _, m := range inputSchemaMaterials {
 		materialResult := &AttestationStatusResultMaterial{
 			Material: &Material{
 				Name: m.Name, Type: m.Type.String(),
@@ -152,12 +165,10 @@ func (action *AttestationStatus) populateContractMaterials(res *AttestationStatu
 			IsOutput: m.Output, Required: !m.Optional,
 		}
 
-		if cm, found := action.c.CraftingState.Attestation.Materials[m.Name]; found {
+		if cm, found := attsMaterial[m.Name]; found {
 			if err := setMaterialValue(cm, materialResult); err != nil {
 				return fmt.Errorf("setting material value: %w", err)
 			}
-			materialResult.Set = true
-			materialResult.Tag = cm.GetContainerImage().GetTag()
 		}
 
 		res.Materials = append(res.Materials, *materialResult)
@@ -167,8 +178,8 @@ func (action *AttestationStatus) populateContractMaterials(res *AttestationStatu
 }
 
 // populateAdditionalMaterials populates the materials that are not defined in the contract schema
-func (action *AttestationStatus) populateAdditionalMaterials(res *AttestationStatusResult, visitedMaterials map[string]struct{}) error {
-	for name, m := range action.c.CraftingState.Attestation.Materials {
+func populateAdditionalMaterials(attsMaterials map[string]*v1.Attestation_Material, res *AttestationStatusResult, visitedMaterials map[string]struct{}) error {
+	for name, m := range attsMaterials {
 		if _, found := visitedMaterials[name]; found {
 			continue
 		}
