@@ -463,8 +463,32 @@ func (c *Crafter) ResolveEnvVars(ctx context.Context, attestationID string) erro
 	return nil
 }
 
-// Inject material to attestation state
-func (c *Crafter) AddMaterial(ctx context.Context, attestationID, key, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string) error {
+// AddMaterialContractFree adds a material to the crafting state without checking the contract schema.
+// This is useful for adding materials that are not defined in the schema.
+// The name of the material is automatically calculated to conform the API contract.
+func (c *Crafter) AddMaterialContractFree(ctx context.Context, attestationID, kind, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string) error {
+	if err := c.requireStateLoaded(); err != nil {
+		return err
+	}
+
+	// 1 - Try to parse incoming type to a known kind
+	m := schemaapi.CraftingSchema_Material{}
+	if val, found := schemaapi.CraftingSchema_Material_MaterialType_value[kind]; found {
+		m.Type = schemaapi.CraftingSchema_Material_MaterialType(val)
+	} else {
+		return fmt.Errorf("%q not found as available kind", kind)
+	}
+
+	// 2 - Generate a random name for the material
+	m.Name = fmt.Sprintf("material-%d", time.Now().UnixNano())
+
+	// 3 - Craft resulting material
+	return c.addMaterial(ctx, &m, attestationID, m.Name, value, casBackend, runtimeAnnotations)
+}
+
+// AddMaterialFromContract adds a material to the crafting state checking the incoming materials is
+// in the schema and has not been set yet
+func (c *Crafter) AddMaterialFromContract(ctx context.Context, attestationID, key, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string) error {
 	if err := c.requireStateLoaded(); err != nil {
 		return err
 	}
@@ -487,6 +511,12 @@ func (c *Crafter) AddMaterial(ctx context.Context, attestationID, key, value str
 	}
 
 	// 3 - Craft resulting material
+	return c.addMaterial(ctx, m, attestationID, key, value, casBackend, runtimeAnnotations)
+}
+
+// addMaterials adds the incoming material m to the crafting state
+func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_Material, attestationID, key, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string) error {
+	// 3- Craft resulting material
 	mt, err := materials.Craft(context.Background(), m, value, casBackend, c.ociRegistryAuth, c.logger)
 	if err != nil {
 		return err

@@ -28,7 +28,7 @@ import (
 )
 
 func newAttestationAddCmd() *cobra.Command {
-	var name, value string
+	var name, value, kind string
 	var artifactCASConn *grpc.ClientConn
 	var annotationsFlag []string
 
@@ -46,6 +46,16 @@ func newAttestationAddCmd() *cobra.Command {
 		Short: "add a material to the attestation",
 		Annotations: map[string]string{
 			useWorkflowRobotAccount: "true",
+		},
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if name == "" && kind == "" {
+				return errors.New("both --name and --kind cannot be empty")
+			}
+			if name != "" && kind != "" {
+				logger.Warn().Msg("both --name and --kind are provided, kind will be ignored")
+			}
+
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			a, err := action.NewAttestationAdd(
@@ -68,7 +78,7 @@ func newAttestationAddCmd() *cobra.Command {
 				return err
 			}
 
-			if err := a.Run(cmd.Context(), attestationID, name, value, annotations); err != nil {
+			if err := a.Run(cmd.Context(), attestationID, name, value, kind, annotations); err != nil {
 				if errors.Is(err, action.ErrAttestationNotInitialized) {
 					return err
 				}
@@ -90,13 +100,12 @@ func newAttestationAddCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&name, "name", "", "name of the material to be recorded")
-	err := cmd.MarkFlagRequired("name")
-	cobra.CheckErr(err)
 	cmd.Flags().StringVar(&value, "value", "", "value to be recorded")
-	err = cmd.MarkFlagRequired("value")
+	err := cmd.MarkFlagRequired("value")
 	cobra.CheckErr(err)
 	cmd.Flags().StringSliceVar(&annotationsFlag, "annotation", nil, "additional annotation in the format of key=value")
 	flagAttestationID(cmd)
+	cmd.Flags().StringVar(&kind, "kind", "", "kind of the material to be recorded")
 
 	// Optional OCI registry credentials
 	cmd.Flags().StringVar(&registryServer, "registry-server", "", fmt.Sprintf("OCI repository server, ($%s)", registryServerEnvVarName))
