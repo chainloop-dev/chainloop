@@ -65,7 +65,7 @@ func NewAttestationAdd(cfg *AttestationAddOpts) (*AttestationAdd, error) {
 
 var ErrAttestationNotInitialized = errors.New("attestation not yet initialized")
 
-func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialName, materialValue string, annotations map[string]string) error {
+func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialName, materialValue, materialType string, annotations map[string]string) error {
 	if initialized, err := action.c.AlreadyInitialized(ctx, attestationID); err != nil {
 		return fmt.Errorf("checking if attestation is already initialized: %w", err)
 	} else if !initialized {
@@ -111,8 +111,15 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 		casBackend.Uploader = casclient.New(artifactCASConn, casclient.WithLogger(action.Logger))
 	}
 
-	if err := action.c.AddMaterial(ctx, attestationID, materialName, materialValue, casBackend, annotations); err != nil {
-		return fmt.Errorf("adding material: %w", err)
+	// Add material to the attestation crafting state based on if the material is contract free or not
+	if materialName != "" {
+		if err := action.c.AddMaterialFromContract(ctx, attestationID, materialName, materialValue, casBackend, annotations); err != nil {
+			return fmt.Errorf("adding material: %w", err)
+		}
+	} else {
+		if err := action.c.AddMaterialContractFree(ctx, attestationID, materialType, materialValue, casBackend, annotations); err != nil {
+			return fmt.Errorf("adding material: %w", err)
+		}
 	}
 
 	return nil

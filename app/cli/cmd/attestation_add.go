@@ -25,10 +25,11 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 )
 
 func newAttestationAddCmd() *cobra.Command {
-	var name, value string
+	var name, value, kind string
 	var artifactCASConn *grpc.ClientConn
 	var annotationsFlag []string
 
@@ -46,6 +47,21 @@ func newAttestationAddCmd() *cobra.Command {
 		Short: "add a material to the attestation",
 		Annotations: map[string]string{
 			useWorkflowRobotAccount: "true",
+		},
+		Example: `  # Add a material to the attestation that is defined in the contract
+  chainloop attestation add --name <material-name> --value <material-value>
+
+  # Add a material to the attestation that is not defined in the contract but you know the kind
+  chainloop attestation add --kind <material-kind> --value <material-value>`,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			switch {
+			case name == "" && kind == "":
+				return fmt.Errorf("either --name or --kind needs to be set")
+			case name != "" && kind != "":
+				return fmt.Errorf("both --name and --kind cannot be set at the same time")
+			}
+
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			a, err := action.NewAttestationAdd(
@@ -68,7 +84,7 @@ func newAttestationAddCmd() *cobra.Command {
 				return err
 			}
 
-			if err := a.Run(cmd.Context(), attestationID, name, value, annotations); err != nil {
+			if err := a.Run(cmd.Context(), attestationID, name, value, kind, annotations); err != nil {
 				if errors.Is(err, action.ErrAttestationNotInitialized) {
 					return err
 				}
@@ -89,14 +105,13 @@ func newAttestationAddCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&name, "name", "", "name of the material to be recorded")
-	err := cmd.MarkFlagRequired("name")
-	cobra.CheckErr(err)
+	cmd.Flags().StringVar(&name, "name", "", "name of the material as shown in the contract")
 	cmd.Flags().StringVar(&value, "value", "", "value to be recorded")
-	err = cmd.MarkFlagRequired("value")
+	err := cmd.MarkFlagRequired("value")
 	cobra.CheckErr(err)
 	cmd.Flags().StringSliceVar(&annotationsFlag, "annotation", nil, "additional annotation in the format of key=value")
 	flagAttestationID(cmd)
+	cmd.Flags().StringVar(&kind, "kind", "", fmt.Sprintf("kind of the material to be recorded: %q", schemaapi.ListAvailableMaterialKind()))
 
 	// Optional OCI registry credentials
 	cmd.Flags().StringVar(&registryServer, "registry-server", "", fmt.Sprintf("OCI repository server, ($%s)", registryServerEnvVarName))

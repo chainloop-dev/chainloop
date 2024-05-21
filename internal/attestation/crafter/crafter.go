@@ -463,10 +463,34 @@ func (c *Crafter) ResolveEnvVars(ctx context.Context, attestationID string) erro
 	return nil
 }
 
-// Inject material to attestation state
-func (c *Crafter) AddMaterial(ctx context.Context, attestationID, key, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string) error {
+// AddMaterialContractFree adds a material to the crafting state without checking the contract schema.
+// This is useful for adding materials that are not defined in the schema.
+// The name of the material is automatically calculated to conform the API contract.
+func (c *Crafter) AddMaterialContractFree(ctx context.Context, attestationID, kind, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string) error {
 	if err := c.requireStateLoaded(); err != nil {
-		return err
+		return fmt.Errorf("adding materials outisde the contract: %w", err)
+	}
+
+	// 1 - Try to parse incoming type to a known kind
+	m := schemaapi.CraftingSchema_Material{}
+	if val, found := schemaapi.CraftingSchema_Material_MaterialType_value[kind]; found {
+		m.Type = schemaapi.CraftingSchema_Material_MaterialType(val)
+	} else {
+		return fmt.Errorf("%q kind not found. Available options are %q", kind, schemaapi.ListAvailableMaterialKind())
+	}
+
+	// 2 - Generate a random name for the material
+	m.Name = fmt.Sprintf("material-%d", time.Now().UnixNano())
+
+	// 3 - Craft resulting material
+	return c.addMaterial(ctx, &m, attestationID, value, casBackend, runtimeAnnotations)
+}
+
+// AddMaterialFromContract adds a material to the crafting state checking the incoming materials is
+// in the schema and has not been set yet
+func (c *Crafter) AddMaterialFromContract(ctx context.Context, attestationID, key, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string) error {
+	if err := c.requireStateLoaded(); err != nil {
+		return fmt.Errorf("adding materials outisde from contract: %w", err)
 	}
 
 	// 1 - Check if the material to be added is in the schema
@@ -487,6 +511,12 @@ func (c *Crafter) AddMaterial(ctx context.Context, attestationID, key, value str
 	}
 
 	// 3 - Craft resulting material
+	return c.addMaterial(ctx, m, attestationID, value, casBackend, runtimeAnnotations)
+}
+
+// addMaterials adds the incoming material m to the crafting state
+func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_Material, attestationID, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string) error {
+	// 3- Craft resulting material
 	mt, err := materials.Craft(context.Background(), m, value, casBackend, c.ociRegistryAuth, c.logger)
 	if err != nil {
 		return err
@@ -498,13 +528,13 @@ func (c *Crafter) AddMaterial(ctx context.Context, attestationID, key, value str
 	for kr, vr := range runtimeAnnotations {
 		// If the annotation is not defined in the material we fail
 		if v, found := mt.Annotations[kr]; !found {
-			return fmt.Errorf("annotation %q not found in material %q", kr, key)
+			return fmt.Errorf("annotation %q not found in material %q", kr, m.Name)
 		} else if v == "" {
 			// Set it only if it's not set
 			mt.Annotations[kr] = vr
 		} else {
 			// NOTE: we do not allow overriding values that come from the contract
-			c.logger.Info().Str("key", key).Str("annotation", kr).Msg("annotation can't be changed, skipping")
+			c.logger.Info().Str("key", m.Name).Str("annotation", kr).Msg("annotation can't be changed, skipping")
 		}
 	}
 
@@ -517,7 +547,7 @@ func (c *Crafter) AddMaterial(ctx context.Context, attestationID, key, value str
 		}
 
 		if len(missingAnnotations) > 0 {
-			return fmt.Errorf("annotations %q required for material %q", missingAnnotations, key)
+			return fmt.Errorf("annotations %q required for material %q", missingAnnotations, m.Name)
 		}
 	}
 
@@ -528,9 +558,9 @@ func (c *Crafter) AddMaterial(ctx context.Context, attestationID, key, value str
 	// 5 - Attach it to state
 	if mt != nil {
 		if c.CraftingState.Attestation.Materials == nil {
-			c.CraftingState.Attestation.Materials = map[string]*api.Attestation_Material{key: mt}
+			c.CraftingState.Attestation.Materials = map[string]*api.Attestation_Material{m.Name: mt}
 		}
-		c.CraftingState.Attestation.Materials[key] = mt
+		c.CraftingState.Attestation.Materials[m.Name] = mt
 	}
 
 	// 6 - Persist state
@@ -538,7 +568,7 @@ func (c *Crafter) AddMaterial(ctx context.Context, attestationID, key, value str
 		return fmt.Errorf("failed to persist crafting state: %w", err)
 	}
 
-	c.logger.Debug().Str("key", key).Msg("added to state")
+	c.logger.Debug().Str("key", m.Name).Msg("added to state")
 	return nil
 }
 

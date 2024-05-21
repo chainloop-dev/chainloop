@@ -15,7 +15,22 @@
 
 package v1
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
+
+// ListAvailableMaterialKind returns a list of available material kinds
+func ListAvailableMaterialKind() []string {
+	var res []string
+	for k := range CraftingSchema_Material_MaterialType_value {
+		if k != "MATERIAL_TYPE_UNSPECIFIED" {
+			res = append(res, strings.Replace(k, "MATERIAL_TYPE_", "", 1))
+		}
+	}
+
+	return res
+}
 
 // Custom validations
 
