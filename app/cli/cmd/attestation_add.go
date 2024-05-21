@@ -48,11 +48,11 @@ func newAttestationAddCmd() *cobra.Command {
 			useWorkflowRobotAccount: "true",
 		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if name == "" && kind == "" {
-				return errors.New("both --name and --kind cannot be empty")
-			}
-			if name != "" && kind != "" {
-				logger.Warn().Msg("both --name and --kind are provided, kind will be ignored")
+			switch {
+			case name == "" && kind == "":
+				return fmt.Errorf("both --name and --kind cannot be empty")
+			case name != "" && kind != "":
+				logger.Warn().Msg("both --name and --kind are provided, --kind will be ignored")
 			}
 
 			return nil
