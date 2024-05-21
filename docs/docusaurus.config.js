@@ -200,9 +200,6 @@ ${content
       "classic",
       /** @type {import('@docusaurus/preset-classic').Options} */
       ({
-        gtag: {
-          trackingID: "G-G4XVJP8LEP",
-        },
         docs: {
           sidebarPath: require.resolve("./sidebars.js"),
           sidebarCollapsed: false,
