@@ -99,14 +99,17 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 		Annotations:   pbAnnotationsToAction(c.CraftingState.InputSchema.GetAnnotations()),
 	}
 
-	// Temporal map to keep track of visited materials
+	// Let's perform the following steps in order to show all possible materials:
+	// 1. Populate the materials that are defined in the contract schema
+	// 2. Populate the materials that are not defined in the contract schema, added inline in the attestation
+	// In order to avoid duplicates, we keep track of the visited materials
 	visitedMaterials := make(map[string]struct{})
 	if err := action.populateContractMaterials(res, visitedMaterials); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("adding materials from the contract: %w", err)
 	}
 
 	if err := action.populateAdditionalMaterials(res, visitedMaterials); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("adding materials outisde the contract: %w", err)
 	}
 
 	// User defined env variables
@@ -150,8 +153,8 @@ func (action *AttestationStatus) populateContractMaterials(res *AttestationStatu
 		}
 
 		if cm, found := action.c.CraftingState.Attestation.Materials[m.Name]; found {
-			if err := setMaterialValue(cm, materialResult.Material); err != nil {
-				return err
+			if err := setMaterialValue(cm, materialResult); err != nil {
+				return fmt.Errorf("setting material value: %w", err)
 			}
 			materialResult.Set = true
 			materialResult.Tag = cm.GetContainerImage().GetTag()
@@ -179,11 +182,12 @@ func (action *AttestationStatus) populateAdditionalMaterials(res *AttestationSta
 				Annotations: stateAnnotationToAction(m.Annotations),
 			},
 			// No need to check if the material is optional or not, as it is not defined in the contract schema
+			// TODO: Make IsOutput configurable
 			IsOutput: true, Required: false,
 		}
 
-		if err := setMaterialValue(m, materialResult.Material); err != nil {
-			return err
+		if err := setMaterialValue(m, materialResult); err != nil {
+			return fmt.Errorf("setting material value: %w", err)
 		}
 		materialResult.Set = true
 		materialResult.Tag = m.GetContainerImage().GetTag()
@@ -220,16 +224,21 @@ func stateAnnotationToAction(in map[string]string) []*Annotation {
 	return res
 }
 
-func setMaterialValue(w *v1.Attestation_Material, o *Material) error {
+func setMaterialValue(w *v1.Attestation_Material, o *AttestationStatusResultMaterial) error {
+	setCommonFields := func(value, hash, tag string) {
+		o.Material.Value = value
+		o.Material.Hash = hash
+		o.Set = true
+		o.Tag = tag
+	}
+
 	switch m := w.GetM().(type) {
 	case *v1.Attestation_Material_String_:
-		o.Value = m.String_.GetValue()
+		setCommonFields(m.String_.GetValue(), "", w.GetContainerImage().GetTag())
 	case *v1.Attestation_Material_ContainerImage_:
-		o.Value = m.ContainerImage.GetName()
-		o.Hash = m.ContainerImage.GetDigest()
+		setCommonFields(m.ContainerImage.GetName(), m.ContainerImage.GetDigest(), w.GetContainerImage().GetTag())
 	case *v1.Attestation_Material_Artifact_:
-		o.Value = m.Artifact.GetName()
-		o.Hash = m.Artifact.GetDigest()
+		setCommonFields(m.Artifact.GetName(), m.Artifact.GetDigest(), w.GetContainerImage().GetTag())
 	default:
 		return fmt.Errorf("unknown material type: %T", m)
 	}

@@ -25,6 +25,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
 )
 
 func newAttestationAddCmd() *cobra.Command {
@@ -47,12 +48,19 @@ func newAttestationAddCmd() *cobra.Command {
 		Annotations: map[string]string{
 			useWorkflowRobotAccount: "true",
 		},
+		Example: `  chainloop attestation add --attestation-id <attestation-id> --name <material-name> --value <material-value> --kind <material-kind> --annotation key=value,key2=value2
+
+ # Add a material to the attestation that is defined in the contract
+ chainloop attestation add --name <material-name> --value <material-value>
+
+ # Add a material to the attestation that is not defined in the contract but you know the kind
+ chainloop attestation add --kind <material-kind> --value <material-value>`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			switch {
 			case name == "" && kind == "":
-				return fmt.Errorf("both --name and --kind cannot be empty")
+				return fmt.Errorf("either --name or --kind needs to be set")
 			case name != "" && kind != "":
-				logger.Warn().Msg("both --name and --kind are provided, --kind will be ignored")
+				return fmt.Errorf("both --name and --kind cannot be set at the same time")
 			}
 
 			return nil
@@ -99,13 +107,13 @@ func newAttestationAddCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&name, "name", "", "name of the material to be recorded")
+	cmd.Flags().StringVar(&name, "name", "", "name of the material as shown in the contract")
 	cmd.Flags().StringVar(&value, "value", "", "value to be recorded")
 	err := cmd.MarkFlagRequired("value")
 	cobra.CheckErr(err)
 	cmd.Flags().StringSliceVar(&annotationsFlag, "annotation", nil, "additional annotation in the format of key=value")
 	flagAttestationID(cmd)
-	cmd.Flags().StringVar(&kind, "kind", "", "kind of the material to be recorded")
+	cmd.Flags().StringVar(&kind, "kind", "", fmt.Sprintf("kind of the material to be recorded: %q", crafter.ListAvailableMaterialKind()))
 
 	// Optional OCI registry credentials
 	cmd.Flags().StringVar(&registryServer, "registry-server", "", fmt.Sprintf("OCI repository server, ($%s)", registryServerEnvVarName))
