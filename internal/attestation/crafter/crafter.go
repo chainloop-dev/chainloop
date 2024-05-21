@@ -43,28 +43,6 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-// attestationCraftingMaterial is a map of material types to their corresponding schemaapi.CraftingSchema_Material_MaterialType
-var attestationCraftingMaterial = func() map[string]schemaapi.CraftingSchema_Material_MaterialType {
-	res := make(map[string]schemaapi.CraftingSchema_Material_MaterialType)
-	for k, v := range schemaapi.CraftingSchema_Material_MaterialType_value {
-		if k != "MATERIAL_TYPE_UNSPECIFIED" {
-			res[strings.Replace(k, "MATERIAL_TYPE_", "", 1)] = schemaapi.CraftingSchema_Material_MaterialType(v)
-		}
-	}
-	return res
-}
-
-// ListAvailableMaterialKind returns a list of available material kinds
-func ListAvailableMaterialKind() []string {
-	m := attestationCraftingMaterial()
-	r := make([]string, 0, len(m))
-	for k := range m {
-		r = append(r, k)
-	}
-
-	return r
-}
-
 // StateManager is an interface for managing the state of the crafting process
 type StateManager interface {
 	// Check if the state is already initialized
@@ -498,7 +476,7 @@ func (c *Crafter) AddMaterialContractFree(ctx context.Context, attestationID, ki
 	if val, found := schemaapi.CraftingSchema_Material_MaterialType_value[kind]; found {
 		m.Type = schemaapi.CraftingSchema_Material_MaterialType(val)
 	} else {
-		return fmt.Errorf("%q kind not found. Available options are %q", kind, ListAvailableMaterialKind())
+		return fmt.Errorf("%q kind not found. Available options are %q", kind, schemaapi.ListAvailableMaterialKind())
 	}
 
 	// 2 - Generate a random name for the material

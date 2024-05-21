@@ -194,14 +194,12 @@ func populateAdditionalMaterials(attsMaterials map[string]*v1.Attestation_Materi
 			},
 			// No need to check if the material is optional or not, as it is not defined in the contract schema
 			// TODO: Make IsOutput configurable
-			IsOutput: true, Required: false,
+			IsOutput: false, Required: false,
 		}
 
 		if err := setMaterialValue(m, materialResult); err != nil {
 			return fmt.Errorf("setting material value: %w", err)
 		}
-		materialResult.Set = true
-		materialResult.Tag = m.GetContainerImage().GetTag()
 
 		res.Materials = append(res.Materials, *materialResult)
 	}
@@ -236,23 +234,22 @@ func stateAnnotationToAction(in map[string]string) []*Annotation {
 }
 
 func setMaterialValue(w *v1.Attestation_Material, o *AttestationStatusResultMaterial) error {
-	setCommonFields := func(value, hash, tag string) {
-		o.Material.Value = value
-		o.Material.Hash = hash
-		o.Set = true
-		o.Tag = tag
-	}
-
 	switch m := w.GetM().(type) {
 	case *v1.Attestation_Material_String_:
-		setCommonFields(m.String_.GetValue(), "", w.GetContainerImage().GetTag())
+		o.Value = m.String_.GetValue()
 	case *v1.Attestation_Material_ContainerImage_:
-		setCommonFields(m.ContainerImage.GetName(), m.ContainerImage.GetDigest(), w.GetContainerImage().GetTag())
+		o.Value = m.ContainerImage.GetName()
+		o.Hash = m.ContainerImage.GetDigest()
 	case *v1.Attestation_Material_Artifact_:
-		setCommonFields(m.Artifact.GetName(), m.Artifact.GetDigest(), w.GetContainerImage().GetTag())
+		o.Value = m.Artifact.GetName()
+		o.Hash = m.Artifact.GetDigest()
 	default:
 		return fmt.Errorf("unknown material type: %T", m)
 	}
+
+	// Set common fields
+	o.Set = true
+	o.Tag = w.GetContainerImage().GetTag()
 
 	return nil
 }

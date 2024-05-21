@@ -25,7 +25,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
-	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 )
 
 func newAttestationAddCmd() *cobra.Command {
@@ -48,13 +48,11 @@ func newAttestationAddCmd() *cobra.Command {
 		Annotations: map[string]string{
 			useWorkflowRobotAccount: "true",
 		},
-		Example: `  chainloop attestation add --attestation-id <attestation-id> --name <material-name> --value <material-value> --kind <material-kind> --annotation key=value,key2=value2
+		Example: `  # Add a material to the attestation that is defined in the contract
+  chainloop attestation add --name <material-name> --value <material-value>
 
- # Add a material to the attestation that is defined in the contract
- chainloop attestation add --name <material-name> --value <material-value>
-
- # Add a material to the attestation that is not defined in the contract but you know the kind
- chainloop attestation add --kind <material-kind> --value <material-value>`,
+  # Add a material to the attestation that is not defined in the contract but you know the kind
+  chainloop attestation add --kind <material-kind> --value <material-value>`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			switch {
 			case name == "" && kind == "":
@@ -113,7 +111,7 @@ func newAttestationAddCmd() *cobra.Command {
 	cobra.CheckErr(err)
 	cmd.Flags().StringSliceVar(&annotationsFlag, "annotation", nil, "additional annotation in the format of key=value")
 	flagAttestationID(cmd)
-	cmd.Flags().StringVar(&kind, "kind", "", fmt.Sprintf("kind of the material to be recorded: %q", crafter.ListAvailableMaterialKind()))
+	cmd.Flags().StringVar(&kind, "kind", "", fmt.Sprintf("kind of the material to be recorded: %q", schemaapi.ListAvailableMaterialKind()))
 
 	// Optional OCI registry credentials
 	cmd.Flags().StringVar(&registryServer, "registry-server", "", fmt.Sprintf("OCI repository server, ($%s)", registryServerEnvVarName))
