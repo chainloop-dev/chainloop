@@ -28,12 +28,15 @@ import (
 	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/runners"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/statemanager/filesystem"
+	"github.com/chainloop-dev/chainloop/internal/casclient"
+	mUploader "github.com/chainloop-dev/chainloop/internal/casclient/mocks"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/proto"
-
 	"github.com/stretchr/testify/suite"
+	"google.golang.org/protobuf/proto"
 )
 
 type crafterSuite struct {
@@ -416,4 +419,70 @@ func (s *crafterSuite) SetupTest() {
 
 func TestSuite(t *testing.T) {
 	suite.Run(t, new(crafterSuite))
+}
+
+func (s *crafterSuite) TestAddMaterialsAutomatic() {
+	testCases := []struct {
+		name         string
+		materialPath string
+		expectedType schemaapi.CraftingSchema_Material_MaterialType
+	}{
+		{
+			name:         "sarif",
+			materialPath: "./materials/testdata/report.sarif",
+			expectedType: schemaapi.CraftingSchema_Material_SARIF,
+		},
+		{
+			name:         "openvex",
+			materialPath: "./materials/testdata/openvex_v0.2.0.json",
+			expectedType: schemaapi.CraftingSchema_Material_OPENVEX,
+		},
+		{
+			name:         "HELM CHART",
+			materialPath: "./materials/testdata/valid-chart.tgz",
+			expectedType: schemaapi.CraftingSchema_Material_HELM_CHART,
+		},
+		{
+			name:         "junit",
+			materialPath: "./materials/testdata/junit.xml",
+			expectedType: schemaapi.CraftingSchema_Material_JUNIT_XML,
+		},
+		{
+			name:         "artifact",
+			materialPath: "./materials/testdata/missing-empty.tgz",
+			expectedType: schemaapi.CraftingSchema_Material_ARTIFACT,
+		},
+		{
+			name:         "artifact - invalid junit",
+			materialPath: "./materials/testdata/junit-invalid.xml",
+			expectedType: schemaapi.CraftingSchema_Material_ARTIFACT,
+		},
+		{
+			name:         "artifact - random file",
+			materialPath: "./materials/testdata/random.json",
+			expectedType: schemaapi.CraftingSchema_Material_ARTIFACT,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			var runner crafter.SupportedRunner = runners.NewGeneric()
+			contract := "testdata/contracts/empty_generic.yaml"
+			uploader := mUploader.NewUploader(s.T())
+			uploader.On("UploadFile", context.Background(), tc.materialPath).
+				Return(&casclient.UpDownStatus{
+					Digest:   "deadbeef",
+					Filename: "simple.txt",
+				}, nil)
+
+			backend := &casclient.CASBackend{Uploader: uploader}
+
+			c, err := newInitializedCrafter(s.T(), contract, &v1.WorkflowMetadata{}, false, "", runner)
+			require.NoError(s.T(), err)
+
+			kind, err := c.AddMaterialAutomatic(context.Background(), "random-id", tc.materialPath, backend, nil)
+			require.NoError(s.T(), err)
+			assert.Equal(s.T(), tc.expectedType.String(), kind.String())
+		})
+	}
 }

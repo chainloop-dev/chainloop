@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
 	"github.com/chainloop-dev/chainloop/internal/grpcconn"
@@ -110,16 +111,23 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 
 		casBackend.Uploader = casclient.New(artifactCASConn, casclient.WithLogger(action.Logger))
 	}
+	// Add material to the attestation crafting state based on if the material is contract free or not.
+	// By default, try to detect the material kind automatically
+	switch {
+	case materialName == "" && materialType == "":
+		var kind schemaapi.CraftingSchema_Material_MaterialType
+		if kind, err = action.c.AddMaterialAutomatic(ctx, attestationID, materialValue, casBackend, annotations); err != nil {
+			return fmt.Errorf("adding material: %w", err)
+		}
+		action.Logger.Info().Str("kind", kind.String()).Msg("material kind detected")
+	case materialName != "":
+		err = action.c.AddMaterialFromContract(ctx, attestationID, materialName, materialValue, casBackend, annotations)
+	default:
+		err = action.c.AddMaterialContractFree(ctx, attestationID, materialType, materialValue, casBackend, annotations)
+	}
 
-	// Add material to the attestation crafting state based on if the material is contract free or not
-	if materialName != "" {
-		if err := action.c.AddMaterialFromContract(ctx, attestationID, materialName, materialValue, casBackend, annotations); err != nil {
-			return fmt.Errorf("adding material: %w", err)
-		}
-	} else {
-		if err := action.c.AddMaterialContractFree(ctx, attestationID, materialType, materialValue, casBackend, annotations); err != nil {
-			return fmt.Errorf("adding material: %w", err)
-		}
+	if err != nil {
+		return fmt.Errorf("adding material: %w", err)
 	}
 
 	return nil
