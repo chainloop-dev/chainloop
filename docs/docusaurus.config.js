@@ -21,6 +21,10 @@ const config = {
     defaultLocale: "en",
     locales: ["en"],
   },
+  // Register posthog only in production
+  clientModules: process.env.NODE_ENV === "production"
+    ? [require.resolve("./src/client-modules/register-posthog.js")]
+    : [],
 
   plugins: [
     [
