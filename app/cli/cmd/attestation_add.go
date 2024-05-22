@@ -54,7 +54,7 @@ func newAttestationAddCmd() *cobra.Command {
   # Add a material to the attestation that is not defined in the contract but you know the kind
   chainloop attestation add --kind <material-kind> --value <material-value>
 
-  # Add a material to the attestation without specifying the kind enables automatic detection
+  # Add a material to the attestation without specifying neither kind nor name enables automatic detection
   chainloop attestation add --value <material-value>`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if name != "" && kind != "" {
