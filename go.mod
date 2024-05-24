@@ -80,21 +80,29 @@ require (
 	github.com/openvex/go-vex v0.2.5
 	github.com/posthog/posthog-go v0.0.0-20240327112532-87b23fe11103
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
+	github.com/sigstore/sigstore/pkg/signature/kms/aws v1.8.3
+	github.com/sigstore/sigstore/pkg/signature/kms/azure v1.8.3
+	github.com/sigstore/sigstore/pkg/signature/kms/gcp v1.8.3
+	github.com/sigstore/sigstore/pkg/signature/kms/hashivault v1.8.3
 	google.golang.org/genproto/googleapis/api v0.0.0-20240401170217-c3f982113cda
 	google.golang.org/genproto/googleapis/bytestream v0.0.0-20240318140521-94a12d6c2237
 )
 
 require (
+	cloud.google.com/go/kms v1.15.8 // indirect
 	cloud.google.com/go/pubsub v1.37.0 // indirect
 	dario.cat/mergo v1.0.0 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.5.2 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/keyvault/internal v0.7.1 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azkeys v1.1.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/internal v1.0.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2 // indirect
 	github.com/Microsoft/hcsshim v0.11.4 // indirect
 	github.com/anchore/go-struct-converter v0.0.0-20230627203149-c72ef8859ca9 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.11.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/kms v1.30.0 // indirect
 	github.com/casbin/govaluate v1.1.0 // indirect
 	github.com/cockroachdb/apd/v3 v3.2.1 // indirect
 	github.com/containerd/log v0.1.0 // indirect
@@ -127,6 +135,7 @@ require (
 	github.com/jackc/pgx/v4 v4.18.2 // indirect
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
+	github.com/jellydator/ttlcache/v3 v3.2.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect

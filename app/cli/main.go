@@ -23,6 +23,10 @@ import (
 	"github.com/go-kratos/kratos/v2/errors"
 	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/rs/zerolog"
+	_ "github.com/sigstore/sigstore/pkg/signature/kms/aws"
+	_ "github.com/sigstore/sigstore/pkg/signature/kms/azure"
+	_ "github.com/sigstore/sigstore/pkg/signature/kms/gcp"
+	_ "github.com/sigstore/sigstore/pkg/signature/kms/hashivault"
 	"google.golang.org/grpc/status"
 )
 
