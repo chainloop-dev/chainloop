@@ -47,7 +47,10 @@ This stage will take the current crafting state, validate that it has all the re
 - Push it to the control plane for storage
 
 :::note
-Currently, a `cosign private key` needs to be provided during push for signing. In future releases this will not be needed since we will rely on keyless signing and verification.
+Chainlooop leverages Cosign for signing and verifying, so it supports any of its key providers.
+Currently, local file-based `cosign private key` and GCP, AWS, Azure and Hashicorp Vault KMS are supported.
+
+In future releases this will not be needed since we will rely on keyless signing and verification.
 :::
 
 #### attestation reset
@@ -188,14 +191,15 @@ $ chainloop attestation status --full
 ### Encode, sign and push attestation
 
 :::note
-Currently, a `cosign private key` needs to be provided during push for signing. In future releases this will not be needed since we will rely on keyless signing and verification.
+Chainlooop leverages Cosign for signing and verifying, so it supports any of its key providers.
+Currently, local file-based `cosign private key` and GCP, AWS, Azure and Hashicorp Vault KMS are supported.
+In future releases this will not be needed since we will rely on keyless signing and verification.
 :::
 
-Since all the required materials have been attached, a **signed in-toto statement can now be generated and sent for storage**
+Since all the required materials have been attached, a **signed in-toto statement can now be generated and sent for storage**. This example uses AWS KMS for signing:
 
 ```bash
-$ export CHAINLOOP_SIGNING_PASSWORD="private key passphrase"
-$ chainloop attestation push --key cosign-private.key
+$ chainloop attestation push --key awskms:///arn:aws:kms:us-east-1:1234567890:key/12345678-a843-43e1-8c5b-1234567890
 ```
 
 The resulting attestation will be rendered, signed and pushed to the control plane.
