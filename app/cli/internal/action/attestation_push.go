@@ -26,6 +26,11 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
+	_ "github.com/sigstore/sigstore/pkg/signature/kms/aws"
+	_ "github.com/sigstore/sigstore/pkg/signature/kms/azure"
+	_ "github.com/sigstore/sigstore/pkg/signature/kms/gcp"
+	_ "github.com/sigstore/sigstore/pkg/signature/kms/hashivault"
+
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
