@@ -20,6 +20,26 @@ import (
 	"strings"
 )
 
+// CraftingMaterialInValidationOrder all type of CraftingMaterial that are available for automatic
+// detection. The order of the list is important as it defines the order of the
+// detection process. Normally from most common one to the least common one and weaker validation method.
+var CraftingMaterialInValidationOrder = []CraftingSchema_Material_MaterialType{
+	CraftingSchema_Material_OPENVEX,
+	CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
+	CraftingSchema_Material_SBOM_SPDX_JSON,
+	CraftingSchema_Material_CSAF_VEX,
+	CraftingSchema_Material_CSAF_INFORMATIONAL_ADVISORY,
+	CraftingSchema_Material_CSAF_SECURITY_ADVISORY,
+	CraftingSchema_Material_CSAF_SECURITY_INCIDENT_RESPONSE,
+	CraftingSchema_Material_JUNIT_XML,
+	CraftingSchema_Material_HELM_CHART,
+	CraftingSchema_Material_CONTAINER_IMAGE,
+	CraftingSchema_Material_SARIF,
+	CraftingSchema_Material_ATTESTATION,
+	CraftingSchema_Material_ARTIFACT,
+	CraftingSchema_Material_STRING,
+}
+
 // ListAvailableMaterialKind returns a list of available material kinds
 func ListAvailableMaterialKind() []string {
 	var res []string

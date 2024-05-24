@@ -52,12 +52,12 @@ func newAttestationAddCmd() *cobra.Command {
   chainloop attestation add --name <material-name> --value <material-value>
 
   # Add a material to the attestation that is not defined in the contract but you know the kind
-  chainloop attestation add --kind <material-kind> --value <material-value>`,
+  chainloop attestation add --kind <material-kind> --value <material-value>
+
+  # Add a material to the attestation without specifying neither kind nor name enables automatic detection
+  chainloop attestation add --value <material-value>`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			switch {
-			case name == "" && kind == "":
-				return fmt.Errorf("either --name or --kind needs to be set")
-			case name != "" && kind != "":
+			if name != "" && kind != "" {
 				return fmt.Errorf("both --name and --kind cannot be set at the same time")
 			}
 

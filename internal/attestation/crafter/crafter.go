@@ -514,6 +514,31 @@ func (c *Crafter) AddMaterialFromContract(ctx context.Context, attestationID, ke
 	return c.addMaterial(ctx, m, attestationID, value, casBackend, runtimeAnnotations)
 }
 
+// AddMaterialContactFreeAutomatic adds a material to the crafting state checking the incoming material matches any of the
+// supported types in validation order. If the material is not found it will return an error.
+func (c *Crafter) AddMaterialContactFreeAutomatic(ctx context.Context, attestationID, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string) (schemaapi.CraftingSchema_Material_MaterialType, error) {
+	var kind schemaapi.CraftingSchema_Material_MaterialType
+	var found bool
+
+	// We want to run the material validation in a specific order
+	for _, kind = range schemaapi.CraftingMaterialInValidationOrder {
+		if err := c.AddMaterialContractFree(ctx, attestationID, kind.String(), value, casBackend, runtimeAnnotations); err != nil {
+			c.logger.Debug().Err(err).Str("kind", kind.String()).Msg("failed to add material")
+			continue
+		}
+		// If we found a match we break the loop and stop looking
+		found = true
+		break
+	}
+
+	// Return an error if the material could not be added
+	if !found {
+		return kind, fmt.Errorf("failed to add material with attestationID: %s", attestationID)
+	}
+
+	return kind, nil
+}
+
 // addMaterials adds the incoming material m to the crafting state
 func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_Material, attestationID, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string) error {
 	// 3- Craft resulting material
