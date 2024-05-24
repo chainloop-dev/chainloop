@@ -37,6 +37,7 @@ var CraftingMaterialInValidationOrder = []CraftingSchema_Material_MaterialType{
 	CraftingSchema_Material_SARIF,
 	CraftingSchema_Material_ATTESTATION,
 	CraftingSchema_Material_ARTIFACT,
+	CraftingSchema_Material_STRING,
 }
 
 // ListAvailableMaterialKind returns a list of available material kinds

@@ -426,6 +426,7 @@ func (s *crafterSuite) TestAddMaterialsAutomatic() {
 		name         string
 		materialPath string
 		expectedType schemaapi.CraftingSchema_Material_MaterialType
+		wantErr      bool
 	}{
 		{
 			name:         "sarif",
@@ -462,6 +463,12 @@ func (s *crafterSuite) TestAddMaterialsAutomatic() {
 			materialPath: "./materials/testdata/random.json",
 			expectedType: schemaapi.CraftingSchema_Material_ARTIFACT,
 		},
+		{
+			name:         "random string",
+			materialPath: "random-string",
+			expectedType: schemaapi.CraftingSchema_Material_STRING,
+			wantErr:      true,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -469,18 +476,21 @@ func (s *crafterSuite) TestAddMaterialsAutomatic() {
 			var runner crafter.SupportedRunner = runners.NewGeneric()
 			contract := "testdata/contracts/empty_generic.yaml"
 			uploader := mUploader.NewUploader(s.T())
-			uploader.On("UploadFile", context.Background(), tc.materialPath).
-				Return(&casclient.UpDownStatus{
-					Digest:   "deadbeef",
-					Filename: "simple.txt",
-				}, nil)
+
+			if !tc.wantErr {
+				uploader.On("UploadFile", context.Background(), tc.materialPath).
+					Return(&casclient.UpDownStatus{
+						Digest:   "deadbeef",
+						Filename: "simple.txt",
+					}, nil)
+			}
 
 			backend := &casclient.CASBackend{Uploader: uploader}
 
 			c, err := newInitializedCrafter(s.T(), contract, &v1.WorkflowMetadata{}, false, "", runner)
 			require.NoError(s.T(), err)
 
-			kind, err := c.AddMaterialAutomatic(context.Background(), "random-id", tc.materialPath, backend, nil)
+			kind, err := c.AddMaterialContactFreeAutomatic(context.Background(), "random-id", tc.materialPath, backend, nil)
 			require.NoError(s.T(), err)
 			assert.Equal(s.T(), tc.expectedType.String(), kind.String())
 		})

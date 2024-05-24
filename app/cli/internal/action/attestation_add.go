@@ -116,7 +116,7 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 	switch {
 	case materialName == "" && materialType == "":
 		var kind schemaapi.CraftingSchema_Material_MaterialType
-		if kind, err = action.c.AddMaterialAutomatic(ctx, attestationID, materialValue, casBackend, annotations); err != nil {
+		if kind, err = action.c.AddMaterialContactFreeAutomatic(ctx, attestationID, materialValue, casBackend, annotations); err != nil {
 			return fmt.Errorf("adding material: %w", err)
 		}
 		action.Logger.Info().Str("kind", kind.String()).Msg("material kind detected")
