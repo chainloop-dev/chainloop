@@ -26,7 +26,6 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
-
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
