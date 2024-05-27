@@ -504,8 +504,6 @@ func (s *crafterSuite) TestAddMaterialsAutomatic() {
 			require.NoError(s.T(), err)
 
 			kind, err := c.AddMaterialContactFreeAutomatic(context.Background(), "random-id", tc.materialPath, backend, nil)
-			fmt.Println(err)
-			fmt.Println(kind)
 			if err != nil {
 				assert.ErrorIs(s.T(), err, materials.ErrBaseUploadAndCraft)
 			} else {
