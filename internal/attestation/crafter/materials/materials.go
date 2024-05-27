@@ -17,6 +17,7 @@ package materials
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -33,9 +34,13 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// ErrInvalidMaterialType is returned when the provided material type
-// is not from the kind we are expecting
-var ErrInvalidMaterialType = fmt.Errorf("unexpected material type")
+var (
+	// ErrInvalidMaterialType is returned when the provided material type
+	// is not from the kind we are expecting
+	ErrInvalidMaterialType = fmt.Errorf("unexpected material type")
+	// ErrBaseUploadAndCraft is returned as a base error when the upload and craft of a material fails
+	ErrBaseUploadAndCraft = errors.New("upload and craft error")
+)
 
 type crafterCommon struct {
 	logger *zerolog.Logger
@@ -59,7 +64,7 @@ func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Materia
 
 	// If there is a max size set and the file is bigger than that, return an error
 	if backend.MaxSize > 0 && result.size > backend.MaxSize {
-		return nil, fmt.Errorf("this file is too big for the %s CAS backend, please contact your administrator: fileSize=%s, maxSize=%s", backend.Name, bytefmt.ByteSize(uint64(result.size)), bytefmt.ByteSize(uint64(backend.MaxSize)))
+		return nil, fmt.Errorf("%w: %w", ErrBaseUploadAndCraft, fmt.Errorf("this file is too big for the %s CAS backend, please contact your administrator: fileSize=%s, maxSize=%s", backend.Name, bytefmt.ByteSize(uint64(result.size)), bytefmt.ByteSize(uint64(backend.MaxSize))))
 	}
 
 	material := &api.Attestation_Material{
@@ -80,7 +85,7 @@ func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Materia
 
 		_, err = backend.Uploader.UploadFile(ctx, artifactPath)
 		if err != nil {
-			return nil, fmt.Errorf("uploading material: %w", err)
+			return nil, fmt.Errorf("%w: %w", ErrBaseUploadAndCraft, fmt.Errorf("uploading material: %w", err))
 		}
 
 		material.UploadedToCas = true
@@ -89,7 +94,7 @@ func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Materia
 		// or store it inline if no uploader is provided
 		content, err := io.ReadAll(result.r)
 		if err != nil {
-			return nil, fmt.Errorf("reading file: %w", err)
+			return nil, fmt.Errorf("%w: %w", ErrBaseUploadAndCraft, fmt.Errorf("reading file: %w", err))
 		}
 
 		material.InlineCas = true
