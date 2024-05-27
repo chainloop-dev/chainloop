@@ -533,7 +533,7 @@ func (c *Crafter) AddMaterialContactFreeAutomatic(ctx context.Context, attestati
 	}
 
 	// Return an error if no material could be added
-	return schemaapi.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED, fmt.Errorf("failed to add material with attestationID: %s", attestationID)
+	return schemaapi.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED, fmt.Errorf("failed to auto-discover material kind for value: %v", value)
 }
 
 // addMaterials adds the incoming material m to the crafting state

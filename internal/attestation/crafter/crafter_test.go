@@ -428,7 +428,7 @@ func (s *crafterSuite) TestAddMaterialsAutomatic() {
 		materialPath   string
 		expectedType   schemaapi.CraftingSchema_Material_MaterialType
 		uploadArtifact bool
-		exceedSize     bool
+		wantErr        bool
 	}{
 		{
 			name:         "sarif",
@@ -475,7 +475,7 @@ func (s *crafterSuite) TestAddMaterialsAutomatic() {
 			name:           "file too large",
 			materialPath:   "./materials/testdata/sbom.cyclonedx.json",
 			expectedType:   schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
-			exceedSize:     true,
+			wantErr:        true,
 			uploadArtifact: true,
 		},
 	}
@@ -496,7 +496,9 @@ func (s *crafterSuite) TestAddMaterialsAutomatic() {
 
 			backend := &casclient.CASBackend{Uploader: uploader}
 
-			if tc.exceedSize {
+			// Establishing a maximum size for the artifact to be uploaded to the CAS causes an error
+			// if the value is exceeded
+			if tc.wantErr {
 				backend.MaxSize = 1
 			}
 
@@ -504,7 +506,7 @@ func (s *crafterSuite) TestAddMaterialsAutomatic() {
 			require.NoError(s.T(), err)
 
 			kind, err := c.AddMaterialContactFreeAutomatic(context.Background(), "random-id", tc.materialPath, backend, nil)
-			if err != nil {
+			if tc.wantErr {
 				assert.ErrorIs(s.T(), err, materials.ErrBaseUploadAndCraft)
 			} else {
 				require.NoError(s.T(), err)
