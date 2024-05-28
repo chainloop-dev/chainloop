@@ -54,15 +54,6 @@ jobs:
           gh release download $tag -A tar.gz -D /tmp
           chainloop attestation add --value "/tmp/chainloop-$version.tar.gz"
 
-          # Include control-plane image
-          chainloop attestation add --value "ghcr.io/chainloop-dev/chainloop/control-plane:$tag"
-
-          # Include cas image
-          chainloop attestation add --value "ghcr.io/chainloop-dev/chainloop/artifact-cas:$tag"
-
-          # Include cli image
-          chainloop attestation add --value "ghcr.io/chainloop-dev/chainloop/cli:$tag"
-
       - name: Finish and Record Attestation
         if: ${{ success() }}
         run: |
