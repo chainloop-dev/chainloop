@@ -75,10 +75,10 @@ jobs:
         run: |
           chainloop attestation reset --trigger cancellation
 
-      - name: Edit the release notes with attestation link
+      - name: Add attestation link to release notes
         if: ${{ success() }}
         run: |
-          chainloop_release_url="## Chainloop Attestation"$'\n'"View the attestation of this release at: https://app.chainloop.dev/attestation/${{ steps.attestation-push.outputs.attestation_sha }}"
+          chainloop_release_url="## Chainloop Attestation"$'\n'"[View the attestation of this release](https://app.chainloop.dev/attestation/${{ steps.attestation-push.outputs.attestation_sha }})"
           current_notes=$(gh release view ${{ github.ref }} --json body -q '.body')
           
           modified_notes="$chainloop_release_url"$'\n\n'"$current_notes"
