@@ -1,4 +1,4 @@
-name: GitHub Release Attestation
+name: Release
 
 on:
   release:
@@ -15,7 +15,7 @@ jobs:
     uses: chainloop-dev/labs/.github/workflows/chainloop_onboard.yml@4173e015dbd5dc2a8802555c268da63d57bbe576
     with:
       project: "chainloop"
-      workflow_name: "chainloop-github-release"
+      workflow_name: "chainloop-vault-release"
     secrets:
       api_token: ${{ secrets.CHAINLOOP_API_TOKEN }}
 
