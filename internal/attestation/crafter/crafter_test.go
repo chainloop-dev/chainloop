@@ -26,6 +26,7 @@ import (
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
 	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/materials"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/runners"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/statemanager/filesystem"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
@@ -423,10 +424,11 @@ func TestSuite(t *testing.T) {
 
 func (s *crafterSuite) TestAddMaterialsAutomatic() {
 	testCases := []struct {
-		name         string
-		materialPath string
-		expectedType schemaapi.CraftingSchema_Material_MaterialType
-		wantErr      bool
+		name           string
+		materialPath   string
+		expectedType   schemaapi.CraftingSchema_Material_MaterialType
+		uploadArtifact bool
+		wantErr        bool
 	}{
 		{
 			name:         "sarif",
@@ -464,10 +466,17 @@ func (s *crafterSuite) TestAddMaterialsAutomatic() {
 			expectedType: schemaapi.CraftingSchema_Material_ARTIFACT,
 		},
 		{
-			name:         "random string",
-			materialPath: "random-string",
-			expectedType: schemaapi.CraftingSchema_Material_STRING,
-			wantErr:      true,
+			name:           "random string",
+			materialPath:   "random-string",
+			expectedType:   schemaapi.CraftingSchema_Material_STRING,
+			uploadArtifact: true,
+		},
+		{
+			name:           "file too large",
+			materialPath:   "./materials/testdata/sbom.cyclonedx.json",
+			expectedType:   schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
+			wantErr:        true,
+			uploadArtifact: true,
 		},
 	}
 
@@ -477,7 +486,7 @@ func (s *crafterSuite) TestAddMaterialsAutomatic() {
 			contract := "testdata/contracts/empty_generic.yaml"
 			uploader := mUploader.NewUploader(s.T())
 
-			if !tc.wantErr {
+			if !tc.uploadArtifact {
 				uploader.On("UploadFile", context.Background(), tc.materialPath).
 					Return(&casclient.UpDownStatus{
 						Digest:   "deadbeef",
@@ -487,11 +496,21 @@ func (s *crafterSuite) TestAddMaterialsAutomatic() {
 
 			backend := &casclient.CASBackend{Uploader: uploader}
 
+			// Establishing a maximum size for the artifact to be uploaded to the CAS causes an error
+			// if the value is exceeded
+			if tc.wantErr {
+				backend.MaxSize = 1
+			}
+
 			c, err := newInitializedCrafter(s.T(), contract, &v1.WorkflowMetadata{}, false, "", runner)
 			require.NoError(s.T(), err)
 
 			kind, err := c.AddMaterialContactFreeAutomatic(context.Background(), "random-id", tc.materialPath, backend, nil)
-			require.NoError(s.T(), err)
+			if tc.wantErr {
+				assert.ErrorIs(s.T(), err, materials.ErrBaseUploadAndCraft)
+			} else {
+				require.NoError(s.T(), err)
+			}
 			assert.Equal(s.T(), tc.expectedType.String(), kind.String())
 		})
 	}
