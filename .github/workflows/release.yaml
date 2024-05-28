@@ -55,10 +55,12 @@ jobs:
           chainloop attestation add --value "/tmp/chainloop-$version.tar.gz"
 
       - name: Finish and Record Attestation
+        id: attestation-push
         if: ${{ success() }}
         run: |
           chainloop attestation status --full
-          chainloop attestation push --key env://CHAINLOOP_SIGNING_KEY
+          attestation_sha=$(chainloop attestation push --key env://CHAINLOOP_SIGNING_KEY -o json | jq -r '.digest')
+          echo "attestation_sha=$attestation_sha" >> $GITHUB_OUTPUT
         env:
           CHAINLOOP_SIGNING_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
           CHAINLOOP_SIGNING_KEY: ${{ secrets.COSIGN_KEY }}
@@ -72,3 +74,13 @@ jobs:
         if: ${{ cancelled() }}
         run: |
           chainloop attestation reset --trigger cancellation
+
+      - name: Edit the release notes with attestation link
+        if: ${{ success() }}
+        run: |
+          chainloop_release_url="## Chainloop Attestation"$'\n'"View the attestation of this release at: https://app.chainloop.dev/attestation/${{ steps.attestation-push.outputs.attestation_sha }}"
+          current_notes=$(gh release view ${{ github.ref }} --json body -q '.body')
+          
+          modified_notes="$chainloop_release_url"$'\n\n'"$current_notes"
+          
+          gh release edit ${{ github.ref }} -n "$modified_notes"
