@@ -23,7 +23,7 @@ jobs:
       packages: write # to push container images
       pull-requests: write
     env:
-      CHAINLOOP_VERSION: 0.86.0
+      CHAINLOOP_VERSION: 0.89.0
       CHAINLOOP_ROBOT_ACCOUNT: ${{ secrets.CHAINLOOP_ROBOT_ACCOUNT }}
       CONTAINER_IMAGE_CP: ghcr.io/chainloop-dev/chainloop/control-plane:${{ github.ref_name }}
       CONTAINER_IMAGE_CAS: ghcr.io/chainloop-dev/chainloop/artifact-cas:${{ github.ref_name }}
@@ -50,7 +50,7 @@ jobs:
 
       - name: Initialize Attestation
         run: |
-          chainloop attestation init --contract-revision 3
+          chainloop attestation init
 
       - name: Docker login to Github Packages
         uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2.2.0
@@ -70,7 +70,7 @@ jobs:
         with:
           distribution: goreleaser
           version: latest
-          args: release --rm-dist
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
@@ -92,38 +92,10 @@ jobs:
           artifact-name: cas.cyclonedx.json
           output-file: /tmp/sbom.cas.cyclonedx.json
 
-      - name: Add Attestation Artifacts (SBOM)
+      - name: Add Attestation from Goreleaser Output
         run: |
-          chainloop attestation add --name sbom-control-plane --value /tmp/sbom.cp.cyclonedx.json
-          chainloop attestation add --name sbom-artifact-cas --value /tmp/sbom.cas.cyclonedx.json
-
-      - name: Add Attestation Artifacts (container images)
-        run: |
-          # Control plane image
-          chainloop attestation add --name control-plane-image --value ${{ env.CONTAINER_IMAGE_CP }}
-          # CAS image
-          chainloop attestation add --name artifact-cas-image --value ${{ env.CONTAINER_IMAGE_CAS }}
-
-      - name: Add Attestation Artifacts (binaries)
-        run: |
-          # Binaries x86_64
-          # TODO: add the rest of binaries
-          # NOTE that we are not making the attestation fail if the material is not found. We will fail on "att push"
-          echo -n '${{ steps.release.outputs.artifacts }}' | jq -r '.[] | select(.type=="Binary") | { "name": "\(.extra.ID)-\(.goos)-\(.goarch)", "path":"\(.path)"} | @base64' | while read i; do
-              BINARY_NAME=$(echo "${i}" | base64 --decode | jq -r ${1} .name)
-              BINARY_PATH=$(echo "${i}" | base64 --decode | jq -r ${1} .path)
-              chainloop attestation add --name ${BINARY_NAME} --value ${BINARY_PATH} || true
-            done
-
-      - name: Add Attestation Artifacts (source code)
-        run: |
-          # When the trigger of the action is a release, github.ref contains refs/tags/<tag_name>
-          # Reference: https://docs.github.com/en/actions/learn-github-actions/contexts#github-context
-
-          tag=$(echo -n ${{github.ref}} | cut -d / -f3)
-          version=$(echo -n $tag | sed 's/v//g')
-          gh release download $tag -A tar.gz -D /tmp
-          chainloop attestation add --name source-code --value "/tmp/chainloop-$version.tar.gz"
+          jq -r . <<< "${{ steps.release.outputs.artifacts }}" > /tmp/artifacts.json
+          chainloop attestation add --name goreleaser-output --value /tmp/artifacts.json 
 
       - name: Finish and Record Attestation
         if: ${{ success() }}
