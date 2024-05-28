@@ -1,4 +1,4 @@
-name: Release
+name: Build and Package
 
 on:
   push:
@@ -50,7 +50,7 @@ jobs:
 
       - name: Initialize Attestation
         run: |
-          chainloop attestation init
+          chainloop attestation init --contract-revision 3
 
       - name: Docker login to Github Packages
         uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2.2.0
