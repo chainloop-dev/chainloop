@@ -1,0 +1,7 @@
+schemaVersion: v1
+runner:
+  type: GITHUB_ACTION
+materials:
+  - type: ARTIFACT
+    name: goreleaser-output
+    output: true
