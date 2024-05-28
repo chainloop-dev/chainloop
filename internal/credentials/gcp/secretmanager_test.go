@@ -24,7 +24,7 @@ import (
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	gcpmocks "github.com/chainloop-dev/chainloop/internal/credentials/gcp/mocks"
-	"github.com/chainloop-dev/chainloop/internal/servicelogger"
+	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

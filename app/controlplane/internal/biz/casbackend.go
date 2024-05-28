@@ -28,7 +28,7 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
 	"github.com/chainloop-dev/chainloop/internal/blobmanager/s3"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
-	"github.com/chainloop-dev/chainloop/internal/servicelogger"
+	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )

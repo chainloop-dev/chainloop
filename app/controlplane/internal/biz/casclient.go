@@ -27,7 +27,7 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/casclient"
 	"github.com/chainloop-dev/chainloop/internal/grpcconn"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
-	"github.com/chainloop-dev/chainloop/internal/servicelogger"
+	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 )
 

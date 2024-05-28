@@ -21,7 +21,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
-	"github.com/chainloop-dev/chainloop/internal/servicelogger"
+	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	errors "github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"

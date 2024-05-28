@@ -26,7 +26,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
 	"github.com/chainloop-dev/chainloop/internal/attestation"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
-	"github.com/chainloop-dev/chainloop/internal/servicelogger"
+	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	v1 "github.com/in-toto/attestation/go/v1"

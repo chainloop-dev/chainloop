@@ -27,7 +27,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/core/smtp/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	plugin_sdk "github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1/plugin"
-	"github.com/chainloop-dev/chainloop/internal/servicelogger"
+	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 
 	"github.com/go-kratos/kratos/v2/log"
 

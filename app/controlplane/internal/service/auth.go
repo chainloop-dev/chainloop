@@ -33,7 +33,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/user"
 	authenticator "github.com/chainloop-dev/chainloop/app/controlplane/internal/oidcauthenticator"
 	"github.com/chainloop-dev/chainloop/internal/oauth"
-	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
+	sl "github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"golang.org/x/oauth2"
 )
 
