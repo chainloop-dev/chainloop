@@ -28,7 +28,7 @@ import (
 	"code.cloudfoundry.org/bytefmt"
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
-	sl "github.com/chainloop-dev/chainloop/internal/servicelogger"
+	sl "github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	kerrors "github.com/go-kratos/kratos/v2/errors"
 	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/gorilla/mux"
