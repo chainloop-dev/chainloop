@@ -135,7 +135,7 @@ func WithAttestationContextFromAPIToken(apiTokenUC *biz.APITokenUseCase, logger 
 
 			ctx, err := setRobotAccountFromAPIToken(ctx, apiTokenUC, tokenID)
 			if err != nil {
-				return nil, errors.New("error extracting organization from APIToken")
+				return nil, fmt.Errorf("error extracting organization from APIToken: %w", err)
 			}
 
 			logger.Infow("msg", "[authN] processed credentials", "id", tokenID, "type", "API-token")
