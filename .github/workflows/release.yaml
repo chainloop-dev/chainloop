@@ -53,6 +53,15 @@ jobs:
           version=$(echo -n $tag | sed 's/v//g')
           gh release download $tag -A tar.gz -D /tmp
           chainloop attestation add --value "/tmp/chainloop-$version.tar.gz"
+          
+           # Include control-plane image
+           chainloop attestation add --value "ghcr.io/chainloop-dev/chainloop/control-plane:$tag"
+          
+           # Include cas image
+           chainloop attestation add --value "ghcr.io/chainloop-dev/chainloop/artifact-cas:$tag"
+
+           # Include cli image
+           chainloop attestation add --value "ghcr.io/chainloop-dev/chainloop/cli:$tag"
 
       - name: Finish and Record Attestation
         id: attestation-push
@@ -81,6 +90,11 @@ jobs:
           chainloop_release_url="## Chainloop Attestation"$'\n'"[View the attestation of this release](https://app.chainloop.dev/attestation/${{ steps.attestation-push.outputs.attestation_sha }})"
           current_notes=$(gh release view ${{ github.ref }} --json body -q '.body')
           
-          modified_notes="$chainloop_release_url"$'\n\n'"$current_notes"
+          # Only add the attestation link if it doesn't already exist
+          if ! echo "$current_notes" | grep -q "## Chainloop Attestation"; then
+            modified_notes="$chainloop_release_url"$'\n\n'"$current_notes"
+          else
+            modified_notes="$current_notes"
+          fi
           
           gh release edit ${{ github.ref }} -n "$modified_notes"
