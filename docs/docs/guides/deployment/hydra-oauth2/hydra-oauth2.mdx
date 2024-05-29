@@ -1,16 +1,15 @@
 ---
-title: Use Ory Hydra as OAuth2 provider
+title: Use Ory Hydra as OIDC (OpenID Connect) provider
 ---
 
-A requirement to run your own Chainloop instance, is to have a way of authenticate users. One of the most common ways to do this is by using OAuth2.
-Ory Hydra is a popular OAuth2 provider that can be used to authenticate users in your Chainloop instance once connected to an external OIDC provider.
+A requirement to run your own Chainloop instance is to configure an OIDC provider to authenticate users who interact with the control plane.
 
 ## Pre-requisites
 
 To configure your Chainloop instance with Ory Hydra you'll need the following information:
 
 - Ory Hydra instance running
-- Access to your OICD provider configuration
+- Access to your OIDC provider configuration
 
 ## Configure Ory Hydra
 
@@ -35,7 +34,7 @@ Once the command is run, it will give back something similar to the following:
 
 ```bash
 CLIENT ID       b028840e-8c54-4d01-91b9-eb2c4aa6fc0e
-CLIENT SECRET   V.Erxy5_f5zYvBHXi4fZWrB6tw
+CLIENT SECRET   REDACTED
 GRANT TYPES     authorization_code, refresh_token
 RESPONSE TYPES  code
 SCOPE           openid email profile
