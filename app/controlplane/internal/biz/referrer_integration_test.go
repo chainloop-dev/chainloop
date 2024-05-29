@@ -137,7 +137,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersistsDependentAttestatio
 		s.NoError(err)
 		// It has a commit and an attestation
 		require.Len(s.T(), got.References, 2)
-		s.Equal(wantDependentAtt, got.References[1].Digest)
+		s.Equal(wantDependentAtt, got.References[0].Digest)
 	})
 }
 
