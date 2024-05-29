@@ -1,0 +1,61 @@
+---
+title: Use Ory Hydra as OIDC (OpenID Connect) provider
+---
+
+A requirement to run your own Chainloop instance is to configure an OIDC provider to authenticate users who interact with the control plane.
+
+## Pre-requisites
+
+To configure your Chainloop instance with Ory Hydra you'll need the following information:
+
+- Ory Hydra instance running
+- Access to your OIDC provider configuration
+
+## Configure Ory Hydra
+
+First, you'll need to have an Ory Hydra instance running. You can follow the [official documentation](https://www.ory.sh/hydra/docs/) to set up your own instance.
+Then simply create a new OAuth2 client in your Ory Hydra instance. You can do this by running the following command:
+
+```bash
+$  hydra create oauth2-client --name "ACME Solutions"  --grant-type authorization_code,refresh_token --response-type code  --scope openid,email,profile  --redirect-uri http://CHAINLOOP_INSTANCE_URL/auth/callback --endpoint https://ORY_HYDRA_URL
+```
+
+Chainloop client will only request `openid`, `email` and `profile` scopes.
+
+Relevant information that can be noted from the command signature is:
+- `name`: The name of the OAuth2 client
+- `grant-type`: The grant type of the client it needs to be set `authorization_code` and `refresh_token`
+- `response-type`: The response type of the client: `code`
+- `scope`: The scopes that the client will request: `openid`, `email`, `profile`
+- `redirect-uri`: The redirect URI of the client: Whenever is the Chainloop instance URL plus `/auth/callback`
+- `endpoint`: The endpoint of the Ory Hydra instance
+
+Once the command is run, it will give back something similar to the following:
+
+```bash
+CLIENT ID       b028840e-8c54-4d01-91b9-eb2c4aa6fc0e
+CLIENT SECRET   REDACTED
+GRANT TYPES     authorization_code, refresh_token
+RESPONSE TYPES  code
+SCOPE           openid email profile
+AUDIENCE
+REDIRECT URIS   http://0.0.0.0:8000/auth/callback, http://localhost:8000/auth/callback
+```
+
+## Configure Chainloop deployment
+
+As explained in the [deployment guide](../k8s), you can configure the ODIC configuration `oidc` section of the `values.yaml` file.
+
+Just put the information we gathered from the previous steps like this.
+
+```yaml
+controlplane:
+  oidc:
+    url: "" # Ory Hydra URL
+    clientID: "" # Ory Hydra OAuth2 client ID
+    clientSecret: "" # Ory Hydra OAuth2 client secret
+```
+
+And deploy your Chainloop Control Plane with the update values to take effect.
+
+Now your Chainloop instance will automatically authenticating users using the Ory Hydra instance you just configured.
