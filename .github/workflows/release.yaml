@@ -90,11 +90,12 @@ jobs:
           chainloop_release_url="## Chainloop Attestation"$'\n'"[View the attestation of this release](https://app.chainloop.dev/attestation/${{ steps.attestation-push.outputs.attestation_sha }})"
           current_notes=$(gh release view ${{ github.ref }} --json body -q '.body')
           
-          # Only add the attestation link if it doesn't already exist
-          if ! echo "$current_notes" | grep -q "## Chainloop Attestation"; then
-            modified_notes="$chainloop_release_url"$'\n\n'"$current_notes"
+          if echo "$current_notes" | grep -q "## Chainloop Attestation"; then
+            # Replace the existing Chainloop Attestation section with the new URL
+            modified_notes=$(echo "$current_notes" | sed -E "s|## Chainloop Attestation[^\n]*\n\[View the attestation of this release\]\(https://app\.chainloop\.dev/attestation/[^\)]*\)|$chainloop_release_url|")
           else
-            modified_notes="$current_notes"
+            # Add the Chainloop Attestation section to the top
+            modified_notes="$chainloop_release_url"$'\n\n'"$current_notes"
           fi
           
           gh release edit ${{ github.ref }} -n "$modified_notes"
