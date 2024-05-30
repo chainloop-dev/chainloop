@@ -4,9 +4,9 @@ description: Chainloop is an open source software supply chain control plane, a 
 
 type: application
 # Bump the patch (not minor, not major) version on each change in the Chart Source code
-version: 1.51.0
+version: 1.52.0
 # Do not update appVersion, this is handled automatically by the release process
-appVersion: v0.89.0
+appVersion: v0.89.1
 
 dependencies:
   - name: common
