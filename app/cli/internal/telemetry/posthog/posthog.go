@@ -86,7 +86,7 @@ func (p *Tracker) TrackEvent(_ context.Context, eventName string, id string, tag
 	// - The machine ID is available and different from the userID.
 	// - The userID is different from the default one.
 	// An alias can help to track the same user across different devices even when it was not logged in.
-	if (tags["machine_id"] != "" && tags["machine_id"] != id) || id != telemetry.UnrecognisedUserID {
+	if (tags["machine_id"] != "" && tags["machine_id"] != id) && id != telemetry.UnrecognisedUserID {
 		if err := p.client.Enqueue(posthog.Alias{
 			DistinctId: id,
 			Alias:      tags["machine_id"],
