@@ -92,7 +92,7 @@ jobs:
 
       - name: Add Attestation from Goreleaser Output
         run: |
-          jq -r . <<< "${{ steps.release.outputs.artifacts }}" > /tmp/artifacts.json
+          jq -r . <<< '${{ steps.release.outputs.artifacts }}' > /tmp/artifacts.json
           chainloop attestation add --name goreleaser-output --value /tmp/artifacts.json
 
       - name: Finish and Record Attestation
