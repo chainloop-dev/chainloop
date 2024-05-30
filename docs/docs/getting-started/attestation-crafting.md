@@ -264,8 +264,6 @@ jobs:
       # highlight-end
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       # highlight-start
       - name: Initialize Attestation

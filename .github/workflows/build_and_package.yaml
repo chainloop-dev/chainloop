@@ -45,8 +45,6 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-        with:
-          fetch-depth: 0
 
       - name: Initialize Attestation
         run: |
@@ -95,7 +93,7 @@ jobs:
       - name: Add Attestation from Goreleaser Output
         run: |
           jq -r . <<< "${{ steps.release.outputs.artifacts }}" > /tmp/artifacts.json
-          chainloop attestation add --name goreleaser-output --value /tmp/artifacts.json 
+          chainloop attestation add --name goreleaser-output --value /tmp/artifacts.json
 
       - name: Finish and Record Attestation
         if: ${{ success() }}
