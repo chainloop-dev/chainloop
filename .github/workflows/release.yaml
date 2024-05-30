@@ -25,7 +25,7 @@ jobs:
   onboard_workflow:
     name: Onboard Chainloop Workflow
     uses: chainloop-dev/labs/.github/workflows/chainloop_github_release.yml@fe6a2afb097cc05bc5812e777aef46316a54ae2c
-    needs: additional_materials
+    # needs: additional_materials
     with:
       project: "chainloop"
       workflow_name: "chainloop-vault-release"
