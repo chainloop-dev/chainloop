@@ -236,7 +236,9 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 	// Attach the workflow predicate
 	predicateReferrer = append(predicateReferrer, referrer.HasWorkflowsWith(predicateWF...))
 
-	refs, err := root.QueryReferences().Where(predicateReferrer...).WithWorkflows().Order(referrer.ByDigest()).All(ctx)
+	// sort the references by creation date in descending order
+	// so whenever we add pagination we'll get the latest x references
+	refs, err := root.QueryReferences().Where(predicateReferrer...).WithWorkflows().Order(referrer.ByCreatedAt(), ent.Desc()).All(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query references: %w", err)
 	}

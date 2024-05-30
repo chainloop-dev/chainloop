@@ -137,7 +137,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersistsDependentAttestatio
 		s.NoError(err)
 		// It has a commit and an attestation
 		require.Len(s.T(), got.References, 2)
-		s.Equal(wantDependentAtt, got.References[1].Digest)
+		s.Equal(wantDependentAtt, got.References[0].Digest)
 	})
 }
 
@@ -226,7 +226,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		require.Len(t, got.References, 6)
 
 		for i, want := range []*biz.Referrer{
-			wantReferrerCommit, wantReferrerSBOM, wantReferrerArtifact, wantReferrerOpenVEX, wantReferrerSarif, wantReferrerContainerImage} {
+			wantReferrerArtifact, wantReferrerContainerImage, wantReferrerCommit, wantReferrerOpenVEX, wantReferrerSarif, wantReferrerSBOM} {
 			gotR := got.References[i]
 			s.Equal(want, gotR.Referrer)
 		}
@@ -345,9 +345,9 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		// it should be referenced by two attestations since it's subject of both
 		require.Len(t, got.References, 2)
 		s.Equal("ATTESTATION", got.References[0].Kind)
-		s.Equal("sha256:c90ccaab0b2cfda9980836aef407f62d747680ea9793ddc6ad2e2d7ab615933d", got.References[0].Digest)
+		s.Equal("sha256:de36d470d792499b1489fc0e6623300fc8822b8f0d2981bb5ec563f8dde723c7", got.References[0].Digest)
 		s.Equal("ATTESTATION", got.References[1].Kind)
-		s.Equal("sha256:de36d470d792499b1489fc0e6623300fc8822b8f0d2981bb5ec563f8dde723c7", got.References[1].Digest)
+		s.Equal("sha256:c90ccaab0b2cfda9980836aef407f62d747680ea9793ddc6ad2e2d7ab615933d", got.References[1].Digest)
 	})
 
 	s.T().Run("if all associated workflows are private, the referrer is private", func(t *testing.T) {
