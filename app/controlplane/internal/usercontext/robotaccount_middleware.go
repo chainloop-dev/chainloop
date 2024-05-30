@@ -46,7 +46,7 @@ func CurrentRobotAccount(ctx context.Context) *RobotAccount {
 type currentRobotAccountCtxKey struct{}
 
 // WithAttestationContextFromRobotAccount Middleware that injects the current user to the context
-func WithAttestationContextFromRobotAccount(robotAccountUseCase *biz.RobotAccountUseCase, logger *log.Helper) middleware.Middleware {
+func WithAttestationContextFromRobotAccount(robotAccountUseCase *biz.RobotAccountUseCase, orgUseCase *biz.OrganizationUseCase, logger *log.Helper) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			authInfo, ok := attjwtmiddleware.FromJWTAuthContext(ctx)
@@ -103,6 +103,13 @@ func WithAttestationContextFromRobotAccount(robotAccountUseCase *biz.RobotAccoun
 			if orgID == "" {
 				return nil, errors.New("error retrieving the organization from the auth token")
 			}
+
+			org, err := orgUseCase.FindByID(ctx, orgID)
+			if err != nil {
+				return nil, err
+			}
+
+			ctx = WithCurrentOrg(ctx, &Org{Name: org.Name, ID: org.ID, CreatedAt: org.CreatedAt})
 
 			// Check that the encoded workflow ID is the one associated with the robot account
 			// NOTE: This in theory should not be necessary since currently we allow a robot account to be attached to ONLY ONE workflowID
