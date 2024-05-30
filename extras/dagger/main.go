@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	chainloopVersion = "v0.88.1"
+	chainloopVersion = "v0.89.1"
 )
 
 type Chainloop struct{}
