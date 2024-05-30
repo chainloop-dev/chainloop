@@ -1,9 +1,10 @@
 name: Build and Package
 
 on:
-  push:
-    tags:
-      - "v*.*.*"
+  pull_request:
+#  push:
+#    tags:
+#      - "v*.*.*"
 
 # https://github.com/ossf/scorecard/blob/7ed886f1bd917d19cb9d6ce6c10e80e81fa31c39/docs/checks.md#token-permissions
 permissions:
@@ -17,7 +18,7 @@ jobs:
     name: Release CLI and control-plane/artifact-cas container images
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref_type == 'tag' # Guard to make sure we are releasing once
+    # if: github.ref_type == 'tag' # Guard to make sure we are releasing once
     permissions:
       contents: write # required for goreleaser to upload the release assets
       packages: write # to push container images
@@ -27,7 +28,7 @@ jobs:
       CHAINLOOP_ROBOT_ACCOUNT: ${{ secrets.CHAINLOOP_ROBOT_ACCOUNT }}
       CONTAINER_IMAGE_CP: ghcr.io/chainloop-dev/chainloop/control-plane:${{ github.ref_name }}
       CONTAINER_IMAGE_CAS: ghcr.io/chainloop-dev/chainloop/artifact-cas:${{ github.ref_name }}
-      GH_TOKEN: ${{ github.token }}
+      GH_TOKEN: ${{ secrets.PAT_GITHUB_TOKEN }}
     steps:
       - name: Install Cosign
         uses: sigstore/cosign-installer@ef6a6b364bbad08abd36a5f8af60b595d12702f8 # main
@@ -46,16 +47,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
-      - name: Initialize Attestation
-        run: |
-          chainloop attestation init
+#      - name: Initialize Attestation
+#        run: |
+#          chainloop attestation init
 
       - name: Docker login to Github Packages
         uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2.2.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.PAT_GITHUB_TOKEN }}
 
       - name: Set up Go
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
@@ -70,55 +71,55 @@ jobs:
           version: latest
           args: release --clean
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PAT_GITHUB_TOKEN }}
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
           COSIGN_KEY: ${{ secrets.COSIGN_KEY }}
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_ENDPOINT: ${{ secrets.POSTHOG_ENDPOINT }}
 
-      - uses: anchore/sbom-action@c6aed38a4323b393d05372c58a74c39ae8386d02 # v0.15.6
-        with:
-          image: ${{ env.CONTAINER_IMAGE_CP }}
-          format: cyclonedx-json
-          artifact-name: controlplane.cyclonedx.json
-          output-file: /tmp/sbom.cp.cyclonedx.json
-
-      - uses: anchore/sbom-action@c6aed38a4323b393d05372c58a74c39ae8386d02 # v0.15.6
-        with:
-          image: ${{ env.CONTAINER_IMAGE_CAS }}
-          format: cyclonedx-json
-          artifact-name: cas.cyclonedx.json
-          output-file: /tmp/sbom.cas.cyclonedx.json
-
-      - name: Add Attestation from Goreleaser Output
-        run: |
-          jq -r . <<< '${{ steps.release.outputs.artifacts }}' > /tmp/artifacts.json
-          chainloop attestation add --name goreleaser-output --value /tmp/artifacts.json
-
-      - name: Finish and Record Attestation
-        if: ${{ success() }}
-        run: |
-          chainloop attestation status --full
-          chainloop attestation push --key env://CHAINLOOP_SIGNING_KEY
-        env:
-          CHAINLOOP_SIGNING_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
-          CHAINLOOP_SIGNING_KEY: ${{ secrets.COSIGN_KEY }}
-
-      - name: Bump Chart Version
-        run: .github/workflows/utils/bump-chart-version.sh deployment/chainloop ${{ github.ref_name }}
-
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38 # v5.0.2
-        with:
-          commit-message: Bump Chart Version ${{ github.ref_name }}
-          signoff: true
-          base: main
-          title: Bump Helm Chart Version => ${{ github.ref_name }}
-          body: |
-            A new Chainloop release is available! Bumping Helm Chart reference to ${{ github.ref_name }}
-          labels: |
-            automated
-            helm
+#      - uses: anchore/sbom-action@c6aed38a4323b393d05372c58a74c39ae8386d02 # v0.15.6
+#        with:
+#          image: ${{ env.CONTAINER_IMAGE_CP }}
+#          format: cyclonedx-json
+#          artifact-name: controlplane.cyclonedx.json
+#          output-file: /tmp/sbom.cp.cyclonedx.json
+#
+#      - uses: anchore/sbom-action@c6aed38a4323b393d05372c58a74c39ae8386d02 # v0.15.6
+#        with:
+#          image: ${{ env.CONTAINER_IMAGE_CAS }}
+#          format: cyclonedx-json
+#          artifact-name: cas.cyclonedx.json
+#          output-file: /tmp/sbom.cas.cyclonedx.json
+#
+#      - name: Add Attestation from Goreleaser Output
+#        run: |
+#          jq -r . <<< '${{ steps.release.outputs.artifacts }}' > /tmp/artifacts.json
+#          chainloop attestation add --name goreleaser-output --value /tmp/artifacts.json
+#
+#      - name: Finish and Record Attestation
+#        if: ${{ success() }}
+#        run: |
+#          chainloop attestation status --full
+#          chainloop attestation push --key env://CHAINLOOP_SIGNING_KEY
+#        env:
+#          CHAINLOOP_SIGNING_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+#          CHAINLOOP_SIGNING_KEY: ${{ secrets.COSIGN_KEY }}
+#
+#      - name: Bump Chart Version
+#        run: .github/workflows/utils/bump-chart-version.sh deployment/chainloop ${{ github.ref_name }}
+#
+#      - name: Create Pull Request
+#        uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38 # v5.0.2
+#        with:
+#          commit-message: Bump Chart Version ${{ github.ref_name }}
+#          signoff: true
+#          base: main
+#          title: Bump Helm Chart Version => ${{ github.ref_name }}
+#          body: |
+#            A new Chainloop release is available! Bumping Helm Chart reference to ${{ github.ref_name }}
+#          labels: |
+#            automated
+#            helm
 
       - name: Mark attestation as failed
         if: ${{ failure() }}
