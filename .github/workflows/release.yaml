@@ -8,8 +8,8 @@ permissions:
   contents: write
 
 jobs:
-  onboard_workflow:
-    name: Onboard Chainloop Workflow
+  release:
+    name: Attest GitHub Release
     uses: chainloop-dev/labs/.github/workflows/chainloop_github_release.yml@2c2fd4a5dbe0ad8020d0550c3f9c52d864b2cd12
     with:
       project: "chainloop"
