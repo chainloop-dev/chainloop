@@ -33,8 +33,9 @@ type SigningService struct {
 
 var _ v1.SigningServiceServer = (*SigningService)(nil)
 
-func NewSigningService(signing *biz.SigningUseCase) *SigningService {
+func NewSigningService(signing *biz.SigningUseCase, opts ...NewOpt) *SigningService {
 	return &SigningService{
+		service: newService(opts...),
 		signing: signing,
 	}
 }
