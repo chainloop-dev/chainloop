@@ -50,15 +50,15 @@ import (
 
 type Opts struct {
 	// UseCases
-	UserUseCase          *biz.UserUseCase
-	RobotAccountUseCase  *biz.RobotAccountUseCase
-	CASBackendUseCase    *biz.CASBackendUseCase
-	CASClientUseCase     *biz.CASClientUseCase
-	IntegrationUseCase   *biz.IntegrationUseCase
-	ReferrerUseCase      *biz.ReferrerUseCase
-	APITokenUseCase      *biz.APITokenUseCase
-	OrganizationUserCase *biz.OrganizationUseCase
-	WorkflowUseCase      *biz.WorkflowUseCase
+	UserUseCase         *biz.UserUseCase
+	RobotAccountUseCase *biz.RobotAccountUseCase
+	CASBackendUseCase   *biz.CASBackendUseCase
+	CASClientUseCase    *biz.CASClientUseCase
+	IntegrationUseCase  *biz.IntegrationUseCase
+	ReferrerUseCase     *biz.ReferrerUseCase
+	APITokenUseCase     *biz.APITokenUseCase
+	OrganizationUseCase *biz.OrganizationUseCase
+	WorkflowUseCase     *biz.WorkflowUseCase
 	// Services
 	WorkflowSvc         *service.WorkflowService
 	AuthSvc             *service.AuthService
@@ -178,7 +178,7 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 			// 2.a - Set its user and organization
 			usercontext.WithCurrentUserAndOrgMiddleware(opts.UserUseCase, logHelper),
 			// 2.b - Set its API token and organization as alternative to the user
-			usercontext.WithCurrentAPITokenAndOrgMiddleware(opts.APITokenUseCase, opts.OrganizationUserCase, logHelper),
+			usercontext.WithCurrentAPITokenAndOrgMiddleware(opts.APITokenUseCase, opts.OrganizationUseCase, logHelper),
 			// 3 - Check user/token authorization
 			authzMiddleware.WithAuthzMiddleware(opts.Enforcer, logHelper),
 			// 4 - Make sure the account is fully functional
@@ -201,7 +201,7 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 				attjwtmiddleware.NewAPITokenProvider(opts.AuthConfig.GeneratedJwsHmacSecret),
 			),
 			// 2.a - Set its workflow and organization in the context
-			usercontext.WithAttestationContextFromRobotAccount(opts.RobotAccountUseCase, logHelper),
+			usercontext.WithAttestationContextFromRobotAccount(opts.RobotAccountUseCase, opts.OrganizationUseCase, logHelper),
 			// 2.b - Set its API token and Robot Account as alternative to the user
 			usercontext.WithAttestationContextFromAPIToken(opts.APITokenUseCase, logHelper),
 		).Match(requireRobotAccountMatcher()).Build(),
