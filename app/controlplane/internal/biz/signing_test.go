@@ -65,15 +65,11 @@ func TestSuite(t *testing.T) {
 
 func (s *signingUseCaseTestSuite) SetupTest() {
 	csr, err := createCSR()
-	if err != nil {
-		s.Require().NoError(err)
-	}
+	s.Require().NoError(err)
 	s.csr = csr
 
 	ca, err := ephemeralca.NewEphemeralCA()
-	if err != nil {
-		s.Require().NoError(err)
-	}
+	s.Require().NoError(err)
 	s.uc = &biz.SigningUseCase{CA: ca}
 }
 
