@@ -24,14 +24,14 @@ import "buf/validate/validate.proto";
 
 service SigningService {
   // GenerateSigningCert takes a certificate request and generates a new certificate for attestation signing
-  rpc GenerateSigningCert (SigningCertRequest) returns (SigningCertResponse);
+  rpc GenerateSigningCert (GenerateSigningCertRequest) returns (GenerateSigningCertResponse);
 }
 
-message SigningCertRequest {
+message GenerateSigningCertRequest {
   bytes certificate_signing_request = 1 [(buf.validate.field).bytes.min_len = 1];
 }
 
-message SigningCertResponse {
+message GenerateSigningCertResponse {
   CertificateChain chain = 1;
 }
 

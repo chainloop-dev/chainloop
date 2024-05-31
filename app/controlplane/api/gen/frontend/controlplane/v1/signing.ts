@@ -5,11 +5,11 @@ import _m0 from "protobufjs/minimal";
 
 export const protobufPackage = "controlplane.v1";
 
-export interface SigningCertRequest {
+export interface GenerateSigningCertRequest {
   certificateSigningRequest: Uint8Array;
 }
 
-export interface SigningCertResponse {
+export interface GenerateSigningCertResponse {
   chain?: CertificateChain;
 }
 
@@ -18,22 +18,22 @@ export interface CertificateChain {
   certificates: string[];
 }
 
-function createBaseSigningCertRequest(): SigningCertRequest {
+function createBaseGenerateSigningCertRequest(): GenerateSigningCertRequest {
   return { certificateSigningRequest: new Uint8Array(0) };
 }
 
-export const SigningCertRequest = {
-  encode(message: SigningCertRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const GenerateSigningCertRequest = {
+  encode(message: GenerateSigningCertRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.certificateSigningRequest.length !== 0) {
       writer.uint32(10).bytes(message.certificateSigningRequest);
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): SigningCertRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): GenerateSigningCertRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSigningCertRequest();
+    const message = createBaseGenerateSigningCertRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -53,7 +53,7 @@ export const SigningCertRequest = {
     return message;
   },
 
-  fromJSON(object: any): SigningCertRequest {
+  fromJSON(object: any): GenerateSigningCertRequest {
     return {
       certificateSigningRequest: isSet(object.certificateSigningRequest)
         ? bytesFromBase64(object.certificateSigningRequest)
@@ -61,7 +61,7 @@ export const SigningCertRequest = {
     };
   },
 
-  toJSON(message: SigningCertRequest): unknown {
+  toJSON(message: GenerateSigningCertRequest): unknown {
     const obj: any = {};
     message.certificateSigningRequest !== undefined &&
       (obj.certificateSigningRequest = base64FromBytes(
@@ -70,33 +70,33 @@ export const SigningCertRequest = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<SigningCertRequest>, I>>(base?: I): SigningCertRequest {
-    return SigningCertRequest.fromPartial(base ?? {});
+  create<I extends Exact<DeepPartial<GenerateSigningCertRequest>, I>>(base?: I): GenerateSigningCertRequest {
+    return GenerateSigningCertRequest.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<SigningCertRequest>, I>>(object: I): SigningCertRequest {
-    const message = createBaseSigningCertRequest();
+  fromPartial<I extends Exact<DeepPartial<GenerateSigningCertRequest>, I>>(object: I): GenerateSigningCertRequest {
+    const message = createBaseGenerateSigningCertRequest();
     message.certificateSigningRequest = object.certificateSigningRequest ?? new Uint8Array(0);
     return message;
   },
 };
 
-function createBaseSigningCertResponse(): SigningCertResponse {
+function createBaseGenerateSigningCertResponse(): GenerateSigningCertResponse {
   return { chain: undefined };
 }
 
-export const SigningCertResponse = {
-  encode(message: SigningCertResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const GenerateSigningCertResponse = {
+  encode(message: GenerateSigningCertResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.chain !== undefined) {
       CertificateChain.encode(message.chain, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): SigningCertResponse {
+  decode(input: _m0.Reader | Uint8Array, length?: number): GenerateSigningCertResponse {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSigningCertResponse();
+    const message = createBaseGenerateSigningCertResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -116,22 +116,22 @@ export const SigningCertResponse = {
     return message;
   },
 
-  fromJSON(object: any): SigningCertResponse {
+  fromJSON(object: any): GenerateSigningCertResponse {
     return { chain: isSet(object.chain) ? CertificateChain.fromJSON(object.chain) : undefined };
   },
 
-  toJSON(message: SigningCertResponse): unknown {
+  toJSON(message: GenerateSigningCertResponse): unknown {
     const obj: any = {};
     message.chain !== undefined && (obj.chain = message.chain ? CertificateChain.toJSON(message.chain) : undefined);
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<SigningCertResponse>, I>>(base?: I): SigningCertResponse {
-    return SigningCertResponse.fromPartial(base ?? {});
+  create<I extends Exact<DeepPartial<GenerateSigningCertResponse>, I>>(base?: I): GenerateSigningCertResponse {
+    return GenerateSigningCertResponse.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<SigningCertResponse>, I>>(object: I): SigningCertResponse {
-    const message = createBaseSigningCertResponse();
+  fromPartial<I extends Exact<DeepPartial<GenerateSigningCertResponse>, I>>(object: I): GenerateSigningCertResponse {
+    const message = createBaseGenerateSigningCertResponse();
     message.chain = (object.chain !== undefined && object.chain !== null)
       ? CertificateChain.fromPartial(object.chain)
       : undefined;
@@ -201,7 +201,10 @@ export const CertificateChain = {
 
 export interface SigningService {
   /** GenerateSigningCert takes a certificate request and generates a new certificate for attestation signing */
-  GenerateSigningCert(request: DeepPartial<SigningCertRequest>, metadata?: grpc.Metadata): Promise<SigningCertResponse>;
+  GenerateSigningCert(
+    request: DeepPartial<GenerateSigningCertRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<GenerateSigningCertResponse>;
 }
 
 export class SigningServiceClientImpl implements SigningService {
@@ -213,10 +216,14 @@ export class SigningServiceClientImpl implements SigningService {
   }
 
   GenerateSigningCert(
-    request: DeepPartial<SigningCertRequest>,
+    request: DeepPartial<GenerateSigningCertRequest>,
     metadata?: grpc.Metadata,
-  ): Promise<SigningCertResponse> {
-    return this.rpc.unary(SigningServiceGenerateSigningCertDesc, SigningCertRequest.fromPartial(request), metadata);
+  ): Promise<GenerateSigningCertResponse> {
+    return this.rpc.unary(
+      SigningServiceGenerateSigningCertDesc,
+      GenerateSigningCertRequest.fromPartial(request),
+      metadata,
+    );
   }
 }
 
@@ -229,12 +236,12 @@ export const SigningServiceGenerateSigningCertDesc: UnaryMethodDefinitionish = {
   responseStream: false,
   requestType: {
     serializeBinary() {
-      return SigningCertRequest.encode(this).finish();
+      return GenerateSigningCertRequest.encode(this).finish();
     },
   } as any,
   responseType: {
     deserializeBinary(data: Uint8Array) {
-      const value = SigningCertResponse.decode(data);
+      const value = GenerateSigningCertResponse.decode(data);
       return {
         ...value,
         toObject() {

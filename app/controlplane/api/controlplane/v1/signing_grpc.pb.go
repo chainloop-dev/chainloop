@@ -42,7 +42,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SigningServiceClient interface {
 	// GenerateSigningCert takes a certificate request and generates a new certificate for attestation signing
-	GenerateSigningCert(ctx context.Context, in *SigningCertRequest, opts ...grpc.CallOption) (*SigningCertResponse, error)
+	GenerateSigningCert(ctx context.Context, in *GenerateSigningCertRequest, opts ...grpc.CallOption) (*GenerateSigningCertResponse, error)
 }
 
 type signingServiceClient struct {
@@ -53,8 +53,8 @@ func NewSigningServiceClient(cc grpc.ClientConnInterface) SigningServiceClient {
 	return &signingServiceClient{cc}
 }
 
-func (c *signingServiceClient) GenerateSigningCert(ctx context.Context, in *SigningCertRequest, opts ...grpc.CallOption) (*SigningCertResponse, error) {
-	out := new(SigningCertResponse)
+func (c *signingServiceClient) GenerateSigningCert(ctx context.Context, in *GenerateSigningCertRequest, opts ...grpc.CallOption) (*GenerateSigningCertResponse, error) {
+	out := new(GenerateSigningCertResponse)
 	err := c.cc.Invoke(ctx, SigningService_GenerateSigningCert_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -67,7 +67,7 @@ func (c *signingServiceClient) GenerateSigningCert(ctx context.Context, in *Sign
 // for forward compatibility
 type SigningServiceServer interface {
 	// GenerateSigningCert takes a certificate request and generates a new certificate for attestation signing
-	GenerateSigningCert(context.Context, *SigningCertRequest) (*SigningCertResponse, error)
+	GenerateSigningCert(context.Context, *GenerateSigningCertRequest) (*GenerateSigningCertResponse, error)
 	mustEmbedUnimplementedSigningServiceServer()
 }
 
@@ -75,7 +75,7 @@ type SigningServiceServer interface {
 type UnimplementedSigningServiceServer struct {
 }
 
-func (UnimplementedSigningServiceServer) GenerateSigningCert(context.Context, *SigningCertRequest) (*SigningCertResponse, error) {
+func (UnimplementedSigningServiceServer) GenerateSigningCert(context.Context, *GenerateSigningCertRequest) (*GenerateSigningCertResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateSigningCert not implemented")
 }
 func (UnimplementedSigningServiceServer) mustEmbedUnimplementedSigningServiceServer() {}
@@ -92,7 +92,7 @@ func RegisterSigningServiceServer(s grpc.ServiceRegistrar, srv SigningServiceSer
 }
 
 func _SigningService_GenerateSigningCert_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SigningCertRequest)
+	in := new(GenerateSigningCertRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func _SigningService_GenerateSigningCert_Handler(srv interface{}, ctx context.Co
 		FullMethod: SigningService_GenerateSigningCert_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SigningServiceServer).GenerateSigningCert(ctx, req.(*SigningCertRequest))
+		return srv.(SigningServiceServer).GenerateSigningCert(ctx, req.(*GenerateSigningCertRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
