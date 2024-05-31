@@ -1,0 +1,49 @@
+---
+title: Configure your deployment for keyless signing
+---
+
+Note: this is a experimental feature and subject to change in future Chainloop releases
+
+Chainloop controlplane can be configured with a Certificate Authority (CA) to support keyless signing scenarios. In these cases,
+the CLI `attestation push` command can be run without a `--key` argument. A new ephemeral sigining certificate will be issued
+by the controlplane to sign the attestations as usual.
+
+## Configuring file based CA
+
+In this deployment mode, Chainloop can be instructed to look for a local, file-based CA that will be used to sign new certificate requests coming from the CLI.
+This example shows how to issue a new CA with `openssl`.:
+
+```bash
+# create a new private key
+> openssl genrsa -aes256 -out ca.key 4096
+# generate a certificate
+> openssl req -new -x509 -sha256 -key ca.key -out ca.crt
+```
+
+Then place a snippet like this in your `config.yaml` file:
+
+```yaml
+certificate_authority:
+  file_ca:
+    cert_path: "./path/to/ca.crt"
+    key_path: "./path/to/ca.key"
+    key_pass: {KEY_PASS}
+```
+
+Then run the controlplane and make sure that it shows this log line during bootstrap:
+
+```
+2024-05-31T13:41:41.478+0200    INFO    {"msg": "Keyless: File CA configured"}
+```
+
+## Running the CLI in keyless mode
+
+Just omit the `--key` argument when pushing an attestation:
+
+```bash
+> chainloop --token $TOKEN att push
+INF key not provided, running in key-less mode
+INF push completed
+...
+Attestation Digest: sha256:956cf9ac20eeedac9dad76235e50b854799cf95a9fa30ec11499782a5cf39ef4%
+```
