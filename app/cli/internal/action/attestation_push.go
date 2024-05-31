@@ -131,12 +131,14 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	// Indicate that we are done with the attestation
 	action.c.CraftingState.Attestation.FinishedAt = timestamppb.New(time.Now())
 
-	renderer, err := renderer.NewAttestationRenderer(action.c.CraftingState, action.keyPath, action.cliVersion, action.cliDigest, renderer.WithLogger(action.Logger))
+	renderer, err := renderer.NewAttestationRenderer(action.c.CraftingState, action.keyPath, action.cliVersion, action.cliDigest,
+		renderer.WithLogger(action.Logger),
+		renderer.WithCPSigningClient(pb.NewSigningServiceClient(action.CPConnection)))
 	if err != nil {
 		return nil, err
 	}
 
-	envelope, err := renderer.Render()
+	envelope, err := renderer.Render(ctx)
 	if err != nil {
 		return nil, err
 	}
