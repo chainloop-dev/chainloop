@@ -48,6 +48,7 @@ var ProviderSet = wire.NewSet(
 	NewAPITokenUseCase,
 	NewAPITokenSyncerUseCase,
 	NewAttestationStateUseCase,
+	NewChainloopSigningUseCase,
 	wire.Struct(new(NewIntegrationUseCaseOpts), "*"),
 	wire.Struct(new(NewUserUseCaseParams), "*"),
 )
