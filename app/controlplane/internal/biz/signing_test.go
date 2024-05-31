@@ -49,7 +49,7 @@ func (s *signingUseCaseTestSuite) TestSigningUseCase_CreateSigningCert() {
 		s.NoError(err)
 
 		// assert 2 certificates: signing certificate + chain (only one)
-		s.Assert().Len(certChain, 2)
+		s.Len(certChain, 2)
 
 		// check cert contents
 		cert, err := cryptoutils.UnmarshalCertificatesFromPEM([]byte(certChain[0]))
@@ -66,13 +66,13 @@ func TestSuite(t *testing.T) {
 func (s *signingUseCaseTestSuite) SetupTest() {
 	csr, err := createCSR()
 	if err != nil {
-		panic(err)
+		s.Require().NoError(err)
 	}
 	s.csr = csr
 
 	ca, err := ephemeralca.NewEphemeralCA()
 	if err != nil {
-		s.T().Fatal(err)
+		s.Require().NoError(err)
 	}
 	s.uc = &biz.SigningUseCase{CA: ca}
 }
