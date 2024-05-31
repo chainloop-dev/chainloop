@@ -42,7 +42,7 @@ func NewChainloopSigningUseCase(ca ca.CertificateAuthority) *SigningUseCase {
 	return &SigningUseCase{CA: ca}
 }
 
-func (s *SigningUseCase) CreateSigningCert(ctx context.Context, orgId string, csrRaw []byte) ([]string, error) {
+func (s *SigningUseCase) CreateSigningCert(ctx context.Context, orgID string, csrRaw []byte) ([]string, error) {
 	var publicKey crypto.PublicKey
 
 	if len(csrRaw) == 0 {
@@ -67,7 +67,7 @@ func (s *SigningUseCase) CreateSigningCert(ctx context.Context, orgId string, cs
 	}
 
 	// Create certificate from CA provider (no Signed Certificate Timestamps for now)
-	csc, err := s.CA.CreateCertificate(ctx, NewChainloopPrincipal(orgId), publicKey)
+	csc, err := s.CA.CreateCertificate(ctx, NewChainloopPrincipal(orgID), publicKey)
 	if err != nil {
 		return nil, err
 	}
@@ -88,24 +88,24 @@ func (s *SigningUseCase) CreateSigningCert(ctx context.Context, orgId string, cs
 }
 
 type ChainloopPrincipal struct {
-	orgId string
+	orgID string
 }
 
 var _ identity.Principal = (*ChainloopPrincipal)(nil)
 
-func NewChainloopPrincipal(orgId string) *ChainloopPrincipal {
-	return &ChainloopPrincipal{orgId: orgId}
+func NewChainloopPrincipal(orgID string) *ChainloopPrincipal {
+	return &ChainloopPrincipal{orgID: orgID}
 }
 
 func (p *ChainloopPrincipal) Name(_ context.Context) string {
-	return p.orgId
+	return p.orgID
 }
 
 func (p *ChainloopPrincipal) Embed(_ context.Context, cert *x509.Certificate) error {
 	// no op.
 	// TODO: Chainloop might have their own private enterprise number with the Internet Assigned Numbers Authority
 	// 		 to embed its own identity information in the resulting certificate
-	cert.Subject = pkix.Name{Organization: []string{p.orgId}}
+	cert.Subject = pkix.Name{Organization: []string{p.orgID}}
 
 	return nil
 }
