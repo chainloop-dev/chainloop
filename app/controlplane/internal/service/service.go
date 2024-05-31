@@ -47,6 +47,7 @@ var ProviderSet = wire.NewSet(
 	NewAPITokenService,
 	NewAttestationStateService,
 	NewUserService,
+	NewSigningService,
 	wire.Struct(new(NewWorkflowRunServiceOpts), "*"),
 	wire.Struct(new(NewAttestationServiceOpts), "*"),
 )
