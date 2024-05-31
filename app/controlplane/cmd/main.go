@@ -22,6 +22,8 @@ import (
 
 	"github.com/bufbuild/protovalidate-go"
 	"github.com/getsentry/sentry-go"
+	"github.com/sigstore/fulcio/pkg/ca"
+	"github.com/sigstore/fulcio/pkg/ca/fileca"
 	flag "github.com/spf13/pflag"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
@@ -127,14 +129,18 @@ func main() {
 	// Kill plugins processes on exit
 	defer availablePlugins.Cleanup()
 
-	app, cleanup, err := wireApp(&bc, credsWriter, logger, availablePlugins)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	ca, err := newSigningCA(ctx, &bc, logger)
+	if err != nil {
+		panic(err)
+	}
+	app, cleanup, err := wireApp(&bc, credsWriter, logger, availablePlugins, ca)
 	if err != nil {
 		panic(err)
 	}
 	defer cleanup()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	// Run an expiration job every minute that expires unfinished runs older than 1 hour
 	// TODO: Make it configurable from the application config
@@ -217,4 +223,17 @@ func initSentry(c *conf.Bootstrap, logger log.Logger) (cleanupFunc func(), err e
 
 func newProtoValidator() (*protovalidate.Validator, error) {
 	return protovalidate.New()
+}
+
+func newSigningCA(_ context.Context, c *conf.Bootstrap, logger log.Logger) (ca.CertificateAuthority, error) {
+	// File
+	if c.GetCertificateAuthority().GetFileCa() != nil {
+		fileCa := c.GetCertificateAuthority().GetFileCa()
+		_ = logger.Log(log.LevelInfo, "msg", "Keyless: File CA configured")
+		return fileca.NewFileCA(fileCa.GetCertPath(), fileCa.GetKeyPath(), fileCa.GetKeyPass(), false)
+	}
+
+	// No CA configured, keyless will be deactivated.
+	_ = logger.Log(log.LevelInfo, "msg", "Keyless NOT configured")
+	return nil, nil
 }

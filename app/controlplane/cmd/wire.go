@@ -33,9 +33,10 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
+	"github.com/sigstore/fulcio/pkg/ca"
 )
 
-func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.AvailablePlugins) (*app, func(), error) {
+func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.AvailablePlugins, ca.CertificateAuthority) (*app, func(), error) {
 	panic(
 		wire.Build(
 			wire.Bind(new(credentials.Reader), new(credentials.ReaderWriter)),
@@ -45,6 +46,7 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.Availabl
 			loader.LoadProviders,
 			service.ProviderSet,
 			wire.Bind(new(biz.CASClient), new(*biz.CASClientUseCase)),
+			wire.Bind(new(biz.SigningCertCreator), new(*biz.SigningUseCase)),
 			serviceOpts,
 			wire.Value([]biz.CASClientOpts{}),
 			wire.FieldsOf(new(*conf.Bootstrap), "Server", "Auth", "Data", "CasServer", "ReferrerSharedIndex"),

@@ -18,11 +18,12 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/blobmanager/loader"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/sigstore/fulcio/pkg/ca"
 )
 
 // Injectors from wire.go:
 
-func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, logger log.Logger, availablePlugins sdk.AvailablePlugins) (*app, func(), error) {
+func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, logger log.Logger, availablePlugins sdk.AvailablePlugins, certificateAuthority ca.CertificateAuthority) (*app, func(), error) {
 	confData := bootstrap.Data
 	dataData, cleanup, err := data.NewData(confData, logger)
 	if err != nil {
@@ -165,6 +166,8 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	attestationStateService := service.NewAttestationStateService(attestationStateUseCase, v2...)
 	userService := service.NewUserService(membershipUseCase, organizationUseCase, v2...)
+	signingUseCase := biz.NewChainloopSigningUseCase(certificateAuthority)
+	signingService := service.NewSigningService(signingUseCase)
 	validator, err := newProtoValidator()
 	if err != nil {
 		cleanup()
@@ -198,6 +201,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		APITokenSvc:          apiTokenService,
 		AttestationStateSvc:  attestationStateService,
 		UserSvc:              userService,
+		SigningSvc:           signingService,
 		Logger:               logger,
 		ServerConfig:         confServer,
 		AuthConfig:           auth,

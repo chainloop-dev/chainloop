@@ -35,6 +35,9 @@ message Bootstrap {
   // Configuration about the shared referrer index
   ReferrerSharedIndex referrer_shared_index = 8;
 
+  // The certificate authority used for keyless signing
+  CA certificate_authority = 9;
+
   message Observability {
     Sentry sentry = 1;
     message Sentry {
@@ -116,5 +119,23 @@ message Auth {
     string client_id = 2;
     string client_secret = 3;
     string redirect_url_scheme = 4;
+  }
+}
+
+message CA {
+  oneof ca {
+    FileCA file_ca = 1;
+    KmsCA kms_ca = 2;
+  }
+
+  message FileCA {
+    string cert_path = 1;
+    string key_path = 2;
+    string key_pass = 3;
+  }
+
+  message KmsCA {
+    string key_resource_id = 1;
+    string certificate_chain_path = 2;
   }
 }
