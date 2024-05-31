@@ -20,15 +20,18 @@ package controlplane.v1;
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
+import "buf/validate/validate.proto";
+
 service SigningService {
-  rpc SigningCert (SigningCertRequest) returns (SigningCertResponse);
+  // GenerateSigningCert takes a certificate request and generates a new certificate for attestation signing
+  rpc GenerateSigningCert (GenerateSigningCertRequest) returns (GenerateSigningCertResponse);
 }
 
-message SigningCertRequest {
-  bytes certificate_signing_request = 1;
+message GenerateSigningCertRequest {
+  bytes certificate_signing_request = 1 [(buf.validate.field).bytes.min_len = 1];
 }
 
-message SigningCertResponse {
+message GenerateSigningCertResponse {
   CertificateChain chain = 1;
 }
 
