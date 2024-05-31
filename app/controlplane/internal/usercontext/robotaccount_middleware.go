@@ -18,6 +18,7 @@ package usercontext
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/robotaccount"
@@ -106,7 +107,7 @@ func WithAttestationContextFromRobotAccount(robotAccountUseCase *biz.RobotAccoun
 
 			org, err := orgUseCase.FindByID(ctx, orgID)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("error retrieving the organization: %w", err)
 			}
 
 			ctx = WithCurrentOrg(ctx, &Org{Name: org.Name, ID: org.ID, CreatedAt: org.CreatedAt})
