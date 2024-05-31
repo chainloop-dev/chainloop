@@ -28,18 +28,18 @@ type SigningService struct {
 	v1.UnimplementedSigningServiceServer
 	*service
 
-	signing biz.SigningCertCreator
+	signing *biz.SigningUseCase
 }
 
 var _ v1.SigningServiceServer = (*SigningService)(nil)
 
-func NewSigningService(signing biz.SigningCertCreator) *SigningService {
+func NewSigningService(signing *biz.SigningUseCase) *SigningService {
 	return &SigningService{
 		signing: signing,
 	}
 }
 
-func (s *SigningService) SigningCert(ctx context.Context, req *v1.SigningCertRequest) (*v1.SigningCertResponse, error) {
+func (s *SigningService) GenerateSigningCert(ctx context.Context, req *v1.SigningCertRequest) (*v1.SigningCertResponse, error) {
 	if len(req.GetCertificateSigningRequest()) == 0 {
 		return nil, errors.BadRequest("missing csr", "a certificate request is expected")
 	}

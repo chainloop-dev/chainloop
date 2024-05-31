@@ -200,7 +200,8 @@ export const CertificateChain = {
 };
 
 export interface SigningService {
-  SigningCert(request: DeepPartial<SigningCertRequest>, metadata?: grpc.Metadata): Promise<SigningCertResponse>;
+  /** GenerateSigningCert takes a certificate request and generates a new certificate for attestation signing */
+  GenerateSigningCert(request: DeepPartial<SigningCertRequest>, metadata?: grpc.Metadata): Promise<SigningCertResponse>;
 }
 
 export class SigningServiceClientImpl implements SigningService {
@@ -208,18 +209,21 @@ export class SigningServiceClientImpl implements SigningService {
 
   constructor(rpc: Rpc) {
     this.rpc = rpc;
-    this.SigningCert = this.SigningCert.bind(this);
+    this.GenerateSigningCert = this.GenerateSigningCert.bind(this);
   }
 
-  SigningCert(request: DeepPartial<SigningCertRequest>, metadata?: grpc.Metadata): Promise<SigningCertResponse> {
-    return this.rpc.unary(SigningServiceSigningCertDesc, SigningCertRequest.fromPartial(request), metadata);
+  GenerateSigningCert(
+    request: DeepPartial<SigningCertRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<SigningCertResponse> {
+    return this.rpc.unary(SigningServiceGenerateSigningCertDesc, SigningCertRequest.fromPartial(request), metadata);
   }
 }
 
 export const SigningServiceDesc = { serviceName: "controlplane.v1.SigningService" };
 
-export const SigningServiceSigningCertDesc: UnaryMethodDefinitionish = {
-  methodName: "SigningCert",
+export const SigningServiceGenerateSigningCertDesc: UnaryMethodDefinitionish = {
+  methodName: "GenerateSigningCert",
   service: SigningServiceDesc,
   requestStream: false,
   responseStream: false,
