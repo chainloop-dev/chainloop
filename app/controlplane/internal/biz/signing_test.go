@@ -54,8 +54,8 @@ func (s *signingUseCaseTestSuite) TestSigningUseCase_CreateSigningCert() {
 		// check cert contents
 		cert, err := cryptoutils.UnmarshalCertificatesFromPEM([]byte(certChain[0]))
 		s.NoError(err)
-		s.Assert().Len(cert, 1)
-		s.Assert().Equal("myorgid", cert[0].Subject.Organization[0])
+		s.Len(cert, 1)
+		s.Equal("myorgid", cert[0].Subject.Organization[0])
 	})
 }
 
