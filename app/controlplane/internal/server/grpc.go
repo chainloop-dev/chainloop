@@ -78,6 +78,7 @@ type Opts struct {
 	APITokenSvc         *service.APITokenService
 	AttestationStateSvc *service.AttestationStateService
 	UserSvc             *service.UserService
+	SigningSvc          *service.SigningService
 	// Utils
 	Logger       log.Logger
 	ServerConfig *conf.Server
@@ -144,6 +145,7 @@ func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
 	v1.RegisterAPITokenServiceServer(srv, opts.APITokenSvc)
 	v1.RegisterAttestationStateServiceServer(srv, opts.AttestationStateSvc)
 	v1.RegisterUserServiceServer(srv, opts.UserSvc)
+	v1.RegisterSigningServiceServer(srv, opts.SigningSvc)
 
 	// Register Prometheus metrics
 	grpc_prometheus.Register(srv.Server)
@@ -213,8 +215,7 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 // If we should load the user
 func requireCurrentUserMatcher() selector.MatchFunc {
 	// Skip authentication on the status grpc service
-	const skipRegexp = "(controlplane.v1.AttestationService/.*|controlplane.v1.StatusService/.*|controlplane.v1.ReferrerService/DiscoverPublicShared|controlplane.v1.AttestationStateService)"
-
+	const skipRegexp = "(controlplane.v1.AttestationService/.*|controlplane.v1.StatusService/.*|controlplane.v1.ReferrerService/DiscoverPublicShared|controlplane.v1.AttestationStateService|controlplane.v1.SigningService)"
 	return func(ctx context.Context, operation string) bool {
 		r := regexp.MustCompile(skipRegexp)
 		return !r.MatchString(operation)
@@ -223,8 +224,7 @@ func requireCurrentUserMatcher() selector.MatchFunc {
 
 func requireFullyConfiguredOrgMatcher() selector.MatchFunc {
 	// We do not need to remove other endpoints since this matcher is called once the requireCurrentUserMatcher one has passed
-	const skipRegexp = "controlplane.v1.OCIRepositoryService/.*|controlplane.v1.ContextService/Current|/controlplane.v1.OrganizationService/.*|/controlplane.v1.AuthService/DeleteAccount|controlplane.v1.CASBackendService/.*|/controlplane.v1.UserService/.*"
-
+	const skipRegexp = "controlplane.v1.OCIRepositoryService/.*|controlplane.v1.ContextService/Current|/controlplane.v1.OrganizationService/.*|/controlplane.v1.AuthService/DeleteAccount|controlplane.v1.CASBackendService/.*|/controlplane.v1.UserService/.*|controlplane.v1.SigningService/.*"
 	return func(ctx context.Context, operation string) bool {
 		r := regexp.MustCompile(skipRegexp)
 		return !r.MatchString(operation)
@@ -232,8 +232,7 @@ func requireFullyConfiguredOrgMatcher() selector.MatchFunc {
 }
 
 func requireRobotAccountMatcher() selector.MatchFunc {
-	const requireMatcher = "controlplane.v1.AttestationService/.*|controlplane.v1.AttestationStateService/.*"
-
+	const requireMatcher = "controlplane.v1.AttestationService/.*|controlplane.v1.AttestationStateService/.*|controlplane.v1.SigningService/.*"
 	return func(ctx context.Context, operation string) bool {
 		r := regexp.MustCompile(requireMatcher)
 		return r.MatchString(operation)

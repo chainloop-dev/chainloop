@@ -33,9 +33,10 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/credentials"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
+	"github.com/sigstore/fulcio/pkg/ca"
 )
 
-func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.AvailablePlugins) (*app, func(), error) {
+func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.AvailablePlugins, ca.CertificateAuthority) (*app, func(), error) {
 	panic(
 		wire.Build(
 			wire.Bind(new(credentials.Reader), new(credentials.ReaderWriter)),

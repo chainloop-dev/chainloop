@@ -38,6 +38,10 @@ func NewChainloopSigningUseCase(ca ca.CertificateAuthority) *SigningUseCase {
 
 // CreateSigningCert signs a certificate request with a configured CA, and returns the full certificate chain
 func (s *SigningUseCase) CreateSigningCert(ctx context.Context, orgID string, csrRaw []byte) ([]string, error) {
+	if s.CA == nil {
+		return nil, errors.New("CA not initialized")
+	}
+
 	var publicKey crypto.PublicKey
 
 	if len(csrRaw) == 0 {

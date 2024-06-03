@@ -165,6 +165,7 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.49.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel/metric v1.24.0 // indirect
+	go.step.sm/crypto v0.44.2 // indirect
 	goa.design/goa v2.2.5+incompatible // indirect
 	gopkg.in/go-jose/go-jose.v2 v2.6.3 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
