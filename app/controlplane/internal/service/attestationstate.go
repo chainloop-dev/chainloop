@@ -19,6 +19,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"strings"
 
 	cpAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
@@ -31,13 +32,26 @@ import (
 
 type AttestationStateService struct {
 	cpAPI.UnimplementedAttestationStateServiceServer
-	uc *biz.AttestationStateUseCase
 	*service
+
+	attestationStateUseCase *biz.AttestationStateUseCase
+	workflowUseCase         *biz.WorkflowUseCase
+	wrUseCase               *biz.WorkflowRunUseCase
 }
 
-func NewAttestationStateService(uc *biz.AttestationStateUseCase, opts ...NewOpt) *AttestationStateService {
+type NewAttestationStateServiceOpt struct {
+	AttestationStateUseCase *biz.AttestationStateUseCase
+	WorkflowUseCase         *biz.WorkflowUseCase
+	WorkflowRunUseCase      *biz.WorkflowRunUseCase
+	Opts                    []NewOpt
+}
+
+func NewAttestationStateService(opts *NewAttestationStateServiceOpt) *AttestationStateService {
 	return &AttestationStateService{
-		service: newService(opts...), uc: uc,
+		service:                 newService(opts.Opts...),
+		attestationStateUseCase: opts.AttestationStateUseCase,
+		workflowUseCase:         opts.WorkflowUseCase,
+		wrUseCase:               opts.WorkflowRunUseCase,
 	}
 }
 
@@ -47,7 +61,12 @@ func (s *AttestationStateService) Initialized(ctx context.Context, req *cpAPI.At
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
 
-	initialized, err := s.uc.Initialized(ctx, robotAccount.WorkflowID, req.WorkflowRunId)
+	wf, err := s.findWorkflowFromTokenOrRunID(ctx, robotAccount.OrgID, robotAccount.WorkflowID, req.GetWorkflowRunId())
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	initialized, err := s.attestationStateUseCase.Initialized(ctx, wf.ID.String(), req.WorkflowRunId)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -64,12 +83,17 @@ func (s *AttestationStateService) Save(ctx context.Context, req *cpAPI.Attestati
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
 
+	wf, err := s.findWorkflowFromTokenOrRunID(ctx, robotAccount.OrgID, robotAccount.WorkflowID, req.GetWorkflowRunId())
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
 	encryptionPassphrase, err := encryptionPassphrase(ctx)
 	if err != nil {
 		return nil, errors.Forbidden("forbidden", "failed to authenticate request")
 	}
 
-	if err := s.uc.Save(ctx, robotAccount.WorkflowID, req.WorkflowRunId, req.AttestationState, encryptionPassphrase); err != nil {
+	if err := s.attestationStateUseCase.Save(ctx, wf.ID.String(), req.WorkflowRunId, req.AttestationState, encryptionPassphrase); err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
@@ -82,12 +106,17 @@ func (s *AttestationStateService) Read(ctx context.Context, req *cpAPI.Attestati
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
 
+	wf, err := s.findWorkflowFromTokenOrRunID(ctx, robotAccount.OrgID, robotAccount.WorkflowID, req.GetWorkflowRunId())
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
 	encryptionPassphrase, err := encryptionPassphrase(ctx)
 	if err != nil {
 		return nil, errors.Forbidden("forbidden", "failed to authenticate request")
 	}
 
-	state, err := s.uc.Read(ctx, robotAccount.WorkflowID, req.WorkflowRunId, encryptionPassphrase)
+	state, err := s.attestationStateUseCase.Read(ctx, wf.ID.String(), req.WorkflowRunId, encryptionPassphrase)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -105,7 +134,12 @@ func (s *AttestationStateService) Reset(ctx context.Context, req *cpAPI.Attestat
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
 
-	if err := s.uc.Reset(ctx, robotAccount.WorkflowID, req.WorkflowRunId); err != nil {
+	wf, err := s.findWorkflowFromTokenOrRunID(ctx, robotAccount.OrgID, robotAccount.WorkflowID, req.GetWorkflowRunId())
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	if err := s.attestationStateUseCase.Reset(ctx, wf.ID.String(), req.WorkflowRunId); err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
@@ -131,4 +165,28 @@ func encryptionPassphrase(ctx context.Context) (string, error) {
 	// We'll use the sha256 of the token as the passphrase
 	hash := sha256.Sum256([]byte(auths[1]))
 	return hex.EncodeToString(hash[:]), nil
+}
+
+// Cascade-based way of retrieving the workflow from the robot-account, the workflow_name or the run_ID
+func (s *AttestationStateService) findWorkflowFromTokenOrRunID(ctx context.Context, orgID string, workflowID, runID string) (*biz.Workflow, error) {
+	if orgID == "" {
+		return nil, biz.NewErrValidationStr("orgID must be provided")
+	}
+
+	// This is the case of the workflowID encoded in the robot account
+	if workflowID != "" {
+		return s.workflowUseCase.FindByIDInOrg(ctx, orgID, workflowID)
+	}
+
+	// This is the case when the workflow is found by its reference to the run
+	if runID != "" {
+		run, err := s.wrUseCase.GetByIDInOrg(ctx, orgID, runID)
+		if err != nil {
+			return nil, fmt.Errorf("error retrieving the workflow run: %w", err)
+		}
+
+		return run.Workflow, nil
+	}
+
+	return nil, biz.NewErrValidationStr("workflowRunId must be provided")
 }

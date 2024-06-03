@@ -50,6 +50,7 @@ var ProviderSet = wire.NewSet(
 	NewSigningService,
 	wire.Struct(new(NewWorkflowRunServiceOpts), "*"),
 	wire.Struct(new(NewAttestationServiceOpts), "*"),
+	wire.Struct(new(NewAttestationStateServiceOpt), "*"),
 )
 
 func requireCurrentUser(ctx context.Context) (*usercontext.User, error) {
