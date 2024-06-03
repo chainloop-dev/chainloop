@@ -164,7 +164,13 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		cleanup()
 		return nil, nil, err
 	}
-	attestationStateService := service.NewAttestationStateService(attestationStateUseCase, v2...)
+	newAttestationStateServiceOpt := &service.NewAttestationStateServiceOpt{
+		AttestationStateUseCase: attestationStateUseCase,
+		WorkflowUseCase:         workflowUseCase,
+		WorkflowRunUseCase:      workflowRunUseCase,
+		Opts:                    v2,
+	}
+	attestationStateService := service.NewAttestationStateService(newAttestationStateServiceOpt)
 	userService := service.NewUserService(membershipUseCase, organizationUseCase, v2...)
 	signingUseCase := biz.NewChainloopSigningUseCase(certificateAuthority)
 	signingService := service.NewSigningService(signingUseCase, v2...)
