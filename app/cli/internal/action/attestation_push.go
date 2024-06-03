@@ -141,7 +141,7 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 		return nil, err
 	}
 
-	envelope, err := renderer.Render(ctx)
+	envelope, err := renderer.Render()
 	if err != nil {
 		return nil, err
 	}

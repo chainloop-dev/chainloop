@@ -17,7 +17,6 @@ package renderer
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -79,7 +78,7 @@ func NewAttestationRenderer(state *v1.CraftingState, keyPath, builderVersion, bu
 
 // Attestation (dsee envelope) -> { message: { Statement(in-toto): [subject, predicate] }, signature: "sig" }.
 // NOTE: It currently only supports cosign key based signing.
-func (ab *AttestationRenderer) Render(ctx context.Context) (*dsse.Envelope, error) {
+func (ab *AttestationRenderer) Render() (*dsse.Envelope, error) {
 	ab.logger.Debug().Msg("generating in-toto statement")
 
 	statement, err := ab.renderer.Statement()
