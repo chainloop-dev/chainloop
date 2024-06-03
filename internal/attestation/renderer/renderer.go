@@ -273,12 +273,12 @@ func (ab *AttestationRenderer) createCertificateRequest() (*certificateRequest, 
 }
 
 func (ab *AttestationRenderer) certFromChainloop(ctx context.Context, req *certificateRequest) ([]string, error) {
-	cr := pb.SigningCertRequest{
+	cr := pb.GenerateSigningCertRequest{
 		CertificateSigningRequest: req.CertificateRequestPEM,
 	}
 
 	// call chainloop
-	resp, err := ab.signingServiceClient.SigningCert(ctx, &cr)
+	resp, err := ab.signingServiceClient.GenerateSigningCert(ctx, &cr)
 	if err != nil {
 		return nil, err
 	}
