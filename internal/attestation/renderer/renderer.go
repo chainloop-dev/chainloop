@@ -95,7 +95,7 @@ func (ab *AttestationRenderer) Render() (*dsse.Envelope, error) {
 		return nil, err
 	}
 
-	wrappedSigner := ab.wrapSigner()
+	wrappedSigner := sigdsee.WrapSigner(ab.signer, "application/vnd.in-toto+json")
 	signedAtt, err := wrappedSigner.SignMessage(bytes.NewReader(rawStatement))
 	if err != nil {
 		return nil, fmt.Errorf("signing message: %w", err)
@@ -107,8 +107,4 @@ func (ab *AttestationRenderer) Render() (*dsse.Envelope, error) {
 	}
 
 	return &dseeEnvelope, nil
-}
-
-func (ab *AttestationRenderer) wrapSigner() sigstoresigner.Signer {
-	return sigdsee.WrapSigner(ab.signer, "application/vnd.in-toto+json")
 }
