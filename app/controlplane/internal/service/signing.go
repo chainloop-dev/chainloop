@@ -28,22 +28,19 @@ type SigningService struct {
 	v1.UnimplementedSigningServiceServer
 	*service
 
-	signing biz.SigningCertCreator
+	signing *biz.SigningUseCase
 }
 
 var _ v1.SigningServiceServer = (*SigningService)(nil)
 
-func NewSigningService(signing biz.SigningCertCreator) *SigningService {
+func NewSigningService(signing *biz.SigningUseCase, opts ...NewOpt) *SigningService {
 	return &SigningService{
+		service: newService(opts...),
 		signing: signing,
 	}
 }
 
-func (s *SigningService) SigningCert(ctx context.Context, req *v1.SigningCertRequest) (*v1.SigningCertResponse, error) {
-	if len(req.GetCertificateSigningRequest()) == 0 {
-		return nil, errors.BadRequest("missing csr", "a certificate request is expected")
-	}
-
+func (s *SigningService) GenerateSigningCert(ctx context.Context, req *v1.GenerateSigningCertRequest) (*v1.GenerateSigningCertResponse, error) {
 	ra := usercontext.CurrentRobotAccount(ctx)
 	if ra == nil {
 		return nil, errors.Unauthorized("missing org", "authentication data is required")
@@ -54,5 +51,5 @@ func (s *SigningService) SigningCert(ctx context.Context, req *v1.SigningCertReq
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
-	return &v1.SigningCertResponse{Chain: &v1.CertificateChain{Certificates: certs}}, nil
+	return &v1.GenerateSigningCertResponse{Chain: &v1.CertificateChain{Certificates: certs}}, nil
 }

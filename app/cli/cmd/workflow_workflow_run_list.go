@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
@@ -36,6 +37,13 @@ func newWorkflowWorkflowRunListCmd() *cobra.Command {
 		Use:     "list",
 		Aliases: []string{"ls"},
 		Short:   "List workflow runs",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if status != "" && !slices.Contains(listAvailableWorkflowStatusFlag(), status) {
+				return fmt.Errorf("invalid status %q, please chose one of: %v", status, listAvailableWorkflowStatusFlag())
+			}
+
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			res, err := action.NewWorkflowRunList(actionOpts).Run(
 				&action.WorkflowRunListOpts{

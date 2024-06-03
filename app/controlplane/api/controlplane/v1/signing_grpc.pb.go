@@ -34,14 +34,15 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	SigningService_SigningCert_FullMethodName = "/controlplane.v1.SigningService/SigningCert"
+	SigningService_GenerateSigningCert_FullMethodName = "/controlplane.v1.SigningService/GenerateSigningCert"
 )
 
 // SigningServiceClient is the client API for SigningService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SigningServiceClient interface {
-	SigningCert(ctx context.Context, in *SigningCertRequest, opts ...grpc.CallOption) (*SigningCertResponse, error)
+	// GenerateSigningCert takes a certificate request and generates a new certificate for attestation signing
+	GenerateSigningCert(ctx context.Context, in *GenerateSigningCertRequest, opts ...grpc.CallOption) (*GenerateSigningCertResponse, error)
 }
 
 type signingServiceClient struct {
@@ -52,9 +53,9 @@ func NewSigningServiceClient(cc grpc.ClientConnInterface) SigningServiceClient {
 	return &signingServiceClient{cc}
 }
 
-func (c *signingServiceClient) SigningCert(ctx context.Context, in *SigningCertRequest, opts ...grpc.CallOption) (*SigningCertResponse, error) {
-	out := new(SigningCertResponse)
-	err := c.cc.Invoke(ctx, SigningService_SigningCert_FullMethodName, in, out, opts...)
+func (c *signingServiceClient) GenerateSigningCert(ctx context.Context, in *GenerateSigningCertRequest, opts ...grpc.CallOption) (*GenerateSigningCertResponse, error) {
+	out := new(GenerateSigningCertResponse)
+	err := c.cc.Invoke(ctx, SigningService_GenerateSigningCert_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +66,8 @@ func (c *signingServiceClient) SigningCert(ctx context.Context, in *SigningCertR
 // All implementations must embed UnimplementedSigningServiceServer
 // for forward compatibility
 type SigningServiceServer interface {
-	SigningCert(context.Context, *SigningCertRequest) (*SigningCertResponse, error)
+	// GenerateSigningCert takes a certificate request and generates a new certificate for attestation signing
+	GenerateSigningCert(context.Context, *GenerateSigningCertRequest) (*GenerateSigningCertResponse, error)
 	mustEmbedUnimplementedSigningServiceServer()
 }
 
@@ -73,8 +75,8 @@ type SigningServiceServer interface {
 type UnimplementedSigningServiceServer struct {
 }
 
-func (UnimplementedSigningServiceServer) SigningCert(context.Context, *SigningCertRequest) (*SigningCertResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SigningCert not implemented")
+func (UnimplementedSigningServiceServer) GenerateSigningCert(context.Context, *GenerateSigningCertRequest) (*GenerateSigningCertResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GenerateSigningCert not implemented")
 }
 func (UnimplementedSigningServiceServer) mustEmbedUnimplementedSigningServiceServer() {}
 
@@ -89,20 +91,20 @@ func RegisterSigningServiceServer(s grpc.ServiceRegistrar, srv SigningServiceSer
 	s.RegisterService(&SigningService_ServiceDesc, srv)
 }
 
-func _SigningService_SigningCert_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SigningCertRequest)
+func _SigningService_GenerateSigningCert_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GenerateSigningCertRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SigningServiceServer).SigningCert(ctx, in)
+		return srv.(SigningServiceServer).GenerateSigningCert(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: SigningService_SigningCert_FullMethodName,
+		FullMethod: SigningService_GenerateSigningCert_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SigningServiceServer).SigningCert(ctx, req.(*SigningCertRequest))
+		return srv.(SigningServiceServer).GenerateSigningCert(ctx, req.(*GenerateSigningCertRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -115,8 +117,8 @@ var SigningService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*SigningServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "SigningCert",
-			Handler:    _SigningService_SigningCert_Handler,
+			MethodName: "GenerateSigningCert",
+			Handler:    _SigningService_GenerateSigningCert_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

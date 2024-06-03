@@ -132,7 +132,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ca, err := newSigningCA(ctx, &bc, logger)
+	ca, err := newSigningCA(ctx, bc.GetCertificateAuthority(), logger)
 	if err != nil {
 		panic(err)
 	}
@@ -225,15 +225,15 @@ func newProtoValidator() (*protovalidate.Validator, error) {
 	return protovalidate.New()
 }
 
-func newSigningCA(_ context.Context, c *conf.Bootstrap, logger log.Logger) (ca.CertificateAuthority, error) {
+func newSigningCA(_ context.Context, ca *conf.CA, logger log.Logger) (ca.CertificateAuthority, error) {
 	// File
-	if c.GetCertificateAuthority().GetFileCa() != nil {
-		fileCa := c.GetCertificateAuthority().GetFileCa()
+	if ca.GetFileCa() != nil {
+		fileCa := ca.GetFileCa()
 		_ = logger.Log(log.LevelInfo, "msg", "Keyless: File CA configured")
 		return fileca.NewFileCA(fileCa.GetCertPath(), fileCa.GetKeyPath(), fileCa.GetKeyPass(), false)
 	}
 
 	// No CA configured, keyless will be deactivated.
-	_ = logger.Log(log.LevelInfo, "msg", "Keyless NOT configured")
+	_ = logger.Log(log.LevelInfo, "msg", "Keyless Signing NOT configured")
 	return nil, nil
 }

@@ -21,28 +21,27 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"errors"
+	"fmt"
 
 	"github.com/sigstore/fulcio/pkg/ca"
 	"github.com/sigstore/fulcio/pkg/identity"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 )
 
-type SigningCertCreator interface {
-	// CreateSigningCert creates a signing certificate from and returns the certificate chain
-	CreateSigningCert(context.Context, string, []byte) ([]string, error)
-}
-
 type SigningUseCase struct {
 	CA ca.CertificateAuthority
 }
-
-var _ SigningCertCreator = (*SigningUseCase)(nil)
 
 func NewChainloopSigningUseCase(ca ca.CertificateAuthority) *SigningUseCase {
 	return &SigningUseCase{CA: ca}
 }
 
+// CreateSigningCert signs a certificate request with a configured CA, and returns the full certificate chain
 func (s *SigningUseCase) CreateSigningCert(ctx context.Context, orgID string, csrRaw []byte) ([]string, error) {
+	if s.CA == nil {
+		return nil, errors.New("CA not initialized")
+	}
+
 	var publicKey crypto.PublicKey
 
 	if len(csrRaw) == 0 {
@@ -52,56 +51,56 @@ func (s *SigningUseCase) CreateSigningCert(ctx context.Context, orgID string, cs
 	// Parse CSR
 	csr, err := cryptoutils.ParseCSR(csrRaw)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parsing csr: %w", err)
 	}
 
 	// Parse public key and check for weak key parameters
 	publicKey = csr.PublicKey
 	if err := cryptoutils.ValidatePubKey(publicKey); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid public key: %w", err)
 	}
 
 	// Check the CSR signature is valid
 	if err := csr.CheckSignature(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid signature: %w", err)
 	}
 
 	// Create certificate from CA provider (no Signed Certificate Timestamps for now)
-	csc, err := s.CA.CreateCertificate(ctx, NewChainloopPrincipal(orgID), publicKey)
+	csc, err := s.CA.CreateCertificate(ctx, newChainloopPrincipal(orgID), publicKey)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("creating certificate: %w", err)
 	}
 
 	// Generated certificate
 	finalPEM, err := csc.CertPEM()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("marshaling certificate to PEM: %w", err)
 	}
 
 	// Certificate chain
 	finalChainPEM, err := csc.ChainPEM()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("marshaling chain to PEM: %w", err)
 	}
 
 	return append([]string{finalPEM}, finalChainPEM...), nil
 }
 
-type ChainloopPrincipal struct {
+type chainloopPrincipal struct {
 	orgID string
 }
 
-var _ identity.Principal = (*ChainloopPrincipal)(nil)
+var _ identity.Principal = (*chainloopPrincipal)(nil)
 
-func NewChainloopPrincipal(orgID string) *ChainloopPrincipal {
-	return &ChainloopPrincipal{orgID: orgID}
+func newChainloopPrincipal(orgID string) *chainloopPrincipal {
+	return &chainloopPrincipal{orgID: orgID}
 }
 
-func (p *ChainloopPrincipal) Name(_ context.Context) string {
+func (p *chainloopPrincipal) Name(_ context.Context) string {
 	return p.orgID
 }
 
-func (p *ChainloopPrincipal) Embed(_ context.Context, cert *x509.Certificate) error {
+func (p *chainloopPrincipal) Embed(_ context.Context, cert *x509.Certificate) error {
 	// no op.
 	// TODO: Chainloop might have their own private enterprise number with the Internet Assigned Numbers Authority
 	// 		 to embed its own identity information in the resulting certificate
