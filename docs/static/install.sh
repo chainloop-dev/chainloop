@@ -56,10 +56,11 @@ is_command() {
 # example: check_sha256 "${TMP_DIR}" checksums.txt
 validate_checksums_file() {
   cd "$1"
+  grep "$FILENAME" "$2" > checksum.txt
   if is_command sha256sum; then
-    sha256sum --ignore-missing --quiet --check "$2"
+    sha256sum -c checksum.txt
   elif is_command shasum; then
-    shasum -a 256 --ignore-missing --quiet --check checksums.txt
+    shasum -a 256 -q -c checksum.txt
   else
     fancy_print 1 "We were not able to verify checksums. Commands sha256sum, shasum are not found."
     return 1
