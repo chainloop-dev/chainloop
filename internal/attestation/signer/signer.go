@@ -24,6 +24,7 @@ import (
 	"golang.org/x/term"
 )
 
+// ChainloopSigner is a wrapper of a Sigstore signer for Chainloop
 type ChainloopSigner struct {
 	sigstoresigner.Signer
 
@@ -72,14 +73,14 @@ func (cs *ChainloopSigner) ensureInitiated(ctx context.Context) error {
 		cs.logger.Debug().Str("path", cs.keyPath).Msg("loading key")
 		signer, err = signature.SignerFromKeyRef(context.Background(), cs.keyPath, getPass)
 		if err != nil {
-			return err
+			return fmt.Errorf("loading signing key: %w", err)
 		}
 	} else {
 		// key is not provided, let's create one
 		cs.logger.Info().Msg("key not provided, running in key-less mode")
 		signer, err = cs.keyLessSigner(ctx)
 		if err != nil {
-			return err
+			return fmt.Errorf("getting a keyless signer: %w", err)
 		}
 	}
 
@@ -155,20 +156,21 @@ type certificateRequest struct {
 func (cs *ChainloopSigner) keyLessSigner(ctx context.Context) (sigstoresigner.Signer, error) {
 	request, err := cs.createCertificateRequest()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("creating certificate request: %w", err)
 	}
 	_, err = cs.certFromChainloop(ctx, request)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getting a certificate from chainloop: %w", err)
 	}
 	sv, err := sigstoresigner.LoadECDSASignerVerifier(request.PrivateKey, crypto.SHA256)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("loading ECDSA signer from private key: %w", err)
 	}
 
 	return sv, nil
 }
 
+// createCertificateRequest generates a new CSR to be sent to Chainloop platform
 func (cs *ChainloopSigner) createCertificateRequest() (*certificateRequest, error) {
 	cs.logger.Debug().Msg("generating new certificate request")
 
@@ -194,6 +196,7 @@ func (cs *ChainloopSigner) createCertificateRequest() (*certificateRequest, erro
 	}, nil
 }
 
+// certFromChainloop gets a full certificate chain from a CSR
 func (cs *ChainloopSigner) certFromChainloop(ctx context.Context, req *certificateRequest) ([]string, error) {
 	cr := pb.GenerateSigningCertRequest{
 		CertificateSigningRequest: req.CertificateRequestPEM,
@@ -202,7 +205,7 @@ func (cs *ChainloopSigner) certFromChainloop(ctx context.Context, req *certifica
 	// call chainloop
 	resp, err := cs.signingServiceClient.GenerateSigningCert(ctx, &cr)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("generating signing cert: %w", err)
 	}
 
 	// get full chain
