@@ -60,10 +60,7 @@ func NewChainloopSigner(keyPath string, sc pb.SigningServiceClient, logger zerol
 }
 
 func (cs *ChainloopSigner) SignMessage(message io.Reader, opts ...sigstoresigner.SignOption) ([]byte, error) {
-
-	var err error
-
-	err = cs.ensureInitiated(context.Background())
+	err := cs.ensureInitiated(context.Background())
 	if err != nil {
 		return nil, err
 	}
