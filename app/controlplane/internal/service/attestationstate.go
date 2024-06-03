@@ -167,7 +167,7 @@ func encryptionPassphrase(ctx context.Context) (string, error) {
 	return hex.EncodeToString(hash[:]), nil
 }
 
-// Cascade-based way of retrieving the workflow from the robot-account, the workflow_name or the run_ID
+// Cascade-based way of retrieving the workflow from the robot-account or the run_ID
 func (s *AttestationStateService) findWorkflowFromTokenOrRunID(ctx context.Context, orgID string, workflowID, runID string) (*biz.Workflow, error) {
 	if orgID == "" {
 		return nil, biz.NewErrValidationStr("orgID must be provided")
