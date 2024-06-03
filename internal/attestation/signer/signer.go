@@ -26,8 +26,6 @@ import (
 
 type ChainloopSigner struct {
 	sigstoresigner.Signer
-	Cert  string
-	Chain []string
 
 	keyPath              string
 	signingServiceClient pb.SigningServiceClient
