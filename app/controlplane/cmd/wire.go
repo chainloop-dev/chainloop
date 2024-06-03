@@ -46,7 +46,6 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.Availabl
 			loader.LoadProviders,
 			service.ProviderSet,
 			wire.Bind(new(biz.CASClient), new(*biz.CASClientUseCase)),
-			wire.Bind(new(biz.SigningCertCreator), new(*biz.SigningUseCase)),
 			serviceOpts,
 			wire.Value([]biz.CASClientOpts{}),
 			wire.FieldsOf(new(*conf.Bootstrap), "Server", "Auth", "Data", "CasServer", "ReferrerSharedIndex"),
