@@ -51,13 +51,7 @@ func WithLogger(logger zerolog.Logger) Opt {
 	}
 }
 
-func WithSigner(signer sigstoresigner.Signer) Opt {
-	return func(ar *AttestationRenderer) {
-		ar.signer = signer
-	}
-}
-
-func NewAttestationRenderer(state *v1.CraftingState, keyPath, builderVersion, builderDigest string, opts ...Opt) (*AttestationRenderer, error) {
+func NewAttestationRenderer(state *v1.CraftingState, keyPath, builderVersion, builderDigest string, signer sigstoresigner.Signer, opts ...Opt) (*AttestationRenderer, error) {
 	if state.GetAttestation() == nil {
 		return nil, errors.New("attestation not initialized")
 	}
@@ -66,6 +60,7 @@ func NewAttestationRenderer(state *v1.CraftingState, keyPath, builderVersion, bu
 		logger:         zerolog.Nop(),
 		signingKeyPath: keyPath,
 		att:            state.GetAttestation(),
+		signer:         signer,
 		renderer:       chainloop.NewChainloopRendererV02(state.GetAttestation(), builderVersion, builderDigest),
 	}
 

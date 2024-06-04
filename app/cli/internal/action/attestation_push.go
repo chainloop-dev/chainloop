@@ -134,9 +134,8 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 
 	signer := clsigner.NewChainloopSigner(action.keyPath, pb.NewSigningServiceClient(action.CPConnection), action.Logger)
 
-	renderer, err := renderer.NewAttestationRenderer(action.c.CraftingState, action.keyPath, action.cliVersion, action.cliDigest,
-		renderer.WithLogger(action.Logger),
-		renderer.WithSigner(signer))
+	renderer, err := renderer.NewAttestationRenderer(action.c.CraftingState, action.keyPath, action.cliVersion, action.cliDigest, signer,
+		renderer.WithLogger(action.Logger))
 	if err != nil {
 		return nil, err
 	}
