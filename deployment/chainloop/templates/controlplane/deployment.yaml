@@ -74,6 +74,10 @@ spec:
               mountPath: /tmp
             - name: jwt-cas-private-key
               mountPath: /secrets
+            {{- if .Values.controlplane.keylessSigning.enabled }}
+            - name: file-ca-cert
+              mountPath: /ca_secrets
+            {{- end }}
             {{- if .Values.controlplane.tlsConfig.secret.name  }}
             - name: server-certs
               mountPath: /data/server-certs
@@ -96,7 +100,7 @@ spec:
         - name: jwt-cas-private-key
           secret:
             secretName: {{ include "chainloop.controlplane.fullname" . }}-jwt-cas
-        {{- if .Values.controlplane.tlsConfig.secret.name  }}
+        {{- if .Values.controlplane.tlsConfig.secret.name }}
         - name: server-certs
           secret:
             secretName: {{ .Values.controlplane.tlsConfig.secret.name  }}
@@ -105,4 +109,9 @@ spec:
         - name: gcp-secretmanager-serviceaccountkey
           secret:
             secretName: {{ include "chainloop.controlplane.fullname" . }}-gcp-secretmanager-serviceaccountkey
+        {{- end }}
+        {{- if .Values.controlplane.keylessSigning.enabled }}
+        - name: file-ca-cert
+          secret:
+            secretName: {{ include "chainloop.controlplane.fullname" . }}-keyless-file-ca
         {{- end }}
