@@ -31,17 +31,26 @@ import (
 
 type rendererSuite struct {
 	suite.Suite
+
+	sv           signature.SignerVerifier
+	dsseSigner   signature.Signer
+	dsseVerifier *dsse.EnvelopeVerifier
 }
 
 func TestSuite(t *testing.T) {
 	suite.Run(t, new(rendererSuite))
 }
 
-func (s *rendererSuite) TestRender() {
-	sv, _, err := signature.NewECDSASignerVerifier(elliptic.P256(), rand.Reader, crypto.SHA256)
+func (s *rendererSuite) SetupTest() {
+	var err error
+	s.sv, _, err = signature.NewECDSASignerVerifier(elliptic.P256(), rand.Reader, crypto.SHA256)
 	s.Require().NoError(err)
-	ws := sigdsee.WrapSigner(sv, "application/vnd.in-toto+json")
+	s.dsseSigner = sigdsee.WrapSigner(s.sv, "application/vnd.in-toto+json")
+	s.dsseVerifier, err = dsse.NewEnvelopeVerifier(&sigdsee.VerifierAdapter{SignatureVerifier: s.sv})
+	s.Require().NoError(err)
+}
 
+func (s *rendererSuite) TestRender() {
 	cs := &v1.CraftingState{
 		InputSchema: nil,
 		Attestation: &v1.Attestation{
@@ -50,15 +59,28 @@ func (s *rendererSuite) TestRender() {
 			},
 		},
 	}
-	renderer, err := NewAttestationRenderer(cs, "", "", ws)
-	s.Require().NoError(err)
 
-	envelope, err := renderer.Render()
-	s.NoError(err)
+	s.Run("generated envelope is always well-formed", func() {
+		renderer, err := NewAttestationRenderer(cs, "", "", s.dsseSigner)
+		s.Require().NoError(err)
 
-	dsseVerifier, err := dsse.NewEnvelopeVerifier(&sigdsee.VerifierAdapter{SignatureVerifier: sv})
-	s.NoError(err)
+		envelope, err := renderer.Render()
+		s.NoError(err)
 
-	_, err = dsseVerifier.Verify(context.TODO(), envelope)
-	s.NoError(err)
+		_, err = s.dsseVerifier.Verify(context.TODO(), envelope)
+		s.NoError(err)
+	})
+
+	s.Run("simulates double wrapping bug", func() {
+		doubleWrapper := sigdsee.WrapSigner(s.dsseSigner, "application/vnd.in-toto+json")
+
+		renderer, err := NewAttestationRenderer(cs, "", "", doubleWrapper)
+		s.Require().NoError(err)
+
+		envelope, err := renderer.Render()
+		s.NoError(err)
+
+		_, err = s.dsseVerifier.Verify(context.TODO(), envelope)
+		s.Error(err)
+	})
 }
