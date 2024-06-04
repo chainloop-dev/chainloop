@@ -49,13 +49,6 @@ func newAttestationPushCmd() *cobra.Command {
 		Annotations: map[string]string{
 			useWorkflowRobotAccount: "true",
 		},
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if pkPath == "" {
-				return errors.New("a path to the private key is required")
-			}
-
-			return nil
-		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			info, err := executableInfo()
 			if err != nil {
@@ -100,7 +93,7 @@ func newAttestationPushCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&pkPath, "key", "k", "", "reference (path or env variable name) to the cosign private key that will be used to sign the attestation")
+	cmd.Flags().StringVarP(&pkPath, "key", "k", "", "reference (path or env variable name) to the cosign or KMS key that will be used to sign the attestation")
 	cmd.Flags().StringSliceVar(&annotationsFlag, "annotation", nil, "additional annotation in the format of key=value")
 	flagAttestationID(cmd)
 

@@ -17,30 +17,25 @@ package renderer
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"os"
-	"syscall"
 
 	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
-	"github.com/sigstore/cosign/v2/pkg/signature"
+	sigstoresigner "github.com/sigstore/sigstore/pkg/signature"
 	sigdsee "github.com/sigstore/sigstore/pkg/signature/dsse"
-	"golang.org/x/term"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
 type AttestationRenderer struct {
-	logger         zerolog.Logger
-	signingKeyPath string
-	att            *v1.Attestation
-	renderer       r
+	logger   zerolog.Logger
+	att      *v1.Attestation
+	renderer r
+	signer   sigstoresigner.Signer
 }
 
 type r interface {
@@ -55,16 +50,16 @@ func WithLogger(logger zerolog.Logger) Opt {
 	}
 }
 
-func NewAttestationRenderer(state *v1.CraftingState, keyPath, builderVersion, builderDigest string, opts ...Opt) (*AttestationRenderer, error) {
+func NewAttestationRenderer(state *v1.CraftingState, builderVersion, builderDigest string, signer sigstoresigner.Signer, opts ...Opt) (*AttestationRenderer, error) {
 	if state.GetAttestation() == nil {
 		return nil, errors.New("attestation not initialized")
 	}
 
 	r := &AttestationRenderer{
-		logger:         zerolog.Nop(),
-		signingKeyPath: keyPath,
-		att:            state.GetAttestation(),
-		renderer:       chainloop.NewChainloopRendererV02(state.GetAttestation(), builderVersion, builderDigest),
+		logger:   zerolog.Nop(),
+		att:      state.GetAttestation(),
+		signer:   signer,
+		renderer: chainloop.NewChainloopRendererV02(state.GetAttestation(), builderVersion, builderDigest),
 	}
 
 	for _, opt := range opts {
@@ -93,15 +88,7 @@ func (ab *AttestationRenderer) Render() (*dsse.Envelope, error) {
 		return nil, err
 	}
 
-	ab.logger.Debug().Str("path", ab.signingKeyPath).Msg("loading key")
-
-	signer, err := signature.SignerFromKeyRef(context.Background(), ab.signingKeyPath, getPass)
-	if err != nil {
-		return nil, err
-	}
-
-	wrappedSigner := sigdsee.WrapSigner(signer, "application/vnd.in-toto+json")
-
+	wrappedSigner := sigdsee.WrapSigner(ab.signer, "application/vnd.in-toto+json")
 	signedAtt, err := wrappedSigner.SignMessage(bytes.NewReader(rawStatement))
 	if err != nil {
 		return nil, fmt.Errorf("signing message: %w", err)
@@ -113,62 +100,4 @@ func (ab *AttestationRenderer) Render() (*dsse.Envelope, error) {
 	}
 
 	return &dseeEnvelope, nil
-}
-
-func getPass(confirm bool) ([]byte, error) {
-	read := readPasswordFn(confirm)
-	return read()
-}
-
-// based on cosign code
-// https://pkg.go.dev/github.com/sigstore/cosign/cmd/cosign/cli/generate
-func readPasswordFn(confirm bool) func() ([]byte, error) {
-	pw, ok := os.LookupEnv("CHAINLOOP_SIGNING_PASSWORD")
-	switch {
-	case ok:
-		return func() ([]byte, error) {
-			return []byte(pw), nil
-		}
-	case isTerminal():
-		return func() ([]byte, error) {
-			return getPassFromTerm(confirm)
-		}
-	// Handle piped in passwords.
-	default:
-		return func() ([]byte, error) {
-			return io.ReadAll(os.Stdin)
-		}
-	}
-}
-
-func isTerminal() bool {
-	stat, _ := os.Stdin.Stat()
-	return (stat.Mode() & os.ModeCharDevice) != 0
-}
-
-func getPassFromTerm(confirm bool) ([]byte, error) {
-	fmt.Fprint(os.Stderr, "Enter password for private key: ")
-	// Unnecessary convert of syscall.Stdin on *nix, but Windows is a uintptr
-	// nolint:unconvert
-	pw1, err := term.ReadPassword(int(syscall.Stdin))
-	if err != nil {
-		return nil, err
-	}
-	fmt.Fprintln(os.Stderr)
-	if !confirm {
-		return pw1, nil
-	}
-	fmt.Fprint(os.Stderr, "Enter password for private key again: ")
-	// Unnecessary convert of syscall.Stdin on *nix, but Windows is a uintptr
-	// nolint:unconvert
-	confirmpw, err := term.ReadPassword(int(syscall.Stdin))
-	fmt.Fprintln(os.Stderr)
-	if err != nil {
-		return nil, err
-	}
-
-	if string(pw1) != string(confirmpw) {
-		return nil, errors.New("passwords do not match")
-	}
-	return pw1, nil
 }

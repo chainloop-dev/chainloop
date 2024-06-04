@@ -25,6 +25,7 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer"
+	"github.com/chainloop-dev/chainloop/internal/attestation/signer"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -131,7 +132,9 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	// Indicate that we are done with the attestation
 	action.c.CraftingState.Attestation.FinishedAt = timestamppb.New(time.Now())
 
-	renderer, err := renderer.NewAttestationRenderer(action.c.CraftingState, action.keyPath, action.cliVersion, action.cliDigest, renderer.WithLogger(action.Logger))
+	wrappedSigner := signer.GetSigner(action.keyPath, action.Logger, pb.NewSigningServiceClient(action.CPConnection))
+	renderer, err := renderer.NewAttestationRenderer(action.c.CraftingState, action.cliVersion, action.cliDigest, wrappedSigner,
+		renderer.WithLogger(action.Logger))
 	if err != nil {
 		return nil, err
 	}
