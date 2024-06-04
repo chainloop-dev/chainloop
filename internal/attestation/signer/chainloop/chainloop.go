@@ -33,11 +33,10 @@ import (
 	sigstoresigner "github.com/sigstore/sigstore/pkg/signature"
 )
 
-// ChainloopSigner is a wrapper of a Sigstore signer for Chainloop
+// ChainloopSigner is a keyless signer for Chainloop
 type ChainloopSigner struct {
 	sigstoresigner.Signer
 
-	keyPath              string
 	signingServiceClient pb.SigningServiceClient
 	logger               zerolog.Logger
 	mu                   sync.Mutex
@@ -45,9 +44,8 @@ type ChainloopSigner struct {
 
 var _ sigstoresigner.Signer = (*ChainloopSigner)(nil)
 
-func NewChainloopSigner(keyPath string, sc pb.SigningServiceClient, logger zerolog.Logger) *ChainloopSigner {
+func NewChainloopSigner(sc pb.SigningServiceClient, logger zerolog.Logger) *ChainloopSigner {
 	return &ChainloopSigner{
-		keyPath:              keyPath,
 		signingServiceClient: sc,
 		logger:               logger,
 	}

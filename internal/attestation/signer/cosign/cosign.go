@@ -30,6 +30,7 @@ import (
 	"golang.org/x/term"
 )
 
+// CosignSigner is a signer leveraging cosign
 type CosignSigner struct {
 	sigstoresigner.Signer
 	keyPath string
