@@ -27,7 +27,6 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	sigstoresigner "github.com/sigstore/sigstore/pkg/signature"
-	sigdsee "github.com/sigstore/sigstore/pkg/signature/dsse"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -88,8 +87,7 @@ func (ab *AttestationRenderer) Render() (*dsse.Envelope, error) {
 		return nil, err
 	}
 
-	wrappedSigner := sigdsee.WrapSigner(ab.signer, "application/vnd.in-toto+json")
-	signedAtt, err := wrappedSigner.SignMessage(bytes.NewReader(rawStatement))
+	signedAtt, err := ab.signer.SignMessage(bytes.NewReader(rawStatement))
 	if err != nil {
 		return nil, fmt.Errorf("signing message: %w", err)
 	}
