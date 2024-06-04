@@ -24,19 +24,13 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	"errors"
 	"fmt"
 	"io"
-	"os"
 	"sync"
-	"syscall"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/rs/zerolog"
-	"github.com/sigstore/cosign/v2/pkg/signature"
 	sigstoresigner "github.com/sigstore/sigstore/pkg/signature"
-	sigdsee "github.com/sigstore/sigstore/pkg/signature/dsse"
-	"golang.org/x/term"
 )
 
 // ChainloopSigner is a wrapper of a Sigstore signer for Chainloop
@@ -76,87 +70,16 @@ func (cs *ChainloopSigner) ensureInitiated(ctx context.Context) error {
 		return nil
 	}
 
-	var (
-		signer sigstoresigner.Signer
-		err    error
-	)
+	var err error
 
-	if cs.keyPath != "" {
-		cs.logger.Debug().Str("path", cs.keyPath).Msg("loading key")
-		signer, err = signature.SignerFromKeyRef(context.Background(), cs.keyPath, getPass)
-		if err != nil {
-			return fmt.Errorf("loading signing key: %w", err)
-		}
-	} else {
-		// key is not provided, let's create one
-		cs.logger.Info().Msg("key not provided, running in key-less mode")
-		signer, err = cs.keyLessSigner(ctx)
-		if err != nil {
-			return fmt.Errorf("getting a keyless signer: %w", err)
-		}
+	// key is not provided, let's create one
+	cs.logger.Debug().Msg("generating a keyless signer")
+	cs.Signer, err = cs.keyLessSigner(ctx)
+	if err != nil {
+		return fmt.Errorf("getting a keyless signer: %w", err)
 	}
-
-	cs.Signer = sigdsee.WrapSigner(signer, "application/vnd.in-toto+json")
 
 	return nil
-}
-
-func getPass(confirm bool) ([]byte, error) {
-	read := readPasswordFn(confirm)
-	return read()
-}
-
-// based on cosign code
-// https://pkg.go.dev/github.com/sigstore/cosign/cmd/cosign/cli/generate
-func readPasswordFn(confirm bool) func() ([]byte, error) {
-	pw, ok := os.LookupEnv("CHAINLOOP_SIGNING_PASSWORD")
-	switch {
-	case ok:
-		return func() ([]byte, error) {
-			return []byte(pw), nil
-		}
-	case isTerminal():
-		return func() ([]byte, error) {
-			return getPassFromTerm(confirm)
-		}
-	// Handle piped in passwords.
-	default:
-		return func() ([]byte, error) {
-			return io.ReadAll(os.Stdin)
-		}
-	}
-}
-
-func isTerminal() bool {
-	stat, _ := os.Stdin.Stat()
-	return (stat.Mode() & os.ModeCharDevice) != 0
-}
-
-func getPassFromTerm(confirm bool) ([]byte, error) {
-	fmt.Fprint(os.Stderr, "Enter password for private key: ")
-	// Unnecessary convert of syscall.Stdin on *nix, but Windows is a uintptr
-	// nolint:unconvert
-	pw1, err := term.ReadPassword(int(syscall.Stdin))
-	if err != nil {
-		return nil, err
-	}
-	fmt.Fprintln(os.Stderr)
-	if !confirm {
-		return pw1, nil
-	}
-	fmt.Fprint(os.Stderr, "Enter password for private key again: ")
-	// Unnecessary convert of syscall.Stdin on *nix, but Windows is a uintptr
-	// nolint:unconvert
-	confirmpw, err := term.ReadPassword(int(syscall.Stdin))
-	fmt.Fprintln(os.Stderr)
-	if err != nil {
-		return nil, err
-	}
-
-	if string(pw1) != string(confirmpw) {
-		return nil, errors.New("passwords do not match")
-	}
-	return pw1, nil
 }
 
 type certificateRequest struct {

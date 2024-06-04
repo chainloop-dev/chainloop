@@ -32,11 +32,10 @@ import (
 )
 
 type AttestationRenderer struct {
-	logger         zerolog.Logger
-	signingKeyPath string
-	att            *v1.Attestation
-	renderer       r
-	signer         sigstoresigner.Signer
+	logger   zerolog.Logger
+	att      *v1.Attestation
+	renderer r
+	signer   sigstoresigner.Signer
 }
 
 type r interface {
@@ -51,17 +50,16 @@ func WithLogger(logger zerolog.Logger) Opt {
 	}
 }
 
-func NewAttestationRenderer(state *v1.CraftingState, keyPath, builderVersion, builderDigest string, signer sigstoresigner.Signer, opts ...Opt) (*AttestationRenderer, error) {
+func NewAttestationRenderer(state *v1.CraftingState, builderVersion, builderDigest string, signer sigstoresigner.Signer, opts ...Opt) (*AttestationRenderer, error) {
 	if state.GetAttestation() == nil {
 		return nil, errors.New("attestation not initialized")
 	}
 
 	r := &AttestationRenderer{
-		logger:         zerolog.Nop(),
-		signingKeyPath: keyPath,
-		att:            state.GetAttestation(),
-		signer:         signer,
-		renderer:       chainloop.NewChainloopRendererV02(state.GetAttestation(), builderVersion, builderDigest),
+		logger:   zerolog.Nop(),
+		att:      state.GetAttestation(),
+		signer:   signer,
+		renderer: chainloop.NewChainloopRendererV02(state.GetAttestation(), builderVersion, builderDigest),
 	}
 
 	for _, opt := range opts {
