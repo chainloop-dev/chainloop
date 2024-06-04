@@ -52,6 +52,7 @@ func (cs *CosignSigner) SignMessage(message io.Reader, opts ...sigstoresigner.Si
 	return cs.Signer.SignMessage(message, opts...)
 }
 
+// ensureInitiated makes sure that a proper cosign signer has been created from the key reference
 func (cs *CosignSigner) ensureInitiated() error {
 	var err error
 

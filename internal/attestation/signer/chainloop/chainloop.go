@@ -60,6 +60,8 @@ func (cs *ChainloopSigner) SignMessage(message io.Reader, opts ...sigstoresigner
 	return cs.Signer.SignMessage(message, opts...)
 }
 
+// ensureInitiated makes sure the signer is fully initialized and can be used right away
+// (i.e. it has performed the CSR challenge with chainloop)
 func (cs *ChainloopSigner) ensureInitiated(ctx context.Context) error {
 	cs.mu.Lock()
 	defer cs.mu.Unlock()
