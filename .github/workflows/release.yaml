@@ -3,9 +3,6 @@ name: Release
 on:
   release:
 
-permissions:
-  contents: write
-
 jobs:
   # This reusable workflow inspects if the given workflow_name exists on Chainloop. If the Workflow does not exist
   # it will create one with an empty contract ready for operators to be filled. Otherwise, if found, it will just
@@ -25,6 +22,7 @@ jobs:
     needs: onboard_workflow
     permissions:
       packages: write
+      contents: write
     env:
       CHAINLOOP_VERSION: 0.89.0
       CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_API_TOKEN }}
@@ -98,4 +96,5 @@ jobs:
             modified_notes="$chainloop_release_url"$'\n\n'"$current_notes"
           fi
           
-          gh release edit ${{ github.ref_name }} -n "$modified_notes"
+          # Update the release notes and ignore if it fails since we might be lacking permissions to update the release notes
+          gh release edit ${{ github.ref_name }} -n "$modified_notes" || echo -n "Not enough permissions to edit the release notes. Skipping..."
