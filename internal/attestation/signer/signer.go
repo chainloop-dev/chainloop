@@ -18,7 +18,7 @@ package signer
 import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/signer/chainloop"
-	clsigner "github.com/chainloop-dev/chainloop/internal/attestation/signer/cosign"
+	"github.com/chainloop-dev/chainloop/internal/attestation/signer/cosign"
 	"github.com/rs/zerolog"
 	sigstoresigner "github.com/sigstore/sigstore/pkg/signature"
 	sigdsee "github.com/sigstore/sigstore/pkg/signature/dsse"
@@ -28,9 +28,9 @@ import (
 func GetSigner(keyPath string, logger zerolog.Logger, client pb.SigningServiceClient) sigstoresigner.Signer {
 	var signer sigstoresigner.Signer
 	if keyPath != "" {
-		signer = clsigner.NewCosignSigner(keyPath, logger)
+		signer = cosign.NewSigner(keyPath, logger)
 	} else {
-		signer = chainloop.NewChainloopSigner(client, logger)
+		signer = chainloop.NewSigner(client, logger)
 	}
 
 	return sigdsee.WrapSigner(signer, "application/vnd.in-toto+json")

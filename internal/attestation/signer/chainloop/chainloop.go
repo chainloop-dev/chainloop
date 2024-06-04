@@ -33,8 +33,8 @@ import (
 	sigstoresigner "github.com/sigstore/sigstore/pkg/signature"
 )
 
-// ChainloopSigner is a keyless signer for Chainloop
-type ChainloopSigner struct {
+// Signer is a keyless signer for Chainloop
+type Signer struct {
 	sigstoresigner.Signer
 
 	signingServiceClient pb.SigningServiceClient
@@ -42,16 +42,16 @@ type ChainloopSigner struct {
 	mu                   sync.Mutex
 }
 
-var _ sigstoresigner.Signer = (*ChainloopSigner)(nil)
+var _ sigstoresigner.Signer = (*Signer)(nil)
 
-func NewChainloopSigner(sc pb.SigningServiceClient, logger zerolog.Logger) *ChainloopSigner {
-	return &ChainloopSigner{
+func NewSigner(sc pb.SigningServiceClient, logger zerolog.Logger) *Signer {
+	return &Signer{
 		signingServiceClient: sc,
 		logger:               logger,
 	}
 }
 
-func (cs *ChainloopSigner) SignMessage(message io.Reader, opts ...sigstoresigner.SignOption) ([]byte, error) {
+func (cs *Signer) SignMessage(message io.Reader, opts ...sigstoresigner.SignOption) ([]byte, error) {
 	err := cs.ensureInitiated(context.Background())
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func (cs *ChainloopSigner) SignMessage(message io.Reader, opts ...sigstoresigner
 
 // ensureInitiated makes sure the signer is fully initialized and can be used right away
 // (i.e. it has performed the CSR challenge with chainloop)
-func (cs *ChainloopSigner) ensureInitiated(ctx context.Context) error {
+func (cs *Signer) ensureInitiated(ctx context.Context) error {
 	cs.mu.Lock()
 	defer cs.mu.Unlock()
 
@@ -88,7 +88,7 @@ type certificateRequest struct {
 	CertificateRequestPEM []byte
 }
 
-func (cs *ChainloopSigner) keyLessSigner(ctx context.Context) (sigstoresigner.Signer, error) {
+func (cs *Signer) keyLessSigner(ctx context.Context) (sigstoresigner.Signer, error) {
 	request, err := cs.createCertificateRequest()
 	if err != nil {
 		return nil, fmt.Errorf("creating certificate request: %w", err)
@@ -106,7 +106,7 @@ func (cs *ChainloopSigner) keyLessSigner(ctx context.Context) (sigstoresigner.Si
 }
 
 // createCertificateRequest generates a new CSR to be sent to Chainloop platform
-func (cs *ChainloopSigner) createCertificateRequest() (*certificateRequest, error) {
+func (cs *Signer) createCertificateRequest() (*certificateRequest, error) {
 	cs.logger.Debug().Msg("generating new certificate request")
 
 	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -132,7 +132,7 @@ func (cs *ChainloopSigner) createCertificateRequest() (*certificateRequest, erro
 }
 
 // certFromChainloop gets a full certificate chain from a CSR
-func (cs *ChainloopSigner) certFromChainloop(ctx context.Context, req *certificateRequest) ([]string, error) {
+func (cs *Signer) certFromChainloop(ctx context.Context, req *certificateRequest) ([]string, error) {
 	cr := pb.GenerateSigningCertRequest{
 		CertificateSigningRequest: req.CertificateRequestPEM,
 	}

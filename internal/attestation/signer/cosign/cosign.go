@@ -30,8 +30,8 @@ import (
 	"golang.org/x/term"
 )
 
-// CosignSigner is a signer leveraging cosign
-type CosignSigner struct {
+// Signer is a signer leveraging cosign
+type Signer struct {
 	sigstoresigner.Signer
 	keyPath string
 	logger  zerolog.Logger
@@ -39,13 +39,13 @@ type CosignSigner struct {
 	mu sync.Mutex
 }
 
-func NewCosignSigner(keyPath string, logger zerolog.Logger) *CosignSigner {
-	return &CosignSigner{
+func NewSigner(keyPath string, logger zerolog.Logger) *Signer {
+	return &Signer{
 		keyPath: keyPath, logger: logger,
 	}
 }
 
-func (cs *CosignSigner) SignMessage(message io.Reader, opts ...sigstoresigner.SignOption) ([]byte, error) {
+func (cs *Signer) SignMessage(message io.Reader, opts ...sigstoresigner.SignOption) ([]byte, error) {
 	if err := cs.ensureInitiated(); err != nil {
 		return nil, fmt.Errorf("initializing signer: %w", err)
 	}
@@ -53,7 +53,7 @@ func (cs *CosignSigner) SignMessage(message io.Reader, opts ...sigstoresigner.Si
 }
 
 // ensureInitiated makes sure that a proper cosign signer has been created from the key reference
-func (cs *CosignSigner) ensureInitiated() error {
+func (cs *Signer) ensureInitiated() error {
 	var err error
 
 	cs.mu.Lock()
