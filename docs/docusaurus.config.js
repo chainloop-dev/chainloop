@@ -144,7 +144,7 @@ title: Use Dagger With Chainloop
 ${content.replaceAll(
   "## Prerequisites",
   `<iframe width="100%" height="500"
-    src="https://www.youtube.com/embed/s-ZtU8PvNmk"
+    src="https://www.youtube-nocookie.com/embed/s-ZtU8PvNmk"
     frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen>
 </iframe>
 
