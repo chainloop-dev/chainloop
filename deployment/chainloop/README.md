@@ -365,6 +365,24 @@ secretsBackend:
 
 ```
 
+### Deploy in keyless mode with file-based CA
+```yaml
+controlplane:
+  keylessSigning:
+    enabled: true
+    backend: fileCA
+    fileCA:
+      cert: |
+        -----BEGIN CERTIFICATE-----
+        ...
+        -----END CERTIFICATE-----
+      key: |
+        -----BEGIN ENCRYPTED PRIVATE KEY-----    
+        ...
+      -----END ENCRYPTED PRIVATE KEY-----
+      keyPass: "REDACTED"  
+```
+
 ### Send exceptions to Sentry
 
 You can configure different sentry projects for both the controlplane and the artifact CAS
