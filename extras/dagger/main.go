@@ -170,7 +170,7 @@ func (att *Attestation) AddRawEvidence(
 		"--value", value,
 	}
 
-	if name == "" {
+	if name != "" {
 		args = append(args,
 			"--name", name,
 		)
@@ -208,7 +208,7 @@ func (att *Attestation) AddFileEvidence(
 		"--value", mountPath,
 	}
 
-	if name == "" {
+	if name != "" {
 		args = append(args,
 			"--name", name,
 		)
