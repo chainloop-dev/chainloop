@@ -49,9 +49,7 @@ func (m *Chainloop) Init(
 	// Path to the source repository to be attested
 	// +optional
 	repository *Directory,
-	// Workflow name to be used for the attestation, default empty
-	// This option is needed when using an API Token
-	// +optional
+	// Workflow name to be used for the attestation
 	workflowName string,
 ) (*Attestation, error) {
 	att := &Attestation{
@@ -60,18 +58,12 @@ func (m *Chainloop) Init(
 	}
 	// Append the contract revision to the args if provided
 	args := []string{
-		"attestation", "init", "--remote-state", "-o", "json",
+		"attestation", "init", "--remote-state", "-o", "json", "--workflow-name", workflowName,
 	}
 
 	if contractRevision != "" {
 		args = append(args,
 			"--contract-revision", contractRevision,
-		)
-	}
-
-	if workflowName != "" {
-		args = append(args,
-			"--workflow-name", workflowName,
 		)
 	}
 
@@ -269,17 +261,31 @@ func (att *Attestation) Container(
 }
 
 // Generate, sign and push the attestation to the chainloop control plane
-func (att *Attestation) Push(ctx context.Context, key, passphrase *Secret) (string, error) {
-	return att.
-		Container(0).
-		WithMountedSecret("/tmp/key.pem", key).
-		WithSecretVariable("CHAINLOOP_SIGNING_PASSWORD", passphrase).
-		WithExec([]string{
-			"attestation", "push",
-			"--remote-state",
-			"--attestation-id", att.AttestationID,
-			"--key", "/tmp/key.pem",
-		}).Stdout(ctx)
+func (att *Attestation) Push(
+	ctx context.Context,
+	// The private key to sign the attestation
+	// +optional
+	key *Secret,
+	// The passphrase to decrypt the private key
+	// +optional
+	passphrase *Secret,
+) (string, error) {
+	container := att.Container(0)
+	args := []string{
+		"attestation", "push",
+		"--remote-state",
+		"--attestation-id", att.AttestationID,
+	}
+
+	if key != nil {
+		container = container.WithMountedSecret("/tmp/key.pem", key)
+		args = append(args, "--key", "/tmp/key.pem")
+	}
+	if passphrase != nil {
+		container = container.WithSecretVariable("CHAINLOOP_SIGNING_PASSWORD", passphrase)
+	}
+
+	return container.WithExec(args).Stdout(ctx)
 }
 
 // Mark the attestation as failed
