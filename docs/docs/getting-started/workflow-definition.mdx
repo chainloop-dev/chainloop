@@ -22,9 +22,9 @@ A workflow represents the identity of any automation, any CI/CD workflow you wan
 
 <WorkflowContractIntro />
 
-### Robot Accounts
+### Chainloop API Token
 
-A robot account is a long-lasting, though revokable, **secret token associated with a Workflow**. It's meant to be used in the target CI/CD pipeline during the attestation process. This token along with the crafting CLI are the only two things development/Apps teams need for the integration.
+A [Chainloop API token](/reference/operator/api-tokens) is a long-lasting, though revokable, **secret token associated with a Chainloop organization**. It's meant to be used in the target CI/CD pipeline during the attestation process and/or for unatended operations with the controlplane. This token along with the crafting CLI are the only two things development teams need to perform attestations.
 
 ## Workflow and Contract creation
 
@@ -34,7 +34,7 @@ To achieve that, we will need to
 
 - Create a new Workflow Contract (optional)
 - Create a Workflow associated with a new or existing Contract
-- Create a Robot account for that Workflow so the integration can happen in the CI.
+- Create an API Token for the CI/CD integration
 
 ### Workflow Create
 
@@ -146,32 +146,31 @@ $ chainloop workflow contract update \
 We could have reached the same result by first creating the contract via `chainloop workflow contract create -f ...` and then attaching it during workflow creation `chainloop workflow create ... --contract deadbeef`
 :::
 
-### Robot Account creation
+### API Token Creation
 
-The final step is to create a robot account that will be shared with the development team so they can start the integration.
+The final step is to create an API token that will be shared with the development team so they can start the integration.
 
 :::note
 
-- Robot accounts are attached to a single workflow. If you create another workflow, another robot account must be created.
-- You can have more than one robot account associated with a workflow.
-- Accounts can be revoked via `chainloop workflow robot-account revoke` command
+- API Tokens are attached to a single organization and can be used to perform attestations in multiple workflows.
+- You can have multiple API tokens per organization
+- Tokens can be revoked via `chainloop org api-token revoke` command
 
 :::
 
 ```bash
-$ chainloop workflow robot-account create \
-    --workflow 2d289d33-8241-47b7-9ea2-8bd8b7c126f8 \
-    --name prod-ci
+$ chainloop org api-token create --name prod-ci
 
-┌──────────────────────────────────────┬─────────┬──────────────────────────────────────┬─────────────────────┬────────────┐
-│ ID                                   │ NAME    │ WORKFLOW ID                          │ CREATED AT          │ REVOKED AT │
-├──────────────────────────────────────┼─────────┼──────────────────────────────────────┼─────────────────────┼────────────┤
-│ 4f2376fa-48c8-4e46-a921-977ec44486a9 │ prod-ci │ 2d289d33-8241-47b7-9ea2-8bd8b7c126f8 │ 01 Nov 22 23:43 UTC │            │
-└──────────────────────────────────────┴─────────┴──────────────────────────────────────┴─────────────────────┴────────────┘
+┌──────────────────────────────────────┬─────────┬─────────────┬─────────────────────┬────────────┬────────────┐
+│ ID                                   │ NAME    │ DESCRIPTION │ CREATED AT          │ EXPIRES AT │ REVOKED AT │
+├──────────────────────────────────────┼─────────┼─────────────┼─────────────────────┼────────────┼────────────┤
+│ 7016d5ad-6d2b-4da4-b657-4ad1ddcb4469 │ prod-ci │             │ 05 Jun 24 14:56 UTC │            │            │
+└──────────────────────────────────────┴─────────┴─────────────┴─────────────────────┴────────────┴────────────┘
 
-Save the following token since it will not printed again:
+Save the following token since it will not printed again: 
 
- eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.REDACTED.lXdvZusJgHyeHDl39RGPNxxrmTUZBN0_QAbJU5ZVxR8
+ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.REDACTED.GzTiR2r8YuccAmn-eZjCMNTSY5MU2gcRGNzu5rBhl80
+
 ```
 
 We have everything we need to integrate our CI with Chainloop!

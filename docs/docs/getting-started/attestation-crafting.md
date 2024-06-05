@@ -23,21 +23,21 @@ During this stage, the crafting tool will contact the control plane to
 - Signal the intent of starting an attestation.
 - Retrieve the associated workflow contract.
 - If the contract has a specified runner context type, check that we are compliant with it.
-- Initialize environment variables explicitly stated in the contract.
-
-:::note
-In the future, during this initialization stage, we will also retrieve ephemeral signing keys for keyless signing/verification
-:::
+- Initialize environment variables, explicitly stated in the contract and other contextual information.
 
 #### attestation add
 
-Add the **materials required by the contract**, i.e artifact, OCI image ref, SBOM.
+Add the **materials required by the contract** and any other additional piece of evidence, i.e artifact, OCI image ref, SBOM.
 
 The `add` command knows how to handle each kind of material transparently to the user.
 
-- STRING kinds will be injected as is.
+For example
+
 - ARTIFACT kinds will be uploaded to your artifact registry and referenced by their content digest.
 - CONTAINER_IMAGE kinds will be resolved to obtain their repository digests using the local authentication keychain.
+- SBOM_CYCLONEDX_JSON will validate the right SBOM format and upload it to the artifact registry.
+
+For a complete list of available material types, see the [reference](/reference/operator/contract#material-schema).
 
 #### attestation push
 
@@ -47,7 +47,7 @@ This stage will take the current crafting state, validate that it has all the re
 - Push it to the control plane for storage
 
 :::note
-Chainlooop leverages Cosign for signing and verifying, so it supports any of its key providers.
+Chainloop leverages Cosign for signing and verifying, so it supports any of its key providers.
 Currently, local file-based `cosign private key` and GCP, AWS, Azure and Hashicorp Vault KMS are supported.
 
 In future releases this will not be needed since we will rely on keyless signing and verification.
@@ -63,7 +63,7 @@ See the state of the current crafting process.
 
 ## Crafting our first attestation locally
 
-To create an attestation two things are required, the Chainloop crafting tool and a robot account.
+To create an attestation two things are required, the Chainloop crafting tool and an [API token](/reference/operator/api-tokens).
 
 The crafting tool is currently bundled within Chainloop command line tool. To install it just follow the [installation](installation) instructions.
 
