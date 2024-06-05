@@ -367,7 +367,7 @@ secretsBackend:
 
 ### Deploy in keyless mode with file-based CA
 
-*This feature is experimental, as it doesn't still support verification.*
+*This feature is experimental, as it doesn't yet support verification.*
 
 You can enable keyless signing mode by providing a custom Certificate Authority.
 For example, these commands generate a self-signed certificate with an RSA private key of length 4096 and AES256 encryption:
@@ -379,7 +379,7 @@ For example, these commands generate a self-signed certificate with an RSA priva
 ...
 ```
 
-Then configure your deployment values with:
+Then you can configure your deployment values with:
 ```yaml
 controlplane:
   keylessSigning:
