@@ -225,7 +225,7 @@ func (att *Attestation) Container(
 		WithEnvVariable("CHAINLOOP_DAGGER_CLIENT", chainloopVersion)
 
 	if att.Token != nil {
-		ctr = ctr.WithSecretVariable("CHAINLOOP_ROBOT_ACCOUNT", att.Token)
+		ctr = ctr.WithSecretVariable("CHAINLOOP_TOKEN", att.Token)
 	}
 
 	if att.repository != nil {
