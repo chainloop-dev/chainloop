@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,7 +38,14 @@ func newAttestationInitCmd() *cobra.Command {
 		Use:   "init",
 		Short: "start attestation crafting process",
 		Annotations: map[string]string{
-			useWorkflowRobotAccount: "true",
+			useAPIToken: "true",
+		},
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if workflowName == "" {
+				return fmt.Errorf("workflow name is required, set it via --name flag or %s environment variable", workflowNameEnvVarName)
+			}
+
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			a, err := action.NewAttestationInit(
@@ -85,7 +92,11 @@ func newAttestationInitCmd() *cobra.Command {
 	cmd.Flags().BoolVarP(&force, "replace", "f", false, "replace any existing in-progress attestation")
 	cmd.Flags().BoolVar(&attestationDryRun, "dry-run", false, "do not record attestation in the control plane, useful for development")
 	cmd.Flags().IntVar(&contractRevision, "contract-revision", 0, "revision of the contract to retrieve, \"latest\" by default")
-	cmd.Flags().StringVar(&workflowName, "workflow-name", "", "name of the workflow to run the attestation. This is ignored when authentication is based on Robot Account")
+
+	// workflow-name has been replaced by --name flag
+	cmd.Flags().StringVar(&workflowName, "workflow-name", "", "name of the workflow to run the attestation")
+	cobra.CheckErr(cmd.Flags().MarkHidden("workflow-name"))
+	cmd.Flags().StringVar(&workflowName, "name", "", "name of the workflow to run the attestation")
 	if workflowName == "" {
 		workflowName = os.Getenv(workflowNameEnvVarName)
 	}

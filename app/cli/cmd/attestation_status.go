@@ -34,7 +34,7 @@ func newAttestationStatusCmd() *cobra.Command {
 		Use:   "status",
 		Short: "check the status of the current attestation process",
 		Annotations: map[string]string{
-			useWorkflowRobotAccount: "true",
+			useAPIToken: "true",
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			a, err := action.NewAttestationStatus(

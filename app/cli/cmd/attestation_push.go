@@ -29,11 +29,11 @@ func newAttestationPushCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "push",
 		Short: "generate and push the attestation to the control plane",
-		Example: `  chainloop attestation push --key <key path>|<env://VAR_NAME> --token [robot-account-token] --annotation key=value,key2=val2
+		Example: `  chainloop attestation push --key <key path>|<env://VAR_NAME> --token [chainloop-token] --annotation key=value,key2=val2
 
   # sign the resulting attestation using a cosign key present in the filesystem and stdin for the passphrase
   # NOTE that the --token flag can be replaced by having the CHAINLOOP_TOKEN env variable
-  chainloop attestation push --key cosign.key --token [robot-account-token]
+  chainloop attestation push --key cosign.key --token [chainloop-token]
 
   # or retrieve the key from an environment variable containing the private key
   chainloop attestation push --key env://[ENV_VAR]
@@ -47,7 +47,7 @@ func newAttestationPushCmd() *cobra.Command {
   # Or alternatively
   chainloop attestation push --annotation key=value,key2=value2`,
 		Annotations: map[string]string{
-			useWorkflowRobotAccount: "true",
+			useAPIToken: "true",
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			info, err := executableInfo()

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,8 +24,7 @@ func newOrganizationAPITokenCmd() *cobra.Command {
 		Use:     "api-token",
 		Aliases: []string{"token"},
 		Short:   "API token management",
-		Long: `Manage API tokens to authenticate with the Chainloop API.
-NOTE: They are not meant to be used during the attestation process, for that purpose you'll need to use a robot accounts instead.`,
+		Long:    "Manage API tokens to authenticate with the Chainloop API or perform attestations.",
 	}
 
 	cmd.AddCommand(newAPITokenCreateCmd(), newAPITokenListCmd(), newAPITokenRevokeCmd())
