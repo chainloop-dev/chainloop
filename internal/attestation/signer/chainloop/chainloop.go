@@ -31,8 +31,6 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/rs/zerolog"
 	sigstoresigner "github.com/sigstore/sigstore/pkg/signature"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // Signer is a keyless signer for Chainloop
@@ -142,11 +140,6 @@ func (cs *Signer) certFromChainloop(ctx context.Context, req *certificateRequest
 	// call chainloop
 	resp, err := cs.signingServiceClient.GenerateSigningCert(ctx, &cr)
 	if err != nil {
-		if status.Code(err) == codes.Unimplemented {
-			cs.logger.Error().Msg("Your Chainloop instance doesn't seem to be configured for Keyless Signing, " +
-				"please provide a private key reference with --key instead")
-			return nil, fmt.Errorf("chainloop instance is not configured for Keyless Signing: %w", err)
-		}
 		return nil, fmt.Errorf("generating signing cert: %w", err)
 	}
 
