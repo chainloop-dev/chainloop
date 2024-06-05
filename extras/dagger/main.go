@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	chainloopVersion = "v0.89.1"
+	chainloopVersion = "v0.90.1"
 )
 
 type Chainloop struct{}
@@ -49,6 +49,10 @@ func (m *Chainloop) Init(
 	// Path to the source repository to be attested
 	// +optional
 	repository *Directory,
+	// Workflow name to be used for the attestation, default empty
+	// This option is needed when using an API Token
+	// +optional
+	workflowName string,
 ) (*Attestation, error) {
 	att := &Attestation{
 		Token:      token,
@@ -62,6 +66,12 @@ func (m *Chainloop) Init(
 	if contractRevision != "" {
 		args = append(args,
 			"--contract-revision", contractRevision,
+		)
+	}
+
+	if workflowName != "" {
+		args = append(args,
+			"--workflow-name", workflowName,
 		)
 	}
 
@@ -215,7 +225,7 @@ func (att *Attestation) Container(
 		WithEnvVariable("CHAINLOOP_DAGGER_CLIENT", chainloopVersion)
 
 	if att.Token != nil {
-		ctr = ctr.WithSecretVariable("CHAINLOOP_ROBOT_ACCOUNT", att.Token)
+		ctr = ctr.WithSecretVariable("CHAINLOOP_TOKEN", att.Token)
 	}
 
 	if att.repository != nil {

@@ -73,6 +73,18 @@ dagger call -m github.com/chainloop-dev/chainloop \
   --contract-revision 1 # optional flag to specify the revision of the Workflow Contract (default `latest`)
 ```
 
+If the token passed is an API Token and not a Robot Account, the name of the workflow needs to be pass as well.
+
+```sh
+# Initialize the attestation and get its ID
+dagger call -m github.com/chainloop-dev/chainloop \
+  init \
+  --token env:CHAINLOOP_TOKEN \
+  --repository /path/to/repo \ # optional flag to automatically attest a Git repository
+  --contract-revision 1 \ # optional flag to specify the revision of the Workflow Contract (default `latest`)
+  --workflow-name the-name-of-the-workflow
+```
+
 #### 2 - Get the status ([docs](https://docs.chainloop.dev/getting-started/attestation-crafting#inspecting-the-crafting-status))
 
 Resuming a previous attestation
