@@ -13,11 +13,11 @@ server:
     # We have some slow operations such as verifying an OCI registry
     timeout: 10s
 
-#certificate_authority:
-#  file_ca:
-#    cert_path: "../../devel/devkeys/ca.pub"
-#    key_path: "../../devel/devkeys/ca.pem"
-#    key_pass: chainloop
+certificate_authority:
+  file_ca:
+    cert_path: "../../devel/devkeys/ca.pub"
+    key_path: "../../devel/devkeys/ca.pem"
+    key_pass: chainloop
 
 # Directory where the plugins are located
 # NOTE: plugins have the form of chainloop-plugin-<name>
