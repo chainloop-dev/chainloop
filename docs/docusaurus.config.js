@@ -301,7 +301,7 @@ ${content
         },
       ],
     }),
-  scripts: [],
+  scripts: ["https://app.termly.io/resource-blocker/48c15f14-86c1-4734-bad4-8a627fa691fa?autoBlock=on"],
 };
 
 module.exports = config;
