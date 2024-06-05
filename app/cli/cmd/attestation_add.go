@@ -46,7 +46,7 @@ func newAttestationAddCmd() *cobra.Command {
 		Use:   "add",
 		Short: "add a material to the attestation",
 		Annotations: map[string]string{
-			useWorkflowRobotAccount: "true",
+			useAPIToken: "true",
 		},
 		Example: `  # Add a material to the attestation that is defined in the contract
   chainloop attestation add --name <material-name> --value <material-value>

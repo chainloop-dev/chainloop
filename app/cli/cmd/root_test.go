@@ -28,15 +28,6 @@ func TestParseToken(t *testing.T) {
 		want  *parsedToken
 	}{
 		{
-			name:  "robot account",
-			token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvcmdfaWQiOiJkZGRiODIwMS1lYWI2LTRlNjEtOTIwMS1mMTJiNDdjMDE4OTIiLCJ3b3JrZmxvd19pZCI6ImY0NmIzMDc5LTMwOGYtNGIwNC1hYjYwLTY3NDNmOGUzMGQzMyIsImlzcyI6ImNwLmNoYWlubG9vcCIsImF1ZCI6WyJhdHRlc3RhdGlvbnMuY2hhaW5sb29wIl0sImp0aSI6IjkzODI5NDE1LTA1ODYtNDFkYS05NTJkLTkyYTRjNDk1ZWEyMCJ9.3Af2C62PiODbEknhv47j0LHLuAgWLqvTrfmIzFjwPCM",
-			want: &parsedToken{
-				id:        "93829415-0586-41da-952d-92a4c495ea20",
-				tokenType: "robot-account",
-				orgID:     "dddb8201-eab6-4e61-9201-f12b47c01892",
-			},
-		},
-		{
 			name:  "user account",
 			token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiYmMwYjIxOTktY2E4NS00MmFiLWE4NTctMDQyZTljMTA5ZDQzIiwiaXNzIjoiY3AuY2hhaW5sb29wIiwiYXVkIjpbInVzZXItYXV0aC5jaGFpbmxvb3AiXSwiZXhwIjoxNzE1OTM1MjUwfQ.ounYshGtagtYQsVIzNeE0ztVYRXrmjFSpdmaTF4QvyY",
 			want: &parsedToken{
@@ -59,15 +50,6 @@ func TestParseToken(t *testing.T) {
 			want: &parsedToken{
 				id:        "d4e0ee5e-9713-41d2-9fea-0bdb14033081",
 				tokenType: "api-token",
-			},
-		},
-		{
-			name:  "old robot account",
-			token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvcmdfaWQiOiI5M2QwMjI3NS04NTNjLTRhZDYtOWQ2MC04ZjU2MmIxMjNmZDIiLCJ3b3JrZmxvd19pZCI6IjM1ZTZkOGIwLWE0OGYtNDFmYS05YmU3LWQ1OTM5YjJkZGUyNiIsImlzcyI6ImNwLmNoYWlubG9vcCIsImF1ZCI6WyJhdHRlc3RhdGlvbnMuY2hhaW5sb29wIl0sImp0aSI6ImUxZDUzOGQxLWI2MWQtNGY4MC1iZWQzLWM3MGE1NzRlOWI2NiJ9.81WltZtOno26oNydJ-YtHRwAIEmD2B4RgChhsS4yYVk",
-			want: &parsedToken{
-				id:        "e1d538d1-b61d-4f80-bed3-c70a574e9b66",
-				tokenType: "robot-account",
-				orgID:     "93d02275-853c-4ad6-9d60-8f562b123fd2",
 			},
 		},
 		{

@@ -32,9 +32,6 @@ var (
 	attestationID string
 )
 
-// Legacy env variable
-const robotAccountEnvVarName = "CHAINLOOP_ROBOT_ACCOUNT"
-
 func newAttestationCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "attestation",
@@ -55,10 +52,6 @@ func newAttestationCmd() *cobra.Command {
 				return cmd.MarkFlagRequired("attestation-id")
 			}
 
-			if os.Getenv(tokenEnvVarName) != "" && os.Getenv(robotAccountEnvVarName) != "" {
-				return fmt.Errorf("both %s and %s env variables cannot be set at the same time", tokenEnvVarName, robotAccountEnvVarName)
-			}
-
 			return nil
 		},
 	}
@@ -69,10 +62,6 @@ func newAttestationCmd() *cobra.Command {
 	if attAPIToken == "" {
 		// Check first the new env variable
 		attAPIToken = os.Getenv(tokenEnvVarName)
-		// If it stills not set, use the legacy one for some time
-		if attAPIToken == "" {
-			attAPIToken = os.Getenv(robotAccountEnvVarName)
-		}
 	}
 
 	cmd.PersistentFlags().BoolVar(&GracefulExit, "graceful-exit", false, "exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0")

@@ -44,12 +44,6 @@ type WorkflowItem struct {
 	Public bool `json:"public"`
 }
 
-type WorkflowItemWithRobotAccount struct {
-	*WorkflowItem
-	RobotAccountID  string `json:"robotAccountID,omitempty"`
-	RobotAccountKey string `json:"robotAccountKey,omitempty"`
-}
-
 func NewWorkflowList(cfg *ActionsOpts) *WorkflowList {
 	return &WorkflowList{cfg}
 }

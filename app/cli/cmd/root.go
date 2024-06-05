@@ -49,12 +49,11 @@ var (
 )
 
 const (
-	useWorkflowRobotAccount = "withWorkflowRobotAccount"
-	appName                 = "chainloop"
+	useAPIToken = "withAPITokenAuth"
+	appName     = "chainloop"
 	//nolint:gosec
-	tokenEnvVarName      = "CHAINLOOP_TOKEN"
-	robotAccountAudience = "attestations.chainloop"
-	userAudience         = "user-auth.chainloop"
+	tokenEnvVarName = "CHAINLOOP_TOKEN"
+	userAudience    = "user-auth.chainloop"
 	//nolint:gosec
 	apiTokenAudience = "api-token-auth.chainloop"
 	// Follow the convention stated on https://consoledonottrack.com/
@@ -90,7 +89,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 
 			apiToken, err := loadControlplaneAuthToken(cmd)
 			if err != nil {
-				return fmt.Errorf("loading controlplane auth token: %w", err)
+				return err
 			}
 
 			conn, err := grpcconn.New(viper.GetString(confOptions.controlplaneAPI.viperKey), apiToken, flagInsecure)
@@ -240,13 +239,12 @@ func cleanup(conn *grpc.ClientConn) error {
 }
 
 // Load the controlplane based on the following order:
-// 1. If the CMD uses a robot account instead of the regular auth token we override it
-// 2. If the CMD uses an API token flag/env variable we override it
-// 3. If the CMD uses a config file we load it from there
+// 1. If the CMD uses an API token flag/env variable we override it
+// 2. If the CMD uses a config file we load it from there
 func loadControlplaneAuthToken(cmd *cobra.Command) (string, error) {
-	// If the CMD uses a robot account instead of the regular auth token we override it
+	// If the CMD uses an API token instead of the regular OIDC auth token we override it
 	// TODO: the attestation CLI should get split from this one
-	if _, ok := cmd.Annotations[useWorkflowRobotAccount]; ok {
+	if _, ok := cmd.Annotations[useAPIToken]; ok {
 		if attAPIToken == "" {
 			return "", newGracefulError(ErrAttestationTokenRequired)
 		}
@@ -265,9 +263,8 @@ func loadControlplaneAuthToken(cmd *cobra.Command) (string, error) {
 }
 
 // parseToken the token and return the type of token. At the moment in Chainloop we have 3 types of tokens:
-// 1. Robot account token
-// 2. User account token
-// 3. API token
+// 1. User account token
+// 2. API token
 // Each one of them have an associated audience claim that we use to identify the type of token. If the token is not
 // present, nor we cannot match it with one of the expected audience, return nil.
 func parseToken(token string) (*parsedToken, error) {
@@ -321,14 +318,6 @@ func parseToken(token string) (*parsedToken, error) {
 		pToken.tokenType = "user"
 		if userID, ok := claims["user_id"].(string); ok {
 			pToken.id = userID
-		}
-	case robotAccountAudience:
-		pToken.tokenType = "robot-account"
-		if tokenID, ok := claims["jti"].(string); ok {
-			pToken.id = tokenID
-		}
-		if orgID, ok := claims["org_id"].(string); ok {
-			pToken.orgID = orgID
 		}
 	default:
 		return nil, nil
