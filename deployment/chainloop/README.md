@@ -365,6 +365,38 @@ secretsBackend:
 
 ```
 
+### Deploy in keyless mode with file-based CA
+
+*This feature is experimental, as it doesn't yet support verification.*
+
+You can enable keyless signing mode by providing a custom Certificate Authority.
+For example, these commands generate a self-signed certificate with an RSA private key of length 4096 and AES256 encryption:
+
+```bash
+> openssl genrsa -aes256 -out ca.key 4096
+...
+> openssl req -new -x509 -sha256 -key ca.key -out ca.crt
+...
+```
+
+Then you can configure your deployment values with:
+```yaml
+controlplane:
+  keylessSigning:
+    enabled: true
+    backend: fileCA
+    fileCA:
+      cert: |
+        -----BEGIN CERTIFICATE-----
+        ...
+        -----END CERTIFICATE-----
+      key: |
+        -----BEGIN ENCRYPTED PRIVATE KEY-----    
+        ...
+        -----END ENCRYPTED PRIVATE KEY-----
+      keyPass: "REDACTED"  
+```
+
 ### Send exceptions to Sentry
 
 You can configure different sentry projects for both the controlplane and the artifact CAS
