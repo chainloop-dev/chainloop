@@ -1,8 +1,9 @@
 // @ts-check
 // Note: type annotations allow type checking and IDEs autocompletion
 
-const lightCodeTheme = require("prism-react-renderer/themes/github");
-const darkCodeTheme = require("prism-react-renderer/themes/dracula");
+const { themes } = require("prism-react-renderer");
+const lightCodeTheme = themes.github;
+const darkCodeTheme = themes.dracula;
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
@@ -22,9 +23,10 @@ const config = {
     locales: ["en"],
   },
   // Register posthog only in production
-  clientModules: process.env.NODE_ENV === "production"
-    ? [require.resolve("./src/client-modules/register-posthog.js")]
-    : [],
+  clientModules:
+    process.env.NODE_ENV === "production"
+      ? [require.resolve("./src/client-modules/register-posthog.js")]
+      : [],
 
   plugins: [
     [
@@ -211,11 +213,6 @@ ${content
           routeBasePath: "/",
           editUrl: "https://github.com/chainloop-dev/chainloop/blob/main/docs",
         },
-        blog: {
-          showReadingTime: true,
-          blogTitle: "Chainloop blog",
-          blogDescription: "Chainloop blog",
-        },
         theme: {
           customCss: require.resolve("./src/css/custom.css"),
         },
@@ -291,7 +288,7 @@ ${content
       prism: {
         theme: lightCodeTheme,
         darkTheme: darkCodeTheme,
-        additionalLanguages: ["log", "cue"],
+        additionalLanguages: ["log", "cue", "bash", "json"],
       },
       metadata: [
         {
@@ -301,7 +298,9 @@ ${content
         },
       ],
     }),
-  scripts: ["https://app.termly.io/resource-blocker/48c15f14-86c1-4734-bad4-8a627fa691fa?autoBlock=on"],
+  scripts: [
+    "https://app.termly.io/resource-blocker/48c15f14-86c1-4734-bad4-8a627fa691fa?autoBlock=on",
+  ],
 };
 
 module.exports = config;
