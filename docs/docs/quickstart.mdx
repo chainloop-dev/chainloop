@@ -3,13 +3,52 @@ sidebar_position: 3
 title: Quickstart
 ---
 
-import CodeBlock from "@theme/CodeBlock";
-import ContractYAML from "!!raw-loader!/examples/quickstart.sh";
-
 # Quickstart
 
-Run the following commands for a quick start:
+Follow these steps for a quick start:
 
-<CodeBlock language="bash" title="quickstart.sh" showLineNumbers>
-{ContractYAML}
-</CodeBlock>
+1. Install Chainloop. This quick snippet will get you through the process:
+    ```bash
+    curl -sfL https://docs.chainloop.dev/install.sh | bash -s
+    ```
+    Refer to [these instructions](/getting-started/installation) for more installation options.
+
+2. Authenticate to the Control Plane via OIDC by running:
+    ```bash
+    chainloop auth login
+    ```
+    This will create a personal token that you will use in operations not related to attestations.
+
+3. Create a new Chainloop workflow.
+    ```bash
+    chainloop wf create --name mywf --project myproject
+    ```
+    Chainloop workflows represent any CI or process you might want to attest.
+    Check [this doc](/getting-started/workflow-definition)
+    for a complete explanation of Workflows and Contracts.
+    You might also want to check our [contract reference](/reference/operator/contract).
+
+4. Create a restricted token for further operations:
+    ```bash
+    export CHAINLOOP_TOKEN=$(chainloop org api-token create --name test-api-token -o json | jq -r ".[].jwt")
+    ```
+    CHAINLOOP_TOKEN environment variable is commonly used from CI/CD scenarios, where a personal token is not available.
+    Tokens have narrower permissions, ensuring that they can only perform the operations they are granted to.
+    More information in [API tokens](/reference/operator/api-tokens#api-tokens).
+
+5. Create a sample payload to attest.
+    ```bash
+    cat "hello chainloop" > hello.txt
+    ```
+
+6. Sign the payload and push the attestation to Chainloop
+    ```bash
+    chainloop att init --workflow-name mywf
+    chainloop att add --value hello.txt
+    chainloop att push
+    ```
+    Here we are: [initiating an attestation](/getting-started/attestation-crafting#initialization), [adding materials to it](/getting-started/attestation-crafting#adding-materials), and finally [signing and pushing the signature](/getting-started/attestation-crafting#encode-sign-and-push-attestation) to Chainloop
+    for permanent preservation.
+    Note that, in this example, we are not specifying any private key for signing.
+    This will make the CLI to work in key-less mode, generating an ephemeral certificate,
+    signed by Chainloop CA, to ensure the trust chain, and finally using it for the signature.
