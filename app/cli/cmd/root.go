@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -146,11 +146,6 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 
 	// Override the oauth authentication requirement for the CLI by providing an API token
 	rootCmd.PersistentFlags().StringVarP(&apiToken, "token", "t", "", fmt.Sprintf("API token. NOTE: Alternatively use the env variable %s", tokenEnvVarName))
-	// We do not use viper in this case because we do not want this token to be saved in the config file
-	// Instead we load the env variable manually
-	if apiToken == "" {
-		apiToken = os.Getenv(tokenEnvVarName)
-	}
 
 	rootCmd.AddCommand(newWorkflowCmd(), newAuthCmd(), NewVersionCmd(),
 		newAttestationCmd(), newArtifactCmd(), newConfigCmd(),
@@ -239,11 +234,14 @@ func cleanup(conn *grpc.ClientConn) error {
 }
 
 // Load the controlplane based on the following order:
-// 1. If the CMD uses an API token flag/env variable we override it
-// 2. If the CMD uses a config file we load it from there
+// 1. If the command requires an API token, we load it and fail otherwise
+// 2. If the command does not require an API token, we
+// 2.1 Return the token explicitly provided via the flag
+// 2.2 Load the token from the environment variable and from the auth login config file
+// 2.3 if they both exist, we default to the user token
+// 2.4 otherwise to the one that's set
 func loadControlplaneAuthToken(cmd *cobra.Command) (string, error) {
-	// If the CMD uses an API token instead of the regular OIDC auth token we override it
-	// TODO: the attestation CLI should get split from this one
+	// If the CMD uses a robot account instead of the regular auth token we override it
 	if _, ok := cmd.Annotations[useAPIToken]; ok {
 		if attAPIToken == "" {
 			return "", newGracefulError(ErrAttestationTokenRequired)
@@ -252,14 +250,26 @@ func loadControlplaneAuthToken(cmd *cobra.Command) (string, error) {
 		return attAPIToken, nil
 	}
 
-	// override if token is passed as a flag/env variable
+	// Now we check explicitly provided API token via the flag
 	if apiToken != "" {
 		logger.Info().Msg("API token provided to the command line")
 		return apiToken, nil
 	}
 
-	// loaded from config file, previously stored via "auth login"
-	return viper.GetString(confOptions.authToken.viperKey), nil
+	// Load the user token from the config file
+	userToken := viper.GetString(confOptions.authToken.viperKey)
+	// Load the APIToken from the env variable
+	// Instead we load the env variable manually
+	apiTokenFromVar := os.Getenv(tokenEnvVarName)
+	// If both the user authentication and the API token are set, we default to user authentication
+	if userToken != "" && apiTokenFromVar != "" {
+		logger.Warn().Msgf("Both user credentials and $%s set. Ignoring $%s.", tokenEnvVarName, tokenEnvVarName)
+		return userToken, nil
+	} else if apiTokenFromVar != "" {
+		return apiTokenFromVar, nil
+	}
+
+	return userToken, nil
 }
 
 // parseToken the token and return the type of token. At the moment in Chainloop we have 3 types of tokens:
