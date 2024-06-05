@@ -14,7 +14,7 @@ jobs:
       project: "chainloop"
       workflow_name: "chainloop-vault-release"
     secrets:
-      api_token: ${{ secrets.CHAINLOOP_API_TOKEN }}
+      api_token: ${{ secrets.CHAINLOOP_TOKEN }}
 
   release:
     name: Record release from GitHub
@@ -24,8 +24,8 @@ jobs:
       packages: write
       contents: write
     env:
-      CHAINLOOP_VERSION: 0.89.0
-      CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_API_TOKEN }}
+      CHAINLOOP_VERSION: 0.90.1
+      CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
       CHAINLOOP_WORKFLOW_NAME: ${{ needs.onboard_workflow.outputs.workflow_name }}
       GH_TOKEN: ${{ github.token }}
     steps:
