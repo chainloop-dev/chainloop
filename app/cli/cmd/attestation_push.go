@@ -21,6 +21,8 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func newAttestationPushCmd() *cobra.Command {
@@ -71,7 +73,9 @@ func newAttestationPushCmd() *cobra.Command {
 				if errors.Is(err, action.ErrAttestationNotInitialized) {
 					return err
 				}
-
+				if status.Code(err) == codes.Unimplemented {
+					return ErrKeylessNotSupported
+				}
 				return newGracefulError(err)
 			}
 

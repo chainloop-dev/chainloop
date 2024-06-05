@@ -22,9 +22,11 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
-	errors "github.com/go-kratos/kratos/v2/errors"
+	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // ProviderSet is service providers.
@@ -141,6 +143,8 @@ func handleUseCaseErr(err error, l *log.Helper) error {
 		return errors.NotFound("not found", err.Error())
 	case biz.IsErrUnauthorized(err):
 		return errors.Forbidden("unauthorized", err.Error())
+	case biz.IsErrNotImplemented(err):
+		return status.Error(codes.Unimplemented, err.Error())
 	default:
 		return servicelogger.LogAndMaskErr(err, l)
 	}

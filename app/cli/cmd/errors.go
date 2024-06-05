@@ -37,3 +37,4 @@ func newGracefulError(err error) error {
 var ErrAttestationNotInitialized = errors.New("attestation not yet initialized, execute the init command first")
 var ErrAttestationAlreadyExist = errors.New("attestation already initialized, to override it use the --replace flag`")
 var ErrAttestationTokenRequired = errors.New("chainloop Token required, please provide it via --token flag or CHAINLOOP_TOKEN environment variable")
+var ErrKeylessNotSupported = errors.New("keyless signing not supported, please provide a private key reference with --key instead")

@@ -74,6 +74,22 @@ func IsErrValidation(err error) bool {
 	return errors.As(err, &ErrValidation{})
 }
 
+type ErrNotImplemented struct {
+	msg string
+}
+
+func NewErrNotImplemented(msg string) ErrNotImplemented {
+	return ErrNotImplemented{msg}
+}
+
+func (e ErrNotImplemented) Error() string {
+	return fmt.Sprintf("not implemented: %s", e.msg)
+}
+
+func IsErrNotImplemented(err error) bool {
+	return errors.As(err, &ErrNotImplemented{})
+}
+
 type ErrUnauthorized struct {
 	err error
 }
