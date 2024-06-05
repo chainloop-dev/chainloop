@@ -6,7 +6,7 @@ title: Attestation Crafting
 <iframe
   width="100%"
   height="500"
-  src="https://www.youtube.com/embed/Q_0dlBqKtIU" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+  src="https://www.youtube-nocookie.com/embed/Q_0dlBqKtIU" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 ## Introduction
 
