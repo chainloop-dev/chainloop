@@ -47,7 +47,7 @@ func newAttestationPushCmd() *cobra.Command {
   # Or alternatively
   chainloop attestation push --annotation key=value,key2=value2`,
 		Annotations: map[string]string{
-			useWorkflowRobotAccount: "true",
+			useAPIToken: "true",
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			info, err := executableInfo()

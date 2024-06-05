@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,9 +29,10 @@ func newWorkflowRobotAccountListCmd() *cobra.Command {
 	var includeRevoked bool
 
 	cmd := &cobra.Command{
-		Use:     "list",
-		Aliases: []string{"ls"},
-		Short:   "List robot accounts associated with a workflow",
+		Use:        "list",
+		Aliases:    []string{"ls"},
+		Short:      "List robot accounts associated with a workflow",
+		Deprecated: "Please use 'chainloop org api-token' instead",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			res, err := action.NewWorkflowRobotAccountList(actionOpts).Run(workflowID, includeRevoked)
 			if err != nil {

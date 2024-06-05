@@ -31,7 +31,7 @@ func newAttestationResetCmd() *cobra.Command {
 		Use:   "reset",
 		Short: "mark current attestation process as canceled or failed",
 		Annotations: map[string]string{
-			useWorkflowRobotAccount: "true",
+			useAPIToken: "true",
 		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if trigger != triggerFailed && trigger != triggerCanceled {

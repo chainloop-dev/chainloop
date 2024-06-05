@@ -49,8 +49,8 @@ var (
 )
 
 const (
-	useWorkflowRobotAccount = "withWorkflowRobotAccount"
-	appName                 = "chainloop"
+	useAPIToken = "withAPITokenAuth"
+	appName     = "chainloop"
 	//nolint:gosec
 	tokenEnvVarName      = "CHAINLOOP_TOKEN"
 	robotAccountAudience = "attestations.chainloop"
@@ -240,13 +240,12 @@ func cleanup(conn *grpc.ClientConn) error {
 }
 
 // Load the controlplane based on the following order:
-// 1. If the CMD uses a robot account instead of the regular auth token we override it
-// 2. If the CMD uses an API token flag/env variable we override it
-// 3. If the CMD uses a config file we load it from there
+// 1. If the CMD uses an API token flag/env variable we override it
+// 2. If the CMD uses a config file we load it from there
 func loadControlplaneAuthToken(cmd *cobra.Command) (string, error) {
 	// If the CMD uses a robot account instead of the regular auth token we override it
 	// TODO: the attestation CLI should get split from this one
-	if _, ok := cmd.Annotations[useWorkflowRobotAccount]; ok {
+	if _, ok := cmd.Annotations[useAPIToken]; ok {
 		if attAPIToken == "" {
 			return "", newGracefulError(ErrAttestationTokenRequired)
 		}
