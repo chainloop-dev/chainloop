@@ -23,6 +23,7 @@ jobs:
     env:
       CHAINLOOP_VERSION: 0.90.1
       CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
+      CHAINLOOP_WORKFLOW_NAME: "chainloop-vault-codeql"
 
     strategy:
       fail-fast: false
@@ -41,7 +42,7 @@ jobs:
       - name: Initialize Attestation
         if: ${{ github.event_name != 'pull_request' }}
         run: |
-          chainloop attestation init
+          chainloop attestation init --workflow-name $CHAINLOOP_WORKFLOW_NAME
 
       - name: Set up Go
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
