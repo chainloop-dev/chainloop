@@ -124,6 +124,16 @@ dagger call -m github.com/chainloop-dev/chainloop \
   add-raw-evidence --name my-container-image --value ghcr.io/chainloop-dev/chainloop/control-plane
 ```
 
+If you're attesting materials that don't belong to the target contract, you can allow Chainloop to figure out its type and if discovered, it will be added to the attestation.
+In order to do that, don't pass the `--name`, just provide the path to the file.
+
+```sh
+# Provide a material only through its path
+dagger call -m github.com/chainloop-dev/chainloop \
+  resume --token env:CHAINLOOP_TOKEN --attestation-id $ATTESTATION_ID \
+  add-file-evidence --path ./path/to/sbom.json
+```
+
 In some cases, you might be providing a private container image as a piece of evidence. In this case, you'll also need to preload the container registry credentials.
 
 ```sh

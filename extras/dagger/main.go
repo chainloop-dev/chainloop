@@ -155,21 +155,30 @@ func (att *Attestation) WithRegistryAuth(
 // Add a raw string piece of evidence to the attestation
 func (att *Attestation) AddRawEvidence(
 	ctx context.Context,
-	// Material name.
-	//   Example: "my-blob"
+	// Evidence name. Don't pass a name if the material
+	// being attested is not part of the contract
+	//  Example: "my-blob"
+	// +optional
 	name string,
 	// The contents of the blob
 	value string,
 ) (*Attestation, error) {
+	args := []string{
+		"attestation", "add",
+		"--remote-state",
+		"--attestation-id", att.AttestationID,
+		"--value", value,
+	}
+
+	if name == "" {
+		args = append(args,
+			"--name", name,
+		)
+	}
+
 	_, err := att.
 		Container(0).
-		WithExec([]string{
-			"attestation", "add",
-			"--remote-state",
-			"--attestation-id", att.AttestationID,
-			"--name", name,
-			"--value", value,
-		}).
+		WithExec(args).
 		Stdout(ctx)
 	return att, err
 }
@@ -177,8 +186,10 @@ func (att *Attestation) AddRawEvidence(
 // Add a file type piece of evidence to the attestation
 func (att *Attestation) AddFileEvidence(
 	ctx context.Context,
-	// Evidence name.
+	// Evidence name. Don't pass a name if the material
+	// being attested is not part of the contract
 	//  Example: "my-binary"
+	// +optional
 	name string,
 	// The file to add
 	path *File,
@@ -190,17 +201,24 @@ func (att *Attestation) AddFileEvidence(
 
 	mountPath := "/tmp/attestation/" + filename
 
+	args := []string{
+		"attestation", "add",
+		"--remote-state",
+		"--attestation-id", att.AttestationID,
+		"--value", mountPath,
+	}
+
+	if name == "" {
+		args = append(args,
+			"--name", name,
+		)
+	}
+
 	_, err = att.
 		Container(0).
 		// Preserve the filename inside the container
 		WithFile(mountPath, path).
-		WithExec([]string{
-			"attestation", "add",
-			"--remote-state",
-			"--attestation-id", att.AttestationID,
-			"--name", name,
-			"--value", mountPath,
-		}).
+		WithExec(args).
 		Sync(ctx)
 
 	return att, err
