@@ -36,19 +36,17 @@ Follow these steps for a quick start:
     Tokens have narrower permissions, ensuring that they can only perform the operations they are granted to.
     More information in [API tokens](/reference/operator/api-tokens#api-tokens).
 
-5. Create a sample payload to attest.
-    ```bash
-    cat "hello chainloop" > hello.txt
-    ```
-
-6. Sign the payload and push the attestation to Chainloop
+5. Sign a payload and push the attestation to Chainloop
     ```bash
     chainloop att init --workflow-name mywf
-    chainloop att add --value hello.txt
+    chainloop att add --value "ghcr.io/chainloop-dev/chainloop/control-plane:latest"
     chainloop att push
     ```
-    Here we are: [initiating an attestation](/getting-started/attestation-crafting#initialization), [adding materials to it](/getting-started/attestation-crafting#adding-materials), and finally [signing and pushing the signature](/getting-started/attestation-crafting#encode-sign-and-push-attestation) to Chainloop
-    for permanent preservation.
+    Here we are: [initiating an attestation](/getting-started/attestation-crafting#initialization),
+    [adding an OCI material to it](/getting-started/attestation-crafting#adding-materials),
+    and finally [signing and pushing the signature](/getting-started/attestation-crafting#encode-sign-and-push-attestation) to Chainloop
+    for permanent preservation. Many other material types are supported, and [the list](/reference/operator/contract#material-schema) is growing every day.
+
     Note that, in this example, we are not specifying any private key for signing.
     This will make the CLI to work in key-less mode, generating an ephemeral certificate,
     signed by Chainloop CA, to ensure the trust chain, and finally using it for the signature.
