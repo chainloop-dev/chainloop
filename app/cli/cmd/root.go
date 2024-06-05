@@ -89,7 +89,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 
 			apiToken, err := loadControlplaneAuthToken(cmd)
 			if err != nil {
-				return fmt.Errorf("loading controlplane auth token: %w", err)
+				return err
 			}
 
 			conn, err := grpcconn.New(viper.GetString(confOptions.controlplaneAPI.viperKey), apiToken, flagInsecure)
