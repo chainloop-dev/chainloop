@@ -144,7 +144,7 @@ func (cs *Signer) certFromChainloop(ctx context.Context, req *certificateRequest
 	if err != nil {
 		if status.Code(err) == codes.Unimplemented {
 			cs.logger.Error().Msg("Your Chainloop instance doesn't seem to be configured for Keyless Signing, " +
-				"please provide a private key with --key instead")
+				"please provide a private key reference with --key instead")
 			return nil, fmt.Errorf("chainloop instance is not configured for Keyless Signing: %w", err)
 		}
 		return nil, fmt.Errorf("generating signing cert: %w", err)
