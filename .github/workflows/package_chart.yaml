@@ -22,7 +22,7 @@ jobs:
       project: "chainloop"
       workflow_name: "chainloop-vault-helm-package"
     secrets:
-      api_token: ${{ secrets.CHAINLOOP_API_TOKEN }}
+      api_token: ${{ secrets.CHAINLOOP_TOKEN }}
 
   package:
     name: Package and push Helm Chart
@@ -31,8 +31,8 @@ jobs:
     permissions:
       packages: write
     env:
-      CHAINLOOP_VERSION: 0.88.0
-      CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_API_TOKEN }}
+      CHAINLOOP_VERSION: 0.90.1
+      CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
       CHAINLOOP_WORKFLOW_NAME: ${{ needs.onboard_workflow.outputs.workflow_name }}
     steps:
       - name: Install Chainloop

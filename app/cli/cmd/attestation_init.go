@@ -18,13 +18,10 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
 )
-
-const workflowNameEnvVarName = "CHAINLOOP_WORKFLOW_NAME"
 
 func newAttestationInitCmd() *cobra.Command {
 	var (
@@ -42,7 +39,7 @@ func newAttestationInitCmd() *cobra.Command {
 		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if workflowName == "" {
-				return fmt.Errorf("workflow name is required, set it via --name flag or %s environment variable", workflowNameEnvVarName)
+				return errors.New("workflow name is required, set it via --name flag")
 			}
 
 			return nil
@@ -97,9 +94,6 @@ func newAttestationInitCmd() *cobra.Command {
 	cmd.Flags().StringVar(&workflowName, "workflow-name", "", "name of the workflow to run the attestation")
 	cobra.CheckErr(cmd.Flags().MarkHidden("workflow-name"))
 	cmd.Flags().StringVar(&workflowName, "name", "", "name of the workflow to run the attestation")
-	if workflowName == "" {
-		workflowName = os.Getenv(workflowNameEnvVarName)
-	}
 
 	return cmd
 }
