@@ -171,7 +171,7 @@ func (action *WorkflowRunDescribe) Run(ctx context.Context, runID string, digest
 func materialPBToAction(in *pb.AttestationItem_Material) *Material {
 	m := &Material{
 		Name:           in.Name,
-		Value:          in.Value,
+		Value:          string(in.Value),
 		Type:           in.Type,
 		Hash:           in.Hash,
 		Tag:            in.Tag,

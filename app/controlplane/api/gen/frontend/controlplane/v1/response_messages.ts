@@ -214,7 +214,7 @@ export interface AttestationItem_EnvVariable {
 export interface AttestationItem_Material {
   name: string;
   /** This might be the raw value, the container image name, the filename and so on */
-  value: string;
+  value: Uint8Array;
   /** filename of the artifact that was either uploaded or injected inline in "value" */
   filename: string;
   /** Material type, i.e ARTIFACT */
@@ -1057,7 +1057,7 @@ export const AttestationItem_EnvVariable = {
 function createBaseAttestationItem_Material(): AttestationItem_Material {
   return {
     name: "",
-    value: "",
+    value: new Uint8Array(0),
     filename: "",
     type: "",
     annotations: {},
@@ -1073,8 +1073,8 @@ export const AttestationItem_Material = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.value !== "") {
-      writer.uint32(18).string(message.value);
+    if (message.value.length !== 0) {
+      writer.uint32(18).bytes(message.value);
     }
     if (message.filename !== "") {
       writer.uint32(66).string(message.filename);
@@ -1119,7 +1119,7 @@ export const AttestationItem_Material = {
             break;
           }
 
-          message.value = reader.string();
+          message.value = reader.bytes();
           continue;
         case 8:
           if (tag !== 66) {
@@ -1185,7 +1185,7 @@ export const AttestationItem_Material = {
   fromJSON(object: any): AttestationItem_Material {
     return {
       name: isSet(object.name) ? String(object.name) : "",
-      value: isSet(object.value) ? String(object.value) : "",
+      value: isSet(object.value) ? bytesFromBase64(object.value) : new Uint8Array(0),
       filename: isSet(object.filename) ? String(object.filename) : "",
       type: isSet(object.type) ? String(object.type) : "",
       annotations: isObject(object.annotations)
@@ -1204,7 +1204,8 @@ export const AttestationItem_Material = {
   toJSON(message: AttestationItem_Material): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
-    message.value !== undefined && (obj.value = message.value);
+    message.value !== undefined &&
+      (obj.value = base64FromBytes(message.value !== undefined ? message.value : new Uint8Array(0)));
     message.filename !== undefined && (obj.filename = message.filename);
     message.type !== undefined && (obj.type = message.type);
     obj.annotations = {};
@@ -1227,7 +1228,7 @@ export const AttestationItem_Material = {
   fromPartial<I extends Exact<DeepPartial<AttestationItem_Material>, I>>(object: I): AttestationItem_Material {
     const message = createBaseAttestationItem_Material();
     message.name = object.name ?? "";
-    message.value = object.value ?? "";
+    message.value = object.value ?? new Uint8Array(0);
     message.filename = object.filename ?? "";
     message.type = object.type ?? "";
     message.annotations = Object.entries(object.annotations ?? {}).reduce<{ [key: string]: string }>(

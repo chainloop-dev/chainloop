@@ -414,7 +414,7 @@ func extractMaterials(in []*chainloop.NormalizedMaterial) ([]*cpAPI.AttestationI
 			Type:           m.Type,
 			Filename:       m.Filename,
 			Annotations:    m.Annotations,
-			Value:          m.Value,
+			Value:          []byte(m.Value),
 			UploadedToCas:  m.UploadedToCAS,
 			EmbeddedInline: m.EmbeddedInline,
 			Tag:            m.Tag,
