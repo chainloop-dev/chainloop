@@ -91,7 +91,7 @@ message AttestationItem {
   message Material {
     string name = 1;
     // This might be the raw value, the container image name, the filename and so on
-    bytes value = 2;
+    string value = 2;
     // filename of the artifact that was either uploaded or injected inline in "value"
     string filename = 8;
     // Material type, i.e ARTIFACT
