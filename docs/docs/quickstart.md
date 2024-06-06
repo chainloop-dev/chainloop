@@ -5,55 +5,94 @@ title: Quickstart
 
 # Quickstart
 
-In this quickstart, we will install Chainloop and make our first attestation:
+This quickstart will guide you through the process of installing the Chainloop CLI and performing your first attestation.
 
-1. Install Chainloop. This quick snippet will get you through the process:
+1. Install CLI by running:
+
     ```bash
     curl -sfL https://docs.chainloop.dev/install.sh | bash -s
     ```
     Refer to [these instructions](/getting-started/installation) for more installation options.
 
-2. Authenticate to the Control Plane via OIDC by running:
+2. Authenticate to the Control Plane:
+
     ```bash
     chainloop auth login
     ```
-    This will create a personal token that you will use in operations not related to attestations.
 
-3. Create a new Chainloop workflow.
+    Once logged in and will have access to any operation with the controlplane, like for example inspecting your organization
+
     ```bash
-    chainloop wf create --name mywf --project myproject
+    chainloop organization describe
     ```
-    Chainloop workflows represent any CI or process you might want to attest.
-    Check [this doc](/getting-started/workflow-definition)
-    for a complete explanation of Workflows and Contracts.
+
+3. Create a new Chainloop Workflow.
+
+    Chainloop workflows represent any CI or process you might want to attest. Check [this doc](/getting-started/workflow-definition) for a complete explanation of Workflows and Contracts.
     You might also want to check our [contract reference](/reference/operator/contract).
 
-4. Create API Token to perform the attestation process:
     ```bash
-    export CHAINLOOP_TOKEN=$(chainloop org api-token create --name test-api-token -o json | jq -r ".[].jwt")
+    chainloop workflow create --name mywf --project myproject
     ```
-    CHAINLOOP_TOKEN environment variable is commonly used from CI/CD scenarios, where a personal token is not available.
-    Tokens have narrower permissions, ensuring that they can only perform the operations they are granted to.
-    More information in [API Tokens](/reference/operator/api-tokens#api-tokens).
 
-5. Perform an attestation:
-    
-    First, let's [initiate the attestation](/getting-started/attestation-crafting#initialization).
+
+4. Create API Token to perform the attestation process:
+
+    To perform an attestation process, you need to provide an API Token:
+
     ```bash
-    chainloop att init --workflow-name mywf
+    export CHAINLOOP_TOKEN=$(chainloop org api-token create --name test-api-token -o token)
+    ```
+
+    Chainloop API Tokens are commonly used (and required) in CI/CD scenarios. Tokens have narrower permissions, ensuring that they can only perform the operations they are granted to. More information in [API Tokens](/reference/operator/api-tokens#api-tokens).
+
+5. Perform an attestation process:
+
+    We are now ready to perform our first attestation, to learn more about its lifecyle refer to [this section](/getting-started/attestation-crafting#introduction)
+    
+    We'll start with the [initialization](/getting-started/attestation-crafting#initialization) of an attestation for our previously created workflow (`mywf`)
+
+    ```bash
+    chainloop att init --name mywf
     ```
 
     Once attestation is initiated, we can start [adding materials](/getting-started/attestation-crafting#adding-materials) to it. 
     In this case we are adding an OCI container image.
     Many other material types are supported, check the [updated the list](/reference/operator/contract#material-schema)
+
     ```bash
-    chainloop att add --value "ghcr.io/chainloop-dev/chainloop/control-plane:latest"
+    chainloop att add --value ghcr.io/chainloop-dev/chainloop/control-plane:latest
+    ```
+
+    We just attested the latest version of the control-plane image as an example, remember that you can provide any material you want to attest by pointing to a local filepath too, like for example
+
+    ```bash
+    chainloop att add --value my-sbom.json
     ```
 
     And finally [we sign and push the attestation](/getting-started/attestation-crafting#encode-sign-and-push-attestation) to Chainloop for permanent preservation.
+
     ```bash
     chainloop att push
     ```
-    Note that, in this example, we are not specifying any private key for signing.
-    This will make the CLI to work in key-less mode, generating an ephemeral certificate,
-    signed by Chainloop CA, to ensure the trust chain, and finally using it for the signature.
+
+6. Operate on your data:
+
+    At this point, we've performed our first attestation, now we can just play with the Chainloop CLI to inspect the attestation, verify it and so on. 
+    
+    For example, to list the workflows you can run: 
+
+    ```bash
+    # List workflow runs, so then you can do `workflow run describe --id <id>` to get more details
+    chainloop workflow run ls
+    ```
+
+    for a complete list of available options and operations refer to
+
+    ```
+    chainloop --help
+    ```
+
+Great! You've successfully completed this guide. Now you are ready to dive deeper into our [Getting Started guide](/getting-started/installation)
+
+Good luck and have fun with Chainloop! 🚀
