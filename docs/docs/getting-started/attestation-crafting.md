@@ -10,7 +10,7 @@ title: Attestation Crafting
 
 ## Introduction
 
-In the previous section, we created a workflow definition, a contract and a robot account in the control plane. Next, we'll perform an attestation crafting example using Chainloop.
+In the previous section, we created a workflow definition, a contract and an API Token in the control plane. Next, we'll perform an attestation crafting example using Chainloop.
 
 The lifecycle of a crafting process has the following stages: `init`, `add`, `push` or `reset`. As you can see, it mimics the workflow of a commonly used version control tool, and this is not by coincidence. Chainloop wants to make sure that the tooling feels familiar to developers and that no security jargon leaks into this stage of the process. For a developer, creating an attestation must be as simple as initializing it, adding materials to it and pushing it.
 
@@ -67,27 +67,27 @@ To create an attestation two things are required, the Chainloop crafting tool an
 
 The crafting tool is currently bundled within Chainloop command line tool. To install it just follow the [installation](installation) instructions.
 
-The robot account was created during the [previous step](./workflow-definition#robot-account-creation) and it's required during all the stages of the crafting process. It can be provided via the `--token` flag or the `$CHAINLOOP_TOKEN` environment variable.
-
-### Initialization
+The API_TOKEN was created during the [previous step](./workflow-definition#api-token-creation) and it's required during all the stages of the crafting process. It can be provided via the `--token` flag or the `$CHAINLOOP_TOKEN` environment variable.
 
 ```bash
 $ export CHAINLOOP_TOKEN=deadbeef
 ```
 
+### Initialization
+
 #### Options
 
 `chainloop attestation init` supports the following options
 
-- `--token` token provided by the SecOps team. Alternatively, you can set the `CHAINLOOP_TOKEN` environment variable.
+- `--token` token provided by the SecOps team. Alternatively, you can set the `CHAINLOOP_TOKEN` environment variable (required).
+- `--name` name of the workflow to run the attestation (required).
 - `--revision` of the contract (default: `latest`).
-- `--workflow-name` name of the workflow to run the attestation. This is ignored when authentication is based on robot account and needed for api tokens.
 - `--dry-run`; do not store the attestation in the Control plane, and do not fail if the runner context or required env variables can not be resolved. Useful for development (default: `false`).
 
 To initialize a new crafting process just run `attestation init` and the system will retrieve the latest version (if no specific revision is set via the `--revision` flag) of the contract.
 
 ```bash
-$ chainloop attestation init --dry-run
+$ chainloop attestation init --name build-and-test
 
 INF Attestation initialized! now you can check its status or add materials to it
 ┌───────────────────┬──────────────────────────────────────┐
@@ -191,14 +191,21 @@ $ chainloop attestation status --full
 ### Encode, sign and push attestation
 
 :::note
-Chainlooop leverages Cosign for signing and verifying, so it supports any of its key providers.
+Chainloop leverages Cosign for signing and verifying, so it supports any of its key providers.
 Currently, local file-based `cosign private key` and GCP, AWS, Azure and Hashicorp Vault KMS are supported.
 In future releases this will not be needed since we will rely on keyless signing and verification.
 :::
 
-Since all the required materials have been attached, a **signed in-toto statement can now be generated and sent for storage**. This example uses AWS KMS for signing:
+Since all the required materials have been attached, a **signed in-toto statement can now be generated and sent for storage**. 
 
 ```bash
+# Sign and push using a local private key
+$ export CHAINLOOP_SIGNING_PASSWORD="private key passphrase"
+$ chainloop attestation push --key cosign-private.key
+```
+
+```bash
+# or, as additional example, using KMS
 $ chainloop attestation push --key awskms:///arn:aws:kms:us-east-1:1234567890:key/12345678-a843-43e1-8c5b-1234567890
 ```
 
@@ -216,7 +223,6 @@ INF Attestation pushed!
       }
    ]
 }
-
 ```
 
 ## CI integration
@@ -242,10 +248,11 @@ jobs:
     env:
       # highlight-start
       # Version of Chainloop to install
-      CHAINLOOP_VERSION: 0.86.0
-      # Export robot-account env variable
+      CHAINLOOP_VERSION: 0.91.1
       # Used by the CLI to authenticate with the control plane
-      CHAINLOOP_ROBOT_ACCOUNT: ${{ secrets.CHAINLOOP_WF_RELEASE }}
+      CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_WF_RELEASE }}
+      # The name of the workflow registered in Chainloop control plane
+      CHAINLOOP_WORKFLOW_NAME: build-and-test
       # highlight-end
     name: "Release CLI and container images"
     runs-on: ubuntu-latest
@@ -268,7 +275,7 @@ jobs:
       # highlight-start
       - name: Initialize Attestation
         run: |
-          chainloop attestation init --contract-revision 1
+          chainloop attestation init --name $CHAINLOOP_WORKFLOW_NAME --contract-revision 1
       # highlight-end
       - name: Set up Go
         uses: actions/setup-go@v3
@@ -322,7 +329,7 @@ jobs:
         if: ${{ success() }}
         run: |
           chainloop attestation status --full
-          # Note that these commands are using CHAINLOOP_ROBOT_ACCOUNT env variable to authenticate
+          # Note that these commands are using CHAINLOOP_TOKEN env variable to authenticate
           chainloop attestation push --key env://CHAINLOOP_SIGNING_KEY
         env:
           CHAINLOOP_SIGNING_KEY: ${{ secrets.COSIGN_KEY }}

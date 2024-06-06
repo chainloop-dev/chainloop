@@ -13,9 +13,10 @@ jobs:
   release:
     env:
       # Version of Chainloop to install
-      CHAINLOOP_VERSION: 0.86.0
-      # Export robot-account env variable
-      CHAINLOOP_ROBOT_ACCOUNT: ${{ secrets.CHAINLOOP_WF_RELEASE }}
+      CHAINLOOP_VERSION: 0.91.1
+      CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_WF_RELEASE }}
+      # The name of the workflow registered in Chainloop control plane
+      CHAINLOOP_WORKFLOW_NAME: build-and-test
     name: "Release binary and container images"
     runs-on: ubuntu-latest
     permissions:
@@ -34,7 +35,7 @@ jobs:
 
       - name: Initialize Attestation
         run: |
-          chainloop attestation init --contract-revision 1
+          chainloop attestation init --name $CHAINLOOP_WORKFLOW_NAME
 
       - name: Set up Go
         uses: actions/setup-go@v3
@@ -67,7 +68,7 @@ jobs:
         if: ${{ success() }}
         run: |
           chainloop attestation status --full
-          # Note that these commands are using CHAINLOOP_ROBOT_ACCOUNT env variable to authenticate
+          # Note that these commands are using CHAINLOOP_TOKEN env variable to authenticate
           chainloop attestation push --key env://CHAINLOOP_SIGNING_KEY
         env:
           CHAINLOOP_SIGNING_KEY: ${{ secrets.COSIGN_KEY }}
