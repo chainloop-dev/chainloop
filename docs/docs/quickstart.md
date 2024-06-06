@@ -28,7 +28,7 @@ Follow these steps for a quick start:
     for a complete explanation of Workflows and Contracts.
     You might also want to check our [contract reference](/reference/operator/contract).
 
-4. Create a restricted token for further operations:
+4. Create API token to perform the attestation process:
     ```bash
     export CHAINLOOP_TOKEN=$(chainloop org api-token create --name test-api-token -o json | jq -r ".[].jwt")
     ```
@@ -36,17 +36,24 @@ Follow these steps for a quick start:
     Tokens have narrower permissions, ensuring that they can only perform the operations they are granted to.
     More information in [API tokens](/reference/operator/api-tokens#api-tokens).
 
-5. Sign a payload and push the attestation to Chainloop
+5. Perform an attestation:
+    
+    First, let's [initiate the attestation](/getting-started/attestation-crafting#initialization).
     ```bash
     chainloop att init --workflow-name mywf
+    ```
+
+    Once attestation is initiated, we can start [adding materials](/getting-started/attestation-crafting#adding-materials) to it. 
+    In this case we are adding an OCI container image.
+    Many other material types are supported, check the [updated the list](/reference/operator/contract#material-schema)
+    ```bash
     chainloop att add --value "ghcr.io/chainloop-dev/chainloop/control-plane:latest"
+    ```
+
+    And finally [we sign and push the attestation](/getting-started/attestation-crafting#encode-sign-and-push-attestation) to Chainloop for permanent preservation.
+    ```bash
     chainloop att push
     ```
-    Here we are: [initiating an attestation](/getting-started/attestation-crafting#initialization),
-    [adding an OCI material to it](/getting-started/attestation-crafting#adding-materials),
-    and finally [signing and pushing the signature](/getting-started/attestation-crafting#encode-sign-and-push-attestation) to Chainloop
-    for permanent preservation. Many other material types are supported, and [the list](/reference/operator/contract#material-schema) is growing every day.
-
     Note that, in this example, we are not specifying any private key for signing.
     This will make the CLI to work in key-less mode, generating an ephemeral certificate,
     signed by Chainloop CA, to ensure the trust chain, and finally using it for the signature.
