@@ -28,13 +28,13 @@ In this quickstart, we will install Chainloop and make our first attestation:
     for a complete explanation of Workflows and Contracts.
     You might also want to check our [contract reference](/reference/operator/contract).
 
-4. Create API token to perform the attestation process:
+4. Create API Token to perform the attestation process:
     ```bash
     export CHAINLOOP_TOKEN=$(chainloop org api-token create --name test-api-token -o json | jq -r ".[].jwt")
     ```
     CHAINLOOP_TOKEN environment variable is commonly used from CI/CD scenarios, where a personal token is not available.
     Tokens have narrower permissions, ensuring that they can only perform the operations they are granted to.
-    More information in [API tokens](/reference/operator/api-tokens#api-tokens).
+    More information in [API Tokens](/reference/operator/api-tokens#api-tokens).
 
 5. Perform an attestation:
     

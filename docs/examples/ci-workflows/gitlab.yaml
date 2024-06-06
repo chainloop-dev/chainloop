@@ -9,7 +9,7 @@ stages:
 
 variables:
   # Service account associated to this workflow in Chainloop's control plane
-  CHAINLOOP_ROBOT_ACCOUNT: $CHAINLOOP_ROBOT_ACCOUNT
+  CHAINLOOP_TOKEN: $CHAINLOOP_TOKEN
   # Private key and passphrase to be used to sign the resulting attestation
   CHAINLOOP_SIGNING_KEY: $COSIGN_PRIVATE_KEY
   CHAINLOOP_SIGNING_PASSWORD: $COSIGN_PASSWORD

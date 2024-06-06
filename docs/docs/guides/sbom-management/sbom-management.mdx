@@ -30,9 +30,9 @@ In the first part, we explain how to:
 This guide makes the following assumptions:
 * You have Chainloop CLI already installed, and you have already authenticated to the Chainloop control plane. Please check [this CLI installation guide](/getting-started/installation) if you don't.
 * You have already added your OCI registry, where all artifacts, metadata, and attestations will be stored. Please learn more about how to do it in [the Account Setup section](/getting-started/setup).
-* You have a Chainloop Workflow, default empty Contract, and Robot Account created as explained in [this document](/getting-started/workflow-definition).
+* You have a Chainloop Workflow, and an API Token created as explained in [this document](/getting-started/workflow-definition).
 * You have a Github Action created for your project in your GitHub repository, which is connected to your Chainloop workflow. The Chainloop Integration Demo Action is a good example. You can check it out [here](https://github.com/chainloop-dev/integration-demo/blob/main/chainloop-demo/github-workflow/release.v1.yaml).
-* Your Chainloop Robot Account Token is set locally and in your GitHub project as the `CHAINLOOP_ROBOT_ACCOUNT` environment variable. The Chainloop CLI uses this token to authenticate with our Control Plane.
+* Your Chainloop API Token is set locally and in your GitHub project as the `CHAINLOOP_TOKEN` environment variable. The Chainloop CLI uses this token to authenticate with our Control Plane.
 * Your Private Key and Private Key Password are exposed locally and in your Github project as the following environment variables. We use this key to sign in-toto attestations for your artifacts, such as SBOMs.
   * `CHAINLOOP_SIGNING_KEY`
   * `CHAINLOOP_SIGNING_PASSWORD`
@@ -79,7 +79,8 @@ Although the workflow run process can be complex, we will highlight the three mo
 ### Initializing an attestation
 Before adding and sending SBOMs to Chainloop, initiating the attestation process is necessary.
 ```bash
-chainloop attestation init
+# --name sbom-cdx is an example of the name of the workflow registered in Chainloop's control plane
+chainloop attestation init --name sbom-cdx
 ```
 ### Generating SBOMs
 Generate SBOM with Syft. Running this command locally will probably generate an empty SBOM, but it should be good enough in our example.
