@@ -45,6 +45,11 @@ func newAPITokenCreateCmd() *cobra.Command {
 				return fmt.Errorf("creating API token: %w", err)
 			}
 
+			if flagOutputFormat == "token" {
+				fmt.Print(res.JWT)
+				return nil
+			}
+
 			return encodeOutput([]*action.APITokenItem{res}, apiTokenListTableOutput)
 		},
 	}
@@ -52,6 +57,8 @@ func newAPITokenCreateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&description, "description", "", "API token description")
 	cmd.Flags().DurationVar(&expiresIn, "expiration", 0, "optional API token expiration, in hours i.e 1h, 24h, 178h (week), ...")
 	cmd.Flags().StringVar(&name, "name", "", "token name")
+	// Override default output flag
+	cmd.InheritedFlags().StringVarP(&flagOutputFormat, "output", "o", "table", "output format, valid options are table, json, token")
 	err := cmd.MarkFlagRequired("name")
 	cobra.CheckErr(err)
 
