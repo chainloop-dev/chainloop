@@ -27,7 +27,7 @@ During this stage, the crafting tool will contact the control plane to
 
 #### attestation add
 
-Add the **materials required by the contract** and any other additional piece of evidence, i.e artifact, OCI image ref, SBOM.
+Add the **materials required by the contract** and any other additional pieces of evidence, i.e artifact, OCI image ref, SBOM.
 
 The `add` command knows how to handle each kind of material transparently to the user.
 
@@ -63,11 +63,11 @@ See the state of the current crafting process.
 
 ## Crafting our first attestation locally
 
-To create an attestation two things are required, the Chainloop crafting tool and an [API token](/reference/operator/api-tokens).
+To create an attestation two things are required, the Chainloop crafting tool and an [API Token](/reference/operator/api-tokens).
 
 The crafting tool is currently bundled within Chainloop command line tool. To install it just follow the [installation](installation) instructions.
 
-The API_TOKEN was created during the [previous step](./workflow-definition#api-token-creation) and it's required during all the stages of the crafting process. It can be provided via the `--token` flag or the `$CHAINLOOP_TOKEN` environment variable.
+The API Token was created during the [previous step](./workflow-definition#api-token-creation) and it's required during all the stages of the crafting process. It can be provided via the `--token` flag or the `$CHAINLOOP_TOKEN` environment variable.
 
 ```bash
 $ export CHAINLOOP_TOKEN=deadbeef

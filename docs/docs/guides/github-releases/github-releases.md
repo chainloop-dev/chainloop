@@ -52,7 +52,7 @@ jobs:
 This workflow will trigger every time a new release is published in your repository. It will collect all the assets from the release page and attest them using Chainloop. The attestation will be stored in the workflow you specify in the `workflow_name` field.
 There are some parameters that you need to provide:
 - `workflow_name`: The name of the workflow in Chainloop where the attestation will be stored.
-- `api_token`: The Chainloop API token to authenticate with the Chainloop API.
+- `api_token`: The Chainloop API Token to authenticate with the Chainloop API.
 - `cosign_key`: The path to the `cosign` key file.
 - `cosign_password`: The passphrase for the `cosign` key.
 
