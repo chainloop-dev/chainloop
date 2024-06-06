@@ -5,7 +5,7 @@ title: Quickstart
 
 # Quickstart
 
-This quickstart will guide you through the process of installing Chainloop the Chainloop CLI and performing your first attestation.
+This quickstart will guide you through the process of installing the Chainloop CLI and performing your first attestation.
 
 1. Install CLI by running:
 
@@ -26,7 +26,7 @@ This quickstart will guide you through the process of installing Chainloop the C
     chainloop organization describe
     ```
 
-3. Create a new Chainloop workflow.
+3. Create a new Chainloop Workflow.
 
     Chainloop workflows represent any CI or process you might want to attest. Check [this doc](/getting-started/workflow-definition) for a complete explanation of Workflows and Contracts.
     You might also want to check our [contract reference](/reference/operator/contract).
@@ -44,11 +44,11 @@ This quickstart will guide you through the process of installing Chainloop the C
     export CHAINLOOP_TOKEN=$(chainloop org api-token create --name test-api-token -o token)
     ```
 
-    Chainloop API Token is commonly used (and required) from CI/CD scenarios. Tokens have narrower permissions, ensuring that they can only perform the operations they are granted to. More information in [API Tokens](/reference/operator/api-tokens#api-tokens).
+    Chainloop API Tokens are commonly used (and required) in CI/CD scenarios. Tokens have narrower permissions, ensuring that they can only perform the operations they are granted to. More information in [API Tokens](/reference/operator/api-tokens#api-tokens).
 
-5. Perform an attestation:
+5. Perform an attestation process:
 
-    We are now ready to perform our first attestation, to learn more about the attestation lifecyle refer to [this section](/getting-started/attestation-crafting#introduction)
+    We are now ready to perform our first attestation, to learn more about its lifecyle refer to [this section](/getting-started/attestation-crafting#introduction)
     
     We'll start with the [initialization](/getting-started/attestation-crafting#initialization) of an attestation for our previously created workflow (`mywf`)
 
