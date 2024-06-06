@@ -5,7 +5,7 @@ title: Quickstart
 
 # Quickstart
 
-Follow these steps for a quick start:
+In this quickstart, we will install Chainloop and make our first attestation:
 
 1. Install Chainloop. This quick snippet will get you through the process:
     ```bash
