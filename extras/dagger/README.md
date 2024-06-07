@@ -184,5 +184,5 @@ To learn more, please visit the Chainloop project's documentation website, https
 Chainloop is developed in the open and is constantly improved by our users, contributors and maintainers. Got a question, comment, or idea? Please don't hesitate to reach out via:
 
 - GitHub [Issues](https://github.com/chainloop-dev/chainloop/issues)
-- Discord [Community Server](https://discord.gg/f7atkaZact)
+- [Slack](https://join.slack.com/t/chainloop-community/shared_invite/zt-2k34dvx3r-u85uGP_KiLC6ic5Wy4aRnQ)
 - Youtube [Channel](https://www.youtube.com/channel/UCISrWrPyR_AFjIQYmxAyKdg)
