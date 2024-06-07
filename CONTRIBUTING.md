@@ -34,7 +34,7 @@ To learn more about how to run the project locally refer to our development [gui
 If you have any question or piece of feedback don't hesitate to
 
 - Open an [Issue](https://github.com/chainloop-dev/chainloop/issues/new)
-- Reach out via our [Discord Server](https://discord.gg/f7atkaZact)
+- Reach out in [Slack](https://join.slack.com/t/chainloop-community/shared_invite/zt-2k34dvx3r-u85uGP_KiLC6ic5Wy4aRnQ)
 
 We are very excited to have you on board!
 

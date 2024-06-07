@@ -257,10 +257,10 @@ ${content
             "aria-label": "GitHub repository",
           },
           {
-            href: "https://discord.gg/Sfw3HnRt",
+            href: "https://join.slack.com/t/chainloop-community/shared_invite/zt-2k34dvx3r-u85uGP_KiLC6ic5Wy4aRnQ",
             position: "right",
-            className: "header-discord-link",
-            "aria-label": "Discord Server",
+            className: "header-slack-link",
+            "aria-label": "Slack",
           },
         ],
       },

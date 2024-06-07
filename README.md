@@ -3,7 +3,7 @@
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/chainloop-dev/chainloop/badge)](https://securityscorecards.dev/viewer/?uri=github.com/chainloop-dev/chainloop)
 [![Go Report Card](https://goreportcard.com/badge/github.com/chainloop-dev/chainloop)](https://goreportcard.com/report/github.com/chainloop-dev/chainloop)
 ![Test passing](https://github.com/chainloop-dev/chainloop/actions/workflows/test.yml/badge.svg?branch=main)
-[![Chat on Discord](https://img.shields.io/discord/1037381970189111326?logo=discord)](https://discord.gg/f7atkaZact)
+[![Chat on Slack](https://img.shields.io/badge/slack-chainloop-blue?logo=slack)](https://join.slack.com/t/chainloop-community/shared_invite/zt-2k34dvx3r-u85uGP_KiLC6ic5Wy4aRnQ)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/chainloop-dev/chainloop/blob/main/LICENSE.md)
 
 > Chainloop is under active development and you should expect breaking changes before the first stable release.
@@ -150,7 +150,7 @@ To learn more, please visit the Chainloop project's documentation website, https
 Chainloop is developed in the open and is constantly improved by our users, contributors and maintainers. Got a question, comment, or idea? Please don't hesitate to reach out via:
 
 - GitHub [Issues](https://github.com/chainloop-dev/chainloop/issues)
-- Discord [Community Server](https://discord.gg/f7atkaZact)
+- [Slack](https://join.slack.com/t/chainloop-community/shared_invite/zt-2k34dvx3r-u85uGP_KiLC6ic5Wy4aRnQ)
 - Youtube [Channel](https://www.youtube.com/channel/UCISrWrPyR_AFjIQYmxAyKdg)
 
 ## Contributing
