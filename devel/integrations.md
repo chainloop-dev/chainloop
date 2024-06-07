@@ -121,4 +121,4 @@ If you can't find the integration you are looking for, feel free [to report it](
 
 ### I am stuck, what do I do?
 
-If you have any questions or run into any issues, don't hesitate to reach out via [Slack](https://join.slack.com/t/chainloop-community/shared_invite/zt-2k34dvx3r-u85uGP_KiLC6ic5Wy4aRnQ) or open an [Issue](https://github.com/chainloop-dev/chainloop/issues/new). We'll be happy to help.
+If you have any questions or run into any issues, don't hesitate to reach out in [Slack](https://join.slack.com/t/chainloop-community/shared_invite/zt-2k34dvx3r-u85uGP_KiLC6ic5Wy4aRnQ) or open an [Issue](https://github.com/chainloop-dev/chainloop/issues/new). We'll be happy to help.
