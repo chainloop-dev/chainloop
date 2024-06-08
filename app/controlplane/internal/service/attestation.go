@@ -318,35 +318,20 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 
 	// Find the CAS backend associated with this workflowRun, that's the one that will be used to upload the materials
 	// NOTE: currently we only support one backend per workflowRun but this will change in the future
-
-	// DEPRECATED: if no workflow run is provided, we use the default repository
-	// Maintained for compatibility reasons with older versions of the CLI
-	var backend *biz.CASBackend
-	if req.WorkflowRunId == "" {
-		s.log.Warn("DEPRECATED: using main repository to get upload creds")
-		backend, err := s.casUC.FindDefaultBackend(ctx, robotAccount.OrgID)
-		if err != nil && !biz.IsNotFound(err) {
-			return nil, handleUseCaseErr(err, s.log)
-		} else if backend == nil {
-			return nil, errors.NotFound("not found", "main repository not found")
-		}
-	} else {
-		// This is the new mode, where the CAS backend ref is stored in the workflow run since initialization
-		wRun, err := s.wrUseCase.GetByIDInOrgOrPublic(ctx, robotAccount.OrgID, req.WorkflowRunId)
-		if err != nil {
-			return nil, handleUseCaseErr(err, s.log)
-		} else if wRun == nil {
-			return nil, errors.NotFound("not found", "workflow run not found")
-		}
-
-		if len(wRun.CASBackends) == 0 {
-			return nil, errors.NotFound("not found", "workflow run has no CAS backend")
-		}
-
-		s.log.Infow("msg", "generating upload credentials for CAS backend", "ID", wRun.CASBackends[0].ID, "name", wRun.CASBackends[0].Location, "workflowRun", req.WorkflowRunId)
-
-		backend = wRun.CASBackends[0]
+	// This is the new mode, where the CAS backend ref is stored in the workflow run since initialization
+	wRun, err := s.wrUseCase.GetByIDInOrgOrPublic(ctx, robotAccount.OrgID, req.WorkflowRunId)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	} else if wRun == nil {
+		return nil, errors.NotFound("not found", "workflow run not found")
 	}
+
+	if len(wRun.CASBackends) == 0 {
+		return nil, errors.NotFound("not found", "workflow run has no CAS backend")
+	}
+
+	backend := wRun.CASBackends[0]
+	s.log.Infow("msg", "generating upload credentials for CAS backend", "ID", wRun.CASBackends[0].ID, "name", wRun.CASBackends[0].Location, "workflowRun", req.WorkflowRunId)
 
 	// Return the backend information and associated credentials (if applicable)
 	resp := &cpAPI.AttestationServiceGetUploadCredsResponse_Result{Backend: bizCASBackendToPb(backend)}
