@@ -106,11 +106,7 @@ func attestationStatusTableOutput(status *action.AttestationStatusResult, full b
 		return err
 	}
 
-	if err := envVarsTable(status, full); err != nil {
-		return err
-	}
-
-	return nil
+	return envVarsTable(status, full)
 }
 
 func envVarsTable(status *action.AttestationStatusResult, full bool) error {
