@@ -51,7 +51,12 @@ func newAttestationStatusCmd() *cobra.Command {
 				return err
 			}
 
-			return encodeOutput(res, simpleStatusTable)
+			output := simpleStatusTable
+			if full {
+				output = fullStatusTable
+			}
+
+			return encodeOutput(res, output)
 		},
 	}
 
