@@ -23,8 +23,8 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/apitoken"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/apitoken"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"

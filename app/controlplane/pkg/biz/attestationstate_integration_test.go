@@ -23,8 +23,8 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
 	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
-	"github.com/chainloop-dev/chainloop/internal/credentials"
-	creds "github.com/chainloop-dev/chainloop/internal/credentials/mocks"
+	"github.com/chainloop-dev/chainloop/pkg/credentials"
+	creds "github.com/chainloop-dev/chainloop/pkg/credentials/mocks"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
 

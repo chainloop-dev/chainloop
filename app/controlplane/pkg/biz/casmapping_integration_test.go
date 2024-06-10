@@ -21,7 +21,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
-	creds "github.com/chainloop-dev/chainloop/internal/credentials/mocks"
+	creds "github.com/chainloop-dev/chainloop/pkg/credentials/mocks"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"

@@ -23,8 +23,8 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/keyvault/azsecrets"
-	"github.com/chainloop-dev/chainloop/internal/credentials"
-	"github.com/chainloop-dev/chainloop/internal/credentials/azurekv/mocks"
+	"github.com/chainloop-dev/chainloop/pkg/credentials"
+	"github.com/chainloop-dev/chainloop/pkg/credentials/azurekv/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"

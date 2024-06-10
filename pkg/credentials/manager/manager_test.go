@@ -22,9 +22,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chainloop-dev/chainloop/internal/credentials"
-	v1 "github.com/chainloop-dev/chainloop/internal/credentials/api/credentials/v1"
-	"github.com/chainloop-dev/chainloop/internal/credentials/manager"
+	"github.com/chainloop-dev/chainloop/pkg/credentials"
+	v1 "github.com/chainloop-dev/chainloop/pkg/credentials/api/credentials/v1"
+	"github.com/chainloop-dev/chainloop/pkg/credentials/manager"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"

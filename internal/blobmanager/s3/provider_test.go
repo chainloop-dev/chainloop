@@ -19,7 +19,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/chainloop-dev/chainloop/internal/credentials/mocks"
+	"github.com/chainloop-dev/chainloop/pkg/credentials/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

@@ -24,7 +24,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	integrationMocks "github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1/mocks"
-	creds "github.com/chainloop-dev/chainloop/internal/credentials/mocks"
+	creds "github.com/chainloop-dev/chainloop/pkg/credentials/mocks"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

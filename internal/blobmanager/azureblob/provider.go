@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
-	"github.com/chainloop-dev/chainloop/internal/credentials"
+	"github.com/chainloop-dev/chainloop/pkg/credentials"
 )
 
 type BackendProvider struct {

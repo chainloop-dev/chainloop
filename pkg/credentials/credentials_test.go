@@ -18,7 +18,7 @@ package credentials_test
 import (
 	"testing"
 
-	"github.com/chainloop-dev/chainloop/internal/credentials"
+	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	"github.com/stretchr/testify/assert"
 )
 

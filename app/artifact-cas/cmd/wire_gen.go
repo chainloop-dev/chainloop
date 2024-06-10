@@ -11,7 +11,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/server"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/service"
 	"github.com/chainloop-dev/chainloop/internal/blobmanager/loader"
-	"github.com/chainloop-dev/chainloop/internal/credentials"
+	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	"github.com/go-kratos/kratos/v2/log"
 )
 

@@ -29,7 +29,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/aws/aws-sdk-go-v2/service/sso/types"
 	"github.com/aws/smithy-go"
-	"github.com/chainloop-dev/chainloop/internal/credentials"
+	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/google/uuid"
 

@@ -21,9 +21,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/apitoken"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/robotaccount"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/user"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/apitoken"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/robotaccount"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/user"
 	errorsAPI "github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/transport"

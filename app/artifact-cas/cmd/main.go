@@ -26,8 +26,8 @@ import (
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/server"
 	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
-	"github.com/chainloop-dev/chainloop/internal/credentials"
-	"github.com/chainloop-dev/chainloop/internal/credentials/manager"
+	"github.com/chainloop-dev/chainloop/pkg/credentials"
+	"github.com/chainloop-dev/chainloop/pkg/credentials/manager"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 
 	"github.com/go-kratos/kratos/v2"

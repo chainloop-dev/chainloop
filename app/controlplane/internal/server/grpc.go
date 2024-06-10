@@ -25,14 +25,14 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	authzMiddleware "github.com/chainloop-dev/chainloop/app/controlplane/internal/authz/middleware"
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/user"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/user"
 
 	"github.com/bufbuild/protovalidate-go"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
-	"github.com/chainloop-dev/chainloop/internal/credentials"
+	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	"github.com/getsentry/sentry-go"
 	"github.com/golang-jwt/jwt/v4"
 

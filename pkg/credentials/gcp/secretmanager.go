@@ -27,7 +27,7 @@ import (
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 	"google.golang.org/api/option"
 
-	"github.com/chainloop-dev/chainloop/internal/credentials"
+	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/docker/distribution/uuid"
 	"github.com/go-kratos/kratos/v2/log"

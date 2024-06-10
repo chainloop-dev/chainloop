@@ -29,8 +29,8 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
-	"github.com/chainloop-dev/chainloop/internal/credentials"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
+	"github.com/chainloop-dev/chainloop/pkg/credentials"
 
 	errors "github.com/go-kratos/kratos/v2/errors"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"

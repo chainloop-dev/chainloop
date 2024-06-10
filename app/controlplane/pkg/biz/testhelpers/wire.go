@@ -29,8 +29,8 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	backends "github.com/chainloop-dev/chainloop/internal/blobmanager"
-	"github.com/chainloop-dev/chainloop/internal/credentials"
 	robotaccount "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
+	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
 )

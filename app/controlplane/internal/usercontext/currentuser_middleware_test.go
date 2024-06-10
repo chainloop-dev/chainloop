@@ -21,9 +21,9 @@ import (
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
-	userjwtbuilder "github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/user"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	bizMocks "github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/mocks"
+	userjwtbuilder "github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/user"
 	"github.com/go-kratos/kratos/v2/log"
 	jwtmiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/golang-jwt/jwt/v4"

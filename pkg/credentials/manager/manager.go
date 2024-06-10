@@ -21,12 +21,12 @@ import (
 	"io"
 
 	"github.com/bufbuild/protovalidate-go"
-	"github.com/chainloop-dev/chainloop/internal/credentials"
-	api "github.com/chainloop-dev/chainloop/internal/credentials/api/credentials/v1"
-	"github.com/chainloop-dev/chainloop/internal/credentials/aws"
-	"github.com/chainloop-dev/chainloop/internal/credentials/azurekv"
-	"github.com/chainloop-dev/chainloop/internal/credentials/gcp"
-	"github.com/chainloop-dev/chainloop/internal/credentials/vault"
+	"github.com/chainloop-dev/chainloop/pkg/credentials"
+	api "github.com/chainloop-dev/chainloop/pkg/credentials/api/credentials/v1"
+	"github.com/chainloop-dev/chainloop/pkg/credentials/aws"
+	"github.com/chainloop-dev/chainloop/pkg/credentials/azurekv"
+	"github.com/chainloop-dev/chainloop/pkg/credentials/gcp"
+	"github.com/chainloop-dev/chainloop/pkg/credentials/vault"
 	"github.com/go-kratos/kratos/v2/log"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )

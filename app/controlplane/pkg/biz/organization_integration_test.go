@@ -26,8 +26,8 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/chainloop-dev/chainloop/internal/credentials"
-	creds "github.com/chainloop-dev/chainloop/internal/credentials/mocks"
+	"github.com/chainloop-dev/chainloop/pkg/credentials"
+	creds "github.com/chainloop-dev/chainloop/pkg/credentials/mocks"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
