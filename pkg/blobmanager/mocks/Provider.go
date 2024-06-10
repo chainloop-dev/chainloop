@@ -5,7 +5,7 @@ package mocks
 import (
 	context "context"
 
-	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
+	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
 
 	mock "github.com/stretchr/testify/mock"
 )

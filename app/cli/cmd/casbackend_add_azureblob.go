@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
-	"github.com/chainloop-dev/chainloop/internal/blobmanager/azureblob"
+	"github.com/chainloop-dev/chainloop/pkg/blobmanager/azureblob"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/spf13/cobra"
 )

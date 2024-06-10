@@ -20,7 +20,7 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
-	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
+	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
 	"github.com/go-kratos/kratos/v2/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )

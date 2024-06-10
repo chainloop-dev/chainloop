@@ -27,7 +27,7 @@ import (
 	nhttp "net/http"
 
 	api "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
-	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
+	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
 	"github.com/go-kratos/kratos/v2/log"
 	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/go-kratos/kratos/v2/middleware/logging"

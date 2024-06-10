@@ -25,7 +25,7 @@ import (
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
-	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
+	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
 	"github.com/docker/go-connections/nat"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"

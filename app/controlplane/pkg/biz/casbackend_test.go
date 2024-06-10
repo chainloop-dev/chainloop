@@ -22,8 +22,8 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	bizMocks "github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/mocks"
-	backends "github.com/chainloop-dev/chainloop/internal/blobmanager"
-	blobM "github.com/chainloop-dev/chainloop/internal/blobmanager/mocks"
+	backends "github.com/chainloop-dev/chainloop/pkg/blobmanager"
+	blobM "github.com/chainloop-dev/chainloop/pkg/blobmanager/mocks"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	credentialsM "github.com/chainloop-dev/chainloop/pkg/credentials/mocks"
 	"github.com/google/uuid"

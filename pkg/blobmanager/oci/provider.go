@@ -20,8 +20,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
 	"github.com/chainloop-dev/chainloop/internal/ociauth"
+	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 )
 

@@ -19,8 +19,8 @@ import (
 	"context"
 	"fmt"
 
-	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
+	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	kerrors "github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"

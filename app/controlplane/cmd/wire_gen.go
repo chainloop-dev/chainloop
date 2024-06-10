@@ -15,7 +15,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
-	"github.com/chainloop-dev/chainloop/internal/blobmanager/loader"
+	"github.com/chainloop-dev/chainloop/pkg/blobmanager/loader"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/sigstore/fulcio/pkg/ca"

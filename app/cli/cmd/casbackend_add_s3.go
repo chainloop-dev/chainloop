@@ -17,7 +17,7 @@ package cmd
 
 import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
-	"github.com/chainloop-dev/chainloop/internal/blobmanager/s3"
+	"github.com/chainloop-dev/chainloop/pkg/blobmanager/s3"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/spf13/cobra"
 )

@@ -16,10 +16,10 @@
 package loader
 
 import (
-	backends "github.com/chainloop-dev/chainloop/internal/blobmanager"
-	"github.com/chainloop-dev/chainloop/internal/blobmanager/azureblob"
-	"github.com/chainloop-dev/chainloop/internal/blobmanager/oci"
-	"github.com/chainloop-dev/chainloop/internal/blobmanager/s3"
+	backends "github.com/chainloop-dev/chainloop/pkg/blobmanager"
+	"github.com/chainloop-dev/chainloop/pkg/blobmanager/azureblob"
+	"github.com/chainloop-dev/chainloop/pkg/blobmanager/oci"
+	"github.com/chainloop-dev/chainloop/pkg/blobmanager/s3"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 )
 
