@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/orginvitation"
 	"github.com/go-kratos/kratos/v2/log"

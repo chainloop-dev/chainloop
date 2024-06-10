@@ -9,7 +9,7 @@ It's implemented following(ish) [Hexagonal architecture](https://netflixtechblog
 - API definition layer `./api/`. proto definitions and generated code for the external gRPC API
 - Server layer `./internal/server`. Definition and registration of the HTTP and gRPC servers and middlewares.
 - Service layer `./internal/service`. Implementation of the protocol buffer services.
-- Business layer `./internal/biz`. Implementation of use-cases referenced by the service layer and definition of the data repository abstractions.
+- Business layer `./pkg/biz`. Implementation of use-cases referenced by the service layer and definition of the data repository abstractions.
 - Data layer `./pkg/data`. Implementation of data repositories interfaces defined in the business layer.
 
 ## Plugins

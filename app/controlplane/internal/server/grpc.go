@@ -24,10 +24,10 @@ import (
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	authzMiddleware "github.com/chainloop-dev/chainloop/app/controlplane/internal/authz/middleware"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/user"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 
 	"github.com/bufbuild/protovalidate-go"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"

@@ -24,8 +24,8 @@ import (
 	"strings"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/internal/oauth"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	kerrors "github.com/go-kratos/kratos/v2/errors"
