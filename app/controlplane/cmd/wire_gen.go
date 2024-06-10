@@ -9,7 +9,7 @@ package main
 import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/server"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"

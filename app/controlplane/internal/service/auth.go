@@ -28,7 +28,7 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
+	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/user"
 	authenticator "github.com/chainloop-dev/chainloop/app/controlplane/internal/oidcauthenticator"

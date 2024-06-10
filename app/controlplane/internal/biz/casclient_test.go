@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
+	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
 	"github.com/chainloop-dev/chainloop/internal/casclient/mocks"
 	"github.com/stretchr/testify/assert"

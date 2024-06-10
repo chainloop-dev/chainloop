@@ -19,7 +19,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
+	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/robotaccount"
 	"github.com/go-kratos/kratos/v2/log"

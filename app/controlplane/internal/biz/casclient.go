@@ -23,7 +23,7 @@ import (
 
 	"github.com/bufbuild/protovalidate-go"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
+	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
 	"github.com/chainloop-dev/chainloop/internal/grpcconn"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"

@@ -24,7 +24,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	bizMocks "github.com/chainloop-dev/chainloop/app/controlplane/internal/biz/mocks"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
+	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/jwt/apitoken"
 	"github.com/go-kratos/kratos/v2/log"
 	jwtmiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
