@@ -22,7 +22,6 @@ export interface WorkflowServiceUpdateRequest {
    * "optional" allow us to detect if the value is explicitly set
    * and not just the default value
    */
-  name?: string | undefined;
   project?: string | undefined;
   team?: string | undefined;
   public?: boolean | undefined;
@@ -188,7 +187,6 @@ export const WorkflowServiceCreateRequest = {
 function createBaseWorkflowServiceUpdateRequest(): WorkflowServiceUpdateRequest {
   return {
     id: "",
-    name: undefined,
     project: undefined,
     team: undefined,
     public: undefined,
@@ -201,9 +199,6 @@ export const WorkflowServiceUpdateRequest = {
   encode(message: WorkflowServiceUpdateRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.id !== "") {
       writer.uint32(10).string(message.id);
-    }
-    if (message.name !== undefined) {
-      writer.uint32(18).string(message.name);
     }
     if (message.project !== undefined) {
       writer.uint32(26).string(message.project);
@@ -236,13 +231,6 @@ export const WorkflowServiceUpdateRequest = {
           }
 
           message.id = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.name = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
@@ -291,7 +279,6 @@ export const WorkflowServiceUpdateRequest = {
   fromJSON(object: any): WorkflowServiceUpdateRequest {
     return {
       id: isSet(object.id) ? String(object.id) : "",
-      name: isSet(object.name) ? String(object.name) : undefined,
       project: isSet(object.project) ? String(object.project) : undefined,
       team: isSet(object.team) ? String(object.team) : undefined,
       public: isSet(object.public) ? Boolean(object.public) : undefined,
@@ -303,7 +290,6 @@ export const WorkflowServiceUpdateRequest = {
   toJSON(message: WorkflowServiceUpdateRequest): unknown {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
-    message.name !== undefined && (obj.name = message.name);
     message.project !== undefined && (obj.project = message.project);
     message.team !== undefined && (obj.team = message.team);
     message.public !== undefined && (obj.public = message.public);
@@ -319,7 +305,6 @@ export const WorkflowServiceUpdateRequest = {
   fromPartial<I extends Exact<DeepPartial<WorkflowServiceUpdateRequest>, I>>(object: I): WorkflowServiceUpdateRequest {
     const message = createBaseWorkflowServiceUpdateRequest();
     message.id = object.id ?? "";
-    message.name = object.name ?? undefined;
     message.project = object.project ?? undefined;
     message.team = object.team ?? undefined;
     message.public = object.public ?? undefined;

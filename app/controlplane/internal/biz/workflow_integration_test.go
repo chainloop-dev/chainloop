@@ -200,7 +200,7 @@ func (s *workflowIntegrationTestSuite) TestUpdate() {
 	})
 
 	s.Run("can't update a workflow in another org", func() {
-		got, err := s.Workflow.Update(ctx, org2.ID, workflow.ID.String(), &biz.WorkflowUpdateOpts{Name: toPtrS("new-name")})
+		got, err := s.Workflow.Update(ctx, org2.ID, workflow.ID.String(), &biz.WorkflowUpdateOpts{Description: toPtrS("new description")})
 		s.True(biz.IsNotFound(err))
 		s.Error(err)
 		s.Nil(got)
@@ -218,13 +218,13 @@ func (s *workflowIntegrationTestSuite) TestUpdate() {
 		{
 			name:    "non existing workflow",
 			id:      uuid.Generate().String(),
-			updates: &biz.WorkflowUpdateOpts{Name: toPtrS("new-name")},
+			updates: &biz.WorkflowUpdateOpts{Description: toPtrS("new description")},
 			wantErr: true,
 		},
 		{
 			name:    "invalid uuid",
 			id:      "deadbeef",
-			updates: &biz.WorkflowUpdateOpts{Name: toPtrS("new-name")},
+			updates: &biz.WorkflowUpdateOpts{Description: toPtrS("new description")},
 			wantErr: true,
 		},
 		{
@@ -233,21 +233,10 @@ func (s *workflowIntegrationTestSuite) TestUpdate() {
 			wantErrMsg: "no updates provided",
 		},
 		{
-			name:       "invalid name",
-			wantErr:    true,
-			wantErrMsg: "RFC 1123",
-			updates:    &biz.WorkflowUpdateOpts{Name: toPtrS(" no no ")},
-		},
-		{
 			name:       "invalid Project",
 			wantErr:    true,
 			wantErrMsg: "RFC 1123",
 			updates:    &biz.WorkflowUpdateOpts{Project: toPtrS(" no no ")},
-		},
-		{
-			name:    "update name",
-			updates: &biz.WorkflowUpdateOpts{Name: toPtrS("new-name")},
-			want:    &biz.Workflow{Name: "new-name", Description: description, Team: team, Project: project, Public: false},
 		},
 		{
 			name:    "update description",
@@ -261,13 +250,8 @@ func (s *workflowIntegrationTestSuite) TestUpdate() {
 		},
 		{
 			name:    "update all options",
-			updates: &biz.WorkflowUpdateOpts{Name: toPtrS("new-name-2"), Project: toPtrS("new-project"), Team: toPtrS("new team"), Public: toPtrBool(true)},
-			want:    &biz.Workflow{Name: "new-name-2", Description: description, Team: "new team", Project: "new-project", Public: true},
-		},
-		{
-			name:    "name can't be emptied",
-			updates: &biz.WorkflowUpdateOpts{Name: toPtrS("")},
-			wantErr: true,
+			updates: &biz.WorkflowUpdateOpts{Project: toPtrS("new-project"), Team: toPtrS("new team"), Public: toPtrBool(true)},
+			want:    &biz.Workflow{Description: description, Team: "new team", Project: "new-project", Public: true},
 		},
 		{
 			name:    "can update contract",

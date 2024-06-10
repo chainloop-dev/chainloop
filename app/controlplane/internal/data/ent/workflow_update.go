@@ -36,12 +36,6 @@ func (wu *WorkflowUpdate) Where(ps ...predicate.Workflow) *WorkflowUpdate {
 	return wu
 }
 
-// SetName sets the "name" field.
-func (wu *WorkflowUpdate) SetName(s string) *WorkflowUpdate {
-	wu.mutation.SetName(s)
-	return wu
-}
-
 // SetProject sets the "project" field.
 func (wu *WorkflowUpdate) SetProject(s string) *WorkflowUpdate {
 	wu.mutation.SetProject(s)
@@ -396,9 +390,6 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := wu.mutation.Name(); ok {
-		_spec.SetField(workflow.FieldName, field.TypeString, value)
-	}
 	if value, ok := wu.mutation.Project(); ok {
 		_spec.SetField(workflow.FieldProject, field.TypeString, value)
 	}
@@ -690,12 +681,6 @@ type WorkflowUpdateOne struct {
 	hooks     []Hook
 	mutation  *WorkflowMutation
 	modifiers []func(*sql.UpdateBuilder)
-}
-
-// SetName sets the "name" field.
-func (wuo *WorkflowUpdateOne) SetName(s string) *WorkflowUpdateOne {
-	wuo.mutation.SetName(s)
-	return wuo
 }
 
 // SetProject sets the "project" field.
@@ -1081,9 +1066,6 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := wuo.mutation.Name(); ok {
-		_spec.SetField(workflow.FieldName, field.TypeString, value)
 	}
 	if value, ok := wuo.mutation.Project(); ok {
 		_spec.SetField(workflow.FieldProject, field.TypeString, value)
