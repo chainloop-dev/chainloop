@@ -30,7 +30,7 @@ func newWorkflowUpdateCmd() *cobra.Command {
 		Use:   "update",
 		Short: "Update an existing workflow",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			opts := &action.NewWorkflowUpdateOpts{}
+			opts := &action.WorkflowUpdateOpts{}
 			if cmd.Flags().Changed("team") {
 				opts.Team = &team
 			}
