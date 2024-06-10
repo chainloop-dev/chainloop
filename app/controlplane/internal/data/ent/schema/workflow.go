@@ -34,7 +34,7 @@ type Workflow struct {
 // Fields of the Workflow.
 func (Workflow) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("name"),
+		field.String("name").Immutable(),
 		field.String("project").Optional(),
 		field.String("team").Optional(),
 		field.Int("runs_count").Default(0),

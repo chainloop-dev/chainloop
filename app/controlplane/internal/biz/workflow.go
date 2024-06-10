@@ -59,8 +59,8 @@ type WorkflowCreateOpts struct {
 }
 
 type WorkflowUpdateOpts struct {
-	Name, Project, Team, Description, ContractID *string
-	Public                                       *bool
+	Project, Team, Description, ContractID *string
+	Public                                 *bool
 }
 
 type WorkflowUseCase struct {
@@ -123,13 +123,6 @@ func (uc *WorkflowUseCase) Update(ctx context.Context, orgID, workflowID string,
 	workflowUUID, err := uuid.Parse(workflowID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
-	}
-
-	if opts.Name != nil {
-		// validate format of the name and the project
-		if err := ValidateIsDNS1123(*opts.Name); err != nil {
-			return nil, NewErrValidation(err)
-		}
 	}
 
 	if opts.Project != nil && *opts.Project != "" {

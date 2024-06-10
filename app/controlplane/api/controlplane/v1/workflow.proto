@@ -44,7 +44,6 @@ message WorkflowServiceUpdateRequest {
   string id = 1 [(buf.validate.field).string.uuid = true];
   // "optional" allow us to detect if the value is explicitly set
   // and not just the default value
-  optional string name = 2;
   optional string project = 3;
   optional string team = 4;
   optional bool public = 5;

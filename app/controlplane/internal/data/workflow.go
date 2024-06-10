@@ -86,12 +86,6 @@ func (r *WorkflowRepo) Update(ctx context.Context, id uuid.UUID, opts *biz.Workf
 		SetNillablePublic(opts.Public).
 		SetNillableDescription(opts.Description)
 
-	// Required schema properties do not have a nillable setter
-	// https://github.com/ent/ent/issues/2108#issuecomment-961898661
-	if opts.Name != nil && *opts.Name != "" {
-		req = req.SetName(*opts.Name)
-	}
-
 	// Update the contract if provided
 	if opts.ContractID != nil {
 		contractUUID, err := uuid.Parse(*opts.ContractID)

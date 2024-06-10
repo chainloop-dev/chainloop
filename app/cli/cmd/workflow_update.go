@@ -23,7 +23,7 @@ import (
 )
 
 func newWorkflowUpdateCmd() *cobra.Command {
-	var workflowID, name, description, project, team, contractID string
+	var workflowID, description, project, team, contractID string
 	var public bool
 
 	cmd := &cobra.Command{
@@ -31,9 +31,6 @@ func newWorkflowUpdateCmd() *cobra.Command {
 		Short: "Update an existing workflow",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts := &action.NewWorkflowUpdateOpts{}
-			if cmd.Flags().Changed("name") {
-				opts.Name = &name
-			}
 			if cmd.Flags().Changed("team") {
 				opts.Team = &team
 			}
@@ -66,7 +63,6 @@ func newWorkflowUpdateCmd() *cobra.Command {
 	err := cmd.MarkFlagRequired("id")
 	cobra.CheckErr(err)
 
-	cmd.Flags().StringVar(&name, "name", "", "workflow name")
 	cmd.Flags().StringVar(&description, "description", "", "workflow description")
 	cmd.Flags().StringVar(&team, "team", "", "team name")
 	cmd.Flags().StringVar(&project, "project", "", "project name")

@@ -70,7 +70,6 @@ func (s *WorkflowService) Update(ctx context.Context, req *pb.WorkflowServiceUpd
 	}
 
 	updateOpts := &biz.WorkflowUpdateOpts{
-		Name:        req.Name,
 		Project:     req.Project,
 		Team:        req.Team,
 		Public:      req.Public,
