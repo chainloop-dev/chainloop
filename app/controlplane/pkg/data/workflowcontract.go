@@ -46,7 +46,7 @@ func NewWorkflowContractRepo(data *Data, logger log.Logger) biz.WorkflowContract
 }
 
 func (r *WorkflowContractRepo) List(ctx context.Context, orgID uuid.UUID) ([]*biz.WorkflowContract, error) {
-	contracts, err := orgScopedQuery(r.data.db, orgID).
+	contracts, err := orgScopedQuery(r.data.DB, orgID).
 		QueryWorkflowContracts().
 		Where(workflowcontract.DeletedAtIsNil()).
 		WithWorkflows(func(q *ent.WorkflowQuery) {
@@ -78,7 +78,7 @@ func (r *WorkflowContractRepo) List(ctx context.Context, orgID uuid.UUID) ([]*bi
 }
 
 func (r *WorkflowContractRepo) Create(ctx context.Context, opts *biz.ContractCreateOpts) (*biz.WorkflowContract, error) {
-	tx, err := r.data.db.Tx(ctx)
+	tx, err := r.data.DB.Tx(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +106,7 @@ func (r *WorkflowContractRepo) Create(ctx context.Context, opts *biz.ContractCre
 }
 
 func (r *WorkflowContractRepo) FindVersionByID(ctx context.Context, versionID uuid.UUID) (*biz.WorkflowContractVersion, error) {
-	version, err := r.data.db.WorkflowContractVersion.Get(ctx, versionID)
+	version, err := r.data.DB.WorkflowContractVersion.Get(ctx, versionID)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	} else if version == nil {
@@ -117,7 +117,7 @@ func (r *WorkflowContractRepo) FindVersionByID(ctx context.Context, versionID uu
 }
 
 func (r *WorkflowContractRepo) Describe(ctx context.Context, orgID, contractID uuid.UUID, revision int) (*biz.WorkflowContractWithVersion, error) {
-	contract, err := contractInOrg(ctx, r.data.db, orgID, &contractID, nil)
+	contract, err := contractInOrg(ctx, r.data.DB, orgID, &contractID, nil)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	} else if contract == nil {
@@ -160,7 +160,7 @@ func (r *WorkflowContractRepo) Describe(ctx context.Context, orgID, contractID u
 // Update will add a new version of the contract.
 // NOTE: ContractVersions are immutable
 func (r *WorkflowContractRepo) Update(ctx context.Context, orgID uuid.UUID, name string, opts *biz.ContractUpdateOpts) (*biz.WorkflowContractWithVersion, error) {
-	tx, err := r.data.db.Debug().Tx(ctx)
+	tx, err := r.data.DB.Debug().Tx(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +211,7 @@ func (r *WorkflowContractRepo) Update(ctx context.Context, orgID uuid.UUID, name
 	}
 
 	// The transaction is committed, we can now return the result
-	contract, err = contractInOrg(ctx, r.data.db, orgID, nil, &name)
+	contract, err = contractInOrg(ctx, r.data.DB, orgID, nil, &name)
 	if err != nil {
 		return nil, err
 	}
@@ -228,7 +228,7 @@ func (r *WorkflowContractRepo) Update(ctx context.Context, orgID uuid.UUID, name
 }
 
 func (r *WorkflowContractRepo) FindByIDInOrg(ctx context.Context, orgID, contractID uuid.UUID) (*biz.WorkflowContract, error) {
-	contract, err := contractInOrg(ctx, r.data.db, orgID, &contractID, nil)
+	contract, err := contractInOrg(ctx, r.data.DB, orgID, &contractID, nil)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	} else if contract == nil {
@@ -249,7 +249,7 @@ func (r *WorkflowContractRepo) FindByIDInOrg(ctx context.Context, orgID, contrac
 }
 
 func (r *WorkflowContractRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
-	return r.data.db.WorkflowContract.UpdateOneID(id).SetDeletedAt(time.Now()).Exec(ctx)
+	return r.data.DB.WorkflowContract.UpdateOneID(id).SetDeletedAt(time.Now()).Exec(ctx)
 }
 
 func entContractVersionToBizContractVersion(w *ent.WorkflowContractVersion) (*biz.WorkflowContractVersion, error) {

@@ -41,7 +41,7 @@ func NewIntegrationRepo(data *Data, logger log.Logger) biz.IntegrationRepo {
 }
 
 func (r *IntegrationRepo) Create(ctx context.Context, opts *biz.IntegrationCreateOpts) (*biz.Integration, error) {
-	integration, err := r.data.db.Integration.Create().
+	integration, err := r.data.DB.Integration.Create().
 		SetName(opts.Name).
 		SetOrganizationID(opts.OrgID).
 		SetKind(opts.Kind).
@@ -62,7 +62,7 @@ func (r *IntegrationRepo) Create(ctx context.Context, opts *biz.IntegrationCreat
 }
 
 func (r *IntegrationRepo) List(ctx context.Context, orgID uuid.UUID) ([]*biz.Integration, error) {
-	integrations, err := orgScopedQuery(r.data.db, orgID).
+	integrations, err := orgScopedQuery(r.data.DB, orgID).
 		QueryIntegrations().
 		Where(integration.DeletedAtIsNil()).
 		Order(ent.Desc(integration.FieldCreatedAt)).
@@ -80,7 +80,7 @@ func (r *IntegrationRepo) List(ctx context.Context, orgID uuid.UUID) ([]*biz.Int
 }
 
 func (r *IntegrationRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID) (*biz.Integration, error) {
-	integration, err := orgScopedQuery(r.data.db, orgID).
+	integration, err := orgScopedQuery(r.data.DB, orgID).
 		QueryIntegrations().
 		Where(integration.ID(id)).
 		Where(integration.DeletedAtIsNil()).
@@ -95,7 +95,7 @@ func (r *IntegrationRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID
 }
 
 func (r *IntegrationRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
-	tx, err := r.data.db.Tx(ctx)
+	tx, err := r.data.DB.Tx(ctx)
 	if err != nil {
 		return err
 	}

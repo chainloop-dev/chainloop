@@ -38,7 +38,7 @@ func NewUserRepo(data *Data, logger log.Logger) biz.UserRepo {
 }
 
 func (r *userRepo) FindByEmail(ctx context.Context, email string) (*biz.User, error) {
-	u, err := r.data.db.User.Query().
+	u, err := r.data.DB.User.Query().
 		Where(user.Email(email)).
 		Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
@@ -51,7 +51,7 @@ func (r *userRepo) FindByEmail(ctx context.Context, email string) (*biz.User, er
 }
 
 func (r *userRepo) CreateByEmail(ctx context.Context, email string) (*biz.User, error) {
-	u, err := r.data.db.User.Create().SetEmail(email).Save(ctx)
+	u, err := r.data.DB.User.Create().SetEmail(email).Save(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (r *userRepo) CreateByEmail(ctx context.Context, email string) (*biz.User, 
 
 // Find by ID, returns nil if not found
 func (r *userRepo) FindByID(ctx context.Context, userID uuid.UUID) (*biz.User, error) {
-	u, err := r.data.db.User.Get(ctx, userID)
+	u, err := r.data.DB.User.Get(ctx, userID)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	} else if u == nil {
@@ -73,7 +73,7 @@ func (r *userRepo) FindByID(ctx context.Context, userID uuid.UUID) (*biz.User, e
 }
 
 func (r *userRepo) Delete(ctx context.Context, userID uuid.UUID) (err error) {
-	return r.data.db.User.DeleteOneID(userID).Exec(ctx)
+	return r.data.DB.User.DeleteOneID(userID).Exec(ctx)
 }
 
 func entUserToBizUser(eu *ent.User) *biz.User {

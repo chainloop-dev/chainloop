@@ -38,7 +38,7 @@ func NewOrganizationRepo(data *Data, logger log.Logger) biz.OrganizationRepo {
 }
 
 func (r *OrganizationRepo) Create(ctx context.Context, name string) (*biz.Organization, error) {
-	org, err := r.data.db.Organization.Create().
+	org, err := r.data.DB.Organization.Create().
 		SetName(name).
 		Save(ctx)
 	if err != nil && ent.IsConstraintError(err) {
@@ -53,7 +53,7 @@ func (r *OrganizationRepo) Create(ctx context.Context, name string) (*biz.Organi
 }
 
 func (r *OrganizationRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Organization, error) {
-	org, err := r.data.db.Organization.Get(ctx, id)
+	org, err := r.data.DB.Organization.Get(ctx, id)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	} else if org == nil {
@@ -64,7 +64,7 @@ func (r *OrganizationRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Org
 }
 
 func (r *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, name *string) (*biz.Organization, error) {
-	req := r.data.db.Organization.UpdateOneID(id)
+	req := r.data.DB.Organization.UpdateOneID(id)
 	if name != nil && *name != "" {
 		req = req.SetName(*name)
 	}
@@ -82,7 +82,7 @@ func (r *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, name *strin
 
 // Delete deletes an organization by ID.
 func (r *OrganizationRepo) Delete(ctx context.Context, id uuid.UUID) error {
-	return r.data.db.Organization.DeleteOneID(id).Exec(ctx)
+	return r.data.DB.Organization.DeleteOneID(id).Exec(ctx)
 }
 
 func entOrgToBizOrg(eu *ent.Organization) *biz.Organization {

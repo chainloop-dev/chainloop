@@ -43,7 +43,7 @@ func NewOrgMetricsRepo(data *Data, l log.Logger) biz.OrgMetricsRepo {
 }
 
 func (repo *OrgMetricsRepo) RunsTotal(ctx context.Context, orgID uuid.UUID, tw time.Duration) (int32, error) {
-	total, err := orgScopedQuery(repo.data.db, orgID).
+	total, err := orgScopedQuery(repo.data.DB, orgID).
 		QueryWorkflows().
 		QueryWorkflowruns().
 		Where(workflowrun.CreatedAtGTE(time.Now().Add(-tw))).
@@ -62,7 +62,7 @@ func (repo *OrgMetricsRepo) RunsByStatusTotal(ctx context.Context, orgID uuid.UU
 		Count int32
 	}
 
-	if err := orgScopedQuery(repo.data.db, orgID).
+	if err := orgScopedQuery(repo.data.DB, orgID).
 		QueryWorkflows().
 		QueryWorkflowruns().
 		Where(workflowrun.CreatedAtGTE(time.Now().Add(-tw))).
@@ -86,7 +86,7 @@ func (repo *OrgMetricsRepo) RunsByRunnerTypeTotal(ctx context.Context, orgID uui
 		Count      int32
 	}
 
-	if err := orgScopedQuery(repo.data.db, orgID).
+	if err := orgScopedQuery(repo.data.DB, orgID).
 		QueryWorkflows().
 		QueryWorkflowruns().
 		Where(workflowrun.CreatedAtGTE(time.Now().Add(-tw))).
@@ -112,7 +112,7 @@ func (repo *OrgMetricsRepo) TopWorkflowsByRunsCount(ctx context.Context, orgID u
 	}
 
 	// Get workflow runs grouped by state and workflowRunID
-	if err := orgScopedQuery(repo.data.db, orgID).
+	if err := orgScopedQuery(repo.data.DB, orgID).
 		QueryWorkflows().
 		QueryWorkflowruns().
 		WithWorkflow().
@@ -134,7 +134,7 @@ func (repo *OrgMetricsRepo) TopWorkflowsByRunsCount(ctx context.Context, orgID u
 				return nil, err
 			}
 
-			wf, err := orgScopedQuery(repo.data.db, orgID).QueryWorkflows().Where(workflow.ID(workflowID)).First(ctx)
+			wf, err := orgScopedQuery(repo.data.DB, orgID).QueryWorkflows().Where(workflow.ID(workflowID)).First(ctx)
 			if err != nil {
 				if ent.IsNotFound(err) {
 					continue
@@ -181,7 +181,7 @@ func (repo *OrgMetricsRepo) DailyRunsCount(ctx context.Context, orgID, workflowI
 	}
 
 	// Get workflow runs grouped by state and day
-	q := orgScopedQuery(repo.data.db, orgID).QueryWorkflows()
+	q := orgScopedQuery(repo.data.DB, orgID).QueryWorkflows()
 	// optionally filter by workflowID
 	if workflowID != uuid.Nil {
 		q = q.Where(workflow.ID(workflowID))

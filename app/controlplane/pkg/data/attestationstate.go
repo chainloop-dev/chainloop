@@ -40,7 +40,7 @@ func NewAttestationStateRepo(data *Data, logger log.Logger) biz.AttestationState
 
 // find the workflow run by its ID and check that it has attestation state
 func (r *AttestationStateRepo) Initialized(ctx context.Context, runID uuid.UUID) (bool, error) {
-	exists, err := r.data.db.WorkflowRun.Query().Where(workflowrun.ID(runID)).Where(workflowrun.AttestationStateNotNil()).Exist(ctx)
+	exists, err := r.data.DB.WorkflowRun.Query().Where(workflowrun.ID(runID)).Where(workflowrun.AttestationStateNotNil()).Exist(ctx)
 	if err != nil {
 		return false, fmt.Errorf("failed to check attestation state: %w", err)
 	}
@@ -49,7 +49,7 @@ func (r *AttestationStateRepo) Initialized(ctx context.Context, runID uuid.UUID)
 }
 
 func (r *AttestationStateRepo) Save(ctx context.Context, runID uuid.UUID, state []byte) error {
-	err := r.data.db.WorkflowRun.UpdateOneID(runID).SetAttestationState(state).Exec(ctx)
+	err := r.data.DB.WorkflowRun.UpdateOneID(runID).SetAttestationState(state).Exec(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return fmt.Errorf("failed to store attestation state: %w", err)
 	} else if err != nil {
@@ -60,7 +60,7 @@ func (r *AttestationStateRepo) Save(ctx context.Context, runID uuid.UUID, state 
 }
 
 func (r *AttestationStateRepo) Read(ctx context.Context, runID uuid.UUID) ([]byte, error) {
-	run, err := r.data.db.WorkflowRun.Query().Where(workflowrun.ID(runID)).Only(ctx)
+	run, err := r.data.DB.WorkflowRun.Query().Where(workflowrun.ID(runID)).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, fmt.Errorf("failed to read attestation state: %w", err)
 	} else if run == nil || run.AttestationState == nil {
@@ -71,7 +71,7 @@ func (r *AttestationStateRepo) Read(ctx context.Context, runID uuid.UUID) ([]byt
 }
 
 func (r *AttestationStateRepo) Reset(ctx context.Context, runID uuid.UUID) error {
-	err := r.data.db.WorkflowRun.UpdateOneID(runID).ClearAttestationState().Exec(ctx)
+	err := r.data.DB.WorkflowRun.UpdateOneID(runID).ClearAttestationState().Exec(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return fmt.Errorf("failed to clear attestation state: %w", err)
 	} else if err != nil {

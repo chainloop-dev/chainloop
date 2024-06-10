@@ -41,7 +41,7 @@ func NewOrgInvitation(data *Data, logger log.Logger) biz.OrgInvitationRepo {
 }
 
 func (r *OrgInvitation) Create(ctx context.Context, orgID, senderID uuid.UUID, receiverEmail string, role authz.Role) (*biz.OrgInvitation, error) {
-	invite, err := r.data.db.OrgInvitation.Create().
+	invite, err := r.data.DB.OrgInvitation.Create().
 		SetOrganizationID(orgID).
 		SetSenderID(senderID).
 		SetRole(role).
@@ -89,12 +89,12 @@ func (r *OrgInvitation) PendingInvitations(ctx context.Context, receiverEmail st
 }
 
 func (r *OrgInvitation) ChangeStatus(ctx context.Context, id uuid.UUID, status biz.OrgInvitationStatus) error {
-	return r.data.db.OrgInvitation.UpdateOneID(id).SetStatus(status).Exec(ctx)
+	return r.data.DB.OrgInvitation.UpdateOneID(id).SetStatus(status).Exec(ctx)
 }
 
 // Full query of non-deleted invites with all edges loaded
 func (r *OrgInvitation) query() *ent.OrgInvitationQuery {
-	return r.data.db.OrgInvitation.Query().WithOrganization().WithSender().Where(orginvitation.DeletedAtIsNil())
+	return r.data.DB.OrgInvitation.Query().WithOrganization().WithSender().Where(orginvitation.DeletedAtIsNil())
 }
 
 func (r *OrgInvitation) FindByID(ctx context.Context, id uuid.UUID) (*biz.OrgInvitation, error) {
@@ -109,7 +109,7 @@ func (r *OrgInvitation) FindByID(ctx context.Context, id uuid.UUID) (*biz.OrgInv
 }
 
 func (r *OrgInvitation) SoftDelete(ctx context.Context, id uuid.UUID) error {
-	return r.data.db.OrgInvitation.UpdateOneID(id).SetDeletedAt(time.Now()).Exec(ctx)
+	return r.data.DB.OrgInvitation.UpdateOneID(id).SetDeletedAt(time.Now()).Exec(ctx)
 }
 
 func (r *OrgInvitation) ListByOrg(ctx context.Context, orgID uuid.UUID) ([]*biz.OrgInvitation, error) {

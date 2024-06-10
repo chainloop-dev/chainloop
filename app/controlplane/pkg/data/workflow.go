@@ -54,7 +54,7 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 		return nil, err
 	}
 
-	wf, err := r.data.db.Workflow.Create().
+	wf, err := r.data.DB.Workflow.Create().
 		SetName(opts.Name).
 		SetProject(opts.Project).
 		SetTeam(opts.Team).
@@ -80,7 +80,7 @@ func (r *WorkflowRepo) Update(ctx context.Context, id uuid.UUID, opts *biz.Workf
 		opts = &biz.WorkflowUpdateOpts{}
 	}
 
-	req := r.data.db.Workflow.UpdateOneID(id).
+	req := r.data.DB.Workflow.UpdateOneID(id).
 		SetNillableTeam(opts.Team).
 		SetNillableProject(opts.Project).
 		SetNillablePublic(opts.Public).
@@ -110,7 +110,7 @@ func (r *WorkflowRepo) Update(ctx context.Context, id uuid.UUID, opts *biz.Workf
 }
 
 func (r *WorkflowRepo) List(ctx context.Context, orgID uuid.UUID) ([]*biz.Workflow, error) {
-	workflows, err := orgScopedQuery(r.data.db, orgID).
+	workflows, err := orgScopedQuery(r.data.DB, orgID).
 		QueryWorkflows().
 		Where(workflow.DeletedAtIsNil()).
 		WithContract().WithOrganization().
@@ -141,7 +141,7 @@ func (r *WorkflowRepo) List(ctx context.Context, orgID uuid.UUID) ([]*biz.Workfl
 
 // GetOrgScoped Gets a workflow making sure it belongs to a given org
 func (r *WorkflowRepo) GetOrgScoped(ctx context.Context, orgID, workflowID uuid.UUID) (*biz.Workflow, error) {
-	workflow, err := orgScopedQuery(r.data.db, orgID).
+	workflow, err := orgScopedQuery(r.data.DB, orgID).
 		QueryWorkflows().
 		Where(workflow.ID(workflowID), workflow.DeletedAtIsNil()).
 		WithContract().WithOrganization().
@@ -166,7 +166,7 @@ func (r *WorkflowRepo) GetOrgScoped(ctx context.Context, orgID, workflowID uuid.
 
 // GetOrgScopedByName Gets a workflow by name making sure it belongs to a given org
 func (r *WorkflowRepo) GetOrgScopedByName(ctx context.Context, orgID uuid.UUID, workflowName string) (*biz.Workflow, error) {
-	wf, err := orgScopedQuery(r.data.db, orgID).QueryWorkflows().
+	wf, err := orgScopedQuery(r.data.DB, orgID).QueryWorkflows().
 		Where(workflow.Name(workflowName), workflow.DeletedAtIsNil()).
 		WithContract().WithOrganization().
 		Order(ent.Desc(workflow.FieldCreatedAt)).
@@ -189,11 +189,11 @@ func (r *WorkflowRepo) GetOrgScopedByName(ctx context.Context, orgID uuid.UUID, 
 }
 
 func (r *WorkflowRepo) IncRunsCounter(ctx context.Context, workflowID uuid.UUID) error {
-	return r.data.db.Workflow.Update().AddRunsCount(1).Where(workflow.ID(workflowID)).Exec(ctx)
+	return r.data.DB.Workflow.Update().AddRunsCount(1).Where(workflow.ID(workflowID)).Exec(ctx)
 }
 
 func (r *WorkflowRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Workflow, error) {
-	workflow, err := r.data.db.Workflow.Query().
+	workflow, err := r.data.DB.Workflow.Query().
 		Where(workflow.DeletedAtIsNil(), workflow.ID(id)).
 		WithContract().WithOrganization().
 		Only(ctx)
@@ -214,7 +214,7 @@ func (r *WorkflowRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Workflo
 }
 
 func (r *WorkflowRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
-	tx, err := r.data.db.Tx(ctx)
+	tx, err := r.data.DB.Tx(ctx)
 	if err != nil {
 		return err
 	}

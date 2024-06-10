@@ -47,7 +47,7 @@ type storedReferrerMap map[string]*ent.Referrer
 
 func (r *ReferrerRepo) Save(ctx context.Context, referrers []*biz.Referrer, workflowID uuid.UUID) error {
 	// Start transaction
-	tx, err := r.data.db.Tx(ctx)
+	tx, err := r.data.DB.Tx(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create transaction: %w", err)
 	}
@@ -123,7 +123,7 @@ func (r *ReferrerRepo) Exist(ctx context.Context, digest string, filters ...biz.
 		f(opts)
 	}
 
-	query := r.data.db.Referrer.Query().Where(referrer.DigestEQ(digest))
+	query := r.data.DB.Referrer.Query().Where(referrer.DigestEQ(digest))
 	// We might be filtering by the rootKind, this will prevent ambiguity
 	if opts.RootKind != nil {
 		query = query.Where(referrer.Kind(*opts.RootKind))
@@ -167,7 +167,7 @@ func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string, orgIDs []
 	// Attach the workflow predicate
 	predicateReferrer = append(predicateReferrer, referrer.HasWorkflowsWith(predicateWF...))
 
-	refs, err := r.data.db.Referrer.Query().Where(predicateReferrer...).WithWorkflows().All(ctx)
+	refs, err := r.data.DB.Referrer.Query().Where(predicateReferrer...).WithWorkflows().All(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query referrer: %w", err)
 	}

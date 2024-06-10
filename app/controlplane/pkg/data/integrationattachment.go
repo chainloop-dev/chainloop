@@ -40,7 +40,7 @@ func NewIntegrationAttachmentRepo(data *Data, logger log.Logger) biz.Integration
 }
 
 func (r *IntegrationAttachmentRepo) Create(ctx context.Context, integrationID, workflowID uuid.UUID, config []byte) (*biz.IntegrationAttachment, error) {
-	ia, err := r.data.db.IntegrationAttachment.Create().
+	ia, err := r.data.DB.IntegrationAttachment.Create().
 		SetWorkflowID(workflowID).
 		SetIntegrationID(integrationID).
 		SetConfiguration(config).
@@ -59,7 +59,7 @@ func (r *IntegrationAttachmentRepo) Create(ctx context.Context, integrationID, w
 }
 
 func (r *IntegrationAttachmentRepo) List(ctx context.Context, orgID, workflowID uuid.UUID) ([]*biz.IntegrationAttachment, error) {
-	wfQuery := orgScopedQuery(r.data.db, orgID).QueryWorkflows()
+	wfQuery := orgScopedQuery(r.data.DB, orgID).QueryWorkflows()
 	if workflowID != uuid.Nil {
 		wfQuery = wfQuery.Where(workflow.ID(workflowID))
 	}
@@ -81,7 +81,7 @@ func (r *IntegrationAttachmentRepo) List(ctx context.Context, orgID, workflowID 
 }
 
 func (r *IntegrationAttachmentRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID) (*biz.IntegrationAttachment, error) {
-	integration, err := orgScopedQuery(r.data.db, orgID).
+	integration, err := orgScopedQuery(r.data.DB, orgID).
 		QueryIntegrations().
 		QueryAttachments().
 		Where(integrationattachment.DeletedAtIsNil(), integrationattachment.ID(id)).
@@ -97,7 +97,7 @@ func (r *IntegrationAttachmentRepo) FindByIDInOrg(ctx context.Context, orgID, id
 }
 
 func (r *IntegrationAttachmentRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
-	return r.data.db.IntegrationAttachment.UpdateOneID(id).SetDeletedAt(time.Now()).Exec(ctx)
+	return r.data.DB.IntegrationAttachment.UpdateOneID(id).SetDeletedAt(time.Now()).Exec(ctx)
 }
 
 func entIntegrationAttachmentToBiz(i *ent.IntegrationAttachment) *biz.IntegrationAttachment {

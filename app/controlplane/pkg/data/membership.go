@@ -42,7 +42,7 @@ func NewMembershipRepo(data *Data, logger log.Logger) biz.MembershipRepo {
 }
 
 func (r *MembershipRepo) Create(ctx context.Context, orgID, userID uuid.UUID, current bool, role authz.Role) (*biz.Membership, error) {
-	m, err := r.data.db.Membership.Create().
+	m, err := r.data.DB.Membership.Create().
 		SetUserID(userID).
 		SetOrganizationID(orgID).
 		SetCurrent(current).
@@ -62,11 +62,11 @@ func (r *MembershipRepo) Create(ctx context.Context, orgID, userID uuid.UUID, cu
 }
 
 func (r *MembershipRepo) loadMembership(ctx context.Context, id uuid.UUID) (*ent.Membership, error) {
-	return r.data.db.Membership.Query().WithOrganization().WithUser().Where(membership.ID(id)).First(ctx)
+	return r.data.DB.Membership.Query().WithOrganization().WithUser().Where(membership.ID(id)).First(ctx)
 }
 
 func (r *MembershipRepo) FindByUser(ctx context.Context, userID uuid.UUID) ([]*biz.Membership, error) {
-	memberships, err := r.data.db.User.Query().Where(user.ID(userID)).QueryMemberships().
+	memberships, err := r.data.DB.User.Query().Where(user.ID(userID)).QueryMemberships().
 		WithOrganization().All(ctx)
 	if err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func (r *MembershipRepo) FindByUser(ctx context.Context, userID uuid.UUID) ([]*b
 
 // FindByOrg finds all memberships for a given organization
 func (r *MembershipRepo) FindByOrg(ctx context.Context, orgID uuid.UUID) ([]*biz.Membership, error) {
-	memberships, err := orgScopedQuery(r.data.db, orgID).
+	memberships, err := orgScopedQuery(r.data.DB, orgID).
 		QueryMemberships().WithUser().
 		WithOrganization().All(ctx)
 	if err != nil {
@@ -99,7 +99,7 @@ func (r *MembershipRepo) FindByOrg(ctx context.Context, orgID uuid.UUID) ([]*biz
 
 // FindByOrgAndUser finds the membership for a given organization and user
 func (r *MembershipRepo) FindByOrgAndUser(ctx context.Context, orgID, userID uuid.UUID) (*biz.Membership, error) {
-	m, err := orgScopedQuery(r.data.db, orgID).
+	m, err := orgScopedQuery(r.data.DB, orgID).
 		QueryMemberships().Where(membership.HasUserWith(user.ID(userID))).
 		WithOrganization().WithUser().Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
@@ -110,7 +110,7 @@ func (r *MembershipRepo) FindByOrgAndUser(ctx context.Context, orgID, userID uui
 }
 
 func (r *MembershipRepo) FindByIDInUser(ctx context.Context, userID, membershipID uuid.UUID) (*biz.Membership, error) {
-	m, err := r.data.db.User.Query().Where(user.ID(userID)).
+	m, err := r.data.DB.User.Query().Where(user.ID(userID)).
 		QueryMemberships().
 		Where(membership.ID(membershipID)).
 		WithUser().
@@ -123,7 +123,7 @@ func (r *MembershipRepo) FindByIDInUser(ctx context.Context, userID, membershipI
 }
 
 func (r *MembershipRepo) FindByIDInOrg(ctx context.Context, orgID, membershipID uuid.UUID) (*biz.Membership, error) {
-	m, err := r.data.db.Organization.Query().Where(organization.ID(orgID)).
+	m, err := r.data.DB.Organization.Query().Where(organization.ID(orgID)).
 		QueryMemberships().
 		Where(membership.ID(membershipID)).
 		WithUser().
@@ -143,7 +143,7 @@ func (r *MembershipRepo) SetCurrent(ctx context.Context, membershipID uuid.UUID)
 	}
 
 	// For the found user, we must, in a transaction.
-	tx, err := r.data.db.Tx(ctx)
+	tx, err := r.data.DB.Tx(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +173,7 @@ func (r *MembershipRepo) SetCurrent(ctx context.Context, membershipID uuid.UUID)
 }
 
 func (r *MembershipRepo) SetRole(ctx context.Context, membershipID uuid.UUID, role authz.Role) (*biz.Membership, error) {
-	if err := r.data.db.Membership.UpdateOneID(membershipID).SetRole(role).Exec(ctx); err != nil {
+	if err := r.data.DB.Membership.UpdateOneID(membershipID).SetRole(role).Exec(ctx); err != nil {
 		return nil, fmt.Errorf("failed to update membership: %w", err)
 	}
 
@@ -187,7 +187,7 @@ func (r *MembershipRepo) SetRole(ctx context.Context, membershipID uuid.UUID, ro
 
 // Delete deletes a membership by ID.
 func (r *MembershipRepo) Delete(ctx context.Context, id uuid.UUID) error {
-	return r.data.db.Membership.DeleteOneID(id).Exec(ctx)
+	return r.data.DB.Membership.DeleteOneID(id).Exec(ctx)
 }
 
 func entMembershipToBiz(m *ent.Membership) *biz.Membership {

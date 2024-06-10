@@ -49,7 +49,7 @@ func (r *CASMappingRepo) Create(ctx context.Context, digest string, casBackendID
 		return nil, fmt.Errorf("cas backend not found")
 	}
 
-	mapping, err := r.data.db.CASMapping.Create().
+	mapping, err := r.data.DB.CASMapping.Create().
 		SetDigest(digest).
 		SetCasBackendID(casBackendID).
 		SetWorkflowRunID(workflowRunID).
@@ -64,7 +64,7 @@ func (r *CASMappingRepo) Create(ctx context.Context, digest string, casBackendID
 }
 
 func (r *CASMappingRepo) FindByDigest(ctx context.Context, digest string) ([]*biz.CASMapping, error) {
-	mappings, err := r.data.db.CASMapping.Query().
+	mappings, err := r.data.DB.CASMapping.Query().
 		Where(casmapping.Digest(digest)).
 		WithCasBackend().
 		WithOrganization().
@@ -90,7 +90,7 @@ func (r *CASMappingRepo) FindByDigest(ctx context.Context, digest string) ([]*bi
 // FindByID finds a CAS Mapping by ID
 // If not found, returns nil and no error
 func (r *CASMappingRepo) findByID(ctx context.Context, id uuid.UUID) (*biz.CASMapping, error) {
-	backend, err := r.data.db.CASMapping.Query().WithCasBackend().WithWorkflowRun().WithOrganization().
+	backend, err := r.data.DB.CASMapping.Query().WithCasBackend().WithWorkflowRun().WithOrganization().
 		Where(casmapping.ID(id)).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err

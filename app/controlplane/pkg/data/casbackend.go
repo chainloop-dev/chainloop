@@ -41,7 +41,7 @@ func NewCASBackendRepo(data *Data, logger log.Logger) biz.CASBackendRepo {
 }
 
 func (r *CASBackendRepo) List(ctx context.Context, orgID uuid.UUID) ([]*biz.CASBackend, error) {
-	backends, err := orgScopedQuery(r.data.db, orgID).QueryCasBackends().WithOrganization().
+	backends, err := orgScopedQuery(r.data.DB, orgID).QueryCasBackends().WithOrganization().
 		Where(casbackend.DeletedAtIsNil()).
 		Order(ent.Desc(casbackend.FieldCreatedAt)).
 		All(ctx)
@@ -59,7 +59,7 @@ func (r *CASBackendRepo) List(ctx context.Context, orgID uuid.UUID) ([]*biz.CASB
 
 // FindDefaultBackend finds the CAS backend that's set as default for the given organization
 func (r *CASBackendRepo) FindDefaultBackend(ctx context.Context, orgID uuid.UUID) (*biz.CASBackend, error) {
-	backend, err := orgScopedQuery(r.data.db, orgID).QueryCasBackends().WithOrganization().
+	backend, err := orgScopedQuery(r.data.DB, orgID).QueryCasBackends().WithOrganization().
 		Where(casbackend.Default(true), casbackend.DeletedAtIsNil()).
 		Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
@@ -71,7 +71,7 @@ func (r *CASBackendRepo) FindDefaultBackend(ctx context.Context, orgID uuid.UUID
 
 // FindFallbackBackend finds the CAS backend that's set as fallback for the given organization
 func (r *CASBackendRepo) FindFallbackBackend(ctx context.Context, orgID uuid.UUID) (*biz.CASBackend, error) {
-	backend, err := orgScopedQuery(r.data.db, orgID).QueryCasBackends().WithOrganization().
+	backend, err := orgScopedQuery(r.data.DB, orgID).QueryCasBackends().WithOrganization().
 		Where(casbackend.Fallback(true), casbackend.DeletedAtIsNil()).
 		Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
@@ -84,7 +84,7 @@ func (r *CASBackendRepo) FindFallbackBackend(ctx context.Context, orgID uuid.UUI
 // Create creates a new CAS backend in the given organization
 // If it's set as default, it will unset the previous default backend
 func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateOpts) (*biz.CASBackend, error) {
-	tx, err := r.data.db.Tx(ctx)
+	tx, err := r.data.DB.Tx(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create transaction: %w", err)
 	}
@@ -129,7 +129,7 @@ func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateO
 }
 
 func (r *CASBackendRepo) Update(ctx context.Context, opts *biz.CASBackendUpdateOpts) (*biz.CASBackend, error) {
-	tx, err := r.data.db.Tx(ctx)
+	tx, err := r.data.DB.Tx(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create transaction: %w", err)
 	}
@@ -178,7 +178,7 @@ func (r *CASBackendRepo) Update(ctx context.Context, opts *biz.CASBackendUpdateO
 // FindByID finds a CAS backend by ID
 // If not found, returns nil and no error
 func (r *CASBackendRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.CASBackend, error) {
-	backend, err := r.data.db.CASBackend.Query().WithOrganization().
+	backend, err := r.data.DB.CASBackend.Query().WithOrganization().
 		Where(casbackend.ID(id), casbackend.DeletedAtIsNil()).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
@@ -192,7 +192,7 @@ func (r *CASBackendRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.CASBa
 // FindByIDInOrg finds a CAS backend by ID in the given organization.
 // If not found, returns nil and no error
 func (r *CASBackendRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID) (*biz.CASBackend, error) {
-	backend, err := orgScopedQuery(r.data.db, orgID).QueryCasBackends().WithOrganization().
+	backend, err := orgScopedQuery(r.data.DB, orgID).QueryCasBackends().WithOrganization().
 		Where(casbackend.ID(id), casbackend.DeletedAtIsNil()).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
@@ -205,17 +205,17 @@ func (r *CASBackendRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID)
 
 // Set deleted at instead of actually deleting the backend
 func (r *CASBackendRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
-	return r.data.db.CASBackend.UpdateOneID(id).SetDeletedAt(time.Now()).Exec(ctx)
+	return r.data.DB.CASBackend.UpdateOneID(id).SetDeletedAt(time.Now()).Exec(ctx)
 }
 
 // Delete deletes a CAS backend from the DB
 func (r *CASBackendRepo) Delete(ctx context.Context, id uuid.UUID) error {
-	return r.data.db.CASBackend.DeleteOneID(id).Exec(ctx)
+	return r.data.DB.CASBackend.DeleteOneID(id).Exec(ctx)
 }
 
 // UpdateValidationStatus updates the validation status of an OCI repository
 func (r *CASBackendRepo) UpdateValidationStatus(ctx context.Context, id uuid.UUID, status biz.CASBackendValidationStatus) error {
-	return r.data.db.CASBackend.UpdateOneID(id).
+	return r.data.DB.CASBackend.UpdateOneID(id).
 		SetValidationStatus(status).
 		SetValidatedAt(time.Now()).
 		Exec(ctx)

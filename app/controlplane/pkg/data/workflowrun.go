@@ -48,7 +48,7 @@ func NewWorkflowRunRepo(data *Data, logger log.Logger) biz.WorkflowRunRepo {
 
 func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoCreateOpts) (*biz.WorkflowRun, error) {
 	// Find the contract to calculate the revisions
-	p, err := r.data.db.WorkflowRun.Create().
+	p, err := r.data.DB.WorkflowRun.Create().
 		SetWorkflowID(opts.WorkflowID).
 		SetContractVersionID(opts.SchemaVersionID).
 		SetRunURL(opts.RunURL).
@@ -72,7 +72,7 @@ func eagerLoadWorkflowRun(client *ent.Client) *ent.WorkflowRunQuery {
 }
 
 func (r *WorkflowRunRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.WorkflowRun, error) {
-	run, err := eagerLoadWorkflowRun(r.data.db).Where(workflowrun.ID(id)).Only(ctx)
+	run, err := eagerLoadWorkflowRun(r.data.DB).Where(workflowrun.ID(id)).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	} else if run == nil {
@@ -83,7 +83,7 @@ func (r *WorkflowRunRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Work
 }
 
 func (r *WorkflowRunRepo) FindByAttestationDigest(ctx context.Context, digest string) (*biz.WorkflowRun, error) {
-	run, err := eagerLoadWorkflowRun(r.data.db).Where(workflowrun.AttestationDigest(digest)).Only(ctx)
+	run, err := eagerLoadWorkflowRun(r.data.DB).Where(workflowrun.AttestationDigest(digest)).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	} else if run == nil {
@@ -94,7 +94,7 @@ func (r *WorkflowRunRepo) FindByAttestationDigest(ctx context.Context, digest st
 }
 
 func (r *WorkflowRunRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID) (*biz.WorkflowRun, error) {
-	run, err := orgScopedQuery(r.data.db, orgID).
+	run, err := orgScopedQuery(r.data.DB, orgID).
 		QueryWorkflows().
 		QueryWorkflowruns().Where(workflowrun.ID(id)).
 		WithWorkflow().WithContractVersion().WithCasBackends().
@@ -110,7 +110,7 @@ func (r *WorkflowRunRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID
 
 // Save the attestation for a workflow run in the database
 func (r *WorkflowRunRepo) SaveAttestation(ctx context.Context, id uuid.UUID, att *dsse.Envelope, digest string) error {
-	run, err := r.data.db.WorkflowRun.UpdateOneID(id).
+	run, err := r.data.DB.WorkflowRun.UpdateOneID(id).
 		SetAttestation(att).
 		SetAttestationDigest(digest).
 		Save(ctx)
@@ -124,7 +124,7 @@ func (r *WorkflowRunRepo) SaveAttestation(ctx context.Context, id uuid.UUID, att
 }
 
 func (r *WorkflowRunRepo) MarkAsFinished(ctx context.Context, id uuid.UUID, status biz.WorkflowRunStatus, reason string) error {
-	run, err := r.data.db.WorkflowRun.Query().Where(workflowrun.ID(id)).WithWorkflow().First(ctx)
+	run, err := r.data.DB.WorkflowRun.Query().Where(workflowrun.ID(id)).WithWorkflow().First(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to find workflow run: %w", err)
 	}
@@ -142,7 +142,7 @@ func (r *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, filters *bi
 		return nil, "", errors.New("pagination options is required")
 	}
 
-	orgQuery := r.data.db.Organization.Query().Where(organization.ID(orgID))
+	orgQuery := r.data.DB.Organization.Query().Where(organization.ID(orgID))
 	// Skip the runs that have a workflow marked as deleted
 	wfQuery := orgQuery.QueryWorkflows().Where(workflow.DeletedAtIsNil())
 	// Append the workflow filter if present
@@ -189,7 +189,7 @@ func (r *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, filters *bi
 func (r *WorkflowRunRepo) ListNotFinishedOlderThan(ctx context.Context, olderThan time.Time) ([]*biz.WorkflowRun, error) {
 	// TODO: Look into adding upper bound on the createdAt column to prevent full table scans
 	// For now this is fine especially because we have a composite index
-	workflowRuns, err := r.data.db.WorkflowRun.Query().
+	workflowRuns, err := r.data.DB.WorkflowRun.Query().
 		Where(workflowrun.CreatedAtLTE(olderThan)).
 		Where(workflowrun.StateEQ(biz.WorkflowRunInitialized)).
 		All(ctx)
@@ -206,7 +206,7 @@ func (r *WorkflowRunRepo) ListNotFinishedOlderThan(ctx context.Context, olderTha
 }
 
 func (r *WorkflowRunRepo) Expire(ctx context.Context, id uuid.UUID) error {
-	return r.data.db.WorkflowRun.UpdateOneID(id).SetState(biz.WorkflowRunExpired).ClearAttestationState().Exec(ctx)
+	return r.data.DB.WorkflowRun.UpdateOneID(id).SetState(biz.WorkflowRunExpired).ClearAttestationState().Exec(ctx)
 }
 
 func entWrToBizWr(wr *ent.WorkflowRun) *biz.WorkflowRun {

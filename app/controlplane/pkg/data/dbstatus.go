@@ -30,5 +30,5 @@ func NewDBStatus(data *Data, logger log.Logger) *DBStatus {
 }
 
 func (s *DBStatus) Ping() error {
-	return s.data.db.Ping()
+	return s.data.DB.Ping()
 }

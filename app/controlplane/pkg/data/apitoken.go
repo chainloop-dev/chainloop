@@ -41,7 +41,7 @@ func NewAPITokenRepo(data *Data, logger log.Logger) biz.APITokenRepo {
 
 // Persist the APIToken to the database.
 func (r *APITokenRepo) Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID uuid.UUID) (*biz.APIToken, error) {
-	token, err := r.data.db.APIToken.Create().
+	token, err := r.data.DB.APIToken.Create().
 		SetName(name).
 		SetNillableDescription(description).
 		SetNillableExpiresAt(expiresAt).
@@ -59,7 +59,7 @@ func (r *APITokenRepo) Create(ctx context.Context, name string, description *str
 }
 
 func (r *APITokenRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.APIToken, error) {
-	token, err := r.data.db.APIToken.Get(ctx, id)
+	token, err := r.data.DB.APIToken.Get(ctx, id)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, fmt.Errorf("getting APIToken: %w", err)
 	} else if token == nil {
@@ -70,7 +70,7 @@ func (r *APITokenRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.APIToke
 }
 
 func (r *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, includeRevoked bool) ([]*biz.APIToken, error) {
-	query := r.data.db.APIToken.Query()
+	query := r.data.DB.APIToken.Query()
 
 	if orgID != nil {
 		query = query.Where(apitoken.OrganizationIDEQ(*orgID))
@@ -95,7 +95,7 @@ func (r *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, includeRevoke
 
 func (r *APITokenRepo) Revoke(ctx context.Context, orgID, id uuid.UUID) error {
 	// Update a token with id = id that has not been revoked yet and its orgID = orgID
-	err := r.data.db.APIToken.UpdateOneID(id).
+	err := r.data.DB.APIToken.UpdateOneID(id).
 		Where(apitoken.OrganizationIDEQ(orgID), apitoken.RevokedAtIsNil()).
 		SetRevokedAt(time.Now()).Exec(ctx)
 	if err != nil {

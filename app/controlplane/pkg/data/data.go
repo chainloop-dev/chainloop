@@ -60,14 +60,14 @@ var ProviderSet = wire.NewSet(
 
 // Data .
 type Data struct {
-	db *ent.Client
+	DB *ent.Client
 }
 
 // Load DB schema
 // NOTE: this is different than running migrations
 // this method is used to load the schema into the DB for TESTING!
 func (data *Data) SchemaLoad() error {
-	return data.db.Schema.Create(context.Background())
+	return data.DB.Schema.Create(context.Background())
 }
 
 type NewConfig struct {
@@ -94,7 +94,7 @@ func NewData(c *NewConfig, logger log.Logger) (*Data, func(), error) {
 		}
 	}
 
-	return &Data{db: db}, cleanup, nil
+	return &Data{DB: db}, cleanup, nil
 }
 
 func initSQLDatabase(c *NewConfig, log *log.Helper) (*ent.Client, error) {

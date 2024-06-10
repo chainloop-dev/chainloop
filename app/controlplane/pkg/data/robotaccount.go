@@ -41,7 +41,7 @@ func NewRobotAccountRepo(data *Data, logger log.Logger) biz.RobotAccountRepo {
 }
 
 func (r *RobotAccountRepo) Create(ctx context.Context, name string, workflowID uuid.UUID) (*biz.RobotAccount, error) {
-	p, err := r.data.db.RobotAccount.Create().SetName(name).SetWorkflowID(workflowID).Save(ctx)
+	p, err := r.data.DB.RobotAccount.Create().SetName(name).SetWorkflowID(workflowID).Save(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func (r *RobotAccountRepo) Create(ctx context.Context, name string, workflowID u
 }
 
 func (r *RobotAccountRepo) List(ctx context.Context, workflowID uuid.UUID, includeRevoked bool) ([]*biz.RobotAccount, error) {
-	raQuery := r.data.db.Workflow.Query().Where(workflow.ID(workflowID)).QueryRobotaccounts()
+	raQuery := r.data.DB.Workflow.Query().Where(workflow.ID(workflowID)).QueryRobotaccounts()
 	if !includeRevoked {
 		raQuery = raQuery.Where(robotaccount.RevokedAtIsNil())
 	}
@@ -69,7 +69,7 @@ func (r *RobotAccountRepo) List(ctx context.Context, workflowID uuid.UUID, inclu
 }
 
 func (r *RobotAccountRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.RobotAccount, error) {
-	p, err := r.data.db.RobotAccount.Get(ctx, id)
+	p, err := r.data.DB.RobotAccount.Get(ctx, id)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	} else if p == nil {
@@ -86,7 +86,7 @@ func (r *RobotAccountRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Rob
 
 func (r *RobotAccountRepo) Revoke(ctx context.Context, orgID, id uuid.UUID) error {
 	// Find a non-revoked robot account in the scope of the organization
-	acc, err := r.data.db.Organization.Query().Where(organization.ID(orgID)).
+	acc, err := r.data.DB.Organization.Query().Where(organization.ID(orgID)).
 		QueryWorkflows().
 		QueryRobotaccounts().Where(robotaccount.ID(id)).Where(robotaccount.RevokedAtIsNil()).
 		First(ctx)
