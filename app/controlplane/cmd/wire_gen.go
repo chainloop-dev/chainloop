@@ -10,10 +10,10 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/server"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/chainloop-dev/chainloop/internal/blobmanager/loader"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
@@ -25,7 +25,9 @@ import (
 
 func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, logger log.Logger, availablePlugins sdk.AvailablePlugins, certificateAuthority ca.CertificateAuthority) (*app, func(), error) {
 	confData := bootstrap.Data
-	dataData, cleanup, err := data.NewData(confData, logger)
+	data_Database := confData.Database
+	newConfig := newDataConf(data_Database)
+	dataData, cleanup, err := data.NewData(newConfig, logger)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -74,7 +76,6 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		return nil, nil, err
 	}
 	apiTokenRepo := data.NewAPITokenRepo(dataData, logger)
-	data_Database := confData.Database
 	enforcer, err := authz.NewDatabaseEnforcer(data_Database)
 	if err != nil {
 		cleanup()
@@ -243,6 +244,10 @@ var (
 )
 
 // wire.go:
+
+func newDataConf(in *conf.Data_Database) *data.NewConfig {
+	return &data.NewConfig{Driver: in.Driver, Source: in.Source}
+}
 
 func serviceOpts(l log.Logger) []service.NewOpt {
 	return []service.NewOpt{service.WithLogger(l)}

@@ -10,7 +10,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/chainloop-dev/chainloop/internal/blobmanager"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
@@ -28,7 +28,8 @@ import (
 // wireTestData init testing data
 func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, readerWriter credentials.ReaderWriter, builder *robotaccount.Builder, auth *conf.Auth, availablePlugins sdk.AvailablePlugins, providers backend.Providers) (*TestingUseCases, func(), error) {
 	confData := NewConfData(testDatabase, t)
-	dataData, cleanup, err := data.NewData(confData, logger)
+	newConfig := NewDataConfig(confData)
+	dataData, cleanup, err := data.NewData(newConfig, logger)
 	if err != nil {
 		return nil, nil, err
 	}

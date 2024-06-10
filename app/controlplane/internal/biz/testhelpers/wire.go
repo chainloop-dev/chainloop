@@ -26,7 +26,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	backends "github.com/chainloop-dev/chainloop/internal/blobmanager"
 	"github.com/chainloop-dev/chainloop/internal/credentials"
@@ -45,6 +45,7 @@ func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWrite
 			wire.Struct(new(TestingUseCases), "*"),
 			wire.Struct(new(TestingRepos), "*"),
 			NewConfData,
+			NewDataConfig,
 			authz.NewDatabaseEnforcer,
 			wire.FieldsOf(new(*conf.Data), "Database"),
 		),

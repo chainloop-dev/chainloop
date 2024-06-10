@@ -10,7 +10,7 @@ It's implemented following(ish) [Hexagonal architecture](https://netflixtechblog
 - Server layer `./internal/server`. Definition and registration of the HTTP and gRPC servers and middlewares.
 - Service layer `./internal/service`. Implementation of the protocol buffer services.
 - Business layer `./internal/biz`. Implementation of use-cases referenced by the service layer and definition of the data repository abstractions.
-- Data layer `./internal/data`. Implementation of data repositories interfaces defined in the business layer.
+- Data layer `./pkg/data`. Implementation of data repositories interfaces defined in the business layer.
 
 ## Plugins
 
@@ -77,9 +77,9 @@ We use [ent](https://entgo.io) as database Object Relational Mapping (ORM) and [
 The way you can make a change in the data model is
 
 **Update the schema**
-- Add a new/update an existing entity via a schema update. Schemas can be found at `internal/data/ent/schema`
+- Add a new/update an existing entity via a schema update. Schemas can be found at `pkg/data/ent/schema`
 - Generate the code changes associated with that schema change. `make generate`
-- Generate a new versioned migration `make migration_new`. This will create a new migration file at `internal/data/ent/migrate/migrations 
+- Generate a new versioned migration `make migration_new`. This will create a new migration file at `pkg/data/ent/migrate/migrations 
 
 **Apply the schema change in development DB**
 - `make migration_apply` will apply the migration to the development database

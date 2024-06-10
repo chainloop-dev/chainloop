@@ -29,7 +29,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	backends "github.com/chainloop-dev/chainloop/internal/blobmanager"
 	backendsm "github.com/chainloop-dev/chainloop/internal/blobmanager/mocks"
@@ -182,7 +182,16 @@ func (db *TestDatabase) ConnectionString(t *testing.T) string {
 }
 
 func NewConfData(db *TestDatabase, t *testing.T) *conf.Data {
-	return &conf.Data{Database: &conf.Data_Database{Driver: "pgx", Source: db.ConnectionString(t)}}
+	return &conf.Data{
+		Database: &conf.Data_Database{Driver: "pgx", Source: db.ConnectionString(t)},
+	}
+}
+
+func NewDataConfig(in *conf.Data) *data.NewConfig {
+	return &data.NewConfig{
+		Driver: in.Database.Driver,
+		Source: in.Database.Source,
+	}
 }
 
 func (db *TestDatabase) Close(t *testing.T) {
