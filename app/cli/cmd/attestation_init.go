@@ -81,6 +81,10 @@ func newAttestationInitCmd() *cobra.Command {
 				return newGracefulError(err)
 			}
 
+			if res.DryRun {
+				logger.Info().Msg("The attestation is being crafted in dry-run mode. It will not get stored once rendered")
+			}
+
 			return encodeOutput(res, simpleStatusTable)
 		},
 	}
