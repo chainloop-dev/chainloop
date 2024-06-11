@@ -24,7 +24,7 @@ build:
 run: migration_apply
 	go run ./cmd/... --conf ./configs
 
-local_migrations_dir = file://internal/data/ent/migrate/migrations
+local_migrations_dir = file://pkg/data/ent/migrate/migrations
 local_db = postgres://postgres:@localhost:5432/controlplane?sslmode=disable
 
 .PHONY: migration_apply
@@ -36,7 +36,7 @@ migration_apply: check-atlas-tool migration_hash
 .PHONY: migration_sync
 # sync migration files with the current ent schema
 migration_sync: check-atlas-tool migration_hash
-	atlas migrate diff --dir ${local_migrations_dir} --to "ent://internal/data/ent/schema" --dev-url "docker://postgres/15/test?search_path=public"
+	atlas migrate diff --dir ${local_migrations_dir} --to "ent://pkg/data/ent/schema" --dev-url "docker://postgres/15/test?search_path=public"
 
 .PHONY: migration_new
 # generate an empty migration file
@@ -50,7 +50,7 @@ migration_hash: check-atlas-tool
 .PHONY: test
 # All tests, both unit and integration
 test: 
-	go test $$(go list ./... | grep -v /internal/data/ent)
+	go test $$(go list ./... | grep -v /pkg/data/ent)
 
 .PHONY: test-unit
 # unit testing, excluding integration tests
@@ -78,4 +78,4 @@ all:
 .PHONY: visualize-data-model
 # Visualize data model
 visualize-data-model:
-	xdg-open internal/data/ent/schema-viz.html
+	xdg-open pkg/data/ent/schema-viz.html

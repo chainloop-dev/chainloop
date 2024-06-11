@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/service"
-	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
+	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
 	"github.com/stretchr/testify/assert"
 )
 

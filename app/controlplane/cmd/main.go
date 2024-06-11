@@ -26,13 +26,13 @@ import (
 	"github.com/sigstore/fulcio/pkg/ca/fileca"
 	flag "github.com/spf13/pflag"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
+	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/server"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
-	"github.com/chainloop-dev/chainloop/internal/credentials"
-	"github.com/chainloop-dev/chainloop/internal/credentials/manager"
+	"github.com/chainloop-dev/chainloop/pkg/credentials"
+	"github.com/chainloop-dev/chainloop/pkg/credentials/manager"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 
 	"github.com/go-kratos/kratos/v2"

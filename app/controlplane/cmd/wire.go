@@ -22,15 +22,15 @@ package main
 
 import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/biz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/data"
+	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/server"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
-	"github.com/chainloop-dev/chainloop/internal/blobmanager/loader"
-	"github.com/chainloop-dev/chainloop/internal/credentials"
+	"github.com/chainloop-dev/chainloop/pkg/blobmanager/loader"
+	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
 	"github.com/sigstore/fulcio/pkg/ca"
@@ -54,8 +54,13 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.Availabl
 			authz.NewDatabaseEnforcer,
 			newApp,
 			newProtoValidator,
+			newDataConf,
 		),
 	)
+}
+
+func newDataConf(in *conf.Data_Database) *data.NewConfig {
+	return &data.NewConfig{Driver: in.Driver, Source: in.Source}
 }
 
 func serviceOpts(l log.Logger) []service.NewOpt {

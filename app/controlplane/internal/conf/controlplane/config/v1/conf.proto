@@ -1,0 +1,137 @@
+//
+// Copyright 2024 The Chainloop Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package controlplane.config.v1;
+
+import "buf/validate/validate.proto";
+import "credentials/v1/config.proto";
+import "google/protobuf/duration.proto";
+
+option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1;conf";
+
+message Bootstrap {
+  Server server = 1;
+  Data data = 2;
+  Auth auth = 3;
+  Observability observability = 4;
+  credentials.v1.Credentials credentials_service = 5;
+  // CAS Server endpoint
+  CASServer cas_server = 6;
+  // Plugins directory
+  // NOTE: plugins have the form of chainloop-plugin-<name>
+  string plugins_dir = 7;
+  // Configuration about the shared referrer index
+  ReferrerSharedIndex referrer_shared_index = 8;
+
+  // The certificate authority used for keyless signing
+  CA certificate_authority = 9;
+
+  message Observability {
+    Sentry sentry = 1;
+    message Sentry {
+      string dsn = 1;
+      string environment = 2;
+    }
+  }
+
+  message CASServer {
+    // CAS server GRPC endpoint
+    Server.GRPC grpc = 1 [(buf.validate.field).required = true];
+    // insecure is used to connect to the CAS server in development
+    bool insecure = 2;
+    // CAS server external http(s) download endpoint
+    // In the form of [scheme]://[host]/path i.e https://cas.chainloop.dev/download
+    // https://github.com/chainloop-dev/chainloop/blob/126f47b6c0803eac844b8e3e1a21d582f00e4dc6/app/artifact-cas/internal/service/download.go#L34
+    string download_url = 3;
+  }
+}
+
+// Configuration used to enable a shared index API endpoint that can be used to discover metadata referrers
+// To populate the shared index you need to enable the feature and configure the allowed orgs
+// The reason to have an org allowList is to avoid leaking metadata from other organizations and set the stage for a trusted publisher model
+message ReferrerSharedIndex {
+  // If the shared, public index feature is enabled
+  bool enabled = 1;
+  // list of organizations uuids that are allowed to appear in the shared referrer index
+  // think of it as a list of trusted publishers
+  repeated string allowed_orgs = 2;
+}
+
+message Server {
+  message HTTP {
+    string network = 1;
+    string addr = 2;
+    // In the form of [scheme]://[host] i.e https://instance.chainloop.dev
+    // Optional
+    string external_url = 4;
+    google.protobuf.Duration timeout = 5;
+  }
+
+  message TLS {
+    // path to certificate and private key
+    string certificate = 1;
+    string private_key = 2;
+  }
+  message GRPC {
+    string network = 1;
+    string addr = 2 [(buf.validate.field).string.min_len = 1];
+    google.protobuf.Duration timeout = 3;
+    TLS tls_config = 4;
+  }
+
+  HTTP http = 1;
+  GRPC grpc = 2;
+  // HTTPMetrics defines the HTTP server that exposes prometheus metrics
+  HTTP http_metrics = 3;
+}
+
+message Data {
+  message Database {
+    string driver = 1;
+    string source = 2;
+  }
+  Database database = 1;
+}
+
+message Auth {
+  // Authentication creates a JWT that uses this secret for signing
+  string generated_jws_hmac_secret = 2;
+  // allow_list is a list of allowed email addresses or domains
+  // for example ["@chainloop.dev", "foo@mycompany.org"]
+  repeated string allow_list = 3;
+  string cas_robot_account_private_key_path = 4;
+  OIDC oidc = 6;
+
+  message OIDC {
+    string domain = 1;
+    string client_id = 2;
+    string client_secret = 3;
+    string redirect_url_scheme = 4;
+  }
+}
+
+message CA {
+  oneof ca {
+    FileCA file_ca = 1;
+  }
+
+  message FileCA {
+    string cert_path = 1;
+    string key_path = 2;
+    string key_pass = 3;
+  }
+}

@@ -98,7 +98,7 @@ dockers:
   # Container image meant to perform migrations on the database at deployment time
   - dockerfile: app/controlplane/Dockerfile.migrations
     extra_files:
-      - app/controlplane/internal/data/ent/migrate/migrations
+      - app/controlplane/pkg/data/ent/migrate/migrations
     image_templates:
       - "ghcr.io/chainloop-dev/chainloop/control-plane-migrations:{{ .Tag }}"
   - dockerfile: app/artifact-cas/Dockerfile.goreleaser

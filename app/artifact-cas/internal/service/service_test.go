@@ -20,9 +20,9 @@ import (
 	"errors"
 	"testing"
 
-	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
-	"github.com/chainloop-dev/chainloop/internal/blobmanager/mocks"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
+	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
+	"github.com/chainloop-dev/chainloop/pkg/blobmanager/mocks"
 	kerrors "github.com/go-kratos/kratos/v2/errors"
 	jwtm "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/golang-jwt/jwt/v4"

@@ -29,7 +29,7 @@ import (
 	fileadapter "github.com/casbin/casbin/v2/persist/file-adapter"
 
 	entadapter "github.com/casbin/ent-adapter"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf"
+	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 )
 
 type Role string

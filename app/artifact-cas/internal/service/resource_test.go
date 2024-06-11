@@ -21,9 +21,9 @@ import (
 
 	v1 "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/service"
-	backend "github.com/chainloop-dev/chainloop/internal/blobmanager"
-	"github.com/chainloop-dev/chainloop/internal/blobmanager/mocks"
 	casjwt "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
+	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
+	"github.com/chainloop-dev/chainloop/pkg/blobmanager/mocks"
 	jwtmiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
