@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/table"
-	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/muesli/reflow/wrap"
 	"github.com/spf13/cobra"
 
@@ -107,15 +106,7 @@ func attestationStatusTableOutput(status *action.AttestationStatusResult, full b
 		return err
 	}
 
-	if err := envVarsTable(status, full); err != nil {
-		return err
-	}
-
-	if status.DryRun {
-		colors := text.Colors{text.FgHiBlack, text.BgHiYellow}
-		fmt.Println(colors.Sprint("The attestation is being crafted in dry-run mode. It will not get stored once rendered"))
-	}
-	return nil
+	return envVarsTable(status, full)
 }
 
 func envVarsTable(status *action.AttestationStatusResult, full bool) error {

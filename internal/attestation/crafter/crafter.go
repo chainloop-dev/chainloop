@@ -599,7 +599,7 @@ func (c *Crafter) ValidateAttestation() error {
 		return err
 	}
 
-	return c.CraftingState.ValidateComplete()
+	return c.CraftingState.ValidateComplete(c.CraftingState.GetDryRun())
 }
 
 func (c *Crafter) requireStateLoaded() error {
