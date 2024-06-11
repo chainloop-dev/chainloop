@@ -1,6 +1,6 @@
 # Container image built by go-releaser that's used to run migrations against the database during deployment
 # See https://atlasgo.io/guides/deploying/image
-FROM arigaio/atlas@sha256:37b8b163719e2f9baf5c97099e8d0772bc1bd84f392e402afcc3e565d11e074f
+FROM arigaio/atlas@sha256:5c459e8c134bb3d6d4f0346bbe6aa32ab23b7726286c4f23e7d831557574ed0d
 
 COPY app/controlplane/pkg/data/ent/migrate/migrations /migrations
 
