@@ -3,3 +3,5 @@
 FROM arigaio/atlas@sha256:37b8b163719e2f9baf5c97099e8d0772bc1bd84f392e402afcc3e565d11e074f
 
 COPY app/controlplane/pkg/data/ent/migrate/migrations /migrations
+
+USER 1001

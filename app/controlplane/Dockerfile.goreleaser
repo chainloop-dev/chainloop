@@ -14,4 +14,6 @@ COPY ./chainloop-plugin-smtp /plugins/
 # tmp is required for the plugins to run
 COPY --from=builder /tmp /tmp
 
+USER 1001
+
 ENTRYPOINT [ "/control-plane", "--conf", "/data/conf"]
