@@ -1,3 +1,7 @@
+{{- /*
+Copyright Chainloop, Inc. All Rights Reserved.
+SPDX-License-Identifier: APACHE-2.0
+*/}}
 
 {{- define "chainloop.postgresql.fullname" -}}
 {{- include "common.names.dependency.fullname" (dict "chartName" "postgresql" "chartValues" .Values.postgresql "context" $) -}}
@@ -61,14 +65,24 @@ WBiBSPaJtz6JYk/fye4=
 {{- with .Values.secretsBackend }}
 secretPrefix: {{ required "secret prefix required" .secretPrefix | quote }}
 {{- if eq .backend "vault" }}
+{{- $tokenEnvVar := "" }}
+{{- range $.Values.vault.server.extraEnvVars }}
+  {{- if eq .name "VAULT_DEV_ROOT_TOKEN_ID" }}
+    {{- $tokenEnvVar = .value }}
+  {{- end }}
+{{- end }}
 vault:
   {{- if and $.Values.development (or (not .vault) not .vault.address) }}
-  address: {{ printf "http://%s:8200" (include "chainloop.vault.fullname" $) | quote }}
-  token: {{ $.Values.vault.server.dev.devRootToken | quote }}
-  {{- else if (required "vault backend selected but configuration not provided" .vault ) }}
+  address: {{ printf "http://%s-server:8200" (include "chainloop.vault.fullname" $) | quote }}
+  {{- if $tokenEnvVar }}
+  token: {{ $tokenEnvVar | quote }}
+  {{- else }}
+  {{- required "VAULT_DEV_ROOT_TOKEN_ID environment variable is required when development mode is enabled" (index $.Values.vault.server.extraEnvVars "VAULT_DEV_ROOT_TOKEN_ID") }}
+  {{- end }}
+{{- else if (required "vault backend selected but configuration not provided" .vault ) }}
   address: {{ required "vault address required" .vault.address | quote }}
   token: {{ required "vault token required" .vault.token | quote }}
-  {{- end }}
+{{- end }}
 
 {{- else if eq .backend "awsSecretManager" }}
 awsSecretManager:

@@ -1,3 +1,6 @@
+# Copyright Chainloop, Inc. All Rights Reserved.
+# SPDX-License-Identifier: APACHE-2.0
+
 ## Default values for Chainloop Helm Chart
 
 ## @skip global
@@ -452,7 +455,7 @@ controlplane:
     dsn: ""
     environment: production
 
-  ## @param controlplane.keylessSigning Configuration for keyless signing using one of the supported providers
+  ## Configuration for keyless signing using one of the supported providers
   ## @param controlplane.keylessSigning.enabled Activates or deactivates de feature
   ## @param controlplane.keylessSigning.backend The backend to use. Currently only "fileCA" is supported
   ## @param controlplane.keylessSigning.fileCA.cert The PEM-encoded certificate of the file based CA
@@ -809,12 +812,29 @@ postgresql:
 # Vault server running in development mode --set development=true
 # IMPORTANT: This is not meant to run in production
 
-## Hashicorp Vault chart configuration
-## ref: https://github.com/hashicorp/vault-helm/blob/main/values.yaml
-## @param vault.server.dev.enabled Enable development mode (unsealed, in-memory, insecure)
-## @param vault.server.dev.devRootToken Connection token
+## Bitnami Hashicorp Vault chart configuration
+## ref: https://github.com/bitnami/charts/blob/main/bitnami/vault/values.yaml
+## @param vault.server.args Arguments to pass to the vault server. This is useful for setting the server in development mode
+## @param vault.server.config Configuration for the vault server. Small override of default Bitnami configuration
+## @param vault.server.extraEnvVars[0].name Root token for the vault server
+## @param vault.server.extraEnvVars[0].value The value of the root token. Default: notasecret
+## @param vault.server.extraEnvVars[1].name Address to listen on development mode
+## @param vault.server.extraEnvVars[1].value The address to listen on. Default: [::]:8200
 vault:
   server:
-    dev:
-      enabled: true
-      devRootToken: "notapassword"
+    args: [
+      "server",
+      "-dev"
+    ]
+    extraEnvVars:
+      - name: VAULT_DEV_ROOT_TOKEN_ID
+        value: "notasecret"
+      - name: VAULT_DEV_LISTEN_ADDRESS
+        value: "[::]:8200"
+    config: |
+      storage "inmem" {}
+
+      disable_mlock = true
+      ui = true
+
+      service_registration "kubernetes" {}

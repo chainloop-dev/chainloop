@@ -1,3 +1,8 @@
+{{- /*
+Copyright Chainloop, Inc. All Rights Reserved.
+SPDX-License-Identifier: APACHE-2.0
+*/}}
+
 {{- if .Values.controlplane.ingress.enabled }}
 {{- $fullName := include "chainloop.controlplane.fullname" . -}}
 apiVersion: {{ include "common.capabilities.ingress.apiVersion" . }}
