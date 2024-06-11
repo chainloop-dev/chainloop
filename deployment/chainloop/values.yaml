@@ -822,6 +822,8 @@ postgresql:
 ## @param vault.server.extraEnvVars[1].value The address to listen on. Default: [::]:8200
 vault:
   server:
+    ## This configuration is only for development purposes and should not be used in production. Development
+    ## mode is configured by --set development=true, which enables this Vault chart
     args: [
       "server",
       "-dev"
