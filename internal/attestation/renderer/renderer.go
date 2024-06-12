@@ -168,7 +168,6 @@ func (ab *AttestationRenderer) envelopeToBundle(dsseEnvelope dsse.Envelope) (*pr
 		bundle.VerificationMaterial.Content = &protobundle.VerificationMaterial_PublicKey{PublicKey: &v12.PublicKeyIdentifier{
 			Hint: string(pk),
 		}}
-		break
 	case *chainloopsigner.Signer:
 		chain := v.Chain
 		certs := make([]*v12.X509Certificate, 0)
