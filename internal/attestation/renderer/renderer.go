@@ -126,6 +126,7 @@ func (ab *AttestationRenderer) Render() (*dsse.Envelope, error) {
 		if err != nil {
 			return nil, fmt.Errorf("marshalling bundle: %w", err)
 		}
+		ab.logger.Info().Msg(fmt.Sprintf("generating Sigstore bundle %s", ab.bundlePath))
 		err = os.WriteFile(ab.bundlePath, json, 0600)
 		if err != nil {
 			return nil, fmt.Errorf("writing bundle: %w", err)
