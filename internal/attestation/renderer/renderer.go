@@ -17,7 +17,6 @@ package renderer
 
 import (
 	"bytes"
-	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
@@ -32,6 +31,7 @@ import (
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
+	"github.com/sigstore/cosign/v2/pkg/signature"
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 	v12 "github.com/sigstore/protobuf-specs/gen/pb-go/common/v1"
 	dsse2 "github.com/sigstore/protobuf-specs/gen/pb-go/dsse"
@@ -159,16 +159,13 @@ func (ab *AttestationRenderer) envelopeToBundle(dsseEnvelope dsse.Envelope) (*pr
 	// check type of wrapped signer
 	switch v := ab.signer.(type) {
 	case *cosign.Signer:
-		pk, err := v.PublicKey()
+		pk, err := signature.PublicKeyPem(v)
 		if err != nil {
 			return nil, fmt.Errorf("getting public key: %w", err)
 		}
-		pkContent, err := x509.MarshalPKIXPublicKey(pk)
-		if err != nil {
-			return nil, fmt.Errorf("marshalling public key: %w", err)
-		}
+
 		bundle.VerificationMaterial.Content = &protobundle.VerificationMaterial_PublicKey{PublicKey: &v12.PublicKeyIdentifier{
-			Hint: base64.StdEncoding.EncodeToString(pkContent),
+			Hint: string(pk),
 		}}
 		break
 	case *chainloopsigner.Signer:
