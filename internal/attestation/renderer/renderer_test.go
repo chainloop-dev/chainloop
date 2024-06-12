@@ -33,7 +33,6 @@ type rendererSuite struct {
 	suite.Suite
 
 	sv           signature.SignerVerifier
-	dsseSigner   signature.Signer
 	dsseVerifier *dsse.EnvelopeVerifier
 }
 
@@ -45,7 +44,6 @@ func (s *rendererSuite) SetupTest() {
 	var err error
 	s.sv, _, err = signature.NewECDSASignerVerifier(elliptic.P256(), rand.Reader, crypto.SHA256)
 	s.Require().NoError(err)
-	s.dsseSigner = sigdsee.WrapSigner(s.sv, "application/vnd.in-toto+json")
 	s.dsseVerifier, err = dsse.NewEnvelopeVerifier(&sigdsee.VerifierAdapter{SignatureVerifier: s.sv})
 	s.Require().NoError(err)
 }
@@ -61,7 +59,7 @@ func (s *rendererSuite) TestRender() {
 	}
 
 	s.Run("generated envelope is always well-formed", func() {
-		renderer, err := NewAttestationRenderer(cs, "", "", s.dsseSigner)
+		renderer, err := NewAttestationRenderer(cs, "", "", s.sv)
 		s.Require().NoError(err)
 
 		envelope, err := renderer.Render()
@@ -72,7 +70,7 @@ func (s *rendererSuite) TestRender() {
 	})
 
 	s.Run("simulates double wrapping bug", func() {
-		doubleWrapper := sigdsee.WrapSigner(s.dsseSigner, "application/vnd.in-toto+json")
+		doubleWrapper := sigdsee.WrapSigner(s.sv, "application/vnd.in-toto+json")
 
 		renderer, err := NewAttestationRenderer(cs, "", "", doubleWrapper)
 		s.Require().NoError(err)
