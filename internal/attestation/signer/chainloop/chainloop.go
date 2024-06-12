@@ -37,6 +37,10 @@ import (
 type Signer struct {
 	sigstoresigner.Signer
 
+	// PEM encoded public certificate chain
+	Chain []string
+
+	// where to write the certificate chain to
 	signingServiceClient pb.SigningServiceClient
 	logger               zerolog.Logger
 	mu                   sync.Mutex
@@ -93,7 +97,7 @@ func (cs *Signer) keyLessSigner(ctx context.Context) (sigstoresigner.Signer, err
 	if err != nil {
 		return nil, fmt.Errorf("creating certificate request: %w", err)
 	}
-	_, err = cs.certFromChainloop(ctx, request)
+	cs.Chain, err = cs.certFromChainloop(ctx, request)
 	if err != nil {
 		return nil, fmt.Errorf("getting a certificate from chainloop: %w", err)
 	}

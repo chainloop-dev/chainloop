@@ -32,7 +32,7 @@ import (
 
 type AttestationPushOpts struct {
 	*ActionsOpts
-	KeyPath, CLIVersion, CLIDigest string
+	KeyPath, CLIVersion, CLIDigest, BundlePath string
 }
 
 type AttestationResult struct {
@@ -43,8 +43,8 @@ type AttestationResult struct {
 
 type AttestationPush struct {
 	*ActionsOpts
-	c                              *crafter.Crafter
-	keyPath, cliVersion, cliDigest string
+	c                                          *crafter.Crafter
+	keyPath, cliVersion, cliDigest, bundlePath string
 }
 
 func NewAttestationPush(cfg *AttestationPushOpts) (*AttestationPush, error) {
@@ -59,6 +59,7 @@ func NewAttestationPush(cfg *AttestationPushOpts) (*AttestationPush, error) {
 		keyPath:     cfg.KeyPath,
 		cliVersion:  cfg.CLIVersion,
 		cliDigest:   cfg.CLIDigest,
+		bundlePath:  cfg.BundlePath,
 	}, nil
 }
 
@@ -133,7 +134,7 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 
 	wrappedSigner := signer.GetSigner(action.keyPath, action.Logger, pb.NewSigningServiceClient(action.CPConnection))
 	renderer, err := renderer.NewAttestationRenderer(action.c.CraftingState, action.cliVersion, action.cliDigest, wrappedSigner,
-		renderer.WithLogger(action.Logger))
+		renderer.WithLogger(action.Logger), renderer.WithBundle(action.bundlePath))
 	if err != nil {
 		return nil, err
 	}
