@@ -168,7 +168,7 @@ func (ab *AttestationRenderer) envelopeToBundle(dsseEnvelope dsse.Envelope) (*pr
 			return nil, fmt.Errorf("marshalling public key: %w", err)
 		}
 		bundle.VerificationMaterial.Content = &protobundle.VerificationMaterial_PublicKey{PublicKey: &v12.PublicKeyIdentifier{
-			Hint: string(pkContent),
+			Hint: base64.StdEncoding.EncodeToString(pkContent),
 		}}
 		break
 	case *chainloopsigner.Signer:
