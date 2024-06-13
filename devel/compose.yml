@@ -3,7 +3,7 @@ version: '3'
 # NOTE: This setup is meant to be used for development purposes only.
 services:
   postgresql:
-    image: docker.io/bitnami/postgresql:14
+    image: docker.io/bitnami/postgresql:16
     # Expose the port to the host to enable baremetal controlplane development
     ports:
       - 5432:5432
