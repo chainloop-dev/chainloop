@@ -34,7 +34,7 @@ import (
 	"github.com/sigstore/cosign/v2/pkg/signature"
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 	v12 "github.com/sigstore/protobuf-specs/gen/pb-go/common/v1"
-	dsse2 "github.com/sigstore/protobuf-specs/gen/pb-go/dsse"
+	sigstoredsse "github.com/sigstore/protobuf-specs/gen/pb-go/dsse"
 	sigstoresigner "github.com/sigstore/sigstore/pkg/signature"
 	sigdsee "github.com/sigstore/sigstore/pkg/signature/dsse"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -61,7 +61,7 @@ func WithLogger(logger zerolog.Logger) Opt {
 	}
 }
 
-func WithBundle(bundlePath string) Opt {
+func WithBundleOutputPath(bundlePath string) Opt {
 	return func(ar *AttestationRenderer) {
 		ar.bundlePath = bundlePath
 	}
@@ -144,10 +144,10 @@ func (ab *AttestationRenderer) envelopeToBundle(dsseEnvelope dsse.Envelope) (*pr
 	}
 	bundle := &protobundle.Bundle{
 		MediaType: "application/vnd.dev.sigstore.bundle+json;version=0.3",
-		Content: &protobundle.Bundle_DsseEnvelope{DsseEnvelope: &dsse2.Envelope{
+		Content: &protobundle.Bundle_DsseEnvelope{DsseEnvelope: &sigstoredsse.Envelope{
 			Payload:     payload,
 			PayloadType: dsseEnvelope.PayloadType,
-			Signatures: []*dsse2.Signature{
+			Signatures: []*sigstoredsse.Signature{
 				{
 					Sig:   []byte(dsseEnvelope.Signatures[0].Sig),
 					Keyid: dsseEnvelope.Signatures[0].KeyID,
@@ -160,6 +160,8 @@ func (ab *AttestationRenderer) envelopeToBundle(dsseEnvelope dsse.Envelope) (*pr
 	// check type of wrapped signer
 	switch v := ab.signer.(type) {
 	case *cosign.Signer:
+		// TODO: review this, since it's expected that we don't store the full key, but a reference to it
+		// 	     so that it can be retrieved out-of-band by the verifier
 		pk, err := signature.PublicKeyPem(v)
 		if err != nil {
 			return nil, fmt.Errorf("getting public key: %w", err)

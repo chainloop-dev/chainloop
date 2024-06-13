@@ -99,7 +99,7 @@ func newAttestationPushCmd() *cobra.Command {
 
 	cmd.Flags().StringVarP(&pkPath, "key", "k", "", "reference (path or env variable name) to the cosign or KMS key that will be used to sign the attestation")
 	cmd.Flags().StringSliceVar(&annotationsFlag, "annotation", nil, "additional annotation in the format of key=value")
-	cmd.Flags().StringVar(&bundle, "bundle", "", "write a Sigstore bundle for the generated attestation")
+	cmd.Flags().StringVar(&bundle, "bundle", "", "output a Sigstore bundle to the provided path  ")
 	flagAttestationID(cmd)
 
 	return cmd
