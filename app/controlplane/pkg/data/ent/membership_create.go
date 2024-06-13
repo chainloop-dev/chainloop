@@ -277,11 +277,15 @@ func (mc *MembershipCreate) createSpec() (*Membership, *sqlgraph.CreateSpec) {
 // MembershipCreateBulk is the builder for creating many Membership entities in bulk.
 type MembershipCreateBulk struct {
 	config
+	err      error
 	builders []*MembershipCreate
 }
 
 // Save creates the Membership entities in the database.
 func (mcb *MembershipCreateBulk) Save(ctx context.Context) ([]*Membership, error) {
+	if mcb.err != nil {
+		return nil, mcb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(mcb.builders))
 	nodes := make([]*Membership, len(mcb.builders))
 	mutators := make([]Mutator, len(mcb.builders))

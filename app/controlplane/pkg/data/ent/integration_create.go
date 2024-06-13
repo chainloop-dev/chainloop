@@ -293,11 +293,15 @@ func (ic *IntegrationCreate) createSpec() (*Integration, *sqlgraph.CreateSpec) {
 // IntegrationCreateBulk is the builder for creating many Integration entities in bulk.
 type IntegrationCreateBulk struct {
 	config
+	err      error
 	builders []*IntegrationCreate
 }
 
 // Save creates the Integration entities in the database.
 func (icb *IntegrationCreateBulk) Save(ctx context.Context) ([]*Integration, error) {
+	if icb.err != nil {
+		return nil, icb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(icb.builders))
 	nodes := make([]*Integration, len(icb.builders))
 	mutators := make([]Mutator, len(icb.builders))

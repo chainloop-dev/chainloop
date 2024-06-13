@@ -224,11 +224,15 @@ func (wcvc *WorkflowContractVersionCreate) createSpec() (*WorkflowContractVersio
 // WorkflowContractVersionCreateBulk is the builder for creating many WorkflowContractVersion entities in bulk.
 type WorkflowContractVersionCreateBulk struct {
 	config
+	err      error
 	builders []*WorkflowContractVersionCreate
 }
 
 // Save creates the WorkflowContractVersion entities in the database.
 func (wcvcb *WorkflowContractVersionCreateBulk) Save(ctx context.Context) ([]*WorkflowContractVersion, error) {
+	if wcvcb.err != nil {
+		return nil, wcvcb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(wcvcb.builders))
 	nodes := make([]*WorkflowContractVersion, len(wcvcb.builders))
 	mutators := make([]Mutator, len(wcvcb.builders))

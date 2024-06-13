@@ -48,12 +48,10 @@ type IntegrationAttachmentEdges struct {
 // IntegrationOrErr returns the Integration value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e IntegrationAttachmentEdges) IntegrationOrErr() (*Integration, error) {
-	if e.loadedTypes[0] {
-		if e.Integration == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: integration.Label}
-		}
+	if e.Integration != nil {
 		return e.Integration, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: integration.Label}
 	}
 	return nil, &NotLoadedError{edge: "integration"}
 }
@@ -61,12 +59,10 @@ func (e IntegrationAttachmentEdges) IntegrationOrErr() (*Integration, error) {
 // WorkflowOrErr returns the Workflow value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e IntegrationAttachmentEdges) WorkflowOrErr() (*Workflow, error) {
-	if e.loadedTypes[1] {
-		if e.Workflow == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: workflow.Label}
-		}
+	if e.Workflow != nil {
 		return e.Workflow, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: workflow.Label}
 	}
 	return nil, &NotLoadedError{edge: "workflow"}
 }

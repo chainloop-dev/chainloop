@@ -246,11 +246,15 @@ func (atc *APITokenCreate) createSpec() (*APIToken, *sqlgraph.CreateSpec) {
 // APITokenCreateBulk is the builder for creating many APIToken entities in bulk.
 type APITokenCreateBulk struct {
 	config
+	err      error
 	builders []*APITokenCreate
 }
 
 // Save creates the APIToken entities in the database.
 func (atcb *APITokenCreateBulk) Save(ctx context.Context) ([]*APIToken, error) {
+	if atcb.err != nil {
+		return nil, atcb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(atcb.builders))
 	nodes := make([]*APIToken, len(atcb.builders))
 	mutators := make([]Mutator, len(atcb.builders))

@@ -212,11 +212,15 @@ func (rac *RobotAccountCreate) createSpec() (*RobotAccount, *sqlgraph.CreateSpec
 // RobotAccountCreateBulk is the builder for creating many RobotAccount entities in bulk.
 type RobotAccountCreateBulk struct {
 	config
+	err      error
 	builders []*RobotAccountCreate
 }
 
 // Save creates the RobotAccount entities in the database.
 func (racb *RobotAccountCreateBulk) Save(ctx context.Context) ([]*RobotAccount, error) {
+	if racb.err != nil {
+		return nil, racb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(racb.builders))
 	nodes := make([]*RobotAccount, len(racb.builders))
 	mutators := make([]Mutator, len(racb.builders))

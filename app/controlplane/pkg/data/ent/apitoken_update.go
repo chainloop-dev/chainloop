@@ -77,6 +77,14 @@ func (atu *APITokenUpdate) SetOrganizationID(u uuid.UUID) *APITokenUpdate {
 	return atu
 }
 
+// SetNillableOrganizationID sets the "organization_id" field if the given value is not nil.
+func (atu *APITokenUpdate) SetNillableOrganizationID(u *uuid.UUID) *APITokenUpdate {
+	if u != nil {
+		atu.SetOrganizationID(*u)
+	}
+	return atu
+}
+
 // SetOrganization sets the "organization" edge to the Organization entity.
 func (atu *APITokenUpdate) SetOrganization(o *Organization) *APITokenUpdate {
 	return atu.SetOrganizationID(o.ID)
@@ -255,6 +263,14 @@ func (atuo *APITokenUpdateOne) ClearRevokedAt() *APITokenUpdateOne {
 // SetOrganizationID sets the "organization_id" field.
 func (atuo *APITokenUpdateOne) SetOrganizationID(u uuid.UUID) *APITokenUpdateOne {
 	atuo.mutation.SetOrganizationID(u)
+	return atuo
+}
+
+// SetNillableOrganizationID sets the "organization_id" field if the given value is not nil.
+func (atuo *APITokenUpdateOne) SetNillableOrganizationID(u *uuid.UUID) *APITokenUpdateOne {
+	if u != nil {
+		atuo.SetOrganizationID(*u)
+	}
 	return atuo
 }
 

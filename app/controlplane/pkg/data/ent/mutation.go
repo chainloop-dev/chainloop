@@ -440,6 +440,7 @@ func (m *APITokenMutation) ResetOrganizationID() {
 // ClearOrganization clears the "organization" edge to the Organization entity.
 func (m *APITokenMutation) ClearOrganization() {
 	m.clearedorganization = true
+	m.clearedFields[apitoken.FieldOrganizationID] = struct{}{}
 }
 
 // OrganizationCleared reports if the "organization" edge to the Organization entity was cleared.
@@ -4911,6 +4912,7 @@ func (m *OrgInvitationMutation) ResetRole() {
 // ClearOrganization clears the "organization" edge to the Organization entity.
 func (m *OrgInvitationMutation) ClearOrganization() {
 	m.clearedorganization = true
+	m.clearedFields[orginvitation.FieldOrganizationID] = struct{}{}
 }
 
 // OrganizationCleared reports if the "organization" edge to the Organization entity was cleared.
@@ -4937,6 +4939,7 @@ func (m *OrgInvitationMutation) ResetOrganization() {
 // ClearSender clears the "sender" edge to the User entity.
 func (m *OrgInvitationMutation) ClearSender() {
 	m.clearedsender = true
+	m.clearedFields[orginvitation.FieldSenderID] = struct{}{}
 }
 
 // SenderCleared reports if the "sender" edge to the User entity was cleared.
@@ -8752,6 +8755,7 @@ func (m *WorkflowMutation) ResetWorkflowruns() {
 // ClearOrganization clears the "organization" edge to the Organization entity.
 func (m *WorkflowMutation) ClearOrganization() {
 	m.clearedorganization = true
+	m.clearedFields[workflow.FieldOrganizationID] = struct{}{}
 }
 
 // OrganizationCleared reports if the "organization" edge to the Organization entity was cleared.

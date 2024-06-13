@@ -236,11 +236,15 @@ func (iac *IntegrationAttachmentCreate) createSpec() (*IntegrationAttachment, *s
 // IntegrationAttachmentCreateBulk is the builder for creating many IntegrationAttachment entities in bulk.
 type IntegrationAttachmentCreateBulk struct {
 	config
+	err      error
 	builders []*IntegrationAttachmentCreate
 }
 
 // Save creates the IntegrationAttachment entities in the database.
 func (iacb *IntegrationAttachmentCreateBulk) Save(ctx context.Context) ([]*IntegrationAttachment, error) {
+	if iacb.err != nil {
+		return nil, iacb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(iacb.builders))
 	nodes := make([]*IntegrationAttachment, len(iacb.builders))
 	mutators := make([]Mutator, len(iacb.builders))

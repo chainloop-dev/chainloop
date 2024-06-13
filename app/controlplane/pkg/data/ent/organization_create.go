@@ -349,11 +349,15 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 // OrganizationCreateBulk is the builder for creating many Organization entities in bulk.
 type OrganizationCreateBulk struct {
 	config
+	err      error
 	builders []*OrganizationCreate
 }
 
 // Save creates the Organization entities in the database.
 func (ocb *OrganizationCreateBulk) Save(ctx context.Context) ([]*Organization, error) {
+	if ocb.err != nil {
+		return nil, ocb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(ocb.builders))
 	nodes := make([]*Organization, len(ocb.builders))
 	mutators := make([]Mutator, len(ocb.builders))

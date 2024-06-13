@@ -474,11 +474,15 @@ func (wc *WorkflowCreate) createSpec() (*Workflow, *sqlgraph.CreateSpec) {
 // WorkflowCreateBulk is the builder for creating many Workflow entities in bulk.
 type WorkflowCreateBulk struct {
 	config
+	err      error
 	builders []*WorkflowCreate
 }
 
 // Save creates the Workflow entities in the database.
 func (wcb *WorkflowCreateBulk) Save(ctx context.Context) ([]*Workflow, error) {
+	if wcb.err != nil {
+		return nil, wcb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(wcb.builders))
 	nodes := make([]*Workflow, len(wcb.builders))
 	mutators := make([]Mutator, len(wcb.builders))

@@ -69,12 +69,10 @@ type WorkflowRunEdges struct {
 // WorkflowOrErr returns the Workflow value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e WorkflowRunEdges) WorkflowOrErr() (*Workflow, error) {
-	if e.loadedTypes[0] {
-		if e.Workflow == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: workflow.Label}
-		}
+	if e.Workflow != nil {
 		return e.Workflow, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: workflow.Label}
 	}
 	return nil, &NotLoadedError{edge: "workflow"}
 }
@@ -82,12 +80,10 @@ func (e WorkflowRunEdges) WorkflowOrErr() (*Workflow, error) {
 // ContractVersionOrErr returns the ContractVersion value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e WorkflowRunEdges) ContractVersionOrErr() (*WorkflowContractVersion, error) {
-	if e.loadedTypes[1] {
-		if e.ContractVersion == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: workflowcontractversion.Label}
-		}
+	if e.ContractVersion != nil {
 		return e.ContractVersion, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: workflowcontractversion.Label}
 	}
 	return nil, &NotLoadedError{edge: "contract_version"}
 }

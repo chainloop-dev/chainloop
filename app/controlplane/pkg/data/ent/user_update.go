@@ -36,6 +36,14 @@ func (uu *UserUpdate) SetEmail(s string) *UserUpdate {
 	return uu
 }
 
+// SetNillableEmail sets the "email" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableEmail(s *string) *UserUpdate {
+	if s != nil {
+		uu.SetEmail(*s)
+	}
+	return uu
+}
+
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by IDs.
 func (uu *UserUpdate) AddMembershipIDs(ids ...uuid.UUID) *UserUpdate {
 	uu.mutation.AddMembershipIDs(ids...)
@@ -205,6 +213,14 @@ type UserUpdateOne struct {
 // SetEmail sets the "email" field.
 func (uuo *UserUpdateOne) SetEmail(s string) *UserUpdateOne {
 	uuo.mutation.SetEmail(s)
+	return uuo
+}
+
+// SetNillableEmail sets the "email" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableEmail(s *string) *UserUpdateOne {
+	if s != nil {
+		uuo.SetEmail(*s)
+	}
 	return uuo
 }
 

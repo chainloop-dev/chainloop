@@ -74,9 +74,25 @@ func (oiu *OrgInvitationUpdate) SetOrganizationID(u uuid.UUID) *OrgInvitationUpd
 	return oiu
 }
 
+// SetNillableOrganizationID sets the "organization_id" field if the given value is not nil.
+func (oiu *OrgInvitationUpdate) SetNillableOrganizationID(u *uuid.UUID) *OrgInvitationUpdate {
+	if u != nil {
+		oiu.SetOrganizationID(*u)
+	}
+	return oiu
+}
+
 // SetSenderID sets the "sender_id" field.
 func (oiu *OrgInvitationUpdate) SetSenderID(u uuid.UUID) *OrgInvitationUpdate {
 	oiu.mutation.SetSenderID(u)
+	return oiu
+}
+
+// SetNillableSenderID sets the "sender_id" field if the given value is not nil.
+func (oiu *OrgInvitationUpdate) SetNillableSenderID(u *uuid.UUID) *OrgInvitationUpdate {
+	if u != nil {
+		oiu.SetSenderID(*u)
+	}
 	return oiu
 }
 
@@ -328,9 +344,25 @@ func (oiuo *OrgInvitationUpdateOne) SetOrganizationID(u uuid.UUID) *OrgInvitatio
 	return oiuo
 }
 
+// SetNillableOrganizationID sets the "organization_id" field if the given value is not nil.
+func (oiuo *OrgInvitationUpdateOne) SetNillableOrganizationID(u *uuid.UUID) *OrgInvitationUpdateOne {
+	if u != nil {
+		oiuo.SetOrganizationID(*u)
+	}
+	return oiuo
+}
+
 // SetSenderID sets the "sender_id" field.
 func (oiuo *OrgInvitationUpdateOne) SetSenderID(u uuid.UUID) *OrgInvitationUpdateOne {
 	oiuo.mutation.SetSenderID(u)
+	return oiuo
+}
+
+// SetNillableSenderID sets the "sender_id" field if the given value is not nil.
+func (oiuo *OrgInvitationUpdateOne) SetNillableSenderID(u *uuid.UUID) *OrgInvitationUpdateOne {
+	if u != nil {
+		oiuo.SetSenderID(*u)
+	}
 	return oiuo
 }
 

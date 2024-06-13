@@ -37,6 +37,14 @@ func (rau *RobotAccountUpdate) SetName(s string) *RobotAccountUpdate {
 	return rau
 }
 
+// SetNillableName sets the "name" field if the given value is not nil.
+func (rau *RobotAccountUpdate) SetNillableName(s *string) *RobotAccountUpdate {
+	if s != nil {
+		rau.SetName(*s)
+	}
+	return rau
+}
+
 // SetRevokedAt sets the "revoked_at" field.
 func (rau *RobotAccountUpdate) SetRevokedAt(t time.Time) *RobotAccountUpdate {
 	rau.mutation.SetRevokedAt(t)
@@ -192,6 +200,14 @@ type RobotAccountUpdateOne struct {
 // SetName sets the "name" field.
 func (rauo *RobotAccountUpdateOne) SetName(s string) *RobotAccountUpdateOne {
 	rauo.mutation.SetName(s)
+	return rauo
+}
+
+// SetNillableName sets the "name" field if the given value is not nil.
+func (rauo *RobotAccountUpdateOne) SetNillableName(s *string) *RobotAccountUpdateOne {
+	if s != nil {
+		rauo.SetName(*s)
+	}
 	return rauo
 }
 

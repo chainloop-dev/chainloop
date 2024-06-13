@@ -407,11 +407,15 @@ func (cbc *CASBackendCreate) createSpec() (*CASBackend, *sqlgraph.CreateSpec) {
 // CASBackendCreateBulk is the builder for creating many CASBackend entities in bulk.
 type CASBackendCreateBulk struct {
 	config
+	err      error
 	builders []*CASBackendCreate
 }
 
 // Save creates the CASBackend entities in the database.
 func (cbcb *CASBackendCreateBulk) Save(ctx context.Context) ([]*CASBackend, error) {
+	if cbcb.err != nil {
+		return nil, cbcb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(cbcb.builders))
 	nodes := make([]*CASBackend, len(cbcb.builders))
 	mutators := make([]Mutator, len(cbcb.builders))

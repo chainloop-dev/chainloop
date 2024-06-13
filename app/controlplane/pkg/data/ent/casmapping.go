@@ -50,12 +50,10 @@ type CASMappingEdges struct {
 // CasBackendOrErr returns the CasBackend value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e CASMappingEdges) CasBackendOrErr() (*CASBackend, error) {
-	if e.loadedTypes[0] {
-		if e.CasBackend == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: casbackend.Label}
-		}
+	if e.CasBackend != nil {
 		return e.CasBackend, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: casbackend.Label}
 	}
 	return nil, &NotLoadedError{edge: "cas_backend"}
 }
@@ -63,12 +61,10 @@ func (e CASMappingEdges) CasBackendOrErr() (*CASBackend, error) {
 // WorkflowRunOrErr returns the WorkflowRun value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e CASMappingEdges) WorkflowRunOrErr() (*WorkflowRun, error) {
-	if e.loadedTypes[1] {
-		if e.WorkflowRun == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: workflowrun.Label}
-		}
+	if e.WorkflowRun != nil {
 		return e.WorkflowRun, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: workflowrun.Label}
 	}
 	return nil, &NotLoadedError{edge: "workflow_run"}
 }
@@ -76,12 +72,10 @@ func (e CASMappingEdges) WorkflowRunOrErr() (*WorkflowRun, error) {
 // OrganizationOrErr returns the Organization value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e CASMappingEdges) OrganizationOrErr() (*Organization, error) {
-	if e.loadedTypes[2] {
-		if e.Organization == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: organization.Label}
-		}
+	if e.Organization != nil {
 		return e.Organization, nil
+	} else if e.loadedTypes[2] {
+		return nil, &NotFoundError{label: organization.Label}
 	}
 	return nil, &NotLoadedError{edge: "organization"}
 }

@@ -300,11 +300,15 @@ func (oic *OrgInvitationCreate) createSpec() (*OrgInvitation, *sqlgraph.CreateSp
 // OrgInvitationCreateBulk is the builder for creating many OrgInvitation entities in bulk.
 type OrgInvitationCreateBulk struct {
 	config
+	err      error
 	builders []*OrgInvitationCreate
 }
 
 // Save creates the OrgInvitation entities in the database.
 func (oicb *OrgInvitationCreateBulk) Save(ctx context.Context) ([]*OrgInvitation, error) {
+	if oicb.err != nil {
+		return nil, oicb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(oicb.builders))
 	nodes := make([]*OrgInvitation, len(oicb.builders))
 	mutators := make([]Mutator, len(oicb.builders))

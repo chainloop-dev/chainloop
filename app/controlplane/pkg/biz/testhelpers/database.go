@@ -148,7 +148,7 @@ func NewTestDatabase(t *testing.T) *TestDatabase {
 	}
 
 	req := testcontainers.ContainerRequest{
-		Image:        "postgres:14-alpine",
+		Image:        "postgres:16-alpine",
 		ExposedPorts: []string{port},
 		AutoRemove:   true,
 		Env: map[string]string{

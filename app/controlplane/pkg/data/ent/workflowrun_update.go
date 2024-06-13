@@ -180,6 +180,14 @@ func (wru *WorkflowRunUpdate) SetContractRevisionUsed(i int) *WorkflowRunUpdate 
 	return wru
 }
 
+// SetNillableContractRevisionUsed sets the "contract_revision_used" field if the given value is not nil.
+func (wru *WorkflowRunUpdate) SetNillableContractRevisionUsed(i *int) *WorkflowRunUpdate {
+	if i != nil {
+		wru.SetContractRevisionUsed(*i)
+	}
+	return wru
+}
+
 // AddContractRevisionUsed adds i to the "contract_revision_used" field.
 func (wru *WorkflowRunUpdate) AddContractRevisionUsed(i int) *WorkflowRunUpdate {
 	wru.mutation.AddContractRevisionUsed(i)
@@ -190,6 +198,14 @@ func (wru *WorkflowRunUpdate) AddContractRevisionUsed(i int) *WorkflowRunUpdate 
 func (wru *WorkflowRunUpdate) SetContractRevisionLatest(i int) *WorkflowRunUpdate {
 	wru.mutation.ResetContractRevisionLatest()
 	wru.mutation.SetContractRevisionLatest(i)
+	return wru
+}
+
+// SetNillableContractRevisionLatest sets the "contract_revision_latest" field if the given value is not nil.
+func (wru *WorkflowRunUpdate) SetNillableContractRevisionLatest(i *int) *WorkflowRunUpdate {
+	if i != nil {
+		wru.SetContractRevisionLatest(*i)
+	}
 	return wru
 }
 
@@ -672,6 +688,14 @@ func (wruo *WorkflowRunUpdateOne) SetContractRevisionUsed(i int) *WorkflowRunUpd
 	return wruo
 }
 
+// SetNillableContractRevisionUsed sets the "contract_revision_used" field if the given value is not nil.
+func (wruo *WorkflowRunUpdateOne) SetNillableContractRevisionUsed(i *int) *WorkflowRunUpdateOne {
+	if i != nil {
+		wruo.SetContractRevisionUsed(*i)
+	}
+	return wruo
+}
+
 // AddContractRevisionUsed adds i to the "contract_revision_used" field.
 func (wruo *WorkflowRunUpdateOne) AddContractRevisionUsed(i int) *WorkflowRunUpdateOne {
 	wruo.mutation.AddContractRevisionUsed(i)
@@ -682,6 +706,14 @@ func (wruo *WorkflowRunUpdateOne) AddContractRevisionUsed(i int) *WorkflowRunUpd
 func (wruo *WorkflowRunUpdateOne) SetContractRevisionLatest(i int) *WorkflowRunUpdateOne {
 	wruo.mutation.ResetContractRevisionLatest()
 	wruo.mutation.SetContractRevisionLatest(i)
+	return wruo
+}
+
+// SetNillableContractRevisionLatest sets the "contract_revision_latest" field if the given value is not nil.
+func (wruo *WorkflowRunUpdateOne) SetNillableContractRevisionLatest(i *int) *WorkflowRunUpdateOne {
+	if i != nil {
+		wruo.SetContractRevisionLatest(*i)
+	}
 	return wruo
 }
 

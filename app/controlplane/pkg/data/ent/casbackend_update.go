@@ -39,6 +39,14 @@ func (cbu *CASBackendUpdate) SetName(s string) *CASBackendUpdate {
 	return cbu
 }
 
+// SetNillableName sets the "name" field if the given value is not nil.
+func (cbu *CASBackendUpdate) SetNillableName(s *string) *CASBackendUpdate {
+	if s != nil {
+		cbu.SetName(*s)
+	}
+	return cbu
+}
+
 // SetDescription sets the "description" field.
 func (cbu *CASBackendUpdate) SetDescription(s string) *CASBackendUpdate {
 	cbu.mutation.SetDescription(s)
@@ -62,6 +70,14 @@ func (cbu *CASBackendUpdate) ClearDescription() *CASBackendUpdate {
 // SetSecretName sets the "secret_name" field.
 func (cbu *CASBackendUpdate) SetSecretName(s string) *CASBackendUpdate {
 	cbu.mutation.SetSecretName(s)
+	return cbu
+}
+
+// SetNillableSecretName sets the "secret_name" field if the given value is not nil.
+func (cbu *CASBackendUpdate) SetNillableSecretName(s *string) *CASBackendUpdate {
+	if s != nil {
+		cbu.SetSecretName(*s)
+	}
 	return cbu
 }
 
@@ -372,6 +388,14 @@ func (cbuo *CASBackendUpdateOne) SetName(s string) *CASBackendUpdateOne {
 	return cbuo
 }
 
+// SetNillableName sets the "name" field if the given value is not nil.
+func (cbuo *CASBackendUpdateOne) SetNillableName(s *string) *CASBackendUpdateOne {
+	if s != nil {
+		cbuo.SetName(*s)
+	}
+	return cbuo
+}
+
 // SetDescription sets the "description" field.
 func (cbuo *CASBackendUpdateOne) SetDescription(s string) *CASBackendUpdateOne {
 	cbuo.mutation.SetDescription(s)
@@ -395,6 +419,14 @@ func (cbuo *CASBackendUpdateOne) ClearDescription() *CASBackendUpdateOne {
 // SetSecretName sets the "secret_name" field.
 func (cbuo *CASBackendUpdateOne) SetSecretName(s string) *CASBackendUpdateOne {
 	cbuo.mutation.SetSecretName(s)
+	return cbuo
+}
+
+// SetNillableSecretName sets the "secret_name" field if the given value is not nil.
+func (cbuo *CASBackendUpdateOne) SetNillableSecretName(s *string) *CASBackendUpdateOne {
+	if s != nil {
+		cbuo.SetSecretName(*s)
+	}
 	return cbuo
 }
 
