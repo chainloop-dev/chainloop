@@ -27,11 +27,9 @@ import (
 	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	chainloopsigner "github.com/chainloop-dev/chainloop/internal/attestation/signer/chainloop"
-	"github.com/chainloop-dev/chainloop/internal/attestation/signer/cosign"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
-	"github.com/sigstore/cosign/v2/pkg/signature"
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 	v12 "github.com/sigstore/protobuf-specs/gen/pb-go/common/v1"
 	sigstoredsse "github.com/sigstore/protobuf-specs/gen/pb-go/dsse"
@@ -157,20 +155,10 @@ func (ab *AttestationRenderer) envelopeToBundle(dsseEnvelope dsse.Envelope) (*pr
 		VerificationMaterial: &protobundle.VerificationMaterial{},
 	}
 
-	// check type of wrapped signer
-	switch v := ab.signer.(type) {
-	case *cosign.Signer:
-		// TODO: review this, since it's expected that we don't store the full key, but a reference to it
-		// 	     so that it can be retrieved out-of-band by the verifier
-		pk, err := signature.PublicKeyPem(v)
-		if err != nil {
-			return nil, fmt.Errorf("getting public key: %w", err)
-		}
-
-		bundle.VerificationMaterial.Content = &protobundle.VerificationMaterial_PublicKey{PublicKey: &v12.PublicKeyIdentifier{
-			Hint: string(pk),
-		}}
-	case *chainloopsigner.Signer:
+	// extract verification materials
+	// Note: we don't support PublicKey materials (from cosign.key and KMS signers), since Chainloop doesn't (yet) store
+	//       public keys.
+	if v, ok := ab.signer.(*chainloopsigner.Signer); ok {
 		chain := v.Chain
 		certs := make([]*v12.X509Certificate, 0)
 		// Store cert chain except root certificate, as it's required to be provided separately
