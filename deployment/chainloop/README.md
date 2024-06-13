@@ -37,7 +37,7 @@ This chart comes in **two flavors**, `standard` and [`development`](#development
 
 ### Standard (default)
 
-![Deployment](../../docs/img/deployment.png)
+![Deployment](https://raw.githubusercontent.com/chainloop-dev/chainloop/main/docs/img/deployment.png)
 
 The default deployment mode relies on external dependencies to be available in advance.
 
@@ -55,7 +55,7 @@ During installation, you'll need to provide
 
 Instructions on how to create the ECDSA keypair can be found [here](#generate-a-ecdsa-key-pair).
 
-#### Installation Examples
+#### Installation examples for standard mode
 
 > **NOTE**: **We do not recommend passing nor storing sensitive data in plain text**. For production, please consider having your overrides encrypted with tools such as [Sops](https://github.com/mozilla/sops), [Helm Secrets](https://github.com/jkroepke/helm-secrets) or [Sealed Secrets](https://github.com/bitnami-labs/sealed-secrets).
 
@@ -144,7 +144,7 @@ To provide an easy way to give Chainloop a try, this Helm Chart has an **opt-in 
 
 > IMPORTANT: DO NOT USE THIS MODE IN PRODUCTION
 
-![Deployment](../../docs/img/deployment-dev.png)
+![Deployment](https://raw.githubusercontent.com/chainloop-dev/chainloop/main/docs/img/deployment-dev.png)
 
 The Helm Chart in this mode includes
 
@@ -161,7 +161,7 @@ During installation, you'll need to provide
 - ~~Connection settings for a secrets storage backend, either [Hashicorp Vault](https://www.vaultproject.io/) or [AWS Secrets Manager](https://aws.amazon.com/secrets-manager)~~
 - ~~ECDSA (ES512) key-pair used for Controlplane <-> CAS Authentication~~
 
-#### Installation Examples
+#### Installation examples for development mode
 
 Deploy by leveraging built-in Vault and PostgreSQL instances
 
@@ -181,12 +181,13 @@ Chainloop uses gRPC streaming to perform artifact uploads. This method is suscep
 
 To improve upload speeds, you need to increase [http2 flow control buffer](https://httpwg.org/specs/rfc7540.html#DisableFlowControl). This can be done in NGINX by setting the following annotation in the ingress resource.
 
-```
+```yaml
 # Improve upload speed by adding client buffering used by http2 control-flows
 nginx.ingress.kubernetes.io/client-body-buffer-size: "3M"
+
 ```
 
-Note: For other reverse proxies, you'll need to find the equivalent configuration. 
+Note: For other reverse proxies, you'll need to find the equivalent configuration.
 
 ### Generate a ECDSA key-pair
 
@@ -240,7 +241,7 @@ cas:
 
 A complete setup that uses
 
-- NGINX as ingress Controller https://kubernetes.github.io/ingress-nginx/
+- [NGINX as ingress Controller](https://kubernetes.github.io/ingress-nginx)
 - [cert-manager](https://cert-manager.io/) as TLS provider
 
 would look like
@@ -380,6 +381,7 @@ For example, these commands generate a self-signed certificate with an RSA priva
 ```
 
 Then you can configure your deployment values with:
+
 ```yaml
 controlplane:
   keylessSigning:
@@ -428,7 +430,7 @@ Google Cloud has a [managed Prometheus offering](https://cloud.google.com/stackd
 
 Once you have your instance of Chainloop deployed, you need to configure the [CLI](https://github.com/chainloop-dev/chainloop/releases) to point to both the CAS and the Control plane gRPC APIs like this.
 
-```
+```bash
 chainloop config save \
   --control-plane my-controlplane.acme.com:443 \
   --artifact-cas cas.acme.com:443
@@ -547,25 +549,25 @@ chainloop config save \
 
 ### Controlplane Misc
 
-| Name                                                         | Description                                                              | Value        |
-| ------------------------------------------------------------ | ------------------------------------------------------------------------ | ------------ |
-| `controlplane.resources.limits.cpu`                          | Container resource limits CPU                                            | `250m`       |
-| `controlplane.resources.limits.memory`                       | Container resource limits memory                                         | `512Mi`      |
-| `controlplane.resources.requests.cpu`                        | Container resource requests CPU                                          | `250m`       |
-| `controlplane.resources.requests.memory`                     | Container resource requests memory                                       | `512Mi`      |
-| `controlplane.autoscaling.enabled`                           | Enable deployment autoscaling                                            | `false`      |
-| `controlplane.autoscaling.minReplicas`                       | Minimum number of replicas                                               | `1`          |
-| `controlplane.autoscaling.maxReplicas`                       | Maximum number of replicas                                               | `100`        |
-| `controlplane.autoscaling.targetCPUUtilizationPercentage`    | Target CPU percentage                                                    | `80`         |
-| `controlplane.autoscaling.targetMemoryUtilizationPercentage` | Target CPU memory                                                        | `80`         |
-| `controlplane.sentry.enabled`                                | Enable sentry.io alerting                                                | `false`      |
-| `controlplane.sentry.dsn`                                    | DSN endpoint https://docs.sentry.io/product/sentry-basics/dsn-explainer/ | `""`         |
-| `controlplane.sentry.environment`                            | Environment tag                                                          | `production` |
-| `controlplane.keylessSigning.enabled`                        | Activates or deactivates de feature                                      | `false`      |
-| `controlplane.keylessSigning.backend`                        | The backend to use. Currently only "fileCA" is supported                 | `fileCA`     |
-| `controlplane.keylessSigning.fileCA.cert`                    | The PEM-encoded certificate of the file based CA                         | `""`         |
-| `controlplane.keylessSigning.fileCA.key`                     | The PEM-encoded private key of the file based CA                         | `""`         |
-| `controlplane.keylessSigning.fileCA.keyPass`                 | The secret key pass                                                      | `""`         |
+| Name                                                         | Description                                              | Value        |
+| ------------------------------------------------------------ | -------------------------------------------------------- | ------------ |
+| `controlplane.resources.limits.cpu`                          | Container resource limits CPU                            | `250m`       |
+| `controlplane.resources.limits.memory`                       | Container resource limits memory                         | `512Mi`      |
+| `controlplane.resources.requests.cpu`                        | Container resource requests CPU                          | `250m`       |
+| `controlplane.resources.requests.memory`                     | Container resource requests memory                       | `512Mi`      |
+| `controlplane.autoscaling.enabled`                           | Enable deployment autoscaling                            | `false`      |
+| `controlplane.autoscaling.minReplicas`                       | Minimum number of replicas                               | `1`          |
+| `controlplane.autoscaling.maxReplicas`                       | Maximum number of replicas                               | `100`        |
+| `controlplane.autoscaling.targetCPUUtilizationPercentage`    | Target CPU percentage                                    | `80`         |
+| `controlplane.autoscaling.targetMemoryUtilizationPercentage` | Target CPU memory                                        | `80`         |
+| `controlplane.sentry.enabled`                                | Enable sentry.io alerting                                | `false`      |
+| `controlplane.sentry.dsn`                                    | DSN endpoint                                             | `""`         |
+| `controlplane.sentry.environment`                            | Environment tag                                          | `production` |
+| `controlplane.keylessSigning.enabled`                        | Activates or deactivates de feature                      | `false`      |
+| `controlplane.keylessSigning.backend`                        | The backend to use. Currently only "fileCA" is supported | `fileCA`     |
+| `controlplane.keylessSigning.fileCA.cert`                    | The PEM-encoded certificate of the file based CA         | `""`         |
+| `controlplane.keylessSigning.fileCA.key`                     | The PEM-encoded private key of the file based CA         | `""`         |
+| `controlplane.keylessSigning.fileCA.keyPass`                 | The secret key pass                                      | `""`         |
 
 ### Artifact Content Addressable (CAS) API
 
@@ -618,37 +620,52 @@ chainloop config save \
 
 ### CAS Misc
 
-| Name                                                | Description                                                              | Value        |
-| --------------------------------------------------- | ------------------------------------------------------------------------ | ------------ |
-| `cas.resources.limits.cpu`                          | Container resource limits CPU                                            | `250m`       |
-| `cas.resources.limits.memory`                       | Container resource limits memory                                         | `512Mi`      |
-| `cas.resources.requests.cpu`                        | Container resource requests CPU                                          | `250m`       |
-| `cas.resources.requests.memory`                     | Container resource requests memory                                       | `512Mi`      |
-| `cas.autoscaling.enabled`                           | Enable deployment autoscaling                                            | `false`      |
-| `cas.autoscaling.minReplicas`                       | Minimum number of replicas                                               | `1`          |
-| `cas.autoscaling.maxReplicas`                       | Maximum number of replicas                                               | `100`        |
-| `cas.autoscaling.targetCPUUtilizationPercentage`    | Target CPU percentage                                                    | `80`         |
-| `cas.autoscaling.targetMemoryUtilizationPercentage` | Target CPU memory                                                        | `80`         |
-| `cas.sentry.enabled`                                | Enable sentry.io alerting                                                | `false`      |
-| `cas.sentry.dsn`                                    | DSN endpoint https://docs.sentry.io/product/sentry-basics/dsn-explainer/ | `""`         |
-| `cas.sentry.environment`                            | Environment tag                                                          | `production` |
+| Name                                                | Description                        | Value        |
+| --------------------------------------------------- | ---------------------------------- | ------------ |
+| `cas.resources.limits.cpu`                          | Container resource limits CPU      | `250m`       |
+| `cas.resources.limits.memory`                       | Container resource limits memory   | `512Mi`      |
+| `cas.resources.requests.cpu`                        | Container resource requests CPU    | `250m`       |
+| `cas.resources.requests.memory`                     | Container resource requests memory | `512Mi`      |
+| `cas.autoscaling.enabled`                           | Enable deployment autoscaling      | `false`      |
+| `cas.autoscaling.minReplicas`                       | Minimum number of replicas         | `1`          |
+| `cas.autoscaling.maxReplicas`                       | Maximum number of replicas         | `100`        |
+| `cas.autoscaling.targetCPUUtilizationPercentage`    | Target CPU percentage              | `80`         |
+| `cas.autoscaling.targetMemoryUtilizationPercentage` | Target CPU memory                  | `80`         |
+| `cas.sentry.enabled`                                | Enable sentry.io alerting          | `false`      |
+| `cas.sentry.dsn`                                    | DSN endpoint                       | `""`         |
+| `cas.sentry.environment`                            | Environment tag                    | `production` |
 
 ### Dependencies
 
-| Name                                 | Description                                                                                            | Value                                                                                                                      |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------ |----------------------------------------------------------------------------------------------------------------------------|
-| `postgresql.enabled`                 | Switch to enable or disable the PostgreSQL helm chart                                                  | `true`                                                                                                                     |
-| `postgresql.auth.enablePostgresUser` | Assign a password to the "postgres" admin user. Otherwise, remote access will be blocked for this user | `false`                                                                                                                    |
-| `postgresql.auth.username`           | Name for a custom user to create                                                                       | `chainloop`                                                                                                                |
-| `postgresql.auth.password`           | Password for the custom user to create                                                                 | `chainlooppwd`                                                                                                             |
-| `postgresql.auth.database`           | Name for a custom database to create                                                                   | `chainloop-cp`                                                                                                             |
-| `postgresql.auth.existingSecret`     | Name of existing secret to use for PostgreSQL credentials                                              | `""`                                                                                                                       |
-| `vault.server.args`                  | Arguments to pass to the vault server. This is useful for setting the server in development mode       | `["server","-dev"]`                                                                                                        |
-| `vault.server.config`                | Configuration for the vault server. Small override of default Bitnami configuration                    | <pre><code>storage "inmem" {}<br/>disable_mlock = true<br/>ui = true<br/>service_registration "kubernetes" {}</code></pre> |
-| `vault.server.extraEnvVars[0].name`  | Root token for the vault server                                                                        | `VAULT_DEV_ROOT_TOKEN_ID`                                                                                                  |
-| `vault.server.extraEnvVars[0].value` | The value of the root token. Default: notasecret                                                       | `notasecret`                                                                                                               |
-| `vault.server.extraEnvVars[1].name`  | Address to listen on development mode                                                                  | `VAULT_DEV_LISTEN_ADDRESS`                                                                                                 |
-| `vault.server.extraEnvVars[1].value` | The address to listen on. Default: [::]:8200                                                           | `[::]:8200`                                                                                                                |
+| Name                                       | Description                                                                                            | Value                                                                                    |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| `postgresql.enabled`                       | Switch to enable or disable the PostgreSQL helm chart                                                  | `true`                                                                                   |
+| `postgresql.auth.enablePostgresUser`       | Assign a password to the "postgres" admin user. Otherwise, remote access will be blocked for this user | `false`                                                                                  |
+| `postgresql.auth.username`                 | Name for a custom user to create                                                                       | `chainloop`                                                                              |
+| `postgresql.auth.password`                 | Password for the custom user to create                                                                 | `chainlooppwd`                                                                           |
+| `postgresql.auth.database`                 | Name for a custom database to create                                                                   | `chainloop-cp`                                                                           |
+| `postgresql.auth.existingSecret`           | Name of existing secret to use for PostgreSQL credentials                                              | `""`                                                                                     |
+| `vault.server.args`                        | Arguments to pass to the vault server. This is useful for setting the server in development mode       | `["server","-dev"]`                                                                      |
+| `vault.server.config`                      | Configuration for the vault server. Small override of default Bitnami configuration                    | `storage "inmem" {}
+disable_mlock = true
+ui = true
+service_registration "kubernetes" {}` |
+| `vault.server.extraEnvVars[0].name`        | Root token for the vault server                                                                        | `VAULT_DEV_ROOT_TOKEN_ID`                                                                |
+| `vault.server.extraEnvVars[0].value`       | The value of the root token. Default: notasecret                                                       | `notasecret`                                                                             |
+| `vault.server.extraEnvVars[1].name`        | Address to listen on development mode                                                                  | `VAULT_DEV_LISTEN_ADDRESS`                                                               |
+| `vault.server.extraEnvVars[1].value`       | The address to listen on. Default: [::]:8200                                                           | `[::]:8200`                                                                              |
+| `dex.config.issuer`                        | The issuer URL of the Identity provider (IDp)                                                          | `http://chainloop-dex:5556/dex`                                                          |
+| `dex.config.storage.type`                  | Storage type for the dex server                                                                        | `memory`                                                                                 |
+| `dex.config.web.http`                      | HTTP address for the dex server                                                                        | `0.0.0.0:5556`                                                                           |
+| `dex.config.staticClients[0].id`           | Client ID for the static client                                                                        | `chainloop-dev`                                                                          |
+| `dex.config.staticClients[0].redirectURIs` | Redirect URIs for the static client                                                                    | `["http://0.0.0.0:8000/auth/callback","http://localhost:8000/auth/callback"]`            |
+| `dex.config.staticClients[0].name`         | Name for the static client                                                                             | `Chainloop Dev`                                                                          |
+| `dex.config.staticClients[0].secret`       | Secret for the static client                                                                           | `ZXhhbXBsZS1hcHAtc2VjcmV0`                                                               |
+| `dex.config.enablePasswordDB`              | Enable static passwords                                                                                | `true`                                                                                   |
+| `dex.config.staticPasswords[0].email`      | Email for the static password                                                                          | `john@chainloop.local`                                                                   |
+| `dex.config.staticPasswords[0].hash`       | Hash for the static password                                                                           | `$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W`                           |
+| `dex.config.staticPasswords[1].email`      | Email for the static password                                                                          | `sarah@chainloop.local`                                                                  |
+| `dex.config.staticPasswords[1].hash`       | Hash for the static password                                                                           | `$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W`                           |
 
 ## License
 
@@ -658,7 +675,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-<http://www.apache.org/licenses/LICENSE-2.0>
+<https://www.apache.org/licenses/LICENSE-2.0>
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
