@@ -1,7 +1,14 @@
 # Container image built by go-releaser that's used to run migrations against the database during deployment
 # See https://atlasgo.io/guides/deploying/image
-FROM arigaio/atlas@sha256:5c459e8c134bb3d6d4f0346bbe6aa32ab23b7726286c4f23e7d831557574ed0d
+FROM arigaio/atlas as base
 
+FROM scratch
+# Update permissions to make it readable by the user
+# Otherwise the permissions are 001 which is not compatible with openshift in the default configuration
+# https://github.com/chainloop-dev/chainloop/issues/922
+COPY --from=base --chmod=555 /atlas /
 COPY app/controlplane/pkg/data/ent/migrate/migrations /migrations
 
 USER 1001
+
+ENTRYPOINT ["/atlas"]
