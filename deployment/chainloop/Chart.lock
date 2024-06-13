@@ -4,9 +4,9 @@ dependencies:
   version: 2.20.2
 - name: postgresql
   repository: https://charts.bitnami.com/bitnami
-  version: 12.12.10
+  version: 15.5.5
 - name: vault
   repository: https://charts.bitnami.com/bitnami
-  version: 1.4.5
-digest: sha256:f36d00d6d657f2e9f7f1dc6df78e852471cff214b8a7a8ad9722351b978aefdf
-generated: "2024-06-10T14:18:12.118269+02:00"
+  version: 1.4.6
+digest: sha256:9b1f7019d584063cd0f0b83d80824ece3327280242d19f0207f017b647279e07
+generated: "2024-06-13T18:47:06.530135114+02:00"
