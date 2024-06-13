@@ -33,6 +33,7 @@ type Organization struct {
 
 type OrganizationRepo interface {
 	FindByID(ctx context.Context, orgID uuid.UUID) (*Organization, error)
+	FindByName(ctx context.Context, name string) (*Organization, error)
 	Create(ctx context.Context, name string) (*Organization, error)
 	Update(ctx context.Context, id uuid.UUID, name *string) (*Organization, error)
 	Delete(ctx context.Context, ID uuid.UUID) error
@@ -195,6 +196,32 @@ func (uc *OrganizationUseCase) FindByID(ctx context.Context, id string) (*Organi
 	}
 
 	return org, nil
+}
+
+// FindByName finds an organization by name.
+func (uc *OrganizationUseCase) FindByName(ctx context.Context, name string) (*Organization, error) {
+	if err := ValidateIsDNS1123(name); err != nil {
+		return nil, NewErrValidation(errOrgName)
+	}
+
+	org, err := uc.orgRepo.FindByName(ctx, name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find organization: %w", err)
+	} else if org == nil {
+		return nil, NewErrNotFound("organization")
+	}
+
+	return org, nil
+}
+
+// FindOrCreate finds an organization by name, or creates it if it doesn't exist.
+func (uc *OrganizationUseCase) FindOrCreate(ctx context.Context, name string) (*Organization, error) {
+	org, err := uc.FindByName(ctx, name)
+	if err != nil && errors.As(err, &ErrNotFound{}) {
+		org, err = uc.Create(ctx, name, WithCreateInlineBackend())
+	}
+
+	return org, err
 }
 
 // Delete deletes an organization and all relevant data

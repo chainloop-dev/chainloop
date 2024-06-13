@@ -21,6 +21,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
@@ -54,6 +55,18 @@ func (r *OrganizationRepo) Create(ctx context.Context, name string) (*biz.Organi
 
 func (r *OrganizationRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Organization, error) {
 	org, err := r.data.DB.Organization.Get(ctx, id)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, err
+	} else if org == nil {
+		return nil, nil
+	}
+
+	return entOrgToBizOrg(org), nil
+}
+
+// FindByName finds an organization by name.
+func (r *OrganizationRepo) FindByName(ctx context.Context, name string) (*biz.Organization, error) {
+	org, err := r.data.DB.Organization.Query().Where(organization.NameEQ(name)).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	} else if org == nil {

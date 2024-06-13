@@ -54,6 +54,11 @@ const (
 	shortLivedDuration = 10 * time.Second
 	// opt-in
 	logLivedDuration = 24 * time.Hour
+
+	// AutoOnboarding roles for the organizations
+	AutoOnboardingViewerRole = "viewer"
+	AutoOnboardingAdminRole  = "admin"
+	AutoOnboardingOwnerRole  = "owner"
 )
 
 type oauthHandler struct {
@@ -72,9 +77,10 @@ type AuthService struct {
 	membershipUseCase *biz.MembershipUseCase
 	orgInvitesUseCase *biz.OrgInvitationUseCase
 	AuthURLs          *AuthURLs
+	onboardingConfig  *conf.OnboardingSpec
 }
 
-func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC *biz.MembershipUseCase, inviteUC *biz.OrgInvitationUseCase, authConfig *conf.Auth, serverConfig *conf.Server, opts ...NewOpt) (*AuthService, error) {
+func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC *biz.MembershipUseCase, inviteUC *biz.OrgInvitationUseCase, authConfig *conf.Auth, onboardingConfig *conf.OnboardingSpec, serverConfig *conf.Server, opts ...NewOpt) (*AuthService, error) {
 	oidcConfig := authConfig.GetOidc()
 	if oidcConfig == nil {
 		return nil, errors.New("oauth configuration missing")
@@ -100,6 +106,7 @@ func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC
 		AuthURLs:          authURLs,
 		membershipUseCase: mUC,
 		orgInvitesUseCase: inviteUC,
+		onboardingConfig:  onboardingConfig,
 	}, nil
 }
 
@@ -242,6 +249,11 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) (
 		svc.log.Infow("msg", "new user associated to an org", "org_id", currentOrg.ID, "user_id", u.ID)
 	}
 
+	// Auto onboard the user to the organizations specified in the config
+	if err := autoOnboardOnOrganizations(ctx, svc, u); err != nil {
+		return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
+	}
+
 	// Accept any pending invites
 	if err := svc.orgInvitesUseCase.AcceptPendingInvitations(ctx, u.Email); err != nil {
 		return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
@@ -287,6 +299,61 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) (
 
 	http.Redirect(w, r, callbackURL, http.StatusFound)
 	return http.StatusTemporaryRedirect, nil
+}
+
+// autoOnboardOnOrganizations onboards the user to the organizations specified in the config
+// If the organization does not exist, it will be created with an inline CAS backend
+// If the user is not already a member of the organization, a membership will be created with the role specified in the config
+func autoOnboardOnOrganizations(ctx context.Context, svc *AuthService, u *biz.User) error {
+	for _, spec := range svc.onboardingConfig.GetAutoOnboardOrganizations() {
+		// Ensure the organization exists or create it if it doesn't
+		org, err := svc.orgUseCase.FindOrCreate(ctx, spec.GetName())
+		if err != nil {
+			return sl.LogAndMaskErr(err, svc.log)
+		}
+
+		// Determine the role to be assigned based on the config
+		role := determineRole(spec.GetRole())
+
+		// Ensures the user is a member of the organization with the specified role
+		if err := ensureMembership(ctx, svc, org.ID, u.ID, role); err != nil {
+			return sl.LogAndMaskErr(err, svc.log)
+		}
+	}
+	return nil
+}
+
+// determineRole maps the config role to the appropriate authz.Role
+func determineRole(configRole string) authz.Role {
+	switch configRole {
+	case AutoOnboardingAdminRole:
+		return authz.RoleAdmin
+	case AutoOnboardingViewerRole:
+		return authz.RoleViewer
+	case AutoOnboardingOwnerRole:
+		return authz.RoleOwner
+	default:
+		return authz.RoleViewer
+	}
+}
+
+// ensureMembership ensures the user is a member of the organization with the specified role
+func ensureMembership(ctx context.Context, svc *AuthService, orgID, userID string, role authz.Role) error {
+	m, err := svc.membershipUseCase.FindByOrgAndUser(ctx, orgID, userID)
+	if err != nil && !errors.As(err, &biz.ErrNotFound{}) {
+		return err
+	}
+
+	// If there is a membership, we don't need to do anything
+	// Don't compare the role, as the user might have a different role, and we cannot update it
+	// because the user might have been assigned a different role by an admin
+	if m != nil {
+		return nil
+	}
+
+	// Create the membership with the proper role if it doesn't exist
+	_, err = svc.membershipUseCase.Create(ctx, orgID, userID, biz.WithCurrentMembership(), biz.WithMembershipRole(role))
+	return err
 }
 
 func crafCallbackURL(callback, userToken string) (string, error) {
