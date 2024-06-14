@@ -106,6 +106,7 @@ func (s Signer) SignMessage(message io.Reader, _ ...sigstoresigner.SignOption) (
 	return resBytes, nil
 }
 
+// ParseKeyReference interprets a key reference for SignServer
 func ParseKeyReference(keyPath string) (string, string, error) {
 	parts := strings.SplitAfter(keyPath, "://")
 	if len(parts) != 2 {
