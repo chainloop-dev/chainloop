@@ -448,7 +448,7 @@ controlplane:
     targetMemoryUtilizationPercentage: 80
 
   ## @param controlplane.sentry.enabled Enable sentry.io alerting
-  ## @param controlplane.sentry.dsn DSN endpoint https://docs.sentry.io/product/sentry-basics/dsn-explainer/
+  ## @param controlplane.sentry.dsn DSN endpoint
   ## @param controlplane.sentry.environment Environment tag
   sentry:
     enabled: false
@@ -780,7 +780,7 @@ cas:
     targetMemoryUtilizationPercentage: 80
 
   ## @param cas.sentry.enabled Enable sentry.io alerting
-  ## @param cas.sentry.dsn DSN endpoint https://docs.sentry.io/product/sentry-basics/dsn-explainer/
+  ## @param cas.sentry.dsn DSN endpoint
   ## @param cas.sentry.environment Environment tag
   sentry:
     enabled: false
@@ -822,8 +822,6 @@ postgresql:
 ## @param vault.server.extraEnvVars[1].value The address to listen on. Default: [::]:8200
 vault:
   server:
-    ## This configuration is only for development purposes and should not be used in production. Development
-    ## mode is configured by --set development=true, which enables this Vault chart
     args: [
       "server",
       "-dev"
@@ -833,10 +831,47 @@ vault:
         value: "notasecret"
       - name: VAULT_DEV_LISTEN_ADDRESS
         value: "[::]:8200"
-    config: |
-      storage "inmem" {}
+    config: "storage \"inmem\" {}\ndisable_mlock = true\nui = true\nservice_registration \"kubernetes\" {}"
 
-      disable_mlock = true
-      ui = true
+# Dex server running in development mode --set development=true
+# IMPORTANT: This is not meant to run in production
+## @param dex.config.issuer The issuer URL of the Identity provider (IDp)
+## @param dex.config.storage.type Storage type for the dex server
+## @param dex.config.web.http HTTP address for the dex server
+## @param dex.config.staticClients[0].id Client ID for the static client
+## @param dex.config.staticClients[0].redirectURIs Redirect URIs for the static client
+## @param dex.config.staticClients[0].name Name for the static client
+## @param dex.config.staticClients[0].secret Secret for the static client
+## @param dex.config.enablePasswordDB Enable static passwords
+## @param dex.config.staticPasswords[0].email Email for the static password
+## @param dex.config.staticPasswords[0].hash Hash for the static password
+## @param dex.config.staticPasswords[1].email Email for the static password
+## @param dex.config.staticPasswords[1].hash Hash for the static password
+dex:
+  config:
+    issuer: http://chainloop-dex:5556/dex
 
-      service_registration "kubernetes" {}
+    storage:
+      type: memory
+
+    web:
+      http: 0.0.0.0:5556
+
+    staticClients:
+      - id: chainloop-dev
+        redirectURIs:
+          - "http://0.0.0.0:8000/auth/callback"
+          - "http://localhost:8000/auth/callback"
+        name: "Chainloop Dev"
+        secret: ZXhhbXBsZS1hcHAtc2VjcmV0
+
+    # required to enable static passwords
+    enablePasswordDB: true
+
+    staticPasswords:
+      - email: "john@chainloop.local"
+        # password: "password"
+        hash: "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"
+      - email: "sarah@chainloop.local"
+        # password: "password"
+        hash: "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"
