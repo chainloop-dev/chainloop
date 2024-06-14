@@ -16,21 +16,37 @@
 package signer
 
 import (
+	"fmt"
+	"strings"
+
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/signer/chainloop"
 	"github.com/chainloop-dev/chainloop/internal/attestation/signer/cosign"
+	"github.com/chainloop-dev/chainloop/internal/attestation/signer/signserver"
 	"github.com/rs/zerolog"
 	sigstoresigner "github.com/sigstore/sigstore/pkg/signature"
 )
 
 // GetSigner creates a new Signer based on input parameters
-func GetSigner(keyPath string, logger zerolog.Logger, client pb.SigningServiceClient) sigstoresigner.Signer {
+func GetSigner(keyPath string, logger zerolog.Logger, client pb.SigningServiceClient) (sigstoresigner.Signer, error) {
 	var signer sigstoresigner.Signer
 	if keyPath != "" {
-		signer = cosign.NewSigner(keyPath, logger)
+		if strings.HasPrefix(keyPath, signserver.ReferenceScheme) {
+			parts := strings.SplitAfter(keyPath, "://")
+			if len(parts) != 2 {
+				return nil, fmt.Errorf("invalid key path: %s", keyPath)
+			}
+			parts = strings.Split(parts[1], "/")
+			if len(parts) != 2 {
+				return nil, fmt.Errorf("invalid key path: %s", keyPath)
+			}
+			signer = signserver.NewSigner(parts[0], parts[1])
+		} else {
+			signer = cosign.NewSigner(keyPath, logger)
+		}
 	} else {
 		signer = chainloop.NewSigner(client, logger)
 	}
 
-	return signer
+	return signer, nil
 }
