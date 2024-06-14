@@ -32,15 +32,11 @@ func GetSigner(keyPath string, logger zerolog.Logger, client pb.SigningServiceCl
 	var signer sigstoresigner.Signer
 	if keyPath != "" {
 		if strings.HasPrefix(keyPath, signserver.ReferenceScheme) {
-			parts := strings.SplitAfter(keyPath, "://")
-			if len(parts) != 2 {
-				return nil, fmt.Errorf("invalid key path: %s", keyPath)
+			host, worker, err := signserver.ParseKeyReference(keyPath)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse key: %w", err)
 			}
-			parts = strings.Split(parts[1], "/")
-			if len(parts) != 2 {
-				return nil, fmt.Errorf("invalid key path: %s", keyPath)
-			}
-			signer = signserver.NewSigner(parts[0], parts[1])
+			signer = signserver.NewSigner(host, worker)
 		} else {
 			signer = cosign.NewSigner(keyPath, logger)
 		}

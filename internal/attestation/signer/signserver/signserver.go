@@ -25,6 +25,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"strings"
 
 	sigstoresigner "github.com/sigstore/sigstore/pkg/signature"
 )
@@ -103,4 +104,16 @@ func (s Signer) SignMessage(message io.Reader, _ ...sigstoresigner.SignOption) (
 	}
 
 	return resBytes, nil
+}
+
+func ParseKeyReference(keyPath string) (string, string, error) {
+	parts := strings.SplitAfter(keyPath, "://")
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("invalid key path: %s", keyPath)
+	}
+	parts = strings.Split(parts[1], "/")
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("invalid key path: %s", keyPath)
+	}
+	return parts[0], parts[1], nil
 }
