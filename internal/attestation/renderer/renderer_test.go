@@ -20,9 +20,15 @@ import (
 	"crypto"
 	"crypto/elliptic"
 	"crypto/rand"
+	"encoding/json"
+	"encoding/pem"
+	"os"
 	"testing"
 
 	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/internal/attestation/signer/chainloop"
+	"github.com/chainloop-dev/chainloop/internal/attestation/signer/cosign"
+	"github.com/rs/zerolog"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/sigstore/sigstore/pkg/signature"
 	sigdsee "github.com/sigstore/sigstore/pkg/signature/dsse"
@@ -33,8 +39,8 @@ type rendererSuite struct {
 	suite.Suite
 
 	sv           signature.SignerVerifier
-	dsseSigner   signature.Signer
 	dsseVerifier *dsse.EnvelopeVerifier
+	cs           *v1.CraftingState
 }
 
 func TestSuite(t *testing.T) {
@@ -43,15 +49,7 @@ func TestSuite(t *testing.T) {
 
 func (s *rendererSuite) SetupTest() {
 	var err error
-	s.sv, _, err = signature.NewECDSASignerVerifier(elliptic.P256(), rand.Reader, crypto.SHA256)
-	s.Require().NoError(err)
-	s.dsseSigner = sigdsee.WrapSigner(s.sv, "application/vnd.in-toto+json")
-	s.dsseVerifier, err = dsse.NewEnvelopeVerifier(&sigdsee.VerifierAdapter{SignatureVerifier: s.sv})
-	s.Require().NoError(err)
-}
-
-func (s *rendererSuite) TestRender() {
-	cs := &v1.CraftingState{
+	s.cs = &v1.CraftingState{
 		InputSchema: nil,
 		Attestation: &v1.Attestation{
 			Workflow: &v1.WorkflowMetadata{
@@ -59,9 +57,15 @@ func (s *rendererSuite) TestRender() {
 			},
 		},
 	}
+	s.sv, _, err = signature.NewECDSASignerVerifier(elliptic.P256(), rand.Reader, crypto.SHA256)
+	s.Require().NoError(err)
+	s.dsseVerifier, err = dsse.NewEnvelopeVerifier(&sigdsee.VerifierAdapter{SignatureVerifier: s.sv})
+	s.Require().NoError(err)
+}
 
+func (s *rendererSuite) TestRender() {
 	s.Run("generated envelope is always well-formed", func() {
-		renderer, err := NewAttestationRenderer(cs, "", "", s.dsseSigner)
+		renderer, err := NewAttestationRenderer(s.cs, "", "", s.sv)
 		s.Require().NoError(err)
 
 		envelope, err := renderer.Render()
@@ -72,9 +76,9 @@ func (s *rendererSuite) TestRender() {
 	})
 
 	s.Run("simulates double wrapping bug", func() {
-		doubleWrapper := sigdsee.WrapSigner(s.dsseSigner, "application/vnd.in-toto+json")
+		doubleWrapper := sigdsee.WrapSigner(s.sv, "application/vnd.in-toto+json")
 
-		renderer, err := NewAttestationRenderer(cs, "", "", doubleWrapper)
+		renderer, err := NewAttestationRenderer(s.cs, "", "", doubleWrapper)
 		s.Require().NoError(err)
 
 		envelope, err := renderer.Render()
@@ -83,4 +87,76 @@ func (s *rendererSuite) TestRender() {
 		_, err = s.dsseVerifier.Verify(context.TODO(), envelope)
 		s.Error(err)
 	})
+}
+
+func (s *rendererSuite) TestEnvelopeToBundle() {
+	s.Run("from cosign signer, it doesn't generate any verification material", func() {
+		envelope, err := testEnvelope("chainloop/testdata/valid.envelope.v2.json")
+		s.Require().NoError(err)
+
+		signer := cosign.NewSigner("", zerolog.Nop())
+		renderer, err := NewAttestationRenderer(s.cs, "", "", signer)
+		s.Require().NoError(err)
+
+		bundle, err := renderer.envelopeToBundle(*envelope)
+		s.Require().NoError(err)
+
+		s.Equal("application/vnd.dev.sigstore.bundle+json;version=0.3", bundle.MediaType)
+		s.Equal("application/vnd.in-toto+json", bundle.GetDsseEnvelope().GetPayloadType())
+		s.Nil(bundle.GetVerificationMaterial().GetContent())
+	})
+
+	s.Run("from keyless signer, it adds intermediate certificates, but not the root CA", func() {
+		envelope, err := testEnvelope("chainloop/testdata/valid.envelope.v2.json")
+		s.Require().NoError(err)
+
+		cert, err := testCert("chainloop/testdata/cert.pem")
+		s.Require().NoError(err)
+
+		signer := chainloop.NewSigner(nil, zerolog.Nop())
+		signer.Signer = s.sv
+
+		// 2 certs
+		signer.Chain = []string{cert, "ROOT"}
+		renderer, err := NewAttestationRenderer(s.cs, "", "", signer)
+		s.Require().NoError(err)
+
+		bundle, err := renderer.envelopeToBundle(*envelope)
+		s.Require().NoError(err)
+
+		s.Equal("application/vnd.dev.sigstore.bundle+json;version=0.3", bundle.MediaType)
+		s.Equal("application/vnd.in-toto+json", bundle.GetDsseEnvelope().GetPayloadType())
+
+		// only 1 cert is added
+		s.Equal(1, len(bundle.GetVerificationMaterial().GetX509CertificateChain().GetCertificates()))
+
+		// and it's the leaf certificate
+		s.Equal(cert, string(pem.EncodeToMemory(&pem.Block{
+			Type:  "CERTIFICATE",
+			Bytes: bundle.GetVerificationMaterial().GetX509CertificateChain().GetCertificates()[0].RawBytes}),
+		))
+	})
+}
+
+func testEnvelope(filePath string) (*dsse.Envelope, error) {
+	var envelope dsse.Envelope
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(content, &envelope)
+	if err != nil {
+		return nil, err
+	}
+
+	return &envelope, nil
+}
+
+func testCert(filePath string) (string, error) {
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return "", err
+	}
+	return string(content), nil
 }

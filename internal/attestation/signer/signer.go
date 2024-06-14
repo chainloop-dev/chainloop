@@ -21,7 +21,6 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/attestation/signer/cosign"
 	"github.com/rs/zerolog"
 	sigstoresigner "github.com/sigstore/sigstore/pkg/signature"
-	sigdsee "github.com/sigstore/sigstore/pkg/signature/dsse"
 )
 
 // GetSigner creates a new Signer based on input parameters
@@ -33,5 +32,5 @@ func GetSigner(keyPath string, logger zerolog.Logger, client pb.SigningServiceCl
 		signer = chainloop.NewSigner(client, logger)
 	}
 
-	return sigdsee.WrapSigner(signer, "application/vnd.in-toto+json")
+	return signer
 }
