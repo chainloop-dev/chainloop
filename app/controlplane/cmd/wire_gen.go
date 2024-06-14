@@ -97,9 +97,9 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		cleanup()
 		return nil, nil, err
 	}
-	onboardingSpec := bootstrap.Onboarding
+	v3 := bootstrap.Onboarding
 	confServer := bootstrap.Server
-	authService, err := service.NewAuthService(userUseCase, organizationUseCase, membershipUseCase, orgInvitationUseCase, auth, onboardingSpec, confServer, v2...)
+	authService, err := service.NewAuthService(userUseCase, organizationUseCase, membershipUseCase, orgInvitationUseCase, auth, v3, confServer, v2...)
 	if err != nil {
 		cleanup()
 		return nil, nil, err

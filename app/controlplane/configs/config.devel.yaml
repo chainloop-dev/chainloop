@@ -60,6 +60,7 @@ auth:
 #     - deadbeef
 
 onboarding:
-  auto_onboard_organizations:
-    - name: "read-only-demo"
-      role: "viewer"
+  - name: "read-only-demo"
+    role: "viewer"
+  - name: "read-write-demo"
+    role: "owner"

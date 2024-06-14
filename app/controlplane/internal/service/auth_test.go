@@ -170,10 +170,8 @@ func (s *authOnboardingTestSuite) TestAutoOnboardWithExistingMemberships() {
 
 func (s *authOnboardingTestSuite) newAuthService(orgName, role string) *AuthService {
 	return &AuthService{
-		onboardingConfig: &conf.OnboardingSpec{
-			AutoOnboardOrganizations: []*conf.AutoOnboardOrganization{
-				{Name: orgName, Role: role},
-			},
+		onboardingConfig: []*conf.OnboardingSpec{
+			{Name: orgName, Role: role},
 		},
 		userUseCase:       s.TestingUseCases.User,
 		orgUseCase:        s.TestingUseCases.Organization,

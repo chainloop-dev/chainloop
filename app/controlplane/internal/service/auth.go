@@ -77,10 +77,10 @@ type AuthService struct {
 	membershipUseCase *biz.MembershipUseCase
 	orgInvitesUseCase *biz.OrgInvitationUseCase
 	AuthURLs          *AuthURLs
-	onboardingConfig  *conf.OnboardingSpec
+	onboardingConfig  []*conf.OnboardingSpec
 }
 
-func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC *biz.MembershipUseCase, inviteUC *biz.OrgInvitationUseCase, authConfig *conf.Auth, onboardingConfig *conf.OnboardingSpec, serverConfig *conf.Server, opts ...NewOpt) (*AuthService, error) {
+func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC *biz.MembershipUseCase, inviteUC *biz.OrgInvitationUseCase, authConfig *conf.Auth, onboardingConfig []*conf.OnboardingSpec, serverConfig *conf.Server, opts ...NewOpt) (*AuthService, error) {
 	oidcConfig := authConfig.GetOidc()
 	if oidcConfig == nil {
 		return nil, errors.New("oauth configuration missing")
@@ -305,7 +305,7 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) (
 // If the organization does not exist, it will be created with an inline CAS backend
 // If the user is not already a member of the organization, a membership will be created with the role specified in the config
 func autoOnboardOnOrganizations(ctx context.Context, svc *AuthService, u *biz.User) error {
-	for _, spec := range svc.onboardingConfig.GetAutoOnboardOrganizations() {
+	for _, spec := range svc.onboardingConfig {
 		// Ensure the organization exists or create it if it doesn't
 		org, err := svc.orgUseCase.FindOrCreate(ctx, spec.GetName())
 		if err != nil {
