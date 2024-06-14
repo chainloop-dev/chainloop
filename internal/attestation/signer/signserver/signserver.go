@@ -47,7 +47,7 @@ func NewSigner(host, worker string) *Signer {
 	}
 }
 
-func (s Signer) PublicKey(opts ...sigstoresigner.PublicKeyOption) (crypto.PublicKey, error) {
+func (s Signer) PublicKey(_ ...sigstoresigner.PublicKeyOption) (crypto.PublicKey, error) {
 	return nil, errors.New("public key not yet supported for SignServer")
 }
 
