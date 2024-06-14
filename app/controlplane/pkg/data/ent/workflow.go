@@ -85,12 +85,10 @@ func (e WorkflowEdges) WorkflowrunsOrErr() ([]*WorkflowRun, error) {
 // OrganizationOrErr returns the Organization value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e WorkflowEdges) OrganizationOrErr() (*Organization, error) {
-	if e.loadedTypes[2] {
-		if e.Organization == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: organization.Label}
-		}
+	if e.Organization != nil {
 		return e.Organization, nil
+	} else if e.loadedTypes[2] {
+		return nil, &NotFoundError{label: organization.Label}
 	}
 	return nil, &NotLoadedError{edge: "organization"}
 }
@@ -98,12 +96,10 @@ func (e WorkflowEdges) OrganizationOrErr() (*Organization, error) {
 // ContractOrErr returns the Contract value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e WorkflowEdges) ContractOrErr() (*WorkflowContract, error) {
-	if e.loadedTypes[3] {
-		if e.Contract == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: workflowcontract.Label}
-		}
+	if e.Contract != nil {
 		return e.Contract, nil
+	} else if e.loadedTypes[3] {
+		return nil, &NotFoundError{label: workflowcontract.Label}
 	}
 	return nil, &NotLoadedError{edge: "contract"}
 }

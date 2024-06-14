@@ -258,11 +258,15 @@ func (cmc *CASMappingCreate) createSpec() (*CASMapping, *sqlgraph.CreateSpec) {
 // CASMappingCreateBulk is the builder for creating many CASMapping entities in bulk.
 type CASMappingCreateBulk struct {
 	config
+	err      error
 	builders []*CASMappingCreate
 }
 
 // Save creates the CASMapping entities in the database.
 func (cmcb *CASMappingCreateBulk) Save(ctx context.Context) ([]*CASMapping, error) {
+	if cmcb.err != nil {
+		return nil, cmcb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(cmcb.builders))
 	nodes := make([]*CASMapping, len(cmcb.builders))
 	mutators := make([]Mutator, len(cmcb.builders))

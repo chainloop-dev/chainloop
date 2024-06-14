@@ -137,6 +137,14 @@ func (wu *WorkflowUpdate) SetOrganizationID(u uuid.UUID) *WorkflowUpdate {
 	return wu
 }
 
+// SetNillableOrganizationID sets the "organization_id" field if the given value is not nil.
+func (wu *WorkflowUpdate) SetNillableOrganizationID(u *uuid.UUID) *WorkflowUpdate {
+	if u != nil {
+		wu.SetOrganizationID(*u)
+	}
+	return wu
+}
+
 // SetDescription sets the "description" field.
 func (wu *WorkflowUpdate) SetDescription(s string) *WorkflowUpdate {
 	wu.mutation.SetDescription(s)
@@ -781,6 +789,14 @@ func (wuo *WorkflowUpdateOne) SetNillablePublic(b *bool) *WorkflowUpdateOne {
 // SetOrganizationID sets the "organization_id" field.
 func (wuo *WorkflowUpdateOne) SetOrganizationID(u uuid.UUID) *WorkflowUpdateOne {
 	wuo.mutation.SetOrganizationID(u)
+	return wuo
+}
+
+// SetNillableOrganizationID sets the "organization_id" field if the given value is not nil.
+func (wuo *WorkflowUpdateOne) SetNillableOrganizationID(u *uuid.UUID) *WorkflowUpdateOne {
+	if u != nil {
+		wuo.SetOrganizationID(*u)
+	}
 	return wuo
 }
 

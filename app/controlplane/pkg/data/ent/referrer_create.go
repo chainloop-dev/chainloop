@@ -297,11 +297,15 @@ func (rc *ReferrerCreate) createSpec() (*Referrer, *sqlgraph.CreateSpec) {
 // ReferrerCreateBulk is the builder for creating many Referrer entities in bulk.
 type ReferrerCreateBulk struct {
 	config
+	err      error
 	builders []*ReferrerCreate
 }
 
 // Save creates the Referrer entities in the database.
 func (rcb *ReferrerCreateBulk) Save(ctx context.Context) ([]*Referrer, error) {
+	if rcb.err != nil {
+		return nil, rcb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(rcb.builders))
 	nodes := make([]*Referrer, len(rcb.builders))
 	mutators := make([]Mutator, len(rcb.builders))

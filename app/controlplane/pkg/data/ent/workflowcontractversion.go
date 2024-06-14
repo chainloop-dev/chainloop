@@ -44,12 +44,10 @@ type WorkflowContractVersionEdges struct {
 // ContractOrErr returns the Contract value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e WorkflowContractVersionEdges) ContractOrErr() (*WorkflowContract, error) {
-	if e.loadedTypes[0] {
-		if e.Contract == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: workflowcontract.Label}
-		}
+	if e.Contract != nil {
 		return e.Contract, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: workflowcontract.Label}
 	}
 	return nil, &NotLoadedError{edge: "contract"}
 }

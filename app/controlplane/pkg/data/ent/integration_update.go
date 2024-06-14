@@ -38,6 +38,14 @@ func (iu *IntegrationUpdate) SetName(s string) *IntegrationUpdate {
 	return iu
 }
 
+// SetNillableName sets the "name" field if the given value is not nil.
+func (iu *IntegrationUpdate) SetNillableName(s *string) *IntegrationUpdate {
+	if s != nil {
+		iu.SetName(*s)
+	}
+	return iu
+}
+
 // SetDescription sets the "description" field.
 func (iu *IntegrationUpdate) SetDescription(s string) *IntegrationUpdate {
 	iu.mutation.SetDescription(s)
@@ -321,6 +329,14 @@ type IntegrationUpdateOne struct {
 // SetName sets the "name" field.
 func (iuo *IntegrationUpdateOne) SetName(s string) *IntegrationUpdateOne {
 	iuo.mutation.SetName(s)
+	return iuo
+}
+
+// SetNillableName sets the "name" field if the given value is not nil.
+func (iuo *IntegrationUpdateOne) SetNillableName(s *string) *IntegrationUpdateOne {
+	if s != nil {
+		iuo.SetName(*s)
+	}
 	return iuo
 }
 
