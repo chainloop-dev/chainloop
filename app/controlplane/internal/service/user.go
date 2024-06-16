@@ -95,19 +95,6 @@ func (s *UserService) DeleteMembership(ctx context.Context, req *pb.DeleteMember
 	return &pb.DeleteMembershipResponse{}, nil
 }
 
-func pbRoleToBiz(r pb.MembershipRole) authz.Role {
-	switch r {
-	case pb.MembershipRole_MEMBERSHIP_ROLE_ORG_OWNER:
-		return authz.RoleOwner
-	case pb.MembershipRole_MEMBERSHIP_ROLE_ORG_ADMIN:
-		return authz.RoleAdmin
-	case pb.MembershipRole_MEMBERSHIP_ROLE_ORG_VIEWER:
-		return authz.RoleViewer
-	default:
-		return ""
-	}
-}
-
 func bizMembershipToPb(m *biz.Membership) *pb.OrgMembershipItem {
 	item := &pb.OrgMembershipItem{
 		Id: m.ID.String(), Current: m.Current,

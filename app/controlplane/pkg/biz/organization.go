@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"time"
 
+	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"github.com/moby/moby/pkg/namesgenerator"
@@ -45,14 +46,16 @@ type OrganizationUseCase struct {
 	casBackendUseCase *CASBackendUseCase
 	integrationUC     *IntegrationUseCase
 	membershipRepo    MembershipRepo
+	onboardingConfig  []*conf.OnboardingSpec
 }
 
-func NewOrganizationUseCase(repo OrganizationRepo, repoUC *CASBackendUseCase, iUC *IntegrationUseCase, mRepo MembershipRepo, logger log.Logger) *OrganizationUseCase {
+func NewOrganizationUseCase(repo OrganizationRepo, repoUC *CASBackendUseCase, iUC *IntegrationUseCase, mRepo MembershipRepo, onboardingConfig []*conf.OnboardingSpec, logger log.Logger) *OrganizationUseCase {
 	return &OrganizationUseCase{orgRepo: repo,
 		logger:            log.NewHelper(logger),
 		casBackendUseCase: repoUC,
 		integrationUC:     iUC,
 		membershipRepo:    mRepo,
+		onboardingConfig:  onboardingConfig,
 	}
 }
 
@@ -214,16 +217,6 @@ func (uc *OrganizationUseCase) FindByName(ctx context.Context, name string) (*Or
 	return org, nil
 }
 
-// FindOrCreate finds an organization by name, or creates it if it doesn't exist.
-func (uc *OrganizationUseCase) FindOrCreate(ctx context.Context, name string) (*Organization, error) {
-	org, err := uc.FindByName(ctx, name)
-	if err != nil && errors.As(err, &ErrNotFound{}) {
-		org, err = uc.Create(ctx, name, WithCreateInlineBackend())
-	}
-
-	return org, err
-}
-
 // Delete deletes an organization and all relevant data
 // This includes:
 // - The organization
@@ -270,4 +263,76 @@ func (uc *OrganizationUseCase) Delete(ctx context.Context, id string) error {
 
 	// Delete the organization
 	return uc.orgRepo.Delete(ctx, orgUUID)
+}
+
+// AutoOnboardOrganizations creates the organizations specified in the onboarding config and assigns the user to them
+// with the specified role if they are not already a member.
+func (uc *OrganizationUseCase) AutoOnboardOrganizations(ctx context.Context, userID string) error {
+	// Parse user UUID
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return NewErrInvalidUUID(err)
+	}
+
+	for _, spec := range uc.onboardingConfig {
+		// Ensure the organization exists or create it if it doesn't
+		org, err := uc.ensureOrganizationExists(ctx, spec)
+		if err != nil {
+			return fmt.Errorf("failed to ensure organization exists: %w", err)
+		}
+
+		// Parse organization UUID
+		orgUUID, err := uuid.Parse(org.ID)
+		if err != nil {
+			return NewErrInvalidUUID(err)
+		}
+
+		// Ensure user membership
+		if err := uc.ensureUserMembership(ctx, orgUUID, userUUID, spec); err != nil {
+			return fmt.Errorf("failed to ensure user membership: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// ensureOrganizationExists ensures that an organization specified by the onboarding configuration exists.
+// If the organization does not exist, it creates it.
+func (uc *OrganizationUseCase) ensureOrganizationExists(ctx context.Context, spec *conf.OnboardingSpec) (*Organization, error) {
+	// Ensure the organization exists or create it if it doesn't
+	org, err := uc.FindByName(ctx, spec.GetName())
+	if err != nil {
+		if errors.As(err, &ErrNotFound{}) {
+			org, err = uc.Create(ctx, spec.GetName(), WithCreateInlineBackend())
+			if err != nil {
+				return nil, fmt.Errorf("failed to create organization: %w", err)
+			}
+		} else {
+			return nil, fmt.Errorf("failed to find organization: %w", err)
+		}
+	}
+
+	return org, nil
+}
+
+// ensureUserMembership ensures that a user is a member of the specified organization with the appropriate role.
+// If the membership does not exist, it creates it.
+func (uc *OrganizationUseCase) ensureUserMembership(ctx context.Context, orgUUID, userUUID uuid.UUID, spec *conf.OnboardingSpec) error {
+	m, err := uc.membershipRepo.FindByOrgAndUser(ctx, orgUUID, userUUID)
+	if err != nil && !errors.As(err, &ErrNotFound{}) {
+		return fmt.Errorf("failed to find membership: %w", err)
+	}
+
+	if m != nil {
+		// Membership already exists, no further action needed
+		return nil
+	}
+
+	// Create the membership with the specified role
+	_, err = uc.membershipRepo.Create(ctx, orgUUID, userUUID, true, PbRoleToBiz(spec.GetRole()))
+	if err != nil {
+		return fmt.Errorf("failed to create membership: %w", err)
+	}
+
+	return nil
 }

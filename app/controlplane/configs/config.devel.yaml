@@ -59,8 +59,3 @@ auth:
 #   allowed_orgs:
 #     - deadbeef
 
-onboarding:
-  - name: "read-only-demo"
-    role: "viewer"
-  - name: "read-write-demo"
-    role: "owner"

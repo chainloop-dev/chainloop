@@ -20,6 +20,7 @@ package controlplane.config.v1;
 import "buf/validate/validate.proto";
 import "credentials/v1/config.proto";
 import "google/protobuf/duration.proto";
+import "controlplane/v1/response_messages.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1;conf";
 
@@ -141,8 +142,8 @@ message CA {
 
 // OnboardingSpec is a configuration to automatically onboard users in organizations with specific roles
 message OnboardingSpec {
-  // name is the name of the organization
+  // Name of the organization
   string name = 1;
-  // role is the role to assign to the user. For the moment, only "viewer" is supported
-  string role = 2;
+  // Role to assign to the user
+  controlplane.v1.MembershipRole role = 2;
 }

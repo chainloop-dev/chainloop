@@ -83,9 +83,10 @@ type TestingRepos struct {
 }
 
 type newTestingOpts struct {
-	credsReaderWriter credentials.ReaderWriter
-	integrations      sdk.AvailablePlugins
-	providers         backends.Providers
+	credsReaderWriter       credentials.ReaderWriter
+	integrations            sdk.AvailablePlugins
+	providers               backends.Providers
+	onboardingConfiguration []*conf.OnboardingSpec
 }
 
 type NewTestingUCOpt func(*newTestingOpts)
@@ -103,6 +104,12 @@ func WithRegisteredIntegration(i sdk.FanOut) NewTestingUCOpt {
 		} else {
 			tu.integrations = append(tu.integrations, &sdk.FanOutP{FanOut: i})
 		}
+	}
+}
+
+func WithOnboardingConfiguration(conf []*conf.OnboardingSpec) NewTestingUCOpt {
+	return func(tu *newTestingOpts) {
+		tu.onboardingConfiguration = conf
 	}
 }
 
@@ -125,7 +132,7 @@ func NewTestingUseCases(t *testing.T, opts ...NewTestingUCOpt) *TestingUseCases 
 	testData, _, err := WireTestData(db, t, log, newArgs.credsReaderWriter, &robotaccount.Builder{}, &conf.Auth{
 		GeneratedJwsHmacSecret:        "test",
 		CasRobotAccountPrivateKeyPath: "./testdata/test-key.ec.pem",
-	}, newArgs.integrations, newArgs.providers)
+	}, newArgs.onboardingConfiguration, newArgs.integrations, newArgs.providers)
 	assert.NoError(t, err)
 
 	// Run DB migrations for testing

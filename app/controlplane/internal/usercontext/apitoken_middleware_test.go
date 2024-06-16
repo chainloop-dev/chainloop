@@ -101,7 +101,7 @@ func TestWithCurrentAPITokenAndOrgMiddleware(t *testing.T) {
 			orgRepo := bizMocks.NewOrganizationRepo(t)
 			apiTokenUC, err := biz.NewAPITokenUseCase(apiTokenRepo, &conf.Auth{GeneratedJwsHmacSecret: "test"}, nil, nil)
 			require.NoError(t, err)
-			orgUC := biz.NewOrganizationUseCase(orgRepo, nil, nil, nil, nil)
+			orgUC := biz.NewOrganizationUseCase(orgRepo, nil, nil, nil, nil, nil)
 			require.NoError(t, err)
 
 			ctx := context.Background()

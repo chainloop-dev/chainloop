@@ -21,6 +21,9 @@ import (
 	"fmt"
 	"time"
 
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
+	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
@@ -48,12 +51,14 @@ type UserUseCase struct {
 	logger              *log.Helper
 	membershipUseCase   *MembershipUseCase
 	organizationUseCase *OrganizationUseCase
+	onboardingConfig    []*conf.OnboardingSpec
 }
 
 type NewUserUseCaseParams struct {
 	UserRepo            UserRepo
 	MembershipUseCase   *MembershipUseCase
 	OrganizationUseCase *OrganizationUseCase
+	OnboardingConfig    []*conf.OnboardingSpec
 	Logger              log.Logger
 }
 
@@ -62,6 +67,7 @@ func NewUserUseCase(opts *NewUserUseCaseParams) *UserUseCase {
 		userRepo:            opts.UserRepo,
 		membershipUseCase:   opts.MembershipUseCase,
 		organizationUseCase: opts.OrganizationUseCase,
+		onboardingConfig:    opts.OnboardingConfig,
 		logger:              log.NewHelper(opts.Logger),
 	}
 }
@@ -90,6 +96,15 @@ func (uc *UserUseCase) DeleteUser(ctx context.Context, userID string) error {
 	return uc.userRepo.Delete(ctx, userUUID)
 }
 
+func (uc *UserUseCase) CreateByEmail(ctx context.Context, email string) (*User, error) {
+	u, err := uc.userRepo.CreateByEmail(ctx, email)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create user: %w", err)
+	}
+
+	return u, nil
+}
+
 func (uc *UserUseCase) FindOrCreateByEmail(ctx context.Context, email string) (*User, error) {
 	u, err := uc.userRepo.FindByEmail(ctx, email)
 	if err != nil {
@@ -98,7 +113,16 @@ func (uc *UserUseCase) FindOrCreateByEmail(ctx context.Context, email string) (*
 		return u, nil
 	}
 
-	return uc.userRepo.CreateByEmail(ctx, email)
+	u, err = uc.CreateByEmail(ctx, email)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create user: %w", err)
+	}
+
+	if err := uc.organizationUseCase.AutoOnboardOrganizations(ctx, u.ID); err != nil {
+		return nil, fmt.Errorf("failed to auto-onboard user: %w", err)
+	}
+
+	return u, err
 }
 
 func (uc *UserUseCase) FindByID(ctx context.Context, userID string) (*User, error) {
@@ -136,4 +160,17 @@ func (uc *UserUseCase) CurrentMembership(ctx context.Context, userID string) (*M
 	}
 
 	return m, nil
+}
+
+func PbRoleToBiz(r pb.MembershipRole) authz.Role {
+	switch r {
+	case pb.MembershipRole_MEMBERSHIP_ROLE_ORG_OWNER:
+		return authz.RoleOwner
+	case pb.MembershipRole_MEMBERSHIP_ROLE_ORG_ADMIN:
+		return authz.RoleAdmin
+	case pb.MembershipRole_MEMBERSHIP_ROLE_ORG_VIEWER:
+		return authz.RoleViewer
+	default:
+		return ""
+	}
 }
