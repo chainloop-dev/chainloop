@@ -399,6 +399,22 @@ controlplane:
       keyPass: "REDACTED"  
 ```
 
+### Insert custom Certificate Authorities (CAs)
+
+In some scenarios, you might want to add custom Certificate Authorities to the Chainloop deployment. Like in the instance where your OIDC provider uses a self-signed certificate. To do so, add the PEM-encoded CA certificate to the `customCAs` list in your `values.yaml` file like in the example below.
+
+```yaml
+  customCAs:
+    - |-
+      -----BEGIN CERTIFICATE-----
+      MIIFmDCCA4CgAwIBAgIQU9C87nMpOIFKYpfvOHFHFDANBgkqhkiG9w0BAQsFADBm
+      BhMCVVMxMzAxBgNVBAoTKihTVEFHSU5HKSBJbnRlcm5ldCBTZWN1cml0eSBSZXNl
+      REDACTED
+      5CunuvCXmEQJHo7kGcViT7sETn6Jz9KOhvYcXkJ7po6d93A/jy4GKPIPnsKKNEmR
+      7DiA+/9Qdp9RBWJpTS9i/mDnJg1xvo8Xz49mrrgfmcAXTCJqXi24NatI3Oc=
+      -----END CERTIFICATE-----
+```
+
 ### Send exceptions to Sentry
 
 You can configure different sentry projects for both the controlplane and the artifact CAS
@@ -568,6 +584,7 @@ chainloop config save \
 | `controlplane.keylessSigning.fileCA.cert`                    | The PEM-encoded certificate of the file based CA         | `""`         |
 | `controlplane.keylessSigning.fileCA.key`                     | The PEM-encoded private key of the file based CA         | `""`         |
 | `controlplane.keylessSigning.fileCA.keyPass`                 | The secret key pass                                      | `""`         |
+| `controlplane.customCAs`                                     | List of custom CA certificates content                   | `[]`         |
 
 ### Artifact Content Addressable (CAS) API
 
