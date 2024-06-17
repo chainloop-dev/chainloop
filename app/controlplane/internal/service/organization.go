@@ -121,7 +121,7 @@ func (s *OrganizationService) UpdateMembership(ctx context.Context, req *pb.Orga
 		return nil, err
 	}
 
-	m, err := s.membershipUC.UpdateRole(ctx, currentOrg.ID, currentUser.ID, req.MembershipId, pbRoleToBiz(req.Role))
+	m, err := s.membershipUC.UpdateRole(ctx, currentOrg.ID, currentUser.ID, req.MembershipId, biz.PbRoleToBiz(req.Role))
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}

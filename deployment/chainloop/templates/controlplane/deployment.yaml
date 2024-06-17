@@ -41,9 +41,15 @@ spec:
             - migrate
             - apply
             - --url
-            - "{{include "controlplane.database.atlas_connection_string" . }}"
+            - $(CONNECTION_STRING)
             - --dir
             - file:///migrations
+          env:
+            - name: CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "chainloop.controlplane.fullname" . }}
+                  key: db_migrate_source
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
@@ -91,6 +97,13 @@ spec:
             - name: gcp-secretmanager-serviceaccountkey
               mountPath: /gcp-secrets
             {{- end }}
+            {{- if (not (empty .Values.controlplane.customCAs)) }}
+            - name: custom-cas
+              # NOTE: /etc/ssl/certs already contains the system CA certs
+              # Let's use another known path https://go.dev/src/crypto/x509/root_linux.go
+              mountPath: /etc/pki/tls/certs
+              readOnly: true
+            {{- end }}
       volumes:
         - name: config
           projected:
@@ -99,6 +112,13 @@ spec:
                 name: {{ include "chainloop.controlplane.fullname" . }}
             - configMap:
                name: {{ include "chainloop.controlplane.fullname" . }}
+        {{- if (not (empty .Values.controlplane.customCAs)) }}
+        - name: custom-cas
+          projected:
+            sources:
+            - secret:
+               name: {{ include "chainloop.controlplane.fullname" . }}-custom-cas
+        {{- end }}
         # required for the plugins to store the socket files
         - name: tmp
           emptyDir: {}

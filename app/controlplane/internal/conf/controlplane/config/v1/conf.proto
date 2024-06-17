@@ -20,6 +20,7 @@ package controlplane.config.v1;
 import "buf/validate/validate.proto";
 import "credentials/v1/config.proto";
 import "google/protobuf/duration.proto";
+import "controlplane/v1/response_messages.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1;conf";
 
@@ -58,6 +59,9 @@ message Bootstrap {
     // https://github.com/chainloop-dev/chainloop/blob/126f47b6c0803eac844b8e3e1a21d582f00e4dc6/app/artifact-cas/internal/service/download.go#L34
     string download_url = 3;
   }
+
+  // Configuration for onboarding users in organizations with specific roles
+  repeated OnboardingSpec onboarding = 10;
 }
 
 // Configuration used to enable a shared index API endpoint that can be used to discover metadata referrers
@@ -134,4 +138,12 @@ message CA {
     string key_path = 2;
     string key_pass = 3;
   }
+}
+
+// OnboardingSpec is a configuration to automatically onboard users in organizations with specific roles
+message OnboardingSpec {
+  // Name of the organization
+  string name = 1 [(buf.validate.field).string.min_len = 1];;
+  // Role to assign to the user
+  controlplane.v1.MembershipRole role = 2;
 }

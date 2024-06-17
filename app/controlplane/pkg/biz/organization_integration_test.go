@@ -19,6 +19,9 @@ import (
 	"context"
 	"testing"
 
+	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
+	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
@@ -193,6 +196,7 @@ func (s *OrgIntegrationTestSuite) TestDeleteOrg() {
 // Run the tests
 func TestOrgUseCase(t *testing.T) {
 	suite.Run(t, new(OrgIntegrationTestSuite))
+	suite.Run(t, new(AuthOnboardingTestSuite))
 }
 
 // Utility struct to hold the test suite
@@ -267,4 +271,124 @@ func (s *OrgIntegrationTestSuite) SetupTest() {
 	contracts, err := s.WorkflowContract.List(ctx, s.org.ID)
 	assert.NoError(err)
 	assert.Len(contracts, 1)
+}
+
+type AuthOnboardingTestSuite struct {
+	testhelpers.UseCasesEachTestSuite
+	usr, usr1 *biz.User
+	org       *biz.Organization
+	m         *biz.Membership
+}
+
+func (s *AuthOnboardingTestSuite) SetupTest() {
+	t := s.T()
+	ctx := context.Background()
+
+	s.TestingUseCases = testhelpers.NewTestingUseCases(t, testhelpers.WithOnboardingConfiguration([]*conf.OnboardingSpec{
+		{
+			Name: "testing-org",
+			Role: v1.MembershipRole_MEMBERSHIP_ROLE_ORG_VIEWER,
+		},
+	}))
+
+	s.setupUsersAndOrganization(ctx)
+	s.setupMembership(ctx)
+}
+
+func (s *AuthOnboardingTestSuite) setupUsersAndOrganization(ctx context.Context) {
+	var err error
+	s.org, err = s.Organization.Create(ctx, "onboarded-org")
+	require.NoError(s.T(), err)
+
+	s.usr, err = s.User.FindOrCreateByEmail(ctx, "foo@bar", true)
+	require.NoError(s.T(), err)
+
+	s.usr1, err = s.User.FindOrCreateByEmail(ctx, "bar@foo", true)
+	require.NoError(s.T(), err)
+}
+
+func (s *AuthOnboardingTestSuite) setupMembership(ctx context.Context) {
+	var err error
+	s.m, err = s.Membership.Create(ctx, s.org.ID, s.usr1.ID, biz.WithMembershipRole(authz.RoleViewer))
+	s.NoError(err)
+}
+
+func (s *AuthOnboardingTestSuite) TestAutoOnboardOrganizations() {
+	ctx := context.Background()
+
+	org, err := s.Repos.OrganizationRepo.FindByName(ctx, "testing-org")
+	s.Nil(err)
+	s.Nil(org)
+
+	err = s.Organization.AutoOnboardOrganizations(ctx, s.usr.ID)
+	s.NoError(err)
+
+	org, err = s.Repos.OrganizationRepo.FindByName(ctx, "testing-org")
+	s.NoError(err)
+	s.NotNil(org)
+
+	m, err := s.Membership.FindByOrgAndUser(ctx, org.ID, s.usr.ID)
+	s.NoError(err)
+	s.NotNil(m)
+}
+
+func (s *AuthOnboardingTestSuite) TestOnboardOrganizationsTwice() {
+	ctx := context.Background()
+
+	org, err := s.Repos.OrganizationRepo.FindByName(ctx, "testing-org")
+	s.Nil(err)
+	s.Nil(org)
+
+	// Call it once
+	err = s.Organization.AutoOnboardOrganizations(ctx, s.usr.ID)
+	s.NoError(err)
+
+	// Call it twice
+	err = s.Organization.AutoOnboardOrganizations(ctx, s.usr.ID)
+	s.NoError(err)
+
+	org, err = s.Repos.OrganizationRepo.FindByName(ctx, "testing-org")
+	s.NoError(err)
+	s.NotNil(org)
+
+	m, err := s.Membership.FindByOrgAndUser(ctx, org.ID, s.usr.ID)
+	s.NoError(err)
+	s.NotNil(m)
+}
+
+func (s *AuthOnboardingTestSuite) TestAutoOnboardWithExistingMemberships() {
+	ctx := context.Background()
+
+	org, err := s.Repos.OrganizationRepo.FindByName(ctx, s.org.Name)
+	s.Nil(err)
+	s.NotNil(org)
+
+	m, err := s.Membership.FindByOrgAndUser(ctx, org.ID, s.usr1.ID)
+	s.NoError(err)
+	s.NotNil(m)
+	s.Equal(s.m.Role, m.Role)
+
+	err = s.Organization.AutoOnboardOrganizations(ctx, s.usr1.ID)
+	s.NoError(err)
+
+	newM, err := s.Membership.FindByOrgAndUser(ctx, org.ID, s.usr1.ID)
+	s.NoError(err)
+	s.NotNil(newM)
+	s.Equal(s.m.Role, newM.Role)
+}
+
+func (s *AuthOnboardingTestSuite) TestAutoOnboardWithoutConfiguration() {
+	ctx := context.Background()
+	s.TestingUseCases = testhelpers.NewTestingUseCases(s.T())
+
+	org, err := s.Repos.OrganizationRepo.FindByName(ctx, "testing-org")
+	s.Nil(err)
+	s.Nil(org)
+
+	err = s.Organization.AutoOnboardOrganizations(ctx, s.usr.ID)
+	s.NoError(err)
+
+	org, err = s.Repos.OrganizationRepo.FindByName(ctx, "testing-org")
+	s.Nil(err)
+	s.Nil(org)
 }

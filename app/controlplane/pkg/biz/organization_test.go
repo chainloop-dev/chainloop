@@ -33,7 +33,7 @@ type organizationTestSuite struct {
 
 func (s *organizationTestSuite) TestCreateWithRandomName() {
 	repo := repoM.NewOrganizationRepo(s.T())
-	uc := biz.NewOrganizationUseCase(repo, nil, nil, nil, log.NewStdLogger(io.Discard))
+	uc := biz.NewOrganizationUseCase(repo, nil, nil, nil, nil, log.NewStdLogger(io.Discard))
 
 	s.Run("the org exists, we retry", func() {
 		ctx := context.Background()
