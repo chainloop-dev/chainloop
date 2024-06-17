@@ -475,6 +475,10 @@ controlplane:
       key: ""
       keyPass: ""
 
+  ## Inject custom CA certificates to the controlplane container
+  ## @param controlplane.customCAs List of custom CA certificates content
+  customCAs: []
+
 ## @section Artifact Content Addressable (CAS) API
 ##################################
 #         Artifacts CAS          #
