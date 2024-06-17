@@ -109,6 +109,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		Workflow:         workflowRepo,
 		WorkflowRunRepo:  workflowRunRepo,
 		AttestationState: attestationStateRepo,
+		OrganizationRepo: organizationRepo,
 	}
 	testingUseCases := &TestingUseCases{
 		DB:                     testDatabase,

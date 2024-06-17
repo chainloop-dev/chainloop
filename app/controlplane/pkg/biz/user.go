@@ -96,16 +96,10 @@ func (uc *UserUseCase) DeleteUser(ctx context.Context, userID string) error {
 	return uc.userRepo.Delete(ctx, userUUID)
 }
 
-func (uc *UserUseCase) CreateByEmail(ctx context.Context, email string) (*User, error) {
-	u, err := uc.userRepo.CreateByEmail(ctx, email)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create user: %w", err)
-	}
-
-	return u, nil
-}
-
-func (uc *UserUseCase) FindOrCreateByEmail(ctx context.Context, email string) (*User, error) {
+// FindOrCreateByEmail finds or creates a user by email. By default, it will auto-onboard the user
+// to the organizations defined in the configuration. If disableAutoOnboarding is set to true, it will
+// skip the auto-onboarding process.
+func (uc *UserUseCase) FindOrCreateByEmail(ctx context.Context, email string, disableAutoOnboarding ...bool) (*User, error) {
 	u, err := uc.userRepo.FindByEmail(ctx, email)
 	if err != nil {
 		return nil, err
@@ -113,13 +107,16 @@ func (uc *UserUseCase) FindOrCreateByEmail(ctx context.Context, email string) (*
 		return u, nil
 	}
 
-	u, err = uc.CreateByEmail(ctx, email)
+	u, err = uc.userRepo.CreateByEmail(ctx, email)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
 
-	if err := uc.organizationUseCase.AutoOnboardOrganizations(ctx, u.ID); err != nil {
-		return nil, fmt.Errorf("failed to auto-onboard user: %w", err)
+	// Check if we should auto-onboard the user
+	if disableAutoOnboarding == nil || (len(disableAutoOnboarding) > 0 && !disableAutoOnboarding[0]) {
+		if err := uc.organizationUseCase.AutoOnboardOrganizations(ctx, u.ID); err != nil {
+			return nil, fmt.Errorf("failed to auto-onboard user: %w", err)
+		}
 	}
 
 	return u, err

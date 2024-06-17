@@ -201,22 +201,6 @@ func (uc *OrganizationUseCase) FindByID(ctx context.Context, id string) (*Organi
 	return org, nil
 }
 
-// FindByName finds an organization by name.
-func (uc *OrganizationUseCase) FindByName(ctx context.Context, name string) (*Organization, error) {
-	if err := ValidateIsDNS1123(name); err != nil {
-		return nil, NewErrValidation(errOrgName)
-	}
-
-	org, err := uc.orgRepo.FindByName(ctx, name)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find organization: %w", err)
-	} else if org == nil {
-		return nil, NewErrNotFound("organization")
-	}
-
-	return org, nil
-}
-
 // Delete deletes an organization and all relevant data
 // This includes:
 // - The organization
@@ -300,15 +284,19 @@ func (uc *OrganizationUseCase) AutoOnboardOrganizations(ctx context.Context, use
 // If the organization does not exist, it creates it.
 func (uc *OrganizationUseCase) ensureOrganizationExists(ctx context.Context, spec *conf.OnboardingSpec) (*Organization, error) {
 	// Ensure the organization exists or create it if it doesn't
-	org, err := uc.FindByName(ctx, spec.GetName())
+	org, err := uc.orgRepo.FindByName(ctx, spec.GetName())
 	if err != nil {
-		if errors.As(err, &ErrNotFound{}) {
-			org, err = uc.Create(ctx, spec.GetName(), WithCreateInlineBackend())
-			if err != nil {
-				return nil, fmt.Errorf("failed to create organization: %w", err)
-			}
-		} else {
-			return nil, fmt.Errorf("failed to find organization: %w", err)
+		return nil, fmt.Errorf("failed to find organization: %w", err)
+	} else if org == nil {
+		// Create the organization since it does not exist
+		org, err = uc.orgRepo.Create(ctx, spec.GetName())
+		if err != nil {
+			return nil, fmt.Errorf("failed to create organization: %w", err)
+		}
+
+		// Create default inline CAS-backend
+		if _, err := uc.casBackendUseCase.CreateInlineFallbackBackend(ctx, org.ID); err != nil {
+			return nil, fmt.Errorf("failed to create fallback backend: %w", err)
 		}
 	}
 
@@ -319,7 +307,7 @@ func (uc *OrganizationUseCase) ensureOrganizationExists(ctx context.Context, spe
 // If the membership does not exist, it creates it.
 func (uc *OrganizationUseCase) ensureUserMembership(ctx context.Context, orgUUID, userUUID uuid.UUID, spec *conf.OnboardingSpec) error {
 	m, err := uc.membershipRepo.FindByOrgAndUser(ctx, orgUUID, userUUID)
-	if err != nil && !errors.As(err, &ErrNotFound{}) {
+	if err != nil {
 		return fmt.Errorf("failed to find membership: %w", err)
 	}
 

@@ -143,7 +143,7 @@ message CA {
 // OnboardingSpec is a configuration to automatically onboard users in organizations with specific roles
 message OnboardingSpec {
   // Name of the organization
-  string name = 1;
+  string name = 1 [(buf.validate.field).string.min_len = 1];;
   // Role to assign to the user
   controlplane.v1.MembershipRole role = 2;
 }

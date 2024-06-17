@@ -80,6 +80,7 @@ type TestingRepos struct {
 	Workflow         biz.WorkflowRepo
 	WorkflowRunRepo  biz.WorkflowRunRepo
 	AttestationState biz.AttestationStateRepo
+	OrganizationRepo biz.OrganizationRepo
 }
 
 type newTestingOpts struct {
