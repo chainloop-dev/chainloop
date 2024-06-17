@@ -27,8 +27,13 @@ import (
 	sigstoresigner "github.com/sigstore/sigstore/pkg/signature"
 )
 
+type SignerOpts struct {
+	SignServerCAPath string
+	Vaultclient      pb.SigningServiceClient
+}
+
 // GetSigner creates a new Signer based on input parameters
-func GetSigner(keyPath string, logger zerolog.Logger, client pb.SigningServiceClient) (sigstoresigner.Signer, error) {
+func GetSigner(keyPath string, logger zerolog.Logger, opts *SignerOpts) (sigstoresigner.Signer, error) {
 	var signer sigstoresigner.Signer
 	if keyPath != "" {
 		if strings.HasPrefix(keyPath, signserver.ReferenceScheme) {
@@ -36,12 +41,12 @@ func GetSigner(keyPath string, logger zerolog.Logger, client pb.SigningServiceCl
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse key: %w", err)
 			}
-			signer = signserver.NewSigner(host, worker)
+			signer = signserver.NewSigner(host, worker, opts.SignServerCAPath)
 		} else {
 			signer = cosign.NewSigner(keyPath, logger)
 		}
 	} else {
-		signer = chainloop.NewSigner(client, logger)
+		signer = chainloop.NewSigner(opts.Vaultclient, logger)
 	}
 
 	return signer, nil

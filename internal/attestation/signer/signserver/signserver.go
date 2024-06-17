@@ -19,12 +19,14 @@ import (
 	"bytes"
 	"crypto"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 
 	sigstoresigner "github.com/sigstore/sigstore/pkg/signature"
@@ -35,15 +37,16 @@ const ReferenceScheme = "signserver"
 
 // Signer implements a signer for SignServer
 type Signer struct {
-	host, worker string
+	host, worker, caPath string
 }
 
 var _ sigstoresigner.Signer = (*Signer)(nil)
 
-func NewSigner(host, worker string) *Signer {
+func NewSigner(host, worker, caPath string) *Signer {
 	return &Signer{
 		host:   host,
 		worker: worker,
+		caPath: caPath,
 	}
 }
 
@@ -86,9 +89,19 @@ func (s Signer) SignMessage(message io.Reader, _ ...sigstoresigner.SignOption) (
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Add("Content-Type", mpwriter.FormDataContentType())
-	client := &http.Client{
-		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
+	client := &http.Client{}
+
+	var caPool *x509.CertPool
+	if s.caPath != "" {
+		caPool = x509.NewCertPool()
+		caContents, err := os.ReadFile(s.caPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read ca cert: %w", err)
+		}
+		caPool.AppendCertsFromPEM(caContents)
+		client.Transport = &http.Transport{TLSClientConfig: &tls.Config{RootCAs: caPool}}
 	}
+
 	res, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)
