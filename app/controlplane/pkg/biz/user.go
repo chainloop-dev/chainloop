@@ -17,7 +17,6 @@ package biz
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -140,7 +139,7 @@ func (uc *UserUseCase) CurrentMembership(ctx context.Context, userID string) (*M
 
 	// there is no current organization
 	if len(memberships) == 0 {
-		return nil, errors.New("user does not have any organization associated")
+		return nil, NewErrNotFound("user does not have any organization associated")
 	}
 
 	for _, m := range memberships {

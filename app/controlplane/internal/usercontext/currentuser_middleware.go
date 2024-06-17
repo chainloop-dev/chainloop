@@ -30,6 +30,9 @@ import (
 	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 )
 
+// ErrUserWithNoMemberships is returned when the user has no memberships in any organization
+var ErrUserWithNoMemberships = errors.New("user has no memberships")
+
 // Utils to get and set information from context
 type User struct {
 	Email, ID string
@@ -172,6 +175,10 @@ func setCurrentOrganization(ctx context.Context, userUC biz.UserOrgFinder, logge
 	// We load the current organization
 	membership, err := userUC.CurrentMembership(ctx, u.ID)
 	if err != nil {
+		if errors.As(err, &biz.ErrNotFound{}) {
+			return nil, ErrUserWithNoMemberships
+		}
+
 		return nil, err
 	}
 
