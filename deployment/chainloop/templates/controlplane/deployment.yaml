@@ -41,9 +41,15 @@ spec:
             - migrate
             - apply
             - --url
-            - "{{include "controlplane.database.atlas_connection_string" . }}"
+            - $(CONNECTION_STRING)
             - --dir
             - file:///migrations
+          env:
+            - name: CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "chainloop.controlplane.fullname" . }}
+                  key: db_migrate_source
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
