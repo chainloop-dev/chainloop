@@ -99,7 +99,8 @@ func (s Signer) SignMessage(message io.Reader, _ ...sigstoresigner.SignOption) (
 			return nil, fmt.Errorf("failed to read ca cert: %w", err)
 		}
 		caPool.AppendCertsFromPEM(caContents)
-		client.Transport = &http.Transport{TLSClientConfig: &tls.Config{RootCAs: caPool}}
+		client.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{RootCAs: caPool, MinVersion: tls.VersionTLS12}}
 	}
 
 	res, err := client.Do(req)
