@@ -26,7 +26,7 @@ import (
 // Injectors from wire.go:
 
 // wireTestData init testing data
-func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, readerWriter credentials.ReaderWriter, builder *robotaccount.Builder, auth *conf.Auth, availablePlugins sdk.AvailablePlugins, providers backend.Providers) (*TestingUseCases, func(), error) {
+func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, readerWriter credentials.ReaderWriter, builder *robotaccount.Builder, auth *conf.Auth, arg []*conf.OnboardingSpec, availablePlugins sdk.AvailablePlugins, providers backend.Providers) (*TestingUseCases, func(), error) {
 	confData := NewConfData(testDatabase, t)
 	newConfig := NewDataConfig(confData)
 	dataData, cleanup, err := data.NewData(newConfig, logger)
@@ -48,7 +48,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		Logger:  logger,
 	}
 	integrationUseCase := biz.NewIntegrationUseCase(newIntegrationUseCaseOpts)
-	organizationUseCase := biz.NewOrganizationUseCase(organizationRepo, casBackendUseCase, integrationUseCase, membershipRepo, logger)
+	organizationUseCase := biz.NewOrganizationUseCase(organizationRepo, casBackendUseCase, integrationUseCase, membershipRepo, arg, logger)
 	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, organizationUseCase, logger)
 	workflowContractRepo := data.NewWorkflowContractRepo(dataData, logger)
 	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, logger)
@@ -64,6 +64,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		UserRepo:            userRepo,
 		MembershipUseCase:   membershipUseCase,
 		OrganizationUseCase: organizationUseCase,
+		OnboardingConfig:    arg,
 		Logger:              logger,
 	}
 	userUseCase := biz.NewUserUseCase(newUserUseCaseParams)
@@ -108,6 +109,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		Workflow:         workflowRepo,
 		WorkflowRunRepo:  workflowRunRepo,
 		AttestationState: attestationStateRepo,
+		OrganizationRepo: organizationRepo,
 	}
 	testingUseCases := &TestingUseCases{
 		DB:                     testDatabase,

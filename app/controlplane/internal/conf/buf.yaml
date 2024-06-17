@@ -5,6 +5,7 @@ breaking:
 deps:
   - buf.build/googleapis/googleapis
   - buf.build/bufbuild/protovalidate
+  - buf.build/kratos-go/kratos
 lint:
   use:
     - DEFAULT

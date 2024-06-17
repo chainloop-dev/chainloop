@@ -19,7 +19,9 @@ import (
 	"context"
 	"testing"
 
+	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
+	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
 
@@ -118,6 +120,43 @@ func (s *userIntegrationTestSuite) TestCurrentMembership() {
 // Run the tests
 func TestUserUseCase(t *testing.T) {
 	suite.Run(t, new(userIntegrationTestSuite))
+	suite.Run(t, new(userOnboardingTestSuite))
+}
+
+type userOnboardingTestSuite struct {
+	testhelpers.UseCasesEachTestSuite
+}
+
+func (s *userOnboardingTestSuite) TestAutoOnboardOrganizationsNoConfiguration() {
+	ctx := context.Background()
+	// Create a user with no orgs
+	user, err := s.User.FindOrCreateByEmail(ctx, "foo@bar.com", true)
+	s.NoError(err)
+	s.NotNil(user)
+}
+
+func (s *userOnboardingTestSuite) TestAutoOnboardOrganizationsWithConfiguration() {
+	ctx := context.Background()
+	// Create a user with no orgs
+
+	s.TestingUseCases = testhelpers.NewTestingUseCases(s.T(), testhelpers.WithOnboardingConfiguration([]*conf.OnboardingSpec{
+		{
+			Name: "testing-org",
+			Role: v1.MembershipRole_MEMBERSHIP_ROLE_ORG_VIEWER,
+		},
+	}))
+
+	org, err := s.Repos.OrganizationRepo.FindByName(ctx, "testing-org")
+	s.Nil(err)
+	s.Nil(org)
+
+	user, err := s.User.FindOrCreateByEmail(ctx, "foo@bar.com")
+	s.NoError(err)
+	s.NotNil(user)
+
+	org, err = s.Repos.OrganizationRepo.FindByName(ctx, "testing-org")
+	s.NoError(err)
+	s.NotNil(org)
 }
 
 // Utility struct to hold the test suite
