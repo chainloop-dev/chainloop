@@ -45,7 +45,6 @@ func (s *workflowRunDescribeSuite) SetupTest() {
 			},
 		},
 	}
-
 }
 
 func (s *workflowRunDescribeSuite) TestOutputTypePayload() {
