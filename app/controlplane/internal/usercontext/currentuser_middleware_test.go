@@ -33,7 +33,91 @@ import (
 
 var emptyHandler = func(_ context.Context, _ interface{}) (interface{}, error) { return nil, nil }
 
-func TestWithCurrentUserAndOrgMiddleware(t *testing.T) {
+func TestWithCurrentUserMiddleware(t *testing.T) {
+	logger := log.NewHelper(log.NewStdLogger(io.Discard))
+	testCases := []struct {
+		name      string
+		loggedIn  bool
+		audience  string
+		userExist bool
+		// the middleware logic got skipped
+		skipped bool
+		wantErr bool
+	}{
+		{
+			name:     "invalid audience", // in this case it gets ignored
+			loggedIn: true,
+			audience: "another-aud",
+			skipped:  true,
+		},
+		{
+			name:      "logged in, user exists",
+			loggedIn:  true,
+			audience:  userjwtbuilder.Audience,
+			userExist: true,
+			wantErr:   false,
+		},
+		{
+			name:      "logged in, user does not exist",
+			loggedIn:  true,
+			audience:  userjwtbuilder.Audience,
+			userExist: false,
+			wantErr:   true,
+		},
+		{
+			name:     "not logged in",
+			loggedIn: false,
+			audience: userjwtbuilder.Audience,
+			wantErr:  true,
+		},
+	}
+
+	wantUser := &biz.User{ID: uuid.NewString()}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			usecase := bizMocks.NewUserOrgFinder(t)
+			ctx := context.Background()
+			if tc.loggedIn {
+				c := jwt.MapClaims{
+					"aud":     tc.audience,
+					"user_id": wantUser.ID,
+				}
+
+				ctx = jwtmiddleware.NewContext(ctx, c)
+			}
+
+			if tc.userExist {
+				usecase.On("FindByID", ctx, wantUser.ID).Return(wantUser, nil)
+			} else if tc.loggedIn {
+				usecase.On("FindByID", ctx, wantUser.ID).Maybe().Return(nil, nil)
+			}
+
+			m := WithCurrentUserMiddleware(usecase, logger)
+			_, err := m(
+				func(ctx context.Context, _ interface{}) (interface{}, error) {
+					if tc.wantErr {
+						return nil, nil
+					}
+
+					if !tc.skipped {
+						// Check that the wrapped handler contains the user
+						assert.Equal(t, CurrentUser(ctx).ID, wantUser.ID)
+					}
+
+					return nil, nil
+				})(ctx, nil)
+
+			if tc.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestWithCurrentOrganizationMiddleware(t *testing.T) {
 	logger := log.NewHelper(log.NewStdLogger(io.Discard))
 	testCases := []struct {
 		name      string
@@ -58,13 +142,6 @@ func TestWithCurrentUserAndOrgMiddleware(t *testing.T) {
 			userExist: true,
 			orgExist:  true,
 			wantErr:   false,
-		},
-		{
-			name:      "logged in, user does not exist",
-			loggedIn:  true,
-			audience:  userjwtbuilder.Audience,
-			userExist: false,
-			wantErr:   true,
 		},
 		{
 			name:      "logged in, org does not exist",
@@ -101,7 +178,7 @@ func TestWithCurrentUserAndOrgMiddleware(t *testing.T) {
 			}
 
 			if tc.userExist {
-				usecase.On("FindByID", ctx, wantUser.ID).Return(wantUser, nil)
+				ctx = WithCurrentUser(ctx, &User{ID: wantUser.ID})
 			} else if tc.loggedIn {
 				usecase.On("FindByID", ctx, wantUser.ID).Maybe().Return(nil, nil)
 			}
@@ -112,7 +189,7 @@ func TestWithCurrentUserAndOrgMiddleware(t *testing.T) {
 				usecase.On("CurrentMembership", ctx, wantUser.ID).Maybe().Return(nil, nil)
 			}
 
-			m := WithCurrentUserAndOrgMiddleware(usecase, logger)
+			m := WithCurrentOrganizationMiddleware(usecase, logger)
 			_, err := m(
 				func(ctx context.Context, _ interface{}) (interface{}, error) {
 					if tc.wantErr {
@@ -120,9 +197,8 @@ func TestWithCurrentUserAndOrgMiddleware(t *testing.T) {
 					}
 
 					if !tc.skipped {
-						// Check that the wrapped handler contains the user and org
+						// Check that the wrapped handler contains the org
 						assert.Equal(t, CurrentOrg(ctx).ID, wantMembership.Org.ID)
-						assert.Equal(t, CurrentUser(ctx).ID, wantUser.ID)
 						assert.Equal(t, CurrentAuthzSubject(ctx), string(authz.RoleViewer))
 					}
 

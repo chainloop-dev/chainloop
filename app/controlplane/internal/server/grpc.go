@@ -177,12 +177,16 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 			},
 				jwtMiddleware.WithSigningMethod(user.SigningMethod),
 			),
-			// 2.a - Set its user and organization
-			usercontext.WithCurrentUserAndOrgMiddleware(opts.UserUseCase, logHelper),
-			// 2.b - Set its API token and organization as alternative to the user
+			// 2.a - Set its API token and organization as alternative to the user
 			usercontext.WithCurrentAPITokenAndOrgMiddleware(opts.APITokenUseCase, opts.OrganizationUseCase, logHelper),
-			// 3 - Check user/token authorization
-			authzMiddleware.WithAuthzMiddleware(opts.Enforcer, logHelper),
+			// 2.b - Set its user
+			usercontext.WithCurrentUserMiddleware(opts.UserUseCase, logHelper),
+			selector.Server(
+				// 2.c - Set its organization
+				usercontext.WithCurrentOrganizationMiddleware(opts.UserUseCase, logHelper),
+				// 3 - Check user/token authorization
+				authzMiddleware.WithAuthzMiddleware(opts.Enforcer, logHelper),
+			).Match(requireAllButOrganizationOperationsMatcher()).Build(),
 			// 4 - Make sure the account is fully functional
 			selector.Server(
 				usercontext.CheckUserInAllowList(opts.AuthConfig.AllowList),
@@ -236,5 +240,14 @@ func requireRobotAccountMatcher() selector.MatchFunc {
 	return func(ctx context.Context, operation string) bool {
 		r := regexp.MustCompile(requireMatcher)
 		return r.MatchString(operation)
+	}
+}
+
+// Matches all operations except the ones that require the organization to be set
+func requireAllButOrganizationOperationsMatcher() selector.MatchFunc {
+	const requireMatcher = "/controlplane.v1.OrganizationService/Create|/controlplane.v1.*/ListMemberships"
+	return func(ctx context.Context, operation string) bool {
+		r := regexp.MustCompile(requireMatcher)
+		return !r.MatchString(operation)
 	}
 }
