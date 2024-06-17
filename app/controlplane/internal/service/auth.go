@@ -26,7 +26,6 @@ import (
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	authenticator "github.com/chainloop-dev/chainloop/app/controlplane/internal/oidcauthenticator"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
@@ -210,36 +209,6 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) (
 	u, err := svc.userUseCase.FindOrCreateByEmail(ctx, claims.Email)
 	if err != nil {
 		return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
-	}
-
-	// Check if the user already has an organization attached
-	memberships, err := svc.membershipUseCase.ByUser(ctx, u.ID)
-	if err != nil {
-		return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
-	}
-
-	var currentOrg *biz.Organization
-	for _, m := range memberships {
-		if m.Current {
-			currentOrg = m.Org
-			break
-		}
-	}
-
-	// If there is not, we create it and associate the user to it
-	if currentOrg == nil {
-		// Create an org and an inline CAS backend
-		currentOrg, err = svc.orgUseCase.CreateWithRandomName(ctx, biz.WithCreateInlineBackend())
-		if err != nil {
-			return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
-		}
-
-		// Create membership as owner of the new org
-		if _, err := svc.membershipUseCase.Create(ctx, currentOrg.ID, u.ID, biz.WithCurrentMembership(), biz.WithMembershipRole(authz.RoleOwner)); err != nil {
-			return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
-		}
-
-		svc.log.Infow("msg", "new user associated to an org", "org_id", currentOrg.ID, "user_id", u.ID)
 	}
 
 	// Accept any pending invites
