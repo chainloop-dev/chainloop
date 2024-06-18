@@ -18,9 +18,9 @@ syntax = "proto3";
 package controlplane.config.v1;
 
 import "buf/validate/validate.proto";
+import "controlplane/v1/response_messages.proto";
 import "credentials/v1/config.proto";
 import "google/protobuf/duration.proto";
-import "controlplane/v1/response_messages.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1;conf";
 
@@ -114,9 +114,7 @@ message Data {
 message Auth {
   // Authentication creates a JWT that uses this secret for signing
   string generated_jws_hmac_secret = 2;
-  // allow_list is a list of allowed email addresses or domains
-  // for example ["@chainloop.dev", "foo@mycompany.org"]
-  repeated string allow_list = 3;
+  AllowList allow_list = 3;
   string cas_robot_account_private_key_path = 4;
   OIDC oidc = 6;
 
@@ -125,6 +123,16 @@ message Auth {
     string client_id = 2;
     string client_secret = 3;
     string redirect_url_scheme = 4;
+  }
+
+  message AllowList {
+    // allow_list is a list of allowed email addresses or domains
+    // for example ["@chainloop.dev", "foo@mycompany.org"]
+    repeated string rules = 1 [(buf.validate.field).string.min_len = 1];
+    // Custom message to show when a user is not allowed
+    string custom_message = 2;
+    // The list of routes that will be affected by this middleware, by default all of them
+    repeated string selected_routes = 3;
   }
 }
 
@@ -143,7 +151,7 @@ message CA {
 // OnboardingSpec is a configuration to automatically onboard users in organizations with specific roles
 message OnboardingSpec {
   // Name of the organization
-  string name = 1 [(buf.validate.field).string.min_len = 1];;
+  string name = 1 [(buf.validate.field).string.min_len = 1];
   // Role to assign to the user
   controlplane.v1.MembershipRole role = 2;
 }

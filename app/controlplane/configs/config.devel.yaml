@@ -53,6 +53,11 @@ auth:
 
   # Private key used to sign the JWTs meant to be consumed by the CAS
   cas_robot_account_private_key_path: "../../devel/devkeys/cas.pem"
+  # allow_list:
+    # rules: ["@chainloop.local"]
+    # selected_routes: ["/controlplane.v1.WorkflowRunService/List"]
+    # custom_message: "you need to require access here http://foo.com"
+    
 
 # referrer_shared_index:
 #   enabled: true
