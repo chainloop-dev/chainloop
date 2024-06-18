@@ -75,8 +75,16 @@ func TestCheckUserInAllowList(t *testing.T) {
 		wantErr        bool
 		customErrMsg   string
 	}{
-		{name: "empty allow list", email: email},
-		{name: "user not in allow list", email: email, rules: []string{"nothere@cyberdyne.io"}, wantErr: true},
+		{
+			name:  "empty allow list",
+			email: email,
+		},
+		{
+			name:    "user not in allow list",
+			email:   email,
+			rules:   []string{"nothere@cyberdyne.io"},
+			wantErr: true,
+		},
 		{
 			name:           "user not allowed to access the route",
 			email:          "random@example.com",
@@ -97,23 +105,54 @@ func TestCheckUserInAllowList(t *testing.T) {
 			wantErr:      true,
 			customErrMsg: "custom error message",
 		},
-		{name: "context missing, no user loaded", wantErr: true},
-		{name: "user in allow list", email: email},
-		{name: "user in one of the valid domains", email: "miguel@dyson-industries.io"},
-		{name: "user in one of the valid domains", email: "john@dyson-industries.io"},
-		{name: "and can use modifiers", email: "john+chainloop@dyson-industries.io"},
-		{name: "it needs to be an email", email: "dyson-industries.io", wantErr: true},
-		{name: "domain position is important", email: "dyson-industries.io@john", wantErr: true},
-		{name: "and can't be typosquated", email: "john@dyson-industriesss.io", wantErr: true},
+		{
+			name:    "context missing, no user loaded",
+			wantErr: true,
+		},
+		{
+			name:  "user in allow list",
+			email: email,
+		},
+		{
+			name:  "user in one of the valid domains",
+			email: "miguel@dyson-industries.io",
+		},
+		{
+			name:  "user in one of the valid domains",
+			email: "john@dyson-industries.io",
+		},
+		{
+			name:  "and can use modifiers",
+			email: "john+chainloop@dyson-industries.io",
+		},
+		{
+			name:    "it needs to be an email",
+			email:   "dyson-industries.io",
+			wantErr: true,
+		},
+		{
+			name:    "domain position is important",
+			email:   "dyson-industries.io@john",
+			wantErr: true,
+		},
+		{
+			name:    "and can't be typosquated",
+			email:   "john@dyson-industriesss.io",
+			wantErr: true,
+		},
 	}
 
 	for _, tc := range testCases {
-		tc := tc // Capture range variable
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			allowList := &conf.Auth_AllowList{
-				Rules:          defaultOr(tc.rules, defaultRules),
+				Rules:          defaultRules,
 				CustomMessage:  tc.customErrMsg,
 				SelectedRoutes: tc.selectedRoutes,
+			}
+
+			if tc.rules != nil {
+				allowList.Rules = tc.rules
 			}
 
 			m := CheckUserInAllowList(allowList)
@@ -137,11 +176,4 @@ func TestCheckUserInAllowList(t *testing.T) {
 			}
 		})
 	}
-}
-
-func defaultOr(rules, defaultRules []string) []string {
-	if rules == nil {
-		return defaultRules
-	}
-	return rules
 }
