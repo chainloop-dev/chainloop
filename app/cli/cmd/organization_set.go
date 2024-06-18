@@ -33,7 +33,7 @@ func newOrganizationSet() *cobra.Command {
 			// To find the membership ID, we need to iterate and filter by org
 			membership, err := membershipFromOrg(ctx, orgID)
 			if err != nil {
-				return err
+				return fmt.Errorf("getting membership: %w", err)
 			} else if membership == nil {
 				return fmt.Errorf("organization %s not found", orgID)
 			}

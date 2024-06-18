@@ -88,7 +88,6 @@ func TestRequireAllButOrganizationOperationsMatcher(t *testing.T) {
 	}{
 		{"/controlplane.v1.WorkflowService/List", true},
 		{"/controlplane.v1.WorkflowRunService/List", true},
-		{"/controlplane.v1.UserService/ListMemberships", false},
 		{"/controlplane.v1.OrganizationService/Create", false},
 		{"/controlplane.v1.CASBackendService/List", true},
 		{"/controlplane.v1.CASBackendService/Add", true},

@@ -27,7 +27,7 @@ import (
 func membershipFromOrg(ctx context.Context, orgID string) (*action.MembershipItem, error) {
 	memberships, err := action.NewMembershipList(actionOpts).ListOrgs(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("listing memberships: %w", err)
 	}
 
 	for _, m := range memberships {
