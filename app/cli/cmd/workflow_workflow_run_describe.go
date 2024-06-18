@@ -39,8 +39,12 @@ const formatAttestation = "attestation"
 const formatPayloadPAE = "payload-pae"
 
 func newWorkflowWorkflowRunDescribeCmd() *cobra.Command {
-	var runID, attestationDigest, publicKey string
-	var verifyAttestation bool
+	var (
+		runID, attestationDigest, publicKey string
+		certPath, chainPath                 string
+		verifyAttestation                   bool
+	)
+
 	// TODO: Replace by retrieving key from rekor
 	const signingKeyEnvVarName = "CHAINLOOP_SIGNING_PUBLIC_KEY"
 
@@ -48,8 +52,8 @@ func newWorkflowWorkflowRunDescribeCmd() *cobra.Command {
 		Use:   "describe",
 		Short: "View a Workflow Run",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if verifyAttestation && publicKey == "" {
-				return errors.New("a public key needs to be provided for verification")
+			if verifyAttestation && publicKey == "" && certPath == "" {
+				return errors.New("a public key or certificate needs to be provided for verification")
 			}
 
 			if runID == "" && attestationDigest == "" {
@@ -59,7 +63,14 @@ func newWorkflowWorkflowRunDescribeCmd() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewWorkflowRunDescribe(actionOpts).Run(context.Background(), runID, attestationDigest, verifyAttestation, publicKey)
+			res, err := action.NewWorkflowRunDescribe(actionOpts).Run(context.Background(), &action.WorkflowRunDescribeOpts{
+				RunID:         runID,
+				Digest:        attestationDigest,
+				PublicKeyRef:  publicKey,
+				CertPath:      certPath,
+				CertChainPath: chainPath,
+				Verify:        verifyAttestation,
+			})
 			if err != nil {
 				return err
 			}
@@ -77,6 +88,9 @@ func newWorkflowWorkflowRunDescribeCmd() *cobra.Command {
 	if publicKey == "" {
 		publicKey = os.Getenv(signingKeyEnvVarName)
 	}
+
+	cmd.Flags().StringVar(&certPath, "cert", "", "public certificate in PEM format to be used to verify the attestation")
+	cmd.Flags().StringVar(&chainPath, "chain", "", "certificate chain (intermediates, root) in PEM format to be used to verify the attestation")
 
 	// Override default output flag
 	cmd.InheritedFlags().StringVarP(&flagOutputFormat, "output", "o", "table", "output format, valid options are table, json, attestation, statement or payload-pae")

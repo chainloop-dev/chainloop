@@ -16,14 +16,20 @@
 package action
 
 import (
+	"bytes"
 	"context"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"sort"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
+	"github.com/sigstore/cosign/v2/pkg/blob"
+	"github.com/sigstore/cosign/v2/pkg/cosign"
 	sigs "github.com/sigstore/cosign/v2/pkg/signature"
+	"github.com/sigstore/sigstore/pkg/cryptoutils"
+	"github.com/sigstore/sigstore/pkg/signature"
 
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
@@ -81,14 +87,21 @@ func NewWorkflowRunDescribe(cfg *ActionsOpts) *WorkflowRunDescribe {
 	return &WorkflowRunDescribe{cfg}
 }
 
-func (action *WorkflowRunDescribe) Run(ctx context.Context, runID string, digest string, verify bool, publicKey string) (*WorkflowRunItemFull, error) {
+type WorkflowRunDescribeOpts struct {
+	RunID, Digest           string
+	Verify                  bool
+	PublicKeyRef            string
+	CertPath, CertChainPath string
+}
+
+func (action *WorkflowRunDescribe) Run(ctx context.Context, opts *WorkflowRunDescribeOpts) (*WorkflowRunItemFull, error) {
 	client := pb.NewWorkflowRunServiceClient(action.cfg.CPConnection)
 
 	req := &pb.WorkflowRunServiceViewRequest{}
-	if digest != "" {
-		req.Ref = &pb.WorkflowRunServiceViewRequest_Digest{Digest: digest}
-	} else if runID != "" {
-		req.Ref = &pb.WorkflowRunServiceViewRequest_Id{Id: runID}
+	if opts.Digest != "" {
+		req.Ref = &pb.WorkflowRunServiceViewRequest_Digest{Digest: opts.Digest}
+	} else if opts.RunID != "" {
+		req.Ref = &pb.WorkflowRunServiceViewRequest_Id{Id: opts.RunID}
 	}
 
 	resp, err := client.View(ctx, req)
@@ -119,8 +132,8 @@ func (action *WorkflowRunDescribe) Run(ctx context.Context, runID string, digest
 		return nil, err
 	}
 
-	if verify {
-		if err := verifyEnvelope(ctx, envelope, publicKey); err != nil {
+	if opts.Verify {
+		if err := verifyEnvelope(ctx, envelope, opts); err != nil {
 			action.cfg.Logger.Debug().Err(err).Msg("verifying the envelope")
 			return nil, errors.New("invalid signature, did you provide the right key?")
 		}
@@ -196,12 +209,36 @@ func materialPBToAction(in *pb.AttestationItem_Material) *Material {
 	return m
 }
 
-func verifyEnvelope(ctx context.Context, e *dsse.Envelope, publicKey string) error {
-	// Currently we only support basic cosign public key check
-	// TODO: Add more verification methods
-	verifier, err := sigs.PublicKeyFromKeyRef(ctx, publicKey)
-	if err != nil {
-		return err
+func verifyEnvelope(ctx context.Context, e *dsse.Envelope, opts *WorkflowRunDescribeOpts) error {
+	if opts.PublicKeyRef == "" && opts.CertPath == "" {
+		return fmt.Errorf("no public key or cert path specified")
+	}
+
+	var verifier signature.Verifier
+	var err error
+	if opts.PublicKeyRef != "" {
+		verifier, err = sigs.PublicKeyFromKeyRef(ctx, opts.PublicKeyRef)
+		if err != nil {
+			return err
+		}
+	}
+
+	if opts.CertPath != "" {
+		// Load cert from PEM
+		certs, err := loadCertificates(opts.CertPath)
+		if err != nil {
+			return err
+		}
+
+		var chain []*x509.Certificate
+		if opts.CertChainPath != "" {
+			chain, err = loadCertificates(opts.CertChainPath)
+			if err != nil {
+				return err
+			}
+		}
+
+		verifier, err = cosign.ValidateAndUnpackCertWithChain(certs[0], chain, &cosign.CheckOpts{IgnoreSCT: true})
 	}
 
 	dsseVerifier, err := dsse.NewEnvelopeVerifier(&sigdsee.VerifierAdapter{SignatureVerifier: verifier})
@@ -211,4 +248,17 @@ func verifyEnvelope(ctx context.Context, e *dsse.Envelope, publicKey string) err
 
 	_, err = dsseVerifier.Verify(ctx, e)
 	return err
+}
+
+func loadCertificates(certPath string) ([]*x509.Certificate, error) {
+	cert, err := blob.LoadFileOrURL(certPath)
+	if err != nil {
+		return nil, fmt.Errorf("loading certificate: %w", err)
+	}
+	certs, err := cryptoutils.LoadCertificatesFromPEM(bytes.NewReader(cert))
+	if err != nil {
+		return nil, fmt.Errorf("loading certificates: %w", err)
+	}
+
+	return certs, nil
 }
