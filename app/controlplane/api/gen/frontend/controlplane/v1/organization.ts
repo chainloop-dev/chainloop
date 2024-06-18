@@ -43,19 +43,6 @@ export interface OrganizationServiceCreateResponse {
   result?: OrgItem;
 }
 
-export interface OrganizationServiceUpdateRequest {
-  id: string;
-  /**
-   * "optional" allow us to detect if the value is explicitly set
-   * and not just the default balue
-   */
-  name?: string | undefined;
-}
-
-export interface OrganizationServiceUpdateResponse {
-  result?: OrgItem;
-}
-
 function createBaseOrganizationServiceListMembershipsRequest(): OrganizationServiceListMembershipsRequest {
   return {};
 }
@@ -538,152 +525,11 @@ export const OrganizationServiceCreateResponse = {
   },
 };
 
-function createBaseOrganizationServiceUpdateRequest(): OrganizationServiceUpdateRequest {
-  return { id: "", name: undefined };
-}
-
-export const OrganizationServiceUpdateRequest = {
-  encode(message: OrganizationServiceUpdateRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.id !== "") {
-      writer.uint32(10).string(message.id);
-    }
-    if (message.name !== undefined) {
-      writer.uint32(18).string(message.name);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): OrganizationServiceUpdateRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseOrganizationServiceUpdateRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.id = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): OrganizationServiceUpdateRequest {
-    return {
-      id: isSet(object.id) ? String(object.id) : "",
-      name: isSet(object.name) ? String(object.name) : undefined,
-    };
-  },
-
-  toJSON(message: OrganizationServiceUpdateRequest): unknown {
-    const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.name !== undefined && (obj.name = message.name);
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<OrganizationServiceUpdateRequest>, I>>(
-    base?: I,
-  ): OrganizationServiceUpdateRequest {
-    return OrganizationServiceUpdateRequest.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<OrganizationServiceUpdateRequest>, I>>(
-    object: I,
-  ): OrganizationServiceUpdateRequest {
-    const message = createBaseOrganizationServiceUpdateRequest();
-    message.id = object.id ?? "";
-    message.name = object.name ?? undefined;
-    return message;
-  },
-};
-
-function createBaseOrganizationServiceUpdateResponse(): OrganizationServiceUpdateResponse {
-  return { result: undefined };
-}
-
-export const OrganizationServiceUpdateResponse = {
-  encode(message: OrganizationServiceUpdateResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.result !== undefined) {
-      OrgItem.encode(message.result, writer.uint32(10).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): OrganizationServiceUpdateResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseOrganizationServiceUpdateResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.result = OrgItem.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): OrganizationServiceUpdateResponse {
-    return { result: isSet(object.result) ? OrgItem.fromJSON(object.result) : undefined };
-  },
-
-  toJSON(message: OrganizationServiceUpdateResponse): unknown {
-    const obj: any = {};
-    message.result !== undefined && (obj.result = message.result ? OrgItem.toJSON(message.result) : undefined);
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<OrganizationServiceUpdateResponse>, I>>(
-    base?: I,
-  ): OrganizationServiceUpdateResponse {
-    return OrganizationServiceUpdateResponse.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<OrganizationServiceUpdateResponse>, I>>(
-    object: I,
-  ): OrganizationServiceUpdateResponse {
-    const message = createBaseOrganizationServiceUpdateResponse();
-    message.result = (object.result !== undefined && object.result !== null)
-      ? OrgItem.fromPartial(object.result)
-      : undefined;
-    return message;
-  },
-};
-
 export interface OrganizationService {
   Create(
     request: DeepPartial<OrganizationServiceCreateRequest>,
     metadata?: grpc.Metadata,
   ): Promise<OrganizationServiceCreateResponse>;
-  Update(
-    request: DeepPartial<OrganizationServiceUpdateRequest>,
-    metadata?: grpc.Metadata,
-  ): Promise<OrganizationServiceUpdateResponse>;
   /** List members in the organization */
   ListMemberships(
     request: DeepPartial<OrganizationServiceListMembershipsRequest>,
@@ -710,7 +556,6 @@ export class OrganizationServiceClientImpl implements OrganizationService {
   constructor(rpc: Rpc) {
     this.rpc = rpc;
     this.Create = this.Create.bind(this);
-    this.Update = this.Update.bind(this);
     this.ListMemberships = this.ListMemberships.bind(this);
     this.DeleteMembership = this.DeleteMembership.bind(this);
     this.UpdateMembership = this.UpdateMembership.bind(this);
@@ -723,17 +568,6 @@ export class OrganizationServiceClientImpl implements OrganizationService {
     return this.rpc.unary(
       OrganizationServiceCreateDesc,
       OrganizationServiceCreateRequest.fromPartial(request),
-      metadata,
-    );
-  }
-
-  Update(
-    request: DeepPartial<OrganizationServiceUpdateRequest>,
-    metadata?: grpc.Metadata,
-  ): Promise<OrganizationServiceUpdateResponse> {
-    return this.rpc.unary(
-      OrganizationServiceUpdateDesc,
-      OrganizationServiceUpdateRequest.fromPartial(request),
       metadata,
     );
   }
@@ -787,29 +621,6 @@ export const OrganizationServiceCreateDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = OrganizationServiceCreateResponse.decode(data);
-      return {
-        ...value,
-        toObject() {
-          return value;
-        },
-      };
-    },
-  } as any,
-};
-
-export const OrganizationServiceUpdateDesc: UnaryMethodDefinitionish = {
-  methodName: "Update",
-  service: OrganizationServiceDesc,
-  requestStream: false,
-  responseStream: false,
-  requestType: {
-    serializeBinary() {
-      return OrganizationServiceUpdateRequest.encode(this).finish();
-    },
-  } as any,
-  responseType: {
-    deserializeBinary(data: Uint8Array) {
-      const value = OrganizationServiceUpdateResponse.decode(data);
       return {
         ...value,
         toObject() {
