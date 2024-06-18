@@ -36,8 +36,6 @@ func WithCurrentOrg(ctx context.Context, org *Org) context.Context {
 	return context.WithValue(ctx, currentOrgCtxKey{}, org)
 }
 
-// RequestID tries to retrieve requestID from the given context.
-// If it doesn't exist, an empty string is returned.
 func CurrentOrg(ctx context.Context) *Org {
 	res := ctx.Value(currentOrgCtxKey{})
 	if res == nil {
