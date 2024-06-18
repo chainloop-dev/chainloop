@@ -20,79 +20,66 @@ import (
 	"io"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	bizMocks "github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/mocks"
 	userjwtbuilder "github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/user"
 	"github.com/go-kratos/kratos/v2/log"
-	jwtmiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
-var emptyHandler = func(_ context.Context, _ interface{}) (interface{}, error) { return nil, nil }
-
-func TestWithCurrentUserMiddleware(t *testing.T) {
+func TestWithCurrentOrganizationMiddleware(t *testing.T) {
 	logger := log.NewHelper(log.NewStdLogger(io.Discard))
 	testCases := []struct {
-		name      string
-		loggedIn  bool
-		audience  string
-		userExist bool
+		name     string
+		loggedIn bool
+		audience string
+		orgExist bool
 		// the middleware logic got skipped
 		skipped bool
 		wantErr bool
 	}{
 		{
-			name:     "invalid audience", // in this case it gets ignored
+			name:     "logged in, user and org exists",
 			loggedIn: true,
-			audience: "another-aud",
-			skipped:  true,
+			audience: userjwtbuilder.Audience,
+			orgExist: true,
+			wantErr:  false,
 		},
 		{
-			name:      "logged in, user exists",
-			loggedIn:  true,
-			audience:  userjwtbuilder.Audience,
-			userExist: true,
-			wantErr:   false,
-		},
-		{
-			name:      "logged in, user does not exist",
-			loggedIn:  true,
-			audience:  userjwtbuilder.Audience,
-			userExist: false,
-			wantErr:   true,
-		},
-		{
-			name:     "not logged in",
-			loggedIn: false,
+			name:     "logged in, org does not exist",
+			loggedIn: true,
 			audience: userjwtbuilder.Audience,
 			wantErr:  true,
 		},
 	}
 
 	wantUser := &biz.User{ID: uuid.NewString()}
+	wantMembership := &biz.Membership{
+		Org:  &biz.Organization{ID: uuid.NewString()},
+		Role: authz.RoleViewer,
+	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			usecase := bizMocks.NewUserOrgFinder(t)
 			ctx := context.Background()
 			if tc.loggedIn {
-				c := jwt.MapClaims{
-					"aud":     tc.audience,
-					"user_id": wantUser.ID,
-				}
-
-				ctx = jwtmiddleware.NewContext(ctx, c)
+				ctx = WithCurrentUser(ctx, &User{ID: wantUser.ID})
 			}
 
-			if tc.userExist {
-				usecase.On("FindByID", ctx, wantUser.ID).Return(wantUser, nil)
-			} else if tc.loggedIn {
+			if tc.loggedIn {
 				usecase.On("FindByID", ctx, wantUser.ID).Maybe().Return(nil, nil)
 			}
 
-			m := WithCurrentUserMiddleware(usecase, logger)
+			if tc.orgExist {
+				usecase.On("CurrentMembership", ctx, wantUser.ID).Return(wantMembership, nil)
+			} else if tc.loggedIn {
+				usecase.On("CurrentMembership", ctx, wantUser.ID).Maybe().Return(nil, nil)
+			}
+
+			m := WithCurrentOrganizationMiddleware(usecase, logger)
 			_, err := m(
 				func(ctx context.Context, _ interface{}) (interface{}, error) {
 					if tc.wantErr {
@@ -100,8 +87,9 @@ func TestWithCurrentUserMiddleware(t *testing.T) {
 					}
 
 					if !tc.skipped {
-						// Check that the wrapped handler contains the user
-						assert.Equal(t, CurrentUser(ctx).ID, wantUser.ID)
+						// Check that the wrapped handler contains the org
+						assert.Equal(t, CurrentOrg(ctx).ID, wantMembership.Org.ID)
+						assert.Equal(t, CurrentAuthzSubject(ctx), string(authz.RoleViewer))
 					}
 
 					return nil, nil

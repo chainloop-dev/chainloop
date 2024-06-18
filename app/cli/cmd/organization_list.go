@@ -24,6 +24,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const UserWithNoOrganizationMsg = "you are not part of any organization, please run \"chainloop organization create --name ORG_NAME\" to create one"
+
 func newOrganizationList() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "list",
@@ -44,7 +46,7 @@ func newOrganizationList() *cobra.Command {
 
 func orgMembershipTableOutput(items []*action.MembershipItem) error {
 	if len(items) == 0 {
-		fmt.Println("you have no access to any organization yet")
+		fmt.Println(UserWithNoOrganizationMsg)
 		return nil
 	}
 

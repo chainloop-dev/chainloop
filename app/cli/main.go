@@ -67,6 +67,8 @@ func errorInfo(err error, logger zerolog.Logger) (string, int) {
 		msg = "your authentication token has expired, please run chainloop auth login again"
 	case isWrappedErr(st, jwtMiddleware.ErrMissingJwtToken):
 		msg = "authentication required, please run \"chainloop auth login\""
+	case v1.IsUserWithNoMembershipErrorNotInOrg(err):
+		msg = cmd.UserWithNoOrganizationMsg
 	case errors.As(err, &cmd.GracefulError{}):
 		// Graceful recovery if the flag is set and the received error is marked as recoverable
 		if cmd.GracefulExit {

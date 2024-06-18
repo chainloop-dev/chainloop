@@ -146,6 +146,39 @@ export function allowListErrorToJSON(object: AllowListError): string {
   }
 }
 
+export enum UserWithNoMembershipError {
+  USER_WITH_NO_MEMBERSHIP_ERROR_UNSPECIFIED = 0,
+  USER_WITH_NO_MEMBERSHIP_ERROR_NOT_IN_ORG = 1,
+  UNRECOGNIZED = -1,
+}
+
+export function userWithNoMembershipErrorFromJSON(object: any): UserWithNoMembershipError {
+  switch (object) {
+    case 0:
+    case "USER_WITH_NO_MEMBERSHIP_ERROR_UNSPECIFIED":
+      return UserWithNoMembershipError.USER_WITH_NO_MEMBERSHIP_ERROR_UNSPECIFIED;
+    case 1:
+    case "USER_WITH_NO_MEMBERSHIP_ERROR_NOT_IN_ORG":
+      return UserWithNoMembershipError.USER_WITH_NO_MEMBERSHIP_ERROR_NOT_IN_ORG;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return UserWithNoMembershipError.UNRECOGNIZED;
+  }
+}
+
+export function userWithNoMembershipErrorToJSON(object: UserWithNoMembershipError): string {
+  switch (object) {
+    case UserWithNoMembershipError.USER_WITH_NO_MEMBERSHIP_ERROR_UNSPECIFIED:
+      return "USER_WITH_NO_MEMBERSHIP_ERROR_UNSPECIFIED";
+    case UserWithNoMembershipError.USER_WITH_NO_MEMBERSHIP_ERROR_NOT_IN_ORG:
+      return "USER_WITH_NO_MEMBERSHIP_ERROR_NOT_IN_ORG";
+    case UserWithNoMembershipError.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export interface WorkflowItem {
   id: string;
   name: string;
