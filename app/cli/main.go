@@ -70,7 +70,7 @@ func errorInfo(err error, logger zerolog.Logger) (string, int) {
 	case isWrappedErr(st, jwtMiddleware.ErrMissingJwtToken):
 		msg = "authentication required, please run \"chainloop auth login\""
 	case v1.IsUserWithNoMembershipErrorNotInOrg(err):
-		msg = "you are not part of any organization, please run \"chainloop organization create --name ORG_NAME\" to create one"
+		msg = cmd.UserWithNoOrganizationMsg
 	case errors.As(err, &cmd.GracefulError{}):
 		// Graceful recovery if the flag is set and the received error is marked as recoverable
 		if cmd.GracefulExit {
