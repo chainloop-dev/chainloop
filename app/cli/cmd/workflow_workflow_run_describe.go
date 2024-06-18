@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"time"
 
@@ -26,11 +27,16 @@ import (
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/muesli/reflow/wrap"
+	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/spf13/cobra"
 )
 
 const formatStatement = "statement"
 const formatAttestation = "attestation"
+
+// outputs the payload in PAE encoding, so that it matches the signature in the attestation,
+// and it's easily verifiable by external tools
+const formatPayloadPAE = "payload-pae"
 
 func newWorkflowWorkflowRunDescribeCmd() *cobra.Command {
 	var runID, attestationDigest, publicKey string
@@ -58,7 +64,7 @@ func newWorkflowWorkflowRunDescribeCmd() *cobra.Command {
 				return err
 			}
 
-			return encodeAttestationOutput(res)
+			return encodeAttestationOutput(res, os.Stdout)
 		},
 	}
 
@@ -73,7 +79,7 @@ func newWorkflowWorkflowRunDescribeCmd() *cobra.Command {
 	}
 
 	// Override default output flag
-	cmd.InheritedFlags().StringVarP(&flagOutputFormat, "output", "o", "table", "output format, valid options are table, json, attestation or statement")
+	cmd.InheritedFlags().StringVarP(&flagOutputFormat, "output", "o", "table", "output format, valid options are table, json, attestation, statement or payload-pae")
 
 	return cmd
 }
@@ -193,7 +199,7 @@ func predicateV1Table(att *action.WorkflowRunAttestationItem) {
 	}
 }
 
-func encodeAttestationOutput(run *action.WorkflowRunItemFull) error {
+func encodeAttestationOutput(run *action.WorkflowRunItemFull, writer io.Writer) error {
 	// Try to encode as a table or json
 	err := encodeOutput(run, workflowRunDescribeTableOutput)
 	// It was correctly encoded, we are done
@@ -217,7 +223,18 @@ func encodeAttestationOutput(run *action.WorkflowRunItemFull) error {
 		return encodeJSON(run.Attestation.Statement())
 	case formatAttestation:
 		return encodeJSON(run.Attestation.Envelope)
+	case formatPayloadPAE:
+		return encodePAE(run, writer)
 	default:
 		return ErrOutputFormatNotImplemented
 	}
+}
+
+func encodePAE(run *action.WorkflowRunItemFull, writer io.Writer) error {
+	payload, err := run.Attestation.Envelope.DecodeB64Payload()
+	if err != nil {
+		return fmt.Errorf("could not decode attestation payload: %w", err)
+	}
+	_, err = fmt.Fprint(writer, string(dsse.PAE(run.Attestation.Envelope.PayloadType, payload)))
+	return err
 }
