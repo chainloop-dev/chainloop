@@ -21,14 +21,17 @@ import (
 	"strings"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/go-kratos/kratos/v2/middleware"
+	"github.com/go-kratos/kratos/v2/transport"
 )
 
 // Middleware that checks that the user is defined in the allow list
-func CheckUserInAllowList(allowList []string) middleware.Middleware {
+func CheckUserInAllowList(allowList *conf.Auth_AllowList) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
-			if len(allowList) == 0 {
+			// Allowlist disabled
+			if allowList == nil || len(allowList.GetRules()) == 0 {
 				return handler(ctx, req)
 			}
 
@@ -38,19 +41,41 @@ func CheckUserInAllowList(allowList []string) middleware.Middleware {
 				return nil, v1.ErrorAllowListErrorNotInList("user not found")
 			}
 
+			// Skip if we have explicitly set some routes and the current request is not part of them
+			if len(allowList.GetSelectedRoutes()) > 0 && !selectedRoute(ctx, allowList.GetSelectedRoutes()) {
+				return handler(ctx, req)
+			}
+
 			// If there are not items in the allowList we allow all users
-			allow, err := inAllowList(allowList, user.Email)
+			allow, err := inAllowList(allowList.GetRules(), user.Email)
 			if err != nil {
 				return nil, v1.ErrorAllowListErrorNotInList("error checking user in allowList: %v", err)
 			}
 
 			if !allow {
-				return nil, v1.ErrorAllowListErrorNotInList("user %q not in the allowList", user.Email)
+				msg := fmt.Sprint("user %q not in the allowList", user.Email)
+				if allowList.GetCustomMessage() != "" {
+					msg = allowList.GetCustomMessage()
+				}
+
+				return nil, v1.ErrorAllowListErrorNotInList(msg)
 			}
 
 			return handler(ctx, req)
 		}
 	}
+}
+
+func selectedRoute(ctx context.Context, selectedRoutes []string) bool {
+	if info, ok := transport.FromServerContext(ctx); ok {
+		for _, route := range selectedRoutes {
+			if info.Operation() == route {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func inAllowList(allowList []string, email string) (bool, error) {

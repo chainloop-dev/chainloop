@@ -63,8 +63,6 @@ func errorInfo(err error, logger zerolog.Logger) (string, int) {
 		msg = "you need to enable a CAS backend first. Refer to `chainloop cas-backend` command or contact your administrator."
 	case v1.IsCasBackendErrorReasonInvalid(err):
 		msg = "the CAS backend you provided is invalid. Refer to `chainloop cas-backend update` command or contact your administrator."
-	case v1.IsAllowListErrorNotInList(err):
-		msg = "your user is not part of the allow-list. Please contact your administrator."
 	case isWrappedErr(st, jwtMiddleware.ErrTokenExpired):
 		msg = "your authentication token has expired, please run chainloop auth login again"
 	case isWrappedErr(st, jwtMiddleware.ErrMissingJwtToken):
