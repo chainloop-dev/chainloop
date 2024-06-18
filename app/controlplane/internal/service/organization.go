@@ -52,7 +52,7 @@ func (s *OrganizationService) Create(ctx context.Context, req *pb.OrganizationSe
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
-	if _, err := s.membershipUC.Create(ctx, org.ID, currentUser.ID, biz.WithMembershipRole(authz.RoleOwner)); err != nil {
+	if _, err := s.membershipUC.Create(ctx, org.ID, currentUser.ID, biz.WithMembershipRole(authz.RoleOwner), biz.WithCurrentMembership()); err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
