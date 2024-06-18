@@ -239,6 +239,9 @@ func verifyEnvelope(ctx context.Context, e *dsse.Envelope, opts *WorkflowRunDesc
 		}
 
 		verifier, err = cosign.ValidateAndUnpackCertWithChain(certs[0], chain, &cosign.CheckOpts{IgnoreSCT: true})
+		if err != nil {
+			return fmt.Errorf("validating the certificate: %w", err)
+		}
 	}
 
 	dsseVerifier, err := dsse.NewEnvelopeVerifier(&sigdsee.VerifierAdapter{SignatureVerifier: verifier})
