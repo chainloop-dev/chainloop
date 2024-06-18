@@ -56,7 +56,7 @@ func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, logger *lo
 			}
 
 			var err error
-			ctx, err = setCurrentOrganization(ctx, userUseCase, logger)
+			ctx, err = setCurrentOrganization(ctx, u, userUseCase, logger)
 			if err != nil {
 				return nil, fmt.Errorf("error setting current org: %w", err)
 			}
@@ -74,24 +74,19 @@ func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, logger *lo
 }
 
 // Find the current membership of the user and sets it on the context
-func setCurrentOrganization(ctx context.Context, userUC biz.UserOrgFinder, logger *log.Helper) (context.Context, error) {
-	u := CurrentUser(ctx)
-	if u == nil {
-		return nil, errors.New("user not found")
-	}
-
+func setCurrentOrganization(ctx context.Context, user *User, userUC biz.UserOrgFinder, logger *log.Helper) (context.Context, error) {
 	// We load the current organization
-	membership, err := userUC.CurrentMembership(ctx, u.ID)
+	membership, err := userUC.CurrentMembership(ctx, user.ID)
 	if err != nil {
 		if biz.IsNotFound(err) {
-			return nil, v1.ErrorUserWithNoMembershipErrorNotInOrg("user with id %s has no current organization", u.ID)
+			return nil, v1.ErrorUserWithNoMembershipErrorNotInOrg("user with id %s has no current organization", user.ID)
 		}
 
 		return nil, err
 	}
 
 	if membership == nil {
-		logger.Warnf("user with id %s has no current organization", u.ID)
+		logger.Warnf("user with id %s has no current organization", user.ID)
 		return nil, errors.New("org not found")
 	}
 
