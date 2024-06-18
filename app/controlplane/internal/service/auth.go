@@ -107,7 +107,7 @@ type AuthURLs struct {
 }
 
 // urlScheme is deprecated, now it will be inferred from the serverConfig externalURL
-func getAuthURLs(serverConfig *conf.Server_HTTP, loginUrlOverride string) (*AuthURLs, error) {
+func getAuthURLs(serverConfig *conf.Server_HTTP, loginURLOverride string) (*AuthURLs, error) {
 	host := serverConfig.Addr
 
 	// Calculate it based on local server configuration
@@ -125,8 +125,8 @@ func getAuthURLs(serverConfig *conf.Server_HTTP, loginUrlOverride string) (*Auth
 	}
 
 	// Override the login URL if needed
-	if loginUrlOverride != "" {
-		urls.Login = loginUrlOverride
+	if loginURLOverride != "" {
+		urls.Login = loginURLOverride
 	}
 
 	return urls, nil
