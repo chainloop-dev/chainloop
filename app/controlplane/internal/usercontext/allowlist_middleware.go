@@ -53,7 +53,7 @@ func CheckUserInAllowList(allowList *conf.Auth_AllowList) middleware.Middleware 
 			}
 
 			if !allow {
-				msg := fmt.Sprint("user %q not in the allowList", user.Email)
+				msg := fmt.Sprintf("user %q not in the allowList", user.Email)
 				if allowList.GetCustomMessage() != "" {
 					msg = allowList.GetCustomMessage()
 				}

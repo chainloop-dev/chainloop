@@ -20,12 +20,45 @@ import (
 	"testing"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
+	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/stretchr/testify/assert"
 )
 
+// mockTransport is a gRPC transport.
+type mockTransport struct {
+	operation string
+}
+
+// Kind returns the transport kind.
+func (tr *mockTransport) Kind() transport.Kind {
+	return transport.KindGRPC
+}
+
+// Endpoint returns the transport endpoint.
+func (tr *mockTransport) Endpoint() string {
+	return ""
+}
+
+// Operation returns the transport operation.
+func (tr *mockTransport) Operation() string {
+	return tr.operation
+}
+
+// RequestHeader returns the request header.
+func (tr *mockTransport) RequestHeader() transport.Header {
+	return nil
+}
+
+// ReplyHeader returns the reply header.
+func (tr *mockTransport) ReplyHeader() transport.Header {
+	return nil
+}
+
 func TestCheckUserInAllowList(t *testing.T) {
 	const email = "sarah@cyberdyne.io"
-	allowList := []string{
+
+	defaultRules := []string{
 		"foo@foo.com",
 		"sarah@cyberdyne.io",
 		// it can also contain domains
@@ -34,83 +67,81 @@ func TestCheckUserInAllowList(t *testing.T) {
 	}
 
 	testCases := []struct {
-		name      string
-		allowList []string
-		email     string
-		wantErr   bool
+		name           string
+		rules          []string
+		selectedRoutes []string
+		runningRoute   string
+		email          string
+		wantErr        bool
+		customErrMsg   string
 	}{
+		{name: "empty allow list", email: email},
+		{name: "user not in allow list", email: email, rules: []string{"nothere@cyberdyne.io"}, wantErr: true},
 		{
-			name:      "empty allow list",
-			email:     email,
-			allowList: []string{},
+			name:           "user not allowed to access the route",
+			email:          "random@example.com",
+			runningRoute:   "/foo/bar",
+			selectedRoutes: []string{"/foo/bar"},
+			wantErr:        true,
 		},
 		{
-			name:      "user not in allow list",
-			email:     email,
-			allowList: []string{"nothere@cyberdyne.io"},
-			wantErr:   true,
+			name:           "route not in selected routes",
+			email:          "random@example.com",
+			runningRoute:   "/foo/bar",
+			selectedRoutes: []string{"/bar/foo", "/request-access", "/forbidden/route"},
 		},
 		{
-			name:      "context missing, no user loaded",
-			allowList: allowList,
-			wantErr:   true,
+			name:         "return custom error message",
+			email:        email,
+			rules:        []string{"nothere@cyberdyne.io"},
+			wantErr:      true,
+			customErrMsg: "custom error message",
 		},
-		{
-			name:      "user in allow list",
-			email:     email,
-			allowList: allowList,
-		},
-		{
-			name:      "user in one of the valid domains",
-			email:     "miguel@dyson-industries.io",
-			allowList: allowList,
-		},
-		{
-			name:      "user in one of the valid domains",
-			email:     "john@dyson-industries.io",
-			allowList: allowList,
-		},
-		{
-			name:      "and can use modifiers",
-			email:     "john+chainloop@dyson-industries.io",
-			allowList: allowList,
-		},
-		{
-			name:      "it needs to be an email",
-			email:     "dyson-industries.io",
-			allowList: allowList,
-			wantErr:   true,
-		},
-		{
-			name:      "domain position is important",
-			email:     "dyson-industries.io@john",
-			allowList: allowList,
-			wantErr:   true,
-		},
-		{
-			name:      "and can't be typosquated",
-			email:     "john@dyson-industriesss.io",
-			allowList: allowList,
-			wantErr:   true,
-		},
+		{name: "context missing, no user loaded", wantErr: true},
+		{name: "user in allow list", email: email},
+		{name: "user in one of the valid domains", email: "miguel@dyson-industries.io"},
+		{name: "user in one of the valid domains", email: "john@dyson-industries.io"},
+		{name: "and can use modifiers", email: "john+chainloop@dyson-industries.io"},
+		{name: "it needs to be an email", email: "dyson-industries.io", wantErr: true},
+		{name: "domain position is important", email: "dyson-industries.io@john", wantErr: true},
+		{name: "and can't be typosquated", email: "john@dyson-industriesss.io", wantErr: true},
 	}
 
 	for _, tc := range testCases {
+		tc := tc // Capture range variable
 		t.Run(tc.name, func(t *testing.T) {
-			m := CheckUserInAllowList(tc.allowList)
+			allowList := &conf.Auth_AllowList{
+				Rules:          defaultOr(tc.rules, defaultRules),
+				CustomMessage:  tc.customErrMsg,
+				SelectedRoutes: tc.selectedRoutes,
+			}
+
+			m := CheckUserInAllowList(allowList)
 			ctx := context.Background()
 			if tc.email != "" {
-				u := &User{Email: tc.email, ID: "124"}
-				ctx = WithCurrentUser(ctx, u)
+				ctx = WithCurrentUser(ctx, &User{Email: tc.email, ID: "124"})
+			}
+			if tc.runningRoute != "" {
+				ctx = transport.NewServerContext(ctx, &mockTransport{operation: tc.runningRoute})
 			}
 
 			_, err := m(emptyHandler)(ctx, nil)
 
 			if tc.wantErr {
 				assert.True(t, v1.IsAllowListErrorNotInList(err))
+				if tc.customErrMsg != "" {
+					assert.Contains(t, err.Error(), tc.customErrMsg)
+				}
 			} else {
 				assert.NoError(t, err)
 			}
 		})
 	}
+}
+
+func defaultOr(rules, defaultRules []string) []string {
+	if rules == nil {
+		return defaultRules
+	}
+	return rules
 }

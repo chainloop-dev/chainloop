@@ -128,7 +128,7 @@ message Auth {
   message AllowList {
     // allow_list is a list of allowed email addresses or domains
     // for example ["@chainloop.dev", "foo@mycompany.org"]
-    repeated string rules = 1;
+    repeated string rules = 1 [(buf.validate.field).string.min_len = 1];
     // Custom message to show when a user is not allowed
     string custom_message = 2;
     // The list of routes that will be affected by this middleware, by default all of them
