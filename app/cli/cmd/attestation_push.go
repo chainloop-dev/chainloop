@@ -27,9 +27,10 @@ import (
 
 func newAttestationPushCmd() *cobra.Command {
 	var (
-		pkPath, bundle   string
-		annotationsFlag  []string
-		signServerCAPath string
+		pkPath, bundle                         string
+		annotationsFlag                        []string
+		signServerCAPath                       string
+		signServerAuthUser, signServerAuthPass string
 	)
 
 	cmd := &cobra.Command{
@@ -109,5 +110,8 @@ func newAttestationPushCmd() *cobra.Command {
 	flagAttestationID(cmd)
 
 	cmd.Flags().StringVar(&signServerCAPath, "signserver-ca-path", "", "custom CA to be used for SignServer communications")
+	cmd.Flags().StringVar(&signServerAuthUser, "signserver-auth-user", "", "")
+	cmd.Flags().StringVar(&signServerAuthPass, "signserver-auth-pass", "", "")
+
 	return cmd
 }

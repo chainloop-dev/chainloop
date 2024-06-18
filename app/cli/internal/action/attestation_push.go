@@ -136,7 +136,7 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	// Indicate that we are done with the attestation
 	action.c.CraftingState.Attestation.FinishedAt = timestamppb.New(time.Now())
 
-	sig, err := signer.GetSigner(action.keyPath, action.Logger, &signer.SignerOpts{
+	sig, err := signer.GetSigner(action.keyPath, action.Logger, &signer.Opts{
 		SignServerCAPath: action.signServerCAPath,
 		Vaultclient:      pb.NewSigningServiceClient(action.CPConnection),
 	})

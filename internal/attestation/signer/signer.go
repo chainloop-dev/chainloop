@@ -27,13 +27,13 @@ import (
 	sigstoresigner "github.com/sigstore/sigstore/pkg/signature"
 )
 
-type SignerOpts struct {
+type Opts struct {
 	SignServerCAPath string
 	Vaultclient      pb.SigningServiceClient
 }
 
 // GetSigner creates a new Signer based on input parameters
-func GetSigner(keyPath string, logger zerolog.Logger, opts *SignerOpts) (sigstoresigner.Signer, error) {
+func GetSigner(keyPath string, logger zerolog.Logger, opts *Opts) (sigstoresigner.Signer, error) {
 	var signer sigstoresigner.Signer
 	if keyPath != "" {
 		if strings.HasPrefix(keyPath, signserver.ReferenceScheme) {
