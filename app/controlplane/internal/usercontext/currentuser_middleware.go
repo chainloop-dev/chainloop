@@ -24,7 +24,6 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/golang-jwt/jwt/v4"
 
-	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/user"
 	"github.com/go-kratos/kratos/v2/middleware"
@@ -34,11 +33,6 @@ import (
 // Utils to get and set information from context
 type User struct {
 	Email, ID string
-	CreatedAt *time.Time
-}
-
-type Org struct {
-	ID, Name  string
 	CreatedAt *time.Time
 }
 
@@ -56,22 +50,7 @@ func CurrentUser(ctx context.Context) *User {
 	return res.(*User)
 }
 
-func WithCurrentOrg(ctx context.Context, org *Org) context.Context {
-	return context.WithValue(ctx, currentOrgCtxKey{}, org)
-}
-
-// RequestID tries to retrieve requestID from the given context.
-// If it doesn't exist, an empty string is returned.
-func CurrentOrg(ctx context.Context) *Org {
-	res := ctx.Value(currentOrgCtxKey{})
-	if res == nil {
-		return nil
-	}
-	return res.(*Org)
-}
-
 type currentUserCtxKey struct{}
-type currentOrgCtxKey struct{}
 
 // Middleware that injects the current user + organization to the context
 func WithCurrentUserMiddleware(userUseCase biz.UserOrgFinder, logger *log.Helper) middleware.Middleware {
@@ -111,42 +90,6 @@ func WithCurrentUserMiddleware(userUseCase biz.UserOrgFinder, logger *log.Helper
 	}
 }
 
-func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, logger *log.Helper) middleware.Middleware {
-	return func(handler middleware.Handler) middleware.Handler {
-		return func(ctx context.Context, req interface{}) (interface{}, error) {
-			rawClaims, ok := jwtMiddleware.FromContext(ctx)
-			// If not found means that there is no currentUser set in the context
-			if !ok {
-				logger.Warn("couldn't extract org, JWT parser middleware not running before this one?")
-				return nil, errors.New("can't extract JWT info from the context")
-			}
-
-			genericClaims, ok := rawClaims.(jwt.MapClaims)
-			if !ok {
-				return nil, errors.New("error mapping the claims")
-			}
-
-			// Check whether the token is for a user or an API-token and handle accordingly
-			// We've received a token for a user
-			if genericClaims.VerifyAudience(user.Audience, true) {
-				var err error
-				ctx, err = setCurrentOrganization(ctx, userUseCase, logger)
-				if err != nil {
-					return nil, fmt.Errorf("error setting current org: %w", err)
-				}
-				org := CurrentOrg(ctx)
-				if org == nil {
-					return nil, errors.New("org not found")
-				}
-
-				logger.Infow("msg", "[authN] processed organization", "org-id", org.ID, "credentials type", "user")
-			}
-
-			return handler(ctx, req)
-		}
-	}
-}
-
 // Find the user by its ID and sets it on the context
 func setCurrentUser(ctx context.Context, userUC biz.UserOrgFinder, userID string, logger *log.Helper) (context.Context, error) {
 	u, err := userUC.FindByID(ctx, userID)
@@ -160,35 +103,4 @@ func setCurrentUser(ctx context.Context, userUC biz.UserOrgFinder, userID string
 	}
 
 	return WithCurrentUser(ctx, &User{Email: u.Email, ID: u.ID, CreatedAt: u.CreatedAt}), nil
-}
-
-// Find the current membership of the user and sets it on the context
-func setCurrentOrganization(ctx context.Context, userUC biz.UserOrgFinder, logger *log.Helper) (context.Context, error) {
-	u := CurrentUser(ctx)
-	if u == nil {
-		logger.Warn("user not found")
-		return nil, errors.New("user not found")
-	}
-
-	// We load the current organization
-	membership, err := userUC.CurrentMembership(ctx, u.ID)
-	if err != nil {
-		if errors.As(err, &biz.ErrNotFound{}) {
-			return nil, v1.ErrorUserWithNoMembershipErrorNotInOrg("user with id %s has no current organization", u.ID)
-		}
-
-		return nil, err
-	}
-
-	if membership == nil {
-		logger.Warnf("user with id %s has no current organization", u.ID)
-		return nil, errors.New("org not found")
-	}
-
-	ctx = WithCurrentOrg(ctx, &Org{Name: membership.Org.Name, ID: membership.Org.ID, CreatedAt: membership.CreatedAt})
-
-	// Set the authorization subject that will be used to check the policies
-	ctx = WithAuthzSubject(ctx, string(membership.Role))
-
-	return ctx, nil
 }

@@ -243,11 +243,11 @@ func requireRobotAccountMatcher() selector.MatchFunc {
 	}
 }
 
-// Matches all operations except the ones that require the organization to be set
+// Matches all operations that require to have a current organization
 func requireAllButOrganizationOperationsMatcher() selector.MatchFunc {
-	const requireMatcher = "/controlplane.v1.OrganizationService/Create|/controlplane.v1.*/ListMemberships"
+	const skipMatcher = "/controlplane.v1.OrganizationService/Create|/controlplane.v1.*/ListMemberships"
 	return func(ctx context.Context, operation string) bool {
-		r := regexp.MustCompile(requireMatcher)
+		r := regexp.MustCompile(skipMatcher)
 		return !r.MatchString(operation)
 	}
 }
