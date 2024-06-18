@@ -25,10 +25,11 @@ import (
 func TestGetAuthURLs(t *testing.T) {
 	internalServer := &conf.Server_HTTP{Addr: "1.2.3.4"}
 	testCases := []struct {
-		name    string
-		config  *conf.Server_HTTP
-		want    *AuthURLs
-		wantErr bool
+		name             string
+		config           *conf.Server_HTTP
+		loginURLOverride string
+		want             *AuthURLs
+		wantErr          bool
 	}{
 		{
 			name:   "neither external url nor externalAddr set",
@@ -60,11 +61,23 @@ func TestGetAuthURLs(t *testing.T) {
 			config:  &conf.Server_HTTP{Addr: "1.2.3.4", ExternalUrl: "localhost.com"},
 			wantErr: true,
 		},
+		{
+			name:             "external with override",
+			config:           &conf.Server_HTTP{Addr: "1.2.3.4", ExternalUrl: "https://foo.com"},
+			loginURLOverride: "https://foo.override.com/auth/login",
+			want:             &AuthURLs{callback: "https://foo.com/auth/callback", Login: "https://foo.override.com/auth/login"},
+		},
+		{
+			name:             "internal with override",
+			config:           internalServer,
+			loginURLOverride: "https://foo.override.com/auth/login",
+			want:             &AuthURLs{callback: "http://1.2.3.4/auth/callback", Login: "https://foo.override.com/auth/login"},
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := getAuthURLs(tc.config)
+			got, err := getAuthURLs(tc.config, tc.loginURLOverride)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return

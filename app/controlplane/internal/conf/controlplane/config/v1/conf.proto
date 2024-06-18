@@ -123,6 +123,9 @@ message Auth {
     string client_id = 2;
     string client_secret = 3;
     string redirect_url_scheme = 4;
+    // Optional login URL that will be used by the CLI to start the OIDC flow
+    // If not provided, it will default to [controlplane domain]/login
+    string login_url_override = 5;
   }
 
   message AllowList {

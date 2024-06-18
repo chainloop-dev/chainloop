@@ -80,7 +80,7 @@ func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC
 	}
 
 	// Craft Auth related endpoints
-	authURLs, err := getAuthURLs(serverConfig.GetHttp())
+	authURLs, err := getAuthURLs(serverConfig.GetHttp(), authConfig.GetOidc().GetLoginUrlOverride())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get auth URLs: %w", err)
 	}
@@ -107,10 +107,13 @@ type AuthURLs struct {
 }
 
 // urlScheme is deprecated, now it will be inferred from the serverConfig externalURL
-func getAuthURLs(serverConfig *conf.Server_HTTP) (*AuthURLs, error) {
+func getAuthURLs(serverConfig *conf.Server_HTTP, loginURLOverride string) (*AuthURLs, error) {
 	host := serverConfig.Addr
 
-	// New mode using FQDN ExternalURL
+	// Calculate it based on local server configuration
+	urls := craftAuthURLs("http", host, "")
+
+	// If needed, use the external URL
 	if ea := serverConfig.GetExternalUrl(); ea != "" {
 		// x must be a valid absolute URI (via RFC 3986)
 		url, err := url.ParseRequestURI(ea)
@@ -118,11 +121,15 @@ func getAuthURLs(serverConfig *conf.Server_HTTP) (*AuthURLs, error) {
 			return nil, fmt.Errorf("validation error: %w", err)
 		}
 
-		return craftAuthURLs(url.Scheme, url.Host, url.Path), nil
+		urls = craftAuthURLs(url.Scheme, url.Host, url.Path)
 	}
 
-	// Fallback no external URL
-	return craftAuthURLs("http", host, ""), nil
+	// Override the login URL if needed
+	if loginURLOverride != "" {
+		urls.Login = loginURLOverride
+	}
+
+	return urls, nil
 }
 
 func craftAuthURLs(scheme, host, path string) *AuthURLs {
