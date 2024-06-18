@@ -33,6 +33,9 @@ import (
 
 const formatStatement = "statement"
 const formatAttestation = "attestation"
+
+// outputs the payload in PAE encoding, so that it matches the signature in the attestation,
+// and it's easily verifiable by external tools
 const formatPayloadPAE = "payload-pae"
 
 func newWorkflowWorkflowRunDescribeCmd() *cobra.Command {
@@ -221,13 +224,13 @@ func encodeAttestationOutput(run *action.WorkflowRunItemFull, writer io.Writer) 
 	case formatAttestation:
 		return encodeJSON(run.Attestation.Envelope)
 	case formatPayloadPAE:
-		return describePayload(run, writer)
+		return encodePAE(run, writer)
 	default:
 		return ErrOutputFormatNotImplemented
 	}
 }
 
-func describePayload(run *action.WorkflowRunItemFull, writer io.Writer) error {
+func encodePAE(run *action.WorkflowRunItemFull, writer io.Writer) error {
 	payload, err := run.Attestation.Envelope.DecodeB64Payload()
 	if err != nil {
 		return fmt.Errorf("could not decode attestation payload: %w", err)
