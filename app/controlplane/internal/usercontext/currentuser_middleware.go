@@ -24,14 +24,12 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/golang-jwt/jwt/v4"
 
+	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/user"
 	"github.com/go-kratos/kratos/v2/middleware"
 	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 )
-
-// ErrUserWithNoMemberships is returned when the user has no memberships in any organization
-var ErrUserWithNoMemberships = errors.New("user has no memberships")
 
 // Utils to get and set information from context
 type User struct {
@@ -176,7 +174,7 @@ func setCurrentOrganization(ctx context.Context, userUC biz.UserOrgFinder, logge
 	membership, err := userUC.CurrentMembership(ctx, u.ID)
 	if err != nil {
 		if errors.As(err, &biz.ErrNotFound{}) {
-			return nil, ErrUserWithNoMemberships
+			return nil, v1.ErrorUserWithNoMembershipErrorNotInOrg("user with id %s has no current organization", u.ID)
 		}
 
 		return nil, err

@@ -34,3 +34,27 @@ func IsAllowListErrorNotInList(err error) bool {
 func ErrorAllowListErrorNotInList(format string, args ...interface{}) *errors.Error {
 	return errors.New(403, AllowListError_ALLOW_LIST_ERROR_NOT_IN_LIST.String(), fmt.Sprintf(format, args...))
 }
+
+func IsUserWithNoMembershipErrorUnspecified(err error) bool {
+	if err == nil {
+		return false
+	}
+	e := errors.FromError(err)
+	return e.Reason == UserWithNoMembershipError_USER_WITH_NO_MEMBERSHIP_ERROR_UNSPECIFIED.String() && e.Code == 500
+}
+
+func ErrorUserWithNoMembershipErrorUnspecified(format string, args ...interface{}) *errors.Error {
+	return errors.New(500, UserWithNoMembershipError_USER_WITH_NO_MEMBERSHIP_ERROR_UNSPECIFIED.String(), fmt.Sprintf(format, args...))
+}
+
+func IsUserWithNoMembershipErrorNotInOrg(err error) bool {
+	if err == nil {
+		return false
+	}
+	e := errors.FromError(err)
+	return e.Reason == UserWithNoMembershipError_USER_WITH_NO_MEMBERSHIP_ERROR_NOT_IN_ORG.String() && e.Code == 403
+}
+
+func ErrorUserWithNoMembershipErrorNotInOrg(format string, args ...interface{}) *errors.Error {
+	return errors.New(403, UserWithNoMembershipError_USER_WITH_NO_MEMBERSHIP_ERROR_NOT_IN_ORG.String(), fmt.Sprintf(format, args...))
+}
