@@ -190,13 +190,13 @@ controlplane:
       clientSecret: ""
       # loginURLOverride: ""
 
-    ## @param controlplane.auth.allowList.rules List of domains or emails to allow
-    ## @param controlplane.auth.allowList.selectedRoutes List of selected routes to allow
-    ## @param controlplane.auth.allowList.customMessage Custom message to display when a user is not allowed
-    allowList:
-      rules: []
-      selectedRoutes: []
-      customMessage: ""
+    ## @extra controlplane.auth.allowList.rules List of domains or emails to allow
+    ## @extra controlplane.auth.allowList.selectedRoutes List of selected routes to allow
+    ## @extra controlplane.auth.allowList.customMessage Custom message to display when a user is not allowed
+#    allowList:
+#      rules: []
+#      selectedRoutes: []
+#      customMessage: ""
 
   ## @section Control Plane Networking
   service:
