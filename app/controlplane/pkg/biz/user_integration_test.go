@@ -26,6 +26,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -137,26 +138,25 @@ func (s *userOnboardingTestSuite) TestAutoOnboardOrganizationsNoConfiguration() 
 
 func (s *userOnboardingTestSuite) TestAutoOnboardOrganizationsWithConfiguration() {
 	ctx := context.Background()
-	// Create a user with no orgs
-
+	const orgName = "existing-org"
 	s.TestingUseCases = testhelpers.NewTestingUseCases(s.T(), testhelpers.WithOnboardingConfiguration([]*conf.OnboardingSpec{
 		{
-			Name: "testing-org",
+			Name: orgName,
 			Role: v1.MembershipRole_MEMBERSHIP_ROLE_ORG_VIEWER,
 		},
 	}))
 
-	org, err := s.Repos.OrganizationRepo.FindByName(ctx, "testing-org")
-	s.Nil(err)
-	s.Nil(org)
+	// The user got onboarded in the existing org
+	org, err := s.Organization.Create(ctx, orgName)
+	require.NoError(s.T(), err)
 
 	user, err := s.User.FindOrCreateByEmail(ctx, "foo@bar.com")
 	s.NoError(err)
 	s.NotNil(user)
 
-	org, err = s.Repos.OrganizationRepo.FindByName(ctx, "testing-org")
+	m, err := s.Membership.FindByOrgAndUser(ctx, org.ID, user.ID)
 	s.NoError(err)
-	s.NotNil(org)
+	s.NotNil(m)
 }
 
 // Utility struct to hold the test suite
