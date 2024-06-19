@@ -65,6 +65,6 @@ referrer_shared_index:
 
 onboarding:
   - name: "read-only-demo"
-    role: "viewer"
+    role: MEMBERSHIP_ROLE_ORG_VIEWER
   - name: "read-write-demo"
-    role: "owner"
+    role: MEMBERSHIP_ROLE_ORG_OWNER
