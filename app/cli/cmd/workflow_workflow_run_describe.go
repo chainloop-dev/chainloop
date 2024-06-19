@@ -90,7 +90,7 @@ func newWorkflowWorkflowRunDescribeCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&certPath, "cert", "", "public certificate in PEM format to be used to verify the attestation")
-	cmd.Flags().StringVar(&chainPath, "chain", "", "certificate chain (intermediates, root) in PEM format to be used to verify the attestation")
+	cmd.Flags().StringVar(&chainPath, "cert-chain", "", "certificate chain (intermediates, root) in PEM format to be used to verify the attestation")
 
 	// Override default output flag
 	cmd.InheritedFlags().StringVarP(&flagOutputFormat, "output", "o", "table", "output format, valid options are table, json, attestation, statement or payload-pae")

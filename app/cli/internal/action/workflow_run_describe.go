@@ -219,7 +219,7 @@ func verifyEnvelope(ctx context.Context, e *dsse.Envelope, opts *WorkflowRunDesc
 	if opts.PublicKeyRef != "" {
 		verifier, err = sigs.PublicKeyFromKeyRef(ctx, opts.PublicKeyRef)
 		if err != nil {
-			return err
+			return fmt.Errorf("invalid public key: %w", err)
 		}
 	}
 
@@ -227,14 +227,14 @@ func verifyEnvelope(ctx context.Context, e *dsse.Envelope, opts *WorkflowRunDesc
 		// Load cert from PEM
 		certs, err := loadCertificates(opts.CertPath)
 		if err != nil {
-			return err
+			return fmt.Errorf("loading certificate: %w", err)
 		}
 
 		var chain []*x509.Certificate
 		if opts.CertChainPath != "" {
 			chain, err = loadCertificates(opts.CertChainPath)
 			if err != nil {
-				return err
+				return fmt.Errorf("loading certificate chain: %w", err)
 			}
 		}
 
@@ -246,7 +246,7 @@ func verifyEnvelope(ctx context.Context, e *dsse.Envelope, opts *WorkflowRunDesc
 
 	dsseVerifier, err := dsse.NewEnvelopeVerifier(&sigdsee.VerifierAdapter{SignatureVerifier: verifier})
 	if err != nil {
-		return err
+		return fmt.Errorf("creating DSSE verifier: %w", err)
 	}
 
 	_, err = dsseVerifier.Verify(ctx, e)
