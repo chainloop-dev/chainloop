@@ -14,9 +14,7 @@ data:
   allow_list.yaml: |
     auth:
       allow_list:
-        rules: {{ .Values.controlplane.auth.allowList.rules | toYaml | nindent 10 }}
-        selected_routes: {{ .Values.controlplane.auth.allowList.selectedRoutes | toYaml | nindent 10 }}
-        custom_message: {{ .Values.controlplane.auth.allowList.customMessage | quote }}
+        {{- toYaml .Values.controlplane.auth.allowList | nindent 8 }}
   {{- end }}
   config.yaml: |
     server:

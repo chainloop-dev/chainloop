@@ -127,7 +127,7 @@ controlplane:
   ## @param controlplane.onboarding Configure the auto onboarding feature for selected organizations
   ## @extra controlplane.onboarding.name Name of the organization to onboard
   ## @extra controlplane.onboarding.role Role of the organization to onboard
-  onboarding:
+  onboarding: []
 
   # Database migration
   ## @skip controlplane.migration
