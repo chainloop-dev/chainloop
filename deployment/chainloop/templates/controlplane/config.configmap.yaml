@@ -40,5 +40,7 @@ data:
     plugins_dir: {{ .Values.controlplane.pluginsDir }}
     referrer_shared_index:
       {{- toYaml .Values.controlplane.referrerSharedIndex | nindent 6 }}
+    {{ if .Values.controlplane.onboarding }}
     onboarding:
       {{- toYaml .Values.controlplane.onboarding | nindent 6 }}
+    {{- end }}

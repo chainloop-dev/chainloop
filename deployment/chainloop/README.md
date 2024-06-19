@@ -499,9 +499,8 @@ chainloop config save \
 | `controlplane.referrerSharedIndex`             | Configure the shared, public index API endpoint that can be used to discover metadata referrers |                                                 |
 | `controlplane.referrerSharedIndex.enabled`     | Enable index API endpoint                                                                       | `false`                                         |
 | `controlplane.referrerSharedIndex.allowedOrgs` | List of UUIDs of organizations that are allowed to publish to the shared index                  | `[]`                                            |
-| `controlplane.onboarding`                      | Configure the auto onboarding feature for selected organizations                                | `nil`                                           |
-| `controlplane.onboarding.name`                 | Name of the organization to onboard                                                             |                                                 |
-| `controlplane.onboarding.role`                 | Role of the organization to onboard                                                             |                                                 |
+| `controlplane.onboarding[0].name`              | Name of the organization to onboard                                                             | `read-only-demo`                                |
+| `controlplane.onboarding[0].role`              | Role of the organization to onboard                                                             | `MEMBERSHIP_ROLE_ORG_VIEWER`                    |
 
 ### Control Plane Database
 
