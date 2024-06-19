@@ -39,7 +39,6 @@ type OrganizationRepo interface {
 	FindByID(ctx context.Context, orgID uuid.UUID) (*Organization, error)
 	FindByName(ctx context.Context, name string) (*Organization, error)
 	Create(ctx context.Context, name string) (*Organization, error)
-	Update(ctx context.Context, id uuid.UUID, name *string) (*Organization, error)
 	Delete(ctx context.Context, ID uuid.UUID) error
 }
 
@@ -146,47 +145,6 @@ func (uc *OrganizationUseCase) doCreate(ctx context.Context, name string, opts .
 		if _, err := uc.casBackendUseCase.CreateInlineFallbackBackend(ctx, org.ID); err != nil {
 			return nil, fmt.Errorf("failed to create fallback backend: %w", err)
 		}
-	}
-
-	return org, nil
-}
-
-func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgID string, name *string) (*Organization, error) {
-	userUUID, err := uuid.Parse(userID)
-	if err != nil {
-		return nil, NewErrInvalidUUID(err)
-	}
-
-	orgUUID, err := uuid.Parse(orgID)
-	if err != nil {
-		return nil, NewErrInvalidUUID(err)
-	}
-
-	// We validate the name to get ready for the name to become identifiers
-	if name != nil {
-		if err := ValidateIsDNS1123(*name); err != nil {
-			return nil, NewErrValidation(errOrgName)
-		}
-	}
-
-	// Make sure that the organization exists and that the user is a member of it
-	membership, err := uc.membershipRepo.FindByOrgAndUser(ctx, orgUUID, userUUID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find memberships: %w", err)
-	} else if membership == nil {
-		return nil, NewErrNotFound("organization")
-	}
-
-	// Perform the update
-	org, err := uc.orgRepo.Update(ctx, orgUUID, name)
-	if err != nil {
-		if errors.Is(err, ErrAlreadyExists) {
-			return nil, NewErrValidationStr("a organization with that name already exists")
-		}
-
-		return nil, fmt.Errorf("failed to update organization: %w", err)
-	} else if org == nil {
-		return nil, NewErrNotFound("organization")
 	}
 
 	return org, nil

@@ -59,20 +59,6 @@ func (s *OrganizationService) Create(ctx context.Context, req *pb.OrganizationSe
 	return &pb.OrganizationServiceCreateResponse{Result: bizOrgToPb(org)}, nil
 }
 
-func (s *OrganizationService) Update(ctx context.Context, req *pb.OrganizationServiceUpdateRequest) (*pb.OrganizationServiceUpdateResponse, error) {
-	currentUser, err := requireCurrentUser(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	org, err := s.orgUC.Update(ctx, currentUser.ID, req.Id, req.Name)
-	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
-	}
-
-	return &pb.OrganizationServiceUpdateResponse{Result: bizOrgToPb(org)}, nil
-}
-
 func (s *OrganizationService) ListMemberships(ctx context.Context, _ *pb.OrganizationServiceListMembershipsRequest) (*pb.OrganizationServiceListMembershipsResponse, error) {
 	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {

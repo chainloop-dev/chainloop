@@ -109,44 +109,6 @@ func (s *OrgIntegrationTestSuite) TestCreateAddsInlineCASBackend() {
 	})
 }
 
-func (s *OrgIntegrationTestSuite) TestUpdate() {
-	ctx := context.Background()
-
-	s.T().Run("invalid org ID", func(t *testing.T) {
-		// Invalid org ID
-		_, err := s.Organization.Update(ctx, s.user.ID, "invalid", nil)
-		s.Error(err)
-		s.True(biz.IsErrInvalidUUID(err))
-	})
-
-	s.T().Run("org non existent", func(t *testing.T) {
-		// org not found
-		_, err := s.Organization.Update(ctx, s.user.ID, uuid.NewString(), nil)
-		s.Error(err)
-		s.True(biz.IsNotFound(err))
-	})
-
-	s.T().Run("org not accessible to user", func(t *testing.T) {
-		org2, err := s.Organization.CreateWithRandomName(ctx)
-		require.NoError(s.T(), err)
-		_, err = s.Organization.Update(ctx, s.user.ID, org2.ID, nil)
-		s.Error(err)
-		s.True(biz.IsNotFound(err))
-	})
-
-	s.T().Run("valid name update", func(t *testing.T) {
-		got, err := s.Organization.Update(ctx, s.user.ID, s.org.ID, toPtrS("new-name"))
-		s.NoError(err)
-		s.Equal("new-name", got.Name)
-	})
-
-	s.T().Run("invalid name update", func(t *testing.T) {
-		_, err := s.Organization.Update(ctx, s.user.ID, s.org.ID, toPtrS("invalid_new-name"))
-		s.Error(err)
-		s.True(biz.IsErrValidation(err))
-	})
-}
-
 // We are doing an integration test here because there are some database constraints
 // and delete cascades that we want to validate that they work too
 func (s *OrgIntegrationTestSuite) TestDeleteOrg() {
