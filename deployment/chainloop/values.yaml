@@ -191,7 +191,7 @@ controlplane:
       # loginURLOverride: ""
 
     ## @extra controlplane.auth.allowList.rules List of domains or emails to allow
-    ## @extra controlplane.auth.allowList.selectedRoutes List of selected routes to allow
+    ## @extra controlplane.auth.allowList.selectedRoutes List of selected routes to allow. If not set it applies to all routes
     ## @extra controlplane.auth.allowList.customMessage Custom message to display when a user is not allowed
     #    allowList:
     #      rules: []
