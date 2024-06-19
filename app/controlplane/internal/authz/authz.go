@@ -200,8 +200,9 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.UserService/ListMemberships": {},
 	// Set the current organization for the current user
 	"/controlplane.v1.UserService/SetCurrentMembership": {},
-	// Leave the organization
+	// Leave the organization or delete your account
 	"/controlplane.v1.UserService/DeleteMembership": {},
+	"/controlplane.v1.AuthService/DeleteAccount":    {},
 }
 
 type SubjectAPIToken struct {
