@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -67,7 +67,7 @@ type CASBackend struct {
 }
 
 type CASBackendLimits struct {
-	// Max number of bytes allowed to be stored in this backend
+	// Max number of bytes allowed to be stored in this backend per blob
 	MaxBytes int64
 }
 
@@ -81,6 +81,7 @@ type CASBackendOpts struct {
 type CASBackendCreateOpts struct {
 	*CASBackendOpts
 	Fallback bool
+	MaxBytes int64
 }
 
 type CASBackendUpdateOpts struct {
@@ -192,6 +193,7 @@ func (uc *CASBackendUseCase) CreateInlineFallbackBackend(ctx context.Context, or
 
 	return uc.repo.Create(ctx, &CASBackendCreateOpts{
 		Fallback: true,
+		MaxBytes: CASBackendInlineDefaultMaxBytes,
 		CASBackendOpts: &CASBackendOpts{
 			Name:     "default-inline",
 			Provider: CASBackendInline, Default: true,
@@ -240,6 +242,7 @@ func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name, location, 
 	}
 
 	backend, err := uc.repo.Create(ctx, &CASBackendCreateOpts{
+		MaxBytes: CASBackendDefaultMaxBytes,
 		CASBackendOpts: &CASBackendOpts{
 			Location: location, SecretName: secretName, Provider: provider, Default: defaultB,
 			Description: description,

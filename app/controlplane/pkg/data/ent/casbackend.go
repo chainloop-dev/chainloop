@@ -42,6 +42,8 @@ type CASBackend struct {
 	DeletedAt time.Time `json:"deleted_at,omitempty"`
 	// Fallback holds the value of the "fallback" field.
 	Fallback bool `json:"fallback,omitempty"`
+	// MaxBlobSizeBytes holds the value of the "max_blob_size_bytes" field.
+	MaxBlobSizeBytes int64 `json:"max_blob_size_bytes,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the CASBackendQuery when eager-loading is set.
 	Edges                     CASBackendEdges `json:"edges"`
@@ -87,6 +89,8 @@ func (*CASBackend) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case casbackend.FieldDefault, casbackend.FieldFallback:
 			values[i] = new(sql.NullBool)
+		case casbackend.FieldMaxBlobSizeBytes:
+			values[i] = new(sql.NullInt64)
 		case casbackend.FieldLocation, casbackend.FieldName, casbackend.FieldProvider, casbackend.FieldDescription, casbackend.FieldSecretName, casbackend.FieldValidationStatus:
 			values[i] = new(sql.NullString)
 		case casbackend.FieldCreatedAt, casbackend.FieldValidatedAt, casbackend.FieldDeletedAt:
@@ -182,6 +186,12 @@ func (cb *CASBackend) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				cb.Fallback = value.Bool
 			}
+		case casbackend.FieldMaxBlobSizeBytes:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field max_blob_size_bytes", values[i])
+			} else if value.Valid {
+				cb.MaxBlobSizeBytes = value.Int64
+			}
 		case casbackend.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field organization_cas_backends", values[i])
@@ -267,6 +277,9 @@ func (cb *CASBackend) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("fallback=")
 	builder.WriteString(fmt.Sprintf("%v", cb.Fallback))
+	builder.WriteString(", ")
+	builder.WriteString("max_blob_size_bytes=")
+	builder.WriteString(fmt.Sprintf("%v", cb.MaxBlobSizeBytes))
 	builder.WriteByte(')')
 	return builder.String()
 }
