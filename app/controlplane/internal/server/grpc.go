@@ -190,6 +190,8 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 			// 4 - Make sure the account is fully functional
 			selector.Server(
 				usercontext.CheckUserInAllowList(opts.AuthConfig.AllowList),
+			).Match(allowListEnabled()).Build(),
+			selector.Server(
 				usercontext.CheckOrgRequirements(opts.CASBackendUseCase),
 			).Match(requireFullyConfiguredOrgMatcher()).Build(),
 		).Match(requireCurrentUserMatcher()).Build(),
@@ -229,6 +231,15 @@ func requireCurrentUserMatcher() selector.MatchFunc {
 func requireFullyConfiguredOrgMatcher() selector.MatchFunc {
 	// We do not need to remove other endpoints since this matcher is called once the requireCurrentUserMatcher one has passed
 	const skipRegexp = "controlplane.v1.OCIRepositoryService/.*|controlplane.v1.ContextService/Current|/controlplane.v1.OrganizationService/.*|/controlplane.v1.AuthService/DeleteAccount|controlplane.v1.CASBackendService/.*|/controlplane.v1.UserService/.*|controlplane.v1.SigningService/.*"
+	return func(ctx context.Context, operation string) bool {
+		r := regexp.MustCompile(skipRegexp)
+		return !r.MatchString(operation)
+	}
+}
+
+func allowListEnabled() selector.MatchFunc {
+	// the allow list should not affect the ability to know who you are and delete your account
+	const skipRegexp = "controlplane.v1.ContextService/Current|/controlplane.v1.AuthService/DeleteAccount"
 	return func(ctx context.Context, operation string) bool {
 		r := regexp.MustCompile(skipRegexp)
 		return !r.MatchString(operation)
