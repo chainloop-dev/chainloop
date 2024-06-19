@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,15 +25,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEntCASBackendTo(t *testing.T) {
+func TestEntCASBackendToBiz(t *testing.T) {
+	const maxBytes = 1234
 	testBackend := ent.CASBackend{
-		ID:          uuid.New(),
-		Location:    "test-repo",
-		Provider:    "test-provider",
-		SecretName:  "test-secret",
-		Description: "test-description",
-		CreatedAt:   time.Now(),
-		Default:     true,
+		ID:               uuid.New(),
+		Location:         "test-repo",
+		Provider:         "test-provider",
+		SecretName:       "test-secret",
+		Description:      "test-description",
+		CreatedAt:        time.Now(),
+		Default:          true,
+		MaxBlobSizeBytes: maxBytes,
 	}
 
 	testBackendInline := testBackend
@@ -56,7 +58,7 @@ func TestEntCASBackendTo(t *testing.T) {
 			Provider:    testBackend.Provider,
 			Default:     true,
 			Limits: &biz.CASBackendLimits{
-				MaxBytes: biz.CASBackendDefaultMaxBytes,
+				MaxBytes: maxBytes,
 			},
 		}},
 		{&testBackendInline, &biz.CASBackend{
@@ -69,7 +71,7 @@ func TestEntCASBackendTo(t *testing.T) {
 			Default:     true,
 			Inline:      true,
 			Limits: &biz.CASBackendLimits{
-				MaxBytes: biz.CASBackendInlineDefaultMaxBytes,
+				MaxBytes: maxBytes,
 			},
 		}},
 		{&testBackendFallback, &biz.CASBackend{
@@ -82,7 +84,7 @@ func TestEntCASBackendTo(t *testing.T) {
 			Default:     true,
 			Fallback:    true,
 			Limits: &biz.CASBackendLimits{
-				MaxBytes: biz.CASBackendDefaultMaxBytes,
+				MaxBytes: maxBytes,
 			},
 		}},
 	}
