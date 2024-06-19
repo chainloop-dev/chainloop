@@ -175,12 +175,14 @@ controlplane:
     passphrase: ""
 
     ## @param controlplane.auth.oidc.url Full authentication path, it should match the issuer URL of the Identity provider (IDp)
-    ## @param controlplane.auth.oidc.clientID  OIDC IDp clientID
-    ## @param controlplane.auth.oidc.clientSecret  OIDC IDp clientSecret
+    ## @param controlplane.auth.oidc.clientID OIDC IDp clientID
+    ## @param controlplane.auth.oidc.clientSecret OIDC IDp clientSecret
+    ## @extra controlplane.auth.oidc.loginURLOverride Optional OIDC login URL override, useful to point to custom login pages
     oidc:
       url: ""
       clientID: ""
       clientSecret: ""
+      # loginURLOverride: ""
 
   ## @section Control Plane Networking
   service:
