@@ -68,6 +68,7 @@ func CheckUserInAllowList(allowList *conf.Auth_AllowList) middleware.Middleware 
 
 func selectedRoute(ctx context.Context, selectedRoutes []string) bool {
 	if info, ok := transport.FromServerContext(ctx); ok {
+		fmt.Println("info.Operation(): ", info.Operation())
 		for _, route := range selectedRoutes {
 			if info.Operation() == route {
 				return true
