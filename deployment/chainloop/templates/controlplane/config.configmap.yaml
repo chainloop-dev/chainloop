@@ -10,13 +10,13 @@ metadata:
   labels:
     {{- include "chainloop.controlplane.labels" . | nindent 4 }}
 data:
-  {{- if .Values.controlplane.allowList }}
+  {{- if .Values.controlplane.auth.allowList }}
   allow_list.yaml: |
     auth:
       allow_list:
-        {{- range .Values.controlplane.allowList }}
-        - {{ . | quote }}
-        {{- end }}
+        rules: {{ .Values.controlplane.auth.allowList.rules | toYaml | nindent 10 }}
+        selected_routes: {{ .Values.controlplane.auth.allowList.selectedRoutes | toYaml | nindent 10 }}
+        custom_message: {{ .Values.controlplane.auth.allowList.customMessage | quote }}
   {{- end }}
   config.yaml: |
     server:
@@ -42,3 +42,5 @@ data:
     plugins_dir: {{ .Values.controlplane.pluginsDir }}
     referrer_shared_index:
       {{- toYaml .Values.controlplane.referrerSharedIndex | nindent 6 }}
+    onboarding:
+      {{- toYaml .Values.controlplane.onboarding | nindent 6 }}
