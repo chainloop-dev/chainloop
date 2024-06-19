@@ -124,11 +124,11 @@ controlplane:
     enabled: false
     allowedOrgs: []
 
-  ## @param controlplane.onboarding[0].name Name of the organization to onboard
-  ## @param controlplane.onboarding[0].role Role of the organization to onboard
-  onboarding:
-    - name: "read-only-demo"
-      role: "MEMBERSHIP_ROLE_ORG_VIEWER"
+  ## @extra controlplane.onboarding.name Name of the organization to onboard
+  ## @extra controlplane.onboarding.role Role of the organization to onboard
+  #  onboarding:
+  #    - name: "read-only-demo"
+  #      role: "MEMBERSHIP_ROLE_ORG_VIEWER"
 
   # Database migration
   ## @skip controlplane.migration
@@ -193,10 +193,10 @@ controlplane:
     ## @extra controlplane.auth.allowList.rules List of domains or emails to allow
     ## @extra controlplane.auth.allowList.selectedRoutes List of selected routes to allow
     ## @extra controlplane.auth.allowList.customMessage Custom message to display when a user is not allowed
-#    allowList:
-#      rules: []
-#      selectedRoutes: []
-#      customMessage: ""
+    #    allowList:
+    #      rules: []
+    #      selectedRoutes: []
+    #      customMessage: ""
 
   ## @section Control Plane Networking
   service:
