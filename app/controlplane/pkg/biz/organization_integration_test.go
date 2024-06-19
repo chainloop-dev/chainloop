@@ -275,9 +275,9 @@ func (s *OrgIntegrationTestSuite) SetupTest() {
 
 type AuthOnboardingTestSuite struct {
 	testhelpers.UseCasesEachTestSuite
-	usr, usr1 *biz.User
-	org       *biz.Organization
-	m         *biz.Membership
+	userWithoutOrg, userInOrg *biz.User
+	existingOrg               *biz.Organization
+	m                         *biz.Membership
 }
 
 func (s *AuthOnboardingTestSuite) SetupTest() {
@@ -286,109 +286,100 @@ func (s *AuthOnboardingTestSuite) SetupTest() {
 
 	s.TestingUseCases = testhelpers.NewTestingUseCases(t, testhelpers.WithOnboardingConfiguration([]*conf.OnboardingSpec{
 		{
-			Name: "testing-org",
+			Name: "non-existing-org",
 			Role: v1.MembershipRole_MEMBERSHIP_ROLE_ORG_VIEWER,
+		},
+		{
+			Name: "existing-org",
+			Role: v1.MembershipRole_MEMBERSHIP_ROLE_ORG_OWNER,
 		},
 	}))
 
-	s.setupUsersAndOrganization(ctx)
-	s.setupMembership(ctx)
-}
-
-func (s *AuthOnboardingTestSuite) setupUsersAndOrganization(ctx context.Context) {
+	// Create org and two users
 	var err error
-	s.org, err = s.Organization.Create(ctx, "onboarded-org")
+	s.existingOrg, err = s.Organization.Create(ctx, "existing-org")
 	require.NoError(s.T(), err)
 
-	s.usr, err = s.User.FindOrCreateByEmail(ctx, "foo@bar", true)
+	s.userWithoutOrg, err = s.User.FindOrCreateByEmail(ctx, "foo@bar", true)
 	require.NoError(s.T(), err)
 
-	s.usr1, err = s.User.FindOrCreateByEmail(ctx, "bar@foo", true)
+	s.userInOrg, err = s.User.FindOrCreateByEmail(ctx, "bar@foo", true)
 	require.NoError(s.T(), err)
-}
 
-func (s *AuthOnboardingTestSuite) setupMembership(ctx context.Context) {
-	var err error
-	s.m, err = s.Membership.Create(ctx, s.org.ID, s.usr1.ID, biz.WithMembershipRole(authz.RoleViewer))
+	// usr1 is already a member of the org
+	s.m, err = s.Membership.Create(ctx, s.existingOrg.ID, s.userInOrg.ID, biz.WithMembershipRole(authz.RoleViewer))
 	s.NoError(err)
 }
 
+// User without org only gets attached to the existing org
 func (s *AuthOnboardingTestSuite) TestAutoOnboardOrganizations() {
 	ctx := context.Background()
 
-	org, err := s.Repos.OrganizationRepo.FindByName(ctx, "testing-org")
-	s.Nil(err)
+	// User has no memberships
+	memberships, err := s.Membership.ByUser(ctx, s.userWithoutOrg.ID)
+	s.NoError(err)
+	s.Len(memberships, 0)
+
+	// Auto onboard
+	err = s.Organization.AutoOnboardOrganizations(ctx, s.userWithoutOrg.ID)
+	s.NoError(err)
+
+	// User has now 1 membership that points to the existing org
+	memberships, err = s.Membership.ByUser(ctx, s.userWithoutOrg.ID)
+	s.NoError(err)
+	s.Len(memberships, 1)
+	s.Equal(s.existingOrg.ID, memberships[0].OrganizationID.String())
+	s.Equal(authz.RoleOwner, memberships[0].Role)
+}
+
+func (s *AuthOnboardingTestSuite) TestAutoOnboardNoOrganizationsCreated() {
+	ctx := context.Background()
+
+	org, err := s.Repos.OrganizationRepo.FindByName(ctx, "non-existing-org")
+	s.NoError(err)
 	s.Nil(org)
 
-	err = s.Organization.AutoOnboardOrganizations(ctx, s.usr.ID)
+	// Auto onboard
+	err = s.Organization.AutoOnboardOrganizations(ctx, s.userWithoutOrg.ID)
 	s.NoError(err)
 
-	org, err = s.Repos.OrganizationRepo.FindByName(ctx, "testing-org")
+	// The org has not been created
+	org, err = s.Repos.OrganizationRepo.FindByName(ctx, "non-existing-org")
 	s.NoError(err)
-	s.NotNil(org)
-
-	m, err := s.Membership.FindByOrgAndUser(ctx, org.ID, s.usr.ID)
-	s.NoError(err)
-	s.NotNil(m)
+	s.Nil(org)
 }
 
 func (s *AuthOnboardingTestSuite) TestOnboardOrganizationsTwice() {
 	ctx := context.Background()
 
-	org, err := s.Repos.OrganizationRepo.FindByName(ctx, "testing-org")
-	s.Nil(err)
-	s.Nil(org)
-
-	// Call it once
-	err = s.Organization.AutoOnboardOrganizations(ctx, s.usr.ID)
+	// Auto onboard
+	err := s.Organization.AutoOnboardOrganizations(ctx, s.userWithoutOrg.ID)
+	s.NoError(err)
+	// Auto onboard again
+	err = s.Organization.AutoOnboardOrganizations(ctx, s.userWithoutOrg.ID)
 	s.NoError(err)
 
-	// Call it twice
-	err = s.Organization.AutoOnboardOrganizations(ctx, s.usr.ID)
+	// User has now 1 membership that points to the existing org
+	memberships, err := s.Membership.ByUser(ctx, s.userWithoutOrg.ID)
 	s.NoError(err)
-
-	org, err = s.Repos.OrganizationRepo.FindByName(ctx, "testing-org")
-	s.NoError(err)
-	s.NotNil(org)
-
-	m, err := s.Membership.FindByOrgAndUser(ctx, org.ID, s.usr.ID)
-	s.NoError(err)
-	s.NotNil(m)
+	s.Len(memberships, 1)
 }
 
 func (s *AuthOnboardingTestSuite) TestAutoOnboardWithExistingMemberships() {
 	ctx := context.Background()
 
-	org, err := s.Repos.OrganizationRepo.FindByName(ctx, s.org.Name)
-	s.Nil(err)
-	s.NotNil(org)
-
-	m, err := s.Membership.FindByOrgAndUser(ctx, org.ID, s.usr1.ID)
-	s.NoError(err)
-	s.NotNil(m)
-	s.Equal(s.m.Role, m.Role)
-
-	err = s.Organization.AutoOnboardOrganizations(ctx, s.usr1.ID)
+	err := s.Organization.AutoOnboardOrganizations(ctx, s.userInOrg.ID)
 	s.NoError(err)
 
-	newM, err := s.Membership.FindByOrgAndUser(ctx, org.ID, s.usr1.ID)
+	got, err := s.Membership.FindByOrgAndUser(ctx, s.existingOrg.ID, s.userInOrg.ID)
 	s.NoError(err)
-	s.NotNil(newM)
-	s.Equal(s.m.Role, newM.Role)
+	s.Equal(s.m, got)
 }
 
 func (s *AuthOnboardingTestSuite) TestAutoOnboardWithoutConfiguration() {
 	ctx := context.Background()
 	s.TestingUseCases = testhelpers.NewTestingUseCases(s.T())
 
-	org, err := s.Repos.OrganizationRepo.FindByName(ctx, "testing-org")
-	s.Nil(err)
-	s.Nil(org)
-
-	err = s.Organization.AutoOnboardOrganizations(ctx, s.usr.ID)
+	err := s.Organization.AutoOnboardOrganizations(ctx, s.userWithoutOrg.ID)
 	s.NoError(err)
-
-	org, err = s.Repos.OrganizationRepo.FindByName(ctx, "testing-org")
-	s.Nil(err)
-	s.Nil(org)
 }

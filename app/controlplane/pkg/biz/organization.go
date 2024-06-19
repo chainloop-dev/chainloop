@@ -19,9 +19,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
+	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"github.com/moby/moby/pkg/namesgenerator"
@@ -49,9 +52,13 @@ type OrganizationUseCase struct {
 	onboardingConfig  []*conf.OnboardingSpec
 }
 
-func NewOrganizationUseCase(repo OrganizationRepo, repoUC *CASBackendUseCase, iUC *IntegrationUseCase, mRepo MembershipRepo, onboardingConfig []*conf.OnboardingSpec, logger log.Logger) *OrganizationUseCase {
+func NewOrganizationUseCase(repo OrganizationRepo, repoUC *CASBackendUseCase, iUC *IntegrationUseCase, mRepo MembershipRepo, onboardingConfig []*conf.OnboardingSpec, l log.Logger) *OrganizationUseCase {
+	if l == nil {
+		l = log.NewStdLogger(io.Discard)
+	}
+
 	return &OrganizationUseCase{orgRepo: repo,
-		logger:            log.NewHelper(logger),
+		logger:            servicelogger.ScopedHelper(l, "biz/organization"),
 		casBackendUseCase: repoUC,
 		integrationUC:     iUC,
 		membershipRepo:    mRepo,
@@ -259,10 +266,13 @@ func (uc *OrganizationUseCase) AutoOnboardOrganizations(ctx context.Context, use
 	}
 
 	for _, spec := range uc.onboardingConfig {
-		// Ensure the organization exists or create it if it doesn't
-		org, err := uc.ensureOrganizationExists(ctx, spec)
+		// Find organization or skip onboarding if it doesn't exist
+		org, err := uc.orgRepo.FindByName(ctx, spec.GetName())
 		if err != nil {
-			return fmt.Errorf("failed to ensure organization exists: %w", err)
+			return fmt.Errorf("failed to find organization: %w", err)
+		} else if org == nil {
+			uc.logger.Infow("msg", "Organization not found", "name", spec.GetName())
+			continue
 		}
 
 		// Parse organization UUID
@@ -272,7 +282,7 @@ func (uc *OrganizationUseCase) AutoOnboardOrganizations(ctx context.Context, use
 		}
 
 		// Ensure user membership
-		if err := uc.ensureUserMembership(ctx, orgUUID, userUUID, spec); err != nil {
+		if err := uc.ensureUserMembership(ctx, orgUUID, userUUID, PbRoleToBiz(spec.GetRole())); err != nil {
 			return fmt.Errorf("failed to ensure user membership: %w", err)
 		}
 	}
@@ -280,32 +290,9 @@ func (uc *OrganizationUseCase) AutoOnboardOrganizations(ctx context.Context, use
 	return nil
 }
 
-// ensureOrganizationExists ensures that an organization specified by the onboarding configuration exists.
-// If the organization does not exist, it creates it.
-func (uc *OrganizationUseCase) ensureOrganizationExists(ctx context.Context, spec *conf.OnboardingSpec) (*Organization, error) {
-	// Ensure the organization exists or create it if it doesn't
-	org, err := uc.orgRepo.FindByName(ctx, spec.GetName())
-	if err != nil {
-		return nil, fmt.Errorf("failed to find organization: %w", err)
-	} else if org == nil {
-		// Create the organization since it does not exist
-		org, err = uc.orgRepo.Create(ctx, spec.GetName())
-		if err != nil {
-			return nil, fmt.Errorf("failed to create organization: %w", err)
-		}
-
-		// Create default inline CAS-backend
-		if _, err := uc.casBackendUseCase.CreateInlineFallbackBackend(ctx, org.ID); err != nil {
-			return nil, fmt.Errorf("failed to create fallback backend: %w", err)
-		}
-	}
-
-	return org, nil
-}
-
 // ensureUserMembership ensures that a user is a member of the specified organization with the appropriate role.
 // If the membership does not exist, it creates it.
-func (uc *OrganizationUseCase) ensureUserMembership(ctx context.Context, orgUUID, userUUID uuid.UUID, spec *conf.OnboardingSpec) error {
+func (uc *OrganizationUseCase) ensureUserMembership(ctx context.Context, orgUUID, userUUID uuid.UUID, role authz.Role) error {
 	m, err := uc.membershipRepo.FindByOrgAndUser(ctx, orgUUID, userUUID)
 	if err != nil {
 		return fmt.Errorf("failed to find membership: %w", err)
@@ -317,10 +304,11 @@ func (uc *OrganizationUseCase) ensureUserMembership(ctx context.Context, orgUUID
 	}
 
 	// Create the membership with the specified role
-	_, err = uc.membershipRepo.Create(ctx, orgUUID, userUUID, true, PbRoleToBiz(spec.GetRole()))
+	_, err = uc.membershipRepo.Create(ctx, orgUUID, userUUID, true, role)
 	if err != nil {
 		return fmt.Errorf("failed to create membership: %w", err)
 	}
 
+	uc.logger.Infow("msg", "User auto-onboarded to organization", "org", orgUUID, "user", userUUID, "role", role)
 	return nil
 }

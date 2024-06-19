@@ -156,5 +156,10 @@ message OnboardingSpec {
   // Name of the organization
   string name = 1 [(buf.validate.field).string.min_len = 1];
   // Role to assign to the user
-  controlplane.v1.MembershipRole role = 2;
+  controlplane.v1.MembershipRole role = 2 [
+    (buf.validate.field).enum = {
+      not_in: [0]
+    },
+    (buf.validate.field).enum.defined_only = true
+  ];
 }
