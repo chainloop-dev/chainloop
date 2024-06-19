@@ -243,7 +243,8 @@ func (r *streamReader) Write(data []byte) error {
 	r.size += int64(len(data))
 
 	// Check if the size of the buffer has exceeded the maximum allowed size
-	if r.size > r.maxSize {
+	// if maxSize is 0, then there is no limit
+	if r.maxSize != 0 && r.size > r.maxSize {
 		return fmt.Errorf("max size of upload exceeded: want=%d, max=%d", r.size, r.maxSize)
 	}
 
