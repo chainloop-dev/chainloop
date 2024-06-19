@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ import (
 )
 
 func (s *bytestreamSuite) TestStreamReader() {
-	buffer := newStreamReader()
+	buffer := newStreamReader(0)
 	// Write twice and check the length
 	err := buffer.Write([]byte("hello"))
 	s.NoError(err)
@@ -66,6 +66,18 @@ func (s *bytestreamSuite) TestStreamReader() {
 	s.Equal(int64(14), buffer.size)
 	// but the internal one is 0
 	s.Equal(0, buffer.Len())
+}
+
+func (s *bytestreamSuite) TestStreamReaderOverflow() {
+	// a buffer with 8 bytes limit
+	buffer := newStreamReader(8)
+	// Write twice and check the length
+	err := buffer.Write([]byte("hello"))
+	s.NoError(err)
+	s.Equal(int64(5), buffer.size)
+	err = buffer.Write([]byte("chainloop"))
+	s.Error(err)
+	s.ErrorContains(err, "max size of upload exceeded")
 }
 
 func (s *bytestreamSuite) TestWrite() {

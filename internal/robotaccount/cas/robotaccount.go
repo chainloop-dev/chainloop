@@ -37,6 +37,7 @@ type Claims struct {
 	Role           Role   `json:"role"`      // either downloader or uploader
 	StoredSecretID string `json:"secret-id"` // path to the OCI secret in the vault
 	BackendType    string `json:"backend"`   // backend to use, i.e OCI
+	MaxBytes       int64  `json:"maxbytes"`  // max bytes to upload
 }
 
 type Role string
@@ -102,7 +103,7 @@ func NewBuilder(opts ...NewOpt) (*Builder, error) {
 	return b, nil
 }
 
-func (ra *Builder) GenerateJWT(backendType, secretID, audience string, role Role) (string, error) {
+func (ra *Builder) GenerateJWT(backendType, secretID, audience string, role Role, maxBytes int64) (string, error) {
 	if backendType == "" {
 		return "", fmt.Errorf("backend type is required")
 	}
@@ -129,6 +130,11 @@ func (ra *Builder) GenerateJWT(backendType, secretID, audience string, role Role
 			Issuer:   ra.issuer,
 			Audience: jwt.ClaimStrings{audience},
 		},
+	}
+
+	// If there is limit on the size of the upload we store it as claim
+	if maxBytes != 0 {
+		claims.MaxBytes = maxBytes
 	}
 
 	if ra.expiration != nil {
