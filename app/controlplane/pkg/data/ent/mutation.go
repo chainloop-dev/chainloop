@@ -778,29 +778,31 @@ func (m *APITokenMutation) ResetEdge(name string) error {
 // CASBackendMutation represents an operation that mutates the CASBackend nodes in the graph.
 type CASBackendMutation struct {
 	config
-	op                  Op
-	typ                 string
-	id                  *uuid.UUID
-	location            *string
-	name                *string
-	provider            *biz.CASBackendProvider
-	description         *string
-	secret_name         *string
-	created_at          *time.Time
-	validation_status   *biz.CASBackendValidationStatus
-	validated_at        *time.Time
-	_default            *bool
-	deleted_at          *time.Time
-	fallback            *bool
-	clearedFields       map[string]struct{}
-	organization        *uuid.UUID
-	clearedorganization bool
-	workflow_run        map[uuid.UUID]struct{}
-	removedworkflow_run map[uuid.UUID]struct{}
-	clearedworkflow_run bool
-	done                bool
-	oldValue            func(context.Context) (*CASBackend, error)
-	predicates          []predicate.CASBackend
+	op                     Op
+	typ                    string
+	id                     *uuid.UUID
+	location               *string
+	name                   *string
+	provider               *biz.CASBackendProvider
+	description            *string
+	secret_name            *string
+	created_at             *time.Time
+	validation_status      *biz.CASBackendValidationStatus
+	validated_at           *time.Time
+	_default               *bool
+	deleted_at             *time.Time
+	fallback               *bool
+	max_blob_size_bytes    *int64
+	addmax_blob_size_bytes *int64
+	clearedFields          map[string]struct{}
+	organization           *uuid.UUID
+	clearedorganization    bool
+	workflow_run           map[uuid.UUID]struct{}
+	removedworkflow_run    map[uuid.UUID]struct{}
+	clearedworkflow_run    bool
+	done                   bool
+	oldValue               func(context.Context) (*CASBackend, error)
+	predicates             []predicate.CASBackend
 }
 
 var _ ent.Mutation = (*CASBackendMutation)(nil)
@@ -1329,6 +1331,62 @@ func (m *CASBackendMutation) ResetFallback() {
 	m.fallback = nil
 }
 
+// SetMaxBlobSizeBytes sets the "max_blob_size_bytes" field.
+func (m *CASBackendMutation) SetMaxBlobSizeBytes(i int64) {
+	m.max_blob_size_bytes = &i
+	m.addmax_blob_size_bytes = nil
+}
+
+// MaxBlobSizeBytes returns the value of the "max_blob_size_bytes" field in the mutation.
+func (m *CASBackendMutation) MaxBlobSizeBytes() (r int64, exists bool) {
+	v := m.max_blob_size_bytes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMaxBlobSizeBytes returns the old "max_blob_size_bytes" field's value of the CASBackend entity.
+// If the CASBackend object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CASBackendMutation) OldMaxBlobSizeBytes(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMaxBlobSizeBytes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMaxBlobSizeBytes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMaxBlobSizeBytes: %w", err)
+	}
+	return oldValue.MaxBlobSizeBytes, nil
+}
+
+// AddMaxBlobSizeBytes adds i to the "max_blob_size_bytes" field.
+func (m *CASBackendMutation) AddMaxBlobSizeBytes(i int64) {
+	if m.addmax_blob_size_bytes != nil {
+		*m.addmax_blob_size_bytes += i
+	} else {
+		m.addmax_blob_size_bytes = &i
+	}
+}
+
+// AddedMaxBlobSizeBytes returns the value that was added to the "max_blob_size_bytes" field in this mutation.
+func (m *CASBackendMutation) AddedMaxBlobSizeBytes() (r int64, exists bool) {
+	v := m.addmax_blob_size_bytes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetMaxBlobSizeBytes resets all changes to the "max_blob_size_bytes" field.
+func (m *CASBackendMutation) ResetMaxBlobSizeBytes() {
+	m.max_blob_size_bytes = nil
+	m.addmax_blob_size_bytes = nil
+}
+
 // SetOrganizationID sets the "organization" edge to the Organization entity by id.
 func (m *CASBackendMutation) SetOrganizationID(id uuid.UUID) {
 	m.organization = &id
@@ -1456,7 +1514,7 @@ func (m *CASBackendMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CASBackendMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 12)
 	if m.location != nil {
 		fields = append(fields, casbackend.FieldLocation)
 	}
@@ -1490,6 +1548,9 @@ func (m *CASBackendMutation) Fields() []string {
 	if m.fallback != nil {
 		fields = append(fields, casbackend.FieldFallback)
 	}
+	if m.max_blob_size_bytes != nil {
+		fields = append(fields, casbackend.FieldMaxBlobSizeBytes)
+	}
 	return fields
 }
 
@@ -1520,6 +1581,8 @@ func (m *CASBackendMutation) Field(name string) (ent.Value, bool) {
 		return m.DeletedAt()
 	case casbackend.FieldFallback:
 		return m.Fallback()
+	case casbackend.FieldMaxBlobSizeBytes:
+		return m.MaxBlobSizeBytes()
 	}
 	return nil, false
 }
@@ -1551,6 +1614,8 @@ func (m *CASBackendMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldDeletedAt(ctx)
 	case casbackend.FieldFallback:
 		return m.OldFallback(ctx)
+	case casbackend.FieldMaxBlobSizeBytes:
+		return m.OldMaxBlobSizeBytes(ctx)
 	}
 	return nil, fmt.Errorf("unknown CASBackend field %s", name)
 }
@@ -1637,6 +1702,13 @@ func (m *CASBackendMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetFallback(v)
 		return nil
+	case casbackend.FieldMaxBlobSizeBytes:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMaxBlobSizeBytes(v)
+		return nil
 	}
 	return fmt.Errorf("unknown CASBackend field %s", name)
 }
@@ -1644,13 +1716,21 @@ func (m *CASBackendMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *CASBackendMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.addmax_blob_size_bytes != nil {
+		fields = append(fields, casbackend.FieldMaxBlobSizeBytes)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *CASBackendMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case casbackend.FieldMaxBlobSizeBytes:
+		return m.AddedMaxBlobSizeBytes()
+	}
 	return nil, false
 }
 
@@ -1659,6 +1739,13 @@ func (m *CASBackendMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *CASBackendMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case casbackend.FieldMaxBlobSizeBytes:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddMaxBlobSizeBytes(v)
+		return nil
 	}
 	return fmt.Errorf("unknown CASBackend numeric field %s", name)
 }
@@ -1733,6 +1820,9 @@ func (m *CASBackendMutation) ResetField(name string) error {
 		return nil
 	case casbackend.FieldFallback:
 		m.ResetFallback()
+		return nil
+	case casbackend.FieldMaxBlobSizeBytes:
+		m.ResetMaxBlobSizeBytes()
 		return nil
 	}
 	return fmt.Errorf("unknown CASBackend field %s", name)

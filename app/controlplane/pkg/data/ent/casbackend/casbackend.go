@@ -39,6 +39,8 @@ const (
 	FieldDeletedAt = "deleted_at"
 	// FieldFallback holds the string denoting the fallback field in the database.
 	FieldFallback = "fallback"
+	// FieldMaxBlobSizeBytes holds the string denoting the max_blob_size_bytes field in the database.
+	FieldMaxBlobSizeBytes = "max_blob_size_bytes"
 	// EdgeOrganization holds the string denoting the organization edge name in mutations.
 	EdgeOrganization = "organization"
 	// EdgeWorkflowRun holds the string denoting the workflow_run edge name in mutations.
@@ -73,6 +75,7 @@ var Columns = []string{
 	FieldDefault,
 	FieldDeletedAt,
 	FieldFallback,
+	FieldMaxBlobSizeBytes,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "cas_backends"
@@ -198,6 +201,11 @@ func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByFallback orders the results by the fallback field.
 func ByFallback(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldFallback, opts...).ToFunc()
+}
+
+// ByMaxBlobSizeBytes orders the results by the max_blob_size_bytes field.
+func ByMaxBlobSizeBytes(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMaxBlobSizeBytes, opts...).ToFunc()
 }
 
 // ByOrganizationField orders the results by organization field.

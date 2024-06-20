@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -110,6 +110,7 @@ func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateO
 		SetProvider(opts.Provider).
 		SetDefault(opts.Default).
 		SetSecretName(opts.SecretName).
+		SetMaxBlobSizeBytes(opts.MaxBytes).
 		Save(ctx)
 	if err != nil {
 		if ent.IsConstraintError(err) {
@@ -227,12 +228,7 @@ func entCASBackendToBiz(backend *ent.CASBackend) *biz.CASBackend {
 	}
 
 	limits := &biz.CASBackendLimits{
-		MaxBytes: biz.CASBackendDefaultMaxBytes,
-	}
-
-	inline := backend.Provider == biz.CASBackendInline
-	if inline {
-		limits.MaxBytes = biz.CASBackendInlineDefaultMaxBytes
+		MaxBytes: backend.MaxBlobSizeBytes,
 	}
 
 	r := &biz.CASBackend{
@@ -246,7 +242,7 @@ func entCASBackendToBiz(backend *ent.CASBackend) *biz.CASBackend {
 		ValidationStatus: backend.ValidationStatus,
 		Provider:         backend.Provider,
 		Default:          backend.Default,
-		Inline:           inline,
+		Inline:           backend.Provider == biz.CASBackendInline,
 		Limits:           limits,
 		Fallback:         backend.Fallback,
 	}

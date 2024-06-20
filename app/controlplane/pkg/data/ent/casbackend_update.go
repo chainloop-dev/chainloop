@@ -143,6 +143,27 @@ func (cbu *CASBackendUpdate) ClearDeletedAt() *CASBackendUpdate {
 	return cbu
 }
 
+// SetMaxBlobSizeBytes sets the "max_blob_size_bytes" field.
+func (cbu *CASBackendUpdate) SetMaxBlobSizeBytes(i int64) *CASBackendUpdate {
+	cbu.mutation.ResetMaxBlobSizeBytes()
+	cbu.mutation.SetMaxBlobSizeBytes(i)
+	return cbu
+}
+
+// SetNillableMaxBlobSizeBytes sets the "max_blob_size_bytes" field if the given value is not nil.
+func (cbu *CASBackendUpdate) SetNillableMaxBlobSizeBytes(i *int64) *CASBackendUpdate {
+	if i != nil {
+		cbu.SetMaxBlobSizeBytes(*i)
+	}
+	return cbu
+}
+
+// AddMaxBlobSizeBytes adds i to the "max_blob_size_bytes" field.
+func (cbu *CASBackendUpdate) AddMaxBlobSizeBytes(i int64) *CASBackendUpdate {
+	cbu.mutation.AddMaxBlobSizeBytes(i)
+	return cbu
+}
+
 // SetOrganizationID sets the "organization" edge to the Organization entity by ID.
 func (cbu *CASBackendUpdate) SetOrganizationID(id uuid.UUID) *CASBackendUpdate {
 	cbu.mutation.SetOrganizationID(id)
@@ -285,6 +306,12 @@ func (cbu *CASBackendUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if cbu.mutation.DeletedAtCleared() {
 		_spec.ClearField(casbackend.FieldDeletedAt, field.TypeTime)
+	}
+	if value, ok := cbu.mutation.MaxBlobSizeBytes(); ok {
+		_spec.SetField(casbackend.FieldMaxBlobSizeBytes, field.TypeInt64, value)
+	}
+	if value, ok := cbu.mutation.AddedMaxBlobSizeBytes(); ok {
+		_spec.AddField(casbackend.FieldMaxBlobSizeBytes, field.TypeInt64, value)
 	}
 	if cbu.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -492,6 +519,27 @@ func (cbuo *CASBackendUpdateOne) ClearDeletedAt() *CASBackendUpdateOne {
 	return cbuo
 }
 
+// SetMaxBlobSizeBytes sets the "max_blob_size_bytes" field.
+func (cbuo *CASBackendUpdateOne) SetMaxBlobSizeBytes(i int64) *CASBackendUpdateOne {
+	cbuo.mutation.ResetMaxBlobSizeBytes()
+	cbuo.mutation.SetMaxBlobSizeBytes(i)
+	return cbuo
+}
+
+// SetNillableMaxBlobSizeBytes sets the "max_blob_size_bytes" field if the given value is not nil.
+func (cbuo *CASBackendUpdateOne) SetNillableMaxBlobSizeBytes(i *int64) *CASBackendUpdateOne {
+	if i != nil {
+		cbuo.SetMaxBlobSizeBytes(*i)
+	}
+	return cbuo
+}
+
+// AddMaxBlobSizeBytes adds i to the "max_blob_size_bytes" field.
+func (cbuo *CASBackendUpdateOne) AddMaxBlobSizeBytes(i int64) *CASBackendUpdateOne {
+	cbuo.mutation.AddMaxBlobSizeBytes(i)
+	return cbuo
+}
+
 // SetOrganizationID sets the "organization" edge to the Organization entity by ID.
 func (cbuo *CASBackendUpdateOne) SetOrganizationID(id uuid.UUID) *CASBackendUpdateOne {
 	cbuo.mutation.SetOrganizationID(id)
@@ -664,6 +712,12 @@ func (cbuo *CASBackendUpdateOne) sqlSave(ctx context.Context) (_node *CASBackend
 	}
 	if cbuo.mutation.DeletedAtCleared() {
 		_spec.ClearField(casbackend.FieldDeletedAt, field.TypeTime)
+	}
+	if value, ok := cbuo.mutation.MaxBlobSizeBytes(); ok {
+		_spec.SetField(casbackend.FieldMaxBlobSizeBytes, field.TypeInt64, value)
+	}
+	if value, ok := cbuo.mutation.AddedMaxBlobSizeBytes(); ok {
+		_spec.AddField(casbackend.FieldMaxBlobSizeBytes, field.TypeInt64, value)
 	}
 	if cbuo.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{
