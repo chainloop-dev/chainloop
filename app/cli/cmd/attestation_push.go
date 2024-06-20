@@ -26,8 +26,13 @@ import (
 )
 
 func newAttestationPushCmd() *cobra.Command {
-	var pkPath, bundle string
-	var annotationsFlag []string
+	var (
+		pkPath, bundle                         string
+		annotationsFlag                        []string
+		signServerCAPath                       string
+		signServerAuthUser, signServerAuthPass string
+	)
+
 	cmd := &cobra.Command{
 		Use:   "push",
 		Short: "generate and push the attestation to the control plane",
@@ -57,7 +62,9 @@ func newAttestationPushCmd() *cobra.Command {
 				return fmt.Errorf("getting executable information: %w", err)
 			}
 			a, err := action.NewAttestationPush(&action.AttestationPushOpts{
-				ActionsOpts: actionOpts, KeyPath: pkPath, BundlePath: bundle, CLIVersion: info.Version, CLIDigest: info.Digest,
+				ActionsOpts: actionOpts, KeyPath: pkPath, BundlePath: bundle,
+				CLIVersion: info.Version, CLIDigest: info.Digest,
+				SignServerCAPath: signServerCAPath,
 			})
 			if err != nil {
 				return fmt.Errorf("failed to load action: %w", err)
@@ -101,6 +108,10 @@ func newAttestationPushCmd() *cobra.Command {
 	cmd.Flags().StringSliceVar(&annotationsFlag, "annotation", nil, "additional annotation in the format of key=value")
 	cmd.Flags().StringVar(&bundle, "bundle", "", "output a Sigstore bundle to the provided path  ")
 	flagAttestationID(cmd)
+
+	cmd.Flags().StringVar(&signServerCAPath, "signserver-ca-path", "", "custom CA to be used for SignServer communications")
+	cmd.Flags().StringVar(&signServerAuthUser, "signserver-auth-user", "", "")
+	cmd.Flags().StringVar(&signServerAuthPass, "signserver-auth-pass", "", "")
 
 	return cmd
 }

@@ -33,6 +33,8 @@ import (
 type AttestationPushOpts struct {
 	*ActionsOpts
 	KeyPath, CLIVersion, CLIDigest, BundlePath string
+
+	SignServerCAPath string
 }
 
 type AttestationResult struct {
@@ -45,6 +47,7 @@ type AttestationPush struct {
 	*ActionsOpts
 	c                                          *crafter.Crafter
 	keyPath, cliVersion, cliDigest, bundlePath string
+	signServerCAPath                           string
 }
 
 func NewAttestationPush(cfg *AttestationPushOpts) (*AttestationPush, error) {
@@ -54,12 +57,13 @@ func NewAttestationPush(cfg *AttestationPushOpts) (*AttestationPush, error) {
 	}
 
 	return &AttestationPush{
-		ActionsOpts: cfg.ActionsOpts,
-		c:           c,
-		keyPath:     cfg.KeyPath,
-		cliVersion:  cfg.CLIVersion,
-		cliDigest:   cfg.CLIDigest,
-		bundlePath:  cfg.BundlePath,
+		ActionsOpts:      cfg.ActionsOpts,
+		c:                c,
+		keyPath:          cfg.KeyPath,
+		cliVersion:       cfg.CLIVersion,
+		cliDigest:        cfg.CLIDigest,
+		bundlePath:       cfg.BundlePath,
+		signServerCAPath: cfg.SignServerCAPath,
 	}, nil
 }
 
@@ -132,7 +136,13 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	// Indicate that we are done with the attestation
 	action.c.CraftingState.Attestation.FinishedAt = timestamppb.New(time.Now())
 
-	sig := signer.GetSigner(action.keyPath, action.Logger, pb.NewSigningServiceClient(action.CPConnection))
+	sig, err := signer.GetSigner(action.keyPath, action.Logger, &signer.Opts{
+		SignServerCAPath: action.signServerCAPath,
+		Vaultclient:      pb.NewSigningServiceClient(action.CPConnection),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("creating signer: %w", err)
+	}
 	renderer, err := renderer.NewAttestationRenderer(action.c.CraftingState, action.cliVersion, action.cliDigest, sig,
 		renderer.WithLogger(action.Logger), renderer.WithBundleOutputPath(action.bundlePath))
 	if err != nil {

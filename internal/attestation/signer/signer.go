@@ -16,21 +16,38 @@
 package signer
 
 import (
+	"fmt"
+	"strings"
+
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/signer/chainloop"
 	"github.com/chainloop-dev/chainloop/internal/attestation/signer/cosign"
+	"github.com/chainloop-dev/chainloop/internal/attestation/signer/signserver"
 	"github.com/rs/zerolog"
 	sigstoresigner "github.com/sigstore/sigstore/pkg/signature"
 )
 
+type Opts struct {
+	SignServerCAPath string
+	Vaultclient      pb.SigningServiceClient
+}
+
 // GetSigner creates a new Signer based on input parameters
-func GetSigner(keyPath string, logger zerolog.Logger, client pb.SigningServiceClient) sigstoresigner.Signer {
+func GetSigner(keyPath string, logger zerolog.Logger, opts *Opts) (sigstoresigner.Signer, error) {
 	var signer sigstoresigner.Signer
 	if keyPath != "" {
-		signer = cosign.NewSigner(keyPath, logger)
+		if strings.HasPrefix(keyPath, signserver.ReferenceScheme) {
+			host, worker, err := signserver.ParseKeyReference(keyPath)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse key: %w", err)
+			}
+			signer = signserver.NewSigner(host, worker, opts.SignServerCAPath)
+		} else {
+			signer = cosign.NewSigner(keyPath, logger)
+		}
 	} else {
-		signer = chainloop.NewSigner(client, logger)
+		signer = chainloop.NewSigner(opts.Vaultclient, logger)
 	}
 
-	return signer
+	return signer, nil
 }
