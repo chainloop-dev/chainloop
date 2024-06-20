@@ -96,7 +96,7 @@ func TestJWTAuthFunc(t *testing.T) {
 
 			b, err := robotaccount.NewBuilder(opts...)
 			require.NoError(t, err)
-			token, err := b.GenerateJWT("backend-type", "secret-id", tc.audience, robotaccount.Downloader)
+			token, err := b.GenerateJWT("backend-type", "secret-id", tc.audience, robotaccount.Downloader, 0)
 			require.NoError(t, err)
 
 			// add bearer token to context

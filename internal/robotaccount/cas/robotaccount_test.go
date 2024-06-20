@@ -150,7 +150,7 @@ func TestGenerateJWT(t *testing.T) {
 	)
 
 	require.NoError(t, err)
-	token, err := b.GenerateJWT("OCI", "secret-id", JWTAudience, Uploader)
+	token, err := b.GenerateJWT("OCI", "secret-id", JWTAudience, Uploader, 123)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
 
@@ -166,6 +166,7 @@ func TestGenerateJWT(t *testing.T) {
 	assert.Equal(t, Uploader, claims.Role)
 	assert.Equal(t, "my-issuer", claims.Issuer)
 	assert.Contains(t, claims.Audience, "artifact-cas.chainloop")
+	assert.Equal(t, claims.MaxBytes, int64(123))
 	assert.WithinDuration(t, time.Now(), claims.ExpiresAt.Time, 10*time.Second)
 }
 

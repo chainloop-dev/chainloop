@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -92,7 +92,7 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 
 	s.log.Infow("msg", "artifact does not exist, uploading", "digest", req.resource.Digest, "name", req.resource.FileName)
 	// Create a buffer that will be filled in the background before sending its content to the backend
-	buffer := newStreamReader()
+	buffer := newStreamReader(info.MaxBytes)
 	// Add data from first request
 	if err = buffer.Write(req.GetData()); err != nil {
 		return sl.LogAndMaskErr(err, s.log)
@@ -213,7 +213,7 @@ func bufferStream(ctx context.Context, stream bytestream.ByteStream_WriteServer,
 				return
 			}
 
-			log.Debugw("msg", "upload chunk received", "digest", req.resource.Digest, "bufferSize", buffer.size, "chunkSize", len(req.GetData()))
+			log.Debugw("msg", "upload chunk received", "digest", req.resource.Digest, "currentSize", buffer.size, "maxSize", buffer.maxSize, "chunkSize", len(req.GetData()))
 		}
 	}
 }
@@ -222,6 +222,8 @@ type streamReader struct {
 	*bytes.Buffer
 	// total size of the in-memory buffer in bytes
 	size int64
+	// Max size allowed to be uploaded
+	maxSize int64
 	// there was an error during stream data filling
 	errorChan chan error
 }
@@ -229,15 +231,23 @@ type streamReader struct {
 // Wrapper around a buffer that adds
 // the ability to record the total size of the data that went through it
 // and a channel to be used by the clients to signal when the buffer has been filled
-func newStreamReader() *streamReader {
+func newStreamReader(maxSize int64) *streamReader {
 	return &streamReader{
 		Buffer:    bytes.NewBuffer(nil),
 		errorChan: make(chan error),
+		maxSize:   maxSize,
 	}
 }
 
 func (r *streamReader) Write(data []byte) error {
 	r.size += int64(len(data))
+
+	// Check if the size of the buffer has exceeded the maximum allowed size
+	// if maxSize is 0, then there is no limit
+	if r.maxSize != 0 && r.size > r.maxSize {
+		return fmt.Errorf("max size of upload exceeded: want=%d, max=%d", r.size, r.maxSize)
+	}
+
 	_, err := r.Buffer.Write(data)
 	return err
 }
