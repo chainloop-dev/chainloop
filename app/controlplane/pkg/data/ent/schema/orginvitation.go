@@ -55,6 +55,6 @@ func (OrgInvitation) Fields() []ent.Field {
 func (OrgInvitation) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("organization", Organization.Type).Unique().Required().Field("organization_id").Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
-		edge.To("sender", User.Type).Unique().Required().Field("sender_id"),
+		edge.To("sender", User.Type).Unique().Required().Field("sender_id").Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 	}
 }
