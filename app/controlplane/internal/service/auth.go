@@ -26,7 +26,6 @@ import (
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	authenticator "github.com/chainloop-dev/chainloop/app/controlplane/internal/oidcauthenticator"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
@@ -81,7 +80,7 @@ func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC
 	}
 
 	// Craft Auth related endpoints
-	authURLs, err := getAuthURLs(serverConfig.GetHttp())
+	authURLs, err := getAuthURLs(serverConfig.GetHttp(), authConfig.GetOidc().GetLoginUrlOverride())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get auth URLs: %w", err)
 	}
@@ -108,10 +107,13 @@ type AuthURLs struct {
 }
 
 // urlScheme is deprecated, now it will be inferred from the serverConfig externalURL
-func getAuthURLs(serverConfig *conf.Server_HTTP) (*AuthURLs, error) {
+func getAuthURLs(serverConfig *conf.Server_HTTP, loginURLOverride string) (*AuthURLs, error) {
 	host := serverConfig.Addr
 
-	// New mode using FQDN ExternalURL
+	// Calculate it based on local server configuration
+	urls := craftAuthURLs("http", host, "")
+
+	// If needed, use the external URL
 	if ea := serverConfig.GetExternalUrl(); ea != "" {
 		// x must be a valid absolute URI (via RFC 3986)
 		url, err := url.ParseRequestURI(ea)
@@ -119,11 +121,15 @@ func getAuthURLs(serverConfig *conf.Server_HTTP) (*AuthURLs, error) {
 			return nil, fmt.Errorf("validation error: %w", err)
 		}
 
-		return craftAuthURLs(url.Scheme, url.Host, url.Path), nil
+		urls = craftAuthURLs(url.Scheme, url.Host, url.Path)
 	}
 
-	// Fallback no external URL
-	return craftAuthURLs("http", host, ""), nil
+	// Override the login URL if needed
+	if loginURLOverride != "" {
+		urls.Login = loginURLOverride
+	}
+
+	return urls, nil
 }
 
 func craftAuthURLs(scheme, host, path string) *AuthURLs {
@@ -210,36 +216,6 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) (
 	u, err := svc.userUseCase.FindOrCreateByEmail(ctx, claims.Email)
 	if err != nil {
 		return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
-	}
-
-	// Check if the user already has an organization attached
-	memberships, err := svc.membershipUseCase.ByUser(ctx, u.ID)
-	if err != nil {
-		return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
-	}
-
-	var currentOrg *biz.Organization
-	for _, m := range memberships {
-		if m.Current {
-			currentOrg = m.Org
-			break
-		}
-	}
-
-	// If there is not, we create it and associate the user to it
-	if currentOrg == nil {
-		// Create an org and an inline CAS backend
-		currentOrg, err = svc.orgUseCase.CreateWithRandomName(ctx, biz.WithCreateInlineBackend())
-		if err != nil {
-			return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
-		}
-
-		// Create membership as owner of the new org
-		if _, err := svc.membershipUseCase.Create(ctx, currentOrg.ID, u.ID, biz.WithCurrentMembership(), biz.WithMembershipRole(authz.RoleOwner)); err != nil {
-			return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
-		}
-
-		svc.log.Infow("msg", "new user associated to an org", "org_id", currentOrg.ID, "user_id", u.ID)
 	}
 
 	// Accept any pending invites

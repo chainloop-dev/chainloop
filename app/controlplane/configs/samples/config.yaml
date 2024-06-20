@@ -16,8 +16,13 @@ auth:
   cas_robot_account_private_key_path: "./configs/devkeys/cas.private.key.devel"
   # Optional allow list
   # allow_list:
-  #   - miguel@chainloop.dev
-  #   - @my-domain.com # This will allow any email from this domain
+    # rules:
+    #   - miguel@chainloop.dev
+    #   - @my-domain.com # This will allow any email from this domain
+    # Optional selected routes, empty means all of them
+    # selected_routes: ["/controlplane.v1.WorkflowRunService/List"]
+    # Optional custom message
+    # custom_message: "you need to require access here http://foo.com"
 
 # CAS server where the controlplane will push artifacts to
 cas_server:
@@ -60,6 +65,6 @@ referrer_shared_index:
 
 onboarding:
   - name: "read-only-demo"
-    role: "viewer"
+    role: MEMBERSHIP_ROLE_ORG_VIEWER
   - name: "read-write-demo"
-    role: "owner"
+    role: MEMBERSHIP_ROLE_ORG_OWNER

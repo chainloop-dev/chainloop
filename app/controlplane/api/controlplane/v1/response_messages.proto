@@ -191,3 +191,9 @@ enum AllowListError {
   ALLOW_LIST_ERROR_UNSPECIFIED = 0;
   ALLOW_LIST_ERROR_NOT_IN_LIST = 1 [(errors.code) = 403];
 }
+
+enum UserWithNoMembershipError {
+  option (errors.default_code) = 500;
+  USER_WITH_NO_MEMBERSHIP_ERROR_UNSPECIFIED = 0;
+  USER_WITH_NO_MEMBERSHIP_ERROR_NOT_IN_ORG = 1 [(errors.code) = 403];
+}

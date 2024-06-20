@@ -177,15 +177,21 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 			},
 				jwtMiddleware.WithSigningMethod(user.SigningMethod),
 			),
-			// 2.a - Set its user and organization
-			usercontext.WithCurrentUserAndOrgMiddleware(opts.UserUseCase, logHelper),
-			// 2.b - Set its API token and organization as alternative to the user
+			// 2.a - Set its API token and organization as alternative to the user
 			usercontext.WithCurrentAPITokenAndOrgMiddleware(opts.APITokenUseCase, opts.OrganizationUseCase, logHelper),
-			// 3 - Check user/token authorization
-			authzMiddleware.WithAuthzMiddleware(opts.Enforcer, logHelper),
+			// 2.b - Set its user
+			usercontext.WithCurrentUserMiddleware(opts.UserUseCase, logHelper),
+			selector.Server(
+				// 2.c - Set its organization
+				usercontext.WithCurrentOrganizationMiddleware(opts.UserUseCase, logHelper),
+				// 3 - Check user/token authorization
+				authzMiddleware.WithAuthzMiddleware(opts.Enforcer, logHelper),
+			).Match(requireAllButOrganizationOperationsMatcher()).Build(),
 			// 4 - Make sure the account is fully functional
 			selector.Server(
 				usercontext.CheckUserInAllowList(opts.AuthConfig.AllowList),
+			).Match(allowListEnabled()).Build(),
+			selector.Server(
 				usercontext.CheckOrgRequirements(opts.CASBackendUseCase),
 			).Match(requireFullyConfiguredOrgMatcher()).Build(),
 		).Match(requireCurrentUserMatcher()).Build(),
@@ -231,10 +237,28 @@ func requireFullyConfiguredOrgMatcher() selector.MatchFunc {
 	}
 }
 
+func allowListEnabled() selector.MatchFunc {
+	// the allow list should not affect the ability to know who you are and delete your account
+	const skipRegexp = "controlplane.v1.ContextService/Current|/controlplane.v1.AuthService/DeleteAccount"
+	return func(ctx context.Context, operation string) bool {
+		r := regexp.MustCompile(skipRegexp)
+		return !r.MatchString(operation)
+	}
+}
+
 func requireRobotAccountMatcher() selector.MatchFunc {
 	const requireMatcher = "controlplane.v1.AttestationService/.*|controlplane.v1.AttestationStateService/.*|controlplane.v1.SigningService/.*"
 	return func(ctx context.Context, operation string) bool {
 		r := regexp.MustCompile(requireMatcher)
 		return r.MatchString(operation)
+	}
+}
+
+// Matches all operations that require to have a current organization
+func requireAllButOrganizationOperationsMatcher() selector.MatchFunc {
+	const skipRegexp = "/controlplane.v1.OrganizationService/Create|/controlplane.v1.UserService/ListMemberships|/controlplane.v1.ContextService/Current|/controlplane.v1.AuthService/DeleteAccount"
+	return func(ctx context.Context, operation string) bool {
+		r := regexp.MustCompile(skipRegexp)
+		return !r.MatchString(operation)
 	}
 }

@@ -146,6 +146,12 @@ func (cbc *CASBackendCreate) SetNillableFallback(b *bool) *CASBackendCreate {
 	return cbc
 }
 
+// SetMaxBlobSizeBytes sets the "max_blob_size_bytes" field.
+func (cbc *CASBackendCreate) SetMaxBlobSizeBytes(i int64) *CASBackendCreate {
+	cbc.mutation.SetMaxBlobSizeBytes(i)
+	return cbc
+}
+
 // SetID sets the "id" field.
 func (cbc *CASBackendCreate) SetID(u uuid.UUID) *CASBackendCreate {
 	cbc.mutation.SetID(u)
@@ -286,6 +292,9 @@ func (cbc *CASBackendCreate) check() error {
 	if _, ok := cbc.mutation.Fallback(); !ok {
 		return &ValidationError{Name: "fallback", err: errors.New(`ent: missing required field "CASBackend.fallback"`)}
 	}
+	if _, ok := cbc.mutation.MaxBlobSizeBytes(); !ok {
+		return &ValidationError{Name: "max_blob_size_bytes", err: errors.New(`ent: missing required field "CASBackend.max_blob_size_bytes"`)}
+	}
 	if _, ok := cbc.mutation.OrganizationID(); !ok {
 		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "CASBackend.organization"`)}
 	}
@@ -367,6 +376,10 @@ func (cbc *CASBackendCreate) createSpec() (*CASBackend, *sqlgraph.CreateSpec) {
 	if value, ok := cbc.mutation.Fallback(); ok {
 		_spec.SetField(casbackend.FieldFallback, field.TypeBool, value)
 		_node.Fallback = value
+	}
+	if value, ok := cbc.mutation.MaxBlobSizeBytes(); ok {
+		_spec.SetField(casbackend.FieldMaxBlobSizeBytes, field.TypeInt64, value)
+		_node.MaxBlobSizeBytes = value
 	}
 	if nodes := cbc.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

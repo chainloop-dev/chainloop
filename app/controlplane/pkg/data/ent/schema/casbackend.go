@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -55,6 +55,7 @@ func (CASBackend) Fields() []ent.Field {
 		field.Time("deleted_at").Optional(),
 		// fallback, main cas backend. If true, this backend will be used as a fallback and cannot be deleted
 		field.Bool("fallback").Default(false).Immutable(),
+		field.Int64("max_blob_size_bytes"),
 	}
 }
 

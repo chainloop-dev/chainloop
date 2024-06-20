@@ -124,6 +124,12 @@ controlplane:
     enabled: false
     allowedOrgs: []
 
+  ## @extra controlplane.onboarding.name Name of the organization to onboard
+  ## @extra controlplane.onboarding.role Role of the organization to onboard
+  #  onboarding:
+  #    - name: "read-only-demo"
+  #      role: "MEMBERSHIP_ROLE_ORG_VIEWER"
+
   # Database migration
   ## @skip controlplane.migration
   migration:
@@ -175,12 +181,22 @@ controlplane:
     passphrase: ""
 
     ## @param controlplane.auth.oidc.url Full authentication path, it should match the issuer URL of the Identity provider (IDp)
-    ## @param controlplane.auth.oidc.clientID  OIDC IDp clientID
-    ## @param controlplane.auth.oidc.clientSecret  OIDC IDp clientSecret
+    ## @param controlplane.auth.oidc.clientID OIDC IDp clientID
+    ## @param controlplane.auth.oidc.clientSecret OIDC IDp clientSecret
+    ## @extra controlplane.auth.oidc.loginURLOverride Optional OIDC login URL override, useful to point to custom login pages
     oidc:
       url: ""
       clientID: ""
       clientSecret: ""
+      # loginURLOverride: ""
+
+    ## @extra controlplane.auth.allowList.rules List of domains or emails to allow
+    ## @extra controlplane.auth.allowList.selectedRoutes List of selected routes to allow. If not set it applies to all routes
+    ## @extra controlplane.auth.allowList.customMessage Custom message to display when a user is not allowed
+    #    allowList:
+    #      rules: []
+    #      selectedRoutes: []
+    #      customMessage: ""
 
   ## @section Control Plane Networking
   service:

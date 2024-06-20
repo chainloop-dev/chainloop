@@ -44,7 +44,7 @@ func newOrganizationMemberList() *cobra.Command {
 
 func orgMembershipsTableOutput(items []*action.MembershipItem) error {
 	if len(items) == 0 {
-		fmt.Println("you have no access to any organization yet")
+		fmt.Println(UserWithNoOrganizationMsg)
 		return nil
 	}
 

@@ -52,25 +52,11 @@ func (s *OrganizationService) Create(ctx context.Context, req *pb.OrganizationSe
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
-	if _, err := s.membershipUC.Create(ctx, org.ID, currentUser.ID, biz.WithMembershipRole(authz.RoleOwner)); err != nil {
+	if _, err := s.membershipUC.Create(ctx, org.ID, currentUser.ID, biz.WithMembershipRole(authz.RoleOwner), biz.WithCurrentMembership()); err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &pb.OrganizationServiceCreateResponse{Result: bizOrgToPb(org)}, nil
-}
-
-func (s *OrganizationService) Update(ctx context.Context, req *pb.OrganizationServiceUpdateRequest) (*pb.OrganizationServiceUpdateResponse, error) {
-	currentUser, err := requireCurrentUser(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	org, err := s.orgUC.Update(ctx, currentUser.ID, req.Id, req.Name)
-	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
-	}
-
-	return &pb.OrganizationServiceUpdateResponse{Result: bizOrgToPb(org)}, nil
 }
 
 func (s *OrganizationService) ListMemberships(ctx context.Context, _ *pb.OrganizationServiceListMembershipsRequest) (*pb.OrganizationServiceListMembershipsResponse, error) {

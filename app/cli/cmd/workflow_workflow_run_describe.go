@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"time"
 
@@ -26,15 +27,24 @@ import (
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/muesli/reflow/wrap"
+	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/spf13/cobra"
 )
 
 const formatStatement = "statement"
 const formatAttestation = "attestation"
 
+// outputs the payload in PAE encoding, so that it matches the signature in the attestation,
+// and it's easily verifiable by external tools
+const formatPayloadPAE = "payload-pae"
+
 func newWorkflowWorkflowRunDescribeCmd() *cobra.Command {
-	var runID, attestationDigest, publicKey string
-	var verifyAttestation bool
+	var (
+		runID, attestationDigest, publicKey string
+		certPath, chainPath                 string
+		verifyAttestation                   bool
+	)
+
 	// TODO: Replace by retrieving key from rekor
 	const signingKeyEnvVarName = "CHAINLOOP_SIGNING_PUBLIC_KEY"
 
@@ -42,8 +52,8 @@ func newWorkflowWorkflowRunDescribeCmd() *cobra.Command {
 		Use:   "describe",
 		Short: "View a Workflow Run",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if verifyAttestation && publicKey == "" {
-				return errors.New("a public key needs to be provided for verification")
+			if verifyAttestation && publicKey == "" && certPath == "" {
+				return errors.New("a public key or certificate needs to be provided for verification")
 			}
 
 			if runID == "" && attestationDigest == "" {
@@ -53,12 +63,19 @@ func newWorkflowWorkflowRunDescribeCmd() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewWorkflowRunDescribe(actionOpts).Run(context.Background(), runID, attestationDigest, verifyAttestation, publicKey)
+			res, err := action.NewWorkflowRunDescribe(actionOpts).Run(context.Background(), &action.WorkflowRunDescribeOpts{
+				RunID:         runID,
+				Digest:        attestationDigest,
+				PublicKeyRef:  publicKey,
+				CertPath:      certPath,
+				CertChainPath: chainPath,
+				Verify:        verifyAttestation,
+			})
 			if err != nil {
 				return err
 			}
 
-			return encodeAttestationOutput(res)
+			return encodeAttestationOutput(res, os.Stdout)
 		},
 	}
 
@@ -72,8 +89,11 @@ func newWorkflowWorkflowRunDescribeCmd() *cobra.Command {
 		publicKey = os.Getenv(signingKeyEnvVarName)
 	}
 
+	cmd.Flags().StringVar(&certPath, "cert", "", "public certificate in PEM format to be used to verify the attestation")
+	cmd.Flags().StringVar(&chainPath, "cert-chain", "", "certificate chain (intermediates, root) in PEM format to be used to verify the attestation")
+
 	// Override default output flag
-	cmd.InheritedFlags().StringVarP(&flagOutputFormat, "output", "o", "table", "output format, valid options are table, json, attestation or statement")
+	cmd.InheritedFlags().StringVarP(&flagOutputFormat, "output", "o", "table", "output format, valid options are table, json, attestation, statement or payload-pae")
 
 	return cmd
 }
@@ -193,7 +213,7 @@ func predicateV1Table(att *action.WorkflowRunAttestationItem) {
 	}
 }
 
-func encodeAttestationOutput(run *action.WorkflowRunItemFull) error {
+func encodeAttestationOutput(run *action.WorkflowRunItemFull, writer io.Writer) error {
 	// Try to encode as a table or json
 	err := encodeOutput(run, workflowRunDescribeTableOutput)
 	// It was correctly encoded, we are done
@@ -217,7 +237,18 @@ func encodeAttestationOutput(run *action.WorkflowRunItemFull) error {
 		return encodeJSON(run.Attestation.Statement())
 	case formatAttestation:
 		return encodeJSON(run.Attestation.Envelope)
+	case formatPayloadPAE:
+		return encodePAE(run, writer)
 	default:
 		return ErrOutputFormatNotImplemented
 	}
+}
+
+func encodePAE(run *action.WorkflowRunItemFull, writer io.Writer) error {
+	payload, err := run.Attestation.Envelope.DecodeB64Payload()
+	if err != nil {
+		return fmt.Errorf("could not decode attestation payload: %w", err)
+	}
+	_, err = fmt.Fprint(writer, string(dsse.PAE(run.Attestation.Envelope.PayloadType, payload)))
+	return err
 }

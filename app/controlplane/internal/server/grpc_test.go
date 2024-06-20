@@ -80,3 +80,21 @@ func TestRequireRobotAccountMatcher(t *testing.T) {
 		assert.Equal(t, matchFunc(context.Background(), op.operation), op.matches)
 	}
 }
+
+func TestRequireAllButOrganizationOperationsMatcher(t *testing.T) {
+	testCases := []struct {
+		operation string
+		matches   bool
+	}{
+		{"/controlplane.v1.WorkflowService/List", true},
+		{"/controlplane.v1.WorkflowRunService/List", true},
+		{"/controlplane.v1.OrganizationService/Create", false},
+		{"/controlplane.v1.CASBackendService/List", true},
+		{"/controlplane.v1.CASBackendService/Add", true},
+	}
+
+	matchFunc := requireAllButOrganizationOperationsMatcher()
+	for _, op := range testCases {
+		assert.Equal(t, matchFunc(context.Background(), op.operation), op.matches)
+	}
+}

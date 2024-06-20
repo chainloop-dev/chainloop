@@ -102,6 +102,11 @@ func Fallback(v bool) predicate.CASBackend {
 	return predicate.CASBackend(sql.FieldEQ(FieldFallback, v))
 }
 
+// MaxBlobSizeBytes applies equality check predicate on the "max_blob_size_bytes" field. It's identical to MaxBlobSizeBytesEQ.
+func MaxBlobSizeBytes(v int64) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldEQ(FieldMaxBlobSizeBytes, v))
+}
+
 // LocationEQ applies the EQ predicate on the "location" field.
 func LocationEQ(v string) predicate.CASBackend {
 	return predicate.CASBackend(sql.FieldEQ(FieldLocation, v))
@@ -580,6 +585,46 @@ func FallbackEQ(v bool) predicate.CASBackend {
 // FallbackNEQ applies the NEQ predicate on the "fallback" field.
 func FallbackNEQ(v bool) predicate.CASBackend {
 	return predicate.CASBackend(sql.FieldNEQ(FieldFallback, v))
+}
+
+// MaxBlobSizeBytesEQ applies the EQ predicate on the "max_blob_size_bytes" field.
+func MaxBlobSizeBytesEQ(v int64) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldEQ(FieldMaxBlobSizeBytes, v))
+}
+
+// MaxBlobSizeBytesNEQ applies the NEQ predicate on the "max_blob_size_bytes" field.
+func MaxBlobSizeBytesNEQ(v int64) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldNEQ(FieldMaxBlobSizeBytes, v))
+}
+
+// MaxBlobSizeBytesIn applies the In predicate on the "max_blob_size_bytes" field.
+func MaxBlobSizeBytesIn(vs ...int64) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldIn(FieldMaxBlobSizeBytes, vs...))
+}
+
+// MaxBlobSizeBytesNotIn applies the NotIn predicate on the "max_blob_size_bytes" field.
+func MaxBlobSizeBytesNotIn(vs ...int64) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldNotIn(FieldMaxBlobSizeBytes, vs...))
+}
+
+// MaxBlobSizeBytesGT applies the GT predicate on the "max_blob_size_bytes" field.
+func MaxBlobSizeBytesGT(v int64) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldGT(FieldMaxBlobSizeBytes, v))
+}
+
+// MaxBlobSizeBytesGTE applies the GTE predicate on the "max_blob_size_bytes" field.
+func MaxBlobSizeBytesGTE(v int64) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldGTE(FieldMaxBlobSizeBytes, v))
+}
+
+// MaxBlobSizeBytesLT applies the LT predicate on the "max_blob_size_bytes" field.
+func MaxBlobSizeBytesLT(v int64) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldLT(FieldMaxBlobSizeBytes, v))
+}
+
+// MaxBlobSizeBytesLTE applies the LTE predicate on the "max_blob_size_bytes" field.
+func MaxBlobSizeBytesLTE(v int64) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldLTE(FieldMaxBlobSizeBytes, v))
 }
 
 // HasOrganization applies the HasEdge predicate on the "organization" edge.
