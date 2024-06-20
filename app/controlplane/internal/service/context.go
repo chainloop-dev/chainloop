@@ -41,11 +41,6 @@ func NewContextService(repoUC *biz.CASBackendUseCase, uUC *biz.UserUseCase, opts
 }
 
 func (s *ContextService) Current(ctx context.Context, _ *pb.ContextServiceCurrentRequest) (*pb.ContextServiceCurrentResponse, error) {
-	currentOrg, err := requireCurrentOrg(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	currentUser, currentAPIToken, err := requireCurrentUserOrAPIToken(ctx)
 	if err != nil {
 		return nil, err
@@ -68,20 +63,28 @@ func (s *ContextService) Current(ctx context.Context, _ *pb.ContextServiceCurren
 		}
 	}
 
-	// Add cas backend
-	backend, err := s.uc.FindDefaultBackend(ctx, currentOrg.ID)
-	if err != nil && !biz.IsNotFound(err) {
-		return nil, handleUseCaseErr(err, s.log)
+	// Load current org if available since it can be a user with no org
+	currentOrg, err := requireCurrentOrg(ctx)
+	if err != nil && !errors.IsNotFound(err) {
+		return nil, err
 	}
 
-	if backend != nil {
-		res.CurrentCasBackend = bizCASBackendToPb(backend)
+	if currentOrg != nil {
+		// Add cas backend
+		backend, err := s.uc.FindDefaultBackend(ctx, currentOrg.ID)
+		if err != nil && !biz.IsNotFound(err) {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+
+		if backend != nil {
+			res.CurrentCasBackend = bizCASBackendToPb(backend)
+		}
 	}
 
 	// Optionally add current membership
 	if currentUser != nil {
 		m, err := s.userUC.CurrentMembership(ctx, currentUser.ID)
-		if err != nil {
+		if err != nil && !biz.IsNotFound(err) {
 			return nil, handleUseCaseErr(err, s.log)
 		}
 
