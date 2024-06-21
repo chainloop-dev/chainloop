@@ -70,6 +70,10 @@ This quickstart will guide you through the process of installing the Chainloop C
     chainloop att add --value my-sbom.json
     ```
 
+   :::info
+   The piece of evidence kind were automatically detected, learn more about auto-discover [here](reference/attestations.md).
+   :::
+
     And finally [we sign and push the attestation](/getting-started/attestation-crafting#encode-sign-and-push-attestation) to Chainloop for permanent preservation.
 
     ```bash

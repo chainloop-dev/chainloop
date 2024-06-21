@@ -1,21 +1,17 @@
 ---
 sidebar_position: 1
-title: Contract-less and auto-discovery of materials
+title: Contract-less and auto-discovery of pieces of evidence
 ---
-A Workflow Contract specifies the necessary content that a workflow must include in its attestation. For instance, it might mandate 
-the inclusion of the URI@digest of the generated container image, the container root filesystem used during the build, and the 
-Software Bill of Materials for that container image. These pieces of evidence must be associated with a specific material type. 
-Operators define what must be included in the contracts, and developers need to understand and comply with these requirements.
+A Workflow Contract specifies the necessary content that a workflow must include in its attestation. For instance, it might mandate the inclusion of the URI@digest of the generated container image, the container root filesystem used during the build, and the Software Bill of Materials for that container image. These pieces of evidence must be associated with a specific material type. Operators define what must be included in the [contracts](operator/contract.mdx), and developers need to understand and comply with these requirements.
 
-This has been the case up until now, with the introduction of contract-less materials and auto-discovery, we ease the job of operators 
-and developers when working with attestations.
+This has been the case up until now, with the introduction of contract-less pieces of evidences and auto-discovery, we ease the job of operators and developers when working with attestations.
 
-## Contract-less materials
+## Contract-less pieces of evidence
 Not all pieces of evidences need to to be registered as a material on the contract, you can add as many pieces of evidences as you like by adding 
 its value and a new flag `--kind`, which determines that type of material you’re attesting, example:
 
 ```bash
-$ chainloop attestation init --workflow-name wf-test
+$ chainloop attestation init --name wf-test
 INF Attestation initialized! now you can check its status or add materials to it
 ┌───────────────────┬──────────────────────────────────────┐
 │ Initialized At    │ 21 May 24 07:23 UTC                  │
@@ -93,17 +89,15 @@ INF push completed
 Attestation Digest: sha256:61832d846b870d01647a384c3df49e3c75fd87f45821c9295d97ab91d5bae198
 ```
 
-## Auto-discovery of materials
-In top of contract-less materials, we have introduced auto-discovery. Auto-discovery it’s a way of inspecting the incoming piece of 
-evidence and try to match it with at least of of the available type of [materials](operator/contract.mdx#material-schema) of Chainloop. 
-Please note this is a best effort and the prediction might fail and matching it with the wrong type of material, defaulting in `ARTIFACT`.
+## Auto-discovery of pieces of evidence
+In top of contract-less pieces of evidences, we have introduced auto-discovery. Auto-discovery it’s a way of inspecting the incoming piece of evidence and try to match it with at least of of the available type of [materials](operator/contract.mdx#material-schema) of Chainloop. Please note this is a best effort and the prediction might fail and matching it with the wrong type of material, defaulting in `ARTIFACT`.
 
 In order to let the auto-discovery work, don’t set `--name` nor `--kind`, let the CLI work it our for you.
 
 Example of usage. Given the following contract:
 
 ```bash
-$ chainloop attestation init --replace --workflow-name wf-test
+$ chainloop attestation init --name wf-test
 INF Attestation initialized! now you can check its status or add materials to it
 ┌───────────────────┬──────────────────────────────────────┐
 │ Initialized At    │ 22 May 24 13:38 UTC                  │
@@ -190,4 +184,4 @@ Attestation Digest: sha256:8a0b3a9db0372fdf571dbe85c8a9b5202f473ca97e9dbcdf77c3f
 ```
 
 ## In a nutshell
-Contract-less and auto-discovery and two features that walk hand by hand. They compose a new way of adding pieces of evidences to an existing contract in a frictionless way.
+Contract-less and auto-discovery and two features that walk hand by hand. They compose a new way of adding pieces of evidences to an existing contract in a frictionless way. You can see it in action in our [quickstart](../quickstart.md) guide.
