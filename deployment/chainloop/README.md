@@ -525,6 +525,7 @@ chainloop config save \
 | `controlplane.auth.oidc.clientID`            | OIDC IDp clientID                                                                                      | `""`  |
 | `controlplane.auth.oidc.clientSecret`        | OIDC IDp clientSecret                                                                                  | `""`  |
 | `controlplane.auth.oidc.loginURLOverride`    | Optional OIDC login URL override, useful to point to custom login pages                                |       |
+| `controlplane.auth.oidc.externalURL`         | Optional External URL for the controlplane to the outside world                                        |       |
 | `controlplane.auth.allowList.rules`          | List of domains or emails to allow                                                                     |       |
 | `controlplane.auth.allowList.selectedRoutes` | List of selected routes to allow. If not set it applies to all routes                                  |       |
 | `controlplane.auth.allowList.customMessage`  | Custom message to display when a user is not allowed                                                   |       |

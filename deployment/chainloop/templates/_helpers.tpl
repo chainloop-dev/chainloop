@@ -284,7 +284,9 @@ NOTE: Load balancer service type is not supported
 {{- $service := .Values.controlplane.service }}
 {{- $ingress := .Values.controlplane.ingress }}
 
-{{- if (and $ingress $ingress.enabled $ingress.hostname) }}
+{{- if .Values.controlplane.auth.oidc.externalURL }}
+{{- .Values.controlplane.auth.oidc.externalURL }}
+{{- else if (and $ingress $ingress.enabled $ingress.hostname) }}
 {{- printf "%s://%s" (ternary "https" "http" $ingress.tls ) $ingress.hostname }}
 {{- else if (and (eq $service.type "NodePort") $service.nodePorts (not (empty $service.nodePorts.http))) }}
 {{- printf "http://localhost:%s" $service.nodePorts.http }}
