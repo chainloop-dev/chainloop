@@ -20,10 +20,11 @@ The following information is included in telemetry:
 
 Chainloop implements the Console [Do Not Track (DNT) standard](https://consoledonottrack.com). As a result, you can deactivate the telemetry by setting the environment variable DO_NOT_TRACK=1 before running the Chainloop CLI.
 
-
 ## What do we use to collect telemetry data?
 
 We use [PostHog](https://posthog.com/). PostHog is an open-source product analytics platform that allows us to collect and analyze telemetry data.
+All telemetry data is stored in our PostHog instance sent via the following endpoint: `https://crb.chainloop.dev`.
+
 We did it in such a way that anyone can set up their own PostHog instance and use it to collect telemetry. To do so
 compile Chainloop CLI from its source code and set up the following linker flags to the Golang compiler:
 
