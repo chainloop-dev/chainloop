@@ -140,6 +140,10 @@ $ chainloop attestation add --name build-ref --value 80e461e9b385c6986cdb8096c9d
 $ chainloop attestation add --name skynet-sbom --value sbom.cyclonedx.json
 ```
 
+:::tip
+There is also the option of leaving Chainloop CLI to figure out the material type when adding a piece of evidence in an attestation, learn more about auto-discover [here](../reference/attestations.md#auto-discovery-of-pieces-of-evidence).
+:::
+
 ### Inspecting the crafting status
 
 If we check the status of the attestation we'll see that the three required materials have been added
