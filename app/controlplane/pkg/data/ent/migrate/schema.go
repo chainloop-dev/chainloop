@@ -255,7 +255,7 @@ var (
 				Symbol:     "org_invitations_users_sender",
 				Columns:    []*schema.Column{OrgInvitationsColumns[7]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 	}
