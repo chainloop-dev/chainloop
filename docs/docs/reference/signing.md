@@ -50,6 +50,5 @@ The following methods are work in progress and **not yet supported**.
 <tbody>
 <tr><td>Ephemeral (file based CA) with verification bundle stored in the control plane</td><td>No key needed</td><td>No verification material needed (will be automatically downloaded from Chainloop Vault</td></tr>
 <tr><td>x509 certificate</td><td>`--key privatekey --cert cert.pem --cert-chain chain.pem`</td><td>`--cert cert.pem --cert-chain chain.pem`</td></tr>
-
 </tbody>
 </table>
