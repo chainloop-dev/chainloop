@@ -184,11 +184,13 @@ controlplane:
     ## @param controlplane.auth.oidc.clientID OIDC IDp clientID
     ## @param controlplane.auth.oidc.clientSecret OIDC IDp clientSecret
     ## @extra controlplane.auth.oidc.loginURLOverride Optional OIDC login URL override, useful to point to custom login pages
+    ## @extra controlplane.auth.oidc.externalURL Optional External URL for the controlplane to the outside world
     oidc:
       url: ""
       clientID: ""
       clientSecret: ""
       # loginURLOverride: ""
+      # externalURL: ""
 
     ## @extra controlplane.auth.allowList.rules List of domains or emails to allow
     ## @extra controlplane.auth.allowList.selectedRoutes List of selected routes to allow. If not set it applies to all routes
