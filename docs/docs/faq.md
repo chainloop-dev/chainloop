@@ -21,3 +21,7 @@ That said, there are [benefits](/reference/operator/contract#runner-context) for
 #### Does Chainloop store my Artifacts and Attestation metadata?
 
 No. They are stored in [your Content-Addressable Storage (CAS)](/reference/operator/cas-backend).
+
+#### Our firewall is flagging a request to crb.chainloop.dev, what's this?
+
+That is our telemetry endpoint. We collect telemetry data to help us enhance Chainloop by gaining insights into its usage. You can learn more about it and even how to deactivate it [here](reference/operator/cli-telemetry.mdx#what-do-we-use-to-collect-telemetry-data).
