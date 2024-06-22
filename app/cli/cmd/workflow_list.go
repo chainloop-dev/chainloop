@@ -44,6 +44,10 @@ func newWorkflowListCmd() *cobra.Command {
 	return cmd
 }
 
+func workflowItemTableOutput(workflow *action.WorkflowItem) error {
+	return WorkflowListTableOutput([]*action.WorkflowItem{workflow})
+}
+
 func WorkflowListTableOutput(workflows []*action.WorkflowItem) error {
 	if len(workflows) == 0 {
 		fmt.Println("there are no workflows yet")

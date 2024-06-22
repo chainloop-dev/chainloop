@@ -67,7 +67,7 @@ func newWorkflowCreateCmd() *cobra.Command {
 			}
 
 			// Print the workflow table
-			if err := encodeOutput([]*action.WorkflowItem{wf}, WorkflowListTableOutput); err != nil {
+			if err := encodeOutput(wf, workflowItemTableOutput); err != nil {
 				return fmt.Errorf("failed to print workflow: %w", err)
 			}
 
