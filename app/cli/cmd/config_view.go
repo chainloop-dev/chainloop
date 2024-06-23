@@ -29,8 +29,10 @@ func newConfigViewCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Printf("Config file: %s\n", viper.ConfigFileUsed())
 
-			for _, opt := range []*confOpt{confOptions.controlplaneAPI, confOptions.CASAPI} {
-				fmt.Printf("%s: %s\n", opt.flagName, viper.GetString(opt.viperKey))
+			for _, opt := range []*confOpt{confOptions.controlplaneAPI, confOptions.controlplaneCA, confOptions.CASAPI, confOptions.CASCA} {
+				if v := viper.GetString(opt.viperKey); v != "" {
+					fmt.Printf("%s: %s\n", opt.flagName, v)
+				}
 			}
 		},
 	}
