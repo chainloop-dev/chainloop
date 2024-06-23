@@ -41,7 +41,10 @@ import (
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors"
 	protovalidateMiddleware "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/protovalidate"
+	grpcselector "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/selector"
+
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 )
 
@@ -86,7 +89,10 @@ func NewGRPCServer(c *conf.Server, authConf *conf.Auth, byteService *service.Byt
 
 		// Streaming interceptors
 		grpc.StreamInterceptor(
-			grpc_auth.StreamServerInterceptor(jwtAuthFunc(loadPublicKey(rawKey), casJWT.SigningMethod)),
+			grpcselector.StreamServerInterceptor(
+				grpc_auth.StreamServerInterceptor(jwtAuthFunc(loadPublicKey(rawKey), casJWT.SigningMethod)),
+				grpcselector.MatchFunc(allButReflectionAPI),
+			),
 			// grpc prometheus metrics
 			grpc_prometheus.StreamServerInterceptor,
 		),
@@ -144,6 +150,12 @@ func requireAuthentication() selector.MatchFunc {
 		r := regexp.MustCompile(skipRegexp)
 		return !r.MatchString(operation)
 	}
+}
+
+// Reflection API is called by clients like grpcurl to list services
+// and without this selector check it would require authentication
+func allButReflectionAPI(_ context.Context, callMeta interceptors.CallMeta) bool {
+	return callMeta.Service != "grpc.reflection.v1alpha.ServerReflection"
 }
 
 // load key for verification
