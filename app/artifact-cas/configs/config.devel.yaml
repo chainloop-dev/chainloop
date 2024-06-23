@@ -13,6 +13,9 @@ server:
     # Some unary RPCs are slow, so we need to increase the timeout
     # For example, Azure Blob Storage describe takes more than 1 second to respond sometimes
     timeout: 5s
+    # tls_config:
+    #   certificate: "../../devel/devkeys/selfsigned/cas.crt"
+    #   private_key: "../../devel/devkeys/selfsigned/cas.key"
   http_metrics:
     addr: 0.0.0.0:5001
 

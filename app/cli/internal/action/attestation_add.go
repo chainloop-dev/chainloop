@@ -32,6 +32,7 @@ type AttestationAddOpts struct {
 	*ActionsOpts
 	ArtifactsCASConn   *grpc.ClientConn
 	CASURI             string
+	CASCAPath          string // optional CA certificate for the CAS connection
 	ConnectionInsecure bool
 	// OCI registry credentials used for CONTAINER_IMAGE material type
 	RegistryServer, RegistryUsername, RegistryPassword string
@@ -39,8 +40,10 @@ type AttestationAddOpts struct {
 
 type AttestationAdd struct {
 	*ActionsOpts
-	c                  *crafter.Crafter
-	casURI             string
+	c      *crafter.Crafter
+	casURI string
+	// optional CA certificate for the CAS connection
+	casCAPath          string
 	connectionInsecure bool
 }
 
@@ -60,6 +63,7 @@ func NewAttestationAdd(cfg *AttestationAddOpts) (*AttestationAdd, error) {
 		ActionsOpts:        cfg.ActionsOpts,
 		c:                  c,
 		casURI:             cfg.CASURI,
+		casCAPath:          cfg.CASCAPath,
 		connectionInsecure: cfg.ConnectionInsecure,
 	}, nil
 }
@@ -104,7 +108,15 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 		// Some CASBackends will actually upload information to the CAS server
 		// in such case we need to set up a connection
 		if !b.IsInline && creds.Result.Token != "" {
-			artifactCASConn, err := grpcconn.New(action.casURI, creds.Result.Token, action.connectionInsecure)
+			var opts = []grpcconn.Option{
+				grpcconn.WithInsecure(action.connectionInsecure),
+			}
+
+			if action.casCAPath != "" {
+				opts = append(opts, grpcconn.WithCAFile(action.casCAPath))
+			}
+
+			artifactCASConn, err := grpcconn.New(action.casURI, creds.Result.Token, opts...)
 			if err != nil {
 				return err
 			}

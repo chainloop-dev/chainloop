@@ -12,6 +12,9 @@ server:
     addr: 0.0.0.0:9000
     # We have some slow operations such as verifying an OCI registry
     timeout: 10s
+    # tls_config:
+    #   certificate: "../../devel/devkeys/selfsigned/controlplane.crt"
+    #   private_key: "../../devel/devkeys/selfsigned/controlplane.key"
 
 certificate_authority:
   file_ca:

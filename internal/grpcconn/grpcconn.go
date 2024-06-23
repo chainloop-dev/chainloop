@@ -18,6 +18,8 @@ package grpcconn
 import (
 	"context"
 	"crypto/x509"
+	"fmt"
+	"os"
 
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"google.golang.org/grpc"
@@ -25,12 +27,36 @@ import (
 	grpc_insecure "google.golang.org/grpc/credentials/insecure"
 )
 
+type newOptionalArg struct {
+	caFilePath string
+	insecure   bool
+}
+
+type Option func(*newOptionalArg)
+
+func WithCAFile(caFilePath string) Option {
+	return func(opt *newOptionalArg) {
+		opt.caFilePath = caFilePath
+	}
+}
+
+func WithInsecure(insecure bool) Option {
+	return func(opt *newOptionalArg) {
+		opt.insecure = insecure
+	}
+}
+
 // Simple wrapper around grpc.Dial that returns a grpc.ClientConn
 // It sets up the connection with the correct credentials headers
-func New(uri, authToken string, insecure bool) (*grpc.ClientConn, error) {
+func New(uri, authToken string, opt ...Option) (*grpc.ClientConn, error) {
+	optionalArgs := &newOptionalArg{}
+	for _, o := range opt {
+		o(optionalArgs)
+	}
+
 	var opts []grpc.DialOption
 	if authToken != "" {
-		grpcCreds := newTokenAuth(authToken, insecure)
+		grpcCreds := newTokenAuth(authToken, optionalArgs.insecure)
 
 		opts = []grpc.DialOption{
 			grpc.WithPerRPCCredentials(grpcCreds),
@@ -41,13 +67,21 @@ func New(uri, authToken string, insecure bool) (*grpc.ClientConn, error) {
 
 	// Currently we only support system tls certs
 	var tlsDialOption grpc.DialOption
-	if insecure {
+	if optionalArgs.insecure {
 		tlsDialOption = grpc.WithTransportCredentials(grpc_insecure.NewCredentials())
 	} else {
+		var err error
 		certsPool, err := x509.SystemCertPool()
 		if err != nil {
 			return nil, err
 		}
+
+		if optionalArgs.caFilePath != "" {
+			if err = appendCAFromFile(optionalArgs.caFilePath, certsPool); err != nil {
+				return nil, fmt.Errorf("failed to load CA cert: %w", err)
+			}
+		}
+
 		tlsDialOption = grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(certsPool, ""))
 	}
 
@@ -59,6 +93,20 @@ func New(uri, authToken string, insecure bool) (*grpc.ClientConn, error) {
 	}
 
 	return conn, nil
+}
+
+func appendCAFromFile(path string, certsPool *x509.CertPool) error {
+	// Load CA cert
+	caCert, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("failed to read CA cert: %w", err)
+	}
+
+	if ok := certsPool.AppendCertsFromPEM(caCert); !ok {
+		return fmt.Errorf("failed to append CA cert to pool")
+	}
+
+	return nil
 }
 
 type tokenAuth struct {

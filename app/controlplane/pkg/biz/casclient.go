@@ -69,7 +69,7 @@ func NewCASClientUseCase(credsProvider *CASCredentialsUseCase, config *conf.Boot
 
 	// generate a client from the given configuration
 	defaultCasClientFactory := func(conf *conf.Bootstrap_CASServer, token string) (casclient.DownloaderUploader, func(), error) {
-		conn, err := grpcconn.New(conf.GetGrpc().GetAddr(), token, conf.GetInsecure())
+		conn, err := grpcconn.New(conf.GetGrpc().GetAddr(), token, grpcconn.WithInsecure(conf.GetInsecure()))
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to create grpc connection: %w", err)
 		}
