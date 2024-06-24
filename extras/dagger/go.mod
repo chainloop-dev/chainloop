@@ -4,9 +4,10 @@ go 1.21.3
 
 require github.com/Khan/genqlient v0.7.0
 
-require github.com/vektah/gqlparser/v2 v2.5.11
+require github.com/vektah/gqlparser/v2 v2.5.16
 
 require (
+	github.com/agnivade/levenshtein v1.1.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
