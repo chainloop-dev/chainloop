@@ -82,7 +82,7 @@ type Response struct {
 
 func (e EJBCA) CreateCertificateFromCSR(ctx context.Context, principal identity.Principal, csr *x509.CertificateRequest) (*fulcioca.CodeSigningCertificate, error) {
 	ejbcaReq := &Request{
-		CertificateRequest:       string(csr.Raw), // "-----BEGIN CERTIFICATE REQUEST-----\nMIHcMIGCAgEAMCAxHjAcBgNVBAMTFWVwaGVtZXJhbCBjZXJ0aWZpY2F0ZTBZMBMG\nByqGSM49AgEGCCqGSM49AwEHA0IABAPBLapncrN8kXNqghlkVSms5XBPjXDSwKDz\nQWyfWcqjY+40VQL/5aggkbBAdcnlU0izR3P6u70caSfPmYfzwVygADAKBggqhkjO\nPQQDAgNJADBGAiEA2uCgmi1qtmn1rBnw6vZZ77Tr4T1tTnXs3m4Dh6Ty/3MCIQCP\nwjIHCIPeNipQzO3CANocL88+dCcHx+hlzrov4/GezA==\n-----END CERTIFICATE REQUEST-----",
+		CertificateRequest:       string(csr.Raw),
 		CertificateProfileName:   e.certificateProfileName,
 		EndEntityProfileName:     e.endEntityProfileName,
 		CertificateAuthorityName: e.caName,
