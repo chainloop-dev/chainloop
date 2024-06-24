@@ -37,7 +37,7 @@ func NewStatusService(logingURL, version string, casClient *biz.CASClientUseCase
 func (s *StatusService) Statusz(ctx context.Context, r *pb.StatuszRequest) (*pb.StatuszResponse, error) {
 	if r.Readiness {
 		if ok, err := s.casClient.IsReady(ctx); err != nil || !ok {
-			return nil, errors.ServiceUnavailable("CAS_NOT_READY", "Artifact CAS is not reachable")
+			return nil, errors.ServiceUnavailable("CAS_NOT_READY", err.Error())
 		}
 	}
 	return &pb.StatuszResponse{}, nil
