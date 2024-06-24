@@ -167,20 +167,28 @@ func (a *app) handleCallback(w http.ResponseWriter, r *http.Request) {
 }
 
 func openbrowser(url string) error {
-	var err error
+	var cmd *exec.Cmd
 
 	switch runtime.GOOS {
 	case "linux":
-		err = exec.Command("xdg-open", url).Start()
+		cmd = exec.Command("xdg-open", url)
 	case "windows":
-		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
 	case "darwin":
-		err = exec.Command("open", url).Start()
+		cmd = exec.Command("open", url)
 	default:
-		err = fmt.Errorf("unsupported platform")
+		return fmt.Errorf("unsupported platform")
 	}
 
-	return err
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+
+	if err := cmd.Wait(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Retrieve loginURL from the control plane
