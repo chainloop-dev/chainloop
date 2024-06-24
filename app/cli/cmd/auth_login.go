@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -41,18 +41,20 @@ type app struct {
 }
 
 func newAuthLoginCmd() *cobra.Command {
+	var forceHeadlessLogin bool
 	cmd := &cobra.Command{
 		Use:   "login",
 		Short: "authenticate the CLI with the Control Plane",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return interactiveAuth()
+			return interactiveAuth(forceHeadlessLogin)
 		},
 	}
 
+	cmd.Flags().BoolVar(&forceHeadlessLogin, "skip-browser", false, "perform a headless login process without opening a browser")
 	return cmd
 }
 
-func interactiveAuth() error {
+func interactiveAuth(forceHeadless bool) error {
 	var a app
 
 	listener, callbackURL, err := localListenerAndCallbackURL()
@@ -74,6 +76,10 @@ func interactiveAuth() error {
 	q.Set(oauth.QueryParamCallback, callbackURL.String())
 	q.Set(oauth.QueryParamLongLived, "true")
 	serverLoginURL.RawQuery = q.Encode()
+
+	if forceHeadless {
+		return headlessAuth(serverLoginURL)
+	}
 
 	err = openbrowser(serverLoginURL.String())
 	if err != nil {
