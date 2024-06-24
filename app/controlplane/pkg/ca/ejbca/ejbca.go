@@ -35,7 +35,7 @@ import (
 type EJBCA struct {
 	// Connection settings
 	// EJBCA installation. ie https://localhost/ejbca/
-	serverUrl string
+	serverURL string
 	// client private key used for authentication
 	keyPath string
 	// client certificate used for authentication
@@ -52,9 +52,9 @@ type EJBCA struct {
 
 var _ ca.CertificateAuthority = (*EJBCA)(nil)
 
-func New(serverUrl, keyPath, certPath, rootCAPath, certProfileName, endEntityProfileName, caName string) *EJBCA {
+func New(serverURL, keyPath, certPath, rootCAPath, certProfileName, endEntityProfileName, caName string) *EJBCA {
 	return &EJBCA{
-		serverUrl:              serverUrl,
+		serverURL:              serverURL,
 		keyPath:                keyPath,
 		certPath:               certPath,
 		rootCAPath:             rootCAPath,
@@ -64,7 +64,7 @@ func New(serverUrl, keyPath, certPath, rootCAPath, certProfileName, endEntityPro
 	}
 }
 
-type EJBCARequest struct {
+type Request struct {
 	CertificateRequest       string `json:"certificate_request,omitempty"`
 	CertificateProfileName   string `json:"certificate_profile_name,omitempty"`
 	EndEntityProfileName     string `json:"end_entity_profile_name,omitempty"`
@@ -73,7 +73,7 @@ type EJBCARequest struct {
 	IncludeChain             bool   `json:"include_chain,omitempty"`
 }
 
-type EJBCAResponse struct {
+type Response struct {
 	Certificate      string   `json:"certificate,omitempty"`
 	SerialNumber     string   `json:"serial_number,omitempty"`
 	ResponseFormat   string   `json:"response_format,omitempty"`
@@ -81,8 +81,8 @@ type EJBCAResponse struct {
 }
 
 func (e EJBCA) CreateCertificateFromCSR(ctx context.Context, principal identity.Principal, csr *x509.CertificateRequest) (*fulcioca.CodeSigningCertificate, error) {
-	ejbcaReq := &EJBCARequest{
-		CertificateRequest:       string(csr.Raw), //"-----BEGIN CERTIFICATE REQUEST-----\nMIHcMIGCAgEAMCAxHjAcBgNVBAMTFWVwaGVtZXJhbCBjZXJ0aWZpY2F0ZTBZMBMG\nByqGSM49AgEGCCqGSM49AwEHA0IABAPBLapncrN8kXNqghlkVSms5XBPjXDSwKDz\nQWyfWcqjY+40VQL/5aggkbBAdcnlU0izR3P6u70caSfPmYfzwVygADAKBggqhkjO\nPQQDAgNJADBGAiEA2uCgmi1qtmn1rBnw6vZZ77Tr4T1tTnXs3m4Dh6Ty/3MCIQCP\nwjIHCIPeNipQzO3CANocL88+dCcHx+hlzrov4/GezA==\n-----END CERTIFICATE REQUEST-----",
+	ejbcaReq := &Request{
+		CertificateRequest:       string(csr.Raw), // "-----BEGIN CERTIFICATE REQUEST-----\nMIHcMIGCAgEAMCAxHjAcBgNVBAMTFWVwaGVtZXJhbCBjZXJ0aWZpY2F0ZTBZMBMG\nByqGSM49AgEGCCqGSM49AwEHA0IABAPBLapncrN8kXNqghlkVSms5XBPjXDSwKDz\nQWyfWcqjY+40VQL/5aggkbBAdcnlU0izR3P6u70caSfPmYfzwVygADAKBggqhkjO\nPQQDAgNJADBGAiEA2uCgmi1qtmn1rBnw6vZZ77Tr4T1tTnXs3m4Dh6Ty/3MCIQCP\nwjIHCIPeNipQzO3CANocL88+dCcHx+hlzrov4/GezA==\n-----END CERTIFICATE REQUEST-----",
 		CertificateProfileName:   e.certificateProfileName,
 		EndEntityProfileName:     e.endEntityProfileName,
 		CertificateAuthorityName: e.caName,
@@ -91,7 +91,7 @@ func (e EJBCA) CreateCertificateFromCSR(ctx context.Context, principal identity.
 	}
 	ejbcaReqBytes, err := json.Marshal(ejbcaReq)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal EJBCA Request: %v", err)
+		return nil, fmt.Errorf("failed to marshal EJBCA Request: %w", err)
 	}
 
 	cert, err := tls.LoadX509KeyPair(e.certPath, e.keyPath)
@@ -101,6 +101,7 @@ func (e EJBCA) CreateCertificateFromCSR(ctx context.Context, principal identity.
 
 	tlsConfig := &tls.Config{
 		Certificates: []tls.Certificate{cert},
+		MinVersion:   tls.VersionTLS12,
 	}
 
 	if e.rootCAPath != "" {
@@ -117,7 +118,7 @@ func (e EJBCA) CreateCertificateFromCSR(ctx context.Context, principal identity.
 		TLSClientConfig: tlsConfig,
 	}}
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/ejbca-rest-api/v1/certificate/pkcs10enroll", e.serverUrl), bytes.NewReader(ejbcaReqBytes))
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/ejbca-rest-api/v1/certificate/pkcs10enroll", e.serverURL), bytes.NewReader(ejbcaReqBytes))
 	if err != nil {
 		return nil, fmt.Errorf("unable to create request: %w", err)
 	}
@@ -126,12 +127,15 @@ func (e EJBCA) CreateCertificateFromCSR(ctx context.Context, principal identity.
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("unable to send request: %w", err)
+	}
 
 	if resp.StatusCode != http.StatusCreated {
 		return nil, fmt.Errorf("wrong status creating certificate: %v", resp.Status)
 	}
 
-	var response EJBCAResponse
+	var response Response
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read response body: %w", err)
