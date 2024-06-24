@@ -92,7 +92,15 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 				return err
 			}
 
-			conn, err := grpcconn.New(viper.GetString(confOptions.controlplaneAPI.viperKey), apiToken, flagInsecure)
+			var opts = []grpcconn.Option{
+				grpcconn.WithInsecure(flagInsecure),
+			}
+
+			if caFilePath := viper.GetString(confOptions.controlplaneCA.viperKey); caFilePath != "" {
+				opts = append(opts, grpcconn.WithCAFile(caFilePath))
+			}
+
+			conn, err := grpcconn.New(viper.GetString(confOptions.controlplaneAPI.viperKey), apiToken, opts...)
 			if err != nil {
 				return err
 			}
@@ -136,8 +144,18 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 	err := viper.BindPFlag(confOptions.controlplaneAPI.viperKey, rootCmd.PersistentFlags().Lookup(confOptions.controlplaneAPI.flagName))
 	cobra.CheckErr(err)
 
+	// Custom CAs for the control plane
+	rootCmd.PersistentFlags().String(confOptions.controlplaneCA.flagName, "", "CUSTOM CA file for the Control Plane API (optional)")
+	err = viper.BindPFlag(confOptions.controlplaneCA.viperKey, rootCmd.PersistentFlags().Lookup(confOptions.controlplaneCA.flagName))
+	cobra.CheckErr(err)
+
 	rootCmd.PersistentFlags().String(confOptions.CASAPI.flagName, defaultCASAPI, "URL for the Artifacts Content Addressable Storage (CAS)")
 	err = viper.BindPFlag(confOptions.CASAPI.viperKey, rootCmd.PersistentFlags().Lookup(confOptions.CASAPI.flagName))
+	cobra.CheckErr(err)
+
+	// Custom CAs for the CAS
+	rootCmd.PersistentFlags().String(confOptions.CASCA.flagName, "", "CUSTOM CA file for the Artifacts CAS API (optional)")
+	err = viper.BindPFlag(confOptions.CASCA.viperKey, rootCmd.PersistentFlags().Lookup(confOptions.CASCA.flagName))
 	cobra.CheckErr(err)
 
 	rootCmd.PersistentFlags().BoolVarP(&flagInsecure, "insecure", "i", false, "Skip TLS transport during connection to the control plane")

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import (
 
 // Map of all the possible configuration options that we expect viper to handle
 var confOptions = struct {
-	authToken, controlplaneAPI, CASAPI *confOpt
+	authToken, controlplaneAPI, CASAPI, controlplaneCA, CASCA *confOpt
 }{
 	authToken: &confOpt{
 		viperKey: "auth.token",
@@ -30,9 +30,17 @@ var confOptions = struct {
 		viperKey: "control-plane.API",
 		flagName: "control-plane",
 	},
+	controlplaneCA: &confOpt{
+		viperKey: "control-plane.api-ca",
+		flagName: "control-plane-ca",
+	},
 	CASAPI: &confOpt{
 		viperKey: "artifact-cas.API",
 		flagName: "artifact-cas",
+	},
+	CASCA: &confOpt{
+		viperKey: "artifact-cas.api-ca",
+		flagName: "artifact-cas-ca",
 	},
 }
 

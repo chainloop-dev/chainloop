@@ -50,5 +50,13 @@ func wrappedArtifactConn(cpConn *grpc.ClientConn, role pb.CASCredentialsServiceG
 		logger.Warn().Msg("API contacted in insecure mode")
 	}
 
-	return grpcconn.New(viper.GetString(confOptions.CASAPI.viperKey), resp.Result.Token, flagInsecure)
+	var opts = []grpcconn.Option{
+		grpcconn.WithInsecure(flagInsecure),
+	}
+
+	if caFilePath := viper.GetString(confOptions.CASCA.viperKey); caFilePath != "" {
+		opts = append(opts, grpcconn.WithCAFile(caFilePath))
+	}
+
+	return grpcconn.New(viper.GetString(confOptions.CASAPI.viperKey), resp.Result.Token, opts...)
 }
