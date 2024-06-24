@@ -32,6 +32,7 @@ const formatTable = "table"
 // Supported list of tabulated data that can be rendered as a table
 type tabulatedData interface {
 	[]*action.WorkflowItem |
+		*action.WorkflowItem |
 		*action.AttestationStatusResult |
 		[]*action.WorkflowRunItem |
 		*action.WorkflowRunItemFull |

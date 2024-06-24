@@ -32,7 +32,7 @@ func newWorkflowDescribeCmd() *cobra.Command {
 				return err
 			}
 
-			return encodeOutput([]*action.WorkflowItem{wf}, WorkflowListTableOutput)
+			return encodeOutput(wf, workflowItemTableOutput)
 		},
 	}
 
