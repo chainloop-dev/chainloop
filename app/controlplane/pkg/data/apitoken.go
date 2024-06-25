@@ -69,6 +69,19 @@ func (r *APITokenRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.APIToke
 	return entAPITokenToBiz(token), nil
 }
 
+func (r *APITokenRepo) FindByName(ctx context.Context, name string) (*biz.APIToken, error) {
+	token, err := r.data.DB.APIToken.Query().Where(apitoken.NameEQ(name)).Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, biz.NewErrNotFound("API token")
+		}
+
+		return nil, err
+	}
+
+	return entAPITokenToBiz(token), nil
+}
+
 func (r *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, includeRevoked bool) ([]*biz.APIToken, error) {
 	query := r.data.DB.APIToken.Query()
 

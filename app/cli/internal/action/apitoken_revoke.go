@@ -30,9 +30,9 @@ func NewAPITokenRevoke(cfg *ActionsOpts) *APITokenRevoke {
 	return &APITokenRevoke{cfg}
 }
 
-func (action *APITokenRevoke) Run(ctx context.Context, apiTokenID string) error {
+func (action *APITokenRevoke) Run(ctx context.Context, name string) error {
 	client := pb.NewAPITokenServiceClient(action.cfg.CPConnection)
-	if _, err := client.Revoke(ctx, &pb.APITokenServiceRevokeRequest{Id: apiTokenID}); err != nil {
+	if _, err := client.Revoke(ctx, &pb.APITokenServiceRevokeRequest{Name: name}); err != nil {
 		return fmt.Errorf("revoking API token: %w", err)
 	}
 

@@ -23,7 +23,8 @@ export interface APITokenServiceCreateResponse_APITokenFull {
 }
 
 export interface APITokenServiceRevokeRequest {
-  id: string;
+  /** Name is the identifier of the contract */
+  name: string;
 }
 
 export interface APITokenServiceRevokeResponse {
@@ -275,13 +276,13 @@ export const APITokenServiceCreateResponse_APITokenFull = {
 };
 
 function createBaseAPITokenServiceRevokeRequest(): APITokenServiceRevokeRequest {
-  return { id: "" };
+  return { name: "" };
 }
 
 export const APITokenServiceRevokeRequest = {
   encode(message: APITokenServiceRevokeRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.id !== "") {
-      writer.uint32(10).string(message.id);
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
     }
     return writer;
   },
@@ -298,7 +299,7 @@ export const APITokenServiceRevokeRequest = {
             break;
           }
 
-          message.id = reader.string();
+          message.name = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -310,12 +311,12 @@ export const APITokenServiceRevokeRequest = {
   },
 
   fromJSON(object: any): APITokenServiceRevokeRequest {
-    return { id: isSet(object.id) ? String(object.id) : "" };
+    return { name: isSet(object.name) ? String(object.name) : "" };
   },
 
   toJSON(message: APITokenServiceRevokeRequest): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
@@ -325,7 +326,7 @@ export const APITokenServiceRevokeRequest = {
 
   fromPartial<I extends Exact<DeepPartial<APITokenServiceRevokeRequest>, I>>(object: I): APITokenServiceRevokeRequest {
     const message = createBaseAPITokenServiceRevokeRequest();
-    message.id = object.id ?? "";
+    message.name = object.name ?? "";
     return message;
   },
 };
