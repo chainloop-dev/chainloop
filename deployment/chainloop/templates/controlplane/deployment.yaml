@@ -146,6 +146,6 @@ spec:
         {{- end }}
         {{- if and .Values.controlplane.keylessSigning.enabled (eq "ejbcaCA" .Values.controlplane.keylessSigning.backend) }}
         - name: ejbca-ca-cert
-        secret:
-          secretName: { { include "chainloop.controlplane.fullname" . } }-keyless-ejbca-ca
+          secret:
+            secretName: {{ include "chainloop.controlplane.fullname" . }}-keyless-ejbca-ca
         {{- end }}
