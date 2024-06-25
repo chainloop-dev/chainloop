@@ -23,7 +23,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/sigstore/fulcio/pkg/ca"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/ca"
 	"github.com/sigstore/fulcio/pkg/identity"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 )
@@ -66,7 +66,8 @@ func (s *SigningUseCase) CreateSigningCert(ctx context.Context, orgID string, cs
 	}
 
 	// Create certificate from CA provider (no Signed Certificate Timestamps for now)
-	csc, err := s.CA.CreateCertificate(ctx, newChainloopPrincipal(orgID), publicKey)
+
+	csc, err := s.CA.CreateCertificateFromCSR(ctx, newChainloopPrincipal(orgID), csr)
 	if err != nil {
 		return nil, fmt.Errorf("creating certificate: %w", err)
 	}

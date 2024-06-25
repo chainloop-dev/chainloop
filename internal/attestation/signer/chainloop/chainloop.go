@@ -29,6 +29,7 @@ import (
 	"sync"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 	sigstoresigner "github.com/sigstore/sigstore/pkg/signature"
 )
@@ -117,7 +118,9 @@ func (cs *Signer) createCertificateRequest() (*certificateRequest, error) {
 	if err != nil {
 		return nil, fmt.Errorf("generating cert: %w", err)
 	}
-	csrTmpl := &x509.CertificateRequest{Subject: pkix.Name{CommonName: "ephemeral certificate"}}
+
+	// TODO: the template should get some metadata from the current user/org
+	csrTmpl := &x509.CertificateRequest{Subject: pkix.Name{CommonName: uuid.New().String()}}
 	derCSR, err := x509.CreateCertificateRequest(rand.Reader, csrTmpl, priv)
 	if err != nil {
 		return nil, fmt.Errorf("generating certificate request: %w", err)

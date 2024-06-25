@@ -27,7 +27,9 @@ import (
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	fulcioca "github.com/sigstore/fulcio/pkg/ca"
 	"github.com/sigstore/fulcio/pkg/ca/ephemeralca"
+	"github.com/sigstore/fulcio/pkg/identity"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 	"github.com/stretchr/testify/suite"
 )
@@ -36,6 +38,22 @@ type signingUseCaseTestSuite struct {
 	suite.Suite
 	uc  *biz.SigningUseCase
 	csr []byte
+}
+
+type TestCA struct {
+	ca *ephemeralca.EphemeralCA
+}
+
+func (e TestCA) CreateCertificateFromCSR(ctx context.Context, principal identity.Principal, csr *x509.CertificateRequest) (*fulcioca.CodeSigningCertificate, error) {
+	return e.ca.CreateCertificate(ctx, principal, csr.PublicKey)
+}
+
+func NewTestCA() (*TestCA, error) {
+	ca, err := ephemeralca.NewEphemeralCA()
+	if err != nil {
+		return nil, err
+	}
+	return &TestCA{ca}, nil
 }
 
 func (s *signingUseCaseTestSuite) TestSigningUseCase_CreateSigningCert() {
@@ -68,7 +86,7 @@ func (s *signingUseCaseTestSuite) SetupTest() {
 	s.Require().NoError(err)
 	s.csr = csr
 
-	ca, err := ephemeralca.NewEphemeralCA()
+	ca, err := NewTestCA()
 	s.Require().NoError(err)
 	s.uc = &biz.SigningUseCase{CA: ca}
 }
