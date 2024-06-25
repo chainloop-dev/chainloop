@@ -572,32 +572,37 @@ chainloop config save \
 
 ### Controlplane Misc
 
-| Name                                                         | Description                                                             | Value        |
-| ------------------------------------------------------------ | ----------------------------------------------------------------------- | ------------ |
-| `controlplane.resources.limits.cpu`                          | Container resource limits CPU                                           | `250m`       |
-| `controlplane.resources.limits.memory`                       | Container resource limits memory                                        | `512Mi`      |
-| `controlplane.resources.requests.cpu`                        | Container resource requests CPU                                         | `250m`       |
-| `controlplane.resources.requests.memory`                     | Container resource requests memory                                      | `512Mi`      |
-| `controlplane.autoscaling.enabled`                           | Enable deployment autoscaling                                           | `false`      |
-| `controlplane.autoscaling.minReplicas`                       | Minimum number of replicas                                              | `1`          |
-| `controlplane.autoscaling.maxReplicas`                       | Maximum number of replicas                                              | `100`        |
-| `controlplane.autoscaling.targetCPUUtilizationPercentage`    | Target CPU percentage                                                   | `80`         |
-| `controlplane.autoscaling.targetMemoryUtilizationPercentage` | Target CPU memory                                                       | `80`         |
-| `controlplane.sentry.enabled`                                | Enable sentry.io alerting                                               | `false`      |
-| `controlplane.sentry.dsn`                                    | DSN endpoint                                                            | `""`         |
-| `controlplane.sentry.environment`                            | Environment tag                                                         | `production` |
-| `controlplane.keylessSigning.enabled`                        | Activates or deactivates the feature                                    | `false`      |
-| `controlplane.keylessSigning.backend`                        | The backend to use. Currently only "fileCA" and "ejbcaCA" are supported | `fileCA`     |
-| `controlplane.keylessSigning.fileCA.cert`                    | The PEM-encoded certificate of the file based CA                        | `""`         |
-| `controlplane.keylessSigning.fileCA.key`                     | The PEM-encoded private key of the file based CA                        | `""`         |
-| `controlplane.keylessSigning.fileCA.keyPass`                 | The secret key pass                                                     | `""`         |
-| `controlplane.keylessSigning.ejbcaCA.serverURL`              | The url of the EJBCA service (https://host/ejbca)                       | `""`         |
-| `controlplane.keylessSigning.ejbcaCA.key`                    | PEM-encoded the private key for EJBCA cert authentication               | `""`         |
-| `controlplane.keylessSigning.ejbcaCA.cert`                   | PEM-encoded certificate for EJBCA cert authentication                   | `""`         |
-| `controlplane.keylessSigning.ejbcaCA.certProfileName`        | Name of the certificate profile to use in EJBCA                         | `""`         |
-| `controlplane.keylessSigning.ejbcaCA.endEntityProfileName`   | Name of the Entity Profile to use in EJBCA                              | `""`         |
-| `controlplane.keylessSigning.ejbcaCA.caName`                 | Name of the CA issuer to use in EJBCA                                   | `""`         |
-| `controlplane.customCAs`                                     | List of custom CA certificates content                                  | `[]`         |
+| Name                                                         | Description                        | Value        |
+| ------------------------------------------------------------ | ---------------------------------- | ------------ |
+| `controlplane.resources.limits.cpu`                          | Container resource limits CPU      | `250m`       |
+| `controlplane.resources.limits.memory`                       | Container resource limits memory   | `512Mi`      |
+| `controlplane.resources.requests.cpu`                        | Container resource requests CPU    | `250m`       |
+| `controlplane.resources.requests.memory`                     | Container resource requests memory | `512Mi`      |
+| `controlplane.autoscaling.enabled`                           | Enable deployment autoscaling      | `false`      |
+| `controlplane.autoscaling.minReplicas`                       | Minimum number of replicas         | `1`          |
+| `controlplane.autoscaling.maxReplicas`                       | Maximum number of replicas         | `100`        |
+| `controlplane.autoscaling.targetCPUUtilizationPercentage`    | Target CPU percentage              | `80`         |
+| `controlplane.autoscaling.targetMemoryUtilizationPercentage` | Target CPU memory                  | `80`         |
+| `controlplane.sentry.enabled`                                | Enable sentry.io alerting          | `false`      |
+| `controlplane.sentry.dsn`                                    | DSN endpoint                       | `""`         |
+| `controlplane.sentry.environment`                            | Environment tag                    | `production` |
+
+### Keyless signing configuration
+
+| Name                                                       | Description                                                             | Value    |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------- | -------- |
+| `controlplane.keylessSigning.enabled`                      | Activates or deactivates the feature                                    | `false`  |
+| `controlplane.keylessSigning.backend`                      | The backend to use. Currently only "fileCA" and "ejbcaCA" are supported | `fileCA` |
+| `controlplane.keylessSigning.fileCA.cert`                  | The PEM-encoded certificate of the file based CA                        | `""`     |
+| `controlplane.keylessSigning.fileCA.key`                   | The PEM-encoded private key of the file based CA                        | `""`     |
+| `controlplane.keylessSigning.fileCA.keyPass`               | The secret key pass                                                     | `""`     |
+| `controlplane.keylessSigning.ejbcaCA.serverURL`            | The url of the EJBCA service (https://host/ejbca)                       | `""`     |
+| `controlplane.keylessSigning.ejbcaCA.key`                  | PEM-encoded the private key for EJBCA cert authentication               | `""`     |
+| `controlplane.keylessSigning.ejbcaCA.cert`                 | PEM-encoded certificate for EJBCA cert authentication                   | `""`     |
+| `controlplane.keylessSigning.ejbcaCA.certProfileName`      | Name of the certificate profile to use in EJBCA                         | `""`     |
+| `controlplane.keylessSigning.ejbcaCA.endEntityProfileName` | Name of the Entity Profile to use in EJBCA                              | `""`     |
+| `controlplane.keylessSigning.ejbcaCA.caName`               | Name of the CA issuer to use in EJBCA                                   | `""`     |
+| `controlplane.customCAs`                                   | List of custom CA certificates content                                  | `[]`     |
 
 ### Artifact Content Addressable (CAS) API
 
