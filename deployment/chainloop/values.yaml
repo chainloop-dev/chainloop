@@ -474,7 +474,7 @@ controlplane:
     environment: production
 
   ## Configuration for keyless signing using one of the supported providers
-  ## @param controlplane.keylessSigning.enabled Activates or deactivates de feature
+  ## @param controlplane.keylessSigning.enabled Activates or deactivates the feature
   ## @param controlplane.keylessSigning.backend The backend to use. Currently only "fileCA" and "ejbcaCA" are supported
   ## @param controlplane.keylessSigning.fileCA.cert The PEM-encoded certificate of the file based CA
   ##       -----BEGIN CERTIFICATE-----

@@ -586,7 +586,7 @@ chainloop config save \
 | `controlplane.sentry.enabled`                                | Enable sentry.io alerting                                               | `false`      |
 | `controlplane.sentry.dsn`                                    | DSN endpoint                                                            | `""`         |
 | `controlplane.sentry.environment`                            | Environment tag                                                         | `production` |
-| `controlplane.keylessSigning.enabled`                        | Activates or deactivates de feature                                     | `false`      |
+| `controlplane.keylessSigning.enabled`                        | Activates or deactivates the feature                                    | `false`      |
 | `controlplane.keylessSigning.backend`                        | The backend to use. Currently only "fileCA" and "ejbcaCA" are supported | `fileCA`     |
 | `controlplane.keylessSigning.fileCA.cert`                    | The PEM-encoded certificate of the file based CA                        | `""`         |
 | `controlplane.keylessSigning.fileCA.key`                     | The PEM-encoded private key of the file based CA                        | `""`         |
