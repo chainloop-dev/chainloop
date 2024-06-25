@@ -95,6 +95,7 @@ type CASBackendRepo interface {
 	FindFallbackBackend(ctx context.Context, orgID uuid.UUID) (*CASBackend, error)
 	FindByID(ctx context.Context, ID uuid.UUID) (*CASBackend, error)
 	FindByIDInOrg(ctx context.Context, OrgID, ID uuid.UUID) (*CASBackend, error)
+	FindByNameInOrg(ctx context.Context, OrgID uuid.UUID, name string) (*CASBackend, error)
 	List(ctx context.Context, orgID uuid.UUID) ([]*CASBackend, error)
 	UpdateValidationStatus(ctx context.Context, ID uuid.UUID, status CASBackendValidationStatus) error
 	Create(context.Context, *CASBackendCreateOpts) (*CASBackend, error)
@@ -168,6 +169,15 @@ func (uc *CASBackendUseCase) FindByIDInOrg(ctx context.Context, orgID, id string
 	}
 
 	return backend, nil
+}
+
+func (uc *CASBackendUseCase) FindByNameInOrg(ctx context.Context, orgID, name string) (*CASBackend, error) {
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	return uc.repo.FindByNameInOrg(ctx, orgUUID, name)
 }
 
 func (uc *CASBackendUseCase) FindFallbackBackend(ctx context.Context, orgID string) (*CASBackend, error) {
@@ -263,7 +273,7 @@ func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name, location, 
 }
 
 // Update will update credentials, description or default status
-func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id, name, description string, creds any, defaultB bool) (*CASBackend, error) {
+func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id, description string, creds any, defaultB bool) (*CASBackend, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -272,13 +282,6 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id, name, descri
 	uuid, err := uuid.Parse(id)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
-	}
-
-	if name != "" {
-		// validate format of the name and the project
-		if err := ValidateIsDNS1123(name); err != nil {
-			return nil, NewErrValidation(err)
-		}
 	}
 
 	before, err := uc.repo.FindByIDInOrg(ctx, orgUUID, uuid)

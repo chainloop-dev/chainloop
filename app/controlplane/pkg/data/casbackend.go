@@ -200,6 +200,22 @@ func (r *CASBackendRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID)
 	return entCASBackendToBiz(backend), nil
 }
 
+func (r *CASBackendRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*biz.CASBackend, error) {
+	backend, err := orgScopedQuery(r.data.DB, orgID).
+		QueryCasBackends().
+		WithOrganization().
+		Where(casbackend.Name(name), casbackend.DeletedAtIsNil()).Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, biz.NewErrNotFound("CAS backend")
+		}
+
+		return nil, err
+	}
+
+	return entCASBackendToBiz(backend), nil
+}
+
 // Set deleted at instead of actually deleting the backend
 func (r *CASBackendRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
 	return r.data.DB.CASBackend.UpdateOneID(id).SetDeletedAt(time.Now()).Exec(ctx)

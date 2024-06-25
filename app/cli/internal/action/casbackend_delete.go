@@ -29,10 +29,10 @@ func NewCASBackendDelete(cfg *ActionsOpts) *CASBackendDelete {
 	return &CASBackendDelete{cfg}
 }
 
-func (action *CASBackendDelete) Run(id string) error {
+func (action *CASBackendDelete) Run(name string) error {
 	client := pb.NewCASBackendServiceClient(action.cfg.CPConnection)
 	_, err := client.Delete(context.Background(), &pb.CASBackendServiceDeleteRequest{
-		Id: id,
+		Name: name,
 	})
 
 	return err

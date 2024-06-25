@@ -22,7 +22,7 @@ import (
 )
 
 func newCASBackendUpdateInlineCmd() *cobra.Command {
-	var backendID string
+	var backendName string
 	cmd := &cobra.Command{
 		Use:   "inline",
 		Short: "Update the Inline, fallback CAS Backend description or default status",
@@ -33,12 +33,9 @@ func newCASBackendUpdateInlineCmd() *cobra.Command {
 			description, err := cmd.Flags().GetString("description")
 			cobra.CheckErr(err)
 
-			name, err := cmd.Flags().GetString("name")
-			cobra.CheckErr(err)
-
 			// If we are overriding the default we ask for confirmation
 			if isDefault {
-				if confirmed, err := confirmDefaultCASBackendOverride(actionOpts, backendID); err != nil {
+				if confirmed, err := confirmDefaultCASBackendOverride(actionOpts, backendName); err != nil {
 					return err
 				} else if !confirmed {
 					log.Info("Aborting...")
@@ -46,7 +43,7 @@ func newCASBackendUpdateInlineCmd() *cobra.Command {
 				}
 			} else {
 				// If we are removing the default we ask for confirmation too
-				if confirmed, err := confirmDefaultCASBackendUnset(backendID, "You are setting the default CAS backend to false", actionOpts); err != nil {
+				if confirmed, err := confirmDefaultCASBackendUnset(backendName, "You are setting the default CAS backend to false", actionOpts); err != nil {
 					return err
 				} else if !confirmed {
 					log.Info("Aborting...")
@@ -55,8 +52,7 @@ func newCASBackendUpdateInlineCmd() *cobra.Command {
 			}
 
 			opts := &action.NewCASBackendUpdateOpts{
-				Name:        name,
-				ID:          backendID,
+				Name:        backendName,
 				Description: description,
 				Default:     isDefault,
 			}
@@ -68,12 +64,12 @@ func newCASBackendUpdateInlineCmd() *cobra.Command {
 				return nil
 			}
 
-			return encodeOutput([]*action.CASBackendItem{res}, casBackendListTableOutput)
+			return encodeOutput(res, casBackendItemTableOutput)
 		},
 	}
 
-	cmd.Flags().StringVar(&backendID, "id", "", "CAS Backend ID")
-	err := cmd.MarkFlagRequired("id")
+	cmd.Flags().StringVar(&backendName, "name", "", "CAS Backend name")
+	err := cmd.MarkFlagRequired("name")
 	cobra.CheckErr(err)
 	return cmd
 }

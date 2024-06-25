@@ -90,11 +90,11 @@ func confirmDefaultCASBackendOverride(actionOpts *action.ActionsOpts, id string)
 }
 
 // If we are removing the default we confirm too
-func confirmDefaultCASBackendRemoval(actionOpts *action.ActionsOpts, id string) (bool, error) {
-	return confirmDefaultCASBackendUnset(id, "You are deleting the default CAS backend.", actionOpts)
+func confirmDefaultCASBackendRemoval(actionOpts *action.ActionsOpts, name string) (bool, error) {
+	return confirmDefaultCASBackendUnset(name, "You are deleting the default CAS backend.", actionOpts)
 }
 
-func confirmDefaultCASBackendUnset(id, msg string, actionOpts *action.ActionsOpts) (bool, error) {
+func confirmDefaultCASBackendUnset(name, msg string, actionOpts *action.ActionsOpts) (bool, error) {
 	// get existing backends
 	backends, err := action.NewCASBackendList(actionOpts).Run()
 	if err != nil {
@@ -103,7 +103,7 @@ func confirmDefaultCASBackendUnset(id, msg string, actionOpts *action.ActionsOpt
 
 	for _, b := range backends {
 		// We are removing ourselves as the default, ask the user to confirm
-		if b.Default && b.ID == id {
+		if b.Default && b.Name == name {
 			return confirmationPrompt(msg), nil
 		}
 	}
