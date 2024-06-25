@@ -3,7 +3,7 @@
 package mocks
 
 import (
-	authz "github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 
 	mock "github.com/stretchr/testify/mock"
 )
