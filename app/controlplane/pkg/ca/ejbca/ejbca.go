@@ -64,6 +64,7 @@ func New(serverURL, keyPath, certPath, rootCAPath, certProfileName, endEntityPro
 	}
 }
 
+// Request represents an EJBCA enrollment request (/v1/certificate/pkcs10enroll)
 type Request struct {
 	CertificateRequest       string `json:"certificate_request,omitempty"`
 	CertificateProfileName   string `json:"certificate_profile_name,omitempty"`
@@ -73,6 +74,7 @@ type Request struct {
 	IncludeChain             bool   `json:"include_chain,omitempty"`
 }
 
+// Response represents an enrollment response
 type Response struct {
 	Certificate      string   `json:"certificate,omitempty"`
 	SerialNumber     string   `json:"serial_number,omitempty"`

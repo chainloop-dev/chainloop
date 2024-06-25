@@ -475,7 +475,7 @@ controlplane:
 
   ## Configuration for keyless signing using one of the supported providers
   ## @param controlplane.keylessSigning.enabled Activates or deactivates de feature
-  ## @param controlplane.keylessSigning.backend The backend to use. Currently only "fileCA" is supported
+  ## @param controlplane.keylessSigning.backend The backend to use. Currently only "fileCA" and "ejbcaCA" are supported
   ## @param controlplane.keylessSigning.fileCA.cert The PEM-encoded certificate of the file based CA
   ##       -----BEGIN CERTIFICATE-----
   ##       ...
@@ -485,6 +485,12 @@ controlplane:
   ##       ...
   ##       -----END RSA PRIVATE KEY-----
   ## @param controlplane.keylessSigning.fileCA.keyPass The secret key pass
+  ## @param controlplane.keylessSigning.ejbcaCA.serverUrl The url of the EJBCA service (https://host/ejbca)
+  ## @param controlplane.keylessSigning.ejbcaCA.key PEM-encoded the private key for EJBCA cert authentication
+  ## @param controlplane.keylessSigning.ejbcaCA.cert PEM-encoded certificate for EJBCA cert authentication
+  ## @param controlplane.keylessSigning.ejbcaCA.certProfileName Name of the certificate profile to use in EJBCA
+  ## @param controlplane.keylessSigning.ejbcaCA.endEntityProfileName Name of the Entity Profile to use in EJBCA
+  ## @param controlplane.keylessSigning.ejbcaCA.caName Name of the CA issuer to use in EJBCA
   keylessSigning:
     enabled: false
     backend: fileCA
@@ -492,6 +498,13 @@ controlplane:
       cert: ""
       key: ""
       keyPass: ""
+    ejbcaCA:
+      serverURL: ""
+      key: ""
+      cert: ""
+      certProfileName: ""
+      endEntityProfileName: ""
+      caName: ""
 
   ## Inject custom CA certificates to the controlplane container
   ## @param controlplane.customCAs List of custom CA certificates content

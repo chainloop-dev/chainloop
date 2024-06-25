@@ -85,8 +85,12 @@ spec:
               mountPath: /tmp
             - name: jwt-cas-private-key
               mountPath: /secrets
-            {{- if .Values.controlplane.keylessSigning.enabled }}
+            {{- if and .Values.controlplane.keylessSigning.enabled (eq "fileCA" .Values.controlplane.keylessSigning.backend) }}
             - name: file-ca-cert
+              mountPath: /ca_secrets
+            {{- end }}
+            {{- if and .Values.controlplane.keylessSigning.enabled (eq "ejbcaCA" .Values.controlplane.keylessSigning.backend) }}
+            - name: ejbca-ca-cert
               mountPath: /ca_secrets
             {{- end }}
             {{- if .Values.controlplane.tlsConfig.secret.name  }}
@@ -135,8 +139,13 @@ spec:
           secret:
             secretName: {{ include "chainloop.controlplane.fullname" . }}-gcp-secretmanager-serviceaccountkey
         {{- end }}
-        {{- if .Values.controlplane.keylessSigning.enabled }}
+        {{- if and .Values.controlplane.keylessSigning.enabled (eq "fileCA" .Values.controlplane.keylessSigning.backend) }}
         - name: file-ca-cert
           secret:
             secretName: {{ include "chainloop.controlplane.fullname" . }}-keyless-file-ca
+        {{- end }}
+        {{- if and .Values.controlplane.keylessSigning.enabled (eq "ejbcaCA" .Values.controlplane.keylessSigning.backend) }}
+        - name: ejbca-ca-cert
+        secret:
+          secretName: { { include "chainloop.controlplane.fullname" . } }-keyless-ejbca-ca
         {{- end }}
