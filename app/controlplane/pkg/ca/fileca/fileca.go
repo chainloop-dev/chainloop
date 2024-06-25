@@ -32,7 +32,7 @@ type FileCA struct {
 
 var _ ca.CertificateAuthority = (*FileCA)(nil)
 
-func NewFileCA(certPath, keyPath, keyPass string, watch bool) (*FileCA, error) {
+func New(certPath, keyPath, keyPass string, watch bool) (*FileCA, error) {
 	wrappedCa, err := fulciofileca.NewFileCA(certPath, keyPath, keyPass, watch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file CA: %w", err)

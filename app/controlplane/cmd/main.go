@@ -231,7 +231,7 @@ func newSigningCA(_ context.Context, ca *conf.CA, logger log.Logger) (ca.Certifi
 	if ca.GetFileCa() != nil {
 		fileCa := ca.GetFileCa()
 		_ = logger.Log(log.LevelInfo, "msg", "Keyless: File CA configured")
-		return fileca.NewFileCA(fileCa.GetCertPath(), fileCa.GetKeyPath(), fileCa.GetKeyPass(), false)
+		return fileca.New(fileCa.GetCertPath(), fileCa.GetKeyPath(), fileCa.GetKeyPass(), false)
 	}
 
 	if ca.GetEjbcaCa() != nil {

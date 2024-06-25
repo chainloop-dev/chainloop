@@ -53,7 +53,11 @@ type EJBCA struct {
 
 var _ ca.CertificateAuthority = (*EJBCA)(nil)
 
-func New(serverURL, keyPath, certPath, rootCAPath, certProfileName, endEntityProfileName, caName string) *EJBCA {
+func New(serverURL, keyPath, certPath, rootCAPath, certProfileName, endEntityProfileName, caName string) (*EJBCA, error) {
+	if serverURL == "" || keyPath == "" || certPath == "" || certProfileName == "" || endEntityProfileName == "" || caName == "" {
+		return nil, fmt.Errorf("ejbca: invalid arguments")
+	}
+	
 	return &EJBCA{
 		serverURL:              serverURL,
 		keyPath:                keyPath,
@@ -62,7 +66,7 @@ func New(serverURL, keyPath, certPath, rootCAPath, certProfileName, endEntityPro
 		certificateProfileName: certProfileName,
 		endEntityProfileName:   endEntityProfileName,
 		caName:                 caName,
-	}
+	}, nil
 }
 
 type Request struct {
