@@ -51,10 +51,10 @@ func orgMembershipTableOutput(items []*action.MembershipItem) error {
 	}
 
 	t := newTableWriter()
-	t.AppendHeader(table.Row{"Org ID", "Org Name", "Current", "Role", "Joined At"})
+	t.AppendHeader(table.Row{"Name", "Current", "Role", "Joined At"})
 
 	for _, i := range items {
-		t.AppendRow(table.Row{i.Org.ID, i.Org.Name, i.Current, i.Role, i.CreatedAt.Format(time.RFC822)})
+		t.AppendRow(table.Row{i.Org.Name, i.Current, i.Role, i.CreatedAt.Format(time.RFC822)})
 		t.AppendSeparator()
 	}
 
