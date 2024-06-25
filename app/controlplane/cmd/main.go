@@ -231,13 +231,13 @@ func newSigningCA(_ context.Context, ca *conf.CA, logger log.Logger) (ca.Certifi
 	if ca.GetFileCa() != nil {
 		fileCa := ca.GetFileCa()
 		_ = logger.Log(log.LevelInfo, "msg", "Keyless: File CA configured")
-		return fileca.NewFileCA(fileCa.GetCertPath(), fileCa.GetKeyPath(), fileCa.GetKeyPass(), false)
+		return fileca.New(fileCa.GetCertPath(), fileCa.GetKeyPath(), fileCa.GetKeyPass(), false)
 	}
 
 	if ca.GetEjbcaCa() != nil {
 		ejbcaCa := ca.GetEjbcaCa()
 		_ = logger.Log(log.LevelInfo, "msg", "Keyless: EJBCA CA configured")
-		return ejbca.New(ejbcaCa.GetServerUrl(), ejbcaCa.GetKeyPath(), ejbcaCa.GetCertPath(), ejbcaCa.GetRootCaPath(), ejbcaCa.GetCertificateProfileName(), ejbcaCa.GetEndEntityProfileName(), ejbcaCa.GetCertificateAuthorityName()), nil
+		return ejbca.New(ejbcaCa.GetServerUrl(), ejbcaCa.GetKeyPath(), ejbcaCa.GetCertPath(), ejbcaCa.GetRootCaPath(), ejbcaCa.GetCertificateProfileName(), ejbcaCa.GetEndEntityProfileName(), ejbcaCa.GetCertificateAuthorityName())
 	}
 
 	// No CA configured, keyless will be deactivated.

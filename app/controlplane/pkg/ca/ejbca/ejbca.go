@@ -53,7 +53,11 @@ type EJBCA struct {
 
 var _ ca.CertificateAuthority = (*EJBCA)(nil)
 
-func New(serverURL, keyPath, certPath, rootCAPath, certProfileName, endEntityProfileName, caName string) *EJBCA {
+func New(serverURL, keyPath, certPath, rootCAPath, certProfileName, endEntityProfileName, caName string) (*EJBCA, error) {
+	if serverURL == "" || keyPath == "" || certPath == "" || certProfileName == "" || endEntityProfileName == "" || caName == "" {
+		return nil, fmt.Errorf("ejbca: invalid arguments")
+	}
+
 	return &EJBCA{
 		serverURL:              serverURL,
 		keyPath:                keyPath,
@@ -62,11 +66,10 @@ func New(serverURL, keyPath, certPath, rootCAPath, certProfileName, endEntityPro
 		certificateProfileName: certProfileName,
 		endEntityProfileName:   endEntityProfileName,
 		caName:                 caName,
-	}
+	}, nil
 }
 
-// Request represents an EJBCA enrollment request (/v1/certificate/pkcs10enroll)
-type Request struct {
+type request struct {
 	CertificateRequest       string `json:"certificate_request,omitempty"`
 	CertificateProfileName   string `json:"certificate_profile_name,omitempty"`
 	EndEntityProfileName     string `json:"end_entity_profile_name,omitempty"`
@@ -75,8 +78,7 @@ type Request struct {
 	IncludeChain             bool   `json:"include_chain,omitempty"`
 }
 
-// Response represents an enrollment response
-type Response struct {
+type response struct {
 	Certificate      string   `json:"certificate,omitempty"`
 	SerialNumber     string   `json:"serial_number,omitempty"`
 	ResponseFormat   string   `json:"response_format,omitempty"`
@@ -90,7 +92,7 @@ func (e EJBCA) CreateCertificateFromCSR(ctx context.Context, principal identity.
 		Bytes: csr.Raw,
 	})
 
-	ejbcaReq := &Request{
+	ejbcaReq := &request{
 		CertificateRequest:       string(pemCSR),
 		CertificateProfileName:   e.certificateProfileName,
 		EndEntityProfileName:     e.endEntityProfileName,
@@ -144,7 +146,7 @@ func (e EJBCA) CreateCertificateFromCSR(ctx context.Context, principal identity.
 		return nil, fmt.Errorf("wrong status creating certificate: %v", resp.Status)
 	}
 
-	var response Response
+	var response response
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read response body: %w", err)

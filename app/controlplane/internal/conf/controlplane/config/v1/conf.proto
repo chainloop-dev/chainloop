@@ -152,16 +152,16 @@ message CA {
   }
 
   message EJBCA {
-    string server_url = 1;
+    string server_url = 1 [(buf.validate.field).string.min_len = 1];
     // client cert authentication configuration
-    string key_path = 2;
-    string cert_path = 3;
+    string key_path = 2 [(buf.validate.field).string.min_len = 1];
+    string cert_path = 3 [(buf.validate.field).string.min_len = 1];
     string root_ca_path = 4;
 
     // EJBCA Profile configuration
-    string certificate_profile_name = 5;
-    string end_entity_profile_name = 6;
-    string certificate_authority_name = 7;
+    string certificate_profile_name = 5 [(buf.validate.field).string.min_len = 1];
+    string end_entity_profile_name = 6 [(buf.validate.field).string.min_len = 1];
+    string certificate_authority_name = 7 [(buf.validate.field).string.min_len = 1];
   }
 }
 
