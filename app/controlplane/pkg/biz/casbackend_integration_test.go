@@ -42,40 +42,40 @@ func (s *CASBackendIntegrationTestSuite) TestUniqueNameDuringCreate() {
 
 	testCases := []struct {
 		name       string
-		opts       *biz.CASBackendOpts
+		opts       *biz.CASBackendCreateOpts
 		wantErrMsg string
 	}{
 		{
 			name:       "org missing",
-			opts:       &biz.CASBackendOpts{Name: "name"},
+			opts:       &biz.CASBackendCreateOpts{Name: "name"},
 			wantErrMsg: "required",
 		},
 		{
 			name:       "name missing",
-			opts:       &biz.CASBackendOpts{OrgID: orgID},
+			opts:       &biz.CASBackendCreateOpts{CASBackendOpts: &biz.CASBackendOpts{OrgID: orgID}},
 			wantErrMsg: "required",
 		},
 		{
 			name:       "invalid name",
-			opts:       &biz.CASBackendOpts{OrgID: orgID, Name: "this/not/valid"},
+			opts:       &biz.CASBackendCreateOpts{Name: "this/not/valid", CASBackendOpts: &biz.CASBackendOpts{OrgID: orgID}},
 			wantErrMsg: "RFC 1123",
 		},
 		{
 			name:       "another invalid name",
-			opts:       &biz.CASBackendOpts{OrgID: orgID, Name: "this-not Valid"},
+			opts:       &biz.CASBackendCreateOpts{Name: "this-not valid", CASBackendOpts: &biz.CASBackendOpts{OrgID: orgID}},
 			wantErrMsg: "RFC 1123",
 		},
 		{
 			name: "can create it with just the name and the org",
-			opts: &biz.CASBackendOpts{OrgID: orgID, Name: "name"},
+			opts: &biz.CASBackendCreateOpts{Name: "name", CASBackendOpts: &biz.CASBackendOpts{OrgID: orgID}},
 		},
 	}
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			orgID := tc.opts.OrgID.String()
-			if uuid.Nil == tc.opts.OrgID {
-				orgID = ""
+			var orgID string
+			if tc.opts.CASBackendOpts != nil && tc.opts.OrgID != uuid.Nil {
+				orgID = tc.opts.OrgID.String()
 			}
 
 			got, err := s.CASBackend.Create(context.Background(), orgID, tc.opts.Name, location, description, backendType, nil, true)
@@ -185,19 +185,6 @@ func (s *CASBackendIntegrationTestSuite) TestUpdate() {
 		defaultB, err = s.CASBackend.FindByIDInOrg(context.TODO(), s.orgNoBackend.ID, defaultB.ID.String())
 		assert.NoError(err)
 		assert.False(defaultB.Default)
-	})
-
-	s.Run("can update only the name", func() {
-		// When a new default backend is set, the previous default should be overridden
-		defaultB, err := s.CASBackend.Create(context.TODO(), s.orgNoBackend.ID, randomName(), location, description, backendType, nil, true)
-		assert.NoError(err)
-		assert.Equal(description, defaultB.Description)
-
-		// Update the description
-		defaultB, err = s.CASBackend.Update(context.TODO(), s.orgNoBackend.ID, defaultB.ID.String(), "updated-name", "", nil, true)
-		assert.NoError(err)
-		assert.Equal("updated-name", defaultB.Name)
-		assert.True(defaultB.Default)
 	})
 
 	s.Run("can update only the description", func() {

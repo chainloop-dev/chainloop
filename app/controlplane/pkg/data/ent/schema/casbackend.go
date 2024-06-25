@@ -38,7 +38,7 @@ func (CASBackend) Fields() []ent.Field {
 		// NOTE: neither the location nor the provider can be updated
 		// CAS backend location, i.e S3 bucket name, OCI repository name
 		field.String("location").Immutable(),
-		field.String("name"),
+		field.String("name").Immutable(),
 		field.Enum("provider").GoType(biz.CASBackendProvider("")).Immutable(),
 		field.String("description").Optional(),
 		field.String("secret_name"),
