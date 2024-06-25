@@ -34,7 +34,7 @@ type Integration struct {
 func (Integration) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique().Immutable(),
-		field.String("name"),
+		field.String("name").Immutable(),
 		field.String("kind").Immutable(),
 		field.String("description").Optional(),
 		field.String("secret_name").Immutable(),
