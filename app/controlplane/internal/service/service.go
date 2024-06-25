@@ -140,7 +140,7 @@ func handleUseCaseErr(err error, l *log.Helper) error {
 	case biz.IsErrValidation(err) || biz.IsErrInvalidUUID(err):
 		return errors.BadRequest("invalid", err.Error())
 	case biz.IsNotFound(err):
-		return errors.NotFound(err.Error(), "not found")
+		return errors.NotFound("not found", err.Error())
 	case biz.IsErrUnauthorized(err):
 		return errors.Forbidden("unauthorized", err.Error())
 	case biz.IsErrNotImplemented(err):
