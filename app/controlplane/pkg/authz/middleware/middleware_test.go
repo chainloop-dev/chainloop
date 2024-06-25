@@ -20,9 +20,9 @@ import (
 	"io"
 	"testing"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz/middleware/mocks"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz/middleware/mocks"
 	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/transport"

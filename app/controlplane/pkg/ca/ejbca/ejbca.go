@@ -22,6 +22,7 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"net/http"
@@ -83,8 +84,14 @@ type Response struct {
 }
 
 func (e EJBCA) CreateCertificateFromCSR(ctx context.Context, principal identity.Principal, csr *x509.CertificateRequest) (*fulcioca.CodeSigningCertificate, error) {
+	// Encode CSR to PEM
+	pemCSR := pem.EncodeToMemory(&pem.Block{
+		Type:  "CERTIFICATE REQUEST",
+		Bytes: csr.Raw,
+	})
+
 	ejbcaReq := &Request{
-		CertificateRequest:       string(csr.Raw),
+		CertificateRequest:       string(pemCSR),
 		CertificateProfileName:   e.certificateProfileName,
 		EndEntityProfileName:     e.endEntityProfileName,
 		CertificateAuthorityName: e.caName,

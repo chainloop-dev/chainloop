@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/authz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
 	"github.com/golang-jwt/jwt/v4"

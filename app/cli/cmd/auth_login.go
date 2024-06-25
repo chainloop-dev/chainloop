@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -41,18 +41,20 @@ type app struct {
 }
 
 func newAuthLoginCmd() *cobra.Command {
+	var forceHeadlessLogin bool
 	cmd := &cobra.Command{
 		Use:   "login",
 		Short: "authenticate the CLI with the Control Plane",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return interactiveAuth()
+			return interactiveAuth(forceHeadlessLogin)
 		},
 	}
 
+	cmd.Flags().BoolVar(&forceHeadlessLogin, "skip-browser", false, "perform a headless login process without opening a browser")
 	return cmd
 }
 
-func interactiveAuth() error {
+func interactiveAuth(forceHeadless bool) error {
 	var a app
 
 	listener, callbackURL, err := localListenerAndCallbackURL()
@@ -74,6 +76,10 @@ func interactiveAuth() error {
 	q.Set(oauth.QueryParamCallback, callbackURL.String())
 	q.Set(oauth.QueryParamLongLived, "true")
 	serverLoginURL.RawQuery = q.Encode()
+
+	if forceHeadless {
+		return headlessAuth(serverLoginURL)
+	}
 
 	err = openbrowser(serverLoginURL.String())
 	if err != nil {
@@ -161,20 +167,24 @@ func (a *app) handleCallback(w http.ResponseWriter, r *http.Request) {
 }
 
 func openbrowser(url string) error {
-	var err error
+	var cmd *exec.Cmd
 
 	switch runtime.GOOS {
 	case "linux":
-		err = exec.Command("xdg-open", url).Start()
+		cmd = exec.Command("xdg-open", url)
 	case "windows":
-		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
 	case "darwin":
-		err = exec.Command("open", url).Start()
+		cmd = exec.Command("open", url)
 	default:
-		err = fmt.Errorf("unsupported platform")
+		return fmt.Errorf("unsupported platform")
 	}
 
-	return err
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+
+	return cmd.Wait()
 }
 
 // Retrieve loginURL from the control plane
