@@ -30,10 +30,10 @@ func NewWorkflowContractUpdate(cfg *ActionsOpts) *WorkflowContractUpdate {
 	return &WorkflowContractUpdate{cfg}
 }
 
-func (action *WorkflowContractUpdate) Run(contractID, name string, description *string, contractPath string) (*WorkflowContractWithVersionItem, error) {
+func (action *WorkflowContractUpdate) Run(name string, description *string, contractPath string) (*WorkflowContractWithVersionItem, error) {
 	client := pb.NewWorkflowContractServiceClient(action.cfg.CPConnection)
 
-	request := &pb.WorkflowContractServiceUpdateRequest{Id: contractID, Name: name, Description: description}
+	request := &pb.WorkflowContractServiceUpdateRequest{Name: name, Description: description}
 	if contractPath != "" {
 		contract, err := crafter.LoadSchema(contractPath)
 		if err != nil {

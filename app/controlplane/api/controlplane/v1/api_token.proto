@@ -46,7 +46,6 @@ message APITokenServiceCreateResponse {
 }
 
 message APITokenServiceRevokeRequest {
-  // Name is the identifier of the contract
   string name = 1 [(buf.validate.field) = {
     // NOTE: validations can not be shared yet https://github.com/bufbuild/protovalidate/issues/51
     cel: {

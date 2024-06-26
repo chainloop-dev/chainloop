@@ -54,6 +54,7 @@ type WorkflowContractRepo interface {
 	Create(ctx context.Context, opts *ContractCreateOpts) (*WorkflowContract, error)
 	List(ctx context.Context, orgID uuid.UUID) ([]*WorkflowContract, error)
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*WorkflowContract, error)
+	FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*WorkflowContract, error)
 	Describe(ctx context.Context, orgID, contractID uuid.UUID, revision int) (*WorkflowContractWithVersion, error)
 	FindVersionByID(ctx context.Context, versionID uuid.UUID) (*WorkflowContractVersion, error)
 	Update(ctx context.Context, orgID uuid.UUID, name string, opts *ContractUpdateOpts) (*WorkflowContractWithVersion, error)
@@ -102,6 +103,15 @@ func (uc *WorkflowContractUseCase) FindByIDInOrg(ctx context.Context, orgID, con
 	}
 
 	return uc.repo.FindByIDInOrg(ctx, orgUUID, contractUUID)
+}
+
+func (uc *WorkflowContractUseCase) FindByNameInOrg(ctx context.Context, orgID, name string) (*WorkflowContract, error) {
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return nil, err
+	}
+
+	return uc.repo.FindByNameInOrg(ctx, orgUUID, name)
 }
 
 type WorkflowContractCreateOpts struct {

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,14 +31,14 @@ import (
 const formatContract = "schema"
 
 func newWorkflowContractDescribeCmd() *cobra.Command {
-	var contractID string
+	var name string
 	var revision int32
 
 	cmd := &cobra.Command{
 		Use:   "describe",
 		Short: "Describe the information of the contract",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewWorkflowContractDescribe(actionOpts).Run(contractID, revision)
+			res, err := action.NewWorkflowContractDescribe(actionOpts).Run(name, revision)
 			if err != nil {
 				return err
 			}
@@ -47,9 +47,10 @@ func newWorkflowContractDescribeCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&contractID, "id", "", "contract ID")
-	err := cmd.MarkFlagRequired("id")
+	cmd.Flags().StringVar(&name, "name", "", "contract name")
+	err := cmd.MarkFlagRequired("name")
 	cobra.CheckErr(err)
+
 	// Override default output flag
 	cmd.InheritedFlags().StringVarP(&flagOutputFormat, "output", "o", "table", "output format, valid options are table, json or schema")
 

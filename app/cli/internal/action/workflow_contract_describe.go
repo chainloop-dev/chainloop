@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,10 +34,10 @@ func NewWorkflowContractDescribe(cfg *ActionsOpts) *WorkflowContractDescribe {
 	return &WorkflowContractDescribe{cfg}
 }
 
-func (action *WorkflowContractDescribe) Run(id string, rev int32) (*WorkflowContractWithVersionItem, error) {
+func (action *WorkflowContractDescribe) Run(name string, rev int32) (*WorkflowContractWithVersionItem, error) {
 	client := pb.NewWorkflowContractServiceClient(action.cfg.CPConnection)
 
-	request := &pb.WorkflowContractServiceDescribeRequest{Id: id, Revision: rev}
+	request := &pb.WorkflowContractServiceDescribeRequest{Name: name, Revision: rev}
 
 	resp, err := client.Describe(context.Background(), request)
 	if err != nil {

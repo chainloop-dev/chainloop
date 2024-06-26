@@ -25,14 +25,6 @@ export interface WorkflowContractServiceCreateResponse {
 }
 
 export interface WorkflowContractServiceUpdateRequest {
-  /**
-   * Maintained for backward compatibility until we mover all identifiers to name
-   * Moving forward, the contract name will be used as the identifier
-   *
-   * @deprecated
-   */
-  id: string;
-  /** Name is the identifier of the contract */
   name: string;
   v1?: CraftingSchema | undefined;
   description?: string | undefined;
@@ -48,7 +40,7 @@ export interface WorkflowContractServiceUpdateResponse_Result {
 }
 
 export interface WorkflowContractServiceDescribeRequest {
-  id: string;
+  name: string;
   revision: number;
 }
 
@@ -62,7 +54,7 @@ export interface WorkflowContractServiceDescribeResponse_Result {
 }
 
 export interface WorkflowContractServiceDeleteRequest {
-  id: string;
+  name: string;
 }
 
 export interface WorkflowContractServiceDeleteResponse {
@@ -334,16 +326,13 @@ export const WorkflowContractServiceCreateResponse = {
 };
 
 function createBaseWorkflowContractServiceUpdateRequest(): WorkflowContractServiceUpdateRequest {
-  return { id: "", name: "", v1: undefined, description: undefined };
+  return { name: "", v1: undefined, description: undefined };
 }
 
 export const WorkflowContractServiceUpdateRequest = {
   encode(message: WorkflowContractServiceUpdateRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.id !== "") {
-      writer.uint32(10).string(message.id);
-    }
     if (message.name !== "") {
-      writer.uint32(18).string(message.name);
+      writer.uint32(10).string(message.name);
     }
     if (message.v1 !== undefined) {
       CraftingSchema.encode(message.v1, writer.uint32(26).fork()).ldelim();
@@ -363,13 +352,6 @@ export const WorkflowContractServiceUpdateRequest = {
       switch (tag >>> 3) {
         case 1:
           if (tag !== 10) {
-            break;
-          }
-
-          message.id = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
             break;
           }
 
@@ -400,7 +382,6 @@ export const WorkflowContractServiceUpdateRequest = {
 
   fromJSON(object: any): WorkflowContractServiceUpdateRequest {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
       name: isSet(object.name) ? String(object.name) : "",
       v1: isSet(object.v1) ? CraftingSchema.fromJSON(object.v1) : undefined,
       description: isSet(object.description) ? String(object.description) : undefined,
@@ -409,7 +390,6 @@ export const WorkflowContractServiceUpdateRequest = {
 
   toJSON(message: WorkflowContractServiceUpdateRequest): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
     message.name !== undefined && (obj.name = message.name);
     message.v1 !== undefined && (obj.v1 = message.v1 ? CraftingSchema.toJSON(message.v1) : undefined);
     message.description !== undefined && (obj.description = message.description);
@@ -426,7 +406,6 @@ export const WorkflowContractServiceUpdateRequest = {
     object: I,
   ): WorkflowContractServiceUpdateRequest {
     const message = createBaseWorkflowContractServiceUpdateRequest();
-    message.id = object.id ?? "";
     message.name = object.name ?? "";
     message.v1 = (object.v1 !== undefined && object.v1 !== null) ? CraftingSchema.fromPartial(object.v1) : undefined;
     message.description = object.description ?? undefined;
@@ -581,13 +560,13 @@ export const WorkflowContractServiceUpdateResponse_Result = {
 };
 
 function createBaseWorkflowContractServiceDescribeRequest(): WorkflowContractServiceDescribeRequest {
-  return { id: "", revision: 0 };
+  return { name: "", revision: 0 };
 }
 
 export const WorkflowContractServiceDescribeRequest = {
   encode(message: WorkflowContractServiceDescribeRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.id !== "") {
-      writer.uint32(10).string(message.id);
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
     }
     if (message.revision !== 0) {
       writer.uint32(16).int32(message.revision);
@@ -607,7 +586,7 @@ export const WorkflowContractServiceDescribeRequest = {
             break;
           }
 
-          message.id = reader.string();
+          message.name = reader.string();
           continue;
         case 2:
           if (tag !== 16) {
@@ -627,14 +606,14 @@ export const WorkflowContractServiceDescribeRequest = {
 
   fromJSON(object: any): WorkflowContractServiceDescribeRequest {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
+      name: isSet(object.name) ? String(object.name) : "",
       revision: isSet(object.revision) ? Number(object.revision) : 0,
     };
   },
 
   toJSON(message: WorkflowContractServiceDescribeRequest): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
+    message.name !== undefined && (obj.name = message.name);
     message.revision !== undefined && (obj.revision = Math.round(message.revision));
     return obj;
   },
@@ -649,7 +628,7 @@ export const WorkflowContractServiceDescribeRequest = {
     object: I,
   ): WorkflowContractServiceDescribeRequest {
     const message = createBaseWorkflowContractServiceDescribeRequest();
-    message.id = object.id ?? "";
+    message.name = object.name ?? "";
     message.revision = object.revision ?? 0;
     return message;
   },
@@ -805,13 +784,13 @@ export const WorkflowContractServiceDescribeResponse_Result = {
 };
 
 function createBaseWorkflowContractServiceDeleteRequest(): WorkflowContractServiceDeleteRequest {
-  return { id: "" };
+  return { name: "" };
 }
 
 export const WorkflowContractServiceDeleteRequest = {
   encode(message: WorkflowContractServiceDeleteRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.id !== "") {
-      writer.uint32(10).string(message.id);
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
     }
     return writer;
   },
@@ -828,7 +807,7 @@ export const WorkflowContractServiceDeleteRequest = {
             break;
           }
 
-          message.id = reader.string();
+          message.name = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -840,12 +819,12 @@ export const WorkflowContractServiceDeleteRequest = {
   },
 
   fromJSON(object: any): WorkflowContractServiceDeleteRequest {
-    return { id: isSet(object.id) ? String(object.id) : "" };
+    return { name: isSet(object.name) ? String(object.name) : "" };
   },
 
   toJSON(message: WorkflowContractServiceDeleteRequest): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
@@ -859,7 +838,7 @@ export const WorkflowContractServiceDeleteRequest = {
     object: I,
   ): WorkflowContractServiceDeleteRequest {
     const message = createBaseWorkflowContractServiceDeleteRequest();
-    message.id = object.id ?? "";
+    message.name = object.name ?? "";
     return message;
   },
 };
