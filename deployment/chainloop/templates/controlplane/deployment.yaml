@@ -90,7 +90,7 @@ spec:
               mountPath: /ca_secrets
             {{- end }}
             {{- if and .Values.controlplane.keylessSigning.enabled (eq "ejbcaCA" .Values.controlplane.keylessSigning.backend) }}
-            - name: ejbca-ca-cert
+            - name: ejbca-ca-client
               mountPath: /ca_secrets
             {{- end }}
             {{- if .Values.controlplane.tlsConfig.secret.name  }}
@@ -145,7 +145,7 @@ spec:
             secretName: {{ include "chainloop.controlplane.fullname" . }}-keyless-file-ca
         {{- end }}
         {{- if and .Values.controlplane.keylessSigning.enabled (eq "ejbcaCA" .Values.controlplane.keylessSigning.backend) }}
-        - name: ejbca-ca-cert
+        - name: ejbca-ca-client
           secret:
             secretName: {{ include "chainloop.controlplane.fullname" . }}-keyless-ejbca-ca
         {{- end }}
