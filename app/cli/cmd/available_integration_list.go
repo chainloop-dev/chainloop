@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ func availableIntegrationListTableOutput(items []*action.AvailableIntegrationIte
 	}
 
 	t := newTableWriter()
-	t.AppendHeader(table.Row{"ID", "Version", "Material Requirement", "Description"})
+	t.AppendHeader(table.Row{"Name", "Version", "Material Requirement", "Description"})
 	for _, i := range items {
 		t.AppendRow(table.Row{i.ID, i.Version, strings.Join(i.SubscribedInputs, ", "), i.Description})
 		t.AppendSeparator()

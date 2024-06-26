@@ -40,6 +40,7 @@ type tabulatedData interface {
 		*action.WorkflowContractWithVersionItem |
 		*action.ConfigContextItem |
 		[]*action.RegisteredIntegrationItem |
+		*action.RegisteredIntegrationItem |
 		[]*action.AvailableIntegrationItem |
 		[]*action.AttachedIntegrationItem |
 		[]*action.MembershipItem |

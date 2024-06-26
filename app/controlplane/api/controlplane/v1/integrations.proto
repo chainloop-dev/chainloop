@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,10 +17,10 @@ syntax = "proto3";
 
 package controlplane.v1;
 
+import "buf/validate/validate.proto";
 import "controlplane/v1/response_messages.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
-import "buf/validate/validate.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
@@ -152,7 +152,13 @@ message IntegrationAttachmentItem {
 }
 
 message IntegrationsServiceDeregisterRequest {
-  string id = 1 [(buf.validate.field).string.uuid = true];
+  string name = 1 [(buf.validate.field) = {
+    cel: {
+      message: "has an invalid format",
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
+      id: "name.dns-1123",
+    },
+  }];
 }
 
 message IntegrationsServiceDeregisterResponse {}

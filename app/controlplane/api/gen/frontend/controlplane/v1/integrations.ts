@@ -117,7 +117,7 @@ export interface IntegrationAttachmentItem {
 }
 
 export interface IntegrationsServiceDeregisterRequest {
-  id: string;
+  name: string;
 }
 
 export interface IntegrationsServiceDeregisterResponse {
@@ -1460,13 +1460,13 @@ export const IntegrationAttachmentItem = {
 };
 
 function createBaseIntegrationsServiceDeregisterRequest(): IntegrationsServiceDeregisterRequest {
-  return { id: "" };
+  return { name: "" };
 }
 
 export const IntegrationsServiceDeregisterRequest = {
   encode(message: IntegrationsServiceDeregisterRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.id !== "") {
-      writer.uint32(10).string(message.id);
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
     }
     return writer;
   },
@@ -1483,7 +1483,7 @@ export const IntegrationsServiceDeregisterRequest = {
             break;
           }
 
-          message.id = reader.string();
+          message.name = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1495,12 +1495,12 @@ export const IntegrationsServiceDeregisterRequest = {
   },
 
   fromJSON(object: any): IntegrationsServiceDeregisterRequest {
-    return { id: isSet(object.id) ? String(object.id) : "" };
+    return { name: isSet(object.name) ? String(object.name) : "" };
   },
 
   toJSON(message: IntegrationsServiceDeregisterRequest): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
@@ -1514,7 +1514,7 @@ export const IntegrationsServiceDeregisterRequest = {
     object: I,
   ): IntegrationsServiceDeregisterRequest {
     const message = createBaseIntegrationsServiceDeregisterRequest();
-    message.id = object.id ?? "";
+    message.name = object.name ?? "";
     return message;
   },
 };

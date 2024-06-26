@@ -71,6 +71,7 @@ type IntegrationRepo interface {
 	Create(ctx context.Context, opts *IntegrationCreateOpts) (*Integration, error)
 	List(ctx context.Context, orgID uuid.UUID) ([]*Integration, error)
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*Integration, error)
+	FindByNameInOrg(ctx context.Context, orgID uuid.UUID, ID string) (*Integration, error)
 	SoftDelete(ctx context.Context, ID uuid.UUID) error
 }
 
@@ -269,6 +270,15 @@ func (uc *IntegrationUseCase) FindByIDInOrg(ctx context.Context, orgID, id strin
 	}
 
 	return uc.integrationRepo.FindByIDInOrg(ctx, orgUUID, uuid)
+}
+
+func (uc *IntegrationUseCase) FindByNameInOrg(ctx context.Context, orgID, name string) (*Integration, error) {
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	return uc.integrationRepo.FindByNameInOrg(ctx, orgUUID, name)
 }
 
 func (uc *IntegrationUseCase) Delete(ctx context.Context, orgID, integrationID string) error {

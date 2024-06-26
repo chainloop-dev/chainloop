@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,29 +29,28 @@ import (
 )
 
 func newAvailableIntegrationDescribeCmd() *cobra.Command {
-	var integrationID string
+	var integrationName string
 
 	cmd := &cobra.Command{
 		Use:   "describe",
 		Short: "Describe integration",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			item, err := action.NewAvailableIntegrationDescribe(actionOpts).Run(integrationID)
+			item, err := action.NewAvailableIntegrationDescribe(actionOpts).Run(integrationName)
 			if err != nil {
 				return err
 			}
 
 			if item == nil {
-				return fmt.Errorf("integration %q not found", integrationID)
+				return fmt.Errorf("integration %q not found", integrationName)
 			}
 
 			return encodeOutput([]*action.AvailableIntegrationItem{item}, availableIntegrationDescribeTableOutput)
 		},
 	}
 
-	cmd.Flags().StringVar(&integrationID, "id", "", "integration ID")
+	cmd.Flags().StringVar(&integrationName, "name", "", "integration name")
+	cobra.CheckErr(cmd.MarkFlagRequired("name"))
 	cmd.Flags().BoolVar(&full, "full", false, "show the full output including JSON schemas")
-	err := cmd.MarkFlagRequired("id")
-	cobra.CheckErr(err)
 
 	return cmd
 }
