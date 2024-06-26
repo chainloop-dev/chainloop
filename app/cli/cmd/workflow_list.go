@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -54,8 +54,8 @@ func WorkflowListTableOutput(workflows []*action.WorkflowItem) error {
 		return nil
 	}
 
-	headerRow := table.Row{"ID", "Name", "Project", "Created At", "Runner", "Last Run status"}
-	headerRowFull := table.Row{"ID", "Name", "Description", "Project", "Team", "Created At", "Runner", "Last Run status", "Public", "Contract ID"}
+	headerRow := table.Row{"Name", "Project", "Public", "Runner", "Last Run status", "Created At"}
+	headerRowFull := table.Row{"Name", "Description", "Project", "Team", "Public", "Runner", "Last Run status", "Contract ID", "Created At"}
 
 	t := newTableWriter()
 	if full {
@@ -74,14 +74,16 @@ func WorkflowListTableOutput(workflows []*action.WorkflowItem) error {
 
 		if !full {
 			row = table.Row{
-				p.ID, p.Name, p.Project,
-				p.CreatedAt.Format(time.RFC822), lastRunRunner, lastRunState,
+				p.Name, p.Project, p.Public,
+				lastRunRunner, lastRunState,
+				p.CreatedAt.Format(time.RFC822),
 			}
 		} else {
 			row = table.Row{
-				p.ID, p.Name, p.Description, p.Project, p.Team,
-				p.CreatedAt.Format(time.RFC822), lastRunRunner, lastRunState,
-				p.Public, p.ContractID,
+				p.Name, p.Description, p.Project, p.Team, p.Public,
+				lastRunRunner, lastRunState,
+				p.ContractID,
+				p.CreatedAt.Format(time.RFC822),
 			}
 		}
 

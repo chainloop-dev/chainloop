@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,10 +29,9 @@ func NewWorkflowDelete(cfg *ActionsOpts) *WorkflowDelete {
 	return &WorkflowDelete{cfg}
 }
 
-func (action *WorkflowDelete) Run(workflowID string) error {
+func (action *WorkflowDelete) Run(name string) error {
 	client := pb.NewWorkflowServiceClient(action.cfg.CPConnection)
-	if _, err := client.Delete(context.Background(), &pb.WorkflowServiceDeleteRequest{Id: workflowID}); err != nil {
-		action.cfg.Logger.Debug().Err(err).Msg("making the API request")
+	if _, err := client.Delete(context.Background(), &pb.WorkflowServiceDeleteRequest{Name: name}); err != nil {
 		return err
 	}
 

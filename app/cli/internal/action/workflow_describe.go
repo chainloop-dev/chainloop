@@ -29,13 +29,10 @@ func NewWorkflowDescribe(cfg *ActionsOpts) *WorkflowDescribe {
 	return &WorkflowDescribe{cfg}
 }
 
-func (action *WorkflowDescribe) Run(ctx context.Context, workflowID, workflowName string) (*WorkflowItem, error) {
+func (action *WorkflowDescribe) Run(ctx context.Context, name string) (*WorkflowItem, error) {
 	client := pb.NewWorkflowServiceClient(action.cfg.CPConnection)
 
-	req := &pb.WorkflowServiceViewRequest{Id: workflowID}
-	if workflowName != "" {
-		req.Name = workflowName
-	}
+	req := &pb.WorkflowServiceViewRequest{Name: name}
 	resp, err := client.View(ctx, req)
 	if err != nil {
 		return nil, err

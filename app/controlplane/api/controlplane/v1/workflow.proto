@@ -17,8 +17,8 @@ syntax = "proto3";
 
 package controlplane.v1;
 
-import "controlplane/v1/response_messages.proto";
 import "buf/validate/validate.proto";
+import "controlplane/v1/response_messages.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
@@ -31,7 +31,14 @@ service WorkflowService {
 }
 
 message WorkflowServiceCreateRequest {
-  string name = 1 [(buf.validate.field).string = {min_len: 1}];
+  string name = 1 [(buf.validate.field) = {
+    // NOTE: validations can not be shared yet https://github.com/bufbuild/protovalidate/issues/51
+    cel: {
+      message: "has an invalid format",
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
+      id: "name.dns-1123",
+    },
+  }];
   string project = 2 [(buf.validate.field).string = {min_len: 1}];
   // The ID of the workload schema to be associated with, if no provided one will be created for you
   string schema_id = 3;
@@ -41,7 +48,14 @@ message WorkflowServiceCreateRequest {
 }
 
 message WorkflowServiceUpdateRequest {
-  string id = 1 [(buf.validate.field).string.uuid = true];
+  string name = 1 [(buf.validate.field) = {
+    // NOTE: validations can not be shared yet https://github.com/bufbuild/protovalidate/issues/51
+    cel: {
+      message: "has an invalid format",
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
+      id: "name.dns-1123",
+    },
+  }];
   // "optional" allow us to detect if the value is explicitly set
   // and not just the default value
   optional string project = 3;
@@ -60,7 +74,14 @@ message WorkflowServiceCreateResponse {
 }
 
 message WorkflowServiceDeleteRequest {
-  string id = 1 [(buf.validate.field).string.uuid = true];
+  string name = 1 [(buf.validate.field) = {
+    // NOTE: validations can not be shared yet https://github.com/bufbuild/protovalidate/issues/51
+    cel: {
+      message: "has an invalid format",
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
+      id: "name.dns-1123",
+    },
+  }];
 }
 
 message WorkflowServiceDeleteResponse {}
@@ -71,30 +92,14 @@ message WorkflowServiceListResponse {
 }
 
 message WorkflowServiceViewRequest {
-  string id = 1 [
-    deprecated = true,
-    (buf.validate.field) = {
-      string: {uuid: true},
-      ignore_empty: true,
-    }
-  ];
-
-  string name = 2 [
-    (buf.validate.field) = {
-      ignore_empty: true,
-      cel: {
-        message: "name must be a valid DNS-1123 subdomain",
-        expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
-        id: "name.dns-1123",
-      },
-    }
-  ];
-
-  option (buf.validate.message).cel = {
-    id: "either-name-or-id-required",
-    message: "either name or id are required",
-    expression: "has(this.id) || has(this.name)"
-  };
+  string name = 1 [(buf.validate.field) = {
+    // NOTE: validations can not be shared yet https://github.com/bufbuild/protovalidate/issues/51
+    cel: {
+      message: "has an invalid format",
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
+      id: "name.dns-1123",
+    },
+  }];
 }
 
 message WorkflowServiceViewResponse {
