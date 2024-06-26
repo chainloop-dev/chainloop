@@ -154,10 +154,6 @@ func (r *CASBackendRepo) Update(ctx context.Context, opts *biz.CASBackendUpdateO
 		updateChain = updateChain.SetDescription(opts.Description)
 	}
 
-	if opts.Name != "" {
-		updateChain = updateChain.SetName(opts.Name)
-	}
-
 	// If secretName is provided we set it
 	if opts.SecretName != "" {
 		updateChain = updateChain.SetSecretName(opts.SecretName)

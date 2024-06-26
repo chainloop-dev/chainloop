@@ -72,14 +72,15 @@ type CASBackendLimits struct {
 }
 
 type CASBackendOpts struct {
-	OrgID                                   uuid.UUID
-	Location, SecretName, Description, Name string
-	Provider                                CASBackendProvider
-	Default                                 bool
+	OrgID                             uuid.UUID
+	Location, SecretName, Description string
+	Provider                          CASBackendProvider
+	Default                           bool
 }
 
 type CASBackendCreateOpts struct {
 	*CASBackendOpts
+	Name     string
 	Fallback bool
 	MaxBytes int64
 }
@@ -192,10 +193,10 @@ func (uc *CASBackendUseCase) CreateInlineFallbackBackend(ctx context.Context, or
 	}
 
 	return uc.repo.Create(ctx, &CASBackendCreateOpts{
+		Name:     "default-inline",
 		Fallback: true,
 		MaxBytes: CASBackendInlineDefaultMaxBytes,
 		CASBackendOpts: &CASBackendOpts{
-			Name:     "default-inline",
 			Provider: CASBackendInline, Default: true,
 			Description: "Embed artifacts content in the attestation (fallback)",
 			OrgID:       orgUUID,
@@ -243,11 +244,11 @@ func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name, location, 
 
 	backend, err := uc.repo.Create(ctx, &CASBackendCreateOpts{
 		MaxBytes: CASBackendDefaultMaxBytes,
+		Name:     name,
 		CASBackendOpts: &CASBackendOpts{
 			Location: location, SecretName: secretName, Provider: provider, Default: defaultB,
 			Description: description,
 			OrgID:       orgUUID,
-			Name:        name,
 		},
 	})
 
@@ -299,7 +300,7 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id, name, descri
 	after, err := uc.repo.Update(ctx, &CASBackendUpdateOpts{
 		ID: uuid,
 		CASBackendOpts: &CASBackendOpts{
-			SecretName: secretName, Default: defaultB, Description: description, OrgID: orgUUID, Name: name,
+			SecretName: secretName, Default: defaultB, Description: description, OrgID: orgUUID,
 		},
 	})
 	if err != nil {
