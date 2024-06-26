@@ -20,7 +20,6 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
-	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -69,6 +68,11 @@ func (s *WorkflowService) Update(ctx context.Context, req *pb.WorkflowServiceUpd
 		return nil, err
 	}
 
+	wf, err := s.useCase.FindByNameInOrg(ctx, currentOrg.ID, req.Name)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
 	updateOpts := &biz.WorkflowUpdateOpts{
 		Project:     req.Project,
 		Team:        req.Team,
@@ -77,7 +81,7 @@ func (s *WorkflowService) Update(ctx context.Context, req *pb.WorkflowServiceUpd
 		ContractID:  req.SchemaId,
 	}
 
-	p, err := s.useCase.Update(ctx, currentOrg.ID, req.Id, updateOpts)
+	p, err := s.useCase.Update(ctx, currentOrg.ID, wf.ID.String(), updateOpts)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -110,7 +114,12 @@ func (s *WorkflowService) Delete(ctx context.Context, req *pb.WorkflowServiceDel
 		return nil, err
 	}
 
-	if err := s.useCase.Delete(ctx, currentOrg.ID, req.Id); err != nil {
+	wf, err := s.useCase.FindByNameInOrg(ctx, currentOrg.ID, req.Name)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	if err := s.useCase.Delete(ctx, currentOrg.ID, wf.ID.String()); err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
@@ -125,15 +134,7 @@ func (s *WorkflowService) View(ctx context.Context, req *pb.WorkflowServiceViewR
 
 	var wf *biz.Workflow
 
-	// nolint:gocritic
-	if req.Name != "" {
-		wf, err = s.useCase.FindByNameInOrg(ctx, currentOrg.ID, req.Name)
-	} else if req.Id != "" {
-		wf, err = s.useCase.FindByIDInOrg(ctx, currentOrg.ID, req.Id)
-	} else {
-		return nil, errors.BadRequest("invalid", "either workflow ID or Name is required")
-	}
-
+	wf, err = s.useCase.FindByNameInOrg(ctx, currentOrg.ID, req.Name)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}

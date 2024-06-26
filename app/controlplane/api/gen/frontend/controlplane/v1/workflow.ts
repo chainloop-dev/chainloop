@@ -17,7 +17,7 @@ export interface WorkflowServiceCreateRequest {
 }
 
 export interface WorkflowServiceUpdateRequest {
-  id: string;
+  name: string;
   /**
    * "optional" allow us to detect if the value is explicitly set
    * and not just the default value
@@ -38,7 +38,7 @@ export interface WorkflowServiceCreateResponse {
 }
 
 export interface WorkflowServiceDeleteRequest {
-  id: string;
+  name: string;
 }
 
 export interface WorkflowServiceDeleteResponse {
@@ -52,8 +52,6 @@ export interface WorkflowServiceListResponse {
 }
 
 export interface WorkflowServiceViewRequest {
-  /** @deprecated */
-  id: string;
   name: string;
 }
 
@@ -186,7 +184,7 @@ export const WorkflowServiceCreateRequest = {
 
 function createBaseWorkflowServiceUpdateRequest(): WorkflowServiceUpdateRequest {
   return {
-    id: "",
+    name: "",
     project: undefined,
     team: undefined,
     public: undefined,
@@ -197,8 +195,8 @@ function createBaseWorkflowServiceUpdateRequest(): WorkflowServiceUpdateRequest 
 
 export const WorkflowServiceUpdateRequest = {
   encode(message: WorkflowServiceUpdateRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.id !== "") {
-      writer.uint32(10).string(message.id);
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
     }
     if (message.project !== undefined) {
       writer.uint32(26).string(message.project);
@@ -230,7 +228,7 @@ export const WorkflowServiceUpdateRequest = {
             break;
           }
 
-          message.id = reader.string();
+          message.name = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
@@ -278,7 +276,7 @@ export const WorkflowServiceUpdateRequest = {
 
   fromJSON(object: any): WorkflowServiceUpdateRequest {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
+      name: isSet(object.name) ? String(object.name) : "",
       project: isSet(object.project) ? String(object.project) : undefined,
       team: isSet(object.team) ? String(object.team) : undefined,
       public: isSet(object.public) ? Boolean(object.public) : undefined,
@@ -289,7 +287,7 @@ export const WorkflowServiceUpdateRequest = {
 
   toJSON(message: WorkflowServiceUpdateRequest): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
+    message.name !== undefined && (obj.name = message.name);
     message.project !== undefined && (obj.project = message.project);
     message.team !== undefined && (obj.team = message.team);
     message.public !== undefined && (obj.public = message.public);
@@ -304,7 +302,7 @@ export const WorkflowServiceUpdateRequest = {
 
   fromPartial<I extends Exact<DeepPartial<WorkflowServiceUpdateRequest>, I>>(object: I): WorkflowServiceUpdateRequest {
     const message = createBaseWorkflowServiceUpdateRequest();
-    message.id = object.id ?? "";
+    message.name = object.name ?? "";
     message.project = object.project ?? undefined;
     message.team = object.team ?? undefined;
     message.public = object.public ?? undefined;
@@ -435,13 +433,13 @@ export const WorkflowServiceCreateResponse = {
 };
 
 function createBaseWorkflowServiceDeleteRequest(): WorkflowServiceDeleteRequest {
-  return { id: "" };
+  return { name: "" };
 }
 
 export const WorkflowServiceDeleteRequest = {
   encode(message: WorkflowServiceDeleteRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.id !== "") {
-      writer.uint32(10).string(message.id);
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
     }
     return writer;
   },
@@ -458,7 +456,7 @@ export const WorkflowServiceDeleteRequest = {
             break;
           }
 
-          message.id = reader.string();
+          message.name = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -470,12 +468,12 @@ export const WorkflowServiceDeleteRequest = {
   },
 
   fromJSON(object: any): WorkflowServiceDeleteRequest {
-    return { id: isSet(object.id) ? String(object.id) : "" };
+    return { name: isSet(object.name) ? String(object.name) : "" };
   },
 
   toJSON(message: WorkflowServiceDeleteRequest): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
@@ -485,7 +483,7 @@ export const WorkflowServiceDeleteRequest = {
 
   fromPartial<I extends Exact<DeepPartial<WorkflowServiceDeleteRequest>, I>>(object: I): WorkflowServiceDeleteRequest {
     const message = createBaseWorkflowServiceDeleteRequest();
-    message.id = object.id ?? "";
+    message.name = object.name ?? "";
     return message;
   },
 };
@@ -639,16 +637,13 @@ export const WorkflowServiceListResponse = {
 };
 
 function createBaseWorkflowServiceViewRequest(): WorkflowServiceViewRequest {
-  return { id: "", name: "" };
+  return { name: "" };
 }
 
 export const WorkflowServiceViewRequest = {
   encode(message: WorkflowServiceViewRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.id !== "") {
-      writer.uint32(10).string(message.id);
-    }
     if (message.name !== "") {
-      writer.uint32(18).string(message.name);
+      writer.uint32(10).string(message.name);
     }
     return writer;
   },
@@ -665,13 +660,6 @@ export const WorkflowServiceViewRequest = {
             break;
           }
 
-          message.id = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
           message.name = reader.string();
           continue;
       }
@@ -684,12 +672,11 @@ export const WorkflowServiceViewRequest = {
   },
 
   fromJSON(object: any): WorkflowServiceViewRequest {
-    return { id: isSet(object.id) ? String(object.id) : "", name: isSet(object.name) ? String(object.name) : "" };
+    return { name: isSet(object.name) ? String(object.name) : "" };
   },
 
   toJSON(message: WorkflowServiceViewRequest): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
     message.name !== undefined && (obj.name = message.name);
     return obj;
   },
@@ -700,7 +687,6 @@ export const WorkflowServiceViewRequest = {
 
   fromPartial<I extends Exact<DeepPartial<WorkflowServiceViewRequest>, I>>(object: I): WorkflowServiceViewRequest {
     const message = createBaseWorkflowServiceViewRequest();
-    message.id = object.id ?? "";
     message.name = object.name ?? "";
     return message;
   },

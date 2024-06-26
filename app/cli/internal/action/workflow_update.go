@@ -34,10 +34,10 @@ type WorkflowUpdateOpts struct {
 	Public                                 *bool
 }
 
-func (action *WorkflowUpdate) Run(ctx context.Context, id string, opts *WorkflowUpdateOpts) (*WorkflowItem, error) {
+func (action *WorkflowUpdate) Run(ctx context.Context, name string, opts *WorkflowUpdateOpts) (*WorkflowItem, error) {
 	client := pb.NewWorkflowServiceClient(action.cfg.CPConnection)
 	resp, err := client.Update(ctx, &pb.WorkflowServiceUpdateRequest{
-		Id:          id,
+		Name:        name,
 		Description: opts.Description,
 		Project:     opts.Project,
 		Team:        opts.Team,
