@@ -4,7 +4,7 @@ VERSION=$(shell git describe --tags --always)
 # init env
 init: init-api-tools
 	go install github.com/google/wire/cmd/wire@latest
-	go install github.com/vektra/mockery/v2@v2.20.0
+	go install github.com/vektra/mockery/v2@v2.43.2
 	# using binary release for atlas, since ent schema handler is not included
 	# in the community version anymore https://github.com/ariga/atlas/issues/2388#issuecomment-1864287189
 	curl -sSf https://atlasgo.sh | sh -s -- -y

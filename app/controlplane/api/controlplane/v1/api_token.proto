@@ -17,9 +17,9 @@ syntax = "proto3";
 
 package controlplane.v1;
 
+import "buf/validate/validate.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
-import "buf/validate/validate.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
@@ -46,7 +46,15 @@ message APITokenServiceCreateResponse {
 }
 
 message APITokenServiceRevokeRequest {
-  string id = 1 [(buf.validate.field).string.uuid = true];
+  // Name is the identifier of the contract
+  string name = 1 [(buf.validate.field) = {
+    // NOTE: validations can not be shared yet https://github.com/bufbuild/protovalidate/issues/51
+    cel: {
+      message: "has an invalid format",
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
+      id: "name.dns-1123",
+    },
+  }];
 }
 
 message APITokenServiceRevokeResponse {}

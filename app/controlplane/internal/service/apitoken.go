@@ -88,7 +88,12 @@ func (s *APITokenService) Revoke(ctx context.Context, req *pb.APITokenServiceRev
 		return nil, err
 	}
 
-	if err := s.APITokenUseCase.Revoke(ctx, currentOrg.ID, req.Id); err != nil {
+	t, err := s.APITokenUseCase.FindByNameInOrg(ctx, currentOrg.ID, req.Name)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	if err := s.APITokenUseCase.Revoke(ctx, currentOrg.ID, t.ID.String()); err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 

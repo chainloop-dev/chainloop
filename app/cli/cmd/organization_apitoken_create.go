@@ -50,7 +50,7 @@ func newAPITokenCreateCmd() *cobra.Command {
 				return nil
 			}
 
-			return encodeOutput([]*action.APITokenItem{res}, apiTokenListTableOutput)
+			return encodeOutput(res, apiTokenItemTableOutput)
 		},
 	}
 
@@ -65,6 +65,10 @@ func newAPITokenCreateCmd() *cobra.Command {
 	return cmd
 }
 
+func apiTokenItemTableOutput(token *action.APITokenItem) error {
+	return apiTokenListTableOutput([]*action.APITokenItem{token})
+}
+
 func apiTokenListTableOutput(tokens []*action.APITokenItem) error {
 	if len(tokens) == 0 {
 		fmt.Println("there are no API tokens in this org")
@@ -73,9 +77,9 @@ func apiTokenListTableOutput(tokens []*action.APITokenItem) error {
 
 	t := newTableWriter()
 
-	t.AppendHeader(table.Row{"ID", "Name", "Description", "Created At", "Expires At", "Revoked At"})
+	t.AppendHeader(table.Row{"Name", "Description", "Created At", "Expires At", "Revoked At"})
 	for _, p := range tokens {
-		r := table.Row{p.ID, p.Name, p.Description, p.CreatedAt.Format(time.RFC822)}
+		r := table.Row{p.Name, p.Description, p.CreatedAt.Format(time.RFC822)}
 		if p.ExpiresAt != nil {
 			r = append(r, p.ExpiresAt.Format(time.RFC822))
 		} else {

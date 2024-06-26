@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,13 +24,13 @@ import (
 )
 
 func newAPITokenRevokeCmd() *cobra.Command {
-	var apiTokenID string
+	var name string
 
 	cmd := &cobra.Command{
 		Use:   "revoke",
 		Short: "revoke API token",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := action.NewAPITokenRevoke(actionOpts).Run(context.Background(), apiTokenID); err != nil {
+			if err := action.NewAPITokenRevoke(actionOpts).Run(context.Background(), name); err != nil {
 				return fmt.Errorf("revoking API token: %w", err)
 			}
 
@@ -39,8 +39,8 @@ func newAPITokenRevokeCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&apiTokenID, "id", "", "API token ID")
-	err := cmd.MarkFlagRequired("id")
+	cmd.Flags().StringVar(&name, "name", "", "API token name")
+	err := cmd.MarkFlagRequired("name")
 	cobra.CheckErr(err)
 
 	return cmd
