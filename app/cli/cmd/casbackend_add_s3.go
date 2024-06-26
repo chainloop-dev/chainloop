@@ -66,7 +66,7 @@ func newCASBackendAddAWSS3Cmd() *cobra.Command {
 				return nil
 			}
 
-			return encodeOutput([]*action.CASBackendItem{res}, casBackendListTableOutput)
+			return encodeOutput(res, casBackendItemTableOutput)
 		},
 	}
 

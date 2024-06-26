@@ -97,8 +97,7 @@ func (s *CASBackendService) Update(ctx context.Context, req *pb.CASBackendServic
 		return nil, err
 	}
 
-	// find the backend to update
-	backend, err := s.uc.FindByIDInOrg(ctx, currentOrg.ID, req.Id)
+	backend, err := s.uc.FindByNameInOrg(ctx, currentOrg.ID, req.Name)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -125,7 +124,7 @@ func (s *CASBackendService) Update(ctx context.Context, req *pb.CASBackendServic
 	}
 
 	// For now we only support one backend which is set as default
-	res, err := s.uc.Update(ctx, currentOrg.ID, req.Id, req.Name, req.Description, creds, req.Default)
+	res, err := s.uc.Update(ctx, currentOrg.ID, backend.ID.String(), req.Description, creds, req.Default)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -140,8 +139,13 @@ func (s *CASBackendService) Delete(ctx context.Context, req *pb.CASBackendServic
 		return nil, err
 	}
 
+	backend, err := s.uc.FindByNameInOrg(ctx, currentOrg.ID, req.Name)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
 	// In fact we soft-delete the backend instead
-	if err := s.uc.SoftDelete(ctx, currentOrg.ID, req.Id); err != nil {
+	if err := s.uc.SoftDelete(ctx, currentOrg.ID, backend.ID.String()); err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 

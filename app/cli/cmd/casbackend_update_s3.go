@@ -22,7 +22,7 @@ import (
 )
 
 func newCASBackendUpdateAWSS3Cmd() *cobra.Command {
-	var backendID, accessKeyID, secretAccessKey, region string
+	var backendName, accessKeyID, secretAccessKey, region string
 	cmd := &cobra.Command{
 		Use:   "aws-s3",
 		Short: "Update a AWS S3 CAS Backend description, credentials or default status",
@@ -35,12 +35,9 @@ func newCASBackendUpdateAWSS3Cmd() *cobra.Command {
 			description, err := cmd.Flags().GetString("description")
 			cobra.CheckErr(err)
 
-			name, err := cmd.Flags().GetString("name")
-			cobra.CheckErr(err)
-
 			// If we are overriding the default we ask for confirmation
 			if isDefault {
-				if confirmed, err := confirmDefaultCASBackendOverride(actionOpts, backendID); err != nil {
+				if confirmed, err := confirmDefaultCASBackendOverride(actionOpts, backendName); err != nil {
 					return err
 				} else if !confirmed {
 					log.Info("Aborting...")
@@ -48,7 +45,7 @@ func newCASBackendUpdateAWSS3Cmd() *cobra.Command {
 				}
 			} else {
 				// If we are removing the default we ask for confirmation too
-				if confirmed, err := confirmDefaultCASBackendUnset(backendID, "You are setting the default CAS backend to false", actionOpts); err != nil {
+				if confirmed, err := confirmDefaultCASBackendUnset(backendName, "You are setting the default CAS backend to false", actionOpts); err != nil {
 					return err
 				} else if !confirmed {
 					log.Info("Aborting...")
@@ -57,8 +54,7 @@ func newCASBackendUpdateAWSS3Cmd() *cobra.Command {
 			}
 
 			opts := &action.NewCASBackendUpdateOpts{
-				ID:          backendID,
-				Name:        name,
+				Name:        backendName,
 				Description: description,
 				Credentials: map[string]any{
 					"accessKeyID":     accessKeyID,
@@ -80,12 +76,12 @@ func newCASBackendUpdateAWSS3Cmd() *cobra.Command {
 				return nil
 			}
 
-			return encodeOutput([]*action.CASBackendItem{res}, casBackendListTableOutput)
+			return encodeOutput(res, casBackendItemTableOutput)
 		},
 	}
 
-	cmd.Flags().StringVar(&backendID, "id", "", "CAS Backend ID")
-	err := cmd.MarkFlagRequired("id")
+	cmd.Flags().StringVar(&backendName, "name", "", "CAS Backend name")
+	err := cmd.MarkFlagRequired("name")
 	cobra.CheckErr(err)
 
 	cmd.Flags().StringVar(&accessKeyID, "access-key-id", "", "AWS Access Key ID")

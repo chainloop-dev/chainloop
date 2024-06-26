@@ -22,7 +22,7 @@ import (
 )
 
 func newCASBackendUpdateAzureBlobCmd() *cobra.Command {
-	var backendID, tenantID, clientID, clientSecret string
+	var backendName, tenantID, clientID, clientSecret string
 	cmd := &cobra.Command{
 		Use:   "azure-blob",
 		Short: "Update a AzureBlob CAS Backend description, credentials or default status",
@@ -35,12 +35,9 @@ func newCASBackendUpdateAzureBlobCmd() *cobra.Command {
 			description, err := cmd.Flags().GetString("description")
 			cobra.CheckErr(err)
 
-			name, err := cmd.Flags().GetString("name")
-			cobra.CheckErr(err)
-
 			// If we are overriding the default we ask for confirmation
 			if isDefault {
-				if confirmed, err := confirmDefaultCASBackendOverride(actionOpts, backendID); err != nil {
+				if confirmed, err := confirmDefaultCASBackendOverride(actionOpts, backendName); err != nil {
 					return err
 				} else if !confirmed {
 					log.Info("Aborting...")
@@ -48,7 +45,7 @@ func newCASBackendUpdateAzureBlobCmd() *cobra.Command {
 				}
 			} else {
 				// If we are removing the default we ask for confirmation too
-				if confirmed, err := confirmDefaultCASBackendUnset(backendID, "You are setting the default CAS backend to false", actionOpts); err != nil {
+				if confirmed, err := confirmDefaultCASBackendUnset(backendName, "You are setting the default CAS backend to false", actionOpts); err != nil {
 					return err
 				} else if !confirmed {
 					log.Info("Aborting...")
@@ -57,8 +54,7 @@ func newCASBackendUpdateAzureBlobCmd() *cobra.Command {
 			}
 
 			opts := &action.NewCASBackendUpdateOpts{
-				ID:          backendID,
-				Name:        name,
+				Name:        backendName,
 				Description: description,
 				Credentials: map[string]any{
 					"tenantID":     tenantID,
@@ -80,12 +76,12 @@ func newCASBackendUpdateAzureBlobCmd() *cobra.Command {
 				return nil
 			}
 
-			return encodeOutput([]*action.CASBackendItem{res}, casBackendListTableOutput)
+			return encodeOutput(res, casBackendItemTableOutput)
 		},
 	}
 
-	cmd.Flags().StringVar(&backendID, "id", "", "CAS Backend ID")
-	err := cmd.MarkFlagRequired("id")
+	cmd.Flags().StringVar(&backendName, "name", "", "CAS Backend name")
+	err := cmd.MarkFlagRequired("name")
 	cobra.CheckErr(err)
 
 	cmd.Flags().StringVar(&tenantID, "tenant", "", "Active Directory Tenant ID")

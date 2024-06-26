@@ -82,9 +82,6 @@ export interface CASBackendServiceCreateResponse {
  * - rotate credentials
  */
 export interface CASBackendServiceUpdateRequest {
-  /** UUID of the workflow to attach */
-  id: string;
-  /** unique name */
   name: string;
   /** Description */
   description: string;
@@ -99,7 +96,7 @@ export interface CASBackendServiceUpdateResponse {
 }
 
 export interface CASBackendServiceDeleteRequest {
-  id: string;
+  name: string;
 }
 
 export interface CASBackendServiceDeleteResponse {
@@ -397,16 +394,13 @@ export const CASBackendServiceCreateResponse = {
 };
 
 function createBaseCASBackendServiceUpdateRequest(): CASBackendServiceUpdateRequest {
-  return { id: "", name: "", description: "", default: false, credentials: undefined };
+  return { name: "", description: "", default: false, credentials: undefined };
 }
 
 export const CASBackendServiceUpdateRequest = {
   encode(message: CASBackendServiceUpdateRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.id !== "") {
-      writer.uint32(10).string(message.id);
-    }
     if (message.name !== "") {
-      writer.uint32(42).string(message.name);
+      writer.uint32(10).string(message.name);
     }
     if (message.description !== "") {
       writer.uint32(18).string(message.description);
@@ -429,13 +423,6 @@ export const CASBackendServiceUpdateRequest = {
       switch (tag >>> 3) {
         case 1:
           if (tag !== 10) {
-            break;
-          }
-
-          message.id = reader.string();
-          continue;
-        case 5:
-          if (tag !== 42) {
             break;
           }
 
@@ -473,7 +460,6 @@ export const CASBackendServiceUpdateRequest = {
 
   fromJSON(object: any): CASBackendServiceUpdateRequest {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
       name: isSet(object.name) ? String(object.name) : "",
       description: isSet(object.description) ? String(object.description) : "",
       default: isSet(object.default) ? Boolean(object.default) : false,
@@ -483,7 +469,6 @@ export const CASBackendServiceUpdateRequest = {
 
   toJSON(message: CASBackendServiceUpdateRequest): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
     message.name !== undefined && (obj.name = message.name);
     message.description !== undefined && (obj.description = message.description);
     message.default !== undefined && (obj.default = message.default);
@@ -499,7 +484,6 @@ export const CASBackendServiceUpdateRequest = {
     object: I,
   ): CASBackendServiceUpdateRequest {
     const message = createBaseCASBackendServiceUpdateRequest();
-    message.id = object.id ?? "";
     message.name = object.name ?? "";
     message.description = object.description ?? "";
     message.default = object.default ?? false;
@@ -569,13 +553,13 @@ export const CASBackendServiceUpdateResponse = {
 };
 
 function createBaseCASBackendServiceDeleteRequest(): CASBackendServiceDeleteRequest {
-  return { id: "" };
+  return { name: "" };
 }
 
 export const CASBackendServiceDeleteRequest = {
   encode(message: CASBackendServiceDeleteRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.id !== "") {
-      writer.uint32(10).string(message.id);
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
     }
     return writer;
   },
@@ -592,7 +576,7 @@ export const CASBackendServiceDeleteRequest = {
             break;
           }
 
-          message.id = reader.string();
+          message.name = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -604,12 +588,12 @@ export const CASBackendServiceDeleteRequest = {
   },
 
   fromJSON(object: any): CASBackendServiceDeleteRequest {
-    return { id: isSet(object.id) ? String(object.id) : "" };
+    return { name: isSet(object.name) ? String(object.name) : "" };
   },
 
   toJSON(message: CASBackendServiceDeleteRequest): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
@@ -621,7 +605,7 @@ export const CASBackendServiceDeleteRequest = {
     object: I,
   ): CASBackendServiceDeleteRequest {
     const message = createBaseCASBackendServiceDeleteRequest();
-    message.id = object.id ?? "";
+    message.name = object.name ?? "";
     return message;
   },
 };

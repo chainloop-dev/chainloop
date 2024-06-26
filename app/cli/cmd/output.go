@@ -43,6 +43,7 @@ type tabulatedData interface {
 		[]*action.AvailableIntegrationItem |
 		[]*action.AttachedIntegrationItem |
 		[]*action.MembershipItem |
+		*action.CASBackendItem |
 		[]*action.CASBackendItem |
 		[]*action.OrgInvitationItem |
 		*action.APITokenItem |

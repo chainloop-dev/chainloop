@@ -70,7 +70,7 @@ func newCASBackendAddAzureBlobStorageCmd() *cobra.Command {
 				return nil
 			}
 
-			return encodeOutput([]*action.CASBackendItem{res}, casBackendListTableOutput)
+			return encodeOutput(res, casBackendItemTableOutput)
 		},
 	}
 

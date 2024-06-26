@@ -164,6 +164,70 @@ func (s *CASBackendIntegrationTestSuite) TestCreateOverride() {
 	assert.False(b1.Default)
 }
 
+func (s *CASBackendIntegrationTestSuite) TestFindByNameInOrg() {
+	name1 := randomName()
+	name2 := randomName()
+	b1, err := s.CASBackend.Create(context.TODO(), s.orgOne.ID, name1, location, description, backendType, nil, true)
+	s.NoError(err)
+	s.True(b1.Default)
+	b2, err := s.CASBackend.Create(context.TODO(), s.orgTwo.ID, name2, "another-location", description, backendType, nil, true)
+	s.NoError(err)
+
+	testCases := []struct {
+		name          string
+		orgID         string
+		backendName   string
+		wantBackendID uuid.UUID
+		wantErr       bool
+	}{
+		{
+			name:        "non-existent org",
+			orgID:       uuid.New().String(),
+			backendName: name1,
+			wantErr:     true,
+		},
+		{
+			name:        "non-existent name",
+			orgID:       s.orgOne.ID,
+			backendName: "non-existent",
+			wantErr:     true,
+		},
+		{
+			name:          "existing name",
+			orgID:         s.orgOne.ID,
+			backendName:   name1,
+			wantBackendID: b1.ID,
+			wantErr:       false,
+		},
+		{
+			name:        "existing name in another org",
+			orgID:       s.orgTwo.ID,
+			backendName: name1,
+			wantErr:     true,
+		},
+		{
+			name:          "existing name in another org",
+			orgID:         s.orgTwo.ID,
+			backendName:   name2,
+			wantBackendID: b2.ID,
+			wantErr:       false,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			got, err := s.CASBackend.FindByNameInOrg(context.Background(), tc.orgID, tc.backendName)
+			if tc.wantErr {
+				s.Error(err)
+				return
+			}
+
+			s.NoError(err)
+			s.Equal(tc.wantBackendID, got.ID)
+		})
+	}
+}
+
 func (s *CASBackendIntegrationTestSuite) TestUpdate() {
 	assert := assert.New(s.T())
 
@@ -177,7 +241,7 @@ func (s *CASBackendIntegrationTestSuite) TestUpdate() {
 		assert.False(nonDefaultB.Default)
 
 		// Update the non-default to be default
-		nonDefaultB, err = s.CASBackend.Update(context.TODO(), s.orgNoBackend.ID, nonDefaultB.ID.String(), "", "", nil, true)
+		nonDefaultB, err = s.CASBackend.Update(context.TODO(), s.orgNoBackend.ID, nonDefaultB.ID.String(), "", nil, true)
 		assert.NoError(err)
 		assert.True(nonDefaultB.Default)
 
@@ -194,7 +258,7 @@ func (s *CASBackendIntegrationTestSuite) TestUpdate() {
 		assert.Equal(description, defaultB.Description)
 
 		// Update the description
-		defaultB, err = s.CASBackend.Update(context.TODO(), s.orgNoBackend.ID, defaultB.ID.String(), "", "updated desc", nil, true)
+		defaultB, err = s.CASBackend.Update(context.TODO(), s.orgNoBackend.ID, defaultB.ID.String(), "updated desc", nil, true)
 		assert.NoError(err)
 		assert.Equal("updated desc", defaultB.Description)
 		assert.True(defaultB.Default)
@@ -207,7 +271,7 @@ func (s *CASBackendIntegrationTestSuite) TestUpdate() {
 		assert.Equal(description, defaultB.Description)
 
 		// update the status
-		defaultB, err = s.CASBackend.Update(context.TODO(), s.orgNoBackend.ID, defaultB.ID.String(), "", description, nil, false)
+		defaultB, err = s.CASBackend.Update(context.TODO(), s.orgNoBackend.ID, defaultB.ID.String(), description, nil, false)
 		assert.NoError(err)
 		assert.Equal(description, defaultB.Description)
 		assert.False(defaultB.Default)
@@ -232,7 +296,7 @@ func (s *CASBackendIntegrationTestSuite) TestUpdate() {
 		assert.False(fallbackB.Default)
 
 		// update the status
-		defaultB, err = s.CASBackend.Update(context.TODO(), s.orgNoBackend.ID, defaultB.ID.String(), "", description, nil, false)
+		defaultB, err = s.CASBackend.Update(context.TODO(), s.orgNoBackend.ID, defaultB.ID.String(), description, nil, false)
 		assert.NoError(err)
 		assert.False(defaultB.Default)
 
@@ -253,7 +317,7 @@ func (s *CASBackendIntegrationTestSuite) TestUpdate() {
 		ctx := context.TODO()
 		s.credsWriter.Mock = mock.Mock{}
 		s.credsWriter.On("SaveCredentials", ctx, s.orgNoBackend.ID, creds).Return("new-secret", nil)
-		defaultB, err = s.CASBackend.Update(ctx, s.orgNoBackend.ID, defaultB.ID.String(), "", description, creds, true)
+		defaultB, err = s.CASBackend.Update(ctx, s.orgNoBackend.ID, defaultB.ID.String(), description, creds, true)
 		assert.NoError(err)
 		assert.Equal(description, defaultB.Description)
 		assert.Equal("new-secret", defaultB.SecretName)

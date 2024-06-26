@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,21 +22,21 @@ import (
 )
 
 func newCASBackendDeleteCmd() *cobra.Command {
-	var backendID string
+	var name string
 
 	cmd := &cobra.Command{
 		Use:     "delete",
 		Aliases: []string{"rm"},
 		Short:   "Delete a CAS Backend from your organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if confirmed, err := confirmDefaultCASBackendRemoval(actionOpts, backendID); err != nil {
+			if confirmed, err := confirmDefaultCASBackendRemoval(actionOpts, name); err != nil {
 				return err
 			} else if !confirmed {
 				log.Info("Aborting...")
 				return nil
 			}
 
-			if err := action.NewCASBackendDelete(actionOpts).Run(backendID); err != nil {
+			if err := action.NewCASBackendDelete(actionOpts).Run(name); err != nil {
 				return err
 			}
 
@@ -46,7 +46,7 @@ func newCASBackendDeleteCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&backendID, "id", "", "CAS Backend ID")
-	cobra.CheckErr(cmd.MarkFlagRequired("id"))
+	cmd.Flags().StringVar(&name, "name", "", "CAS Backend name")
+	cobra.CheckErr(cmd.MarkFlagRequired("name"))
 	return cmd
 }
