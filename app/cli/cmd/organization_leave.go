@@ -24,34 +24,34 @@ import (
 )
 
 // Get the membership entry associated to the current user for the given organization
-func membershipFromOrg(ctx context.Context, orgID string) (*action.MembershipItem, error) {
+func membershipFromOrg(ctx context.Context, name string) (*action.MembershipItem, error) {
 	memberships, err := action.NewMembershipList(actionOpts).ListOrgs(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("listing memberships: %w", err)
 	}
 
 	for _, m := range memberships {
-		if m.Org.ID == orgID {
+		if m.Org.Name == name {
 			return m, nil
 		}
 	}
 
-	return nil, fmt.Errorf("organization %s not found", orgID)
+	return nil, fmt.Errorf("organization %s not found", name)
 }
 
 func newOrganizationLeaveCmd() *cobra.Command {
-	var orgID string
+	var orgName string
 	cmd := &cobra.Command{
 		Use:   "leave",
 		Short: "leave an organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			// To find the membership ID, we need to iterate and filter by org
-			membership, err := membershipFromOrg(ctx, orgID)
+			membership, err := membershipFromOrg(ctx, orgName)
 			if err != nil {
 				return fmt.Errorf("getting membership: %w", err)
 			} else if membership == nil {
-				return fmt.Errorf("organization %s not found", orgID)
+				return fmt.Errorf("organization %s not found", orgName)
 			}
 
 			fmt.Printf("You are about to leave the organization %q\n", membership.Org.Name)
@@ -71,7 +71,7 @@ func newOrganizationLeaveCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&orgID, "id", "", "organization ID to leave")
-	cobra.CheckErr(cmd.MarkFlagRequired("id"))
+	cmd.Flags().StringVar(&orgName, "name", "", "organization name")
+	cobra.CheckErr(cmd.MarkFlagRequired("name"))
 	return cmd
 }

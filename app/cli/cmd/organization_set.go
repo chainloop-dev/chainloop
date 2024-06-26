@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,19 +23,19 @@ import (
 )
 
 func newOrganizationSet() *cobra.Command {
-	var orgID string
+	var orgName string
 
 	cmd := &cobra.Command{
 		Use:   "set",
 		Short: "Set the current organization associated with this user",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
 			// To find the membership ID, we need to iterate and filter by org
-			membership, err := membershipFromOrg(ctx, orgID)
+			membership, err := membershipFromOrg(ctx, orgName)
 			if err != nil {
 				return fmt.Errorf("getting membership: %w", err)
 			} else if membership == nil {
-				return fmt.Errorf("organization %s not found", orgID)
+				return fmt.Errorf("organization %s not found", orgName)
 			}
 
 			m, err := action.NewMembershipSet(actionOpts).Run(ctx, membership.ID)
@@ -48,8 +48,8 @@ func newOrganizationSet() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&orgID, "id", "", "organization ID to make the switch")
-	cobra.CheckErr(cmd.MarkFlagRequired("id"))
+	cmd.Flags().StringVar(&orgName, "name", "", "organization name to make the switch")
+	cobra.CheckErr(cmd.MarkFlagRequired("name"))
 
 	return cmd
 }
