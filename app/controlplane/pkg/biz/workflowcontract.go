@@ -85,7 +85,7 @@ func NewWorkflowContractUseCase(repo WorkflowContractRepo, logger log.Logger) *W
 func (uc *WorkflowContractUseCase) List(ctx context.Context, orgID string) ([]*WorkflowContract, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
-		return nil, err
+		return nil, NewErrInvalidUUID(err)
 	}
 
 	return uc.repo.List(ctx, orgUUID)
@@ -94,12 +94,12 @@ func (uc *WorkflowContractUseCase) List(ctx context.Context, orgID string) ([]*W
 func (uc *WorkflowContractUseCase) FindByIDInOrg(ctx context.Context, orgID, contractID string) (*WorkflowContract, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
-		return nil, err
+		return nil, NewErrInvalidUUID(err)
 	}
 
 	contractUUID, err := uuid.Parse(contractID)
 	if err != nil {
-		return nil, err
+		return nil, NewErrInvalidUUID(err)
 	}
 
 	return uc.repo.FindByIDInOrg(ctx, orgUUID, contractUUID)
@@ -108,7 +108,7 @@ func (uc *WorkflowContractUseCase) FindByIDInOrg(ctx context.Context, orgID, con
 func (uc *WorkflowContractUseCase) FindByNameInOrg(ctx context.Context, orgID, name string) (*WorkflowContract, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
-		return nil, err
+		return nil, NewErrInvalidUUID(err)
 	}
 
 	return uc.repo.FindByNameInOrg(ctx, orgUUID, name)

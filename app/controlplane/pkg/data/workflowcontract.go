@@ -258,12 +258,12 @@ func (r *WorkflowContractRepo) FindByNameInOrg(ctx context.Context, orgID uuid.U
 
 	workflowIDs, err := getWorkflowIDs(ctx, contract)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get workflows: %w", err)
 	}
 
 	latestV, err := latestVersion(ctx, contract)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get latest version: %w", err)
 	}
 
 	return entContractToBizContract(contract, latestV, workflowIDs), nil
