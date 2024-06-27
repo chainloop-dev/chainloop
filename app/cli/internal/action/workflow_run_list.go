@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -63,9 +63,9 @@ func NewWorkflowRunList(cfg *ActionsOpts) *WorkflowRunList {
 }
 
 type WorkflowRunListOpts struct {
-	WorkflowID string
-	Pagination *PaginationOpts
-	Status     string
+	WorkflowName string
+	Pagination   *PaginationOpts
+	Status       string
 }
 type PaginationOpts struct {
 	Limit      int
@@ -75,7 +75,7 @@ type PaginationOpts struct {
 func (action *WorkflowRunList) Run(opts *WorkflowRunListOpts) (*PaginatedWorkflowRunItem, error) {
 	client := pb.NewWorkflowRunServiceClient(action.cfg.CPConnection)
 	req := &pb.WorkflowRunServiceListRequest{
-		WorkflowId: opts.WorkflowID,
+		WorkflowName: opts.WorkflowName,
 		Pagination: &pb.CursorPaginationRequest{
 			Limit:  int32(opts.Pagination.Limit),
 			Cursor: opts.Pagination.NextCursor,

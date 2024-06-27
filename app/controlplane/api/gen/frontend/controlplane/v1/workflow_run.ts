@@ -128,7 +128,7 @@ export interface WorkflowRunServiceListRequest {
    * Filters
    * by workflow
    */
-  workflowId: string;
+  workflowName: string;
   /** by run status */
   status: RunStatus;
   /** pagination options */
@@ -958,13 +958,13 @@ export const AttestationServiceCancelResponse = {
 };
 
 function createBaseWorkflowRunServiceListRequest(): WorkflowRunServiceListRequest {
-  return { workflowId: "", status: 0, pagination: undefined };
+  return { workflowName: "", status: 0, pagination: undefined };
 }
 
 export const WorkflowRunServiceListRequest = {
   encode(message: WorkflowRunServiceListRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.workflowId !== "") {
-      writer.uint32(10).string(message.workflowId);
+    if (message.workflowName !== "") {
+      writer.uint32(10).string(message.workflowName);
     }
     if (message.status !== 0) {
       writer.uint32(24).int32(message.status);
@@ -987,7 +987,7 @@ export const WorkflowRunServiceListRequest = {
             break;
           }
 
-          message.workflowId = reader.string();
+          message.workflowName = reader.string();
           continue;
         case 3:
           if (tag !== 24) {
@@ -1014,7 +1014,7 @@ export const WorkflowRunServiceListRequest = {
 
   fromJSON(object: any): WorkflowRunServiceListRequest {
     return {
-      workflowId: isSet(object.workflowId) ? String(object.workflowId) : "",
+      workflowName: isSet(object.workflowName) ? String(object.workflowName) : "",
       status: isSet(object.status) ? runStatusFromJSON(object.status) : 0,
       pagination: isSet(object.pagination) ? CursorPaginationRequest.fromJSON(object.pagination) : undefined,
     };
@@ -1022,7 +1022,7 @@ export const WorkflowRunServiceListRequest = {
 
   toJSON(message: WorkflowRunServiceListRequest): unknown {
     const obj: any = {};
-    message.workflowId !== undefined && (obj.workflowId = message.workflowId);
+    message.workflowName !== undefined && (obj.workflowName = message.workflowName);
     message.status !== undefined && (obj.status = runStatusToJSON(message.status));
     message.pagination !== undefined &&
       (obj.pagination = message.pagination ? CursorPaginationRequest.toJSON(message.pagination) : undefined);
@@ -1037,7 +1037,7 @@ export const WorkflowRunServiceListRequest = {
     object: I,
   ): WorkflowRunServiceListRequest {
     const message = createBaseWorkflowRunServiceListRequest();
-    message.workflowId = object.workflowId ?? "";
+    message.workflowName = object.workflowName ?? "";
     message.status = object.status ?? 0;
     message.pagination = (object.pagination !== undefined && object.pagination !== null)
       ? CursorPaginationRequest.fromPartial(object.pagination)

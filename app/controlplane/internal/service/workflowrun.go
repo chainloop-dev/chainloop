@@ -25,7 +25,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	errors "github.com/go-kratos/kratos/v2/errors"
-	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -63,24 +62,22 @@ func (s *WorkflowRunService) List(ctx context.Context, req *pb.WorkflowRunServic
 		return nil, err
 	}
 
-	if req.GetWorkflowId() != "" {
-		wf, err := s.workflowUseCase.FindByIDInOrg(ctx, currentOrg.ID, req.GetWorkflowId())
+	// Configure filters
+	filters := &biz.RunListFilters{}
+
+	// by workflow
+	if req.GetWorkflowName() != "" {
+		wf, err := s.workflowUseCase.FindByNameInOrg(ctx, currentOrg.ID, req.GetWorkflowName())
 		if err != nil {
 			return nil, handleUseCaseErr(err, s.log)
 		} else if wf == nil {
 			return nil, errors.NotFound("not found", "workflow not found")
 		}
+
+		filters.WorkflowID = wf.ID
 	}
 
-	p := req.GetPagination()
-	paginationOpts, err := pagination.NewCursor(p.GetCursor(), int(p.GetLimit()))
-	if err != nil {
-		return nil, errors.InternalServer("invalid", "invalid pagination options")
-	}
-
-	// Configure filters
-	filters := &biz.RunListFilters{}
-	// run status
+	// by run status
 	if req.GetStatus() != pb.RunStatus_RUN_STATUS_UNSPECIFIED {
 		st, err := pbWorkflowRunStatusToBiz(req.GetStatus())
 		if err != nil {
@@ -89,13 +86,10 @@ func (s *WorkflowRunService) List(ctx context.Context, req *pb.WorkflowRunServic
 		filters.Status = st
 	}
 
-	// Workflow ID
-	if req.GetWorkflowId() != "" {
-		workflowID, err := uuid.Parse(req.GetWorkflowId())
-		if err != nil {
-			return nil, errors.BadRequest("invalid workflow ID", err.Error())
-		}
-		filters.WorkflowID = workflowID
+	p := req.GetPagination()
+	paginationOpts, err := pagination.NewCursor(p.GetCursor(), int(p.GetLimit()))
+	if err != nil {
+		return nil, errors.InternalServer("invalid", "invalid pagination options")
 	}
 
 	workflowRuns, nextCursor, err := s.wrUseCase.List(ctx, currentOrg.ID, filters, paginationOpts)

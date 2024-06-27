@@ -17,9 +17,9 @@ syntax = "proto3";
 
 package controlplane.v1;
 
+import "buf/validate/validate.proto";
 import "controlplane/v1/pagination.proto";
 import "controlplane/v1/response_messages.proto";
-import "buf/validate/validate.proto";
 import "workflowcontract/v1/crafting_schema.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
@@ -108,7 +108,14 @@ message AttestationServiceCancelResponse {}
 message WorkflowRunServiceListRequest {
   // Filters
   // by workflow
-  string workflow_id = 1;
+  string workflow_name = 1 [(buf.validate.field) = {
+    ignore_empty: true,
+    cel: {
+      message: "must contain only lowercase letters, numbers, and hyphens.",
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
+      id: "name.dns-1123",
+    },
+  }];
   // by run status
   RunStatus status = 3;
   // pagination options
