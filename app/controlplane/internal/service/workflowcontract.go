@@ -152,7 +152,7 @@ func bizWorkFlowContractToPb(schema *biz.WorkflowContract) *pb.WorkflowContractI
 		CreatedAt:      timestamppb.New(*schema.CreatedAt),
 		Name:           schema.Name,
 		LatestRevision: int32(schema.LatestRevision),
-		WorkflowIds:    schema.WorkflowIDs,
+		WorkflowNames:  schema.WorkflowNames,
 		Description:    schema.Description,
 	}
 }

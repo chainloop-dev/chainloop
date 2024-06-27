@@ -34,8 +34,8 @@ type WorkflowContract struct {
 	Description    string
 	LatestRevision int
 	CreatedAt      *time.Time
-	// WorkflowIDs is the list of workflows associated with this contract
-	WorkflowIDs []string
+	// WorkflowNames is the list of workflows associated with this contract
+	WorkflowNames []string
 }
 
 type WorkflowContractVersion struct {
@@ -293,7 +293,7 @@ func (uc *WorkflowContractUseCase) Delete(ctx context.Context, orgID, contractID
 		return NewErrNotFound("contract")
 	}
 
-	if len(contract.WorkflowIDs) > 0 {
+	if len(contract.WorkflowNames) > 0 {
 		return NewErrValidation(errors.New("there are associated workflows with this contract, delete them first"))
 	}
 

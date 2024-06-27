@@ -65,12 +65,11 @@ func (r *WorkflowContractRepo) List(ctx context.Context, orgID uuid.UUID) ([]*bi
 			return nil, err
 		}
 
-		workflowIDs, err := getWorkflowIDs(ctx, s)
+		workflowNames, err := getWorkflowNames(ctx, s)
 		if err != nil {
 			return nil, err
 		}
-		res := entContractToBizContract(s, latestV, workflowIDs)
-
+		res := entContractToBizContract(s, latestV, workflowNames)
 		result = append(result, res)
 	}
 
@@ -145,11 +144,11 @@ func (r *WorkflowContractRepo) Describe(ctx context.Context, orgID, contractID u
 		return nil, err
 	}
 
-	workflowIDs, err := getWorkflowIDs(ctx, contract)
+	workflowNames, err := getWorkflowNames(ctx, contract)
 	if err != nil {
 		return nil, err
 	}
-	s := entContractToBizContract(contract, latestV, workflowIDs)
+	s := entContractToBizContract(contract, latestV, workflowNames)
 
 	return &biz.WorkflowContractWithVersion{
 		Contract: s,
@@ -201,7 +200,7 @@ func (r *WorkflowContractRepo) Update(ctx context.Context, orgID uuid.UUID, name
 		}
 	}
 
-	workflowIDs, err := getWorkflowIDs(ctx, contract)
+	workflowNames, err := getWorkflowNames(ctx, contract)
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +221,7 @@ func (r *WorkflowContractRepo) Update(ctx context.Context, orgID uuid.UUID, name
 	}
 
 	return &biz.WorkflowContractWithVersion{
-		Contract: entContractToBizContract(contract, lv, workflowIDs),
+		Contract: entContractToBizContract(contract, lv, workflowNames),
 		Version:  v,
 	}, nil
 }
@@ -235,7 +234,7 @@ func (r *WorkflowContractRepo) FindByIDInOrg(ctx context.Context, orgID, contrac
 		return nil, nil
 	}
 
-	workflowIDs, err := getWorkflowIDs(ctx, contract)
+	workflowNames, err := getWorkflowNames(ctx, contract)
 	if err != nil {
 		return nil, err
 	}
@@ -245,7 +244,7 @@ func (r *WorkflowContractRepo) FindByIDInOrg(ctx context.Context, orgID, contrac
 		return nil, err
 	}
 
-	return entContractToBizContract(contract, latestV, workflowIDs), nil
+	return entContractToBizContract(contract, latestV, workflowNames), nil
 }
 
 func (r *WorkflowContractRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*biz.WorkflowContract, error) {
@@ -256,7 +255,7 @@ func (r *WorkflowContractRepo) FindByNameInOrg(ctx context.Context, orgID uuid.U
 		return nil, biz.NewErrNotFound("contract")
 	}
 
-	workflowIDs, err := getWorkflowIDs(ctx, contract)
+	workflowNames, err := getWorkflowNames(ctx, contract)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get workflows: %w", err)
 	}
@@ -266,7 +265,7 @@ func (r *WorkflowContractRepo) FindByNameInOrg(ctx context.Context, orgID uuid.U
 		return nil, fmt.Errorf("failed to get latest version: %w", err)
 	}
 
-	return entContractToBizContract(contract, latestV, workflowIDs), nil
+	return entContractToBizContract(contract, latestV, workflowNames), nil
 }
 
 func (r *WorkflowContractRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
@@ -337,9 +336,9 @@ func contractInOrgQuery(ctx context.Context, q *ent.OrganizationQuery, orgID uui
 	return query.Only(ctx)
 }
 
-func entContractToBizContract(w *ent.WorkflowContract, version *ent.WorkflowContractVersion, workflowIDs []string) *biz.WorkflowContract {
+func entContractToBizContract(w *ent.WorkflowContract, version *ent.WorkflowContractVersion, workflowNames []string) *biz.WorkflowContract {
 	c := &biz.WorkflowContract{
-		Name: w.Name, ID: w.ID, CreatedAt: toTimePtr(w.CreatedAt), WorkflowIDs: workflowIDs, Description: w.Description,
+		Name: w.Name, ID: w.ID, CreatedAt: toTimePtr(w.CreatedAt), WorkflowNames: workflowNames, Description: w.Description,
 	}
 
 	c.LatestRevision = version.Revision
@@ -347,7 +346,7 @@ func entContractToBizContract(w *ent.WorkflowContract, version *ent.WorkflowCont
 }
 
 // get the list of workflows associated with a given contract
-func getWorkflowIDs(ctx context.Context, schema *ent.WorkflowContract) ([]string, error) {
+func getWorkflowNames(ctx context.Context, schema *ent.WorkflowContract) ([]string, error) {
 	// Either get it from preloaded entity or query it
 	workflows := schema.Edges.Workflows
 	if workflows == nil {
@@ -360,10 +359,10 @@ func getWorkflowIDs(ctx context.Context, schema *ent.WorkflowContract) ([]string
 		}
 	}
 
-	wfIDs := make([]string, 0, len(workflows))
+	names := make([]string, 0, len(workflows))
 	for _, wf := range workflows {
-		wfIDs = append(wfIDs, wf.ID.String())
+		names = append(names, wf.Name)
 	}
 
-	return wfIDs, nil
+	return names, nil
 }

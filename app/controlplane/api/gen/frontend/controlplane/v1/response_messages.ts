@@ -274,7 +274,7 @@ export interface WorkflowContractItem {
   createdAt?: Date;
   latestRevision: number;
   /** Workflows associated with this contract */
-  workflowIds: string[];
+  workflowNames: string[];
 }
 
 export interface WorkflowContractVersionItem {
@@ -1353,7 +1353,7 @@ export const AttestationItem_Material_AnnotationsEntry = {
 };
 
 function createBaseWorkflowContractItem(): WorkflowContractItem {
-  return { id: "", name: "", description: "", createdAt: undefined, latestRevision: 0, workflowIds: [] };
+  return { id: "", name: "", description: "", createdAt: undefined, latestRevision: 0, workflowNames: [] };
 }
 
 export const WorkflowContractItem = {
@@ -1373,7 +1373,7 @@ export const WorkflowContractItem = {
     if (message.latestRevision !== 0) {
       writer.uint32(32).int32(message.latestRevision);
     }
-    for (const v of message.workflowIds) {
+    for (const v of message.workflowNames) {
       writer.uint32(42).string(v!);
     }
     return writer;
@@ -1426,7 +1426,7 @@ export const WorkflowContractItem = {
             break;
           }
 
-          message.workflowIds.push(reader.string());
+          message.workflowNames.push(reader.string());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1444,7 +1444,7 @@ export const WorkflowContractItem = {
       description: isSet(object.description) ? String(object.description) : "",
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
       latestRevision: isSet(object.latestRevision) ? Number(object.latestRevision) : 0,
-      workflowIds: Array.isArray(object?.workflowIds) ? object.workflowIds.map((e: any) => String(e)) : [],
+      workflowNames: Array.isArray(object?.workflowNames) ? object.workflowNames.map((e: any) => String(e)) : [],
     };
   },
 
@@ -1455,10 +1455,10 @@ export const WorkflowContractItem = {
     message.description !== undefined && (obj.description = message.description);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
     message.latestRevision !== undefined && (obj.latestRevision = Math.round(message.latestRevision));
-    if (message.workflowIds) {
-      obj.workflowIds = message.workflowIds.map((e) => e);
+    if (message.workflowNames) {
+      obj.workflowNames = message.workflowNames.map((e) => e);
     } else {
-      obj.workflowIds = [];
+      obj.workflowNames = [];
     }
     return obj;
   },
@@ -1474,7 +1474,7 @@ export const WorkflowContractItem = {
     message.description = object.description ?? "";
     message.createdAt = object.createdAt ?? undefined;
     message.latestRevision = object.latestRevision ?? 0;
-    message.workflowIds = object.workflowIds?.map((e) => e) || [];
+    message.workflowNames = object.workflowNames?.map((e) => e) || [];
     return message;
   },
 };
