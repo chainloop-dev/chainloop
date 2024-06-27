@@ -9,8 +9,8 @@ export const protobufPackage = "controlplane.v1";
 export interface WorkflowServiceCreateRequest {
   name: string;
   project: string;
-  /** The ID of the workload schema to be associated with, if no provided one will be created for you */
-  schemaId: string;
+  /** The name of the workflow contract */
+  contractName: string;
   team: string;
   description: string;
   public: boolean;
@@ -60,7 +60,7 @@ export interface WorkflowServiceViewResponse {
 }
 
 function createBaseWorkflowServiceCreateRequest(): WorkflowServiceCreateRequest {
-  return { name: "", project: "", schemaId: "", team: "", description: "", public: false };
+  return { name: "", project: "", contractName: "", team: "", description: "", public: false };
 }
 
 export const WorkflowServiceCreateRequest = {
@@ -71,8 +71,8 @@ export const WorkflowServiceCreateRequest = {
     if (message.project !== "") {
       writer.uint32(18).string(message.project);
     }
-    if (message.schemaId !== "") {
-      writer.uint32(26).string(message.schemaId);
+    if (message.contractName !== "") {
+      writer.uint32(26).string(message.contractName);
     }
     if (message.team !== "") {
       writer.uint32(34).string(message.team);
@@ -112,7 +112,7 @@ export const WorkflowServiceCreateRequest = {
             break;
           }
 
-          message.schemaId = reader.string();
+          message.contractName = reader.string();
           continue;
         case 4:
           if (tag !== 34) {
@@ -148,7 +148,7 @@ export const WorkflowServiceCreateRequest = {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       project: isSet(object.project) ? String(object.project) : "",
-      schemaId: isSet(object.schemaId) ? String(object.schemaId) : "",
+      contractName: isSet(object.contractName) ? String(object.contractName) : "",
       team: isSet(object.team) ? String(object.team) : "",
       description: isSet(object.description) ? String(object.description) : "",
       public: isSet(object.public) ? Boolean(object.public) : false,
@@ -159,7 +159,7 @@ export const WorkflowServiceCreateRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.project !== undefined && (obj.project = message.project);
-    message.schemaId !== undefined && (obj.schemaId = message.schemaId);
+    message.contractName !== undefined && (obj.contractName = message.contractName);
     message.team !== undefined && (obj.team = message.team);
     message.description !== undefined && (obj.description = message.description);
     message.public !== undefined && (obj.public = message.public);
@@ -174,7 +174,7 @@ export const WorkflowServiceCreateRequest = {
     const message = createBaseWorkflowServiceCreateRequest();
     message.name = object.name ?? "";
     message.project = object.project ?? "";
-    message.schemaId = object.schemaId ?? "";
+    message.contractName = object.contractName ?? "";
     message.team = object.team ?? "";
     message.description = object.description ?? "";
     message.public = object.public ?? false;

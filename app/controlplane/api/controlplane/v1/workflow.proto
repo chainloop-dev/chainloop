@@ -40,8 +40,15 @@ message WorkflowServiceCreateRequest {
     },
   }];
   string project = 2 [(buf.validate.field).string = {min_len: 1}];
-  // The ID of the workload schema to be associated with, if no provided one will be created for you
-  string schema_id = 3;
+  // The name of the workflow contract
+  string contract_name = 3 [(buf.validate.field) = {
+    ignore_empty: true,
+    cel: {
+      message: "must contain only lowercase letters, numbers, and hyphens.",
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
+      id: "name.dns-1123",
+    },
+  }];
   string team = 4;
   string description = 5;
   bool public = 6;

@@ -130,18 +130,17 @@ func (s *workflowIntegrationTestSuite) TestCreate() {
 			wantErrMsg: "RFC 1123",
 		},
 		{
-			name:       " invalid project name",
+			name:       "invalid project name",
 			opts:       &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "valid", Project: "this-not Valid"},
 			wantErrMsg: "RFC 1123",
 		},
 		{
-			name:       "non-existing contract",
-			opts:       &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name", ContractID: uuid.Generate().String()},
-			wantErrMsg: "not found",
+			name: "non-existing contract will create it",
+			opts: &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name", ContractName: uuid.Generate().String()},
 		},
 		{
 			name: "can create it with just the name and the org",
-			opts: &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name"},
+			opts: &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name2"},
 		},
 		{
 			name: "with all items",
