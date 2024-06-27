@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -89,6 +89,24 @@ func (r *IntegrationRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID
 		return nil, err
 	} else if integration == nil {
 		return nil, nil
+	}
+
+	return entIntegrationToBiz(integration), nil
+}
+
+func (r *IntegrationRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*biz.Integration, error) {
+	integration, err := orgScopedQuery(r.data.DB, orgID).
+		QueryIntegrations().
+		Where(integration.Name(name)).
+		Where(integration.DeletedAtIsNil()).
+		Only(ctx)
+
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, biz.NewErrNotFound("integration")
+		}
+
+		return nil, fmt.Errorf("failed to find registration by name: %w", err)
 	}
 
 	return entIntegrationToBiz(integration), nil

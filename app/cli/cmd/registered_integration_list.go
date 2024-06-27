@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -43,6 +43,10 @@ func newRegisteredIntegrationListCmd() *cobra.Command {
 	return cmd
 }
 
+func registeredIntegrationItemTableOutput(item *action.RegisteredIntegrationItem) error {
+	return registeredIntegrationListTableOutput([]*action.RegisteredIntegrationItem{item})
+}
+
 func registeredIntegrationListTableOutput(items []*action.RegisteredIntegrationItem) error {
 	switch n := len(items); {
 	case n == 0:
@@ -53,13 +57,13 @@ func registeredIntegrationListTableOutput(items []*action.RegisteredIntegrationI
 	}
 
 	t := newTableWriter()
-	t.AppendHeader(table.Row{"ID", "Name", "Description", "Kind", "Config", "Created At"})
+	t.AppendHeader(table.Row{"Name", "Description", "Kind", "Config", "Created At"})
 	for _, i := range items {
 		var options []string
 		for k, v := range i.Config {
 			options = append(options, fmt.Sprintf("%s: %v", k, v))
 		}
-		t.AppendRow(table.Row{i.ID, i.Name, i.Description, i.Kind, strings.Join(options, "\n"), i.CreatedAt.Format(time.RFC822)})
+		t.AppendRow(table.Row{i.Name, i.Description, i.Kind, strings.Join(options, "\n"), i.CreatedAt.Format(time.RFC822)})
 		t.AppendSeparator()
 	}
 

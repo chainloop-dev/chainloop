@@ -185,7 +185,14 @@ func (s *IntegrationsService) Deregister(ctx context.Context, req *pb.Integratio
 		return nil, err
 	}
 
-	err = s.integrationUC.Delete(ctx, org.ID, req.Id)
+	integration, err := s.integrationUC.FindByNameInOrg(ctx, org.ID, req.Name)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	} else if integration == nil {
+		return nil, errors.NotFound("not found", "integration not found")
+	}
+
+	err = s.integrationUC.Delete(ctx, org.ID, integration.ID.String())
 	if err != nil && biz.IsNotFound(err) {
 		return nil, errors.NotFound("not found", err.Error())
 	} else if err != nil {
