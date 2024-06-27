@@ -41,12 +41,16 @@ func newWorkflowContractListCmd() *cobra.Command {
 	return cmd
 }
 
+func contractItemTableOutput(contract *action.WorkflowContractItem) error {
+	return contractListTableOutput([]*action.WorkflowContractItem{contract})
+}
+
 func contractListTableOutput(contracts []*action.WorkflowContractItem) error {
 	t := newTableWriter()
 
-	t.AppendHeader(table.Row{"ID", "Name", "Latest Revision", "Created At", "# Workflows"})
+	t.AppendHeader(table.Row{"Name", "Latest Revision", "Created At", "# Workflows"})
 	for _, p := range contracts {
-		t.AppendRow(table.Row{p.ID, p.Name, p.LatestRevision, p.CreatedAt.Format(time.RFC822), len(p.WorkflowIDs)})
+		t.AppendRow(table.Row{p.Name, p.LatestRevision, p.CreatedAt.Format(time.RFC822), len(p.WorkflowIDs)})
 	}
 
 	t.Render()

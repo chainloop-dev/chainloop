@@ -37,6 +37,7 @@ type tabulatedData interface {
 		[]*action.WorkflowRunItem |
 		*action.WorkflowRunItemFull |
 		[]*action.WorkflowContractItem |
+		*action.WorkflowContractItem |
 		*action.WorkflowContractWithVersionItem |
 		*action.ConfigContextItem |
 		[]*action.RegisteredIntegrationItem |

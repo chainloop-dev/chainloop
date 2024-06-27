@@ -23,7 +23,6 @@ export interface APITokenServiceCreateResponse_APITokenFull {
 }
 
 export interface APITokenServiceRevokeRequest {
-  /** Name is the identifier of the contract */
   name: string;
 }
 

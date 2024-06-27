@@ -23,7 +23,7 @@ import (
 )
 
 func newWorkflowContractUpdateCmd() *cobra.Command {
-	var contractID, name, description, contractPath string
+	var name, description, contractPath string
 
 	cmd := &cobra.Command{
 		Use:   "update",
@@ -41,7 +41,7 @@ func newWorkflowContractUpdateCmd() *cobra.Command {
 				desc = &description
 			}
 
-			res, err := action.NewWorkflowContractUpdate(actionOpts).Run(contractID, name, desc, contractPath)
+			res, err := action.NewWorkflowContractUpdate(actionOpts).Run(name, desc, contractPath)
 			if err != nil {
 				return err
 			}
@@ -51,12 +51,11 @@ func newWorkflowContractUpdateCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&contractID, "id", "", "contract ID")
-	err := cmd.Flags().MarkDeprecated("id", "use --name instead")
+	cmd.Flags().StringVar(&name, "name", "", "contract name")
+	err := cmd.MarkFlagRequired("name")
 	cobra.CheckErr(err)
 
 	cmd.Flags().StringVarP(&contractPath, "contract", "f", "", "path or URL to the contract schema")
-	cmd.Flags().StringVar(&name, "name", "", "name of the contract")
 
 	cobra.CheckErr(err)
 	cmd.Flags().StringVar(&description, "description", "", "description of the contract")

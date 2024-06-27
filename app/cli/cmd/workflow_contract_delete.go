@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,13 +21,13 @@ import (
 )
 
 func newWorkflowContractDeleteCmd() *cobra.Command {
-	var contractID string
+	var name string
 
 	cmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Delete a contract",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := action.NewWorkflowContractDelete(actionOpts).Run(contractID); err != nil {
+			if err := action.NewWorkflowContractDelete(actionOpts).Run(name); err != nil {
 				return err
 			}
 			logger.Info().Msg("contract deleted!")
@@ -35,8 +35,8 @@ func newWorkflowContractDeleteCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&contractID, "id", "", "contract ID")
-	err := cmd.MarkFlagRequired("id")
+	cmd.Flags().StringVar(&name, "name", "", "contract name")
+	err := cmd.MarkFlagRequired("name")
 	cobra.CheckErr(err)
 
 	return cmd

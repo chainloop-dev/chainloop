@@ -63,7 +63,14 @@ func (s *WorkflowContractService) Describe(ctx context.Context, req *pb.Workflow
 		return nil, err
 	}
 
-	contractWithVersion, err := s.contractUseCase.Describe(ctx, currentOrg.ID, req.GetId(), int(req.GetRevision()))
+	contract, err := s.contractUseCase.FindByNameInOrg(ctx, currentOrg.ID, req.GetName())
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	} else if contract == nil {
+		return nil, errors.NotFound("not found", "contract not found")
+	}
+
+	contractWithVersion, err := s.contractUseCase.Describe(ctx, currentOrg.ID, contract.Name, int(req.GetRevision()))
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	} else if contractWithVersion == nil {
@@ -102,18 +109,7 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 		return nil, err
 	}
 
-	// TODO: remove once we do no longer support updating by ID
-	var name = req.GetName()
-	if name == "" && req.GetId() != "" {
-		// find the name from the ID
-		contract, err := s.contractUseCase.FindByIDInOrg(ctx, currentOrg.ID, req.GetId())
-		if err != nil {
-			return nil, handleUseCaseErr(err, s.log)
-		}
-		name = contract.Name
-	}
-
-	schemaWithVersion, err := s.contractUseCase.Update(ctx, currentOrg.ID, name,
+	schemaWithVersion, err := s.contractUseCase.Update(ctx, currentOrg.ID, req.Name,
 		&biz.WorkflowContractUpdateOpts{
 			Schema:      req.GetV1(),
 			Description: req.Description,
@@ -136,7 +132,14 @@ func (s *WorkflowContractService) Delete(ctx context.Context, req *pb.WorkflowCo
 		return nil, err
 	}
 
-	if err := s.contractUseCase.Delete(ctx, currentOrg.ID, req.Id); err != nil {
+	contract, err := s.contractUseCase.FindByNameInOrg(ctx, currentOrg.ID, req.GetName())
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	} else if contract == nil {
+		return nil, errors.NotFound("not found", "contract not found")
+	}
+
+	if err := s.contractUseCase.Delete(ctx, currentOrg.ID, contract.ID.String()); err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 

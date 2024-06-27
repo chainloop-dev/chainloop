@@ -38,7 +38,13 @@ message WorkflowContractServiceListResponse {
 }
 
 message WorkflowContractServiceCreateRequest {
-  string name = 1 [(buf.validate.field).string = {min_len: 1}];
+  string name = 1 [(buf.validate.field) = {
+    cel: {
+      message: "has an invalid format",
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
+      id: "name.dns-1123",
+    },
+  }];
   // Ready to support multiple schema versions
   oneof contract {
     workflowcontract.v1.CraftingSchema v1 = 2;
@@ -52,32 +58,9 @@ message WorkflowContractServiceCreateResponse {
 }
 
 message WorkflowContractServiceUpdateRequest {
-  // TODO: remove once the id is fully removed
-  // Checks that either name or id is provided
-  // NOTE: we did not use oneof in this case because we don't want to break compatibility with other clients
-  // and we'll drop the id field in the future
-  option (buf.validate.message).cel = {
-    id: "either-name-or-id-required",
-    message: "either name or id are required",
-    expression: "has(this.id) || has(this.name)"
-  };
-
-  // Maintained for backward compatibility until we mover all identifiers to name
-  // Moving forward, the contract name will be used as the identifier
-  string id = 1 [
-    deprecated = true,
-    (buf.validate.field) = {
-      string: {uuid: true},
-      ignore_empty: true,
-    }
-  ];
-
-  // Name is the identifier of the contract
-  string name = 2 [(buf.validate.field) = {
-    ignore_empty: true,
-    // NOTE: validations can not be shared yet https://github.com/bufbuild/protovalidate/issues/51
+  string name = 1 [(buf.validate.field) = {
     cel: {
-      message: "name must be a valid DNS-1123 subdomain",
+      message: "has an invalid format",
       expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
       id: "name.dns-1123",
     },
@@ -99,7 +82,13 @@ message WorkflowContractServiceUpdateResponse {
 }
 
 message WorkflowContractServiceDescribeRequest {
-  string id = 1 [(buf.validate.field).string.uuid = true];
+  string name = 1 [(buf.validate.field) = {
+    cel: {
+      message: "has an invalid format",
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
+      id: "name.dns-1123",
+    },
+  }];
   int32 revision = 2;
 }
 
@@ -112,7 +101,13 @@ message WorkflowContractServiceDescribeResponse {
 }
 
 message WorkflowContractServiceDeleteRequest {
-  string id = 1 [(buf.validate.field).string.uuid = true];
+  string name = 1 [(buf.validate.field) = {
+    cel: {
+      message: "has an invalid format",
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
+      id: "name.dns-1123",
+    },
+  }];
 }
 
 message WorkflowContractServiceDeleteResponse {}

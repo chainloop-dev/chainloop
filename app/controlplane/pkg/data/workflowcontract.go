@@ -248,6 +248,27 @@ func (r *WorkflowContractRepo) FindByIDInOrg(ctx context.Context, orgID, contrac
 	return entContractToBizContract(contract, latestV, workflowIDs), nil
 }
 
+func (r *WorkflowContractRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*biz.WorkflowContract, error) {
+	contract, err := contractInOrg(ctx, r.data.DB, orgID, nil, &name)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, fmt.Errorf("failed to find contract: %w", err)
+	} else if contract == nil {
+		return nil, biz.NewErrNotFound("contract")
+	}
+
+	workflowIDs, err := getWorkflowIDs(ctx, contract)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get workflows: %w", err)
+	}
+
+	latestV, err := latestVersion(ctx, contract)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get latest version: %w", err)
+	}
+
+	return entContractToBizContract(contract, latestV, workflowIDs), nil
+}
+
 func (r *WorkflowContractRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
 	return r.data.DB.WorkflowContract.UpdateOneID(id).SetDeletedAt(time.Now()).Exec(ctx)
 }
