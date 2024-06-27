@@ -31,6 +31,7 @@ type Workflow struct {
 	RunsCounter                      int
 	LastRun                          *WorkflowRun
 	ID, ContractID, OrgID            uuid.UUID
+	ContractName                     string
 	// Latest available contract revision
 	ContractRevisionLatest int
 	// Public means that the associated workflow runs, attestations and materials

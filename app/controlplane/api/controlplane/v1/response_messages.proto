@@ -32,7 +32,7 @@ message WorkflowItem {
   int32 runs_count = 6;
 
   WorkflowRunItem last_run = 7;
-  string contract_id = 8;
+  string contract_name = 8;
   // Current, latest revision of the contract
   int32 contract_revision_latest = 11;
   // A public workflow means that any user can

@@ -70,7 +70,7 @@ func (s *WorkflowContractService) Describe(ctx context.Context, req *pb.Workflow
 		return nil, errors.NotFound("not found", "contract not found")
 	}
 
-	contractWithVersion, err := s.contractUseCase.Describe(ctx, currentOrg.ID, contract.Name, int(req.GetRevision()))
+	contractWithVersion, err := s.contractUseCase.Describe(ctx, currentOrg.ID, contract.ID.String(), int(req.GetRevision()))
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	} else if contractWithVersion == nil {
