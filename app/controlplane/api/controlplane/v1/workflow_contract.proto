@@ -40,7 +40,7 @@ message WorkflowContractServiceListResponse {
 message WorkflowContractServiceCreateRequest {
   string name = 1 [(buf.validate.field) = {
     cel: {
-      message: "has an invalid format",
+      message: "must contain only lowercase letters, numbers, and hyphens.",
       expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
       id: "name.dns-1123",
     },
@@ -60,7 +60,7 @@ message WorkflowContractServiceCreateResponse {
 message WorkflowContractServiceUpdateRequest {
   string name = 1 [(buf.validate.field) = {
     cel: {
-      message: "has an invalid format",
+      message: "must contain only lowercase letters, numbers, and hyphens.",
       expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
       id: "name.dns-1123",
     },
@@ -84,7 +84,7 @@ message WorkflowContractServiceUpdateResponse {
 message WorkflowContractServiceDescribeRequest {
   string name = 1 [(buf.validate.field) = {
     cel: {
-      message: "has an invalid format",
+      message: "must contain only lowercase letters, numbers, and hyphens.",
       expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
       id: "name.dns-1123",
     },
@@ -103,7 +103,7 @@ message WorkflowContractServiceDescribeResponse {
 message WorkflowContractServiceDeleteRequest {
   string name = 1 [(buf.validate.field) = {
     cel: {
-      message: "has an invalid format",
+      message: "must contain only lowercase letters, numbers, and hyphens.",
       expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
       id: "name.dns-1123",
     },
