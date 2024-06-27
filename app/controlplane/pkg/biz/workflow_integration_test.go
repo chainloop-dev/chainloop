@@ -136,7 +136,7 @@ func (s *workflowIntegrationTestSuite) TestCreate() {
 		},
 		{
 			name:       "non-existing contract",
-			opts:       &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name", ContractID: uuid.Generate().String()},
+			opts:       &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name", ContractName: uuid.Generate().String()},
 			wantErrMsg: "not found",
 		},
 		{

@@ -24,7 +24,7 @@ import (
 )
 
 func newWorkflowCreateCmd() *cobra.Command {
-	var workflowName, description, project, team, contract string
+	var workflowName, description, project, team, contractRef string
 	var public bool
 
 	cmd := &cobra.Command{
@@ -43,21 +43,23 @@ func newWorkflowCreateCmd() *cobra.Command {
   chainloop workflow create --name release --project skynet --contract https://skynet.org/contract.yaml
   `,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// If it's not an UUID we try to create a contract with the potential path or url
-			// Import/Create an existing contract if it's provided by it's path or URL
-			// If it's provided by the UUID we skip this
-			if contract != "" {
-				if !isValidUUID(contract) {
-					createResp, err := action.NewWorkflowContractCreate(actionOpts).Run(fmt.Sprintf("%s-%s", project, workflowName), nil, contract)
+			// If contract flag is provided we want to either
+			// 1 - make sure it exists and attach it
+			// 2 - Create a new contract from a file or URL
+			if contractRef != "" {
+				// Try to find it by name
+				c, err := action.NewWorkflowContractDescribe(actionOpts).Run(contractRef, 0)
+				if err != nil || c == nil {
+					createResp, err := action.NewWorkflowContractCreate(actionOpts).Run(fmt.Sprintf("%s-%s", project, workflowName), nil, contractRef)
 					if err != nil {
 						return err
 					}
-					contract = createResp.ID
+					contractRef = createResp.Name
 				}
 			}
 
 			opts := &action.NewWorkflowCreateOpts{
-				Name: workflowName, Team: team, Project: project, ContractID: contract, Description: description,
+				Name: workflowName, Team: team, Project: project, ContractName: contractRef, Description: description,
 				Public: public,
 			}
 
@@ -87,7 +89,7 @@ func newWorkflowCreateCmd() *cobra.Command {
 	cobra.CheckErr(err)
 
 	cmd.Flags().StringVar(&team, "team", "", "team name")
-	cmd.Flags().StringVar(&contract, "contract", "", "the ID of an existing contract or the path/URL to a contract file. If not provided an empty one will be created.")
+	cmd.Flags().StringVar(&contractRef, "contract", "", "the name of an existing contract or the path/URL to a contract file. If not provided an empty one will be created.")
 	cmd.Flags().BoolVar(&public, "public", false, "is the workflow public")
 	cmd.Flags().SortFlags = false
 

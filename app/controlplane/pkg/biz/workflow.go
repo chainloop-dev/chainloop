@@ -52,7 +52,8 @@ type WorkflowRepo interface {
 
 // TODO: move to pointer properties to handle empty values
 type WorkflowCreateOpts struct {
-	Name, OrgID, Project, Team, ContractID, Description string
+	Name, OrgID, Project, Team, ContractName, Description string
+	ContractID                                            string
 	// Public means that the associated workflow runs, attestations and materials
 	// are reachable by other users, regardless of their organization
 	Public bool
@@ -89,14 +90,21 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 		}
 	}
 
-	contract, err := uc.findOrCreateContract(ctx, opts.OrgID, opts.ContractID, opts.Project, opts.Name)
+	// If the name is not provided for the contract we come up with one based on the workflow info
+	if opts.ContractName == "" {
+		opts.ContractName = opts.Name
+		if opts.Project != "" {
+			opts.ContractName = fmt.Sprintf("%s-%s", opts.Project, opts.Name)
+		}
+	}
+
+	contract, err := uc.findOrCreateContract(ctx, opts.OrgID, opts.ContractName)
 	if err != nil {
 		return nil, err
 	} else if contract == nil {
 		return nil, NewErrNotFound("contract")
 	}
 
-	// Set the potential new schemaID
 	opts.ContractID = contract.ID.String()
 	wf, err := uc.wfRepo.Create(ctx, opts)
 	if err != nil {
@@ -161,20 +169,13 @@ func (uc *WorkflowUseCase) Update(ctx context.Context, orgID, workflowID string,
 	return wf, err
 }
 
-func (uc *WorkflowUseCase) findOrCreateContract(ctx context.Context, orgID, contractID, project, name string) (*WorkflowContract, error) {
-	// The contractID has been provided so we try to find it in our org
-	if contractID != "" {
-		return uc.contractUC.FindByIDInOrg(ctx, orgID, contractID)
+func (uc *WorkflowUseCase) findOrCreateContract(ctx context.Context, orgID, name string) (*WorkflowContract, error) {
+	e, _ := uc.contractUC.FindByNameInOrg(ctx, orgID, name)
+	if e != nil {
+		return e, nil
 	}
 
-	// No contractID has been provided so we create a new one
-	contractName := name
-	// Project might be empty
-	if project != "" {
-		contractName = fmt.Sprintf("%s-%s", project, name)
-	}
-
-	return uc.contractUC.Create(ctx, &WorkflowContractCreateOpts{OrgID: orgID, Name: contractName, AddUniquePrefix: true})
+	return uc.contractUC.Create(ctx, &WorkflowContractCreateOpts{OrgID: orgID, Name: name, AddUniquePrefix: true})
 }
 
 func (uc *WorkflowUseCase) List(ctx context.Context, orgID string) ([]*Workflow, error) {
