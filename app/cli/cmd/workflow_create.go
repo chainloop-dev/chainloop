@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
-	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
 
@@ -94,9 +93,4 @@ func newWorkflowCreateCmd() *cobra.Command {
 	cmd.Flags().SortFlags = false
 
 	return cmd
-}
-
-func isValidUUID(u string) bool {
-	_, err := uuid.Parse(u)
-	return err == nil
 }
