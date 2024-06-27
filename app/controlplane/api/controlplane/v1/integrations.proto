@@ -154,7 +154,7 @@ message IntegrationAttachmentItem {
 message IntegrationsServiceDeregisterRequest {
   string name = 1 [(buf.validate.field) = {
     cel: {
-      message: "has an invalid format",
+      message: "must contain only lowercase letters, numbers, and hyphens.",
       expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
       id: "name.dns-1123",
     },
