@@ -187,7 +187,7 @@ export interface WorkflowItem {
   createdAt?: Date;
   runsCount: number;
   lastRun?: WorkflowRunItem;
-  contractId: string;
+  contractName: string;
   /** Current, latest revision of the contract */
   contractRevisionLatest: number;
   /**
@@ -381,7 +381,7 @@ function createBaseWorkflowItem(): WorkflowItem {
     createdAt: undefined,
     runsCount: 0,
     lastRun: undefined,
-    contractId: "",
+    contractName: "",
     contractRevisionLatest: 0,
     public: false,
     description: "",
@@ -411,8 +411,8 @@ export const WorkflowItem = {
     if (message.lastRun !== undefined) {
       WorkflowRunItem.encode(message.lastRun, writer.uint32(58).fork()).ldelim();
     }
-    if (message.contractId !== "") {
-      writer.uint32(66).string(message.contractId);
+    if (message.contractName !== "") {
+      writer.uint32(66).string(message.contractName);
     }
     if (message.contractRevisionLatest !== 0) {
       writer.uint32(88).int32(message.contractRevisionLatest);
@@ -487,7 +487,7 @@ export const WorkflowItem = {
             break;
           }
 
-          message.contractId = reader.string();
+          message.contractName = reader.string();
           continue;
         case 11:
           if (tag !== 88) {
@@ -528,7 +528,7 @@ export const WorkflowItem = {
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
       runsCount: isSet(object.runsCount) ? Number(object.runsCount) : 0,
       lastRun: isSet(object.lastRun) ? WorkflowRunItem.fromJSON(object.lastRun) : undefined,
-      contractId: isSet(object.contractId) ? String(object.contractId) : "",
+      contractName: isSet(object.contractName) ? String(object.contractName) : "",
       contractRevisionLatest: isSet(object.contractRevisionLatest) ? Number(object.contractRevisionLatest) : 0,
       public: isSet(object.public) ? Boolean(object.public) : false,
       description: isSet(object.description) ? String(object.description) : "",
@@ -545,7 +545,7 @@ export const WorkflowItem = {
     message.runsCount !== undefined && (obj.runsCount = Math.round(message.runsCount));
     message.lastRun !== undefined &&
       (obj.lastRun = message.lastRun ? WorkflowRunItem.toJSON(message.lastRun) : undefined);
-    message.contractId !== undefined && (obj.contractId = message.contractId);
+    message.contractName !== undefined && (obj.contractName = message.contractName);
     message.contractRevisionLatest !== undefined &&
       (obj.contractRevisionLatest = Math.round(message.contractRevisionLatest));
     message.public !== undefined && (obj.public = message.public);
@@ -568,7 +568,7 @@ export const WorkflowItem = {
     message.lastRun = (object.lastRun !== undefined && object.lastRun !== null)
       ? WorkflowRunItem.fromPartial(object.lastRun)
       : undefined;
-    message.contractId = object.contractId ?? "";
+    message.contractName = object.contractName ?? "";
     message.contractRevisionLatest = object.contractRevisionLatest ?? 0;
     message.public = object.public ?? false;
     message.description = object.description ?? "";

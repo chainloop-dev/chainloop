@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ type WorkflowItem struct {
 	Project                string           `json:"project,omitempty"`
 	CreatedAt              *time.Time       `json:"createdAt"`
 	RunsCount              int32            `json:"runsCount"`
-	ContractID             string           `json:"contractID,omitempty"`
+	ContractName           string           `json:"contractName,omitempty"`
 	ContractRevisionLatest int32            `json:"contractRevisionLatest,omitempty"`
 	LastRun                *WorkflowRunItem `json:"lastRun,omitempty"`
 	// A public workflow means that any user can
@@ -71,7 +71,7 @@ func pbWorkflowItemToAction(wf *pb.WorkflowItem) *WorkflowItem {
 	res := &WorkflowItem{
 		Name: wf.Name, ID: wf.Id, CreatedAt: toTimePtr(wf.CreatedAt.AsTime()),
 		Project: wf.Project, Team: wf.Team, RunsCount: wf.RunsCount,
-		ContractID:             wf.ContractId,
+		ContractName:           wf.ContractName,
 		ContractRevisionLatest: wf.ContractRevisionLatest,
 		LastRun:                pbWorkflowRunItemToAction(wf.LastRun),
 		Public:                 wf.Public,

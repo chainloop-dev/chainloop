@@ -150,7 +150,7 @@ func bizWorkflowToPb(wf *biz.Workflow) *pb.WorkflowItem {
 	}
 
 	if wf.ContractID != uuid.Nil {
-		item.ContractId = wf.ContractID.String()
+		item.ContractName = wf.ContractName
 	}
 
 	if wf.LastRun != nil {

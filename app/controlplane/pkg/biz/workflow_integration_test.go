@@ -164,6 +164,8 @@ func (s *workflowIntegrationTestSuite) TestCreate() {
 			s.Equal(tc.opts.Description, got.Description)
 			s.Equal(tc.opts.Team, got.Team)
 			s.Equal(tc.opts.Project, got.Project)
+			s.NotEmpty(got.ContractID)
+			s.NotEmpty(got.ContractName)
 		})
 	}
 }
@@ -293,7 +295,7 @@ func (s *workflowIntegrationTestSuite) TestUpdate() {
 			s.NoError(err)
 
 			if diff := cmp.Diff(tc.want, got,
-				cmpopts.IgnoreFields(biz.Workflow{}, "Name", "CreatedAt", "ID", "OrgID", "ContractID", "ContractRevisionLatest"),
+				cmpopts.IgnoreFields(biz.Workflow{}, "Name", "CreatedAt", "ID", "OrgID", "ContractName", "ContractID", "ContractRevisionLatest"),
 			); diff != "" {
 				s.Failf("mismatch (-want +got):\n%s", diff)
 			}

@@ -242,6 +242,7 @@ func entWFToBizWF(w *ent.Workflow, r *ent.WorkflowRun) (*biz.Workflow, error) {
 
 	if contract := w.Edges.Contract; contract != nil {
 		wf.ContractID = contract.ID
+		wf.ContractName = contract.Name
 		lv, err := latestVersion(context.Background(), contract)
 		if err != nil {
 			return nil, fmt.Errorf("finding contract version: %w", err)
