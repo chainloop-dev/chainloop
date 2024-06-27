@@ -159,7 +159,7 @@ func (r *WorkflowContractRepo) Describe(ctx context.Context, orgID, contractID u
 // Update will add a new version of the contract.
 // NOTE: ContractVersions are immutable
 func (r *WorkflowContractRepo) Update(ctx context.Context, orgID uuid.UUID, name string, opts *biz.ContractUpdateOpts) (*biz.WorkflowContractWithVersion, error) {
-	tx, err := r.data.DB.Debug().Tx(ctx)
+	tx, err := r.data.DB.Tx(ctx)
 	if err != nil {
 		return nil, err
 	}
