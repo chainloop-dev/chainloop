@@ -23,7 +23,7 @@ import (
 )
 
 func newCASBackendAddAWSS3Cmd() *cobra.Command {
-	var bucketName, accessKeyID, secretAccessKey, region string
+	var bucketName, accessKeyID, secretAccessKey, region, endpoint string
 	cmd := &cobra.Command{
 		Use:   "aws-s3",
 		Short: "Register a AWS S3 storage bucket",
@@ -55,6 +55,7 @@ func newCASBackendAddAWSS3Cmd() *cobra.Command {
 					"accessKeyID":     accessKeyID,
 					"secretAccessKey": secretAccessKey,
 					"region":          region,
+					"endpoint":        endpoint,
 				},
 				Default: isDefault,
 			}
@@ -83,8 +84,9 @@ func newCASBackendAddAWSS3Cmd() *cobra.Command {
 	cobra.CheckErr(err)
 
 	cmd.Flags().StringVar(&region, "region", "", "AWS region for the bucket")
-	err = cmd.MarkFlagRequired("region")
 	cobra.CheckErr(err)
+
+	cmd.Flags().StringVar(&endpoint, "endpoint", "", "Custom Endpoint URL for other S3 compatible backends i.e MinIO")
 
 	return cmd
 }

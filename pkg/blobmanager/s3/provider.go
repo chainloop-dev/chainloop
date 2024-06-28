@@ -46,6 +46,8 @@ func (p *BackendProvider) FromCredentials(ctx context.Context, secretName string
 		return nil, err
 	}
 
+	fmt.Println("creds: ", creds)
+
 	if err := creds.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid credentials retrieved from storage: %w", err)
 	}
@@ -96,6 +98,8 @@ type Credentials struct {
 	BucketName string
 	// Region ID, i.e us-east-1
 	Region string
+	// Optional endpoint URL for other S3 compatible backends i.e MinIO
+	Endpoint string
 }
 
 // Validate that the APICreds has all its properties set
@@ -110,10 +114,6 @@ func (c *Credentials) Validate() error {
 
 	if c.BucketName == "" {
 		return fmt.Errorf("%w: missing bucket name", backend.ErrValidation)
-	}
-
-	if c.Region == "" {
-		return fmt.Errorf("%w: missing region", backend.ErrValidation)
 	}
 
 	return nil

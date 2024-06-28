@@ -61,6 +61,8 @@ func WithForcedS3PathStyle(force bool) ConnOpt {
 	}
 }
 
+const defaultRegion = "us-east-1"
+
 func NewBackend(creds *Credentials, connOpts ...ConnOpt) (*Backend, error) {
 	if creds == nil {
 		return nil, errors.New("credentials cannot be nil")
@@ -70,11 +72,22 @@ func NewBackend(creds *Credentials, connOpts ...ConnOpt) (*Backend, error) {
 		return nil, fmt.Errorf("invalid credentials: %w", err)
 	}
 
+	// Set a default region if not provided
+	var region = defaultRegion
+	if creds.Region != "" {
+		region = creds.Region
+	}
+
 	c := credentials.NewStaticCredentials(creds.AccessKeyID, creds.SecretAccessKey, "")
 	// Configure AWS session
-	cfg := &aws.Config{Credentials: c, Region: aws.String(creds.Region)}
+	cfg := &aws.Config{Credentials: c, Region: aws.String(region)}
 	for _, opt := range connOpts {
 		opt(cfg)
+	}
+
+	if creds.Endpoint != "" {
+		cfg.Endpoint = aws.String(creds.Endpoint)
+		cfg.S3ForcePathStyle = aws.Bool(true)
 	}
 
 	session, err := session.NewSession(cfg)
