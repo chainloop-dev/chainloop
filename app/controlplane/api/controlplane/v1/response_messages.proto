@@ -114,7 +114,7 @@ message WorkflowContractItem {
   google.protobuf.Timestamp created_at = 3;
   int32 latest_revision = 4;
   // Workflows associated with this contract
-  repeated string workflow_ids = 5;
+  repeated string workflow_names = 5;
 }
 
 message WorkflowContractVersionItem {
