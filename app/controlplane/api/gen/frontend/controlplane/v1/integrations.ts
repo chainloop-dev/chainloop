@@ -27,10 +27,10 @@ export interface IntegrationsServiceRegisterResponse {
 }
 
 export interface IntegrationsServiceAttachRequest {
-  /** UUID of the workflow to attach */
-  workflowId: string;
-  /** UUID of the integration registration to attach */
-  integrationId: string;
+  /** Name of the workflow to attach */
+  workflowName: string;
+  /** Name of the registered integration */
+  integrationName: string;
   /** Arbitrary configuration for the integration */
   config?: { [key: string]: any };
 }
@@ -48,7 +48,7 @@ export interface IntegrationsServiceListAvailableResponse {
 
 export interface IntegrationAvailableItem {
   /** Integration identifier */
-  id: string;
+  name: string;
   version: string;
   description: string;
   fanout?: PluginFanout | undefined;
@@ -72,7 +72,7 @@ export interface IntegrationsServiceListRegistrationsResponse {
 }
 
 export interface IntegrationsServiceDescribeRegistrationRequest {
-  id: string;
+  name: string;
 }
 
 export interface IntegrationsServiceDescribeRegistrationResponse {
@@ -88,7 +88,7 @@ export interface IntegrationsServiceDetachResponse {
 
 export interface ListAttachmentsRequest {
   /** Filter by workflow */
-  workflowId: string;
+  workflowName: string;
 }
 
 export interface ListAttachmentsResponse {
@@ -288,16 +288,16 @@ export const IntegrationsServiceRegisterResponse = {
 };
 
 function createBaseIntegrationsServiceAttachRequest(): IntegrationsServiceAttachRequest {
-  return { workflowId: "", integrationId: "", config: undefined };
+  return { workflowName: "", integrationName: "", config: undefined };
 }
 
 export const IntegrationsServiceAttachRequest = {
   encode(message: IntegrationsServiceAttachRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.workflowId !== "") {
-      writer.uint32(10).string(message.workflowId);
+    if (message.workflowName !== "") {
+      writer.uint32(10).string(message.workflowName);
     }
-    if (message.integrationId !== "") {
-      writer.uint32(18).string(message.integrationId);
+    if (message.integrationName !== "") {
+      writer.uint32(18).string(message.integrationName);
     }
     if (message.config !== undefined) {
       Struct.encode(Struct.wrap(message.config), writer.uint32(34).fork()).ldelim();
@@ -317,14 +317,14 @@ export const IntegrationsServiceAttachRequest = {
             break;
           }
 
-          message.workflowId = reader.string();
+          message.workflowName = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
             break;
           }
 
-          message.integrationId = reader.string();
+          message.integrationName = reader.string();
           continue;
         case 4:
           if (tag !== 34) {
@@ -344,16 +344,16 @@ export const IntegrationsServiceAttachRequest = {
 
   fromJSON(object: any): IntegrationsServiceAttachRequest {
     return {
-      workflowId: isSet(object.workflowId) ? String(object.workflowId) : "",
-      integrationId: isSet(object.integrationId) ? String(object.integrationId) : "",
+      workflowName: isSet(object.workflowName) ? String(object.workflowName) : "",
+      integrationName: isSet(object.integrationName) ? String(object.integrationName) : "",
       config: isObject(object.config) ? object.config : undefined,
     };
   },
 
   toJSON(message: IntegrationsServiceAttachRequest): unknown {
     const obj: any = {};
-    message.workflowId !== undefined && (obj.workflowId = message.workflowId);
-    message.integrationId !== undefined && (obj.integrationId = message.integrationId);
+    message.workflowName !== undefined && (obj.workflowName = message.workflowName);
+    message.integrationName !== undefined && (obj.integrationName = message.integrationName);
     message.config !== undefined && (obj.config = message.config);
     return obj;
   },
@@ -368,8 +368,8 @@ export const IntegrationsServiceAttachRequest = {
     object: I,
   ): IntegrationsServiceAttachRequest {
     const message = createBaseIntegrationsServiceAttachRequest();
-    message.workflowId = object.workflowId ?? "";
-    message.integrationId = object.integrationId ?? "";
+    message.workflowName = object.workflowName ?? "";
+    message.integrationName = object.integrationName ?? "";
     message.config = object.config ?? undefined;
     return message;
   },
@@ -553,13 +553,13 @@ export const IntegrationsServiceListAvailableResponse = {
 };
 
 function createBaseIntegrationAvailableItem(): IntegrationAvailableItem {
-  return { id: "", version: "", description: "", fanout: undefined };
+  return { name: "", version: "", description: "", fanout: undefined };
 }
 
 export const IntegrationAvailableItem = {
   encode(message: IntegrationAvailableItem, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.id !== "") {
-      writer.uint32(10).string(message.id);
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
     }
     if (message.version !== "") {
       writer.uint32(18).string(message.version);
@@ -585,7 +585,7 @@ export const IntegrationAvailableItem = {
             break;
           }
 
-          message.id = reader.string();
+          message.name = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
@@ -619,7 +619,7 @@ export const IntegrationAvailableItem = {
 
   fromJSON(object: any): IntegrationAvailableItem {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
+      name: isSet(object.name) ? String(object.name) : "",
       version: isSet(object.version) ? String(object.version) : "",
       description: isSet(object.description) ? String(object.description) : "",
       fanout: isSet(object.fanout) ? PluginFanout.fromJSON(object.fanout) : undefined,
@@ -628,7 +628,7 @@ export const IntegrationAvailableItem = {
 
   toJSON(message: IntegrationAvailableItem): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
+    message.name !== undefined && (obj.name = message.name);
     message.version !== undefined && (obj.version = message.version);
     message.description !== undefined && (obj.description = message.description);
     message.fanout !== undefined && (obj.fanout = message.fanout ? PluginFanout.toJSON(message.fanout) : undefined);
@@ -641,7 +641,7 @@ export const IntegrationAvailableItem = {
 
   fromPartial<I extends Exact<DeepPartial<IntegrationAvailableItem>, I>>(object: I): IntegrationAvailableItem {
     const message = createBaseIntegrationAvailableItem();
-    message.id = object.id ?? "";
+    message.name = object.name ?? "";
     message.version = object.version ?? "";
     message.description = object.description ?? "";
     message.fanout = (object.fanout !== undefined && object.fanout !== null)
@@ -864,7 +864,7 @@ export const IntegrationsServiceListRegistrationsResponse = {
 };
 
 function createBaseIntegrationsServiceDescribeRegistrationRequest(): IntegrationsServiceDescribeRegistrationRequest {
-  return { id: "" };
+  return { name: "" };
 }
 
 export const IntegrationsServiceDescribeRegistrationRequest = {
@@ -872,8 +872,8 @@ export const IntegrationsServiceDescribeRegistrationRequest = {
     message: IntegrationsServiceDescribeRegistrationRequest,
     writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
-    if (message.id !== "") {
-      writer.uint32(10).string(message.id);
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
     }
     return writer;
   },
@@ -890,7 +890,7 @@ export const IntegrationsServiceDescribeRegistrationRequest = {
             break;
           }
 
-          message.id = reader.string();
+          message.name = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -902,12 +902,12 @@ export const IntegrationsServiceDescribeRegistrationRequest = {
   },
 
   fromJSON(object: any): IntegrationsServiceDescribeRegistrationRequest {
-    return { id: isSet(object.id) ? String(object.id) : "" };
+    return { name: isSet(object.name) ? String(object.name) : "" };
   },
 
   toJSON(message: IntegrationsServiceDescribeRegistrationRequest): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
@@ -921,7 +921,7 @@ export const IntegrationsServiceDescribeRegistrationRequest = {
     object: I,
   ): IntegrationsServiceDescribeRegistrationRequest {
     const message = createBaseIntegrationsServiceDescribeRegistrationRequest();
-    message.id = object.id ?? "";
+    message.name = object.name ?? "";
     return message;
   },
 };
@@ -1101,13 +1101,13 @@ export const IntegrationsServiceDetachResponse = {
 };
 
 function createBaseListAttachmentsRequest(): ListAttachmentsRequest {
-  return { workflowId: "" };
+  return { workflowName: "" };
 }
 
 export const ListAttachmentsRequest = {
   encode(message: ListAttachmentsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.workflowId !== "") {
-      writer.uint32(10).string(message.workflowId);
+    if (message.workflowName !== "") {
+      writer.uint32(10).string(message.workflowName);
     }
     return writer;
   },
@@ -1124,7 +1124,7 @@ export const ListAttachmentsRequest = {
             break;
           }
 
-          message.workflowId = reader.string();
+          message.workflowName = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1136,12 +1136,12 @@ export const ListAttachmentsRequest = {
   },
 
   fromJSON(object: any): ListAttachmentsRequest {
-    return { workflowId: isSet(object.workflowId) ? String(object.workflowId) : "" };
+    return { workflowName: isSet(object.workflowName) ? String(object.workflowName) : "" };
   },
 
   toJSON(message: ListAttachmentsRequest): unknown {
     const obj: any = {};
-    message.workflowId !== undefined && (obj.workflowId = message.workflowId);
+    message.workflowName !== undefined && (obj.workflowName = message.workflowName);
     return obj;
   },
 
@@ -1151,7 +1151,7 @@ export const ListAttachmentsRequest = {
 
   fromPartial<I extends Exact<DeepPartial<ListAttachmentsRequest>, I>>(object: I): ListAttachmentsRequest {
     const message = createBaseListAttachmentsRequest();
-    message.workflowId = object.workflowId ?? "";
+    message.workflowName = object.workflowName ?? "";
     return message;
   },
 };

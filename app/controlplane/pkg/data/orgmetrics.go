@@ -43,10 +43,10 @@ func NewOrgMetricsRepo(data *Data, l log.Logger) biz.OrgMetricsRepo {
 }
 
 func (repo *OrgMetricsRepo) RunsTotal(ctx context.Context, orgID uuid.UUID, tw time.Duration) (int32, error) {
-	total, err := orgScopedQuery(repo.data.DB, orgID).
+	total, err := orgScopedQuery(repo.data.DB.Debug(), orgID).
 		QueryWorkflows().
 		QueryWorkflowruns().
-		Where(workflowrun.CreatedAtGTE(time.Now().Add(-tw))).
+		Where(workflowrun.CreatedAtIn(time.Now(), time.Now().Add(-tw))).
 		Count(ctx)
 
 	if err != nil {

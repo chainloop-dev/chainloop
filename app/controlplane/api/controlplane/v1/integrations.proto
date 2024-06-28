@@ -64,10 +64,22 @@ message IntegrationsServiceRegisterResponse {
 }
 
 message IntegrationsServiceAttachRequest {
-  // UUID of the workflow to attach
-  string workflow_id = 1 [(buf.validate.field).string.uuid = true];
-  // UUID of the integration registration to attach
-  string integration_id = 2 [(buf.validate.field).string.uuid = true];
+  // Name of the workflow to attach
+  string workflow_name = 1 [(buf.validate.field) = {
+    cel: {
+      message: "must contain only lowercase letters, numbers, and hyphens.",
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
+      id: "name.dns-1123",
+    },
+  }];
+  // Name of the registered integration
+  string integration_name = 2 [(buf.validate.field) = {
+    cel: {
+      message: "must contain only lowercase letters, numbers, and hyphens.",
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
+      id: "name.dns-1123",
+    },
+  }];
   // Arbitrary configuration for the integration
   google.protobuf.Struct config = 4 [(buf.validate.field).required = true];
 }
@@ -83,7 +95,7 @@ message IntegrationsServiceListAvailableResponse {
 
 message IntegrationAvailableItem {
   // Integration identifier
-  string id = 1;
+  string name = 1;
   string version = 2;
   string description = 3;
 
@@ -108,7 +120,13 @@ message IntegrationsServiceListRegistrationsResponse {
 }
 
 message IntegrationsServiceDescribeRegistrationRequest {
-  string id = 1 [(buf.validate.field).string.uuid = true];
+  string name = 1 [(buf.validate.field) = {
+    cel: {
+      message: "must contain only lowercase letters, numbers, and hyphens.",
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
+      id: "name.dns-1123",
+    },
+  }];
 }
 
 message IntegrationsServiceDescribeRegistrationResponse {
@@ -123,7 +141,14 @@ message IntegrationsServiceDetachResponse {}
 
 message ListAttachmentsRequest {
   // Filter by workflow
-  string workflow_id = 1;
+  string workflow_name = 1 [(buf.validate.field) = {
+    ignore_empty: true,
+    cel: {
+      message: "must contain only lowercase letters, numbers, and hyphens.",
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
+      id: "name.dns-1123",
+    },
+  }];
 }
 
 message ListAttachmentsResponse {

@@ -29,10 +29,10 @@ func NewRegisteredIntegrationDescribe(cfg *ActionsOpts) *RegisteredIntegrationDe
 	return &RegisteredIntegrationDescribe{cfg}
 }
 
-func (action *RegisteredIntegrationDescribe) Run(id string) (*RegisteredIntegrationItem, error) {
+func (action *RegisteredIntegrationDescribe) Run(name string) (*RegisteredIntegrationItem, error) {
 	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
 	resp, err := client.DescribeRegistration(context.Background(), &pb.IntegrationsServiceDescribeRegistrationRequest{
-		Id: id,
+		Name: name,
 	})
 	if err != nil {
 		return nil, err
