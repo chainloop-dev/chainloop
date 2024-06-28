@@ -17,6 +17,7 @@ package service
 
 import (
 	"context"
+	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
@@ -42,19 +43,21 @@ func (s *OrgMetricsService) Totals(ctx context.Context, req *pb.OrgMetricsServic
 		return nil, err
 	}
 
+	timeWindow := calculateTimeWindow(&req.TimeWindow)
+
 	// totals
 	// TODO: Merge it to a single request
-	totals, err := s.uc.RunsTotal(ctx, currentOrg.ID, *req.TimeWindow.ToDuration())
+	totals, err := s.uc.RunsTotal(ctx, currentOrg.ID, timeWindow)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
-	totalsByStatus, err := s.uc.RunsTotalByStatus(ctx, currentOrg.ID, *req.TimeWindow.ToDuration())
+	totalsByStatus, err := s.uc.RunsTotalByStatus(ctx, currentOrg.ID, timeWindow)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
-	totalsByRunnerType, err := s.uc.RunsTotalByRunnerType(ctx, currentOrg.ID, *req.TimeWindow.ToDuration())
+	totalsByRunnerType, err := s.uc.RunsTotalByRunnerType(ctx, currentOrg.ID, timeWindow)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -72,7 +75,9 @@ func (s *OrgMetricsService) TopWorkflowsByRunsCount(ctx context.Context, req *pb
 		return nil, err
 	}
 
-	res, err := s.uc.TopWorkflowsByRunsCount(ctx, currentOrg.ID, int(req.GetNumWorkflows()), *req.TimeWindow.ToDuration())
+	timeWindow := calculateTimeWindow(&req.TimeWindow)
+
+	res, err := s.uc.TopWorkflowsByRunsCount(ctx, currentOrg.ID, int(req.GetNumWorkflows()), timeWindow)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -94,7 +99,9 @@ func (s *OrgMetricsService) DailyRunsCount(ctx context.Context, req *pb.DailyRun
 		return nil, err
 	}
 
-	metricsByDay, err := s.uc.DailyRunsCount(ctx, org.ID, req.WorkflowId, *req.TimeWindow.ToDuration())
+	timeWindow := calculateTimeWindow(&req.TimeWindow)
+
+	metricsByDay, err := s.uc.DailyRunsCount(ctx, org.ID, req.WorkflowId, timeWindow)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -110,6 +117,14 @@ func (s *OrgMetricsService) DailyRunsCount(ctx context.Context, req *pb.DailyRun
 	}
 
 	return &pb.DailyRunsCountResponse{Result: res}, nil
+}
+
+// calculateTimeWindow calculates the time window based on the request
+func calculateTimeWindow(req *pb.MetricsTimeWindow) biz.TimeWindow {
+	return biz.TimeWindow{
+		StartDate: time.Now().UTC().Add(-*req.ToDuration()),
+		EndDate:   time.Now().UTC(),
+	}
 }
 
 func totalByStatusToPb(in map[string]int32) []*pb.MetricsStatusCount {

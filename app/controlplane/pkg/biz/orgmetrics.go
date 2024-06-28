@@ -30,12 +30,12 @@ type OrgMetricsUseCase struct {
 
 type OrgMetricsRepo interface {
 	// Total number of runs within the provided time window (from now)
-	RunsTotal(ctx context.Context, orgID uuid.UUID, timeWindow time.Duration) (int32, error)
+	RunsTotal(ctx context.Context, orgID uuid.UUID, timeWindow TimeWindow) (int32, error)
 	// Total number by run status
-	RunsByStatusTotal(ctx context.Context, orgID uuid.UUID, timeWindow time.Duration) (map[string]int32, error)
-	RunsByRunnerTypeTotal(ctx context.Context, orgID uuid.UUID, timeWindow time.Duration) (map[string]int32, error)
-	TopWorkflowsByRunsCount(ctx context.Context, orgID uuid.UUID, numWorkflows int, timeWindow time.Duration) ([]*TopWorkflowsByRunsCountItem, error)
-	DailyRunsCount(ctx context.Context, orgID, workflowID uuid.UUID, timeWindow time.Duration) ([]*DayRunsCount, error)
+	RunsByStatusTotal(ctx context.Context, orgID uuid.UUID, timeWindow TimeWindow) (map[string]int32, error)
+	RunsByRunnerTypeTotal(ctx context.Context, orgID uuid.UUID, timeWindow TimeWindow) (map[string]int32, error)
+	TopWorkflowsByRunsCount(ctx context.Context, orgID uuid.UUID, numWorkflows int, timeWindow TimeWindow) ([]*TopWorkflowsByRunsCountItem, error)
+	DailyRunsCount(ctx context.Context, orgID, workflowID uuid.UUID, timeWindow TimeWindow) ([]*DayRunsCount, error)
 }
 
 type DayRunsCount struct {
@@ -48,11 +48,17 @@ type ByStatusCount struct {
 	Count  int32
 }
 
+// TimeWindow represents in time.Time format not in time.Duration
+type TimeWindow struct {
+	StartDate time.Time
+	EndDate   time.Time
+}
+
 func NewOrgMetricsUseCase(r OrgMetricsRepo, l log.Logger) (*OrgMetricsUseCase, error) {
 	return &OrgMetricsUseCase{logger: log.NewHelper(l), repo: r}, nil
 }
 
-func (uc *OrgMetricsUseCase) RunsTotal(ctx context.Context, orgID string, timeWindow time.Duration) (int32, error) {
+func (uc *OrgMetricsUseCase) RunsTotal(ctx context.Context, orgID string, timeWindow TimeWindow) (int32, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return 0, err
@@ -61,7 +67,7 @@ func (uc *OrgMetricsUseCase) RunsTotal(ctx context.Context, orgID string, timeWi
 	return uc.repo.RunsTotal(ctx, orgUUID, timeWindow)
 }
 
-func (uc *OrgMetricsUseCase) RunsTotalByStatus(ctx context.Context, orgID string, timeWindow time.Duration) (map[string]int32, error) {
+func (uc *OrgMetricsUseCase) RunsTotalByStatus(ctx context.Context, orgID string, timeWindow TimeWindow) (map[string]int32, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, err
@@ -70,7 +76,7 @@ func (uc *OrgMetricsUseCase) RunsTotalByStatus(ctx context.Context, orgID string
 	return uc.repo.RunsByStatusTotal(ctx, orgUUID, timeWindow)
 }
 
-func (uc *OrgMetricsUseCase) RunsTotalByRunnerType(ctx context.Context, orgID string, timeWindow time.Duration) (map[string]int32, error) {
+func (uc *OrgMetricsUseCase) RunsTotalByRunnerType(ctx context.Context, orgID string, timeWindow TimeWindow) (map[string]int32, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, err
@@ -81,7 +87,7 @@ func (uc *OrgMetricsUseCase) RunsTotalByRunnerType(ctx context.Context, orgID st
 
 // DailyRunsCount returns the number of runs per day within the provided time window (from now)
 // Optionally filtered by workflowID
-func (uc *OrgMetricsUseCase) DailyRunsCount(ctx context.Context, orgID string, workflowID *string, timeWindow time.Duration) ([]*DayRunsCount, error) {
+func (uc *OrgMetricsUseCase) DailyRunsCount(ctx context.Context, orgID string, workflowID *string, timeWindow TimeWindow) ([]*DayRunsCount, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -104,7 +110,7 @@ type TopWorkflowsByRunsCountItem struct {
 	Total    int32
 }
 
-func (uc *OrgMetricsUseCase) TopWorkflowsByRunsCount(ctx context.Context, orgID string, numWorkflows int, timeWindow time.Duration) ([]*TopWorkflowsByRunsCountItem, error) {
+func (uc *OrgMetricsUseCase) TopWorkflowsByRunsCount(ctx context.Context, orgID string, numWorkflows int, timeWindow TimeWindow) ([]*TopWorkflowsByRunsCountItem, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, err
