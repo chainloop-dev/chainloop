@@ -120,10 +120,10 @@ func (s *OrgMetricsService) DailyRunsCount(ctx context.Context, req *pb.DailyRun
 }
 
 // calculateTimeWindow calculates the time window based on the request
-func calculateTimeWindow(req *pb.MetricsTimeWindow) biz.TimeWindow {
-	return biz.TimeWindow{
-		StartDate: time.Now().UTC().Add(-*req.ToDuration()),
-		EndDate:   time.Now().UTC(),
+func calculateTimeWindow(req *pb.MetricsTimeWindow) *biz.TimeWindow {
+	return &biz.TimeWindow{
+		From: time.Now().UTC().Add(-*req.ToDuration()),
+		To:   time.Now().UTC(),
 	}
 }
 

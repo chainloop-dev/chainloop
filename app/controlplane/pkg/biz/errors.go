@@ -125,3 +125,23 @@ func NewErrReferrerAmbiguous(digest string, kinds []string) error {
 func (e ErrAmbiguousReferrer) Error() string {
 	return fmt.Sprintf("digest %s present in %d kinds %q", e.digest, len(e.kinds), e.kinds)
 }
+
+type ErrInvalidTimeWindow struct {
+	err error
+}
+
+func NewErrInvalidTimeWindowStr(errMsg string) ErrInvalidTimeWindow {
+	return ErrInvalidTimeWindow{errors.New(errMsg)}
+}
+
+func NewErrInvalidTimeWindow(err error) ErrInvalidTimeWindow {
+	return ErrInvalidTimeWindow{err}
+}
+
+func (e ErrInvalidTimeWindow) Error() string {
+	return fmt.Sprintf("time window error: %s", e.err.Error())
+}
+
+func IsErrInvalidTimeWindow(err error) bool {
+	return errors.As(err, &ErrInvalidTimeWindow{})
+}
