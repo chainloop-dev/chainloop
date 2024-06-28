@@ -17,6 +17,7 @@ package biz
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/go-kratos/kratos/v2/log"
@@ -30,12 +31,12 @@ type OrgMetricsUseCase struct {
 
 type OrgMetricsRepo interface {
 	// Total number of runs within the provided time window (from now)
-	RunsTotal(ctx context.Context, orgID uuid.UUID, timeWindow time.Duration) (int32, error)
+	RunsTotal(ctx context.Context, orgID uuid.UUID, timeWindow *TimeWindow) (int32, error)
 	// Total number by run status
-	RunsByStatusTotal(ctx context.Context, orgID uuid.UUID, timeWindow time.Duration) (map[string]int32, error)
-	RunsByRunnerTypeTotal(ctx context.Context, orgID uuid.UUID, timeWindow time.Duration) (map[string]int32, error)
-	TopWorkflowsByRunsCount(ctx context.Context, orgID uuid.UUID, numWorkflows int, timeWindow time.Duration) ([]*TopWorkflowsByRunsCountItem, error)
-	DailyRunsCount(ctx context.Context, orgID, workflowID uuid.UUID, timeWindow time.Duration) ([]*DayRunsCount, error)
+	RunsByStatusTotal(ctx context.Context, orgID uuid.UUID, timeWindow *TimeWindow) (map[string]int32, error)
+	RunsByRunnerTypeTotal(ctx context.Context, orgID uuid.UUID, timeWindow *TimeWindow) (map[string]int32, error)
+	TopWorkflowsByRunsCount(ctx context.Context, orgID uuid.UUID, numWorkflows int, timeWindow *TimeWindow) ([]*TopWorkflowsByRunsCountItem, error)
+	DailyRunsCount(ctx context.Context, orgID, workflowID uuid.UUID, timeWindow *TimeWindow) ([]*DayRunsCount, error)
 }
 
 type DayRunsCount struct {
@@ -48,31 +49,58 @@ type ByStatusCount struct {
 	Count  int32
 }
 
+// TimeWindow represents in time.Time format not in time.Duration
+type TimeWindow struct {
+	From time.Time
+	To   time.Time
+}
+
+// Validate validates the time window checking From and To are set
+func (tw *TimeWindow) Validate() error {
+	if tw.From.IsZero() || tw.To.IsZero() {
+		return NewErrInvalidTimeWindowStr("from and to time must be set in time window")
+	}
+
+	return nil
+}
+
 func NewOrgMetricsUseCase(r OrgMetricsRepo, l log.Logger) (*OrgMetricsUseCase, error) {
 	return &OrgMetricsUseCase{logger: log.NewHelper(l), repo: r}, nil
 }
 
-func (uc *OrgMetricsUseCase) RunsTotal(ctx context.Context, orgID string, timeWindow time.Duration) (int32, error) {
+func (uc *OrgMetricsUseCase) RunsTotal(ctx context.Context, orgID string, timeWindow *TimeWindow) (int32, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
+		return 0, err
+	}
+
+	if err := validateTimeWindowIsSet(timeWindow); err != nil {
 		return 0, err
 	}
 
 	return uc.repo.RunsTotal(ctx, orgUUID, timeWindow)
 }
 
-func (uc *OrgMetricsUseCase) RunsTotalByStatus(ctx context.Context, orgID string, timeWindow time.Duration) (map[string]int32, error) {
+func (uc *OrgMetricsUseCase) RunsTotalByStatus(ctx context.Context, orgID string, timeWindow *TimeWindow) (map[string]int32, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := validateTimeWindowIsSet(timeWindow); err != nil {
 		return nil, err
 	}
 
 	return uc.repo.RunsByStatusTotal(ctx, orgUUID, timeWindow)
 }
 
-func (uc *OrgMetricsUseCase) RunsTotalByRunnerType(ctx context.Context, orgID string, timeWindow time.Duration) (map[string]int32, error) {
+func (uc *OrgMetricsUseCase) RunsTotalByRunnerType(ctx context.Context, orgID string, timeWindow *TimeWindow) (map[string]int32, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := validateTimeWindowIsSet(timeWindow); err != nil {
 		return nil, err
 	}
 
@@ -81,10 +109,14 @@ func (uc *OrgMetricsUseCase) RunsTotalByRunnerType(ctx context.Context, orgID st
 
 // DailyRunsCount returns the number of runs per day within the provided time window (from now)
 // Optionally filtered by workflowID
-func (uc *OrgMetricsUseCase) DailyRunsCount(ctx context.Context, orgID string, workflowID *string, timeWindow time.Duration) ([]*DayRunsCount, error) {
+func (uc *OrgMetricsUseCase) DailyRunsCount(ctx context.Context, orgID string, workflowID *string, timeWindow *TimeWindow) ([]*DayRunsCount, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
+	}
+
+	if err := validateTimeWindowIsSet(timeWindow); err != nil {
+		return nil, err
 	}
 
 	var workflowUUID uuid.UUID
@@ -104,11 +136,26 @@ type TopWorkflowsByRunsCountItem struct {
 	Total    int32
 }
 
-func (uc *OrgMetricsUseCase) TopWorkflowsByRunsCount(ctx context.Context, orgID string, numWorkflows int, timeWindow time.Duration) ([]*TopWorkflowsByRunsCountItem, error) {
+func (uc *OrgMetricsUseCase) TopWorkflowsByRunsCount(ctx context.Context, orgID string, numWorkflows int, timeWindow *TimeWindow) ([]*TopWorkflowsByRunsCountItem, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, err
 	}
 
+	if err := validateTimeWindowIsSet(timeWindow); err != nil {
+		return nil, err
+	}
+
 	return uc.repo.TopWorkflowsByRunsCount(ctx, orgUUID, numWorkflows, timeWindow)
+}
+
+// validateTimeWindowIsSet validates that the time window is set
+func validateTimeWindowIsSet(tw *TimeWindow) error {
+	// Check if time window is set
+	if tw == nil {
+		return fmt.Errorf("time window is required")
+	}
+
+	// Validate time window
+	return tw.Validate()
 }
