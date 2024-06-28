@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,10 +29,10 @@ func NewAttachedIntegrationList(cfg *ActionsOpts) *AttachedIntegrationList {
 	return &AttachedIntegrationList{cfg}
 }
 
-func (action *AttachedIntegrationList) Run() ([]*AttachedIntegrationItem, error) {
+func (action *AttachedIntegrationList) Run(workflowName string) ([]*AttachedIntegrationItem, error) {
 	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
 
-	resp, err := client.ListAttachments(context.Background(), &pb.ListAttachmentsRequest{})
+	resp, err := client.ListAttachments(context.Background(), &pb.ListAttachmentsRequest{WorkflowName: workflowName})
 	if err != nil {
 		return nil, err
 	}

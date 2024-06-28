@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import (
 
 func newAttachedIntegrationAttachCmd() *cobra.Command {
 	var options []string
-	var integrationID, workflowID string
+	var integrationName, workflowName string
 
 	cmd := &cobra.Command{
 		Use:     "add",
@@ -31,7 +31,7 @@ func newAttachedIntegrationAttachCmd() *cobra.Command {
 		Example: `  chainloop integration attached add --workflow deadbeef --integration beefdoingwell --opt projectName=MyProject --opt projectVersion=1.0.0`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Find the integration to extract the kind of integration we care about
-			integration, err := action.NewRegisteredIntegrationDescribe(actionOpts).Run(integrationID)
+			integration, err := action.NewRegisteredIntegrationDescribe(actionOpts).Run(integrationName)
 			if err != nil {
 				return err
 			}
@@ -52,7 +52,7 @@ func newAttachedIntegrationAttachCmd() *cobra.Command {
 				return err
 			}
 
-			res, err := action.NewAttachedIntegrationAdd(actionOpts).Run(integrationID, workflowID, opts)
+			res, err := action.NewAttachedIntegrationAdd(actionOpts).Run(integrationName, workflowName, opts)
 			if err != nil {
 				return err
 			}
@@ -61,10 +61,10 @@ func newAttachedIntegrationAttachCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&integrationID, "integration", "", "ID of the integration already registered in this organization")
+	cmd.Flags().StringVar(&integrationName, "integration", "", "Name of the integration already registered in this organization")
 	cobra.CheckErr(cmd.MarkFlagRequired("integration"))
 
-	cmd.Flags().StringVar(&workflowID, "workflow", "", "ID of the workflow to attach this integration")
+	cmd.Flags().StringVar(&workflowName, "workflow", "", "name of the workflow to attach this integration")
 	cobra.CheckErr(cmd.MarkFlagRequired("workflow"))
 
 	// StringSlice seems to struggle with comma-separated values such as p12 jsonKeys provided as passwords

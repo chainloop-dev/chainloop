@@ -30,7 +30,7 @@ type AvailableIntegrationList struct {
 }
 
 type AvailableIntegrationItem struct {
-	ID           string      `json:"id"`
+	Name         string      `json:"name"`
 	Version      string      `json:"version"`
 	Description  string      `json:"description,omitempty"`
 	Registration *JSONSchema `json:"registration"`
@@ -78,14 +78,14 @@ func pbAvailableIntegrationItemToAction(in *pb.IntegrationAvailableItem) (*Avail
 	}
 
 	if in.GetFanout() == nil {
-		fmt.Printf("skipping integration %s, type not supported\n", in.GetId())
+		fmt.Printf("skipping integration %s, type not supported\n", in.GetName())
 		return nil, nil
 	}
 
 	foType := in.GetFanout()
 
 	i := &AvailableIntegrationItem{
-		ID: in.GetId(), Version: in.GetVersion(), Description: in.GetDescription(),
+		Name: in.GetName(), Version: in.GetVersion(), Description: in.GetDescription(),
 		Registration: &JSONSchema{Raw: string(foType.GetRegistrationSchema())},
 		Attachment:   &JSONSchema{Raw: string(foType.GetAttachmentSchema())},
 	}
