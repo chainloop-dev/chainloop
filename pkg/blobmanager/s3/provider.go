@@ -46,8 +46,6 @@ func (p *BackendProvider) FromCredentials(ctx context.Context, secretName string
 		return nil, err
 	}
 
-	fmt.Println("creds: ", creds)
-
 	if err := creds.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid credentials retrieved from storage: %w", err)
 	}

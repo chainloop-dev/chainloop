@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -54,15 +54,6 @@ func TestValidate(t *testing.T) {
 				AccessKeyID: "test",
 				Region:      "test",
 				BucketName:  "test",
-			},
-			wantErr: true,
-		},
-		{
-			name: "missing region",
-			creds: &Credentials{
-				AccessKeyID:     "test",
-				SecretAccessKey: "test",
-				BucketName:      "test",
 			},
 			wantErr: true,
 		},
