@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -40,30 +41,16 @@ const (
 )
 
 type Backend struct {
-	client *s3.S3
-	bucket string
+	client         *s3.S3
+	bucket         string
+	customEndpoint string
 }
 
 var _ backend.UploaderDownloader = (*Backend)(nil)
 
-type ConnOpt func(*aws.Config)
-
-// Optional endpoint configuration
-func WithEndpoint(endpoint string) ConnOpt {
-	return func(cfg *aws.Config) {
-		cfg.Endpoint = aws.String(endpoint)
-	}
-}
-
-func WithForcedS3PathStyle(force bool) ConnOpt {
-	return func(cfg *aws.Config) {
-		cfg.S3ForcePathStyle = aws.Bool(force)
-	}
-}
-
 const defaultRegion = "us-east-1"
 
-func NewBackend(creds *Credentials, connOpts ...ConnOpt) (*Backend, error) {
+func NewBackend(creds *Credentials) (*Backend, error) {
 	if creds == nil {
 		return nil, errors.New("credentials cannot be nil")
 	}
@@ -81,12 +68,17 @@ func NewBackend(creds *Credentials, connOpts ...ConnOpt) (*Backend, error) {
 	c := credentials.NewStaticCredentials(creds.AccessKeyID, creds.SecretAccessKey, "")
 	// Configure AWS session
 	cfg := &aws.Config{Credentials: c, Region: aws.String(region)}
-	for _, opt := range connOpts {
-		opt(cfg)
+
+	// Bucket might contain the not only the bucket name but also the endpoint
+	endpoint, bucket, err := extractLocationAndBucket(creds)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse bucket name: %w", err)
 	}
 
-	if creds.Endpoint != "" {
-		cfg.Endpoint = aws.String(creds.Endpoint)
+	// we have a custom endpoint
+	// in some cases the server-side checksum verification is not supported like in the case of cloudflare r2
+	if endpoint != "" {
+		cfg.Endpoint = aws.String(endpoint)
 		cfg.S3ForcePathStyle = aws.Bool(true)
 	}
 
@@ -96,9 +88,53 @@ func NewBackend(creds *Credentials, connOpts ...ConnOpt) (*Backend, error) {
 	}
 
 	return &Backend{
-		client: s3.New(session),
-		bucket: creds.BucketName,
+		client:         s3.New(session),
+		bucket:         bucket,
+		customEndpoint: endpoint,
 	}, nil
+}
+
+// For now we are aware that the checksum verification is not supported by cloudflare r2
+// https://developers.cloudflare.com/r2/api/s3/api/
+func (b *Backend) checksumVerificationEnabled() bool {
+	var enabled = true
+	if b.customEndpoint != "" && strings.Contains(b.customEndpoint, "r2.cloudflarestorage.com") {
+		enabled = false
+	}
+
+	return enabled
+}
+
+// Extract the custom endpoint and the bucket name from the location string
+// The location string can be either a bucket name or a URL
+// i.e bucket-name or https://custom-domain/bucket-name
+func extractLocationAndBucket(creds *Credentials) (string, string, error) {
+	// Older versions of the credentials didn't have the location field
+	// and just the bucket name was stored in the bucket name field
+	if creds.BucketName != "" {
+		return "", creds.BucketName, nil
+	}
+
+	// Newer versions of the credentials have the location field which can contain the endpoint
+	// so we override the bucket and set the endpoint if needed
+	parsedLocation, err := url.Parse(creds.Location)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to parse location: %w", err)
+	}
+
+	host := parsedLocation.Host
+	// It's a bucket name
+	if host == "" {
+		return "", creds.Location, nil
+	}
+
+	endpoint := fmt.Sprintf("%s://%s", parsedLocation.Scheme, host)
+	// It's a URL, extract bucket name from the path
+	if pathSegments := strings.Split(parsedLocation.Path, "/"); len(pathSegments) > 1 {
+		return endpoint, pathSegments[1], nil
+	}
+
+	return "", "", fmt.Errorf("the location doesn't contain a bucket name")
 }
 
 // Exists check that the artifact is already present in the repository
@@ -113,29 +149,41 @@ func (b *Backend) Exists(ctx context.Context, digest string) (bool, error) {
 
 func (b *Backend) Upload(ctx context.Context, r io.Reader, resource *pb.CASResource) error {
 	uploader := s3manager.NewUploaderWithClient(b.client)
-
-	_, err := uploader.UploadWithContext(ctx, &s3manager.UploadInput{
+	input := &s3manager.UploadInput{
 		Bucket: aws.String(b.bucket),
 		Key:    aws.String(resourceName(resource.Digest)),
 		Body:   r,
-		// Check that the object is uploaded correctly
-		ChecksumSHA256: aws.String(hexSha256ToBinaryB64(resource.Digest)),
 		Metadata: map[string]*string{
 			annotationNameAuthor:   aws.String(backend.AuthorAnnotation),
 			annotationNameFilename: aws.String(resource.FileName),
 		},
-	})
+	}
 
-	return err
+	if b.checksumVerificationEnabled() {
+		// Check that the object is uploaded correctly
+		input.ChecksumSHA256 = aws.String(hexSha256ToBinaryB64(resource.Digest))
+	}
+
+	if _, err := uploader.UploadWithContext(ctx, input); err != nil {
+		return fmt.Errorf("failed to upload to bucket: %w", err)
+	}
+
+	return nil
 }
 
 func (b *Backend) Describe(ctx context.Context, digest string) (*pb.CASResource, error) {
-	// and read the object back + validate integrity
-	resp, err := b.client.HeadObjectWithContext(ctx, &s3.HeadObjectInput{
-		Bucket:       aws.String(b.bucket),
-		Key:          aws.String(resourceName(digest)),
-		ChecksumMode: aws.String("ENABLED"),
-	})
+	input := &s3.HeadObjectInput{
+		Bucket: aws.String(b.bucket),
+		Key:    aws.String(resourceName(digest)),
+	}
+
+	if b.checksumVerificationEnabled() {
+		// Enable checksum verification
+		input.ChecksumMode = aws.String("ENABLED")
+	}
+
+	// and read the object back
+	resp, err := b.client.HeadObjectWithContext(ctx, input)
 
 	// check error is aws error
 	var awsErr awserr.Error

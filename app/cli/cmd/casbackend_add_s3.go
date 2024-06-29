@@ -16,6 +16,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/s3"
 	"github.com/go-kratos/kratos/v2/log"
@@ -46,6 +48,11 @@ func newCASBackendAddAWSS3Cmd() *cobra.Command {
 				}
 			}
 
+			// If there is a custom endpoint we want to store it as part of the fqdn location
+			if endpoint != "" {
+				bucketName = fmt.Sprintf("%s/%s", endpoint, bucketName)
+			}
+
 			opts := &action.NewCASBackendAddOpts{
 				Name:        name,
 				Location:    bucketName,
@@ -55,7 +62,6 @@ func newCASBackendAddAWSS3Cmd() *cobra.Command {
 					"accessKeyID":     accessKeyID,
 					"secretAccessKey": secretAccessKey,
 					"region":          region,
-					"endpoint":        endpoint,
 				},
 				Default: isDefault,
 			}
