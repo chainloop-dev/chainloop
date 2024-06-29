@@ -48,14 +48,15 @@ func newCASBackendAddAWSS3Cmd() *cobra.Command {
 				}
 			}
 
+			location := bucketName
 			// If there is a custom endpoint we want to store it as part of the fqdn location
 			if endpoint != "" {
-				bucketName = fmt.Sprintf("%s/%s", endpoint, bucketName)
+				location = fmt.Sprintf("%s/%s", endpoint, bucketName)
 			}
 
 			opts := &action.NewCASBackendAddOpts{
 				Name:        name,
-				Location:    bucketName,
+				Location:    location,
 				Provider:    s3.ProviderID,
 				Description: description,
 				Credentials: map[string]any{
