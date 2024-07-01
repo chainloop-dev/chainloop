@@ -23,6 +23,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/apitoken"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
@@ -69,8 +70,8 @@ func (r *APITokenRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.APIToke
 	return entAPITokenToBiz(token), nil
 }
 
-func (r *APITokenRepo) FindByName(ctx context.Context, name string) (*biz.APIToken, error) {
-	token, err := r.data.DB.APIToken.Query().Where(apitoken.NameEQ(name)).Only(ctx)
+func (r *APITokenRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*biz.APIToken, error) {
+	token, err := r.data.DB.APIToken.Query().Where(apitoken.NameEQ(name), apitoken.HasOrganizationWith(organization.ID(orgID)), apitoken.RevokedAtIsNil()).Only(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, biz.NewErrNotFound("API token")

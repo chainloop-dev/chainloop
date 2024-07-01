@@ -52,7 +52,7 @@ type APITokenRepo interface {
 	List(ctx context.Context, orgID *uuid.UUID, includeRevoked bool) ([]*APIToken, error)
 	Revoke(ctx context.Context, orgID, ID uuid.UUID) error
 	FindByID(ctx context.Context, ID uuid.UUID) (*APIToken, error)
-	FindByName(ctx context.Context, name string) (*APIToken, error)
+	FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*APIToken, error)
 }
 
 type APITokenUseCase struct {
@@ -183,11 +183,9 @@ func (uc *APITokenUseCase) FindByNameInOrg(ctx context.Context, orgID, name stri
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	t, err := uc.apiTokenRepo.FindByName(ctx, name)
+	t, err := uc.apiTokenRepo.FindByNameInOrg(ctx, orgUUID, name)
 	if err != nil {
 		return nil, fmt.Errorf("finding token: %w", err)
-	} else if t.OrganizationID != orgUUID {
-		return nil, NewErrNotFound("token")
 	}
 
 	return t, nil
