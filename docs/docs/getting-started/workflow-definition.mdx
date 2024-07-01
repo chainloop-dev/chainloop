@@ -55,11 +55,11 @@ $ chainloop workflow create \
 By default, if no contract is provided, a new, empty one will be created
 
 ```bash
-$ chainloop workflow contract describe --id fd489047-67f1-45d4-9f3b-27eba4051929
+$ chainloop workflow contract describe --name build-and-test
 ┌─────────────────────────────────────────────────────────────┐
 │ Contract                                                    │
 ├──────────────────────┬──────────────────────────────────────┤
-│ Name                 │ build-and-test generated schema      │
+│ Name                 │ build-and-test                       │
 ├──────────────────────┼──────────────────────────────────────┤
 │ ID                   │ fd489047-67f1-45d4-9f3b-27eba4051929 │
 ├──────────────────────┼──────────────────────────────────────┤
@@ -114,8 +114,7 @@ Update the name and schema, notice the revision increment
 
 ```bash
 $ chainloop workflow contract update \
-   --id fd489047-67f1-45d4-9f3b-27eba4051929 \
-   --name skynet-contract \
+   --name build-and-test \
    -f https://raw.githubusercontent.com/chainloop-dev/chainloop/main/docs/examples/contracts/skynet/contract.yaml
 
 ┌─────────────────────────────────────────────────────────────┐
