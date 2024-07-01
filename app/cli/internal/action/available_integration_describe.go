@@ -37,7 +37,7 @@ func (action *AvailableIntegrationDescribe) Run(name string) (*AvailableIntegrat
 	}
 
 	for _, i := range resp.Result {
-		if i.Id == name {
+		if i.Name == name {
 			return pbAvailableIntegrationItemToAction(i)
 		}
 	}

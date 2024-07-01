@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ func NewAttachedIntegrationAdd(cfg *ActionsOpts) *AttachedIntegrationAdd {
 	return &AttachedIntegrationAdd{cfg}
 }
 
-func (action *AttachedIntegrationAdd) Run(integrationID, workflowID string, options map[string]any) (*AttachedIntegrationItem, error) {
+func (action *AttachedIntegrationAdd) Run(integrationName, workflowName string, options map[string]any) (*AttachedIntegrationItem, error) {
 	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
 
 	requestConfig, err := structpb.NewStruct(options)
@@ -39,9 +39,8 @@ func (action *AttachedIntegrationAdd) Run(integrationID, workflowID string, opti
 	}
 
 	resp, err := client.Attach(context.Background(), &pb.IntegrationsServiceAttachRequest{
-		WorkflowId: workflowID, IntegrationId: integrationID, Config: requestConfig,
+		WorkflowName: workflowName, IntegrationName: integrationName, Config: requestConfig,
 	})
-
 	if err != nil {
 		return nil, err
 	}

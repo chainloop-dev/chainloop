@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,12 +27,13 @@ import (
 )
 
 func newAttachedIntegrationListCmd() *cobra.Command {
+	var workflowName string
 	cmd := &cobra.Command{
 		Use:     "list",
 		Aliases: []string{"ls"},
 		Short:   "List integrations attached to workflows",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewAttachedIntegrationList(actionOpts).Run()
+			res, err := action.NewAttachedIntegrationList(actionOpts).Run(workflowName)
 			if err != nil {
 				return err
 			}
@@ -41,6 +42,7 @@ func newAttachedIntegrationListCmd() *cobra.Command {
 		},
 	}
 
+	cmd.Flags().StringVar(&workflowName, "workflow", "", "workflow name")
 	return cmd
 }
 
@@ -54,7 +56,7 @@ func attachedIntegrationListTableOutput(attachments []*action.AttachedIntegratio
 	}
 
 	t := newTableWriter()
-	t.AppendHeader(table.Row{"ID", "Kind", "Config", "Attached At", "Workflow"})
+	t.AppendHeader(table.Row{"ID", "Kind", "Config", "Workflow", "Attached At"})
 	for _, attachment := range attachments {
 		wf := attachment.Workflow
 		integration := attachment.Integration
@@ -80,7 +82,7 @@ func attachedIntegrationListTableOutput(attachments []*action.AttachedIntegratio
 			options = append(options, fmt.Sprintf("%s: %v", k, v))
 		}
 
-		t.AppendRow(table.Row{attachment.ID, integration.Kind, strings.Join(options, "\n"), attachment.CreatedAt.Format(time.RFC822), wf.NamespacedName()})
+		t.AppendRow(table.Row{attachment.ID, integration.Kind, strings.Join(options, "\n"), wf.Name, attachment.CreatedAt.Format(time.RFC822)})
 		t.AppendSeparator()
 	}
 

@@ -56,7 +56,7 @@ func (s *IntegrationsService) ListAvailable(_ context.Context, _ *pb.Integration
 		}
 
 		item := &pb.IntegrationAvailableItem{
-			Id:          d.ID,
+			Name:        d.ID,
 			Version:     d.Version,
 			Description: d.Description,
 			Type: &pb.IntegrationAvailableItem_Fanout{
@@ -106,7 +106,8 @@ func (s *IntegrationsService) Attach(ctx context.Context, req *pb.IntegrationsSe
 		return nil, err
 	}
 
-	integration, err := s.integrationUC.FindByIDInOrg(ctx, org.ID, req.IntegrationId)
+	// Find the integration and workflow by name
+	integration, err := s.integrationUC.FindByNameInOrg(ctx, org.ID, req.IntegrationName)
 	if err != nil {
 		if biz.IsNotFound(err) {
 			return nil, errors.NotFound("not found", err.Error())
@@ -120,8 +121,16 @@ func (s *IntegrationsService) Attach(ctx context.Context, req *pb.IntegrationsSe
 		return nil, fmt.Errorf("loading integration: %w", err)
 	}
 
+	wf, err := s.workflowUC.FindByNameInOrg(ctx, org.ID, req.WorkflowName)
+	if err != nil {
+		if biz.IsNotFound(err) {
+			return nil, errors.NotFound("not found", err.Error())
+		}
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
 	res, err := s.integrationUC.AttachToWorkflow(ctx, &biz.AttachOpts{
-		OrgID: org.ID, IntegrationID: req.IntegrationId, WorkflowID: req.WorkflowId,
+		OrgID: org.ID, IntegrationID: integration.ID.String(), WorkflowID: wf.ID.String(),
 		AttachmentConfig:  req.Config,
 		FanOutIntegration: attachable,
 	})
@@ -169,7 +178,7 @@ func (s *IntegrationsService) DescribeRegistration(ctx context.Context, req *pb.
 		return nil, err
 	}
 
-	i, err := s.integrationUC.FindByIDInOrg(ctx, org.ID, req.Id)
+	i, err := s.integrationUC.FindByNameInOrg(ctx, org.ID, req.Name)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	} else if i == nil {
@@ -208,7 +217,20 @@ func (s *IntegrationsService) ListAttachments(ctx context.Context, req *pb.ListA
 		return nil, err
 	}
 
-	integrations, err := s.integrationUC.ListAttachments(ctx, org.ID, req.GetWorkflowId())
+	// Translate workflow name to ID
+	var workflowID string
+	if req.GetWorkflowName() != "" {
+		wf, err := s.workflowUC.FindByNameInOrg(ctx, org.ID, req.GetWorkflowName())
+		if err != nil {
+			if biz.IsNotFound(err) {
+				return nil, errors.NotFound("not found", err.Error())
+			}
+			return nil, handleUseCaseErr(err, s.log)
+		}
+		workflowID = wf.ID.String()
+	}
+
+	integrations, err := s.integrationUC.ListAttachments(ctx, org.ID, workflowID)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
