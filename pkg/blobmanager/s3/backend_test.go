@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -129,6 +129,101 @@ func (s *testSuite) TestDescribe() {
 		s.Equal(int64(4), artifact.Size)
 	})
 }
+func (s *testSuite) TestChecksumVerificationEnabled() {
+	testCases := []struct {
+		name           string
+		customEndpoint string
+		expected       bool
+	}{
+		{
+			name:           "no endpoint, a.k.a AWS",
+			customEndpoint: "",
+			expected:       true,
+		},
+		{
+			name:           "custom endpoint, i.e minio",
+			customEndpoint: s.minio.ConnectionString(s.T()),
+			expected:       true,
+		},
+		{
+			name:           "custom endpoint",
+			customEndpoint: "https://123.r2.cloudflarestorage.com/bucket-name",
+			expected:       false,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			b := &Backend{customEndpoint: tc.customEndpoint}
+			s.Equal(tc.expected, b.checksumVerificationEnabled())
+		})
+	}
+}
+
+func (s *testSuite) TestExtractLocationAndBucket() {
+	type expected struct {
+		endpoint string
+		bucket   string
+		err      string
+	}
+
+	testCases := []struct {
+		name     string
+		creds    *Credentials
+		expected *expected
+	}{
+		{
+			name: "no location",
+			creds: &Credentials{
+				BucketName: "bucket",
+			},
+			expected: &expected{
+				bucket: "bucket",
+			},
+		},
+		{
+			name: "location is a bucket name",
+			creds: &Credentials{
+				Location: "bucket",
+			},
+			expected: &expected{
+				bucket: "bucket",
+			},
+		},
+		{
+			name: "location is a URL",
+			creds: &Credentials{
+				Location: "https://custom-domain/bucket",
+			},
+			expected: &expected{
+				endpoint: "https://custom-domain",
+				bucket:   "bucket",
+			},
+		},
+		{
+			name: "invalid URL",
+			creds: &Credentials{
+				Location: "https://custom-domain",
+			},
+			expected: &expected{
+				err: "doesn't contain a bucket name",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			endpoint, bucket, err := extractLocationAndBucket(tc.creds)
+			if tc.expected.err != "" {
+				s.ErrorContains(err, tc.expected.err)
+			} else {
+				s.NoError(err)
+				s.Equal(tc.expected.endpoint, endpoint)
+				s.Equal(tc.expected.bucket, bucket)
+			}
+		})
+	}
+}
 
 func (s *testSuite) TestDownload() {
 	s.T().Run("exist but not uploaded by Chainloop", func(t *testing.T) {
@@ -183,14 +278,15 @@ const testBucket = "test-bucket"
 
 func (s *testSuite) SetupTest() {
 	s.minio = newMinioInstance(s.T())
+	location := fmt.Sprintf("http://%s/%s", s.minio.ConnectionString(s.T()), testBucket)
 
 	// Create backend
 	backend, err := NewBackend(&Credentials{
 		AccessKeyID:     "root",
 		SecretAccessKey: "test-password",
 		Region:          "us-east-1",
-		BucketName:      testBucket,
-	}, WithEndpoint(fmt.Sprintf("http://%s", s.minio.ConnectionString(s.T()))), WithForcedS3PathStyle(true))
+		Location:        location,
+	})
 	require.NoError(s.T(), err)
 	s.backend = backend
 
@@ -199,7 +295,9 @@ func (s *testSuite) SetupTest() {
 		SecretAccessKey: "wrong-password",
 		Region:          "us-east-1",
 		BucketName:      testBucket,
-	}, WithEndpoint(fmt.Sprintf("http://%s", s.minio.ConnectionString(s.T()))), WithForcedS3PathStyle(true))
+		Location:        location,
+	})
+
 	require.NoError(s.T(), err)
 	s.invalidBackend = invalidBackend
 
