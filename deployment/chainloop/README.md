@@ -482,10 +482,10 @@ chainloop config save \
 
 ### Authentication
 
-| Name               | Description                                                            | Value |
-| ------------------ | ---------------------------------------------------------------------- | ----- |
+| Name               | Description                                                                  | Value |
+| ------------------ | ---------------------------------------------------------------------------- | ----- |
 | `casJWTPrivateKey` | ECDSA (ES512) private key used for Controlplane &lt;-&gt; CAS Authentication | `""`  |
-| `casJWTPublicKey`  | ECDSA (ES512) public key                                               | `""`  |
+| `casJWTPublicKey`  | ECDSA (ES512) public key                                                     | `""`  |
 
 ### Control Plane
 
@@ -533,7 +533,7 @@ chainloop config save \
 ### Control Plane Networking
 
 | Name                                       | Description                                                                                                                      | Value                    |
-| ------------------------------------------ |----------------------------------------------------------------------------------------------------------------------------------| ------------------------ |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
 | `controlplane.service.type`                | Service type                                                                                                                     | `ClusterIP`              |
 | `controlplane.service.port`                | Service port                                                                                                                     | `80`                     |
 | `controlplane.service.targetPort`          | Service target Port                                                                                                              | `http`                   |
@@ -620,12 +620,12 @@ chainloop config save \
 | `cas.service.type`                | Service type                                                                                                                     | `ClusterIP`              |
 | `cas.service.port`                | Service port                                                                                                                     | `80`                     |
 | `cas.service.targetPort`          | Service target Port                                                                                                              | `http`                   |
-| `cas.service.nodePorts.http`      | Node port for HTTP. NOTE: choose port between &lt;30000-32767&gt;                                                                      |                          |
+| `cas.service.nodePorts.http`      | Node port for HTTP. NOTE: choose port between &lt;30000-32767&gt;                                                                |                          |
 | `cas.serviceAPI.type`             | Service type                                                                                                                     | `ClusterIP`              |
 | `cas.serviceAPI.port`             | Service port                                                                                                                     | `80`                     |
 | `cas.serviceAPI.targetPort`       | Service target Port                                                                                                              | `grpc`                   |
 | `cas.serviceAPI.annotations`      | Service annotations                                                                                                              |                          |
-| `cas.serviceAPI.nodePorts.http`   | Node port for HTTP. NOTE: choose port between &lt;30000-32767&gt;                                                                      |                          |
+| `cas.serviceAPI.nodePorts.http`   | Node port for HTTP. NOTE: choose port between &lt;30000-32767&gt;                                                                |                          |
 | `cas.ingress.enabled`             | Enable ingress record generation for %%MAIN_CONTAINER_NAME%%                                                                     | `false`                  |
 | `cas.ingress.pathType`            | Ingress path type                                                                                                                | `ImplementationSpecific` |
 | `cas.ingress.hostname`            | Default host for the ingress record                                                                                              | `cas.dev.local`          |
