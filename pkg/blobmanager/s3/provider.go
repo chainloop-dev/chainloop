@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -72,13 +72,14 @@ func (p *BackendProvider) ValidateAndExtractCredentials(location string, credsJS
 	return creds, nil
 }
 
-func extractCreds(bucketName string, credsJSON []byte) (*Credentials, error) {
+func extractCreds(location string, credsJSON []byte) (*Credentials, error) {
 	var creds *Credentials
 	if err := json.Unmarshal(credsJSON, &creds); err != nil {
 		return nil, fmt.Errorf("unmarshaling credentials: %w", err)
 	}
 
-	creds.BucketName = bucketName
+	// We do not allow overriding the location
+	creds.Location = location
 
 	if err := creds.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid credentials: %w", err)
@@ -92,8 +93,12 @@ type Credentials struct {
 	AccessKeyID string
 	// AWS Secret Access Key
 	SecretAccessKey string
-	// Bucket name
+	// Deprecated: use Location instead. Kept for backward compatibility with existing stored credentials
 	BucketName string
+	// Location is a combination of the bucket name and the endpoint
+	// custom endpoint + bucket-name https://123.r2.cloudflarestorage.com/bucket-name
+	// or just the bucket name i.e bucket-name
+	Location string
 	// Region ID, i.e us-east-1
 	Region string
 }
@@ -108,12 +113,9 @@ func (c *Credentials) Validate() error {
 		return fmt.Errorf("%w: missing secretAccessKey", backend.ErrValidation)
 	}
 
-	if c.BucketName == "" {
-		return fmt.Errorf("%w: missing bucket name", backend.ErrValidation)
-	}
-
-	if c.Region == "" {
-		return fmt.Errorf("%w: missing region", backend.ErrValidation)
+	// BucketName is deprecated, we should use Location instead
+	if c.Location == "" && c.BucketName == "" {
+		return fmt.Errorf("%w: missing bucket and location", backend.ErrValidation)
 	}
 
 	return nil

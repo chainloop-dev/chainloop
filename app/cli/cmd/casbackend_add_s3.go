@@ -16,6 +16,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/s3"
 	"github.com/go-kratos/kratos/v2/log"
@@ -23,7 +25,7 @@ import (
 )
 
 func newCASBackendAddAWSS3Cmd() *cobra.Command {
-	var bucketName, accessKeyID, secretAccessKey, region string
+	var bucketName, accessKeyID, secretAccessKey, region, endpoint string
 	cmd := &cobra.Command{
 		Use:   "aws-s3",
 		Short: "Register a AWS S3 storage bucket",
@@ -46,9 +48,15 @@ func newCASBackendAddAWSS3Cmd() *cobra.Command {
 				}
 			}
 
+			location := bucketName
+			// If there is a custom endpoint we want to store it as part of the fqdn location
+			if endpoint != "" {
+				location = fmt.Sprintf("%s/%s", endpoint, bucketName)
+			}
+
 			opts := &action.NewCASBackendAddOpts{
 				Name:        name,
-				Location:    bucketName,
+				Location:    location,
 				Provider:    s3.ProviderID,
 				Description: description,
 				Credentials: map[string]any{
@@ -83,8 +91,9 @@ func newCASBackendAddAWSS3Cmd() *cobra.Command {
 	cobra.CheckErr(err)
 
 	cmd.Flags().StringVar(&region, "region", "", "AWS region for the bucket")
-	err = cmd.MarkFlagRequired("region")
 	cobra.CheckErr(err)
+
+	cmd.Flags().StringVar(&endpoint, "endpoint", "", "Custom Endpoint URL for other S3 compatible backends i.e MinIO")
 
 	return cmd
 }

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package s3
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/pkg/credentials/mocks"
@@ -32,6 +33,15 @@ func TestValidate(t *testing.T) {
 	}{
 		{
 			name: "valid credentials",
+			creds: &Credentials{
+				AccessKeyID:     "test",
+				SecretAccessKey: "test",
+				Region:          "test",
+				Location:        "test",
+			},
+		},
+		{
+			name: "valid credentials with deprecated bucket name",
 			creds: &Credentials{
 				AccessKeyID:     "test",
 				SecretAccessKey: "test",
@@ -54,15 +64,6 @@ func TestValidate(t *testing.T) {
 				AccessKeyID: "test",
 				Region:      "test",
 				BucketName:  "test",
-			},
-			wantErr: true,
-		},
-		{
-			name: "missing region",
-			creds: &Credentials{
-				AccessKeyID:     "test",
-				SecretAccessKey: "test",
-				BucketName:      "test",
 			},
 			wantErr: true,
 		},
@@ -95,29 +96,45 @@ func TestFromCredentials(t *testing.T) {
 	r := mocks.NewReader(t)
 	const bucket, keyID, keySecret, region = "my-bucket", "key-id", "key-secret", "region-1"
 
-	r.On("ReadCredentials", ctx, "secretName", mock.AnythingOfType("*s3.Credentials")).Return(nil).Run(
-		func(args mock.Arguments) {
-			credentials := args.Get(2).(*Credentials)
-			credentials.BucketName = bucket
-			credentials.Region = region
-			credentials.SecretAccessKey = keySecret
-			credentials.AccessKeyID = keyID
-		})
+	t.Run("with deprecated bucketName", func(_ *testing.T) {
+		r.On("ReadCredentials", ctx, "secretName", mock.AnythingOfType("*s3.Credentials")).Return(nil).Run(
+			func(args mock.Arguments) {
+				credentials := args.Get(2).(*Credentials)
+				credentials.BucketName = bucket
+				credentials.Region = region
+				credentials.SecretAccessKey = keySecret
+				credentials.AccessKeyID = keyID
+			})
 
-	_, err := NewBackendProvider(r).FromCredentials(ctx, "secretName")
-	assert.NoError(err)
+		_, err := NewBackendProvider(r).FromCredentials(ctx, "secretName")
+		assert.NoError(err)
+	})
+
+	t.Run("with location", func(_ *testing.T) {
+		r.On("ReadCredentials", ctx, "secretName", mock.AnythingOfType("*s3.Credentials")).Return(nil).Run(
+			func(args mock.Arguments) {
+				credentials := args.Get(2).(*Credentials)
+				credentials.Location = fmt.Sprintf("https://123.r2.cloudflarestorage.com/%s", bucket)
+				credentials.Region = region
+				credentials.SecretAccessKey = keySecret
+				credentials.AccessKeyID = keyID
+			})
+
+		_, err := NewBackendProvider(r).FromCredentials(ctx, "secretName")
+		assert.NoError(err)
+	})
 }
 
 func TestExtractCreds(t *testing.T) {
 	tetCases := []struct {
-		name       string
-		bucketName string
-		credsJSON  []byte
-		wantErr    bool
+		name      string
+		location  string
+		credsJSON []byte
+		wantErr   bool
 	}{
 		{
-			name:       "valid credentials",
-			bucketName: "mybucket",
+			name:     "valid credentials",
+			location: "mybucket",
 			credsJSON: []byte(`{
 				"AccessKeyID": "keyID",
 				"SecretAccessKey": "keySecret",
@@ -125,9 +142,9 @@ func TestExtractCreds(t *testing.T) {
 			}`),
 		},
 		{
-			name:       "invalid location, missing bucket",
-			bucketName: "",
-			wantErr:    true,
+			name:     "invalid location, missing bucket",
+			location: "",
+			wantErr:  true,
 			credsJSON: []byte(`{
 				"AccessKeyID": "test",
 				"SecretAccessKey": "keySecret",
@@ -135,8 +152,8 @@ func TestExtractCreds(t *testing.T) {
 			}`),
 		},
 		{
-			name:       "invalid credentials, missing secret",
-			bucketName: "account/container",
+			name:     "invalid credentials, missing secret",
+			location: "account/container",
 			credsJSON: []byte(`{
 				"AccessKeyID": "test",
 				"Region": "region-1"
@@ -147,7 +164,7 @@ func TestExtractCreds(t *testing.T) {
 
 	for _, tc := range tetCases {
 		t.Run(tc.name, func(t *testing.T) {
-			creds, err := extractCreds(tc.bucketName, tc.credsJSON)
+			creds, err := extractCreds(tc.location, tc.credsJSON)
 			if tc.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -156,7 +173,7 @@ func TestExtractCreds(t *testing.T) {
 					Region:          "region-1",
 					SecretAccessKey: "keySecret",
 					AccessKeyID:     "keyID",
-					BucketName:      tc.bucketName,
+					Location:        tc.location,
 				}, creds)
 			}
 		})
