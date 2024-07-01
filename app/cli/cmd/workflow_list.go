@@ -54,8 +54,8 @@ func WorkflowListTableOutput(workflows []*action.WorkflowItem) error {
 		return nil
 	}
 
-	headerRow := table.Row{"Name", "Project", "Public", "Runner", "Last Run status", "Created At"}
-	headerRowFull := table.Row{"Name", "Description", "Project", "Team", "Public", "Runner", "Last Run status", "Contract", "Created At"}
+	headerRow := table.Row{"Name", "Project", "Contract", "Public", "Runner", "Last Run status", "Created At"}
+	headerRowFull := table.Row{"Name", "Description", "Project", "Team", "Contract", "Public", "Runner", "Last Run status", "Created At"}
 
 	t := newTableWriter()
 	if full {
@@ -74,15 +74,15 @@ func WorkflowListTableOutput(workflows []*action.WorkflowItem) error {
 
 		if !full {
 			row = table.Row{
-				p.Name, p.Project, p.Public,
+				p.Name, p.Project, p.ContractName, p.Public,
 				lastRunRunner, lastRunState,
 				p.CreatedAt.Format(time.RFC822),
 			}
 		} else {
 			row = table.Row{
-				p.Name, p.Description, p.Project, p.Team, p.Public,
+				p.Name, p.Description, p.Project, p.Team,
+				p.ContractName, p.Public,
 				lastRunRunner, lastRunState,
-				p.ContractName,
 				p.CreatedAt.Format(time.RFC822),
 			}
 		}
