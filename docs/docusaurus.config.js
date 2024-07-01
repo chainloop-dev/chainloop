@@ -184,11 +184,11 @@ import Image from "@theme/IdealImage";
 
 ${content
   .replaceAll(
-    "![Deployment](../../docs/img/deployment.png)",
+    "![Deployment](https://raw.githubusercontent.com/chainloop-dev/chainloop/main/docs/img/deployment.png)",
     '<Image img={require("./deployment.png")} className="light-mode-only" /> <Image img={require("./deployment-dark.png")} className="dark-mode-only" />'
   )
   .replaceAll(
-    "![Deployment](../../docs/img/deployment-dev.png)",
+    "![Deployment](https://raw.githubusercontent.com/chainloop-dev/chainloop/main/docs/img/deployment-dev.png)",
     '<Image img={require("./deployment-dev.png")} className="light-mode-only" /> <Image img={require("./deployment-dev-dark.png")} className="dark-mode-only" />'
   )} `,
               filename: "k8s.mdx",
