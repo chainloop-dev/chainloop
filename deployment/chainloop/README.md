@@ -51,7 +51,7 @@ During installation, you'll need to provide
 
 - Open ID Connect Identity Provider (IDp) settings i.e [Auth0 settings](https://auth0.com/docs/get-started/applications/application-settings#basic-information)
 - Connection settings for a secrets storage backend, either [Hashicorp Vault](https://www.vaultproject.io/) or [AWS Secrets Manager](https://aws.amazon.com/secrets-manager)
-- ECDSA (ES512) key-pair used for Controlplane <-> CAS Authentication
+- ECDSA (ES512) key-pair used for Controlplane &lt;-&gt; CAS Authentication
 
 Instructions on how to create the ECDSA keypair can be found [here](#generate-a-ecdsa-key-pair).
 
@@ -159,7 +159,7 @@ During installation, you'll need to provide
 
 - Open ID Connect Identity Provider (IDp) settings i.e [Auth0 settings](https://auth0.com/docs/get-started/applications/application-settings#basic-information)
 - ~~Connection settings for a secrets storage backend, either [Hashicorp Vault](https://www.vaultproject.io/) or [AWS Secrets Manager](https://aws.amazon.com/secrets-manager)~~
-- ~~ECDSA (ES512) key-pair used for Controlplane <-> CAS Authentication~~
+- ~~ECDSA (ES512) key-pair used for Controlplane &lt;-&gt; CAS Authentication~~
 
 #### Installation examples for development mode
 
@@ -484,7 +484,7 @@ chainloop config save \
 
 | Name               | Description                                                            | Value |
 | ------------------ | ---------------------------------------------------------------------- | ----- |
-| `casJWTPrivateKey` | ECDSA (ES512) private key used for Controlplane <-> CAS Authentication | `""`  |
+| `casJWTPrivateKey` | ECDSA (ES512) private key used for Controlplane &lt;-&gt; CAS Authentication | `""`  |
 | `casJWTPublicKey`  | ECDSA (ES512) public key                                               | `""`  |
 
 ### Control Plane
@@ -533,16 +533,16 @@ chainloop config save \
 ### Control Plane Networking
 
 | Name                                       | Description                                                                                                                      | Value                    |
-| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| ------------------------------------------ |----------------------------------------------------------------------------------------------------------------------------------| ------------------------ |
 | `controlplane.service.type`                | Service type                                                                                                                     | `ClusterIP`              |
 | `controlplane.service.port`                | Service port                                                                                                                     | `80`                     |
 | `controlplane.service.targetPort`          | Service target Port                                                                                                              | `http`                   |
-| `controlplane.service.nodePorts.http`      | Node port for HTTP. NOTE: choose port between <30000-32767>                                                                      |                          |
+| `controlplane.service.nodePorts.http`      | Node port for HTTP. NOTE: choose port between &lt;30000-32767&gt;                                                                |                          |
 | `controlplane.serviceAPI.type`             | Service type                                                                                                                     | `ClusterIP`              |
 | `controlplane.serviceAPI.port`             | Service port                                                                                                                     | `80`                     |
 | `controlplane.serviceAPI.targetPort`       | Service target Port                                                                                                              | `grpc`                   |
 | `controlplane.serviceAPI.annotations`      | Service annotations                                                                                                              |                          |
-| `controlplane.serviceAPI.nodePorts.http`   | Node port for HTTP. NOTE: choose port between <30000-32767>                                                                      |                          |
+| `controlplane.serviceAPI.nodePorts.http`   | Node port for HTTP. NOTE: choose port between &lt;30000-32767&gt;                                                                |                          |
 | `controlplane.ingress.enabled`             | Enable ingress record generation for %%MAIN_CONTAINER_NAME%%                                                                     | `false`                  |
 | `controlplane.ingress.pathType`            | Ingress path type                                                                                                                | `ImplementationSpecific` |
 | `controlplane.ingress.hostname`            | Default host for the ingress record                                                                                              | `cp.dev.local`           |
@@ -620,12 +620,12 @@ chainloop config save \
 | `cas.service.type`                | Service type                                                                                                                     | `ClusterIP`              |
 | `cas.service.port`                | Service port                                                                                                                     | `80`                     |
 | `cas.service.targetPort`          | Service target Port                                                                                                              | `http`                   |
-| `cas.service.nodePorts.http`      | Node port for HTTP. NOTE: choose port between <30000-32767>                                                                      |                          |
+| `cas.service.nodePorts.http`      | Node port for HTTP. NOTE: choose port between &lt;30000-32767&gt;                                                                      |                          |
 | `cas.serviceAPI.type`             | Service type                                                                                                                     | `ClusterIP`              |
 | `cas.serviceAPI.port`             | Service port                                                                                                                     | `80`                     |
 | `cas.serviceAPI.targetPort`       | Service target Port                                                                                                              | `grpc`                   |
 | `cas.serviceAPI.annotations`      | Service annotations                                                                                                              |                          |
-| `cas.serviceAPI.nodePorts.http`   | Node port for HTTP. NOTE: choose port between <30000-32767>                                                                      |                          |
+| `cas.serviceAPI.nodePorts.http`   | Node port for HTTP. NOTE: choose port between &lt;30000-32767&gt;                                                                      |                          |
 | `cas.ingress.enabled`             | Enable ingress record generation for %%MAIN_CONTAINER_NAME%%                                                                     | `false`                  |
 | `cas.ingress.pathType`            | Ingress path type                                                                                                                | `ImplementationSpecific` |
 | `cas.ingress.hostname`            | Default host for the ingress record                                                                                              | `cas.dev.local`          |
