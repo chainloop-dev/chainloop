@@ -51,7 +51,7 @@ Registration is when a specific instance of the integration is configured on a C
 In our case, we want to register an instance of the `oci-registry` integration. To do so, we need to first figure out what configuration parameters are required by the integration. We can do so by running:
 
 ```sh
-$ chainloop integration available describe --id oci-registry
+$ chainloop integration available describe --name oci-registry
 ┌──────────────┬─────────┬──────────────────────┬────────────────────────────────────────────────┐
 │ ID           │ VERSION │ MATERIAL REQUIREMENT │ DESCRIPTION                                    │
 ├──────────────┼─────────┼──────────────────────┼────────────────────────────────────────────────┤
