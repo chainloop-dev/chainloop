@@ -87,7 +87,7 @@ This quickstart will guide you through the process of installing the Chainloop C
     For example, to list the workflows you can run: 
 
     ```bash
-    # List workflow runs, so then you can do `workflow run describe --id <id>` to get more details
+    # List workflow runs, so then you can do `workflow run describe --name <workflow-name>` to get more details
     chainloop workflow run ls
     ```
 

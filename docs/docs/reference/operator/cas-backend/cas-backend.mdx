@@ -129,13 +129,13 @@ $ chainloop cas-backend add oci \
 #### Rotate credentials
 
 ```bash
-chainloop cas-backend update oci --id [BACKEND_ID] --username [NEW_USERNAME] --password [NEW_PASSWORD]
+chainloop cas-backend update oci --name [BACKEND_NAME] --username [NEW_USERNAME] --password [NEW_PASSWORD]
 ```
 
 #### Set as default
 
 ```bash
-chainloop cas-backend update oci --id [BACKEND_ID] --default=true
+chainloop cas-backend update oci --name [BACKEND_NAME] --default=true
 ```
 
 ### AWS S3
@@ -205,7 +205,7 @@ We are now ready to connect our AWS account to Chainloop
 #### Rotate credentials
 
 ```bash
-chainloop cas-backend update aws-s3 --id [BACKEND_ID] --access-key-id [new-accessKeyID] --secret-access-key [new-secretAccessKey] --region [new-region]
+chainloop cas-backend update aws-s3 --name [BACKEND_NAME] --access-key-id [new-accessKeyID] --secret-access-key [new-secretAccessKey] --region [new-region]
 ```
 
 ### Azure Blob Storage
@@ -265,7 +265,62 @@ At thi point we have all the information we need to connect our Azure storage ac
 #### Rotate credentials
 
 ```bash
-chainloop cas-backend update azure-blob --id [BACKEND_ID] --client-id [new-clientID] --client-secret [new secret] --tenant [updated tenant]
+chainloop cas-backend update azure-blob --name [BACKEND_NAME] --client-id [new-clientID] --client-secret [new secret] --tenant [updated tenant]
+```
+
+### Cloudflare R2
+
+[Cloudflare R2](https://www.cloudflare.com/developer-platform/r2/) is compatible with AWS S3 and can be configured in Chainloop by providing a custom endpoint.
+
+Pre-requisites
+
+- **AccessKeyID**
+- **SecretAccessKey**
+- **Bucket Name**
+- **Endpoint**
+
+Follow [this instructions](https://developers.cloudflare.com/r2/api/s3/tokens/) to create a compatible AccessKeyID and SecretAccessKey. Then copy the bucket name and endpoint from the bucket settings.
+
+![](./cloudflare.png)
+
+Finally register the Cloudflare R2 bucket using the `aws-s3` provider and providing the custom endpoint.
+
+```bash
+ $ chainloop cas-backend add aws-s3 \
+    --access-key-id [accessKeyID] \
+    --secret-access-key [secretAccessKey] \
+    --bucket [bucketName] \
+    --endpoint [endpoint] # provide the custom endpoint
+```
+
+### Minio
+
+[Minio](https://min.io/) is an S3-compatible blob storage that can be configured in Chainloop by providing a custom endpoint.
+
+Pre-requisites
+
+- **AccessKeyID**
+- **SecretAccessKey**
+- **Bucket Name**
+- **Minio Endpoint**
+
+
+You can create a new AccessKey from the Minio console.
+
+![](./minio-1.png)
+
+Then copy the bucket name and Minio endpoint.
+
+![](./minio-2.png)
+
+Finally register the Minio bucket using the `aws-s3` provider and providing the custom endpoint
+
+```bash
+ $ chainloop cas-backend add aws-s3 \
+    --access-key-id [accessKeyID] \
+    --secret-access-key [secretAccessKey] \
+    --bucket [bucketName] \
+    --endpoint [endpoint] # provide the custom endpoint
 ```
 
 ## Give it a try

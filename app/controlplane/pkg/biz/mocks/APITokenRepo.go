@@ -79,29 +79,29 @@ func (_m *APITokenRepo) FindByID(ctx context.Context, ID uuid.UUID) (*biz.APITok
 	return r0, r1
 }
 
-// FindByName provides a mock function with given fields: ctx, name
-func (_m *APITokenRepo) FindByName(ctx context.Context, name string) (*biz.APIToken, error) {
-	ret := _m.Called(ctx, name)
+// FindByNameInOrg provides a mock function with given fields: ctx, orgID, name
+func (_m *APITokenRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*biz.APIToken, error) {
+	ret := _m.Called(ctx, orgID, name)
 
 	if len(ret) == 0 {
-		panic("no return value specified for FindByName")
+		panic("no return value specified for FindByNameInOrg")
 	}
 
 	var r0 *biz.APIToken
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (*biz.APIToken, error)); ok {
-		return rf(ctx, name)
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) (*biz.APIToken, error)); ok {
+		return rf(ctx, orgID, name)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) *biz.APIToken); ok {
-		r0 = rf(ctx, name)
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) *biz.APIToken); ok {
+		r0 = rf(ctx, orgID, name)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*biz.APIToken)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, name)
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, string) error); ok {
+		r1 = rf(ctx, orgID, name)
 	} else {
 		r1 = ret.Error(1)
 	}
