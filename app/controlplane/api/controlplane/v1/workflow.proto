@@ -69,7 +69,13 @@ message WorkflowServiceUpdateRequest {
   optional string team = 4;
   optional bool public = 5;
   optional string description = 6;
-  optional string schema_id = 7;
+  optional string contract_name = 7 [(buf.validate.field) = {
+    cel: {
+      message: "must contain only lowercase letters, numbers, and hyphens.",
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
+      id: "name.dns-1123",
+    },
+  }];
 }
 
 message WorkflowServiceUpdateResponse {

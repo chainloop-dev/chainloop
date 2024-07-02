@@ -28,13 +28,15 @@ type WorkflowService struct {
 	pb.UnimplementedWorkflowServiceServer
 	*service
 
-	useCase *biz.WorkflowUseCase
+	useCase    *biz.WorkflowUseCase
+	contractUC *biz.WorkflowContractUseCase
 }
 
-func NewWorkflowService(uc *biz.WorkflowUseCase, opts ...NewOpt) *WorkflowService {
+func NewWorkflowService(uc *biz.WorkflowUseCase, wfuc *biz.WorkflowContractUseCase, opts ...NewOpt) *WorkflowService {
 	return &WorkflowService{
-		service: newService(opts...),
-		useCase: uc,
+		service:    newService(opts...),
+		useCase:    uc,
+		contractUC: wfuc,
 	}
 }
 
@@ -73,12 +75,25 @@ func (s *WorkflowService) Update(ctx context.Context, req *pb.WorkflowServiceUpd
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
+	var contractID *string
+	if req.ContractName != nil {
+		c, err := s.contractUC.FindByNameInOrg(ctx, currentOrg.ID, *req.ContractName)
+		if err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		} else if c == nil {
+			return nil, biz.NewErrNotFound("contract")
+		}
+
+		cid := c.ID.String()
+		contractID = &cid
+	}
+
 	updateOpts := &biz.WorkflowUpdateOpts{
 		Project:     req.Project,
 		Team:        req.Team,
 		Public:      req.Public,
 		Description: req.Description,
-		ContractID:  req.SchemaId,
+		ContractID:  contractID,
 	}
 
 	p, err := s.useCase.Update(ctx, currentOrg.ID, wf.ID.String(), updateOpts)
