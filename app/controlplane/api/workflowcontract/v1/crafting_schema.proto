@@ -34,6 +34,8 @@ message CraftingSchema {
   // It works in addition to the annotations defined in the materials and the runner
   repeated Annotation annotations = 5;
 
+  repeated PolicyAttachment policies = 6;
+
   message Runner {
     RunnerType type = 1 [
       (buf.validate.field).enum = {
@@ -102,4 +104,33 @@ message Annotation {
   string name = 1 [(buf.validate.field).string.pattern = "^[\\w]+$"]; // Single word optionally separated with _
   // This value can be set in the contract or provided during the attestation
   string value = 2;
+}
+
+// A policy to be applied to this contract
+message PolicyAttachment {
+  // policy reference. It must consist of an identifier or URI reference
+  string ref = 1 [(buf.validate.field).string.min_len = 1];
+
+  // rules to select a material or materials to be validated by the policy.
+  // If none provided, the whole statement will be injected to the policy
+  MaterialSelector selector = 2;
+
+  // set to true to disable this rule
+  bool disabled = 3;
+
+  repeated PolicyArgument with = 4;
+
+  message MaterialSelector {
+    // material name
+    string name = 1;
+
+    // material type
+    CraftingSchema.Material.MaterialType kind = 2;
+  }
+
+  // optional arguments for policies
+  message PolicyArgument {
+    string name = 1;
+    string value = 2;
+  }
 }

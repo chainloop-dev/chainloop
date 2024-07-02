@@ -19,6 +19,7 @@ export interface CraftingSchema {
    * It works in addition to the annotations defined in the materials and the runner
    */
   annotations: Annotation[];
+  policies: PolicyAttachment[];
 }
 
 export interface CraftingSchema_Runner {
@@ -237,8 +238,35 @@ export interface Annotation {
   value: string;
 }
 
+/** A policy to be applied to this contract */
+export interface PolicyAttachment {
+  /** policy reference. It must consist of an identifier or URI reference */
+  ref: string;
+  /**
+   * rules to select a material or materials to be validated by the policy.
+   * If none provided, the whole statement will be injected to the policy
+   */
+  selector?: PolicyAttachment_MaterialSelector;
+  /** set to true to disable this rule */
+  disabled: boolean;
+  with: PolicyAttachment_PolicyArgument[];
+}
+
+export interface PolicyAttachment_MaterialSelector {
+  /** material name */
+  name: string;
+  /** material type */
+  kind: CraftingSchema_Material_MaterialType;
+}
+
+/** optional arguments for policies */
+export interface PolicyAttachment_PolicyArgument {
+  name: string;
+  value: string;
+}
+
 function createBaseCraftingSchema(): CraftingSchema {
-  return { schemaVersion: "", materials: [], envAllowList: [], runner: undefined, annotations: [] };
+  return { schemaVersion: "", materials: [], envAllowList: [], runner: undefined, annotations: [], policies: [] };
 }
 
 export const CraftingSchema = {
@@ -257,6 +285,9 @@ export const CraftingSchema = {
     }
     for (const v of message.annotations) {
       Annotation.encode(v!, writer.uint32(42).fork()).ldelim();
+    }
+    for (const v of message.policies) {
+      PolicyAttachment.encode(v!, writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -303,6 +334,13 @@ export const CraftingSchema = {
 
           message.annotations.push(Annotation.decode(reader, reader.uint32()));
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.policies.push(PolicyAttachment.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -321,6 +359,7 @@ export const CraftingSchema = {
       envAllowList: Array.isArray(object?.envAllowList) ? object.envAllowList.map((e: any) => String(e)) : [],
       runner: isSet(object.runner) ? CraftingSchema_Runner.fromJSON(object.runner) : undefined,
       annotations: Array.isArray(object?.annotations) ? object.annotations.map((e: any) => Annotation.fromJSON(e)) : [],
+      policies: Array.isArray(object?.policies) ? object.policies.map((e: any) => PolicyAttachment.fromJSON(e)) : [],
     };
   },
 
@@ -344,6 +383,11 @@ export const CraftingSchema = {
     } else {
       obj.annotations = [];
     }
+    if (message.policies) {
+      obj.policies = message.policies.map((e) => e ? PolicyAttachment.toJSON(e) : undefined);
+    } else {
+      obj.policies = [];
+    }
     return obj;
   },
 
@@ -360,6 +404,7 @@ export const CraftingSchema = {
       ? CraftingSchema_Runner.fromPartial(object.runner)
       : undefined;
     message.annotations = object.annotations?.map((e) => Annotation.fromPartial(e)) || [];
+    message.policies = object.policies?.map((e) => PolicyAttachment.fromPartial(e)) || [];
     return message;
   },
 };
@@ -599,6 +644,258 @@ export const Annotation = {
 
   fromPartial<I extends Exact<DeepPartial<Annotation>, I>>(object: I): Annotation {
     const message = createBaseAnnotation();
+    message.name = object.name ?? "";
+    message.value = object.value ?? "";
+    return message;
+  },
+};
+
+function createBasePolicyAttachment(): PolicyAttachment {
+  return { ref: "", selector: undefined, disabled: false, with: [] };
+}
+
+export const PolicyAttachment = {
+  encode(message: PolicyAttachment, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.ref !== "") {
+      writer.uint32(10).string(message.ref);
+    }
+    if (message.selector !== undefined) {
+      PolicyAttachment_MaterialSelector.encode(message.selector, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.disabled === true) {
+      writer.uint32(24).bool(message.disabled);
+    }
+    for (const v of message.with) {
+      PolicyAttachment_PolicyArgument.encode(v!, writer.uint32(34).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PolicyAttachment {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePolicyAttachment();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.ref = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.selector = PolicyAttachment_MaterialSelector.decode(reader, reader.uint32());
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.disabled = reader.bool();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.with.push(PolicyAttachment_PolicyArgument.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PolicyAttachment {
+    return {
+      ref: isSet(object.ref) ? String(object.ref) : "",
+      selector: isSet(object.selector) ? PolicyAttachment_MaterialSelector.fromJSON(object.selector) : undefined,
+      disabled: isSet(object.disabled) ? Boolean(object.disabled) : false,
+      with: Array.isArray(object?.with) ? object.with.map((e: any) => PolicyAttachment_PolicyArgument.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: PolicyAttachment): unknown {
+    const obj: any = {};
+    message.ref !== undefined && (obj.ref = message.ref);
+    message.selector !== undefined &&
+      (obj.selector = message.selector ? PolicyAttachment_MaterialSelector.toJSON(message.selector) : undefined);
+    message.disabled !== undefined && (obj.disabled = message.disabled);
+    if (message.with) {
+      obj.with = message.with.map((e) => e ? PolicyAttachment_PolicyArgument.toJSON(e) : undefined);
+    } else {
+      obj.with = [];
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PolicyAttachment>, I>>(base?: I): PolicyAttachment {
+    return PolicyAttachment.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<PolicyAttachment>, I>>(object: I): PolicyAttachment {
+    const message = createBasePolicyAttachment();
+    message.ref = object.ref ?? "";
+    message.selector = (object.selector !== undefined && object.selector !== null)
+      ? PolicyAttachment_MaterialSelector.fromPartial(object.selector)
+      : undefined;
+    message.disabled = object.disabled ?? false;
+    message.with = object.with?.map((e) => PolicyAttachment_PolicyArgument.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBasePolicyAttachment_MaterialSelector(): PolicyAttachment_MaterialSelector {
+  return { name: "", kind: 0 };
+}
+
+export const PolicyAttachment_MaterialSelector = {
+  encode(message: PolicyAttachment_MaterialSelector, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.kind !== 0) {
+      writer.uint32(16).int32(message.kind);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PolicyAttachment_MaterialSelector {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePolicyAttachment_MaterialSelector();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.kind = reader.int32() as any;
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PolicyAttachment_MaterialSelector {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      kind: isSet(object.kind) ? craftingSchema_Material_MaterialTypeFromJSON(object.kind) : 0,
+    };
+  },
+
+  toJSON(message: PolicyAttachment_MaterialSelector): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.kind !== undefined && (obj.kind = craftingSchema_Material_MaterialTypeToJSON(message.kind));
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PolicyAttachment_MaterialSelector>, I>>(
+    base?: I,
+  ): PolicyAttachment_MaterialSelector {
+    return PolicyAttachment_MaterialSelector.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<PolicyAttachment_MaterialSelector>, I>>(
+    object: I,
+  ): PolicyAttachment_MaterialSelector {
+    const message = createBasePolicyAttachment_MaterialSelector();
+    message.name = object.name ?? "";
+    message.kind = object.kind ?? 0;
+    return message;
+  },
+};
+
+function createBasePolicyAttachment_PolicyArgument(): PolicyAttachment_PolicyArgument {
+  return { name: "", value: "" };
+}
+
+export const PolicyAttachment_PolicyArgument = {
+  encode(message: PolicyAttachment_PolicyArgument, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PolicyAttachment_PolicyArgument {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePolicyAttachment_PolicyArgument();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PolicyAttachment_PolicyArgument {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      value: isSet(object.value) ? String(object.value) : "",
+    };
+  },
+
+  toJSON(message: PolicyAttachment_PolicyArgument): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.value !== undefined && (obj.value = message.value);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PolicyAttachment_PolicyArgument>, I>>(base?: I): PolicyAttachment_PolicyArgument {
+    return PolicyAttachment_PolicyArgument.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<PolicyAttachment_PolicyArgument>, I>>(
+    object: I,
+  ): PolicyAttachment_PolicyArgument {
+    const message = createBasePolicyAttachment_PolicyArgument();
     message.name = object.name ?? "";
     message.value = object.value ?? "";
     return message;
