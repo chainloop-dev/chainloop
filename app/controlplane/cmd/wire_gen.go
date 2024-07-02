@@ -92,7 +92,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, logger)
 	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, workflowContractUseCase, logger)
 	v3 := serviceOpts(logger)
-	workflowService := service.NewWorkflowService(workflowUseCase, v3...)
+	workflowService := service.NewWorkflowService(workflowUseCase, workflowContractUseCase, v3...)
 	orgInvitationRepo := data.NewOrgInvitation(dataData, logger)
 	orgInvitationUseCase, err := biz.NewOrgInvitationUseCase(orgInvitationRepo, membershipRepo, userRepo, logger)
 	if err != nil {

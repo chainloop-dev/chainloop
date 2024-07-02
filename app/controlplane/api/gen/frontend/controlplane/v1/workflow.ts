@@ -26,7 +26,7 @@ export interface WorkflowServiceUpdateRequest {
   team?: string | undefined;
   public?: boolean | undefined;
   description?: string | undefined;
-  schemaId?: string | undefined;
+  contractName?: string | undefined;
 }
 
 export interface WorkflowServiceUpdateResponse {
@@ -189,7 +189,7 @@ function createBaseWorkflowServiceUpdateRequest(): WorkflowServiceUpdateRequest 
     team: undefined,
     public: undefined,
     description: undefined,
-    schemaId: undefined,
+    contractName: undefined,
   };
 }
 
@@ -210,8 +210,8 @@ export const WorkflowServiceUpdateRequest = {
     if (message.description !== undefined) {
       writer.uint32(50).string(message.description);
     }
-    if (message.schemaId !== undefined) {
-      writer.uint32(58).string(message.schemaId);
+    if (message.contractName !== undefined) {
+      writer.uint32(58).string(message.contractName);
     }
     return writer;
   },
@@ -263,7 +263,7 @@ export const WorkflowServiceUpdateRequest = {
             break;
           }
 
-          message.schemaId = reader.string();
+          message.contractName = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -281,7 +281,7 @@ export const WorkflowServiceUpdateRequest = {
       team: isSet(object.team) ? String(object.team) : undefined,
       public: isSet(object.public) ? Boolean(object.public) : undefined,
       description: isSet(object.description) ? String(object.description) : undefined,
-      schemaId: isSet(object.schemaId) ? String(object.schemaId) : undefined,
+      contractName: isSet(object.contractName) ? String(object.contractName) : undefined,
     };
   },
 
@@ -292,7 +292,7 @@ export const WorkflowServiceUpdateRequest = {
     message.team !== undefined && (obj.team = message.team);
     message.public !== undefined && (obj.public = message.public);
     message.description !== undefined && (obj.description = message.description);
-    message.schemaId !== undefined && (obj.schemaId = message.schemaId);
+    message.contractName !== undefined && (obj.contractName = message.contractName);
     return obj;
   },
 
@@ -307,7 +307,7 @@ export const WorkflowServiceUpdateRequest = {
     message.team = object.team ?? undefined;
     message.public = object.public ?? undefined;
     message.description = object.description ?? undefined;
-    message.schemaId = object.schemaId ?? undefined;
+    message.contractName = object.contractName ?? undefined;
     return message;
   },
 };

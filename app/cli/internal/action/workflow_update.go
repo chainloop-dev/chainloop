@@ -30,19 +30,19 @@ func NewWorkflowUpdate(cfg *ActionsOpts) *WorkflowUpdate {
 }
 
 type WorkflowUpdateOpts struct {
-	Description, Project, Team, ContractID *string
-	Public                                 *bool
+	Description, Project, Team, ContractName *string
+	Public                                   *bool
 }
 
 func (action *WorkflowUpdate) Run(ctx context.Context, name string, opts *WorkflowUpdateOpts) (*WorkflowItem, error) {
 	client := pb.NewWorkflowServiceClient(action.cfg.CPConnection)
 	resp, err := client.Update(ctx, &pb.WorkflowServiceUpdateRequest{
-		Name:        name,
-		Description: opts.Description,
-		Project:     opts.Project,
-		Team:        opts.Team,
-		Public:      opts.Public,
-		SchemaId:    opts.ContractID,
+		Name:         name,
+		Description:  opts.Description,
+		Project:      opts.Project,
+		Team:         opts.Team,
+		Public:       opts.Public,
+		ContractName: opts.ContractName,
 	})
 
 	if err != nil {
