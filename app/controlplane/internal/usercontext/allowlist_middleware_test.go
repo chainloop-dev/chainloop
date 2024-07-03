@@ -72,6 +72,7 @@ func TestCheckUserInAllowList(t *testing.T) {
 		selectedRoutes []string
 		runningRoute   string
 		email          string
+		isAPIToken     bool
 		wantErr        bool
 		customErrMsg   string
 	}{
@@ -84,6 +85,12 @@ func TestCheckUserInAllowList(t *testing.T) {
 			email:   email,
 			rules:   []string{"nothere@cyberdyne.io"},
 			wantErr: true,
+		},
+		{
+			name:       "is an API token so allow-list gets skipped",
+			isAPIToken: true,
+			rules:      []string{"nothere@cyberdyne.io"},
+			wantErr:    false,
 		},
 		{
 			name:           "user not allowed to access the route",
@@ -159,7 +166,10 @@ func TestCheckUserInAllowList(t *testing.T) {
 			ctx := context.Background()
 			if tc.email != "" {
 				ctx = WithCurrentUser(ctx, &User{Email: tc.email, ID: "124"})
+			} else if tc.isAPIToken {
+				ctx = WithCurrentAPIToken(ctx, &APIToken{ID: "124"})
 			}
+
 			if tc.runningRoute != "" {
 				ctx = transport.NewServerContext(ctx, &mockTransport{operation: tc.runningRoute})
 			}
