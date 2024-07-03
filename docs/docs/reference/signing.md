@@ -36,7 +36,7 @@ These methods don't require any special setup in the client. You must make sure 
 | [SignServer](https://www.signserver.org/)                  | You can sign with your instance of SignServer with `--key signserver://host/worker`                                                                                                                                                                | See [bundles](#bundles)                               |
 
 
-#### Bundles 
+### Bundles 
 When signing with a verification method that supports it (like keyless with ephemeral certificates), you can download the verification material used for signing, to be used later during the verification process.
 
 Just add `--bundle my-bundle.json` to the `push` command. Then, you can use the material to verify the attestation:
@@ -45,7 +45,7 @@ Just add `--bundle my-bundle.json` to the `push` command. Then, you can use the 
 > chainloop wf run describe --digest ... --verify true --cert cert.pem --cert-chain my-root.pem
 ```
 
-#### Not yet supported
+### Not yet supported
 
 The following methods are work in progress and **not yet supported**.
 
