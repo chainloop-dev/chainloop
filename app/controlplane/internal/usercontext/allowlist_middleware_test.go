@@ -72,7 +72,7 @@ func TestCheckUserInAllowList(t *testing.T) {
 		selectedRoutes []string
 		runningRoute   string
 		email          string
-		isApiToken     bool
+		isAPIToken     bool
 		wantErr        bool
 		customErrMsg   string
 	}{
@@ -88,7 +88,7 @@ func TestCheckUserInAllowList(t *testing.T) {
 		},
 		{
 			name:       "is an API token so allow-list gets skipped",
-			isApiToken: true,
+			isAPIToken: true,
 			rules:      []string{"nothere@cyberdyne.io"},
 			wantErr:    false,
 		},
@@ -166,7 +166,7 @@ func TestCheckUserInAllowList(t *testing.T) {
 			ctx := context.Background()
 			if tc.email != "" {
 				ctx = WithCurrentUser(ctx, &User{Email: tc.email, ID: "124"})
-			} else if tc.isApiToken {
+			} else if tc.isAPIToken {
 				ctx = WithCurrentAPIToken(ctx, &APIToken{ID: "124"})
 			}
 
