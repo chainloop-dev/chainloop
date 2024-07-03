@@ -35,6 +35,11 @@ func CheckUserInAllowList(allowList *conf.Auth_AllowList) middleware.Middleware 
 				return handler(ctx, req)
 			}
 
+			// API tokens skip the allowlist since they are meant to represent a service
+			if token := CurrentAPIToken(ctx); token != nil {
+				return handler(ctx, req)
+			}
+
 			// Make sure that this middleware is ran after WithCurrentUser
 			user := CurrentUser(ctx)
 			if user == nil {
