@@ -26,6 +26,7 @@ import (
 	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/stretchr/testify/require"
@@ -153,6 +154,30 @@ func TestRequireAuthentication(t *testing.T) {
 	matchFunc := requireAuthentication()
 	for _, op := range testCases {
 		assert.Equal(t, matchFunc(context.Background(), op.operation), op.matches)
+	}
+}
+
+func TestAllButReflectionAPI(t *testing.T) {
+	testCases := []struct {
+		callMeta interceptors.CallMeta
+		expected bool
+	}{
+		{
+			callMeta: interceptors.CallMeta{Service: "grpc.reflection.v1alpha.ServerReflection"},
+			expected: false,
+		},
+		{
+			callMeta: interceptors.CallMeta{Service: "grpc.reflection.v1.ServerReflection"},
+			expected: false,
+		},
+		{
+			callMeta: interceptors.CallMeta{Service: "grpc.other.service"},
+			expected: true,
+		},
+	}
+
+	for _, op := range testCases {
+		assert.Equal(t, allButReflectionAPI(context.TODO(), op.callMeta), op.expected)
 	}
 }
 

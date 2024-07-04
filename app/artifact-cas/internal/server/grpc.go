@@ -155,7 +155,9 @@ func requireAuthentication() selector.MatchFunc {
 // Reflection API is called by clients like grpcurl to list services
 // and without this selector check it would require authentication
 func allButReflectionAPI(_ context.Context, callMeta interceptors.CallMeta) bool {
-	return callMeta.Service != "grpc.reflection.v1alpha.ServerReflection"
+	const skipRegexp = "(grpc.reflection.*)"
+	r := regexp.MustCompile(skipRegexp)
+	return !r.MatchString(callMeta.Service)
 }
 
 // load key for verification
