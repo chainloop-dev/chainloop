@@ -241,7 +241,9 @@ export interface Annotation {
 /** A policy to be applied to this contract */
 export interface PolicyAttachment {
   /** policy reference. It must consist of an identifier or URI reference */
-  ref: string;
+  ref?:
+    | string
+    | undefined;
   /**
    * rules to select a material or materials to be validated by the policy.
    * If none provided, the whole statement will be injected to the policy
@@ -255,8 +257,6 @@ export interface PolicyAttachment {
 export interface PolicyAttachment_MaterialSelector {
   /** material name */
   name: string;
-  /** material type */
-  kind: CraftingSchema_Material_MaterialType;
 }
 
 /** optional arguments for policies */
@@ -651,12 +651,12 @@ export const Annotation = {
 };
 
 function createBasePolicyAttachment(): PolicyAttachment {
-  return { ref: "", selector: undefined, disabled: false, with: [] };
+  return { ref: undefined, selector: undefined, disabled: false, with: [] };
 }
 
 export const PolicyAttachment = {
   encode(message: PolicyAttachment, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.ref !== "") {
+    if (message.ref !== undefined) {
       writer.uint32(10).string(message.ref);
     }
     if (message.selector !== undefined) {
@@ -717,7 +717,7 @@ export const PolicyAttachment = {
 
   fromJSON(object: any): PolicyAttachment {
     return {
-      ref: isSet(object.ref) ? String(object.ref) : "",
+      ref: isSet(object.ref) ? String(object.ref) : undefined,
       selector: isSet(object.selector) ? PolicyAttachment_MaterialSelector.fromJSON(object.selector) : undefined,
       disabled: isSet(object.disabled) ? Boolean(object.disabled) : false,
       with: Array.isArray(object?.with) ? object.with.map((e: any) => PolicyAttachment_PolicyArgument.fromJSON(e)) : [],
@@ -744,7 +744,7 @@ export const PolicyAttachment = {
 
   fromPartial<I extends Exact<DeepPartial<PolicyAttachment>, I>>(object: I): PolicyAttachment {
     const message = createBasePolicyAttachment();
-    message.ref = object.ref ?? "";
+    message.ref = object.ref ?? undefined;
     message.selector = (object.selector !== undefined && object.selector !== null)
       ? PolicyAttachment_MaterialSelector.fromPartial(object.selector)
       : undefined;
@@ -755,16 +755,13 @@ export const PolicyAttachment = {
 };
 
 function createBasePolicyAttachment_MaterialSelector(): PolicyAttachment_MaterialSelector {
-  return { name: "", kind: 0 };
+  return { name: "" };
 }
 
 export const PolicyAttachment_MaterialSelector = {
   encode(message: PolicyAttachment_MaterialSelector, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
-    }
-    if (message.kind !== 0) {
-      writer.uint32(16).int32(message.kind);
     }
     return writer;
   },
@@ -783,13 +780,6 @@ export const PolicyAttachment_MaterialSelector = {
 
           message.name = reader.string();
           continue;
-        case 2:
-          if (tag !== 16) {
-            break;
-          }
-
-          message.kind = reader.int32() as any;
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -800,16 +790,12 @@ export const PolicyAttachment_MaterialSelector = {
   },
 
   fromJSON(object: any): PolicyAttachment_MaterialSelector {
-    return {
-      name: isSet(object.name) ? String(object.name) : "",
-      kind: isSet(object.kind) ? craftingSchema_Material_MaterialTypeFromJSON(object.kind) : 0,
-    };
+    return { name: isSet(object.name) ? String(object.name) : "" };
   },
 
   toJSON(message: PolicyAttachment_MaterialSelector): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
-    message.kind !== undefined && (obj.kind = craftingSchema_Material_MaterialTypeToJSON(message.kind));
     return obj;
   },
 
@@ -824,7 +810,6 @@ export const PolicyAttachment_MaterialSelector = {
   ): PolicyAttachment_MaterialSelector {
     const message = createBasePolicyAttachment_MaterialSelector();
     message.name = object.name ?? "";
-    message.kind = object.kind ?? 0;
     return message;
   },
 };

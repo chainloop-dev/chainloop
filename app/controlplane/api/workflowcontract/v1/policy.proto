@@ -38,20 +38,26 @@ message Metadata {
       expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
       id: "name.dns-1123",
     },
-    required: true,
   }];
 }
 
 message PolicySpec {
-  // path to a policy script. It might consist of a URI reference
-  string path = 1 [(buf.validate.field).required = true];
+  oneof source {
+    // path to a policy script. It might consist of a URI reference
+    string path = 1;
+
+    // embedded source code (only Rego supported currently)
+    string code = 2;
+
+    option (buf.validate.oneof).required = true;
+  };
 
   // stage at which this policy will be run.
   // Only "push" is supported currently and this field will be ignored
-  PolicyStage stage = 2;
+  PolicyStage stage = 3 [(buf.validate.field).required = false, (buf.validate.field).enum.defined_only = true];
 
   // if set, it will match a material kind supported by Chainloop.
-  CraftingSchema.Material.MaterialType kind = 3 ;
+  CraftingSchema.Material.MaterialType kind = 4;
 
   // buf:lint:ignore ENUM_VALUE_PREFIX ENUM_ZERO_VALUE_SUFFIX
   // buf:lint:ignore ENUM_ZERO_VALUE_SUFFIX

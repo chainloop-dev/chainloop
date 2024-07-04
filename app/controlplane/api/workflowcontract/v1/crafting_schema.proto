@@ -108,8 +108,10 @@ message Annotation {
 
 // A policy to be applied to this contract
 message PolicyAttachment {
-  // policy reference. It must consist of an identifier or URI reference
-  string ref = 1 [(buf.validate.field).string.min_len = 1];
+  oneof policy {
+    // policy reference. It must consist of an identifier or URI reference
+    string ref = 1 [(buf.validate.field).string.min_len = 1];
+  }
 
   // rules to select a material or materials to be validated by the policy.
   // If none provided, the whole statement will be injected to the policy
@@ -123,9 +125,6 @@ message PolicyAttachment {
   message MaterialSelector {
     // material name
     string name = 1;
-
-    // material type
-    CraftingSchema.Material.MaterialType kind = 2;
   }
 
   // optional arguments for policies

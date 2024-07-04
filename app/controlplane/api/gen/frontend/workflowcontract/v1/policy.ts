@@ -22,7 +22,13 @@ export interface Metadata {
 
 export interface PolicySpec {
   /** path to a policy script. It might consist of a URI reference */
-  path: string;
+  path?:
+    | string
+    | undefined;
+  /** embedded source code (only Rego supported currently) */
+  code?:
+    | string
+    | undefined;
   /**
    * stage at which this policy will be run.
    * Only "push" is supported currently and this field will be ignored
@@ -227,19 +233,22 @@ export const Metadata = {
 };
 
 function createBasePolicySpec(): PolicySpec {
-  return { path: "", stage: 0, kind: 0 };
+  return { path: undefined, code: undefined, stage: 0, kind: 0 };
 }
 
 export const PolicySpec = {
   encode(message: PolicySpec, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.path !== "") {
+    if (message.path !== undefined) {
       writer.uint32(10).string(message.path);
     }
+    if (message.code !== undefined) {
+      writer.uint32(18).string(message.code);
+    }
     if (message.stage !== 0) {
-      writer.uint32(16).int32(message.stage);
+      writer.uint32(24).int32(message.stage);
     }
     if (message.kind !== 0) {
-      writer.uint32(24).int32(message.kind);
+      writer.uint32(32).int32(message.kind);
     }
     return writer;
   },
@@ -259,14 +268,21 @@ export const PolicySpec = {
           message.path = reader.string();
           continue;
         case 2:
-          if (tag !== 16) {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.code = reader.string();
+          continue;
+        case 3:
+          if (tag !== 24) {
             break;
           }
 
           message.stage = reader.int32() as any;
           continue;
-        case 3:
-          if (tag !== 24) {
+        case 4:
+          if (tag !== 32) {
             break;
           }
 
@@ -283,7 +299,8 @@ export const PolicySpec = {
 
   fromJSON(object: any): PolicySpec {
     return {
-      path: isSet(object.path) ? String(object.path) : "",
+      path: isSet(object.path) ? String(object.path) : undefined,
+      code: isSet(object.code) ? String(object.code) : undefined,
       stage: isSet(object.stage) ? policySpec_PolicyStageFromJSON(object.stage) : 0,
       kind: isSet(object.kind) ? craftingSchema_Material_MaterialTypeFromJSON(object.kind) : 0,
     };
@@ -292,6 +309,7 @@ export const PolicySpec = {
   toJSON(message: PolicySpec): unknown {
     const obj: any = {};
     message.path !== undefined && (obj.path = message.path);
+    message.code !== undefined && (obj.code = message.code);
     message.stage !== undefined && (obj.stage = policySpec_PolicyStageToJSON(message.stage));
     message.kind !== undefined && (obj.kind = craftingSchema_Material_MaterialTypeToJSON(message.kind));
     return obj;
@@ -303,7 +321,8 @@ export const PolicySpec = {
 
   fromPartial<I extends Exact<DeepPartial<PolicySpec>, I>>(object: I): PolicySpec {
     const message = createBasePolicySpec();
-    message.path = object.path ?? "";
+    message.path = object.path ?? undefined;
+    message.code = object.code ?? undefined;
     message.stage = object.stage ?? 0;
     message.kind = object.kind ?? 0;
     return message;

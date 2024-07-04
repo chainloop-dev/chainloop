@@ -28,56 +28,64 @@ import (
 
 func TestValidatePolicy(t *testing.T) {
 	testCases := []struct {
-		desc    string
-		policy  *v1.Policy
-		wantErr bool
+		desc      string
+		policy    *v1.Policy
+		wantErr   bool
+		violation string
 	}{
 		{
-			desc:    "empty policy",
-			policy:  &v1.Policy{},
-			wantErr: true,
+			desc:      "empty policy",
+			policy:    &v1.Policy{},
+			wantErr:   true,
+			violation: "api_version",
 		},
 		{
-			desc:    "wrong api version",
-			policy:  &v1.Policy{ApiVersion: "wrong", Kind: "Policy"},
-			wantErr: true,
+			desc:      "wrong api version",
+			policy:    &v1.Policy{ApiVersion: "wrong", Kind: "Policy"},
+			wantErr:   true,
+			violation: "api_version",
 		},
 		{
-			desc:    "wrong kind",
-			policy:  &v1.Policy{ApiVersion: "workflowcontract.chainloop.dev/v1", Kind: "wrong"},
-			wantErr: true,
+			desc:      "wrong kind",
+			policy:    &v1.Policy{ApiVersion: "workflowcontract.chainloop.dev/v1", Kind: "wrong"},
+			wantErr:   true,
+			violation: "kind",
 		},
 		{
-			desc:    "missing metadata",
-			policy:  &v1.Policy{ApiVersion: "workflowcontract.chainloop.dev/v1", Kind: "Policy"},
-			wantErr: true,
+			desc:      "missing metadata",
+			policy:    &v1.Policy{ApiVersion: "workflowcontract.chainloop.dev/v1", Kind: "Policy"},
+			wantErr:   true,
+			violation: "metadata",
 		},
 		{
-			desc:    "missing name",
-			policy:  &v1.Policy{ApiVersion: "workflowcontract.chainloop.dev/v1", Kind: "Policy", Metadata: &v1.Metadata{}},
-			wantErr: true,
+			desc:      "missing name",
+			policy:    &v1.Policy{ApiVersion: "workflowcontract.chainloop.dev/v1", Kind: "Policy", Metadata: &v1.Metadata{}},
+			wantErr:   true,
+			violation: "metadata.name",
 		},
 		{
-			desc:    "non DNS name",
-			policy:  &v1.Policy{ApiVersion: "workflowcontract.chainloop.dev/v1", Kind: "Policy", Metadata: &v1.Metadata{Name: "--asdf--"}},
-			wantErr: true,
+			desc:      "non DNS name",
+			policy:    &v1.Policy{ApiVersion: "workflowcontract.chainloop.dev/v1", Kind: "Policy", Metadata: &v1.Metadata{Name: "--asdf--"}},
+			wantErr:   true,
+			violation: "metadata.name",
 		},
 		{
 			desc: "empty spec",
 			policy: &v1.Policy{ApiVersion: "workflowcontract.chainloop.dev/v1", Kind: "Policy",
 				Metadata: &v1.Metadata{Name: "my-policy"}, Spec: &v1.PolicySpec{}},
-			wantErr: true,
+			wantErr:   true,
+			violation: "spec.source",
 		},
 		{
 			desc: "correct spec",
 			policy: &v1.Policy{ApiVersion: "workflowcontract.chainloop.dev/v1", Kind: "Policy",
-				Metadata: &v1.Metadata{Name: "my-policy"}, Spec: &v1.PolicySpec{Path: "policy.rego"}},
+				Metadata: &v1.Metadata{Name: "my-policy"}, Spec: &v1.PolicySpec{Source: &v1.PolicySpec_Path{Path: "policy.rego"}}},
 			wantErr: false,
 		},
 		{
 			desc: "filter material type",
 			policy: &v1.Policy{ApiVersion: "workflowcontract.chainloop.dev/v1", Kind: "Policy",
-				Metadata: &v1.Metadata{Name: "my-policy"}, Spec: &v1.PolicySpec{Path: "policy.rego", Kind: v1.CraftingSchema_Material_ATTESTATION}},
+				Metadata: &v1.Metadata{Name: "my-policy"}, Spec: &v1.PolicySpec{Source: &v1.PolicySpec_Path{Path: "policy.rego"}, Kind: v1.CraftingSchema_Material_ATTESTATION}},
 			wantErr: false,
 		},
 	}
@@ -90,6 +98,10 @@ func TestValidatePolicy(t *testing.T) {
 			err := validator.Validate(tc.policy)
 			if tc.wantErr {
 				assert.Error(t, err)
+
+				if tc.violation != "" {
+					assert.Contains(t, err.Error(), tc.violation)
+				}
 				return
 			}
 
