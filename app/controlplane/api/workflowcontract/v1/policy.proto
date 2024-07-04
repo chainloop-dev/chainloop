@@ -54,7 +54,7 @@ message PolicySpec {
 
   // stage at which this policy will be run.
   // Only "push" is supported currently and this field will be ignored
-  PolicyStage stage = 3 [(buf.validate.field).required = false, (buf.validate.field).enum.defined_only = true];
+  PolicyStage stage = 3;
 
   // if set, it will match a material kind supported by Chainloop.
   CraftingSchema.Material.MaterialType kind = 4;
