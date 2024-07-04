@@ -240,8 +240,12 @@ export interface Annotation {
 
 /** A policy to be applied to this contract */
 export interface PolicyAttachment {
-  /** policy reference. It must consist of an identifier or URI reference */
+  /** policy reference, it might be in URI format. */
   ref?:
+    | string
+    | undefined;
+  /** reference to a policy already known by chainloop */
+  name?:
     | string
     | undefined;
   /**
@@ -651,7 +655,7 @@ export const Annotation = {
 };
 
 function createBasePolicyAttachment(): PolicyAttachment {
-  return { ref: undefined, selector: undefined, disabled: false, with: [] };
+  return { ref: undefined, name: undefined, selector: undefined, disabled: false, with: [] };
 }
 
 export const PolicyAttachment = {
@@ -659,14 +663,17 @@ export const PolicyAttachment = {
     if (message.ref !== undefined) {
       writer.uint32(10).string(message.ref);
     }
+    if (message.name !== undefined) {
+      writer.uint32(18).string(message.name);
+    }
     if (message.selector !== undefined) {
-      PolicyAttachment_MaterialSelector.encode(message.selector, writer.uint32(18).fork()).ldelim();
+      PolicyAttachment_MaterialSelector.encode(message.selector, writer.uint32(26).fork()).ldelim();
     }
     if (message.disabled === true) {
-      writer.uint32(24).bool(message.disabled);
+      writer.uint32(32).bool(message.disabled);
     }
     for (const v of message.with) {
-      PolicyAttachment_PolicyArgument.encode(v!, writer.uint32(34).fork()).ldelim();
+      PolicyAttachment_PolicyArgument.encode(v!, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -690,17 +697,24 @@ export const PolicyAttachment = {
             break;
           }
 
-          message.selector = PolicyAttachment_MaterialSelector.decode(reader, reader.uint32());
+          message.name = reader.string();
           continue;
         case 3:
-          if (tag !== 24) {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.selector = PolicyAttachment_MaterialSelector.decode(reader, reader.uint32());
+          continue;
+        case 4:
+          if (tag !== 32) {
             break;
           }
 
           message.disabled = reader.bool();
           continue;
-        case 4:
-          if (tag !== 34) {
+        case 5:
+          if (tag !== 42) {
             break;
           }
 
@@ -718,6 +732,7 @@ export const PolicyAttachment = {
   fromJSON(object: any): PolicyAttachment {
     return {
       ref: isSet(object.ref) ? String(object.ref) : undefined,
+      name: isSet(object.name) ? String(object.name) : undefined,
       selector: isSet(object.selector) ? PolicyAttachment_MaterialSelector.fromJSON(object.selector) : undefined,
       disabled: isSet(object.disabled) ? Boolean(object.disabled) : false,
       with: Array.isArray(object?.with) ? object.with.map((e: any) => PolicyAttachment_PolicyArgument.fromJSON(e)) : [],
@@ -727,6 +742,7 @@ export const PolicyAttachment = {
   toJSON(message: PolicyAttachment): unknown {
     const obj: any = {};
     message.ref !== undefined && (obj.ref = message.ref);
+    message.name !== undefined && (obj.name = message.name);
     message.selector !== undefined &&
       (obj.selector = message.selector ? PolicyAttachment_MaterialSelector.toJSON(message.selector) : undefined);
     message.disabled !== undefined && (obj.disabled = message.disabled);
@@ -745,6 +761,7 @@ export const PolicyAttachment = {
   fromPartial<I extends Exact<DeepPartial<PolicyAttachment>, I>>(object: I): PolicyAttachment {
     const message = createBasePolicyAttachment();
     message.ref = object.ref ?? undefined;
+    message.name = object.name ?? undefined;
     message.selector = (object.selector !== undefined && object.selector !== null)
       ? PolicyAttachment_MaterialSelector.fromPartial(object.selector)
       : undefined;

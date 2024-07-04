@@ -109,18 +109,29 @@ message Annotation {
 // A policy to be applied to this contract
 message PolicyAttachment {
   oneof policy {
-    // policy reference. It must consist of an identifier or URI reference
+    // policy reference, it might be in URI format.
     string ref = 1 [(buf.validate.field).string.min_len = 1];
+
+    // reference to a policy already known by chainloop
+    string name = 2 [(buf.validate.field) = {
+      cel: {
+        message: "must contain only lowercase letters, numbers, and hyphens.",
+        expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
+        id: "name.dns-1123",
+      },
+    }];
+
+    option (buf.validate.oneof).required = true;
   }
 
   // rules to select a material or materials to be validated by the policy.
   // If none provided, the whole statement will be injected to the policy
-  MaterialSelector selector = 2;
+  MaterialSelector selector = 3;
 
   // set to true to disable this rule
-  bool disabled = 3;
+  bool disabled = 4;
 
-  repeated PolicyArgument with = 4;
+  repeated PolicyArgument with = 5;
 
   message MaterialSelector {
     // material name
@@ -129,7 +140,7 @@ message PolicyAttachment {
 
   // optional arguments for policies
   message PolicyArgument {
-    string name = 1;
-    string value = 2;
+    string name = 1 [(buf.validate.field).required = true];
+    string value = 2 [(buf.validate.field).required = true];;
   }
 }

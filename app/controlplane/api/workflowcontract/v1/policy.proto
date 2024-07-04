@@ -47,7 +47,7 @@ message PolicySpec {
     string path = 1;
 
     // embedded source code (only Rego supported currently)
-    string code = 2;
+    string embedded = 2;
 
     option (buf.validate.oneof).required = true;
   };

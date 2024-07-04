@@ -26,7 +26,7 @@ export interface PolicySpec {
     | string
     | undefined;
   /** embedded source code (only Rego supported currently) */
-  code?:
+  embedded?:
     | string
     | undefined;
   /**
@@ -233,7 +233,7 @@ export const Metadata = {
 };
 
 function createBasePolicySpec(): PolicySpec {
-  return { path: undefined, code: undefined, stage: 0, kind: 0 };
+  return { path: undefined, embedded: undefined, stage: 0, kind: 0 };
 }
 
 export const PolicySpec = {
@@ -241,8 +241,8 @@ export const PolicySpec = {
     if (message.path !== undefined) {
       writer.uint32(10).string(message.path);
     }
-    if (message.code !== undefined) {
-      writer.uint32(18).string(message.code);
+    if (message.embedded !== undefined) {
+      writer.uint32(18).string(message.embedded);
     }
     if (message.stage !== 0) {
       writer.uint32(24).int32(message.stage);
@@ -272,7 +272,7 @@ export const PolicySpec = {
             break;
           }
 
-          message.code = reader.string();
+          message.embedded = reader.string();
           continue;
         case 3:
           if (tag !== 24) {
@@ -300,7 +300,7 @@ export const PolicySpec = {
   fromJSON(object: any): PolicySpec {
     return {
       path: isSet(object.path) ? String(object.path) : undefined,
-      code: isSet(object.code) ? String(object.code) : undefined,
+      embedded: isSet(object.embedded) ? String(object.embedded) : undefined,
       stage: isSet(object.stage) ? policySpec_PolicyStageFromJSON(object.stage) : 0,
       kind: isSet(object.kind) ? craftingSchema_Material_MaterialTypeFromJSON(object.kind) : 0,
     };
@@ -309,7 +309,7 @@ export const PolicySpec = {
   toJSON(message: PolicySpec): unknown {
     const obj: any = {};
     message.path !== undefined && (obj.path = message.path);
-    message.code !== undefined && (obj.code = message.code);
+    message.embedded !== undefined && (obj.embedded = message.embedded);
     message.stage !== undefined && (obj.stage = policySpec_PolicyStageToJSON(message.stage));
     message.kind !== undefined && (obj.kind = craftingSchema_Material_MaterialTypeToJSON(message.kind));
     return obj;
@@ -322,7 +322,7 @@ export const PolicySpec = {
   fromPartial<I extends Exact<DeepPartial<PolicySpec>, I>>(object: I): PolicySpec {
     const message = createBasePolicySpec();
     message.path = object.path ?? undefined;
-    message.code = object.code ?? undefined;
+    message.embedded = object.embedded ?? undefined;
     message.stage = object.stage ?? 0;
     message.kind = object.kind ?? 0;
     return message;
