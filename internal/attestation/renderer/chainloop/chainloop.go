@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	v12 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -72,6 +73,18 @@ type ProvenancePredicateCommon struct {
 	RunnerURL  string            `json:"runnerURL,omitempty"`
 	// Custom annotations
 	Annotations map[string]string `json:"annotations,omitempty"`
+	// Applied policies
+	Policies []PolicyPredicate `json:"policies,omitempty"`
+}
+
+// PolicyPredicate represents a policy that has been run against an attestation
+type PolicyPredicate struct {
+	Name  string `json:"name"`
+	Stage string `json:"stage,omitempty"`
+	// Base64 body of the policy script
+	Body string `json:"body"`
+	// optional parameters set as policy inputs
+	Arguments []v12.PolicyAttachment_PolicyArgument `json:"arguments,omitempty"`
 }
 
 type Metadata struct {

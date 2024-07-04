@@ -18,6 +18,7 @@
 package v1_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/bufbuild/protovalidate-go"
@@ -88,6 +89,78 @@ func TestValidateAnnotations(t *testing.T) {
 				return
 			}
 
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestPolicyAttachment(t *testing.T) {
+	testCases := []struct {
+		desc      string
+		policy    *v1.PolicyAttachment
+		wantErr   bool
+		violation string
+	}{
+		{
+			desc:      "empty policy",
+			policy:    &v1.PolicyAttachment{},
+			wantErr:   true,
+			violation: "policy",
+		},
+		{
+			desc:    "policy ref",
+			policy:  &v1.PolicyAttachment{Policy: &v1.PolicyAttachment_Ref{Ref: "reference"}},
+			wantErr: false,
+		},
+		{
+			desc:    "policy name",
+			policy:  &v1.PolicyAttachment{Policy: &v1.PolicyAttachment_Name{Name: "name"}},
+			wantErr: false,
+		},
+		{
+			desc: "incomplete arguments",
+			policy: &v1.PolicyAttachment{
+				Policy: &v1.PolicyAttachment_Name{Name: "name"},
+				With: []*v1.PolicyAttachment_PolicyArgument{
+					{
+						Name: "name",
+					},
+				},
+			},
+			wantErr:   true,
+			violation: "with[0].value",
+		},
+		{
+			desc: "complete arguments",
+			policy: &v1.PolicyAttachment{
+				Policy: &v1.PolicyAttachment_Name{Name: "name"},
+				With: []*v1.PolicyAttachment_PolicyArgument{
+					{
+						Name:  "name",
+						Value: "value",
+					},
+				},
+			},
+			wantErr: false,
+		},
+	}
+
+	validator, err := protovalidate.New()
+	require.NoError(t, err)
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			err := validator.Validate(tc.policy)
+			if tc.wantErr {
+				assert.Error(t, err)
+
+				valErr := &protovalidate.ValidationError{}
+				errors.As(err, &valErr)
+				assert.Equal(t, tc.violation, valErr.Violations[0].FieldPath)
+				assert.Contains(t, err.Error(), tc.violation)
+
+				return
+			}
 			assert.NoError(t, err)
 		})
 	}

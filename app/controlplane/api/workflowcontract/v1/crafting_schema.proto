@@ -34,6 +34,8 @@ message CraftingSchema {
   // It works in addition to the annotations defined in the materials and the runner
   repeated Annotation annotations = 5;
 
+  repeated PolicyAttachment policies = 6;
+
   message Runner {
     RunnerType type = 1 [
       (buf.validate.field).enum = {
@@ -102,4 +104,43 @@ message Annotation {
   string name = 1 [(buf.validate.field).string.pattern = "^[\\w]+$"]; // Single word optionally separated with _
   // This value can be set in the contract or provided during the attestation
   string value = 2;
+}
+
+// A policy to be applied to this contract
+message PolicyAttachment {
+  oneof policy {
+    // policy reference, it might be in URI format.
+    string ref = 1 [(buf.validate.field).string.min_len = 1];
+
+    // reference to a policy already known by chainloop
+    string name = 2 [(buf.validate.field) = {
+      cel: {
+        message: "must contain only lowercase letters, numbers, and hyphens.",
+        expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
+        id: "name.dns-1123",
+      },
+    }];
+
+    option (buf.validate.oneof).required = true;
+  }
+
+  // rules to select a material or materials to be validated by the policy.
+  // If none provided, the whole statement will be injected to the policy
+  MaterialSelector selector = 3;
+
+  // set to true to disable this rule
+  bool disabled = 4;
+
+  repeated PolicyArgument with = 5;
+
+  message MaterialSelector {
+    // material name
+    string name = 1;
+  }
+
+  // optional arguments for policies
+  message PolicyArgument {
+    string name = 1 [(buf.validate.field).required = true];
+    string value = 2 [(buf.validate.field).required = true];;
+  }
 }
