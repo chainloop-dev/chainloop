@@ -79,10 +79,10 @@ type ProvenancePredicateCommon struct {
 
 // PolicyPredicate represents a policy that has been run against an attestation
 type PolicyPredicate struct {
-	Name  string `json:"ref"`
-	Stage string
+	Name  string `json:"name"`
+	Stage string `json:"stage,omitempty"`
 	// Base64 body of the policy script
-	Body string
+	Body string `json:"body"`
 	// optional parameters set as policy inputs
 	Arguments []v12.PolicyAttachment_PolicyArgument `json:"arguments,omitempty"`
 }
