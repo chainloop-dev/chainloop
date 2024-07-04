@@ -27,7 +27,7 @@ These methods require setting up a key and/or KMS authentication in the local en
 | Gitlab secret     | `--key gitlab://<project>` (it will look for `COSIGN_PRIVATE_KEY`, `COSIGN_PASSWORD` variables)        | `--key gitlab://<project>` (it will look for `COSIGN_PUBLIC_KEY` variable) |
 
 ### Keyless signing
-These methods don't require any special setup in the client. You must make sure you get the CA certificate chain out-of-band, as it will be required for the verification command.
+These methods don't require any special setup in the client. For the verification command, you must make sure you get the CA certificate chain out-of-band, as it will be required to validate the ephemeral signing certificate.
 
 | Method                                                     | Signing (`chainloop att push`)                                                                                                                                                                                                                     | Verifying (`chainloop wf run describe --verify true`) |
 |------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------|
