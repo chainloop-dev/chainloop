@@ -401,7 +401,7 @@ controlplane:
 
 ### Insert custom Certificate Authorities (CAs)
 
-In some scenarios, you might want to add custom Certificate Authorities to the Chainloop deployment. Like in the instance where your OIDC provider uses a self-signed certificate. To do so, add the PEM-encoded CA certificate to the `customCAs` list in your `values.yaml` file like in the example below.
+In some scenarios, you might want to add custom Certificate Authorities to the Chainloop deployment. Like in the instance where your OIDC provider uses a self-signed certificate. To do so, add the PEM-encoded CA certificate to the `customCAs` list in either `controlplane` or `cas` sections, in your `values.yaml` file like in the example below.
 
 ```yaml
   customCAs:
@@ -655,20 +655,21 @@ chainloop config save \
 
 ### CAS Misc
 
-| Name                                                | Description                        | Value        |
-| --------------------------------------------------- | ---------------------------------- | ------------ |
-| `cas.resources.limits.cpu`                          | Container resource limits CPU      | `250m`       |
-| `cas.resources.limits.memory`                       | Container resource limits memory   | `512Mi`      |
-| `cas.resources.requests.cpu`                        | Container resource requests CPU    | `250m`       |
-| `cas.resources.requests.memory`                     | Container resource requests memory | `512Mi`      |
-| `cas.autoscaling.enabled`                           | Enable deployment autoscaling      | `false`      |
-| `cas.autoscaling.minReplicas`                       | Minimum number of replicas         | `1`          |
-| `cas.autoscaling.maxReplicas`                       | Maximum number of replicas         | `100`        |
-| `cas.autoscaling.targetCPUUtilizationPercentage`    | Target CPU percentage              | `80`         |
-| `cas.autoscaling.targetMemoryUtilizationPercentage` | Target CPU memory                  | `80`         |
-| `cas.sentry.enabled`                                | Enable sentry.io alerting          | `false`      |
-| `cas.sentry.dsn`                                    | DSN endpoint                       | `""`         |
-| `cas.sentry.environment`                            | Environment tag                    | `production` |
+| Name                                                | Description                            | Value        |
+| --------------------------------------------------- | -------------------------------------- | ------------ |
+| `cas.resources.limits.cpu`                          | Container resource limits CPU          | `250m`       |
+| `cas.resources.limits.memory`                       | Container resource limits memory       | `512Mi`      |
+| `cas.resources.requests.cpu`                        | Container resource requests CPU        | `250m`       |
+| `cas.resources.requests.memory`                     | Container resource requests memory     | `512Mi`      |
+| `cas.autoscaling.enabled`                           | Enable deployment autoscaling          | `false`      |
+| `cas.autoscaling.minReplicas`                       | Minimum number of replicas             | `1`          |
+| `cas.autoscaling.maxReplicas`                       | Maximum number of replicas             | `100`        |
+| `cas.autoscaling.targetCPUUtilizationPercentage`    | Target CPU percentage                  | `80`         |
+| `cas.autoscaling.targetMemoryUtilizationPercentage` | Target CPU memory                      | `80`         |
+| `cas.sentry.enabled`                                | Enable sentry.io alerting              | `false`      |
+| `cas.sentry.dsn`                                    | DSN endpoint                           | `""`         |
+| `cas.sentry.environment`                            | Environment tag                        | `production` |
+| `cas.customCAs`                                     | List of custom CA certificates content | `[]`         |
 
 ### Dependencies
 
