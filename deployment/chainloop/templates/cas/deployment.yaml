@@ -71,13 +71,13 @@ spec:
             - name: server-certs
               mountPath: /data/server-certs
             {{- end }}
-            {{ - if (not (empty .Values.cas.customCAs)) }}
+            {{- if (not (empty .Values.cas.customCAs)) }}
             - name: custom-cas
               # NOTE: /etc/ssl/certs already contains the system CA certs
               # Let's use another known path https://go.dev/src/crypto/x509/root_linux.go
               mountPath: /etc/pki/tls/certs
               readOnly: true
-            {{ - end }}
+            {{- end }}
       volumes:
         - name: config
           projected:
