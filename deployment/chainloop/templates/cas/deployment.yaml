@@ -71,6 +71,13 @@ spec:
             - name: server-certs
               mountPath: /data/server-certs
             {{- end }}
+            {{- if (not (empty .Values.cas.customCAs)) }}
+            - name: custom-cas
+              # NOTE: /etc/ssl/certs already contains the system CA certs
+              # Let's use another known path https://go.dev/src/crypto/x509/root_linux.go
+              mountPath: /etc/pki/tls/certs
+              readOnly: true
+            {{- end }}
       volumes:
         - name: config
           projected:
@@ -91,4 +98,11 @@ spec:
         - name: gcp-secretmanager-serviceaccountkey
           secret:
             secretName: {{ include "chainloop.controlplane.fullname" . }}-gcp-secretmanager-serviceaccountkey
+        {{- end }}
+        {{- if (not (empty .Values.cas.customCAs)) }}
+        - name: custom-cas
+          projected:
+            sources:
+              - secret:
+                  name: {{ include "chainloop.cas.fullname" . }}-custom-cas
         {{- end }}

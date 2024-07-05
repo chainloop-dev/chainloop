@@ -824,6 +824,10 @@ cas:
     dsn: ""
     environment: production
 
+  ## Inject custom CA certificates to the CAS container
+  ## @param cas.customCAs List of custom CA certificates content
+  customCAs: []
+
 ## @section Dependencies
 # ##################################
 # #          Dependencies          #
