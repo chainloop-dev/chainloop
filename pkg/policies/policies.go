@@ -81,11 +81,11 @@ func (pv *PolicyVerifier) loadSpec(attachment *v1.PolicyAttachment) (*v1.Policy,
 	if err != nil {
 		return nil, fmt.Errorf("loading policy spec: %w", err)
 	}
-	var policy *v1.Policy
+	var policy v1.Policy
 	if err := yaml.Unmarshal(specContent, &policy); err != nil {
 		return nil, fmt.Errorf("unmarshalling policy spec: %w", err)
 	}
-	return policy, nil
+	return &policy, nil
 }
 
 // loads a policy referenced from the spec
