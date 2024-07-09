@@ -77,6 +77,7 @@ require (
 	github.com/invopop/jsonschema v0.7.0
 	github.com/jackc/pgx/v5 v5.5.4
 	github.com/muesli/reflow v0.3.0
+	github.com/open-policy-agent/opa v0.63.0
 	github.com/openvex/go-vex v0.2.5
 	github.com/posthog/posthog-go v0.0.0-20240327112532-87b23fe11103
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
@@ -102,6 +103,8 @@ require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2 // indirect
 	github.com/Masterminds/semver/v3 v3.2.1 // indirect
 	github.com/Microsoft/hcsshim v0.11.4 // indirect
+	github.com/OneOfOne/xxhash v1.2.8 // indirect
+	github.com/agnivade/levenshtein v1.1.1 // indirect
 	github.com/anchore/go-struct-converter v0.0.0-20230627203149-c72ef8859ca9 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.11.1 // indirect
@@ -120,11 +123,13 @@ require (
 	github.com/gliderlabs/ssh v0.3.6 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.5.0 // indirect
+	github.com/go-ini/ini v1.67.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.0.1 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-playground/assert/v2 v2.2.0 // indirect
 	github.com/go-sql-driver/mysql v1.8.1 // indirect
 	github.com/goadesign/goa v2.2.5+incompatible // indirect
+	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
 	github.com/google/cel-go v0.20.1 // indirect
@@ -164,6 +169,7 @@ require (
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pkg/xattr v0.4.9 // indirect
 	github.com/power-devops/perfstat v0.0.0-20221212215047-62379fc7944b // indirect
+	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/rs/xid v1.5.0 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
@@ -175,14 +181,19 @@ require (
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.2.0 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
+	github.com/tchap/go-patricia/v2 v2.3.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
+	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
+	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
+	github.com/yashtewari/glob-intersection v0.2.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.49.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.22.0 // indirect
 	go.opentelemetry.io/otel/metric v1.24.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.24.0 // indirect
 	go.step.sm/crypto v0.44.2 // indirect
 	goa.design/goa v2.2.5+incompatible // indirect
 	gopkg.in/go-jose/go-jose.v2 v2.6.3 // indirect
