@@ -78,7 +78,7 @@ func TestRego_VerifyInvalidPolicy(t *testing.T) {
 
 	t.Run("doesn't eval a deny rule", func(t *testing.T) {
 		violations, err := r.Verify(context.TODO(), policy, []byte("{\"foo\": \"bar\"}"))
-		require.NoError(t, err)
+		assert.Error(t, err)
 		assert.Len(t, violations, 0)
 	})
 }
