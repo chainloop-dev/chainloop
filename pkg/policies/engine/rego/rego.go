@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
@@ -34,7 +35,7 @@ type Rego struct {
 var _ engine.PolicyEngine = (*Rego)(nil)
 
 func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte) ([]*engine.PolicyViolation, error) {
-	policyString := string(policy.Module)
+	policyString := string(policy.Source)
 	parsedModule, err := ast.ParseModule(policy.Name, policyString)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse rego policy: %w", err)
@@ -62,6 +63,11 @@ func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte) 
 	res, err := regoEval.Eval(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to evaluate policy: %w", err)
+	}
+
+	// If res is nil, it means that the rule hasn't been found
+	if res == nil {
+		return nil, errors.New("failed to evaluate policy: no 'deny' rule found")
 	}
 
 	violations := make([]*engine.PolicyViolation, 0)
