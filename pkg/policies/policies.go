@@ -16,10 +16,121 @@
 package policies
 
 import (
+	"context"
+	"fmt"
+
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	v12 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine/rego"
+	"github.com/sigstore/cosign/v2/pkg/blob"
+	"google.golang.org/protobuf/encoding/protojson"
+	"gopkg.in/yaml.v2"
 )
+
+type PolicyVerifier struct {
+	state  *v12.CraftingState
+	engine engine.PolicyEngine
+}
+
+func NewPolicyVerifier(state *v12.CraftingState) *PolicyVerifier {
+	// only Rego engine is currently supported
+	return &PolicyVerifier{state: state, engine: new(rego.Rego)}
+}
+
+// Verify verifies that the statement is compliant with the policies present in the schema
+func (pv *PolicyVerifier) Verify(ctx context.Context) ([]*engine.PolicyViolation, error) {
+	violations := make([]*engine.PolicyViolation, 0)
+	policies := pv.state.GetInputSchema().GetPolicies()
+	for _, policyAtt := range policies {
+		if policyAtt.Disabled {
+			// policy is disabled
+			// TODO: WARN.
+			continue
+		}
+		spec, err := loadSpec(policyAtt)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load policy spec: %w", err)
+		}
+		script, err := loadPolicyScriptFromSpec(spec)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load policy content: %w", err)
+		}
+		m, err := loadSubject(policyAtt, spec, pv.state)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load policy subject: %w", err)
+		}
+		// verify policy, passing arguments from policyAtt
+
+		res, err := pv.engine.Verify(ctx, script, m)
+		if err != nil {
+			return nil, fmt.Errorf("failed to verify policy: %w", err)
+		}
+		violations = append(violations, res...)
+	}
+
+	return violations, nil
+}
+
+func loadSpec(attachment *v1.PolicyAttachment) (*v1.Policy, error) {
+	// 1. look for the referenced policy spec (note: `name` is not supported yet)
+	reference := attachment.GetRef()
+	// this method understands env, http and https schemes, and defaults to file system.
+	specContent, err := blob.LoadFileOrURL(reference)
+	if err != nil {
+		return nil, fmt.Errorf("loading policy spec: %w", err)
+	}
+	var policy *v1.Policy
+	if err := yaml.Unmarshal(specContent, &policy); err != nil {
+		return nil, fmt.Errorf("unmarshalling policy spec: %w", err)
+	}
+	return policy, nil
+}
+
+// loads a policy referenced from the spec
+func loadPolicyScriptFromSpec(spec *v1.Policy) (*engine.Policy, error) {
+	var content []byte
+	var err error
+	if spec.GetSpec().GetEmbedded() != "" {
+		content = []byte(spec.GetSpec().GetEmbedded())
+	} else if spec.GetSpec().GetPath() != "" {
+		content, err = blob.LoadFileOrURL(spec.GetSpec().GetPath())
+		if err != nil {
+			return nil, fmt.Errorf("loading policy content: %w", err)
+		}
+	} else {
+		return nil, fmt.Errorf("policy spec is empty")
+	}
+
+	return &engine.Policy{
+		Name:   spec.GetMetadata().GetName(),
+		Module: content,
+	}, nil
+}
+
+func loadSubject(attachment *v1.PolicyAttachment, spec *v1.Policy, state *v12.CraftingState) ([]byte, error) {
+	// Load the affected material or attestation, and checks if the expected name and type match
+	name := attachment.GetSelector().GetName()
+	// if name selector is not set, the subject will become the full crafting state
+	if name == "" {
+		return protojson.Marshal(state.GetAttestation())
+	}
+
+	// if set, we want a material
+	for _, m := range state.GetAttestation().GetMaterials() {
+		if m.GetArtifact().GetName() == name {
+			return getMaterialPayload(m)
+		}
+	}
+
+	return nil, fmt.Errorf("no material found with name %s", name)
+}
+
+// Gets the material payload from the CAS
+func getMaterialPayload(m *v12.Attestation_Material) ([]byte, error) {
+	// TODO
+	return nil, nil
+}
 
 // GetPolicyEngine returns a PolicyEngine implementation to evaluate a given policy.
 func GetPolicyEngine(_ *v1.Policy) engine.PolicyEngine {
