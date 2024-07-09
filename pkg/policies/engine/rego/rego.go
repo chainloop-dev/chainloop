@@ -34,7 +34,7 @@ type Rego struct {
 var _ engine.PolicyEngine = (*Rego)(nil)
 
 func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte) ([]*engine.PolicyViolation, error) {
-	policyString := string(policy.Module)
+	policyString := string(policy.Source)
 	parsedModule, err := ast.ParseModule(policy.Name, policyString)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse rego policy: %w", err)

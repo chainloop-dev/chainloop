@@ -32,7 +32,7 @@ func TestRego_VerifyWithValidPolicy(t *testing.T) {
 	r := &Rego{}
 	policy := &engine.Policy{
 		Name:   "check approval",
-		Module: regoContent,
+		Source: regoContent,
 	}
 
 	t.Run("invalid input", func(t *testing.T) {
@@ -73,7 +73,7 @@ func TestRego_VerifyInvalidPolicy(t *testing.T) {
 	r := &Rego{}
 	policy := &engine.Policy{
 		Name:   "invalid",
-		Module: regoContent,
+		Source: regoContent,
 	}
 
 	t.Run("doesn't eval a deny rule", func(t *testing.T) {

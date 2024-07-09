@@ -20,16 +20,19 @@ import (
 )
 
 type PolicyEngine interface {
+	// Verify verifies an input against a policy
 	Verify(ctx context.Context, policy *Policy, input []byte) ([]*PolicyViolation, error)
 }
 
+// PolicyViolation represents a policy failure
 type PolicyViolation struct {
 	Subject, Violation string
 }
 
 // Policy represents a loaded policy in any of the supported technologies.
 type Policy struct {
-	//
-	Module []byte `json:"module"`
-	Name   string `json:"name"`
+	// the source code for this policy
+	Source []byte `json:"module"`
+	// The unique policy name
+	Name string `json:"name"`
 }
