@@ -18,15 +18,16 @@ package policies
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
 	v12 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine/rego"
 	"github.com/sigstore/cosign/v2/pkg/blob"
 	"google.golang.org/protobuf/encoding/protojson"
-	"gopkg.in/yaml.v2"
 )
 
 type PolicyVerifier struct {
@@ -77,12 +78,13 @@ func (pv *PolicyVerifier) loadSpec(attachment *v1.PolicyAttachment) (*v1.Policy,
 	// 1. look for the referenced policy spec (note: `name` is not supported yet)
 	reference := attachment.GetRef()
 	// this method understands env, http and https schemes, and defaults to file system.
-	specContent, err := blob.LoadFileOrURL(reference)
+	rawData, err := blob.LoadFileOrURL(reference)
 	if err != nil {
 		return nil, fmt.Errorf("loading policy spec: %w", err)
 	}
+	jsonContent, err := crafter.LoadJSONBytes(rawData, filepath.Ext(reference))
 	var policy v1.Policy
-	if err := yaml.Unmarshal(specContent, &policy); err != nil {
+	if err := protojson.Unmarshal(jsonContent, &policy); err != nil {
 		return nil, fmt.Errorf("unmarshalling policy spec: %w", err)
 	}
 	return &policy, nil

@@ -153,8 +153,8 @@ func (c *Crafter) AlreadyInitialized(ctx context.Context, stateID string) (bool,
 	return c.stateManager.Initialized(ctx, stateID)
 }
 
-// Extract raw data in JSON format from different sources, i.e cue or yaml files
-func loadJSONBytes(rawData []byte, extension string) ([]byte, error) {
+// LoadJSONBytes Extracts raw data in JSON format from different sources, i.e cue or yaml files
+func LoadJSONBytes(rawData []byte, extension string) ([]byte, error) {
 	var jsonRawData []byte
 	var err error
 
@@ -187,7 +187,7 @@ func LoadSchema(pathOrURI string) (*schemaapi.CraftingSchema, error) {
 		return nil, err
 	}
 
-	jsonSchemaRaw, err := loadJSONBytes(content, filepath.Ext(pathOrURI))
+	jsonSchemaRaw, err := LoadJSONBytes(content, filepath.Ext(pathOrURI))
 	if err != nil {
 		return nil, err
 	}
