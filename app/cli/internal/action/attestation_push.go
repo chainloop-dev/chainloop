@@ -36,6 +36,11 @@ type AttestationPushOpts struct {
 	KeyPath, CLIVersion, CLIDigest, BundlePath string
 
 	SignServerCAPath string
+
+	CASURI    string
+	CASCAPath string // optional CA certificate for the CAS connection
+	// CAS connection insecure flag
+	ConnectionInsecure bool
 }
 
 type AttestationResult struct {
@@ -49,6 +54,12 @@ type AttestationPush struct {
 	c                                          *crafter.Crafter
 	keyPath, cliVersion, cliDigest, bundlePath string
 	signServerCAPath                           string
+
+	// CAS options
+	casURI string
+	// optional CA certificate for the CAS connection
+	casCAPath          string
+	connectionInsecure bool
 }
 
 func NewAttestationPush(cfg *AttestationPushOpts) (*AttestationPush, error) {
@@ -58,13 +69,16 @@ func NewAttestationPush(cfg *AttestationPushOpts) (*AttestationPush, error) {
 	}
 
 	return &AttestationPush{
-		ActionsOpts:      cfg.ActionsOpts,
-		c:                c,
-		keyPath:          cfg.KeyPath,
-		cliVersion:       cfg.CLIVersion,
-		cliDigest:        cfg.CLIDigest,
-		bundlePath:       cfg.BundlePath,
-		signServerCAPath: cfg.SignServerCAPath,
+		ActionsOpts:        cfg.ActionsOpts,
+		c:                  c,
+		keyPath:            cfg.KeyPath,
+		cliVersion:         cfg.CLIVersion,
+		cliDigest:          cfg.CLIDigest,
+		bundlePath:         cfg.BundlePath,
+		signServerCAPath:   cfg.SignServerCAPath,
+		casURI:             cfg.CASURI,
+		casCAPath:          cfg.CASCAPath,
+		connectionInsecure: cfg.ConnectionInsecure,
 	}, nil
 }
 
@@ -145,13 +159,14 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 		return nil, fmt.Errorf("creating signer: %w", err)
 	}
 
-	// Apply policies
-	backend, closefunc, err := getCasBackend(ctx, action.c.CraftingState, action.ActionsOpts, "", "", false)
+	// CAS backend for policies
+	backend, closefunc, err := getCasBackend(ctx, action.c.CraftingState, action.ActionsOpts, action.casCAPath, action.casURI, action.connectionInsecure)
 	if err != nil {
 		return nil, fmt.Errorf("creating cas backend: %w", err)
 	}
 	defer closefunc()
 
+	// Apply policies
 	pv := policies.NewPolicyVerifier(action.c.CraftingState, backend.Downloader)
 	violations, err := pv.Verify(ctx)
 	if err != nil {

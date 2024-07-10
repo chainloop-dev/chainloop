@@ -62,6 +62,7 @@ func newCrafter(enableRemoteState bool, conn *grpc.ClientConn, opts ...crafter.N
 	return crafter.NewCrafter(stateManager, opts...)
 }
 
+// creates a connection to a CAS backend
 func getCasBackend(ctx context.Context, state *v1.CraftingState, opts *ActionsOpts, casCAPath, casURI string, insecure bool) (*casclient.CASBackend, func() error, error) {
 	// Default to inline CASBackend and override if we are not in dry-run mode
 	var closefunc func() error
