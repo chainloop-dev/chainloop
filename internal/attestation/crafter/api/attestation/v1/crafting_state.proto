@@ -88,6 +88,24 @@ message Attestation {
 
   // Head Commit of the environment where the attestation was executed (optional)
   Commit head = 9;
+
+  // Policies that this attestation was validated against
+  repeated Policy policies = 10;
+}
+
+// A policy executed against an attestation
+message Policy {
+  // The attachment as in the contract, with arguments and any other metadata
+  workflowcontract.v1.PolicyAttachment attachment = 1 [(buf.validate.field).required = true];
+  // The policy script body (rego)
+  string body = 2 [(buf.validate.field).required = true];
+  // The policy violations, if any
+  repeated Violation violations = 3;
+
+  message Violation {
+    string subject = 1;
+    string message = 2;
+  }
 }
 
 message Commit {
