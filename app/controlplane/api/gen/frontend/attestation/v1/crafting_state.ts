@@ -102,6 +102,8 @@ export interface Attestation_EnvVarsEntry {
 
 /** A policy executed against an attestation */
 export interface Policy {
+  /** The policy name from the policy spec */
+  name: string;
   /** The attachment as in the contract, with arguments and any other metadata */
   attachment?: PolicyAttachment;
   /** The policy script body (rego) */
@@ -1170,19 +1172,22 @@ export const Attestation_EnvVarsEntry = {
 };
 
 function createBasePolicy(): Policy {
-  return { attachment: undefined, body: "", violations: [] };
+  return { name: "", attachment: undefined, body: "", violations: [] };
 }
 
 export const Policy = {
   encode(message: Policy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
     if (message.attachment !== undefined) {
-      PolicyAttachment.encode(message.attachment, writer.uint32(10).fork()).ldelim();
+      PolicyAttachment.encode(message.attachment, writer.uint32(18).fork()).ldelim();
     }
     if (message.body !== "") {
-      writer.uint32(18).string(message.body);
+      writer.uint32(26).string(message.body);
     }
     for (const v of message.violations) {
-      Policy_Violation.encode(v!, writer.uint32(26).fork()).ldelim();
+      Policy_Violation.encode(v!, writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -1199,17 +1204,24 @@ export const Policy = {
             break;
           }
 
-          message.attachment = PolicyAttachment.decode(reader, reader.uint32());
+          message.name = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
             break;
           }
 
-          message.body = reader.string();
+          message.attachment = PolicyAttachment.decode(reader, reader.uint32());
           continue;
         case 3:
           if (tag !== 26) {
+            break;
+          }
+
+          message.body = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
             break;
           }
 
@@ -1226,6 +1238,7 @@ export const Policy = {
 
   fromJSON(object: any): Policy {
     return {
+      name: isSet(object.name) ? String(object.name) : "",
       attachment: isSet(object.attachment) ? PolicyAttachment.fromJSON(object.attachment) : undefined,
       body: isSet(object.body) ? String(object.body) : "",
       violations: Array.isArray(object?.violations)
@@ -1236,6 +1249,7 @@ export const Policy = {
 
   toJSON(message: Policy): unknown {
     const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
     message.attachment !== undefined &&
       (obj.attachment = message.attachment ? PolicyAttachment.toJSON(message.attachment) : undefined);
     message.body !== undefined && (obj.body = message.body);
@@ -1253,6 +1267,7 @@ export const Policy = {
 
   fromPartial<I extends Exact<DeepPartial<Policy>, I>>(object: I): Policy {
     const message = createBasePolicy();
+    message.name = object.name ?? "";
     message.attachment = (object.attachment !== undefined && object.attachment !== null)
       ? PolicyAttachment.fromPartial(object.attachment)
       : undefined;

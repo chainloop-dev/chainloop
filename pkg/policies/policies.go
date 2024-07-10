@@ -69,6 +69,14 @@ func (pv *PolicyVerifier) Verify(ctx context.Context) ([]*engine.PolicyViolation
 			return nil, fmt.Errorf("failed to verify policy: %w", err)
 		}
 		violations = append(violations, res...)
+
+		// Store result in the attestation itself (for the renderer to include them in the predicate)
+		pv.state.Attestation.Policies = append(pv.state.Attestation.Policies, &v12.Policy{
+			Name:       spec.Metadata.Name,
+			Attachment: policyAtt,
+			Body:       string(script.Source),
+			Violations: policyViolationsToAttestationViolations(violations),
+		})
 	}
 
 	return violations, nil
@@ -156,4 +164,14 @@ func (pv *PolicyVerifier) getMaterialPayload(m *v12.Attestation_Material) ([]byt
 func getPolicyEngine(_ *v1.Policy) engine.PolicyEngine {
 	// Currently, only Rego is supported
 	return new(rego.Rego)
+}
+
+func policyViolationsToAttestationViolations(violations []*engine.PolicyViolation) (pvs []*v12.Policy_Violation) {
+	for _, violation := range violations {
+		pvs = append(pvs, &v12.Policy_Violation{
+			Subject: violation.Subject,
+			Message: violation.Violation,
+		})
+	}
+	return
 }

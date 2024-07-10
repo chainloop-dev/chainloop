@@ -110,6 +110,7 @@ func (s *testSuite) TestVerifyAttestations() {
 			verifier := NewPolicyVerifier(tc.state, nil)
 			res, err := verifier.Verify(context.TODO())
 			if tc.wantErr != nil {
+				// #nosec G601
 				s.ErrorAs(err, &tc.wantErr)
 				return
 			}
@@ -119,6 +120,36 @@ func (s *testSuite) TestVerifyAttestations() {
 			}
 		})
 	}
+}
+
+func (s *testSuite) TestAttestationResult() {
+	state := &v1.CraftingState{
+		InputSchema: &v12.CraftingSchema{
+			Policies: []*v12.PolicyAttachment{
+				{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/workflow.yaml"}},
+			},
+		},
+		Attestation: &v1.Attestation{
+			Workflow: &v1.WorkflowMetadata{
+				Name: "policytest",
+			},
+			RunnerType: v12.CraftingSchema_Runner_GITHUB_ACTION,
+		},
+	}
+
+	verifier := NewPolicyVerifier(state, nil)
+	res, err := verifier.Verify(context.TODO())
+	s.Require().NoError(err)
+	s.Len(res, 0)
+
+	att := state.GetAttestation()
+	s.Len(att.Policies, 1)
+
+	p := att.Policies[0]
+	s.Len(p.Violations, 0)
+	s.Equal("testdata/workflow.yaml", p.Attachment.GetRef())
+	s.Equal("workflow", p.Name)
+	s.Contains(p.Body, "package main")
 }
 
 type testSuite struct {
