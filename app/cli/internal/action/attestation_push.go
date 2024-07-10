@@ -164,7 +164,9 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	if err != nil {
 		return nil, fmt.Errorf("creating cas backend: %w", err)
 	}
-	defer closefunc()
+	if closefunc != nil {
+		defer closefunc()
+	}
 
 	// Apply policies
 	pv := policies.NewPolicyVerifier(action.c.CraftingState, backend.Downloader)

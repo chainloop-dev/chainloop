@@ -84,7 +84,9 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 	if err != nil {
 		return fmt.Errorf("getting cas backend: %w", err)
 	}
-	defer closefunc()
+	if closefunc != nil {
+		defer closefunc()
+	}
 
 	// Add material to the attestation crafting state based on if the material is contract free or not.
 	// By default, try to detect the material kind automatically
