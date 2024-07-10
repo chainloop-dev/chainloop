@@ -138,7 +138,7 @@ func (pv *PolicyVerifier) loadSubject(attachment *v1.PolicyAttachment, spec *v1.
 		if m.GetArtifact().GetName() == name {
 			if spec.GetSpec().GetKind() != v1.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED && spec.GetSpec().GetKind() != m.GetMaterialType() {
 				// If policy wasn't meant to be evaluated against this type of material, raise an error
-				return nil, fmt.Errorf("invalid material type: %s, policy spected: %s", m.GetMaterialType(), spec.GetSpec().GetKind())
+				return nil, fmt.Errorf("invalid material type: %s, policy expected: %s", m.GetMaterialType(), spec.GetSpec().GetKind())
 			}
 			return pv.getMaterialPayload(m)
 		}
@@ -152,10 +152,8 @@ func (pv *PolicyVerifier) getMaterialPayload(m *v12.Attestation_Material) ([]byt
 	if !m.UploadedToCas {
 		return m.GetArtifact().GetContent(), nil
 	}
-	// Look for material, and get its payload depending on which its nature.
-	// switch m.MaterialType {
-	// case v1.CraftingSchema_Mate
-	// }
+
+	// TODO: Use the CAS to look for the material,.
 
 	return nil, nil
 }
