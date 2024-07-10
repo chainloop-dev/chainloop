@@ -1,0 +1,6 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: made-with-syft
+spec:
+  path: testdata/sbom_syft.rego

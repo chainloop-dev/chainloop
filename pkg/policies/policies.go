@@ -134,8 +134,8 @@ func (pv *PolicyVerifier) loadSubject(attachment *v1.PolicyAttachment, spec *v1.
 	}
 
 	// if name is set, we want a specific material
-	for _, m := range state.GetAttestation().GetMaterials() {
-		if m.GetArtifact().GetName() == name {
+	for k, m := range state.GetAttestation().GetMaterials() {
+		if k == name {
 			if spec.GetSpec().GetKind() != v1.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED && spec.GetSpec().GetKind() != m.GetMaterialType() {
 				// If policy wasn't meant to be evaluated against this type of material, raise an error
 				return nil, fmt.Errorf("invalid material type: %s, policy expected: %s", m.GetMaterialType(), spec.GetSpec().GetKind())
@@ -149,7 +149,7 @@ func (pv *PolicyVerifier) loadSubject(attachment *v1.PolicyAttachment, spec *v1.
 
 // Gets the material payload from the CAS
 func (pv *PolicyVerifier) getMaterialPayload(m *v12.Attestation_Material) ([]byte, error) {
-	if !m.UploadedToCas {
+	if m.InlineCas {
 		return m.GetArtifact().GetContent(), nil
 	}
 

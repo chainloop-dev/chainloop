@@ -18,6 +18,7 @@ package policies
 import (
 	"context"
 	"io/fs"
+	"os"
 	"testing"
 
 	v12 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -257,6 +258,51 @@ func (s *testSuite) TestAttestationResult() {
 		p = att.Policies[index]
 		s.Len(p.Violations, 0)
 	})
+}
+
+func (s *testSuite) TestInlineMaterial() {
+	content, err := os.ReadFile("testdata/sbom-spdx.json")
+	s.Require().NoError(err)
+
+	state := &v1.CraftingState{
+		InputSchema: &v12.CraftingSchema{
+			Materials: []*v12.CraftingSchema_Material{
+				{
+					Name: "sbom",
+					Type: v12.CraftingSchema_Material_SBOM_SPDX_JSON,
+				},
+			},
+			Policies: []*v12.PolicyAttachment{
+				{
+					Selector: &v12.PolicyAttachment_MaterialSelector{Name: "sbom"},
+					Policy:   &v12.PolicyAttachment_Ref{Ref: "testdata/sbom_syft.yaml"},
+				},
+			},
+		},
+		Attestation: &v1.Attestation{
+			Workflow: &v1.WorkflowMetadata{
+				Name: "policytest",
+			},
+			Materials: map[string]*v1.Attestation_Material{
+				"sbom": {
+					MaterialType: v12.CraftingSchema_Material_SBOM_SPDX_JSON,
+					M: &v1.Attestation_Material_Artifact_{Artifact: &v1.Attestation_Material_Artifact{
+						Content: content,
+					},
+					},
+					InlineCas: true,
+				},
+			},
+		},
+	}
+	verifier := NewPolicyVerifier(state, nil)
+	res, err := verifier.Verify(context.TODO())
+	s.Require().NoError(err)
+	s.Len(res, 0)
+
+	att := state.GetAttestation()
+	s.Len(att.Policies, 1)
+	s.Len(att.Policies[0].Violations, 0)
 }
 
 type testSuite struct {
