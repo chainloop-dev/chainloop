@@ -50,19 +50,26 @@ func (pv *PolicyVerifier) Verify(ctx context.Context) ([]*engine.PolicyViolation
 			// TODO: WARN.
 			continue
 		}
+
+		// 1. load the policy spec
 		spec, err := pv.loadSpec(policyAtt)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load policy spec: %w", err)
 		}
+
+		// 2. load the policy script (rego)
 		script, err := pv.loadPolicyScriptFromSpec(spec)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load policy content: %w", err)
 		}
+
+		// 3. load the affected material (or the whole attestation)
 		material, err := pv.loadSubject(policyAtt, spec, pv.state)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load policy subject: %w", err)
 		}
-		// verify policy, passing arguments from policyAtt
+
+		// 4. verify the policy
 		ng := getPolicyEngine(spec)
 		res, err := ng.Verify(ctx, script, material)
 		if err != nil {
@@ -70,7 +77,7 @@ func (pv *PolicyVerifier) Verify(ctx context.Context) ([]*engine.PolicyViolation
 		}
 		violations = append(violations, res...)
 
-		// Store result in the attestation itself (for the renderer to include them in the predicate)
+		// 5. Store result in the attestation itself (for the renderer to include them in the predicate)
 		pv.state.Attestation.Policies = append(pv.state.Attestation.Policies, &v12.Policy{
 			Name:       spec.Metadata.Name,
 			Attachment: policyAtt,
@@ -83,7 +90,7 @@ func (pv *PolicyVerifier) Verify(ctx context.Context) ([]*engine.PolicyViolation
 }
 
 func (pv *PolicyVerifier) loadSpec(attachment *v1.PolicyAttachment) (*v1.Policy, error) {
-	// 1. look for the referenced policy spec (note: `name` is not supported yet)
+	// look for the referenced policy spec (note: loading by `name` is not supported yet)
 	reference := attachment.GetRef()
 	// this method understands env, http and https schemes, and defaults to file system.
 	rawData, err := blob.LoadFileOrURL(reference)

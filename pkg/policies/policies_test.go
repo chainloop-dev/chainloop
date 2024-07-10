@@ -105,6 +105,37 @@ func (s *testSuite) TestVerifyAttestations() {
 				},
 			},
 		},
+		{
+			name: "embedded rego policy",
+			state: &v1.CraftingState{
+				InputSchema: &v12.CraftingSchema{
+					Policies: []*v12.PolicyAttachment{
+						{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/workflow_embedded.yaml"}},
+					},
+				},
+				Attestation: &v1.Attestation{
+					Workflow: &v1.WorkflowMetadata{
+						Name: "policytest",
+					},
+				},
+			},
+		},
+		{
+			name: "embedded rego policy violations",
+			state: &v1.CraftingState{
+				InputSchema: &v12.CraftingSchema{
+					Policies: []*v12.PolicyAttachment{
+						{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/workflow_embedded.yaml"}},
+					},
+				},
+				Attestation: &v1.Attestation{
+					Workflow: &v1.WorkflowMetadata{
+						Name: "wrongname",
+					},
+				},
+			},
+			violations: 1,
+		},
 	}
 
 	for _, tc := range cases {
