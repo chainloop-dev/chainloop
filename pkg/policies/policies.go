@@ -83,6 +83,9 @@ func (pv *PolicyVerifier) loadSpec(attachment *v1.PolicyAttachment) (*v1.Policy,
 		return nil, fmt.Errorf("loading policy spec: %w", err)
 	}
 	jsonContent, err := crafter.LoadJSONBytes(rawData, filepath.Ext(reference))
+	if err != nil {
+		return nil, fmt.Errorf("loading policy spec: %w", err)
+	}
 	var policy v1.Policy
 	if err := protojson.Unmarshal(jsonContent, &policy); err != nil {
 		return nil, fmt.Errorf("unmarshalling policy spec: %w", err)
@@ -94,14 +97,16 @@ func (pv *PolicyVerifier) loadSpec(attachment *v1.PolicyAttachment) (*v1.Policy,
 func (pv *PolicyVerifier) loadPolicyScriptFromSpec(spec *v1.Policy) (*engine.Policy, error) {
 	var content []byte
 	var err error
-	if spec.GetSpec().GetEmbedded() != "" {
-		content = []byte(spec.GetSpec().GetEmbedded())
-	} else if spec.GetSpec().GetPath() != "" {
-		content, err = blob.LoadFileOrURL(spec.GetSpec().GetPath())
+
+	switch source := spec.GetSpec().GetSource().(type) {
+	case *v1.PolicySpec_Embedded:
+		content = []byte(source.Embedded)
+	case *v1.PolicySpec_Path:
+		content, err = blob.LoadFileOrURL(source.Path)
 		if err != nil {
 			return nil, fmt.Errorf("loading policy content: %w", err)
 		}
-	} else {
+	default:
 		return nil, fmt.Errorf("policy spec is empty")
 	}
 
