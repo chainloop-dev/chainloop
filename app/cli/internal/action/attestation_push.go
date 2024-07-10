@@ -25,6 +25,7 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer"
 	"github.com/chainloop-dev/chainloop/internal/attestation/signer"
+	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -143,6 +144,27 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	if err != nil {
 		return nil, fmt.Errorf("creating signer: %w", err)
 	}
+
+	// Apply policies
+	backend, closefunc, err := getCasBackend(ctx, action.c.CraftingState, action.ActionsOpts, "", "", false)
+	if err != nil {
+		return nil, fmt.Errorf("creating cas backend: %w", err)
+	}
+	defer closefunc()
+
+	pv := policies.NewPolicyVerifier(action.c.CraftingState, backend.Downloader)
+	violations, err := pv.Verify(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("verifying policies: %w", err)
+	}
+
+	// Log violations
+	if len(violations) > 0 {
+		for _, v := range violations {
+			action.Logger.Error().Msgf("policy violation [%s]: %s", v.Subject, v.Violation)
+		}
+	}
+
 	renderer, err := renderer.NewAttestationRenderer(action.c.CraftingState, action.cliVersion, action.cliDigest, sig,
 		renderer.WithLogger(action.Logger), renderer.WithBundleOutputPath(action.bundlePath))
 	if err != nil {

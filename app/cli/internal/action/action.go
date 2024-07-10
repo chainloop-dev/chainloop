@@ -16,6 +16,7 @@
 package action
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -23,8 +24,11 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
+	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/statemanager/filesystem"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/statemanager/remote"
+	"github.com/chainloop-dev/chainloop/internal/casclient"
+	"github.com/chainloop-dev/chainloop/internal/grpcconn"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 )
@@ -56,4 +60,57 @@ func newCrafter(enableRemoteState bool, conn *grpc.ClientConn, opts ...crafter.N
 	}
 
 	return crafter.NewCrafter(stateManager, opts...)
+}
+
+func getCasBackend(ctx context.Context, state *v1.CraftingState, opts *ActionsOpts, casCAPath, casURI string, insecure bool) (*casclient.CASBackend, func() error, error) {
+	// Default to inline CASBackend and override if we are not in dry-run mode
+	var closefunc func() error
+	backend := &casclient.CASBackend{
+		Name: "not-set",
+	}
+
+	// Define CASbackend information based on the API response
+	if !state.GetDryRun() {
+		// Get upload creds and CASbackend for the current attestation and set up CAS client
+		client := pb.NewAttestationServiceClient(opts.CPConnection)
+		creds, err := client.GetUploadCreds(ctx,
+			&pb.AttestationServiceGetUploadCredsRequest{
+				WorkflowRunId: state.GetAttestation().GetWorkflow().GetWorkflowRunId(),
+			},
+		)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to get upload creds: %w", err)
+		}
+		b := creds.GetResult().GetBackend()
+		if b == nil {
+			return nil, nil, fmt.Errorf("no backend found in upload creds")
+		}
+		backend.Name = b.Provider
+		backend.MaxSize = b.GetLimits().MaxBytes
+
+		// Some CASBackends will actually upload information to the CAS server
+		// in such case we need to set up a connection
+		if !b.IsInline && creds.Result.Token != "" {
+			var grpcopts = []grpcconn.Option{
+				grpcconn.WithInsecure(insecure),
+			}
+
+			if casCAPath != "" {
+				grpcopts = append(grpcopts, grpcconn.WithCAFile(casCAPath))
+			}
+
+			artifactCASConn, err := grpcconn.New(casURI, creds.Result.Token, grpcopts...)
+			closefunc = artifactCASConn.Close
+
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to create CAS client: %w", err)
+			}
+
+			cascli := casclient.New(artifactCASConn, casclient.WithLogger(opts.Logger))
+			backend.Uploader = cascli
+			backend.Downloader = cascli
+		}
+	}
+
+	return backend, closefunc, nil
 }

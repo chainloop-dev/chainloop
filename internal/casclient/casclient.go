@@ -53,7 +53,8 @@ type DownloaderUploader interface {
 }
 
 type CASBackend struct {
-	Uploader Uploader
+	Uploader   Uploader
+	Downloader Downloader
 	// Max number of bytes this backend can store per artifact
 	MaxSize int64
 	// CAS backend name

@@ -20,11 +20,8 @@ import (
 	"errors"
 	"fmt"
 
-	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
-	"github.com/chainloop-dev/chainloop/internal/casclient"
-	"github.com/chainloop-dev/chainloop/internal/grpcconn"
 	"google.golang.org/grpc"
 )
 
@@ -83,52 +80,14 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 	}
 
 	// Default to inline CASBackend and override if we are not in dry-run mode
-	casBackend := &casclient.CASBackend{
-		Name: "not-set",
+	casBackend, closefunc, err := getCasBackend(ctx, action.c.CraftingState, action.ActionsOpts, action.casCAPath, action.casURI, action.connectionInsecure)
+	if err != nil {
+		return fmt.Errorf("getting cas backend: %w", err)
 	}
-
-	// Define CASbackend information based on the API response
-	if !action.c.CraftingState.GetDryRun() {
-		// Get upload creds and CASbackend for the current attestation and set up CAS client
-		client := pb.NewAttestationServiceClient(action.CPConnection)
-		creds, err := client.GetUploadCreds(ctx,
-			&pb.AttestationServiceGetUploadCredsRequest{
-				WorkflowRunId: action.c.CraftingState.GetAttestation().GetWorkflow().GetWorkflowRunId(),
-			},
-		)
-		if err != nil {
-			return err
-		}
-		b := creds.GetResult().GetBackend()
-		if b == nil {
-			return fmt.Errorf("no backend found in upload creds")
-		}
-		casBackend.Name = b.Provider
-		casBackend.MaxSize = b.GetLimits().MaxBytes
-		// Some CASBackends will actually upload information to the CAS server
-		// in such case we need to set up a connection
-		if !b.IsInline && creds.Result.Token != "" {
-			var opts = []grpcconn.Option{
-				grpcconn.WithInsecure(action.connectionInsecure),
-			}
-
-			if action.casCAPath != "" {
-				opts = append(opts, grpcconn.WithCAFile(action.casCAPath))
-			}
-
-			artifactCASConn, err := grpcconn.New(action.casURI, creds.Result.Token, opts...)
-			if err != nil {
-				return err
-			}
-			defer artifactCASConn.Close()
-
-			casBackend.Uploader = casclient.New(artifactCASConn, casclient.WithLogger(action.Logger))
-		}
-	}
+	defer closefunc()
 
 	// Add material to the attestation crafting state based on if the material is contract free or not.
 	// By default, try to detect the material kind automatically
-	var err error
 	switch {
 	case materialName == "" && materialType == "":
 		var kind schemaapi.CraftingSchema_Material_MaterialType
