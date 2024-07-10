@@ -16,6 +16,8 @@
 package policies
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"path/filepath"
@@ -32,10 +34,10 @@ import (
 
 type PolicyVerifier struct {
 	state *v12.CraftingState
-	cas   *casclient.Client
+	cas   casclient.Downloader
 }
 
-func NewPolicyVerifier(state *v12.CraftingState, client *casclient.Client) *PolicyVerifier {
+func NewPolicyVerifier(state *v12.CraftingState, client casclient.Downloader) *PolicyVerifier {
 	// only Rego engine is currently supported
 	return &PolicyVerifier{state: state, cas: client}
 }
@@ -64,7 +66,7 @@ func (pv *PolicyVerifier) Verify(ctx context.Context) ([]*engine.PolicyViolation
 		}
 
 		// 3. load the affected material (or the whole attestation)
-		material, err := pv.loadSubject(policyAtt, spec, pv.state)
+		material, err := pv.loadSubject(ctx, policyAtt, spec, pv.state)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load policy subject: %w", err)
 		}
@@ -132,7 +134,7 @@ func (pv *PolicyVerifier) loadPolicyScriptFromSpec(spec *v1.Policy) (*engine.Pol
 }
 
 // load the subject of the policy.
-func (pv *PolicyVerifier) loadSubject(attachment *v1.PolicyAttachment, spec *v1.Policy, state *v12.CraftingState) ([]byte, error) {
+func (pv *PolicyVerifier) loadSubject(ctx context.Context, attachment *v1.PolicyAttachment, spec *v1.Policy, state *v12.CraftingState) ([]byte, error) {
 	// Load the affected material or attestation, and checks if the expected name and type match
 	name := attachment.GetSelector().GetName()
 	// if name selector is not set, the subject will become the full crafting state
@@ -147,7 +149,7 @@ func (pv *PolicyVerifier) loadSubject(attachment *v1.PolicyAttachment, spec *v1.
 				// If policy wasn't meant to be evaluated against this type of material, raise an error
 				return nil, fmt.Errorf("invalid material type: %s, policy expected: %s", m.GetMaterialType(), spec.GetSpec().GetKind())
 			}
-			return pv.getMaterialPayload(m)
+			return pv.getMaterialPayload(ctx, m)
 		}
 	}
 
@@ -155,14 +157,24 @@ func (pv *PolicyVerifier) loadSubject(attachment *v1.PolicyAttachment, spec *v1.
 }
 
 // Gets the material payload from the CAS
-func (pv *PolicyVerifier) getMaterialPayload(m *v12.Attestation_Material) ([]byte, error) {
+func (pv *PolicyVerifier) getMaterialPayload(ctx context.Context, m *v12.Attestation_Material) ([]byte, error) {
 	if m.InlineCas {
 		return m.GetArtifact().GetContent(), nil
 	}
 
-	// TODO: Use the CAS to look for the material,.
+	// Use the CAS to look for the material
+	var b bytes.Buffer
+	w := bufio.NewWriter(&b)
+	err := pv.cas.Download(ctx, w, m.GetArtifact().GetDigest())
+	if err != nil {
+		return nil, fmt.Errorf("failed to download artifact: %w", err)
+	}
+	err = w.Flush()
+	if err != nil {
+		return nil, fmt.Errorf("failed to download artifact: %w", err)
+	}
 
-	return nil, nil
+	return b.Bytes(), nil
 }
 
 // getPolicyEngine returns a PolicyEngine implementation to evaluate a given policy.
