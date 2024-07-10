@@ -75,7 +75,7 @@ func (pv *PolicyVerifier) Verify(ctx context.Context) ([]*engine.PolicyViolation
 			Name:       spec.Metadata.Name,
 			Attachment: policyAtt,
 			Body:       string(script.Source),
-			Violations: policyViolationsToAttestationViolations(violations),
+			Violations: policyViolationsToAttestationViolations(res),
 		})
 	}
 

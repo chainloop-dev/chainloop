@@ -23,6 +23,7 @@ import (
 	v12 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/stretchr/testify/suite"
+	"golang.org/x/exp/slices"
 )
 
 func (s *testSuite) TestVerifyAttestations() {
@@ -123,33 +124,139 @@ func (s *testSuite) TestVerifyAttestations() {
 }
 
 func (s *testSuite) TestAttestationResult() {
-	state := &v1.CraftingState{
-		InputSchema: &v12.CraftingSchema{
-			Policies: []*v12.PolicyAttachment{
-				{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/workflow.yaml"}},
+	s.Run("successful attestation", func() {
+		state := &v1.CraftingState{
+			InputSchema: &v12.CraftingSchema{
+				Policies: []*v12.PolicyAttachment{
+					{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/workflow.yaml"}},
+				},
 			},
-		},
-		Attestation: &v1.Attestation{
-			Workflow: &v1.WorkflowMetadata{
-				Name: "policytest",
+			Attestation: &v1.Attestation{
+				Workflow: &v1.WorkflowMetadata{
+					Name: "policytest",
+				},
+				RunnerType: v12.CraftingSchema_Runner_GITHUB_ACTION,
 			},
-			RunnerType: v12.CraftingSchema_Runner_GITHUB_ACTION,
-		},
-	}
+		}
 
-	verifier := NewPolicyVerifier(state, nil)
-	res, err := verifier.Verify(context.TODO())
-	s.Require().NoError(err)
-	s.Len(res, 0)
+		verifier := NewPolicyVerifier(state, nil)
+		res, err := verifier.Verify(context.TODO())
+		s.Require().NoError(err)
+		s.Len(res, 0)
 
-	att := state.GetAttestation()
-	s.Len(att.Policies, 1)
+		att := state.GetAttestation()
+		s.Len(att.Policies, 1)
 
-	p := att.Policies[0]
-	s.Len(p.Violations, 0)
-	s.Equal("testdata/workflow.yaml", p.Attachment.GetRef())
-	s.Equal("workflow", p.Name)
-	s.Contains(p.Body, "package main")
+		p := att.Policies[0]
+		s.Len(p.Violations, 0)
+		s.Equal("testdata/workflow.yaml", p.Attachment.GetRef())
+		s.Equal("workflow", p.Name)
+		s.Contains(p.Body, "package main")
+	})
+
+	s.Run("failed attestation", func() {
+		state := &v1.CraftingState{
+			InputSchema: &v12.CraftingSchema{
+				Policies: []*v12.PolicyAttachment{
+					{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/workflow.yaml"}},
+				},
+			},
+			Attestation: &v1.Attestation{
+				Workflow: &v1.WorkflowMetadata{
+					Name: "policytest",
+				},
+				RunnerType: v12.CraftingSchema_Runner_DAGGER_PIPELINE,
+			},
+		}
+
+		verifier := NewPolicyVerifier(state, nil)
+		res, err := verifier.Verify(context.TODO())
+		s.Require().NoError(err)
+		s.Len(res, 1)
+
+		att := state.GetAttestation()
+		s.Len(att.Policies, 1)
+
+		p := att.Policies[0]
+		s.Len(p.Violations, 1)
+		s.Contains(p.Body, "package main")
+		v := p.Violations[0]
+		s.Equal(p.Name, v.Subject)
+		s.Equal("incorrect runner", v.Message)
+	})
+
+	s.Run("multiple successful policies", func() {
+		state := &v1.CraftingState{
+			InputSchema: &v12.CraftingSchema{
+				Policies: []*v12.PolicyAttachment{
+					{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/workflow.yaml"}},
+					{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/materials.yaml"}},
+				},
+			},
+			Attestation: &v1.Attestation{
+				Workflow: &v1.WorkflowMetadata{
+					Name: "policytest",
+				},
+				RunnerType: v12.CraftingSchema_Runner_GITHUB_ACTION,
+				Materials: map[string]*v1.Attestation_Material{
+					"vex": {
+						MaterialType: v12.CraftingSchema_Material_OPENVEX,
+					},
+				},
+			},
+		}
+
+		verifier := NewPolicyVerifier(state, nil)
+		res, err := verifier.Verify(context.TODO())
+		s.Require().NoError(err)
+		s.Len(res, 0)
+		att := state.GetAttestation()
+		s.Len(att.Policies, 2)
+		s.Len(att.Policies[0].Violations, 0)
+		s.Len(att.Policies[1].Violations, 0)
+	})
+
+	s.Run("partial success", func() {
+		state := &v1.CraftingState{
+			InputSchema: &v12.CraftingSchema{
+				Policies: []*v12.PolicyAttachment{
+					{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/workflow.yaml"}},
+					{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/materials.yaml"}},
+				},
+			},
+			Attestation: &v1.Attestation{
+				Workflow: &v1.WorkflowMetadata{
+					Name: "policytest",
+				},
+				RunnerType: v12.CraftingSchema_Runner_DAGGER_PIPELINE,
+				Materials: map[string]*v1.Attestation_Material{
+					"vex": {
+						MaterialType: v12.CraftingSchema_Material_OPENVEX,
+					},
+				},
+			},
+		}
+
+		verifier := NewPolicyVerifier(state, nil)
+		res, err := verifier.Verify(context.TODO())
+		s.Require().NoError(err)
+		s.Greater(len(res), 0)
+		att := state.GetAttestation()
+		s.Len(att.Policies, 2)
+
+		// Check that only 1 policy failed
+		index := slices.IndexFunc(att.Policies, func(p *v1.Policy) bool {
+			return p.Name == "workflow"
+		})
+		p := att.Policies[index]
+		s.Len(p.Violations, 1)
+
+		index = slices.IndexFunc(att.Policies, func(p *v1.Policy) bool {
+			return p.Name == "materials"
+		})
+		p = att.Policies[index]
+		s.Len(p.Violations, 0)
+	})
 }
 
 type testSuite struct {

@@ -1,0 +1,6 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: materials
+spec:
+  path: testdata/materials.rego
