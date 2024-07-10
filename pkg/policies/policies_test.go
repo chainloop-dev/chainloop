@@ -17,20 +17,20 @@ package policies
 
 import (
 	"context"
+	"io/fs"
 	"testing"
 
 	v12 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestPolicyVerifier_Verify(t *testing.T) {
+func (s *testSuite) TestVerifyAttestations() {
 	cases := []struct {
 		name       string
 		state      *v1.CraftingState
 		violations int
-		wantErr    bool
+		wantErr    error
 	}{
 		{
 			name: "happy path, test attestation properties",
@@ -83,7 +83,7 @@ func TestPolicyVerifier_Verify(t *testing.T) {
 		},
 		{
 			name:    "wrong policy",
-			wantErr: true,
+			wantErr: &fs.PathError{},
 			state: &v1.CraftingState{
 				InputSchema: &v12.CraftingSchema{
 					Policies: []*v12.PolicyAttachment{
@@ -92,20 +92,39 @@ func TestPolicyVerifier_Verify(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:    "missing rego policy",
+			wantErr: &fs.PathError{},
+			state: &v1.CraftingState{
+				InputSchema: &v12.CraftingSchema{
+					Policies: []*v12.PolicyAttachment{
+						{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/missing_rego.yaml"}},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
+		s.Run(tc.name, func() {
 			verifier := NewPolicyVerifier(tc.state, nil)
 			res, err := verifier.Verify(context.TODO())
-			if tc.wantErr {
-				assert.Error(t, err)
+			if tc.wantErr != nil {
+				s.ErrorAs(err, &tc.wantErr)
 				return
 			}
-			require.NoError(t, err)
+			s.Require().NoError(err)
 			if tc.violations > 0 {
-				assert.Len(t, res, tc.violations)
+				s.Len(res, tc.violations)
 			}
 		})
 	}
+}
+
+type testSuite struct {
+	suite.Suite
+}
+
+func TestPolicyVerifier(t *testing.T) {
+	suite.Run(t, new(testSuite))
 }
