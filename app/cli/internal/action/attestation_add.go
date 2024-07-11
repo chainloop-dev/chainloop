@@ -20,12 +20,13 @@ import (
 	"errors"
 	"fmt"
 
+	"google.golang.org/grpc"
+
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
 	"github.com/chainloop-dev/chainloop/internal/grpcconn"
-	"google.golang.org/grpc"
 )
 
 type AttestationAddOpts struct {
@@ -108,15 +109,15 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 		// Some CASBackends will actually upload information to the CAS server
 		// in such case we need to set up a connection
 		if !b.IsInline && creds.Result.Token != "" {
-			var grpcopts = []grpcconn.Option{
+			var opts = []grpcconn.Option{
 				grpcconn.WithInsecure(action.connectionInsecure),
 			}
 
 			if action.casCAPath != "" {
-				grpcopts = append(grpcopts, grpcconn.WithCAFile(action.casCAPath))
+				opts = append(opts, grpcconn.WithCAFile(action.casCAPath))
 			}
 
-			artifactCASConn, err := grpcconn.New(action.casURI, creds.Result.Token, grpcopts...)
+			artifactCASConn, err := grpcconn.New(action.casURI, creds.Result.Token, opts...)
 			if err != nil {
 				return err
 			}
