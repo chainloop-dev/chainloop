@@ -1,0 +1,3 @@
+schemaVersion: "v1"
+policies:
+  - ref: testdata/contracts/policy_missing_rego.yaml

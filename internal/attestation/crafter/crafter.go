@@ -29,18 +29,21 @@ import (
 
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/bufbuild/protovalidate-go"
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/rs/zerolog"
+	"github.com/sigstore/cosign/v2/pkg/blob"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/timestamppb"
+	"sigs.k8s.io/yaml"
+
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	api "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/materials"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
 	"github.com/chainloop-dev/chainloop/internal/ociauth"
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/google/go-containerregistry/pkg/authn"
-	"github.com/rs/zerolog"
-	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/types/known/timestamppb"
-	"sigs.k8s.io/yaml"
+	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
 )
 
 // StateManager is an interface for managing the state of the crafting process
@@ -203,16 +206,81 @@ func LoadSchema(pathOrURI string) (*schemaapi.CraftingSchema, error) {
 	}
 
 	// Proto validations
-	if err := validator.Validate(schema); err != nil {
+	if err = validator.Validate(schema); err != nil {
 		return nil, err
 	}
 
 	// Custom Validations
-	if err := schema.ValidateUniqueMaterialName(); err != nil {
+	if err = schema.ValidateUniqueMaterialName(); err != nil {
 		return nil, err
 	}
 
+	// Load and validate policies, if any
+	for _, p := range schema.GetPolicies() {
+		spec, err := LoadPolicySpec(p)
+		if err != nil {
+			return nil, fmt.Errorf("validating policy: %w", err)
+		}
+		_, err = LoadPolicyScriptFromSpec(spec)
+		if err != nil {
+			return nil, fmt.Errorf("loading policy script: %w", err)
+		}
+	}
+
 	return schema, nil
+}
+
+// LoadPolicySpec loads and validates a policy spec from a contract
+func LoadPolicySpec(attachment *schemaapi.PolicyAttachment) (*schemaapi.Policy, error) {
+	// look for the referenced policy spec (note: loading by `name` is not supported yet)
+	reference := attachment.GetRef()
+	// this method understands env, http and https schemes, and defaults to file system.
+	rawData, err := blob.LoadFileOrURL(reference)
+	if err != nil {
+		return nil, fmt.Errorf("loading policy spec: %w", err)
+	}
+	jsonContent, err := LoadJSONBytes(rawData, filepath.Ext(reference))
+	if err != nil {
+		return nil, fmt.Errorf("loading policy spec: %w", err)
+	}
+	var policy schemaapi.Policy
+	if err := protojson.Unmarshal(jsonContent, &policy); err != nil {
+		return nil, fmt.Errorf("unmarshalling policy spec: %w", err)
+	}
+	// Validate just in case
+	validator, err := protovalidate.New()
+	if err != nil {
+		return nil, fmt.Errorf("validating policy spec: %w", err)
+	}
+	err = validator.Validate(&policy)
+	if err != nil {
+		return nil, fmt.Errorf("validating policy spec: %w", err)
+	}
+
+	return &policy, nil
+}
+
+// LoadPolicyScriptFromSpec loads a policy referenced from the spec
+func LoadPolicyScriptFromSpec(spec *schemaapi.Policy) (*engine.Policy, error) {
+	var content []byte
+	var err error
+
+	switch source := spec.GetSpec().GetSource().(type) {
+	case *schemaapi.PolicySpec_Embedded:
+		content = []byte(source.Embedded)
+	case *schemaapi.PolicySpec_Path:
+		content, err = blob.LoadFileOrURL(source.Path)
+		if err != nil {
+			return nil, fmt.Errorf("loading policy content: %w", err)
+		}
+	default:
+		return nil, fmt.Errorf("policy spec is empty")
+	}
+
+	return &engine.Policy{
+		Name:   spec.GetMetadata().GetName(),
+		Source: content,
+	}, nil
 }
 
 // Initialize the temporary file with the content of the schema
