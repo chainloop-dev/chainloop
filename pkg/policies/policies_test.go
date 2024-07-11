@@ -21,10 +21,11 @@ import (
 	"os"
 	"testing"
 
-	v12 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/stretchr/testify/suite"
 	"golang.org/x/exp/slices"
+
+	v12 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 )
 
 func (s *testSuite) TestVerifyAttestations() {

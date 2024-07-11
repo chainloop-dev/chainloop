@@ -96,7 +96,13 @@ message Attestation {
 // A policy executed against an attestation
 message Policy {
   // The policy name from the policy spec
-  string name = 1;
+  string name = 1 [(buf.validate.field) = {
+    cel: {
+      message: "must contain only lowercase letters, numbers, and hyphens.",
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
+      id: "name.dns-1123",
+    },
+  }];
   // The attachment as in the contract, with arguments and any other metadata
   workflowcontract.v1.PolicyAttachment attachment = 2 [(buf.validate.field).required = true];
   // The policy script body (rego)
@@ -105,8 +111,8 @@ message Policy {
   repeated Violation violations = 4;
 
   message Violation {
-    string subject = 1;
-    string message = 2;
+    string subject = 1 [(buf.validate.field).required = true];
+    string message = 2 [(buf.validate.field).required = true];
   }
 }
 

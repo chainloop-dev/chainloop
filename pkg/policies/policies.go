@@ -22,6 +22,12 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/bufbuild/protovalidate-go"
+	"github.com/rs/zerolog"
+	"github.com/sigstore/cosign/v2/pkg/blob"
+	"google.golang.org/grpc"
+	"google.golang.org/protobuf/encoding/protojson"
+
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
@@ -30,10 +36,6 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/grpcconn"
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine/rego"
-	"github.com/rs/zerolog"
-	"github.com/sigstore/cosign/v2/pkg/blob"
-	"google.golang.org/grpc"
-	"google.golang.org/protobuf/encoding/protojson"
 )
 
 type PolicyVerifier struct {
@@ -118,6 +120,16 @@ func (pv *PolicyVerifier) loadSpec(attachment *v1.PolicyAttachment) (*v1.Policy,
 	if err := protojson.Unmarshal(jsonContent, &policy); err != nil {
 		return nil, fmt.Errorf("unmarshalling policy spec: %w", err)
 	}
+	// Validate just in case
+	validator, err := protovalidate.New()
+	if err != nil {
+		return nil, fmt.Errorf("validating policy spec: %w", err)
+	}
+	err = validator.Validate(&policy)
+	if err != nil {
+		return nil, fmt.Errorf("validating policy spec: %w", err)
+	}
+
 	return &policy, nil
 }
 
