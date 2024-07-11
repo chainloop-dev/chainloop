@@ -215,16 +215,21 @@ func LoadSchema(pathOrURI string) (*schemaapi.CraftingSchema, error) {
 		return nil, err
 	}
 
-	// Load and validate policies, if any
+	// Load, validate policies, and embed them in the schema
 	for _, p := range schema.GetPolicies() {
 		spec, err := LoadPolicySpec(p)
 		if err != nil {
 			return nil, fmt.Errorf("validating policy: %w", err)
 		}
-		_, err = LoadPolicyScriptFromSpec(spec)
+		script, err := LoadPolicyScriptFromSpec(spec)
 		if err != nil {
 			return nil, fmt.Errorf("loading policy script: %w", err)
 		}
+
+		// embed the script in the policy (if not already)
+		spec.GetSpec().Source = &schemaapi.PolicySpec_Embedded{Embedded: string(script.Source)}
+		// Embed the policy in the schema (if not already)
+		p.Policy = &schemaapi.PolicyAttachment_Embedded{Embedded: spec}
 	}
 
 	return schema, nil
@@ -232,6 +237,12 @@ func LoadSchema(pathOrURI string) (*schemaapi.CraftingSchema, error) {
 
 // LoadPolicySpec loads and validates a policy spec from a contract
 func LoadPolicySpec(attachment *schemaapi.PolicyAttachment) (*schemaapi.Policy, error) {
+	if attachment.GetEmbedded() != nil {
+		return attachment.GetEmbedded(), nil
+	}
+
+	// if policy is not embedded in the contract, we'll look for it
+
 	// look for the referenced policy spec (note: loading by `name` is not supported yet)
 	reference := attachment.GetRef()
 	// this method understands env, http and https schemes, and defaults to file system.

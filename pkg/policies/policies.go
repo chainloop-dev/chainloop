@@ -19,7 +19,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"encoding/base64"
 	"fmt"
 
 	"github.com/rs/zerolog"
@@ -98,7 +97,7 @@ func (pv *PolicyVerifier) Verify(ctx context.Context) ([]*engine.PolicyViolation
 		pv.state.Attestation.Policies = append(pv.state.Attestation.Policies, &v12.Policy{
 			Name:       spec.Metadata.Name,
 			Attachment: policyAtt,
-			Body:       base64.StdEncoding.EncodeToString(script.Source),
+			Body:       string(script.Source),
 			Violations: policyViolationsToAttestationViolations(res),
 		})
 	}

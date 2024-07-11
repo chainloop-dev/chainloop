@@ -121,6 +121,9 @@ message PolicyAttachment {
       },
     }];
 
+    // meant to be used to embed the policy in the contract
+    Policy embedded = 6;
+
     option (buf.validate.oneof).required = true;
   }
 
@@ -142,5 +145,51 @@ message PolicyAttachment {
   message PolicyArgument {
     string name = 1 [(buf.validate.field).required = true];
     string value = 2 [(buf.validate.field).required = true];;
+  }
+}
+
+// Represents a policy to be applied to a material or attestation
+message Policy {
+  string api_version = 1 [(buf.validate.field).string.const = "workflowcontract.chainloop.dev/v1"];
+  string kind = 2 [(buf.validate.field).string.const = "Policy"];
+
+  Metadata metadata = 3 [(buf.validate.field).required = true];
+  PolicySpec spec = 4 [(buf.validate.field).required = true];
+}
+
+message Metadata {
+  // the name of the policy
+  string name = 3 [(buf.validate.field) = {
+    cel: {
+      message: "must contain only lowercase letters, numbers, and hyphens.",
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
+      id: "name.dns-1123",
+    },
+  }];
+}
+
+message PolicySpec {
+  oneof source {
+    // path to a policy script. It might consist of a URI reference
+    string path = 1;
+
+    // embedded source code (only Rego supported currently)
+    string embedded = 2;
+
+    option (buf.validate.oneof).required = true;
+  };
+
+  // stage at which this policy will be run.
+  // Only "push" is supported currently and this field will be ignored
+  PolicyStage stage = 3;
+
+  // if set, it will match a material kind supported by Chainloop.
+  CraftingSchema.Material.MaterialType kind = 4;
+
+  // buf:lint:ignore ENUM_VALUE_PREFIX ENUM_ZERO_VALUE_SUFFIX
+  // buf:lint:ignore ENUM_ZERO_VALUE_SUFFIX
+  enum PolicyStage {
+    UNSPECIFIED = 0;
+    PUSH = 1;
   }
 }

@@ -17,7 +17,6 @@ package policies
 
 import (
 	"context"
-	"encoding/base64"
 	"io/fs"
 	"os"
 	"testing"
@@ -188,9 +187,7 @@ func (s *testSuite) TestAttestationResult() {
 		s.Len(p.Violations, 0)
 		s.Equal("testdata/workflow.yaml", p.Attachment.GetRef())
 		s.Equal("workflow", p.Name)
-		body, err := base64.StdEncoding.DecodeString(p.Body)
-		s.Require().NoError(err)
-		s.Contains(string(body), "package main")
+		s.Contains(p.Body, "package main")
 	})
 
 	s.Run("failed attestation", func() {
@@ -219,9 +216,7 @@ func (s *testSuite) TestAttestationResult() {
 
 		p := att.Policies[0]
 		s.Len(p.Violations, 1)
-		body, err := base64.StdEncoding.DecodeString(p.Body)
-		s.Require().NoError(err)
-		s.Contains(string(body), "package main")
+		s.Contains(p.Body, "package main")
 		v := p.Violations[0]
 		s.Equal(p.Name, v.Subject)
 		s.Equal("incorrect runner", v.Message)
