@@ -17,10 +17,12 @@ package policies
 
 import (
 	"context"
+	"encoding/base64"
 	"io/fs"
 	"os"
 	"testing"
 
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/suite"
 	"golang.org/x/exp/slices"
 
@@ -141,7 +143,7 @@ func (s *testSuite) TestVerifyAttestations() {
 
 	for _, tc := range cases {
 		s.Run(tc.name, func() {
-			verifier := NewPolicyVerifier(tc.state, nil, nil)
+			verifier := NewPolicyVerifier(tc.state, nil, &s.logger)
 
 			res, err := verifier.Verify(context.TODO())
 			if tc.wantErr != nil {
@@ -173,7 +175,7 @@ func (s *testSuite) TestAttestationResult() {
 			},
 		}
 
-		verifier := NewPolicyVerifier(state, nil, nil)
+		verifier := NewPolicyVerifier(state, nil, &s.logger)
 
 		res, err := verifier.Verify(context.TODO())
 		s.Require().NoError(err)
@@ -186,7 +188,9 @@ func (s *testSuite) TestAttestationResult() {
 		s.Len(p.Violations, 0)
 		s.Equal("testdata/workflow.yaml", p.Attachment.GetRef())
 		s.Equal("workflow", p.Name)
-		s.Contains(p.Body, "package main")
+		body, err := base64.StdEncoding.DecodeString(p.Body)
+		s.Require().NoError(err)
+		s.Contains(string(body), "package main")
 	})
 
 	s.Run("failed attestation", func() {
@@ -204,7 +208,7 @@ func (s *testSuite) TestAttestationResult() {
 			},
 		}
 
-		verifier := NewPolicyVerifier(state, nil, nil)
+		verifier := NewPolicyVerifier(state, nil, &s.logger)
 
 		res, err := verifier.Verify(context.TODO())
 		s.Require().NoError(err)
@@ -215,7 +219,9 @@ func (s *testSuite) TestAttestationResult() {
 
 		p := att.Policies[0]
 		s.Len(p.Violations, 1)
-		s.Contains(p.Body, "package main")
+		body, err := base64.StdEncoding.DecodeString(p.Body)
+		s.Require().NoError(err)
+		s.Contains(string(body), "package main")
 		v := p.Violations[0]
 		s.Equal(p.Name, v.Subject)
 		s.Equal("incorrect runner", v.Message)
@@ -242,7 +248,7 @@ func (s *testSuite) TestAttestationResult() {
 			},
 		}
 
-		verifier := NewPolicyVerifier(state, nil, nil)
+		verifier := NewPolicyVerifier(state, nil, &s.logger)
 
 		res, err := verifier.Verify(context.TODO())
 		s.Require().NoError(err)
@@ -274,7 +280,7 @@ func (s *testSuite) TestAttestationResult() {
 			},
 		}
 
-		verifier := NewPolicyVerifier(state, nil, nil)
+		verifier := NewPolicyVerifier(state, nil, &s.logger)
 
 		res, err := verifier.Verify(context.TODO())
 		s.Require().NoError(err)
@@ -332,7 +338,7 @@ func (s *testSuite) TestInlineMaterial() {
 			},
 		},
 	}
-	verifier := NewPolicyVerifier(state, nil, nil)
+	verifier := NewPolicyVerifier(state, nil, &s.logger)
 
 	res, err := verifier.Verify(context.TODO())
 	s.Require().NoError(err)
@@ -376,7 +382,7 @@ func (s *testSuite) TestInvalidInlineMaterial() {
 		},
 	}
 
-	verifier := NewPolicyVerifier(state, nil, nil)
+	verifier := NewPolicyVerifier(state, nil, &s.logger)
 
 	res, err := verifier.Verify(context.TODO())
 	s.Require().NoError(err)
@@ -385,6 +391,12 @@ func (s *testSuite) TestInvalidInlineMaterial() {
 
 type testSuite struct {
 	suite.Suite
+
+	logger zerolog.Logger
+}
+
+func (s *testSuite) SetupTest() {
+	s.logger = zerolog.Nop()
 }
 
 func TestPolicyVerifier(t *testing.T) {
