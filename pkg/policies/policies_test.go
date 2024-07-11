@@ -17,15 +17,12 @@ package policies
 
 import (
 	"context"
-	"io"
 	"io/fs"
 	"os"
 	"testing"
 
 	v12 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
-	"github.com/chainloop-dev/chainloop/internal/casclient/mocks"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"golang.org/x/exp/slices"
 )
@@ -143,7 +140,7 @@ func (s *testSuite) TestVerifyAttestations() {
 
 	for _, tc := range cases {
 		s.Run(tc.name, func() {
-			verifier := NewPolicyVerifier(tc.state, nil)
+			verifier := NewPolicyVerifier(tc.state, nil, nil)
 			res, err := verifier.Verify(context.TODO())
 			if tc.wantErr != nil {
 				// #nosec G601
@@ -174,7 +171,7 @@ func (s *testSuite) TestAttestationResult() {
 			},
 		}
 
-		verifier := NewPolicyVerifier(state, nil)
+		verifier := NewPolicyVerifier(state, nil, nil)
 		res, err := verifier.Verify(context.TODO())
 		s.Require().NoError(err)
 		s.Len(res, 0)
@@ -204,7 +201,7 @@ func (s *testSuite) TestAttestationResult() {
 			},
 		}
 
-		verifier := NewPolicyVerifier(state, nil)
+		verifier := NewPolicyVerifier(state, nil, nil)
 		res, err := verifier.Verify(context.TODO())
 		s.Require().NoError(err)
 		s.Len(res, 1)
@@ -241,7 +238,7 @@ func (s *testSuite) TestAttestationResult() {
 			},
 		}
 
-		verifier := NewPolicyVerifier(state, nil)
+		verifier := NewPolicyVerifier(state, nil, nil)
 		res, err := verifier.Verify(context.TODO())
 		s.Require().NoError(err)
 		s.Len(res, 0)
@@ -272,7 +269,7 @@ func (s *testSuite) TestAttestationResult() {
 			},
 		}
 
-		verifier := NewPolicyVerifier(state, nil)
+		verifier := NewPolicyVerifier(state, nil, nil)
 		res, err := verifier.Verify(context.TODO())
 		s.Require().NoError(err)
 		s.Greater(len(res), 0)
@@ -329,7 +326,7 @@ func (s *testSuite) TestInlineMaterial() {
 			},
 		},
 	}
-	verifier := NewPolicyVerifier(state, nil)
+	verifier := NewPolicyVerifier(state, nil, nil)
 	res, err := verifier.Verify(context.TODO())
 	s.Require().NoError(err)
 	s.Len(res, 0)
@@ -339,17 +336,7 @@ func (s *testSuite) TestInlineMaterial() {
 	s.Len(att.Policies[0].Violations, 0)
 }
 
-func (s *testSuite) TestDownloadedMaterial() {
-	content, err := os.ReadFile("testdata/sbom-spdx.json")
-	s.Require().NoError(err)
-
-	d := mocks.NewDownloader(s.T())
-	d.On("Download", context.TODO(), mock.AnythingOfType("*bufio.Writer"), "foobar").Run(func(args mock.Arguments) {
-		w := args.Get(1).(io.Writer)
-		_, err := w.Write(content)
-		s.Require().NoError(err)
-	}).Return(nil)
-
+func (s *testSuite) TestInvalidInlineMaterial() {
 	state := &v1.CraftingState{
 		InputSchema: &v12.CraftingSchema{
 			Materials: []*v12.CraftingSchema_Material{
@@ -373,60 +360,16 @@ func (s *testSuite) TestDownloadedMaterial() {
 				"sbom": {
 					MaterialType: v12.CraftingSchema_Material_SBOM_SPDX_JSON,
 					M: &v1.Attestation_Material_Artifact_{Artifact: &v1.Attestation_Material_Artifact{
-						Digest: "foobar",
+						Content: []byte(`{"this": { "is": "not", "a": "sbom"}}`),
 					},
 					},
-					UploadedToCas: true,
+					InlineCas: true,
 				},
 			},
 		},
 	}
-	verifier := NewPolicyVerifier(state, d)
-	res, err := verifier.Verify(context.TODO())
-	s.Require().NoError(err)
-	s.Len(res, 0)
-}
 
-func (s *testSuite) TestInvalidDownloadedMaterial() {
-	d := mocks.NewDownloader(s.T())
-	d.On("Download", context.TODO(), mock.AnythingOfType("*bufio.Writer"), "another").Run(func(args mock.Arguments) {
-		w := args.Get(1).(io.Writer)
-		_, err := w.Write([]byte(`{"this": { "is": "not", "a": "sbom"}}`))
-		s.Require().NoError(err)
-	}).Return(nil)
-
-	state := &v1.CraftingState{
-		InputSchema: &v12.CraftingSchema{
-			Materials: []*v12.CraftingSchema_Material{
-				{
-					Name: "sbom",
-					Type: v12.CraftingSchema_Material_SBOM_SPDX_JSON,
-				},
-			},
-			Policies: []*v12.PolicyAttachment{
-				{
-					Selector: &v12.PolicyAttachment_MaterialSelector{Name: "sbom"},
-					Policy:   &v12.PolicyAttachment_Ref{Ref: "testdata/sbom_syft.yaml"},
-				},
-			},
-		},
-		Attestation: &v1.Attestation{
-			Workflow: &v1.WorkflowMetadata{
-				Name: "policytest",
-			},
-			Materials: map[string]*v1.Attestation_Material{
-				"sbom": {
-					MaterialType: v12.CraftingSchema_Material_SBOM_SPDX_JSON,
-					M: &v1.Attestation_Material_Artifact_{Artifact: &v1.Attestation_Material_Artifact{
-						Digest: "another",
-					},
-					},
-					UploadedToCas: true,
-				},
-			},
-		},
-	}
-	verifier := NewPolicyVerifier(state, d)
+	verifier := NewPolicyVerifier(state, nil, nil)
 	res, err := verifier.Verify(context.TODO())
 	s.Require().NoError(err)
 	s.Len(res, 1)

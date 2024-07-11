@@ -159,17 +159,13 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 		return nil, fmt.Errorf("creating signer: %w", err)
 	}
 
-	// CAS backend for policies
-	backend, closefunc, err := getCasBackend(ctx, action.c.CraftingState, action.ActionsOpts, action.casCAPath, action.casURI, action.connectionInsecure)
-	if err != nil {
-		return nil, fmt.Errorf("creating cas backend: %w", err)
-	}
-	if closefunc != nil {
-		defer closefunc()
-	}
-
 	// Apply policies
-	pv := policies.NewPolicyVerifier(action.c.CraftingState, backend.Downloader)
+	pv := policies.NewPolicyVerifier(action.c.CraftingState, &policies.CASConnecitonOpts{
+		Insecure: action.connectionInsecure,
+		CpConn:   action.CPConnection,
+		CasAPI:   action.casURI,
+		CasCA:    action.casCAPath,
+	}, &action.Logger)
 	violations, err := pv.Verify(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("verifying policies: %w", err)

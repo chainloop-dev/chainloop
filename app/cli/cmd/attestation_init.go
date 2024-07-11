@@ -44,7 +44,7 @@ func newAttestationInitCmd() *cobra.Command {
 
 			return nil
 		},
-		RunE: func(cmd *cobra.Command, _ []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			a, err := action.NewAttestationInit(
 				&action.AttestationInitOpts{
 					ActionsOpts: actionOpts,

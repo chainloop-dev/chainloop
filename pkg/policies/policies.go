@@ -22,24 +22,35 @@ import (
 	"fmt"
 	"path/filepath"
 
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
 	v12 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
+	"github.com/chainloop-dev/chainloop/internal/grpcconn"
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine/rego"
+	"github.com/rs/zerolog"
 	"github.com/sigstore/cosign/v2/pkg/blob"
+	"google.golang.org/grpc"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
 type PolicyVerifier struct {
-	state *v12.CraftingState
-	cas   casclient.Downloader
+	state   *v12.CraftingState
+	casOpts *CASConnecitonOpts
+	logger  *zerolog.Logger
 }
 
-func NewPolicyVerifier(state *v12.CraftingState, client casclient.Downloader) *PolicyVerifier {
+type CASConnecitonOpts struct {
+	CasAPI, CasCA string
+	Insecure      bool
+	CpConn        *grpc.ClientConn
+}
+
+func NewPolicyVerifier(state *v12.CraftingState, opts *CASConnecitonOpts, logger *zerolog.Logger) *PolicyVerifier {
 	// only Rego engine is currently supported
-	return &PolicyVerifier{state: state, cas: client}
+	return &PolicyVerifier{state: state, casOpts: opts, logger: logger}
 }
 
 // Verify verifies that the statement is compliant with the policies present in the schema
@@ -165,7 +176,12 @@ func (pv *PolicyVerifier) getMaterialPayload(ctx context.Context, m *v12.Attesta
 	// Use the CAS to look for the material
 	var b bytes.Buffer
 	w := bufio.NewWriter(&b)
-	err := pv.cas.Download(ctx, w, m.GetArtifact().GetDigest())
+
+	client, err := pv.getCASClient(pb.CASCredentialsServiceGetRequest_ROLE_DOWNLOADER, m.GetArtifact().GetDigest())
+	if err != nil {
+		return nil, err
+	}
+	err = client.Download(ctx, w, m.GetArtifact().GetDigest())
 	if err != nil {
 		return nil, fmt.Errorf("failed to download artifact: %w", err)
 	}
@@ -191,4 +207,36 @@ func policyViolationsToAttestationViolations(violations []*engine.PolicyViolatio
 		})
 	}
 	return
+}
+
+// We need to create a connection for every single artifact, because it depends on the digest
+func (pv *PolicyVerifier) getCASClient(role pb.CASCredentialsServiceGetRequest_Role, digest string) (*casclient.Client, error) {
+	// Retrieve temporary credentials for uploading
+	client := pb.NewCASCredentialsServiceClient(pv.casOpts.CpConn)
+	resp, err := client.Get(context.Background(), &pb.CASCredentialsServiceGetRequest{
+		Role:   role,
+		Digest: digest,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if pv.casOpts.Insecure {
+		pv.logger.Warn().Msg("API contacted in insecure mode")
+	}
+
+	var opts = []grpcconn.Option{
+		grpcconn.WithInsecure(pv.casOpts.Insecure),
+	}
+
+	if pv.casOpts.CasCA != "" {
+		opts = append(opts, grpcconn.WithCAFile(pv.casOpts.CasCA))
+	}
+
+	conn, err := grpcconn.New(pv.casOpts.CasAPI, resp.Result.Token, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create cas client: %w", err)
+	}
+
+	return casclient.New(conn, casclient.WithLogger(*pv.logger)), nil
 }
