@@ -19,6 +19,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 
 	"github.com/rs/zerolog"
@@ -83,6 +84,8 @@ func (pv *PolicyVerifier) Verify(ctx context.Context) ([]*engine.PolicyViolation
 			return nil, fmt.Errorf("failed to load policy subject: %w", err)
 		}
 
+		pv.logger.Debug().Msgf("evaluating policy %s", spec.Metadata.Name)
+
 		// 4. verify the policy
 		ng := getPolicyEngine(spec)
 		res, err := ng.Verify(ctx, script, material)
@@ -95,7 +98,7 @@ func (pv *PolicyVerifier) Verify(ctx context.Context) ([]*engine.PolicyViolation
 		pv.state.Attestation.Policies = append(pv.state.Attestation.Policies, &v12.Policy{
 			Name:       spec.Metadata.Name,
 			Attachment: policyAtt,
-			Body:       string(script.Source),
+			Body:       base64.StdEncoding.EncodeToString(script.Source),
 			Violations: policyViolationsToAttestationViolations(res),
 		})
 	}

@@ -23,13 +23,15 @@ import (
 	"strings"
 	"time"
 
-	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
+
 	intoto "github.com/in-toto/attestation/go/v1"
+
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 )
 
 // Replace custom material type with https://github.com/in-toto/attestation/blob/main/spec/v1.0/resource_descriptor.md
@@ -38,6 +40,7 @@ const PredicateTypeV02 = "chainloop.dev/attestation/v0.2"
 type ProvenancePredicateV02 struct {
 	*ProvenancePredicateCommon
 	Materials []*intoto.ResourceDescriptor `json:"materials,omitempty"`
+	Policies  []*v1.Policy                 `json:"policies,omitempty"`
 }
 
 type RendererV02 struct {
@@ -150,6 +153,7 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 	p := ProvenancePredicateV02{
 		ProvenancePredicateCommon: predicateCommon(r.builder, r.att),
 		Materials:                 normalizedMaterials,
+		Policies:                  r.att.Policies,
 	}
 
 	// transform to structpb.Struct in a two steps process
