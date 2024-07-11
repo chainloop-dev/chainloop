@@ -142,6 +142,7 @@ func (s *testSuite) TestVerifyAttestations() {
 	for _, tc := range cases {
 		s.Run(tc.name, func() {
 			verifier := NewPolicyVerifier(tc.state, nil, nil)
+
 			res, err := verifier.Verify(context.TODO())
 			if tc.wantErr != nil {
 				// #nosec G601
@@ -173,6 +174,7 @@ func (s *testSuite) TestAttestationResult() {
 		}
 
 		verifier := NewPolicyVerifier(state, nil, nil)
+
 		res, err := verifier.Verify(context.TODO())
 		s.Require().NoError(err)
 		s.Len(res, 0)
@@ -203,6 +205,7 @@ func (s *testSuite) TestAttestationResult() {
 		}
 
 		verifier := NewPolicyVerifier(state, nil, nil)
+
 		res, err := verifier.Verify(context.TODO())
 		s.Require().NoError(err)
 		s.Len(res, 1)
@@ -240,6 +243,7 @@ func (s *testSuite) TestAttestationResult() {
 		}
 
 		verifier := NewPolicyVerifier(state, nil, nil)
+
 		res, err := verifier.Verify(context.TODO())
 		s.Require().NoError(err)
 		s.Len(res, 0)
@@ -271,6 +275,7 @@ func (s *testSuite) TestAttestationResult() {
 		}
 
 		verifier := NewPolicyVerifier(state, nil, nil)
+
 		res, err := verifier.Verify(context.TODO())
 		s.Require().NoError(err)
 		s.Greater(len(res), 0)
@@ -328,6 +333,7 @@ func (s *testSuite) TestInlineMaterial() {
 		},
 	}
 	verifier := NewPolicyVerifier(state, nil, nil)
+
 	res, err := verifier.Verify(context.TODO())
 	s.Require().NoError(err)
 	s.Len(res, 0)
@@ -371,6 +377,7 @@ func (s *testSuite) TestInvalidInlineMaterial() {
 	}
 
 	verifier := NewPolicyVerifier(state, nil, nil)
+
 	res, err := verifier.Verify(context.TODO())
 	s.Require().NoError(err)
 	s.Len(res, 1)
