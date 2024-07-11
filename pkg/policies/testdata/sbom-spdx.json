@@ -1,0 +1,1874 @@
+{
+ "spdxVersion": "SPDX-2.3",
+ "dataLicense": "CC0-1.0",
+ "SPDXID": "SPDXRef-DOCUMENT",
+ "name": ".",
+ "documentNamespace": "https://anchore.com/syft/dir/5d82480d-1f44-4351-b216-24880a877ce4",
+ "creationInfo": {
+  "licenseListVersion": "3.20",
+  "creators": [
+   "Organization: Anchore, Inc",
+   "Tool: syft-0.73.0"
+  ],
+  "created": "2023-02-25T15:16:03Z"
+ },
+ "packages": [
+  {
+   "name": "@algolia/autocomplete-core",
+   "SPDXID": "SPDXRef-Package-npm--algolia-autocomplete-core-d4f529d2efd5d873",
+   "versionInfo": "1.7.4",
+   "downloadLocation": "NOASSERTION",
+   "sourceInfo": "acquired package info from installed node module manifest file: package-lock.json",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete-core:\\@algolia\\/autocomplete-core:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete-core:\\@algolia\\/autocomplete_core:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete_core:\\@algolia\\/autocomplete-core:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete_core:\\@algolia\\/autocomplete_core:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete:\\@algolia\\/autocomplete-core:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete:\\@algolia\\/autocomplete_core:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/autocomplete-core:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/autocomplete_core:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:npm/%40algolia/autocomplete-core@1.7.4"
+    }
+   ]
+  },
+  {
+   "name": "@algolia/autocomplete-core",
+   "SPDXID": "SPDXRef-Package-npm--algolia-autocomplete-core-a75e9cc60748602d",
+   "versionInfo": "1.7.4",
+   "downloadLocation": "NOASSERTION",
+   "sourceInfo": "acquired package info from installed node module manifest file: yarn.lock",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete-core:\\@algolia\\/autocomplete-core:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete-core:\\@algolia\\/autocomplete_core:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete_core:\\@algolia\\/autocomplete-core:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete_core:\\@algolia\\/autocomplete_core:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete:\\@algolia\\/autocomplete-core:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete:\\@algolia\\/autocomplete_core:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/autocomplete-core:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/autocomplete_core:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:npm/%40algolia/autocomplete-core@1.7.4"
+    }
+   ]
+  },
+  {
+   "name": "@algolia/autocomplete-preset-algolia",
+   "SPDXID": "SPDXRef-Package-npm--algolia-autocomplete-preset-algolia-2efe8108bf5904fb",
+   "versionInfo": "1.7.4",
+   "downloadLocation": "NOASSERTION",
+   "sourceInfo": "acquired package info from installed node module manifest file: package-lock.json",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete-preset-algolia:\\@algolia\\/autocomplete-preset-algolia:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete-preset-algolia:\\@algolia\\/autocomplete_preset_algolia:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete_preset_algolia:\\@algolia\\/autocomplete-preset-algolia:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete_preset_algolia:\\@algolia\\/autocomplete_preset_algolia:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete-preset:\\@algolia\\/autocomplete-preset-algolia:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete-preset:\\@algolia\\/autocomplete_preset_algolia:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete_preset:\\@algolia\\/autocomplete-preset-algolia:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete_preset:\\@algolia\\/autocomplete_preset_algolia:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete:\\@algolia\\/autocomplete-preset-algolia:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete:\\@algolia\\/autocomplete_preset_algolia:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/autocomplete-preset-algolia:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/autocomplete_preset_algolia:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:npm/%40algolia/autocomplete-preset-algolia@1.7.4"
+    }
+   ]
+  },
+  {
+   "name": "@algolia/autocomplete-preset-algolia",
+   "SPDXID": "SPDXRef-Package-npm--algolia-autocomplete-preset-algolia-719fbc0a971c8423",
+   "versionInfo": "1.7.4",
+   "downloadLocation": "NOASSERTION",
+   "sourceInfo": "acquired package info from installed node module manifest file: yarn.lock",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete-preset-algolia:\\@algolia\\/autocomplete-preset-algolia:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete-preset-algolia:\\@algolia\\/autocomplete_preset_algolia:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete_preset_algolia:\\@algolia\\/autocomplete-preset-algolia:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete_preset_algolia:\\@algolia\\/autocomplete_preset_algolia:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete-preset:\\@algolia\\/autocomplete-preset-algolia:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete-preset:\\@algolia\\/autocomplete_preset_algolia:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete_preset:\\@algolia\\/autocomplete-preset-algolia:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete_preset:\\@algolia\\/autocomplete_preset_algolia:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete:\\@algolia\\/autocomplete-preset-algolia:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete:\\@algolia\\/autocomplete_preset_algolia:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/autocomplete-preset-algolia:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/autocomplete_preset_algolia:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:npm/%40algolia/autocomplete-preset-algolia@1.7.4"
+    }
+   ]
+  },
+  {
+   "name": "@algolia/autocomplete-shared",
+   "SPDXID": "SPDXRef-Package-npm--algolia-autocomplete-shared-c04c8898a671ed16",
+   "versionInfo": "1.7.4",
+   "downloadLocation": "NOASSERTION",
+   "sourceInfo": "acquired package info from installed node module manifest file: package-lock.json",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete-shared:\\@algolia\\/autocomplete-shared:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete-shared:\\@algolia\\/autocomplete_shared:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete_shared:\\@algolia\\/autocomplete-shared:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete_shared:\\@algolia\\/autocomplete_shared:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete:\\@algolia\\/autocomplete-shared:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete:\\@algolia\\/autocomplete_shared:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/autocomplete-shared:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/autocomplete_shared:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:npm/%40algolia/autocomplete-shared@1.7.4"
+    }
+   ]
+  },
+  {
+   "name": "@algolia/autocomplete-shared",
+   "SPDXID": "SPDXRef-Package-npm--algolia-autocomplete-shared-349e9c24c2b4f2c5",
+   "versionInfo": "1.7.4",
+   "downloadLocation": "NOASSERTION",
+   "sourceInfo": "acquired package info from installed node module manifest file: yarn.lock",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete-shared:\\@algolia\\/autocomplete-shared:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete-shared:\\@algolia\\/autocomplete_shared:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete_shared:\\@algolia\\/autocomplete-shared:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete_shared:\\@algolia\\/autocomplete_shared:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete:\\@algolia\\/autocomplete-shared:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/autocomplete:\\@algolia\\/autocomplete_shared:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/autocomplete-shared:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/autocomplete_shared:1.7.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:npm/%40algolia/autocomplete-shared@1.7.4"
+    }
+   ]
+  },
+  {
+   "name": "@algolia/cache-browser-local-storage",
+   "SPDXID": "SPDXRef-Package-npm--algolia-cache-browser-local-storage-7f047bcfa53ed7ee",
+   "versionInfo": "4.14.3",
+   "downloadLocation": "NOASSERTION",
+   "sourceInfo": "acquired package info from installed node module manifest file: package-lock.json",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache-browser-local-storage:\\@algolia\\/cache-browser-local-storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache-browser-local-storage:\\@algolia\\/cache_browser_local_storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache_browser_local_storage:\\@algolia\\/cache-browser-local-storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache_browser_local_storage:\\@algolia\\/cache_browser_local_storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache-browser-local:\\@algolia\\/cache-browser-local-storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache-browser-local:\\@algolia\\/cache_browser_local_storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache_browser_local:\\@algolia\\/cache-browser-local-storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache_browser_local:\\@algolia\\/cache_browser_local_storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache-browser:\\@algolia\\/cache-browser-local-storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache-browser:\\@algolia\\/cache_browser_local_storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache_browser:\\@algolia\\/cache-browser-local-storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache_browser:\\@algolia\\/cache_browser_local_storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache:\\@algolia\\/cache-browser-local-storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache:\\@algolia\\/cache_browser_local_storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/cache-browser-local-storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/cache_browser_local_storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:npm/%40algolia/cache-browser-local-storage@4.14.3"
+    }
+   ]
+  },
+  {
+   "name": "@algolia/cache-browser-local-storage",
+   "SPDXID": "SPDXRef-Package-npm--algolia-cache-browser-local-storage-699118b8ecb40e29",
+   "versionInfo": "4.14.3",
+   "downloadLocation": "NOASSERTION",
+   "sourceInfo": "acquired package info from installed node module manifest file: yarn.lock",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache-browser-local-storage:\\@algolia\\/cache-browser-local-storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache-browser-local-storage:\\@algolia\\/cache_browser_local_storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache_browser_local_storage:\\@algolia\\/cache-browser-local-storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache_browser_local_storage:\\@algolia\\/cache_browser_local_storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache-browser-local:\\@algolia\\/cache-browser-local-storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache-browser-local:\\@algolia\\/cache_browser_local_storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache_browser_local:\\@algolia\\/cache-browser-local-storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache_browser_local:\\@algolia\\/cache_browser_local_storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache-browser:\\@algolia\\/cache-browser-local-storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache-browser:\\@algolia\\/cache_browser_local_storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache_browser:\\@algolia\\/cache-browser-local-storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache_browser:\\@algolia\\/cache_browser_local_storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache:\\@algolia\\/cache-browser-local-storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache:\\@algolia\\/cache_browser_local_storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/cache-browser-local-storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/cache_browser_local_storage:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:npm/%40algolia/cache-browser-local-storage@4.14.3"
+    }
+   ]
+  },
+  {
+   "name": "@algolia/cache-common",
+   "SPDXID": "SPDXRef-Package-npm--algolia-cache-common-b83a20f4252c841a",
+   "versionInfo": "4.14.3",
+   "downloadLocation": "NOASSERTION",
+   "sourceInfo": "acquired package info from installed node module manifest file: package-lock.json",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache-common:\\@algolia\\/cache-common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache-common:\\@algolia\\/cache_common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache_common:\\@algolia\\/cache-common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache_common:\\@algolia\\/cache_common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache:\\@algolia\\/cache-common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache:\\@algolia\\/cache_common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/cache-common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/cache_common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:npm/%40algolia/cache-common@4.14.3"
+    }
+   ]
+  },
+  {
+   "name": "@algolia/cache-common",
+   "SPDXID": "SPDXRef-Package-npm--algolia-cache-common-8feb5c8eb82329a3",
+   "versionInfo": "4.14.3",
+   "downloadLocation": "NOASSERTION",
+   "sourceInfo": "acquired package info from installed node module manifest file: yarn.lock",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache-common:\\@algolia\\/cache-common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache-common:\\@algolia\\/cache_common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache_common:\\@algolia\\/cache-common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache_common:\\@algolia\\/cache_common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache:\\@algolia\\/cache-common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache:\\@algolia\\/cache_common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/cache-common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/cache_common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:npm/%40algolia/cache-common@4.14.3"
+    }
+   ]
+  },
+  {
+   "name": "@algolia/cache-in-memory",
+   "SPDXID": "SPDXRef-Package-npm--algolia-cache-in-memory-5b4709d3757a3a6d",
+   "versionInfo": "4.14.3",
+   "downloadLocation": "NOASSERTION",
+   "sourceInfo": "acquired package info from installed node module manifest file: package-lock.json",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache-in-memory:\\@algolia\\/cache-in-memory:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache-in-memory:\\@algolia\\/cache_in_memory:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache_in_memory:\\@algolia\\/cache-in-memory:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache_in_memory:\\@algolia\\/cache_in_memory:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache-in:\\@algolia\\/cache-in-memory:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache-in:\\@algolia\\/cache_in_memory:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache_in:\\@algolia\\/cache-in-memory:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache_in:\\@algolia\\/cache_in_memory:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache:\\@algolia\\/cache-in-memory:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache:\\@algolia\\/cache_in_memory:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/cache-in-memory:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/cache_in_memory:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:npm/%40algolia/cache-in-memory@4.14.3"
+    }
+   ]
+  },
+  {
+   "name": "@algolia/cache-in-memory",
+   "SPDXID": "SPDXRef-Package-npm--algolia-cache-in-memory-a4bf58feef42f315",
+   "versionInfo": "4.14.3",
+   "downloadLocation": "NOASSERTION",
+   "sourceInfo": "acquired package info from installed node module manifest file: yarn.lock",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache-in-memory:\\@algolia\\/cache-in-memory:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache-in-memory:\\@algolia\\/cache_in_memory:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache_in_memory:\\@algolia\\/cache-in-memory:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache_in_memory:\\@algolia\\/cache_in_memory:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache-in:\\@algolia\\/cache-in-memory:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache-in:\\@algolia\\/cache_in_memory:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache_in:\\@algolia\\/cache-in-memory:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache_in:\\@algolia\\/cache_in_memory:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache:\\@algolia\\/cache-in-memory:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/cache:\\@algolia\\/cache_in_memory:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/cache-in-memory:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/cache_in_memory:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:npm/%40algolia/cache-in-memory@4.14.3"
+    }
+   ]
+  },
+  {
+   "name": "@algolia/client-account",
+   "SPDXID": "SPDXRef-Package-npm--algolia-client-account-ccad52fb07b66b08",
+   "versionInfo": "4.14.3",
+   "downloadLocation": "NOASSERTION",
+   "sourceInfo": "acquired package info from installed node module manifest file: package-lock.json",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client-account:\\@algolia\\/client-account:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client-account:\\@algolia\\/client_account:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client_account:\\@algolia\\/client-account:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client_account:\\@algolia\\/client_account:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client:\\@algolia\\/client-account:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client:\\@algolia\\/client_account:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/client-account:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/client_account:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:npm/%40algolia/client-account@4.14.3"
+    }
+   ]
+  },
+  {
+   "name": "@algolia/client-account",
+   "SPDXID": "SPDXRef-Package-npm--algolia-client-account-dcac7f21f13a1b6",
+   "versionInfo": "4.14.3",
+   "downloadLocation": "NOASSERTION",
+   "sourceInfo": "acquired package info from installed node module manifest file: yarn.lock",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client-account:\\@algolia\\/client-account:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client-account:\\@algolia\\/client_account:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client_account:\\@algolia\\/client-account:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client_account:\\@algolia\\/client_account:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client:\\@algolia\\/client-account:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client:\\@algolia\\/client_account:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/client-account:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/client_account:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:npm/%40algolia/client-account@4.14.3"
+    }
+   ]
+  },
+  {
+   "name": "@algolia/client-analytics",
+   "SPDXID": "SPDXRef-Package-npm--algolia-client-analytics-da8f8d5e4a42283c",
+   "versionInfo": "4.14.3",
+   "downloadLocation": "NOASSERTION",
+   "sourceInfo": "acquired package info from installed node module manifest file: package-lock.json",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client-analytics:\\@algolia\\/client-analytics:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client-analytics:\\@algolia\\/client_analytics:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client_analytics:\\@algolia\\/client-analytics:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client_analytics:\\@algolia\\/client_analytics:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client:\\@algolia\\/client-analytics:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client:\\@algolia\\/client_analytics:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/client-analytics:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/client_analytics:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:npm/%40algolia/client-analytics@4.14.3"
+    }
+   ]
+  },
+  {
+   "name": "@algolia/client-analytics",
+   "SPDXID": "SPDXRef-Package-npm--algolia-client-analytics-7aa06ac329e132f6",
+   "versionInfo": "4.14.3",
+   "downloadLocation": "NOASSERTION",
+   "sourceInfo": "acquired package info from installed node module manifest file: yarn.lock",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client-analytics:\\@algolia\\/client-analytics:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client-analytics:\\@algolia\\/client_analytics:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client_analytics:\\@algolia\\/client-analytics:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client_analytics:\\@algolia\\/client_analytics:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client:\\@algolia\\/client-analytics:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client:\\@algolia\\/client_analytics:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/client-analytics:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/client_analytics:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:npm/%40algolia/client-analytics@4.14.3"
+    }
+   ]
+  },
+  {
+   "name": "@algolia/client-common",
+   "SPDXID": "SPDXRef-Package-npm--algolia-client-common-fdab2e146ab09cb0",
+   "versionInfo": "4.14.3",
+   "downloadLocation": "NOASSERTION",
+   "sourceInfo": "acquired package info from installed node module manifest file: package-lock.json",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client-common:\\@algolia\\/client-common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client-common:\\@algolia\\/client_common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client_common:\\@algolia\\/client-common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client_common:\\@algolia\\/client_common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client:\\@algolia\\/client-common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client:\\@algolia\\/client_common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/client-common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/client_common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:npm/%40algolia/client-common@4.14.3"
+    }
+   ]
+  },
+  {
+   "name": "@algolia/client-common",
+   "SPDXID": "SPDXRef-Package-npm--algolia-client-common-1e82fe4ac5f06142",
+   "versionInfo": "4.14.3",
+   "downloadLocation": "NOASSERTION",
+   "sourceInfo": "acquired package info from installed node module manifest file: yarn.lock",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client-common:\\@algolia\\/client-common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client-common:\\@algolia\\/client_common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client_common:\\@algolia\\/client-common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client_common:\\@algolia\\/client_common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client:\\@algolia\\/client-common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client:\\@algolia\\/client_common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/client-common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/client_common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:npm/%40algolia/client-common@4.14.3"
+    }
+   ]
+  },
+  {
+   "name": "@algolia/client-personalization",
+   "SPDXID": "SPDXRef-Package-npm--algolia-client-personalization-5860c568f6a2884b",
+   "versionInfo": "4.14.3",
+   "downloadLocation": "NOASSERTION",
+   "sourceInfo": "acquired package info from installed node module manifest file: package-lock.json",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client-personalization:\\@algolia\\/client-personalization:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client-personalization:\\@algolia\\/client_personalization:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client_personalization:\\@algolia\\/client-personalization:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client_personalization:\\@algolia\\/client_personalization:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client:\\@algolia\\/client-personalization:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client:\\@algolia\\/client_personalization:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/client-personalization:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/client_personalization:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:npm/%40algolia/client-personalization@4.14.3"
+    }
+   ]
+  },
+  {
+   "name": "@algolia/client-personalization",
+   "SPDXID": "SPDXRef-Package-npm--algolia-client-personalization-5230f032c64636a3",
+   "versionInfo": "4.14.3",
+   "downloadLocation": "NOASSERTION",
+   "sourceInfo": "acquired package info from installed node module manifest file: yarn.lock",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client-personalization:\\@algolia\\/client-personalization:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client-personalization:\\@algolia\\/client_personalization:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client_personalization:\\@algolia\\/client-personalization:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client_personalization:\\@algolia\\/client_personalization:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client:\\@algolia\\/client-personalization:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client:\\@algolia\\/client_personalization:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/client-personalization:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/client_personalization:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:npm/%40algolia/client-personalization@4.14.3"
+    }
+   ]
+  },
+  {
+   "name": "@algolia/client-search",
+   "SPDXID": "SPDXRef-Package-npm--algolia-client-search-dd73cb953fef8932",
+   "versionInfo": "4.14.3",
+   "downloadLocation": "NOASSERTION",
+   "sourceInfo": "acquired package info from installed node module manifest file: package-lock.json",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client-search:\\@algolia\\/client-search:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client-search:\\@algolia\\/client_search:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client_search:\\@algolia\\/client-search:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client_search:\\@algolia\\/client_search:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client:\\@algolia\\/client-search:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client:\\@algolia\\/client_search:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/client-search:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/client_search:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:npm/%40algolia/client-search@4.14.3"
+    }
+   ]
+  },
+  {
+   "name": "@algolia/client-search",
+   "SPDXID": "SPDXRef-Package-npm--algolia-client-search-a19e56cf638775e2",
+   "versionInfo": "4.14.3",
+   "downloadLocation": "NOASSERTION",
+   "sourceInfo": "acquired package info from installed node module manifest file: yarn.lock",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client-search:\\@algolia\\/client-search:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client-search:\\@algolia\\/client_search:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client_search:\\@algolia\\/client-search:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client_search:\\@algolia\\/client_search:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client:\\@algolia\\/client-search:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/client:\\@algolia\\/client_search:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/client-search:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/client_search:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:npm/%40algolia/client-search@4.14.3"
+    }
+   ]
+  },
+  {
+   "name": "@algolia/events",
+   "SPDXID": "SPDXRef-Package-npm--algolia-events-5f312ad698b9cd07",
+   "versionInfo": "4.0.1",
+   "downloadLocation": "NOASSERTION",
+   "sourceInfo": "acquired package info from installed node module manifest file: package-lock.json",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/events:\\@algolia\\/events:4.0.1:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/events:4.0.1:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:npm/%40algolia/events@4.0.1"
+    }
+   ]
+  },
+  {
+   "name": "@algolia/events",
+   "SPDXID": "SPDXRef-Package-npm--algolia-events-4f529c22422af8a",
+   "versionInfo": "4.0.1",
+   "downloadLocation": "NOASSERTION",
+   "sourceInfo": "acquired package info from installed node module manifest file: yarn.lock",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/events:\\@algolia\\/events:4.0.1:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/events:4.0.1:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:npm/%40algolia/events@4.0.1"
+    }
+   ]
+  },
+  {
+   "name": "@algolia/logger-common",
+   "SPDXID": "SPDXRef-Package-npm--algolia-logger-common-4beb0a564e01e8dd",
+   "versionInfo": "4.14.3",
+   "downloadLocation": "NOASSERTION",
+   "sourceInfo": "acquired package info from installed node module manifest file: package-lock.json",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/logger-common:\\@algolia\\/logger-common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/logger-common:\\@algolia\\/logger_common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/logger_common:\\@algolia\\/logger-common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/logger_common:\\@algolia\\/logger_common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/logger:\\@algolia\\/logger-common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/logger:\\@algolia\\/logger_common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/logger-common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/logger_common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:npm/%40algolia/logger-common@4.14.3"
+    }
+   ]
+  },
+  {
+   "name": "@algolia/logger-common",
+   "SPDXID": "SPDXRef-Package-npm--algolia-logger-common-b5611c2c52827c17",
+   "versionInfo": "4.14.3",
+   "downloadLocation": "NOASSERTION",
+   "sourceInfo": "acquired package info from installed node module manifest file: yarn.lock",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/logger-common:\\@algolia\\/logger-common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/logger-common:\\@algolia\\/logger_common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/logger_common:\\@algolia\\/logger-common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/logger_common:\\@algolia\\/logger_common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/logger:\\@algolia\\/logger-common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/logger:\\@algolia\\/logger_common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/logger-common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/logger_common:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:npm/%40algolia/logger-common@4.14.3"
+    }
+   ]
+  },
+  {
+   "name": "@algolia/logger-console",
+   "SPDXID": "SPDXRef-Package-npm--algolia-logger-console-7d44d092b7346496",
+   "versionInfo": "4.14.3",
+   "downloadLocation": "NOASSERTION",
+   "sourceInfo": "acquired package info from installed node module manifest file: package-lock.json",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/logger-console:\\@algolia\\/logger-console:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/logger-console:\\@algolia\\/logger_console:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/logger_console:\\@algolia\\/logger-console:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/logger_console:\\@algolia\\/logger_console:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/logger:\\@algolia\\/logger-console:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/logger:\\@algolia\\/logger_console:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/logger-console:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/logger_console:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:npm/%40algolia/logger-console@4.14.3"
+    }
+   ]
+  },
+  {
+   "name": "@algolia/logger-console",
+   "SPDXID": "SPDXRef-Package-npm--algolia-logger-console-bd05c3862ee5c855",
+   "versionInfo": "4.14.3",
+   "downloadLocation": "NOASSERTION",
+   "sourceInfo": "acquired package info from installed node module manifest file: yarn.lock",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/logger-console:\\@algolia\\/logger-console:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/logger-console:\\@algolia\\/logger_console:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/logger_console:\\@algolia\\/logger-console:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/logger_console:\\@algolia\\/logger_console:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/logger:\\@algolia\\/logger-console:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/logger:\\@algolia\\/logger_console:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/logger-console:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/logger_console:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:npm/%40algolia/logger-console@4.14.3"
+    }
+   ]
+  },
+  {
+   "name": "@algolia/requester-browser-xhr",
+   "SPDXID": "SPDXRef-Package-npm--algolia-requester-browser-xhr-2547173fb30f7bf4",
+   "versionInfo": "4.14.3",
+   "downloadLocation": "NOASSERTION",
+   "sourceInfo": "acquired package info from installed node module manifest file: package-lock.json",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/requester-browser-xhr:\\@algolia\\/requester-browser-xhr:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/requester-browser-xhr:\\@algolia\\/requester_browser_xhr:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/requester_browser_xhr:\\@algolia\\/requester-browser-xhr:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/requester_browser_xhr:\\@algolia\\/requester_browser_xhr:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/requester-browser:\\@algolia\\/requester-browser-xhr:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/requester-browser:\\@algolia\\/requester_browser_xhr:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/requester_browser:\\@algolia\\/requester-browser-xhr:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/requester_browser:\\@algolia\\/requester_browser_xhr:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/requester:\\@algolia\\/requester-browser-xhr:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/requester:\\@algolia\\/requester_browser_xhr:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/requester-browser-xhr:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/requester_browser_xhr:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:npm/%40algolia/requester-browser-xhr@4.14.3"
+    }
+   ]
+  },
+  {
+   "name": "@algolia/requester-browser-xhr",
+   "SPDXID": "SPDXRef-Package-npm--algolia-requester-browser-xhr-afdcaeba77bd9241",
+   "versionInfo": "4.14.3",
+   "downloadLocation": "NOASSERTION",
+   "sourceInfo": "acquired package info from installed node module manifest file: yarn.lock",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/requester-browser-xhr:\\@algolia\\/requester-browser-xhr:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/requester-browser-xhr:\\@algolia\\/requester_browser_xhr:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/requester_browser_xhr:\\@algolia\\/requester-browser-xhr:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/requester_browser_xhr:\\@algolia\\/requester_browser_xhr:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/requester-browser:\\@algolia\\/requester-browser-xhr:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/requester-browser:\\@algolia\\/requester_browser_xhr:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/requester_browser:\\@algolia\\/requester-browser-xhr:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/requester_browser:\\@algolia\\/requester_browser_xhr:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/requester:\\@algolia\\/requester-browser-xhr:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:\\@algolia\\/requester:\\@algolia\\/requester_browser_xhr:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/requester-browser-xhr:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:*:\\@algolia\\/requester_browser_xhr:4.14.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:npm/%40algolia/requester-browser-xhr@4.14.3"
+    }
+   ]
+  }
+ ],
+ "relationships": [
+  {
+   "spdxElementId": "SPDXRef-DOCUMENT",
+   "relatedSpdxElement": "SPDXRef-DOCUMENT",
+   "relationshipType": "DESCRIBES"
+  }
+ ]
+}

@@ -1,0 +1,6 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: wrong_policy
+spec:
+  path: testdata/wrong_policy.rego
