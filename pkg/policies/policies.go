@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/bufbuild/protovalidate-go"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
 	v12 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
@@ -107,6 +108,16 @@ func (pv *PolicyVerifier) loadSpec(attachment *v1.PolicyAttachment) (*v1.Policy,
 	if err := protojson.Unmarshal(jsonContent, &policy); err != nil {
 		return nil, fmt.Errorf("unmarshalling policy spec: %w", err)
 	}
+	// Validate just in case
+	validator, err := protovalidate.New()
+	if err != nil {
+		return nil, fmt.Errorf("validating policy spec: %w", err)
+	}
+	err = validator.Validate(&policy)
+	if err != nil {
+		return nil, fmt.Errorf("validating policy spec: %w", err)
+	}
+
 	return &policy, nil
 }
 
