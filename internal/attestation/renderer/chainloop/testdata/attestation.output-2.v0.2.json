@@ -110,6 +110,7 @@
       "workflowRunID": "f97a0680-e64b-478a-9eea-df8864fa27f8",
       "organization": "my-org"
     },
+    "policies": [],
     "runnerType": "RUNNER_TYPE_UNSPECIFIED"
   }
 }

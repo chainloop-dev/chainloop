@@ -73,6 +73,7 @@
       "workflowID": "54ea7c5c-7592-48ac-9a9f-084b72447184",
       "workflowRunID": ""
     },
+    "policies": [],
     "runnerType": "GITHUB_ACTION"
   }
 }
