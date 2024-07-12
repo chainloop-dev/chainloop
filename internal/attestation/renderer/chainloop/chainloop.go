@@ -20,10 +20,8 @@ import (
 	"fmt"
 	"time"
 
-	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
 
 	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 
@@ -179,10 +177,6 @@ func ExtractPredicate(envelope *dsse.Envelope) (NormalizablePredicate, error) {
 }
 
 func extractPredicate(statement *intoto.Statement, v *ProvenancePredicateV02) error {
-	// policies will be handled separately, as it contains a oneof
-	policiesField := statement.Predicate.GetFields()["policies"]
-	delete(statement.Predicate.Fields, "policies")
-
 	jsonPredicate, err := protojson.Marshal(statement.Predicate)
 	if err != nil {
 		return fmt.Errorf("un-marshaling predicate: %w", err)
@@ -190,32 +184,6 @@ func extractPredicate(statement *intoto.Statement, v *ProvenancePredicateV02) er
 
 	if err := json.Unmarshal(jsonPredicate, v); err != nil {
 		return fmt.Errorf("un-marshaling predicate: %w", err)
-	}
-
-	policies := make([]*v1.Policy, 0)
-	for _, policyValue := range policiesField.GetListValue().GetValues() {
-		var policy v1.Policy
-		err := valueToProto(policyValue, &policy)
-		if err != nil {
-			return fmt.Errorf("un-marshaling policy: %w", err)
-		}
-		policies = append(policies, &policy)
-	}
-
-	v.Policies = policies
-
-	return nil
-}
-
-func valueToProto(value *structpb.Value, m proto.Message) error {
-	jsonValue, err := protojson.Marshal(value)
-	if err != nil {
-		return fmt.Errorf("marshaling value: %w", err)
-	}
-
-	err = protojson.Unmarshal(jsonValue, m)
-	if err != nil {
-		return fmt.Errorf("un-marshaling proto: %w", err)
 	}
 
 	return nil
