@@ -20,10 +20,13 @@ import (
 	"fmt"
 	"time"
 
-	v12 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
+
+	v12 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
 	intoto "github.com/in-toto/attestation/go/v1"
@@ -177,18 +180,22 @@ func ExtractPredicate(envelope *dsse.Envelope) (NormalizablePredicate, error) {
 	// 2 - Extract the Chainloop predicate from the in-toto statement
 	switch statement.PredicateType {
 	case PredicateTypeV02:
-		var predicate *ProvenancePredicateV02
+		var predicate ProvenancePredicateV02
 		if err = extractPredicate(statement, &predicate); err != nil {
 			return nil, fmt.Errorf("extracting predicate: %w", err)
 		}
 
-		return predicate, nil
+		return &predicate, nil
 	default:
 		return nil, fmt.Errorf("unsupported predicate type: %s", statement.PredicateType)
 	}
 }
 
-func extractPredicate(statement *intoto.Statement, v any) error {
+func extractPredicate(statement *intoto.Statement, v *ProvenancePredicateV02) error {
+	// policies will be handled separately, as it contains a oneof
+	policiesField := statement.Predicate.GetFields()["policies"]
+	delete(statement.Predicate.Fields, "policies")
+
 	jsonPredicate, err := protojson.Marshal(statement.Predicate)
 	if err != nil {
 		return fmt.Errorf("un-marshaling predicate: %w", err)
@@ -196,6 +203,32 @@ func extractPredicate(statement *intoto.Statement, v any) error {
 
 	if err := json.Unmarshal(jsonPredicate, v); err != nil {
 		return fmt.Errorf("un-marshaling predicate: %w", err)
+	}
+
+	policies := make([]*v1.Policy, 0)
+	for _, policyValue := range policiesField.GetListValue().GetValues() {
+		var policy v1.Policy
+		err := valueToProto(policyValue, &policy)
+		if err != nil {
+			return fmt.Errorf("un-marshaling policy: %w", err)
+		}
+		policies = append(policies, &policy)
+	}
+
+	v.Policies = policies
+
+	return nil
+}
+
+func valueToProto(value *structpb.Value, m proto.Message) error {
+	jsonValue, err := protojson.Marshal(value)
+	if err != nil {
+		return fmt.Errorf("marshaling value: %w", err)
+	}
+
+	err = protojson.Unmarshal(jsonValue, m)
+	if err != nil {
+		return fmt.Errorf("un-marshaling proto: %w", err)
 	}
 
 	return nil
