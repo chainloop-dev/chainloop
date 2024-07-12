@@ -258,6 +258,12 @@ func (s *crafterSuite) TestLoadSchema() {
 	}
 }
 
+func (s *crafterSuite) TestPolicyCompilation() {
+	schema, err := crafter.LoadSchema("testdata/contracts/with_rego.yaml")
+	s.NoError(err)
+	s.Contains(schema.Policies[0].GetEmbedded().GetSpec().GetEmbedded(), "package main")
+}
+
 func (s *crafterSuite) TestResolveEnvVars() {
 	testCases := []struct {
 		name string

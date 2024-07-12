@@ -187,7 +187,6 @@ func (s *testSuite) TestAttestationResult() {
 		s.Len(p.Violations, 0)
 		s.Equal("testdata/workflow.yaml", p.Attachment.GetRef())
 		s.Equal("workflow", p.Name)
-		s.Contains(p.Body, "package main")
 	})
 
 	s.Run("failed attestation", func() {
@@ -216,7 +215,6 @@ func (s *testSuite) TestAttestationResult() {
 
 		p := att.Policies[0]
 		s.Len(p.Violations, 1)
-		s.Contains(p.Body, "package main")
 		v := p.Violations[0]
 		s.Equal(p.Name, v.Subject)
 		s.Equal("incorrect runner", v.Message)

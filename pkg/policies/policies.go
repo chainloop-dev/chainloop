@@ -97,7 +97,6 @@ func (pv *PolicyVerifier) Verify(ctx context.Context) ([]*engine.PolicyViolation
 		pv.state.Attestation.Policies = append(pv.state.Attestation.Policies, &v12.Policy{
 			Name:       spec.Metadata.Name,
 			Attachment: policyAtt,
-			Body:       string(script.Source),
 			Violations: policyViolationsToAttestationViolations(res),
 		})
 	}

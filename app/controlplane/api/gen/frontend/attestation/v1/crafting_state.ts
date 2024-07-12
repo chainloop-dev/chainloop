@@ -106,8 +106,6 @@ export interface Policy {
   name: string;
   /** The attachment as in the contract, with arguments and any other metadata */
   attachment?: PolicyAttachment;
-  /** The policy script body (rego) */
-  body: string;
   /** The policy violations, if any */
   violations: Policy_Violation[];
 }
@@ -1172,7 +1170,7 @@ export const Attestation_EnvVarsEntry = {
 };
 
 function createBasePolicy(): Policy {
-  return { name: "", attachment: undefined, body: "", violations: [] };
+  return { name: "", attachment: undefined, violations: [] };
 }
 
 export const Policy = {
@@ -1183,11 +1181,8 @@ export const Policy = {
     if (message.attachment !== undefined) {
       PolicyAttachment.encode(message.attachment, writer.uint32(18).fork()).ldelim();
     }
-    if (message.body !== "") {
-      writer.uint32(26).string(message.body);
-    }
     for (const v of message.violations) {
-      Policy_Violation.encode(v!, writer.uint32(34).fork()).ldelim();
+      Policy_Violation.encode(v!, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -1218,13 +1213,6 @@ export const Policy = {
             break;
           }
 
-          message.body = reader.string();
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
           message.violations.push(Policy_Violation.decode(reader, reader.uint32()));
           continue;
       }
@@ -1240,7 +1228,6 @@ export const Policy = {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       attachment: isSet(object.attachment) ? PolicyAttachment.fromJSON(object.attachment) : undefined,
-      body: isSet(object.body) ? String(object.body) : "",
       violations: Array.isArray(object?.violations)
         ? object.violations.map((e: any) => Policy_Violation.fromJSON(e))
         : [],
@@ -1252,7 +1239,6 @@ export const Policy = {
     message.name !== undefined && (obj.name = message.name);
     message.attachment !== undefined &&
       (obj.attachment = message.attachment ? PolicyAttachment.toJSON(message.attachment) : undefined);
-    message.body !== undefined && (obj.body = message.body);
     if (message.violations) {
       obj.violations = message.violations.map((e) => e ? Policy_Violation.toJSON(e) : undefined);
     } else {
@@ -1271,7 +1257,6 @@ export const Policy = {
     message.attachment = (object.attachment !== undefined && object.attachment !== null)
       ? PolicyAttachment.fromPartial(object.attachment)
       : undefined;
-    message.body = object.body ?? "";
     message.violations = object.violations?.map((e) => Policy_Violation.fromPartial(e)) || [];
     return message;
   },

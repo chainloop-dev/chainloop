@@ -105,10 +105,9 @@ message Policy {
   }];
   // The attachment as in the contract, with arguments and any other metadata
   workflowcontract.v1.PolicyAttachment attachment = 2 [(buf.validate.field).required = true];
-  // The policy script body (rego)
-  string body = 3 [(buf.validate.field).required = true];
+
   // The policy violations, if any
-  repeated Violation violations = 4;
+  repeated Violation violations = 3;
 
   message Violation {
     string subject = 1 [(buf.validate.field).required = true];
