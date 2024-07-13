@@ -173,6 +173,30 @@ helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
     --set controlplane.auth.oidc.clientSecret=[clientSecret]
 ```
 
+## AirGap and Relocation Support
+
+This chart is compatible with relocation processes performed by the [Helm Relocation Plugin](https://github.com/vmware-labs/distribution-tooling-for-helm)
+
+This is a two-step process (wrap -> unwrap)
+
+- Pull all the container images and Helm chart and wrap them in an intermediate tarball.
+- Unwrap the tarball and push container images, update the Helm Chart with new image references and push it to the target registry.
+
+For example: to relocate to an Azure Container Registry
+
+```sh
+helm dt wrap oci://ghcr.io/chainloop-dev/charts/chainloop
+# 🎉  Helm chart wrapped into "chainloop-1.77.0.wrap.tgz"
+
+# Now you can take the tarball to an air-gapped environment and unwrap it like this
+helm dt unwrap chainloop-1.77.0.wrap.tgz oci://chainloop.azurecr.io --yes
+#  Unwrapping Helm chart "chainloop-1.77.0.wrap.tgz"
+#    ✔  All images pushed successfully
+#    ✔  Helm chart successfully pushed
+#
+# 🎉  Helm chart unwrapped successfully: You can use it now by running "helm install oci://chainloop.azurecr.io/chart/chainloop --generate-name"
+```
+
 ## How to guides
 
 ### CAS upload speeds are slow, what can I do?
