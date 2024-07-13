@@ -122,6 +122,10 @@ Controlplane helpers
 ##############################################################################
 */}}
 
+{{- define "chainloop.controlplane.image" -}}
+{{ include "common.images.image" (dict "imageRoot" .Values.controlplane.image "global" .Values.global) }}
+{{- end -}}
+
 {{/*
 Chainloop Controlplane release name
 */}}
@@ -144,6 +148,10 @@ Common labels
 app.kubernetes.io/part-of: chainloop
 app.kubernetes.io/component: controlplane
 {{- end }}
+
+{{- define "chainloop.controlplane.migration.image" -}}
+{{ include "common.images.image" (dict "imageRoot" .Values.controlplane.migration.image "global" .Values.global) }}
+{{- end -}}
 
 {{/*
 Migration labels
@@ -354,10 +362,13 @@ CAS Helpers
 ##############################################################################
 */}}
 
+{{- define "chainloop.cas.image" -}}
+{{ include "common.images.image" (dict "imageRoot" .Values.cas.image "global" .Values.global) }}
+{{- end -}}
+
 {{/*
 Chainloop CAS release name
 */}}
-
 {{- define "chainloop.cas.fullname" -}}
 {{- printf "%s-%s" (include "common.names.fullname" .) "cas" | trunc 63 | trimSuffix "-" -}}
 {{- end -}}

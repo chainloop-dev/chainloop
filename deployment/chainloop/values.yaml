@@ -3,8 +3,21 @@
 
 ## Default values for Chainloop Helm Chart
 
-## @skip global
-global: {}
+## @section Global parameters
+## Global Docker image parameters
+## Please, note that this will override the image parameters, including dependencies, configured to use the global value
+## Current available global Docker image parameters: imageRegistry, imagePullSecrets and storageClass
+
+## @param global.imageRegistry Global Docker image registry
+## @param global.imagePullSecrets Global Docker registry secret names as an array
+##
+global:
+  imageRegistry: ""
+  ## E.g.
+  ## imagePullSecrets:
+  ##   - myRegistryKeySecretName
+  ##
+  imagePullSecrets: []
 
 ## @section Common parameters
 ##
@@ -101,12 +114,13 @@ controlplane:
   ## @param controlplane.replicaCount Number of replicas
   replicaCount: 2
 
-  ## @param controlplane.image.repository FQDN uri for the image
-  ## @extra controlplane.image.tag Image tag (immutable tags are recommended). If no set chart.appVersion will be used
+  ## @param controlplane.image.registry Image registry
+  ## @param controlplane.image.repository Image repository
+  ## @skip controlplane.image.tag
   image:
-    repository: ghcr.io/chainloop-dev/chainloop/control-plane
-    # Overrides the image tag whose default is the chart appVersion.
-    # tag: latest
+    registry: ghcr.io
+    repository: chainloop-dev/chainloop/control-plane
+    tag: v0.93.7
 
   ## @param controlplane.tlsConfig.secret.name name of a secret containing TLS certificate to be used by the controlplane grpc server.
   tlsConfig:
@@ -131,12 +145,15 @@ controlplane:
   #      role: "MEMBERSHIP_ROLE_ORG_VIEWER"
 
   # Database migration
-  ## @skip controlplane.migration
+  ## @param controlplane.migration.image.registry Image registry
+  ## @param controlplane.migration.image.repository Image repository
+  ## @param controlplane.migration.ssl Connect to the database using SSL (required fro AWS RDS, etc)
+  ## @skip controlplane.migration.image.tag
   migration:
     image:
-      repository: ghcr.io/chainloop-dev/chainloop/control-plane-migrations
-      # Overrides the image tag whose default is the chart appVersion.
-    # tag: latest
+      registry: ghcr.io
+      repository: chainloop-dev/chainloop/control-plane-migrations
+      tag: v0.93.7
     # Run the migration job forcing SSL, required in AWS RDS for PostgreSQL 15
     ssl: false
 
@@ -520,12 +537,13 @@ cas:
   ## @param cas.replicaCount Number of replicas
   replicaCount: 2
 
-  ## @param cas.image.repository FQDN uri for the image
-  ## @extra cas.image.tag Image tag (immutable tags are recommended). If no set chart.appVersion will be used
+  ## @param cas.image.registry Image registry
+  ## @param cas.image.repository Image repository
+  ## @skip cas.image.tag
   image:
-    repository: ghcr.io/chainloop-dev/chainloop/artifact-cas
-    # Overrides the image tag whose default is the chart appVersion.
-    # tag: latest
+    registry: ghcr.io
+    repository: chainloop-dev/chainloop/artifact-cas
+    tag: v0.93.7
 
   ## @param cas.tlsConfig.secret.name name of a secret containing TLS certificate to be used by the controlplane grpc server.
   tlsConfig:

@@ -173,6 +173,30 @@ helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
     --set controlplane.auth.oidc.clientSecret=[clientSecret]
 ```
 
+## AirGap and Relocation Support
+
+This chart is compatible with relocation processes performed by the [Helm Relocation Plugin](https://github.com/vmware-labs/distribution-tooling-for-helm)
+
+This is a two-step process (wrap -> unwrap)
+
+- Pull all the container images and Helm chart and wrap them in an intermediate tarball.
+- Unwrap the tarball and push container images, update the Helm Chart with new image references and push it to the target registry.
+
+For example: to relocate to an Azure Container Registry
+
+```sh
+helm dt wrap oci://ghcr.io/chainloop-dev/charts/chainloop
+# 🎉  Helm chart wrapped into "chainloop-1.77.0.wrap.tgz"
+
+# Now you can take the tarball to an air-gapped environment and unwrap it like this
+helm dt unwrap chainloop-1.77.0.wrap.tgz oci://chainloop.azurecr.io --yes
+#  Unwrapping Helm chart "chainloop-1.77.0.wrap.tgz"
+#    ✔  All images pushed successfully
+#    ✔  Helm chart successfully pushed
+#
+# 🎉  Helm chart unwrapped successfully: You can use it now by running "helm install oci://chainloop.azurecr.io/chart/chainloop --generate-name"
+```
+
 ## How to guides
 
 ### CAS upload speeds are slow, what can I do?
@@ -454,6 +478,13 @@ chainloop config save \
 
 ## Parameters
 
+### Global parameters
+
+| Name                      | Description                                     | Value |
+| ------------------------- | ----------------------------------------------- | ----- |
+| `global.imageRegistry`    | Global Docker image registry                    | `""`  |
+| `global.imagePullSecrets` | Global Docker registry secret names as an array | `[]`  |
+
 ### Common parameters
 
 | Name                    | Description                                                                                                                                                            | Value   |
@@ -489,18 +520,21 @@ chainloop config save \
 
 ### Control Plane
 
-| Name                                           | Description                                                                                     | Value                                           |
-| ---------------------------------------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| `controlplane.replicaCount`                    | Number of replicas                                                                              | `2`                                             |
-| `controlplane.image.repository`                | FQDN uri for the image                                                                          | `ghcr.io/chainloop-dev/chainloop/control-plane` |
-| `controlplane.image.tag`                       | Image tag (immutable tags are recommended). If no set chart.appVersion will be used             |                                                 |
-| `controlplane.tlsConfig.secret.name`           | name of a secret containing TLS certificate to be used by the controlplane grpc server.         | `""`                                            |
-| `controlplane.pluginsDir`                      | Directory where to look for plugins                                                             | `/plugins`                                      |
-| `controlplane.referrerSharedIndex`             | Configure the shared, public index API endpoint that can be used to discover metadata referrers |                                                 |
-| `controlplane.referrerSharedIndex.enabled`     | Enable index API endpoint                                                                       | `false`                                         |
-| `controlplane.referrerSharedIndex.allowedOrgs` | List of UUIDs of organizations that are allowed to publish to the shared index                  | `[]`                                            |
-| `controlplane.onboarding.name`                 | Name of the organization to onboard                                                             |                                                 |
-| `controlplane.onboarding.role`                 | Role of the organization to onboard                                                             |                                                 |
+| Name                                           | Description                                                                                     | Value                                              |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| `controlplane.replicaCount`                    | Number of replicas                                                                              | `2`                                                |
+| `controlplane.image.registry`                  | Image registry                                                                                  | `ghcr.io`                                          |
+| `controlplane.image.repository`                | Image repository                                                                                | `chainloop-dev/chainloop/control-plane`            |
+| `controlplane.tlsConfig.secret.name`           | name of a secret containing TLS certificate to be used by the controlplane grpc server.         | `""`                                               |
+| `controlplane.pluginsDir`                      | Directory where to look for plugins                                                             | `/plugins`                                         |
+| `controlplane.referrerSharedIndex`             | Configure the shared, public index API endpoint that can be used to discover metadata referrers |                                                    |
+| `controlplane.referrerSharedIndex.enabled`     | Enable index API endpoint                                                                       | `false`                                            |
+| `controlplane.referrerSharedIndex.allowedOrgs` | List of UUIDs of organizations that are allowed to publish to the shared index                  | `[]`                                               |
+| `controlplane.onboarding.name`                 | Name of the organization to onboard                                                             |                                                    |
+| `controlplane.onboarding.role`                 | Role of the organization to onboard                                                             |                                                    |
+| `controlplane.migration.image.registry`        | Image registry                                                                                  | `ghcr.io`                                          |
+| `controlplane.migration.image.repository`      | Image repository                                                                                | `chainloop-dev/chainloop/control-plane-migrations` |
+| `controlplane.migration.ssl`                   | Connect to the database using SSL (required fro AWS RDS, etc)                                   | `false`                                            |
 
 ### Control Plane Database
 
@@ -606,12 +640,12 @@ chainloop config save \
 
 ### Artifact Content Addressable (CAS) API
 
-| Name                        | Description                                                                             | Value                                          |
-| --------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| `cas.replicaCount`          | Number of replicas                                                                      | `2`                                            |
-| `cas.image.repository`      | FQDN uri for the image                                                                  | `ghcr.io/chainloop-dev/chainloop/artifact-cas` |
-| `cas.image.tag`             | Image tag (immutable tags are recommended). If no set chart.appVersion will be used     |                                                |
-| `cas.tlsConfig.secret.name` | name of a secret containing TLS certificate to be used by the controlplane grpc server. | `""`                                           |
+| Name                        | Description                                                                             | Value                                  |
+| --------------------------- | --------------------------------------------------------------------------------------- | -------------------------------------- |
+| `cas.replicaCount`          | Number of replicas                                                                      | `2`                                    |
+| `cas.image.registry`        | Image registry                                                                          | `ghcr.io`                              |
+| `cas.image.repository`      | Image repository                                                                        | `chainloop-dev/chainloop/artifact-cas` |
+| `cas.tlsConfig.secret.name` | name of a secret containing TLS certificate to be used by the controlplane grpc server. | `""`                                   |
 
 ### CAS Networking
 
