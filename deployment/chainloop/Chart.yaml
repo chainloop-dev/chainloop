@@ -29,3 +29,12 @@ dependencies:
     condition: development
     repository: https://charts.dexidp.io
     version: 0.18.0
+
+annotations:
+    images: |
+        - image: ghcr.io/chainloop-dev/chainloop/artifact-cas:v0.93.7
+          name: artifact-cas
+        - image: ghcr.io/chainloop-dev/chainloop/control-plane:v0.93.7
+          name: control-plane
+        - image: ghcr.io/chainloop-dev/chainloop/control-plane-migrations:v0.93.7
+          name: control-plane-migrations
