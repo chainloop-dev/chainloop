@@ -26,16 +26,13 @@ spec:
       labels:
         {{- include "chainloop.controlplane.selectorLabels" . | nindent 8 }}
     spec:
-      {{- with .Values.controlplane.image.pullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+      {{- include "common.images.renderPullSecrets" (dict "images" (list .Values.controlplane.image .Values.controlplane.migration.image) "context" $) | nindent 6 }}
       serviceAccountName: {{ include "controlplane.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.controlplane.podSecurityContext | nindent 8 }}
       initContainers:
         - name: migrate
-          image: "{{ .Values.controlplane.migration.image.repository }}:{{ .Values.controlplane.migration.image.tag | default .Chart.AppVersion }}"
+          image: {{ include "chainloop.controlplane.migration.image" . }}
           imagePullPolicy: {{ .Values.controlplane.image.pullPolicy }}
           args:
             - migrate
@@ -54,7 +51,7 @@ spec:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.controlplane.securityContext | nindent 12 }}
-          image: "{{ .Values.controlplane.image.repository }}:{{ .Values.controlplane.image.tag | default .Chart.AppVersion }}"
+          image: {{ include "chainloop.controlplane.image" . }}
           imagePullPolicy: {{ .Values.controlplane.image.pullPolicy }}
           ports:
             - name: http
