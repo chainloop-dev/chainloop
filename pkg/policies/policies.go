@@ -84,7 +84,7 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 			Name:         spec.GetMetadata().GetName(),
 			MaterialName: material.GetArtifact().GetId(),
 			Body:         string(script.Source),
-			Violations:   engineViolationsToApiViolations(res),
+			Violations:   engineViolationsToAPIViolations(res),
 		})
 	}
 
@@ -138,7 +138,7 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 	return result, nil
 }
 
-func engineViolationsToApiViolations(input []*engine.PolicyViolation) []*v12.Policy_Violation {
+func engineViolationsToAPIViolations(input []*engine.PolicyViolation) []*v12.Policy_Violation {
 	res := make([]*v12.Policy_Violation, 0)
 	for _, v := range input {
 		res = append(res, &v12.Policy_Violation{
