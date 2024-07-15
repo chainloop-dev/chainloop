@@ -1,3 +1,4 @@
 schemaVersion: "v1"
 policies:
-  - ref: testdata/contracts/policy_rego.yaml
+  attestation:
+    - ref: testdata/contracts/policy_rego.yaml

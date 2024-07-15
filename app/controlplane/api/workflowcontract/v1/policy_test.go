@@ -21,9 +21,10 @@ import (
 	"testing"
 
 	"github.com/bufbuild/protovalidate-go"
-	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 )
 
 func TestValidatePolicy(t *testing.T) {
@@ -85,7 +86,7 @@ func TestValidatePolicy(t *testing.T) {
 		{
 			desc: "filter material type",
 			policy: &v1.Policy{ApiVersion: "workflowcontract.chainloop.dev/v1", Kind: "Policy",
-				Metadata: &v1.Metadata{Name: "my-policy"}, Spec: &v1.PolicySpec{Source: &v1.PolicySpec_Path{Path: "policy.rego"}, Kind: v1.CraftingSchema_Material_ATTESTATION}},
+				Metadata: &v1.Metadata{Name: "my-policy"}, Spec: &v1.PolicySpec{Source: &v1.PolicySpec_Path{Path: "policy.rego"}, Type: v1.CraftingSchema_Material_ATTESTATION}},
 			wantErr: false,
 		},
 	}
