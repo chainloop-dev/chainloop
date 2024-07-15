@@ -43,14 +43,20 @@ func NewOrgMetricsRepo(data *Data, l log.Logger) biz.OrgMetricsRepo {
 }
 
 func (repo *OrgMetricsRepo) RunsTotal(ctx context.Context, orgID uuid.UUID, tw *biz.TimeWindow) (int32, error) {
-	total, err := orgScopedQuery(repo.data.DB, orgID).
+	baseQuery := orgScopedQuery(repo.data.DB, orgID).
 		QueryWorkflows().
-		QueryWorkflowruns().
-		Where(
-			workflowrun.CreatedAtGTE(tw.From),
-			workflowrun.CreatedAtLTE(tw.To),
-		).
-		Count(ctx)
+		QueryWorkflowruns()
+
+	// Optionally filter by time window
+	if tw != nil {
+		baseQuery = baseQuery.
+			Where(
+				workflowrun.CreatedAtGTE(tw.From),
+				workflowrun.CreatedAtLTE(tw.To),
+			)
+	}
+
+	total, err := baseQuery.Count(ctx)
 
 	if err != nil {
 		return 0, err
@@ -65,13 +71,20 @@ func (repo *OrgMetricsRepo) RunsByStatusTotal(ctx context.Context, orgID uuid.UU
 		Count int32
 	}
 
-	if err := orgScopedQuery(repo.data.DB, orgID).
+	baseQuery := orgScopedQuery(repo.data.DB, orgID).
 		QueryWorkflows().
-		QueryWorkflowruns().
-		Where(
-			workflowrun.CreatedAtGTE(tw.From),
-			workflowrun.CreatedAtLTE(tw.To),
-		).
+		QueryWorkflowruns()
+
+	// Optionally filter by time window
+	if tw != nil {
+		baseQuery = baseQuery.
+			Where(
+				workflowrun.CreatedAtGTE(tw.From),
+				workflowrun.CreatedAtLTE(tw.To),
+			)
+	}
+
+	if err := baseQuery.
 		GroupBy(workflowrun.FieldState).
 		Aggregate(ent.Count()).
 		Scan(ctx, &runs); err != nil {
@@ -92,13 +105,20 @@ func (repo *OrgMetricsRepo) RunsByRunnerTypeTotal(ctx context.Context, orgID uui
 		Count      int32
 	}
 
-	if err := orgScopedQuery(repo.data.DB, orgID).
+	baseQuery := orgScopedQuery(repo.data.DB, orgID).
 		QueryWorkflows().
-		QueryWorkflowruns().
-		Where(
-			workflowrun.CreatedAtGTE(tw.From),
-			workflowrun.CreatedAtLTE(tw.To),
-		).
+		QueryWorkflowruns()
+
+	// Optionally filter by time window
+	if tw != nil {
+		baseQuery = baseQuery.
+			Where(
+				workflowrun.CreatedAtGTE(tw.From),
+				workflowrun.CreatedAtLTE(tw.To),
+			)
+	}
+
+	if err := baseQuery.
 		GroupBy(workflowrun.FieldRunnerType).
 		Aggregate(ent.Count()).
 		Scan(ctx, &runs); err != nil {
@@ -120,15 +140,23 @@ func (repo *OrgMetricsRepo) TopWorkflowsByRunsCount(ctx context.Context, orgID u
 		Count      int32
 	}
 
-	// Get workflow runs grouped by state and workflowRunID
-	if err := orgScopedQuery(repo.data.DB, orgID).
+	baseQuery := orgScopedQuery(repo.data.DB, orgID).
 		QueryWorkflows().
 		QueryWorkflowruns().
-		WithWorkflow().
-		Where(
-			workflowrun.CreatedAtGTE(tw.From),
-			workflowrun.CreatedAtLTE(tw.To),
-		).
+		WithWorkflow()
+
+	// Optionally filter by time window
+	if tw != nil {
+		baseQuery = baseQuery.
+			Where(
+				workflowrun.CreatedAtGTE(tw.From),
+				workflowrun.CreatedAtLTE(tw.To),
+			)
+
+	}
+
+	// Get workflow runs grouped by state and workflowRunID
+	if err := baseQuery.
 		GroupBy(workflowrun.WorkflowColumn, workflowrun.FieldState).
 		Aggregate(ent.Count()).
 		Scan(ctx, &runs); err != nil {
@@ -199,11 +227,18 @@ func (repo *OrgMetricsRepo) DailyRunsCount(ctx context.Context, orgID, workflowI
 		q = q.Where(workflow.ID(workflowID))
 	}
 
-	err := q.QueryWorkflowruns().
-		Where(
-			workflowrun.CreatedAtGTE(tw.From),
-			workflowrun.CreatedAtLTE(tw.To),
-		).
+	qwruns := q.QueryWorkflowruns()
+
+	// Optionally filter by time window
+	if tw != nil {
+		qwruns = qwruns.
+			Where(
+				workflowrun.CreatedAtGTE(tw.From),
+				workflowrun.CreatedAtLTE(tw.To),
+			)
+	}
+
+	err := qwruns.
 		// group by day and state
 		Modify(func(s *sql.Selector) {
 			s.GroupBy("creation_day", workflowrun.FieldState)

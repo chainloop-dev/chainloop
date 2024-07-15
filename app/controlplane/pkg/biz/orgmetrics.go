@@ -17,7 +17,6 @@ package biz
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/go-kratos/kratos/v2/log"
@@ -74,7 +73,7 @@ func (uc *OrgMetricsUseCase) RunsTotal(ctx context.Context, orgID string, timeWi
 		return 0, err
 	}
 
-	if err := validateTimeWindowIsSet(timeWindow); err != nil {
+	if err := validateTimeWindowIfSet(timeWindow); err != nil {
 		return 0, err
 	}
 
@@ -87,7 +86,7 @@ func (uc *OrgMetricsUseCase) RunsTotalByStatus(ctx context.Context, orgID string
 		return nil, err
 	}
 
-	if err := validateTimeWindowIsSet(timeWindow); err != nil {
+	if err := validateTimeWindowIfSet(timeWindow); err != nil {
 		return nil, err
 	}
 
@@ -100,7 +99,7 @@ func (uc *OrgMetricsUseCase) RunsTotalByRunnerType(ctx context.Context, orgID st
 		return nil, err
 	}
 
-	if err := validateTimeWindowIsSet(timeWindow); err != nil {
+	if err := validateTimeWindowIfSet(timeWindow); err != nil {
 		return nil, err
 	}
 
@@ -115,7 +114,7 @@ func (uc *OrgMetricsUseCase) DailyRunsCount(ctx context.Context, orgID string, w
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	if err := validateTimeWindowIsSet(timeWindow); err != nil {
+	if err := validateTimeWindowIfSet(timeWindow); err != nil {
 		return nil, err
 	}
 
@@ -142,20 +141,20 @@ func (uc *OrgMetricsUseCase) TopWorkflowsByRunsCount(ctx context.Context, orgID 
 		return nil, err
 	}
 
-	if err := validateTimeWindowIsSet(timeWindow); err != nil {
+	if err := validateTimeWindowIfSet(timeWindow); err != nil {
 		return nil, err
 	}
 
 	return uc.repo.TopWorkflowsByRunsCount(ctx, orgUUID, numWorkflows, timeWindow)
 }
 
-// validateTimeWindowIsSet validates that the time window is set
-func validateTimeWindowIsSet(tw *TimeWindow) error {
+// validateTimeWindowIfSet validates that the time window is valid if it has been set
+func validateTimeWindowIfSet(tw *TimeWindow) error {
 	// Check if time window is set
-	if tw == nil {
-		return fmt.Errorf("time window is required")
+	if tw != nil {
+		// Validate time window
+		return tw.Validate()
 	}
 
-	// Validate time window
-	return tw.Validate()
+	return nil
 }
