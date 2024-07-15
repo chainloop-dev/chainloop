@@ -152,7 +152,6 @@ func (repo *OrgMetricsRepo) TopWorkflowsByRunsCount(ctx context.Context, orgID u
 				workflowrun.CreatedAtGTE(tw.From),
 				workflowrun.CreatedAtLTE(tw.To),
 			)
-
 	}
 
 	// Get workflow runs grouped by state and workflowRunID
