@@ -89,7 +89,7 @@ message Attestation {
   // Head Commit of the environment where the attestation was executed (optional)
   Commit head = 9;
 
-  // Policies that this attestation was validated against
+  // Policies that materials in this attestation were validated against
   repeated Policy policies = 10;
 }
 

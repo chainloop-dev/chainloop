@@ -34,11 +34,13 @@ import (
 	sigstoresigner "github.com/sigstore/sigstore/pkg/signature"
 	sigdsee "github.com/sigstore/sigstore/pkg/signature/dsse"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	chainloopsigner "github.com/chainloop-dev/chainloop/internal/attestation/signer/chainloop"
+	"github.com/chainloop-dev/chainloop/pkg/policies"
 )
 
 type AttestationRenderer struct {
@@ -105,12 +107,16 @@ func (ab *AttestationRenderer) Render(ctx context.Context) (*dsse.Envelope, erro
 	}
 
 	// validate attestation-level policies
-	//pv := policies.NewPolicyVerifier(ab.schema, &ab.logger)
-	//polcyResult, err := pv.VerifyStatement(ctx, statement)
-	//if err != nil {
-	//	return nil, fmt.Errorf("applying policies to statement: %w", err)
-	//}
-	// insert policy results into statement
+	pv := policies.NewPolicyVerifier(ab.schema, &ab.logger)
+	policyResults, err := pv.VerifyStatement(ctx, statement)
+	if err != nil {
+		return nil, fmt.Errorf("applying policies to statement: %w", err)
+	}
+
+	// insert attestation level policy results into statement
+	if err = addPolicyResults(statement, policyResults); err != nil {
+		return nil, fmt.Errorf("adding policy results to statement: %w", err)
+	}
 
 	rawStatement, err := protojson.Marshal(statement)
 	if err != nil {
@@ -145,6 +151,35 @@ func (ab *AttestationRenderer) Render(ctx context.Context) (*dsse.Envelope, erro
 	}
 
 	return &dsseEnvelope, nil
+}
+
+func addPolicyResults(statement *intoto.Statement, policyResults []*v1.Policy) error {
+	predicate := statement.Predicate
+	jsonPredicate, err := protojson.Marshal(predicate)
+	if err != nil {
+		return fmt.Errorf("marshalling predicate: %w", err)
+	}
+	var p chainloop.ProvenancePredicateV02
+	err = json.Unmarshal(jsonPredicate, &p)
+	if err != nil {
+		return fmt.Errorf("unmarshalling predicate: %w", err)
+	}
+	p.Policies["ATTESTATION"] = policyResults
+
+	// marshall back to structpb
+	jsonPredicate, err = json.Marshal(p)
+	if err != nil {
+		return fmt.Errorf("marshalling predicate: %w", err)
+	}
+	var finalPredicate structpb.Struct
+	err = protojson.Unmarshal(jsonPredicate, &finalPredicate)
+	if err != nil {
+		return fmt.Errorf("unmarshalling predicate: %w", err)
+	}
+
+	statement.Predicate = &finalPredicate
+
+	return nil
 }
 
 func (ab *AttestationRenderer) envelopeToBundle(dsseEnvelope dsse.Envelope) (*protobundle.Bundle, error) {

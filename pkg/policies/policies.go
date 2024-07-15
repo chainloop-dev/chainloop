@@ -71,7 +71,7 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 			return nil, fmt.Errorf("failed to load material content: %w", err)
 		}
 
-		pv.logger.Debug().Msgf("evaluating policy %s", spec.Metadata.Name)
+		pv.logger.Info().Msgf("evaluating policy '%s' against material '%s'", spec.Metadata.Name, material.GetArtifact().GetId())
 
 		// verify the policy
 		ng := getPolicyEngine(spec)
@@ -113,7 +113,7 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 			return nil, fmt.Errorf("failed to load policy content: %w", err)
 		}
 
-		pv.logger.Debug().Msgf("evaluating policy %s", spec.Metadata.Name)
+		pv.logger.Info().Msgf("evaluating policy '%s' on attestation", spec.Metadata.Name)
 
 		material, err := protojson.Marshal(statement)
 		if err != nil {
