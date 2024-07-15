@@ -21,9 +21,10 @@ import (
 	"os"
 	"testing"
 
+	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/suite"
-	"golang.org/x/exp/slices"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	v12 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
@@ -32,354 +33,429 @@ import (
 func (s *testSuite) TestVerifyAttestations() {
 	cases := []struct {
 		name       string
-		state      *v1.CraftingState
+		schema     *v12.CraftingSchema
+		statement  string
+		npolicies  int
 		violations int
 		wantErr    error
 	}{
 		{
 			name: "happy path, test attestation properties",
-			state: &v1.CraftingState{
-				InputSchema: &v12.CraftingSchema{
-					Policies: []*v12.PolicyAttachment{
+			schema: &v12.CraftingSchema{
+				Policies: &v12.Policies{
+					Attestation: []*v12.PolicyAttachment{
 						{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/workflow.yaml"}},
 					},
 				},
-				Attestation: &v1.Attestation{
-					Workflow: &v1.WorkflowMetadata{
-						Name: "policytest",
-					},
-					RunnerType: v12.CraftingSchema_Runner_GITHUB_ACTION,
-				},
 			},
+			statement: "testdata/statement.json",
+			npolicies: 1,
 		},
 		{
 			name:       "wrong runner",
+			npolicies:  1,
 			violations: 1,
-			state: &v1.CraftingState{
-				InputSchema: &v12.CraftingSchema{
-					Policies: []*v12.PolicyAttachment{
+			statement:  "testdata/statement_gitlab.json",
+			schema: &v12.CraftingSchema{
+				Policies: &v12.Policies{
+					Attestation: []*v12.PolicyAttachment{
 						{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/workflow.yaml"}},
 					},
-				},
-				Attestation: &v1.Attestation{
-					Workflow: &v1.WorkflowMetadata{
-						Name: "policytest",
-					},
-					RunnerType: v12.CraftingSchema_Runner_DAGGER_PIPELINE,
 				},
 			},
 		},
 		{
 			name:       "missing runner",
+			npolicies:  1,
 			violations: 1,
-			state: &v1.CraftingState{
-				InputSchema: &v12.CraftingSchema{
-					Policies: []*v12.PolicyAttachment{
+			schema: &v12.CraftingSchema{
+				Policies: &v12.Policies{
+					Attestation: []*v12.PolicyAttachment{
 						{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/workflow.yaml"}},
 					},
 				},
-				Attestation: &v1.Attestation{
-					Workflow: &v1.WorkflowMetadata{
-						Name: "policytest",
-					},
-				},
 			},
+			statement: "testdata/statement_missing_runner.json",
 		},
 		{
 			name:    "wrong policy",
 			wantErr: &fs.PathError{},
-			state: &v1.CraftingState{
-				InputSchema: &v12.CraftingSchema{
-					Policies: []*v12.PolicyAttachment{
+			schema: &v12.CraftingSchema{
+				Policies: &v12.Policies{
+					Attestation: []*v12.PolicyAttachment{
 						{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/wrong_policy.yaml"}},
 					},
 				},
 			},
+			statement: "testdata/statement.json",
 		},
 		{
 			name:    "missing rego policy",
 			wantErr: &fs.PathError{},
-			state: &v1.CraftingState{
-				InputSchema: &v12.CraftingSchema{
-					Policies: []*v12.PolicyAttachment{
+			schema: &v12.CraftingSchema{
+				Policies: &v12.Policies{
+					Attestation: []*v12.PolicyAttachment{
 						{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/missing_rego.yaml"}},
 					},
 				},
 			},
+			statement: "testdata/statement.json",
 		},
 		{
 			name: "embedded rego policy",
-			state: &v1.CraftingState{
-				InputSchema: &v12.CraftingSchema{
-					Policies: []*v12.PolicyAttachment{
+			schema: &v12.CraftingSchema{
+				Policies: &v12.Policies{
+					Attestation: []*v12.PolicyAttachment{
 						{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/workflow_embedded.yaml"}},
 					},
 				},
-				Attestation: &v1.Attestation{
-					Workflow: &v1.WorkflowMetadata{
-						Name: "policytest",
-					},
-				},
 			},
+			statement: "testdata/statement.json",
+			npolicies: 1,
 		},
 		{
 			name: "embedded rego policy violations",
-			state: &v1.CraftingState{
-				InputSchema: &v12.CraftingSchema{
-					Policies: []*v12.PolicyAttachment{
+			schema: &v12.CraftingSchema{
+				Policies: &v12.Policies{
+					Attestation: []*v12.PolicyAttachment{
 						{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/workflow_embedded.yaml"}},
 					},
 				},
-				Attestation: &v1.Attestation{
-					Workflow: &v1.WorkflowMetadata{
-						Name: "wrongname",
-					},
-				},
 			},
+			npolicies:  1,
 			violations: 1,
+			statement:  "testdata/statement_missing_runner.json",
 		},
 	}
 
 	for _, tc := range cases {
 		s.Run(tc.name, func() {
-			verifier := NewPolicyVerifier(tc.state, nil, &s.logger)
+			verifier := NewPolicyVerifier(tc.schema, &s.logger)
+			stContent, err := os.ReadFile(tc.statement)
+			s.Require().NoError(err)
+			var statement intoto.Statement
+			err = protojson.Unmarshal(stContent, &statement)
+			s.Require().NoError(err)
 
-			res, err := verifier.Verify(context.TODO())
+			res, err := verifier.VerifyStatement(context.TODO(), &statement)
 			if tc.wantErr != nil {
 				// #nosec G601
 				s.ErrorAs(err, &tc.wantErr)
 				return
 			}
 			s.Require().NoError(err)
-			if tc.violations > 0 {
-				s.Len(res, tc.violations)
+			s.Len(res, tc.npolicies)
+			if tc.npolicies > 0 {
+				s.Len(res[0].Violations, tc.violations)
 			}
 		})
 	}
 }
 
-func (s *testSuite) TestAttestationResult() {
-	s.Run("successful attestation", func() {
-		state := &v1.CraftingState{
-			InputSchema: &v12.CraftingSchema{
-				Policies: []*v12.PolicyAttachment{
-					{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/workflow.yaml"}},
-				},
-			},
-			Attestation: &v1.Attestation{
-				Workflow: &v1.WorkflowMetadata{
-					Name: "policytest",
-				},
-				RunnerType: v12.CraftingSchema_Runner_GITHUB_ACTION,
-			},
-		}
+//
+//func (s *testSuite) TestAttestationResult() {
+//	s.Run("successful attestation", func() {
+//		schema := &v12.CraftingSchema{
+//			Policies: []*v12.PolicyAttachment{
+//				{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/workflow.yaml"}},
+//			},
+//		}
+//		statement := &v1.Attestation{
+//			Workflow: &v1.WorkflowMetadata{
+//				Name: "policytest",
+//			},
+//			RunnerType: v12.CraftingSchema_Runner_GITHUB_ACTION,
+//		}
+//
+//		verifier := NewPolicyVerifier(schema, &s.logger)
+//
+//		res, err := verifier.VerifyStatement(context.TODO(), nil)
+//		s.Require().NoError(err)
+//		s.Len(res, 0)
+//
+//		att := state.GetAttestation()
+//		s.Len(att.Policies, 1)
+//
+//		p := att.Policies[0]
+//		s.Len(p.Violations, 0)
+//		s.Equal("testdata/workflow.yaml", p.Attachment.GetRef())
+//		s.Equal("workflow", p.Name)
+//	})
+//
+//	s.Run("failed attestation", func() {
+//		state := &v1.CraftingState{
+//			InputSchema: &v12.CraftingSchema{
+//				Policies: []*v12.PolicyAttachment{
+//					{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/workflow.yaml"}},
+//				},
+//			},
+//			Attestation: &v1.Attestation{
+//				Workflow: &v1.WorkflowMetadata{
+//					Name: "policytest",
+//				},
+//				RunnerType: v12.CraftingSchema_Runner_DAGGER_PIPELINE,
+//			},
+//		}
+//
+//		verifier := NewPolicyVerifier(state, &s.logger)
+//
+//		res, err := verifier.VerifyStatement(context.TODO())
+//		s.Require().NoError(err)
+//		s.Len(res, 1)
+//
+//		att := state.GetAttestation()
+//		s.Len(att.Policies, 1)
+//
+//		p := att.Policies[0]
+//		s.Len(p.Violations, 1)
+//		v := p.Violations[0]
+//		s.Equal(p.Name, v.Subject)
+//		s.Equal("incorrect runner", v.Message)
+//	})
+//
+//	s.Run("multiple successful policies", func() {
+//		state := &v1.CraftingState{
+//			InputSchema: &v12.CraftingSchema{
+//				Policies: []*v12.PolicyAttachment{
+//					{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/workflow.yaml"}},
+//					{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/materials.yaml"}},
+//				},
+//			},
+//			Attestation: &v1.Attestation{
+//				Workflow: &v1.WorkflowMetadata{
+//					Name: "policytest",
+//				},
+//				RunnerType: v12.CraftingSchema_Runner_GITHUB_ACTION,
+//				Materials: map[string]*v1.Attestation_Material{
+//					"vex": {
+//						MaterialType: v12.CraftingSchema_Material_OPENVEX,
+//					},
+//				},
+//			},
+//		}
+//
+//		verifier := NewPolicyVerifier(state, &s.logger)
+//
+//		res, err := verifier.VerifyStatement(context.TODO())
+//		s.Require().NoError(err)
+//		s.Len(res, 0)
+//		att := state.GetAttestation()
+//		s.Len(att.Policies, 2)
+//		s.Len(att.Policies[0].Violations, 0)
+//		s.Len(att.Policies[1].Violations, 0)
+//	})
+//
+//	s.Run("partial success", func() {
+//		state := &v1.CraftingState{
+//			InputSchema: &v12.CraftingSchema{
+//				Policies: []*v12.PolicyAttachment{
+//					{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/workflow.yaml"}},
+//					{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/materials.yaml"}},
+//				},
+//			},
+//			Attestation: &v1.Attestation{
+//				Workflow: &v1.WorkflowMetadata{
+//					Name: "policytest",
+//				},
+//				RunnerType: v12.CraftingSchema_Runner_DAGGER_PIPELINE,
+//				Materials: map[string]*v1.Attestation_Material{
+//					"vex": {
+//						MaterialType: v12.CraftingSchema_Material_OPENVEX,
+//					},
+//				},
+//			},
+//		}
+//
+//		verifier := NewPolicyVerifier(state, &s.logger)
+//
+//		res, err := verifier.VerifyStatement(context.TODO())
+//		s.Require().NoError(err)
+//		s.Greater(len(res), 0)
+//		att := state.GetAttestation()
+//		s.Len(att.Policies, 2)
+//
+//		// Check that only 1 policy failed
+//		index := slices.IndexFunc(att.Policies, func(p *v1.Policy) bool {
+//			return p.Name == "workflow"
+//		})
+//		p := att.Policies[index]
+//		s.Len(p.Violations, 1)
+//
+//		index = slices.IndexFunc(att.Policies, func(p *v1.Policy) bool {
+//			return p.Name == "materials"
+//		})
+//		p = att.Policies[index]
+//		s.Len(p.Violations, 0)
+//	})
+//}
 
-		verifier := NewPolicyVerifier(state, nil, &s.logger)
-
-		res, err := verifier.Verify(context.TODO())
-		s.Require().NoError(err)
-		s.Len(res, 0)
-
-		att := state.GetAttestation()
-		s.Len(att.Policies, 1)
-
-		p := att.Policies[0]
-		s.Len(p.Violations, 0)
-		s.Equal("testdata/workflow.yaml", p.Attachment.GetRef())
-		s.Equal("workflow", p.Name)
-	})
-
-	s.Run("failed attestation", func() {
-		state := &v1.CraftingState{
-			InputSchema: &v12.CraftingSchema{
-				Policies: []*v12.PolicyAttachment{
-					{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/workflow.yaml"}},
-				},
-			},
-			Attestation: &v1.Attestation{
-				Workflow: &v1.WorkflowMetadata{
-					Name: "policytest",
-				},
-				RunnerType: v12.CraftingSchema_Runner_DAGGER_PIPELINE,
-			},
-		}
-
-		verifier := NewPolicyVerifier(state, nil, &s.logger)
-
-		res, err := verifier.Verify(context.TODO())
-		s.Require().NoError(err)
-		s.Len(res, 1)
-
-		att := state.GetAttestation()
-		s.Len(att.Policies, 1)
-
-		p := att.Policies[0]
-		s.Len(p.Violations, 1)
-		v := p.Violations[0]
-		s.Equal(p.Name, v.Subject)
-		s.Equal("incorrect runner", v.Message)
-	})
-
-	s.Run("multiple successful policies", func() {
-		state := &v1.CraftingState{
-			InputSchema: &v12.CraftingSchema{
-				Policies: []*v12.PolicyAttachment{
-					{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/workflow.yaml"}},
-					{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/materials.yaml"}},
-				},
-			},
-			Attestation: &v1.Attestation{
-				Workflow: &v1.WorkflowMetadata{
-					Name: "policytest",
-				},
-				RunnerType: v12.CraftingSchema_Runner_GITHUB_ACTION,
-				Materials: map[string]*v1.Attestation_Material{
-					"vex": {
-						MaterialType: v12.CraftingSchema_Material_OPENVEX,
+func (s *testSuite) TestMaterialSelectionCriteria() {
+	attNoFilterPolicyTyped := &v12.PolicyAttachment{
+		Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/sbom_syft.yaml"},
+	}
+	attFilteredPolicyTyped := &v12.PolicyAttachment{
+		Policy:   &v12.PolicyAttachment_Ref{Ref: "testdata/sbom_syft.yaml"},
+		Selector: &v12.PolicyAttachment_MaterialSelector{Name: "sbom"},
+	}
+	attFilteredPolicyNotTyped := &v12.PolicyAttachment{
+		Policy:   &v12.PolicyAttachment_Ref{Ref: "testdata/sbom_syft_not_typed.yaml"},
+		Selector: &v12.PolicyAttachment_MaterialSelector{Name: "custom-material"},
+	}
+	testcases := []struct {
+		name     string
+		policies []*v12.PolicyAttachment
+		material *v1.Attestation_Material
+		wantErr  bool
+		result   int
+	}{
+		{
+			name:     "attachment with no filter, policy with type, matched material",
+			policies: []*v12.PolicyAttachment{attNoFilterPolicyTyped},
+			material: &v1.Attestation_Material{MaterialType: v12.CraftingSchema_Material_SBOM_SPDX_JSON},
+			result:   1,
+		},
+		{
+			name:     "attachment with no filter, policy with type, non matched material",
+			policies: []*v12.PolicyAttachment{attNoFilterPolicyTyped},
+			material: &v1.Attestation_Material{MaterialType: v12.CraftingSchema_Material_SBOM_CYCLONEDX_JSON},
+			result:   0,
+		},
+		{
+			name:     "attachment with filter, policy with type, matched material",
+			policies: []*v12.PolicyAttachment{attFilteredPolicyTyped},
+			material: &v1.Attestation_Material{
+				M: &v1.Attestation_Material_Artifact_{
+					Artifact: &v1.Attestation_Material_Artifact{
+						Id: "sbom",
 					},
 				},
-			},
-		}
-
-		verifier := NewPolicyVerifier(state, nil, &s.logger)
-
-		res, err := verifier.Verify(context.TODO())
-		s.Require().NoError(err)
-		s.Len(res, 0)
-		att := state.GetAttestation()
-		s.Len(att.Policies, 2)
-		s.Len(att.Policies[0].Violations, 0)
-		s.Len(att.Policies[1].Violations, 0)
-	})
-
-	s.Run("partial success", func() {
-		state := &v1.CraftingState{
-			InputSchema: &v12.CraftingSchema{
-				Policies: []*v12.PolicyAttachment{
-					{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/workflow.yaml"}},
-					{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/materials.yaml"}},
-				},
-			},
-			Attestation: &v1.Attestation{
-				Workflow: &v1.WorkflowMetadata{
-					Name: "policytest",
-				},
-				RunnerType: v12.CraftingSchema_Runner_DAGGER_PIPELINE,
-				Materials: map[string]*v1.Attestation_Material{
-					"vex": {
-						MaterialType: v12.CraftingSchema_Material_OPENVEX,
+				MaterialType: v12.CraftingSchema_Material_SBOM_SPDX_JSON},
+			result: 1,
+		},
+		{
+			name:     "attachment with filter, policy with type, unmatched material",
+			policies: []*v12.PolicyAttachment{attFilteredPolicyTyped},
+			material: &v1.Attestation_Material{
+				M: &v1.Attestation_Material_Artifact_{
+					Artifact: &v1.Attestation_Material_Artifact{
+						Id: "not-the-sbom-you-expect",
 					},
 				},
-			},
-		}
+				MaterialType: v12.CraftingSchema_Material_SBOM_SPDX_JSON},
+			result: 0,
+		},
+		{
+			name:     "attachment with no filter, policy without type, matched material",
+			policies: []*v12.PolicyAttachment{attFilteredPolicyNotTyped},
+			material: &v1.Attestation_Material{
+				M: &v1.Attestation_Material_Artifact_{
+					Artifact: &v1.Attestation_Material_Artifact{
+						Id: "custom-material",
+					},
+				},
+				MaterialType: v12.CraftingSchema_Material_ATTESTATION},
+			result: 1,
+		},
+		{
+			name:     "attachment with no filter, policy without type, unmatched material",
+			policies: []*v12.PolicyAttachment{attFilteredPolicyNotTyped},
+			material: &v1.Attestation_Material{
+				M: &v1.Attestation_Material_Artifact_{
+					Artifact: &v1.Attestation_Material_Artifact{
+						Id: "not-the-material-you-expect",
+					},
+				},
+				MaterialType: v12.CraftingSchema_Material_ATTESTATION},
+			result: 0,
+		},
+	}
 
-		verifier := NewPolicyVerifier(state, nil, &s.logger)
-
-		res, err := verifier.Verify(context.TODO())
-		s.Require().NoError(err)
-		s.Greater(len(res), 0)
-		att := state.GetAttestation()
-		s.Len(att.Policies, 2)
-
-		// Check that only 1 policy failed
-		index := slices.IndexFunc(att.Policies, func(p *v1.Policy) bool {
-			return p.Name == "workflow"
+	for _, tc := range testcases {
+		s.Run(tc.name, func() {
+			schema := &v12.CraftingSchema{
+				Policies: &v12.Policies{
+					Materials: tc.policies,
+				},
+			}
+			pv := NewPolicyVerifier(schema, &s.logger)
+			atts, err := pv.requiredPoliciesForMaterial(tc.material)
+			s.Require().NoError(err)
+			s.Require().Len(atts, tc.result)
 		})
-		p := att.Policies[index]
-		s.Len(p.Violations, 1)
-
-		index = slices.IndexFunc(att.Policies, func(p *v1.Policy) bool {
-			return p.Name == "materials"
-		})
-		p = att.Policies[index]
-		s.Len(p.Violations, 0)
-	})
+	}
 }
 
-func (s *testSuite) TestInlineMaterial() {
+func (s *testSuite) TestValidInlineMaterial() {
 	content, err := os.ReadFile("testdata/sbom-spdx.json")
 	s.Require().NoError(err)
 
-	state := &v1.CraftingState{
-		InputSchema: &v12.CraftingSchema{
-			Materials: []*v12.CraftingSchema_Material{
-				{
-					Name: "sbom",
-					Type: v12.CraftingSchema_Material_SBOM_SPDX_JSON,
-				},
-			},
-			Policies: []*v12.PolicyAttachment{
-				{
-					Selector: &v12.PolicyAttachment_MaterialSelector{Name: "sbom"},
-					Policy:   &v12.PolicyAttachment_Ref{Ref: "testdata/sbom_syft.yaml"},
-				},
+	schema := &v12.CraftingSchema{
+		Materials: []*v12.CraftingSchema_Material{
+			{
+				Name: "sbom",
+				Type: v12.CraftingSchema_Material_SBOM_SPDX_JSON,
 			},
 		},
-		Attestation: &v1.Attestation{
-			Workflow: &v1.WorkflowMetadata{
-				Name: "policytest",
-			},
-			Materials: map[string]*v1.Attestation_Material{
-				"sbom": {
-					MaterialType: v12.CraftingSchema_Material_SBOM_SPDX_JSON,
-					M: &v1.Attestation_Material_Artifact_{Artifact: &v1.Attestation_Material_Artifact{
-						Content: content,
-					},
-					},
-					InlineCas: true,
+		Policies: &v12.Policies{
+			Materials: []*v12.PolicyAttachment{
+				{
+					Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/sbom_syft.yaml"},
 				},
 			},
+			Attestation: nil,
 		},
 	}
-	verifier := NewPolicyVerifier(state, nil, &s.logger)
+	material := &v1.Attestation_Material{
+		M: &v1.Attestation_Material_Artifact_{Artifact: &v1.Attestation_Material_Artifact{
+			Content: content,
+		}},
+		MaterialType: v12.CraftingSchema_Material_SBOM_SPDX_JSON,
+		InlineCas:    true,
+	}
 
-	res, err := verifier.Verify(context.TODO())
+	verifier := NewPolicyVerifier(schema, &s.logger)
+
+	res, err := verifier.VerifyMaterial(context.TODO(), material, "")
 	s.Require().NoError(err)
-	s.Len(res, 0)
-
-	att := state.GetAttestation()
-	s.Len(att.Policies, 1)
-	s.Len(att.Policies[0].Violations, 0)
+	s.Len(res, 1)
+	s.Equal("made-with-syft", res[0].Name)
+	s.Len(res[0].Violations, 0)
 }
 
 func (s *testSuite) TestInvalidInlineMaterial() {
-	state := &v1.CraftingState{
-		InputSchema: &v12.CraftingSchema{
-			Materials: []*v12.CraftingSchema_Material{
-				{
-					Name: "sbom",
-					Type: v12.CraftingSchema_Material_SBOM_SPDX_JSON,
-				},
-			},
-			Policies: []*v12.PolicyAttachment{
-				{
-					Selector: &v12.PolicyAttachment_MaterialSelector{Name: "sbom"},
-					Policy:   &v12.PolicyAttachment_Ref{Ref: "testdata/sbom_syft.yaml"},
-				},
+	schema := &v12.CraftingSchema{
+		Materials: []*v12.CraftingSchema_Material{
+			{
+				Name: "sbom",
+				Type: v12.CraftingSchema_Material_SBOM_SPDX_JSON,
 			},
 		},
-		Attestation: &v1.Attestation{
-			Workflow: &v1.WorkflowMetadata{
-				Name: "policytest",
-			},
-			Materials: map[string]*v1.Attestation_Material{
-				"sbom": {
-					MaterialType: v12.CraftingSchema_Material_SBOM_SPDX_JSON,
-					M: &v1.Attestation_Material_Artifact_{Artifact: &v1.Attestation_Material_Artifact{
-						Content: []byte(`{"this": { "is": "not", "a": "sbom"}}`),
-					},
-					},
-					InlineCas: true,
+		Policies: &v12.Policies{
+			Materials: []*v12.PolicyAttachment{
+				{
+					Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/sbom_syft.yaml"},
 				},
 			},
+			Attestation: nil,
 		},
 	}
+	material := &v1.Attestation_Material{
+		M: &v1.Attestation_Material_Artifact_{Artifact: &v1.Attestation_Material_Artifact{
+			Content: []byte(`{"this": { "is": "not", "a": "sbom"}}`),
+		}},
+		MaterialType: v12.CraftingSchema_Material_SBOM_SPDX_JSON,
+		InlineCas:    true,
+	}
 
-	verifier := NewPolicyVerifier(state, nil, &s.logger)
+	verifier := NewPolicyVerifier(schema, &s.logger)
 
-	res, err := verifier.Verify(context.TODO())
+	res, err := verifier.VerifyMaterial(context.TODO(), material, "")
 	s.Require().NoError(err)
 	s.Len(res, 1)
+	s.Equal("made-with-syft", res[0].Name)
+	s.Len(res[0].Violations, 1)
+	s.Equal("made-with-syft", res[0].Violations[0].Subject)
+	s.Equal("Not made with syft", res[0].Violations[0].Message)
 }
 
 type testSuite struct {

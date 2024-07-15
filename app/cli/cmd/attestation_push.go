@@ -19,11 +19,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 )
 
 func newAttestationPushCmd() *cobra.Command {
@@ -65,10 +65,7 @@ func newAttestationPushCmd() *cobra.Command {
 			a, err := action.NewAttestationPush(&action.AttestationPushOpts{
 				ActionsOpts: actionOpts, KeyPath: pkPath, BundlePath: bundle,
 				CLIVersion: info.Version, CLIDigest: info.Digest,
-				SignServerCAPath:   signServerCAPath,
-				CASURI:             viper.GetString(confOptions.CASAPI.viperKey),
-				CASCAPath:          viper.GetString(confOptions.CASCA.viperKey),
-				ConnectionInsecure: flagInsecure,
+				SignServerCAPath: signServerCAPath,
 			})
 			if err != nil {
 				return fmt.Errorf("failed to load action: %w", err)

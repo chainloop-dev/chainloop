@@ -24,14 +24,17 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/bytefmt"
+	"cuelang.org/go/cue/cuecontext"
 	"github.com/bufbuild/protovalidate-go"
-	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	api "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
-	"github.com/chainloop-dev/chainloop/internal/casclient"
 	"github.com/google/go-containerregistry/pkg/authn"
 	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"sigs.k8s.io/yaml"
+
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	api "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/internal/casclient"
 )
 
 var (
@@ -206,4 +209,31 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 	}
 
 	return m, nil
+}
+
+// LoadJSONBytes Extracts raw data in JSON format from different sources, i.e cue or yaml files
+func LoadJSONBytes(rawData []byte, extension string) ([]byte, error) {
+	var jsonRawData []byte
+	var err error
+
+	switch extension {
+	case ".yaml", ".yml":
+		jsonRawData, err = yaml.YAMLToJSON(rawData)
+		if err != nil {
+			return nil, err
+		}
+	case ".cue":
+		ctx := cuecontext.New()
+		v := ctx.CompileBytes(rawData)
+		jsonRawData, err = v.MarshalJSON()
+		if err != nil {
+			return nil, err
+		}
+	case ".json":
+		jsonRawData = rawData
+	default:
+		return nil, errors.New("unsupported file format")
+	}
+
+	return jsonRawData, nil
 }

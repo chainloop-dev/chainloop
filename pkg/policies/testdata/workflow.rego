@@ -14,9 +14,10 @@ deny[msg] {
 
 
 is_workflow {
-    input.workflow.name == "policytest"
+    input.predicate.metadata.name == "chainloop-vault-release"
 }
 
 is_github {
-    input.runnerType == "GITHUB_ACTION"
+    input.predicate.runnerType == "GITHUB_ACTION"
+    input.predicate.env.GITHUB_SHA
 }

@@ -25,14 +25,15 @@ import (
 	"os"
 	"testing"
 
-	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
-	"github.com/chainloop-dev/chainloop/internal/attestation/signer/chainloop"
-	"github.com/chainloop-dev/chainloop/internal/attestation/signer/cosign"
 	"github.com/rs/zerolog"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/sigstore/sigstore/pkg/signature"
 	sigdsee "github.com/sigstore/sigstore/pkg/signature/dsse"
 	"github.com/stretchr/testify/suite"
+
+	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/internal/attestation/signer/chainloop"
+	"github.com/chainloop-dev/chainloop/internal/attestation/signer/cosign"
 )
 
 type rendererSuite struct {
@@ -68,7 +69,7 @@ func (s *rendererSuite) TestRender() {
 		renderer, err := NewAttestationRenderer(s.cs, "", "", s.sv)
 		s.Require().NoError(err)
 
-		envelope, err := renderer.Render()
+		envelope, err := renderer.Render(context.TODO())
 		s.NoError(err)
 
 		_, err = s.dsseVerifier.Verify(context.TODO(), envelope)
@@ -81,7 +82,7 @@ func (s *rendererSuite) TestRender() {
 		renderer, err := NewAttestationRenderer(s.cs, "", "", doubleWrapper)
 		s.Require().NoError(err)
 
-		envelope, err := renderer.Render()
+		envelope, err := renderer.Render(context.TODO())
 		s.NoError(err)
 
 		_, err = s.dsseVerifier.Verify(context.TODO(), envelope)

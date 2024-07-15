@@ -17,6 +17,7 @@ package renderer
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
@@ -24,9 +25,6 @@ import (
 	"fmt"
 	"os"
 
-	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
-	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
-	chainloopsigner "github.com/chainloop-dev/chainloop/internal/attestation/signer/chainloop"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
@@ -36,11 +34,17 @@ import (
 	sigstoresigner "github.com/sigstore/sigstore/pkg/signature"
 	sigdsee "github.com/sigstore/sigstore/pkg/signature/dsse"
 	"google.golang.org/protobuf/encoding/protojson"
+
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
+	chainloopsigner "github.com/chainloop-dev/chainloop/internal/attestation/signer/chainloop"
 )
 
 type AttestationRenderer struct {
 	logger     zerolog.Logger
 	att        *v1.Attestation
+	schema     *schemaapi.CraftingSchema
 	renderer   r
 	signer     sigstoresigner.Signer
 	dsseSigner sigstoresigner.Signer
@@ -73,6 +77,7 @@ func NewAttestationRenderer(state *v1.CraftingState, builderVersion, builderDige
 	r := &AttestationRenderer{
 		logger:     zerolog.Nop(),
 		att:        state.GetAttestation(),
+		schema:     state.GetInputSchema(),
 		dsseSigner: sigdsee.WrapSigner(signer, "application/vnd.in-toto+json"),
 		signer:     signer,
 		renderer:   chainloop.NewChainloopRendererV02(state.GetAttestation(), builderVersion, builderDigest),
@@ -87,7 +92,7 @@ func NewAttestationRenderer(state *v1.CraftingState, builderVersion, builderDige
 
 // Attestation (dsee envelope) -> { message: { Statement(in-toto): [subject, predicate] }, signature: "sig" }.
 // NOTE: It currently only supports cosign key based signing.
-func (ab *AttestationRenderer) Render() (*dsse.Envelope, error) {
+func (ab *AttestationRenderer) Render(ctx context.Context) (*dsse.Envelope, error) {
 	ab.logger.Debug().Msg("generating in-toto statement")
 
 	statement, err := ab.renderer.Statement()
@@ -98,6 +103,14 @@ func (ab *AttestationRenderer) Render() (*dsse.Envelope, error) {
 	if err := statement.Validate(); err != nil {
 		return nil, fmt.Errorf("validating intoto statement: %w", err)
 	}
+
+	// validate attestation-level policies
+	//pv := policies.NewPolicyVerifier(ab.schema, &ab.logger)
+	//polcyResult, err := pv.VerifyStatement(ctx, statement)
+	//if err != nil {
+	//	return nil, fmt.Errorf("applying policies to statement: %w", err)
+	//}
+	// insert policy results into statement
 
 	rawStatement, err := protojson.Marshal(statement)
 	if err != nil {

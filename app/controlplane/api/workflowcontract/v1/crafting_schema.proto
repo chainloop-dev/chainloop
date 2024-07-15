@@ -34,7 +34,8 @@ message CraftingSchema {
   // It works in addition to the annotations defined in the materials and the runner
   repeated Annotation annotations = 5;
 
-  repeated PolicyAttachment policies = 6;
+  // Policies to apply to this schema
+  Policies policies = 6;
 
   message Runner {
     RunnerType type = 1 [
@@ -104,6 +105,13 @@ message Annotation {
   string name = 1 [(buf.validate.field).string.pattern = "^[\\w]+$"]; // Single word optionally separated with _
   // This value can be set in the contract or provided during the attestation
   string value = 2;
+}
+
+message Policies {
+  // Policies to be applied to materials
+  repeated PolicyAttachment materials = 1;
+  // Policies to be applied to attestation metadata
+  repeated PolicyAttachment attestation = 2;
 }
 
 // A policy to be applied to this contract
@@ -183,8 +191,9 @@ message PolicySpec {
   // Only "push" is supported currently and this field will be ignored
   PolicyStage stage = 3;
 
-  // if set, it will match a material kind supported by Chainloop.
-  CraftingSchema.Material.MaterialType kind = 4;
+  // if set, it will match any material supported by Chainloop
+  // except those not having a schema
+  CraftingSchema.Material.MaterialType type = 4 [(buf.validate.field).enum = { not_in: [1, 2, 3, 10, 11]}];
 
   // buf:lint:ignore ENUM_VALUE_PREFIX ENUM_ZERO_VALUE_SUFFIX
   // buf:lint:ignore ENUM_ZERO_VALUE_SUFFIX

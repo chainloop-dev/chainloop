@@ -21,14 +21,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/secure-systems-lab/go-securesystemslib/dsse"
+	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer"
 	"github.com/chainloop-dev/chainloop/internal/attestation/signer"
-	"github.com/chainloop-dev/chainloop/pkg/policies"
-	"github.com/secure-systems-lab/go-securesystemslib/dsse"
-	"google.golang.org/grpc"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type AttestationPushOpts struct {
@@ -36,11 +36,6 @@ type AttestationPushOpts struct {
 	KeyPath, CLIVersion, CLIDigest, BundlePath string
 
 	SignServerCAPath string
-
-	CASURI    string
-	CASCAPath string // optional CA certificate for the CAS connection
-	// CAS connection insecure flag
-	ConnectionInsecure bool
 }
 
 type AttestationResult struct {
@@ -54,12 +49,6 @@ type AttestationPush struct {
 	c                                          *crafter.Crafter
 	keyPath, cliVersion, cliDigest, bundlePath string
 	signServerCAPath                           string
-
-	// CAS options
-	casURI string
-	// optional CA certificate for the CAS connection
-	casCAPath          string
-	connectionInsecure bool
 }
 
 func NewAttestationPush(cfg *AttestationPushOpts) (*AttestationPush, error) {
@@ -69,16 +58,13 @@ func NewAttestationPush(cfg *AttestationPushOpts) (*AttestationPush, error) {
 	}
 
 	return &AttestationPush{
-		ActionsOpts:        cfg.ActionsOpts,
-		c:                  c,
-		keyPath:            cfg.KeyPath,
-		cliVersion:         cfg.CLIVersion,
-		cliDigest:          cfg.CLIDigest,
-		bundlePath:         cfg.BundlePath,
-		signServerCAPath:   cfg.SignServerCAPath,
-		casURI:             cfg.CASURI,
-		casCAPath:          cfg.CASCAPath,
-		connectionInsecure: cfg.ConnectionInsecure,
+		ActionsOpts:      cfg.ActionsOpts,
+		c:                c,
+		keyPath:          cfg.KeyPath,
+		cliVersion:       cfg.CLIVersion,
+		cliDigest:        cfg.CLIDigest,
+		bundlePath:       cfg.BundlePath,
+		signServerCAPath: cfg.SignServerCAPath,
 	}, nil
 }
 
@@ -159,32 +145,13 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 		return nil, fmt.Errorf("creating signer: %w", err)
 	}
 
-	// Apply policies
-	pv := policies.NewPolicyVerifier(action.c.CraftingState, &policies.CASConnecitonOpts{
-		Insecure: action.connectionInsecure,
-		CpConn:   action.CPConnection,
-		CasAPI:   action.casURI,
-		CasCA:    action.casCAPath,
-	}, &action.Logger)
-	violations, err := pv.Verify(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("verifying policies: %w", err)
-	}
-
-	// Log violations
-	if len(violations) > 0 {
-		for _, v := range violations {
-			action.Logger.Error().Msgf("policy violation [%s]: %s", v.Subject, v.Violation)
-		}
-	}
-
 	renderer, err := renderer.NewAttestationRenderer(action.c.CraftingState, action.cliVersion, action.cliDigest, sig,
 		renderer.WithLogger(action.Logger), renderer.WithBundleOutputPath(action.bundlePath))
 	if err != nil {
 		return nil, err
 	}
 
-	envelope, err := renderer.Render()
+	envelope, err := renderer.Render(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -93,7 +93,7 @@ message Attestation {
   repeated Policy policies = 10;
 }
 
-// A policy executed against an attestation
+// A policy executed against an attestation or material
 message Policy {
   // The policy name from the policy spec
   string name = 1 [(buf.validate.field) = {
@@ -103,11 +103,14 @@ message Policy {
       id: "name.dns-1123",
     },
   }];
-  // The attachment as in the contract, with arguments and any other metadata
-  workflowcontract.v1.PolicyAttachment attachment = 2 [(buf.validate.field).required = true];
+
+  string material_name = 2;
+
+  // The body script of the policy
+  string body = 3 [(buf.validate.field).required = true];
 
   // The policy violations, if any
-  repeated Violation violations = 3;
+  repeated Violation violations = 4;
 
   message Violation {
     string subject = 1 [(buf.validate.field).required = true];

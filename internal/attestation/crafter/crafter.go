@@ -27,23 +27,20 @@ import (
 	"strings"
 	"time"
 
-	"cuelang.org/go/cue/cuecontext"
 	"github.com/bufbuild/protovalidate-go"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/rs/zerolog"
-	"github.com/sigstore/cosign/v2/pkg/blob"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"sigs.k8s.io/yaml"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	api "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/materials"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
 	"github.com/chainloop-dev/chainloop/internal/ociauth"
-	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
+	"github.com/chainloop-dev/chainloop/pkg/policies"
 )
 
 // StateManager is an interface for managing the state of the crafting process
@@ -156,33 +153,6 @@ func (c *Crafter) AlreadyInitialized(ctx context.Context, stateID string) (bool,
 	return c.stateManager.Initialized(ctx, stateID)
 }
 
-// LoadJSONBytes Extracts raw data in JSON format from different sources, i.e cue or yaml files
-func LoadJSONBytes(rawData []byte, extension string) ([]byte, error) {
-	var jsonRawData []byte
-	var err error
-
-	switch extension {
-	case ".yaml", ".yml":
-		jsonRawData, err = yaml.YAMLToJSON(rawData)
-		if err != nil {
-			return nil, err
-		}
-	case ".cue":
-		ctx := cuecontext.New()
-		v := ctx.CompileBytes(rawData)
-		jsonRawData, err = v.MarshalJSON()
-		if err != nil {
-			return nil, err
-		}
-	case ".json":
-		jsonRawData = rawData
-	default:
-		return nil, errors.New("unsupported file format")
-	}
-
-	return jsonRawData, nil
-}
-
 func LoadSchema(pathOrURI string) (*schemaapi.CraftingSchema, error) {
 	// Extract json formatted data
 	content, err := loadFileOrURL(pathOrURI)
@@ -190,7 +160,7 @@ func LoadSchema(pathOrURI string) (*schemaapi.CraftingSchema, error) {
 		return nil, err
 	}
 
-	jsonSchemaRaw, err := LoadJSONBytes(content, filepath.Ext(pathOrURI))
+	jsonSchemaRaw, err := materials.LoadJSONBytes(content, filepath.Ext(pathOrURI))
 	if err != nil {
 		return nil, err
 	}
@@ -216,14 +186,25 @@ func LoadSchema(pathOrURI string) (*schemaapi.CraftingSchema, error) {
 	}
 
 	// Load, validate policies, and embed them in the schema
-	for _, p := range schema.GetPolicies() {
-		spec, err := LoadPolicySpec(p)
+	if err = validateAndPreloadPolicies(schema.GetPolicies().GetMaterials()); err != nil {
+		return nil, fmt.Errorf("validating policies: %w", err)
+	}
+	if err = validateAndPreloadPolicies(schema.GetPolicies().GetAttestation()); err != nil {
+		return nil, fmt.Errorf("validating policies: %w", err)
+	}
+
+	return schema, nil
+}
+
+func validateAndPreloadPolicies(pols []*schemaapi.PolicyAttachment) error {
+	for _, p := range pols {
+		spec, err := policies.LoadPolicySpec(p)
 		if err != nil {
-			return nil, fmt.Errorf("validating policy: %w", err)
+			return fmt.Errorf("validating policy: %w", err)
 		}
-		script, err := LoadPolicyScriptFromSpec(spec)
+		script, err := policies.LoadPolicyScriptFromSpec(spec)
 		if err != nil {
-			return nil, fmt.Errorf("loading policy script: %w", err)
+			return fmt.Errorf("loading policy script: %w", err)
 		}
 
 		// embed the script in the policy (if not already)
@@ -232,66 +213,7 @@ func LoadSchema(pathOrURI string) (*schemaapi.CraftingSchema, error) {
 		p.Policy = &schemaapi.PolicyAttachment_Embedded{Embedded: spec}
 	}
 
-	return schema, nil
-}
-
-// LoadPolicySpec loads and validates a policy spec from a contract
-func LoadPolicySpec(attachment *schemaapi.PolicyAttachment) (*schemaapi.Policy, error) {
-	if attachment.GetEmbedded() != nil {
-		return attachment.GetEmbedded(), nil
-	}
-
-	// if policy is not embedded in the contract, we'll look for it
-
-	// look for the referenced policy spec (note: loading by `name` is not supported yet)
-	reference := attachment.GetRef()
-	// this method understands env, http and https schemes, and defaults to file system.
-	rawData, err := blob.LoadFileOrURL(reference)
-	if err != nil {
-		return nil, fmt.Errorf("loading policy spec: %w", err)
-	}
-	jsonContent, err := LoadJSONBytes(rawData, filepath.Ext(reference))
-	if err != nil {
-		return nil, fmt.Errorf("loading policy spec: %w", err)
-	}
-	var policy schemaapi.Policy
-	if err := protojson.Unmarshal(jsonContent, &policy); err != nil {
-		return nil, fmt.Errorf("unmarshalling policy spec: %w", err)
-	}
-	// Validate just in case
-	validator, err := protovalidate.New()
-	if err != nil {
-		return nil, fmt.Errorf("validating policy spec: %w", err)
-	}
-	err = validator.Validate(&policy)
-	if err != nil {
-		return nil, fmt.Errorf("validating policy spec: %w", err)
-	}
-
-	return &policy, nil
-}
-
-// LoadPolicyScriptFromSpec loads a policy referenced from the spec
-func LoadPolicyScriptFromSpec(spec *schemaapi.Policy) (*engine.Policy, error) {
-	var content []byte
-	var err error
-
-	switch source := spec.GetSpec().GetSource().(type) {
-	case *schemaapi.PolicySpec_Embedded:
-		content = []byte(source.Embedded)
-	case *schemaapi.PolicySpec_Path:
-		content, err = blob.LoadFileOrURL(source.Path)
-		if err != nil {
-			return nil, fmt.Errorf("loading policy content: %w", err)
-		}
-	default:
-		return nil, fmt.Errorf("policy spec is empty")
-	}
-
-	return &engine.Policy{
-		Name:   spec.GetMetadata().GetName(),
-		Source: content,
-	}, nil
+	return nil
 }
 
 // Initialize the temporary file with the content of the schema
@@ -656,13 +578,20 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 		return fmt.Errorf("validation error: %w", err)
 	}
 
-	// 5 - Attach it to state
-	if mt != nil {
-		if c.CraftingState.Attestation.Materials == nil {
-			c.CraftingState.Attestation.Materials = map[string]*api.Attestation_Material{m.Name: mt}
-		}
-		c.CraftingState.Attestation.Materials[m.Name] = mt
+	// Validate policies
+	pv := policies.NewPolicyVerifier(c.CraftingState.InputSchema, c.logger)
+	policyResults, err := pv.VerifyMaterial(ctx, mt, value)
+	if err != nil {
+		return fmt.Errorf("error applying policies to material: %w", err)
 	}
+	// store policy results
+	c.CraftingState.Attestation.Policies = append(c.CraftingState.Attestation.Policies, policyResults...)
+
+	// 5 - Attach it to state
+	if c.CraftingState.Attestation.Materials == nil {
+		c.CraftingState.Attestation.Materials = map[string]*api.Attestation_Material{m.Name: mt}
+	}
+	c.CraftingState.Attestation.Materials[m.Name] = mt
 
 	// 6 - Persist state
 	if err := c.stateManager.Write(ctx, attestationID, c.CraftingState); err != nil {

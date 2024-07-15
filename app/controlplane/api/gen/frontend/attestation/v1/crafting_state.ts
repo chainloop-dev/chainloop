@@ -9,7 +9,6 @@ import {
   CraftingSchema_Runner_RunnerType,
   craftingSchema_Runner_RunnerTypeFromJSON,
   craftingSchema_Runner_RunnerTypeToJSON,
-  PolicyAttachment,
 } from "../../workflowcontract/v1/crafting_schema";
 
 export const protobufPackage = "attestation.v1";
@@ -100,12 +99,13 @@ export interface Attestation_EnvVarsEntry {
   value: string;
 }
 
-/** A policy executed against an attestation */
+/** A policy executed against an attestation or material */
 export interface Policy {
   /** The policy name from the policy spec */
   name: string;
-  /** The attachment as in the contract, with arguments and any other metadata */
-  attachment?: PolicyAttachment;
+  materialName: string;
+  /** The body script of the policy */
+  body: string;
   /** The policy violations, if any */
   violations: Policy_Violation[];
 }
@@ -1170,7 +1170,7 @@ export const Attestation_EnvVarsEntry = {
 };
 
 function createBasePolicy(): Policy {
-  return { name: "", attachment: undefined, violations: [] };
+  return { name: "", materialName: "", body: "", violations: [] };
 }
 
 export const Policy = {
@@ -1178,11 +1178,14 @@ export const Policy = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.attachment !== undefined) {
-      PolicyAttachment.encode(message.attachment, writer.uint32(18).fork()).ldelim();
+    if (message.materialName !== "") {
+      writer.uint32(18).string(message.materialName);
+    }
+    if (message.body !== "") {
+      writer.uint32(26).string(message.body);
     }
     for (const v of message.violations) {
-      Policy_Violation.encode(v!, writer.uint32(26).fork()).ldelim();
+      Policy_Violation.encode(v!, writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -1206,10 +1209,17 @@ export const Policy = {
             break;
           }
 
-          message.attachment = PolicyAttachment.decode(reader, reader.uint32());
+          message.materialName = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
+            break;
+          }
+
+          message.body = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
             break;
           }
 
@@ -1227,7 +1237,8 @@ export const Policy = {
   fromJSON(object: any): Policy {
     return {
       name: isSet(object.name) ? String(object.name) : "",
-      attachment: isSet(object.attachment) ? PolicyAttachment.fromJSON(object.attachment) : undefined,
+      materialName: isSet(object.materialName) ? String(object.materialName) : "",
+      body: isSet(object.body) ? String(object.body) : "",
       violations: Array.isArray(object?.violations)
         ? object.violations.map((e: any) => Policy_Violation.fromJSON(e))
         : [],
@@ -1237,8 +1248,8 @@ export const Policy = {
   toJSON(message: Policy): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
-    message.attachment !== undefined &&
-      (obj.attachment = message.attachment ? PolicyAttachment.toJSON(message.attachment) : undefined);
+    message.materialName !== undefined && (obj.materialName = message.materialName);
+    message.body !== undefined && (obj.body = message.body);
     if (message.violations) {
       obj.violations = message.violations.map((e) => e ? Policy_Violation.toJSON(e) : undefined);
     } else {
@@ -1254,9 +1265,8 @@ export const Policy = {
   fromPartial<I extends Exact<DeepPartial<Policy>, I>>(object: I): Policy {
     const message = createBasePolicy();
     message.name = object.name ?? "";
-    message.attachment = (object.attachment !== undefined && object.attachment !== null)
-      ? PolicyAttachment.fromPartial(object.attachment)
-      : undefined;
+    message.materialName = object.materialName ?? "";
+    message.body = object.body ?? "";
     message.violations = object.violations?.map((e) => Policy_Violation.fromPartial(e)) || [];
     return message;
   },

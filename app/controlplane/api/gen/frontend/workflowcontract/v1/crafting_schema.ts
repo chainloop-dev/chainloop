@@ -19,7 +19,8 @@ export interface CraftingSchema {
    * It works in addition to the annotations defined in the materials and the runner
    */
   annotations: Annotation[];
-  policies: PolicyAttachment[];
+  /** Policies to apply to this schema */
+  policies?: Policies;
 }
 
 export interface CraftingSchema_Runner {
@@ -238,6 +239,13 @@ export interface Annotation {
   value: string;
 }
 
+export interface Policies {
+  /** Policies to be applied to materials */
+  materials: PolicyAttachment[];
+  /** Policies to be applied to attestation metadata */
+  attestation: PolicyAttachment[];
+}
+
 /** A policy to be applied to this contract */
 export interface PolicyAttachment {
   /** policy reference, it might be in URI format. */
@@ -300,8 +308,11 @@ export interface PolicySpec {
    * Only "push" is supported currently and this field will be ignored
    */
   stage: PolicySpec_PolicyStage;
-  /** if set, it will match a material kind supported by Chainloop. */
-  kind: CraftingSchema_Material_MaterialType;
+  /**
+   * if set, it will match any material supported by Chainloop
+   * except those not having a schema
+   */
+  type: CraftingSchema_Material_MaterialType;
 }
 
 /**
@@ -342,7 +353,14 @@ export function policySpec_PolicyStageToJSON(object: PolicySpec_PolicyStage): st
 }
 
 function createBaseCraftingSchema(): CraftingSchema {
-  return { schemaVersion: "", materials: [], envAllowList: [], runner: undefined, annotations: [], policies: [] };
+  return {
+    schemaVersion: "",
+    materials: [],
+    envAllowList: [],
+    runner: undefined,
+    annotations: [],
+    policies: undefined,
+  };
 }
 
 export const CraftingSchema = {
@@ -362,8 +380,8 @@ export const CraftingSchema = {
     for (const v of message.annotations) {
       Annotation.encode(v!, writer.uint32(42).fork()).ldelim();
     }
-    for (const v of message.policies) {
-      PolicyAttachment.encode(v!, writer.uint32(50).fork()).ldelim();
+    if (message.policies !== undefined) {
+      Policies.encode(message.policies, writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -415,7 +433,7 @@ export const CraftingSchema = {
             break;
           }
 
-          message.policies.push(PolicyAttachment.decode(reader, reader.uint32()));
+          message.policies = Policies.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -435,7 +453,7 @@ export const CraftingSchema = {
       envAllowList: Array.isArray(object?.envAllowList) ? object.envAllowList.map((e: any) => String(e)) : [],
       runner: isSet(object.runner) ? CraftingSchema_Runner.fromJSON(object.runner) : undefined,
       annotations: Array.isArray(object?.annotations) ? object.annotations.map((e: any) => Annotation.fromJSON(e)) : [],
-      policies: Array.isArray(object?.policies) ? object.policies.map((e: any) => PolicyAttachment.fromJSON(e)) : [],
+      policies: isSet(object.policies) ? Policies.fromJSON(object.policies) : undefined,
     };
   },
 
@@ -459,11 +477,7 @@ export const CraftingSchema = {
     } else {
       obj.annotations = [];
     }
-    if (message.policies) {
-      obj.policies = message.policies.map((e) => e ? PolicyAttachment.toJSON(e) : undefined);
-    } else {
-      obj.policies = [];
-    }
+    message.policies !== undefined && (obj.policies = message.policies ? Policies.toJSON(message.policies) : undefined);
     return obj;
   },
 
@@ -480,7 +494,9 @@ export const CraftingSchema = {
       ? CraftingSchema_Runner.fromPartial(object.runner)
       : undefined;
     message.annotations = object.annotations?.map((e) => Annotation.fromPartial(e)) || [];
-    message.policies = object.policies?.map((e) => PolicyAttachment.fromPartial(e)) || [];
+    message.policies = (object.policies !== undefined && object.policies !== null)
+      ? Policies.fromPartial(object.policies)
+      : undefined;
     return message;
   },
 };
@@ -722,6 +738,87 @@ export const Annotation = {
     const message = createBaseAnnotation();
     message.name = object.name ?? "";
     message.value = object.value ?? "";
+    return message;
+  },
+};
+
+function createBasePolicies(): Policies {
+  return { materials: [], attestation: [] };
+}
+
+export const Policies = {
+  encode(message: Policies, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.materials) {
+      PolicyAttachment.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    for (const v of message.attestation) {
+      PolicyAttachment.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Policies {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePolicies();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.materials.push(PolicyAttachment.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.attestation.push(PolicyAttachment.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Policies {
+    return {
+      materials: Array.isArray(object?.materials) ? object.materials.map((e: any) => PolicyAttachment.fromJSON(e)) : [],
+      attestation: Array.isArray(object?.attestation)
+        ? object.attestation.map((e: any) => PolicyAttachment.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: Policies): unknown {
+    const obj: any = {};
+    if (message.materials) {
+      obj.materials = message.materials.map((e) => e ? PolicyAttachment.toJSON(e) : undefined);
+    } else {
+      obj.materials = [];
+    }
+    if (message.attestation) {
+      obj.attestation = message.attestation.map((e) => e ? PolicyAttachment.toJSON(e) : undefined);
+    } else {
+      obj.attestation = [];
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Policies>, I>>(base?: I): Policies {
+    return Policies.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<Policies>, I>>(object: I): Policies {
+    const message = createBasePolicies();
+    message.materials = object.materials?.map((e) => PolicyAttachment.fromPartial(e)) || [];
+    message.attestation = object.attestation?.map((e) => PolicyAttachment.fromPartial(e)) || [];
     return message;
   },
 };
@@ -1149,7 +1246,7 @@ export const Metadata = {
 };
 
 function createBasePolicySpec(): PolicySpec {
-  return { path: undefined, embedded: undefined, stage: 0, kind: 0 };
+  return { path: undefined, embedded: undefined, stage: 0, type: 0 };
 }
 
 export const PolicySpec = {
@@ -1163,8 +1260,8 @@ export const PolicySpec = {
     if (message.stage !== 0) {
       writer.uint32(24).int32(message.stage);
     }
-    if (message.kind !== 0) {
-      writer.uint32(32).int32(message.kind);
+    if (message.type !== 0) {
+      writer.uint32(32).int32(message.type);
     }
     return writer;
   },
@@ -1202,7 +1299,7 @@ export const PolicySpec = {
             break;
           }
 
-          message.kind = reader.int32() as any;
+          message.type = reader.int32() as any;
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1218,7 +1315,7 @@ export const PolicySpec = {
       path: isSet(object.path) ? String(object.path) : undefined,
       embedded: isSet(object.embedded) ? String(object.embedded) : undefined,
       stage: isSet(object.stage) ? policySpec_PolicyStageFromJSON(object.stage) : 0,
-      kind: isSet(object.kind) ? craftingSchema_Material_MaterialTypeFromJSON(object.kind) : 0,
+      type: isSet(object.type) ? craftingSchema_Material_MaterialTypeFromJSON(object.type) : 0,
     };
   },
 
@@ -1227,7 +1324,7 @@ export const PolicySpec = {
     message.path !== undefined && (obj.path = message.path);
     message.embedded !== undefined && (obj.embedded = message.embedded);
     message.stage !== undefined && (obj.stage = policySpec_PolicyStageToJSON(message.stage));
-    message.kind !== undefined && (obj.kind = craftingSchema_Material_MaterialTypeToJSON(message.kind));
+    message.type !== undefined && (obj.type = craftingSchema_Material_MaterialTypeToJSON(message.type));
     return obj;
   },
 
@@ -1240,7 +1337,7 @@ export const PolicySpec = {
     message.path = object.path ?? undefined;
     message.embedded = object.embedded ?? undefined;
     message.stage = object.stage ?? 0;
-    message.kind = object.kind ?? 0;
+    message.type = object.type ?? 0;
     return message;
   },
 };

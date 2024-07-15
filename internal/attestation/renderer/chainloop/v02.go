@@ -25,7 +25,6 @@ import (
 
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
@@ -41,7 +40,12 @@ const PredicateTypeV02 = "chainloop.dev/attestation/v0.2"
 type ProvenancePredicateV02 struct {
 	*ProvenancePredicateCommon
 	Materials []*intoto.ResourceDescriptor `json:"materials,omitempty"`
-	Policies  []*v1.Policy                 `json:"policies,omitempty"`
+	Policies  map[string]*PolicyEvaluation `json:"policies,omitempty"`
+}
+
+type PolicyEvaluation struct {
+	Material   string            `json:"material,omitempty"`
+	Violations map[string]string `json:"violations,omitempty"`
 }
 
 type RendererV02 struct {
@@ -169,41 +173,7 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 		return nil, fmt.Errorf("error unmarshaling predicate: %w", err)
 	}
 
-	// Policies have oneofs, which are not compatible with the regular json.Marshal. We need to do it separately
-	policyValues, err := policiesToValues(r.att.Policies)
-	if err != nil {
-		return nil, fmt.Errorf("error converting policies to values: %w", err)
-	}
-	// Store it in a ListValue struct.
-	predicate.Fields["policies"] = &structpb.Value{Kind: &structpb.Value_ListValue{ListValue: &structpb.ListValue{Values: policyValues}}}
-
 	return predicate, nil
-}
-
-func policiesToValues(policies []*v1.Policy) ([]*structpb.Value, error) {
-	values := make([]*structpb.Value, 0)
-	for _, pol := range policies {
-		policyValue, err := protoToValue(pol)
-		if err != nil {
-			return nil, fmt.Errorf("error converting policy to value: %w", err)
-		}
-		values = append(values, policyValue)
-	}
-
-	return values, nil
-}
-
-func protoToValue(m proto.Message) (*structpb.Value, error) {
-	jsonValue, err := protojson.Marshal(m)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling proto: %w", err)
-	}
-	value := &structpb.Value{}
-	if err := protojson.Unmarshal(jsonValue, value); err != nil {
-		return nil, fmt.Errorf("error unmarshaling json to value: %w", err)
-	}
-
-	return value, nil
 }
 
 func outputMaterials(att *v1.Attestation, onlyOutput bool) ([]*intoto.ResourceDescriptor, error) {
