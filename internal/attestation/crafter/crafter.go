@@ -176,20 +176,20 @@ func LoadSchema(pathOrURI string) (*schemaapi.CraftingSchema, error) {
 	}
 
 	// Proto validations
-	if err = validator.Validate(schema); err != nil {
+	if err := validator.Validate(schema); err != nil {
 		return nil, err
 	}
 
 	// Custom Validations
-	if err = schema.ValidateUniqueMaterialName(); err != nil {
+	if err := schema.ValidateUniqueMaterialName(); err != nil {
 		return nil, err
 	}
 
 	// Load, validate policies, and embed them in the schema
-	if err = validateAndPreloadPolicies(schema.GetPolicies().GetMaterials()); err != nil {
+	if err := validateAndPreloadPolicies(schema.GetPolicies().GetMaterials()); err != nil {
 		return nil, fmt.Errorf("validating policies: %w", err)
 	}
-	if err = validateAndPreloadPolicies(schema.GetPolicies().GetAttestation()); err != nil {
+	if err := validateAndPreloadPolicies(schema.GetPolicies().GetAttestation()); err != nil {
 		return nil, fmt.Errorf("validating policies: %w", err)
 	}
 
