@@ -307,43 +307,6 @@ export interface PolicySpec {
   type: CraftingSchema_Material_MaterialType;
 }
 
-/**
- * buf:lint:ignore ENUM_VALUE_PREFIX ENUM_ZERO_VALUE_SUFFIX
- * buf:lint:ignore ENUM_ZERO_VALUE_SUFFIX
- */
-export enum PolicySpec_PolicyStage {
-  UNSPECIFIED = 0,
-  PUSH = 1,
-  UNRECOGNIZED = -1,
-}
-
-export function policySpec_PolicyStageFromJSON(object: any): PolicySpec_PolicyStage {
-  switch (object) {
-    case 0:
-    case "UNSPECIFIED":
-      return PolicySpec_PolicyStage.UNSPECIFIED;
-    case 1:
-    case "PUSH":
-      return PolicySpec_PolicyStage.PUSH;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return PolicySpec_PolicyStage.UNRECOGNIZED;
-  }
-}
-
-export function policySpec_PolicyStageToJSON(object: PolicySpec_PolicyStage): string {
-  switch (object) {
-    case PolicySpec_PolicyStage.UNSPECIFIED:
-      return "UNSPECIFIED";
-    case PolicySpec_PolicyStage.PUSH:
-      return "PUSH";
-    case PolicySpec_PolicyStage.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
 function createBaseCraftingSchema(): CraftingSchema {
   return {
     schemaVersion: "",

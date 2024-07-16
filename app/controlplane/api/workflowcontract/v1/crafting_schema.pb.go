@@ -192,54 +192,6 @@ func (CraftingSchema_Material_MaterialType) EnumDescriptor() ([]byte, []int) {
 	return file_workflowcontract_v1_crafting_schema_proto_rawDescGZIP(), []int{0, 1, 0}
 }
 
-// buf:lint:ignore ENUM_VALUE_PREFIX ENUM_ZERO_VALUE_SUFFIX
-// buf:lint:ignore ENUM_ZERO_VALUE_SUFFIX
-type PolicySpec_PolicyStage int32
-
-const (
-	PolicySpec_UNSPECIFIED PolicySpec_PolicyStage = 0
-	PolicySpec_PUSH        PolicySpec_PolicyStage = 1
-)
-
-// Enum value maps for PolicySpec_PolicyStage.
-var (
-	PolicySpec_PolicyStage_name = map[int32]string{
-		0: "UNSPECIFIED",
-		1: "PUSH",
-	}
-	PolicySpec_PolicyStage_value = map[string]int32{
-		"UNSPECIFIED": 0,
-		"PUSH":        1,
-	}
-)
-
-func (x PolicySpec_PolicyStage) Enum() *PolicySpec_PolicyStage {
-	p := new(PolicySpec_PolicyStage)
-	*p = x
-	return p
-}
-
-func (x PolicySpec_PolicyStage) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (PolicySpec_PolicyStage) Descriptor() protoreflect.EnumDescriptor {
-	return file_workflowcontract_v1_crafting_schema_proto_enumTypes[2].Descriptor()
-}
-
-func (PolicySpec_PolicyStage) Type() protoreflect.EnumType {
-	return &file_workflowcontract_v1_crafting_schema_proto_enumTypes[2]
-}
-
-func (x PolicySpec_PolicyStage) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use PolicySpec_PolicyStage.Descriptor instead.
-func (PolicySpec_PolicyStage) EnumDescriptor() ([]byte, []int) {
-	return file_workflowcontract_v1_crafting_schema_proto_rawDescGZIP(), []int{6, 0}
-}
-
 // Schema definition provided by the user to the tool
 // that defines the schema of the workflowRun
 type CraftingSchema struct {
@@ -1158,7 +1110,7 @@ var file_workflowcontract_v1_crafting_schema_proto_rawDesc = []byte{
 	0x73, 0x2e, 0x6d, 0x61, 0x74, 0x63, 0x68, 0x65, 0x73, 0x28, 0x27, 0x5e, 0x5b, 0x61, 0x2d, 0x7a,
 	0x30, 0x2d, 0x39, 0x5d, 0x28, 0x5b, 0x2d, 0x61, 0x2d, 0x7a, 0x30, 0x2d, 0x39, 0x5d, 0x2a, 0x5b,
 	0x61, 0x2d, 0x7a, 0x30, 0x2d, 0x39, 0x5d, 0x29, 0x3f, 0x24, 0x27, 0x29, 0x52, 0x04, 0x6e, 0x61,
-	0x6d, 0x65, 0x22, 0xd9, 0x01, 0x0a, 0x0a, 0x50, 0x6f, 0x6c, 0x69, 0x63, 0x79, 0x53, 0x70, 0x65,
+	0x6d, 0x65, 0x22, 0xaf, 0x01, 0x0a, 0x0a, 0x50, 0x6f, 0x6c, 0x69, 0x63, 0x79, 0x53, 0x70, 0x65,
 	0x63, 0x12, 0x14, 0x0a, 0x04, 0x70, 0x61, 0x74, 0x68, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x48,
 	0x00, 0x52, 0x04, 0x70, 0x61, 0x74, 0x68, 0x12, 0x1c, 0x0a, 0x08, 0x65, 0x6d, 0x62, 0x65, 0x64,
 	0x64, 0x65, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x48, 0x00, 0x52, 0x08, 0x65, 0x6d, 0x62,
@@ -1168,16 +1120,13 @@ var file_workflowcontract_v1_crafting_schema_proto_rawDesc = []byte{
 	0x6e, 0x67, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x4d, 0x61, 0x74, 0x65, 0x72, 0x69, 0x61,
 	0x6c, 0x2e, 0x4d, 0x61, 0x74, 0x65, 0x72, 0x69, 0x61, 0x6c, 0x54, 0x79, 0x70, 0x65, 0x42, 0x0d,
 	0xba, 0x48, 0x0a, 0x82, 0x01, 0x07, 0x22, 0x05, 0x01, 0x02, 0x03, 0x0a, 0x0b, 0x52, 0x04, 0x74,
-	0x79, 0x70, 0x65, 0x22, 0x28, 0x0a, 0x0b, 0x50, 0x6f, 0x6c, 0x69, 0x63, 0x79, 0x53, 0x74, 0x61,
-	0x67, 0x65, 0x12, 0x0f, 0x0a, 0x0b, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45,
-	0x44, 0x10, 0x00, 0x12, 0x08, 0x0a, 0x04, 0x50, 0x55, 0x53, 0x48, 0x10, 0x01, 0x42, 0x0f, 0x0a,
-	0x06, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x12, 0x05, 0xba, 0x48, 0x02, 0x08, 0x01, 0x42, 0x4d,
-	0x5a, 0x4b, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x63, 0x68, 0x61,
-	0x69, 0x6e, 0x6c, 0x6f, 0x6f, 0x70, 0x2d, 0x64, 0x65, 0x76, 0x2f, 0x63, 0x68, 0x61, 0x69, 0x6e,
-	0x6c, 0x6f, 0x6f, 0x70, 0x2f, 0x61, 0x70, 0x70, 0x2f, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c,
-	0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x77, 0x6f, 0x72, 0x6b, 0x66, 0x6c,
-	0x6f, 0x77, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x63, 0x74, 0x2f, 0x76, 0x31, 0x62, 0x06, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x79, 0x70, 0x65, 0x42, 0x0f, 0x0a, 0x06, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x12, 0x05, 0xba,
+	0x48, 0x02, 0x08, 0x01, 0x42, 0x4d, 0x5a, 0x4b, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63,
+	0x6f, 0x6d, 0x2f, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x6c, 0x6f, 0x6f, 0x70, 0x2d, 0x64, 0x65, 0x76,
+	0x2f, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x6c, 0x6f, 0x6f, 0x70, 0x2f, 0x61, 0x70, 0x70, 0x2f, 0x63,
+	0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2f, 0x61, 0x70, 0x69, 0x2f,
+	0x77, 0x6f, 0x72, 0x6b, 0x66, 0x6c, 0x6f, 0x77, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x63, 0x74,
+	0x2f, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1192,40 +1141,39 @@ func file_workflowcontract_v1_crafting_schema_proto_rawDescGZIP() []byte {
 	return file_workflowcontract_v1_crafting_schema_proto_rawDescData
 }
 
-var file_workflowcontract_v1_crafting_schema_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_workflowcontract_v1_crafting_schema_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_workflowcontract_v1_crafting_schema_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_workflowcontract_v1_crafting_schema_proto_goTypes = []interface{}{
 	(CraftingSchema_Runner_RunnerType)(0),     // 0: workflowcontract.v1.CraftingSchema.Runner.RunnerType
 	(CraftingSchema_Material_MaterialType)(0), // 1: workflowcontract.v1.CraftingSchema.Material.MaterialType
-	(PolicySpec_PolicyStage)(0),               // 2: workflowcontract.v1.PolicySpec.PolicyStage
-	(*CraftingSchema)(nil),                    // 3: workflowcontract.v1.CraftingSchema
-	(*Annotation)(nil),                        // 4: workflowcontract.v1.Annotation
-	(*Policies)(nil),                          // 5: workflowcontract.v1.Policies
-	(*PolicyAttachment)(nil),                  // 6: workflowcontract.v1.PolicyAttachment
-	(*Policy)(nil),                            // 7: workflowcontract.v1.Policy
-	(*Metadata)(nil),                          // 8: workflowcontract.v1.Metadata
-	(*PolicySpec)(nil),                        // 9: workflowcontract.v1.PolicySpec
-	(*CraftingSchema_Runner)(nil),             // 10: workflowcontract.v1.CraftingSchema.Runner
-	(*CraftingSchema_Material)(nil),           // 11: workflowcontract.v1.CraftingSchema.Material
-	(*PolicyAttachment_MaterialSelector)(nil), // 12: workflowcontract.v1.PolicyAttachment.MaterialSelector
-	(*PolicyAttachment_PolicyArgument)(nil),   // 13: workflowcontract.v1.PolicyAttachment.PolicyArgument
+	(*CraftingSchema)(nil),                    // 2: workflowcontract.v1.CraftingSchema
+	(*Annotation)(nil),                        // 3: workflowcontract.v1.Annotation
+	(*Policies)(nil),                          // 4: workflowcontract.v1.Policies
+	(*PolicyAttachment)(nil),                  // 5: workflowcontract.v1.PolicyAttachment
+	(*Policy)(nil),                            // 6: workflowcontract.v1.Policy
+	(*Metadata)(nil),                          // 7: workflowcontract.v1.Metadata
+	(*PolicySpec)(nil),                        // 8: workflowcontract.v1.PolicySpec
+	(*CraftingSchema_Runner)(nil),             // 9: workflowcontract.v1.CraftingSchema.Runner
+	(*CraftingSchema_Material)(nil),           // 10: workflowcontract.v1.CraftingSchema.Material
+	(*PolicyAttachment_MaterialSelector)(nil), // 11: workflowcontract.v1.PolicyAttachment.MaterialSelector
+	(*PolicyAttachment_PolicyArgument)(nil),   // 12: workflowcontract.v1.PolicyAttachment.PolicyArgument
 }
 var file_workflowcontract_v1_crafting_schema_proto_depIdxs = []int32{
-	11, // 0: workflowcontract.v1.CraftingSchema.materials:type_name -> workflowcontract.v1.CraftingSchema.Material
-	10, // 1: workflowcontract.v1.CraftingSchema.runner:type_name -> workflowcontract.v1.CraftingSchema.Runner
-	4,  // 2: workflowcontract.v1.CraftingSchema.annotations:type_name -> workflowcontract.v1.Annotation
-	5,  // 3: workflowcontract.v1.CraftingSchema.policies:type_name -> workflowcontract.v1.Policies
-	6,  // 4: workflowcontract.v1.Policies.materials:type_name -> workflowcontract.v1.PolicyAttachment
-	6,  // 5: workflowcontract.v1.Policies.attestation:type_name -> workflowcontract.v1.PolicyAttachment
-	7,  // 6: workflowcontract.v1.PolicyAttachment.embedded:type_name -> workflowcontract.v1.Policy
-	12, // 7: workflowcontract.v1.PolicyAttachment.selector:type_name -> workflowcontract.v1.PolicyAttachment.MaterialSelector
-	13, // 8: workflowcontract.v1.PolicyAttachment.with:type_name -> workflowcontract.v1.PolicyAttachment.PolicyArgument
-	8,  // 9: workflowcontract.v1.Policy.metadata:type_name -> workflowcontract.v1.Metadata
-	9,  // 10: workflowcontract.v1.Policy.spec:type_name -> workflowcontract.v1.PolicySpec
+	10, // 0: workflowcontract.v1.CraftingSchema.materials:type_name -> workflowcontract.v1.CraftingSchema.Material
+	9,  // 1: workflowcontract.v1.CraftingSchema.runner:type_name -> workflowcontract.v1.CraftingSchema.Runner
+	3,  // 2: workflowcontract.v1.CraftingSchema.annotations:type_name -> workflowcontract.v1.Annotation
+	4,  // 3: workflowcontract.v1.CraftingSchema.policies:type_name -> workflowcontract.v1.Policies
+	5,  // 4: workflowcontract.v1.Policies.materials:type_name -> workflowcontract.v1.PolicyAttachment
+	5,  // 5: workflowcontract.v1.Policies.attestation:type_name -> workflowcontract.v1.PolicyAttachment
+	6,  // 6: workflowcontract.v1.PolicyAttachment.embedded:type_name -> workflowcontract.v1.Policy
+	11, // 7: workflowcontract.v1.PolicyAttachment.selector:type_name -> workflowcontract.v1.PolicyAttachment.MaterialSelector
+	12, // 8: workflowcontract.v1.PolicyAttachment.with:type_name -> workflowcontract.v1.PolicyAttachment.PolicyArgument
+	7,  // 9: workflowcontract.v1.Policy.metadata:type_name -> workflowcontract.v1.Metadata
+	8,  // 10: workflowcontract.v1.Policy.spec:type_name -> workflowcontract.v1.PolicySpec
 	1,  // 11: workflowcontract.v1.PolicySpec.type:type_name -> workflowcontract.v1.CraftingSchema.Material.MaterialType
 	0,  // 12: workflowcontract.v1.CraftingSchema.Runner.type:type_name -> workflowcontract.v1.CraftingSchema.Runner.RunnerType
 	1,  // 13: workflowcontract.v1.CraftingSchema.Material.type:type_name -> workflowcontract.v1.CraftingSchema.Material.MaterialType
-	4,  // 14: workflowcontract.v1.CraftingSchema.Material.annotations:type_name -> workflowcontract.v1.Annotation
+	3,  // 14: workflowcontract.v1.CraftingSchema.Material.annotations:type_name -> workflowcontract.v1.Annotation
 	15, // [15:15] is the sub-list for method output_type
 	15, // [15:15] is the sub-list for method input_type
 	15, // [15:15] is the sub-list for extension type_name
@@ -1385,7 +1333,7 @@ func file_workflowcontract_v1_crafting_schema_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_workflowcontract_v1_crafting_schema_proto_rawDesc,
-			NumEnums:      3,
+			NumEnums:      2,
 			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   0,
