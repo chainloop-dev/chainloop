@@ -17,6 +17,8 @@ package policies
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -25,6 +27,7 @@ import (
 	"github.com/bufbuild/protovalidate-go"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
+	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/sigstore/cosign/v2/pkg/blob"
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -151,16 +154,33 @@ func engineViolationsToAPIViolations(input []*engine.PolicyViolation) []*v12.Pol
 }
 
 func getMaterialContent(material *v12.Attestation_Material, artifactPath string) ([]byte, error) {
+	var rawMaterial []byte
+	var err error
 	if material.InlineCas {
-		return material.GetArtifact().GetContent(), nil
-	}
-
-	if artifactPath == "" {
+		rawMaterial = material.GetArtifact().GetContent()
+	} else if artifactPath == "" {
 		return nil, errors.New("artifact path required")
+	} else {
+		// read content from local filesystem
+		rawMaterial, err = os.ReadFile(artifactPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read material content: %w", err)
+		}
+	}
+	// special case for ATTESTATION materials, the statement needs to be extracted from the dsse wrapper.
+	if material.MaterialType == v1.CraftingSchema_Material_ATTESTATION {
+		var envelope dsse.Envelope
+		if err := json.Unmarshal(rawMaterial, &envelope); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal attestation material: %w", err)
+		}
+
+		_, err = base64.StdEncoding.Decode(rawMaterial, []byte(envelope.Payload))
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode attestation material: %w", err)
+		}
 	}
 
-	// read content from local filesystem
-	return os.ReadFile(artifactPath)
+	return rawMaterial, nil
 }
 
 func (pv *PolicyVerifier) requiredPoliciesForMaterial(material *v12.Attestation_Material) ([]*v1.PolicyAttachment, error) {
