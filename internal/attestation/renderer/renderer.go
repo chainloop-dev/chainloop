@@ -152,27 +152,37 @@ func (ab *AttestationRenderer) Render(ctx context.Context) (*dsse.Envelope, erro
 	return &dsseEnvelope, nil
 }
 
+// addPolicyResults adds policy evaluation results to the statement. It does it by deserializing the predicate from a structpb.Struct,
+// filling PolicyEvaluations, and serializing it again to a structpb.Struct object, using JSON as an intermediate representation.
+// Note that this is needed because intoto predicates are generic structpb.Struct
 func addPolicyResults(statement *intoto.Statement, policyResults []*v1.PolicyEvaluation) error {
 	predicate := statement.Predicate
+	// marshall to json
 	jsonPredicate, err := protojson.Marshal(predicate)
 	if err != nil {
 		return fmt.Errorf("marshalling predicate: %w", err)
 	}
+
+	// unmarshall to our typed predicate object
 	var p chainloop.ProvenancePredicateV02
 	err = json.Unmarshal(jsonPredicate, &p)
 	if err != nil {
 		return fmt.Errorf("unmarshalling predicate: %w", err)
 	}
+
+	// insert policy evaluations
 	if p.PolicyEvaluations == nil {
 		p.PolicyEvaluations = make(map[string][]*v1.PolicyEvaluation)
 	}
 	p.PolicyEvaluations["ATTESTATION"] = policyResults
 
-	// marshall back to structpb
+	// marshall back to JSON
 	jsonPredicate, err = json.Marshal(p)
 	if err != nil {
 		return fmt.Errorf("marshalling predicate: %w", err)
 	}
+
+	// finally unmarshal from JSON to structpb.Struct.
 	var finalPredicate structpb.Struct
 	err = protojson.Unmarshal(jsonPredicate, &finalPredicate)
 	if err != nil {
