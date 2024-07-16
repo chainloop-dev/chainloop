@@ -38,8 +38,9 @@ type APIToken struct {
 	// This is the JWT value returned only during creation
 	JWT string
 	// Tokens are scoped to organizations
-	OrganizationID uuid.UUID
-	CreatedAt      *time.Time
+	OrganizationID   uuid.UUID
+	OrganizationName string
+	CreatedAt        *time.Time
 	// When the token expires
 	ExpiresAt *time.Time
 	// When the token was manually revoked
@@ -61,15 +62,18 @@ type APITokenUseCase struct {
 	jwtBuilder           *apitoken.Builder
 	enforcer             *authz.Enforcer
 	DefaultAuthzPolicies []*authz.Policy
+	// Use Cases
+	orgUseCase *OrganizationUseCase
 }
 
 type APITokenSyncerUseCase struct {
 	base *APITokenUseCase
 }
 
-func NewAPITokenUseCase(apiTokenRepo APITokenRepo, conf *conf.Auth, authzE *authz.Enforcer, logger log.Logger) (*APITokenUseCase, error) {
+func NewAPITokenUseCase(apiTokenRepo APITokenRepo, conf *conf.Auth, authzE *authz.Enforcer, orgUseCase *OrganizationUseCase, logger log.Logger) (*APITokenUseCase, error) {
 	uc := &APITokenUseCase{
 		apiTokenRepo: apiTokenRepo,
+		orgUseCase:   orgUseCase,
 		logger:       servicelogger.ScopedHelper(logger, "biz/APITokenUseCase"),
 		enforcer:     authzE,
 		DefaultAuthzPolicies: []*authz.Policy{
@@ -125,6 +129,12 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		*expiresAt = time.Now().Add(*expiresIn)
 	}
 
+	// Retrieve the organization
+	org, err := uc.orgUseCase.FindByID(ctx, orgID)
+	if err != nil {
+		return nil, fmt.Errorf("finding organization: %w", err)
+	}
+
 	// NOTE: the expiration time is stored just for reference, it's also encoded in the JWT
 	// We store it since Chainloop will not have access to the JWT to check the expiration once created
 	token, err := uc.apiTokenRepo.Create(ctx, name, description, expiresAt, orgUUID)
@@ -136,7 +146,7 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 	}
 
 	// generate the JWT
-	token.JWT, err = uc.jwtBuilder.GenerateJWT(token.OrganizationID.String(), token.ID.String(), expiresAt)
+	token.JWT, err = uc.jwtBuilder.GenerateJWT(token.OrganizationID.String(), org.Name, token.ID.String(), expiresAt)
 	if err != nil {
 		return nil, fmt.Errorf("generating jwt: %w", err)
 	}

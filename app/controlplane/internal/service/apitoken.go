@@ -102,10 +102,12 @@ func (s *APITokenService) Revoke(ctx context.Context, req *pb.APITokenServiceRev
 
 func apiTokenBizToPb(in *biz.APIToken) *pb.APITokenItem {
 	res := &pb.APITokenItem{
-		Id:          in.ID.String(),
-		Name:        in.Name,
-		Description: in.Description, OrganizationId: in.OrganizationID.String(),
-		CreatedAt: timestamppb.New(*in.CreatedAt),
+		Id:               in.ID.String(),
+		Name:             in.Name,
+		OrganizationId:   in.OrganizationID.String(),
+		OrganizationName: in.OrganizationName,
+		Description:      in.Description,
+		CreatedAt:        timestamppb.New(*in.CreatedAt),
 	}
 
 	if in.ExpiresAt != nil {

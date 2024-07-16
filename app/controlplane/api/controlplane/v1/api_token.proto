@@ -71,6 +71,7 @@ message APITokenItem {
   string name = 7;
   string description = 2;
   string organization_id = 3;
+  string organization_name = 8;
   google.protobuf.Timestamp created_at = 4;
   google.protobuf.Timestamp revoked_at = 5;
   google.protobuf.Timestamp expires_at = 6;

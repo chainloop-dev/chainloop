@@ -66,12 +66,13 @@ func NewBuilder(opts ...NewOpt) (*Builder, error) {
 	return b, nil
 }
 
-// it can both expire and being revoked, revocation is performed by checking the keyID against our revocation list
-func (ra *Builder) GenerateJWT(orgID, keyID string, expiresAt *time.Time) (string, error) {
+// GenerateJWT creates a new JWT token for the given organization and keyID
+func (ra *Builder) GenerateJWT(orgID, orgName, keyID string, expiresAt *time.Time) (string, error) {
 	claims := CustomClaims{
 		orgID,
+		orgName,
 		jwt.RegisteredClaims{
-			// Key identifier so we can check it's revocation status
+			// Key identifier so we can check its revocation status
 			ID:       keyID,
 			Issuer:   ra.issuer,
 			Audience: jwt.ClaimStrings{Audience},
@@ -88,6 +89,7 @@ func (ra *Builder) GenerateJWT(orgID, keyID string, expiresAt *time.Time) (strin
 }
 
 type CustomClaims struct {
-	OrgID string `json:"org_id"`
+	OrgID   string `json:"org_id"`
+	OrgName string `json:"org_name"`
 	jwt.RegisteredClaims
 }
