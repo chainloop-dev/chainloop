@@ -201,15 +201,10 @@ func validateAndPreloadPolicies(pols []*schemaapi.PolicyAttachment) error {
 		if err != nil {
 			return fmt.Errorf("validating policy: %w", err)
 		}
-		script, err := policies.LoadPolicyScriptFromSpec(spec)
+		_, err = policies.LoadPolicyScriptFromSpec(spec)
 		if err != nil {
 			return fmt.Errorf("loading policy script: %w", err)
 		}
-
-		// embed the script in the policy (if not already)
-		spec.GetSpec().Source = &schemaapi.PolicySpec_Embedded{Embedded: string(script.Source)}
-		// Embed the policy in the schema (if not already)
-		p.Policy = &schemaapi.PolicyAttachment_Embedded{Embedded: spec}
 	}
 
 	return nil
