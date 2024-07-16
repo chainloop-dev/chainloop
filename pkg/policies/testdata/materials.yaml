@@ -3,4 +3,5 @@ kind: Policy
 metadata:
   name: materials
 spec:
+  type: ATTESTATION
   path: testdata/materials.rego
