@@ -164,6 +164,9 @@ func addPolicyResults(statement *intoto.Statement, policyResults []*v1.Policy) e
 	if err != nil {
 		return fmt.Errorf("unmarshalling predicate: %w", err)
 	}
+	if p.Policies == nil {
+		p.Policies = make(map[string][]*v1.Policy)
+	}
 	p.Policies["ATTESTATION"] = policyResults
 
 	// marshall back to structpb
