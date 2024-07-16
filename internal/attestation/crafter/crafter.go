@@ -185,17 +185,17 @@ func LoadSchema(pathOrURI string) (*schemaapi.CraftingSchema, error) {
 	}
 
 	// Load, validate policies, and embed them in the schema
-	if err := validateAndPreloadPolicies(schema.GetPolicies().GetMaterials()); err != nil {
+	if err := validatePolicyAttachments(schema.GetPolicies().GetMaterials()); err != nil {
 		return nil, fmt.Errorf("validating policies: %w", err)
 	}
-	if err := validateAndPreloadPolicies(schema.GetPolicies().GetAttestation()); err != nil {
+	if err := validatePolicyAttachments(schema.GetPolicies().GetAttestation()); err != nil {
 		return nil, fmt.Errorf("validating policies: %w", err)
 	}
 
 	return schema, nil
 }
 
-func validateAndPreloadPolicies(pols []*schemaapi.PolicyAttachment) error {
+func validatePolicyAttachments(pols []*schemaapi.PolicyAttachment) error {
 	for _, p := range pols {
 		spec, err := policies.LoadPolicySpec(p)
 		if err != nil {
