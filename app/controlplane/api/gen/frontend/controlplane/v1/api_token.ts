@@ -42,6 +42,7 @@ export interface APITokenItem {
   name: string;
   description: string;
   organizationId: string;
+  organizationName: string;
   createdAt?: Date;
   revokedAt?: Date;
   expiresAt?: Date;
@@ -496,6 +497,7 @@ function createBaseAPITokenItem(): APITokenItem {
     name: "",
     description: "",
     organizationId: "",
+    organizationName: "",
     createdAt: undefined,
     revokedAt: undefined,
     expiresAt: undefined,
@@ -515,6 +517,9 @@ export const APITokenItem = {
     }
     if (message.organizationId !== "") {
       writer.uint32(26).string(message.organizationId);
+    }
+    if (message.organizationName !== "") {
+      writer.uint32(66).string(message.organizationName);
     }
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(34).fork()).ldelim();
@@ -563,6 +568,13 @@ export const APITokenItem = {
 
           message.organizationId = reader.string();
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.organizationName = reader.string();
+          continue;
         case 4:
           if (tag !== 34) {
             break;
@@ -599,6 +611,7 @@ export const APITokenItem = {
       name: isSet(object.name) ? String(object.name) : "",
       description: isSet(object.description) ? String(object.description) : "",
       organizationId: isSet(object.organizationId) ? String(object.organizationId) : "",
+      organizationName: isSet(object.organizationName) ? String(object.organizationName) : "",
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
       revokedAt: isSet(object.revokedAt) ? fromJsonTimestamp(object.revokedAt) : undefined,
       expiresAt: isSet(object.expiresAt) ? fromJsonTimestamp(object.expiresAt) : undefined,
@@ -611,6 +624,7 @@ export const APITokenItem = {
     message.name !== undefined && (obj.name = message.name);
     message.description !== undefined && (obj.description = message.description);
     message.organizationId !== undefined && (obj.organizationId = message.organizationId);
+    message.organizationName !== undefined && (obj.organizationName = message.organizationName);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
     message.revokedAt !== undefined && (obj.revokedAt = message.revokedAt.toISOString());
     message.expiresAt !== undefined && (obj.expiresAt = message.expiresAt.toISOString());
@@ -627,6 +641,7 @@ export const APITokenItem = {
     message.name = object.name ?? "";
     message.description = object.description ?? "";
     message.organizationId = object.organizationId ?? "";
+    message.organizationName = object.organizationName ?? "";
     message.createdAt = object.createdAt ?? undefined;
     message.revokedAt = object.revokedAt ?? undefined;
     message.expiresAt = object.expiresAt ?? undefined;

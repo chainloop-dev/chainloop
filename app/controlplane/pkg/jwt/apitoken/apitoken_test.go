@@ -73,7 +73,7 @@ func TestGenerateJWT(t *testing.T) {
 	b, err := NewBuilder(WithIssuer("my-issuer"), WithKeySecret(hmacSecret))
 	require.NoError(t, err)
 
-	token, err := b.GenerateJWT("org-id", "key-id", toPtrTime(time.Now().Add(1*time.Hour)))
+	token, err := b.GenerateJWT("org-id", "org-name", "key-id", toPtrTime(time.Now().Add(1*time.Hour)))
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
 
@@ -86,6 +86,7 @@ func TestGenerateJWT(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, tokenInfo.Valid)
 	assert.Equal(t, "org-id", claims.OrgID)
+	assert.Equal(t, "org-name", claims.OrgName)
 	assert.Equal(t, "key-id", claims.ID)
 	assert.Equal(t, "my-issuer", claims.Issuer)
 	assert.Contains(t, claims.Audience, Audience)
