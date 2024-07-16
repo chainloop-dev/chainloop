@@ -26,7 +26,7 @@ export interface Attestation {
   runnerType: CraftingSchema_Runner_RunnerType;
   /** Head Commit of the environment where the attestation was executed (optional) */
   head?: Commit;
-  /** Policies that this attestation was validated against */
+  /** Policies that materials in this attestation were validated against */
   policies: Policy[];
 }
 

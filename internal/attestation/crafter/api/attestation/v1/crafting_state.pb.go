@@ -55,7 +55,7 @@ type Attestation struct {
 	RunnerType v1.CraftingSchema_Runner_RunnerType `protobuf:"varint,8,opt,name=runner_type,json=runnerType,proto3,enum=workflowcontract.v1.CraftingSchema_Runner_RunnerType" json:"runner_type,omitempty"`
 	// Head Commit of the environment where the attestation was executed (optional)
 	Head *Commit `protobuf:"bytes,9,opt,name=head,proto3" json:"head,omitempty"`
-	// Policies that this attestation was validated against
+	// Policies that materials in this attestation were validated against
 	Policies []*Policy `protobuf:"bytes,10,rep,name=policies,proto3" json:"policies,omitempty"`
 }
 
