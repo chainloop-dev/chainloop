@@ -120,17 +120,17 @@ message PolicyAttachment {
     // policy reference, it might be in URI format.
     string ref = 1 [(buf.validate.field).string.min_len = 1];
 
-    // reference to a policy already known by chainloop
-    string name = 2 [(buf.validate.field) = {
-      cel: {
-        message: "must contain only lowercase letters, numbers, and hyphens.",
-        expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
-        id: "name.dns-1123",
-      },
-    }];
-
     // meant to be used to embed the policy in the contract
-    Policy embedded = 6;
+    Policy embedded = 2;
+
+    //    TODO: reference to a policy already known by chainloop
+    //      string name = 2 [(buf.validate.field) = {
+    //        cel: {
+    //          message: "must contain only lowercase letters, numbers, and hyphens.",
+    //          expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
+    //          id: "name.dns-1123",
+    //        },
+    //      }];
 
     option (buf.validate.oneof).required = true;
   }

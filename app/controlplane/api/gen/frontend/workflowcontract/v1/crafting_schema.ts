@@ -252,10 +252,6 @@ export interface PolicyAttachment {
   ref?:
     | string
     | undefined;
-  /** reference to a policy already known by chainloop */
-  name?:
-    | string
-    | undefined;
   /** meant to be used to embed the policy in the contract */
   embedded?:
     | Policy
@@ -824,7 +820,7 @@ export const Policies = {
 };
 
 function createBasePolicyAttachment(): PolicyAttachment {
-  return { ref: undefined, name: undefined, embedded: undefined, selector: undefined, disabled: false, with: [] };
+  return { ref: undefined, embedded: undefined, selector: undefined, disabled: false, with: [] };
 }
 
 export const PolicyAttachment = {
@@ -832,11 +828,8 @@ export const PolicyAttachment = {
     if (message.ref !== undefined) {
       writer.uint32(10).string(message.ref);
     }
-    if (message.name !== undefined) {
-      writer.uint32(18).string(message.name);
-    }
     if (message.embedded !== undefined) {
-      Policy.encode(message.embedded, writer.uint32(50).fork()).ldelim();
+      Policy.encode(message.embedded, writer.uint32(18).fork()).ldelim();
     }
     if (message.selector !== undefined) {
       PolicyAttachment_MaterialSelector.encode(message.selector, writer.uint32(26).fork()).ldelim();
@@ -866,13 +859,6 @@ export const PolicyAttachment = {
           continue;
         case 2:
           if (tag !== 18) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        case 6:
-          if (tag !== 50) {
             break;
           }
 
@@ -911,7 +897,6 @@ export const PolicyAttachment = {
   fromJSON(object: any): PolicyAttachment {
     return {
       ref: isSet(object.ref) ? String(object.ref) : undefined,
-      name: isSet(object.name) ? String(object.name) : undefined,
       embedded: isSet(object.embedded) ? Policy.fromJSON(object.embedded) : undefined,
       selector: isSet(object.selector) ? PolicyAttachment_MaterialSelector.fromJSON(object.selector) : undefined,
       disabled: isSet(object.disabled) ? Boolean(object.disabled) : false,
@@ -922,7 +907,6 @@ export const PolicyAttachment = {
   toJSON(message: PolicyAttachment): unknown {
     const obj: any = {};
     message.ref !== undefined && (obj.ref = message.ref);
-    message.name !== undefined && (obj.name = message.name);
     message.embedded !== undefined && (obj.embedded = message.embedded ? Policy.toJSON(message.embedded) : undefined);
     message.selector !== undefined &&
       (obj.selector = message.selector ? PolicyAttachment_MaterialSelector.toJSON(message.selector) : undefined);
@@ -942,7 +926,6 @@ export const PolicyAttachment = {
   fromPartial<I extends Exact<DeepPartial<PolicyAttachment>, I>>(object: I): PolicyAttachment {
     const message = createBasePolicyAttachment();
     message.ref = object.ref ?? undefined;
-    message.name = object.name ?? undefined;
     message.embedded = (object.embedded !== undefined && object.embedded !== null)
       ? Policy.fromPartial(object.embedded)
       : undefined;
