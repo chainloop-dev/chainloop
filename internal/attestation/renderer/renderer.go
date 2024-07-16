@@ -152,7 +152,7 @@ func (ab *AttestationRenderer) Render(ctx context.Context) (*dsse.Envelope, erro
 	return &dsseEnvelope, nil
 }
 
-func addPolicyResults(statement *intoto.Statement, policyResults []*v1.Policy) error {
+func addPolicyResults(statement *intoto.Statement, policyResults []*v1.PolicyEvaluation) error {
 	predicate := statement.Predicate
 	jsonPredicate, err := protojson.Marshal(predicate)
 	if err != nil {
@@ -163,10 +163,10 @@ func addPolicyResults(statement *intoto.Statement, policyResults []*v1.Policy) e
 	if err != nil {
 		return fmt.Errorf("unmarshalling predicate: %w", err)
 	}
-	if p.Policies == nil {
-		p.Policies = make(map[string][]*v1.Policy)
+	if p.PolicyEvaluations == nil {
+		p.PolicyEvaluations = make(map[string][]*v1.PolicyEvaluation)
 	}
-	p.Policies["ATTESTATION"] = policyResults
+	p.PolicyEvaluations["ATTESTATION"] = policyResults
 
 	// marshall back to structpb
 	jsonPredicate, err = json.Marshal(p)

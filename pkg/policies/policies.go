@@ -44,13 +44,12 @@ type PolicyVerifier struct {
 }
 
 func NewPolicyVerifier(schema *v1.CraftingSchema, logger *zerolog.Logger) *PolicyVerifier {
-	// only Rego engine is currently supported
 	return &PolicyVerifier{schema: schema, logger: logger}
 }
 
 // VerifyMaterial applies all required policies to a material
-func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Attestation_Material, artifactPath string) ([]*v12.Policy, error) {
-	result := make([]*v12.Policy, 0)
+func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Attestation_Material, artifactPath string) ([]*v12.PolicyEvaluation, error) {
+	result := make([]*v12.PolicyEvaluation, 0)
 	policies, err := pv.requiredPoliciesForMaterial(material)
 	if err != nil {
 		return nil, fmt.Errorf("error getting required policies for material: %w", err)
@@ -83,7 +82,7 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 			return nil, fmt.Errorf("failed to verify policy: %w", err)
 		}
 
-		result = append(result, &v12.Policy{
+		result = append(result, &v12.PolicyEvaluation{
 			Name:         spec.GetMetadata().GetName(),
 			MaterialName: material.GetArtifact().GetId(),
 			Body:         base64.StdEncoding.EncodeToString(script.Source),
@@ -95,8 +94,8 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 }
 
 // VerifyStatement verifies that the statement is compliant with the policies present in the schema
-func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto.Statement) ([]*v12.Policy, error) {
-	result := make([]*v12.Policy, 0)
+func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto.Statement) ([]*v12.PolicyEvaluation, error) {
+	result := make([]*v12.PolicyEvaluation, 0)
 	policies := pv.schema.GetPolicies().GetAttestation()
 	for _, policyAtt := range policies {
 		// 1. load the policy spec
@@ -131,7 +130,7 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 		}
 
 		// 5. Store result in the attestation itself (for the renderer to include them in the predicate)
-		result = append(result, &v12.Policy{
+		result = append(result, &v12.PolicyEvaluation{
 			Name:       spec.Metadata.Name,
 			Body:       base64.StdEncoding.EncodeToString(script.Source),
 			Violations: policyViolationsToAttestationViolations(res),
@@ -141,10 +140,10 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 	return result, nil
 }
 
-func engineViolationsToAPIViolations(input []*engine.PolicyViolation) []*v12.Policy_Violation {
-	res := make([]*v12.Policy_Violation, 0)
+func engineViolationsToAPIViolations(input []*engine.PolicyViolation) []*v12.PolicyEvaluation_Violation {
+	res := make([]*v12.PolicyEvaluation_Violation, 0)
 	for _, v := range input {
-		res = append(res, &v12.Policy_Violation{
+		res = append(res, &v12.PolicyEvaluation_Violation{
 			Subject: v.Subject,
 			Message: v.Violation,
 		})
@@ -228,9 +227,9 @@ func getPolicyEngine(_ *v1.Policy) engine.PolicyEngine {
 	return new(rego.Rego)
 }
 
-func policyViolationsToAttestationViolations(violations []*engine.PolicyViolation) (pvs []*v12.Policy_Violation) {
+func policyViolationsToAttestationViolations(violations []*engine.PolicyViolation) (pvs []*v12.PolicyEvaluation_Violation) {
 	for _, violation := range violations {
-		pvs = append(pvs, &v12.Policy_Violation{
+		pvs = append(pvs, &v12.PolicyEvaluation_Violation{
 			Subject: violation.Subject,
 			Message: violation.Violation,
 		})

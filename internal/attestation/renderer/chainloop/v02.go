@@ -38,7 +38,7 @@ type ProvenancePredicateV02 struct {
 	*ProvenancePredicateCommon
 	Materials []*intoto.ResourceDescriptor `json:"materials,omitempty"`
 	// Map materials and policies
-	Policies map[string][]*v1.Policy `json:"policies,omitempty"`
+	PolicyEvaluations map[string][]*v1.PolicyEvaluation `json:"policy_evaluations,omitempty"`
 }
 
 type RendererV02 struct {
@@ -148,12 +148,12 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 		return nil, fmt.Errorf("error normalizing materials: %w", err)
 	}
 
-	policies := policiesFromMaterials(r.att)
+	policies := policyEvaluationsFromMaterials(r.att)
 
 	p := ProvenancePredicateV02{
 		ProvenancePredicateCommon: predicateCommon(r.builder, r.att),
 		Materials:                 normalizedMaterials,
-		Policies:                  policies,
+		PolicyEvaluations:         policies,
 	}
 
 	// transform to structpb.Struct in a two steps process
@@ -172,10 +172,10 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 	return predicate, nil
 }
 
-// collect all policies grouped by material
-func policiesFromMaterials(att *v1.Attestation) map[string][]*v1.Policy {
-	result := map[string][]*v1.Policy{}
-	for _, p := range att.GetPolicies() {
+// collect all policy evaluations grouped by material
+func policyEvaluationsFromMaterials(att *v1.Attestation) map[string][]*v1.PolicyEvaluation {
+	result := map[string][]*v1.PolicyEvaluation{}
+	for _, p := range att.GetPolicyEvaluations() {
 		result[p.MaterialName] = append(result[p.MaterialName], p)
 	}
 

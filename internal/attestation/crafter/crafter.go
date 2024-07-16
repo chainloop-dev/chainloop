@@ -578,7 +578,7 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 		return fmt.Errorf("error applying policies to material: %w", err)
 	}
 	// store policy results
-	c.CraftingState.Attestation.Policies = append(c.CraftingState.Attestation.Policies, policyResults...)
+	c.CraftingState.Attestation.PolicyEvaluations = append(c.CraftingState.Attestation.PolicyEvaluations, policyResults...)
 
 	// 5 - Attach it to state
 	if c.CraftingState.Attestation.Materials == nil {

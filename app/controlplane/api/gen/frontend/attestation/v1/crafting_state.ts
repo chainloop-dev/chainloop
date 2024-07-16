@@ -27,7 +27,7 @@ export interface Attestation {
   /** Head Commit of the environment where the attestation was executed (optional) */
   head?: Commit;
   /** Policies that materials in this attestation were validated against */
-  policies: Policy[];
+  policyEvaluations: PolicyEvaluation[];
 }
 
 export interface Attestation_MaterialsEntry {
@@ -100,17 +100,17 @@ export interface Attestation_EnvVarsEntry {
 }
 
 /** A policy executed against an attestation or material */
-export interface Policy {
+export interface PolicyEvaluation {
   /** The policy name from the policy spec */
   name: string;
   materialName: string;
   /** The body script of the policy */
   body: string;
   /** The policy violations, if any */
-  violations: Policy_Violation[];
+  violations: PolicyEvaluation_Violation[];
 }
 
-export interface Policy_Violation {
+export interface PolicyEvaluation_Violation {
   subject: string;
   message: string;
 }
@@ -159,7 +159,7 @@ function createBaseAttestation(): Attestation {
     runnerUrl: "",
     runnerType: 0,
     head: undefined,
-    policies: [],
+    policyEvaluations: [],
   };
 }
 
@@ -192,8 +192,8 @@ export const Attestation = {
     if (message.head !== undefined) {
       Commit.encode(message.head, writer.uint32(74).fork()).ldelim();
     }
-    for (const v of message.policies) {
-      Policy.encode(v!, writer.uint32(82).fork()).ldelim();
+    for (const v of message.policyEvaluations) {
+      PolicyEvaluation.encode(v!, writer.uint32(82).fork()).ldelim();
     }
     return writer;
   },
@@ -282,7 +282,7 @@ export const Attestation = {
             break;
           }
 
-          message.policies.push(Policy.decode(reader, reader.uint32()));
+          message.policyEvaluations.push(PolicyEvaluation.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -319,7 +319,9 @@ export const Attestation = {
       runnerUrl: isSet(object.runnerUrl) ? String(object.runnerUrl) : "",
       runnerType: isSet(object.runnerType) ? craftingSchema_Runner_RunnerTypeFromJSON(object.runnerType) : 0,
       head: isSet(object.head) ? Commit.fromJSON(object.head) : undefined,
-      policies: Array.isArray(object?.policies) ? object.policies.map((e: any) => Policy.fromJSON(e)) : [],
+      policyEvaluations: Array.isArray(object?.policyEvaluations)
+        ? object.policyEvaluations.map((e: any) => PolicyEvaluation.fromJSON(e))
+        : [],
     };
   },
 
@@ -350,10 +352,10 @@ export const Attestation = {
     message.runnerUrl !== undefined && (obj.runnerUrl = message.runnerUrl);
     message.runnerType !== undefined && (obj.runnerType = craftingSchema_Runner_RunnerTypeToJSON(message.runnerType));
     message.head !== undefined && (obj.head = message.head ? Commit.toJSON(message.head) : undefined);
-    if (message.policies) {
-      obj.policies = message.policies.map((e) => e ? Policy.toJSON(e) : undefined);
+    if (message.policyEvaluations) {
+      obj.policyEvaluations = message.policyEvaluations.map((e) => e ? PolicyEvaluation.toJSON(e) : undefined);
     } else {
-      obj.policies = [];
+      obj.policyEvaluations = [];
     }
     return obj;
   },
@@ -396,7 +398,7 @@ export const Attestation = {
     message.runnerUrl = object.runnerUrl ?? "";
     message.runnerType = object.runnerType ?? 0;
     message.head = (object.head !== undefined && object.head !== null) ? Commit.fromPartial(object.head) : undefined;
-    message.policies = object.policies?.map((e) => Policy.fromPartial(e)) || [];
+    message.policyEvaluations = object.policyEvaluations?.map((e) => PolicyEvaluation.fromPartial(e)) || [];
     return message;
   },
 };
@@ -1169,12 +1171,12 @@ export const Attestation_EnvVarsEntry = {
   },
 };
 
-function createBasePolicy(): Policy {
+function createBasePolicyEvaluation(): PolicyEvaluation {
   return { name: "", materialName: "", body: "", violations: [] };
 }
 
-export const Policy = {
-  encode(message: Policy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const PolicyEvaluation = {
+  encode(message: PolicyEvaluation, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
@@ -1185,15 +1187,15 @@ export const Policy = {
       writer.uint32(26).string(message.body);
     }
     for (const v of message.violations) {
-      Policy_Violation.encode(v!, writer.uint32(34).fork()).ldelim();
+      PolicyEvaluation_Violation.encode(v!, writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): Policy {
+  decode(input: _m0.Reader | Uint8Array, length?: number): PolicyEvaluation {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePolicy();
+    const message = createBasePolicyEvaluation();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1223,7 +1225,7 @@ export const Policy = {
             break;
           }
 
-          message.violations.push(Policy_Violation.decode(reader, reader.uint32()));
+          message.violations.push(PolicyEvaluation_Violation.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1234,50 +1236,50 @@ export const Policy = {
     return message;
   },
 
-  fromJSON(object: any): Policy {
+  fromJSON(object: any): PolicyEvaluation {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       materialName: isSet(object.materialName) ? String(object.materialName) : "",
       body: isSet(object.body) ? String(object.body) : "",
       violations: Array.isArray(object?.violations)
-        ? object.violations.map((e: any) => Policy_Violation.fromJSON(e))
+        ? object.violations.map((e: any) => PolicyEvaluation_Violation.fromJSON(e))
         : [],
     };
   },
 
-  toJSON(message: Policy): unknown {
+  toJSON(message: PolicyEvaluation): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.materialName !== undefined && (obj.materialName = message.materialName);
     message.body !== undefined && (obj.body = message.body);
     if (message.violations) {
-      obj.violations = message.violations.map((e) => e ? Policy_Violation.toJSON(e) : undefined);
+      obj.violations = message.violations.map((e) => e ? PolicyEvaluation_Violation.toJSON(e) : undefined);
     } else {
       obj.violations = [];
     }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<Policy>, I>>(base?: I): Policy {
-    return Policy.fromPartial(base ?? {});
+  create<I extends Exact<DeepPartial<PolicyEvaluation>, I>>(base?: I): PolicyEvaluation {
+    return PolicyEvaluation.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<Policy>, I>>(object: I): Policy {
-    const message = createBasePolicy();
+  fromPartial<I extends Exact<DeepPartial<PolicyEvaluation>, I>>(object: I): PolicyEvaluation {
+    const message = createBasePolicyEvaluation();
     message.name = object.name ?? "";
     message.materialName = object.materialName ?? "";
     message.body = object.body ?? "";
-    message.violations = object.violations?.map((e) => Policy_Violation.fromPartial(e)) || [];
+    message.violations = object.violations?.map((e) => PolicyEvaluation_Violation.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBasePolicy_Violation(): Policy_Violation {
+function createBasePolicyEvaluation_Violation(): PolicyEvaluation_Violation {
   return { subject: "", message: "" };
 }
 
-export const Policy_Violation = {
-  encode(message: Policy_Violation, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const PolicyEvaluation_Violation = {
+  encode(message: PolicyEvaluation_Violation, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.subject !== "") {
       writer.uint32(10).string(message.subject);
     }
@@ -1287,10 +1289,10 @@ export const Policy_Violation = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): Policy_Violation {
+  decode(input: _m0.Reader | Uint8Array, length?: number): PolicyEvaluation_Violation {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePolicy_Violation();
+    const message = createBasePolicyEvaluation_Violation();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1317,26 +1319,26 @@ export const Policy_Violation = {
     return message;
   },
 
-  fromJSON(object: any): Policy_Violation {
+  fromJSON(object: any): PolicyEvaluation_Violation {
     return {
       subject: isSet(object.subject) ? String(object.subject) : "",
       message: isSet(object.message) ? String(object.message) : "",
     };
   },
 
-  toJSON(message: Policy_Violation): unknown {
+  toJSON(message: PolicyEvaluation_Violation): unknown {
     const obj: any = {};
     message.subject !== undefined && (obj.subject = message.subject);
     message.message !== undefined && (obj.message = message.message);
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<Policy_Violation>, I>>(base?: I): Policy_Violation {
-    return Policy_Violation.fromPartial(base ?? {});
+  create<I extends Exact<DeepPartial<PolicyEvaluation_Violation>, I>>(base?: I): PolicyEvaluation_Violation {
+    return PolicyEvaluation_Violation.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<Policy_Violation>, I>>(object: I): Policy_Violation {
-    const message = createBasePolicy_Violation();
+  fromPartial<I extends Exact<DeepPartial<PolicyEvaluation_Violation>, I>>(object: I): PolicyEvaluation_Violation {
+    const message = createBasePolicyEvaluation_Violation();
     message.subject = object.subject ?? "";
     message.message = object.message ?? "";
     return message;

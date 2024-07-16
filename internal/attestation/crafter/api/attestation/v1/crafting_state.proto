@@ -90,11 +90,11 @@ message Attestation {
   Commit head = 9;
 
   // Policies that materials in this attestation were validated against
-  repeated Policy policies = 10;
+  repeated PolicyEvaluation policy_evaluations = 10;
 }
 
 // A policy executed against an attestation or material
-message Policy {
+message PolicyEvaluation {
   // The policy name from the policy spec
   string name = 1 [(buf.validate.field) = {
     cel: {
