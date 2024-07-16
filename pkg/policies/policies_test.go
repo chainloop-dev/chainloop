@@ -162,7 +162,7 @@ func (s *testSuite) TestVerifyAttestations() {
 			if tc.npolicies > 0 {
 				violations := 0
 				for _, pol := range res {
-					violations = violations + len(pol.Violations)
+					violations += len(pol.Violations)
 				}
 				s.Equal(tc.violations, violations)
 			}
