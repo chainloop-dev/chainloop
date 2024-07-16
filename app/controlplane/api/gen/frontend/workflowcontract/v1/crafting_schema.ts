@@ -300,11 +300,6 @@ export interface PolicySpec {
     | string
     | undefined;
   /**
-   * stage at which this policy will be run.
-   * Only "push" is supported currently and this field will be ignored
-   */
-  stage: PolicySpec_PolicyStage;
-  /**
    * if set, it will match any material supported by Chainloop
    * except those not having a schema
    */
@@ -1229,7 +1224,7 @@ export const Metadata = {
 };
 
 function createBasePolicySpec(): PolicySpec {
-  return { path: undefined, embedded: undefined, stage: 0, type: 0 };
+  return { path: undefined, embedded: undefined, type: 0 };
 }
 
 export const PolicySpec = {
@@ -1240,11 +1235,8 @@ export const PolicySpec = {
     if (message.embedded !== undefined) {
       writer.uint32(18).string(message.embedded);
     }
-    if (message.stage !== 0) {
-      writer.uint32(24).int32(message.stage);
-    }
     if (message.type !== 0) {
-      writer.uint32(32).int32(message.type);
+      writer.uint32(24).int32(message.type);
     }
     return writer;
   },
@@ -1275,13 +1267,6 @@ export const PolicySpec = {
             break;
           }
 
-          message.stage = reader.int32() as any;
-          continue;
-        case 4:
-          if (tag !== 32) {
-            break;
-          }
-
           message.type = reader.int32() as any;
           continue;
       }
@@ -1297,7 +1282,6 @@ export const PolicySpec = {
     return {
       path: isSet(object.path) ? String(object.path) : undefined,
       embedded: isSet(object.embedded) ? String(object.embedded) : undefined,
-      stage: isSet(object.stage) ? policySpec_PolicyStageFromJSON(object.stage) : 0,
       type: isSet(object.type) ? craftingSchema_Material_MaterialTypeFromJSON(object.type) : 0,
     };
   },
@@ -1306,7 +1290,6 @@ export const PolicySpec = {
     const obj: any = {};
     message.path !== undefined && (obj.path = message.path);
     message.embedded !== undefined && (obj.embedded = message.embedded);
-    message.stage !== undefined && (obj.stage = policySpec_PolicyStageToJSON(message.stage));
     message.type !== undefined && (obj.type = craftingSchema_Material_MaterialTypeToJSON(message.type));
     return obj;
   },
@@ -1319,7 +1302,6 @@ export const PolicySpec = {
     const message = createBasePolicySpec();
     message.path = object.path ?? undefined;
     message.embedded = object.embedded ?? undefined;
-    message.stage = object.stage ?? 0;
     message.type = object.type ?? 0;
     return message;
   },

@@ -187,13 +187,9 @@ message PolicySpec {
     option (buf.validate.oneof).required = true;
   };
 
-  // stage at which this policy will be run.
-  // Only "push" is supported currently and this field will be ignored
-  PolicyStage stage = 3;
-
   // if set, it will match any material supported by Chainloop
   // except those not having a schema
-  CraftingSchema.Material.MaterialType type = 4 [(buf.validate.field).enum = { not_in: [1, 2, 3, 10, 11]}];
+  CraftingSchema.Material.MaterialType type = 3 [(buf.validate.field).enum = { not_in: [1, 2, 3, 10, 11]}];
 
   // buf:lint:ignore ENUM_VALUE_PREFIX ENUM_ZERO_VALUE_SUFFIX
   // buf:lint:ignore ENUM_ZERO_VALUE_SUFFIX
