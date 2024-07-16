@@ -339,6 +339,73 @@ func (s *testSuite) TestInvalidInlineMaterial() {
 	s.Equal("Not made with syft", res[0].Violations[0].Message)
 }
 
+func (s *testSuite) TestLoadPolicySpec() {
+	var cases = []struct {
+		name         string
+		attachment   *v12.PolicyAttachment
+		wantErr      bool
+		expectedName string
+	}{
+		{
+			name:       "missing policy",
+			attachment: &v12.PolicyAttachment{},
+			wantErr:    true,
+		},
+		{
+			name: "by ref",
+			attachment: &v12.PolicyAttachment{
+				Policy: &v12.PolicyAttachment_Ref{
+					Ref: "testdata/sbom_syft.yaml",
+				},
+			},
+			expectedName: "made-with-syft",
+		},
+		{
+			name: "embedded invalid",
+			attachment: &v12.PolicyAttachment{
+				Policy: &v12.PolicyAttachment_Embedded{
+					Embedded: &v12.Policy{
+						ApiVersion: "",
+						Kind:       "",
+						Metadata:   &v12.Metadata{Name: "my-policy"},
+						Spec:       nil,
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "embedded valid",
+			attachment: &v12.PolicyAttachment{
+				Policy: &v12.PolicyAttachment_Embedded{
+					Embedded: &v12.Policy{
+						ApiVersion: "workflowcontract.chainloop.dev/v1",
+						Kind:       "Policy",
+						Metadata:   &v12.Metadata{Name: "my-policy"},
+						Spec: &v12.PolicySpec{
+							Source: &v12.PolicySpec_Path{Path: "file.rego"},
+							Type:   v12.CraftingSchema_Material_OPENVEX,
+						},
+					},
+				},
+			},
+			expectedName: "my-policy",
+		},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			p, err := LoadPolicySpec(tc.attachment)
+			if tc.wantErr {
+				s.Error(err)
+				return
+			}
+			s.Require().NoError(err)
+			s.Equal(tc.expectedName, p.Metadata.Name)
+		})
+	}
+}
+
 type testSuite struct {
 	suite.Suite
 

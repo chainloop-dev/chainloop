@@ -245,38 +245,53 @@ func policyViolationsToAttestationViolations(violations []*engine.PolicyViolatio
 
 // LoadPolicySpec loads and validates a policy spec from a contract
 func LoadPolicySpec(attachment *v1.PolicyAttachment) (*v1.Policy, error) {
-	if attachment.GetEmbedded() != nil {
-		return attachment.GetEmbedded(), nil
-	}
-
-	// if policy is not embedded in the contract, we'll look for it
-
-	// look for the referenced policy spec (note: loading by `name` is not supported yet)
 	reference := attachment.GetRef()
-	// this method understands env, http and https schemes, and defaults to file system.
-	rawData, err := blob.LoadFileOrURL(reference)
-	if err != nil {
-		return nil, fmt.Errorf("loading policy spec: %w", err)
+	embedded := attachment.GetEmbedded()
+
+	if embedded == nil && reference == "" {
+		return nil, errors.New("policy must be referenced or embedded in the attachment")
 	}
-	jsonContent, err := materials.LoadJSONBytes(rawData, filepath.Ext(reference))
-	if err != nil {
-		return nil, fmt.Errorf("loading policy spec: %w", err)
+
+	var spec v1.Policy
+	if embedded != nil {
+		spec = *attachment.GetEmbedded()
+	} else {
+		// look for the referenced policy spec (note: loading by `name` is not supported yet)
+		// this method understands env, http and https schemes, and defaults to file system.
+		rawData, err := blob.LoadFileOrURL(reference)
+		if err != nil {
+			return nil, fmt.Errorf("loading policy spec: %w", err)
+		}
+
+		jsonContent, err := materials.LoadJSONBytes(rawData, filepath.Ext(reference))
+		if err != nil {
+			return nil, fmt.Errorf("loading policy spec: %w", err)
+		}
+
+		if err := protojson.Unmarshal(jsonContent, &spec); err != nil {
+			return nil, fmt.Errorf("unmarshalling policy spec: %w", err)
+		}
 	}
-	var policy v1.Policy
-	if err := protojson.Unmarshal(jsonContent, &policy); err != nil {
-		return nil, fmt.Errorf("unmarshalling policy spec: %w", err)
-	}
+
 	// Validate just in case
+	if err := validatePolicy(&spec); err != nil {
+		return nil, fmt.Errorf("invalid policy: %w", err)
+	}
+
+	return &spec, nil
+}
+
+func validatePolicy(policy *v1.Policy) error {
 	validator, err := protovalidate.New()
 	if err != nil {
-		return nil, fmt.Errorf("validating policy spec: %w", err)
+		return fmt.Errorf("validating policy spec: %w", err)
 	}
-	err = validator.Validate(&policy)
+	err = validator.Validate(policy)
 	if err != nil {
-		return nil, fmt.Errorf("validating policy spec: %w", err)
+		return fmt.Errorf("validating policy spec: %w", err)
 	}
 
-	return &policy, nil
+	return nil
 }
 
 // LoadPolicyScriptFromSpec loads a policy referenced from the spec
