@@ -13,8 +13,8 @@ deny[msg] {
 
 # Collect all material types
 kinds contains kind {
-    some material in input.materials
-    kind := material.materialType
+    some material in input.predicate.materials
+    kind := material.annotations["chainloop.material.type"]
 }
 
 has_vex {
