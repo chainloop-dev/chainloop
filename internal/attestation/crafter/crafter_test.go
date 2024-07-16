@@ -223,7 +223,6 @@ func (s *crafterSuite) TestLoadSchema() {
 		{
 			name:         "policies",
 			contractPath: "testdata/contracts/with_policy_embedded.yaml",
-			want:         want,
 		},
 		{
 			name:         "missing policy",
@@ -238,7 +237,6 @@ func (s *crafterSuite) TestLoadSchema() {
 		{
 			name:         "rego policy",
 			contractPath: "testdata/contracts/with_rego.yaml",
-			want:         want,
 		},
 	}
 
