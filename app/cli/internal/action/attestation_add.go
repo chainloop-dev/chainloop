@@ -20,13 +20,12 @@ import (
 	"errors"
 	"fmt"
 
-	"google.golang.org/grpc"
-
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
 	"github.com/chainloop-dev/chainloop/internal/grpcconn"
+	"google.golang.org/grpc"
 )
 
 type AttestationAddOpts struct {

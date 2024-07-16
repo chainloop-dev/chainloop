@@ -21,10 +21,9 @@ import (
 	"testing"
 
 	"github.com/bufbuild/protovalidate-go"
+	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 )
 
 func TestValidatePolicy(t *testing.T) {
