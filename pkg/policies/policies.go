@@ -79,7 +79,7 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 
 		// verify the policy
 		ng := getPolicyEngine(spec)
-		res, err := ng.Verify(ctx, script, subject)
+		violations, err := ng.Verify(ctx, script, subject)
 		if err != nil {
 			return nil, fmt.Errorf("failed to verify policy: %w", err)
 		}
@@ -88,7 +88,7 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 			Name:         spec.GetMetadata().GetName(),
 			MaterialName: material.GetArtifact().GetId(),
 			Body:         base64.StdEncoding.EncodeToString(script.Source),
-			Violations:   engineViolationsToAPIViolations(res),
+			Violations:   engineViolationsToAPIViolations(violations),
 		})
 	}
 
@@ -186,6 +186,10 @@ func getMaterialContent(material *v12.Attestation_Material, artifactPath string)
 	return rawMaterial, nil
 }
 
+// returns the list of polices to be applied to a material, following these rules:
+// 1. if policy spec has a type, return it only if material has the same type
+// 2. if attachment has a name filter, return the policy only if the material has the same name
+// 3. if policy spec doesn't have a type, a name filter is mandatory (otherwise there is no way to know if material has to be applied)
 func (pv *PolicyVerifier) requiredPoliciesForMaterial(material *v12.Attestation_Material) ([]*v1.PolicyAttachment, error) {
 	result := make([]*v1.PolicyAttachment, 0)
 	policies := pv.schema.GetPolicies().GetMaterials()
