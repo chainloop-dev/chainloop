@@ -25,15 +25,14 @@ import (
 	"os"
 	"testing"
 
+	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/internal/attestation/signer/chainloop"
+	"github.com/chainloop-dev/chainloop/internal/attestation/signer/cosign"
 	"github.com/rs/zerolog"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/sigstore/sigstore/pkg/signature"
 	sigdsee "github.com/sigstore/sigstore/pkg/signature/dsse"
 	"github.com/stretchr/testify/suite"
-
-	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
-	"github.com/chainloop-dev/chainloop/internal/attestation/signer/chainloop"
-	"github.com/chainloop-dev/chainloop/internal/attestation/signer/cosign"
 )
 
 type rendererSuite struct {

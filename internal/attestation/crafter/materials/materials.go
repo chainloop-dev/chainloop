@@ -26,15 +26,14 @@ import (
 	"code.cloudfoundry.org/bytefmt"
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/bufbuild/protovalidate-go"
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	api "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/internal/casclient"
 	"github.com/google/go-containerregistry/pkg/authn"
 	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"sigs.k8s.io/yaml"
-
-	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	api "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
-	"github.com/chainloop-dev/chainloop/internal/casclient"
 )
 
 var (
