@@ -3,4 +3,4 @@ kind: Policy
 metadata:
   name: workflow
 spec:
-  path: testdata/contracts/policy.rego
+  path: testdata/policies/policy.rego

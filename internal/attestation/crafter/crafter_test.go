@@ -229,7 +229,7 @@ func (s *crafterSuite) TestLoadSchema() {
 					Attestation: []*schemaapi.PolicyAttachment{
 						{
 							Policy: &schemaapi.PolicyAttachment_Ref{
-								Ref: "testdata/contracts/policy_embedded.yaml",
+								Ref: "testdata/policies/policy_embedded.yaml",
 							},
 						},
 					},
@@ -255,7 +255,7 @@ func (s *crafterSuite) TestLoadSchema() {
 					Attestation: []*schemaapi.PolicyAttachment{
 						{
 							Policy: &schemaapi.PolicyAttachment_Ref{
-								Ref: "testdata/contracts/policy_rego.yaml",
+								Ref: "testdata/policies/policy_rego.yaml",
 							},
 						},
 					},
