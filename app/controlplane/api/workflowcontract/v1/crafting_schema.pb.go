@@ -689,7 +689,8 @@ type PolicySpec struct {
 	//	*PolicySpec_Embedded
 	Source isPolicySpec_Source `protobuf_oneof:"source"`
 	// if set, it will match any material supported by Chainloop
-	// except those not having a schema
+	// except those not having a direct schema (STRING, ARTIFACT, EVIDENCE), since their format cannot be guessed by the crafter.
+	// CONTAINER, HELM_CHART are also excluded, but we might implement custom policies for them in the future.
 	Type CraftingSchema_Material_MaterialType `protobuf:"varint,3,opt,name=type,proto3,enum=workflowcontract.v1.CraftingSchema_Material_MaterialType" json:"type,omitempty"`
 }
 
