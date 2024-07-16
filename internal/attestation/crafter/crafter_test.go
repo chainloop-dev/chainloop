@@ -223,6 +223,18 @@ func (s *crafterSuite) TestLoadSchema() {
 		{
 			name:         "policies",
 			contractPath: "testdata/contracts/with_policy_embedded.yaml",
+			want: &schemaapi.CraftingSchema{
+				SchemaVersion: "v1",
+				Policies: &schemaapi.Policies{
+					Attestation: []*schemaapi.PolicyAttachment{
+						{
+							Policy: &schemaapi.PolicyAttachment_Ref{
+								Ref: "testdata/contracts/policy_embedded.yaml",
+							},
+						},
+					},
+				},
+			},
 		},
 		{
 			name:         "missing policy",
@@ -237,6 +249,18 @@ func (s *crafterSuite) TestLoadSchema() {
 		{
 			name:         "rego policy",
 			contractPath: "testdata/contracts/with_rego.yaml",
+			want: &schemaapi.CraftingSchema{
+				SchemaVersion: "v1",
+				Policies: &schemaapi.Policies{
+					Attestation: []*schemaapi.PolicyAttachment{
+						{
+							Policy: &schemaapi.PolicyAttachment_Ref{
+								Ref: "testdata/contracts/policy_rego.yaml",
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 
@@ -250,7 +274,7 @@ func (s *crafterSuite) TestLoadSchema() {
 
 			if tc.want != nil {
 				// Check state
-				if ok := proto.Equal(want, got); !ok {
+				if ok := proto.Equal(tc.want, got); !ok {
 					s.Fail(fmt.Sprintf("These two protobuf messages are not equal:\nexpected: %v\nactual:  %v", want, got))
 				}
 			}
