@@ -50,10 +50,12 @@ func NewPolicyVerifier(schema *v1.CraftingSchema, logger *zerolog.Logger) *Polic
 // VerifyMaterial applies all required policies to a material
 func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Attestation_Material, artifactPath string) ([]*v12.PolicyEvaluation, error) {
 	result := make([]*v12.PolicyEvaluation, 0)
+
 	policies, err := pv.requiredPoliciesForMaterial(material)
 	if err != nil {
 		return nil, fmt.Errorf("error getting required policies for material: %w", err)
 	}
+
 	for _, policy := range policies {
 		// 1. load the policy spec
 		spec, err := LoadPolicySpec(policy)
