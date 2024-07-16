@@ -156,6 +156,8 @@ func engineViolationsToAPIViolations(input []*engine.PolicyViolation) []*v12.Pol
 func getMaterialContent(material *v12.Attestation_Material, artifactPath string) ([]byte, error) {
 	var rawMaterial []byte
 	var err error
+
+	// nolint: gocritic
 	if material.InlineCas {
 		rawMaterial = material.GetArtifact().GetContent()
 	} else if artifactPath == "" {
