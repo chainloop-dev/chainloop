@@ -177,7 +177,7 @@ func getMaterialContent(material *v12.Attestation_Material, artifactPath string)
 			return nil, fmt.Errorf("failed to unmarshal attestation material: %w", err)
 		}
 
-		_, err = base64.StdEncoding.Decode(rawMaterial, []byte(envelope.Payload))
+		rawMaterial, err = envelope.DecodeB64Payload()
 		if err != nil {
 			return nil, fmt.Errorf("failed to decode attestation material: %w", err)
 		}
