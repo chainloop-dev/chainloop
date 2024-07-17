@@ -44,20 +44,25 @@ func AuthFromQueryParam(keyFunc jwt.Keyfunc, claimsFunc ClaimsFunc, signingMetho
 			return
 		}
 
-		claims, err := verifyAndMarshalJWT(token, keyFunc, claimsFunc, signingMethod)
-		if err != nil {
-			// return unauthorized
-			nhttp.Error(w, "invalid token", nhttp.StatusUnauthorized)
-			return
-		}
-
-		// Attach the claims to the context
-		ctx := jwtMiddleware.NewContext(r.Context(), *claims)
-		r = r.WithContext(ctx)
-
-		// Run the next handler
-		next.ServeHTTP(w, r)
+		verifyJWTAndServeNext(w, r, token, keyFunc, claimsFunc, signingMethod, next)
 	})
+}
+
+// verifyJWTAndServeNext verifies the token and serves the next handler
+func verifyJWTAndServeNext(w http.ResponseWriter, r *nhttp.Request, token string, keyFunc jwt.Keyfunc, claimsFunc ClaimsFunc, signingMethod jwt.SigningMethod, next nhttp.Handler) {
+	claims, err := verifyAndMarshalJWT(token, keyFunc, claimsFunc, signingMethod)
+	if err != nil {
+		// return unauthorized
+		nhttp.Error(w, "invalid token", nhttp.StatusUnauthorized)
+		return
+	}
+
+	// Attach the claims to the context
+	ctx := jwtMiddleware.NewContext(r.Context(), *claims)
+	r = r.WithContext(ctx)
+
+	// Run the next handler
+	next.ServeHTTP(w, r)
 }
 
 // AuthFromAuthorizationHeader is a middleware that extracts the token from the authorization header and verifies it
@@ -71,19 +76,7 @@ func AuthFromAuthorizationHeader(keyFunc jwt.Keyfunc, claimsFunc ClaimsFunc, sig
 
 		jwtToken := auths[1]
 
-		claims, err := verifyAndMarshalJWT(jwtToken, keyFunc, claimsFunc, signingMethod)
-		if err != nil {
-			// return unauthorized
-			nhttp.Error(w, "invalid token", nhttp.StatusUnauthorized)
-			return
-		}
-
-		// Attach the claims to the context
-		ctx := jwtMiddleware.NewContext(r.Context(), *claims)
-		r = r.WithContext(ctx)
-
-		// Run the next handler
-		next.ServeHTTP(w, r)
+		verifyJWTAndServeNext(w, r, jwtToken, keyFunc, claimsFunc, signingMethod, next)
 	})
 }
 
