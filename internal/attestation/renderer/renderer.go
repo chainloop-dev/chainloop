@@ -58,6 +58,8 @@ type r interface {
 
 type Opt func(*AttestationRenderer)
 
+const AttPolicyEvaluation = "CHAINLOOP.ATTESTATION"
+
 func WithLogger(logger zerolog.Logger) Opt {
 	return func(ar *AttestationRenderer) {
 		ar.logger = logger
@@ -174,7 +176,7 @@ func addPolicyResults(statement *intoto.Statement, policyResults []*v1.PolicyEva
 	if p.PolicyEvaluations == nil {
 		p.PolicyEvaluations = make(map[string][]*v1.PolicyEvaluation)
 	}
-	p.PolicyEvaluations["ATTESTATION"] = policyResults
+	p.PolicyEvaluations[AttPolicyEvaluation] = policyResults
 
 	// marshall back to JSON
 	jsonPredicate, err = json.Marshal(p)
