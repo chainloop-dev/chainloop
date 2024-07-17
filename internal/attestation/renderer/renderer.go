@@ -113,6 +113,8 @@ func (ab *AttestationRenderer) Render(ctx context.Context) (*dsse.Envelope, erro
 	if err != nil {
 		return nil, fmt.Errorf("applying policies to statement: %w", err)
 	}
+	// log policy violations
+	policies.LogPolicyViolations(policyResults, &ab.logger)
 
 	// insert attestation level policy results into statement
 	if err = addPolicyResults(statement, policyResults); err != nil {
