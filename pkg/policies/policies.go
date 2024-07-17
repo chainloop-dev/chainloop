@@ -316,3 +316,14 @@ func LoadPolicyScriptFromSpec(spec *v1.Policy) (*engine.Policy, error) {
 		Source: content,
 	}, nil
 }
+
+func LogPolicyViolations(evaluations []*v12.PolicyEvaluation, logger *zerolog.Logger) {
+	for _, policyEval := range evaluations {
+		if len(policyEval.Violations) > 0 {
+			logger.Warn().Msgf("found policy violations (%s) for %s", policyEval.Name, policyEval.MaterialName)
+			for _, v := range policyEval.Violations {
+				logger.Warn().Msgf(" - %s", v.Message)
+			}
+		}
+	}
+}
