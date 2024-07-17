@@ -1,0 +1,29 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: sbom-present
+spec:
+  type: ATTESTATION
+  embedded: |
+    package main
+      
+    # Verifies there is a SBOM material, even if not enforced by contract
+    
+    import future.keywords.contains
+    import future.keywords.in
+    
+    deny[msg] {
+      not has_sbom
+      msg := "missing SBOM material"
+    }
+    
+    # Collect all material types
+    kinds contains kind {
+      some material in input.predicate.materials
+      kind := material.annotations["chainloop.material.type"]
+    }
+      
+    has_sbom {
+      values := ["SBOM_SPDX_JSON","SBOM_CYCLONEDX_JSON"]      
+      kinds[_] == values[_]
+    }

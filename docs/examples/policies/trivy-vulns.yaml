@@ -1,0 +1,20 @@
+# Checks that there are no MEDIUM or HIGH vulnerabilities in the CVE report
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: trivy-vulnerabilities
+spec:
+  embedded: |
+    package main
+    
+    # Verifies there is a SBOM material, even if not enforced by contract
+    
+    deny[msg] {
+      has_vulnerabilities
+      msg := "CVE report has vulnerabilities with severity MEDIUM or HIGH"
+    }
+    
+    has_vulnerabilities {
+      severities := ["HIGH", "MEDIUM"]
+      input.Results[_].Vulnerabilities[_].Severity == severities[_]
+    }

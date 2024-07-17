@@ -1,0 +1,20 @@
+# Checks that all components have a license
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: cyclonedx-licenses
+spec:
+  type: SBOM_CYCLONEDX_JSON
+  embedded: |
+    package main
+    
+    deny[msg] {
+      count(without_license) > 0
+      msg := "SBOM has components without licenses"
+    }
+      
+    without_license = {comp.purl |
+      some i
+      comp := input.components[i]
+      not comp.licenses
+    }

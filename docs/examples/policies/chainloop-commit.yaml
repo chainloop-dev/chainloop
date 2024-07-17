@@ -1,0 +1,20 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: chainloop-commit
+spec:
+  type: ATTESTATION
+  embedded: |
+    package main
+    
+    deny[msg] {
+      not has_commit
+      msg := "missing commit in attestation material"
+    }
+    
+    has_commit {
+      some i
+      input.subject[i].name == "git.head"
+      input.subject[i].digest.sha1
+    }
+
