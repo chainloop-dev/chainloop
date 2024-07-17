@@ -1,0 +1,247 @@
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "subject": [
+    {
+      "name": "chainloop.workflow.chainloop-vault-release",
+      "digest": {
+        "sha256": "9ae495a85891eb1130fefc17bc89940c9aa96acb8355c26a3e0d73a5097d41d4"
+      }
+    },
+    {
+      "name": "git.head",
+      "digest": {
+        "sha1": "53f95f066b620172301e2a3879e7d593da05727e"
+      },
+      "annotations": {
+        "author.email": "devel@chainloop.dev",
+        "author.name": "Developer",
+        "date": "2024-07-12T10:16:04Z",
+        "message": "chore(vulns): fix CVEs in base image (#1088)\n\nSigned-off-by: Jose I. Paris <jiparis@chainloop.dev>",
+        "remotes": [
+          {
+            "name": "origin",
+            "url": "https://github.com/chainloop-dev/chainloop"
+          }
+        ]
+      }
+    }
+  ],
+  "predicateType": "chainloop.dev/attestation/v0.2",
+  "predicate": {
+    "buildType": "chainloop.dev/workflowrun/v0.1",
+    "builder": {
+      "id": "chainloop.dev/cli/0.90.1@sha256:431a0765636854095f0c78d01b61eb5558abe7c8de1608aa93eef1530deee0b6"
+    },
+    "env": {
+      "GITHUB_ACTOR": "jiparis",
+      "GITHUB_REF": "refs/tags/v0.93.7",
+      "GITHUB_REPOSITORY": "chainloop-dev/chainloop",
+      "GITHUB_REPOSITORY_OWNER": "chainloop-dev",
+      "GITHUB_RUN_ID": "9906853011",
+      "GITHUB_SHA": "53f95f066b620172301e2a3879e7d593da05727e",
+      "RUNNER_NAME": "GitHub Actions 193",
+      "RUNNER_OS": "Linux"
+    },
+    "materials": [
+      {
+        "annotations": {
+          "chainloop.material.cas": true,
+          "chainloop.material.name": "material-1720782291120414953",
+          "chainloop.material.type": "SBOM_CYCLONEDX_JSON"
+        },
+        "digest": {
+          "sha256": "bc449b71c4a47f2f69b514f27e1d61250ff0af0cc554a68d331b40042d90a3da"
+        },
+        "name": "cas.cyclonedx.json"
+      },
+      {
+        "annotations": {
+          "chainloop.material.cas": true,
+          "chainloop.material.name": "material-1720782293352471920",
+          "chainloop.material.type": "ARTIFACT"
+        },
+        "digest": {
+          "sha256": "972ca204670aee23ed070619333fb04410ed996bf3c063ff88d35de0702fd478"
+        },
+        "name": "chainloop-cli-0.93.7-darwin-amd64.tar.gz"
+      },
+      {
+        "annotations": {
+          "chainloop.material.cas": true,
+          "chainloop.material.name": "material-1720782295934163620",
+          "chainloop.material.type": "ARTIFACT"
+        },
+        "digest": {
+          "sha256": "27e4efa094adef0dc5375da7bce70437dde9d35d1e20598240debfc318f374da"
+        },
+        "name": "chainloop-cli-0.93.7-darwin-amd64.tar.gz.sig"
+      },
+      {
+        "annotations": {
+          "chainloop.material.cas": true,
+          "chainloop.material.name": "material-1720782297645680131",
+          "chainloop.material.type": "ARTIFACT"
+        },
+        "digest": {
+          "sha256": "389ea065be2dd50d07b27619b8594d4738b2c86481db969f62dd549e579af1e2"
+        },
+        "name": "chainloop-cli-0.93.7-darwin-arm64.tar.gz"
+      },
+      {
+        "annotations": {
+          "chainloop.material.cas": true,
+          "chainloop.material.name": "material-1720782300158976415",
+          "chainloop.material.type": "ARTIFACT"
+        },
+        "digest": {
+          "sha256": "47d5c22ee0f56bf3e7eed5c283fe66e5f61a7a9e913b9af1550dd07e71ac09e1"
+        },
+        "name": "chainloop-cli-0.93.7-darwin-arm64.tar.gz.sig"
+      },
+      {
+        "annotations": {
+          "chainloop.material.cas": true,
+          "chainloop.material.name": "material-1720782301800977382",
+          "chainloop.material.type": "ARTIFACT"
+        },
+        "digest": {
+          "sha256": "a57b0b11a51b8ebbc9d421bd68e6e82fd021f4e87742780ef30f0aaca0bdd1c2"
+        },
+        "name": "chainloop-cli-0.93.7-linux-amd64.tar.gz"
+      },
+      {
+        "annotations": {
+          "chainloop.material.cas": true,
+          "chainloop.material.name": "material-1720782304541799505",
+          "chainloop.material.type": "ARTIFACT"
+        },
+        "digest": {
+          "sha256": "754dea96fc2addc0fdb70f725686fd4b5e01a1aa69a1ed0726e4d08866400d42"
+        },
+        "name": "chainloop-cli-0.93.7-linux-amd64.tar.gz.sig"
+      },
+      {
+        "annotations": {
+          "chainloop.material.cas": true,
+          "chainloop.material.name": "material-1720782306140039811",
+          "chainloop.material.type": "ARTIFACT"
+        },
+        "digest": {
+          "sha256": "c63ee103397001d2e9727d30d02a4ce4e55b7e32da55f042a414c7424b42b21d"
+        },
+        "name": "chainloop-cli-0.93.7-linux-arm64.tar.gz"
+      },
+      {
+        "annotations": {
+          "chainloop.material.cas": true,
+          "chainloop.material.name": "material-1720782308650938558",
+          "chainloop.material.type": "ARTIFACT"
+        },
+        "digest": {
+          "sha256": "b5c7c73c9d4cd325b8da64135c28685715e8e19f6b48357eaf1a02e693734f37"
+        },
+        "name": "chainloop-cli-0.93.7-linux-arm64.tar.gz.sig"
+      },
+      {
+        "annotations": {
+          "chainloop.material.cas": true,
+          "chainloop.material.name": "material-1720782309843066922",
+          "chainloop.material.type": "ARTIFACT"
+        },
+        "digest": {
+          "sha256": "897f1dfc64736dd66ea8881ab07689d59e1bc147c45da0baa1de416834a46a3d"
+        },
+        "name": "checksums.txt"
+      },
+      {
+        "annotations": {
+          "chainloop.material.cas": true,
+          "chainloop.material.name": "material-1720782311062937592",
+          "chainloop.material.type": "ARTIFACT"
+        },
+        "digest": {
+          "sha256": "2f804aa3b95a81802c24e384e5e87e86f02ec23d043c9c4d3aa9243ee866b60b"
+        },
+        "name": "checksums.txt.sig"
+      },
+      {
+        "annotations": {
+          "chainloop.material.cas": true,
+          "chainloop.material.name": "material-1720782311526704542",
+          "chainloop.material.type": "SBOM_CYCLONEDX_JSON"
+        },
+        "digest": {
+          "sha256": "8b53305ead21a9ede6e0e3aee2fcc04f04796716e1a2b566ce03f3f8cbc2b130"
+        },
+        "name": "controlplane.cyclonedx.json"
+      },
+      {
+        "annotations": {
+          "chainloop.material.cas": true,
+          "chainloop.material.name": "material-1720782313410977824",
+          "chainloop.material.type": "ARTIFACT"
+        },
+        "digest": {
+          "sha256": "91c0b92358109bfc31ea4c58902d9b7f4f582ff9c4782fb276a685e914d3cc82"
+        },
+        "name": "cosign.pub"
+      },
+      {
+        "annotations": {
+          "chainloop.material.cas": true,
+          "chainloop.material.name": "material-1720782315689903312",
+          "chainloop.material.type": "HELM_CHART"
+        },
+        "digest": {
+          "sha256": "7cbbda1e5ab71fef561c0f123f5f584c8e0de523d4da80379599ce7a05c04c1f"
+        },
+        "name": "chainloop-0.93.7.tar.gz"
+      },
+      {
+        "annotations": {
+          "chainloop.material.image.tag": "v0.93.7",
+          "chainloop.material.name": "material-1720782317669410353",
+          "chainloop.material.type": "CONTAINER_IMAGE"
+        },
+        "digest": {
+          "sha256": "4a8eb6f9ae76460b682e7e9eb5504df9f7f2b2250d9c5cb63204442e265e2c5a"
+        },
+        "name": "ghcr.io/chainloop-dev/chainloop/control-plane"
+      },
+      {
+        "annotations": {
+          "chainloop.material.image.tag": "v0.93.7",
+          "chainloop.material.name": "material-1720782318334142313",
+          "chainloop.material.type": "CONTAINER_IMAGE"
+        },
+        "digest": {
+          "sha256": "4d329b2aee79b35ec5e6c462be5d8000565d5ccd13602427cd889fc91c187fc8"
+        },
+        "name": "ghcr.io/chainloop-dev/chainloop/artifact-cas"
+      },
+      {
+        "annotations": {
+          "chainloop.material.image.tag": "v0.93.7",
+          "chainloop.material.name": "material-1720782319034635257",
+          "chainloop.material.type": "CONTAINER_IMAGE"
+        },
+        "digest": {
+          "sha256": "571a5543151d651cbc62679c3f50c2e6cadfd2ff20279374c6d6106b3f70560f"
+        },
+        "name": "ghcr.io/chainloop-dev/chainloop/cli"
+      }
+    ],
+    "metadata": {
+      "finishedAt": "2024-07-12T11:05:19.808858785Z",
+      "initializedAt": "2024-07-12T11:04:48.604833219Z",
+      "name": "chainloop-vault-release",
+      "organization": "read-only-demo",
+      "project": "chainloop",
+      "team": "",
+      "workflowID": "2acc7ee5-21d1-4500-9ca4-2d25748a1ce0",
+      "workflowRunID": "37dd3d94-06e3-483f-83c2-18b1137e73ee"
+    },
+    "runnerType": "GITLAB",
+    "runnerURL": "https://github.com/chainloop-dev/chainloop/actions/runs/9906853011"
+  }
+}

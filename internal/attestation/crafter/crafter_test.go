@@ -182,22 +182,33 @@ func newInitializedCrafter(t *testing.T, contractPath string, wfMeta *v1.Workflo
 }
 
 func (s *crafterSuite) TestLoadSchema() {
+	want := &schemaapi.CraftingSchema{
+		SchemaVersion: "v1",
+		Runner: &schemaapi.CraftingSchema_Runner{
+			Type: schemaapi.CraftingSchema_Runner_GITHUB_ACTION,
+		},
+	}
+
 	testCases := []struct {
 		name         string
 		contractPath string
+		want         *schemaapi.CraftingSchema
 		wantErr      bool
 	}{
 		{
 			name:         "yaml",
 			contractPath: "testdata/contracts/empty_github.yaml",
+			want:         want,
 		},
 		{
 			name:         "json",
 			contractPath: "testdata/contracts/empty_github.json",
+			want:         want,
 		},
 		{
 			name:         "cue",
 			contractPath: "testdata/contracts/empty_github.cue",
+			want:         want,
 		},
 		{
 			name:         "unsupported",
@@ -209,6 +220,48 @@ func (s *crafterSuite) TestLoadSchema() {
 			contractPath: "testdata/contracts/invalid.yaml",
 			wantErr:      true,
 		},
+		{
+			name:         "policies",
+			contractPath: "testdata/contracts/with_policy_embedded.yaml",
+			want: &schemaapi.CraftingSchema{
+				SchemaVersion: "v1",
+				Policies: &schemaapi.Policies{
+					Attestation: []*schemaapi.PolicyAttachment{
+						{
+							Policy: &schemaapi.PolicyAttachment_Ref{
+								Ref: "testdata/policies/policy_embedded.yaml",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:         "missing policy",
+			contractPath: "testdata/contracts/with_missing_policy.yaml",
+			wantErr:      true,
+		},
+		{
+			name:         "missing script",
+			contractPath: "testdata/contracts/with_policy_missing_rego.yaml",
+			wantErr:      true,
+		},
+		{
+			name:         "rego policy",
+			contractPath: "testdata/contracts/with_rego.yaml",
+			want: &schemaapi.CraftingSchema{
+				SchemaVersion: "v1",
+				Policies: &schemaapi.Policies{
+					Attestation: []*schemaapi.PolicyAttachment{
+						{
+							Policy: &schemaapi.PolicyAttachment_Ref{
+								Ref: "testdata/policies/policy_rego.yaml",
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -219,16 +272,11 @@ func (s *crafterSuite) TestLoadSchema() {
 				return
 			}
 
-			want := &schemaapi.CraftingSchema{
-				SchemaVersion: "v1",
-				Runner: &schemaapi.CraftingSchema_Runner{
-					Type: schemaapi.CraftingSchema_Runner_GITHUB_ACTION,
-				},
-			}
-
-			// Check state
-			if ok := proto.Equal(want, got); !ok {
-				s.Fail(fmt.Sprintf("These two protobuf messages are not equal:\nexpected: %v\nactual:  %v", want, got))
+			if tc.want != nil {
+				// Check state
+				if ok := proto.Equal(tc.want, got); !ok {
+					s.Fail(fmt.Sprintf("These two protobuf messages are not equal:\nexpected: %v\nactual:  %v", want, got))
+				}
 			}
 		})
 	}

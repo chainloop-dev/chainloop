@@ -34,7 +34,8 @@ message CraftingSchema {
   // It works in addition to the annotations defined in the materials and the runner
   repeated Annotation annotations = 5;
 
-  repeated PolicyAttachment policies = 6;
+  // Policies to apply to this schema
+  Policies policies = 6;
 
   message Runner {
     RunnerType type = 1 [
@@ -106,20 +107,30 @@ message Annotation {
   string value = 2;
 }
 
+message Policies {
+  // Policies to be applied to materials
+  repeated PolicyAttachment materials = 1;
+  // Policies to be applied to attestation metadata
+  repeated PolicyAttachment attestation = 2;
+}
+
 // A policy to be applied to this contract
 message PolicyAttachment {
   oneof policy {
     // policy reference, it might be in URI format.
     string ref = 1 [(buf.validate.field).string.min_len = 1];
 
-    // reference to a policy already known by chainloop
-    string name = 2 [(buf.validate.field) = {
-      cel: {
-        message: "must contain only lowercase letters, numbers, and hyphens.",
-        expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
-        id: "name.dns-1123",
-      },
-    }];
+    // meant to be used to embed the policy in the contract
+    Policy embedded = 2;
+
+    //    TODO: reference to a policy already known by chainloop
+    //      string name = 2 [(buf.validate.field) = {
+    //        cel: {
+    //          message: "must contain only lowercase letters, numbers, and hyphens.",
+    //          expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
+    //          id: "name.dns-1123",
+    //        },
+    //      }];
 
     option (buf.validate.oneof).required = true;
   }
@@ -143,4 +154,41 @@ message PolicyAttachment {
     string name = 1 [(buf.validate.field).required = true];
     string value = 2 [(buf.validate.field).required = true];;
   }
+}
+
+// Represents a policy to be applied to a material or attestation
+message Policy {
+  string api_version = 1 [(buf.validate.field).string.const = "workflowcontract.chainloop.dev/v1"];
+  string kind = 2 [(buf.validate.field).string.const = "Policy"];
+
+  Metadata metadata = 3 [(buf.validate.field).required = true];
+  PolicySpec spec = 4 [(buf.validate.field).required = true];
+}
+
+message Metadata {
+  // the name of the policy
+  string name = 3 [(buf.validate.field) = {
+    cel: {
+      message: "must contain only lowercase letters, numbers, and hyphens.",
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
+      id: "name.dns-1123",
+    },
+  }];
+}
+
+message PolicySpec {
+  oneof source {
+    // path to a policy script. It might consist of a URI reference
+    string path = 1;
+
+    // embedded source code (only Rego supported currently)
+    string embedded = 2;
+
+    option (buf.validate.oneof).required = true;
+  };
+
+  // if set, it will match any material supported by Chainloop
+  // except those not having a direct schema (STRING, ARTIFACT, EVIDENCE), since their format cannot be guessed by the crafter.
+  // CONTAINER, HELM_CHART are also excluded, but we might implement custom policies for them in the future.
+  CraftingSchema.Material.MaterialType type = 3 [(buf.validate.field).enum = { not_in: [1, 2, 3, 10, 11]}];
 }

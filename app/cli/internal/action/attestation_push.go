@@ -143,13 +143,14 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	if err != nil {
 		return nil, fmt.Errorf("creating signer: %w", err)
 	}
+
 	renderer, err := renderer.NewAttestationRenderer(action.c.CraftingState, action.cliVersion, action.cliDigest, sig,
 		renderer.WithLogger(action.Logger), renderer.WithBundleOutputPath(action.bundlePath))
 	if err != nil {
 		return nil, err
 	}
 
-	envelope, err := renderer.Render()
+	envelope, err := renderer.Render(ctx)
 	if err != nil {
 		return nil, err
 	}

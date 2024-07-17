@@ -89,12 +89,12 @@ message Attestation {
   // Head Commit of the environment where the attestation was executed (optional)
   Commit head = 9;
 
-  // Policies that this attestation was validated against
-  repeated Policy policies = 10;
+  // Policies that materials in this attestation were validated against
+  repeated PolicyEvaluation policy_evaluations = 10;
 }
 
-// A policy executed against an attestation
-message Policy {
+// A policy executed against an attestation or material
+message PolicyEvaluation {
   // The policy name from the policy spec
   string name = 1 [(buf.validate.field) = {
     cel: {
@@ -103,10 +103,12 @@ message Policy {
       id: "name.dns-1123",
     },
   }];
-  // The attachment as in the contract, with arguments and any other metadata
-  workflowcontract.v1.PolicyAttachment attachment = 2 [(buf.validate.field).required = true];
-  // The policy script body (rego)
+
+  string material_name = 2;
+
+  // The body script of the policy
   string body = 3 [(buf.validate.field).required = true];
+
   // The policy violations, if any
   repeated Violation violations = 4;
 

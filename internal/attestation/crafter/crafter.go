@@ -27,20 +27,19 @@ import (
 	"strings"
 	"time"
 
-	"cuelang.org/go/cue/cuecontext"
 	"github.com/bufbuild/protovalidate-go"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	api "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/materials"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
 	"github.com/chainloop-dev/chainloop/internal/ociauth"
+	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"sigs.k8s.io/yaml"
 )
 
 // StateManager is an interface for managing the state of the crafting process
@@ -153,33 +152,6 @@ func (c *Crafter) AlreadyInitialized(ctx context.Context, stateID string) (bool,
 	return c.stateManager.Initialized(ctx, stateID)
 }
 
-// LoadJSONBytes Extracts raw data in JSON format from different sources, i.e cue or yaml files
-func LoadJSONBytes(rawData []byte, extension string) ([]byte, error) {
-	var jsonRawData []byte
-	var err error
-
-	switch extension {
-	case ".yaml", ".yml":
-		jsonRawData, err = yaml.YAMLToJSON(rawData)
-		if err != nil {
-			return nil, err
-		}
-	case ".cue":
-		ctx := cuecontext.New()
-		v := ctx.CompileBytes(rawData)
-		jsonRawData, err = v.MarshalJSON()
-		if err != nil {
-			return nil, err
-		}
-	case ".json":
-		jsonRawData = rawData
-	default:
-		return nil, errors.New("unsupported file format")
-	}
-
-	return jsonRawData, nil
-}
-
 func LoadSchema(pathOrURI string) (*schemaapi.CraftingSchema, error) {
 	// Extract json formatted data
 	content, err := loadFileOrURL(pathOrURI)
@@ -187,7 +159,7 @@ func LoadSchema(pathOrURI string) (*schemaapi.CraftingSchema, error) {
 		return nil, err
 	}
 
-	jsonSchemaRaw, err := LoadJSONBytes(content, filepath.Ext(pathOrURI))
+	jsonSchemaRaw, err := materials.LoadJSONBytes(content, filepath.Ext(pathOrURI))
 	if err != nil {
 		return nil, err
 	}
@@ -212,7 +184,29 @@ func LoadSchema(pathOrURI string) (*schemaapi.CraftingSchema, error) {
 		return nil, err
 	}
 
+	// Load, validate policies, and embed them in the schema
+	if err := validatePolicyAttachments(schema.GetPolicies().GetMaterials()); err != nil {
+		return nil, fmt.Errorf("validating policies: %w", err)
+	}
+	if err := validatePolicyAttachments(schema.GetPolicies().GetAttestation()); err != nil {
+		return nil, fmt.Errorf("validating policies: %w", err)
+	}
+
 	return schema, nil
+}
+
+func validatePolicyAttachments(pols []*schemaapi.PolicyAttachment) error {
+	for _, p := range pols {
+		spec, err := policies.LoadPolicySpec(p)
+		if err != nil {
+			return fmt.Errorf("validating policy: %w", err)
+		}
+		if _, err := policies.LoadPolicyScriptFromSpec(spec); err != nil {
+			return fmt.Errorf("loading policy script: %w", err)
+		}
+	}
+
+	return nil
 }
 
 // Initialize the temporary file with the content of the schema
@@ -577,13 +571,20 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 		return fmt.Errorf("validation error: %w", err)
 	}
 
-	// 5 - Attach it to state
-	if mt != nil {
-		if c.CraftingState.Attestation.Materials == nil {
-			c.CraftingState.Attestation.Materials = map[string]*api.Attestation_Material{m.Name: mt}
-		}
-		c.CraftingState.Attestation.Materials[m.Name] = mt
+	// Validate policies
+	pv := policies.NewPolicyVerifier(c.CraftingState.InputSchema, c.logger)
+	policyResults, err := pv.VerifyMaterial(ctx, mt, value)
+	if err != nil {
+		return fmt.Errorf("error applying policies to material: %w", err)
 	}
+	// store policy results
+	c.CraftingState.Attestation.PolicyEvaluations = append(c.CraftingState.Attestation.PolicyEvaluations, policyResults...)
+
+	// 5 - Attach it to state
+	if c.CraftingState.Attestation.Materials == nil {
+		c.CraftingState.Attestation.Materials = map[string]*api.Attestation_Material{m.Name: mt}
+	}
+	c.CraftingState.Attestation.Materials[m.Name] = mt
 
 	// 6 - Persist state
 	if err := c.stateManager.Write(ctx, attestationID, c.CraftingState); err != nil {

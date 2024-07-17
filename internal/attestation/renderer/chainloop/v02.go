@@ -23,13 +23,12 @@ import (
 	"strings"
 	"time"
 
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
+	intoto "github.com/in-toto/attestation/go/v1"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
-
-	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	intoto "github.com/in-toto/attestation/go/v1"
 )
 
 // Replace custom material type with https://github.com/in-toto/attestation/blob/main/spec/v1.0/resource_descriptor.md
@@ -38,6 +37,8 @@ const PredicateTypeV02 = "chainloop.dev/attestation/v0.2"
 type ProvenancePredicateV02 struct {
 	*ProvenancePredicateCommon
 	Materials []*intoto.ResourceDescriptor `json:"materials,omitempty"`
+	// Map materials and policies
+	PolicyEvaluations map[string][]*v1.PolicyEvaluation `json:"policy_evaluations,omitempty"`
 }
 
 type RendererV02 struct {
@@ -147,9 +148,12 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 		return nil, fmt.Errorf("error normalizing materials: %w", err)
 	}
 
+	policies := policyEvaluationsFromMaterials(r.att)
+
 	p := ProvenancePredicateV02{
 		ProvenancePredicateCommon: predicateCommon(r.builder, r.att),
 		Materials:                 normalizedMaterials,
+		PolicyEvaluations:         policies,
 	}
 
 	// transform to structpb.Struct in a two steps process
@@ -166,6 +170,16 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 	}
 
 	return predicate, nil
+}
+
+// collect all policy evaluations grouped by material
+func policyEvaluationsFromMaterials(att *v1.Attestation) map[string][]*v1.PolicyEvaluation {
+	result := map[string][]*v1.PolicyEvaluation{}
+	for _, p := range att.GetPolicyEvaluations() {
+		result[p.MaterialName] = append(result[p.MaterialName], p)
+	}
+
+	return result
 }
 
 func outputMaterials(att *v1.Attestation, onlyOutput bool) ([]*intoto.ResourceDescriptor, error) {

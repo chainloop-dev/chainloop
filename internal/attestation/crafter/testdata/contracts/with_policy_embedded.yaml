@@ -1,0 +1,4 @@
+schemaVersion: "v1"
+policies:
+  attestation:
+    - ref: testdata/policies/policy_embedded.yaml

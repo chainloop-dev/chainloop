@@ -1,7 +1,6 @@
 apiVersion: workflowcontract.chainloop.dev/v1
 kind: Policy
 metadata:
-  name: workflow
+  name: made-with-syft
 spec:
-  type: ATTESTATION
-  path: testdata/workflow.rego
+  path: testdata/sbom_syft.rego

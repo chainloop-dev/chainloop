@@ -3,4 +3,5 @@ kind: Policy
 metadata:
   name: made-with-syft
 spec:
+  type: SBOM_SPDX_JSON
   path: testdata/sbom_syft.rego

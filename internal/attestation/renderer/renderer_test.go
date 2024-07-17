@@ -68,7 +68,7 @@ func (s *rendererSuite) TestRender() {
 		renderer, err := NewAttestationRenderer(s.cs, "", "", s.sv)
 		s.Require().NoError(err)
 
-		envelope, err := renderer.Render()
+		envelope, err := renderer.Render(context.TODO())
 		s.NoError(err)
 
 		_, err = s.dsseVerifier.Verify(context.TODO(), envelope)
@@ -81,7 +81,7 @@ func (s *rendererSuite) TestRender() {
 		renderer, err := NewAttestationRenderer(s.cs, "", "", doubleWrapper)
 		s.Require().NoError(err)
 
-		envelope, err := renderer.Render()
+		envelope, err := renderer.Render(context.TODO())
 		s.NoError(err)
 
 		_, err = s.dsseVerifier.Verify(context.TODO(), envelope)

@@ -3,6 +3,7 @@ kind: Policy
 metadata:
   name: workflow
 spec:
+  type: ATTESTATION
   embedded: |
     package main
     deny[msg] {
@@ -10,6 +11,17 @@ spec:
       msg := "incorrect workflow"
     }
     
-    is_workflow {
-      input.workflow.name == "policytest"
+    deny[msg] {
+      not is_github
+      msg := "incorrect runner"
     }
+    
+    is_workflow {
+      input.predicate.metadata.name == "chainloop-vault-release"
+    }
+    
+    is_github {
+      input.predicate.runnerType == "GITHUB_ACTION"
+      input.predicate.env.GITHUB_SHA
+    }
+

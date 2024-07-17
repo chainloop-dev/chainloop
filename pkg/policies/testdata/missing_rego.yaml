@@ -3,4 +3,5 @@ kind: Policy
 metadata:
   name: missing-rego
 spec:
+  type: ATTESTATION
   path: this_is_a_missing.rego

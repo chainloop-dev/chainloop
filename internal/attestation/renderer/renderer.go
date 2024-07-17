@@ -17,6 +17,7 @@ package renderer
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
@@ -24,9 +25,11 @@ import (
 	"fmt"
 	"os"
 
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	chainloopsigner "github.com/chainloop-dev/chainloop/internal/attestation/signer/chainloop"
+	"github.com/chainloop-dev/chainloop/pkg/policies"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
@@ -36,11 +39,13 @@ import (
 	sigstoresigner "github.com/sigstore/sigstore/pkg/signature"
 	sigdsee "github.com/sigstore/sigstore/pkg/signature/dsse"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type AttestationRenderer struct {
 	logger     zerolog.Logger
 	att        *v1.Attestation
+	schema     *schemaapi.CraftingSchema
 	renderer   r
 	signer     sigstoresigner.Signer
 	dsseSigner sigstoresigner.Signer
@@ -52,6 +57,8 @@ type r interface {
 }
 
 type Opt func(*AttestationRenderer)
+
+const AttPolicyEvaluation = "CHAINLOOP.ATTESTATION"
 
 func WithLogger(logger zerolog.Logger) Opt {
 	return func(ar *AttestationRenderer) {
@@ -73,6 +80,7 @@ func NewAttestationRenderer(state *v1.CraftingState, builderVersion, builderDige
 	r := &AttestationRenderer{
 		logger:     zerolog.Nop(),
 		att:        state.GetAttestation(),
+		schema:     state.GetInputSchema(),
 		dsseSigner: sigdsee.WrapSigner(signer, "application/vnd.in-toto+json"),
 		signer:     signer,
 		renderer:   chainloop.NewChainloopRendererV02(state.GetAttestation(), builderVersion, builderDigest),
@@ -87,7 +95,7 @@ func NewAttestationRenderer(state *v1.CraftingState, builderVersion, builderDige
 
 // Attestation (dsee envelope) -> { message: { Statement(in-toto): [subject, predicate] }, signature: "sig" }.
 // NOTE: It currently only supports cosign key based signing.
-func (ab *AttestationRenderer) Render() (*dsse.Envelope, error) {
+func (ab *AttestationRenderer) Render(ctx context.Context) (*dsse.Envelope, error) {
 	ab.logger.Debug().Msg("generating in-toto statement")
 
 	statement, err := ab.renderer.Statement()
@@ -97,6 +105,18 @@ func (ab *AttestationRenderer) Render() (*dsse.Envelope, error) {
 
 	if err := statement.Validate(); err != nil {
 		return nil, fmt.Errorf("validating intoto statement: %w", err)
+	}
+
+	// validate attestation-level policies
+	pv := policies.NewPolicyVerifier(ab.schema, &ab.logger)
+	policyResults, err := pv.VerifyStatement(ctx, statement)
+	if err != nil {
+		return nil, fmt.Errorf("applying policies to statement: %w", err)
+	}
+
+	// insert attestation level policy results into statement
+	if err = addPolicyResults(statement, policyResults); err != nil {
+		return nil, fmt.Errorf("adding policy results to statement: %w", err)
 	}
 
 	rawStatement, err := protojson.Marshal(statement)
@@ -132,6 +152,48 @@ func (ab *AttestationRenderer) Render() (*dsse.Envelope, error) {
 	}
 
 	return &dsseEnvelope, nil
+}
+
+// addPolicyResults adds policy evaluation results to the statement. It does it by deserializing the predicate from a structpb.Struct,
+// filling PolicyEvaluations, and serializing it again to a structpb.Struct object, using JSON as an intermediate representation.
+// Note that this is needed because intoto predicates are generic structpb.Struct
+func addPolicyResults(statement *intoto.Statement, policyResults []*v1.PolicyEvaluation) error {
+	predicate := statement.Predicate
+	// marshall to json
+	jsonPredicate, err := protojson.Marshal(predicate)
+	if err != nil {
+		return fmt.Errorf("marshalling predicate: %w", err)
+	}
+
+	// unmarshall to our typed predicate object
+	var p chainloop.ProvenancePredicateV02
+	err = json.Unmarshal(jsonPredicate, &p)
+	if err != nil {
+		return fmt.Errorf("unmarshalling predicate: %w", err)
+	}
+
+	// insert policy evaluations
+	if p.PolicyEvaluations == nil {
+		p.PolicyEvaluations = make(map[string][]*v1.PolicyEvaluation)
+	}
+	p.PolicyEvaluations[AttPolicyEvaluation] = policyResults
+
+	// marshall back to JSON
+	jsonPredicate, err = json.Marshal(p)
+	if err != nil {
+		return fmt.Errorf("marshalling predicate: %w", err)
+	}
+
+	// finally unmarshal from JSON to structpb.Struct.
+	var finalPredicate structpb.Struct
+	err = protojson.Unmarshal(jsonPredicate, &finalPredicate)
+	if err != nil {
+		return fmt.Errorf("unmarshalling predicate: %w", err)
+	}
+
+	statement.Predicate = &finalPredicate
+
+	return nil
 }
 
 func (ab *AttestationRenderer) envelopeToBundle(dsseEnvelope dsse.Envelope) (*protobundle.Bundle, error) {
