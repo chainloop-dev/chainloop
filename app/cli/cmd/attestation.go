@@ -64,6 +64,10 @@ func newAttestationCmd() *cobra.Command {
 		attAPIToken = os.Getenv(tokenEnvVarName)
 	}
 
+	cmd.PersistentFlags().Bool("remote-state", false, "Store the attestation state remotely (preview feature)")
+	// We do not need this flag in all the attestation subcommands just in init, but we don't want to remove it to not to break current integrations
+	cobra.CheckErr(cmd.PersistentFlags().MarkHidden("remote-state"))
+
 	cmd.PersistentFlags().BoolVar(&GracefulExit, "graceful-exit", false, "exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0")
 
 	cmd.AddCommand(newAttestationInitCmd(), newAttestationAddCmd(), newAttestationStatusCmd(), newAttestationPushCmd(), newAttestationResetCmd())

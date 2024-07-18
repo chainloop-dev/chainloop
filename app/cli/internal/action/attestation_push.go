@@ -64,8 +64,9 @@ func NewAttestationPush(cfg *AttestationPushOpts) (*AttestationPush, error) {
 }
 
 func (action *AttestationPush) Run(ctx context.Context, attestationID string, runtimeAnnotations map[string]string) (*AttestationResult, error) {
+	useRemoteState := attestationID != ""
 	// initialize the crafter. If attestation-id is provided we assume the attestation is performed using remote state
-	crafter, err := newCrafter(attestationID != "", action.CPConnection, action.newCrafterOpts.opts...)
+	crafter, err := newCrafter(useRemoteState, action.CPConnection, action.newCrafterOpts.opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load crafter: %w", err)
 	}
@@ -77,7 +78,7 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	}
 
 	// Retrieve attestation status
-	statusAction, err := NewAttestationStatus(&AttestationStatusOpts{ActionsOpts: action.ActionsOpts})
+	statusAction, err := NewAttestationStatus(&AttestationStatusOpts{ActionsOpts: action.ActionsOpts, UseAttestationRemoteState: useRemoteState})
 	if err != nil {
 		return nil, fmt.Errorf("creating status action: %w", err)
 	}

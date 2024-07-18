@@ -21,16 +21,18 @@ import (
 	"time"
 
 	pbc "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
 	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 )
 
 type AttestationStatusOpts struct {
 	*ActionsOpts
+	UseAttestationRemoteState bool
 }
 
 type AttestationStatus struct {
 	*ActionsOpts
-	*newCrafterOpts
+	c *crafter.Crafter
 }
 
 type AttestationStatusResult struct {
@@ -59,18 +61,19 @@ type AttestationStatusResultMaterial struct {
 }
 
 func NewAttestationStatus(cfg *AttestationStatusOpts) (*AttestationStatus, error) {
+	c, err := newCrafter(cfg.UseAttestationRemoteState, cfg.CPConnection, crafter.WithLogger(&cfg.Logger))
+	if err != nil {
+		return nil, fmt.Errorf("failed to load crafter: %w", err)
+	}
+
 	return &AttestationStatus{
-		ActionsOpts:    cfg.ActionsOpts,
-		newCrafterOpts: &newCrafterOpts{cpConnection: cfg.CPConnection},
+		ActionsOpts: cfg.ActionsOpts,
+		c:           c,
 	}, nil
 }
 
 func (action *AttestationStatus) Run(ctx context.Context, attestationID string) (*AttestationStatusResult, error) {
-	// initialize the crafter. If attestation-id is provided we assume the attestation is performed using remote state
-	c, err := newCrafter(attestationID != "", action.CPConnection, action.newCrafterOpts.opts...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load crafter: %w", err)
-	}
+	c := action.c
 
 	if initialized, err := c.AlreadyInitialized(ctx, attestationID); err != nil {
 		return nil, fmt.Errorf("checking if attestation is already initialized: %w", err)
