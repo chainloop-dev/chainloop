@@ -17,7 +17,7 @@ package biz
 
 import (
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/metrics/registry"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/metrics/prometheus/registry"
 
 	"github.com/go-kratos/kratos/v2/log"
 )

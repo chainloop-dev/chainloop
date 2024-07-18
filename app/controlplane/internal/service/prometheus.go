@@ -99,9 +99,10 @@ func (p *PrometheusService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Encode and write the metrics to the response
-	// TODO: make the content type configurable
-	w.Header().Set("Content-Type", "text/plain")
-	enc := expfmt.NewEncoder(w, "text/plain")
+	contentType := expfmt.Negotiate(r.Header)
+	w.Header().Set("Content-Type", string(contentType))
+
+	enc := expfmt.NewEncoder(w, contentType)
 	for _, mf := range gather {
 		if err := enc.Encode(mf); err != nil {
 			http.Error(w, "Error encoding metrics", http.StatusInternalServerError)

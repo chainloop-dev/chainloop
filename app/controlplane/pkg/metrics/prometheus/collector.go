@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package prometheuscollector
+package prometheus
 
 import (
 	"slices"
@@ -22,14 +22,27 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// ChainloopCollector is an interface for a collector that collects metrics for Chainloop
-// It extends the prometheus.Collector interface plus two additional methods
-type ChainloopCollector interface {
-	prometheus.Collector
+// ChainloopMetricsGatherer is an interface for a gatherer that gathers metrics for Chainloop prometheus collector
+type ChainloopMetricsGatherer interface {
+	GetLastWorkflowStatusByRun(orgName string) ([]*WorkflowLastStatusByRunReport, error)
 }
 
-// BaseChainloopCollector is a base implementation of the ChainloopCollector interface
-type BaseChainloopCollector struct {
+// notSuccessfulStatus is a list of statuses that are not considered successful
+var notSuccessfulStatus = []string{
+	"error",
+	"canceled",
+	"expired",
+}
+
+// WorkflowLastStatusByRunReport is a report of the status of a workflow by its last run
+type WorkflowLastStatusByRunReport struct {
+	WorkflowName string `json:"workflow_name"`
+	OrgName      string `json:"org_name"`
+	Status       string `json:"status"`
+}
+
+// ChainloopCollector is a base implementation of the ChainloopCollector interface
+type ChainloopCollector struct {
 	orgName  string
 	gatherer ChainloopMetricsGatherer
 	// Metrics
@@ -38,9 +51,9 @@ type BaseChainloopCollector struct {
 	logger *log.Helper
 }
 
-// NewBaseChainloopCollector creates a new BaseChainloopCollector with basic metrics
-func NewBaseChainloopCollector(orgName string, gatherer ChainloopMetricsGatherer, logger log.Logger) *BaseChainloopCollector {
-	return &BaseChainloopCollector{
+// NewChainloopCollector creates a new ChainloopCollector with basic metrics
+func NewChainloopCollector(orgName string, gatherer ChainloopMetricsGatherer, logger log.Logger) *ChainloopCollector {
+	return &ChainloopCollector{
 		orgName:  orgName,
 		gatherer: gatherer,
 		workflowLastRunSuccessful: prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -51,11 +64,11 @@ func NewBaseChainloopCollector(orgName string, gatherer ChainloopMetricsGatherer
 	}
 }
 
-func (bcc *BaseChainloopCollector) Describe(ch chan<- *prometheus.Desc) {
+func (bcc *ChainloopCollector) Describe(ch chan<- *prometheus.Desc) {
 	bcc.workflowLastRunSuccessful.Describe(ch)
 }
 
-func (bcc *BaseChainloopCollector) Collect(ch chan<- prometheus.Metric) {
+func (bcc *ChainloopCollector) Collect(ch chan<- prometheus.Metric) {
 	wfReports, err := bcc.gatherer.GetLastWorkflowStatusByRun(bcc.orgName)
 	if err != nil {
 		bcc.logger.Warnf("error getting last workflow status by run for organization [%v]: %v", bcc.orgName, err)
