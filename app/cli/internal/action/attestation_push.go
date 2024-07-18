@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -45,30 +45,32 @@ type AttestationResult struct {
 
 type AttestationPush struct {
 	*ActionsOpts
-	c                                          *crafter.Crafter
 	keyPath, cliVersion, cliDigest, bundlePath string
 	signServerCAPath                           string
+	*newCrafterOpts
 }
 
 func NewAttestationPush(cfg *AttestationPushOpts) (*AttestationPush, error) {
-	c, err := newCrafter(cfg.UseAttestationRemoteState, cfg.CPConnection, crafter.WithLogger(&cfg.Logger))
-	if err != nil {
-		return nil, fmt.Errorf("failed to load crafter: %w", err)
-	}
-
+	opts := []crafter.NewOpt{crafter.WithLogger(&cfg.Logger)}
 	return &AttestationPush{
 		ActionsOpts:      cfg.ActionsOpts,
-		c:                c,
 		keyPath:          cfg.KeyPath,
 		cliVersion:       cfg.CLIVersion,
 		cliDigest:        cfg.CLIDigest,
 		bundlePath:       cfg.BundlePath,
 		signServerCAPath: cfg.SignServerCAPath,
+		newCrafterOpts:   &newCrafterOpts{cpConnection: cfg.CPConnection, opts: opts},
 	}, nil
 }
 
 func (action *AttestationPush) Run(ctx context.Context, attestationID string, runtimeAnnotations map[string]string) (*AttestationResult, error) {
-	if initialized, err := action.c.AlreadyInitialized(ctx, attestationID); err != nil {
+	// initialize the crafter. If attestation-id is provided we assume the attestation is performed using remote state
+	crafter, err := newCrafter(attestationID != "", action.CPConnection, action.newCrafterOpts.opts...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load crafter: %w", err)
+	}
+
+	if initialized, err := crafter.AlreadyInitialized(ctx, attestationID); err != nil {
 		return nil, fmt.Errorf("checking if attestation is already initialized: %w", err)
 	} else if !initialized {
 		return nil, ErrAttestationNotInitialized
@@ -84,7 +86,7 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 		return nil, fmt.Errorf("creating running status action: %w", err)
 	}
 
-	if err := action.c.LoadCraftingState(ctx, attestationID); err != nil {
+	if err := crafter.LoadCraftingState(ctx, attestationID); err != nil {
 		action.Logger.Err(err).Msg("loading existing attestation")
 		return nil, err
 	}
@@ -92,7 +94,7 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	// Annotations
 	craftedAnnotations := make(map[string]string, 0)
 	// 1 - Set annotations that come from the contract
-	for _, v := range action.c.CraftingState.InputSchema.GetAnnotations() {
+	for _, v := range crafter.CraftingState.InputSchema.GetAnnotations() {
 		craftedAnnotations[v.Name] = v.Value
 	}
 
@@ -125,16 +127,16 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 		}
 	}
 	// Set the annotations
-	action.c.CraftingState.Attestation.Annotations = craftedAnnotations
+	crafter.CraftingState.Attestation.Annotations = craftedAnnotations
 
-	if err := action.c.ValidateAttestation(); err != nil {
+	if err := crafter.ValidateAttestation(); err != nil {
 		return nil, err
 	}
 
 	action.Logger.Debug().Msg("validation completed")
 
 	// Indicate that we are done with the attestation
-	action.c.CraftingState.Attestation.FinishedAt = timestamppb.New(time.Now())
+	crafter.CraftingState.Attestation.FinishedAt = timestamppb.New(time.Now())
 
 	sig, err := signer.GetSigner(action.keyPath, action.Logger, &signer.Opts{
 		SignServerCAPath: action.signServerCAPath,
@@ -144,7 +146,7 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 		return nil, fmt.Errorf("creating signer: %w", err)
 	}
 
-	renderer, err := renderer.NewAttestationRenderer(action.c.CraftingState, action.cliVersion, action.cliDigest, sig,
+	renderer, err := renderer.NewAttestationRenderer(crafter.CraftingState, action.cliVersion, action.cliDigest, sig,
 		renderer.WithLogger(action.Logger), renderer.WithBundleOutputPath(action.bundlePath))
 	if err != nil {
 		return nil, err
@@ -158,17 +160,17 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	attestationResult := &AttestationResult{Envelope: envelope, Status: attestationStatus}
 
 	action.Logger.Debug().Msg("render completed")
-	if action.c.CraftingState.DryRun {
+	if crafter.CraftingState.DryRun {
 		action.Logger.Info().Msg("dry-run completed, push skipped")
 		// We are done, remove the existing att state
-		if err := action.c.Reset(ctx, attestationID); err != nil {
+		if err := crafter.Reset(ctx, attestationID); err != nil {
 			return nil, err
 		}
 
 		return attestationResult, nil
 	}
 
-	attestationResult.Digest, err = pushToControlPlane(ctx, action.ActionsOpts.CPConnection, envelope, action.c.CraftingState.Attestation.GetWorkflow().GetWorkflowRunId())
+	attestationResult.Digest, err = pushToControlPlane(ctx, action.ActionsOpts.CPConnection, envelope, crafter.CraftingState.Attestation.GetWorkflow().GetWorkflowRunId())
 	if err != nil {
 		return nil, fmt.Errorf("pushing to control plane: %w", err)
 	}
@@ -176,7 +178,7 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	action.Logger.Info().Msg("push completed")
 
 	// We are done, remove the existing att state
-	if err := action.c.Reset(ctx, attestationID); err != nil {
+	if err := crafter.Reset(ctx, attestationID); err != nil {
 		return nil, err
 	}
 

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,34 +33,37 @@ type AttestationResetOpts struct {
 
 type AttestationReset struct {
 	*ActionsOpts
-	c *crafter.Crafter
+	*newCrafterOpts
 }
 
 func NewAttestationReset(cfg *ActionsOpts) (*AttestationReset, error) {
-	c, err := newCrafter(cfg.UseAttestationRemoteState, cfg.CPConnection, crafter.WithLogger(&cfg.Logger))
-	if err != nil {
-		return nil, fmt.Errorf("failed to load crafter: %w", err)
-	}
-
-	return &AttestationReset{ActionsOpts: cfg, c: c}, nil
+	return &AttestationReset{
+		newCrafterOpts: &newCrafterOpts{cpConnection: cfg.CPConnection, opts: []crafter.NewOpt{crafter.WithLogger(&cfg.Logger)}},
+		ActionsOpts:    cfg}, nil
 }
 
 func (action *AttestationReset) Run(ctx context.Context, attestationID, trigger, reason string) error {
-	if initialized, err := action.c.AlreadyInitialized(ctx, attestationID); err != nil {
+	// initialize the crafter. If attestation-id is provided we assume the attestation is performed using remote state
+	crafter, err := newCrafter(attestationID != "", action.CPConnection, action.newCrafterOpts.opts...)
+	if err != nil {
+		return fmt.Errorf("failed to load crafter: %w", err)
+	}
+
+	if initialized, err := crafter.AlreadyInitialized(ctx, attestationID); err != nil {
 		return fmt.Errorf("checking if attestation is already initialized: %w", err)
 	} else if !initialized {
 		return ErrAttestationNotInitialized
 	}
 
-	if err := action.c.LoadCraftingState(ctx, attestationID); err != nil {
+	if err := crafter.LoadCraftingState(ctx, attestationID); err != nil {
 		action.Logger.Err(err).Msg("loading existing attestation")
 		return err
 	}
 
-	if !action.c.CraftingState.DryRun {
+	if !crafter.CraftingState.DryRun {
 		client := pb.NewAttestationServiceClient(action.CPConnection)
 		if _, err := client.Cancel(context.Background(), &pb.AttestationServiceCancelRequest{
-			WorkflowRunId: action.c.CraftingState.GetAttestation().GetWorkflow().GetWorkflowRunId(),
+			WorkflowRunId: crafter.CraftingState.GetAttestation().GetWorkflow().GetWorkflowRunId(),
 			Reason:        reason,
 			Trigger:       parseTrigger(trigger),
 		}); err != nil {
@@ -72,7 +75,7 @@ func (action *AttestationReset) Run(ctx context.Context, attestationID, trigger,
 		}
 	}
 
-	return action.c.Reset(ctx, attestationID)
+	return crafter.Reset(ctx, attestationID)
 }
 
 func parseTrigger(in string) pb.AttestationServiceCancelRequest_TriggerType {

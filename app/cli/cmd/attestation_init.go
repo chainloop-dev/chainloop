@@ -47,9 +47,10 @@ func newAttestationInitCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			a, err := action.NewAttestationInit(
 				&action.AttestationInitOpts{
-					ActionsOpts: actionOpts,
-					DryRun:      attestationDryRun,
-					Force:       force,
+					ActionsOpts:    actionOpts,
+					DryRun:         attestationDryRun,
+					Force:          force,
+					UseRemoteState: useAttestationRemoteState,
 				},
 			)
 			if err != nil {
@@ -93,6 +94,7 @@ func newAttestationInitCmd() *cobra.Command {
 	cmd.Flags().BoolVarP(&force, "replace", "f", false, "replace any existing in-progress attestation")
 	cmd.Flags().BoolVar(&attestationDryRun, "dry-run", false, "do not record attestation in the control plane, useful for development")
 	cmd.Flags().IntVar(&contractRevision, "contract-revision", 0, "revision of the contract to retrieve, \"latest\" by default")
+	cmd.Flags().BoolVar(&useAttestationRemoteState, "remote-state", false, "Store the attestation state remotely (preview feature)")
 
 	// workflow-name has been replaced by --name flag
 	cmd.Flags().StringVar(&workflowName, "workflow-name", "", "name of the workflow to run the attestation")
