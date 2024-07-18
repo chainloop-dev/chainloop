@@ -177,7 +177,8 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	userService := service.NewUserService(membershipUseCase, organizationUseCase, v3...)
 	signingUseCase := biz.NewChainloopSigningUseCase(certificateAuthority)
 	signingService := service.NewSigningService(signingUseCase, v3...)
-	prometheusUseCase := biz.NewPrometheusUseCase(bootstrap, organizationUseCase, orgMetricsUseCase, logger)
+	v4 := bootstrap.PrometheusIntegration
+	prometheusUseCase := biz.NewPrometheusUseCase(v4, organizationUseCase, orgMetricsUseCase, logger)
 	prometheusService := service.NewPrometheusService(organizationUseCase, prometheusUseCase, v3...)
 	validator, err := newProtoValidator()
 	if err != nil {

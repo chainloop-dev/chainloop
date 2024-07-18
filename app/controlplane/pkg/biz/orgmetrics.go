@@ -161,8 +161,8 @@ func (uc *OrgMetricsUseCase) TopWorkflowsByRunsCount(ctx context.Context, orgID 
 }
 
 // GetLastWorkflowStatusByRun returns the last status of each workflow by its last run
-func (uc *OrgMetricsUseCase) GetLastWorkflowStatusByRun(orgName string) ([]*prometheuscollector.WorkflowLastStatusByRunReport, error) {
-	ctx := context.Background()
+// It only returns workflows with at least one run and skips workflows with initialized runs
+func (uc *OrgMetricsUseCase) GetLastWorkflowStatusByRun(ctx context.Context, orgName string) ([]*prometheuscollector.WorkflowLastStatusByRunReport, error) {
 	// Find organization
 	org, err := uc.orgRepo.FindByName(ctx, orgName)
 	if err != nil {

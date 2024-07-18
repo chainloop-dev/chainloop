@@ -33,14 +33,14 @@ type PrometheusUseCase struct {
 }
 
 // NewPrometheusUseCase creates a new PrometheusUseCase
-func NewPrometheusUseCase(conf *conf.Bootstrap, orgUseCase *OrganizationUseCase, orgMetricsUseCase *OrgMetricsUseCase, logger log.Logger) *PrometheusUseCase {
+func NewPrometheusUseCase(conf []*conf.PrometheusIntegrationSpec, orgUseCase *OrganizationUseCase, orgMetricsUseCase *OrgMetricsUseCase, logger log.Logger) *PrometheusUseCase {
 	useCase := &PrometheusUseCase{
 		orgUseCase:        orgUseCase,
 		orgMetricsUseCase: orgMetricsUseCase,
 		logger:            log.NewHelper(log.With(logger, "component", "biz/prometheus")),
 	}
 
-	registryManager := loadPrometheusRegistries(conf.PrometheusIntegration, orgMetricsUseCase, logger)
+	registryManager := loadPrometheusRegistries(conf, orgMetricsUseCase, logger)
 	useCase.registryManager = registryManager
 
 	return useCase

@@ -16,7 +16,7 @@
 package prometheus
 
 import (
-	"slices"
+	"context"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/prometheus/client_golang/prometheus"
@@ -24,14 +24,7 @@ import (
 
 // ChainloopMetricsGatherer is an interface for a gatherer that gathers metrics for Chainloop prometheus collector
 type ChainloopMetricsGatherer interface {
-	GetLastWorkflowStatusByRun(orgName string) ([]*WorkflowLastStatusByRunReport, error)
-}
-
-// notSuccessfulStatus is a list of statuses that are not considered successful
-var notSuccessfulStatus = []string{
-	"error",
-	"canceled",
-	"expired",
+	GetLastWorkflowStatusByRun(ctx context.Context, orgName string) ([]*WorkflowLastStatusByRunReport, error)
 }
 
 // WorkflowLastStatusByRunReport is a report of the status of a workflow by its last run
@@ -58,7 +51,7 @@ func NewChainloopCollector(orgName string, gatherer ChainloopMetricsGatherer, lo
 		gatherer: gatherer,
 		workflowLastRunSuccessful: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "chainloop_workflow_up",
-			Help: "The last state of the workflows by their last run",
+			Help: "Indicate if the last run was successful.",
 		}, []string{"org_name", "workflow_name"}),
 		logger: log.NewHelper(log.With(logger, "component", "collector/prometheus")),
 	}
@@ -69,17 +62,19 @@ func (bcc *ChainloopCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (bcc *ChainloopCollector) Collect(ch chan<- prometheus.Metric) {
-	wfReports, err := bcc.gatherer.GetLastWorkflowStatusByRun(bcc.orgName)
+	ctx := context.Background()
+
+	wfReports, err := bcc.gatherer.GetLastWorkflowStatusByRun(ctx, bcc.orgName)
 	if err != nil {
 		bcc.logger.Warnf("error getting last workflow status by run for organization [%v]: %v", bcc.orgName, err)
 		return
 	}
 
 	for _, r := range wfReports {
-		if slices.Contains(notSuccessfulStatus, r.Status) {
-			bcc.workflowLastRunSuccessful.WithLabelValues(r.OrgName, r.WorkflowName).Set(0)
-		} else {
+		if r.Status == "success" {
 			bcc.workflowLastRunSuccessful.WithLabelValues(r.OrgName, r.WorkflowName).Set(1)
+		} else {
+			bcc.workflowLastRunSuccessful.WithLabelValues(r.OrgName, r.WorkflowName).Set(0)
 		}
 	}
 
