@@ -532,7 +532,7 @@ chainloop config save \
 | `controlplane.referrerSharedIndex.allowedOrgs` | List of UUIDs of organizations that are allowed to publish to the shared index                  | `[]`                                               |
 | `controlplane.onboarding.name`                 | Name of the organization to onboard                                                             |                                                    |
 | `controlplane.onboarding.role`                 | Role of the organization to onboard                                                             |                                                    |
-| `controlplane.prometheus_integration.org_name` | Name of the organization to integrate with Prometheus                                           |                                                    |
+| `controlplane.prometheus_org_metrics`          | List of organizations to expose metrics for using Prometheus                                    |                                                    |
 | `controlplane.migration.image.registry`        | Image registry                                                                                  | `ghcr.io`                                          |
 | `controlplane.migration.image.repository`      | Image repository                                                                                | `chainloop-dev/chainloop/control-plane-migrations` |
 | `controlplane.migration.ssl`                   | Connect to the database using SSL (required fro AWS RDS, etc)                                   | `false`                                            |

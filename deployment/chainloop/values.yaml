@@ -144,8 +144,8 @@ controlplane:
   #    - name: "read-only-demo"
   #      role: "MEMBERSHIP_ROLE_ORG_VIEWER"
 
-  ## @extra controlplane.prometheus_integration.org_name Name of the organization to integrate with Prometheus
-  #  prometheus_integration:
+  ## @extra controlplane.prometheus_org_metrics List of organizations to expose metrics for using Prometheus
+  #  prometheus_org_metrics:
   #    - org_name: "read-only-demo"
 
   # Database migration
