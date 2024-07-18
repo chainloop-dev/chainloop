@@ -18,7 +18,7 @@ package registry
 import (
 	"github.com/go-kratos/kratos/v2/log"
 
-	chainloopprometehus "github.com/chainloop-dev/chainloop/app/controlplane/pkg/metrics/prometheus"
+	chainloopprometheus "github.com/chainloop-dev/chainloop/app/controlplane/pkg/metrics/prometheus"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -26,22 +26,22 @@ import (
 // PrometheusRegistry is a wrapper around a prometheus registry that also holds a list of ChainloopCollectors
 type PrometheusRegistry struct {
 	*prometheus.Registry
-	Name                   string
-	BaseChainloopCollector *chainloopprometehus.ChainloopCollector
+	Name               string
+	chainloopCollector *chainloopprometheus.ChainloopCollector
 }
 
 // NewPrometheusRegistry creates a new Prometheus registry with a given ID and collector
-func NewPrometheusRegistry(name string, gatherer chainloopprometehus.ChainloopMetricsGatherer, logger log.Logger) *PrometheusRegistry {
+func NewPrometheusRegistry(name string, gatherer chainloopprometheus.ChainloopMetricsGatherer, logger log.Logger) *PrometheusRegistry {
 	reg := prometheus.NewRegistry()
 
-	bcc := chainloopprometehus.NewChainloopCollector(name, gatherer, logger)
+	bcc := chainloopprometheus.NewChainloopCollector(name, gatherer, logger)
 
 	reg.MustRegister(bcc)
 
 	return &PrometheusRegistry{
-		Name:                   name,
-		Registry:               reg,
-		BaseChainloopCollector: bcc,
+		Name:               name,
+		Registry:           reg,
+		chainloopCollector: bcc,
 	}
 }
 
