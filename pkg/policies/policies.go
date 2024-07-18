@@ -38,6 +38,18 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine/rego"
 )
 
+type PolicyError struct {
+	err error
+}
+
+func NewPolicyError(err error) *PolicyError {
+	return &PolicyError{err: err}
+}
+
+func (e *PolicyError) Error() string {
+	return fmt.Sprintf("policy error: %s", e.err.Error())
+}
+
 type PolicyVerifier struct {
 	schema *v1.CraftingSchema
 	logger *zerolog.Logger
@@ -53,26 +65,26 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 
 	policies, err := pv.requiredPoliciesForMaterial(material)
 	if err != nil {
-		return nil, fmt.Errorf("error getting required policies for material: %w", err)
+		return nil, NewPolicyError(err)
 	}
 
 	for _, policy := range policies {
 		// 1. load the policy spec
 		spec, err := LoadPolicySpec(policy)
 		if err != nil {
-			return nil, fmt.Errorf("failed to load policy spec: %w", err)
+			return nil, NewPolicyError(err)
 		}
 
 		// load the policy script (rego)
 		script, err := LoadPolicyScriptFromSpec(spec)
 		if err != nil {
-			return nil, fmt.Errorf("failed to load policy content: %w", err)
+			return nil, NewPolicyError(err)
 		}
 
 		// Load material content
 		subject, err := getMaterialContent(material, artifactPath)
 		if err != nil {
-			return nil, fmt.Errorf("failed to load material content: %w", err)
+			return nil, NewPolicyError(err)
 		}
 
 		pv.logger.Info().Msgf("evaluating policy '%s' against material '%s'", spec.Metadata.Name, material.GetArtifact().GetId())
@@ -81,7 +93,7 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 		ng := getPolicyEngine(spec)
 		violations, err := ng.Verify(ctx, script, subject)
 		if err != nil {
-			return nil, fmt.Errorf("failed to verify policy: %w", err)
+			return nil, NewPolicyError(err)
 		}
 
 		result = append(result, &v12.PolicyEvaluation{
@@ -103,7 +115,7 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 		// 1. load the policy spec
 		spec, err := LoadPolicySpec(policyAtt)
 		if err != nil {
-			return nil, fmt.Errorf("failed to load policy spec: %w", err)
+			return nil, NewPolicyError(err)
 		}
 
 		// it's expected statements can only be validated by policy of type ATTESTATION
@@ -114,21 +126,21 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 		// 2. load the policy script (rego)
 		script, err := LoadPolicyScriptFromSpec(spec)
 		if err != nil {
-			return nil, fmt.Errorf("failed to load policy content: %w", err)
+			return nil, NewPolicyError(err)
 		}
 
 		pv.logger.Info().Msgf("evaluating policy '%s' on attestation", spec.Metadata.Name)
 
 		material, err := protojson.Marshal(statement)
 		if err != nil {
-			return nil, fmt.Errorf("failed to load material content: %w", err)
+			return nil, NewPolicyError(err)
 		}
 
 		// 4. verify the policy
 		ng := getPolicyEngine(spec)
 		res, err := ng.Verify(ctx, script, material)
 		if err != nil {
-			return nil, fmt.Errorf("failed to verify policy: %w", err)
+			return nil, NewPolicyError(err)
 		}
 
 		// 5. Store result in the attestation itself (for the renderer to include them in the predicate)
