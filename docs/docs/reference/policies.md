@@ -12,11 +12,11 @@ be used for building server side control gates.
 ### Policy specification
 A policy can be defined in a YAML document, like this:
 ```yaml
-# sbom-licenses.yaml
+# cyclonedx-licenses.yaml
 apiVersion: workflowcontract.chainloop.dev/v1
 kind: Policy
 metadata:
-  name: sbom-licenses # (1)
+  name: cyclonedx-licenses # (1)
 spec:
   type: SBOM_CYCLONEDX_JSON # (2)
   embedded: | # (3)
@@ -57,22 +57,22 @@ materials:
     type: SBOM_CYCLONEDX_JSON
 policies:
   materials: # policies applied to materials
-    - ref: sbom-licenses.yaml # (1)
+    - ref: cyclonedx-licenses.yaml # (1)
   attestation: # policies applied to the whole attestation
     - ref: chainloop-commit.yaml # (2)
 ```
 Here we can see that:
-- (1) materials will be validated against `sbom-licenses.yaml` policy. But, since that policy has a `type` property set to `SBOM_CYCLONEDX_JSON`, all materials of that type (two in this case) will be evaluated. 
+- (1) materials will be validated against `cyclonedx-licenses.yaml` policy. But, since that policy has a `type` property set to `SBOM_CYCLONEDX_JSON`, all materials of that type (two in this case) will be evaluated. 
   
   If we wanted to only evaluate the policy against the `sbom` material, and skip any other, we should filter them by name:
   ```yaml
   policies:
     materials:
-      - ref: sbom-licenses.yaml
+      - ref: cyclonedx-licenses.yaml
         selector: # (3)
           name: sbom
   ```
-  Here, we are making explicit that only `sbom` material must be evaluated by the `sbom-licenses.yaml` policy.
+  Here, we are making explicit that only `sbom` material must be evaluated by the `cyclonedx-licenses.yaml` policy.
 - (2) the attestation in-toto statement as a whole will be evaluated against `chainloo-commit.yaml`, which has a `type` property set to `ATTESTATION`. This brings the opportunity to validate global attestation properties, checking the presence of a material, etc. You can see this policy and other examples in the [examples folder](https://github.com/chainloop-dev/chainloop/tree/main/docs/examples/policies).
 
 Finally, note that material policies are evaluated during `chainloop attestation add` commands, while attestation policies are evaluated in `chainloop attestation push` command.
@@ -83,15 +83,16 @@ There are two ways to attach a policy to a contract:
   ```yaml
   policies:
     materials: 
-      - ref: sbom-licenses.yaml # local reference
+      - ref: cyclonedx-licenses.yaml # local reference
   ```
-      and
+  and
   ```yaml
   policies:
     materials:
-      - ref: https://github.com/chainloop/chainloop-dev/blob/main/docs/examples/policies/sbom-licenses.yaml
+      - ref: https://github.com/chainloop/chainloop-dev/blob/main/docs/examples/policies/cyclonedx-licenses.yaml
   ```
   are both equivalent. The advantage of having remote policies is that they can be easily reused, allowing organizations to create policy catalogs.
+
 * If preferred, authors could create self-contained contracts **embedding policy specifications**. The main advantage of this method is that it ensures that the policy source cannot be changed, as it's stored and versioned within the contract:
   ```yaml
   schemaVersion: v1
