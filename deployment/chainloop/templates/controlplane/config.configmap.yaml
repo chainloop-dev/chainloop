@@ -44,3 +44,7 @@ data:
     onboarding:
       {{- toYaml .Values.controlplane.onboarding | nindent 6 }}
     {{- end }}
+    {{ if .Values.controlplane.prometheus_org_metrics }}
+    prometheus_integration:
+      {{- toYaml .Values.controlplane.prometheus_org_metrics | nindent 6 }}
+    {{- end }}
