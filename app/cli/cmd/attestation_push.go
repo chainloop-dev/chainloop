@@ -19,10 +19,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 )
 
 func newAttestationPushCmd() *cobra.Command {

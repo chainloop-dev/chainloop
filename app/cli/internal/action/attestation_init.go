@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,13 +32,15 @@ type AttestationInitOpts struct {
 	// Force the initialization and override any existing, in-progress ones.
 	// Note that this is only useful when local-based attestation state is configured
 	// since it's a protection to make sure you don't override the state by mistake
-	Force bool
+	Force          bool
+	UseRemoteState bool
 }
 
 type AttestationInit struct {
 	*ActionsOpts
-	dryRun, force bool
-	c             *crafter.Crafter
+	dryRun, force  bool
+	c              *crafter.Crafter
+	useRemoteState bool
 }
 
 // ErrAttestationAlreadyExist means that there is an attestation in progress
@@ -53,28 +55,29 @@ func (e ErrRunnerContextNotFound) Error() string {
 }
 
 func NewAttestationInit(cfg *AttestationInitOpts) (*AttestationInit, error) {
-	c, err := newCrafter(cfg.UseAttestationRemoteState, cfg.CPConnection, crafter.WithLogger(&cfg.Logger))
+	c, err := newCrafter(cfg.UseRemoteState, cfg.CPConnection, crafter.WithLogger(&cfg.Logger))
 	if err != nil {
 		return nil, fmt.Errorf("failed to load crafter: %w", err)
 	}
 
 	return &AttestationInit{
-		ActionsOpts: cfg.ActionsOpts,
-		c:           c,
-		dryRun:      cfg.DryRun,
-		force:       cfg.Force,
+		ActionsOpts:    cfg.ActionsOpts,
+		c:              c,
+		dryRun:         cfg.DryRun,
+		force:          cfg.Force,
+		useRemoteState: cfg.UseRemoteState,
 	}, nil
 }
 
 // returns the attestation ID
 func (action *AttestationInit) Run(ctx context.Context, contractRevision int, workflowName string) (string, error) {
-	if action.dryRun && action.UseAttestationRemoteState {
+	if action.dryRun && action.useRemoteState {
 		return "", errors.New("remote state is not compatible with dry-run mode")
 	}
 
 	// During local initializations we need to make sure if there is already an attestation in progress
 	// If it is and we are not "forcing" the initialization, we should return an error
-	if !action.UseAttestationRemoteState && !action.force {
+	if !action.useRemoteState && !action.force {
 		if initialized, _ := action.c.AlreadyInitialized(ctx, ""); initialized {
 			return "", ErrAttestationAlreadyExist
 		}

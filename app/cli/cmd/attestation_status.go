@@ -38,7 +38,8 @@ func newAttestationStatusCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			a, err := action.NewAttestationStatus(
 				&action.AttestationStatusOpts{
-					ActionsOpts: actionOpts,
+					UseAttestationRemoteState: attestationID != "",
+					ActionsOpts:               actionOpts,
 				},
 			)
 			if err != nil {

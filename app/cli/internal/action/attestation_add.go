@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,13 +38,18 @@ type AttestationAddOpts struct {
 	RegistryServer, RegistryUsername, RegistryPassword string
 }
 
+type newCrafterOpts struct {
+	cpConnection *grpc.ClientConn
+	opts         []crafter.NewOpt
+}
+
 type AttestationAdd struct {
 	*ActionsOpts
-	c      *crafter.Crafter
 	casURI string
 	// optional CA certificate for the CAS connection
 	casCAPath          string
 	connectionInsecure bool
+	*newCrafterOpts
 }
 
 func NewAttestationAdd(cfg *AttestationAddOpts) (*AttestationAdd, error) {
@@ -54,14 +59,9 @@ func NewAttestationAdd(cfg *AttestationAddOpts) (*AttestationAdd, error) {
 		opts = append(opts, crafter.WithOCIAuth(cfg.RegistryServer, cfg.RegistryUsername, cfg.RegistryPassword))
 	}
 
-	c, err := newCrafter(cfg.UseAttestationRemoteState, cfg.CPConnection, opts...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load crafter: %w", err)
-	}
-
 	return &AttestationAdd{
 		ActionsOpts:        cfg.ActionsOpts,
-		c:                  c,
+		newCrafterOpts:     &newCrafterOpts{cpConnection: cfg.CPConnection, opts: opts},
 		casURI:             cfg.CASURI,
 		casCAPath:          cfg.CASCAPath,
 		connectionInsecure: cfg.ConnectionInsecure,
@@ -71,13 +71,19 @@ func NewAttestationAdd(cfg *AttestationAddOpts) (*AttestationAdd, error) {
 var ErrAttestationNotInitialized = errors.New("attestation not yet initialized")
 
 func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialName, materialValue, materialType string, annotations map[string]string) error {
-	if initialized, err := action.c.AlreadyInitialized(ctx, attestationID); err != nil {
+	// initialize the crafter. If attestation-id is provided we assume the attestation is performed using remote state
+	crafter, err := newCrafter(attestationID != "", action.CPConnection, action.newCrafterOpts.opts...)
+	if err != nil {
+		return fmt.Errorf("failed to load crafter: %w", err)
+	}
+
+	if initialized, err := crafter.AlreadyInitialized(ctx, attestationID); err != nil {
 		return fmt.Errorf("checking if attestation is already initialized: %w", err)
 	} else if !initialized {
 		return ErrAttestationNotInitialized
 	}
 
-	if err := action.c.LoadCraftingState(ctx, attestationID); err != nil {
+	if err := crafter.LoadCraftingState(ctx, attestationID); err != nil {
 		action.Logger.Err(err).Msg("loading existing attestation")
 		return err
 	}
@@ -88,12 +94,12 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 	}
 
 	// Define CASbackend information based on the API response
-	if !action.c.CraftingState.GetDryRun() {
+	if !crafter.CraftingState.GetDryRun() {
 		// Get upload creds and CASbackend for the current attestation and set up CAS client
 		client := pb.NewAttestationServiceClient(action.CPConnection)
 		creds, err := client.GetUploadCreds(ctx,
 			&pb.AttestationServiceGetUploadCredsRequest{
-				WorkflowRunId: action.c.CraftingState.GetAttestation().GetWorkflow().GetWorkflowRunId(),
+				WorkflowRunId: crafter.CraftingState.GetAttestation().GetWorkflow().GetWorkflowRunId(),
 			},
 		)
 		if err != nil {
@@ -128,18 +134,17 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 
 	// Add material to the attestation crafting state based on if the material is contract free or not.
 	// By default, try to detect the material kind automatically
-	var err error
 	switch {
 	case materialName == "" && materialType == "":
 		var kind schemaapi.CraftingSchema_Material_MaterialType
-		if kind, err = action.c.AddMaterialContactFreeAutomatic(ctx, attestationID, materialValue, casBackend, annotations); err != nil {
+		if kind, err = crafter.AddMaterialContactFreeAutomatic(ctx, attestationID, materialValue, casBackend, annotations); err != nil {
 			return fmt.Errorf("adding material: %w", err)
 		}
 		action.Logger.Info().Str("kind", kind.String()).Msg("material kind detected")
 	case materialName != "":
-		err = action.c.AddMaterialFromContract(ctx, attestationID, materialName, materialValue, casBackend, annotations)
+		err = crafter.AddMaterialFromContract(ctx, attestationID, materialName, materialValue, casBackend, annotations)
 	default:
-		err = action.c.AddMaterialContractFree(ctx, attestationID, materialType, materialValue, casBackend, annotations)
+		err = crafter.AddMaterialContractFree(ctx, attestationID, materialType, materialValue, casBackend, annotations)
 	}
 
 	if err != nil {

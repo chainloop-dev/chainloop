@@ -27,6 +27,7 @@ import (
 
 type AttestationStatusOpts struct {
 	*ActionsOpts
+	UseAttestationRemoteState bool
 }
 
 type AttestationStatus struct {
@@ -65,7 +66,10 @@ func NewAttestationStatus(cfg *AttestationStatusOpts) (*AttestationStatus, error
 		return nil, fmt.Errorf("failed to load crafter: %w", err)
 	}
 
-	return &AttestationStatus{ActionsOpts: cfg.ActionsOpts, c: c}, nil
+	return &AttestationStatus{
+		ActionsOpts: cfg.ActionsOpts,
+		c:           c,
+	}, nil
 }
 
 func (action *AttestationStatus) Run(ctx context.Context, attestationID string) (*AttestationStatusResult, error) {
