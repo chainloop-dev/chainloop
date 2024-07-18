@@ -25,6 +25,11 @@ const sidebars = {
       label: "CI Workflow examples",
       href: "https://github.com/chainloop-dev/chainloop/blob/main/docs/examples/ci-workflows",
     },
+    {
+      type: "link",
+      label: "Policy examples",
+      href: "https://github.com/chainloop-dev/chainloop/blob/main/docs/examples/policies",
+    },
   ],
 };
 
