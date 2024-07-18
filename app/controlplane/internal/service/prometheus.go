@@ -18,12 +18,12 @@ package service
 import (
 	"fmt"
 	"net/http"
-	"regexp"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/apitoken"
 
 	jwtmiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
+	"github.com/gorilla/mux"
 	"github.com/prometheus/common/expfmt"
 )
 
@@ -31,9 +31,6 @@ const (
 	// PrometheusMetricsPath is the path for the Prometheus metrics
 	PrometheusMetricsPath = "/prom/{org_name}/metrics"
 )
-
-// pattern is the regular expression pattern to match the organization name in the URL path
-var pattern = regexp.MustCompile(`/prom/([^/]+)/metrics`)
 
 // PrometheusService is the prometheus service
 type PrometheusService struct {
@@ -56,12 +53,10 @@ func NewPrometheusService(orgUseCase *biz.OrganizationUseCase, prometheusUseCase
 // and if found, retrieves all metrics in Prometheus format.
 func (p *PrometheusService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Extract org_name from the URL path
-	match := pattern.FindStringSubmatch(r.URL.Path)
-	var orgName string
-	if len(match) > 1 {
-		orgName = match[1]
-	} else {
-		http.Error(w, "Invalid URL path", http.StatusBadRequest)
+	orgName, ok := mux.Vars(r)["org_name"]
+	if !ok {
+		http.Error(w, "Error extracting organization name from URL path", http.StatusBadRequest)
+		return
 	}
 
 	// Extracts the organization name from the request
