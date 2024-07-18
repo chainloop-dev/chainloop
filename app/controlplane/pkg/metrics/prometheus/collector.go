@@ -52,7 +52,7 @@ func NewChainloopCollector(orgName string, gatherer ChainloopMetricsGatherer, lo
 		workflowLastRunSuccessful: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "chainloop_workflow_up",
 			Help: "Indicate if the last run was successful.",
-		}, []string{"org_name", "workflow_name"}),
+		}, []string{"org", "workflow"}),
 		logger: log.NewHelper(log.With(logger, "component", "collector/prometheus")),
 	}
 }
