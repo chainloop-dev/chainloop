@@ -521,7 +521,8 @@ func (c *Crafter) AddMaterialContactFreeAutomatic(ctx context.Context, attestati
 		c.logger.Debug().Err(err).Str("kind", kind.String()).Msg("failed to add material")
 
 		// Handle base error for upload and craft errors except the opening file error
-		if errors.Is(err, materials.ErrBaseUploadAndCraft) {
+		var policyError *policies.PolicyError
+		if errors.Is(err, materials.ErrBaseUploadAndCraft) || errors.As(err, &policyError) {
 			return kind, err
 		}
 	}
