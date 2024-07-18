@@ -62,6 +62,9 @@ message Bootstrap {
 
   // Configuration for onboarding users in organizations with specific roles
   repeated OnboardingSpec onboarding = 10;
+
+  // Configuration to enable Prometheus integration for the specified organizations
+  repeated PrometheusIntegrationSpec prometheus_integration = 11;
 }
 
 // Configuration used to enable a shared index API endpoint that can be used to discover metadata referrers
@@ -176,4 +179,10 @@ message OnboardingSpec {
     },
     (buf.validate.field).enum.defined_only = true
   ];
+}
+
+// PrometheusIntegrationSpec is a configuration to enable Prometheus integration for the
+// specified organizations
+message PrometheusIntegrationSpec {
+  string org_name = 1 [(buf.validate.field).string.min_len = 1];
 }

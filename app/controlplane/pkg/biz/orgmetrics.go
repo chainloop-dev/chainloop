@@ -20,13 +20,19 @@ import (
 	"fmt"
 	"time"
 
+	prometheuscollector "github.com/chainloop-dev/chainloop/app/controlplane/pkg/metrics/prometheus"
+
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
 
 type OrgMetricsUseCase struct {
 	logger *log.Helper
-	repo   OrgMetricsRepo
+	// Repositories
+	repo    OrgMetricsRepo
+	orgRepo OrganizationRepo
+	// Use Cases
+	wfUseCase *WorkflowUseCase
 }
 
 type OrgMetricsRepo interface {
@@ -64,8 +70,13 @@ func (tw *TimeWindow) Validate() error {
 	return nil
 }
 
-func NewOrgMetricsUseCase(r OrgMetricsRepo, l log.Logger) (*OrgMetricsUseCase, error) {
-	return &OrgMetricsUseCase{logger: log.NewHelper(l), repo: r}, nil
+func NewOrgMetricsUseCase(r OrgMetricsRepo, orgRepo OrganizationRepo, wfUseCase *WorkflowUseCase, l log.Logger) (*OrgMetricsUseCase, error) {
+	return &OrgMetricsUseCase{
+		orgRepo:   orgRepo,
+		wfUseCase: wfUseCase,
+		logger:    log.NewHelper(l),
+		repo:      r,
+	}, nil
 }
 
 func (uc *OrgMetricsUseCase) RunsTotal(ctx context.Context, orgID string, timeWindow *TimeWindow) (int32, error) {
@@ -147,6 +158,45 @@ func (uc *OrgMetricsUseCase) TopWorkflowsByRunsCount(ctx context.Context, orgID 
 	}
 
 	return uc.repo.TopWorkflowsByRunsCount(ctx, orgUUID, numWorkflows, timeWindow)
+}
+
+// GetLastWorkflowStatusByRun returns the last status of each workflow by its last run
+func (uc *OrgMetricsUseCase) GetLastWorkflowStatusByRun(orgName string) ([]*prometheuscollector.WorkflowLastStatusByRunReport, error) {
+	ctx := context.Background()
+	// Find organization
+	org, err := uc.orgRepo.FindByName(ctx, orgName)
+	if err != nil {
+		return nil, fmt.Errorf("finding organization: %w", err)
+	}
+
+	// List all workflows
+	wfs, err := uc.wfUseCase.List(ctx, org.ID)
+	if err != nil {
+		return nil, fmt.Errorf("listing workflows: %w", err)
+	}
+
+	// Create reports
+	// nolint:prealloc
+	var reports []*prometheuscollector.WorkflowLastStatusByRunReport
+	for _, wf := range wfs {
+		// Skip workflows with no runs
+		if wf.RunsCounter == 0 {
+			continue
+		}
+
+		// Skip workflows with initialized runs since they are not yet finished
+		if wf.LastRun.State == string(WorkflowRunInitialized) {
+			continue
+		}
+
+		reports = append(reports, &prometheuscollector.WorkflowLastStatusByRunReport{
+			OrgName:      orgName,
+			WorkflowName: wf.Name,
+			Status:       wf.LastRun.State,
+		})
+	}
+
+	return reports, nil
 }
 
 // validateTimeWindowIsSet validates that the time window is set

@@ -144,7 +144,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	contextService := service.NewContextService(casBackendUseCase, userUseCase, v3...)
 	casCredentialsService := service.NewCASCredentialsService(casCredentialsUseCase, casMappingUseCase, casBackendUseCase, enforcer, v3...)
 	orgMetricsRepo := data.NewOrgMetricsRepo(dataData, logger)
-	orgMetricsUseCase, err := biz.NewOrgMetricsUseCase(orgMetricsRepo, logger)
+	orgMetricsUseCase, err := biz.NewOrgMetricsUseCase(orgMetricsRepo, organizationRepo, workflowUseCase, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -177,6 +177,8 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	userService := service.NewUserService(membershipUseCase, organizationUseCase, v3...)
 	signingUseCase := biz.NewChainloopSigningUseCase(certificateAuthority)
 	signingService := service.NewSigningService(signingUseCase, v3...)
+	prometheusUseCase := biz.NewPrometheusUseCase(bootstrap, organizationUseCase, orgMetricsUseCase, logger)
+	prometheusService := service.NewPrometheusService(organizationUseCase, prometheusUseCase, v3...)
 	validator, err := newProtoValidator()
 	if err != nil {
 		cleanup()
@@ -211,6 +213,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		AttestationStateSvc: attestationStateService,
 		UserSvc:             userService,
 		SigningSvc:          signingService,
+		PrometheusSvc:       prometheusService,
 		Logger:              logger,
 		ServerConfig:        confServer,
 		AuthConfig:          auth,
