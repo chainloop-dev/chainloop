@@ -79,6 +79,7 @@ type Opts struct {
 	AttestationStateSvc *service.AttestationStateService
 	UserSvc             *service.UserService
 	SigningSvc          *service.SigningService
+	PrometheusSvc       *service.PrometheusService
 	// Utils
 	Logger       log.Logger
 	ServerConfig *conf.Server

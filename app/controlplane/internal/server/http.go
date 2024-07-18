@@ -19,6 +19,10 @@ import (
 	"context"
 	"errors"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/apitoken"
+	middlewares_http "github.com/chainloop-dev/chainloop/pkg/middlewares/http"
+	"github.com/golang-jwt/jwt/v4"
+
 	"github.com/bufbuild/protovalidate-go"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
@@ -34,7 +38,7 @@ import (
 	"github.com/go-kratos/kratos/v2/transport/http"
 )
 
-// NewHTTPServer new a HTTP server.
+// NewHTTPServer new an HTTP server.
 func NewHTTPServer(opts *Opts, grpcSrv *grpc.Server) (*http.Server, error) {
 	middlewares := craftMiddleware(opts)
 	// important, the validation middleware should be the last one
@@ -59,6 +63,12 @@ func NewHTTPServer(opts *Opts, grpcSrv *grpc.Server) (*http.Server, error) {
 	// NOTE: these non-grpc transcoded methods DO NOT RUN the middlewares
 	httpSrv.Handle(service.AuthLoginPath, opts.AuthSvc.RegisterLoginHandler())
 	httpSrv.Handle(service.AuthCallbackPath, opts.AuthSvc.RegisterCallbackHandler())
+	httpSrv.Handle(service.PrometheusMetricsPath, middlewares_http.AuthFromAuthorizationHeader(
+		loadJWTKeyFunc(opts.AuthConfig.GetGeneratedJwsHmacSecret()),
+		apiTokenCustomClaims(),
+		apitoken.SigningMethod,
+		opts.PrometheusSvc,
+	))
 	v1.RegisterStatusServiceHTTPServer(httpSrv, service.NewStatusService(opts.AuthSvc.AuthURLs.Login, Version, opts.CASClientUseCase))
 	v1.RegisterReferrerServiceHTTPServer(httpSrv, service.NewReferrerService(opts.ReferrerUseCase))
 
@@ -100,5 +110,19 @@ func protoValidateHTTPMiddleware(validator *protovalidate.Validator) middleware.
 			}
 			return handler(ctx, req)
 		}
+	}
+}
+
+// loadJWTKeyFunc returns a Keyfunc that returns the raw key
+func loadJWTKeyFunc(rawKey string) jwt.Keyfunc {
+	return func(_ *jwt.Token) (interface{}, error) {
+		return []byte(rawKey), nil
+	}
+}
+
+// apiTokenCustomClaims returns a ClaimsFunc that returns a custom claims struct
+func apiTokenCustomClaims() middlewares_http.ClaimsFunc {
+	return func() jwt.Claims {
+		return &apitoken.CustomClaims{}
 	}
 }

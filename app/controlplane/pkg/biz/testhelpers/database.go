@@ -133,7 +133,7 @@ func NewTestingUseCases(t *testing.T, opts ...NewTestingUCOpt) *TestingUseCases 
 	testData, _, err := WireTestData(db, t, log, newArgs.credsReaderWriter, &robotaccount.Builder{}, &conf.Auth{
 		GeneratedJwsHmacSecret:        "test",
 		CasRobotAccountPrivateKeyPath: "./testdata/test-key.ec.pem",
-	}, newArgs.onboardingConfiguration, newArgs.integrations, newArgs.providers)
+	}, &conf.Bootstrap{}, newArgs.onboardingConfiguration, newArgs.integrations, newArgs.providers)
 	assert.NoError(t, err)
 
 	// Run DB migrations for testing
