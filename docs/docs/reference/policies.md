@@ -3,7 +3,11 @@ title: Policies
 ---
 
 Starting with Chainloop [0.93.8](https://github.com/chainloop-dev/chainloop/releases/tag/v0.93.8), operators can attach policies to contracts. 
-These policies will be evaluated against all attestation metadata and materials in any workflow with that contract.
+These policies will be evaluated against the different materials and the statement metadata, if required. The result of the evaluation is informed as a list of possible violations and added to the attestation statement
+before signing and sending it to Chainloop. 
+
+Currently, policy violations won't block `attestation push` commands, but instead, we chose to include them in the attestation so that they can 
+be used for building server side control gates.
 
 ### Policy specification
 A policy can be defined in a YAML document, like this:
@@ -73,6 +77,52 @@ Here we can see that:
 
 Finally, note that material policies are evaluated during `chainloop attestation add` commands, while attestation policies are evaluated in `chainloop attestation push` command.
 
+### Embedding or referencing policies
+There are two ways to attach a policy to a contract:
+* **By referencing it**, as it can be seen in the examples above. `ref` property admits a local (filesystem) or remote reference (HTTPS). For example:
+  ```yaml
+  policies:
+    materials: 
+      - ref: sbom-licenses.yaml # local reference
+  ```
+      and
+  ```yaml
+  policies:
+    materials:
+      - ref: https://github.com/chainloop/chainloop-dev/blob/main/docs/examples/policies/sbom-licenses.yaml
+  ```
+  are both equivalent. The advantage of having remote policies is that they can be easily reused, allowing organizations to create policy catalogs.
+* If preferred, authors could create self-contained contracts **embedding policy specifications**. The main advantage of this method is that it ensures that the policy source cannot be changed, as it's stored and versioned within the contract:
+  ```yaml
+  schemaVersion: v1
+  materials:
+    - name: sbom
+      type: SBOM_CYCLONEDX_JSON
+  policies:
+    materials:
+      - policy: # (1)
+          apiVersion: workflowcontract.chainloop.dev/v1
+          kind: Policy
+          metadata:
+            name: sbom-licenses 
+          spec:
+            type: SBOM_CYCLONEDX_JSON 
+            embedded: | 
+              package main
+
+              deny[msg] {
+                count(without_license) > 0
+                msg := "SBOM has components without licenses"
+              }
+
+              without_license = {comp.purl |
+                some i
+                comp := input.components[i]
+                not comp.licenses
+              }
+    ```
+  In the example above, we can see that, when referenced by the `policy` attribute (1), a full policy can be embedded in the contract.
+  
 ### Rego scripts
 Currently, policy scripts are assumed to be written in [Rego language](https://www.openpolicyagent.org/docs/latest/policy-language/#learning-rego). Other policy engines might be implemented in the future.
 The only requirement of the policy is the existence of one or multiple `deny` rules, which evaluate to a **list of violation strings**.
