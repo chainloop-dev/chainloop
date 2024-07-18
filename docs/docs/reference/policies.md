@@ -55,16 +55,18 @@ materials:
     type: SBOM_CYCLONEDX_JSON
   - name: another-sbom
     type: SBOM_CYCLONEDX_JSON
+  - name: my-image
+    type: CONTAINER_IMAGE
 policies:
   materials: # policies applied to materials
     - ref: cyclonedx-licenses.yaml # (1)
   attestation: # policies applied to the whole attestation
-    - ref: chainloop-commit.yaml # (2)
+    - ref: https://github.com/chainloop/chainloop-dev/blob/main/docs/examples/policies/chainloop-commit.yaml # (2)
 ```
 Here we can see that:
-- (1) materials will be validated against `cyclonedx-licenses.yaml` policy. But, since that policy has a `type` property set to `SBOM_CYCLONEDX_JSON`, all materials of that type (two in this case) will be evaluated. 
+- (1) materials will be validated against `cyclonedx-licenses.yaml` policy. But, since that policy has a `type` property set to `SBOM_CYCLONEDX_JSON`, only SBOM materials (`sbom` and `another-sbom` in this case) will be evaluated. 
   
-  If we wanted to only evaluate the policy against the `sbom` material, and skip any other, we should filter them by name:
+  If we wanted to only evaluate the policy against the `sbom` material, and skip the other, we should filter them by name:
   ```yaml
   policies:
     materials:
@@ -72,8 +74,9 @@ Here we can see that:
         selector: # (3)
           name: sbom
   ```
-  Here, we are making explicit that only `sbom` material must be evaluated by the `cyclonedx-licenses.yaml` policy.
-- (2) the attestation in-toto statement as a whole will be evaluated against `chainloo-commit.yaml`, which has a `type` property set to `ATTESTATION`. This brings the opportunity to validate global attestation properties, checking the presence of a material, etc. You can see this policy and other examples in the [examples folder](https://github.com/chainloop-dev/chainloop/tree/main/docs/examples/policies).
+  Here, in (3), we are making explicit that only `sbom` material must be evaluated by the `cyclonedx-licenses.yaml` policy.
+- (2) the attestation in-toto statement as a whole will be evaluated against the remote policy `chainloop-commit.yaml`, which has a `type` property set to `ATTESTATION`. 
+  This brings the opportunity to validate global attestation properties, like annotations, the presence of a material, etc. You can see this policy and other examples in the [examples folder](https://github.com/chainloop-dev/chainloop/tree/main/docs/examples/policies).
 
 Finally, note that material policies are evaluated during `chainloop attestation add` commands, while attestation policies are evaluated in `chainloop attestation push` command.
 
@@ -129,19 +132,19 @@ Currently, policy scripts are assumed to be written in [Rego language](https://w
 The only requirement of the policy is the existence of one or multiple `deny` rules, which evaluate to a **list of violation strings**.
 For example, this policy script:
 ```yaml
-    package main
-    
-    deny[msg] {
-      not is_approved
-      
-      msg:= "Container image is not approved"
-    }
-    
-    is_approved {
-      input.predicate.materials[_].annotations["chainloop.material.type"] == "CONTAINER_IMAGE"
-      
-      input.predicate.annotations.approval == "true"
-    }
+package main
+
+deny[msg] {
+  not is_approved
+  
+  msg:= "Container image is not approved"
+}
+
+is_approved {
+  input.predicate.materials[_].annotations["chainloop.material.type"] == "CONTAINER_IMAGE"
+  
+  input.predicate.annotations.approval == "true"
+}
 ```
 when evaluated against an attestation, will generate the following output if the expected annotation is not present:
 ```json
