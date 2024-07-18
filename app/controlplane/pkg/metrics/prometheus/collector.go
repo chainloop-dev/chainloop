@@ -59,6 +59,7 @@ func (bcc *BaseChainloopCollector) Collect(ch chan<- prometheus.Metric) {
 	wfReports, err := bcc.gatherer.GetLastWorkflowStatusByRun(bcc.orgName)
 	if err != nil {
 		bcc.logger.Warnf("error getting last workflow status by run for organization [%v]: %v", bcc.orgName, err)
+		return
 	}
 
 	for _, r := range wfReports {
