@@ -20,6 +20,7 @@ package controlplane.v1;
 import "errors/errors.proto";
 import "google/protobuf/timestamp.proto";
 import "workflowcontract/v1/crafting_schema.proto";
+import "attestation/v1/crafting_state.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
@@ -82,6 +83,7 @@ message AttestationItem {
   repeated EnvVariable env_vars = 4;
   repeated Material materials = 5;
   map<string, string> annotations = 6;
+  map<string, PolicyEvaluations> policy_evaluations = 8;
 
   message EnvVariable {
     string name = 1;
@@ -105,6 +107,10 @@ message AttestationItem {
     // the content instead if inline
     bool embedded_inline = 7;
   }
+}
+
+message PolicyEvaluations {
+  repeated attestation.v1.PolicyEvaluation evaluations = 1;
 }
 
 message WorkflowContractItem {

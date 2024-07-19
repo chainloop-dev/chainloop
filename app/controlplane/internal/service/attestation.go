@@ -28,6 +28,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
@@ -374,7 +375,21 @@ func bizAttestationToPb(att *biz.Attestation) (*cpAPI.AttestationItem, error) {
 		DigestInCasBackend: att.Digest,
 		Materials:          materials,
 		Annotations:        predicate.GetAnnotations(),
+		PolicyEvaluations:  extractPolicyEvaluations(predicate.GetPolicyEvaluations()),
 	}, nil
+}
+
+// extract policy evaluations in form of a Go map of arrays, into a map of protobuf messages
+// (needed to be added to the response message)
+func extractPolicyEvaluations(in map[string][]*v1.PolicyEvaluation) map[string]*cpAPI.PolicyEvaluations {
+	res := make(map[string]*cpAPI.PolicyEvaluations)
+	for k, v := range in {
+		res[k] = &cpAPI.PolicyEvaluations{
+			Evaluations: v,
+		}
+	}
+
+	return res
 }
 
 func extractEnvVariables(in map[string]string) []*cpAPI.AttestationItem_EnvVariable {
