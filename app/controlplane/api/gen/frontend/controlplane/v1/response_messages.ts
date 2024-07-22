@@ -1,6 +1,7 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
+import { PolicyEvaluation } from "../../attestation/v1/crafting_state";
 import { Timestamp } from "../../google/protobuf/timestamp";
 import {
   CraftingSchema,
@@ -232,11 +233,17 @@ export interface AttestationItem {
   envVars: AttestationItem_EnvVariable[];
   materials: AttestationItem_Material[];
   annotations: { [key: string]: string };
+  policyEvaluations: { [key: string]: PolicyEvaluations };
 }
 
 export interface AttestationItem_AnnotationsEntry {
   key: string;
   value: string;
+}
+
+export interface AttestationItem_PolicyEvaluationsEntry {
+  key: string;
+  value?: PolicyEvaluations;
 }
 
 export interface AttestationItem_EnvVariable {
@@ -265,6 +272,10 @@ export interface AttestationItem_Material {
 export interface AttestationItem_Material_AnnotationsEntry {
   key: string;
   value: string;
+}
+
+export interface PolicyEvaluations {
+  evaluations: PolicyEvaluation[];
 }
 
 export interface WorkflowContractItem {
@@ -801,7 +812,14 @@ export const WorkflowRunItem = {
 };
 
 function createBaseAttestationItem(): AttestationItem {
-  return { envelope: new Uint8Array(0), digestInCasBackend: "", envVars: [], materials: [], annotations: {} };
+  return {
+    envelope: new Uint8Array(0),
+    digestInCasBackend: "",
+    envVars: [],
+    materials: [],
+    annotations: {},
+    policyEvaluations: {},
+  };
 }
 
 export const AttestationItem = {
@@ -820,6 +838,9 @@ export const AttestationItem = {
     }
     Object.entries(message.annotations).forEach(([key, value]) => {
       AttestationItem_AnnotationsEntry.encode({ key: key as any, value }, writer.uint32(50).fork()).ldelim();
+    });
+    Object.entries(message.policyEvaluations).forEach(([key, value]) => {
+      AttestationItem_PolicyEvaluationsEntry.encode({ key: key as any, value }, writer.uint32(66).fork()).ldelim();
     });
     return writer;
   },
@@ -869,6 +890,16 @@ export const AttestationItem = {
             message.annotations[entry6.key] = entry6.value;
           }
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          const entry8 = AttestationItem_PolicyEvaluationsEntry.decode(reader, reader.uint32());
+          if (entry8.value !== undefined) {
+            message.policyEvaluations[entry8.key] = entry8.value;
+          }
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -891,6 +922,12 @@ export const AttestationItem = {
       annotations: isObject(object.annotations)
         ? Object.entries(object.annotations).reduce<{ [key: string]: string }>((acc, [key, value]) => {
           acc[key] = String(value);
+          return acc;
+        }, {})
+        : {},
+      policyEvaluations: isObject(object.policyEvaluations)
+        ? Object.entries(object.policyEvaluations).reduce<{ [key: string]: PolicyEvaluations }>((acc, [key, value]) => {
+          acc[key] = PolicyEvaluations.fromJSON(value);
           return acc;
         }, {})
         : {},
@@ -918,6 +955,12 @@ export const AttestationItem = {
         obj.annotations[k] = v;
       });
     }
+    obj.policyEvaluations = {};
+    if (message.policyEvaluations) {
+      Object.entries(message.policyEvaluations).forEach(([k, v]) => {
+        obj.policyEvaluations[k] = PolicyEvaluations.toJSON(v);
+      });
+    }
     return obj;
   },
 
@@ -940,6 +983,14 @@ export const AttestationItem = {
       },
       {},
     );
+    message.policyEvaluations = Object.entries(object.policyEvaluations ?? {}).reduce<
+      { [key: string]: PolicyEvaluations }
+    >((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = PolicyEvaluations.fromPartial(value);
+      }
+      return acc;
+    }, {});
     return message;
   },
 };
@@ -1012,6 +1063,83 @@ export const AttestationItem_AnnotationsEntry = {
     const message = createBaseAttestationItem_AnnotationsEntry();
     message.key = object.key ?? "";
     message.value = object.value ?? "";
+    return message;
+  },
+};
+
+function createBaseAttestationItem_PolicyEvaluationsEntry(): AttestationItem_PolicyEvaluationsEntry {
+  return { key: "", value: undefined };
+}
+
+export const AttestationItem_PolicyEvaluationsEntry = {
+  encode(message: AttestationItem_PolicyEvaluationsEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== undefined) {
+      PolicyEvaluations.encode(message.value, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AttestationItem_PolicyEvaluationsEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAttestationItem_PolicyEvaluationsEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = PolicyEvaluations.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AttestationItem_PolicyEvaluationsEntry {
+    return {
+      key: isSet(object.key) ? String(object.key) : "",
+      value: isSet(object.value) ? PolicyEvaluations.fromJSON(object.value) : undefined,
+    };
+  },
+
+  toJSON(message: AttestationItem_PolicyEvaluationsEntry): unknown {
+    const obj: any = {};
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value ? PolicyEvaluations.toJSON(message.value) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AttestationItem_PolicyEvaluationsEntry>, I>>(
+    base?: I,
+  ): AttestationItem_PolicyEvaluationsEntry {
+    return AttestationItem_PolicyEvaluationsEntry.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<AttestationItem_PolicyEvaluationsEntry>, I>>(
+    object: I,
+  ): AttestationItem_PolicyEvaluationsEntry {
+    const message = createBaseAttestationItem_PolicyEvaluationsEntry();
+    message.key = object.key ?? "";
+    message.value = (object.value !== undefined && object.value !== null)
+      ? PolicyEvaluations.fromPartial(object.value)
+      : undefined;
     return message;
   },
 };
@@ -1348,6 +1476,70 @@ export const AttestationItem_Material_AnnotationsEntry = {
     const message = createBaseAttestationItem_Material_AnnotationsEntry();
     message.key = object.key ?? "";
     message.value = object.value ?? "";
+    return message;
+  },
+};
+
+function createBasePolicyEvaluations(): PolicyEvaluations {
+  return { evaluations: [] };
+}
+
+export const PolicyEvaluations = {
+  encode(message: PolicyEvaluations, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.evaluations) {
+      PolicyEvaluation.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PolicyEvaluations {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePolicyEvaluations();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.evaluations.push(PolicyEvaluation.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PolicyEvaluations {
+    return {
+      evaluations: Array.isArray(object?.evaluations)
+        ? object.evaluations.map((e: any) => PolicyEvaluation.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: PolicyEvaluations): unknown {
+    const obj: any = {};
+    if (message.evaluations) {
+      obj.evaluations = message.evaluations.map((e) => e ? PolicyEvaluation.toJSON(e) : undefined);
+    } else {
+      obj.evaluations = [];
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PolicyEvaluations>, I>>(base?: I): PolicyEvaluations {
+    return PolicyEvaluations.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<PolicyEvaluations>, I>>(object: I): PolicyEvaluations {
+    const message = createBasePolicyEvaluations();
+    message.evaluations = object.evaluations?.map((e) => PolicyEvaluation.fromPartial(e)) || [];
     return message;
   },
 };

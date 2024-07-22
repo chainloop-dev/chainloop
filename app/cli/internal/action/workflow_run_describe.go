@@ -55,6 +55,8 @@ type WorkflowRunAttestationItem struct {
 	Annotations []*Annotation `json:"annotations,omitempty"`
 	// Digest in CAS backend
 	Digest string `json:"digest"`
+	// Policy violations
+	PolicyEvaluations map[string]*pb.PolicyEvaluations `json:"policy_evaluations,omitempty"`
 }
 
 type Material struct {
@@ -170,12 +172,13 @@ func (action *WorkflowRunDescribe) Run(ctx context.Context, opts *WorkflowRunDes
 	}
 
 	item.Attestation = &WorkflowRunAttestationItem{
-		Envelope:    envelope,
-		statement:   statement,
-		EnvVars:     envVars,
-		Materials:   materials,
-		Annotations: annotations,
-		Digest:      attestation.DigestInCasBackend,
+		Envelope:          envelope,
+		statement:         statement,
+		EnvVars:           envVars,
+		Materials:         materials,
+		Annotations:       annotations,
+		Digest:            attestation.DigestInCasBackend,
+		PolicyEvaluations: attestation.PolicyEvaluations,
 	}
 
 	return item, nil

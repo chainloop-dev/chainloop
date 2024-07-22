@@ -40,6 +40,7 @@ type NormalizablePredicate interface {
 	GetMaterials() []*NormalizedMaterial
 	GetRunLink() string
 	GetMetadata() *Metadata
+	GetPolicyEvaluations() map[string][]*v1.PolicyEvaluation
 }
 
 type NormalizedMaterial struct {
