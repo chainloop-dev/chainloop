@@ -12,22 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Checks and returns the list of components without licenses
+# Checks that SBOM contains required packages
 apiVersion: workflowcontract.chainloop.dev/v1
 kind: Policy
 metadata:
-  name: cyclonedx-licenses
+  name: cyclonedx-required-packages
 spec:
   type: SBOM_CYCLONEDX_JSON
   embedded: |
     package main
     
     import rego.v1
-
-    deny contains ref if {
+    
+    required_packages := {"glibc", "libcrypto3"}
+      
+    deny contains msg if {
+      count(all_matches) != count(required_packages)
+      missing := required_packages - all_matches
+      some i
+      msg := sprintf("missing package: %v", [missing[i]])
+    }
+      
+    all_matches contains name if {
       some i
       comp := input.components[i]
-      not comp.licenses
-      # log name and bom-ref fields
-      ref := sprintf("Missing licenses for %v (%v)", [comp.name, comp["bom-ref"]])
+      comp.name == required_packages[_]
+      name := comp.name
     }

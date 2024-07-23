@@ -12,25 +12,50 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Checks that components don't have banned licenses and return them otherwise
+# Checks that there are no banned packages in the SBOM
 apiVersion: workflowcontract.chainloop.dev/v1
 kind: Policy
 metadata:
-  name: cyclonedx-banned-licenses
+  name: cyclonedx-banned-packages
 spec:
   type: SBOM_CYCLONEDX_JSON
   embedded: |
     package main
     
     import rego.v1
-  
-    banned_licenses := ["GPL-2.0", "GPL-3.0"]
     
+    banned_packages := ["log4j@2.14.1"]
+
+    # deny all versions
     deny contains ref if {
       some i
       comp := input.components[i]
       some j
-      license := comp.licenses[j].license
-      license.name == banned_licenses[_]
-      ref := sprintf("Forbidden license %v for %v (%v)", [license.name, comp.name, comp["bom-ref"]])
+      banned := banned_packages[j]
+      nv := split(banned, "@")
+      not nv[1]
+      comp.name == nv[0]
+      ref := sprintf("Banned package: %v", [comp.name])
+    }
+
+    # deny specific versions
+    deny contains ref if {
+      some i
+      comp := input.components[i]
+      some j
+      banned := banned_packages[j]
+      nv := split(banned, "@")
+      comp.name == nv[0]
+      bad_version(comp.version, nv[1])
+      ref := sprintf("Banned package: %v %v", [comp.name, comp.version])
+    }
+  
+    bad_version(x, y) if {
+      result := semver.compare(x, y)
+      result == 0
+    }
+  
+    bad_version(x, y) if {
+      result := semver.compare(x, y)
+      result == -1
     }
