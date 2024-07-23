@@ -109,6 +109,9 @@ message PolicyEvaluation {
   // The body script of the policy
   string body = 3 [(buf.validate.field).required = true];
 
+  string description = 5;
+  map<string,string> labels = 6;
+
   // The policy violations, if any
   repeated Violation violations = 4;
 

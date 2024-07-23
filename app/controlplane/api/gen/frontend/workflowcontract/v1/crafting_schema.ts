@@ -288,6 +288,13 @@ export interface Policy {
 export interface Metadata {
   /** the name of the policy */
   name: string;
+  description: string;
+  labels: { [key: string]: string };
+}
+
+export interface Metadata_LabelsEntry {
+  key: string;
+  value: string;
 }
 
 export interface PolicySpec {
@@ -1132,7 +1139,7 @@ export const Policy = {
 };
 
 function createBaseMetadata(): Metadata {
-  return { name: "" };
+  return { name: "", description: "", labels: {} };
 }
 
 export const Metadata = {
@@ -1140,6 +1147,12 @@ export const Metadata = {
     if (message.name !== "") {
       writer.uint32(26).string(message.name);
     }
+    if (message.description !== "") {
+      writer.uint32(34).string(message.description);
+    }
+    Object.entries(message.labels).forEach(([key, value]) => {
+      Metadata_LabelsEntry.encode({ key: key as any, value }, writer.uint32(42).fork()).ldelim();
+    });
     return writer;
   },
 
@@ -1157,6 +1170,23 @@ export const Metadata = {
 
           message.name = reader.string();
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          const entry5 = Metadata_LabelsEntry.decode(reader, reader.uint32());
+          if (entry5.value !== undefined) {
+            message.labels[entry5.key] = entry5.value;
+          }
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1167,12 +1197,28 @@ export const Metadata = {
   },
 
   fromJSON(object: any): Metadata {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      description: isSet(object.description) ? String(object.description) : "",
+      labels: isObject(object.labels)
+        ? Object.entries(object.labels).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+          acc[key] = String(value);
+          return acc;
+        }, {})
+        : {},
+    };
   },
 
   toJSON(message: Metadata): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
+    message.description !== undefined && (obj.description = message.description);
+    obj.labels = {};
+    if (message.labels) {
+      Object.entries(message.labels).forEach(([k, v]) => {
+        obj.labels[k] = v;
+      });
+    }
     return obj;
   },
 
@@ -1183,6 +1229,81 @@ export const Metadata = {
   fromPartial<I extends Exact<DeepPartial<Metadata>, I>>(object: I): Metadata {
     const message = createBaseMetadata();
     message.name = object.name ?? "";
+    message.description = object.description ?? "";
+    message.labels = Object.entries(object.labels ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = String(value);
+      }
+      return acc;
+    }, {});
+    return message;
+  },
+};
+
+function createBaseMetadata_LabelsEntry(): Metadata_LabelsEntry {
+  return { key: "", value: "" };
+}
+
+export const Metadata_LabelsEntry = {
+  encode(message: Metadata_LabelsEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Metadata_LabelsEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMetadata_LabelsEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Metadata_LabelsEntry {
+    return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? String(object.value) : "" };
+  },
+
+  toJSON(message: Metadata_LabelsEntry): unknown {
+    const obj: any = {};
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Metadata_LabelsEntry>, I>>(base?: I): Metadata_LabelsEntry {
+    return Metadata_LabelsEntry.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<Metadata_LabelsEntry>, I>>(object: I): Metadata_LabelsEntry {
+    const message = createBaseMetadata_LabelsEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
     return message;
   },
 };
@@ -1281,6 +1402,10 @@ export type DeepPartial<T> = T extends Builtin ? T
 type KeysOfUnion<T> = T extends T ? keyof T : never;
 export type Exact<P, I extends P> = P extends Builtin ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+
+function isObject(value: any): boolean {
+  return typeof value === "object" && value !== null;
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;
