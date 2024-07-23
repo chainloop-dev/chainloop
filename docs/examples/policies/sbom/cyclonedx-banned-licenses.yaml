@@ -12,23 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Checks that all components have a license
+# Checks that components don't have banned licenses and return them otherwise
 apiVersion: workflowcontract.chainloop.dev/v1
 kind: Policy
 metadata:
-  name: cyclonedx-licenses
+  name: cyclonedx-banned-licenses
 spec:
   type: SBOM_CYCLONEDX_JSON
   embedded: |
     package main
     
-    deny[msg] {
-      count(without_license) > 0
-      msg := "SBOM has components without licenses"
-    }
-      
-    without_license = {comp.purl |
+    import rego.v1
+  
+    banned_licenses := ["GPL-2.0", "GPL-3.0"]
+    
+    deny contains ref if {
       some i
       comp := input.components[i]
-      not comp.licenses
+      some j
+      comp.licenses[j].license.name == banned_licenses[_]
+      ref := concat(",", [comp.name, comp["bom-ref"]])
     }
