@@ -197,7 +197,7 @@ func predicateV1Table(att *action.WorkflowRunAttestationItem) {
 				}
 			}
 			evs := att.PolicyEvaluations[m.Name].GetEvaluations()
-			if evs != nil && len(evs) > 0 {
+			if len(evs) > 0 {
 				mt.AppendSeparator()
 				mt.AppendRow(table.Row{"Policies"})
 				policiesTable(evs, mt)
@@ -222,7 +222,7 @@ func predicateV1Table(att *action.WorkflowRunAttestationItem) {
 	}
 
 	evs := att.PolicyEvaluations[renderer.AttPolicyEvaluation].GetEvaluations()
-	if evs != nil && len(evs) > 0 {
+	if len(evs) > 0 {
 		mt := newTableWriter()
 		mt.SetTitle("Attestation policies")
 		policiesTable(evs, mt)
