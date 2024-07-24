@@ -3,7 +3,7 @@ kind: Policy
 metadata:
   name: made-with-syft
   description: This policy checks that the SPDX SBOM was created with syft
-  labels:
+  annotations:
     category: SBOM
 spec:
   type: SBOM_SPDX_JSON

@@ -101,7 +101,7 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 			MaterialName: material.GetArtifact().GetId(),
 			Body:         base64.StdEncoding.EncodeToString(script.Source),
 			Violations:   engineViolationsToAPIViolations(violations),
-			Labels:       spec.GetMetadata().GetLabels(),
+			Annotations:  spec.GetMetadata().GetAnnotations(),
 			Description:  spec.GetMetadata().GetDescription(),
 		})
 	}
@@ -150,7 +150,7 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 			Name:        spec.Metadata.Name,
 			Body:        base64.StdEncoding.EncodeToString(script.Source),
 			Violations:  policyViolationsToAttestationViolations(res),
-			Labels:      spec.GetMetadata().GetLabels(),
+			Annotations: spec.GetMetadata().GetAnnotations(),
 			Description: spec.GetMetadata().GetDescription(),
 		})
 	}

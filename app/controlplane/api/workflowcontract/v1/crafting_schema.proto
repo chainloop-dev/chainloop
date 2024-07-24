@@ -176,7 +176,7 @@ message Metadata {
   }];
 
   string description = 4;
-  map<string, string> labels = 5;
+  map<string, string> annotations = 5;
 }
 
 message PolicySpec {

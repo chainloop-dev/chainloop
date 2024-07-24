@@ -289,10 +289,10 @@ export interface Metadata {
   /** the name of the policy */
   name: string;
   description: string;
-  labels: { [key: string]: string };
+  annotations: { [key: string]: string };
 }
 
-export interface Metadata_LabelsEntry {
+export interface Metadata_AnnotationsEntry {
   key: string;
   value: string;
 }
@@ -1139,7 +1139,7 @@ export const Policy = {
 };
 
 function createBaseMetadata(): Metadata {
-  return { name: "", description: "", labels: {} };
+  return { name: "", description: "", annotations: {} };
 }
 
 export const Metadata = {
@@ -1150,8 +1150,8 @@ export const Metadata = {
     if (message.description !== "") {
       writer.uint32(34).string(message.description);
     }
-    Object.entries(message.labels).forEach(([key, value]) => {
-      Metadata_LabelsEntry.encode({ key: key as any, value }, writer.uint32(42).fork()).ldelim();
+    Object.entries(message.annotations).forEach(([key, value]) => {
+      Metadata_AnnotationsEntry.encode({ key: key as any, value }, writer.uint32(42).fork()).ldelim();
     });
     return writer;
   },
@@ -1182,9 +1182,9 @@ export const Metadata = {
             break;
           }
 
-          const entry5 = Metadata_LabelsEntry.decode(reader, reader.uint32());
+          const entry5 = Metadata_AnnotationsEntry.decode(reader, reader.uint32());
           if (entry5.value !== undefined) {
-            message.labels[entry5.key] = entry5.value;
+            message.annotations[entry5.key] = entry5.value;
           }
           continue;
       }
@@ -1200,8 +1200,8 @@ export const Metadata = {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       description: isSet(object.description) ? String(object.description) : "",
-      labels: isObject(object.labels)
-        ? Object.entries(object.labels).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+      annotations: isObject(object.annotations)
+        ? Object.entries(object.annotations).reduce<{ [key: string]: string }>((acc, [key, value]) => {
           acc[key] = String(value);
           return acc;
         }, {})
@@ -1213,10 +1213,10 @@ export const Metadata = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.description !== undefined && (obj.description = message.description);
-    obj.labels = {};
-    if (message.labels) {
-      Object.entries(message.labels).forEach(([k, v]) => {
-        obj.labels[k] = v;
+    obj.annotations = {};
+    if (message.annotations) {
+      Object.entries(message.annotations).forEach(([k, v]) => {
+        obj.annotations[k] = v;
       });
     }
     return obj;
@@ -1230,22 +1230,25 @@ export const Metadata = {
     const message = createBaseMetadata();
     message.name = object.name ?? "";
     message.description = object.description ?? "";
-    message.labels = Object.entries(object.labels ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
-      if (value !== undefined) {
-        acc[key] = String(value);
-      }
-      return acc;
-    }, {});
+    message.annotations = Object.entries(object.annotations ?? {}).reduce<{ [key: string]: string }>(
+      (acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key] = String(value);
+        }
+        return acc;
+      },
+      {},
+    );
     return message;
   },
 };
 
-function createBaseMetadata_LabelsEntry(): Metadata_LabelsEntry {
+function createBaseMetadata_AnnotationsEntry(): Metadata_AnnotationsEntry {
   return { key: "", value: "" };
 }
 
-export const Metadata_LabelsEntry = {
-  encode(message: Metadata_LabelsEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const Metadata_AnnotationsEntry = {
+  encode(message: Metadata_AnnotationsEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.key !== "") {
       writer.uint32(10).string(message.key);
     }
@@ -1255,10 +1258,10 @@ export const Metadata_LabelsEntry = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): Metadata_LabelsEntry {
+  decode(input: _m0.Reader | Uint8Array, length?: number): Metadata_AnnotationsEntry {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseMetadata_LabelsEntry();
+    const message = createBaseMetadata_AnnotationsEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1285,23 +1288,23 @@ export const Metadata_LabelsEntry = {
     return message;
   },
 
-  fromJSON(object: any): Metadata_LabelsEntry {
+  fromJSON(object: any): Metadata_AnnotationsEntry {
     return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? String(object.value) : "" };
   },
 
-  toJSON(message: Metadata_LabelsEntry): unknown {
+  toJSON(message: Metadata_AnnotationsEntry): unknown {
     const obj: any = {};
     message.key !== undefined && (obj.key = message.key);
     message.value !== undefined && (obj.value = message.value);
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<Metadata_LabelsEntry>, I>>(base?: I): Metadata_LabelsEntry {
-    return Metadata_LabelsEntry.fromPartial(base ?? {});
+  create<I extends Exact<DeepPartial<Metadata_AnnotationsEntry>, I>>(base?: I): Metadata_AnnotationsEntry {
+    return Metadata_AnnotationsEntry.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<Metadata_LabelsEntry>, I>>(object: I): Metadata_LabelsEntry {
-    const message = createBaseMetadata_LabelsEntry();
+  fromPartial<I extends Exact<DeepPartial<Metadata_AnnotationsEntry>, I>>(object: I): Metadata_AnnotationsEntry {
+    const message = createBaseMetadata_AnnotationsEntry();
     message.key = object.key ?? "";
     message.value = object.value ?? "";
     return message;

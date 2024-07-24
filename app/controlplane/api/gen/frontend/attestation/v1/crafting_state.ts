@@ -107,12 +107,12 @@ export interface PolicyEvaluation {
   /** The body script of the policy */
   body: string;
   description: string;
-  labels: { [key: string]: string };
+  annotations: { [key: string]: string };
   /** The policy violations, if any */
   violations: PolicyEvaluation_Violation[];
 }
 
-export interface PolicyEvaluation_LabelsEntry {
+export interface PolicyEvaluation_AnnotationsEntry {
   key: string;
   value: string;
 }
@@ -1179,7 +1179,7 @@ export const Attestation_EnvVarsEntry = {
 };
 
 function createBasePolicyEvaluation(): PolicyEvaluation {
-  return { name: "", materialName: "", body: "", description: "", labels: {}, violations: [] };
+  return { name: "", materialName: "", body: "", description: "", annotations: {}, violations: [] };
 }
 
 export const PolicyEvaluation = {
@@ -1196,8 +1196,8 @@ export const PolicyEvaluation = {
     if (message.description !== "") {
       writer.uint32(42).string(message.description);
     }
-    Object.entries(message.labels).forEach(([key, value]) => {
-      PolicyEvaluation_LabelsEntry.encode({ key: key as any, value }, writer.uint32(50).fork()).ldelim();
+    Object.entries(message.annotations).forEach(([key, value]) => {
+      PolicyEvaluation_AnnotationsEntry.encode({ key: key as any, value }, writer.uint32(50).fork()).ldelim();
     });
     for (const v of message.violations) {
       PolicyEvaluation_Violation.encode(v!, writer.uint32(34).fork()).ldelim();
@@ -1245,9 +1245,9 @@ export const PolicyEvaluation = {
             break;
           }
 
-          const entry6 = PolicyEvaluation_LabelsEntry.decode(reader, reader.uint32());
+          const entry6 = PolicyEvaluation_AnnotationsEntry.decode(reader, reader.uint32());
           if (entry6.value !== undefined) {
-            message.labels[entry6.key] = entry6.value;
+            message.annotations[entry6.key] = entry6.value;
           }
           continue;
         case 4:
@@ -1272,8 +1272,8 @@ export const PolicyEvaluation = {
       materialName: isSet(object.materialName) ? String(object.materialName) : "",
       body: isSet(object.body) ? String(object.body) : "",
       description: isSet(object.description) ? String(object.description) : "",
-      labels: isObject(object.labels)
-        ? Object.entries(object.labels).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+      annotations: isObject(object.annotations)
+        ? Object.entries(object.annotations).reduce<{ [key: string]: string }>((acc, [key, value]) => {
           acc[key] = String(value);
           return acc;
         }, {})
@@ -1290,10 +1290,10 @@ export const PolicyEvaluation = {
     message.materialName !== undefined && (obj.materialName = message.materialName);
     message.body !== undefined && (obj.body = message.body);
     message.description !== undefined && (obj.description = message.description);
-    obj.labels = {};
-    if (message.labels) {
-      Object.entries(message.labels).forEach(([k, v]) => {
-        obj.labels[k] = v;
+    obj.annotations = {};
+    if (message.annotations) {
+      Object.entries(message.annotations).forEach(([k, v]) => {
+        obj.annotations[k] = v;
       });
     }
     if (message.violations) {
@@ -1314,23 +1314,26 @@ export const PolicyEvaluation = {
     message.materialName = object.materialName ?? "";
     message.body = object.body ?? "";
     message.description = object.description ?? "";
-    message.labels = Object.entries(object.labels ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
-      if (value !== undefined) {
-        acc[key] = String(value);
-      }
-      return acc;
-    }, {});
+    message.annotations = Object.entries(object.annotations ?? {}).reduce<{ [key: string]: string }>(
+      (acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key] = String(value);
+        }
+        return acc;
+      },
+      {},
+    );
     message.violations = object.violations?.map((e) => PolicyEvaluation_Violation.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBasePolicyEvaluation_LabelsEntry(): PolicyEvaluation_LabelsEntry {
+function createBasePolicyEvaluation_AnnotationsEntry(): PolicyEvaluation_AnnotationsEntry {
   return { key: "", value: "" };
 }
 
-export const PolicyEvaluation_LabelsEntry = {
-  encode(message: PolicyEvaluation_LabelsEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const PolicyEvaluation_AnnotationsEntry = {
+  encode(message: PolicyEvaluation_AnnotationsEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.key !== "") {
       writer.uint32(10).string(message.key);
     }
@@ -1340,10 +1343,10 @@ export const PolicyEvaluation_LabelsEntry = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): PolicyEvaluation_LabelsEntry {
+  decode(input: _m0.Reader | Uint8Array, length?: number): PolicyEvaluation_AnnotationsEntry {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePolicyEvaluation_LabelsEntry();
+    const message = createBasePolicyEvaluation_AnnotationsEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1370,23 +1373,27 @@ export const PolicyEvaluation_LabelsEntry = {
     return message;
   },
 
-  fromJSON(object: any): PolicyEvaluation_LabelsEntry {
+  fromJSON(object: any): PolicyEvaluation_AnnotationsEntry {
     return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? String(object.value) : "" };
   },
 
-  toJSON(message: PolicyEvaluation_LabelsEntry): unknown {
+  toJSON(message: PolicyEvaluation_AnnotationsEntry): unknown {
     const obj: any = {};
     message.key !== undefined && (obj.key = message.key);
     message.value !== undefined && (obj.value = message.value);
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<PolicyEvaluation_LabelsEntry>, I>>(base?: I): PolicyEvaluation_LabelsEntry {
-    return PolicyEvaluation_LabelsEntry.fromPartial(base ?? {});
+  create<I extends Exact<DeepPartial<PolicyEvaluation_AnnotationsEntry>, I>>(
+    base?: I,
+  ): PolicyEvaluation_AnnotationsEntry {
+    return PolicyEvaluation_AnnotationsEntry.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<PolicyEvaluation_LabelsEntry>, I>>(object: I): PolicyEvaluation_LabelsEntry {
-    const message = createBasePolicyEvaluation_LabelsEntry();
+  fromPartial<I extends Exact<DeepPartial<PolicyEvaluation_AnnotationsEntry>, I>>(
+    object: I,
+  ): PolicyEvaluation_AnnotationsEntry {
+    const message = createBasePolicyEvaluation_AnnotationsEntry();
     message.key = object.key ?? "";
     message.value = object.value ?? "";
     return message;

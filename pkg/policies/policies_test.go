@@ -410,7 +410,7 @@ func (s *testSuite) TestLoadPolicySpec() {
 				s.Equal(tc.expectedDesc, p.Metadata.Description)
 			}
 			if tc.expectedCategory != "" {
-				s.Equal(tc.expectedCategory, p.Metadata.Labels["category"])
+				s.Equal(tc.expectedCategory, p.Metadata.Annotations["category"])
 			}
 		})
 	}
