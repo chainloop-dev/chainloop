@@ -93,6 +93,7 @@ func (s *AttestationStateService) Save(ctx context.Context, req *cpAPI.Attestati
 		return nil, errors.Forbidden("forbidden", "failed to authenticate request")
 	}
 
+	// TODO: compare with the current crafting state
 	if err := s.attestationStateUseCase.Save(ctx, wf.ID.String(), req.WorkflowRunId, req.AttestationState, encryptionPassphrase); err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -121,9 +122,16 @@ func (s *AttestationStateService) Read(ctx context.Context, req *cpAPI.Attestati
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
+	// calculate the sha2556 digest of the stored state
+	digest, err := state.Digest()
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
 	return &cpAPI.AttestationStateServiceReadResponse{
 		Result: &cpAPI.AttestationStateServiceReadResponse_Result{
 			AttestationState: state.State,
+			Digest:           digest,
 		},
 	}, nil
 }

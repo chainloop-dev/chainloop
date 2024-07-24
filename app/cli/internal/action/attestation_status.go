@@ -142,7 +142,7 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 
 // populateMaterials populates the materials in the attestation result regardless of where they are defined
 // (contract schema or inline in the attestation)
-func populateMaterials(craftingState *v1.CraftingState, res *AttestationStatusResult) error {
+func populateMaterials(craftingState *crafter.VersionedState, res *AttestationStatusResult) error {
 	visitedMaterials := make(map[string]struct{})
 	attsMaterials := craftingState.GetAttestation().GetMaterials()
 	inputSchemaMaterials := craftingState.GetInputSchema().GetMaterials()

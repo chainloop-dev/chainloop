@@ -21,7 +21,7 @@ import (
 	"io"
 	"os"
 
-	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/statemanager"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -55,7 +55,7 @@ func (l *Filesystem) Initialized(_ context.Context, _ string) (bool, error) {
 	return false, nil
 }
 
-func (l *Filesystem) Write(_ context.Context, _ string, state *v1.CraftingState) error {
+func (l *Filesystem) Write(_ context.Context, _ string, state *crafter.VersionedState) error {
 	if state == nil {
 		return fmt.Errorf("state cannot be nil")
 	}
@@ -81,7 +81,7 @@ func (l *Filesystem) Write(_ context.Context, _ string, state *v1.CraftingState)
 	return nil
 }
 
-func (l *Filesystem) Read(_ context.Context, _ string, state *v1.CraftingState) error {
+func (l *Filesystem) Read(_ context.Context, _ string, state *crafter.VersionedState) error {
 	if state == nil {
 		return fmt.Errorf("state cannot be nil")
 	}

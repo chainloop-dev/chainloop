@@ -21,6 +21,8 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -238,4 +240,14 @@ func decrypt(ciphertext []byte, passphrase string) ([]byte, error) {
 	}
 
 	return ciphertext[len(magic):], nil
+}
+
+func (s *AttestationState) Digest() (string, error) {
+	m, err := json.Marshal(s)
+	if err != nil {
+		return "", fmt.Errorf("error marshalling state: %w", err)
+	}
+
+	hash := sha256.Sum256(m)
+	return hex.EncodeToString(hash[:]), nil
 }

@@ -47,9 +47,9 @@ type StateManager interface {
 	// Check if the state is already initialized
 	Initialized(ctx context.Context, key string) (bool, error)
 	// Write the state to the manager backend
-	Write(ctx context.Context, key string, state *api.CraftingState) error
+	Write(ctx context.Context, key string, state *VersionedState) error
 	// Read the state from the manager backend
-	Read(ctx context.Context, key string, state *api.CraftingState) error
+	Read(ctx context.Context, key string, state *VersionedState) error
 	// Reset/Delete the state
 	Reset(ctx context.Context, key string) error
 	// String returns a string representation of the state manager
@@ -58,13 +58,18 @@ type StateManager interface {
 
 type Crafter struct {
 	logger        *zerolog.Logger
-	CraftingState *api.CraftingState
+	CraftingState *VersionedState
 	Runner        SupportedRunner
 	workingDir    string
 	stateManager  StateManager
 	// Authn is used to authenticate with the OCI registry
 	ociRegistryAuth authn.Keychain
 	validator       *protovalidate.Validator
+}
+
+type VersionedState struct {
+	*api.CraftingState
+	Digest string
 }
 
 var ErrAttestationStateNotLoaded = errors.New("crafting state not loaded")
@@ -225,7 +230,9 @@ func (c *Crafter) initCraftingStateFile(
 		return fmt.Errorf("initializing crafting state: %w", err)
 	}
 
-	if err := c.stateManager.Write(ctx, attestationID, state); err != nil {
+	// No digest for the initial state
+	newState := &VersionedState{CraftingState: state}
+	if err := c.stateManager.Write(ctx, attestationID, newState); err != nil {
 		return fmt.Errorf("failed to persist crafting state: %w", err)
 	}
 
@@ -242,7 +249,7 @@ func (c *Crafter) Reset(ctx context.Context, stateID string) error {
 func (c *Crafter) LoadCraftingState(ctx context.Context, attestationID string) error {
 	c.logger.Debug().Str("state", c.stateManager.Info(ctx, attestationID)).Msg("loading state")
 
-	c.CraftingState = &api.CraftingState{}
+	c.CraftingState = &VersionedState{CraftingState: &api.CraftingState{}}
 
 	if err := c.stateManager.Read(ctx, attestationID, c.CraftingState); err != nil {
 		return fmt.Errorf("failed to load crafting state: %w", err)

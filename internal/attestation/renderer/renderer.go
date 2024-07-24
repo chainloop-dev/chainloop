@@ -26,6 +26,7 @@ import (
 	"os"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
 	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
 	chainloopsigner "github.com/chainloop-dev/chainloop/internal/attestation/signer/chainloop"
@@ -72,7 +73,7 @@ func WithBundleOutputPath(bundlePath string) Opt {
 	}
 }
 
-func NewAttestationRenderer(state *v1.CraftingState, builderVersion, builderDigest string, signer sigstoresigner.Signer, opts ...Opt) (*AttestationRenderer, error) {
+func NewAttestationRenderer(state *crafter.VersionedState, builderVersion, builderDigest string, signer sigstoresigner.Signer, opts ...Opt) (*AttestationRenderer, error) {
 	if state.GetAttestation() == nil {
 		return nil, errors.New("attestation not initialized")
 	}
