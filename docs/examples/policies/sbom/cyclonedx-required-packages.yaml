@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Checks that SBOM contains required packages
 apiVersion: workflowcontract.chainloop.dev/v1
 kind: Policy
 metadata:
   name: cyclonedx-required-packages
+  description: Checks that SBOM contains required packages
+  annotations:
+    category: sbom
 spec:
   type: SBOM_CYCLONEDX_JSON
   embedded: |

@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Checks that there are no banned packages in the SBOM
 apiVersion: workflowcontract.chainloop.dev/v1
 kind: Policy
 metadata:
   name: cyclonedx-banned-packages
+  description: Checks that there are no banned packages in the SBOM
+  annotations:
+    category: sbom
 spec:
   type: SBOM_CYCLONEDX_JSON
   embedded: |

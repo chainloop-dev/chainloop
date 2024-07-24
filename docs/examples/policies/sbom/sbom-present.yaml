@@ -16,6 +16,9 @@ apiVersion: workflowcontract.chainloop.dev/v1
 kind: Policy
 metadata:
   name: sbom-present
+  description: Checks a SBOM is present in the attestation materials
+  annotations:
+    category: sbom
 spec:
   type: ATTESTATION
   embedded: |

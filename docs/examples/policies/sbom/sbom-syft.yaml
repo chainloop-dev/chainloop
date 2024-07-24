@@ -16,14 +16,15 @@ apiVersion: workflowcontract.chainloop.dev/v1
 kind: Policy
 metadata:
   name: made-with-syft
+  description: Verifies that the SPDX was created with Syft
+  annotations:
+    category: sbom
 spec:
   type: SBOM_SPDX_JSON
   embedded: |
     package main
 
     import future.keywords.in
-
-    # Verifies that the SPDX was created with Syft
     
     deny[msg] {
       not made_with_syft

@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Checks and returns the list of components without licenses
 apiVersion: workflowcontract.chainloop.dev/v1
 kind: Policy
 metadata:
   name: cyclonedx-licenses
+  description: Checks for components without licenses
+  annotations:
+    category: sbom
 spec:
   type: SBOM_CYCLONEDX_JSON
   embedded: |
