@@ -12,15 +12,15 @@ import (
 const _ = errors.SupportPackageIsVersion1
 
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/409
-func IsAttestationStateConflictErrorConflict(err error) bool {
+func IsAttestationStateErrorConflict(err error) bool {
 	if err == nil {
 		return false
 	}
 	e := errors.FromError(err)
-	return e.Reason == AttestationStateConflictError_ATTESTATION_STATE_CONFLICT_ERROR_CONFLICT.String() && e.Code == 409
+	return e.Reason == AttestationStateError_ATTESTATION_STATE_ERROR_CONFLICT.String() && e.Code == 409
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/409
-func ErrorAttestationStateConflictErrorConflict(format string, args ...interface{}) *errors.Error {
-	return errors.New(409, AttestationStateConflictError_ATTESTATION_STATE_CONFLICT_ERROR_CONFLICT.String(), fmt.Sprintf(format, args...))
+func ErrorAttestationStateErrorConflict(format string, args ...interface{}) *errors.Error {
+	return errors.New(409, AttestationStateError_ATTESTATION_STATE_ERROR_CONFLICT.String(), fmt.Sprintf(format, args...))
 }

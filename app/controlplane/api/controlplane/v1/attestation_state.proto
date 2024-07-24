@@ -74,8 +74,8 @@ message AttestationStateServiceResetRequest {
 
 message AttestationStateServiceResetResponse {}
 
-enum AttestationStateConflictError {
-  ATTESTATION_STATE_CONFLICT_ERROR_UNSPECIFIED = 0;
+enum AttestationStateError {
+  ATTESTATION_STATE_ERROR_UNSPECIFIED = 0;
   // https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/409
-  ATTESTATION_STATE_CONFLICT_ERROR_CONFLICT = 1 [(errors.code) = 409];
+  ATTESTATION_STATE_ERROR_CONFLICT = 1 [(errors.code) = 409];
 }

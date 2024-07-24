@@ -6,35 +6,35 @@ import { CraftingState } from "../../attestation/v1/crafting_state";
 
 export const protobufPackage = "controlplane.v1";
 
-export enum AttestationStateConflictError {
-  ATTESTATION_STATE_CONFLICT_ERROR_UNSPECIFIED = 0,
-  /** ATTESTATION_STATE_CONFLICT_ERROR_CONFLICT - https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/409 */
-  ATTESTATION_STATE_CONFLICT_ERROR_CONFLICT = 1,
+export enum AttestationStateError {
+  ATTESTATION_STATE_ERROR_UNSPECIFIED = 0,
+  /** ATTESTATION_STATE_ERROR_CONFLICT - https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/409 */
+  ATTESTATION_STATE_ERROR_CONFLICT = 1,
   UNRECOGNIZED = -1,
 }
 
-export function attestationStateConflictErrorFromJSON(object: any): AttestationStateConflictError {
+export function attestationStateErrorFromJSON(object: any): AttestationStateError {
   switch (object) {
     case 0:
-    case "ATTESTATION_STATE_CONFLICT_ERROR_UNSPECIFIED":
-      return AttestationStateConflictError.ATTESTATION_STATE_CONFLICT_ERROR_UNSPECIFIED;
+    case "ATTESTATION_STATE_ERROR_UNSPECIFIED":
+      return AttestationStateError.ATTESTATION_STATE_ERROR_UNSPECIFIED;
     case 1:
-    case "ATTESTATION_STATE_CONFLICT_ERROR_CONFLICT":
-      return AttestationStateConflictError.ATTESTATION_STATE_CONFLICT_ERROR_CONFLICT;
+    case "ATTESTATION_STATE_ERROR_CONFLICT":
+      return AttestationStateError.ATTESTATION_STATE_ERROR_CONFLICT;
     case -1:
     case "UNRECOGNIZED":
     default:
-      return AttestationStateConflictError.UNRECOGNIZED;
+      return AttestationStateError.UNRECOGNIZED;
   }
 }
 
-export function attestationStateConflictErrorToJSON(object: AttestationStateConflictError): string {
+export function attestationStateErrorToJSON(object: AttestationStateError): string {
   switch (object) {
-    case AttestationStateConflictError.ATTESTATION_STATE_CONFLICT_ERROR_UNSPECIFIED:
-      return "ATTESTATION_STATE_CONFLICT_ERROR_UNSPECIFIED";
-    case AttestationStateConflictError.ATTESTATION_STATE_CONFLICT_ERROR_CONFLICT:
-      return "ATTESTATION_STATE_CONFLICT_ERROR_CONFLICT";
-    case AttestationStateConflictError.UNRECOGNIZED:
+    case AttestationStateError.ATTESTATION_STATE_ERROR_UNSPECIFIED:
+      return "ATTESTATION_STATE_ERROR_UNSPECIFIED";
+    case AttestationStateError.ATTESTATION_STATE_ERROR_CONFLICT:
+      return "ATTESTATION_STATE_ERROR_CONFLICT";
+    case AttestationStateError.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
