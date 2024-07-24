@@ -17,18 +17,19 @@ syntax = "proto3";
 
 package controlplane.v1;
 
-option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
-
-import "buf/validate/validate.proto";
 import "attestation/v1/crafting_state.proto";
+import "buf/validate/validate.proto";
+import "errors/errors.proto";
+
+option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
 // API to remotely store and retrieve attestation state
 // using the attestation crafting process
 service AttestationStateService {
-	rpc Initialized (AttestationStateServiceInitializedRequest) returns (AttestationStateServiceInitializedResponse);
-	rpc Save (AttestationStateServiceSaveRequest) returns (AttestationStateServiceSaveResponse);
-	rpc Read (AttestationStateServiceReadRequest) returns (AttestationStateServiceReadResponse);
-	rpc Reset (AttestationStateServiceResetRequest) returns (AttestationStateServiceResetResponse);
+  rpc Initialized(AttestationStateServiceInitializedRequest) returns (AttestationStateServiceInitializedResponse);
+  rpc Save(AttestationStateServiceSaveRequest) returns (AttestationStateServiceSaveResponse);
+  rpc Read(AttestationStateServiceReadRequest) returns (AttestationStateServiceReadResponse);
+  rpc Reset(AttestationStateServiceResetRequest) returns (AttestationStateServiceResetResponse);
 }
 
 message AttestationStateServiceInitializedRequest {
@@ -37,7 +38,7 @@ message AttestationStateServiceInitializedRequest {
 
 message AttestationStateServiceInitializedResponse {
   Result result = 1;
-  
+
   message Result {
     bool initialized = 1;
   }
@@ -46,6 +47,9 @@ message AttestationStateServiceInitializedResponse {
 message AttestationStateServiceSaveRequest {
   string workflow_run_id = 1 [(buf.validate.field).string = {min_len: 1}];
   attestation.v1.CraftingState attestation_state = 2 [(buf.validate.field).required = true];
+  // digest of the attestation state this update was performed on top of
+  // The digest might be empty the first time
+  string base_digest = 3;
 }
 
 message AttestationStateServiceSaveResponse {}
@@ -56,9 +60,11 @@ message AttestationStateServiceReadRequest {
 
 message AttestationStateServiceReadResponse {
   Result result = 1;
-  
+
   message Result {
     attestation.v1.CraftingState attestation_state = 2;
+    // digest of the attestation state to implement Optimistic Concurrency Control
+    string digest = 3;
   }
 }
 
@@ -68,3 +74,8 @@ message AttestationStateServiceResetRequest {
 
 message AttestationStateServiceResetResponse {}
 
+enum AttestationStateConflictError {
+  ATTESTATION_STATE_ERROR_UNSPECIFIED = 0;
+  // https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/409
+  ATTESTATION_STATE_ERROR_CONFLICT = 1 [(errors.code) = 409];
+}
