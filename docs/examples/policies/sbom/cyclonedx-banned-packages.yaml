@@ -46,16 +46,7 @@ spec:
       banned := banned_packages[j]
       nv := split(banned, "@")
       comp.name == nv[0]
-      bad_version(comp.version, nv[1])
+      result := semver.compare(comp.version, nv[1])
+      result <= 0
       ref := sprintf("Banned package: %v %v", [comp.name, comp.version])
-    }
-  
-    bad_version(x, y) if {
-      result := semver.compare(x, y)
-      result == 0
-    }
-  
-    bad_version(x, y) if {
-      result := semver.compare(x, y)
-      result == -1
     }
