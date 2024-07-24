@@ -23,7 +23,6 @@ import (
 	"strings"
 
 	cpAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 
@@ -97,7 +96,7 @@ func (s *AttestationStateService) Save(ctx context.Context, req *cpAPI.Attestati
 	err = s.attestationStateUseCase.Save(ctx, wf.ID.String(), req.WorkflowRunId, req.AttestationState, encryptionPassphrase, biz.WithAttStateBaseDigest(req.GetBaseDigest()))
 	if err != nil {
 		if biz.IsErrAttestationStateConflict(err) {
-			return nil, v1.ErrorAttestationStateErrorConflict(err.Error())
+			return nil, cpAPI.ErrorAttestationStateErrorConflict(err.Error())
 		}
 
 		return nil, handleUseCaseErr(err, s.log)

@@ -7,20 +7,20 @@ import { CraftingState } from "../../attestation/v1/crafting_state";
 export const protobufPackage = "controlplane.v1";
 
 export enum AttestationStateConflictError {
-  ATTESTATION_STATE_ERROR_UNSPECIFIED = 0,
-  /** ATTESTATION_STATE_ERROR_CONFLICT - https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/409 */
-  ATTESTATION_STATE_ERROR_CONFLICT = 1,
+  ATTESTATION_STATE_CONFLICT_ERROR_UNSPECIFIED = 0,
+  /** ATTESTATION_STATE_CONFLICT_ERROR_CONFLICT - https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/409 */
+  ATTESTATION_STATE_CONFLICT_ERROR_CONFLICT = 1,
   UNRECOGNIZED = -1,
 }
 
 export function attestationStateConflictErrorFromJSON(object: any): AttestationStateConflictError {
   switch (object) {
     case 0:
-    case "ATTESTATION_STATE_ERROR_UNSPECIFIED":
-      return AttestationStateConflictError.ATTESTATION_STATE_ERROR_UNSPECIFIED;
+    case "ATTESTATION_STATE_CONFLICT_ERROR_UNSPECIFIED":
+      return AttestationStateConflictError.ATTESTATION_STATE_CONFLICT_ERROR_UNSPECIFIED;
     case 1:
-    case "ATTESTATION_STATE_ERROR_CONFLICT":
-      return AttestationStateConflictError.ATTESTATION_STATE_ERROR_CONFLICT;
+    case "ATTESTATION_STATE_CONFLICT_ERROR_CONFLICT":
+      return AttestationStateConflictError.ATTESTATION_STATE_CONFLICT_ERROR_CONFLICT;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -30,10 +30,10 @@ export function attestationStateConflictErrorFromJSON(object: any): AttestationS
 
 export function attestationStateConflictErrorToJSON(object: AttestationStateConflictError): string {
   switch (object) {
-    case AttestationStateConflictError.ATTESTATION_STATE_ERROR_UNSPECIFIED:
-      return "ATTESTATION_STATE_ERROR_UNSPECIFIED";
-    case AttestationStateConflictError.ATTESTATION_STATE_ERROR_CONFLICT:
-      return "ATTESTATION_STATE_ERROR_CONFLICT";
+    case AttestationStateConflictError.ATTESTATION_STATE_CONFLICT_ERROR_UNSPECIFIED:
+      return "ATTESTATION_STATE_CONFLICT_ERROR_UNSPECIFIED";
+    case AttestationStateConflictError.ATTESTATION_STATE_CONFLICT_ERROR_CONFLICT:
+      return "ATTESTATION_STATE_CONFLICT_ERROR_CONFLICT";
     case AttestationStateConflictError.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
