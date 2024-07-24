@@ -341,10 +341,12 @@ func (s *testSuite) TestInvalidInlineMaterial() {
 
 func (s *testSuite) TestLoadPolicySpec() {
 	var cases = []struct {
-		name         string
-		attachment   *v12.PolicyAttachment
-		wantErr      bool
-		expectedName string
+		name             string
+		attachment       *v12.PolicyAttachment
+		wantErr          bool
+		expectedName     string
+		expectedDesc     string
+		expectedCategory string
 	}{
 		{
 			name:       "missing policy",
@@ -358,7 +360,9 @@ func (s *testSuite) TestLoadPolicySpec() {
 					Ref: "testdata/sbom_syft.yaml",
 				},
 			},
-			expectedName: "made-with-syft",
+			expectedName:     "made-with-syft",
+			expectedDesc:     "This policy checks that the SPDX SBOM was created with syft",
+			expectedCategory: "SBOM",
 		},
 		{
 			name: "embedded invalid",
@@ -402,6 +406,12 @@ func (s *testSuite) TestLoadPolicySpec() {
 			}
 			s.Require().NoError(err)
 			s.Equal(tc.expectedName, p.Metadata.Name)
+			if tc.expectedDesc != "" {
+				s.Equal(tc.expectedDesc, p.Metadata.Description)
+			}
+			if tc.expectedCategory != "" {
+				s.Equal(tc.expectedCategory, p.Metadata.Labels["category"])
+			}
 		})
 	}
 }
