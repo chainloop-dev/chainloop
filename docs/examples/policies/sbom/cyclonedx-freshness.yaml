@@ -1,0 +1,40 @@
+# Copyright 2024 The Chainloop Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Checks that SBOM has been generated recently
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: cyclonedx-required-packages
+spec:
+  type: SBOM_CYCLONEDX_JSON
+  embedded: |
+    package main
+    
+    import rego.v1
+  
+    limit := 30
+    
+    nanosecs_per_second = (1000 * 1000) * 1000
+    
+    nanosecs_per_day = ((24 * 60) * 60) * nanosecs_per_second
+    
+    maximum_age = limit * nanosecs_per_day
+    
+    deny contains msg if {
+      sbom_ns = time.parse_rfc3339_ns(input.metadata.timestamp)
+      exceeding = time.now_ns() - (sbom_ns + maximum_age)
+      exceeding > 0
+      msg := sprintf("SBOM created at: %s which is too old (freshness limit set to %d days)", [input.metadata.timestamp, limit])
+    }
