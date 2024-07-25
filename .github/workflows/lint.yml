@@ -60,7 +60,7 @@ jobs:
         run: |
           mkdir -p ~/.local/bin
           cd ~/.local
-          curl -L https://dl.dagger.io/dagger/install.sh | DAGGER_VERSION=0.11.0  sh
+          curl -L https://dl.dagger.io/dagger/install.sh | DAGGER_VERSION=0.12.2  sh
 
       - uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
