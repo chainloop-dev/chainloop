@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"main/internal/dagger"
 	"time"
 )
 
@@ -19,10 +20,10 @@ type Chainloop struct{}
 type Attestation struct {
 	AttestationID string
 
-	repository *Directory
+	repository *dagger.Directory
 
 	// +private
-	Token *Secret
+	Token *dagger.Secret
 
 	// +private
 	RegistryAuth RegistryAuth
@@ -35,20 +36,20 @@ type RegistryAuth struct {
 	// Username to use when authenticating to the registry
 	Username string
 	// Password to use when authenticating to the registry
-	Password *Secret
+	Password *dagger.Secret
 }
 
 // Initialize a new attestation
 func (m *Chainloop) Init(
 	ctx context.Context,
 	// Chainloop API token
-	token *Secret,
+	token *dagger.Secret,
 	// Workflow Contract revision, default is the latest
 	// +optional
 	contractRevision string,
 	// Path to the source repository to be attested
 	// +optional
-	repository *Directory,
+	repository *dagger.Directory,
 	// Workflow name to be used for the attestation
 	workflowName string,
 ) (*Attestation, error) {
@@ -92,7 +93,7 @@ func (m *Chainloop) Resume(
 	// The attestation ID
 	attestationID string,
 	// Chainloop API token
-	token *Secret,
+	token *dagger.Secret,
 ) *Attestation {
 	return &Attestation{
 		AttestationID: attestationID,
@@ -136,7 +137,7 @@ func (att *Attestation) WithRegistryAuth(
 	// Registry username
 	username string,
 	// Registry password
-	password *Secret,
+	password *dagger.Secret,
 ) *Attestation {
 	att.RegistryAuth.Address = address
 	att.RegistryAuth.Username = username
@@ -184,7 +185,7 @@ func (att *Attestation) AddFileEvidence(
 	// +optional
 	name string,
 	// The file to add
-	path *File,
+	path *dagger.File,
 ) (*Attestation, error) {
 	filename, err := path.Name(ctx)
 	if err != nil {
@@ -216,7 +217,7 @@ func (att *Attestation) AddFileEvidence(
 	return att, err
 }
 
-func (att *Attestation) Debug() *Terminal {
+func (att *Attestation) Debug() *dagger.Container {
 	return att.Container(0).Terminal()
 }
 
@@ -227,7 +228,7 @@ func (att *Attestation) Container(
 	// +optional
 	// +default=0
 	ttl int,
-) *Container {
+) *dagger.Container {
 	ctr := dag.
 		Container().
 		From(fmt.Sprintf("ghcr.io/chainloop-dev/chainloop/cli:%s", chainloopVersion)).
@@ -265,10 +266,10 @@ func (att *Attestation) Push(
 	ctx context.Context,
 	// The private key to sign the attestation
 	// +optional
-	key *Secret,
+	key *dagger.Secret,
 	// The passphrase to decrypt the private key
 	// +optional
-	passphrase *Secret,
+	passphrase *dagger.Secret,
 ) (string, error) {
 	container := att.Container(0)
 	args := []string{
