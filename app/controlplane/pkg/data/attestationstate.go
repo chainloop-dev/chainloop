@@ -54,7 +54,7 @@ func (r *AttestationStateRepo) Initialized(ctx context.Context, runID uuid.UUID)
 // baseDigest, when provided will be used to check that it matches the digest of the state currently in the DB
 // if the digests do not match, the state has been modified and the caller should retry
 func (r *AttestationStateRepo) Save(ctx context.Context, runID uuid.UUID, state []byte, baseDigest string) (err error) {
-	tx, err := r.data.DB.Debug().Tx(ctx)
+	tx, err := r.data.DB.Tx(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create transaction: %w", err)
 	}
