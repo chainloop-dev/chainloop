@@ -19,7 +19,7 @@ package controlplane.config.v1;
 
 import "buf/validate/validate.proto";
 import "credentials/v1/config.proto";
-import "onboarding_spec/v1/config.proto";
+import "config/v1/config.proto";
 import "google/protobuf/duration.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1;conf";
@@ -61,7 +61,7 @@ message Bootstrap {
   }
 
   // Configuration for onboarding users in organizations with specific roles
-  repeated onboarding_spec.v1.OnboardingSpec onboarding = 10;
+  repeated config.v1.OnboardingSpec onboarding = 10;
 
   // Configuration to enable Prometheus integration for the specified organizations
   repeated PrometheusIntegrationSpec prometheus_integration = 11;

@@ -14,7 +14,7 @@ api:
 # generate config proto
 config:
 	cd ./pkg/credentials/api && buf generate
-	cd ./app/controlplane/pkg/onboarding_spec/api && buf generate
+	cd ./app/controlplane/pkg/conf/controlplane && buf generate
 	make -C ./app/controlplane config
 	make -C ./app/artifact-cas config
 

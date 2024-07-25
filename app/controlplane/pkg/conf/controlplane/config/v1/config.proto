@@ -15,12 +15,12 @@
 
 
 syntax = "proto3";
-package controlplane.onboarding_spec.v1;
+package controlplane.config.v1;
 
 import "buf/validate/validate.proto";
 import "controlplane/v1/response_messages.proto";
 
-option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/pkg/onboarding_spec/api/onboarding_spec/v1;v1";
+option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1;v1";
 
 // OnboardingSpec is a configuration to automatically onboard users in organizations with specific roles
 message OnboardingSpec {
