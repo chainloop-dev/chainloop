@@ -6,6 +6,40 @@ import { CraftingState } from "../../attestation/v1/crafting_state";
 
 export const protobufPackage = "controlplane.v1";
 
+export enum AttestationStateError {
+  ATTESTATION_STATE_ERROR_UNSPECIFIED = 0,
+  /** ATTESTATION_STATE_ERROR_CONFLICT - https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/409 */
+  ATTESTATION_STATE_ERROR_CONFLICT = 1,
+  UNRECOGNIZED = -1,
+}
+
+export function attestationStateErrorFromJSON(object: any): AttestationStateError {
+  switch (object) {
+    case 0:
+    case "ATTESTATION_STATE_ERROR_UNSPECIFIED":
+      return AttestationStateError.ATTESTATION_STATE_ERROR_UNSPECIFIED;
+    case 1:
+    case "ATTESTATION_STATE_ERROR_CONFLICT":
+      return AttestationStateError.ATTESTATION_STATE_ERROR_CONFLICT;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return AttestationStateError.UNRECOGNIZED;
+  }
+}
+
+export function attestationStateErrorToJSON(object: AttestationStateError): string {
+  switch (object) {
+    case AttestationStateError.ATTESTATION_STATE_ERROR_UNSPECIFIED:
+      return "ATTESTATION_STATE_ERROR_UNSPECIFIED";
+    case AttestationStateError.ATTESTATION_STATE_ERROR_CONFLICT:
+      return "ATTESTATION_STATE_ERROR_CONFLICT";
+    case AttestationStateError.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export interface AttestationStateServiceInitializedRequest {
   workflowRunId: string;
 }
@@ -21,6 +55,11 @@ export interface AttestationStateServiceInitializedResponse_Result {
 export interface AttestationStateServiceSaveRequest {
   workflowRunId: string;
   attestationState?: CraftingState;
+  /**
+   * digest of the attestation state this update was performed on top of
+   * The digest might be empty the first time
+   */
+  baseDigest: string;
 }
 
 export interface AttestationStateServiceSaveResponse {
@@ -36,6 +75,8 @@ export interface AttestationStateServiceReadResponse {
 
 export interface AttestationStateServiceReadResponse_Result {
   attestationState?: CraftingState;
+  /** digest of the attestation state to implement Optimistic Concurrency Control */
+  digest: string;
 }
 
 export interface AttestationStateServiceResetRequest {
@@ -237,7 +278,7 @@ export const AttestationStateServiceInitializedResponse_Result = {
 };
 
 function createBaseAttestationStateServiceSaveRequest(): AttestationStateServiceSaveRequest {
-  return { workflowRunId: "", attestationState: undefined };
+  return { workflowRunId: "", attestationState: undefined, baseDigest: "" };
 }
 
 export const AttestationStateServiceSaveRequest = {
@@ -247,6 +288,9 @@ export const AttestationStateServiceSaveRequest = {
     }
     if (message.attestationState !== undefined) {
       CraftingState.encode(message.attestationState, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.baseDigest !== "") {
+      writer.uint32(26).string(message.baseDigest);
     }
     return writer;
   },
@@ -272,6 +316,13 @@ export const AttestationStateServiceSaveRequest = {
 
           message.attestationState = CraftingState.decode(reader, reader.uint32());
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.baseDigest = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -285,6 +336,7 @@ export const AttestationStateServiceSaveRequest = {
     return {
       workflowRunId: isSet(object.workflowRunId) ? String(object.workflowRunId) : "",
       attestationState: isSet(object.attestationState) ? CraftingState.fromJSON(object.attestationState) : undefined,
+      baseDigest: isSet(object.baseDigest) ? String(object.baseDigest) : "",
     };
   },
 
@@ -293,6 +345,7 @@ export const AttestationStateServiceSaveRequest = {
     message.workflowRunId !== undefined && (obj.workflowRunId = message.workflowRunId);
     message.attestationState !== undefined &&
       (obj.attestationState = message.attestationState ? CraftingState.toJSON(message.attestationState) : undefined);
+    message.baseDigest !== undefined && (obj.baseDigest = message.baseDigest);
     return obj;
   },
 
@@ -310,6 +363,7 @@ export const AttestationStateServiceSaveRequest = {
     message.attestationState = (object.attestationState !== undefined && object.attestationState !== null)
       ? CraftingState.fromPartial(object.attestationState)
       : undefined;
+    message.baseDigest = object.baseDigest ?? "";
     return message;
   },
 };
@@ -488,13 +542,16 @@ export const AttestationStateServiceReadResponse = {
 };
 
 function createBaseAttestationStateServiceReadResponse_Result(): AttestationStateServiceReadResponse_Result {
-  return { attestationState: undefined };
+  return { attestationState: undefined, digest: "" };
 }
 
 export const AttestationStateServiceReadResponse_Result = {
   encode(message: AttestationStateServiceReadResponse_Result, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.attestationState !== undefined) {
       CraftingState.encode(message.attestationState, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.digest !== "") {
+      writer.uint32(26).string(message.digest);
     }
     return writer;
   },
@@ -513,6 +570,13 @@ export const AttestationStateServiceReadResponse_Result = {
 
           message.attestationState = CraftingState.decode(reader, reader.uint32());
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.digest = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -525,6 +589,7 @@ export const AttestationStateServiceReadResponse_Result = {
   fromJSON(object: any): AttestationStateServiceReadResponse_Result {
     return {
       attestationState: isSet(object.attestationState) ? CraftingState.fromJSON(object.attestationState) : undefined,
+      digest: isSet(object.digest) ? String(object.digest) : "",
     };
   },
 
@@ -532,6 +597,7 @@ export const AttestationStateServiceReadResponse_Result = {
     const obj: any = {};
     message.attestationState !== undefined &&
       (obj.attestationState = message.attestationState ? CraftingState.toJSON(message.attestationState) : undefined);
+    message.digest !== undefined && (obj.digest = message.digest);
     return obj;
   },
 
@@ -548,6 +614,7 @@ export const AttestationStateServiceReadResponse_Result = {
     message.attestationState = (object.attestationState !== undefined && object.attestationState !== null)
       ? CraftingState.fromPartial(object.attestationState)
       : undefined;
+    message.digest = object.digest ?? "";
     return message;
   },
 };

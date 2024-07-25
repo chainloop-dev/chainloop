@@ -17,6 +17,9 @@ package data
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
@@ -48,26 +51,69 @@ func (r *AttestationStateRepo) Initialized(ctx context.Context, runID uuid.UUID)
 	return exists, nil
 }
 
-func (r *AttestationStateRepo) Save(ctx context.Context, runID uuid.UUID, state []byte) error {
-	err := r.data.DB.WorkflowRun.UpdateOneID(runID).SetAttestationState(state).Exec(ctx)
+// baseDigest, when provided will be used to check that it matches the digest of the state currently in the DB
+// if the digests do not match, the state has been modified and the caller should retry
+func (r *AttestationStateRepo) Save(ctx context.Context, runID uuid.UUID, state []byte, baseDigest string) (err error) {
+	tx, err := r.data.DB.Tx(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to create transaction: %w", err)
+	}
+
+	defer func() {
+		// Unblock the row if there was an error
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	// compared the provided digest with the digest of the state in the DB
+	// TODO: make digest check mandatory on updates
+	if baseDigest != "" {
+		// Get the run but BLOCK IT for update
+		run, err := tx.WorkflowRun.Query().ForUpdate().Where(workflowrun.ID(runID)).Only(ctx)
+		if err != nil && !ent.IsNotFound(err) {
+			return fmt.Errorf("failed to read attestation state: %w", err)
+		} else if run == nil || run.AttestationState == nil {
+			return biz.NewErrNotFound("attestation state")
+		}
+
+		// calculate the digest of the current state
+		storedDigest, err := digest(run.AttestationState)
+		if err != nil {
+			return fmt.Errorf("failed to calculate digest: %w", err)
+		}
+
+		if baseDigest != storedDigest {
+			return biz.NewErrAttestationStateConflict(storedDigest, baseDigest)
+		}
+	}
+
+	// Update it in the DB if the digest matches
+	err = tx.WorkflowRun.UpdateOneID(runID).SetAttestationState(state).Exec(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return fmt.Errorf("failed to store attestation state: %w", err)
 	} else if err != nil {
 		return biz.NewErrNotFound("workflow run")
 	}
 
-	return nil
+	return tx.Commit()
 }
 
-func (r *AttestationStateRepo) Read(ctx context.Context, runID uuid.UUID) ([]byte, error) {
+func (r *AttestationStateRepo) Read(ctx context.Context, runID uuid.UUID) ([]byte, string, error) {
 	run, err := r.data.DB.WorkflowRun.Query().Where(workflowrun.ID(runID)).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
-		return nil, fmt.Errorf("failed to read attestation state: %w", err)
+		return nil, "", fmt.Errorf("failed to read attestation state: %w", err)
 	} else if run == nil || run.AttestationState == nil {
-		return nil, biz.NewErrNotFound("attestation state")
+		return nil, "", biz.NewErrNotFound("attestation state")
 	}
 
-	return run.AttestationState, nil
+	// calculate the digest of the state
+	digest, err := digest(run.AttestationState)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to calculate digest: %w", err)
+	}
+
+	return run.AttestationState, digest, nil
 }
 
 func (r *AttestationStateRepo) Reset(ctx context.Context, runID uuid.UUID) error {
@@ -79,4 +125,14 @@ func (r *AttestationStateRepo) Reset(ctx context.Context, runID uuid.UUID) error
 	}
 
 	return nil
+}
+
+func digest(data []byte) (string, error) {
+	m, err := json.Marshal(data)
+	if err != nil {
+		return "", fmt.Errorf("error marshalling state: %w", err)
+	}
+
+	hash := sha256.Sum256(m)
+	return hex.EncodeToString(hash[:]), nil
 }

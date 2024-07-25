@@ -93,7 +93,12 @@ func (s *AttestationStateService) Save(ctx context.Context, req *cpAPI.Attestati
 		return nil, errors.Forbidden("forbidden", "failed to authenticate request")
 	}
 
-	if err := s.attestationStateUseCase.Save(ctx, wf.ID.String(), req.WorkflowRunId, req.AttestationState, encryptionPassphrase); err != nil {
+	err = s.attestationStateUseCase.Save(ctx, wf.ID.String(), req.WorkflowRunId, req.AttestationState, encryptionPassphrase, biz.WithAttStateBaseDigest(req.GetBaseDigest()))
+	if err != nil {
+		if biz.IsErrAttestationStateConflict(err) {
+			return nil, cpAPI.ErrorAttestationStateErrorConflict(err.Error())
+		}
+
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
@@ -124,6 +129,7 @@ func (s *AttestationStateService) Read(ctx context.Context, req *cpAPI.Attestati
 	return &cpAPI.AttestationStateServiceReadResponse{
 		Result: &cpAPI.AttestationStateServiceReadResponse_Result{
 			AttestationState: state.State,
+			Digest:           state.Digest,
 		},
 	}, nil
 }

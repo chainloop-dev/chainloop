@@ -69,19 +69,19 @@ func (s *attestationStateTestSuite) TestInitialized() {
 
 func (s *attestationStateTestSuite) TestSave() {
 	ctx := context.Background()
-	s.T().Run("run in different workflow causes error", func(t *testing.T) {
+	s.Run("run in different workflow causes error", func() {
 		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg2.ID.String(), s.testState, s.passphrase)
 		s.Error(err)
 		s.True(biz.IsNotFound(err))
 	})
 
-	s.T().Run("the run doesn't exist", func(t *testing.T) {
+	s.Run("the run doesn't exist", func() {
 		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), uuid.NewString(), s.testState, s.passphrase)
 		s.Error(err)
 		s.True(biz.IsNotFound(err))
 	})
 
-	s.T().Run("the run exists", func(t *testing.T) {
+	s.Run("the run exists", func() {
 		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState, s.passphrase)
 		s.NoError(err)
 
@@ -92,7 +92,7 @@ func (s *attestationStateTestSuite) TestSave() {
 		}
 	})
 
-	s.T().Run("it can be overridden", func(t *testing.T) {
+	s.Run("it can be overridden", func() {
 		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState, s.passphrase)
 		s.NoError(err)
 
@@ -111,6 +111,33 @@ func (s *attestationStateTestSuite) TestSave() {
 		if ok := proto.Equal(newState, got.State); !ok {
 			s.Fail(fmt.Sprintf("These two protobuf messages are not equal:\nexpected: %v\nactual:  %v", newState, got.State))
 		}
+	})
+
+	s.Run("can enforce base digest checking for concurrency control", func() {
+		// Get the digest of the stored state
+		state, err := s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.passphrase)
+		s.NoError(err)
+
+		// Write again passing the base digest
+		update := &v1.CraftingState{Attestation: &v1.Attestation{Annotations: map[string]string{"key": "updated"}}}
+		err = s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), update, s.passphrase, biz.WithAttStateBaseDigest(state.Digest))
+		s.NoError(err)
+
+		// The digest now should be different
+		updatedState, err := s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.passphrase)
+		s.NoError(err)
+		s.NotEmpty(updatedState.Digest)
+		s.NotEqual(state.Digest, updatedState.Digest)
+
+		// trying to update passing the wrong base digest should fail with a conflict error
+		err = s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), update, s.passphrase, biz.WithAttStateBaseDigest(state.Digest))
+		s.Error(err)
+		s.True(biz.IsErrAttestationStateConflict(err))
+
+		// but will not fail if base digest is not passed
+		// trying to update passing the wrong base digest should fail with a conflict error
+		err = s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), update, s.passphrase, biz.WithAttStateBaseDigest(""))
+		s.NoError(err)
 	})
 }
 
@@ -141,7 +168,7 @@ func (s *attestationStateTestSuite) TestRead() {
 		s.NoError(err)
 
 		// tamper directly with the database
-		err = s.Repos.AttestationState.Save(ctx, s.runOrg1.ID, []byte("tampered data modified directly in the DB"))
+		err = s.Repos.AttestationState.Save(ctx, s.runOrg1.ID, []byte("tampered data modified directly in the DB"), "")
 		s.NoError(err)
 
 		got, err := s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.passphrase)
