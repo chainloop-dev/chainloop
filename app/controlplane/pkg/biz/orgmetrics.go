@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	prometheuscollector "github.com/chainloop-dev/chainloop/app/controlplane/pkg/metrics/prometheus"
+	prometheuscollector "github.com/chainloop-dev/chainloop/app/controlplane/pkg/metrics/prometheus/collector"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"

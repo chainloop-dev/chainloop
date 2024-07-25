@@ -76,3 +76,6 @@ auth:
 #   allowed_orgs:
 #     - deadbeef
 
+# Organizations with Prometheus integration enabled
+prometheus_integration:
+  - org_name: "development"

@@ -18,7 +18,7 @@ package registry
 import (
 	"github.com/go-kratos/kratos/v2/log"
 
-	chainloopprometheus "github.com/chainloop-dev/chainloop/app/controlplane/pkg/metrics/prometheus"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/metrics/prometheus/collector"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -27,14 +27,14 @@ import (
 type PrometheusRegistry struct {
 	*prometheus.Registry
 	Name               string
-	chainloopCollector *chainloopprometheus.ChainloopCollector
+	chainloopCollector *collector.ChainloopCollector
 }
 
 // NewPrometheusRegistry creates a new Prometheus registry with a given ID and collector
-func NewPrometheusRegistry(name string, gatherer chainloopprometheus.ChainloopMetricsGatherer, logger log.Logger) *PrometheusRegistry {
+func NewPrometheusRegistry(name string, gatherer collector.ChainloopMetricsGatherer, logger log.Logger) *PrometheusRegistry {
 	reg := prometheus.NewRegistry()
 
-	bcc := chainloopprometheus.NewChainloopCollector(name, gatherer, logger)
+	bcc := collector.NewChainloopCollector(name, gatherer, logger)
 
 	reg.MustRegister(bcc)
 
@@ -43,29 +43,4 @@ func NewPrometheusRegistry(name string, gatherer chainloopprometheus.ChainloopMe
 		Registry:           reg,
 		chainloopCollector: bcc,
 	}
-}
-
-type ChainloopRegistryManager struct {
-	Registries map[string]*PrometheusRegistry
-}
-
-func NewChainloopRegistryManager() *ChainloopRegistryManager {
-	return &ChainloopRegistryManager{
-		Registries: make(map[string]*PrometheusRegistry),
-	}
-}
-
-// AddRegistry adds a registry to the manager
-func (rm *ChainloopRegistryManager) AddRegistry(reg *PrometheusRegistry) {
-	rm.Registries[reg.Name] = reg
-}
-
-// GetRegistryByName returns a registry by name
-func (rm *ChainloopRegistryManager) GetRegistryByName(name string) *PrometheusRegistry {
-	return rm.Registries[name]
-}
-
-// DeleteRegistryByName deletes a registry by name
-func (rm *ChainloopRegistryManager) DeleteRegistryByName(name string) {
-	delete(rm.Registries, name)
 }
