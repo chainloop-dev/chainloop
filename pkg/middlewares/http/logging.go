@@ -39,7 +39,6 @@ func Logging(logger log.Logger, next nhttp.Handler) nhttp.Handler {
 		next.ServeHTTP(lrw, r)
 
 		_ = logger.Log(log.LevelInfo,
-			"kind", "server",
 			"uri", r.RequestURI,
 			"code", lrw.statusCode,
 			"method", r.Method,
