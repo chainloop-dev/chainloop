@@ -5,4 +5,5 @@ directories:
   - app/artifact-cas/internal/conf
   - app/artifact-cas/api
   - pkg/credentials/api
+  - pkg/onboarding_spec/api
   - internal/attestation/crafter/api

@@ -31,12 +31,13 @@ import (
 	robotaccount "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	backends "github.com/chainloop-dev/chainloop/pkg/blobmanager"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
+	onboardingspec "github.com/chainloop-dev/chainloop/pkg/onboarding_spec/api/onboarding_spec/v1"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
 )
 
 // wireTestData init testing data
-func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWriter, *robotaccount.Builder, *conf.Auth, *conf.Bootstrap, []*conf.OnboardingSpec, sdk.AvailablePlugins, backends.Providers) (*TestingUseCases, func(), error) {
+func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWriter, *robotaccount.Builder, *conf.Auth, *conf.Bootstrap, []*onboardingspec.OnboardingSpec, sdk.AvailablePlugins, backends.Providers) (*TestingUseCases, func(), error) {
 	panic(
 		wire.Build(
 			data.ProviderSet,

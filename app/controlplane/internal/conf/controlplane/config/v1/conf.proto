@@ -18,8 +18,8 @@ syntax = "proto3";
 package controlplane.config.v1;
 
 import "buf/validate/validate.proto";
-import "controlplane/v1/response_messages.proto";
 import "credentials/v1/config.proto";
+import "onboarding_spec/v1/config.proto";
 import "google/protobuf/duration.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1;conf";
@@ -61,7 +61,7 @@ message Bootstrap {
   }
 
   // Configuration for onboarding users in organizations with specific roles
-  repeated OnboardingSpec onboarding = 10;
+  repeated onboarding_spec.v1.OnboardingSpec onboarding = 10;
 
   // Configuration to enable Prometheus integration for the specified organizations
   repeated PrometheusIntegrationSpec prometheus_integration = 11;
@@ -166,19 +166,6 @@ message CA {
     string end_entity_profile_name = 6 [(buf.validate.field).string.min_len = 1];
     string certificate_authority_name = 7 [(buf.validate.field).string.min_len = 1];
   }
-}
-
-// OnboardingSpec is a configuration to automatically onboard users in organizations with specific roles
-message OnboardingSpec {
-  // Name of the organization
-  string name = 1 [(buf.validate.field).string.min_len = 1];
-  // Role to assign to the user
-  controlplane.v1.MembershipRole role = 2 [
-    (buf.validate.field).enum = {
-      not_in: [0]
-    },
-    (buf.validate.field).enum.defined_only = true
-  ];
 }
 
 // PrometheusIntegrationSpec is a configuration to enable Prometheus integration for the

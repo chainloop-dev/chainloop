@@ -13,6 +13,7 @@ api:
 .PHONY: config
 # generate config proto
 config:
+	cd ./pkg/onboarding_spec/api && buf generate
 	cd ./pkg/credentials/api && buf generate
 	make -C ./app/controlplane config
 	make -C ./app/artifact-cas config

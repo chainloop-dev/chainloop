@@ -1,0 +1,36 @@
+//
+// Copyright 2024 The Chainloop Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+
+syntax = "proto3";
+package onboarding_spec.v1;
+
+import "buf/validate/validate.proto";
+import "controlplane/v1/response_messages.proto";
+
+option go_package = "github.com/chainloop-dev/chainloop/pkg/onboarding_spec/api/onboarding_spec/v1;v1";
+
+// OnboardingSpec is a configuration to automatically onboard users in organizations with specific roles
+message OnboardingSpec {
+  // Name of the organization
+  string name = 1 [(buf.validate.field).string.min_len = 1];
+  // Role to assign to the user
+  controlplane.v1.MembershipRole role = 2 [
+    (buf.validate.field).enum = {
+      not_in: [0]
+    },
+    (buf.validate.field).enum.defined_only = true
+  ];
+}

@@ -22,8 +22,8 @@ import (
 	"io"
 	"time"
 
-	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
+	onboardingspec "github.com/chainloop-dev/chainloop/pkg/onboarding_spec/api/onboarding_spec/v1"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
@@ -48,10 +48,10 @@ type OrganizationUseCase struct {
 	casBackendUseCase *CASBackendUseCase
 	integrationUC     *IntegrationUseCase
 	membershipRepo    MembershipRepo
-	onboardingConfig  []*conf.OnboardingSpec
+	onboardingConfig  []*onboardingspec.OnboardingSpec
 }
 
-func NewOrganizationUseCase(repo OrganizationRepo, repoUC *CASBackendUseCase, iUC *IntegrationUseCase, mRepo MembershipRepo, onboardingConfig []*conf.OnboardingSpec, l log.Logger) *OrganizationUseCase {
+func NewOrganizationUseCase(repo OrganizationRepo, repoUC *CASBackendUseCase, iUC *IntegrationUseCase, mRepo MembershipRepo, onboardingConfig []*onboardingspec.OnboardingSpec, l log.Logger) *OrganizationUseCase {
 	if l == nil {
 		l = log.NewStdLogger(io.Discard)
 	}

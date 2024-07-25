@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	onboardingspec "github.com/chainloop-dev/chainloop/pkg/onboarding_spec/api/onboarding_spec/v1"
 	// Required for the database waitFor strategy
 	_ "github.com/lib/pq"
 
@@ -87,7 +88,7 @@ type newTestingOpts struct {
 	credsReaderWriter       credentials.ReaderWriter
 	integrations            sdk.AvailablePlugins
 	providers               backends.Providers
-	onboardingConfiguration []*conf.OnboardingSpec
+	onboardingConfiguration []*onboardingspec.OnboardingSpec
 }
 
 type NewTestingUCOpt func(*newTestingOpts)
@@ -108,7 +109,7 @@ func WithRegisteredIntegration(i sdk.FanOut) NewTestingUCOpt {
 	}
 }
 
-func WithOnboardingConfiguration(conf []*conf.OnboardingSpec) NewTestingUCOpt {
+func WithOnboardingConfiguration(conf []*onboardingspec.OnboardingSpec) NewTestingUCOpt {
 	return func(tu *newTestingOpts) {
 		tu.onboardingConfiguration = conf
 	}

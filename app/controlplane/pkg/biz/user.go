@@ -21,8 +21,8 @@ import (
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
+	onboardingspec "github.com/chainloop-dev/chainloop/pkg/onboarding_spec/api/onboarding_spec/v1"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
@@ -50,14 +50,14 @@ type UserUseCase struct {
 	logger              *log.Helper
 	membershipUseCase   *MembershipUseCase
 	organizationUseCase *OrganizationUseCase
-	onboardingConfig    []*conf.OnboardingSpec
+	onboardingConfig    []*onboardingspec.OnboardingSpec
 }
 
 type NewUserUseCaseParams struct {
 	UserRepo            UserRepo
 	MembershipUseCase   *MembershipUseCase
 	OrganizationUseCase *OrganizationUseCase
-	OnboardingConfig    []*conf.OnboardingSpec
+	OnboardingConfig    []*onboardingspec.OnboardingSpec
 	Logger              log.Logger
 }
 
