@@ -120,7 +120,7 @@ controlplane:
   image:
     registry: ghcr.io
     repository: chainloop-dev/chainloop/control-plane
-    tag: "v0.94.2"
+    tag: "v0.94.3"
 
   ## @param controlplane.tlsConfig.secret.name name of a secret containing TLS certificate to be used by the controlplane grpc server.
   tlsConfig:
@@ -157,7 +157,7 @@ controlplane:
     image:
       registry: ghcr.io
       repository: chainloop-dev/chainloop/control-plane-migrations
-      tag: "v0.94.2"
+      tag: "v0.94.3"
     # Run the migration job forcing SSL, required in AWS RDS for PostgreSQL 15
     ssl: false
 
@@ -547,7 +547,7 @@ cas:
   image:
     registry: ghcr.io
     repository: chainloop-dev/chainloop/artifact-cas
-    tag: "v0.94.2"
+    tag: "v0.94.3"
 
   ## @param cas.tlsConfig.secret.name name of a secret containing TLS certificate to be used by the controlplane grpc server.
   tlsConfig:
