@@ -25,6 +25,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
 	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/signer/chainloop"
 	"github.com/chainloop-dev/chainloop/internal/attestation/signer/cosign"
@@ -40,7 +41,7 @@ type rendererSuite struct {
 
 	sv           signature.SignerVerifier
 	dsseVerifier *dsse.EnvelopeVerifier
-	cs           *v1.CraftingState
+	cs           *crafter.VersionedCraftingState
 }
 
 func TestSuite(t *testing.T) {
@@ -49,14 +50,17 @@ func TestSuite(t *testing.T) {
 
 func (s *rendererSuite) SetupTest() {
 	var err error
-	s.cs = &v1.CraftingState{
-		InputSchema: nil,
-		Attestation: &v1.Attestation{
-			Workflow: &v1.WorkflowMetadata{
-				Name: "my-wf",
+	s.cs = &crafter.VersionedCraftingState{
+		CraftingState: &v1.CraftingState{
+			InputSchema: nil,
+			Attestation: &v1.Attestation{
+				Workflow: &v1.WorkflowMetadata{
+					Name: "my-wf",
+				},
 			},
 		},
 	}
+
 	s.sv, _, err = signature.NewECDSASignerVerifier(elliptic.P256(), rand.Reader, crypto.SHA256)
 	s.Require().NoError(err)
 	s.dsseVerifier, err = dsse.NewEnvelopeVerifier(&sigdsee.VerifierAdapter{SignatureVerifier: s.sv})

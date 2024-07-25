@@ -107,7 +107,7 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 	// 1. Populate the materials that are defined in the contract schema
 	// 2. Populate the materials that are not defined in the contract schema, added inline in the attestation
 	// In order to avoid duplicates, we keep track of the visited materials
-	if err := populateMaterials(c.CraftingState, res); err != nil {
+	if err := populateMaterials(c.CraftingState.CraftingState, res); err != nil {
 		return nil, fmt.Errorf("populating materials: %w", err)
 	}
 

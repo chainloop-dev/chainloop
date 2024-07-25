@@ -14,7 +14,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.28.6
 	github.com/aws/aws-sdk-go-v2/service/sso v1.20.4
 	github.com/aws/smithy-go v1.20.2
-	github.com/cenkalti/backoff/v4 v4.2.1
+	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/coreos/go-oidc/v3 v3.10.0
 	github.com/docker/distribution v2.8.3+incompatible
 	github.com/docker/go-connections v0.4.0

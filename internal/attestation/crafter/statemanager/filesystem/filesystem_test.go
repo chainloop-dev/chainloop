@@ -21,6 +21,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
 	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/statemanager"
 	"github.com/stretchr/testify/require"
@@ -61,7 +62,7 @@ func (s *testSuite) TestNew() {
 func (s *testSuite) TestWrite() {
 	testCases := []struct {
 		name    string
-		state   *v1.CraftingState
+		state   *crafter.VersionedCraftingState
 		wantErr bool
 	}{
 		{
@@ -87,7 +88,7 @@ func (s *testSuite) TestWrite() {
 			}
 
 			s.NoError(err)
-			got := &v1.CraftingState{}
+			got := &crafter.VersionedCraftingState{CraftingState: &v1.CraftingState{}}
 			err = sm.Read(context.Background(), "", got)
 			s.NoError(err)
 			s.Equal(tc.state, got)
@@ -107,7 +108,7 @@ func (s *testSuite) TestRead() {
 	s.T().Run("no state found in path return NotFound error", func(t *testing.T) {
 		sm, err := New(s.statePath)
 		require.NoError(t, err)
-		err = sm.Read(context.Background(), "", &v1.CraftingState{})
+		err = sm.Read(context.Background(), "", &crafter.VersionedCraftingState{})
 		s.Error(err)
 		want := &statemanager.ErrNotFound{}
 		s.ErrorAs(err, &want)
@@ -116,7 +117,7 @@ func (s *testSuite) TestRead() {
 	s.T().Run("we can read the state", func(t *testing.T) {
 		sm, err := New("testdata/state.json")
 		require.NoError(t, err)
-		got := &v1.CraftingState{}
+		got := &crafter.VersionedCraftingState{CraftingState: &v1.CraftingState{}}
 		err = sm.Read(context.Background(), "", got)
 		require.NoError(s.T(), err)
 
@@ -173,14 +174,14 @@ func (s *testSuite) TestInitialized() {
 type testSuite struct {
 	suite.Suite
 	statePath    string
-	exampleState *v1.CraftingState
+	exampleState *crafter.VersionedCraftingState
 }
 
 func (s *testSuite) SetupTest() {
 	s.statePath = fmt.Sprintf("%s/attestation.json", s.T().TempDir())
-	s.exampleState = &v1.CraftingState{DryRun: true, Attestation: &v1.Attestation{
+	s.exampleState = &crafter.VersionedCraftingState{CraftingState: &v1.CraftingState{DryRun: true, Attestation: &v1.Attestation{
 		Annotations: map[string]string{"foo": "bar"},
-	}}
+	}}}
 }
 
 func TestSuite(t *testing.T) {

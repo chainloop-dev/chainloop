@@ -47,9 +47,9 @@ type StateManager interface {
 	// Check if the state is already initialized
 	Initialized(ctx context.Context, key string) (bool, error)
 	// Write the state to the manager backend
-	Write(ctx context.Context, key string, state *api.CraftingState) error
+	Write(ctx context.Context, key string, state *VersionedCraftingState) error
 	// Read the state from the manager backend
-	Read(ctx context.Context, key string, state *api.CraftingState) error
+	Read(ctx context.Context, key string, state *VersionedCraftingState) error
 	// Reset/Delete the state
 	Reset(ctx context.Context, key string) error
 	// String returns a string representation of the state manager
@@ -57,8 +57,8 @@ type StateManager interface {
 }
 
 type Crafter struct {
-	logger        *zerolog.Logger
-	CraftingState *api.CraftingState
+	Logger        *zerolog.Logger
+	CraftingState *VersionedCraftingState
 	Runner        SupportedRunner
 	workingDir    string
 	stateManager  StateManager
@@ -67,13 +67,19 @@ type Crafter struct {
 	validator       *protovalidate.Validator
 }
 
+type VersionedCraftingState struct {
+	*api.CraftingState
+	// This digest is used to verify the integrity of the state during updates
+	UpdateCheckSum string
+}
+
 var ErrAttestationStateNotLoaded = errors.New("crafting state not loaded")
 
 type NewOpt func(c *Crafter) error
 
 func WithLogger(l *zerolog.Logger) NewOpt {
 	return func(c *Crafter) error {
-		c.logger = l
+		c.Logger = l
 		return nil
 	}
 }
@@ -108,7 +114,7 @@ func NewCrafter(stateManager StateManager, opts ...NewOpt) (*Crafter, error) {
 
 	cw, _ := os.Getwd()
 	c := &Crafter{
-		logger:       &noopLogger,
+		Logger:       &noopLogger,
 		workingDir:   cw,
 		stateManager: stateManager,
 		// By default we authenticate with the current user's keychain (i.e ~/.docker/config.json)
@@ -225,11 +231,13 @@ func (c *Crafter) initCraftingStateFile(
 		return fmt.Errorf("initializing crafting state: %w", err)
 	}
 
-	if err := c.stateManager.Write(ctx, attestationID, state); err != nil {
+	// newState doesn't have a digest to check against
+	newState := &VersionedCraftingState{CraftingState: state}
+	if err := c.stateManager.Write(ctx, attestationID, newState); err != nil {
 		return fmt.Errorf("failed to persist crafting state: %w", err)
 	}
 
-	c.logger.Debug().Str("state", c.stateManager.Info(ctx, attestationID)).Msg("created state file")
+	c.Logger.Debug().Str("state", c.stateManager.Info(ctx, attestationID)).Msg("created state file")
 
 	return c.LoadCraftingState(ctx, attestationID)
 }
@@ -240,9 +248,9 @@ func (c *Crafter) Reset(ctx context.Context, stateID string) error {
 }
 
 func (c *Crafter) LoadCraftingState(ctx context.Context, attestationID string) error {
-	c.logger.Debug().Str("state", c.stateManager.Info(ctx, attestationID)).Msg("loading state")
+	c.Logger.Debug().Str("state", c.stateManager.Info(ctx, attestationID)).Msg("loading state")
 
-	c.CraftingState = &api.CraftingState{}
+	c.CraftingState = &VersionedCraftingState{CraftingState: &api.CraftingState{}}
 
 	if err := c.stateManager.Read(ctx, attestationID, c.CraftingState); err != nil {
 		return fmt.Errorf("failed to load crafting state: %w", err)
@@ -255,7 +263,7 @@ func (c *Crafter) LoadCraftingState(ctx context.Context, attestationID string) e
 	}
 
 	c.Runner = NewRunner(runnerType)
-	c.logger.Debug().Str("state", c.stateManager.Info(ctx, attestationID)).Msg("loaded state")
+	c.Logger.Debug().Str("state", c.stateManager.Info(ctx, attestationID)).Msg("loaded state")
 
 	return nil
 }
@@ -413,7 +421,7 @@ func (c *Crafter) ResolveEnvVars(ctx context.Context, attestationID string) erro
 	}
 
 	// Runner specific environment variables
-	c.logger.Debug().Str("runnerType", c.Runner.ID().String()).Msg("loading runner specific env variables")
+	c.Logger.Debug().Str("runnerType", c.Runner.ID().String()).Msg("loading runner specific env variables")
 	if !c.Runner.CheckEnv() {
 		errorStr := fmt.Sprintf("couldn't detect the environment %q. Is the crafting process happening in the target env?", c.Runner.ID().String())
 		return fmt.Errorf("%s - %w", errorStr, ErrRunnerContextNotFound)
@@ -424,7 +432,7 @@ func (c *Crafter) ResolveEnvVars(ctx context.Context, attestationID string) erro
 	for index, envVarDef := range c.Runner.ListEnvVars() {
 		varNames[index] = envVarDef.Name
 	}
-	c.logger.Debug().Str("runnerType", c.Runner.ID().String()).Strs("variables", varNames).Msg("list of env variables to automatically extract")
+	c.Logger.Debug().Str("runnerType", c.Runner.ID().String()).Strs("variables", varNames).Msg("list of env variables to automatically extract")
 
 	outputEnvVars, errors := c.Runner.ResolveEnvVars()
 	if len(errors) > 0 {
@@ -437,7 +445,7 @@ func (c *Crafter) ResolveEnvVars(ctx context.Context, attestationID string) erro
 
 	// User-defined environment vars
 	if len(c.CraftingState.InputSchema.EnvAllowList) > 0 {
-		c.logger.Debug().Strs("allowList", c.CraftingState.InputSchema.EnvAllowList).Msg("loading env variables")
+		c.Logger.Debug().Strs("allowList", c.CraftingState.InputSchema.EnvAllowList).Msg("loading env variables")
 	}
 	for _, want := range c.CraftingState.InputSchema.EnvAllowList {
 		val := os.Getenv(want)
@@ -501,7 +509,7 @@ func (c *Crafter) AddMaterialFromContract(ctx context.Context, attestationID, ke
 
 	// 2 - Check that it has not been set yet and warn of override
 	if _, found := c.CraftingState.Attestation.Materials[key]; found {
-		c.logger.Info().Str("key", key).Str("value", value).Msg("material already set, overriding it")
+		c.Logger.Info().Str("key", key).Str("value", value).Msg("material already set, overriding it")
 	}
 
 	// 3 - Craft resulting material
@@ -518,7 +526,7 @@ func (c *Crafter) AddMaterialContactFreeAutomatic(ctx context.Context, attestati
 			return kind, nil
 		}
 
-		c.logger.Debug().Err(err).Str("kind", kind.String()).Msg("failed to add material")
+		c.Logger.Debug().Err(err).Str("kind", kind.String()).Msg("failed to add material")
 
 		// Handle base error for upload and craft errors except the opening file error
 		var policyError *policies.PolicyError
@@ -534,7 +542,7 @@ func (c *Crafter) AddMaterialContactFreeAutomatic(ctx context.Context, attestati
 // addMaterials adds the incoming material m to the crafting state
 func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_Material, attestationID, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string) error {
 	// 3- Craft resulting material
-	mt, err := materials.Craft(context.Background(), m, value, casBackend, c.ociRegistryAuth, c.logger)
+	mt, err := materials.Craft(context.Background(), m, value, casBackend, c.ociRegistryAuth, c.Logger)
 	if err != nil {
 		return err
 	}
@@ -551,7 +559,7 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 			mt.Annotations[kr] = vr
 		} else {
 			// NOTE: we do not allow overriding values that come from the contract
-			c.logger.Info().Str("key", m.Name).Str("annotation", kr).Msg("annotation can't be changed, skipping")
+			c.Logger.Info().Str("key", m.Name).Str("annotation", kr).Msg("annotation can't be changed, skipping")
 		}
 	}
 
@@ -573,13 +581,13 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 	}
 
 	// Validate policies
-	pv := policies.NewPolicyVerifier(c.CraftingState.InputSchema, c.logger)
+	pv := policies.NewPolicyVerifier(c.CraftingState.InputSchema, c.Logger)
 	policyResults, err := pv.VerifyMaterial(ctx, mt, value)
 	if err != nil {
 		return fmt.Errorf("error applying policies to material: %w", err)
 	}
 	// log policy violations
-	policies.LogPolicyViolations(policyResults, c.logger)
+	policies.LogPolicyViolations(policyResults, c.Logger)
 	// store policy results
 	c.CraftingState.Attestation.PolicyEvaluations = append(c.CraftingState.Attestation.PolicyEvaluations, policyResults...)
 
@@ -594,7 +602,7 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 		return fmt.Errorf("failed to persist crafting state: %w", err)
 	}
 
-	c.logger.Debug().Str("key", m.Name).Msg("added to state")
+	c.Logger.Debug().Str("key", m.Name).Msg("added to state")
 	return nil
 }
 
