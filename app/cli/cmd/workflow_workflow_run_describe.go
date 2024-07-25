@@ -21,9 +21,12 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/internal/attestation/renderer"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/muesli/reflow/wrap"
@@ -193,6 +196,12 @@ func predicateV1Table(att *action.WorkflowRunAttestationItem) {
 					mt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", a.Name, a.Value)})
 				}
 			}
+			evs := att.PolicyEvaluations[m.Name].GetEvaluations()
+			if len(evs) > 0 {
+				mt.AppendSeparator()
+				mt.AppendRow(table.Row{"Policies"})
+				policiesTable(evs, mt)
+			}
 			mt.AppendSeparator()
 		}
 
@@ -210,6 +219,30 @@ func predicateV1Table(att *action.WorkflowRunAttestationItem) {
 			mt.AppendRow(table.Row{e.Name, e.Value})
 		}
 		mt.Render()
+	}
+
+	evs := att.PolicyEvaluations[renderer.AttPolicyEvaluation].GetEvaluations()
+	if len(evs) > 0 {
+		mt := newTableWriter()
+		mt.SetTitle("Attestation policies")
+		policiesTable(evs, mt)
+		mt.Render()
+	}
+}
+
+func policiesTable(evs []*v1.PolicyEvaluation, mt table.Writer) {
+	for _, ev := range evs {
+		mt.AppendSeparator()
+		mt.AppendRow(table.Row{"Policy", ev.Name})
+		var violations []string
+		if len(ev.Violations) > 0 {
+			for _, v := range ev.Violations {
+				violations = append(violations, v.Message)
+			}
+		} else {
+			violations = append(violations, "None")
+		}
+		mt.AppendRow(table.Row{"Violations", fmt.Sprint(strings.Join(violations, "\n"))})
 	}
 }
 
