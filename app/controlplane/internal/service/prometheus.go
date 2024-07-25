@@ -101,6 +101,7 @@ func (p *PrometheusService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Encode and write the metrics to the response
 	contentType := expfmt.Negotiate(r.Header)
 	w.Header().Set("Content-Type", string(contentType))
+	w.WriteHeader(http.StatusOK)
 
 	enc := expfmt.NewEncoder(w, contentType)
 	for _, mf := range gather {
