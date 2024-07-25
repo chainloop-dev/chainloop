@@ -20,10 +20,10 @@ import (
 	"testing"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
+	config "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	integrationMocks "github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1/mocks"
 	"github.com/google/uuid"
@@ -246,7 +246,7 @@ func (s *AuthOnboardingTestSuite) SetupTest() {
 	t := s.T()
 	ctx := context.Background()
 
-	s.TestingUseCases = testhelpers.NewTestingUseCases(t, testhelpers.WithOnboardingConfiguration([]*conf.OnboardingSpec{
+	s.TestingUseCases = testhelpers.NewTestingUseCases(t, testhelpers.WithOnboardingConfiguration([]*config.OnboardingSpec{
 		{
 			Name: "non-existing-org",
 			Role: v1.MembershipRole_MEMBERSHIP_ROLE_ORG_VIEWER,

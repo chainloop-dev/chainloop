@@ -10,6 +10,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
@@ -26,7 +27,7 @@ import (
 // Injectors from wire.go:
 
 // wireTestData init testing data
-func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, readerWriter credentials.ReaderWriter, builder *robotaccount.Builder, auth *conf.Auth, bootstrap *conf.Bootstrap, arg []*conf.OnboardingSpec, availablePlugins sdk.AvailablePlugins, providers backend.Providers) (*TestingUseCases, func(), error) {
+func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, readerWriter credentials.ReaderWriter, builder *robotaccount.Builder, auth *conf.Auth, bootstrap *conf.Bootstrap, arg []*v1.OnboardingSpec, availablePlugins sdk.AvailablePlugins, providers backend.Providers) (*TestingUseCases, func(), error) {
 	confData := NewConfData(testDatabase, t)
 	newConfig := NewDataConfig(confData)
 	dataData, cleanup, err := data.NewData(newConfig, logger)

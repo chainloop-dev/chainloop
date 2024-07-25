@@ -26,6 +26,7 @@ import (
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	config "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	robotaccount "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
@@ -36,7 +37,7 @@ import (
 )
 
 // wireTestData init testing data
-func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWriter, *robotaccount.Builder, *conf.Auth, *conf.Bootstrap, []*conf.OnboardingSpec, sdk.AvailablePlugins, backends.Providers) (*TestingUseCases, func(), error) {
+func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWriter, *robotaccount.Builder, *conf.Auth, *conf.Bootstrap, []*config.OnboardingSpec, sdk.AvailablePlugins, backends.Providers) (*TestingUseCases, func(), error) {
 	panic(
 		wire.Build(
 			data.ProviderSet,

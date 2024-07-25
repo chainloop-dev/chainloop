@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	config "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
 	// Required for the database waitFor strategy
 	_ "github.com/lib/pq"
 
@@ -87,7 +88,7 @@ type newTestingOpts struct {
 	credsReaderWriter       credentials.ReaderWriter
 	integrations            sdk.AvailablePlugins
 	providers               backends.Providers
-	onboardingConfiguration []*conf.OnboardingSpec
+	onboardingConfiguration []*config.OnboardingSpec
 }
 
 type NewTestingUCOpt func(*newTestingOpts)
@@ -108,7 +109,7 @@ func WithRegisteredIntegration(i sdk.FanOut) NewTestingUCOpt {
 	}
 }
 
-func WithOnboardingConfiguration(conf []*conf.OnboardingSpec) NewTestingUCOpt {
+func WithOnboardingConfiguration(conf []*config.OnboardingSpec) NewTestingUCOpt {
 	return func(tu *newTestingOpts) {
 		tu.onboardingConfiguration = conf
 	}
