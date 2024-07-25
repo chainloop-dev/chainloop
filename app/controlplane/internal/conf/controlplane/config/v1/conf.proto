@@ -61,7 +61,7 @@ message Bootstrap {
   }
 
   // Configuration for onboarding users in organizations with specific roles
-  repeated config.v1.OnboardingSpec onboarding = 10;
+  repeated OnboardingSpec onboarding = 10;
 
   // Configuration to enable Prometheus integration for the specified organizations
   repeated PrometheusIntegrationSpec prometheus_integration = 11;
