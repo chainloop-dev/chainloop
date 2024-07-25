@@ -23,7 +23,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
-	onboardingspec "github.com/chainloop-dev/chainloop/pkg/onboarding_spec/api/onboarding_spec/v1"
+	onboardingspec "github.com/chainloop-dev/chainloop/app/controlplane/pkg/onboarding_spec/api/onboarding_spec/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"

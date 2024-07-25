@@ -23,7 +23,7 @@ import (
 	"testing"
 	"time"
 
-	onboardingspec "github.com/chainloop-dev/chainloop/pkg/onboarding_spec/api/onboarding_spec/v1"
+	onboardingspec "github.com/chainloop-dev/chainloop/app/controlplane/pkg/onboarding_spec/api/onboarding_spec/v1"
 	// Required for the database waitFor strategy
 	_ "github.com/lib/pq"
 
