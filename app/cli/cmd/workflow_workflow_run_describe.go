@@ -234,13 +234,15 @@ func policiesTable(evs []*v1.PolicyEvaluation, mt table.Writer) {
 	for _, ev := range evs {
 		mt.AppendSeparator()
 		mt.AppendRow(table.Row{"Policy", ev.Name})
+		var violations []string
 		if len(ev.Violations) > 0 {
-			var violations []string
 			for _, v := range ev.Violations {
 				violations = append(violations, v.Message)
 			}
-			mt.AppendRow(table.Row{"Violations", fmt.Sprint(strings.Join(violations, "\n"))})
+		} else {
+			violations = append(violations, "None")
 		}
+		mt.AppendRow(table.Row{"Violations", fmt.Sprint(strings.Join(violations, "\n"))})
 	}
 }
 
