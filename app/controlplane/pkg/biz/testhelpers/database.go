@@ -62,6 +62,7 @@ type TestingUseCases struct {
 	WorkflowContract       *biz.WorkflowContractUseCase
 	Workflow               *biz.WorkflowUseCase
 	WorkflowRun            *biz.WorkflowRunUseCase
+	Prometheus             *biz.PrometheusUseCase
 	User                   *biz.UserUseCase
 	RobotAccount           *biz.RobotAccountUseCase
 	RegisteredIntegrations sdk.AvailablePlugins
@@ -194,6 +195,10 @@ func NewConfData(db *TestDatabase, t *testing.T) *conf.Data {
 	return &conf.Data{
 		Database: &conf.Data_Database{Driver: "pgx", Source: db.ConnectionString(t)},
 	}
+}
+
+func NewPromSpec() []*conf.PrometheusIntegrationSpec {
+	return []*conf.PrometheusIntegrationSpec{}
 }
 
 func NewDataConfig(in *conf.Data) *data.NewConfig {
