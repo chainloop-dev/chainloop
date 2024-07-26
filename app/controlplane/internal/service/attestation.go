@@ -53,6 +53,7 @@ type AttestationService struct {
 	casMappingUseCase       *biz.CASMappingUseCase
 	referrerUseCase         *biz.ReferrerUseCase
 	orgUseCase              *biz.OrganizationUseCase
+	prometheusUseCase       *biz.PrometheusUseCase
 }
 
 type NewAttestationServiceOpts struct {
@@ -68,6 +69,7 @@ type NewAttestationServiceOpts struct {
 	CASMappingUseCase  *biz.CASMappingUseCase
 	ReferrerUC         *biz.ReferrerUseCase
 	OrgUC              *biz.OrganizationUseCase
+	PromUC             *biz.PrometheusUseCase
 	Opts               []NewOpt
 }
 
@@ -86,6 +88,7 @@ func NewAttestationService(opts *NewAttestationServiceOpts) *AttestationService 
 		casMappingUseCase:       opts.CASMappingUseCase,
 		referrerUseCase:         opts.ReferrerUC,
 		orgUseCase:              opts.OrgUC,
+		prometheusUseCase:       opts.PromUC,
 	}
 }
 
@@ -183,6 +186,11 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
 
+	currentOrg := usercontext.CurrentOrg(ctx)
+	if currentOrg == nil {
+		return nil, errors.NotFound("not found", "organization not found")
+	}
+
 	// This will make sure the provided workflowRunID belongs to the org encoded in the robot account
 	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, robotAccount.WorkflowID, "", req.WorkflowRunId)
 	if err != nil {
@@ -276,6 +284,13 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
+	// Record the attestation in the prometheus registry
+	if s.prometheusUseCase.OrganizationHasRegistry(currentOrg.Name) {
+		if err := s.prometheusUseCase.ObserveAttestation(currentOrg.Name, wf.Name, biz.WorkflowRunSuccess, wRun.CreatedAt); err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+	}
+
 	return &cpAPI.AttestationServiceStoreResponse{
 		Result: &cpAPI.AttestationServiceStoreResponse_Result{Digest: digest},
 	}, nil
@@ -287,8 +302,14 @@ func (s *AttestationService) Cancel(ctx context.Context, req *cpAPI.AttestationS
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
 
+	currentOrg := usercontext.CurrentOrg(ctx)
+	if currentOrg == nil {
+		return nil, errors.NotFound("not found", "organization not found")
+	}
+
 	// This will make sure the provided workflowRunID belongs to the org encoded in the robot account
-	if _, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, robotAccount.WorkflowID, "", req.WorkflowRunId); err != nil {
+	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, robotAccount.WorkflowID, "", req.WorkflowRunId)
+	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
@@ -304,6 +325,20 @@ func (s *AttestationService) Cancel(ctx context.Context, req *cpAPI.AttestationS
 
 	if err := s.wrUseCase.MarkAsFinished(ctx, req.WorkflowRunId, status, req.Reason); err != nil {
 		return nil, err
+	}
+
+	wRun, err := s.wrUseCase.GetByIDInOrgOrPublic(ctx, robotAccount.OrgID, req.WorkflowRunId)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	} else if wRun == nil {
+		return nil, errors.NotFound("not found", "workflow run not found")
+	}
+
+	// Record the attestation in the prometheus registry
+	if s.prometheusUseCase.OrganizationHasRegistry(currentOrg.Name) {
+		if err := s.prometheusUseCase.ObserveAttestation(currentOrg.Name, wf.Name, status, wRun.CreatedAt); err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
 	}
 
 	return &cpAPI.AttestationServiceCancelResponse{}, nil

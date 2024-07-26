@@ -16,9 +16,12 @@
 package biz
 
 import (
+	"time"
+
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/metrics/prometheus"
+	chainloopprometheus "github.com/chainloop-dev/chainloop/app/controlplane/pkg/metrics/prometheus"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/metrics/prometheus/registry"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/go-kratos/kratos/v2/log"
 )
@@ -30,7 +33,7 @@ type PrometheusUseCase struct {
 	orgUseCase        *OrganizationUseCase
 	orgMetricsUseCase *OrgMetricsUseCase
 	// Other
-	registryManager *prometheus.ChainloopRegistryManager
+	registryManager *chainloopprometheus.ChainloopRegistryManager
 }
 
 // NewPrometheusUseCase creates a new PrometheusUseCase
@@ -48,15 +51,31 @@ func NewPrometheusUseCase(conf []*conf.PrometheusIntegrationSpec, orgUseCase *Or
 }
 
 // loadPrometheusRegistries loads the prometheus registries from the configuration
-func loadPrometheusRegistries(conf []*conf.PrometheusIntegrationSpec, useCase *OrgMetricsUseCase, logger log.Logger) *prometheus.ChainloopRegistryManager {
-	rm := prometheus.NewChainloopRegistryManager()
+func loadPrometheusRegistries(conf []*conf.PrometheusIntegrationSpec, useCase *OrgMetricsUseCase, logger log.Logger) *chainloopprometheus.ChainloopRegistryManager {
+	manager := chainloopprometheus.NewChainloopRegistryManager()
 
 	for _, spec := range conf {
 		reg := registry.NewPrometheusRegistry(spec.GetOrgName(), useCase, logger)
-		rm.AddRegistry(reg)
+		manager.AddRegistry(reg)
 	}
 
-	return rm
+	return manager
+}
+
+// OrganizationHasRegistry checks if an organization has a registry
+func (uc *PrometheusUseCase) ObserveAttestation(orgName, wfName string, status WorkflowRunStatus, startTime *time.Time) error {
+	if orgName == "" || wfName == "" || status == "" || startTime == nil {
+		return NewErrValidationStr("orgName, wfName, and state must be non-empty")
+	}
+
+	reg := uc.GetRegistryByOrganizationName(orgName)
+	if reg == nil {
+		return NewErrNotFound("registry not found for organization")
+	}
+
+	duration := time.Since(*startTime).Seconds()
+	reg.WorkflowRunDurationSeconds.With(prometheus.Labels{"org": orgName, "workflow": wfName, "status": string(status)}).Observe(duration)
+	return nil
 }
 
 // OrganizationHasRegistry checks if an organization has a registry

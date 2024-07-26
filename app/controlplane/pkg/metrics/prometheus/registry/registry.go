@@ -28,19 +28,34 @@ type PrometheusRegistry struct {
 	*prometheus.Registry
 	Name               string
 	chainloopCollector *collector.ChainloopCollector
+
+	// metrics
+	WorkflowRunDurationSeconds *prometheus.HistogramVec
 }
+
+var workflowRunDurationSeconds = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+	Name: "chainloop_wf_run_duration_seconds",
+	Help: "Duration of a workflow runs in seconds.",
+	// TODO: tweak the buckets
+	Buckets: prometheus.DefBuckets,
+}, []string{"org", "workflow", "status"})
 
 // NewPrometheusRegistry creates a new Prometheus registry with a given ID and collector
 func NewPrometheusRegistry(name string, gatherer collector.ChainloopMetricsGatherer, logger log.Logger) *PrometheusRegistry {
 	reg := prometheus.NewRegistry()
 
+	// Collector of metrics stored in DB
 	bcc := collector.NewChainloopCollector(name, gatherer, logger)
 
 	reg.MustRegister(bcc)
 
+	// Custom metrics that come from the business logic
+	reg.MustRegister(workflowRunDurationSeconds)
+
 	return &PrometheusRegistry{
-		Name:               name,
-		Registry:           reg,
-		chainloopCollector: bcc,
+		Name:                       name,
+		Registry:                   reg,
+		chainloopCollector:         bcc,
+		WorkflowRunDurationSeconds: workflowRunDurationSeconds,
 	}
 }
