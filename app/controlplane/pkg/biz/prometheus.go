@@ -17,6 +17,7 @@ package biz
 
 import (
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/metrics/prometheus"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/metrics/prometheus/registry"
 
 	"github.com/go-kratos/kratos/v2/log"
@@ -29,7 +30,7 @@ type PrometheusUseCase struct {
 	orgUseCase        *OrganizationUseCase
 	orgMetricsUseCase *OrgMetricsUseCase
 	// Other
-	registryManager *registry.ChainloopRegistryManager
+	registryManager *prometheus.ChainloopRegistryManager
 }
 
 // NewPrometheusUseCase creates a new PrometheusUseCase
@@ -47,8 +48,8 @@ func NewPrometheusUseCase(conf []*conf.PrometheusIntegrationSpec, orgUseCase *Or
 }
 
 // loadPrometheusRegistries loads the prometheus registries from the configuration
-func loadPrometheusRegistries(conf []*conf.PrometheusIntegrationSpec, useCase *OrgMetricsUseCase, logger log.Logger) *registry.ChainloopRegistryManager {
-	rm := registry.NewChainloopRegistryManager()
+func loadPrometheusRegistries(conf []*conf.PrometheusIntegrationSpec, useCase *OrgMetricsUseCase, logger log.Logger) *prometheus.ChainloopRegistryManager {
+	rm := prometheus.NewChainloopRegistryManager()
 
 	for _, spec := range conf {
 		reg := registry.NewPrometheusRegistry(spec.GetOrgName(), useCase, logger)
