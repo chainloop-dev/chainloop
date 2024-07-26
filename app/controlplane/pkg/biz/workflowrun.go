@@ -131,7 +131,6 @@ func (uc *WorkflowRunExpirerUseCase) Run(ctx context.Context, opts *WorkflowRunE
 
 				if err := uc.ExpirationSweep(ctx, threshold); err != nil {
 					uc.logger.Error(err)
-					continue
 				}
 			}
 
@@ -144,7 +143,7 @@ func (uc *WorkflowRunExpirerUseCase) Run(ctx context.Context, opts *WorkflowRunE
 
 // ExpirationSweep looks for runs older than the provider time and marks them as expired
 func (uc *WorkflowRunExpirerUseCase) ExpirationSweep(ctx context.Context, olderThan time.Time) error {
-	uc.logger.Infof("expiration sweep - runs older than %s", olderThan.Format(time.RFC822))
+	uc.logger.Debugf("expiration sweep - runs older than %s", olderThan.Format(time.RFC822))
 
 	toExpire, err := uc.wfRunRepo.ListNotFinishedOlderThan(ctx, olderThan)
 	if err != nil {
@@ -161,13 +160,14 @@ func (uc *WorkflowRunExpirerUseCase) ExpirationSweep(ctx context.Context, olderT
 			return fmt.Errorf("finding org: %w", err)
 		}
 
-		// Record the attestation in the prometheus registry
+		// Record the attestation in the prometheus registry if applicable
 		if uc.prometheusUseCase.OrganizationHasRegistry(org.Name) {
 			if err := uc.prometheusUseCase.ObserveAttestation(org.Name, r.Workflow.Name, WorkflowRunExpired, r.CreatedAt); err != nil {
 				return fmt.Errorf("observing attestation: %w", err)
 			}
 		}
-		uc.logger.Infof("run with id=%q createdAt=%q expired!\n", r.ID, r.CreatedAt.Format(time.RFC822))
+
+		uc.logger.Debugf("run with id=%q createdAt=%q expired!\n", r.ID, r.CreatedAt.Format(time.RFC822))
 	}
 
 	return nil
