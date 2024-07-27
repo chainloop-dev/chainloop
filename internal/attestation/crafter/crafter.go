@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/bufbuild/protovalidate-go"
+	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	api "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/materials"
@@ -529,8 +530,14 @@ func (c *Crafter) AddMaterialContactFreeAutomatic(ctx context.Context, attestati
 		c.Logger.Debug().Err(err).Str("kind", kind.String()).Msg("failed to add material")
 
 		// Handle base error for upload and craft errors except the opening file error
+		// TODO: have an error to detect validation error instead
 		var policyError *policies.PolicyError
 		if errors.Is(err, materials.ErrBaseUploadAndCraft) || errors.As(err, &policyError) {
+			return kind, err
+		}
+
+		// This is a final error, we detected the kind
+		if v1.IsAttestationStateErrorConflict(err) {
 			return kind, err
 		}
 	}
