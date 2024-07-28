@@ -233,6 +233,7 @@ func (att *Attestation) Container(
 	ctr := dag.
 		Container().
 		From(fmt.Sprintf("ghcr.io/chainloop-dev/chainloop/cli:%s", chainloopVersion)).
+		WithEntrypoint([]string{"/chainloop"}). // Be explicit to prepare for possible API change
 		WithEnvVariable("CHAINLOOP_DAGGER_CLIENT", chainloopVersion).WithUser("")
 
 	if att.Token != nil {
