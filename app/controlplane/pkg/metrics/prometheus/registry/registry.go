@@ -36,9 +36,9 @@ type PrometheusRegistry struct {
 var workflowRunDurationSeconds = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 	Name: "chainloop_wf_run_duration_seconds",
 	Help: "Duration of a workflow runs in seconds.",
-	// TODO: tweak the buckets
-	Buckets: prometheus.DefBuckets,
-}, []string{"org", "workflow", "status"})
+	// 10 seconds to 20 minutes
+	Buckets: []float64{10, 30, 60, 90, 120, 180, 240, 300, 600, 900, 1200},
+}, []string{"org", "workflow", "status", "runner"})
 
 // NewPrometheusRegistry creates a new Prometheus registry with a given ID and collector
 func NewPrometheusRegistry(name string, gatherer collector.ChainloopMetricsGatherer, logger log.Logger) *PrometheusRegistry {

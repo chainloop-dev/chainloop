@@ -162,7 +162,7 @@ func (uc *WorkflowRunExpirerUseCase) ExpirationSweep(ctx context.Context, olderT
 
 		// Record the attestation in the prometheus registry if applicable
 		if uc.prometheusUseCase.OrganizationHasRegistry(org.Name) {
-			if err := uc.prometheusUseCase.ObserveAttestation(org.Name, r.Workflow.Name, WorkflowRunExpired, r.CreatedAt); err != nil {
+			if err := uc.prometheusUseCase.ObserveAttestation(org.Name, r.Workflow.Name, WorkflowRunExpired, r.RunnerType, r.CreatedAt); err != nil {
 				return fmt.Errorf("observing attestation: %w", err)
 			}
 		}

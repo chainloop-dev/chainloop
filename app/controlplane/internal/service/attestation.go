@@ -286,7 +286,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 
 	// Record the attestation in the prometheus registry
 	if s.prometheusUseCase.OrganizationHasRegistry(currentOrg.Name) {
-		if err := s.prometheusUseCase.ObserveAttestation(currentOrg.Name, wf.Name, biz.WorkflowRunSuccess, wRun.CreatedAt); err != nil {
+		if err := s.prometheusUseCase.ObserveAttestation(currentOrg.Name, wf.Name, biz.WorkflowRunSuccess, wRun.RunnerType, wRun.CreatedAt); err != nil {
 			return nil, handleUseCaseErr(err, s.log)
 		}
 	}
@@ -336,7 +336,7 @@ func (s *AttestationService) Cancel(ctx context.Context, req *cpAPI.AttestationS
 
 	// Record the attestation in the prometheus registry
 	if s.prometheusUseCase.OrganizationHasRegistry(currentOrg.Name) {
-		if err := s.prometheusUseCase.ObserveAttestation(currentOrg.Name, wf.Name, status, wRun.CreatedAt); err != nil {
+		if err := s.prometheusUseCase.ObserveAttestation(currentOrg.Name, wf.Name, status, wRun.RunnerType, wRun.CreatedAt); err != nil {
 			return nil, handleUseCaseErr(err, s.log)
 		}
 	}

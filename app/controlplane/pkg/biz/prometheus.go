@@ -63,7 +63,7 @@ func loadPrometheusRegistries(conf []*conf.PrometheusIntegrationSpec, useCase *O
 }
 
 // OrganizationHasRegistry checks if an organization has a registry
-func (uc *PrometheusUseCase) ObserveAttestation(orgName, wfName string, status WorkflowRunStatus, startTime *time.Time) error {
+func (uc *PrometheusUseCase) ObserveAttestation(orgName, wfName string, status WorkflowRunStatus, runnerType string, startTime *time.Time) error {
 	if orgName == "" || wfName == "" || status == "" || startTime == nil {
 		return NewErrValidationStr("orgName, wfName, and state must be non-empty")
 	}
@@ -74,7 +74,7 @@ func (uc *PrometheusUseCase) ObserveAttestation(orgName, wfName string, status W
 	}
 
 	duration := time.Since(*startTime).Seconds()
-	reg.WorkflowRunDurationSeconds.With(prometheus.Labels{"org": orgName, "workflow": wfName, "status": string(status)}).Observe(duration)
+	reg.WorkflowRunDurationSeconds.With(prometheus.Labels{"org": orgName, "workflow": wfName, "status": string(status), "runner": runnerType}).Observe(duration)
 	return nil
 }
 
