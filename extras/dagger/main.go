@@ -234,7 +234,8 @@ func (att *Attestation) Container(
 		Container().
 		From(fmt.Sprintf("ghcr.io/chainloop-dev/chainloop/cli:%s", chainloopVersion)).
 		WithEntrypoint([]string{"/chainloop"}). // Be explicit to prepare for possible API change
-		WithEnvVariable("CHAINLOOP_DAGGER_CLIENT", chainloopVersion).WithUser("")
+		WithEnvVariable("CHAINLOOP_DAGGER_CLIENT", chainloopVersion).
+		WithUser("") // Our images come with pre-defined user set, so we need to reset it
 
 	if att.Token != nil {
 		ctr = ctr.WithSecretVariable("CHAINLOOP_TOKEN", att.Token)
