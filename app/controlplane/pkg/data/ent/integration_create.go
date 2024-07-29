@@ -188,7 +188,7 @@ func (ic *IntegrationCreate) check() error {
 	if _, ok := ic.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Integration.created_at"`)}
 	}
-	if _, ok := ic.mutation.OrganizationID(); !ok {
+	if len(ic.mutation.OrganizationIDs()) == 0 {
 		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "Integration.organization"`)}
 	}
 	return nil

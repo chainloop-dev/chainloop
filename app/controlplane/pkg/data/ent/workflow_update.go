@@ -371,10 +371,10 @@ func (wu *WorkflowUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (wu *WorkflowUpdate) check() error {
-	if _, ok := wu.mutation.OrganizationID(); wu.mutation.OrganizationCleared() && !ok {
+	if wu.mutation.OrganizationCleared() && len(wu.mutation.OrganizationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Workflow.organization"`)
 	}
-	if _, ok := wu.mutation.ContractID(); wu.mutation.ContractCleared() && !ok {
+	if wu.mutation.ContractCleared() && len(wu.mutation.ContractIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Workflow.contract"`)
 	}
 	return nil
@@ -1039,10 +1039,10 @@ func (wuo *WorkflowUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (wuo *WorkflowUpdateOne) check() error {
-	if _, ok := wuo.mutation.OrganizationID(); wuo.mutation.OrganizationCleared() && !ok {
+	if wuo.mutation.OrganizationCleared() && len(wuo.mutation.OrganizationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Workflow.organization"`)
 	}
-	if _, ok := wuo.mutation.ContractID(); wuo.mutation.ContractCleared() && !ok {
+	if wuo.mutation.ContractCleared() && len(wuo.mutation.ContractIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Workflow.contract"`)
 	}
 	return nil

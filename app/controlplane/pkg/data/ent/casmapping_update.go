@@ -62,10 +62,10 @@ func (cmu *CASMappingUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (cmu *CASMappingUpdate) check() error {
-	if _, ok := cmu.mutation.CasBackendID(); cmu.mutation.CasBackendCleared() && !ok {
+	if cmu.mutation.CasBackendCleared() && len(cmu.mutation.CasBackendIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "CASMapping.cas_backend"`)
 	}
-	if _, ok := cmu.mutation.OrganizationID(); cmu.mutation.OrganizationCleared() && !ok {
+	if cmu.mutation.OrganizationCleared() && len(cmu.mutation.OrganizationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "CASMapping.organization"`)
 	}
 	return nil
@@ -158,10 +158,10 @@ func (cmuo *CASMappingUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (cmuo *CASMappingUpdateOne) check() error {
-	if _, ok := cmuo.mutation.CasBackendID(); cmuo.mutation.CasBackendCleared() && !ok {
+	if cmuo.mutation.CasBackendCleared() && len(cmuo.mutation.CasBackendIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "CASMapping.cas_backend"`)
 	}
-	if _, ok := cmuo.mutation.OrganizationID(); cmuo.mutation.OrganizationCleared() && !ok {
+	if cmuo.mutation.OrganizationCleared() && len(cmuo.mutation.OrganizationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "CASMapping.organization"`)
 	}
 	return nil

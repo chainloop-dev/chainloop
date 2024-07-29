@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -111,7 +112,7 @@ func (oiq *OrgInvitationQuery) QuerySender() *UserQuery {
 // First returns the first OrgInvitation entity from the query.
 // Returns a *NotFoundError when no OrgInvitation was found.
 func (oiq *OrgInvitationQuery) First(ctx context.Context) (*OrgInvitation, error) {
-	nodes, err := oiq.Limit(1).All(setContextOp(ctx, oiq.ctx, "First"))
+	nodes, err := oiq.Limit(1).All(setContextOp(ctx, oiq.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +135,7 @@ func (oiq *OrgInvitationQuery) FirstX(ctx context.Context) *OrgInvitation {
 // Returns a *NotFoundError when no OrgInvitation ID was found.
 func (oiq *OrgInvitationQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = oiq.Limit(1).IDs(setContextOp(ctx, oiq.ctx, "FirstID")); err != nil {
+	if ids, err = oiq.Limit(1).IDs(setContextOp(ctx, oiq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -157,7 +158,7 @@ func (oiq *OrgInvitationQuery) FirstIDX(ctx context.Context) uuid.UUID {
 // Returns a *NotSingularError when more than one OrgInvitation entity is found.
 // Returns a *NotFoundError when no OrgInvitation entities are found.
 func (oiq *OrgInvitationQuery) Only(ctx context.Context) (*OrgInvitation, error) {
-	nodes, err := oiq.Limit(2).All(setContextOp(ctx, oiq.ctx, "Only"))
+	nodes, err := oiq.Limit(2).All(setContextOp(ctx, oiq.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +186,7 @@ func (oiq *OrgInvitationQuery) OnlyX(ctx context.Context) *OrgInvitation {
 // Returns a *NotFoundError when no entities are found.
 func (oiq *OrgInvitationQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = oiq.Limit(2).IDs(setContextOp(ctx, oiq.ctx, "OnlyID")); err != nil {
+	if ids, err = oiq.Limit(2).IDs(setContextOp(ctx, oiq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -210,7 +211,7 @@ func (oiq *OrgInvitationQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 
 // All executes the query and returns a list of OrgInvitations.
 func (oiq *OrgInvitationQuery) All(ctx context.Context) ([]*OrgInvitation, error) {
-	ctx = setContextOp(ctx, oiq.ctx, "All")
+	ctx = setContextOp(ctx, oiq.ctx, ent.OpQueryAll)
 	if err := oiq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
@@ -232,7 +233,7 @@ func (oiq *OrgInvitationQuery) IDs(ctx context.Context) (ids []uuid.UUID, err er
 	if oiq.ctx.Unique == nil && oiq.path != nil {
 		oiq.Unique(true)
 	}
-	ctx = setContextOp(ctx, oiq.ctx, "IDs")
+	ctx = setContextOp(ctx, oiq.ctx, ent.OpQueryIDs)
 	if err = oiq.Select(orginvitation.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
@@ -250,7 +251,7 @@ func (oiq *OrgInvitationQuery) IDsX(ctx context.Context) []uuid.UUID {
 
 // Count returns the count of the given query.
 func (oiq *OrgInvitationQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, oiq.ctx, "Count")
+	ctx = setContextOp(ctx, oiq.ctx, ent.OpQueryCount)
 	if err := oiq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
@@ -268,7 +269,7 @@ func (oiq *OrgInvitationQuery) CountX(ctx context.Context) int {
 
 // Exist returns true if the query has elements in the graph.
 func (oiq *OrgInvitationQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, oiq.ctx, "Exist")
+	ctx = setContextOp(ctx, oiq.ctx, ent.OpQueryExist)
 	switch _, err := oiq.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
@@ -647,7 +648,7 @@ func (oigb *OrgInvitationGroupBy) Aggregate(fns ...AggregateFunc) *OrgInvitation
 
 // Scan applies the selector query and scans the result into the given value.
 func (oigb *OrgInvitationGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, oigb.build.ctx, "GroupBy")
+	ctx = setContextOp(ctx, oigb.build.ctx, ent.OpQueryGroupBy)
 	if err := oigb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
@@ -695,7 +696,7 @@ func (ois *OrgInvitationSelect) Aggregate(fns ...AggregateFunc) *OrgInvitationSe
 
 // Scan applies the selector query and scans the result into the given value.
 func (ois *OrgInvitationSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, ois.ctx, "Select")
+	ctx = setContextOp(ctx, ois.ctx, ent.OpQuerySelect)
 	if err := ois.prepareQuery(ctx); err != nil {
 		return err
 	}

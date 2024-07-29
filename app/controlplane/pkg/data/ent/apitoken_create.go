@@ -165,7 +165,7 @@ func (atc *APITokenCreate) check() error {
 	if _, ok := atc.mutation.OrganizationID(); !ok {
 		return &ValidationError{Name: "organization_id", err: errors.New(`ent: missing required field "APIToken.organization_id"`)}
 	}
-	if _, ok := atc.mutation.OrganizationID(); !ok {
+	if len(atc.mutation.OrganizationIDs()) == 0 {
 		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "APIToken.organization"`)}
 	}
 	return nil

@@ -297,10 +297,10 @@ func (wc *WorkflowCreate) check() error {
 	if _, ok := wc.mutation.OrganizationID(); !ok {
 		return &ValidationError{Name: "organization_id", err: errors.New(`ent: missing required field "Workflow.organization_id"`)}
 	}
-	if _, ok := wc.mutation.OrganizationID(); !ok {
+	if len(wc.mutation.OrganizationIDs()) == 0 {
 		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "Workflow.organization"`)}
 	}
-	if _, ok := wc.mutation.ContractID(); !ok {
+	if len(wc.mutation.ContractIDs()) == 0 {
 		return &ValidationError{Name: "contract", err: errors.New(`ent: missing required edge "Workflow.contract"`)}
 	}
 	return nil

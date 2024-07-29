@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -113,7 +114,7 @@ func (cbq *CASBackendQuery) QueryWorkflowRun() *WorkflowRunQuery {
 // First returns the first CASBackend entity from the query.
 // Returns a *NotFoundError when no CASBackend was found.
 func (cbq *CASBackendQuery) First(ctx context.Context) (*CASBackend, error) {
-	nodes, err := cbq.Limit(1).All(setContextOp(ctx, cbq.ctx, "First"))
+	nodes, err := cbq.Limit(1).All(setContextOp(ctx, cbq.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +137,7 @@ func (cbq *CASBackendQuery) FirstX(ctx context.Context) *CASBackend {
 // Returns a *NotFoundError when no CASBackend ID was found.
 func (cbq *CASBackendQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = cbq.Limit(1).IDs(setContextOp(ctx, cbq.ctx, "FirstID")); err != nil {
+	if ids, err = cbq.Limit(1).IDs(setContextOp(ctx, cbq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -159,7 +160,7 @@ func (cbq *CASBackendQuery) FirstIDX(ctx context.Context) uuid.UUID {
 // Returns a *NotSingularError when more than one CASBackend entity is found.
 // Returns a *NotFoundError when no CASBackend entities are found.
 func (cbq *CASBackendQuery) Only(ctx context.Context) (*CASBackend, error) {
-	nodes, err := cbq.Limit(2).All(setContextOp(ctx, cbq.ctx, "Only"))
+	nodes, err := cbq.Limit(2).All(setContextOp(ctx, cbq.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +188,7 @@ func (cbq *CASBackendQuery) OnlyX(ctx context.Context) *CASBackend {
 // Returns a *NotFoundError when no entities are found.
 func (cbq *CASBackendQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = cbq.Limit(2).IDs(setContextOp(ctx, cbq.ctx, "OnlyID")); err != nil {
+	if ids, err = cbq.Limit(2).IDs(setContextOp(ctx, cbq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -212,7 +213,7 @@ func (cbq *CASBackendQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 
 // All executes the query and returns a list of CASBackends.
 func (cbq *CASBackendQuery) All(ctx context.Context) ([]*CASBackend, error) {
-	ctx = setContextOp(ctx, cbq.ctx, "All")
+	ctx = setContextOp(ctx, cbq.ctx, ent.OpQueryAll)
 	if err := cbq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
@@ -234,7 +235,7 @@ func (cbq *CASBackendQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error
 	if cbq.ctx.Unique == nil && cbq.path != nil {
 		cbq.Unique(true)
 	}
-	ctx = setContextOp(ctx, cbq.ctx, "IDs")
+	ctx = setContextOp(ctx, cbq.ctx, ent.OpQueryIDs)
 	if err = cbq.Select(casbackend.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
@@ -252,7 +253,7 @@ func (cbq *CASBackendQuery) IDsX(ctx context.Context) []uuid.UUID {
 
 // Count returns the count of the given query.
 func (cbq *CASBackendQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, cbq.ctx, "Count")
+	ctx = setContextOp(ctx, cbq.ctx, ent.OpQueryCount)
 	if err := cbq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
@@ -270,7 +271,7 @@ func (cbq *CASBackendQuery) CountX(ctx context.Context) int {
 
 // Exist returns true if the query has elements in the graph.
 func (cbq *CASBackendQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, cbq.ctx, "Exist")
+	ctx = setContextOp(ctx, cbq.ctx, ent.OpQueryExist)
 	switch _, err := cbq.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
@@ -686,7 +687,7 @@ func (cbgb *CASBackendGroupBy) Aggregate(fns ...AggregateFunc) *CASBackendGroupB
 
 // Scan applies the selector query and scans the result into the given value.
 func (cbgb *CASBackendGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, cbgb.build.ctx, "GroupBy")
+	ctx = setContextOp(ctx, cbgb.build.ctx, ent.OpQueryGroupBy)
 	if err := cbgb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
@@ -734,7 +735,7 @@ func (cbs *CASBackendSelect) Aggregate(fns ...AggregateFunc) *CASBackendSelect {
 
 // Scan applies the selector query and scans the result into the given value.
 func (cbs *CASBackendSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, cbs.ctx, "Select")
+	ctx = setContextOp(ctx, cbs.ctx, ent.OpQuerySelect)
 	if err := cbs.prepareQuery(ctx); err != nil {
 		return err
 	}

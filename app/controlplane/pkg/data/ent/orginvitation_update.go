@@ -182,10 +182,10 @@ func (oiu *OrgInvitationUpdate) check() error {
 			return &ValidationError{Name: "role", err: fmt.Errorf(`ent: validator failed for field "OrgInvitation.role": %w`, err)}
 		}
 	}
-	if _, ok := oiu.mutation.OrganizationID(); oiu.mutation.OrganizationCleared() && !ok {
+	if oiu.mutation.OrganizationCleared() && len(oiu.mutation.OrganizationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "OrgInvitation.organization"`)
 	}
-	if _, ok := oiu.mutation.SenderID(); oiu.mutation.SenderCleared() && !ok {
+	if oiu.mutation.SenderCleared() && len(oiu.mutation.SenderIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "OrgInvitation.sender"`)
 	}
 	return nil
@@ -465,10 +465,10 @@ func (oiuo *OrgInvitationUpdateOne) check() error {
 			return &ValidationError{Name: "role", err: fmt.Errorf(`ent: validator failed for field "OrgInvitation.role": %w`, err)}
 		}
 	}
-	if _, ok := oiuo.mutation.OrganizationID(); oiuo.mutation.OrganizationCleared() && !ok {
+	if oiuo.mutation.OrganizationCleared() && len(oiuo.mutation.OrganizationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "OrgInvitation.organization"`)
 	}
-	if _, ok := oiuo.mutation.SenderID(); oiuo.mutation.SenderCleared() && !ok {
+	if oiuo.mutation.SenderCleared() && len(oiuo.mutation.SenderIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "OrgInvitation.sender"`)
 	}
 	return nil

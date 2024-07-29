@@ -295,7 +295,7 @@ func (cbc *CASBackendCreate) check() error {
 	if _, ok := cbc.mutation.MaxBlobSizeBytes(); !ok {
 		return &ValidationError{Name: "max_blob_size_bytes", err: errors.New(`ent: missing required field "CASBackend.max_blob_size_bytes"`)}
 	}
-	if _, ok := cbc.mutation.OrganizationID(); !ok {
+	if len(cbc.mutation.OrganizationIDs()) == 0 {
 		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "CASBackend.organization"`)}
 	}
 	return nil
