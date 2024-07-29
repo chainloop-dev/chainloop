@@ -34,7 +34,7 @@ type PrometheusRegistry struct {
 }
 
 var workflowRunDurationSeconds = prometheus.NewHistogramVec(prometheus.HistogramOpts{
-	Name: "chainloop_wf_run_duration_seconds",
+	Name: "chainloop_workflow_run_duration_seconds",
 	Help: "Duration of a workflow runs in seconds.",
 	// 10 seconds to 20 minutes
 	Buckets: []float64{10, 30, 60, 90, 120, 180, 240, 300, 600, 900, 1200},
