@@ -513,8 +513,9 @@ chainloop config save \
 | `controlplane.replicaCount`                    | Number of replicas                                                                              | `2`               |
 | `controlplane.image.registry`                  | Image registry                                                                                  | `REGISTRY_NAME`   |
 | `controlplane.image.repository`                | Image repository                                                                                | `REPOSITORY_NAME` |
-| `controlplane.containerPorts.http`             | controlplane HTTP container port                                                                | `80`              |
-| `controlplane.containerPorts.https`            | controlplane HTTPS container port                                                               | `443`             |
+| `controlplane.containerPorts.http`             | controlplane HTTP container port                                                                | `8000`            |
+| `controlplane.containerPorts.grpc`             | controlplane gRPC container port                                                                | `9000`            |
+| `controlplane.containerPorts.metrics`          | controlplane prometheus metrics container port                                                  | `5000`            |
 | `controlplane.tlsConfig.secret.name`           | name of a secret containing TLS certificate to be used by the controlplane grpc server.         | `""`              |
 | `controlplane.pluginsDir`                      | Directory where to look for plugins                                                             | `/plugins`        |
 | `controlplane.referrerSharedIndex`             | Configure the shared, public index API endpoint that can be used to discover metadata referrers |                   |

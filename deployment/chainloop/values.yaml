@@ -128,11 +128,13 @@ controlplane:
 
 
   ## @param controlplane.containerPorts.http controlplane HTTP container port
-  ## @param controlplane.containerPorts.https controlplane HTTPS container port
+  ## @param controlplane.containerPorts.grpc controlplane gRPC container port
+  ## @param controlplane.containerPorts.metrics controlplane prometheus metrics container port
   ##
   containerPorts:
-    http: 80
-    https: 443
+    http: 8000
+    grpc: 9000
+    metrics: 5000
 
   ## @param controlplane.tlsConfig.secret.name name of a secret containing TLS certificate to be used by the controlplane grpc server.
   tlsConfig:
