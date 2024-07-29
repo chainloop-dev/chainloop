@@ -105,13 +105,6 @@ jobs:
           CHAINLOOP_SIGNING_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
           CHAINLOOP_SIGNING_KEY: ${{ secrets.COSIGN_KEY }}
 
-      - uses: bufbuild/buf-setup-action@v1
-      - name: Buf push
-        uses: bufbuild/buf-push-action@v1
-        with:
-          input: "app/controlplane/api"
-          buf_token: ${{ secrets.buf_api_token }}
-
       - name: Bump Chart Version
         run: .github/workflows/utils/bump-chart-version.sh deployment/chainloop ${{ github.ref_name }}
 
