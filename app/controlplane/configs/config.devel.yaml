@@ -56,7 +56,6 @@ data:
 auth:
   oidc:
     domain: "http://0.0.0.0:5556/dex"
-    redirect_url_scheme: "http"
     client_id: "chainloop-dev"
     client_secret: "ZXhhbXBsZS1hcHAtc2VjcmV0"
 

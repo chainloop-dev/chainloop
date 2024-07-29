@@ -22,11 +22,7 @@ Compatibility with the following Ingress Controllers has been verified, other co
 Deploy Chainloop in [development mode](#development) by running
 
 ```console
-helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
-    --set development=true \
-    --set controlplane.auth.oidc.url=[OIDC URL] \
-    --set controlplane.auth.oidc.clientID=[clientID] \
-    --set controlplane.auth.oidc.clientSecret=[clientSecret]
+helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop --set development=true
 ```
 
 > **CAUTION**: Do not use this mode in production, for that, use the [standard mode](#standard-default) instead.
@@ -152,25 +148,16 @@ The Helm Chart in this mode includes
 - Chainloop [Artifact proxy](https://github.com/chainloop-dev/chainloop/tree/main/app/artifact-cas)
 - A PostgreSQL dependency enabled by default
 - **A pre-configured Hashicorp Vault instance running in development mode (unsealed, in-memory, insecure)**
+- **A pre-configured Dex OIDC instance. You can find pre-setup usernames in values.yaml file**
 
 > **CAUTION**: Do not use this mode in production, for that, use the [standard mode](#standard-default) instead.
-
-During installation, you'll need to provide
-
-- Open ID Connect Identity Provider (IDp) settings i.e [Auth0 settings](https://auth0.com/docs/get-started/applications/application-settings#basic-information)
-- ~~Connection settings for a secrets storage backend, either [Hashicorp Vault](https://www.vaultproject.io/) or [AWS Secrets Manager](https://aws.amazon.com/secrets-manager)~~
-- ~~ECDSA (ES512) key-pair used for Controlplane to CAS Authentication~~
 
 #### Installation examples for development mode
 
 Deploy by leveraging built-in Vault and PostgreSQL instances
 
 ```console
-helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop \
-    --set development=true \
-    --set controlplane.auth.oidc.url=[OIDC URL] \
-    --set controlplane.auth.oidc.clientID=[clientID] \
-    --set controlplane.auth.oidc.clientSecret=[clientSecret]
+helm install [RELEASE_NAME] oci://ghcr.io/chainloop-dev/charts/chainloop --set development=true
 ```
 
 ## AirGap and Relocation Support
