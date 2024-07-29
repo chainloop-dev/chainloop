@@ -9,9 +9,13 @@ import (
 	"time"
 )
 
-var (
-	chainloopVersion = "v0.90.1"
+const (
+	chainloopVersion = "v0.94.3"
 )
+
+var execOpts = dagger.ContainerWithExecOpts{
+	UseEntrypoint: true,
+}
 
 type Chainloop struct{}
 
@@ -59,7 +63,7 @@ func (m *Chainloop) Init(
 	}
 	// Append the contract revision to the args if provided
 	args := []string{
-		"attestation", "init", "--remote-state", "-o", "json", "--workflow-name", workflowName,
+		"attestation", "init", "--remote-state", "-o", "json", "--name", workflowName,
 	}
 
 	if contractRevision != "" {
@@ -70,7 +74,7 @@ func (m *Chainloop) Init(
 
 	info, err := att.
 		Container(0).
-		WithExec(args).
+		WithExec(args, execOpts).
 		Stdout(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("attestation init: %w", err)
@@ -107,10 +111,9 @@ func (att *Attestation) Status(ctx context.Context) (string, error) {
 		Container(0).
 		WithExec([]string{
 			"attestation", "status",
-			"--remote-state",
 			"--attestation-id", att.AttestationID,
 			"--full",
-		}).
+		}, execOpts).
 		Stdout(ctx)
 }
 
@@ -158,7 +161,6 @@ func (att *Attestation) AddRawEvidence(
 ) (*Attestation, error) {
 	args := []string{
 		"attestation", "add",
-		"--remote-state",
 		"--attestation-id", att.AttestationID,
 		"--value", value,
 	}
@@ -171,7 +173,7 @@ func (att *Attestation) AddRawEvidence(
 
 	_, err := att.
 		Container(0).
-		WithExec(args).
+		WithExec(args, execOpts).
 		Stdout(ctx)
 	return att, err
 }
@@ -196,7 +198,6 @@ func (att *Attestation) AddFileEvidence(
 
 	args := []string{
 		"attestation", "add",
-		"--remote-state",
 		"--attestation-id", att.AttestationID,
 		"--value", mountPath,
 	}
@@ -211,7 +212,7 @@ func (att *Attestation) AddFileEvidence(
 		Container(0).
 		// Preserve the filename inside the container
 		WithFile(mountPath, path).
-		WithExec(args).
+		WithExec(args, execOpts).
 		Sync(ctx)
 
 	return att, err
@@ -233,7 +234,8 @@ func (att *Attestation) Container(
 		Container().
 		From(fmt.Sprintf("ghcr.io/chainloop-dev/chainloop/cli:%s", chainloopVersion)).
 		WithEntrypoint([]string{"/chainloop"}). // Be explicit to prepare for possible API change
-		WithEnvVariable("CHAINLOOP_DAGGER_CLIENT", chainloopVersion)
+		WithEnvVariable("CHAINLOOP_DAGGER_CLIENT", chainloopVersion).
+		WithUser("") // Our images come with pre-defined user set, so we need to reset it
 
 	if att.Token != nil {
 		ctr = ctr.WithSecretVariable("CHAINLOOP_TOKEN", att.Token)
@@ -274,7 +276,6 @@ func (att *Attestation) Push(
 	container := att.Container(0)
 	args := []string{
 		"attestation", "push",
-		"--remote-state",
 		"--attestation-id", att.AttestationID,
 	}
 
@@ -286,7 +287,7 @@ func (att *Attestation) Push(
 		container = container.WithSecretVariable("CHAINLOOP_SIGNING_PASSWORD", passphrase)
 	}
 
-	return container.WithExec(args).Stdout(ctx)
+	return container.WithExec(args, execOpts).Stdout(ctx)
 }
 
 // Mark the attestation as failed
@@ -321,7 +322,6 @@ func (att *Attestation) reset(ctx context.Context,
 ) error {
 	args := []string{
 		"attestation", "reset",
-		"--remote-state",
 		"--attestation-id", att.AttestationID,
 	}
 
@@ -335,7 +335,7 @@ func (att *Attestation) reset(ctx context.Context,
 
 	_, err := att.
 		Container(0).
-		WithExec(args).
+		WithExec(args, execOpts).
 		Sync(ctx)
 	return err
 }
