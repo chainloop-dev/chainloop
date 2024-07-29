@@ -16,7 +16,7 @@ apiVersion: workflowcontract.chainloop.dev/v1
 kind: Policy
 metadata:
   name: cyclonedx-required-packages
-  description: Checks that SBOM has been generated recently
+  description: Checks that SBOM has a maximum of 30 days old
   annotations:
     category: sbom
 spec:

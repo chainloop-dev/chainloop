@@ -16,7 +16,7 @@ apiVersion: workflowcontract.chainloop.dev/v1
 kind: Policy
 metadata:
   name: cyclonedx-banned-packages
-  description: Checks that there are no banned packages in the SBOM
+  description: Checks that there are no banned packages in the SBOM.
   annotations:
     category: sbom
 spec:
@@ -26,6 +26,7 @@ spec:
     
     import rego.v1
     
+    # It supports packages with version. When specified, requires it to be semver, and would also fail when version is lower
     banned_packages := ["log4j@2.14.1"]
 
     # deny all versions
