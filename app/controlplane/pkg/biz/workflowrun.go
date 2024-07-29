@@ -102,7 +102,6 @@ func NewWorkflowRunUseCase(wfrRepo WorkflowRunRepo, wfRepo WorkflowRepo, logger 
 type WorkflowRunExpirerUseCase struct {
 	wfRunRepo         WorkflowRunRepo
 	prometheusUseCase *PrometheusUseCase
-	orgUsecase        *OrganizationUseCase
 	logger            *log.Helper
 }
 
@@ -112,9 +111,9 @@ type WorkflowRunExpirerOpts struct {
 	CheckInterval    time.Duration
 }
 
-func NewWorkflowRunExpirerUseCase(wfrRepo WorkflowRunRepo, pUC *PrometheusUseCase, ouc *OrganizationUseCase, logger log.Logger) *WorkflowRunExpirerUseCase {
+func NewWorkflowRunExpirerUseCase(wfrRepo WorkflowRunRepo, pUC *PrometheusUseCase, logger log.Logger) *WorkflowRunExpirerUseCase {
 	logger = log.With(logger, "component", "biz.WorkflowRunExpirer")
-	return &WorkflowRunExpirerUseCase{wfrRepo, pUC, ouc, log.NewHelper(logger)}
+	return &WorkflowRunExpirerUseCase{wfrRepo, pUC, log.NewHelper(logger)}
 }
 
 func (uc *WorkflowRunExpirerUseCase) Run(ctx context.Context, opts *WorkflowRunExpirerOpts) {
@@ -155,18 +154,8 @@ func (uc *WorkflowRunExpirerUseCase) ExpirationSweep(ctx context.Context, olderT
 			return err
 		}
 
-		org, err := uc.orgUsecase.FindByID(ctx, r.Workflow.OrgID.String())
-		if err != nil {
-			return fmt.Errorf("finding org: %w", err)
-		}
-
 		// Record the attestation in the prometheus registry if applicable
-		if uc.prometheusUseCase.OrganizationHasRegistry(org.Name) {
-			if err := uc.prometheusUseCase.ObserveAttestation(org.Name, r.Workflow.Name, WorkflowRunExpired, r.RunnerType, r.CreatedAt); err != nil {
-				return fmt.Errorf("observing attestation: %w", err)
-			}
-		}
-
+		_ = uc.prometheusUseCase.ObserveAttestationIfNeeded(ctx, r, WorkflowRunExpired)
 		uc.logger.Debugf("run with id=%q createdAt=%q expired!\n", r.ID, r.CreatedAt.Format(time.RFC822))
 	}
 

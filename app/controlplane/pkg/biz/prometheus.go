@@ -16,6 +16,7 @@
 package biz
 
 import (
+	"context"
 	"time"
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
@@ -62,8 +63,34 @@ func loadPrometheusRegistries(conf []*conf.PrometheusIntegrationSpec, useCase *O
 	return manager
 }
 
+// Record an attestation if the run exists and there is a registry for the organization
+func (uc *PrometheusUseCase) ObserveAttestationIfNeeded(ctx context.Context, run *WorkflowRun, status WorkflowRunStatus) bool {
+	if run == nil || run.Workflow == nil {
+		return false
+	}
+
+	workflow := run.Workflow
+	orgID := workflow.OrgID
+
+	org, err := uc.orgUseCase.FindByID(ctx, orgID.String())
+	if err != nil {
+		return false
+	}
+
+	if !uc.OrganizationHasRegistry(org.Name) {
+		return false
+	}
+
+	err = uc.observeAttestation(org.Name, workflow.Name, status, run.RunnerType, run.CreatedAt)
+	if err != nil {
+		return false
+	}
+
+	return true
+}
+
 // OrganizationHasRegistry checks if an organization has a registry
-func (uc *PrometheusUseCase) ObserveAttestation(orgName, wfName string, status WorkflowRunStatus, runnerType string, startTime *time.Time) error {
+func (uc *PrometheusUseCase) observeAttestation(orgName, wfName string, status WorkflowRunStatus, runnerType string, startTime *time.Time) error {
 	if orgName == "" || wfName == "" || status == "" || startTime == nil {
 		return NewErrValidationStr("orgName, wfName, and state must be non-empty")
 	}

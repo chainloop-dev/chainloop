@@ -186,11 +186,6 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
 
-	currentOrg := usercontext.CurrentOrg(ctx)
-	if currentOrg == nil {
-		return nil, errors.NotFound("not found", "organization not found")
-	}
-
 	// This will make sure the provided workflowRunID belongs to the org encoded in the robot account
 	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, robotAccount.WorkflowID, "", req.WorkflowRunId)
 	if err != nil {
@@ -285,11 +280,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	}
 
 	// Record the attestation in the prometheus registry
-	if s.prometheusUseCase.OrganizationHasRegistry(currentOrg.Name) {
-		if err := s.prometheusUseCase.ObserveAttestation(currentOrg.Name, wf.Name, biz.WorkflowRunSuccess, wRun.RunnerType, wRun.CreatedAt); err != nil {
-			return nil, handleUseCaseErr(err, s.log)
-		}
-	}
+	_ = s.prometheusUseCase.ObserveAttestationIfNeeded(ctx, wRun, biz.WorkflowRunSuccess)
 
 	return &cpAPI.AttestationServiceStoreResponse{
 		Result: &cpAPI.AttestationServiceStoreResponse_Result{Digest: digest},
@@ -302,14 +293,8 @@ func (s *AttestationService) Cancel(ctx context.Context, req *cpAPI.AttestationS
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
 
-	currentOrg := usercontext.CurrentOrg(ctx)
-	if currentOrg == nil {
-		return nil, errors.NotFound("not found", "organization not found")
-	}
-
 	// This will make sure the provided workflowRunID belongs to the org encoded in the robot account
-	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, robotAccount.WorkflowID, "", req.WorkflowRunId)
-	if err != nil {
+	if _, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, robotAccount.WorkflowID, "", req.WorkflowRunId); err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
@@ -335,11 +320,7 @@ func (s *AttestationService) Cancel(ctx context.Context, req *cpAPI.AttestationS
 	}
 
 	// Record the attestation in the prometheus registry
-	if s.prometheusUseCase.OrganizationHasRegistry(currentOrg.Name) {
-		if err := s.prometheusUseCase.ObserveAttestation(currentOrg.Name, wf.Name, status, wRun.RunnerType, wRun.CreatedAt); err != nil {
-			return nil, handleUseCaseErr(err, s.log)
-		}
-	}
+	_ = s.prometheusUseCase.ObserveAttestationIfNeeded(ctx, wRun, status)
 
 	return &cpAPI.AttestationServiceCancelResponse{}, nil
 }
