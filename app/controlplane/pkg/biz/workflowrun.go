@@ -99,10 +99,14 @@ func NewWorkflowRunUseCase(wfrRepo WorkflowRunRepo, wfRepo WorkflowRepo, logger 
 	}, nil
 }
 
+type PromObservable interface {
+	ObserveAttestationIfNeeded(ctx context.Context, run *WorkflowRun, status WorkflowRunStatus) bool
+}
+
 type WorkflowRunExpirerUseCase struct {
-	wfRunRepo         WorkflowRunRepo
-	prometheusUseCase *PrometheusUseCase
-	logger            *log.Helper
+	wfRunRepo      WorkflowRunRepo
+	PromObservable PromObservable
+	logger         *log.Helper
 }
 
 type WorkflowRunExpirerOpts struct {
@@ -111,9 +115,9 @@ type WorkflowRunExpirerOpts struct {
 	CheckInterval    time.Duration
 }
 
-func NewWorkflowRunExpirerUseCase(wfrRepo WorkflowRunRepo, pUC *PrometheusUseCase, logger log.Logger) *WorkflowRunExpirerUseCase {
+func NewWorkflowRunExpirerUseCase(wfrRepo WorkflowRunRepo, po PromObservable, logger log.Logger) *WorkflowRunExpirerUseCase {
 	logger = log.With(logger, "component", "biz.WorkflowRunExpirer")
-	return &WorkflowRunExpirerUseCase{wfrRepo, pUC, log.NewHelper(logger)}
+	return &WorkflowRunExpirerUseCase{wfrRepo, po, log.NewHelper(logger)}
 }
 
 func (uc *WorkflowRunExpirerUseCase) Run(ctx context.Context, opts *WorkflowRunExpirerOpts) {
@@ -155,7 +159,7 @@ func (uc *WorkflowRunExpirerUseCase) ExpirationSweep(ctx context.Context, olderT
 		}
 
 		// Record the attestation in the prometheus registry if applicable
-		_ = uc.prometheusUseCase.ObserveAttestationIfNeeded(ctx, r, WorkflowRunExpired)
+		_ = uc.PromObservable.ObserveAttestationIfNeeded(ctx, r, WorkflowRunExpired)
 		uc.logger.Debugf("run with id=%q createdAt=%q expired!\n", r.ID, r.CreatedAt.Format(time.RFC822))
 	}
 
