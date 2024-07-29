@@ -60,6 +60,14 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		cleanup()
 		return nil, nil, err
 	}
+	v := NewPromSpec()
+	orgMetricsRepo := data.NewOrgMetricsRepo(dataData, logger)
+	orgMetricsUseCase, err := biz.NewOrgMetricsUseCase(orgMetricsRepo, organizationRepo, workflowUseCase, logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	prometheusUseCase := biz.NewPrometheusUseCase(v, organizationUseCase, orgMetricsUseCase, logger)
 	userRepo := data.NewUserRepo(dataData, logger)
 	newUserUseCaseParams := &biz.NewUserUseCaseParams{
 		UserRepo:            userRepo,
@@ -123,6 +131,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		WorkflowContract:       workflowContractUseCase,
 		Workflow:               workflowUseCase,
 		WorkflowRun:            workflowRunUseCase,
+		Prometheus:             prometheusUseCase,
 		User:                   userUseCase,
 		RobotAccount:           robotAccountUseCase,
 		RegisteredIntegrations: availablePlugins,

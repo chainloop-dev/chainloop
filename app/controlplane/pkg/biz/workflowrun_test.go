@@ -35,12 +35,13 @@ import (
 
 type workflowrunExpirerTestSuite struct {
 	suite.Suite
-	useCase   *biz.WorkflowRunExpirerUseCase
-	repo      *repoM.WorkflowRunRepo
-	ctx       context.Context
-	err       error
-	toExpire  []*biz.WorkflowRun
-	threshold time.Time
+	useCase        *biz.WorkflowRunExpirerUseCase
+	repo           *repoM.WorkflowRunRepo
+	prometheusRepo *repoM.PromObservable
+	ctx            context.Context
+	err            error
+	toExpire       []*biz.WorkflowRun
+	threshold      time.Time
 }
 
 type workflowrunTestSuite struct {
@@ -62,7 +63,8 @@ func (s *workflowrunExpirerTestSuite) SetupTest() {
 	now := time.Now()
 
 	s.repo = repoM.NewWorkflowRunRepo(s.T())
-	s.useCase = biz.NewWorkflowRunExpirerUseCase(s.repo, log.NewStdLogger(io.Discard))
+	s.prometheusRepo = repoM.NewPromObservable(s.T())
+	s.useCase = biz.NewWorkflowRunExpirerUseCase(s.repo, s.prometheusRepo, log.NewStdLogger(io.Discard))
 	s.ctx = context.TODO()
 	s.err = errors.New("an error")
 	s.threshold = now
@@ -94,6 +96,9 @@ func (s *workflowrunExpirerTestSuite) TestSweepExpireOK() {
 
 	s.repo.On("Expire", s.ctx, s.toExpire[0].ID).Return(nil)
 	s.repo.On("Expire", s.ctx, s.toExpire[1].ID).Return(nil)
+	s.prometheusRepo.On("ObserveAttestationIfNeeded", s.ctx, s.toExpire[0], biz.WorkflowRunExpired).Return(true)
+	s.prometheusRepo.On("ObserveAttestationIfNeeded", s.ctx, s.toExpire[1], biz.WorkflowRunExpired).Return(true)
+
 	err := s.useCase.ExpirationSweep(s.ctx, s.threshold)
 	assert.NoError(err)
 }
