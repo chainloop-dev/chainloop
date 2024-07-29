@@ -82,11 +82,7 @@ func (uc *PrometheusUseCase) ObserveAttestationIfNeeded(ctx context.Context, run
 	}
 
 	err = uc.observeAttestation(org.Name, workflow.Name, status, run.RunnerType, run.CreatedAt)
-	if err != nil {
-		return false
-	}
-
-	return true
+	return err == nil
 }
 
 // OrganizationHasRegistry checks if an organization has a registry
