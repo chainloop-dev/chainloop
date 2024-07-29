@@ -199,10 +199,10 @@ func (oic *OrgInvitationCreate) check() error {
 			return &ValidationError{Name: "role", err: fmt.Errorf(`ent: validator failed for field "OrgInvitation.role": %w`, err)}
 		}
 	}
-	if _, ok := oic.mutation.OrganizationID(); !ok {
+	if len(oic.mutation.OrganizationIDs()) == 0 {
 		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "OrgInvitation.organization"`)}
 	}
-	if _, ok := oic.mutation.SenderID(); !ok {
+	if len(oic.mutation.SenderIDs()) == 0 {
 		return &ValidationError{Name: "sender", err: errors.New(`ent: missing required edge "OrgInvitation.sender"`)}
 	}
 	return nil

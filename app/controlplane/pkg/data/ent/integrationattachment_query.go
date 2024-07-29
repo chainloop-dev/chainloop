@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -112,7 +113,7 @@ func (iaq *IntegrationAttachmentQuery) QueryWorkflow() *WorkflowQuery {
 // First returns the first IntegrationAttachment entity from the query.
 // Returns a *NotFoundError when no IntegrationAttachment was found.
 func (iaq *IntegrationAttachmentQuery) First(ctx context.Context) (*IntegrationAttachment, error) {
-	nodes, err := iaq.Limit(1).All(setContextOp(ctx, iaq.ctx, "First"))
+	nodes, err := iaq.Limit(1).All(setContextOp(ctx, iaq.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +136,7 @@ func (iaq *IntegrationAttachmentQuery) FirstX(ctx context.Context) *IntegrationA
 // Returns a *NotFoundError when no IntegrationAttachment ID was found.
 func (iaq *IntegrationAttachmentQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = iaq.Limit(1).IDs(setContextOp(ctx, iaq.ctx, "FirstID")); err != nil {
+	if ids, err = iaq.Limit(1).IDs(setContextOp(ctx, iaq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -158,7 +159,7 @@ func (iaq *IntegrationAttachmentQuery) FirstIDX(ctx context.Context) uuid.UUID {
 // Returns a *NotSingularError when more than one IntegrationAttachment entity is found.
 // Returns a *NotFoundError when no IntegrationAttachment entities are found.
 func (iaq *IntegrationAttachmentQuery) Only(ctx context.Context) (*IntegrationAttachment, error) {
-	nodes, err := iaq.Limit(2).All(setContextOp(ctx, iaq.ctx, "Only"))
+	nodes, err := iaq.Limit(2).All(setContextOp(ctx, iaq.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +187,7 @@ func (iaq *IntegrationAttachmentQuery) OnlyX(ctx context.Context) *IntegrationAt
 // Returns a *NotFoundError when no entities are found.
 func (iaq *IntegrationAttachmentQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = iaq.Limit(2).IDs(setContextOp(ctx, iaq.ctx, "OnlyID")); err != nil {
+	if ids, err = iaq.Limit(2).IDs(setContextOp(ctx, iaq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -211,7 +212,7 @@ func (iaq *IntegrationAttachmentQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 
 // All executes the query and returns a list of IntegrationAttachments.
 func (iaq *IntegrationAttachmentQuery) All(ctx context.Context) ([]*IntegrationAttachment, error) {
-	ctx = setContextOp(ctx, iaq.ctx, "All")
+	ctx = setContextOp(ctx, iaq.ctx, ent.OpQueryAll)
 	if err := iaq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
@@ -233,7 +234,7 @@ func (iaq *IntegrationAttachmentQuery) IDs(ctx context.Context) (ids []uuid.UUID
 	if iaq.ctx.Unique == nil && iaq.path != nil {
 		iaq.Unique(true)
 	}
-	ctx = setContextOp(ctx, iaq.ctx, "IDs")
+	ctx = setContextOp(ctx, iaq.ctx, ent.OpQueryIDs)
 	if err = iaq.Select(integrationattachment.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
@@ -251,7 +252,7 @@ func (iaq *IntegrationAttachmentQuery) IDsX(ctx context.Context) []uuid.UUID {
 
 // Count returns the count of the given query.
 func (iaq *IntegrationAttachmentQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, iaq.ctx, "Count")
+	ctx = setContextOp(ctx, iaq.ctx, ent.OpQueryCount)
 	if err := iaq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
@@ -269,7 +270,7 @@ func (iaq *IntegrationAttachmentQuery) CountX(ctx context.Context) int {
 
 // Exist returns true if the query has elements in the graph.
 func (iaq *IntegrationAttachmentQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, iaq.ctx, "Exist")
+	ctx = setContextOp(ctx, iaq.ctx, ent.OpQueryExist)
 	switch _, err := iaq.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
@@ -655,7 +656,7 @@ func (iagb *IntegrationAttachmentGroupBy) Aggregate(fns ...AggregateFunc) *Integ
 
 // Scan applies the selector query and scans the result into the given value.
 func (iagb *IntegrationAttachmentGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, iagb.build.ctx, "GroupBy")
+	ctx = setContextOp(ctx, iagb.build.ctx, ent.OpQueryGroupBy)
 	if err := iagb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
@@ -703,7 +704,7 @@ func (ias *IntegrationAttachmentSelect) Aggregate(fns ...AggregateFunc) *Integra
 
 // Scan applies the selector query and scans the result into the given value.
 func (ias *IntegrationAttachmentSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, ias.ctx, "Select")
+	ctx = setContextOp(ctx, ias.ctx, ent.OpQuerySelect)
 	if err := ias.prepareQuery(ctx); err != nil {
 		return err
 	}

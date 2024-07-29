@@ -132,10 +132,10 @@ func (iau *IntegrationAttachmentUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (iau *IntegrationAttachmentUpdate) check() error {
-	if _, ok := iau.mutation.IntegrationID(); iau.mutation.IntegrationCleared() && !ok {
+	if iau.mutation.IntegrationCleared() && len(iau.mutation.IntegrationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "IntegrationAttachment.integration"`)
 	}
-	if _, ok := iau.mutation.WorkflowID(); iau.mutation.WorkflowCleared() && !ok {
+	if iau.mutation.WorkflowCleared() && len(iau.mutation.WorkflowIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "IntegrationAttachment.workflow"`)
 	}
 	return nil
@@ -364,10 +364,10 @@ func (iauo *IntegrationAttachmentUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (iauo *IntegrationAttachmentUpdateOne) check() error {
-	if _, ok := iauo.mutation.IntegrationID(); iauo.mutation.IntegrationCleared() && !ok {
+	if iauo.mutation.IntegrationCleared() && len(iauo.mutation.IntegrationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "IntegrationAttachment.integration"`)
 	}
-	if _, ok := iauo.mutation.WorkflowID(); iauo.mutation.WorkflowCleared() && !ok {
+	if iauo.mutation.WorkflowCleared() && len(iauo.mutation.WorkflowIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "IntegrationAttachment.workflow"`)
 	}
 	return nil

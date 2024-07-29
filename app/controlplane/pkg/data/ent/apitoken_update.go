@@ -130,7 +130,7 @@ func (atu *APITokenUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (atu *APITokenUpdate) check() error {
-	if _, ok := atu.mutation.OrganizationID(); atu.mutation.OrganizationCleared() && !ok {
+	if atu.mutation.OrganizationCleared() && len(atu.mutation.OrganizationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "APIToken.organization"`)
 	}
 	return nil
@@ -332,7 +332,7 @@ func (atuo *APITokenUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (atuo *APITokenUpdateOne) check() error {
-	if _, ok := atuo.mutation.OrganizationID(); atuo.mutation.OrganizationCleared() && !ok {
+	if atuo.mutation.OrganizationCleared() && len(atuo.mutation.OrganizationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "APIToken.organization"`)
 	}
 	return nil

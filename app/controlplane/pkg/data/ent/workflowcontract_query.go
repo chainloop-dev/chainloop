@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -137,7 +138,7 @@ func (wcq *WorkflowContractQuery) QueryWorkflows() *WorkflowQuery {
 // First returns the first WorkflowContract entity from the query.
 // Returns a *NotFoundError when no WorkflowContract was found.
 func (wcq *WorkflowContractQuery) First(ctx context.Context) (*WorkflowContract, error) {
-	nodes, err := wcq.Limit(1).All(setContextOp(ctx, wcq.ctx, "First"))
+	nodes, err := wcq.Limit(1).All(setContextOp(ctx, wcq.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +161,7 @@ func (wcq *WorkflowContractQuery) FirstX(ctx context.Context) *WorkflowContract 
 // Returns a *NotFoundError when no WorkflowContract ID was found.
 func (wcq *WorkflowContractQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = wcq.Limit(1).IDs(setContextOp(ctx, wcq.ctx, "FirstID")); err != nil {
+	if ids, err = wcq.Limit(1).IDs(setContextOp(ctx, wcq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -183,7 +184,7 @@ func (wcq *WorkflowContractQuery) FirstIDX(ctx context.Context) uuid.UUID {
 // Returns a *NotSingularError when more than one WorkflowContract entity is found.
 // Returns a *NotFoundError when no WorkflowContract entities are found.
 func (wcq *WorkflowContractQuery) Only(ctx context.Context) (*WorkflowContract, error) {
-	nodes, err := wcq.Limit(2).All(setContextOp(ctx, wcq.ctx, "Only"))
+	nodes, err := wcq.Limit(2).All(setContextOp(ctx, wcq.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +212,7 @@ func (wcq *WorkflowContractQuery) OnlyX(ctx context.Context) *WorkflowContract {
 // Returns a *NotFoundError when no entities are found.
 func (wcq *WorkflowContractQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = wcq.Limit(2).IDs(setContextOp(ctx, wcq.ctx, "OnlyID")); err != nil {
+	if ids, err = wcq.Limit(2).IDs(setContextOp(ctx, wcq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -236,7 +237,7 @@ func (wcq *WorkflowContractQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 
 // All executes the query and returns a list of WorkflowContracts.
 func (wcq *WorkflowContractQuery) All(ctx context.Context) ([]*WorkflowContract, error) {
-	ctx = setContextOp(ctx, wcq.ctx, "All")
+	ctx = setContextOp(ctx, wcq.ctx, ent.OpQueryAll)
 	if err := wcq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
@@ -258,7 +259,7 @@ func (wcq *WorkflowContractQuery) IDs(ctx context.Context) (ids []uuid.UUID, err
 	if wcq.ctx.Unique == nil && wcq.path != nil {
 		wcq.Unique(true)
 	}
-	ctx = setContextOp(ctx, wcq.ctx, "IDs")
+	ctx = setContextOp(ctx, wcq.ctx, ent.OpQueryIDs)
 	if err = wcq.Select(workflowcontract.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
@@ -276,7 +277,7 @@ func (wcq *WorkflowContractQuery) IDsX(ctx context.Context) []uuid.UUID {
 
 // Count returns the count of the given query.
 func (wcq *WorkflowContractQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, wcq.ctx, "Count")
+	ctx = setContextOp(ctx, wcq.ctx, ent.OpQueryCount)
 	if err := wcq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
@@ -294,7 +295,7 @@ func (wcq *WorkflowContractQuery) CountX(ctx context.Context) int {
 
 // Exist returns true if the query has elements in the graph.
 func (wcq *WorkflowContractQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, wcq.ctx, "Exist")
+	ctx = setContextOp(ctx, wcq.ctx, ent.OpQueryExist)
 	switch _, err := wcq.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
@@ -731,7 +732,7 @@ func (wcgb *WorkflowContractGroupBy) Aggregate(fns ...AggregateFunc) *WorkflowCo
 
 // Scan applies the selector query and scans the result into the given value.
 func (wcgb *WorkflowContractGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, wcgb.build.ctx, "GroupBy")
+	ctx = setContextOp(ctx, wcgb.build.ctx, ent.OpQueryGroupBy)
 	if err := wcgb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
@@ -779,7 +780,7 @@ func (wcs *WorkflowContractSelect) Aggregate(fns ...AggregateFunc) *WorkflowCont
 
 // Scan applies the selector query and scans the result into the given value.
 func (wcs *WorkflowContractSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, wcs.ctx, "Select")
+	ctx = setContextOp(ctx, wcs.ctx, ent.OpQuerySelect)
 	if err := wcs.prepareQuery(ctx); err != nil {
 		return err
 	}
