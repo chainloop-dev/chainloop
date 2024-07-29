@@ -85,3 +85,7 @@ onboarding:
 #    certificate_profile_name: "PlainSigner"
 #    end_entity_profile_name: "PlainSigner"
 #    certificate_authority_name: "ManagementCA"
+
+# Organizations with Prometheus integration enabled
+prometheus_integration:
+  - org_name: "my-org"

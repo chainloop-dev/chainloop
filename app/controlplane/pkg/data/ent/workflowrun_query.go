@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 
+	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -712,6 +713,32 @@ func (wrq *WorkflowRunQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// ForUpdate locks the selected rows against concurrent updates, and prevent them from being
+// updated, deleted or "selected ... for update" by other sessions, until the transaction is
+// either committed or rolled-back.
+func (wrq *WorkflowRunQuery) ForUpdate(opts ...sql.LockOption) *WorkflowRunQuery {
+	if wrq.driver.Dialect() == dialect.Postgres {
+		wrq.Unique(false)
+	}
+	wrq.modifiers = append(wrq.modifiers, func(s *sql.Selector) {
+		s.ForUpdate(opts...)
+	})
+	return wrq
+}
+
+// ForShare behaves similarly to ForUpdate, except that it acquires a shared mode lock
+// on any rows that are read. Other sessions can read the rows, but cannot modify them
+// until your transaction commits.
+func (wrq *WorkflowRunQuery) ForShare(opts ...sql.LockOption) *WorkflowRunQuery {
+	if wrq.driver.Dialect() == dialect.Postgres {
+		wrq.Unique(false)
+	}
+	wrq.modifiers = append(wrq.modifiers, func(s *sql.Selector) {
+		s.ForShare(opts...)
+	})
+	return wrq
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.

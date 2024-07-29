@@ -99,9 +99,14 @@ func NewWorkflowRunUseCase(wfrRepo WorkflowRunRepo, wfRepo WorkflowRepo, logger 
 	}, nil
 }
 
+type PromObservable interface {
+	ObserveAttestationIfNeeded(ctx context.Context, run *WorkflowRun, status WorkflowRunStatus) bool
+}
+
 type WorkflowRunExpirerUseCase struct {
-	wfRunRepo WorkflowRunRepo
-	logger    *log.Helper
+	wfRunRepo      WorkflowRunRepo
+	PromObservable PromObservable
+	logger         *log.Helper
 }
 
 type WorkflowRunExpirerOpts struct {
@@ -110,9 +115,9 @@ type WorkflowRunExpirerOpts struct {
 	CheckInterval    time.Duration
 }
 
-func NewWorkflowRunExpirerUseCase(wfrRepo WorkflowRunRepo, logger log.Logger) *WorkflowRunExpirerUseCase {
+func NewWorkflowRunExpirerUseCase(wfrRepo WorkflowRunRepo, po PromObservable, logger log.Logger) *WorkflowRunExpirerUseCase {
 	logger = log.With(logger, "component", "biz.WorkflowRunExpirer")
-	return &WorkflowRunExpirerUseCase{wfrRepo, log.NewHelper(logger)}
+	return &WorkflowRunExpirerUseCase{wfrRepo, po, log.NewHelper(logger)}
 }
 
 func (uc *WorkflowRunExpirerUseCase) Run(ctx context.Context, opts *WorkflowRunExpirerOpts) {
@@ -129,7 +134,6 @@ func (uc *WorkflowRunExpirerUseCase) Run(ctx context.Context, opts *WorkflowRunE
 
 				if err := uc.ExpirationSweep(ctx, threshold); err != nil {
 					uc.logger.Error(err)
-					continue
 				}
 			}
 
@@ -142,7 +146,7 @@ func (uc *WorkflowRunExpirerUseCase) Run(ctx context.Context, opts *WorkflowRunE
 
 // ExpirationSweep looks for runs older than the provider time and marks them as expired
 func (uc *WorkflowRunExpirerUseCase) ExpirationSweep(ctx context.Context, olderThan time.Time) error {
-	uc.logger.Infof("expiration sweep - runs older than %s", olderThan.Format(time.RFC822))
+	uc.logger.Debugf("expiration sweep - runs older than %s", olderThan.Format(time.RFC822))
 
 	toExpire, err := uc.wfRunRepo.ListNotFinishedOlderThan(ctx, olderThan)
 	if err != nil {
@@ -153,7 +157,10 @@ func (uc *WorkflowRunExpirerUseCase) ExpirationSweep(ctx context.Context, olderT
 		if err := uc.wfRunRepo.Expire(ctx, r.ID); err != nil {
 			return err
 		}
-		uc.logger.Infof("run with id=%q createdAt=%q expired!\n", r.ID, r.CreatedAt.Format(time.RFC822))
+
+		// Record the attestation in the prometheus registry if applicable
+		_ = uc.PromObservable.ObserveAttestationIfNeeded(ctx, r, WorkflowRunExpired)
+		uc.logger.Debugf("run with id=%q createdAt=%q expired!\n", r.ID, r.CreatedAt.Format(time.RFC822))
 	}
 
 	return nil

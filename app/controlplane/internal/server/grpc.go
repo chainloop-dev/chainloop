@@ -212,7 +212,7 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 			// 2.a - Set its workflow and organization in the context
 			usercontext.WithAttestationContextFromRobotAccount(opts.RobotAccountUseCase, opts.OrganizationUseCase, logHelper),
 			// 2.b - Set its API token and Robot Account as alternative to the user
-			usercontext.WithAttestationContextFromAPIToken(opts.APITokenUseCase, logHelper),
+			usercontext.WithAttestationContextFromAPIToken(opts.APITokenUseCase, opts.OrganizationUseCase, logHelper),
 		).Match(requireRobotAccountMatcher()).Build(),
 	)
 

@@ -20,11 +20,10 @@ import (
 	"testing"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
-
+	config "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -139,7 +138,7 @@ func (s *userOnboardingTestSuite) TestAutoOnboardOrganizationsNoConfiguration() 
 func (s *userOnboardingTestSuite) TestAutoOnboardOrganizationsWithConfiguration() {
 	ctx := context.Background()
 	const orgName = "existing-org"
-	s.TestingUseCases = testhelpers.NewTestingUseCases(s.T(), testhelpers.WithOnboardingConfiguration([]*conf.OnboardingSpec{
+	s.TestingUseCases = testhelpers.NewTestingUseCases(s.T(), testhelpers.WithOnboardingConfiguration([]*config.OnboardingSpec{
 		{
 			Name: orgName,
 			Role: v1.MembershipRole_MEMBERSHIP_ROLE_ORG_VIEWER,

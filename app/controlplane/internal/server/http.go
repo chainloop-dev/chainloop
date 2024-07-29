@@ -61,14 +61,17 @@ func NewHTTPServer(opts *Opts, grpcSrv *grpc.Server) (*http.Server, error) {
 	// initialize the underneath http server
 	httpSrv := http.NewServer(serverOpts...)
 	// NOTE: these non-grpc transcoded methods DO NOT RUN the middlewares
-	httpSrv.Handle(service.AuthLoginPath, opts.AuthSvc.RegisterLoginHandler())
-	httpSrv.Handle(service.AuthCallbackPath, opts.AuthSvc.RegisterCallbackHandler())
-	httpSrv.Handle(service.PrometheusMetricsPath, middlewares_http.AuthFromAuthorizationHeader(
-		loadJWTKeyFunc(opts.AuthConfig.GetGeneratedJwsHmacSecret()),
-		apiTokenCustomClaims(),
-		apitoken.SigningMethod,
-		opts.PrometheusSvc,
-	))
+	httpSrv.Handle(service.AuthLoginPath, middlewares_http.Logging(opts.Logger, opts.AuthSvc.RegisterLoginHandler()))
+	httpSrv.Handle(service.AuthCallbackPath, middlewares_http.Logging(opts.Logger, opts.AuthSvc.RegisterCallbackHandler()))
+	httpSrv.Handle(service.PrometheusMetricsPath,
+		middlewares_http.Logging(opts.Logger,
+			middlewares_http.AuthFromAuthorizationHeader(
+				loadJWTKeyFunc(opts.AuthConfig.GetGeneratedJwsHmacSecret()),
+				apiTokenCustomClaims(),
+				apitoken.SigningMethod,
+				opts.PrometheusSvc,
+			),
+		))
 	v1.RegisterStatusServiceHTTPServer(httpSrv, service.NewStatusService(opts.AuthSvc.AuthURLs.Login, Version, opts.CASClientUseCase))
 	v1.RegisterReferrerServiceHTTPServer(httpSrv, service.NewReferrerService(opts.ReferrerUseCase))
 

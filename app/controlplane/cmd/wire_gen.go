@@ -124,6 +124,14 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	fanOutDispatcher := dispatcher.New(integrationUseCase, workflowUseCase, workflowRunUseCase, readerWriter, casClientUseCase, availablePlugins, logger)
 	casMappingRepo := data.NewCASMappingRepo(dataData, casBackendRepo, logger)
 	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipRepo, logger)
+	v4 := bootstrap.PrometheusIntegration
+	orgMetricsRepo := data.NewOrgMetricsRepo(dataData, logger)
+	orgMetricsUseCase, err := biz.NewOrgMetricsUseCase(orgMetricsRepo, organizationRepo, workflowUseCase, logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	prometheusUseCase := biz.NewPrometheusUseCase(v4, organizationUseCase, orgMetricsUseCase, logger)
 	newAttestationServiceOpts := &service.NewAttestationServiceOpts{
 		WorkflowRunUC:      workflowRunUseCase,
 		WorkflowUC:         workflowUseCase,
@@ -137,18 +145,13 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		CASMappingUseCase:  casMappingUseCase,
 		ReferrerUC:         referrerUseCase,
 		OrgUC:              organizationUseCase,
+		PromUC:             prometheusUseCase,
 		Opts:               v3,
 	}
 	attestationService := service.NewAttestationService(newAttestationServiceOpts)
 	workflowContractService := service.NewWorkflowSchemaService(workflowContractUseCase, v3...)
 	contextService := service.NewContextService(casBackendUseCase, userUseCase, v3...)
 	casCredentialsService := service.NewCASCredentialsService(casCredentialsUseCase, casMappingUseCase, casBackendUseCase, enforcer, v3...)
-	orgMetricsRepo := data.NewOrgMetricsRepo(dataData, logger)
-	orgMetricsUseCase, err := biz.NewOrgMetricsUseCase(orgMetricsRepo, organizationRepo, workflowUseCase, logger)
-	if err != nil {
-		cleanup()
-		return nil, nil, err
-	}
 	orgMetricsService := service.NewOrgMetricsService(orgMetricsUseCase, v3...)
 	integrationsService := service.NewIntegrationsService(integrationUseCase, workflowUseCase, availablePlugins, v3...)
 	organizationService := service.NewOrganizationService(membershipUseCase, organizationUseCase, v3...)
@@ -177,8 +180,6 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	userService := service.NewUserService(membershipUseCase, organizationUseCase, v3...)
 	signingUseCase := biz.NewChainloopSigningUseCase(certificateAuthority)
 	signingService := service.NewSigningService(signingUseCase, v3...)
-	v4 := bootstrap.PrometheusIntegration
-	prometheusUseCase := biz.NewPrometheusUseCase(v4, organizationUseCase, orgMetricsUseCase, logger)
 	prometheusService := service.NewPrometheusService(organizationUseCase, prometheusUseCase, v3...)
 	validator, err := newProtoValidator()
 	if err != nil {
@@ -237,7 +238,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		cleanup()
 		return nil, nil, err
 	}
-	workflowRunExpirerUseCase := biz.NewWorkflowRunExpirerUseCase(workflowRunRepo, logger)
+	workflowRunExpirerUseCase := biz.NewWorkflowRunExpirerUseCase(workflowRunRepo, prometheusUseCase, logger)
 	apiTokenSyncerUseCase := biz.NewAPITokenSyncerUseCase(apiTokenUseCase)
 	mainApp := newApp(logger, grpcServer, httpServer, httpMetricsServer, workflowRunExpirerUseCase, availablePlugins, apiTokenSyncerUseCase)
 	return mainApp, func() {

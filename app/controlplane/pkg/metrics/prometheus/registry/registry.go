@@ -18,7 +18,7 @@ package registry
 import (
 	"github.com/go-kratos/kratos/v2/log"
 
-	chainloopprometheus "github.com/chainloop-dev/chainloop/app/controlplane/pkg/metrics/prometheus"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/metrics/prometheus/collector"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -27,45 +27,35 @@ import (
 type PrometheusRegistry struct {
 	*prometheus.Registry
 	Name               string
-	chainloopCollector *chainloopprometheus.ChainloopCollector
+	chainloopCollector *collector.ChainloopCollector
+
+	// metrics
+	WorkflowRunDurationSeconds *prometheus.HistogramVec
 }
 
+var workflowRunDurationSeconds = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+	Name: "chainloop_workflow_run_duration_seconds",
+	Help: "Duration of a workflow runs in seconds.",
+	// 10 seconds to 20 minutes
+	Buckets: []float64{10, 30, 60, 90, 120, 180, 240, 300, 600, 900, 1200},
+}, []string{"org", "workflow", "status", "runner"})
+
 // NewPrometheusRegistry creates a new Prometheus registry with a given ID and collector
-func NewPrometheusRegistry(name string, gatherer chainloopprometheus.ChainloopMetricsGatherer, logger log.Logger) *PrometheusRegistry {
+func NewPrometheusRegistry(name string, gatherer collector.ChainloopMetricsGatherer, logger log.Logger) *PrometheusRegistry {
 	reg := prometheus.NewRegistry()
 
-	bcc := chainloopprometheus.NewChainloopCollector(name, gatherer, logger)
+	// Collector of metrics stored in DB
+	bcc := collector.NewChainloopCollector(name, gatherer, logger)
 
 	reg.MustRegister(bcc)
 
+	// Custom metrics that come from the business logic
+	reg.MustRegister(workflowRunDurationSeconds)
+
 	return &PrometheusRegistry{
-		Name:               name,
-		Registry:           reg,
-		chainloopCollector: bcc,
+		Name:                       name,
+		Registry:                   reg,
+		chainloopCollector:         bcc,
+		WorkflowRunDurationSeconds: workflowRunDurationSeconds,
 	}
-}
-
-type ChainloopRegistryManager struct {
-	Registries map[string]*PrometheusRegistry
-}
-
-func NewChainloopRegistryManager() *ChainloopRegistryManager {
-	return &ChainloopRegistryManager{
-		Registries: make(map[string]*PrometheusRegistry),
-	}
-}
-
-// AddRegistry adds a registry to the manager
-func (rm *ChainloopRegistryManager) AddRegistry(reg *PrometheusRegistry) {
-	rm.Registries[reg.Name] = reg
-}
-
-// GetRegistryByName returns a registry by name
-func (rm *ChainloopRegistryManager) GetRegistryByName(name string) *PrometheusRegistry {
-	return rm.Registries[name]
-}
-
-// DeleteRegistryByName deletes a registry by name
-func (rm *ChainloopRegistryManager) DeleteRegistryByName(name string) {
-	delete(rm.Registries, name)
 }

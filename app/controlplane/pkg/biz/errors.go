@@ -145,3 +145,20 @@ func (e ErrInvalidTimeWindow) Error() string {
 func IsErrInvalidTimeWindow(err error) bool {
 	return errors.As(err, &ErrInvalidTimeWindow{})
 }
+
+type ErrAttestationStateConflict struct {
+	got, want string
+}
+
+func NewErrAttestationStateConflict(got, want string) error {
+	return &ErrAttestationStateConflict{got, want}
+}
+
+func (e *ErrAttestationStateConflict) Error() string {
+	return fmt.Sprintf("the provided base digest doesn't match the stored state, it might have changed, got=%q, want=%q", e.got, e.want)
+}
+
+func IsErrAttestationStateConflict(err error) bool {
+	var e *ErrAttestationStateConflict
+	return errors.As(err, &e)
+}

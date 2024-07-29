@@ -1,4 +1,4 @@
-# Copyright Chainloop, Inc. All Rights Reserved.
+# Copyright Broadcom, Inc. All Rights Reserved.
 # SPDX-License-Identifier: APACHE-2.0
 
 ## Default values for Chainloop Helm Chart
@@ -114,13 +114,13 @@ controlplane:
   ## @param controlplane.replicaCount Number of replicas
   replicaCount: 2
 
-  ## @param controlplane.image.registry Image registry
-  ## @param controlplane.image.repository Image repository
+  ## @param controlplane.image.registry [default: REGISTRY_NAME] Image registry
+  ## @param controlplane.image.repository [default: REPOSITORY_NAME] Image repository
   ## @skip controlplane.image.tag
   image:
     registry: ghcr.io
     repository: chainloop-dev/chainloop/control-plane
-    tag: "v0.94.2"
+    tag: "v0.94.3"
 
   ## @param controlplane.tlsConfig.secret.name name of a secret containing TLS certificate to be used by the controlplane grpc server.
   tlsConfig:
@@ -149,15 +149,15 @@ controlplane:
   #    - org_name: "read-only-demo"
 
   # Database migration
-  ## @param controlplane.migration.image.registry Image registry
-  ## @param controlplane.migration.image.repository Image repository
+  ## @param controlplane.migration.image.registry [default: REGISTRY_NAME] Image registry
+  ## @param controlplane.migration.image.repository [default: REPOSITORY_NAME] Image repository
   ## @param controlplane.migration.ssl Connect to the database using SSL (required fro AWS RDS, etc)
   ## @skip controlplane.migration.image.tag
   migration:
     image:
       registry: ghcr.io
       repository: chainloop-dev/chainloop/control-plane-migrations
-      tag: "v0.94.2"
+      tag: "v0.94.3"
     # Run the migration job forcing SSL, required in AWS RDS for PostgreSQL 15
     ssl: false
 
@@ -508,7 +508,7 @@ controlplane:
   ##       ...
   ##       -----END RSA PRIVATE KEY-----
   ## @param controlplane.keylessSigning.fileCA.keyPass The secret key pass
-  ## @param controlplane.keylessSigning.ejbcaCA.serverURL The url of the EJBCA service (https://host/ejbca)
+  ## @param controlplane.keylessSigning.ejbcaCA.serverURL The url of the EJBCA service ("https://host/ejbca")
   ## @param controlplane.keylessSigning.ejbcaCA.clientKey PEM-encoded the private key for EJBCA cert authentication
   ## @param controlplane.keylessSigning.ejbcaCA.clientCert PEM-encoded certificate for EJBCA cert authentication
   ## @param controlplane.keylessSigning.ejbcaCA.certProfileName Name of the certificate profile to use in EJBCA
@@ -541,13 +541,13 @@ cas:
   ## @param cas.replicaCount Number of replicas
   replicaCount: 2
 
-  ## @param cas.image.registry Image registry
-  ## @param cas.image.repository Image repository
+  ## @param cas.image.registry [default: REGISTRY_NAME] Image registry
+  ## @param cas.image.repository [default: REPOSITORY_NAME] Image repository
   ## @skip cas.image.tag
   image:
     registry: ghcr.io
     repository: chainloop-dev/chainloop/artifact-cas
-    tag: "v0.94.2"
+    tag: "v0.94.3"
 
   ## @param cas.tlsConfig.secret.name name of a secret containing TLS certificate to be used by the controlplane grpc server.
   tlsConfig:

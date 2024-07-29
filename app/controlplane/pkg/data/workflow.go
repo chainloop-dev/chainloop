@@ -238,6 +238,7 @@ func entWFToBizWF(w *ent.Workflow, r *ent.WorkflowRun) (*biz.Workflow, error) {
 		Project: w.Project, RunsCounter: w.RunsCount,
 		Public:      w.Public,
 		Description: w.Description,
+		OrgID:       w.OrganizationID,
 	}
 
 	if contract := w.Edges.Contract; contract != nil {
@@ -248,10 +249,6 @@ func entWFToBizWF(w *ent.Workflow, r *ent.WorkflowRun) (*biz.Workflow, error) {
 			return nil, fmt.Errorf("finding contract version: %w", err)
 		}
 		wf.ContractRevisionLatest = lv.Revision
-	}
-
-	if org := w.Edges.Organization; org != nil {
-		wf.OrgID = org.ID
 	}
 
 	if r != nil {

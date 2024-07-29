@@ -190,6 +190,7 @@ func (r *WorkflowRunRepo) ListNotFinishedOlderThan(ctx context.Context, olderTha
 	// TODO: Look into adding upper bound on the createdAt column to prevent full table scans
 	// For now this is fine especially because we have a composite index
 	workflowRuns, err := r.data.DB.WorkflowRun.Query().
+		WithWorkflow().
 		Where(workflowrun.CreatedAtLTE(olderThan)).
 		Where(workflowrun.StateEQ(biz.WorkflowRunInitialized)).
 		All(ctx)

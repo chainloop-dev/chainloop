@@ -41,8 +41,10 @@ jobs:
       # This could happen if the developer ran make generate but didn't run make migration_sync
       - name: Generate migrations
         if: ${{ matrix.app == 'controlplane' }}
+        env:
+          ATLAS_VERSION: v0.24.1
         run: |
-          wget -q https://release.ariga.io/atlas/atlas-linux-amd64-latest -O /tmp/atlas
+          wget -q https://release.ariga.io/atlas/atlas-linux-amd64-$ATLAS_VERSION -O /tmp/atlas
           sudo install /tmp/atlas /usr/local/bin/atlas
 
           make -C app/controlplane migration_sync

@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	config "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
 	// Required for the database waitFor strategy
 	_ "github.com/lib/pq"
 
@@ -61,6 +62,7 @@ type TestingUseCases struct {
 	WorkflowContract       *biz.WorkflowContractUseCase
 	Workflow               *biz.WorkflowUseCase
 	WorkflowRun            *biz.WorkflowRunUseCase
+	Prometheus             *biz.PrometheusUseCase
 	User                   *biz.UserUseCase
 	RobotAccount           *biz.RobotAccountUseCase
 	RegisteredIntegrations sdk.AvailablePlugins
@@ -87,7 +89,7 @@ type newTestingOpts struct {
 	credsReaderWriter       credentials.ReaderWriter
 	integrations            sdk.AvailablePlugins
 	providers               backends.Providers
-	onboardingConfiguration []*conf.OnboardingSpec
+	onboardingConfiguration []*config.OnboardingSpec
 }
 
 type NewTestingUCOpt func(*newTestingOpts)
@@ -108,7 +110,7 @@ func WithRegisteredIntegration(i sdk.FanOut) NewTestingUCOpt {
 	}
 }
 
-func WithOnboardingConfiguration(conf []*conf.OnboardingSpec) NewTestingUCOpt {
+func WithOnboardingConfiguration(conf []*config.OnboardingSpec) NewTestingUCOpt {
 	return func(tu *newTestingOpts) {
 		tu.onboardingConfiguration = conf
 	}
@@ -193,6 +195,10 @@ func NewConfData(db *TestDatabase, t *testing.T) *conf.Data {
 	return &conf.Data{
 		Database: &conf.Data_Database{Driver: "pgx", Source: db.ConnectionString(t)},
 	}
+}
+
+func NewPromSpec() []*conf.PrometheusIntegrationSpec {
+	return []*conf.PrometheusIntegrationSpec{}
 }
 
 func NewDataConfig(in *conf.Data) *data.NewConfig {
