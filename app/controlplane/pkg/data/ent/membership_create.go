@@ -180,10 +180,10 @@ func (mc *MembershipCreate) check() error {
 			return &ValidationError{Name: "role", err: fmt.Errorf(`ent: validator failed for field "Membership.role": %w`, err)}
 		}
 	}
-	if _, ok := mc.mutation.OrganizationID(); !ok {
+	if len(mc.mutation.OrganizationIDs()) == 0 {
 		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "Membership.organization"`)}
 	}
-	if _, ok := mc.mutation.UserID(); !ok {
+	if len(mc.mutation.UserIDs()) == 0 {
 		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "Membership.user"`)}
 	}
 	return nil

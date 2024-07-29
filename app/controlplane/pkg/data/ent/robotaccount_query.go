@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -88,7 +89,7 @@ func (raq *RobotAccountQuery) QueryWorkflow() *WorkflowQuery {
 // First returns the first RobotAccount entity from the query.
 // Returns a *NotFoundError when no RobotAccount was found.
 func (raq *RobotAccountQuery) First(ctx context.Context) (*RobotAccount, error) {
-	nodes, err := raq.Limit(1).All(setContextOp(ctx, raq.ctx, "First"))
+	nodes, err := raq.Limit(1).All(setContextOp(ctx, raq.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +112,7 @@ func (raq *RobotAccountQuery) FirstX(ctx context.Context) *RobotAccount {
 // Returns a *NotFoundError when no RobotAccount ID was found.
 func (raq *RobotAccountQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = raq.Limit(1).IDs(setContextOp(ctx, raq.ctx, "FirstID")); err != nil {
+	if ids, err = raq.Limit(1).IDs(setContextOp(ctx, raq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -134,7 +135,7 @@ func (raq *RobotAccountQuery) FirstIDX(ctx context.Context) uuid.UUID {
 // Returns a *NotSingularError when more than one RobotAccount entity is found.
 // Returns a *NotFoundError when no RobotAccount entities are found.
 func (raq *RobotAccountQuery) Only(ctx context.Context) (*RobotAccount, error) {
-	nodes, err := raq.Limit(2).All(setContextOp(ctx, raq.ctx, "Only"))
+	nodes, err := raq.Limit(2).All(setContextOp(ctx, raq.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +163,7 @@ func (raq *RobotAccountQuery) OnlyX(ctx context.Context) *RobotAccount {
 // Returns a *NotFoundError when no entities are found.
 func (raq *RobotAccountQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = raq.Limit(2).IDs(setContextOp(ctx, raq.ctx, "OnlyID")); err != nil {
+	if ids, err = raq.Limit(2).IDs(setContextOp(ctx, raq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -187,7 +188,7 @@ func (raq *RobotAccountQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 
 // All executes the query and returns a list of RobotAccounts.
 func (raq *RobotAccountQuery) All(ctx context.Context) ([]*RobotAccount, error) {
-	ctx = setContextOp(ctx, raq.ctx, "All")
+	ctx = setContextOp(ctx, raq.ctx, ent.OpQueryAll)
 	if err := raq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
@@ -209,7 +210,7 @@ func (raq *RobotAccountQuery) IDs(ctx context.Context) (ids []uuid.UUID, err err
 	if raq.ctx.Unique == nil && raq.path != nil {
 		raq.Unique(true)
 	}
-	ctx = setContextOp(ctx, raq.ctx, "IDs")
+	ctx = setContextOp(ctx, raq.ctx, ent.OpQueryIDs)
 	if err = raq.Select(robotaccount.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
@@ -227,7 +228,7 @@ func (raq *RobotAccountQuery) IDsX(ctx context.Context) []uuid.UUID {
 
 // Count returns the count of the given query.
 func (raq *RobotAccountQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, raq.ctx, "Count")
+	ctx = setContextOp(ctx, raq.ctx, ent.OpQueryCount)
 	if err := raq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
@@ -245,7 +246,7 @@ func (raq *RobotAccountQuery) CountX(ctx context.Context) int {
 
 // Exist returns true if the query has elements in the graph.
 func (raq *RobotAccountQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, raq.ctx, "Exist")
+	ctx = setContextOp(ctx, raq.ctx, ent.OpQueryExist)
 	switch _, err := raq.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
@@ -580,7 +581,7 @@ func (ragb *RobotAccountGroupBy) Aggregate(fns ...AggregateFunc) *RobotAccountGr
 
 // Scan applies the selector query and scans the result into the given value.
 func (ragb *RobotAccountGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, ragb.build.ctx, "GroupBy")
+	ctx = setContextOp(ctx, ragb.build.ctx, ent.OpQueryGroupBy)
 	if err := ragb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
@@ -628,7 +629,7 @@ func (ras *RobotAccountSelect) Aggregate(fns ...AggregateFunc) *RobotAccountSele
 
 // Scan applies the selector query and scans the result into the given value.
 func (ras *RobotAccountSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, ras.ctx, "Select")
+	ctx = setContextOp(ctx, ras.ctx, ent.OpQuerySelect)
 	if err := ras.prepareQuery(ctx); err != nil {
 		return err
 	}

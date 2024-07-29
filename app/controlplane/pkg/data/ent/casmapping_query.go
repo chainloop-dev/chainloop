@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -136,7 +137,7 @@ func (cmq *CASMappingQuery) QueryOrganization() *OrganizationQuery {
 // First returns the first CASMapping entity from the query.
 // Returns a *NotFoundError when no CASMapping was found.
 func (cmq *CASMappingQuery) First(ctx context.Context) (*CASMapping, error) {
-	nodes, err := cmq.Limit(1).All(setContextOp(ctx, cmq.ctx, "First"))
+	nodes, err := cmq.Limit(1).All(setContextOp(ctx, cmq.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +160,7 @@ func (cmq *CASMappingQuery) FirstX(ctx context.Context) *CASMapping {
 // Returns a *NotFoundError when no CASMapping ID was found.
 func (cmq *CASMappingQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = cmq.Limit(1).IDs(setContextOp(ctx, cmq.ctx, "FirstID")); err != nil {
+	if ids, err = cmq.Limit(1).IDs(setContextOp(ctx, cmq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -182,7 +183,7 @@ func (cmq *CASMappingQuery) FirstIDX(ctx context.Context) uuid.UUID {
 // Returns a *NotSingularError when more than one CASMapping entity is found.
 // Returns a *NotFoundError when no CASMapping entities are found.
 func (cmq *CASMappingQuery) Only(ctx context.Context) (*CASMapping, error) {
-	nodes, err := cmq.Limit(2).All(setContextOp(ctx, cmq.ctx, "Only"))
+	nodes, err := cmq.Limit(2).All(setContextOp(ctx, cmq.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +211,7 @@ func (cmq *CASMappingQuery) OnlyX(ctx context.Context) *CASMapping {
 // Returns a *NotFoundError when no entities are found.
 func (cmq *CASMappingQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = cmq.Limit(2).IDs(setContextOp(ctx, cmq.ctx, "OnlyID")); err != nil {
+	if ids, err = cmq.Limit(2).IDs(setContextOp(ctx, cmq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -235,7 +236,7 @@ func (cmq *CASMappingQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 
 // All executes the query and returns a list of CASMappings.
 func (cmq *CASMappingQuery) All(ctx context.Context) ([]*CASMapping, error) {
-	ctx = setContextOp(ctx, cmq.ctx, "All")
+	ctx = setContextOp(ctx, cmq.ctx, ent.OpQueryAll)
 	if err := cmq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
@@ -257,7 +258,7 @@ func (cmq *CASMappingQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error
 	if cmq.ctx.Unique == nil && cmq.path != nil {
 		cmq.Unique(true)
 	}
-	ctx = setContextOp(ctx, cmq.ctx, "IDs")
+	ctx = setContextOp(ctx, cmq.ctx, ent.OpQueryIDs)
 	if err = cmq.Select(casmapping.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
@@ -275,7 +276,7 @@ func (cmq *CASMappingQuery) IDsX(ctx context.Context) []uuid.UUID {
 
 // Count returns the count of the given query.
 func (cmq *CASMappingQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, cmq.ctx, "Count")
+	ctx = setContextOp(ctx, cmq.ctx, ent.OpQueryCount)
 	if err := cmq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
@@ -293,7 +294,7 @@ func (cmq *CASMappingQuery) CountX(ctx context.Context) int {
 
 // Exist returns true if the query has elements in the graph.
 func (cmq *CASMappingQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, cmq.ctx, "Exist")
+	ctx = setContextOp(ctx, cmq.ctx, ent.OpQueryExist)
 	switch _, err := cmq.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
@@ -730,7 +731,7 @@ func (cmgb *CASMappingGroupBy) Aggregate(fns ...AggregateFunc) *CASMappingGroupB
 
 // Scan applies the selector query and scans the result into the given value.
 func (cmgb *CASMappingGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, cmgb.build.ctx, "GroupBy")
+	ctx = setContextOp(ctx, cmgb.build.ctx, ent.OpQueryGroupBy)
 	if err := cmgb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
@@ -778,7 +779,7 @@ func (cms *CASMappingSelect) Aggregate(fns ...AggregateFunc) *CASMappingSelect {
 
 // Scan applies the selector query and scans the result into the given value.
 func (cms *CASMappingSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, cms.ctx, "Select")
+	ctx = setContextOp(ctx, cms.ctx, ent.OpQuerySelect)
 	if err := cms.prepareQuery(ctx); err != nil {
 		return err
 	}

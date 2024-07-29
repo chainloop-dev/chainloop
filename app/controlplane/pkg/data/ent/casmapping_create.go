@@ -152,10 +152,10 @@ func (cmc *CASMappingCreate) check() error {
 	if _, ok := cmc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "CASMapping.created_at"`)}
 	}
-	if _, ok := cmc.mutation.CasBackendID(); !ok {
+	if len(cmc.mutation.CasBackendIDs()) == 0 {
 		return &ValidationError{Name: "cas_backend", err: errors.New(`ent: missing required edge "CASMapping.cas_backend"`)}
 	}
-	if _, ok := cmc.mutation.OrganizationID(); !ok {
+	if len(cmc.mutation.OrganizationIDs()) == 0 {
 		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "CASMapping.organization"`)}
 	}
 	return nil

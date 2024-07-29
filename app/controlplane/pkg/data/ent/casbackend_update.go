@@ -242,7 +242,7 @@ func (cbu *CASBackendUpdate) check() error {
 			return &ValidationError{Name: "validation_status", err: fmt.Errorf(`ent: validator failed for field "CASBackend.validation_status": %w`, err)}
 		}
 	}
-	if _, ok := cbu.mutation.OrganizationID(); cbu.mutation.OrganizationCleared() && !ok {
+	if cbu.mutation.OrganizationCleared() && len(cbu.mutation.OrganizationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "CASBackend.organization"`)
 	}
 	return nil
@@ -614,7 +614,7 @@ func (cbuo *CASBackendUpdateOne) check() error {
 			return &ValidationError{Name: "validation_status", err: fmt.Errorf(`ent: validator failed for field "CASBackend.validation_status": %w`, err)}
 		}
 	}
-	if _, ok := cbuo.mutation.OrganizationID(); cbuo.mutation.OrganizationCleared() && !ok {
+	if cbuo.mutation.OrganizationCleared() && len(cbuo.mutation.OrganizationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "CASBackend.organization"`)
 	}
 	return nil

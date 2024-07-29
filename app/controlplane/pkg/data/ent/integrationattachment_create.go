@@ -143,10 +143,10 @@ func (iac *IntegrationAttachmentCreate) check() error {
 	if _, ok := iac.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "IntegrationAttachment.created_at"`)}
 	}
-	if _, ok := iac.mutation.IntegrationID(); !ok {
+	if len(iac.mutation.IntegrationIDs()) == 0 {
 		return &ValidationError{Name: "integration", err: errors.New(`ent: missing required edge "IntegrationAttachment.integration"`)}
 	}
-	if _, ok := iac.mutation.WorkflowID(); !ok {
+	if len(iac.mutation.WorkflowIDs()) == 0 {
 		return &ValidationError{Name: "workflow", err: errors.New(`ent: missing required edge "IntegrationAttachment.workflow"`)}
 	}
 	return nil

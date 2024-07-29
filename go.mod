@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/secretmanager v1.11.5
 	code.cloudfoundry.org/bytefmt v0.0.0-20230612151507-41ef4d1f67a4
 	cuelang.org/go v0.8.1
-	entgo.io/ent v0.13.1
+	entgo.io/ent v0.14.0
 	github.com/adrg/xdg v0.4.0
 	github.com/aws/aws-sdk-go-v2 v1.26.1
 	github.com/aws/aws-sdk-go-v2/config v1.27.9

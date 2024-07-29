@@ -171,7 +171,7 @@ func (iu *IntegrationUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (iu *IntegrationUpdate) check() error {
-	if _, ok := iu.mutation.OrganizationID(); iu.mutation.OrganizationCleared() && !ok {
+	if iu.mutation.OrganizationCleared() && len(iu.mutation.OrganizationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Integration.organization"`)
 	}
 	return nil
@@ -461,7 +461,7 @@ func (iuo *IntegrationUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (iuo *IntegrationUpdateOne) check() error {
-	if _, ok := iuo.mutation.OrganizationID(); iuo.mutation.OrganizationCleared() && !ok {
+	if iuo.mutation.OrganizationCleared() && len(iuo.mutation.OrganizationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Integration.organization"`)
 	}
 	return nil
