@@ -15,23 +15,21 @@
 apiVersion: workflowcontract.chainloop.dev/v1
 kind: Policy
 metadata:
-  name: made-with-syft
+  name: cyclonedx-licenses
+  description: Checks for components without licenses
+  annotations:
+    category: sbom
 spec:
-  type: SBOM_SPDX_JSON
+  type: SBOM_CYCLONEDX_JSON
   embedded: |
     package main
-
-    import future.keywords.in
-
-    # Verifies that the SPDX was created with Syft
     
-    deny[msg] {
-      not made_with_syft
+    import rego.v1
 
-      msg := "Not made with syft"
-    }
-
-    made_with_syft {
-      some creator in input.creationInfo.creators
-      contains(creator, "syft")
+    deny contains ref if {
+      some i
+      comp := input.components[i]
+      not comp.licenses
+      # log name and bom-ref fields
+      ref := sprintf("Missing licenses for %v (%v)", [comp.name, comp["bom-ref"]])
     }

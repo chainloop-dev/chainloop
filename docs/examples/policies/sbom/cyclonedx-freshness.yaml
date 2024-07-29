@@ -12,23 +12,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Checks that all components have a license
 apiVersion: workflowcontract.chainloop.dev/v1
 kind: Policy
 metadata:
-  name: cyclonedx-licenses
+  name: cyclonedx-required-packages
+  description: Checks that SBOM has a maximum of 30 days old
+  annotations:
+    category: sbom
 spec:
   type: SBOM_CYCLONEDX_JSON
   embedded: |
     package main
     
-    deny[msg] {
-      count(without_license) > 0
-      msg := "SBOM has components without licenses"
-    }
-      
-    without_license = {comp.purl |
-      some i
-      comp := input.components[i]
-      not comp.licenses
+    import rego.v1
+  
+    limit := 30
+    
+    nanosecs_per_second = (1000 * 1000) * 1000
+    
+    nanosecs_per_day = ((24 * 60) * 60) * nanosecs_per_second
+    
+    maximum_age = limit * nanosecs_per_day
+    
+    deny contains msg if {
+      sbom_ns = time.parse_rfc3339_ns(input.metadata.timestamp)
+      exceeding = time.now_ns() - (sbom_ns + maximum_age)
+      exceeding > 0
+      msg := sprintf("SBOM created at: %s which is too old (freshness limit set to %d days)", [input.metadata.timestamp, limit])
     }
