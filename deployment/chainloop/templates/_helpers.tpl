@@ -225,22 +225,14 @@ Return the Postgresql connection string for Atlas migration
 Return the Postgresql hostname
 */}}
 {{- define "controlplane.database.host" -}}
-{{- if .Values.controlplane.sqlProxy.enabled }}
-    {{- include "chainloop.sql-proxy.fullname" . -}}
-{{- else -}}
-    {{- ternary (include "chainloop.postgresql.fullname" .) .Values.controlplane.externalDatabase.host .Values.postgresql.enabled -}}
-{{- end -}}
+{{- ternary (include "chainloop.postgresql.fullname" .) .Values.controlplane.externalDatabase.host .Values.postgresql.enabled -}}
 {{- end -}}
 
 {{/*
 Return the Postgresql port
 */}}
 {{- define "controlplane.database.port" -}}
-{{- if .Values.controlplane.sqlProxy.enabled }}
-    {{- 5432 -}}
-{{- else -}}
-    {{- ternary 5432 .Values.controlplane.externalDatabase.port .Values.postgresql.enabled -}}
-{{- end -}}
+{{- ternary 5432 .Values.controlplane.externalDatabase.port .Values.postgresql.enabled -}}
 {{- end -}}
 
 {{/*
