@@ -193,6 +193,7 @@ func (uc *OrgMetricsUseCase) GetLastWorkflowStatusByRun(ctx context.Context, org
 			OrgName:      orgName,
 			WorkflowName: wf.Name,
 			Status:       wf.LastRun.State,
+			Runner:       wf.LastRun.RunnerType,
 		})
 	}
 
