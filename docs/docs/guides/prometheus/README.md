@@ -1,5 +1,6 @@
 ---
 title: How to monitor your CI/CD systems with Chainloop and Prometheus
+image: ./integration-diagram.png
 ---
 
 Chainloop is an open-source Software Supply Chain control plane, a single source of truth for metadata and artifacts, plus a declarative attestation process.
