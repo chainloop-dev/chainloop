@@ -20,26 +20,26 @@ import (
 )
 
 type ChainloopRegistryManager struct {
-	Registries map[string]*registry.PrometheusRegistry
+	registries map[string]*registry.PrometheusRegistry
 }
 
 func NewChainloopRegistryManager() *ChainloopRegistryManager {
 	return &ChainloopRegistryManager{
-		Registries: make(map[string]*registry.PrometheusRegistry),
+		registries: make(map[string]*registry.PrometheusRegistry),
 	}
 }
 
 // AddRegistry adds a registry to the manager
 func (rm *ChainloopRegistryManager) AddRegistry(reg *registry.PrometheusRegistry) {
-	rm.Registries[reg.Name] = reg
+	rm.registries[reg.Name] = reg
 }
 
 // GetRegistryByName returns a registry by name
 func (rm *ChainloopRegistryManager) GetRegistryByName(name string) *registry.PrometheusRegistry {
-	return rm.Registries[name]
+	return rm.registries[name]
 }
 
 // DeleteRegistryByName deletes a registry by name
 func (rm *ChainloopRegistryManager) DeleteRegistryByName(name string) {
-	delete(rm.Registries, name)
+	delete(rm.registries, name)
 }
