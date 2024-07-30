@@ -18,8 +18,8 @@ syntax = "proto3";
 package controlplane.config.v1;
 
 import "buf/validate/validate.proto";
-import "credentials/v1/config.proto";
 import "controlplane/config/v1/config.proto";
+import "credentials/v1/config.proto";
 import "google/protobuf/duration.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1;conf";
@@ -125,7 +125,6 @@ message Auth {
     string domain = 1;
     string client_id = 2;
     string client_secret = 3;
-    string redirect_url_scheme = 4;
     // Optional login URL that will be used by the CLI to start the OIDC flow
     // If not provided, it will default to [controlplane domain]/login
     string login_url_override = 5;

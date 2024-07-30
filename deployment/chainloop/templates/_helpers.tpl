@@ -171,6 +171,31 @@ app.kubernetes.io/component: controlplane
 {{- end }}
 
 {{/*
+OIDC settings, will fallback to development settings if needed
+*/}}
+{{- define "controlplane.oidc_settings" -}}
+  {{- if .Values.development }}
+    {{- with .Values.controlplane.auth }}
+    domain: "{{ coalesce .oidc.url "http://chainloop-dex:5556/dex" }}"
+    clientID: "{{ coalesce .oidc.clientID "chainloop-dev" }}"
+    clientSecret: "{{ coalesce .oidc.clientSecret "ZXhhbXBsZS1hcHAtc2VjcmV0" }}"
+    {{- if .oidc.loginURLOverride }}
+    login_url_override: "{{ .oidc.loginURLOverride }}"
+    {{- end }}
+    {{- end }}
+  {{- else }}
+    {{- with .Values.controlplane.auth }}
+    domain: "{{ required "oidc URL endpoint required" .oidc.url }}"
+    client_id: "{{ required "oidc clientID required" .oidc.clientID }}"
+    client_secret: "{{ required "oidc clientSecret required" .oidc.clientSecret }}"
+    {{- if .oidc.loginURLOverride }}
+    login_url_override: "{{ .oidc.loginURLOverride }}"
+    {{- end }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+
+{{/*
 Create the name of the service account to use
 */}}
 {{- define "controlplane.serviceAccountName" -}}
