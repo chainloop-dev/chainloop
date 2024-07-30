@@ -61,7 +61,7 @@ controlplane:
     - org_name: cyberdyne
 ```
 
-In the example above, we have added the `prometheus_org_metrics` entry to the top level `controlplane` key. The `value org_name: cyberdyne` refers to the fact that we want to activate the metrics for the organization with the name cyberdyne.
+In the example above, we have added the `prometheus_org_metrics` entry to the top level `controlplane` key. The value `org_name: cyberdyne` refers to the fact that we want to activate the metrics for the organization with the name `cyberdyne`.
 
 If you want to activate it for more organizations, simply add them below:
 
