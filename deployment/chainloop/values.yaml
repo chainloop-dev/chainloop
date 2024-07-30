@@ -33,10 +33,6 @@ commonAnnotations: {}
 ##
 development: false
 
-## @param GKEMonitoring.enabled Enable GKE podMonitoring (prometheus.io scrape) to scrape the controlplane and CAS /metrics endpoints
-GKEMonitoring:
-  enabled: false
-
 ## @section Secrets Backend
 ##
 
