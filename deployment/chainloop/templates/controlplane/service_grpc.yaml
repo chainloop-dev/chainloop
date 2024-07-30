@@ -36,8 +36,9 @@ spec:
   {{- end }}
   ports:
     - name: grpc
-      port: {{ .Values.controlplane.serviceAPI.ports.http }}
-      {{- if not (eq .Values.controlplane.serviceAPI.ports.http .Values.controlplane.containerPorts.grpc) }}
+      {{- $port := coalesce .Values.controlplane.serviceAPI.port .Values.controlplane.serviceAPI.ports.http }}
+      port: {{ $port }}
+      {{- if not (eq $port .Values.controlplane.containerPorts.grpc) }}
       targetPort: {{ .Values.controlplane.containerPorts.grpc }}
       {{- end }}
       protocol: TCP

@@ -36,8 +36,9 @@ spec:
   {{- end }}
   ports:
     - name: http
-      port: {{ .Values.cas.service.ports.http }}
-      {{- if not (eq .Values.cas.service.ports.http .Values.cas.containerPorts.http) }}
+      {{- $port := coalesce .Values.cas.service.port .Values.cas.service.ports.http }}
+      port: {{ $port }}
+      {{- if not (eq $port .Values.cas.containerPorts.http) }}
       targetPort: {{ .Values.cas.containerPorts.http }}
       {{- end }}
       protocol: TCP

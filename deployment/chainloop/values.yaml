@@ -330,7 +330,7 @@ controlplane:
     ## ref http://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip
     ##
     externalTrafficPolicy: Cluster
-    ## @param controlplane.serviceAPI.annotations Additional custom annotations for controlplane service
+    ## @extra controlplane.serviceAPI.annotations Additional custom annotations for controlplane service
     ##
     annotations:
       ## @skip controlplane.serviceAPI.annotations.traefik.ingress.kubernetes.io/service.serversscheme
@@ -677,8 +677,8 @@ cas:
     ## @param cas.service.type Service type
     type: ClusterIP
 
-    ## @param cas.service.ports.http controlplane service HTTP port
-    ## @param cas.service.ports.https controlplane service HTTPS port
+    ## @param cas.service.ports.http cas service HTTP port
+    ## @param cas.service.ports.https cas service HTTPS port
     ##
     ports:
       http: 80
@@ -691,30 +691,30 @@ cas:
     nodePorts:
       http: ""
       https: ""
-    ## @param cas.service.clusterIP controlplane service Cluster IP
+    ## @param cas.service.clusterIP cas service Cluster IP
     ## e.g.:
     ## clusterIP: None
     ##
     clusterIP: ""
-    ## @param cas.service.loadBalancerIP controlplane service Load Balancer IP
+    ## @param cas.service.loadBalancerIP cas service Load Balancer IP
     ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-loadbalancer
     ##
     loadBalancerIP: ""
-    ## @param cas.service.loadBalancerSourceRanges controlplane service Load Balancer sources
+    ## @param cas.service.loadBalancerSourceRanges cas service Load Balancer sources
     ## ref: https://kubernetes.io/docs/tasks/access-application-cluster/configure-cloud-provider-firewall/#restrict-access-for-loadbalancer-service
     ## e.g:
     ## loadBalancerSourceRanges:
     ##   - 10.10.10.0/24
     ##
     loadBalancerSourceRanges: []
-    ## @param cas.service.externalTrafficPolicy controlplane service external traffic policy
+    ## @param cas.service.externalTrafficPolicy cas service external traffic policy
     ## ref http://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip
     ##
     externalTrafficPolicy: Cluster
-    ## @param cas.service.annotations Additional custom annotations for controlplane service
+    ## @param cas.service.annotations Additional custom annotations for cas service
     ##
     annotations: {}
-    ## @param cas.service.extraPorts Extra ports to expose in controlplane service (normally used with the `sidecars` value)
+    ## @param cas.service.extraPorts Extra ports to expose in cas service (normally used with the `sidecars` value)
     ##
     extraPorts: []
     ## @param cas.service.sessionAffinity Control where client requests go, to the same pod or round-robin
@@ -732,18 +732,61 @@ cas:
   serviceAPI:
     ## @param cas.serviceAPI.type Service type
     type: ClusterIP
-    ## @param cas.serviceAPI.port Service port
-    port: 80
-    ## @param cas.serviceAPI.targetPort Service target Port
-    targetPort: grpc
-    ## @extra cas.serviceAPI.annotations Service annotations
+
+    ## @param cas.serviceAPI.ports.http cas service HTTP port
+    ## @param cas.serviceAPI.ports.https cas service HTTPS port
+    ##
+    ports:
+      http: 80
+      https: 443
+    ## Node ports to expose
+    ## @param cas.serviceAPI.nodePorts.http Node port for HTTP
+    ## @param cas.serviceAPI.nodePorts.https Node port for HTTPS
+    ## NOTE: choose port between <30000-32767>
+    ##
+    nodePorts:
+      http: ""
+      https: ""
+    ## @param cas.serviceAPI.clusterIP cas service Cluster IP
+    ## e.g.:
+    ## clusterIP: None
+    ##
+    clusterIP: ""
+    ## @param cas.serviceAPI.loadBalancerIP cas service Load Balancer IP
+    ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-loadbalancer
+    ##
+    loadBalancerIP: ""
+    ## @param cas.serviceAPI.loadBalancerSourceRanges cas service Load Balancer sources
+    ## ref: https://kubernetes.io/docs/tasks/access-application-cluster/configure-cloud-provider-firewall/#restrict-access-for-loadbalancer-service
+    ## e.g:
+    ## loadBalancerSourceRanges:
+    ##   - 10.10.10.0/24
+    ##
+    loadBalancerSourceRanges: []
+    ## @param cas.serviceAPI.externalTrafficPolicy cas service external traffic policy
+    ## ref http://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip
+    ##
+    externalTrafficPolicy: Cluster
+    ## @extra cas.serviceAPI.annotations Additional custom annotations for cas service
+    ##
     annotations:
       ## @skip cas.serviceAPI.annotations.traefik.ingress.kubernetes.io/service.serversscheme
-      traefik.ingress.kubernetes.io/service.serversscheme: h2c
+      traefik.ingress.kubernetes.io/service.serversscheme: h2c 
+    ## @param cas.serviceAPI.extraPorts Extra ports to expose in cas service (normally used with the `sidecars` value)
+    ##
+    extraPorts: []
+    ## @param cas.serviceAPI.sessionAffinity Control where client requests go, to the same pod or round-robin
+    ## Values: ClientIP or None
+    ## ref: https://kubernetes.io/docs/concepts/services-networking/service/
+    ##
+    sessionAffinity: None
+    ## @param cas.serviceAPI.sessionAffinityConfig Additional settings for the sessionAffinity
+    ## sessionAffinityConfig:
+    ##   clientIP:
+    ##     timeoutSeconds: 300
+    ##
+    sessionAffinityConfig: {}
 
-    ## @extra cas.serviceAPI.nodePorts.http Node port for HTTP. NOTE: choose port between [30000-32767]
-    # nodePorts:
-    #   http: "30901"
 
   ## ref: http://kubernetes.io/docs/user-guide/ingress/
   ingress:

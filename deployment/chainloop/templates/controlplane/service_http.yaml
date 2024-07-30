@@ -36,8 +36,9 @@ spec:
   {{- end }}
   ports:
     - name: http
-      port: {{ .Values.controlplane.service.ports.http }}
-      {{- if not (eq .Values.controlplane.service.ports.http .Values.controlplane.containerPorts.http) }}
+      {{- $port := coalesce .Values.controlplane.service.port .Values.controlplane.service.ports.http }}
+      port: {{ $port }}
+      {{- if not (eq $port .Values.controlplane.containerPorts.http) }}
       targetPort: {{ .Values.controlplane.containerPorts.http }}
       {{- end }}
       protocol: TCP
