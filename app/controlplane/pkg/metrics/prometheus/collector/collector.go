@@ -32,6 +32,7 @@ type WorkflowLastStatusByRunReport struct {
 	WorkflowName string `json:"workflow_name"`
 	OrgName      string `json:"org_name"`
 	Status       string `json:"status"`
+	Runner       string `json:"runner"`
 }
 
 // ChainloopCollector is a base implementation of the ChainloopCollector interface
@@ -52,7 +53,7 @@ func NewChainloopCollector(orgName string, gatherer ChainloopMetricsGatherer, lo
 		workflowLastRunSuccessful: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "chainloop_workflow_up",
 			Help: "Indicate if the last run was successful.",
-		}, []string{"org", "workflow"}),
+		}, []string{"org", "workflow", "runner"}),
 		logger: log.NewHelper(log.With(logger, "component", "collector/prometheus")),
 	}
 }
@@ -72,9 +73,9 @@ func (bcc *ChainloopCollector) Collect(ch chan<- prometheus.Metric) {
 
 	for _, r := range wfReports {
 		if r.Status == "success" {
-			bcc.workflowLastRunSuccessful.WithLabelValues(r.OrgName, r.WorkflowName).Set(1)
+			bcc.workflowLastRunSuccessful.WithLabelValues(r.OrgName, r.WorkflowName, r.Runner).Set(1)
 		} else {
-			bcc.workflowLastRunSuccessful.WithLabelValues(r.OrgName, r.WorkflowName).Set(0)
+			bcc.workflowLastRunSuccessful.WithLabelValues(r.OrgName, r.WorkflowName, r.Runner).Set(0)
 		}
 	}
 
