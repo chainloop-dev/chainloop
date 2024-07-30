@@ -474,12 +474,11 @@ chainloop config save \
 
 ### Common parameters
 
-| Name                    | Description                                                                                                                                                            | Value   |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| `kubeVersion`           | Override Kubernetes version                                                                                                                                            | `""`    |
-| `commonAnnotations`     | Annotations to add to all deployed objects                                                                                                                             | `{}`    |
-| `development`           | Deploys Chainloop pre-configured FOR DEVELOPMENT ONLY. It includes a Vault instance in development mode and pre-configured authentication certificates and passphrases | `false` |
-| `GKEMonitoring.enabled` | Enable GKE podMonitoring (prometheus.io scrape) to scrape the controlplane and CAS /metrics endpoints                                                                  | `false` |
+| Name                | Description                                                                                                                                                            | Value   |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| `kubeVersion`       | Override Kubernetes version                                                                                                                                            | `""`    |
+| `commonAnnotations` | Annotations to add to all deployed objects                                                                                                                             | `{}`    |
+| `development`       | Deploys Chainloop pre-configured FOR DEVELOPMENT ONLY. It includes a Vault instance in development mode and pre-configured authentication certificates and passphrases | `false` |
 
 ### Secrets Backend
 
