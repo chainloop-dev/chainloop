@@ -200,7 +200,6 @@ require (
 	goa.design/goa v2.2.5+incompatible // indirect
 	gopkg.in/go-jose/go-jose.v2 v2.6.3 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	gotest.tools/v3 v3.5.1 // indirect
 )
 
 require (
