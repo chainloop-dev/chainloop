@@ -3,19 +3,28 @@ Copyright Chainloop, Inc. All Rights Reserved.
 SPDX-License-Identifier: APACHE-2.0
 */}}
 
-apiVersion: apps/v1
+apiVersion: {{ include "common.capabilities.deployment.apiVersion" . }}
 kind: Deployment
 metadata:
   name: {{ include "chainloop.controlplane.fullname" . }}
-  labels:
-    {{- include "chainloop.controlplane.labels" . | nindent 4 }}
+  namespace: {{ include "common.names.namespace" . | quote }}
+  labels: {{- include "common.labels.standard" ( dict "customLabels" .Values.commonLabels "context" $ ) | nindent 4 }}
+    app.kubernetes.io/component: controlplane
+  {{- if or .Values.controlplane.deploymentAnnotations .Values.commonAnnotations }}
+  {{- $annotations := include "common.tplvalues.merge" (dict "values" (list .Values.controlplane.deploymentAnnotations .Values.commonAnnotations) "context" .) }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" $annotations "context" $ ) | nindent 4 }}
+  {{- end }}
 spec:
-  {{- if not .Values.controlplane.autoscaling.enabled }}
+  {{- if not .Values.controlplane.autoscaling.hpa.enabled }}
   replicas: {{ .Values.controlplane.replicaCount }}
   {{- end }}
+  {{- if .Values.controlplane.updateStrategy }}
+  strategy: {{- toYaml .Values.controlplane.updateStrategy | nindent 4 }}
+  {{- end }}
+  {{- $podLabels := include "common.tplvalues.merge" (dict "values" (list .Values.controlplane.podLabels .Values.commonLabels) "context" .) }}
   selector:
-    matchLabels:
-      {{- include "chainloop.controlplane.selectorLabels" . | nindent 6 }}
+    matchLabels: {{- include "common.labels.matchLabels" ( dict "customLabels" $podLabels "context" $ ) | nindent 6 }}
+      app.kubernetes.io/component: controlplane
   template:
     metadata:
       annotations:
