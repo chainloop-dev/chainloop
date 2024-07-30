@@ -4,15 +4,16 @@ title: How to monitor your CI/CD systems with Chainloop and Prometheus
 
 Chainloop is an open-source Software Supply Chain control plane, a single source of truth for metadata and artifacts, plus a declarative attestation process.
 
-With Chainloop, SecOps teams can declaratively state the pieces of evidence and artifact expectations for their organization’s CI/CD workflows. At the same time, they can rest assured that the metadata will reach the desired destination for storage and analysis, always meeting the latest standards and best practices.
-
 ![chainloop-overview](./overview.png)
 
-Using Chainloop, you can effortlessly integrate your CI/CD pipelines or processes by defining a Chainloop [Workflow](../../getting-started/workflow-definition.mdx#workflows). These workflows can include a Chainloop [Contract](../../getting-started/workflow-definition.mdx#workflow-contracts) if desired, based on your requirements. As a result, Chainloop can serve as the central authority for your system's health, provided that a sufficient number of CI pipelines or processes are instrumented.
+Using Chainloop, you can effortlessly integrate your CI/CD pipelines or processes by defining a Chainloop [Workflow](../../getting-started/workflow-definition.mdx#workflows). These workflows can include a Chainloop [Contract](../../getting-started/workflow-definition.mdx#workflow-contracts) if desired, based on your requirements. As a result, Chainloop can serve as the central authority for your CI/CD operational health.
 
 ## Prometheus Integration
-Chainloop integrates with Prometheus, allowing end users to gain insights into their Chainloop Workflows. This provides an opportunity to monitor the processes you have instrumented using the Chainloop CLI and get up-to-date information to react to changes.
-For the moment, the below metrics are being exposed but, more can be expected:
+Chainloop integrates with Prometheus, allowing end users to gain insights into their CI/CD pipelines automatically, in an standardized way.
+
+![integration-diagram](./integration-diagram.png)
+
+For the moment, the following metrics are being exposed but, more can be expected:
 
 - `chainloop_workflow_up`: Indicate if the last run was successful.
 - `chainloop_workflow_run_duration_seconds`: Duration of a workflow runs in seconds.
@@ -34,14 +35,14 @@ It's important to note that the endpoint is authenticated and can be accessed un
 ### How to activate Prometheus Integration?
 In order to use the Prometheus integration there a few steps that need to be performed:
 
-1. Create or use an existing organization.
+1. Create or use an existing Chainloop organization.
 2. Generate an API Token for the organization.
-3. Update Chainloop Controlplane configuration.
+3. Update Chainloop Controlplane configuration to activate prometheus endpoint for that org.
 
-#### Create or use an existing organization
-If you already have a Chainloop Organization, you only need to know its name. If you don't have an existing Chainloop Organization, log in and run the following command, replacing `ORG_NAME` with your desired organization name:
+#### Create or use an existing Chainloop organization
+If you already have a Chainloop Organization, you only need to know its name. If you don't have an existing Chainloop Organization, log in and run the following command:
 ```bash
-chainloop organization create --name ORG_NAME
+chainloop organization create --name cyberdyne
 ```
 
 #### Generate an API Token for the organization
@@ -57,10 +58,10 @@ When using the Chainloop Open Source Chart, there are a few configurations you c
 controlplane:
   # existing or previous values.yaml configuration
   prometheus_org_metrics:
-    - org_name: read-only-demo
+    - org_name: cyberdyne
 ```
 
-In the example above, we have added the `prometheus_org_metrics` entry to the top level `controlplane` key. The `value org_name: read-only-demo` refers to the fact that we want to activate the metrics for the organization with the name read-only-demo.
+In the example above, we have added the `prometheus_org_metrics` entry to the top level `controlplane` key. The `value org_name: cyberdyne` refers to the fact that we want to activate the metrics for the organization with the name cyberdyne.
 
 If you want to activate it for more organizations, simply add them below:
 
@@ -68,30 +69,30 @@ If you want to activate it for more organizations, simply add them below:
 controlplane:
   # existing or previous values.yaml configuration
   prometheus_org_metrics:
-    - org_name: read-only-demo	
+    - org_name: cyberdyne	
     - org_name: acme-corp
 ```
 
 ### Test the metrics endpoint
 
-With the generated API Token and changed configuration, we can test that everything works as expected by making a request to the Chainloop’s Controlplane to gather metrics for read-only-demo organization:
+With the generated API Token and changed configuration, we can test that everything works as expected by making a request to the Chainloop’s Controlplane to gather metrics for cyberdyne organization:
 ```bash
 curl -H 'Authorization: Bearer API_TOKEN' \
-     'https://CHAINLOOP_CONTROLPLANE_URL/prom/read-only-demo/metrics'
+     'https://CHAINLOOP_CONTROLPLANE_URL/prom/cyberdyne/metrics'
 ```
 
 Which, will return similar metrics in [Prometheus compatible format](https://github.com/prometheus/docs/blob/main/content/docs/instrumenting/exposition_formats.md):
 ```text
 # HELP chainloop_workflow_up Indicate if the last run was successful.
 # TYPE chainloop_workflow_up gauge
-chainloop_workflow_up{org="read-only-demo",workflow="backend-release-production"} 1
-chainloop_workflow_up{org="read-only-demo",workflow="chainloop-docs-release"} 1
-chainloop_workflow_up{org="read-only-demo",workflow="chainloop-labs-tests"} 1
-chainloop_workflow_up{org="read-only-demo",workflow="chainloop-platform-deploy"} 0
-chainloop_workflow_up{org="read-only-demo",workflow="chainloop-platform-qa-approval"} 1
-chainloop_workflow_up{org="read-only-demo",workflow="chainloop-platform-release-canary"} 1
-chainloop_workflow_up{org="read-only-demo",workflow="chainloop-platform-release-production"} 1
-chainloop_workflow_up{org="read-only-demo",workflow="chainloop-vault-build-and-package"} 1
+chainloop_workflow_up{org="cyberdyne",workflow="backend-release-production"} 1
+chainloop_workflow_up{org="cyberdyne",workflow="chainloop-docs-release"} 1
+chainloop_workflow_up{org="cyberdyne",workflow="chainloop-labs-tests"} 1
+chainloop_workflow_up{org="cyberdyne",workflow="chainloop-platform-deploy"} 0
+chainloop_workflow_up{org="cyberdyne",workflow="chainloop-platform-qa-approval"} 1
+chainloop_workflow_up{org="cyberdyne",workflow="chainloop-platform-release-canary"} 1
+chainloop_workflow_up{org="cyberdyne",workflow="chainloop-platform-release-production"} 1
+chainloop_workflow_up{org="cyberdyne",workflow="chainloop-vault-build-and-package"} 1
 ```
 
 ### How to connect to your Prometheus instance?
@@ -100,26 +101,19 @@ Depending on how Prometheus is deployed in your infrastructure, there could be s
 ```yaml
 scrape_configs:
   - job_name: chainloop-metrics
-    scrape_interval: 15s
-    scrape_timeout: 10s
-    scrape_protocols:
-      - OpenMetricsText1.0.0
-      - OpenMetricsText0.0.1
-      - PrometheusText0.0.4
-    metrics_path: /prom/read-only-demo/metrics
+    metrics_path: /prom/cyberdyne/metrics
     scheme: https
     bearer_token: CHAINLOOP_API_TOKEN
-    enable_compression: true
     static_configs:
       - targets:
           - https://CHAINLOOP_CONTROLPLANE_URL
 ```
 In the previous configuration we can see how we have added a new scrape config called `chainloop-metrics` with several options, the most important ones:
-- metrics_path: `/prom/read-only-demo/metrics`
+- metrics_path: `/prom/cyberdyne/metrics`
 - bearer_token: The Chainloop API Token previously generated
 - target: `https://CHAINLOOP_CONTROLPLANE_URL`
 
-With the configuration we will retrieve the metrics for read-only-demo using an authenticated API Token against the installation of Chainloop’s Controlplane.
+With the configuration we will retrieve the metrics for cyberdyne using an authenticated API Token against the installation of Chainloop’s Controlplane.
 
 On another hand you are using the [Prometheus Operator](https://prometheus-operator.dev), you can also leverage almost the same configuration using a [ScrapeConfig](https://prometheus-operator.dev/docs/api-reference/api/#monitoring.coreos.com/v1alpha1.ScrapeConfig):
 ```yaml
@@ -127,18 +121,17 @@ apiVersion: monitoring.coreos.com/v1alpha1
 kind: ScrapeConfig
 metadata:
  name: test
- namespace: prometheus
 spec:
  scrapeInterval: 15s
  authorization:
    type: Bearer
    credentials:
-     name: read-only-demo-metrics-token
+     name: cyberdyne-metrics-token
      key: token
  staticConfigs:
    - targets:
        - https://CHAINLOOP_CONTROLPLANE_URL
- metricsPath: /prom/read-only-demo/metrics
+ metricsPath: /prom/cyberdyne/metrics
 ```
 
 Where we have created a scrape entry to be added to the global Prometheus configuration with Chainloop’s Controlplane as target and the API Token as secret used for authentication.
