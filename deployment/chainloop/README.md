@@ -529,17 +529,14 @@ chainloop config save \
 
 ### Control Plane Database
 
-| Name                                     | Description                                                                                           | Value   |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------- |
-| `controlplane.externalDatabase`          | External PostgreSQL configuration. These values are only used when postgresql.enabled is set to false |         |
-| `controlplane.externalDatabase.host`     | Database host                                                                                         | `""`    |
-| `controlplane.externalDatabase.port`     | Database port number                                                                                  | `5432`  |
-| `controlplane.externalDatabase.user`     | Non-root username                                                                                     | `""`    |
-| `controlplane.externalDatabase.database` | Database name                                                                                         | `""`    |
-| `controlplane.externalDatabase.password` | Password for the non-root username                                                                    | `""`    |
-| `controlplane.sqlProxy.enabled`          | Enable sidecar to connect to DB via Google Cloud SQL proxy                                            | `false` |
-| `controlplane.sqlProxy.connectionName`   | Google Cloud SQL connection name                                                                      | `""`    |
-| `controlplane.sqlProxy.resources`        | Sidecar container resources                                                                           | `{}`    |
+| Name                                     | Description                                                                                           | Value  |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------ |
+| `controlplane.externalDatabase`          | External PostgreSQL configuration. These values are only used when postgresql.enabled is set to false |        |
+| `controlplane.externalDatabase.host`     | Database host                                                                                         | `""`   |
+| `controlplane.externalDatabase.port`     | Database port number                                                                                  | `5432` |
+| `controlplane.externalDatabase.user`     | Non-root username                                                                                     | `""`   |
+| `controlplane.externalDatabase.database` | Database name                                                                                         | `""`   |
+| `controlplane.externalDatabase.password` | Password for the non-root username                                                                    | `""`   |
 
 ### Control Plane Authentication
 
