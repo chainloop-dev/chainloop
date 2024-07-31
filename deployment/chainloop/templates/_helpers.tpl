@@ -122,13 +122,6 @@ Controlplane helpers
 ##############################################################################
 */}}
 
-{{/*
-Chainloop Controlplane GRPC URL
-*/}}
-{{- define "chainloop.controlplane.grpc_url" -}}
-{{ printf "%s-api:%.0f" (include "chainloop.controlplane.fullname" .) (coalesce .Values.controlplane.serviceAPI.port .Values.cas.serviceAPI.ports.http) }}
-{{- end -}}
-
 {{- define "chainloop.controlplane.image" -}}
 {{ include "common.images.image" (dict "imageRoot" .Values.controlplane.image "global" .Values.global) }}
 {{- end -}}
@@ -339,13 +332,6 @@ observability:
 CAS Helpers
 ##############################################################################
 */}}
-
-{{/*
-Chainloop CAS GRPC URL
-*/}}
-{{- define "chainloop.cas.grpc_url" -}}
-{{ printf "%s-api:%.0f" (include "chainloop.cas.fullname" .) (coalesce .Values.cas.serviceAPI.port .Values.cas.serviceAPI.ports.http) }}
-{{- end -}}
 
 {{- define "chainloop.cas.image" -}}
 {{ include "common.images.image" (dict "imageRoot" .Values.cas.image "global" .Values.global) }}

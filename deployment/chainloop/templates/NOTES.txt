@@ -11,8 +11,8 @@ APP VERSION: {{ .Chart.AppVersion  }}
 Configure the CLI to point to this instance, for example
 
   chainloop --insecure config save \
-    --control-plane {{ include "chainloop.controlplane.grpc_url" . }} \
-    --artifact-cas {{ include "chainloop.cas.grpc_url" . }}
+    --control-plane my-controlplane.acme.com:80 \
+    --artifact-cas cas.acme.com:80
 
 Refer to this link for more information
 https://docs.chainloop.dev/getting-started/installation#configure-cli-optional
