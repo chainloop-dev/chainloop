@@ -394,3 +394,26 @@ NOTE: Load balancer service type is not supported
 {{- printf "http://localhost:%s" $service.nodePorts.http }}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Check for Development mode
+*/}}
+{{- define "chainloop.validateValues.development" -}}
+{{- if .Values.development }}
+{{-     printf "\n###########################################################################\n  DEVELOPMENT MODE\n###########################################################################\n\n██████╗ ███████╗██╗    ██╗ █████╗ ██████╗ ███████╗\n██╔══██╗██╔════╝██║    ██║██╔══██╗██╔══██╗██╔════╝\n██████╔╝█████╗  ██║ █╗ ██║███████║██████╔╝█████╗\n██╔══██╗██╔══╝  ██║███╗██║██╔══██║██╔══██╗██╔══╝\n██████╔╝███████╗╚███╔███╔╝██║  ██║██║  ██║███████╗\n╚═════╝ ╚══════╝ ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝\n\nInstance running in development mode!\n\nDevelopment mode, by default\n\n- Runs an insecure, unsealed, non-persistent instance of Vault\n- Is configured with development authentication keys\n\nDO NOT USE IT FOR PRODUCTION PURPOSES" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Compile all warning messages into a single one
+*/}}
+{{- define "chainloop.validateValues" -}}
+{{- $messages := list -}}
+{{- $messages := append $messages (include "chainloop.validateValues.development" .) -}}
+{{- $messages := without $messages "" -}}
+{{- $message := join "\n" $messages -}}
+
+{{- if $message -}}
+{{-   printf "\n\nVALUES VALIDATION:\n%s" $message -}}
+{{- end -}}
+{{- end -}}
