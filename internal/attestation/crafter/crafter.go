@@ -521,9 +521,24 @@ func (c *Crafter) AddMaterialFromContract(ctx context.Context, attestationID, ke
 	return c.addMaterial(ctx, m, attestationID, value, casBackend, runtimeAnnotations)
 }
 
-// AddMaterialContactFreeAutomatic adds a material to the crafting state checking the incoming material matches any of the
+// IsMaterialInContract checks if the material is in the contract schema
+func (c *Crafter) IsMaterialInContract(key string) bool {
+	if err := c.requireStateLoaded(); err != nil {
+		return false
+	}
+
+	for _, d := range c.CraftingState.InputSchema.Materials {
+		if d.Name == key {
+			return true
+		}
+	}
+
+	return false
+}
+
+// AddMaterialContactFreeWithAutoDetectedKind adds a material to the crafting state checking the incoming material matches any of the
 // supported types in validation order. If the material is not found it will return an error.
-func (c *Crafter) AddMaterialContactFreeAutomatic(ctx context.Context, attestationID, name, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string) (schemaapi.CraftingSchema_Material_MaterialType, error) {
+func (c *Crafter) AddMaterialContactFreeWithAutoDetectedKind(ctx context.Context, attestationID, name, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string) (schemaapi.CraftingSchema_Material_MaterialType, error) {
 	for _, kind := range schemaapi.CraftingMaterialInValidationOrder {
 		err := c.AddMaterialContractFree(ctx, attestationID, kind.String(), name, value, casBackend, runtimeAnnotations)
 		if err == nil {

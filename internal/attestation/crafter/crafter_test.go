@@ -560,7 +560,7 @@ func (s *crafterSuite) TestAddMaterialsAutomatic() {
 			c, err := newInitializedCrafter(s.T(), contract, &v1.WorkflowMetadata{}, false, "", runner)
 			require.NoError(s.T(), err)
 
-			kind, err := c.AddMaterialContactFreeAutomatic(context.Background(), "random-id", tc.materialName, tc.materialPath, backend, nil)
+			kind, err := c.AddMaterialContactFreeWithAutoDetectedKind(context.Background(), "random-id", tc.materialName, tc.materialPath, backend, nil)
 			if tc.wantErr {
 				assert.ErrorIs(s.T(), err, materials.ErrBaseUploadAndCraft)
 			} else {
