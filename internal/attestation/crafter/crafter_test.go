@@ -474,6 +474,7 @@ func (s *crafterSuite) TestAddMaterialsAutomatic() {
 	testCases := []struct {
 		name           string
 		materialPath   string
+		materialName   string
 		expectedType   schemaapi.CraftingSchema_Material_MaterialType
 		uploadArtifact bool
 		wantErr        bool
@@ -495,6 +496,12 @@ func (s *crafterSuite) TestAddMaterialsAutomatic() {
 		},
 		{
 			name:         "junit",
+			materialPath: "./materials/testdata/junit.xml",
+			expectedType: schemaapi.CraftingSchema_Material_JUNIT_XML,
+		},
+		{
+			name:         "junit with custom material name",
+			materialName: "custom-junit-material",
 			materialPath: "./materials/testdata/junit.xml",
 			expectedType: schemaapi.CraftingSchema_Material_JUNIT_XML,
 		},
@@ -553,13 +560,18 @@ func (s *crafterSuite) TestAddMaterialsAutomatic() {
 			c, err := newInitializedCrafter(s.T(), contract, &v1.WorkflowMetadata{}, false, "", runner)
 			require.NoError(s.T(), err)
 
-			kind, err := c.AddMaterialContactFreeAutomatic(context.Background(), "random-id", tc.materialPath, backend, nil)
+			kind, err := c.AddMaterialContactFreeAutomatic(context.Background(), "random-id", tc.materialName, tc.materialPath, backend, nil)
 			if tc.wantErr {
 				assert.ErrorIs(s.T(), err, materials.ErrBaseUploadAndCraft)
 			} else {
 				require.NoError(s.T(), err)
 			}
 			assert.Equal(s.T(), tc.expectedType.String(), kind.String())
+			if tc.materialName != "" {
+				attestationMaterials := c.CraftingState.Attestation.Materials
+				_, found := attestationMaterials[tc.materialName]
+				assert.True(s.T(), found)
+			}
 		})
 	}
 }
