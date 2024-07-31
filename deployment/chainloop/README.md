@@ -478,6 +478,7 @@ chainloop config save \
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
 | `kubeVersion`       | Override Kubernetes version                                                                                                                                            | `""`    |
 | `commonAnnotations` | Annotations to add to all deployed objects                                                                                                                             | `{}`    |
+| `commonLabels`      | Labels to add to all deployed objects                                                                                                                                  | `{}`    |
 | `development`       | Deploys Chainloop pre-configured FOR DEVELOPMENT ONLY. It includes a Vault instance in development mode and pre-configured authentication certificates and passphrases | `false` |
 
 ### Secrets Backend
