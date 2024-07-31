@@ -122,6 +122,13 @@ Controlplane helpers
 ##############################################################################
 */}}
 
+{{/*
+Chainloop Controlplane GRPC URL
+*/}}
+{{- define "chainloop.controlplane.grpc_url" -}}
+{{ printf "%s-api:%.0f" (include "chainloop.controlplane.fullname" .) (coalesce .Values.controlplane.serviceAPI.port .Values.cas.serviceAPI.ports.http) }}
+{{- end -}}
+
 {{- define "chainloop.controlplane.image" -}}
 {{ include "common.images.image" (dict "imageRoot" .Values.controlplane.image "global" .Values.global) }}
 {{- end -}}
@@ -333,6 +340,13 @@ CAS Helpers
 ##############################################################################
 */}}
 
+{{/*
+Chainloop CAS GRPC URL
+*/}}
+{{- define "chainloop.cas.grpc_url" -}}
+{{ printf "%s-api:%.0f" (include "chainloop.cas.fullname" .) (coalesce .Values.cas.serviceAPI.port .Values.cas.serviceAPI.ports.http) }}
+{{- end -}}
+
 {{- define "chainloop.cas.image" -}}
 {{ include "common.images.image" (dict "imageRoot" .Values.cas.image "global" .Values.global) }}
 {{- end -}}
@@ -392,5 +406,28 @@ NOTE: Load balancer service type is not supported
 {{- printf "%s://%s" (ternary "https" "http" $ingress.tls ) $ingress.hostname }}
 {{- else if (and (eq $service.type "NodePort") $service.nodePorts (not (empty $service.nodePorts.http))) }}
 {{- printf "http://localhost:%s" $service.nodePorts.http }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Check for Development mode
+*/}}
+{{- define "chainloop.validateValues.development" -}}
+{{- if .Values.development }}
+{{-     printf "\n###########################################################################\n  DEVELOPMENT MODE\n###########################################################################\n\n██████╗ ███████╗██╗    ██╗ █████╗ ██████╗ ███████╗\n██╔══██╗██╔════╝██║    ██║██╔══██╗██╔══██╗██╔════╝\n██████╔╝█████╗  ██║ █╗ ██║███████║██████╔╝█████╗\n██╔══██╗██╔══╝  ██║███╗██║██╔══██║██╔══██╗██╔══╝\n██████╔╝███████╗╚███╔███╔╝██║  ██║██║  ██║███████╗\n╚═════╝ ╚══════╝ ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝\n\nInstance running in development mode!\n\nDevelopment mode, by default\n\n- Runs an insecure, unsealed, non-persistent instance of Vault\n- Is configured with development authentication keys\n\nDO NOT USE IT FOR PRODUCTION PURPOSES" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Compile all warning messages into a single one
+*/}}
+{{- define "chainloop.validateValues" -}}
+{{- $messages := list -}}
+{{- $messages := append $messages (include "chainloop.validateValues.development" .) -}}
+{{- $messages := without $messages "" -}}
+{{- $message := join "\n" $messages -}}
+
+{{- if $message -}}
+{{-   printf "\n\nVALUES VALIDATION:\n%s" $message -}}
 {{- end -}}
 {{- end -}}

@@ -34,7 +34,7 @@ data:
         {{- end }}
     cas_server:
       grpc:
-        addr: {{ printf "%s-api:%.0f" (include "chainloop.cas.fullname" .) (coalesce .Values.cas.serviceAPI.port .Values.cas.serviceAPI.ports.http) }}
+        addr: {{ include "chainloop.cas.grpc_url" . }}
       insecure: {{ empty .Values.cas.tlsConfig.secret.name }}
       download_url: {{ include "chainloop.cas.external_url" . }}/download
     plugins_dir: {{ .Values.controlplane.pluginsDir }}
