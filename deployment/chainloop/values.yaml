@@ -29,6 +29,10 @@ kubeVersion: ""
 ##
 commonAnnotations: {}
 
+## @param commonLabels Labels to add to all deployed objects
+##
+commonLabels: {}
+
 ## @param development Deploys Chainloop pre-configured FOR DEVELOPMENT ONLY. It includes a Vault instance in development mode and pre-configured authentication certificates and passphrases
 ##
 development: false
