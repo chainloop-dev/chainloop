@@ -57,7 +57,7 @@ require (
 	golang.org/x/term v0.21.0
 	google.golang.org/api v0.172.0
 	google.golang.org/genproto v0.0.0-20240311173647-c811ad7063a7 // indirect
-	google.golang.org/grpc v1.62.1
+	google.golang.org/grpc v1.64.1
 	google.golang.org/protobuf v1.33.0
 	sigs.k8s.io/yaml v1.4.0
 )
@@ -205,7 +205,7 @@ require (
 require (
 	ariga.io/atlas v0.19.1-0.20240203083654-5948b60a8e43 // indirect
 	cloud.google.com/go v0.112.1 // indirect
-	cloud.google.com/go/compute v1.25.0 // indirect
+	cloud.google.com/go/compute v1.25.1 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/iam v1.1.6 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/keyvault/azsecrets v0.12.0
