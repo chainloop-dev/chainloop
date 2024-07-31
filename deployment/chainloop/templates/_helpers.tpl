@@ -329,52 +329,6 @@ observability:
 
 {{/*
 ##############################################################################
-sql-proxy helpers
-##############################################################################
-*/}}
-
-{{/*
-Chainloop sql-proxy release name
-*/}}
-{{- define "chainloop.sql-proxy.fullname" -}}
-{{- printf "%s-%s" (include "common.names.fullname" .) "sql-proxy" | trunc 63 | trimSuffix "-" -}}
-{{- end -}}
-
-{{/*
-Chainloop sql-proxy Chart fullname
-*/}}
-{{- define "chainloop.sql-proxy.name" -}}
-{{- printf "%s-%s" (include "common.names.name" .) "sql-proxy" | trunc 63 | trimSuffix "-" -}}
-{{- end -}}
-
-{{/*
-Common labels
-*/}}
-{{- define "chainloop.sql-proxy.labels" -}}
-{{- include "common.labels.standard" . }}
-app.kubernetes.io/part-of: chainloop
-app.kubernetes.io/component: sql-proxy
-{{- end }}
-
-{{/*
-Migration labels
-*/}}
-{{- define "chainloop.sql-proxy.migration.labels" -}}
-{{- include "common.labels.standard" . }}
-app.kubernetes.io/part-of: chainloop
-app.kubernetes.io/component: sql-proxy-migration
-{{- end }}
-
-{{/*
-Selector labels
-*/}}
-{{- define "chainloop.sql-proxy.selectorLabels" -}}
-{{- include "common.labels.matchLabels" .}}
-app.kubernetes.io/component: sql-proxy
-{{- end }}
-
-{{/*
-##############################################################################
 CAS Helpers
 ##############################################################################
 */}}
