@@ -147,18 +147,19 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 		}
 		action.Logger.Info().Str("kind", kind.String()).Msg("material kind detected")
 	case materialName != "":
+		switch {
 		// If the material is in the contract, add it from the contract
-		if crafter.IsMaterialInContract(materialName) {
+		case crafter.IsMaterialInContract(materialName):
 			err = crafter.AddMaterialFromContract(ctx, attestationID, materialName, materialValue, casBackend, annotations)
-		} else if materialType == "" {
-			// If the material is not in the contract and the materialType is not provided, add material contract free with auto-detected kind, guessing the kind
+		// If the material is not in the contract and the materialType is not provided, add material contract free with auto-detected kind, guessing the kind
+		case materialType == "":
 			kind, err = crafter.AddMaterialContactFreeWithAutoDetectedKind(ctx, attestationID, materialName, materialValue, casBackend, annotations)
 			if err != nil {
 				return fmt.Errorf("adding material: %w", err)
 			}
 			action.Logger.Info().Str("kind", kind.String()).Msg("material kind detected")
-		} else {
-			// If the material is not in the contract and has a materialType, add material contract free with the provided materialType
+		// If the material is not in the contract and has a materialType, add material contract free with the provided materialType
+		default:
 			err = crafter.AddMaterialContractFree(ctx, attestationID, materialType, materialName, materialValue, casBackend, annotations)
 		}
 	default:
