@@ -548,55 +548,63 @@ controlplane:
 
   ## @section Controlplane Misc
 
-  ## ref: https://kubernetes.io/docs/user-guide/compute-resources/
-  ## @param controlplane.resources.limits.cpu Container resource limits CPU
-  ## @param controlplane.resources.limits.memory Container resource limits memory
-  ## @param controlplane.resources.requests.cpu Container resource requests CPU
-  ## @param controlplane.resources.requests.memory Container resource requests memory
-  resources:
-    # GKE auto-pilot min
-    # https://cloud.google.com/kubernetes-engine/docs/concepts/autopilot-resource-requests#min-max-requests
-    requests:
-      cpu: 250m
-      memory: 512Mi
-    limits:
-      cpu: 250m
-      memory: 512Mi
-
-  ## Autoscaling configuration
-  ## ref: https://kubernetes.io/docs/concepts/workloads/autoscaling/
+  ## Init container's resource requests and limits
+  ## ref: http://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/
+  ## @param volumePermissions.resourcesPreset Set init container resources according to one common preset (allowed values: none, nano, small, medium, large, xlarge, 2xlarge). This is ignored if volumePermissions.resources is set (volumePermissions.resources is recommended for production).
+  ## More information: https://github.com/bitnami/charts/blob/main/bitnami/common/templates/_resources.tpl#L15
   ##
-  autoscaling:
-    ## @param controlplane.autoscaling.vpa.enabled Enable VPA for %%MAIN_CONTAINER_NAME%% pods
-    ## @param controlplane.autoscaling.vpa.annotations Annotations for VPA resource
-    ## @param controlplane.autoscaling.vpa.controlledResources VPA List of resources that the vertical pod autoscaler can control. Defaults to cpu and memory
-    ## @param controlplane.autoscaling.vpa.maxAllowed VPA Max allowed resources for the pod
-    ## @param controlplane.autoscaling.vpa.minAllowed VPA Min allowed resources for the pod
-    ##
-    vpa:
-      enabled: false
-      annotations: {}
-      controlledResources: []
-      maxAllowed: {}
-      minAllowed: {}
-      ## @param controlplane.autoscaling.vpa.updatePolicy.updateMode Autoscaling update policy
-      ## Specifies whether recommended updates are applied when a Pod is started and whether recommended updates are applied during the life of a Pod
-      ## Possible values are "Off", "Initial", "Recreate", and "Auto".
-      ##
-      updatePolicy:
-        updateMode: Auto
-    ## @param controlplane.autoscaling.hpa.enabled Enable HPA for %%MAIN_CONTAINER_NAME%% pods
-    ## @param controlplane.autoscaling.hpa.minReplicas Minimum number of replicas
-    ## @param controlplane.autoscaling.hpa.maxReplicas Maximum number of replicas
-    ## @param controlplane.autoscaling.hpa.targetCPU Target CPU utilization percentage
-    ## @param controlplane.autoscaling.hpa.targetMemory Target Memory utilization percentage
-    ##
-    hpa:
-      enabled: false
-      minReplicas: ""
-      maxReplicas: ""
-      targetCPU: ""
-      targetMemory: ""
+  resourcesPreset: "micro"
+  ## @param controlplane.resources Set controlplane container requests and limits for different resources like CPU or memory (essential for production workloads)
+  ## Example:
+  ## resources:
+  ##   requests:
+  ##     cpu: 2
+  ##     memory: 512Mi
+  ##   limits:
+  ##     cpu: 3
+  ##     memory: 1024Mi
+  ##
+  resources: {}
+  ## Configure Pods Security Context
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
+  ## @param controlplane.podSecurityContext.enabled Enable controlplane pods' Security Context
+  ## @param controlplane.podSecurityContext.fsGroupChangePolicy Set filesystem group change policy for controlplane pods
+  ## @param controlplane.podSecurityContext.sysctls Set kernel settings using the sysctl interface for controlplane pods
+  ## @param controlplane.podSecurityContext.supplementalGroups Set filesystem extra groups for controlplane pods
+  ## @param controlplane.podSecurityContext.fsGroup Set fsGroup in controlplane pods' Security Context
+  ##
+  podSecurityContext:
+    enabled: true
+    fsGroupChangePolicy: Always
+    sysctls: []
+    supplementalGroups: []
+    fsGroup: 1001
+
+  ## Configure Container Security Context
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container
+  ## @param controlplane.containerSecurityContext.enabled Enabled controlplane container' Security Context
+  ## @param controlplane.containerSecurityContext.seLinuxOptions [object,nullable] Set SELinux options in controlplane container
+  ## @param controlplane.containerSecurityContext.runAsUser Set runAsUser in controlplane container' Security Context
+  ## @param controlplane.containerSecurityContext.runAsNonRoot Set runAsNonRoot in controlplane container' Security Context
+  ## @param controlplane.containerSecurityContext.readOnlyRootFilesystem Set readOnlyRootFilesystem in controlplane container' Security Context
+  ## @param controlplane.containerSecurityContext.privileged Set privileged in controlplane container' Security Context
+  ## @param controlplane.containerSecurityContext.allowPrivilegeEscalation Set allowPrivilegeEscalation in controlplane container' Security Context
+  ## @param controlplane.containerSecurityContext.capabilities.drop List of capabilities to be dropped in controlplane container
+  ## @param controlplane.containerSecurityContext.seccompProfile.type Set seccomp profile in controlplane container
+  ##
+  containerSecurityContext:
+    enabled: true
+    seLinuxOptions: {}
+    runAsUser: 1001
+    runAsGroup: 1001
+    runAsNonRoot: true
+    readOnlyRootFilesystem: true
+    privileged: false
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+    seccompProfile:
+      type: "RuntimeDefault"
 
   ## @param controlplane.sentry.enabled Enable sentry.io alerting
   ## @param controlplane.sentry.dsn DSN endpoint
@@ -644,6 +652,190 @@ controlplane:
   ## Inject custom CA certificates to the controlplane container
   ## @param controlplane.customCAs List of custom CA certificates content
   customCAs: []
+
+  ## @param controlplane.automountServiceAccountToken Mount Service Account token in controlplane pods
+  ##
+  automountServiceAccountToken: false
+
+  ## @param controlplane.hostAliases controlplane pods host aliases
+  ## https://kubernetes.io/docs/concepts/services-networking/add-entries-to-pod-etc-hosts-with-host-aliases/
+  ##
+  hostAliases: []
+
+  ## @param controlplane.deploymentAnnotations Annotations for controlplane deployment
+  ## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+  ##
+  deploymentAnnotations: {}
+
+  ## @param controlplane.podLabels Extra labels for controlplane pods
+  ## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+  ##
+  podLabels: {}
+
+  ## @param controlplane.podAffinityPreset Pod affinity preset. Ignored if `controlplane.affinity` is set. Allowed values: `soft` or `hard`
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+  ##
+  podAffinityPreset: ""
+  ## @param controlplane.podAntiAffinityPreset Pod anti-affinity preset. Ignored if `controlplane.affinity` is set. Allowed values: `soft` or `hard`
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+  ##
+  podAntiAffinityPreset: soft
+  ## Node controlplane.affinity preset
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#node-affinity
+  ##
+
+  ## Node controlplane.affinity preset
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#node-affinity
+  ##
+  nodeAffinityPreset:
+    ## @param controlplane.nodeAffinityPreset.type Node affinity preset type. Ignored if `controlplane.affinity` is set. Allowed values: `soft` or `hard`
+    ##
+    type: ""
+    ## @param controlplane.nodeAffinityPreset.key Node label key to match. Ignored if `controlplane.affinity` is set
+    ##
+    key: ""
+    ## @param controlplane.nodeAffinityPreset.values Node label values to match. Ignored if `controlplane.affinity` is set
+    ## E.g.
+    ## values:
+    ##   - e2e-az1
+    ##   - e2e-az2
+    ##
+    values: []
+  ## @param controlplane.affinity Affinity for controlplane pods assignment
+  ## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+  ## NOTE: `controlplane.podAffinityPreset`, `controlplane.podAntiAffinityPreset`, and `controlplane.nodeAffinityPreset` will be ignored when it's set
+  ##
+  affinity: {}
+  ## @param controlplane.nodeSelector Node labels for controlplane pods assignment
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
+  ##
+  nodeSelector: {}
+  ## @param controlplane.tolerations Tolerations for controlplane pods assignment
+  ## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+  ##
+  tolerations: []
+  ## ONLY FOR DEPLOYMENTS:
+  ## @param controlplane.updateStrategy.type controlplane deployment strategy type
+  ## ref: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
+  ## ONLY FOR STATEFULSETS:
+  ## @param controlplane.updateStrategy.type controlplane statefulset strategy type
+  ## ref: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#update-strategies
+  ##
+  updateStrategy:
+    ## ONLY FOR DEPLOYMENTS:
+    ## Can be set to RollingUpdate or Recreate
+    ## ONLY FOR STATEFULSETS:
+    ## Can be set to RollingUpdate or OnDelete
+    ##
+    type: RollingUpdate
+  ## ONLY FOR STATEFULSETS:
+  ## @param controlplane.podManagementPolicy Pod management policy for controlplane statefulset
+  ## Ref: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#pod-management-policies
+  ##
+  podManagementPolicy: OrderedReady
+  ## @param controlplane.priorityClassName controlplane pods' priorityClassName
+  ##
+  priorityClassName: ""
+  ## @param controlplane.topologySpreadConstraints Topology Spread Constraints for controlplane pod assignment spread across your cluster among failure-domains
+  ## Ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/#spread-constraints-for-pods
+  ##
+  topologySpreadConstraints: []
+  ## @param controlplane.schedulerName Name of the k8s scheduler (other than default) for controlplane pods
+  ## ref: https://kubernetes.io/docs/tasks/administer-cluster/configure-multiple-schedulers/
+  ##
+  schedulerName: ""
+  ## @param controlplane.terminationGracePeriodSeconds Seconds controlplane pods need to terminate gracefully
+  ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod/#termination-of-pods
+  ##
+  terminationGracePeriodSeconds: ""
+  ## @param controlplane.lifecycleHooks for controlplane containers to automate configuration before or after startup
+  ##
+  lifecycleHooks: {}
+  ## @param controlplane.extraEnvVars Array with extra environment variables to add to controlplane containers
+  ## e.g:
+  ## extraEnvVars:
+  ##   - name: FOO
+  ##     value: "bar"
+  ##
+  extraEnvVars: []
+  ## @param controlplane.extraEnvVarsCM Name of existing ConfigMap containing extra env vars for controlplane containers
+  ##
+  extraEnvVarsCM: ""
+  ## @param controlplane.extraEnvVarsSecret Name of existing Secret containing extra env vars for controlplane containers
+  ##
+  extraEnvVarsSecret: ""
+  ## @param controlplane.extraVolumes Optionally specify extra list of additional volumes for the controlplane pods
+  ##
+  extraVolumes: []
+  ## @param controlplane.extraVolumeMounts Optionally specify extra list of additional volumeMounts for the controlplane containers
+  ##
+  extraVolumeMounts: []
+  ## @param controlplane.sidecars Add additional sidecar containers to the controlplane pods
+  ## e.g:
+  ## sidecars:
+  ##   - name: your-image-name
+  ##     image: your-image
+  ##     imagePullPolicy: Always
+  ##     ports:
+  ##       - name: portname
+  ##         containerPort: 1234
+  ##
+  sidecars: []
+
+  ## @param controlplane.initContainers Add additional init containers to the controlplane pods
+  ## ref: https://kubernetes.io/docs/concepts/workloads/pods/init-containers/
+  ## e.g:
+  ## initContainers:
+  ##  - name: your-image-name
+  ##    image: your-image
+  ##    imagePullPolicy: Always
+  ##    command: ['sh', '-c', 'echo "hello world"']
+  ##
+  initContainers: []
+  ## Pod Disruption Budget configuration
+  ## ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb
+  ## @param controlplane.pdb.create Enable/disable a Pod Disruption Budget creation
+  ## @param controlplane.pdb.minAvailable Minimum number/percentage of pods that should remain scheduled
+  ## @param controlplane.pdb.maxUnavailable Maximum number/percentage of pods that may be made unavailable. Defaults to `1` if both `controlplane.pdb.minAvailable` and `controlplane.pdb.maxUnavailable` are empty.
+  ##
+  pdb:
+    create: true
+    minAvailable: ""
+    maxUnavailable: ""
+  ## Autoscaling configuration
+  ## ref: https://kubernetes.io/docs/concepts/workloads/autoscaling/
+  ##
+  autoscaling:
+    ## @param controlplane.autoscaling.vpa.enabled Enable VPA for controlplane pods
+    ## @param controlplane.autoscaling.vpa.annotations Annotations for VPA resource
+    ## @param controlplane.autoscaling.vpa.controlledResources VPA List of resources that the vertical pod autoscaler can control. Defaults to cpu and memory
+    ## @param controlplane.autoscaling.vpa.maxAllowed VPA Max allowed resources for the pod
+    ## @param controlplane.autoscaling.vpa.minAllowed VPA Min allowed resources for the pod
+    ##
+    vpa:
+      enabled: false
+      annotations: {}
+      controlledResources: []
+      maxAllowed: {}
+      minAllowed: {}
+      ## @param controlplane.autoscaling.vpa.updatePolicy.updateMode Autoscaling update policy
+      ## Specifies whether recommended updates are applied when a Pod is started and whether recommended updates are applied during the life of a Pod
+      ## Possible values are "Off", "Initial", "Recreate", and "Auto".
+      ##
+      updatePolicy:
+        updateMode: Auto
+    ## @param controlplane.autoscaling.hpa.enabled Enable HPA for controlplane pods
+    ## @param controlplane.autoscaling.hpa.minReplicas Minimum number of replicas
+    ## @param controlplane.autoscaling.hpa.maxReplicas Maximum number of replicas
+    ## @param controlplane.autoscaling.hpa.targetCPU Target CPU utilization percentage
+    ## @param controlplane.autoscaling.hpa.targetMemory Target Memory utilization percentage
+    ##
+    hpa:
+      enabled: false
+      minReplicas: ""
+      maxReplicas: ""
+      targetCPU: ""
+      targetMemory: ""
 
 ## @section Artifact Content Addressable (CAS) API
 ##################################

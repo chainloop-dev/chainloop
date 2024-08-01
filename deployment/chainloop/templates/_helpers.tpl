@@ -162,13 +162,6 @@ app.kubernetes.io/part-of: chainloop
 app.kubernetes.io/component: controlplane-migration
 {{- end }}
 
-{{/*
-Selector labels
-*/}}
-{{- define "chainloop.controlplane.selectorLabels" -}}
-{{- include "common.labels.matchLabels" .}}
-app.kubernetes.io/component: controlplane
-{{- end }}
 
 {{/*
 OIDC settings, will fallback to development settings if needed
