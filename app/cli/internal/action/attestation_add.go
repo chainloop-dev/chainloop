@@ -133,18 +133,37 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 	}
 
 	// Add material to the attestation crafting state based on if the material is contract free or not.
-	// By default, try to detect the material kind automatically
+	// The checks are performed in the following order:
+	// 1. If materialName is empty and materialType is empty, we don't know anything about the material so, we add it with auto-detected kind and random name
+	// 2. If materialName is not empty, check if the material is in the contract. If it is, add material from contract
+	// 2.1. If materialType is empty, try to guess the material kind with auto-detected kind and materialName
+	// 3. If materialType is not empty, add material contract free with materialType and materialName
+	var kind schemaapi.CraftingSchema_Material_MaterialType
 	switch {
 	case materialName == "" && materialType == "":
-		var kind schemaapi.CraftingSchema_Material_MaterialType
-		if kind, err = crafter.AddMaterialContactFreeAutomatic(ctx, attestationID, materialValue, casBackend, annotations); err != nil {
+		kind, err = crafter.AddMaterialContactFreeWithAutoDetectedKind(ctx, attestationID, "", materialValue, casBackend, annotations)
+		if err != nil {
 			return fmt.Errorf("adding material: %w", err)
 		}
 		action.Logger.Info().Str("kind", kind.String()).Msg("material kind detected")
 	case materialName != "":
-		err = crafter.AddMaterialFromContract(ctx, attestationID, materialName, materialValue, casBackend, annotations)
+		switch {
+		// If the material is in the contract, add it from the contract
+		case crafter.IsMaterialInContract(materialName):
+			err = crafter.AddMaterialFromContract(ctx, attestationID, materialName, materialValue, casBackend, annotations)
+		// If the material is not in the contract and the materialType is not provided, add material contract free with auto-detected kind, guessing the kind
+		case materialType == "":
+			kind, err = crafter.AddMaterialContactFreeWithAutoDetectedKind(ctx, attestationID, materialName, materialValue, casBackend, annotations)
+			if err != nil {
+				return fmt.Errorf("adding material: %w", err)
+			}
+			action.Logger.Info().Str("kind", kind.String()).Msg("material kind detected")
+		// If the material is not in the contract and has a materialType, add material contract free with the provided materialType
+		default:
+			err = crafter.AddMaterialContractFree(ctx, attestationID, materialType, materialName, materialValue, casBackend, annotations)
+		}
 	default:
-		err = crafter.AddMaterialContractFree(ctx, attestationID, materialType, materialValue, casBackend, annotations)
+		err = crafter.AddMaterialContractFree(ctx, attestationID, materialType, materialName, materialValue, casBackend, annotations)
 	}
 
 	if err != nil {
