@@ -21,7 +21,7 @@ import (
 	"net/http"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 // PolicyProvider represents an external policy provider
@@ -50,7 +50,7 @@ func (p *PolicyProvider) Resolve(policyName string, token string) (*schemaapi.Po
 	}
 
 	var res schemaapi.Policy
-	if err := proto.Unmarshal(resBytes, &res); err != nil {
+	if err := protojson.Unmarshal(resBytes, &res); err != nil {
 		return nil, fmt.Errorf("error unmarshalling policy response: %w", err)
 	}
 	return &res, nil
