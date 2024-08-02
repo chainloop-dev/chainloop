@@ -7,7 +7,7 @@ description: Chainloop is an open source software supply chain control plane, a 
 
 type: application
 # Bump the patch (not minor, not major) version on each change in the Chart Source code
-version: 1.86.3
+version: 1.86.4
 # Do not update appVersion, this is handled automatically by the release process
 appVersion: v0.95.3
 
@@ -25,6 +25,10 @@ dependencies:
     name: vault
     repository: https://charts.bitnami.com/bitnami
     version: 1.4.x
+  - condition: development
+    repository: file://charts/dex
+    name: dex
+    version: 0.0.1
 
 annotations:
     images: |
@@ -34,5 +38,3 @@ annotations:
           name: control-plane
         - image: ghcr.io/chainloop-dev/chainloop/control-plane-migrations:v0.95.3
           name: control-plane-migrations
-        - image: docker.io/bitnami/dex:2.40.0-debian-12-r1
-          name: dex
