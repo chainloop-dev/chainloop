@@ -92,7 +92,6 @@ export function craftingSchema_Runner_RunnerTypeToJSON(object: CraftingSchema_Ru
 
 export interface CraftingSchema_Material {
   type: CraftingSchema_Material_MaterialType;
-  /** Single word optionally separated with _ or - */
   name: string;
   optional: boolean;
   /** If a material is set as output it will get added to the subject in the statement */
