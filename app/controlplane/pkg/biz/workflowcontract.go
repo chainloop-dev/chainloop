@@ -23,6 +23,7 @@ import (
 
 	"github.com/bufbuild/protovalidate-go"
 	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/policyprovider"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
@@ -74,12 +75,13 @@ type ContractUpdateOpts struct {
 }
 
 type WorkflowContractUseCase struct {
-	repo   WorkflowContractRepo
-	logger *log.Helper
+	repo           WorkflowContractRepo
+	logger         *log.Helper
+	policyRegistry *policyprovider.Registry
 }
 
-func NewWorkflowContractUseCase(repo WorkflowContractRepo, logger log.Logger) *WorkflowContractUseCase {
-	return &WorkflowContractUseCase{repo: repo, logger: log.NewHelper(logger)}
+func NewWorkflowContractUseCase(repo WorkflowContractRepo, policyRegistry *policyprovider.Registry, logger log.Logger) *WorkflowContractUseCase {
+	return &WorkflowContractUseCase{repo: repo, policyRegistry: policyRegistry, logger: log.NewHelper(logger)}
 }
 
 func (uc *WorkflowContractUseCase) List(ctx context.Context, orgID string) ([]*WorkflowContract, error) {
