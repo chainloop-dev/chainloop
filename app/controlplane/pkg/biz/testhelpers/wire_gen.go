@@ -8,7 +8,7 @@ package testhelpers
 
 import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/policyprovider"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/policies"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
@@ -54,7 +54,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, organizationUseCase, logger)
 	workflowContractRepo := data.NewWorkflowContractRepo(dataData, logger)
 	v := NewPolicyProviders(bootstrap)
-	registry := policyprovider.NewRegistry(v...)
+	registry := policies.NewRegistry(v...)
 	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, registry, logger)
 	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, workflowContractUseCase, logger)
 	workflowRunRepo := data.NewWorkflowRunRepo(dataData, logger)

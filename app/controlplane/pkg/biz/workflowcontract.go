@@ -23,7 +23,7 @@ import (
 
 	"github.com/bufbuild/protovalidate-go"
 	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/policyprovider"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/policies"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
@@ -77,10 +77,10 @@ type ContractUpdateOpts struct {
 type WorkflowContractUseCase struct {
 	repo           WorkflowContractRepo
 	logger         *log.Helper
-	policyRegistry *policyprovider.Registry
+	policyRegistry *policies.Registry
 }
 
-func NewWorkflowContractUseCase(repo WorkflowContractRepo, policyRegistry *policyprovider.Registry, logger log.Logger) *WorkflowContractUseCase {
+func NewWorkflowContractUseCase(repo WorkflowContractRepo, policyRegistry *policies.Registry, logger log.Logger) *WorkflowContractUseCase {
 	return &WorkflowContractUseCase{repo: repo, policyRegistry: policyRegistry, logger: log.NewHelper(logger)}
 }
 
@@ -166,6 +166,8 @@ func (uc *WorkflowContractUseCase) Create(ctx context.Context, opts *WorkflowCon
 		ContractBody: rawSchema,
 	}
 
+	err = validateExternalPolicies(ctx, opts.Schema)
+
 	var c *WorkflowContract
 	if opts.AddUniquePrefix {
 		c, err = uc.createWithUniqueName(ctx, args)
@@ -182,6 +184,16 @@ func (uc *WorkflowContractUseCase) Create(ctx context.Context, opts *WorkflowCon
 	}
 
 	return c, nil
+}
+
+func validateExternalPolicies(ctx context.Context, schema *schemav1.CraftingSchema) error {
+	for _, p := range schema.GetPolicies().GetMaterials() {
+		if p.GetRef() != "" {
+
+		}
+	}
+
+	return nil
 }
 
 func (uc *WorkflowContractUseCase) createWithUniqueName(ctx context.Context, opts *ContractCreateOpts) (*WorkflowContract, error) {

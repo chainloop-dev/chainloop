@@ -130,14 +130,8 @@ message PolicyAttachment {
     // meant to be used to embed the policy in the contract
     Policy embedded = 2;
 
-    //    TODO: reference to a policy already known by chainloop
-    //      string name = 2 [(buf.validate.field) = {
-    //        cel: {
-    //          message: "must contain only lowercase letters, numbers, and hyphens.",
-    //          expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
-    //          id: "name.dns-1123",
-    //        },
-    //      }];
+    // reference to a policy already known by chainloop in the form of provider://policy-name, or just `policy-name` (it would use a default provider if any)
+    string name = 6 [(buf.validate.field).string.min_len = 1];
 
     option (buf.validate.oneof).required = true;
   }
