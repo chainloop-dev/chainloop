@@ -1110,10 +1110,20 @@ vault:
 dex:
   ## Bitnami Dex image
   ## ref: https://hub.docker.com/r/bitnami/argo-cd/tags/
+  ## @skip dex.staticUsers[0].email
+  ## @skip dex.staticUsers[0].hash
+  ## @skip dex.staticUsers[1].email
+  ## @skip dex.staticUsers[1].hash
+  staticUsers:
+    - email: "john@chainloop.local"
+      # password: "password"
+      hash: "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"
+    - email: "sarah@chainloop.local"
+      # password: "password"
+      hash: "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"
   ## @param dex.image.registry [default: REGISTRY_NAME] Dex image registry
   ## @param dex.image.repository [default: REPOSITORY_NAME/dex] Dex image repository
   ## @skip dex.image.tag Dex image tag (immutable tags are recommended)
-  ## @param dex.image.digest Dex image digest in the way sha256:aa.... Please note this parameter, if set, will override the tag
   ## @param dex.image.pullPolicy Dex image pull policy
   ## @param dex.image.pullSecrets Dex image pull secrets
   ## @param dex.image.debug Enable Dex image debug mode
@@ -1122,7 +1132,6 @@ dex:
     registry: docker.io
     repository: bitnami/dex
     tag: 2.40.0-debian-12-r1
-    digest: ""
     ## Specify a imagePullPolicy
     ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
     ## ref: https://kubernetes.io/docs/concepts/containers/images/#pre-pulled-images

@@ -187,10 +187,8 @@ spec:
         - name: empty-dir
           emptyDir: {}
         - name: config
-          projected:
-            sources:
-              - configMap:
-                  name: {{ include "chainloop.dex.fullname" . }}
+          secret:
+            secretName: {{ include "chainloop.dex.fullname" . }}-config
         {{- if .Values.dex.extraVolumes }}
         {{- include "common.tplvalues.render" (dict "value" .Values.dex.extraVolumes "context" $) | nindent 8 }}
         {{- end }}
