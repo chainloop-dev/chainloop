@@ -208,6 +208,10 @@ func NewDataConfig(in *conf.Data) *data.NewConfig {
 	}
 }
 
+func NewPolicyProviders(in *conf.Bootstrap) []*conf.PolicyProvider {
+	return in.PolicyProviders
+}
+
 func (db *TestDatabase) Close(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
