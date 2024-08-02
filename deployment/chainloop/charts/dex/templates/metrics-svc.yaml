@@ -3,7 +3,7 @@ Copyright Chainloop, Inc. All Rights Reserved.
 SPDX-License-Identifier: APACHE-2.0
 */}}
 
-{{- if and .Values.development .Values.dex.metrics.enabled }}
+{{- if .Values.dex.metrics.enabled }}
 apiVersion: v1
 kind: Service
 metadata:

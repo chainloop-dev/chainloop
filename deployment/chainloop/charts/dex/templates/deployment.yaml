@@ -3,7 +3,6 @@ Copyright Chainloop, Inc. All Rights Reserved.
 SPDX-License-Identifier: APACHE-2.0
 */}}
 
-{{- if .Values.development }}
 apiVersion: {{ include "common.capabilities.deployment.apiVersion" . }}
 kind: Deployment
 metadata:
@@ -34,7 +33,7 @@ spec:
         app.kubernetes.io/component: dex
     spec:
       serviceAccountName: {{ include "chainloop.dex.serviceAccountName" . }}
-      {{- include "common.images.renderPullSecrets" (dict "images" (list .Values.controlplane.image .Values.controlplane.migration.image .Values.dex.image) "context" $) | nindent 6 }}
+      {{- include "common.images.renderPullSecrets" (dict "images" (list .Values.dex.image) "context" $) | nindent 6 }}
       automountServiceAccountToken: {{ .Values.dex.automountServiceAccountToken }}
       {{- if .Values.dex.hostAliases }}
       hostAliases: {{- include "common.tplvalues.render" (dict "value" .Values.dex.hostAliases "context" $) | nindent 8 }}
@@ -192,4 +191,3 @@ spec:
         {{- if .Values.dex.extraVolumes }}
         {{- include "common.tplvalues.render" (dict "value" .Values.dex.extraVolumes "context" $) | nindent 8 }}
         {{- end }}
-{{- end }}
