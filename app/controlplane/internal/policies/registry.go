@@ -48,7 +48,11 @@ func (r *Registry) DefaultProvider() *PolicyProvider {
 }
 
 func (r *Registry) GetProvider(name string) *PolicyProvider {
-	return r.providers[name]
+	p := r.providers[name]
+	if p != nil {
+		return p
+	}
+	return r.DefaultProvider()
 }
 
 // GetProviderFromReference finds a provider given a policy reference in the form of `provider://policy`.
