@@ -539,8 +539,9 @@ func (c *Crafter) IsMaterialInContract(key string) bool {
 // AddMaterialContactFreeWithAutoDetectedKind adds a material to the crafting state checking the incoming material matches any of the
 // supported types in validation order. If the material is not found it will return an error.
 func (c *Crafter) AddMaterialContactFreeWithAutoDetectedKind(ctx context.Context, attestationID, name, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string) (schemaapi.CraftingSchema_Material_MaterialType, error) {
+	var err error
 	for _, kind := range schemaapi.CraftingMaterialInValidationOrder {
-		err := c.AddMaterialContractFree(ctx, attestationID, kind.String(), name, value, casBackend, runtimeAnnotations)
+		err = c.AddMaterialContractFree(ctx, attestationID, kind.String(), name, value, casBackend, runtimeAnnotations)
 		if err == nil {
 			// Successfully added material, return the kind
 			return kind, nil
@@ -562,7 +563,7 @@ func (c *Crafter) AddMaterialContactFreeWithAutoDetectedKind(ctx context.Context
 	}
 
 	// Return an error if no material could be added
-	return schemaapi.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED, fmt.Errorf("failed to auto-discover material kind for value: %v", value)
+	return schemaapi.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED, fmt.Errorf("failed to auto-discover material kind: %w", err)
 }
 
 // addMaterials adds the incoming material m to the crafting state
