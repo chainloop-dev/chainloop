@@ -19,9 +19,9 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/cas" "/config.configmap.yaml") . | sha256sum }}
-        checksum/config-secret: {{ include (print $.Template.BasePath "/cas" "/config.secret.yaml") . | sha256sum }}
-        checksum/public-key-secret: {{ include (print $.Template.BasePath "/cas" "/jwt_public_key.secret.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/cas" "/configmap.yaml") . | sha256sum }}
+        checksum/config-secret: {{ include (print $.Template.BasePath "/cas" "/secret-config.yaml") . | sha256sum }}
+        checksum/public-key-secret: {{ include (print $.Template.BasePath "/cas" "/secret-jwt-public-key.yaml") . | sha256sum }}
       labels:
         {{- include "chainloop.cas.selectorLabels" . | nindent 8 }}
     spec:
