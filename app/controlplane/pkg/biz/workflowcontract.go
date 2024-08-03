@@ -168,8 +168,6 @@ func (uc *WorkflowContractUseCase) Create(ctx context.Context, opts *WorkflowCon
 		ContractBody: rawSchema,
 	}
 
-	err = validateExternalPolicies(ctx, opts.Schema)
-
 	var c *WorkflowContract
 	if opts.AddUniquePrefix {
 		c, err = uc.createWithUniqueName(ctx, args)
@@ -186,16 +184,6 @@ func (uc *WorkflowContractUseCase) Create(ctx context.Context, opts *WorkflowCon
 	}
 
 	return c, nil
-}
-
-func validateExternalPolicies(ctx context.Context, schema *schemav1.CraftingSchema) error {
-	for _, p := range schema.GetPolicies().GetMaterials() {
-		if p.GetRef() != "" {
-
-		}
-	}
-
-	return nil
 }
 
 func (uc *WorkflowContractUseCase) createWithUniqueName(ctx context.Context, opts *ContractCreateOpts) (*WorkflowContract, error) {
