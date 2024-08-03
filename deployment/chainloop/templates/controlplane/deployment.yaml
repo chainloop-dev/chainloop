@@ -19,9 +19,9 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/controlplane" "/config.configmap.yaml") . | sha256sum }}
-        checksum/secret-config: {{ include (print $.Template.BasePath "/controlplane" "/config.secret.yaml") . | sha256sum }}
-        checksum/cas-private-key: {{ include (print $.Template.BasePath "/controlplane" "/jwt_cas_private_key.secret.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/controlplane" "/configmap.yaml") . | sha256sum }}
+        checksum/secret-config: {{ include (print $.Template.BasePath "/controlplane" "/secret-config.yaml") . | sha256sum }}
+        checksum/cas-private-key: {{ include (print $.Template.BasePath "/controlplane" "/secret-jwt-cas-private-key.yaml") . | sha256sum }}
         kubectl.kubernetes.io/default-container: controlplane
       labels:
         {{- include "chainloop.controlplane.selectorLabels" . | nindent 8 }}
