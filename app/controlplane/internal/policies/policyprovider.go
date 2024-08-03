@@ -16,6 +16,7 @@
 package policies
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -28,6 +29,10 @@ import (
 type PolicyProvider struct {
 	name, host string
 	isDefault  bool
+}
+
+type ProviderResponse struct {
+	Policy map[string]any `json:"policy"`
 }
 
 // Resolve calls the remote provider for retrieving a policy
@@ -49,8 +54,20 @@ func (p *PolicyProvider) Resolve(policyName string, token string) (*schemaapi.Po
 		return nil, fmt.Errorf("error reading policy response: %w", err)
 	}
 
+	var response ProviderResponse
+	if err := json.Unmarshal(resBytes, &response); err != nil {
+		return nil, fmt.Errorf("error unmarshalling policy response: %w", err)
+	}
+
+	// extract the policy payload from the query response
+	jsonPolicy, err := json.Marshal(response.Policy)
+	if err != nil {
+		return nil, fmt.Errorf("error marshalling policy response: %w", err)
+	}
+
+	// unmarshall the payload using the known protobuf message
 	var res schemaapi.Policy
-	if err := protojson.Unmarshal(resBytes, &res); err != nil {
+	if err := protojson.Unmarshal(jsonPolicy, &res); err != nil {
 		return nil, fmt.Errorf("error unmarshalling policy response: %w", err)
 	}
 	return &res, nil
