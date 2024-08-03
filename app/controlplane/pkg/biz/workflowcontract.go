@@ -259,7 +259,7 @@ func (uc *WorkflowContractUseCase) Describe(ctx context.Context, orgID, contract
 
 func (uc *WorkflowContractUseCase) injectExternalPolicyAttachments(ctx context.Context, p *schemav1.PolicyAttachment) error {
 	if p.GetName() != "" {
-		parts := strings.SplitAfterN(p.GetName(), "://", 2)
+		parts := strings.SplitN(p.GetName(), "://", 2)
 		var policyName string
 		var provider = uc.policyRegistry.DefaultProvider()
 
