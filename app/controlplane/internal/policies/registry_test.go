@@ -75,7 +75,7 @@ func (s *providerTestSuite) TestGetProviderFromReference() {
 		reference: "p1://my-policy",
 		expected:  "p1",
 	}, {
-		name:      "returns nil porovider if not found",
+		name:      "returns nil provider if not found",
 		reference: "p5://my-policy",
 		expectNil: true,
 	}, {
