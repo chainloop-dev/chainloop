@@ -714,25 +714,11 @@ controlplane:
   ## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
   ##
   tolerations: []
-  ## ONLY FOR DEPLOYMENTS:
+
   ## @param controlplane.updateStrategy.type controlplane deployment strategy type
-  ## ref: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
-  ## ONLY FOR STATEFULSETS:
-  ## @param controlplane.updateStrategy.type controlplane statefulset strategy type
-  ## ref: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#update-strategies
-  ##
   updateStrategy:
-    ## ONLY FOR DEPLOYMENTS:
     ## Can be set to RollingUpdate or Recreate
-    ## ONLY FOR STATEFULSETS:
-    ## Can be set to RollingUpdate or OnDelete
-    ##
     type: RollingUpdate
-  ## ONLY FOR STATEFULSETS:
-  ## @param controlplane.podManagementPolicy Pod management policy for controlplane statefulset
-  ## Ref: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#pod-management-policies
-  ##
-  podManagementPolicy: OrderedReady
   ## @param controlplane.priorityClassName controlplane pods' priorityClassName
   ##
   priorityClassName: ""
