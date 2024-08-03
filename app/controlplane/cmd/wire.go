@@ -23,7 +23,7 @@ package main
 import (
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/policyprovider"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/policies"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/server"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
@@ -53,7 +53,7 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.Availabl
 			wire.FieldsOf(new(*conf.Data), "Database"),
 			dispatcher.New,
 			authz.NewDatabaseEnforcer,
-			policyprovider.NewRegistry,
+			policies.NewRegistry,
 			newApp,
 			newProtoValidator,
 			newDataConf,

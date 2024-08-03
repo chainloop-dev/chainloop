@@ -177,8 +177,8 @@ OIDC settings, will fallback to development settings if needed
   {{- if .Values.development }}
     {{- with .Values.controlplane.auth }}
     domain: "{{ coalesce .oidc.url "http://chainloop-dex:5556/dex" }}"
-    clientID: "{{ coalesce .oidc.clientID "chainloop-dev" }}"
-    clientSecret: "{{ coalesce .oidc.clientSecret "ZXhhbXBsZS1hcHAtc2VjcmV0" }}"
+    client_id: "{{ coalesce .oidc.clientID "chainloop-dev" }}"
+    client_secret: "{{ coalesce .oidc.clientSecret "ZXhhbXBsZS1hcHAtc2VjcmV0" }}"
     {{- if .oidc.loginURLOverride }}
     login_url_override: "{{ .oidc.loginURLOverride }}"
     {{- end }}
@@ -225,22 +225,14 @@ Return the Postgresql connection string for Atlas migration
 Return the Postgresql hostname
 */}}
 {{- define "controlplane.database.host" -}}
-{{- if .Values.controlplane.sqlProxy.enabled }}
-    {{- include "chainloop.sql-proxy.fullname" . -}}
-{{- else -}}
-    {{- ternary (include "chainloop.postgresql.fullname" .) .Values.controlplane.externalDatabase.host .Values.postgresql.enabled -}}
-{{- end -}}
+{{- ternary (include "chainloop.postgresql.fullname" .) .Values.controlplane.externalDatabase.host .Values.postgresql.enabled -}}
 {{- end -}}
 
 {{/*
 Return the Postgresql port
 */}}
 {{- define "controlplane.database.port" -}}
-{{- if .Values.controlplane.sqlProxy.enabled }}
-    {{- 5432 -}}
-{{- else -}}
-    {{- ternary 5432 .Values.controlplane.externalDatabase.port .Values.postgresql.enabled -}}
-{{- end -}}
+{{- ternary 5432 .Values.controlplane.externalDatabase.port .Values.postgresql.enabled -}}
 {{- end -}}
 
 {{/*
@@ -337,52 +329,6 @@ observability:
 
 {{/*
 ##############################################################################
-sql-proxy helpers
-##############################################################################
-*/}}
-
-{{/*
-Chainloop sql-proxy release name
-*/}}
-{{- define "chainloop.sql-proxy.fullname" -}}
-{{- printf "%s-%s" (include "common.names.fullname" .) "sql-proxy" | trunc 63 | trimSuffix "-" -}}
-{{- end -}}
-
-{{/*
-Chainloop sql-proxy Chart fullname
-*/}}
-{{- define "chainloop.sql-proxy.name" -}}
-{{- printf "%s-%s" (include "common.names.name" .) "sql-proxy" | trunc 63 | trimSuffix "-" -}}
-{{- end -}}
-
-{{/*
-Common labels
-*/}}
-{{- define "chainloop.sql-proxy.labels" -}}
-{{- include "common.labels.standard" . }}
-app.kubernetes.io/part-of: chainloop
-app.kubernetes.io/component: sql-proxy
-{{- end }}
-
-{{/*
-Migration labels
-*/}}
-{{- define "chainloop.sql-proxy.migration.labels" -}}
-{{- include "common.labels.standard" . }}
-app.kubernetes.io/part-of: chainloop
-app.kubernetes.io/component: sql-proxy-migration
-{{- end }}
-
-{{/*
-Selector labels
-*/}}
-{{- define "chainloop.sql-proxy.selectorLabels" -}}
-{{- include "common.labels.matchLabels" .}}
-app.kubernetes.io/component: sql-proxy
-{{- end }}
-
-{{/*
-##############################################################################
 CAS Helpers
 ##############################################################################
 */}}
@@ -446,5 +392,28 @@ NOTE: Load balancer service type is not supported
 {{- printf "%s://%s" (ternary "https" "http" $ingress.tls ) $ingress.hostname }}
 {{- else if (and (eq $service.type "NodePort") $service.nodePorts (not (empty $service.nodePorts.http))) }}
 {{- printf "http://localhost:%s" $service.nodePorts.http }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Check for Development mode
+*/}}
+{{- define "chainloop.validateValues.development" -}}
+{{- if .Values.development }}
+{{-     printf "\n###########################################################################\n  DEVELOPMENT MODE\n###########################################################################\n\n██████╗ ███████╗██╗    ██╗ █████╗ ██████╗ ███████╗\n██╔══██╗██╔════╝██║    ██║██╔══██╗██╔══██╗██╔════╝\n██████╔╝█████╗  ██║ █╗ ██║███████║██████╔╝█████╗\n██╔══██╗██╔══╝  ██║███╗██║██╔══██║██╔══██╗██╔══╝\n██████╔╝███████╗╚███╔███╔╝██║  ██║██║  ██║███████╗\n╚═════╝ ╚══════╝ ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝\n\nInstance running in development mode!\n\nDevelopment mode, by default\n\n- Runs an insecure, unsealed, non-persistent instance of Vault\n- Is configured with development authentication keys\n\nDO NOT USE IT FOR PRODUCTION PURPOSES" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Compile all warning messages into a single one
+*/}}
+{{- define "chainloop.validateValues" -}}
+{{- $messages := list -}}
+{{- $messages := append $messages (include "chainloop.validateValues.development" .) -}}
+{{- $messages := without $messages "" -}}
+{{- $message := join "\n" $messages -}}
+
+{{- if $message -}}
+{{-   printf "\n\nVALUES VALIDATION:\n%s" $message -}}
 {{- end -}}
 {{- end -}}

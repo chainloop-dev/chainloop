@@ -208,8 +208,10 @@ func validatePolicyAttachments(pols []*schemaapi.PolicyAttachment) error {
 		if err != nil {
 			return fmt.Errorf("validating policy: %w", err)
 		}
-		if _, err := policies.LoadPolicyScriptFromSpec(spec); err != nil {
-			return fmt.Errorf("loading policy script: %w", err)
+		if spec != nil {
+			if _, err := policies.LoadPolicyScriptFromSpec(spec); err != nil {
+				return fmt.Errorf("loading policy script: %w", err)
+			}
 		}
 	}
 
@@ -468,8 +470,8 @@ func (c *Crafter) ResolveEnvVars(ctx context.Context, attestationID string) erro
 
 // AddMaterialContractFree adds a material to the crafting state without checking the contract schema.
 // This is useful for adding materials that are not defined in the schema.
-// The name of the material is automatically calculated to conform the API contract.
-func (c *Crafter) AddMaterialContractFree(ctx context.Context, attestationID, kind, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string) error {
+// The name of the material is automatically calculated to conform the API contract if not provided.
+func (c *Crafter) AddMaterialContractFree(ctx context.Context, attestationID, kind, name, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string) error {
 	if err := c.requireStateLoaded(); err != nil {
 		return fmt.Errorf("adding materials outisde the contract: %w", err)
 	}
@@ -482,8 +484,12 @@ func (c *Crafter) AddMaterialContractFree(ctx context.Context, attestationID, ki
 		return fmt.Errorf("%q kind not found. Available options are %q", kind, schemaapi.ListAvailableMaterialKind())
 	}
 
-	// 2 - Generate a random name for the material
-	m.Name = fmt.Sprintf("material-%d", time.Now().UnixNano())
+	// 2 - Set the name of the material if provided
+	m.Name = name
+	if m.Name == "" {
+		// 2.1 - Generate a random name for the material since it was not provided
+		m.Name = fmt.Sprintf("material-%d", time.Now().UnixNano())
+	}
 
 	// 3 - Craft resulting material
 	return c.addMaterial(ctx, &m, attestationID, value, casBackend, runtimeAnnotations)
@@ -517,11 +523,27 @@ func (c *Crafter) AddMaterialFromContract(ctx context.Context, attestationID, ke
 	return c.addMaterial(ctx, m, attestationID, value, casBackend, runtimeAnnotations)
 }
 
-// AddMaterialContactFreeAutomatic adds a material to the crafting state checking the incoming material matches any of the
+// IsMaterialInContract checks if the material is in the contract schema
+func (c *Crafter) IsMaterialInContract(key string) bool {
+	if err := c.requireStateLoaded(); err != nil {
+		return false
+	}
+
+	for _, d := range c.CraftingState.InputSchema.Materials {
+		if d.Name == key {
+			return true
+		}
+	}
+
+	return false
+}
+
+// AddMaterialContactFreeWithAutoDetectedKind adds a material to the crafting state checking the incoming material matches any of the
 // supported types in validation order. If the material is not found it will return an error.
-func (c *Crafter) AddMaterialContactFreeAutomatic(ctx context.Context, attestationID, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string) (schemaapi.CraftingSchema_Material_MaterialType, error) {
+func (c *Crafter) AddMaterialContactFreeWithAutoDetectedKind(ctx context.Context, attestationID, name, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string) (schemaapi.CraftingSchema_Material_MaterialType, error) {
+	var err error
 	for _, kind := range schemaapi.CraftingMaterialInValidationOrder {
-		err := c.AddMaterialContractFree(ctx, attestationID, kind.String(), value, casBackend, runtimeAnnotations)
+		err = c.AddMaterialContractFree(ctx, attestationID, kind.String(), name, value, casBackend, runtimeAnnotations)
 		if err == nil {
 			// Successfully added material, return the kind
 			return kind, nil
@@ -543,7 +565,7 @@ func (c *Crafter) AddMaterialContactFreeAutomatic(ctx context.Context, attestati
 	}
 
 	// Return an error if no material could be added
-	return schemaapi.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED, fmt.Errorf("failed to auto-discover material kind for value: %v", value)
+	return schemaapi.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED, fmt.Errorf("failed to auto-discover material kind: %w", err)
 }
 
 // addMaterials adds the incoming material m to the crafting state

@@ -9,7 +9,7 @@ package main
 import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/policyprovider"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/policies"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/server"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
@@ -91,7 +91,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	workflowContractRepo := data.NewWorkflowContractRepo(dataData, logger)
 	v3 := bootstrap.PolicyProviders
-	registry := policyprovider.NewRegistry(v3...)
+	registry := policies.NewRegistry(v3...)
 	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, registry, logger)
 	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, workflowContractUseCase, logger)
 	v4 := serviceOpts(logger)
