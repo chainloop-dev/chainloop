@@ -8,8 +8,7 @@ kind: Deployment
 metadata:
   name: {{ include "chainloop.controlplane.fullname" . }}
   namespace: {{ include "common.names.namespace" . | quote }}
-  labels: {{- include "common.labels.standard" ( dict "customLabels" .Values.commonLabels "context" $ ) | nindent 4 }}
-    app.kubernetes.io/component: controlplane
+  labels: {{- include "chainloop.controlplane.labels" . | nindent 4 }}
   {{- if or .Values.controlplane.deploymentAnnotations .Values.commonAnnotations }}
   {{- $annotations := include "common.tplvalues.merge" (dict "values" (list .Values.controlplane.deploymentAnnotations .Values.commonAnnotations) "context" .) }}
   annotations: {{- include "common.tplvalues.render" ( dict "value" $annotations "context" $ ) | nindent 4 }}
@@ -23,8 +22,7 @@ spec:
   {{- end }}
   {{- $podLabels := include "common.tplvalues.merge" (dict "values" (list .Values.controlplane.podLabels .Values.commonLabels) "context" .) }}
   selector:
-    matchLabels: {{- include "common.labels.matchLabels" ( dict "customLabels" $podLabels "context" $ ) | nindent 6 }}
-      app.kubernetes.io/component: controlplane
+    matchLabels: {{ include "chainloop.controlplane.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       annotations:
@@ -32,8 +30,7 @@ spec:
         checksum/secret-config: {{ include (print $.Template.BasePath "/controlplane" "/secret-config.yaml") . | sha256sum }}
         checksum/cas-private-key: {{ include (print $.Template.BasePath "/controlplane" "/secret-jwt-cas-private-key.yaml") . | sha256sum }}
         kubectl.kubernetes.io/default-container: controlplane
-      labels: {{- include "common.labels.standard" ( dict "customLabels" $podLabels "context" $ ) | nindent 8 }}
-        app.kubernetes.io/component: controlplane
+      labels: {{- include "chainloop.controlplane.labels" . | nindent 8 }}
     spec:
       {{- include "common.images.renderPullSecrets" (dict "images" (list .Values.controlplane.image .Values.controlplane.migration.image) "context" $) | nindent 6 }}
       serviceAccountName: {{ include "controlplane.serviceAccountName" . }}

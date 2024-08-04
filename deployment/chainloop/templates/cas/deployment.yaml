@@ -8,8 +8,7 @@ kind: Deployment
 metadata:
   name: {{ include "chainloop.cas.fullname" . }}
   namespace: {{ include "common.names.namespace" . | quote }}
-  labels: {{- include "common.labels.standard" ( dict "customLabels" .Values.commonLabels "context" $ ) | nindent 4 }}
-    app.kubernetes.io/component: cas
+  labels: {{ include "chainloop.cas.labels" . | nindent 4 }}
   {{- if or .Values.cas.deploymentAnnotations .Values.commonAnnotations }}
   {{- $annotations := include "common.tplvalues.merge" (dict "values" (list .Values.cas.deploymentAnnotations .Values.commonAnnotations) "context" .) }}
   annotations: {{- include "common.tplvalues.render" ( dict "value" $annotations "context" $ ) | nindent 4 }}
@@ -21,18 +20,15 @@ spec:
   {{- if .Values.cas.updateStrategy }}
   strategy: {{- toYaml .Values.cas.updateStrategy | nindent 4 }}
   {{- end }}
-  {{- $podLabels := include "common.tplvalues.merge" (dict "values" (list .Values.cas.podLabels .Values.commonLabels) "context" .) }}
   selector:
-    matchLabels: {{- include "common.labels.matchLabels" ( dict "customLabels" $podLabels "context" $ ) | nindent 6 }}
-      app.kubernetes.io/component: cas
+    matchLabels: {{ include "chainloop.cas.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/cas" "/configmap.yaml") . | sha256sum }}
         checksum/config-secret: {{ include (print $.Template.BasePath "/cas" "/secret-config.yaml") . | sha256sum }}
         checksum/public-key-secret: {{ include (print $.Template.BasePath "/cas" "/secret-jwt-public-key.yaml") . | sha256sum }}
-      labels: {{- include "common.labels.standard" ( dict "customLabels" $podLabels "context" $ ) | nindent 8 }}
-        app.kubernetes.io/component: cas
+      labels: {{ include "chainloop.cas.labels" . | nindent 8 }}
     spec:
       {{- include "common.images.renderPullSecrets" (dict "images" (list .Values.cas.image) "context" $) | nindent 6 }}
       serviceAccountName: {{ include "chainloop.cas.serviceAccountName" . }}
@@ -44,6 +40,7 @@ spec:
       affinity: {{- include "common.tplvalues.render" ( dict "value" .Values.cas.affinity "context" $) | nindent 8 }}
       {{- else }}
       affinity:
+        {{- $podLabels := include "common.tplvalues.merge" (dict "values" (list .Values.cas.podLabels .Values.commonLabels) "context" .) }}
         podAffinity: {{- include "common.affinities.pods" (dict "type" .Values.cas.podAffinityPreset "component" "cas" "customLabels" $podLabels "context" $) | nindent 10 }}
         podAntiAffinity: {{- include "common.affinities.pods" (dict "type" .Values.cas.podAntiAffinityPreset "component" "cas" "customLabels" $podLabels "context" $) | nindent 10 }}
         nodeAffinity: {{- include "common.affinities.nodes" (dict "type" .Values.cas.nodeAffinityPreset.type "key" .Values.cas.nodeAffinityPreset.key "values" .Values.cas.nodeAffinityPreset.values) | nindent 10 }}
