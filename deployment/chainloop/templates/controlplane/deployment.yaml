@@ -71,7 +71,7 @@ spec:
       terminationGracePeriodSeconds: {{ .Values.controlplane.terminationGracePeriodSeconds }}
       {{- end }}
       initContainers:
-         {{- if .Values.controlplane.initContainers }}
+        {{- if .Values.controlplane.initContainers }}
           {{- include "common.tplvalues.render" (dict "value" .Values.controlplane.initContainers "context" $) | nindent 8 }}
         {{- end }}
         - name: migrate
@@ -168,9 +168,9 @@ spec:
               mountPath: /etc/pki/tls/certs
               readOnly: true
             {{- end }}
-          {{- if .Values.controlplane.extraVolumeMounts }}
-          {{- include "common.tplvalues.render" (dict "value" .Values.controlplane.extraVolumeMounts "context" $) | nindent 12 }}
-          {{- end }}
+            {{- if .Values.controlplane.extraVolumeMounts }}
+            {{- include "common.tplvalues.render" (dict "value" .Values.controlplane.extraVolumeMounts "context" $) | nindent 12 }}
+            {{- end }}
         {{- if .Values.controlplane.sidecars }}
         {{- include "common.tplvalues.render" ( dict "value" .Values.controlplane.sidecars "context" $) | nindent 8 }}
         {{- end }}
