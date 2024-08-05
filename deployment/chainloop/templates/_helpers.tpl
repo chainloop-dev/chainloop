@@ -145,7 +145,6 @@ Common labels
 */}}
 {{- define "chainloop.controlplane.labels" -}}
 {{- include "common.labels.standard" ( dict "customLabels" .Values.commonLabels "context" .) }}
-app.kubernetes.io/part-of: chainloop
 app.kubernetes.io/component: controlplane
 {{- end }}
 
@@ -155,7 +154,6 @@ app.kubernetes.io/component: controlplane
 {{- define "chainloop.controlplane.selectorLabels" -}}
 {{- $podLabels := include "common.tplvalues.merge" (dict "values" (list .Values.controlplane.podLabels .Values.commonLabels) "context" .) }}
 {{- include "common.labels.matchLabels" ( dict "customLabels" $podLabels "context" . ) }}
-app.kubernetes.io/part-of: chainloop
 app.kubernetes.io/component: controlplane
 {{- end }}
 
@@ -168,7 +166,6 @@ Migration labels
 */}}
 {{- define "chainloop.controlplane.migration.labels" -}}
 {{- include "common.labels.standard" . }}
-app.kubernetes.io/part-of: chainloop
 app.kubernetes.io/component: controlplane-migration
 {{- end }}
 
@@ -359,7 +356,6 @@ Common labels
 */}}
 {{- define "chainloop.cas.labels" -}}
 {{- include "common.labels.standard" ( dict "customLabels" .Values.commonLabels "context" .) }}
-app.kubernetes.io/part-of: chainloop
 app.kubernetes.io/component: cas
 {{- end }}
 
@@ -370,7 +366,6 @@ app.kubernetes.io/component: cas
 {{- $podLabels := include "common.tplvalues.merge" (dict "values" (list .Values.cas.podLabels .Values.commonLabels) "context" .) }}
 {{- include "common.labels.matchLabels" ( dict "customLabels" $podLabels "context" . ) }}
 app.kubernetes.io/component: cas
-app.kubernetes.io/part-of: chainloop
 {{- end }}
 
 {{/*
