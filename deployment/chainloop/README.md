@@ -148,7 +148,18 @@ The Helm Chart in this mode includes
 - Chainloop [Artifact proxy](https://github.com/chainloop-dev/chainloop/tree/main/app/artifact-cas)
 - A PostgreSQL dependency enabled by default
 - **A pre-configured Hashicorp Vault instance running in development mode (unsealed, in-memory, insecure)**
-- **A pre-configured Dex OIDC instance. You can find pre-setup usernames in values.yaml file**
+- **A pre-configured Dex OIDC instance.**
+
+The pre-setup users configuration on the Chart include two users, the information is as follows:
+```text
+username: sarah@chainloop.local
+password: password
+
+username: john@chainloop.local
+password: password
+```
+
+The overall OIDC configuration can be found at [dex-values.yaml](./charts/dex/values.yaml)
 
 > **CAUTION**: Do not use this mode in production, for that, use the [standard mode](#standard-default) instead.
 
