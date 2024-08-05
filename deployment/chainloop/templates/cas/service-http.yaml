@@ -8,8 +8,7 @@ kind: Service
 metadata:
   name: {{ include "chainloop.cas.fullname" . }}
   namespace: {{ include "common.names.namespace" . | quote }}
-  labels: {{- include "common.labels.standard" ( dict "customLabels" .Values.commonLabels "context" $ ) | nindent 4 }}
-    app.kubernetes.io/component: cas
+  labels: {{ include "chainloop.cas.labels" . | nindent 4 }}
   {{- if or .Values.cas.service.annotations .Values.commonAnnotations }}
   {{- $annotations := include "common.tplvalues.merge" (dict "values" (list .Values.cas.service.annotations .Values.commonAnnotations) "context" .) }}
   annotations: {{- include "common.tplvalues.render" ( dict "value" $annotations "context" $ ) | nindent 4 }}
@@ -50,6 +49,4 @@ spec:
     {{- if .Values.cas.service.extraPorts }}
     {{- include "common.tplvalues.render" (dict "value" .Values.cas.service.extraPorts "context" $) | nindent 4 }}
     {{- end }}
-  {{- $podLabels := include "common.tplvalues.merge" (dict "values" (list .Values.cas.podLabels .Values.commonLabels) "context" .) | fromYaml }}
-  selector: {{- include "common.labels.matchLabels" ( dict "customLabels" $podLabels "context" $ ) | nindent 4 }}
-    app.kubernetes.io/component: cas
+  selector: {{ include "chainloop.cas.selectorLabels" . | nindent 4 }}

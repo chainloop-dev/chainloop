@@ -144,7 +144,17 @@ Chainloop Controlplane Chart fullname
 Common labels
 */}}
 {{- define "chainloop.controlplane.labels" -}}
-{{- include "common.labels.standard" . }}
+{{- include "common.labels.standard" ( dict "customLabels" .Values.commonLabels "context" .) }}
+app.kubernetes.io/part-of: chainloop
+app.kubernetes.io/component: controlplane
+{{- end }}
+
+-{{/*
+-Selector labels
+-*/}}
+{{- define "chainloop.controlplane.selectorLabels" -}}
+{{- $podLabels := include "common.tplvalues.merge" (dict "values" (list .Values.controlplane.podLabels .Values.commonLabels) "context" .) }}
+{{- include "common.labels.matchLabels" ( dict "customLabels" $podLabels "context" . ) }}
 app.kubernetes.io/part-of: chainloop
 app.kubernetes.io/component: controlplane
 {{- end }}
@@ -162,13 +172,6 @@ app.kubernetes.io/part-of: chainloop
 app.kubernetes.io/component: controlplane-migration
 {{- end }}
 
-{{/*
-Selector labels
-*/}}
-{{- define "chainloop.controlplane.selectorLabels" -}}
-{{- include "common.labels.matchLabels" .}}
-app.kubernetes.io/component: controlplane
-{{- end }}
 
 {{/*
 OIDC settings, will fallback to development settings if needed
@@ -355,17 +358,19 @@ Chainloop CAS Chart fullname
 Common labels
 */}}
 {{- define "chainloop.cas.labels" -}}
-{{- include "common.labels.standard" . }}
+{{- include "common.labels.standard" ( dict "customLabels" .Values.commonLabels "context" .) }}
 app.kubernetes.io/part-of: chainloop
 app.kubernetes.io/component: cas
 {{- end }}
 
-{{/*
-Selector labels
-*/}}
+-{{/*
+-Selector labels
+-*/}}
 {{- define "chainloop.cas.selectorLabels" -}}
-{{- include "common.labels.matchLabels" .}}
+{{- $podLabels := include "common.tplvalues.merge" (dict "values" (list .Values.cas.podLabels .Values.commonLabels) "context" .) }}
+{{- include "common.labels.matchLabels" ( dict "customLabels" $podLabels "context" . ) }}
 app.kubernetes.io/component: cas
+app.kubernetes.io/part-of: chainloop
 {{- end }}
 
 {{/*
