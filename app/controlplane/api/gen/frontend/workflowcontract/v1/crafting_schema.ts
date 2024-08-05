@@ -255,6 +255,10 @@ export interface PolicyAttachment {
   embedded?:
     | Policy
     | undefined;
+  /** reference to a policy already known by chainloop in the form of provider://policy-name, or just `policy-name` (it would use a default provider if any) */
+  name?:
+    | string
+    | undefined;
   /**
    * rules to select a material or materials to be validated by the policy.
    * If none provided, the whole statement will be injected to the policy
@@ -785,7 +789,7 @@ export const Policies = {
 };
 
 function createBasePolicyAttachment(): PolicyAttachment {
-  return { ref: undefined, embedded: undefined, selector: undefined, disabled: false, with: [] };
+  return { ref: undefined, embedded: undefined, name: undefined, selector: undefined, disabled: false, with: [] };
 }
 
 export const PolicyAttachment = {
@@ -795,6 +799,9 @@ export const PolicyAttachment = {
     }
     if (message.embedded !== undefined) {
       Policy.encode(message.embedded, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.name !== undefined) {
+      writer.uint32(50).string(message.name);
     }
     if (message.selector !== undefined) {
       PolicyAttachment_MaterialSelector.encode(message.selector, writer.uint32(26).fork()).ldelim();
@@ -828,6 +835,13 @@ export const PolicyAttachment = {
           }
 
           message.embedded = Policy.decode(reader, reader.uint32());
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.name = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
@@ -863,6 +877,7 @@ export const PolicyAttachment = {
     return {
       ref: isSet(object.ref) ? String(object.ref) : undefined,
       embedded: isSet(object.embedded) ? Policy.fromJSON(object.embedded) : undefined,
+      name: isSet(object.name) ? String(object.name) : undefined,
       selector: isSet(object.selector) ? PolicyAttachment_MaterialSelector.fromJSON(object.selector) : undefined,
       disabled: isSet(object.disabled) ? Boolean(object.disabled) : false,
       with: Array.isArray(object?.with) ? object.with.map((e: any) => PolicyAttachment_PolicyArgument.fromJSON(e)) : [],
@@ -873,6 +888,7 @@ export const PolicyAttachment = {
     const obj: any = {};
     message.ref !== undefined && (obj.ref = message.ref);
     message.embedded !== undefined && (obj.embedded = message.embedded ? Policy.toJSON(message.embedded) : undefined);
+    message.name !== undefined && (obj.name = message.name);
     message.selector !== undefined &&
       (obj.selector = message.selector ? PolicyAttachment_MaterialSelector.toJSON(message.selector) : undefined);
     message.disabled !== undefined && (obj.disabled = message.disabled);
@@ -894,6 +910,7 @@ export const PolicyAttachment = {
     message.embedded = (object.embedded !== undefined && object.embedded !== null)
       ? Policy.fromPartial(object.embedded)
       : undefined;
+    message.name = object.name ?? undefined;
     message.selector = (object.selector !== undefined && object.selector !== null)
       ? PolicyAttachment_MaterialSelector.fromPartial(object.selector)
       : undefined;

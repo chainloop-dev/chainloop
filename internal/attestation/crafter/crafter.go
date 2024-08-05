@@ -208,8 +208,10 @@ func validatePolicyAttachments(pols []*schemaapi.PolicyAttachment) error {
 		if err != nil {
 			return fmt.Errorf("validating policy: %w", err)
 		}
-		if _, err := policies.LoadPolicyScriptFromSpec(spec); err != nil {
-			return fmt.Errorf("loading policy script: %w", err)
+		if spec != nil {
+			if _, err := policies.LoadPolicyScriptFromSpec(spec); err != nil {
+				return fmt.Errorf("loading policy script: %w", err)
+			}
 		}
 	}
 

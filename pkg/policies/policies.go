@@ -263,6 +263,14 @@ func policyViolationsToAttestationViolations(violations []*engine.PolicyViolatio
 func LoadPolicySpec(attachment *v1.PolicyAttachment) (*v1.Policy, error) {
 	reference := attachment.GetRef()
 	embedded := attachment.GetEmbedded()
+	name := attachment.GetName()
+
+	// if it's a remote reference, there is nothing to validate. Ideally, we would query the remote service, but it's not
+	// available in CLI operations, just server side.
+	// Note that this condition will only be possible during schema updates, since they will be embedded on attestation operations
+	if name != "" {
+		return nil, nil
+	}
 
 	if embedded == nil && reference == "" {
 		return nil, errors.New("policy must be referenced or embedded in the attachment")
