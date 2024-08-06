@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	cr_v1 "github.com/google/go-containerregistry/pkg/v1"

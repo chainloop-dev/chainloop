@@ -22,9 +22,9 @@ import (
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
-	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/statemanager/filesystem"
-	"github.com/chainloop-dev/chainloop/internal/attestation/crafter/statemanager/remote"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/statemanager/filesystem"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/statemanager/remote"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 )
