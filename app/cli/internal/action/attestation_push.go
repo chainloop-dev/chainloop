@@ -22,9 +22,9 @@ import (
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
-	"github.com/chainloop-dev/chainloop/internal/attestation/renderer"
-	"github.com/chainloop-dev/chainloop/internal/attestation/signer"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/signer"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"

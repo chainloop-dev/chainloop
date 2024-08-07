@@ -21,7 +21,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1/plugin/api"
-	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
 

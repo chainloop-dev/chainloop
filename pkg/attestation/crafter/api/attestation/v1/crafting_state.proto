@@ -1,0 +1,154 @@
+//
+// Copyright 2024 The Chainloop Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package attestation.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
+import "workflowcontract/v1/crafting_schema.proto";
+
+option go_package = "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1";
+
+message Attestation {
+  google.protobuf.Timestamp initialized_at = 1 [(buf.validate.field).required = true];
+  google.protobuf.Timestamp finished_at = 2;
+
+  WorkflowMetadata workflow = 3 [(buf.validate.field).required = true];
+
+  map<string, Material> materials = 4;
+  // Annotations for the attestation
+  map<string, string> annotations = 5 [(buf.validate.field).map.values.string.min_len = 1];
+
+  message Material {
+    oneof m {
+      KeyVal string = 1;
+      ContainerImage container_image = 2;
+      Artifact artifact = 3;
+    }
+
+    google.protobuf.Timestamp added_at = 5;
+    workflowcontract.v1.CraftingSchema.Material.MaterialType material_type = 6;
+
+    // Whether the material has been uploaded to the CAS
+    bool uploaded_to_cas = 7;
+    // If the material content has been injected inline in the attestation
+    // leveraging a form of inline CAS
+    bool inline_cas = 8;
+
+    // Annotations for the material
+    map<string, string> annotations = 9 [(buf.validate.field).map.values.string.min_len = 1];
+
+    message KeyVal {
+      string id = 1 [(buf.validate.field).string.min_len = 1];
+      string value = 2 [(buf.validate.field).string.min_len = 1];
+    }
+
+    message ContainerImage {
+      string id = 1 [(buf.validate.field).string.min_len = 1];
+      string name = 2 [(buf.validate.field).string.min_len = 1];
+      string digest = 3 [(buf.validate.field).string.min_len = 1];
+      bool is_subject = 4;
+      // provided tag
+      string tag = 5;
+    }
+
+    message Artifact {
+      // ID of the artifact
+      string id = 1 [(buf.validate.field).string.min_len = 1];
+      // filename, use for record purposes
+      string name = 2 [(buf.validate.field).string.min_len = 1];
+      // the digest is enough to retrieve the artifact since it's stored in a CAS
+      // which also has annotated the fileName
+      string digest = 3 [(buf.validate.field).string.min_len = 1];
+      bool is_subject = 4;
+      // Inline content of the artifact.
+      // This is optional and is used for small artifacts that can be stored inline in the attestation
+      bytes content = 5;
+    }
+  }
+
+  // List of env variables
+  map<string, string> env_vars = 6;
+  string runner_url = 7;
+  workflowcontract.v1.CraftingSchema.Runner.RunnerType runner_type = 8;
+
+  // Head Commit of the environment where the attestation was executed (optional)
+  Commit head = 9;
+
+  // Policies that materials in this attestation were validated against
+  repeated PolicyEvaluation policy_evaluations = 10;
+}
+
+// A policy executed against an attestation or material
+message PolicyEvaluation {
+  // The policy name from the policy spec
+  string name = 1 [(buf.validate.field) = {
+    cel: {
+      message: "must contain only lowercase letters, numbers, and hyphens.",
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
+      id: "name.dns-1123",
+    },
+  }];
+
+  string material_name = 2;
+
+  // The body script of the policy
+  string body = 3 [(buf.validate.field).required = true];
+
+  string description = 5;
+  map<string,string> annotations = 6;
+
+  // The policy violations, if any
+  repeated Violation violations = 4;
+
+  message Violation {
+    string subject = 1 [(buf.validate.field).required = true];
+    string message = 2 [(buf.validate.field).required = true];
+  }
+}
+
+message Commit {
+  string hash = 1 [(buf.validate.field).string.min_len = 1];
+  string author_email = 2 [(buf.validate.field).string.min_len = 1];
+  string author_name = 3 [(buf.validate.field).string.min_len = 1];
+  string message = 4 [(buf.validate.field).string.min_len = 1];
+  google.protobuf.Timestamp date = 5;
+  repeated Remote remotes = 6;
+
+  message Remote {
+    string name = 1 [(buf.validate.field).string.min_len = 1];
+    string url = 2 [(buf.validate.field).string.min_len = 1];
+  }
+}
+
+// Intermediate information that will get stored in the system while the run is being executed
+message CraftingState {
+  workflowcontract.v1.CraftingSchema input_schema = 1;
+  Attestation attestation = 2;
+  bool dry_run = 3;
+}
+
+message WorkflowMetadata {
+  string name = 1 [(buf.validate.field).string.min_len = 1];
+  string project = 2;
+  string team = 3;
+  string workflow_id = 5 [(buf.validate.field).string.min_len = 1];
+  string workflow_run_id = 6; // Not required since we might be doing a dry-run
+  string schema_revision = 7 [(buf.validate.field).string.min_len = 1];
+  // organization name
+  string organization = 8 [(buf.validate.field).string.min_len = 1];
+}

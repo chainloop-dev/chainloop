@@ -22,8 +22,8 @@ import (
 	"strconv"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
-	clientAPI "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
+	clientAPI "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 )
 
 type AttestationInitOpts struct {

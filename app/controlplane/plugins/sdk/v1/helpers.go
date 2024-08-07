@@ -20,7 +20,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/muesli/reflow/wrap"
 )

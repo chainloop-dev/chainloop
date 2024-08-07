@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	cpAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/stretchr/testify/assert"
 )

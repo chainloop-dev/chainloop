@@ -23,8 +23,8 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/pagination"
-	"github.com/chainloop-dev/chainloop/internal/attestation"
-	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
+	"github.com/chainloop-dev/chainloop/pkg/attestation"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"

@@ -25,8 +25,8 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
-	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
-	"github.com/chainloop-dev/chainloop/internal/attestation/renderer"
+	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/muesli/reflow/wrap"

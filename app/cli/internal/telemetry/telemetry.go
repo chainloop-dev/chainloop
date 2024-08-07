@@ -20,7 +20,7 @@ import (
 	"runtime"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	"github.com/denisbrodbeck/machineid"
 	"github.com/rs/zerolog"
 )

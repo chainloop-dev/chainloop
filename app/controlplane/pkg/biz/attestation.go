@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/chainloop-dev/chainloop/internal/attestation"
+	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 

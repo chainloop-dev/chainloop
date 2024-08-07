@@ -19,7 +19,7 @@ import (
 	"context"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	"github.com/chainloop-dev/chainloop/internal/attestation/crafter"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 )
 
 type WorkflowContractUpdate struct {
