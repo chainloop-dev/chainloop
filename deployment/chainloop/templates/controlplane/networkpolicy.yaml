@@ -9,7 +9,7 @@ apiVersion: {{ include "common.capabilities.networkPolicy.apiVersion" . }}
 metadata:
   name: {{ printf "%s-controlplane" (include "common.names.fullname" .) }}
   namespace: {{ include "common.names.namespace" . | quote }}
-  labels: {{- include "common.labels.standard" ( dict "customLabels" .Values.commonLabels "context" $ ) | nindent 4 }}
+  labels: {{ include "chainloop.controlplane.labels" . | nindent 4 }}
     app.kubernetes.io/component: controlplane
   {{- if .Values.commonAnnotations }}
   annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
@@ -17,8 +17,7 @@ metadata:
 spec:
   {{- $podLabels := include "common.tplvalues.merge" ( dict "values" ( list .Values.controlplane.podLabels .Values.commonLabels ) "context" . ) }}
   podSelector:
-    matchLabels: {{- include "common.labels.matchLabels" ( dict "customLabels" $podLabels "context" $ ) | nindent 6 }}
-      app.kubernetes.io/component: controlplane
+    matchLabels: {{ include "chainloop.controlplane.selectorLabels" . | nindent 6 }}
   policyTypes:
     - Ingress
     - Egress
