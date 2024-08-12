@@ -842,20 +842,20 @@ controlplane:
   ## Ref: https://kubernetes.io/docs/concepts/services-networking/network-policies/
   ##
   networkPolicy:
-    ## @param cas.networkPolicy.enabled Specifies whether a NetworkPolicy should be created
+    ## @param controlplane.networkPolicy.enabled Specifies whether a NetworkPolicy should be created
     ##
     enabled: true
-    ## @param cas.networkPolicy.allowExternal Don't require client label for connections
+    ## @param controlplane.networkPolicy.allowExternal Don't require client label for connections
     ## The Policy model to apply. When set to false, only pods with the correct
     ## client label will have network access to the ports Web is listening
     ## on. When true, Web will accept connections from any source
     ## (with the correct destination port).
     ##
     allowExternal: true
-    ## @param cas.networkPolicy.allowExternalEgress Allow the pod to access any range of port and all destinations.
+    ## @param controlplane.networkPolicy.allowExternalEgress Allow the pod to access any range of port and all destinations.
     ##
     allowExternalEgress: true
-    ## @param cas.networkPolicy.extraIngress [array] Add extra ingress rules to the NetworkPolicy
+    ## @param controlplane.networkPolicy.extraIngress [array] Add extra ingress rules to the NetworkPolicy
     ## e.g:
     ## extraIngress:
     ##   - ports:
@@ -871,7 +871,7 @@ controlplane:
     ##                 values:
     ##                   - frontend
     extraIngress: [ ]
-    ## @param cas.networkPolicy.extraEgress [array] Add extra ingress rules to the NetworkPolicy
+    ## @param controlplane.networkPolicy.extraEgress [array] Add extra ingress rules to the NetworkPolicy
     ## e.g:
     ## extraEgress:
     ##   - ports:
@@ -888,8 +888,8 @@ controlplane:
     ##                   - frontend
     ##
     extraEgress: [ ]
-    ## @param cas.networkPolicy.ingressNSMatchLabels [object] Labels to match to allow traffic from other namespaces
-    ## @param cas.networkPolicy.ingressNSPodMatchLabels [object] Pod labels to match to allow traffic from other namespaces
+    ## @param controlplane.networkPolicy.ingressNSMatchLabels [object] Labels to match to allow traffic from other namespaces
+    ## @param controlplane.networkPolicy.ingressNSPodMatchLabels [object] Pod labels to match to allow traffic from other namespaces
     ##
     ingressNSMatchLabels: { }
     ingressNSPodMatchLabels: { }
