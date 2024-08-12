@@ -10,7 +10,6 @@ metadata:
   name: {{ printf "%s-controlplane" (include "common.names.fullname" .) }}
   namespace: {{ include "common.names.namespace" . | quote }}
   labels: {{ include "chainloop.controlplane.labels" . | nindent 4 }}
-    app.kubernetes.io/component: controlplane
   {{- if .Values.commonAnnotations }}
   annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
   {{- end }}
