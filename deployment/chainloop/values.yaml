@@ -150,11 +150,14 @@ controlplane:
     grpc: 9000
     metrics: 5000
 
-  ## @param controlplane.tlsConfig.secret.name name of a secret containing TLS certificate to be used by the controlplane grpc server.
-  tlsConfig:
-    secret:
-      # the secret must contains 2 keys: tls.crt and tls.key respectively containing the certificate and private key.
-      name: ""
+  ##
+  ## TLS configuration
+  ##
+  tls:
+    ## @param controlplane.tls.existingSecret Existing secret name containing TLS certificate to be used by the controlplane grpc server
+    ## NOTE: When it's set it will disable secret creation. The secret must contains 2 keys: tls.crt and tls.key respectively containing the certificate and private key.
+    ##
+    existingSecret: ""
 
   ## @param controlplane.pluginsDir Directory where to look for plugins
   pluginsDir: /plugins
@@ -919,11 +922,14 @@ cas:
     grpc: 9000
     metrics: 5000
 
-  ## @param cas.tlsConfig.secret.name name of a secret containing TLS certificate to be used by the controlplane grpc server.
-  tlsConfig:
-    secret:
-      # the secret must contains 2 keys: tls.crt and tls.key respectively containing the certificate and private key.
-      name: ""
+  ##
+  ## TLS configuration
+  ##
+  tls:
+    ## @param cas.tls.existingSecret Existing secret name containing TLS certificate to be used by the cas grpc server
+    ## NOTE: When it's set it will disable secret creation. The secret must contains 2 keys: tls.crt and tls.key respectively containing the certificate and private key.
+    ##
+    existingSecret: ""
 
   ## @skip cas.serviceAccount
   serviceAccount:

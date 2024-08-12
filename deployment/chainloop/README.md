@@ -529,7 +529,7 @@ chainloop config save \
 | `controlplane.containerPorts.http`             | controlplane HTTP container port                                                                | `8000`            |
 | `controlplane.containerPorts.grpc`             | controlplane gRPC container port                                                                | `9000`            |
 | `controlplane.containerPorts.metrics`          | controlplane prometheus metrics container port                                                  | `5000`            |
-| `controlplane.tlsConfig.secret.name`           | name of a secret containing TLS certificate to be used by the controlplane grpc server.         | `""`              |
+| `controlplane.tls.existingSecret`              | Existing secret name containing TLS certificate to be used by the controlplane grpc server      | `random`          |
 | `controlplane.pluginsDir`                      | Directory where to look for plugins                                                             | `/plugins`        |
 | `controlplane.referrerSharedIndex`             | Configure the shared, public index API endpoint that can be used to discover metadata referrers |                   |
 | `controlplane.referrerSharedIndex.enabled`     | Enable index API endpoint                                                                       | `false`           |
@@ -713,15 +713,15 @@ chainloop config save \
 
 ### Artifact Content Addressable (CAS) API
 
-| Name                         | Description                                                                             | Value             |
-| ---------------------------- | --------------------------------------------------------------------------------------- | ----------------- |
-| `cas.replicaCount`           | Number of replicas                                                                      | `2`               |
-| `cas.image.registry`         | Image registry                                                                          | `REGISTRY_NAME`   |
-| `cas.image.repository`       | Image repository                                                                        | `REPOSITORY_NAME` |
-| `cas.containerPorts.http`    | controlplane HTTP container port                                                        | `8000`            |
-| `cas.containerPorts.grpc`    | controlplane gRPC container port                                                        | `9000`            |
-| `cas.containerPorts.metrics` | controlplane prometheus metrics container port                                          | `5000`            |
-| `cas.tlsConfig.secret.name`  | name of a secret containing TLS certificate to be used by the controlplane grpc server. | `""`              |
+| Name                         | Description                                                                                | Value             |
+| ---------------------------- | ------------------------------------------------------------------------------------------ | ----------------- |
+| `cas.replicaCount`           | Number of replicas                                                                         | `2`               |
+| `cas.image.registry`         | Image registry                                                                             | `REGISTRY_NAME`   |
+| `cas.image.repository`       | Image repository                                                                           | `REPOSITORY_NAME` |
+| `cas.containerPorts.http`    | controlplane HTTP container port                                                           | `8000`            |
+| `cas.containerPorts.grpc`    | controlplane gRPC container port                                                           | `9000`            |
+| `cas.containerPorts.metrics` | controlplane prometheus metrics container port                                             | `5000`            |
+| `cas.tls.existingSecret`     | Existing secret name containing TLS certificate to be used by the controlplane grpc server | `""`              |
 
 ### CAS Networking
 
