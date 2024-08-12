@@ -140,6 +140,44 @@ func (s *testSuite) TestVerifyAttestations() {
 			violations: 1,
 			statement:  "testdata/statement.json",
 		},
+		{
+			name: "with arguments, no violations",
+			schema: &v12.CraftingSchema{
+				Policies: &v12.Policies{
+					Attestation: []*v12.PolicyAttachment{
+						{
+							Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/with_arguments.yaml"},
+							With: []*v12.PolicyAttachment_PolicyArgument{{
+								Name:  "email",
+								Value: "devel@chainloop.dev",
+							}},
+						},
+					},
+				},
+			},
+			npolicies:  1,
+			violations: 0,
+			statement:  "testdata/statement.json",
+		},
+		{
+			name: "with arguments, violations",
+			schema: &v12.CraftingSchema{
+				Policies: &v12.Policies{
+					Attestation: []*v12.PolicyAttachment{
+						{
+							Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/with_arguments.yaml"},
+							With: []*v12.PolicyAttachment_PolicyArgument{{
+								Name:  "email",
+								Value: "foobar@chainloop.dev",
+							}},
+						},
+					},
+				},
+			},
+			npolicies:  1,
+			violations: 1,
+			statement:  "testdata/statement.json",
+		},
 	}
 
 	for _, tc := range cases {
