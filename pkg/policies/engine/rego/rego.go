@@ -31,10 +31,12 @@ import (
 type Rego struct {
 }
 
+const InputArgs = "args"
+
 // Force interface
 var _ engine.PolicyEngine = (*Rego)(nil)
 
-func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte) ([]*engine.PolicyViolation, error) {
+func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte, args map[string]any) ([]*engine.PolicyViolation, error) {
 	policyString := string(policy.Source)
 	parsedModule, err := ast.ParseModule(policy.Name, policyString)
 	if err != nil {
@@ -47,6 +49,16 @@ func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte) 
 	var decodedInput interface{}
 	if err := decoder.Decode(&decodedInput); err != nil {
 		return nil, fmt.Errorf("failed to parse input: %w", err)
+	}
+
+	// add arguments
+	if args != nil {
+		inputMap, ok := decodedInput.(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("unexpected input arguments")
+		}
+		inputMap[InputArgs] = args
+		decodedInput = inputMap
 	}
 
 	// add input

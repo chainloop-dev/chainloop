@@ -21,7 +21,7 @@ import (
 
 type PolicyEngine interface {
 	// Verify verifies an input against a policy
-	Verify(ctx context.Context, policy *Policy, input []byte) ([]*PolicyViolation, error)
+	Verify(ctx context.Context, policy *Policy, input []byte, args map[string]any) ([]*PolicyViolation, error)
 }
 
 // PolicyViolation represents a policy failure

@@ -91,7 +91,7 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 
 		// verify the policy
 		ng := getPolicyEngine(spec)
-		violations, err := ng.Verify(ctx, script, subject)
+		violations, err := ng.Verify(ctx, script, subject, getInputArguments(policy))
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
@@ -140,7 +140,7 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 
 		// 4. verify the policy
 		ng := getPolicyEngine(spec)
-		res, err := ng.Verify(ctx, script, material)
+		res, err := ng.Verify(ctx, script, material, getInputArguments(policyAtt))
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
@@ -156,6 +156,14 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 	}
 
 	return result, nil
+}
+
+func getInputArguments(att *v1.PolicyAttachment) map[string]any {
+	args := make(map[string]any)
+	for _, w := range att.GetWith() {
+		args[w.GetName()] = w.GetValue()
+	}
+	return args
 }
 
 func engineViolationsToAPIViolations(input []*engine.PolicyViolation) []*v12.PolicyEvaluation_Violation {

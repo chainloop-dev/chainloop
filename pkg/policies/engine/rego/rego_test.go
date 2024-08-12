@@ -36,7 +36,7 @@ func TestRego_VerifyWithValidPolicy(t *testing.T) {
 	}
 
 	t.Run("invalid input", func(t *testing.T) {
-		violations, err := r.Verify(context.TODO(), policy, []byte("{\"foo\": \"bar\"}"))
+		violations, err := r.Verify(context.TODO(), policy, []byte("{\"foo\": \"bar\"}"), nil)
 		require.NoError(t, err)
 		assert.Len(t, violations, 2)
 		assert.Contains(t, violations, &engine.PolicyViolation{
@@ -59,9 +59,45 @@ func TestRego_VerifyWithValidPolicy(t *testing.T) {
 				}, {
 					"metadata": {"name": "chainloop-platform-release-production"}
 				}]
-			}`))
+			}`), nil)
 		require.NoError(t, err)
 		assert.Len(t, violations, 0)
+	})
+}
+
+func TestRego_VerifyWithArguments(t *testing.T) {
+	regoContent, err := os.ReadFile("testfiles/arguments.rego")
+	require.NoError(t, err)
+
+	r := &Rego{}
+	policy := &engine.Policy{
+		Name:   "foobar",
+		Source: regoContent,
+	}
+
+	t.Run("no violations", func(t *testing.T) {
+		violations, err := r.Verify(context.TODO(), policy, []byte(`
+			{
+				"kind": "CONTAINER_IMAGE"
+			}`),
+			map[string]interface{}{"foo": "hello"},
+		)
+		require.NoError(t, err)
+		assert.Len(t, violations, 0)
+	})
+
+	t.Run("with violations", func(t *testing.T) {
+		violations, err := r.Verify(context.TODO(), policy, []byte(`
+			{
+				"kind": "CONTAINER_IMAGE"
+			}`),
+			map[string]interface{}{"foo": "bar"},
+		)
+		require.NoError(t, err)
+		assert.Len(t, violations, 1)
+		assert.Contains(t, violations, &engine.PolicyViolation{
+			Subject: "foobar", Violation: "foo is bar"},
+		)
 	})
 }
 
@@ -77,7 +113,7 @@ func TestRego_VerifyInvalidPolicy(t *testing.T) {
 	}
 
 	t.Run("doesn't eval a deny rule", func(t *testing.T) {
-		violations, err := r.Verify(context.TODO(), policy, []byte("{\"foo\": \"bar\"}"))
+		violations, err := r.Verify(context.TODO(), policy, []byte("{\"foo\": \"bar\"}"), nil)
 		assert.Error(t, err)
 		assert.Len(t, violations, 0)
 	})
