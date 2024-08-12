@@ -293,7 +293,7 @@ func rollback(tx *ent.Tx, err error) error {
 
 	// If the error is a constraint error, we return a more specific error to indicate the client that's a duplicate
 	if ent.IsConstraintError(err) {
-		return biz.ErrAlreadyExists
+		return biz.NewErrAlreadyExists(err)
 	}
 
 	return err

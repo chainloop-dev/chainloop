@@ -114,7 +114,7 @@ func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateO
 		Save(ctx)
 	if err != nil {
 		if ent.IsConstraintError(err) {
-			return nil, biz.ErrAlreadyExists
+			return nil, biz.NewErrAlreadyExists(err)
 		}
 
 		return nil, fmt.Errorf("failed to create backend: %w", err)

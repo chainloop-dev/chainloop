@@ -109,6 +109,11 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 	opts.ContractID = contract.ID.String()
 	wf, err := uc.wfRepo.Create(ctx, opts)
 	if err != nil {
+		if IsErrAlreadyExists(err) {
+			// mask the error but return a custom error
+			return nil, NewErrAlreadyExistsStr("name already taken")
+		}
+
 		return nil, fmt.Errorf("failed to create workflow: %w", err)
 	}
 
@@ -154,7 +159,7 @@ func (uc *WorkflowUseCase) Update(ctx context.Context, orgID, workflowID string,
 
 	wf, err := uc.wfRepo.Update(ctx, workflowUUID, opts)
 	if err != nil {
-		if errors.Is(err, ErrAlreadyExists) {
+		if IsErrAlreadyExists(err) {
 			return nil, NewErrValidationStr("name already taken")
 		}
 

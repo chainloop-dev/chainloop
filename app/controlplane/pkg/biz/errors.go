@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,8 +19,6 @@ import (
 	"errors"
 	"fmt"
 )
-
-var ErrAlreadyExists = errors.New("duplicate")
 
 type ErrNotFound struct {
 	entity string
@@ -161,4 +159,24 @@ func (e *ErrAttestationStateConflict) Error() string {
 func IsErrAttestationStateConflict(err error) bool {
 	var e *ErrAttestationStateConflict
 	return errors.As(err, &e)
+}
+
+type ErrAlreadyExists struct {
+	err error
+}
+
+func NewErrAlreadyExists(err error) ErrAlreadyExists {
+	return ErrAlreadyExists{err}
+}
+
+func NewErrAlreadyExistsStr(errMsg string) ErrAlreadyExists {
+	return ErrAlreadyExists{errors.New(errMsg)}
+}
+
+func (e ErrAlreadyExists) Error() string {
+	return fmt.Sprintf("duplicated: %s", e.err.Error())
+}
+
+func IsErrAlreadyExists(err error) bool {
+	return errors.As(err, &ErrAlreadyExists{})
 }

@@ -172,8 +172,8 @@ func (uc *WorkflowContractUseCase) Create(ctx context.Context, opts *WorkflowCon
 	}
 
 	if err != nil {
-		if errors.Is(err, ErrAlreadyExists) {
-			return nil, NewErrValidationStr("name already taken")
+		if IsErrAlreadyExists(err) {
+			return nil, NewErrAlreadyExistsStr("name already taken")
 		}
 
 		return nil, fmt.Errorf("failed to create contract: %w", err)
@@ -197,7 +197,7 @@ func (uc *WorkflowContractUseCase) createWithUniqueName(ctx context.Context, opt
 
 		c, err := uc.repo.Create(ctx, opts)
 		if err != nil {
-			if errors.Is(err, ErrAlreadyExists) {
+			if IsErrAlreadyExists(err) {
 				continue
 			}
 
