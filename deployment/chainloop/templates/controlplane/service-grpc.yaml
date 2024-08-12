@@ -8,8 +8,7 @@ kind: Service
 metadata:
   name: {{ include "chainloop.controlplane.fullname" . }}-api
   namespace: {{ include "common.names.namespace" . | quote }}
-  labels: {{- include "common.labels.standard" ( dict "customLabels" .Values.commonLabels "context" $ ) | nindent 4 }}
-    app.kubernetes.io/component: controlplane
+  labels: {{- include "chainloop.controlplane.labels" . | nindent 4 }}
   {{- if or .Values.controlplane.serviceAPI.annotations .Values.commonAnnotations }}
   {{- $annotations := include "common.tplvalues.merge" (dict "values" (list .Values.controlplane.serviceAPI.annotations .Values.commonAnnotations) "context" .) }}
   annotations: {{- include "common.tplvalues.render" ( dict "value" $annotations "context" $ ) | nindent 4 }}
@@ -50,6 +49,4 @@ spec:
     {{- if .Values.controlplane.serviceAPI.extraPorts }}
     {{- include "common.tplvalues.render" (dict "value" .Values.controlplane.serviceAPI.extraPorts "context" $) | nindent 4 }}
     {{- end }}
-  {{- $podLabels := include "common.tplvalues.merge" (dict "values" (list .Values.controlplane.podLabels .Values.commonLabels) "context" .) | fromYaml }}
-  selector: {{- include "common.labels.matchLabels" ( dict "customLabels" $podLabels "context" $ ) | nindent 4 }}
-    app.kubernetes.io/component: controlplane
+  selector: {{ include "chainloop.controlplane.selectorLabels" . | nindent 4 }}

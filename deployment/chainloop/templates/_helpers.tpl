@@ -144,8 +144,16 @@ Chainloop Controlplane Chart fullname
 Common labels
 */}}
 {{- define "chainloop.controlplane.labels" -}}
-{{- include "common.labels.standard" . }}
-app.kubernetes.io/part-of: chainloop
+{{- include "common.labels.standard" ( dict "customLabels" .Values.commonLabels "context" .) }}
+app.kubernetes.io/component: controlplane
+{{- end }}
+
+-{{/*
+-Selector labels
+-*/}}
+{{- define "chainloop.controlplane.selectorLabels" -}}
+{{- $podLabels := include "common.tplvalues.merge" (dict "values" (list .Values.controlplane.podLabels .Values.commonLabels) "context" .) }}
+{{- include "common.labels.matchLabels" ( dict "customLabels" $podLabels "context" . ) }}
 app.kubernetes.io/component: controlplane
 {{- end }}
 
@@ -158,17 +166,9 @@ Migration labels
 */}}
 {{- define "chainloop.controlplane.migration.labels" -}}
 {{- include "common.labels.standard" . }}
-app.kubernetes.io/part-of: chainloop
 app.kubernetes.io/component: controlplane-migration
 {{- end }}
 
-{{/*
-Selector labels
-*/}}
-{{- define "chainloop.controlplane.selectorLabels" -}}
-{{- include "common.labels.matchLabels" .}}
-app.kubernetes.io/component: controlplane
-{{- end }}
 
 {{/*
 OIDC settings, will fallback to development settings if needed
@@ -355,16 +355,16 @@ Chainloop CAS Chart fullname
 Common labels
 */}}
 {{- define "chainloop.cas.labels" -}}
-{{- include "common.labels.standard" . }}
-app.kubernetes.io/part-of: chainloop
+{{- include "common.labels.standard" ( dict "customLabels" .Values.commonLabels "context" .) }}
 app.kubernetes.io/component: cas
 {{- end }}
 
-{{/*
-Selector labels
-*/}}
+-{{/*
+-Selector labels
+-*/}}
 {{- define "chainloop.cas.selectorLabels" -}}
-{{- include "common.labels.matchLabels" .}}
+{{- $podLabels := include "common.tplvalues.merge" (dict "values" (list .Values.cas.podLabels .Values.commonLabels) "context" .) }}
+{{- include "common.labels.matchLabels" ( dict "customLabels" $podLabels "context" . ) }}
 app.kubernetes.io/component: cas
 {{- end }}
 
@@ -400,7 +400,7 @@ Check for Development mode
 */}}
 {{- define "chainloop.validateValues.development" -}}
 {{- if .Values.development }}
-{{-     printf "\n###########################################################################\n  DEVELOPMENT MODE\n###########################################################################\n\n██████╗ ███████╗██╗    ██╗ █████╗ ██████╗ ███████╗\n██╔══██╗██╔════╝██║    ██║██╔══██╗██╔══██╗██╔════╝\n██████╔╝█████╗  ██║ █╗ ██║███████║██████╔╝█████╗\n██╔══██╗██╔══╝  ██║███╗██║██╔══██║██╔══██╗██╔══╝\n██████╔╝███████╗╚███╔███╔╝██║  ██║██║  ██║███████╗\n╚═════╝ ╚══════╝ ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝\n\nInstance running in development mode!\n\nDevelopment mode, by default\n\n- Runs an insecure, unsealed, non-persistent instance of Vault\n- Is configured with development authentication keys\n\nDO NOT USE IT FOR PRODUCTION PURPOSES" -}}
+{{-     printf "###########################################################################\n  DEVELOPMENT MODE\n###########################################################################\n\n██████╗ ███████╗██╗    ██╗ █████╗ ██████╗ ███████╗\n██╔══██╗██╔════╝██║    ██║██╔══██╗██╔══██╗██╔════╝\n██████╔╝█████╗  ██║ █╗ ██║███████║██████╔╝█████╗\n██╔══██╗██╔══╝  ██║███╗██║██╔══██║██╔══██╗██╔══╝\n██████╔╝███████╗╚███╔███╔╝██║  ██║██║  ██║███████╗\n╚═════╝ ╚══════╝ ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚══════╝\n\nInstance running in development mode!\n\nDevelopment mode, by default\n\n- Runs an insecure, unsealed, non-persistent instance of Vault\n- Is configured with development authentication keys\n\n###########################################################################\nPre-configured static users\n###########################################################################\n\nDevelopment configuration comes with two pre-setup users:\n- username: sarah@chainloop.local\n- password: password\n\n- username: john@chainloop.local\n- password: password\n\nDO NOT USE IT FOR PRODUCTION PURPOSES" -}}
 {{- end -}}
 {{- end -}}
 

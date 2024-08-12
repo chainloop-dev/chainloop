@@ -28,7 +28,7 @@ import (
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/chainloop/internal/attestation/renderer/chainloop"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	intoto "github.com/in-toto/attestation/go/v1"

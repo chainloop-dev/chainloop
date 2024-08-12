@@ -25,7 +25,7 @@ import (
 	"fmt"
 	"io"
 
-	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
+	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/pbkdf2"
 	"google.golang.org/protobuf/proto"

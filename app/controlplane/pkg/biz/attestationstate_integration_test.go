@@ -22,7 +22,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
-	v1 "github.com/chainloop-dev/chainloop/internal/attestation/crafter/api/attestation/v1"
+	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	creds "github.com/chainloop-dev/chainloop/pkg/credentials/mocks"
 	"github.com/google/uuid"
