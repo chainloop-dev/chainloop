@@ -34,6 +34,8 @@ spec:
     # Allow outbound connections to other cluster pods
     - ports:
         - port: {{ .Values.controlplane.containerPorts.http }}
+        - port: {{ .Values.controlplane.containerPorts.grpc }}
+        - port: {{ .Values.controlplane.containerPorts.metrics }}
       to:
         - podSelector:
             matchLabels: {{- include "common.labels.matchLabels" ( dict "customLabels" .Values.commonLabels "context" $ ) | nindent 14 }}
