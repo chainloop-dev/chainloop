@@ -109,10 +109,6 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 	opts.ContractID = contract.ID.String()
 	wf, err := uc.wfRepo.Create(ctx, opts)
 	if err != nil {
-		if errors.Is(err, ErrAlreadyExists) {
-			return nil, NewErrValidationStr("name already taken")
-		}
-
 		return nil, fmt.Errorf("failed to create workflow: %w", err)
 	}
 

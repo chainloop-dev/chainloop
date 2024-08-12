@@ -146,6 +146,8 @@ func handleUseCaseErr(err error, l *log.Helper) error {
 		return errors.Forbidden("unauthorized", err.Error())
 	case biz.IsErrNotImplemented(err):
 		return status.Error(codes.Unimplemented, err.Error())
+	case errors.Is(err, biz.ErrAlreadyExists):
+		return status.Error(codes.AlreadyExists, err.Error())
 	default:
 		return servicelogger.LogAndMaskErr(err, l)
 	}

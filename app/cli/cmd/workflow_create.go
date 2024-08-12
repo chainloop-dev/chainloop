@@ -20,11 +20,13 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func newWorkflowCreateCmd() *cobra.Command {
 	var workflowName, description, project, team, contractRef string
-	var public bool
+	var public, skipIfExists bool
 
 	cmd := &cobra.Command{
 		Use:   "create",
@@ -64,6 +66,15 @@ func newWorkflowCreateCmd() *cobra.Command {
 
 			wf, err := action.NewWorkflowCreate(actionOpts).Run(opts)
 			if err != nil {
+				if s, ok := status.FromError(err); ok {
+					if s.Code() == codes.AlreadyExists {
+						if skipIfExists {
+							logger.Info().Msg("Workflow already exists")
+							return nil
+						}
+					}
+				}
+
 				return fmt.Errorf("failed to create workflow: %w", err)
 			}
 
@@ -90,6 +101,7 @@ func newWorkflowCreateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&team, "team", "", "team name")
 	cmd.Flags().StringVar(&contractRef, "contract", "", "the name of an existing contract or the path/URL to a contract file. If not provided an empty one will be created.")
 	cmd.Flags().BoolVar(&public, "public", false, "is the workflow public")
+	cmd.Flags().BoolVarP(&skipIfExists, "skip-if-exists", "f", false, "do not fail if the workflow with the provided name already exists")
 	cmd.Flags().SortFlags = false
 
 	return cmd
