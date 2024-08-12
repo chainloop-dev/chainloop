@@ -75,7 +75,7 @@ func newWorkflowCreateCmd() *cobra.Command {
 					}
 				}
 
-				return fmt.Errorf("failed to create workflow: %w", err)
+				return err
 			}
 
 			// Print the workflow table
