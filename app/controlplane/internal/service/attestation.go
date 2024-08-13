@@ -366,8 +366,8 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 }
 
 func (s *AttestationService) GetPolicy(ctx context.Context, req *cpAPI.AttestationServiceGetPolicyRequest) (*cpAPI.AttestationServiceGetPolicyResponse, error) {
-	token := usercontext.CurrentAPIToken(ctx)
-	if token == nil {
+	token, ok := attjwtmiddleware.FromJWTAuthContext(ctx)
+	if !ok {
 		return nil, errors.Forbidden("forbidden", "token not found")
 	}
 

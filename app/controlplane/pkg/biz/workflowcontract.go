@@ -306,7 +306,7 @@ func (uc *WorkflowContractUseCase) Delete(ctx context.Context, orgID, contractID
 // GetPolicy retrieves a policy from a policy provider
 func (uc *WorkflowContractUseCase) GetPolicy(providerName, policyName, token string) (*schemav1.Policy, error) {
 	var provider = uc.policyRegistry.DefaultProvider()
-	if providerName == "" {
+	if providerName != "" {
 		provider = uc.policyRegistry.GetProvider(providerName)
 	}
 
