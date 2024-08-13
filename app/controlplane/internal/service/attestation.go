@@ -365,9 +365,13 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 	return &cpAPI.AttestationServiceGetUploadCredsResponse{Result: resp}, nil
 }
 
-func (s *AttestationService) GetPolicy(context.Context, *cpAPI.AttestationServiceGetPolicyRequest) (*cpAPI.AttestationServiceGetPolicyResponse, error) {
-
-}
+//func (s *AttestationService) GetPolicy(ctx context.Context, req *cpAPI.AttestationServiceGetPolicyRequest) (*cpAPI.AttestationServiceGetPolicyResponse, error) {
+//	token := usercontext.CurrentAPIToken(ctx)
+//	if token == nil {
+//		return nil, errors.Forbidden("forbidden", "token not found")
+//	}
+//
+//}
 
 func bizAttestationToPb(att *biz.Attestation) (*cpAPI.AttestationItem, error) {
 	if att == nil || att.Envelope == nil {

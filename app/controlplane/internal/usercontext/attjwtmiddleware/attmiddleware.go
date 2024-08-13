@@ -102,7 +102,6 @@ func NewAPITokenProvider(signingSecret string) JWTOption {
 type JWTAuthContext struct {
 	Claims      jwt.Claims
 	ProviderKey string
-	Token       string
 }
 
 type authzContextKey struct{}
@@ -199,7 +198,6 @@ func WithJWTMulti(opts ...JWTOption) middleware.Middleware {
 					ctx := newJWTAuthContext(ctx, JWTAuthContext{
 						Claims:      tokenInfo.Claims,
 						ProviderKey: provider.providerKey,
-						Token:       jwtToken,
 					})
 
 					//nolint:staticcheck
