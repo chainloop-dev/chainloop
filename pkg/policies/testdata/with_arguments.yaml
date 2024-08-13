@@ -1,0 +1,7 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: workflow
+spec:
+  type: ATTESTATION
+  path: testdata/with_arguments.rego

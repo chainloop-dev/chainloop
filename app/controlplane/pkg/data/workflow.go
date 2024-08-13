@@ -66,7 +66,7 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 		Save(ctx)
 	if err != nil {
 		if ent.IsConstraintError(err) {
-			return nil, biz.ErrAlreadyExists
+			return nil, biz.NewErrAlreadyExists(err)
 		}
 
 		return nil, fmt.Errorf("failed to create workflow: %w", err)
@@ -99,7 +99,7 @@ func (r *WorkflowRepo) Update(ctx context.Context, id uuid.UUID, opts *biz.Workf
 
 	if err != nil {
 		if ent.IsConstraintError(err) {
-			return nil, biz.ErrAlreadyExists
+			return nil, biz.NewErrAlreadyExists(err)
 		}
 
 		return nil, fmt.Errorf("failed to update workflow: %w", err)

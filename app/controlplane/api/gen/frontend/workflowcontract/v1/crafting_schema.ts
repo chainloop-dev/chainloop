@@ -266,18 +266,27 @@ export interface PolicyAttachment {
   selector?: PolicyAttachment_MaterialSelector;
   /** set to true to disable this rule */
   disabled: boolean;
-  with: PolicyAttachment_PolicyArgument[];
+  /**
+   * optional arguments for policies. Multivalued arguments can be set through multiline strings or comma separated values. It will be
+   * parsed and passed as an array value to the policy engine.
+   * with:
+   *   user: john
+   *   users: john, sarah
+   *   licenses: |
+   *     AGPL-1.0
+   *     AGPL-3.0
+   */
+  with: { [key: string]: string };
+}
+
+export interface PolicyAttachment_WithEntry {
+  key: string;
+  value: string;
 }
 
 export interface PolicyAttachment_MaterialSelector {
   /** material name */
   name: string;
-}
-
-/** optional arguments for policies */
-export interface PolicyAttachment_PolicyArgument {
-  name: string;
-  value: string;
 }
 
 /** Represents a policy to be applied to a material or attestation */
@@ -789,7 +798,7 @@ export const Policies = {
 };
 
 function createBasePolicyAttachment(): PolicyAttachment {
-  return { ref: undefined, embedded: undefined, name: undefined, selector: undefined, disabled: false, with: [] };
+  return { ref: undefined, embedded: undefined, name: undefined, selector: undefined, disabled: false, with: {} };
 }
 
 export const PolicyAttachment = {
@@ -809,9 +818,9 @@ export const PolicyAttachment = {
     if (message.disabled === true) {
       writer.uint32(32).bool(message.disabled);
     }
-    for (const v of message.with) {
-      PolicyAttachment_PolicyArgument.encode(v!, writer.uint32(42).fork()).ldelim();
-    }
+    Object.entries(message.with).forEach(([key, value]) => {
+      PolicyAttachment_WithEntry.encode({ key: key as any, value }, writer.uint32(42).fork()).ldelim();
+    });
     return writer;
   },
 
@@ -862,7 +871,10 @@ export const PolicyAttachment = {
             break;
           }
 
-          message.with.push(PolicyAttachment_PolicyArgument.decode(reader, reader.uint32()));
+          const entry5 = PolicyAttachment_WithEntry.decode(reader, reader.uint32());
+          if (entry5.value !== undefined) {
+            message.with[entry5.key] = entry5.value;
+          }
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -880,7 +892,12 @@ export const PolicyAttachment = {
       name: isSet(object.name) ? String(object.name) : undefined,
       selector: isSet(object.selector) ? PolicyAttachment_MaterialSelector.fromJSON(object.selector) : undefined,
       disabled: isSet(object.disabled) ? Boolean(object.disabled) : false,
-      with: Array.isArray(object?.with) ? object.with.map((e: any) => PolicyAttachment_PolicyArgument.fromJSON(e)) : [],
+      with: isObject(object.with)
+        ? Object.entries(object.with).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+          acc[key] = String(value);
+          return acc;
+        }, {})
+        : {},
     };
   },
 
@@ -892,10 +909,11 @@ export const PolicyAttachment = {
     message.selector !== undefined &&
       (obj.selector = message.selector ? PolicyAttachment_MaterialSelector.toJSON(message.selector) : undefined);
     message.disabled !== undefined && (obj.disabled = message.disabled);
+    obj.with = {};
     if (message.with) {
-      obj.with = message.with.map((e) => e ? PolicyAttachment_PolicyArgument.toJSON(e) : undefined);
-    } else {
-      obj.with = [];
+      Object.entries(message.with).forEach(([k, v]) => {
+        obj.with[k] = v;
+      });
     }
     return obj;
   },
@@ -915,7 +933,80 @@ export const PolicyAttachment = {
       ? PolicyAttachment_MaterialSelector.fromPartial(object.selector)
       : undefined;
     message.disabled = object.disabled ?? false;
-    message.with = object.with?.map((e) => PolicyAttachment_PolicyArgument.fromPartial(e)) || [];
+    message.with = Object.entries(object.with ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = String(value);
+      }
+      return acc;
+    }, {});
+    return message;
+  },
+};
+
+function createBasePolicyAttachment_WithEntry(): PolicyAttachment_WithEntry {
+  return { key: "", value: "" };
+}
+
+export const PolicyAttachment_WithEntry = {
+  encode(message: PolicyAttachment_WithEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PolicyAttachment_WithEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePolicyAttachment_WithEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PolicyAttachment_WithEntry {
+    return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? String(object.value) : "" };
+  },
+
+  toJSON(message: PolicyAttachment_WithEntry): unknown {
+    const obj: any = {};
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PolicyAttachment_WithEntry>, I>>(base?: I): PolicyAttachment_WithEntry {
+    return PolicyAttachment_WithEntry.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<PolicyAttachment_WithEntry>, I>>(object: I): PolicyAttachment_WithEntry {
+    const message = createBasePolicyAttachment_WithEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
     return message;
   },
 };
@@ -976,79 +1067,6 @@ export const PolicyAttachment_MaterialSelector = {
   ): PolicyAttachment_MaterialSelector {
     const message = createBasePolicyAttachment_MaterialSelector();
     message.name = object.name ?? "";
-    return message;
-  },
-};
-
-function createBasePolicyAttachment_PolicyArgument(): PolicyAttachment_PolicyArgument {
-  return { name: "", value: "" };
-}
-
-export const PolicyAttachment_PolicyArgument = {
-  encode(message: PolicyAttachment_PolicyArgument, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    if (message.value !== "") {
-      writer.uint32(18).string(message.value);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): PolicyAttachment_PolicyArgument {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePolicyAttachment_PolicyArgument();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.value = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): PolicyAttachment_PolicyArgument {
-    return {
-      name: isSet(object.name) ? String(object.name) : "",
-      value: isSet(object.value) ? String(object.value) : "",
-    };
-  },
-
-  toJSON(message: PolicyAttachment_PolicyArgument): unknown {
-    const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.value !== undefined && (obj.value = message.value);
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<PolicyAttachment_PolicyArgument>, I>>(base?: I): PolicyAttachment_PolicyArgument {
-    return PolicyAttachment_PolicyArgument.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<PolicyAttachment_PolicyArgument>, I>>(
-    object: I,
-  ): PolicyAttachment_PolicyArgument {
-    const message = createBasePolicyAttachment_PolicyArgument();
-    message.name = object.name ?? "";
-    message.value = object.value ?? "";
     return message;
   },
 };

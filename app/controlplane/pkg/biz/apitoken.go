@@ -17,7 +17,6 @@ package biz
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -139,8 +138,8 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 	// We store it since Chainloop will not have access to the JWT to check the expiration once created
 	token, err := uc.apiTokenRepo.Create(ctx, name, description, expiresAt, orgUUID)
 	if err != nil {
-		if errors.Is(err, ErrAlreadyExists) {
-			return nil, NewErrValidationStr("name already taken")
+		if IsErrAlreadyExists(err) {
+			return nil, NewErrAlreadyExistsStr("name already taken")
 		}
 		return nil, fmt.Errorf("storing token: %w", err)
 	}

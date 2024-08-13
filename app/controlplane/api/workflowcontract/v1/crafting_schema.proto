@@ -143,17 +143,19 @@ message PolicyAttachment {
   // set to true to disable this rule
   bool disabled = 4;
 
-  repeated PolicyArgument with = 5;
+  // optional arguments for policies. Multivalued arguments can be set through multiline strings or comma separated values. It will be
+  // parsed and passed as an array value to the policy engine.
+  // with:
+  //   user: john
+  //   users: john, sarah
+  //   licenses: |
+  //     AGPL-1.0
+  //     AGPL-3.0
+  map<string, string> with = 5;
 
   message MaterialSelector {
     // material name
     string name = 1;
-  }
-
-  // optional arguments for policies
-  message PolicyArgument {
-    string name = 1 [(buf.validate.field).required = true];
-    string value = 2 [(buf.validate.field).required = true];;
   }
 }
 

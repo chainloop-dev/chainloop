@@ -140,6 +140,88 @@ func (s *testSuite) TestVerifyAttestations() {
 			violations: 1,
 			statement:  "testdata/statement.json",
 		},
+		{
+			name: "with arguments, no violations",
+			schema: &v12.CraftingSchema{
+				Policies: &v12.Policies{
+					Attestation: []*v12.PolicyAttachment{
+						{
+							Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/with_arguments.yaml"},
+							With:   map[string]string{"email": "devel@chainloop.dev"},
+						},
+					},
+				},
+			},
+			npolicies:  1,
+			violations: 0,
+			statement:  "testdata/statement.json",
+		},
+		{
+			name: "with arguments, violations",
+			schema: &v12.CraftingSchema{
+				Policies: &v12.Policies{
+					Attestation: []*v12.PolicyAttachment{
+						{
+							Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/with_arguments.yaml"},
+							With:   map[string]string{"email": "foobar@chainloop.dev"},
+						},
+					},
+				},
+			},
+			npolicies:  1,
+			violations: 1,
+			statement:  "testdata/statement.json",
+		},
+		{
+			name: "with array argument, multiline string",
+			schema: &v12.CraftingSchema{
+				Policies: &v12.Policies{
+					Attestation: []*v12.PolicyAttachment{
+						{
+							Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/with_arguments.yaml"},
+							With: map[string]string{"email_array": `
+								foobar@chainloop.dev
+								foobaz@chainloop.dev`},
+						},
+					},
+				},
+			},
+			npolicies:  1,
+			violations: 1,
+			statement:  "testdata/statement.json",
+		},
+		{
+			name: "with array argument, csv string",
+			schema: &v12.CraftingSchema{
+				Policies: &v12.Policies{
+					Attestation: []*v12.PolicyAttachment{
+						{
+							Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/with_arguments.yaml"},
+							With:   map[string]string{"email_array": "foobar@chainloop.dev,foobaz@chainloop.dev"},
+						},
+					},
+				},
+			},
+			npolicies:  1,
+			violations: 1,
+			statement:  "testdata/statement.json",
+		},
+		{
+			name: "with array argument, malformed csv string",
+			schema: &v12.CraftingSchema{
+				Policies: &v12.Policies{
+					Attestation: []*v12.PolicyAttachment{
+						{
+							Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/with_arguments.yaml"},
+							With:   map[string]string{"email_array": ",,foobar@chainloop.dev,foobaz@chainloop.dev,,"},
+						},
+					},
+				},
+			},
+			npolicies:  1,
+			violations: 1,
+			statement:  "testdata/statement.json",
+		},
 	}
 
 	for _, tc := range cases {
@@ -412,6 +494,62 @@ func (s *testSuite) TestLoadPolicySpec() {
 			if tc.expectedCategory != "" {
 				s.Equal(tc.expectedCategory, p.Metadata.Annotations["category"])
 			}
+		})
+	}
+}
+
+func (s *testSuite) TestInputArguments() {
+	cases := []struct {
+		name     string
+		inputs   map[string]string
+		expected map[string]any
+	}{
+		{
+			name:     "string input",
+			inputs:   map[string]string{"foo": "bar"},
+			expected: map[string]any{"foo": "bar"},
+		},
+		{
+			name:     "csv input",
+			inputs:   map[string]string{"foo": "bar1,bar2,bar3"},
+			expected: map[string]any{"foo": []string{"bar1", "bar2", "bar3"}},
+		},
+		{
+			name:     "csv input with empty slots",
+			inputs:   map[string]string{"foo": ",bar1,,,bar2,bar3,,"},
+			expected: map[string]any{"foo": []string{"bar1", "bar2", "bar3"}},
+		},
+		{
+			name:     "csv input with line feeds",
+			inputs:   map[string]string{"foo": "\nbar1,,,bar2,bar3,,"},
+			expected: map[string]any{"foo": []string{"bar1", "bar2", "bar3"}},
+		},
+		{
+			name:     "multiline input",
+			inputs:   map[string]string{"foo": "\nbar1\nbar2\nbar3\n"},
+			expected: map[string]any{"foo": []string{"bar1", "bar2", "bar3"}},
+		},
+		{
+			name:     "multiline input with empty lines",
+			inputs:   map[string]string{"foo": "\n\n\nbar1\nbar2\n\nbar3\n"},
+			expected: map[string]any{"foo": []string{"bar1", "bar2", "bar3"}},
+		},
+		{
+			name:     "no input",
+			inputs:   nil,
+			expected: map[string]any{},
+		},
+		{
+			name:     "multiple values",
+			inputs:   map[string]string{"foo": "bar1,bar2,bar3", "bar": "baz", "foos": "bar1\nbar2\nbar3\n"},
+			expected: map[string]any{"foo": []string{"bar1", "bar2", "bar3"}, "bar": "baz", "foos": []string{"bar1", "bar2", "bar3"}},
+		},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			actual := getInputArguments(tc.inputs)
+			s.Equal(tc.expected, actual)
 		})
 	}
 }

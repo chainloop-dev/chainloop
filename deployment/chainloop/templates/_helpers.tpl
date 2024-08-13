@@ -169,6 +169,17 @@ Migration labels
 app.kubernetes.io/component: controlplane-migration
 {{- end }}
 
+{{/*
+Controlplane TLS Config Name
+*/}}
+{{- define "controlplane.tls-secret-name" -}}
+{{- if .Values.controlplane.tls.existingSecret }}
+{{- .Values.controlplane.tls.existingSecret }}
+{{/* Legacy option for existing secret configuration */}}
+{{- else if .Values.controlplane.tlsConfig }}
+{{- .Values.controlplane.tlsConfig.secret.name }}
+{{- end }}
+{{- end }}
 
 {{/*
 OIDC settings, will fallback to development settings if needed
@@ -376,6 +387,18 @@ Create the name of the service account to use
 {{- default (include "chainloop.cas.fullname" .) .Values.cas.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.cas.serviceAccount.name }}
+{{- end }}
+{{- end }}
+
+{{/*
+CAS TLS Config Name
+*/}}
+{{- define "cas.tls-secret-name" -}}
+{{- if .Values.cas.tls.existingSecret }}
+{{- .Values.cas.tls.existingSecret }}
+{{/* Legacy option for existing secret configuration */}}
+{{- else if .Values.cas.tlsConfig }}
+{{- .Values.cas.tlsConfig.secret.name }}
 {{- end }}
 {{- end }}
 

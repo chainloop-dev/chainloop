@@ -478,11 +478,12 @@ chainloop config save \
 
 ### Global parameters
 
-| Name                      | Description                                                                                                                                                            | Value   |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| `global.imageRegistry`    | Global Docker image registry                                                                                                                                           | `""`    |
-| `global.imagePullSecrets` | Global Docker registry secret names as an array                                                                                                                        | `[]`    |
-| `development`             | Deploys Chainloop pre-configured FOR DEVELOPMENT ONLY. It includes a Vault instance in development mode and pre-configured authentication certificates and passphrases | `false` |
+| Name                                                  | Description                                                                                                                                                                                                                                                                                                                                                         | Value   |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| `global.imageRegistry`                                | Global Docker image registry                                                                                                                                                                                                                                                                                                                                        | `""`    |
+| `global.imagePullSecrets`                             | Global Docker registry secret names as an array                                                                                                                                                                                                                                                                                                                     | `[]`    |
+| `global.compatibility.openshift.adaptSecurityContext` | Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: auto (apply if the detected running cluster is Openshift), force (perform the adaptation always), disabled (do not perform adaptation) | `auto`  |
+| `development`                                         | Deploys Chainloop pre-configured FOR DEVELOPMENT ONLY. It includes a Vault instance in development mode and pre-configured authentication certificates and passphrases                                                                                                                                                                                              | `false` |
 
 ### Common parameters
 
@@ -528,7 +529,7 @@ chainloop config save \
 | `controlplane.containerPorts.http`             | controlplane HTTP container port                                                                | `8000`            |
 | `controlplane.containerPorts.grpc`             | controlplane gRPC container port                                                                | `9000`            |
 | `controlplane.containerPorts.metrics`          | controlplane prometheus metrics container port                                                  | `5000`            |
-| `controlplane.tlsConfig.secret.name`           | name of a secret containing TLS certificate to be used by the controlplane grpc server.         | `""`              |
+| `controlplane.tls.existingSecret`              | Existing secret name containing TLS certificate to be used by the controlplane grpc server      | `random`          |
 | `controlplane.pluginsDir`                      | Directory where to look for plugins                                                             | `/plugins`        |
 | `controlplane.referrerSharedIndex`             | Configure the shared, public index API endpoint that can be used to discover metadata referrers |                   |
 | `controlplane.referrerSharedIndex.enabled`     | Enable index API endpoint                                                                       | `false`           |
@@ -702,18 +703,25 @@ chainloop config save \
 | `controlplane.autoscaling.hpa.maxReplicas`                 | Maximum number of replicas                                                                                                                                               | `""`            |
 | `controlplane.autoscaling.hpa.targetCPU`                   | Target CPU utilization percentage                                                                                                                                        | `""`            |
 | `controlplane.autoscaling.hpa.targetMemory`                | Target Memory utilization percentage                                                                                                                                     | `""`            |
+| `controlplane.networkPolicy.enabled`                       | Specifies whether a NetworkPolicy should be created                                                                                                                      | `true`          |
+| `controlplane.networkPolicy.allowExternal`                 | Don't require client label for connections                                                                                                                               | `true`          |
+| `controlplane.networkPolicy.allowExternalEgress`           | Allow the pod to access any range of port and all destinations.                                                                                                          | `true`          |
+| `controlplane.networkPolicy.extraIngress`                  | Add extra ingress rules to the NetworkPolicy                                                                                                                             | `[]`            |
+| `controlplane.networkPolicy.extraEgress`                   | Add extra ingress rules to the NetworkPolicy                                                                                                                             | `[]`            |
+| `controlplane.networkPolicy.ingressNSMatchLabels`          | Labels to match to allow traffic from other namespaces                                                                                                                   | `{}`            |
+| `controlplane.networkPolicy.ingressNSPodMatchLabels`       | Pod labels to match to allow traffic from other namespaces                                                                                                               | `{}`            |
 
 ### Artifact Content Addressable (CAS) API
 
-| Name                         | Description                                                                             | Value             |
-| ---------------------------- | --------------------------------------------------------------------------------------- | ----------------- |
-| `cas.replicaCount`           | Number of replicas                                                                      | `2`               |
-| `cas.image.registry`         | Image registry                                                                          | `REGISTRY_NAME`   |
-| `cas.image.repository`       | Image repository                                                                        | `REPOSITORY_NAME` |
-| `cas.containerPorts.http`    | controlplane HTTP container port                                                        | `8000`            |
-| `cas.containerPorts.grpc`    | controlplane gRPC container port                                                        | `9000`            |
-| `cas.containerPorts.metrics` | controlplane prometheus metrics container port                                          | `5000`            |
-| `cas.tlsConfig.secret.name`  | name of a secret containing TLS certificate to be used by the controlplane grpc server. | `""`              |
+| Name                         | Description                                                                                | Value             |
+| ---------------------------- | ------------------------------------------------------------------------------------------ | ----------------- |
+| `cas.replicaCount`           | Number of replicas                                                                         | `2`               |
+| `cas.image.registry`         | Image registry                                                                             | `REGISTRY_NAME`   |
+| `cas.image.repository`       | Image repository                                                                           | `REPOSITORY_NAME` |
+| `cas.containerPorts.http`    | controlplane HTTP container port                                                           | `8000`            |
+| `cas.containerPorts.grpc`    | controlplane gRPC container port                                                           | `9000`            |
+| `cas.containerPorts.metrics` | controlplane prometheus metrics container port                                             | `5000`            |
+| `cas.tls.existingSecret`     | Existing secret name containing TLS certificate to be used by the controlplane grpc server | `""`              |
 
 ### CAS Networking
 
@@ -840,7 +848,14 @@ chainloop config save \
 | `cas.autoscaling.hpa.minReplicas`                       | Minimum number of replicas                                                                                                                                                                                                                          | `""`             |
 | `cas.autoscaling.hpa.maxReplicas`                       | Maximum number of replicas                                                                                                                                                                                                                          | `""`             |
 | `cas.autoscaling.hpa.targetCPU`                         | Target CPU utilization percentage                                                                                                                                                                                                                   | `""`             |
-| `cas.autoscaling.hpa.targetMemory`                      | Target Memory utilization percentage                                                                                                                                                                                                                | `""`             |
+| `cas.autoscaling.hpa.targetMemory`                      | Target Memory utilization percentage                                                                                                                                                                                                                | `nil`            |
+| `cas.networkPolicy.enabled`                             | Specifies whether a NetworkPolicy should be created                                                                                                                                                                                                 | `true`           |
+| `cas.networkPolicy.allowExternal`                       | Don't require client label for connections                                                                                                                                                                                                          | `true`           |
+| `cas.networkPolicy.allowExternalEgress`                 | Allow the pod to access any range of port and all destinations.                                                                                                                                                                                     | `true`           |
+| `cas.networkPolicy.extraIngress`                        | Add extra ingress rules to the NetworkPolicy                                                                                                                                                                                                        | `[]`             |
+| `cas.networkPolicy.extraEgress`                         | Add extra ingress rules to the NetworkPolicy                                                                                                                                                                                                        | `[]`             |
+| `cas.networkPolicy.ingressNSMatchLabels`                | Labels to match to allow traffic from other namespaces                                                                                                                                                                                              | `{}`             |
+| `cas.networkPolicy.ingressNSPodMatchLabels`             | Pod labels to match to allow traffic from other namespaces                                                                                                                                                                                          | `{}`             |
 
 ### Dependencies
 
