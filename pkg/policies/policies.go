@@ -16,7 +16,6 @@
 package policies
 
 import (
-	"bufio"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -164,38 +163,47 @@ func getInputArguments(att *v1.PolicyAttachment) map[string]any {
 	args := make(map[string]any)
 	for k, v := range att.GetWith() {
 		// scan for multiple values
-		lines := make([]string, 0)
-		scanner := bufio.NewScanner(strings.NewReader(v))
-		for scanner.Scan() {
-			text := strings.TrimSpace(scanner.Text())
-			if len(text) > 0 {
-				lines = append(lines, text)
-			}
-		}
+		lines := strings.Split(strings.TrimRight(v, "\n"), "\n")
+		value := getValue(lines)
 
-		// It's a multiline string, map to an array
-		if len(lines) > 1 {
-			args[k] = lines
+		if value == nil {
 			continue
 		}
+		s, ok := value.(string)
+		if !ok {
+			// case for multivalued argument
+			args[k] = value
+		}
 
-		csv := strings.Split(lines[0], ",")
-		// iterate result to remove empty values
-		lines = make([]string, 0)
-		for _, part := range csv {
-			text := strings.TrimSpace(part)
-			if len(text) > 0 {
-				lines = append(lines, text)
-			}
+		// Single string, let's check for CSV
+		lines = strings.Split(s, ",")
+		value = getValue(lines)
+		if value == nil {
+			continue
 		}
-		if len(lines) > 1 {
-			args[k] = lines
-		} else {
-			args[k] = lines[0]
-		}
+		args[k] = value
 	}
 
 	return args
+}
+
+func getValue(values []string) any {
+	lines := make([]string, 0)
+	for _, line := range values {
+		text := strings.TrimSpace(line)
+		if len(text) > 0 {
+			lines = append(lines, text)
+		}
+	}
+
+	if len(lines) == 0 {
+		// No valid input, skip
+		return nil
+	}
+	if len(lines) > 1 {
+		return lines
+	}
+	return lines[0]
 }
 
 func engineViolationsToAPIViolations(input []*engine.PolicyViolation) []*v12.PolicyEvaluation_Violation {

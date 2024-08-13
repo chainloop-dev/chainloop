@@ -18,7 +18,6 @@ syntax = "proto3";
 package workflowcontract.v1;
 
 import "buf/validate/validate.proto";
-import "google/protobuf/any.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1";
 
@@ -152,7 +151,6 @@ message PolicyAttachment {
 
   // optional arguments for policies
   map<string, string> with = 5;
-//  bytes with = 5;
 
   message MaterialSelector {
     // material name
