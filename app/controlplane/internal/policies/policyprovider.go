@@ -37,6 +37,10 @@ type ProviderResponse struct {
 
 // Resolve calls the remote provider for retrieving a policy
 func (p *PolicyProvider) Resolve(policyName string, token string) (*schemaapi.Policy, error) {
+	if policyName == "" || token == "" {
+		return nil, fmt.Errorf("both policyname and token are mandatory")
+	}
+
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/%s", p.host, policyName), nil)
 	if err != nil {
 		return nil, fmt.Errorf("error creating policy request: %w", err)
