@@ -100,6 +100,41 @@ func TestRego_VerifyWithArguments(t *testing.T) {
 		)
 	})
 }
+func TestRego_VerifyWithComplexArguments(t *testing.T) {
+	regoContent, err := os.ReadFile("testfiles/arguments_array.rego")
+	require.NoError(t, err)
+
+	r := &Rego{}
+	policy := &engine.Policy{
+		Name:   "foobar",
+		Source: regoContent,
+	}
+
+	t.Run("violation with array args", func(t *testing.T) {
+		violations, err := r.Verify(context.TODO(), policy, []byte(`
+			{
+				"kind": "CONTAINER_IMAGE"
+			}`),
+			map[string]interface{}{"foo": []string{"hello", "bar"}},
+		)
+		require.NoError(t, err)
+		assert.Len(t, violations, 1)
+		assert.Contains(t, violations, &engine.PolicyViolation{
+			Subject: "foobar", Violation: "foo has bar"},
+		)
+	})
+
+	t.Run("with array args", func(t *testing.T) {
+		violations, err := r.Verify(context.TODO(), policy, []byte(`
+			{
+				"kind": "CONTAINER_IMAGE"
+			}`),
+			map[string]interface{}{"foo": []string{"hello", "world"}},
+		)
+		require.NoError(t, err)
+		assert.Len(t, violations, 0)
+	})
+}
 
 func TestRego_VerifyInvalidPolicy(t *testing.T) {
 	// load policy without a default deny rule

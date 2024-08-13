@@ -31,7 +31,7 @@ import (
 type Rego struct {
 }
 
-const InputArgs = "args"
+const inputArgs = "args"
 
 // Force interface
 var _ engine.PolicyEngine = (*Rego)(nil)
@@ -57,7 +57,7 @@ func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte, 
 		if !ok {
 			return nil, fmt.Errorf("unexpected input arguments")
 		}
-		inputMap[InputArgs] = args
+		inputMap[inputArgs] = args
 		decodedInput = inputMap
 	}
 
