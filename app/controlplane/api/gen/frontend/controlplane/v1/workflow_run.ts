@@ -6,6 +6,7 @@ import {
   CraftingSchema_Runner_RunnerType,
   craftingSchema_Runner_RunnerTypeFromJSON,
   craftingSchema_Runner_RunnerTypeToJSON,
+  Policy,
 } from "../../workflowcontract/v1/crafting_schema";
 import { CursorPaginationRequest, CursorPaginationResponse } from "./pagination";
 import {
@@ -20,6 +21,17 @@ import {
 } from "./response_messages";
 
 export const protobufPackage = "controlplane.v1";
+
+export interface AttestationServiceGetPolicyRequest {
+  /** Provider name */
+  provider: string;
+  /** Policy name (it must exist in the provider) */
+  policyName: string;
+}
+
+export interface AttestationServiceGetPolicyResponse {
+  policy?: Policy;
+}
 
 export interface AttestationServiceGetContractRequest {
   contractRevision: number;
@@ -166,6 +178,143 @@ export interface AttestationServiceGetUploadCredsResponse_Result {
   token: string;
   backend?: CASBackendItem;
 }
+
+function createBaseAttestationServiceGetPolicyRequest(): AttestationServiceGetPolicyRequest {
+  return { provider: "", policyName: "" };
+}
+
+export const AttestationServiceGetPolicyRequest = {
+  encode(message: AttestationServiceGetPolicyRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.provider !== "") {
+      writer.uint32(10).string(message.provider);
+    }
+    if (message.policyName !== "") {
+      writer.uint32(18).string(message.policyName);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AttestationServiceGetPolicyRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAttestationServiceGetPolicyRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.provider = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.policyName = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AttestationServiceGetPolicyRequest {
+    return {
+      provider: isSet(object.provider) ? String(object.provider) : "",
+      policyName: isSet(object.policyName) ? String(object.policyName) : "",
+    };
+  },
+
+  toJSON(message: AttestationServiceGetPolicyRequest): unknown {
+    const obj: any = {};
+    message.provider !== undefined && (obj.provider = message.provider);
+    message.policyName !== undefined && (obj.policyName = message.policyName);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AttestationServiceGetPolicyRequest>, I>>(
+    base?: I,
+  ): AttestationServiceGetPolicyRequest {
+    return AttestationServiceGetPolicyRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<AttestationServiceGetPolicyRequest>, I>>(
+    object: I,
+  ): AttestationServiceGetPolicyRequest {
+    const message = createBaseAttestationServiceGetPolicyRequest();
+    message.provider = object.provider ?? "";
+    message.policyName = object.policyName ?? "";
+    return message;
+  },
+};
+
+function createBaseAttestationServiceGetPolicyResponse(): AttestationServiceGetPolicyResponse {
+  return { policy: undefined };
+}
+
+export const AttestationServiceGetPolicyResponse = {
+  encode(message: AttestationServiceGetPolicyResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.policy !== undefined) {
+      Policy.encode(message.policy, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AttestationServiceGetPolicyResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAttestationServiceGetPolicyResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.policy = Policy.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AttestationServiceGetPolicyResponse {
+    return { policy: isSet(object.policy) ? Policy.fromJSON(object.policy) : undefined };
+  },
+
+  toJSON(message: AttestationServiceGetPolicyResponse): unknown {
+    const obj: any = {};
+    message.policy !== undefined && (obj.policy = message.policy ? Policy.toJSON(message.policy) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AttestationServiceGetPolicyResponse>, I>>(
+    base?: I,
+  ): AttestationServiceGetPolicyResponse {
+    return AttestationServiceGetPolicyResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<AttestationServiceGetPolicyResponse>, I>>(
+    object: I,
+  ): AttestationServiceGetPolicyResponse {
+    const message = createBaseAttestationServiceGetPolicyResponse();
+    message.policy = (object.policy !== undefined && object.policy !== null)
+      ? Policy.fromPartial(object.policy)
+      : undefined;
+    return message;
+  },
+};
 
 function createBaseAttestationServiceGetContractRequest(): AttestationServiceGetContractRequest {
   return { contractRevision: 0, workflowName: "" };
@@ -1577,6 +1726,11 @@ export interface AttestationService {
     request: DeepPartial<AttestationServiceCancelRequest>,
     metadata?: grpc.Metadata,
   ): Promise<AttestationServiceCancelResponse>;
+  /** Get policies from remote providers */
+  GetPolicy(
+    request: DeepPartial<AttestationServiceGetPolicyRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<AttestationServiceGetPolicyResponse>;
 }
 
 export class AttestationServiceClientImpl implements AttestationService {
@@ -1589,6 +1743,7 @@ export class AttestationServiceClientImpl implements AttestationService {
     this.Store = this.Store.bind(this);
     this.GetUploadCreds = this.GetUploadCreds.bind(this);
     this.Cancel = this.Cancel.bind(this);
+    this.GetPolicy = this.GetPolicy.bind(this);
   }
 
   GetContract(
@@ -1632,6 +1787,17 @@ export class AttestationServiceClientImpl implements AttestationService {
     metadata?: grpc.Metadata,
   ): Promise<AttestationServiceCancelResponse> {
     return this.rpc.unary(AttestationServiceCancelDesc, AttestationServiceCancelRequest.fromPartial(request), metadata);
+  }
+
+  GetPolicy(
+    request: DeepPartial<AttestationServiceGetPolicyRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<AttestationServiceGetPolicyResponse> {
+    return this.rpc.unary(
+      AttestationServiceGetPolicyDesc,
+      AttestationServiceGetPolicyRequest.fromPartial(request),
+      metadata,
+    );
   }
 }
 
@@ -1742,6 +1908,29 @@ export const AttestationServiceCancelDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = AttestationServiceCancelResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const AttestationServiceGetPolicyDesc: UnaryMethodDefinitionish = {
+  methodName: "GetPolicy",
+  service: AttestationServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return AttestationServiceGetPolicyRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = AttestationServiceGetPolicyResponse.decode(data);
       return {
         ...value,
         toObject() {

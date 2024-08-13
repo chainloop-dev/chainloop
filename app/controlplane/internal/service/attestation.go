@@ -365,6 +365,10 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 	return &cpAPI.AttestationServiceGetUploadCredsResponse{Result: resp}, nil
 }
 
+func (s *AttestationService) GetPolicy(context.Context, *cpAPI.AttestationServiceGetPolicyRequest) (*cpAPI.AttestationServiceGetPolicyResponse, error) {
+
+}
+
 func bizAttestationToPb(att *biz.Attestation) (*cpAPI.AttestationItem, error) {
 	if att == nil || att.Envelope == nil {
 		return nil, nil

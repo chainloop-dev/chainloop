@@ -39,6 +39,7 @@ const (
 	AttestationService_Store_FullMethodName          = "/controlplane.v1.AttestationService/Store"
 	AttestationService_GetUploadCreds_FullMethodName = "/controlplane.v1.AttestationService/GetUploadCreds"
 	AttestationService_Cancel_FullMethodName         = "/controlplane.v1.AttestationService/Cancel"
+	AttestationService_GetPolicy_FullMethodName      = "/controlplane.v1.AttestationService/GetPolicy"
 )
 
 // AttestationServiceClient is the client API for AttestationService service.
@@ -52,6 +53,8 @@ type AttestationServiceClient interface {
 	// This one is kept since it leverages robot-accounts in the context of a workflow
 	GetUploadCreds(ctx context.Context, in *AttestationServiceGetUploadCredsRequest, opts ...grpc.CallOption) (*AttestationServiceGetUploadCredsResponse, error)
 	Cancel(ctx context.Context, in *AttestationServiceCancelRequest, opts ...grpc.CallOption) (*AttestationServiceCancelResponse, error)
+	// Get policies from remote providers
+	GetPolicy(ctx context.Context, in *AttestationServiceGetPolicyRequest, opts ...grpc.CallOption) (*AttestationServiceGetPolicyResponse, error)
 }
 
 type attestationServiceClient struct {
@@ -107,6 +110,15 @@ func (c *attestationServiceClient) Cancel(ctx context.Context, in *AttestationSe
 	return out, nil
 }
 
+func (c *attestationServiceClient) GetPolicy(ctx context.Context, in *AttestationServiceGetPolicyRequest, opts ...grpc.CallOption) (*AttestationServiceGetPolicyResponse, error) {
+	out := new(AttestationServiceGetPolicyResponse)
+	err := c.cc.Invoke(ctx, AttestationService_GetPolicy_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AttestationServiceServer is the server API for AttestationService service.
 // All implementations must embed UnimplementedAttestationServiceServer
 // for forward compatibility
@@ -118,6 +130,8 @@ type AttestationServiceServer interface {
 	// This one is kept since it leverages robot-accounts in the context of a workflow
 	GetUploadCreds(context.Context, *AttestationServiceGetUploadCredsRequest) (*AttestationServiceGetUploadCredsResponse, error)
 	Cancel(context.Context, *AttestationServiceCancelRequest) (*AttestationServiceCancelResponse, error)
+	// Get policies from remote providers
+	GetPolicy(context.Context, *AttestationServiceGetPolicyRequest) (*AttestationServiceGetPolicyResponse, error)
 	mustEmbedUnimplementedAttestationServiceServer()
 }
 
@@ -139,6 +153,9 @@ func (UnimplementedAttestationServiceServer) GetUploadCreds(context.Context, *At
 }
 func (UnimplementedAttestationServiceServer) Cancel(context.Context, *AttestationServiceCancelRequest) (*AttestationServiceCancelResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Cancel not implemented")
+}
+func (UnimplementedAttestationServiceServer) GetPolicy(context.Context, *AttestationServiceGetPolicyRequest) (*AttestationServiceGetPolicyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPolicy not implemented")
 }
 func (UnimplementedAttestationServiceServer) mustEmbedUnimplementedAttestationServiceServer() {}
 
@@ -243,6 +260,24 @@ func _AttestationService_Cancel_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AttestationService_GetPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AttestationServiceGetPolicyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AttestationServiceServer).GetPolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AttestationService_GetPolicy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AttestationServiceServer).GetPolicy(ctx, req.(*AttestationServiceGetPolicyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AttestationService_ServiceDesc is the grpc.ServiceDesc for AttestationService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -269,6 +304,10 @@ var AttestationService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Cancel",
 			Handler:    _AttestationService_Cancel_Handler,
+		},
+		{
+			MethodName: "GetPolicy",
+			Handler:    _AttestationService_GetPolicy_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
