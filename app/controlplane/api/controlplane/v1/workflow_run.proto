@@ -45,8 +45,8 @@ service WorkflowRunService {
 }
 
 message AttestationServiceGetPolicyRequest {
-  // Provider name
-  string provider = 1 [(buf.validate.field).string.min_len = 1];
+  // Provider name. If not set, the default provider will be used
+  string provider = 1;
 
   // Policy name (it must exist in the provider)
   string policy_name = 2 [(buf.validate.field).string.min_len = 1];

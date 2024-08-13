@@ -23,7 +23,7 @@ import {
 export const protobufPackage = "controlplane.v1";
 
 export interface AttestationServiceGetPolicyRequest {
-  /** Provider name */
+  /** Provider name. If not set, the default provider will be used */
   provider: string;
   /** Policy name (it must exist in the provider) */
   policyName: string;
