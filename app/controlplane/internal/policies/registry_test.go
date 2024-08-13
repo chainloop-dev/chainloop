@@ -33,11 +33,22 @@ func TestProviderSuite(t *testing.T) {
 }
 
 func (s *providerTestSuite) SetupTest() {
-	s.registry = NewRegistry([]*conf.PolicyProvider{
+	var err error
+	s.registry, err = NewRegistry([]*conf.PolicyProvider{
 		{Name: "p1", Host: "https://p1host"},
 		{Name: "p2", Host: "https://p2host"},
 		{Name: "p3", Host: "https://p3host", Default: true},
 	}...)
+	s.Require().NoError(err)
+}
+
+func (s *providerTestSuite) TestDuplicateDefault() {
+	_, err := NewRegistry([]*conf.PolicyProvider{
+		{Name: "p1", Host: "https://p1host"},
+		{Name: "p2", Host: "https://p2host", Default: true},
+		{Name: "p3", Host: "https://p3host", Default: true},
+	}...)
+	s.Error(err)
 }
 
 func (s *providerTestSuite) TestGetProvider() {
@@ -60,38 +71,6 @@ func (s *providerTestSuite) TestGetProvider() {
 				return
 			}
 			s.Equal(c.expected, p.name)
-		})
-	}
-}
-
-func (s *providerTestSuite) TestGetProviderFromReference() {
-	cases := []struct {
-		name      string
-		reference string
-		expected  string
-		expectNil bool
-	}{{
-		name:      "returns the expected provider",
-		reference: "p1://my-policy",
-		expected:  "p1",
-	}, {
-		name:      "returns nil provider if not found",
-		reference: "p5://my-policy",
-		expectNil: true,
-	}, {
-		name:      "returns the default provider if no provider specified",
-		reference: "my-policy",
-		expected:  "p3",
-	}}
-
-	for _, c := range cases {
-		s.Run(c.name, func() {
-			p := s.registry.GetProviderFromReference(c.reference)
-			if c.expectNil {
-				s.Nil(p)
-				return
-			}
-			s.Equal(p.name, c.expected)
 		})
 	}
 }

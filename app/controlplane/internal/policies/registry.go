@@ -16,7 +16,7 @@
 package policies
 
 import (
-	"strings"
+	"fmt"
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 )
@@ -26,16 +26,22 @@ type Registry struct {
 	providers map[string]*PolicyProvider
 }
 
-func NewRegistry(conf ...*conf.PolicyProvider) *Registry {
+func NewRegistry(conf ...*conf.PolicyProvider) (*Registry, error) {
 	r := &Registry{providers: make(map[string]*PolicyProvider)}
+	var hasDefault bool
+
 	for _, p := range conf {
+		if hasDefault && p.Default {
+			return nil, fmt.Errorf("duplicate default policy")
+		}
+		hasDefault = hasDefault || p.Default
 		r.providers[p.Name] = &PolicyProvider{
 			name:      p.Name,
 			host:      p.Host,
 			isDefault: p.Default,
 		}
 	}
-	return r
+	return r, nil
 }
 
 func (r *Registry) DefaultProvider() *PolicyProvider {
@@ -53,14 +59,4 @@ func (r *Registry) GetProvider(name string) *PolicyProvider {
 	}
 
 	return r.providers[name]
-}
-
-// GetProviderFromReference finds a provider given a policy reference in the form of `provider://policy`.
-// it returns the default provider if none found
-func (r *Registry) GetProviderFromReference(ref string) *PolicyProvider {
-	parts := strings.SplitN(ref, "://", 2)
-	if len(parts) == 2 {
-		return r.providers[parts[0]]
-	}
-	return r.DefaultProvider()
 }
