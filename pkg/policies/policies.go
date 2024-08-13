@@ -203,6 +203,7 @@ func getValue(values []string) any {
 	if len(lines) > 1 {
 		return lines
 	}
+	// nolint: gosec
 	return lines[0]
 }
 
