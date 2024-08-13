@@ -91,7 +91,11 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	workflowContractRepo := data.NewWorkflowContractRepo(dataData, logger)
 	v3 := bootstrap.PolicyProviders
-	registry := policies.NewRegistry(v3...)
+	registry, err := policies.NewRegistry(v3...)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
 	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, registry, logger)
 	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, workflowContractUseCase, logger)
 	v4 := serviceOpts(logger)

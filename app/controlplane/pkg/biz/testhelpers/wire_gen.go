@@ -54,7 +54,11 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, organizationUseCase, logger)
 	workflowContractRepo := data.NewWorkflowContractRepo(dataData, logger)
 	v := NewPolicyProviders(bootstrap)
-	registry := policies.NewRegistry(v...)
+	registry, err := policies.NewRegistry(v...)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
 	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, registry, logger)
 	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, workflowContractUseCase, logger)
 	workflowRunRepo := data.NewWorkflowRunRepo(dataData, logger)
