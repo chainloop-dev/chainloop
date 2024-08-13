@@ -22,10 +22,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/bufbuild/protovalidate-go"
+	v13 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
@@ -34,7 +34,6 @@ import (
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	v12 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
-	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine/rego"
 )
@@ -54,24 +53,25 @@ func (e *PolicyError) Error() string {
 type PolicyVerifier struct {
 	schema *v1.CraftingSchema
 	logger *zerolog.Logger
+	client v13.AttestationServiceClient
 }
 
-func NewPolicyVerifier(schema *v1.CraftingSchema, logger *zerolog.Logger) *PolicyVerifier {
-	return &PolicyVerifier{schema: schema, logger: logger}
+func NewPolicyVerifier(schema *v1.CraftingSchema, client v13.AttestationServiceClient, logger *zerolog.Logger) *PolicyVerifier {
+	return &PolicyVerifier{schema: schema, client: client, logger: logger}
 }
 
 // VerifyMaterial applies all required policies to a material
 func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Attestation_Material, artifactPath string) ([]*v12.PolicyEvaluation, error) {
 	result := make([]*v12.PolicyEvaluation, 0)
 
-	policies, err := pv.requiredPoliciesForMaterial(material)
+	policies, err := pv.requiredPoliciesForMaterial(ctx, material)
 	if err != nil {
 		return nil, NewPolicyError(err)
 	}
 
 	for _, policy := range policies {
 		// 1. load the policy spec
-		spec, err := LoadPolicySpec(policy)
+		spec, err := pv.loadPolicySpec(ctx, policy)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
@@ -116,7 +116,7 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 	policies := pv.schema.GetPolicies().GetAttestation()
 	for _, policyAtt := range policies {
 		// 1. load the policy spec
-		spec, err := LoadPolicySpec(policyAtt)
+		spec, err := pv.loadPolicySpec(ctx, policyAtt)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
@@ -157,6 +157,54 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 	}
 
 	return result, nil
+}
+
+// LoadPolicySpec loads and validates a policy spec from a contract
+func (pv *PolicyVerifier) loadPolicySpec(ctx context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, error) {
+	ref := attachment.GetRef()
+	emb := attachment.GetEmbedded()
+
+	if emb == nil && ref == "" {
+		return nil, errors.New("policy must be referenced or embedded in the attachment")
+	}
+
+	// Figure out loader to use
+	var loader Loader
+	if emb != nil {
+		loader = &EmbeddedLoader{}
+	} else {
+		parts := strings.SplitN(ref, "://", 2)
+		if len(parts) == 2 && parts[0] == chainloopScheme {
+			loader = &ChainloopLoader{Client: pv.client}
+		} else {
+			loader = &URLLoader{}
+		}
+	}
+
+	spec, err := loader.Load(ctx, attachment)
+	if err != nil {
+		return nil, fmt.Errorf("loading policy spec: %w", err)
+	}
+
+	// Validate just in case
+	if err = validatePolicy(spec); err != nil {
+		return nil, fmt.Errorf("invalid policy: %w", err)
+	}
+
+	return spec, nil
+}
+
+func validatePolicy(policy *v1.Policy) error {
+	validator, err := protovalidate.New()
+	if err != nil {
+		return fmt.Errorf("validating policy spec: %w", err)
+	}
+	err = validator.Validate(policy)
+	if err != nil {
+		return fmt.Errorf("validating policy spec: %w", err)
+	}
+
+	return nil
 }
 
 func getInputArguments(inputs map[string]string) map[string]any {
@@ -255,13 +303,13 @@ func getMaterialContent(material *v12.Attestation_Material, artifactPath string)
 // 1. if policy spec has a type, return it only if material has the same type
 // 2. if attachment has a name filter, return the policy only if the material has the same name
 // 3. if policy spec doesn't have a type, a name filter is mandatory (otherwise there is no way to know if material has to be applied)
-func (pv *PolicyVerifier) requiredPoliciesForMaterial(material *v12.Attestation_Material) ([]*v1.PolicyAttachment, error) {
+func (pv *PolicyVerifier) requiredPoliciesForMaterial(ctx context.Context, material *v12.Attestation_Material) ([]*v1.PolicyAttachment, error) {
 	result := make([]*v1.PolicyAttachment, 0)
 	policies := pv.schema.GetPolicies().GetMaterials()
 
 	for _, policyAtt := range policies {
 		// load the policy spec
-		spec, err := LoadPolicySpec(policyAtt)
+		spec, err := pv.loadPolicySpec(ctx, policyAtt)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load policy spec: %w", err)
 		}
@@ -308,57 +356,6 @@ func policyViolationsToAttestationViolations(violations []*engine.PolicyViolatio
 	return
 }
 
-// LoadPolicySpec loads and validates a policy spec from a contract
-func LoadPolicySpec(attachment *v1.PolicyAttachment) (*v1.Policy, error) {
-	reference := attachment.GetRef()
-	embedded := attachment.GetEmbedded()
-
-	if embedded == nil && reference == "" {
-		return nil, errors.New("policy must be referenced or embedded in the attachment")
-	}
-
-	var spec v1.Policy
-	if embedded != nil {
-		spec = *attachment.GetEmbedded()
-	} else {
-		// look for the referenced policy spec (note: loading by `name` is not supported yet)
-		// this method understands env, http and https schemes, and defaults to file system.
-		rawData, err := blob.LoadFileOrURL(reference)
-		if err != nil {
-			return nil, fmt.Errorf("loading policy spec: %w", err)
-		}
-
-		jsonContent, err := materials.LoadJSONBytes(rawData, filepath.Ext(reference))
-		if err != nil {
-			return nil, fmt.Errorf("loading policy spec: %w", err)
-		}
-
-		if err := protojson.Unmarshal(jsonContent, &spec); err != nil {
-			return nil, fmt.Errorf("unmarshalling policy spec: %w", err)
-		}
-	}
-
-	// Validate just in case
-	if err := validatePolicy(&spec); err != nil {
-		return nil, fmt.Errorf("invalid policy: %w", err)
-	}
-
-	return &spec, nil
-}
-
-func validatePolicy(policy *v1.Policy) error {
-	validator, err := protovalidate.New()
-	if err != nil {
-		return fmt.Errorf("validating policy spec: %w", err)
-	}
-	err = validator.Validate(policy)
-	if err != nil {
-		return fmt.Errorf("validating policy spec: %w", err)
-	}
-
-	return nil
-}
-
 // LoadPolicyScriptFromSpec loads a policy referenced from the spec
 func LoadPolicyScriptFromSpec(spec *v1.Policy) (*engine.Policy, error) {
 	var content []byte
@@ -385,7 +382,11 @@ func LoadPolicyScriptFromSpec(spec *v1.Policy) (*engine.Policy, error) {
 func LogPolicyViolations(evaluations []*v12.PolicyEvaluation, logger *zerolog.Logger) {
 	for _, policyEval := range evaluations {
 		if len(policyEval.Violations) > 0 {
-			logger.Warn().Msgf("found policy violations (%s) for %s", policyEval.Name, policyEval.MaterialName)
+			subject := policyEval.MaterialName
+			if subject == "" {
+				subject = "statement"
+			}
+			logger.Warn().Msgf("found policy violations (%s) for %s", policyEval.Name, subject)
 			for _, v := range policyEval.Violations {
 				logger.Warn().Msgf(" - %s", v.Message)
 			}

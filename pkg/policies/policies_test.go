@@ -226,7 +226,7 @@ func (s *testSuite) TestVerifyAttestations() {
 
 	for _, tc := range cases {
 		s.Run(tc.name, func() {
-			verifier := NewPolicyVerifier(tc.schema, &s.logger)
+			verifier := NewPolicyVerifier(tc.schema, nil, &s.logger)
 			stContent, err := os.ReadFile(tc.statement)
 			s.Require().NoError(err)
 			var statement intoto.Statement
@@ -340,8 +340,8 @@ func (s *testSuite) TestMaterialSelectionCriteria() {
 					Materials: tc.policies,
 				},
 			}
-			pv := NewPolicyVerifier(schema, &s.logger)
-			atts, err := pv.requiredPoliciesForMaterial(tc.material)
+			pv := NewPolicyVerifier(schema, nil, &s.logger)
+			atts, err := pv.requiredPoliciesForMaterial(context.TODO(), tc.material)
 			s.Require().NoError(err)
 			s.Require().Len(atts, tc.result)
 		})
@@ -376,7 +376,7 @@ func (s *testSuite) TestValidInlineMaterial() {
 		InlineCas:    true,
 	}
 
-	verifier := NewPolicyVerifier(schema, &s.logger)
+	verifier := NewPolicyVerifier(schema, nil, &s.logger)
 
 	res, err := verifier.VerifyMaterial(context.TODO(), material, "")
 	s.Require().NoError(err)
@@ -410,7 +410,7 @@ func (s *testSuite) TestInvalidInlineMaterial() {
 		InlineCas:    true,
 	}
 
-	verifier := NewPolicyVerifier(schema, &s.logger)
+	verifier := NewPolicyVerifier(schema, nil, &s.logger)
 
 	res, err := verifier.VerifyMaterial(context.TODO(), material, "")
 	s.Require().NoError(err)
@@ -479,9 +479,10 @@ func (s *testSuite) TestLoadPolicySpec() {
 		},
 	}
 
+	verifier := NewPolicyVerifier(nil, nil, &s.logger)
 	for _, tc := range cases {
 		s.Run(tc.name, func() {
-			p, err := LoadPolicySpec(tc.attachment)
+			p, err := verifier.loadPolicySpec(context.TODO(), tc.attachment)
 			if tc.wantErr {
 				s.Error(err)
 				return

@@ -66,6 +66,9 @@ type Crafter struct {
 	// Authn is used to authenticate with the OCI registry
 	ociRegistryAuth authn.Keychain
 	validator       *protovalidate.Validator
+
+	// attestation client is used to load chainloop policies
+	attClient v1.AttestationServiceClient
 }
 
 type VersionedCraftingState struct {
@@ -105,7 +108,7 @@ func WithOCIAuth(server, username, password string) NewOpt {
 }
 
 // Create a completely new crafter
-func NewCrafter(stateManager StateManager, opts ...NewOpt) (*Crafter, error) {
+func NewCrafter(stateManager StateManager, attClient v1.AttestationServiceClient, opts ...NewOpt) (*Crafter, error) {
 	noopLogger := zerolog.Nop()
 
 	validator, err := protovalidate.New()
@@ -121,6 +124,7 @@ func NewCrafter(stateManager StateManager, opts ...NewOpt) (*Crafter, error) {
 		// By default we authenticate with the current user's keychain (i.e ~/.docker/config.json)
 		ociRegistryAuth: authn.DefaultKeychain,
 		validator:       validator,
+		attClient:       attClient,
 	}
 
 	for _, opt := range opts {
@@ -191,29 +195,7 @@ func LoadSchema(pathOrURI string) (*schemaapi.CraftingSchema, error) {
 		return nil, err
 	}
 
-	// Load, validate policies, and embed them in the schema
-	if err := validatePolicyAttachments(schema.GetPolicies().GetMaterials()); err != nil {
-		return nil, fmt.Errorf("validating policies: %w", err)
-	}
-	if err := validatePolicyAttachments(schema.GetPolicies().GetAttestation()); err != nil {
-		return nil, fmt.Errorf("validating policies: %w", err)
-	}
-
 	return schema, nil
-}
-
-func validatePolicyAttachments(pols []*schemaapi.PolicyAttachment) error {
-	for _, p := range pols {
-		spec, err := policies.LoadPolicySpec(p)
-		if err != nil {
-			return fmt.Errorf("validating policy: %w", err)
-		}
-		if _, err := policies.LoadPolicyScriptFromSpec(spec); err != nil {
-			return fmt.Errorf("loading policy script: %w", err)
-		}
-	}
-
-	return nil
 }
 
 // Initialize the temporary file with the content of the schema
@@ -608,7 +590,7 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 	}
 
 	// Validate policies
-	pv := policies.NewPolicyVerifier(c.CraftingState.InputSchema, c.Logger)
+	pv := policies.NewPolicyVerifier(c.CraftingState.InputSchema, c.attClient, c.Logger)
 	policyResults, err := pv.VerifyMaterial(ctx, mt, value)
 	if err != nil {
 		return fmt.Errorf("error applying policies to material: %w", err)

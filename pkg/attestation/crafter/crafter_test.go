@@ -164,7 +164,7 @@ func newInitializedCrafter(t *testing.T, contractPath string, wfMeta *v1.Workflo
 	}
 
 	statePath := fmt.Sprintf("%s/attestation.json", t.TempDir())
-	c, err := crafter.NewCrafter(testingStateManager(t, statePath), opts...)
+	c, err := crafter.NewCrafter(testingStateManager(t, statePath), nil, opts...)
 	require.NoError(t, err)
 	contract, err := crafter.LoadSchema(contractPath)
 	if err != nil {
@@ -219,48 +219,6 @@ func (s *crafterSuite) TestLoadSchema() {
 			name:         "non existing",
 			contractPath: "testdata/contracts/invalid.yaml",
 			wantErr:      true,
-		},
-		{
-			name:         "policies",
-			contractPath: "testdata/contracts/with_policy_embedded.yaml",
-			want: &schemaapi.CraftingSchema{
-				SchemaVersion: "v1",
-				Policies: &schemaapi.Policies{
-					Attestation: []*schemaapi.PolicyAttachment{
-						{
-							Policy: &schemaapi.PolicyAttachment_Ref{
-								Ref: "testdata/policies/policy_embedded.yaml",
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name:         "missing policy",
-			contractPath: "testdata/contracts/with_missing_policy.yaml",
-			wantErr:      true,
-		},
-		{
-			name:         "missing script",
-			contractPath: "testdata/contracts/with_policy_missing_rego.yaml",
-			wantErr:      true,
-		},
-		{
-			name:         "rego policy",
-			contractPath: "testdata/contracts/with_rego.yaml",
-			want: &schemaapi.CraftingSchema{
-				SchemaVersion: "v1",
-				Policies: &schemaapi.Policies{
-					Attestation: []*schemaapi.PolicyAttachment{
-						{
-							Policy: &schemaapi.PolicyAttachment_Ref{
-								Ref: "testdata/policies/policy_rego.yaml",
-							},
-						},
-					},
-				},
-			},
 		},
 	}
 
@@ -410,14 +368,14 @@ func (s *crafterSuite) TestAlreadyInitialized() {
 		_, err := os.Create(statePath)
 		require.NoError(s.T(), err)
 		// TODO: replace by a mock
-		c, err := crafter.NewCrafter(testingStateManager(t, statePath))
+		c, err := crafter.NewCrafter(testingStateManager(t, statePath), nil)
 		require.NoError(s.T(), err)
 		s.True(c.AlreadyInitialized(context.Background(), ""))
 	})
 
 	s.T().Run("non existing", func(t *testing.T) {
 		statePath := fmt.Sprintf("%s/attestation.json", t.TempDir())
-		c, err := crafter.NewCrafter(testingStateManager(t, statePath))
+		c, err := crafter.NewCrafter(testingStateManager(t, statePath), nil)
 		require.NoError(s.T(), err)
 		s.False(c.AlreadyInitialized(context.Background(), ""))
 	})

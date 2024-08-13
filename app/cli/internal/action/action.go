@@ -60,5 +60,7 @@ func newCrafter(enableRemoteState bool, conn *grpc.ClientConn, opts ...crafter.N
 		return nil, fmt.Errorf("failed to create state manager: %w", err)
 	}
 
-	return crafter.NewCrafter(stateManager, opts...)
+	attClient := pb.NewAttestationServiceClient(conn)
+
+	return crafter.NewCrafter(stateManager, attClient, opts...)
 }
