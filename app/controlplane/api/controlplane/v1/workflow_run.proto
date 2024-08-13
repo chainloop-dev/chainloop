@@ -33,12 +33,27 @@ service AttestationService {
   // This one is kept since it leverages robot-accounts in the context of a workflow
   rpc GetUploadCreds(AttestationServiceGetUploadCredsRequest) returns (AttestationServiceGetUploadCredsResponse);
   rpc Cancel(AttestationServiceCancelRequest) returns (AttestationServiceCancelResponse);
+
+  // Get policies from remote providers
+  rpc GetPolicy(AttestationServiceGetPolicyRequest) returns (AttestationServiceGetPolicyResponse);
 }
 
 // Administrative service for the operator
 service WorkflowRunService {
   rpc List(WorkflowRunServiceListRequest) returns (WorkflowRunServiceListResponse);
   rpc View(WorkflowRunServiceViewRequest) returns (WorkflowRunServiceViewResponse);
+}
+
+message AttestationServiceGetPolicyRequest {
+  // Provider name. If not set, the default provider will be used
+  string provider = 1;
+
+  // Policy name (it must exist in the provider)
+  string policy_name = 2 [(buf.validate.field).string.min_len = 1];
+}
+
+message AttestationServiceGetPolicyResponse {
+  workflowcontract.v1.Policy policy = 1;
 }
 
 message AttestationServiceGetContractRequest {

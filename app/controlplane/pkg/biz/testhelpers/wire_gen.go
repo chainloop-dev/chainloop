@@ -8,6 +8,7 @@ package testhelpers
 
 import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/policies"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
@@ -52,7 +53,13 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	organizationUseCase := biz.NewOrganizationUseCase(organizationRepo, casBackendUseCase, integrationUseCase, membershipRepo, arg, logger)
 	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, organizationUseCase, logger)
 	workflowContractRepo := data.NewWorkflowContractRepo(dataData, logger)
-	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, logger)
+	v := NewPolicyProviders(bootstrap)
+	registry, err := policies.NewRegistry(v...)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, registry, logger)
 	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, workflowContractUseCase, logger)
 	workflowRunRepo := data.NewWorkflowRunRepo(dataData, logger)
 	workflowRunUseCase, err := biz.NewWorkflowRunUseCase(workflowRunRepo, workflowRepo, logger)
@@ -60,14 +67,14 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		cleanup()
 		return nil, nil, err
 	}
-	v := NewPromSpec()
+	v2 := NewPromSpec()
 	orgMetricsRepo := data.NewOrgMetricsRepo(dataData, logger)
 	orgMetricsUseCase, err := biz.NewOrgMetricsUseCase(orgMetricsRepo, organizationRepo, workflowUseCase, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	prometheusUseCase := biz.NewPrometheusUseCase(v, organizationUseCase, orgMetricsUseCase, logger)
+	prometheusUseCase := biz.NewPrometheusUseCase(v2, organizationUseCase, orgMetricsUseCase, logger)
 	userRepo := data.NewUserRepo(dataData, logger)
 	newUserUseCaseParams := &biz.NewUserUseCaseParams{
 		UserRepo:            userRepo,

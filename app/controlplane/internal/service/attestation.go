@@ -365,6 +365,20 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 	return &cpAPI.AttestationServiceGetUploadCredsResponse{Result: resp}, nil
 }
 
+func (s *AttestationService) GetPolicy(ctx context.Context, req *cpAPI.AttestationServiceGetPolicyRequest) (*cpAPI.AttestationServiceGetPolicyResponse, error) {
+	token, ok := attjwtmiddleware.FromJWTAuthContext(ctx)
+	if !ok {
+		return nil, errors.Forbidden("forbidden", "token not found")
+	}
+
+	policy, err := s.workflowContractUseCase.GetPolicy(req.GetProvider(), req.GetPolicyName(), token.Token)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	return &cpAPI.AttestationServiceGetPolicyResponse{Policy: policy}, nil
+}
+
 func bizAttestationToPb(att *biz.Attestation) (*cpAPI.AttestationItem, error) {
 	if att == nil || att.Envelope == nil {
 		return nil, nil

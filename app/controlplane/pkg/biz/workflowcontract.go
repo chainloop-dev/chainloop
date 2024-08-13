@@ -23,6 +23,7 @@ import (
 
 	"github.com/bufbuild/protovalidate-go"
 	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/policies"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
@@ -74,12 +75,13 @@ type ContractUpdateOpts struct {
 }
 
 type WorkflowContractUseCase struct {
-	repo   WorkflowContractRepo
-	logger *log.Helper
+	repo           WorkflowContractRepo
+	logger         *log.Helper
+	policyRegistry *policies.Registry
 }
 
-func NewWorkflowContractUseCase(repo WorkflowContractRepo, logger log.Logger) *WorkflowContractUseCase {
-	return &WorkflowContractUseCase{repo: repo, logger: log.NewHelper(logger)}
+func NewWorkflowContractUseCase(repo WorkflowContractRepo, policyRegistry *policies.Registry, logger log.Logger) *WorkflowContractUseCase {
+	return &WorkflowContractUseCase{repo: repo, policyRegistry: policyRegistry, logger: log.NewHelper(logger)}
 }
 
 func (uc *WorkflowContractUseCase) List(ctx context.Context, orgID string) ([]*WorkflowContract, error) {
@@ -299,4 +301,23 @@ func (uc *WorkflowContractUseCase) Delete(ctx context.Context, orgID, contractID
 
 	// Check that the workflow to delete belongs to the provided organization
 	return uc.repo.SoftDelete(ctx, contractUUID)
+}
+
+// GetPolicy retrieves a policy from a policy provider
+func (uc *WorkflowContractUseCase) GetPolicy(providerName, policyName, token string) (*schemav1.Policy, error) {
+	var provider = uc.policyRegistry.DefaultProvider()
+	if providerName != "" {
+		provider = uc.policyRegistry.GetProvider(providerName)
+	}
+
+	if provider == nil {
+		return nil, NewErrNotFound("policy")
+	}
+
+	policy, err := provider.Resolve(policyName, token)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve policy: %w", err)
+	}
+
+	return policy, nil
 }

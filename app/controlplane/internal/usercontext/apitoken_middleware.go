@@ -35,6 +35,7 @@ import (
 type APIToken struct {
 	ID        string
 	CreatedAt *time.Time
+	Token     string
 }
 
 // Store the authorization subject
@@ -204,7 +205,7 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 
 	// Set the current organization and API-Token in the context
 	ctx = WithCurrentOrg(ctx, &Org{Name: org.Name, ID: org.ID, CreatedAt: org.CreatedAt})
-	ctx = WithCurrentAPIToken(ctx, &APIToken{ID: token.ID.String(), CreatedAt: token.CreatedAt})
+	ctx = WithCurrentAPIToken(ctx, &APIToken{ID: token.ID.String(), CreatedAt: token.CreatedAt, Token: token.JWT})
 
 	// Set the authorization subject that will be used to check the policies
 	subjectAPIToken := authz.SubjectAPIToken{ID: token.ID.String()}
