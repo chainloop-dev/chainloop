@@ -262,7 +262,16 @@ export interface PolicyAttachment {
   selector?: PolicyAttachment_MaterialSelector;
   /** set to true to disable this rule */
   disabled: boolean;
-  /** optional arguments for policies */
+  /**
+   * optional arguments for policies. Multivalued arguments can be set through multiline strings or comma separated values. It will be
+   * parsed and passed as an array value to the policy engine.
+   * with:
+   *   user: john
+   *   users: john, sarah
+   *   licenses: |
+   *     AGPL-1.0
+   *     AGPL-3.0
+   */
   with: { [key: string]: string };
 }
 

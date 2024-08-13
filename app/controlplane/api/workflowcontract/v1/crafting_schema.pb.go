@@ -415,7 +415,15 @@ type PolicyAttachment struct {
 	Selector *PolicyAttachment_MaterialSelector `protobuf:"bytes,3,opt,name=selector,proto3" json:"selector,omitempty"`
 	// set to true to disable this rule
 	Disabled bool `protobuf:"varint,4,opt,name=disabled,proto3" json:"disabled,omitempty"`
-	// optional arguments for policies
+	// optional arguments for policies. Multivalued arguments can be set through multiline strings or comma separated values. It will be
+	// parsed and passed as an array value to the policy engine.
+	// with:
+	//
+	//	user: john
+	//	users: john, sarah
+	//	licenses: |
+	//	  AGPL-1.0
+	//	  AGPL-3.0
 	With map[string]string `protobuf:"bytes,5,rep,name=with,proto3" json:"with,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
