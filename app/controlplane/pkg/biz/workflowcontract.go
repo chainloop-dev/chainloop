@@ -302,3 +302,22 @@ func (uc *WorkflowContractUseCase) Delete(ctx context.Context, orgID, contractID
 	// Check that the workflow to delete belongs to the provided organization
 	return uc.repo.SoftDelete(ctx, contractUUID)
 }
+
+// GetPolicy retrieves a policy from a policy provider
+func (uc *WorkflowContractUseCase) GetPolicy(providerName, policyName, token string) (*schemav1.Policy, error) {
+	var provider = uc.policyRegistry.DefaultProvider()
+	if providerName == "" {
+		provider = uc.policyRegistry.GetProvider(providerName)
+	}
+
+	if provider == nil {
+		return nil, NewErrNotFound("policy")
+	}
+
+	policy, err := provider.Resolve(policyName, token)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve policy: %w", err)
+	}
+
+	return policy, nil
+}
