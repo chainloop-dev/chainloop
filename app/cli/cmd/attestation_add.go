@@ -110,7 +110,7 @@ func newAttestationAddCmd() *cobra.Command {
 
 					return nil
 				},
-				backoff.NewExponentialBackOff(backoff.WithMaxElapsedTime(10*time.Second)),
+				backoff.NewExponentialBackOff(backoff.WithMaxElapsedTime(3*time.Minute)),
 				func(err error, delay time.Duration) {
 					logger.Err(err).Msgf("retrying in %s", delay)
 				})
