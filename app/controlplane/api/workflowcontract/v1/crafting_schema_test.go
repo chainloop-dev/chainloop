@@ -113,28 +113,10 @@ func TestPolicyAttachment(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			desc: "incomplete arguments",
-			policy: &v1.PolicyAttachment{
-				Policy: &v1.PolicyAttachment_Ref{Ref: "reference"},
-				With: []*v1.PolicyAttachment_PolicyArgument{
-					{
-						Name: "name",
-					},
-				},
-			},
-			wantErr:   true,
-			violation: "with[0].value",
-		},
-		{
 			desc: "complete arguments",
 			policy: &v1.PolicyAttachment{
 				Policy: &v1.PolicyAttachment_Ref{Ref: "reference"},
-				With: []*v1.PolicyAttachment_PolicyArgument{
-					{
-						Name:  "name",
-						Value: "value",
-					},
-				},
+				With:   map[string]string{"foo": "bar"},
 			},
 			wantErr: false,
 		},

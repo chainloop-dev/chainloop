@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/bufbuild/protovalidate-go"
 	intoto "github.com/in-toto/attestation/go/v1"
@@ -91,7 +92,7 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 
 		// verify the policy
 		ng := getPolicyEngine(spec)
-		violations, err := ng.Verify(ctx, script, subject)
+		violations, err := ng.Verify(ctx, script, subject, getInputArguments(policy.GetWith()))
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
@@ -140,7 +141,7 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 
 		// 4. verify the policy
 		ng := getPolicyEngine(spec)
-		res, err := ng.Verify(ctx, script, material)
+		res, err := ng.Verify(ctx, script, material, getInputArguments(policyAtt.GetWith()))
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
@@ -156,6 +157,54 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 	}
 
 	return result, nil
+}
+
+func getInputArguments(inputs map[string]string) map[string]any {
+	args := make(map[string]any)
+	for k, v := range inputs {
+		// scan for multiple values
+		lines := strings.Split(strings.TrimRight(v, "\n"), "\n")
+		value := getValue(lines)
+
+		if value == nil {
+			continue
+		}
+		s, ok := value.(string)
+		if !ok {
+			// case for multivalued argument
+			args[k] = value
+		}
+
+		// Single string, let's check for CSV
+		lines = strings.Split(s, ",")
+		value = getValue(lines)
+		if value == nil {
+			continue
+		}
+		args[k] = value
+	}
+
+	return args
+}
+
+func getValue(values []string) any {
+	lines := make([]string, 0)
+	for _, line := range values {
+		text := strings.TrimSpace(line)
+		if len(text) > 0 {
+			lines = append(lines, text)
+		}
+	}
+
+	if len(lines) == 0 {
+		// No valid input, skip
+		return nil
+	}
+	if len(lines) > 1 {
+		return lines
+	}
+	// nolint: gosec
+	return lines[0]
 }
 
 func engineViolationsToAPIViolations(input []*engine.PolicyViolation) []*v12.PolicyEvaluation_Violation {
