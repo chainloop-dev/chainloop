@@ -51,7 +51,7 @@ func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte, 
 		return nil, fmt.Errorf("failed to parse input: %w", err)
 	}
 
-	// add arguments
+	// put arguments embedded in the input object
 	if args != nil {
 		inputMap, ok := decodedInput.(map[string]interface{})
 		if !ok {
