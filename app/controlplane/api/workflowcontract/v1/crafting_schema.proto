@@ -18,6 +18,7 @@ syntax = "proto3";
 package workflowcontract.v1;
 
 import "buf/validate/validate.proto";
+import "google/protobuf/any.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1";
 
@@ -149,17 +150,13 @@ message PolicyAttachment {
   // set to true to disable this rule
   bool disabled = 4;
 
-  repeated PolicyArgument with = 5;
+  // optional arguments for policies
+  map<string, string> with = 5;
+//  bytes with = 5;
 
   message MaterialSelector {
     // material name
     string name = 1;
-  }
-
-  // optional arguments for policies
-  message PolicyArgument {
-    string name = 1 [(buf.validate.field).required = true];
-    string value = 2 [(buf.validate.field).required = true];;
   }
 }
 

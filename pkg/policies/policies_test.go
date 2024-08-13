@@ -147,10 +147,7 @@ func (s *testSuite) TestVerifyAttestations() {
 					Attestation: []*v12.PolicyAttachment{
 						{
 							Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/with_arguments.yaml"},
-							With: []*v12.PolicyAttachment_PolicyArgument{{
-								Name:  "email",
-								Value: "devel@chainloop.dev",
-							}},
+							With:   map[string]string{"email": "devel@chainloop.dev"},
 						},
 					},
 				},
@@ -166,10 +163,57 @@ func (s *testSuite) TestVerifyAttestations() {
 					Attestation: []*v12.PolicyAttachment{
 						{
 							Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/with_arguments.yaml"},
-							With: []*v12.PolicyAttachment_PolicyArgument{{
-								Name:  "email",
-								Value: "foobar@chainloop.dev",
-							}},
+							With:   map[string]string{"email": "foobar@chainloop.dev"},
+						},
+					},
+				},
+			},
+			npolicies:  1,
+			violations: 1,
+			statement:  "testdata/statement.json",
+		},
+		{
+			name: "with array argument, multiline string",
+			schema: &v12.CraftingSchema{
+				Policies: &v12.Policies{
+					Attestation: []*v12.PolicyAttachment{
+						{
+							Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/with_arguments.yaml"},
+							With: map[string]string{"email_array": `
+								foobar@chainloop.dev
+								foobaz@chainloop.dev`},
+						},
+					},
+				},
+			},
+			npolicies:  1,
+			violations: 1,
+			statement:  "testdata/statement.json",
+		},
+		{
+			name: "with array argument, csv string",
+			schema: &v12.CraftingSchema{
+				Policies: &v12.Policies{
+					Attestation: []*v12.PolicyAttachment{
+						{
+							Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/with_arguments.yaml"},
+							With:   map[string]string{"email_array": "foobar@chainloop.dev,foobaz@chainloop.dev"},
+						},
+					},
+				},
+			},
+			npolicies:  1,
+			violations: 1,
+			statement:  "testdata/statement.json",
+		},
+		{
+			name: "with array argument, malformed csv string",
+			schema: &v12.CraftingSchema{
+				Policies: &v12.Policies{
+					Attestation: []*v12.PolicyAttachment{
+						{
+							Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/with_arguments.yaml"},
+							With:   map[string]string{"email_array": ",,foobar@chainloop.dev,foobaz@chainloop.dev,,"},
 						},
 					},
 				},

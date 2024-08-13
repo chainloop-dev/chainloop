@@ -16,6 +16,7 @@
 package policies
 
 import (
+	"bufio"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -23,6 +24,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/bufbuild/protovalidate-go"
 	intoto "github.com/in-toto/attestation/go/v1"
@@ -160,9 +162,39 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 
 func getInputArguments(att *v1.PolicyAttachment) map[string]any {
 	args := make(map[string]any)
-	for _, w := range att.GetWith() {
-		args[w.GetName()] = w.GetValue()
+	for k, v := range att.GetWith() {
+		// scan for multiple values
+		lines := make([]string, 0)
+		scanner := bufio.NewScanner(strings.NewReader(v))
+		for scanner.Scan() {
+			text := strings.TrimSpace(scanner.Text())
+			if len(text) > 0 {
+				lines = append(lines, text)
+			}
+		}
+
+		// It's a multiline string, map to an array
+		if len(lines) > 1 {
+			args[k] = lines
+			continue
+		}
+
+		csv := strings.Split(lines[0], ",")
+		// iterate result to remove empty values
+		lines = make([]string, 0)
+		for _, part := range csv {
+			text := strings.TrimSpace(part)
+			if len(text) > 0 {
+				lines = append(lines, text)
+			}
+		}
+		if len(lines) > 1 {
+			args[k] = lines
+		} else {
+			args[k] = lines[0]
+		}
 	}
+
 	return args
 }
 
