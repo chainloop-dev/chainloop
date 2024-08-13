@@ -154,8 +154,8 @@ func (uc *IntegrationUseCase) RegisterAndSave(ctx context.Context, orgID, name, 
 		SecretName: secretID, Config: registrationResponse.Configuration,
 	})
 	if err != nil {
-		if errors.Is(err, ErrAlreadyExists) {
-			return nil, NewErrValidationStr("name already taken")
+		if IsErrAlreadyExists(err) {
+			return nil, NewErrAlreadyExistsStr("name already taken")
 		}
 
 		return nil, fmt.Errorf("failed to register integration: %w", err)

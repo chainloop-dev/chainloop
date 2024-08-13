@@ -38,7 +38,7 @@ func (s *organizationTestSuite) TestCreateWithRandomName() {
 	s.Run("the org exists, we retry", func() {
 		ctx := context.Background()
 		// the first one fails because it already exists
-		repo.On("Create", ctx, mock.Anything).Once().Return(nil, biz.ErrAlreadyExists)
+		repo.On("Create", ctx, mock.Anything).Once().Return(nil, biz.NewErrAlreadyExistsStr("it already exists"))
 		// but the second call creates the org
 		repo.On("Create", ctx, mock.Anything).Once().Return(&biz.Organization{Name: "foobar"}, nil)
 		got, err := uc.CreateWithRandomName(ctx)
@@ -49,7 +49,7 @@ func (s *organizationTestSuite) TestCreateWithRandomName() {
 	s.Run("if it runs out of tries, it fails", func() {
 		ctx := context.Background()
 		// the first one fails because it already exists
-		repo.On("Create", ctx, mock.Anything).Times(biz.RandomNameMaxTries).Return(nil, biz.ErrAlreadyExists)
+		repo.On("Create", ctx, mock.Anything).Times(biz.RandomNameMaxTries).Return(nil, biz.NewErrAlreadyExistsStr("it already exists"))
 		got, err := uc.CreateWithRandomName(ctx)
 		s.Error(err)
 		s.Nil(got)

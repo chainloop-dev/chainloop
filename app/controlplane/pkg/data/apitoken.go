@@ -50,7 +50,7 @@ func (r *APITokenRepo) Create(ctx context.Context, name string, description *str
 		Save(ctx)
 	if err != nil {
 		if ent.IsConstraintError(err) {
-			return nil, biz.ErrAlreadyExists
+			return nil, biz.NewErrAlreadyExists(err)
 		}
 
 		return nil, fmt.Errorf("saving APIToken: %w", err)

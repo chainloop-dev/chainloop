@@ -93,7 +93,7 @@ func (uc *OrganizationUseCase) CreateWithRandomName(ctx context.Context, opts ..
 		org, err := uc.doCreate(ctx, name, opts...)
 		if err != nil {
 			// We retry if the organization already exists
-			if errors.Is(err, ErrAlreadyExists) {
+			if IsErrAlreadyExists(err) {
 				uc.logger.Debugw("msg", "Org exists!", "name", name)
 				continue
 			}
@@ -111,8 +111,8 @@ func (uc *OrganizationUseCase) CreateWithRandomName(ctx context.Context, opts ..
 func (uc *OrganizationUseCase) Create(ctx context.Context, name string, opts ...CreateOpt) (*Organization, error) {
 	org, err := uc.doCreate(ctx, name, opts...)
 	if err != nil {
-		if errors.Is(err, ErrAlreadyExists) {
-			return nil, NewErrValidationStr("organization already exists")
+		if IsErrAlreadyExists(err) {
+			return nil, NewErrAlreadyExistsStr("organization already exists")
 		}
 
 		return nil, fmt.Errorf("failed to create organization: %w", err)

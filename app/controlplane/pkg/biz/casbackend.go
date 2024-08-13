@@ -263,8 +263,8 @@ func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name, location, 
 	})
 
 	if err != nil {
-		if errors.Is(err, ErrAlreadyExists) {
-			return nil, NewErrValidationStr("name already taken")
+		if IsErrAlreadyExists(err) {
+			return nil, NewErrAlreadyExistsStr("name already taken")
 		}
 		return nil, fmt.Errorf("failed to create CAS backend: %w", err)
 	}

@@ -42,7 +42,7 @@ func (r *OrganizationRepo) Create(ctx context.Context, name string) (*biz.Organi
 		SetName(name).
 		Save(ctx)
 	if err != nil && ent.IsConstraintError(err) {
-		return nil, biz.ErrAlreadyExists
+		return nil, biz.NewErrAlreadyExists(err)
 	} else if err != nil {
 		return nil, err
 	}

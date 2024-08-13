@@ -52,7 +52,7 @@ func (r *IntegrationRepo) Create(ctx context.Context, opts *biz.IntegrationCreat
 
 	if err != nil {
 		if ent.IsConstraintError(err) {
-			return nil, biz.ErrAlreadyExists
+			return nil, biz.NewErrAlreadyExists(err)
 		}
 
 		return nil, fmt.Errorf("failed to create registration: %w", err)
