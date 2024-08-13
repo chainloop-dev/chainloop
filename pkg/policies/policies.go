@@ -92,7 +92,7 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 
 		// verify the policy
 		ng := getPolicyEngine(spec)
-		violations, err := ng.Verify(ctx, script, subject, getInputArguments(policy))
+		violations, err := ng.Verify(ctx, script, subject, getInputArguments(policy.GetWith()))
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
@@ -141,7 +141,7 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 
 		// 4. verify the policy
 		ng := getPolicyEngine(spec)
-		res, err := ng.Verify(ctx, script, material, getInputArguments(policyAtt))
+		res, err := ng.Verify(ctx, script, material, getInputArguments(policyAtt.GetWith()))
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
@@ -159,9 +159,9 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 	return result, nil
 }
 
-func getInputArguments(att *v1.PolicyAttachment) map[string]any {
+func getInputArguments(inputs map[string]string) map[string]any {
 	args := make(map[string]any)
-	for k, v := range att.GetWith() {
+	for k, v := range inputs {
 		// scan for multiple values
 		lines := strings.Split(strings.TrimRight(v, "\n"), "\n")
 		value := getValue(lines)

@@ -498,6 +498,62 @@ func (s *testSuite) TestLoadPolicySpec() {
 	}
 }
 
+func (s *testSuite) TestInputArguments() {
+	cases := []struct {
+		name     string
+		inputs   map[string]string
+		expected map[string]any
+	}{
+		{
+			name:     "string input",
+			inputs:   map[string]string{"foo": "bar"},
+			expected: map[string]any{"foo": "bar"},
+		},
+		{
+			name:     "csv input",
+			inputs:   map[string]string{"foo": "bar1,bar2,bar3"},
+			expected: map[string]any{"foo": []string{"bar1", "bar2", "bar3"}},
+		},
+		{
+			name:     "csv input with empty slots",
+			inputs:   map[string]string{"foo": ",bar1,,,bar2,bar3,,"},
+			expected: map[string]any{"foo": []string{"bar1", "bar2", "bar3"}},
+		},
+		{
+			name:     "csv input with line feeds",
+			inputs:   map[string]string{"foo": "\nbar1,,,bar2,bar3,,"},
+			expected: map[string]any{"foo": []string{"bar1", "bar2", "bar3"}},
+		},
+		{
+			name:     "multiline input",
+			inputs:   map[string]string{"foo": "\nbar1\nbar2\nbar3\n"},
+			expected: map[string]any{"foo": []string{"bar1", "bar2", "bar3"}},
+		},
+		{
+			name:     "multiline input with empty lines",
+			inputs:   map[string]string{"foo": "\n\n\nbar1\nbar2\n\nbar3\n"},
+			expected: map[string]any{"foo": []string{"bar1", "bar2", "bar3"}},
+		},
+		{
+			name:     "no input",
+			inputs:   nil,
+			expected: map[string]any{},
+		},
+		{
+			name:     "multiple values",
+			inputs:   map[string]string{"foo": "bar1,bar2,bar3", "bar": "baz", "foos": "bar1\nbar2\nbar3\n"},
+			expected: map[string]any{"foo": []string{"bar1", "bar2", "bar3"}, "bar": "baz", "foos": []string{"bar1", "bar2", "bar3"}},
+		},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			actual := getInputArguments(tc.inputs)
+			s.Equal(tc.expected, actual)
+		})
+	}
+}
+
 type testSuite struct {
 	suite.Suite
 
