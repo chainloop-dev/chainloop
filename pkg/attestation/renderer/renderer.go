@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"os"
 
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
@@ -51,6 +52,7 @@ type AttestationRenderer struct {
 	signer     sigstoresigner.Signer
 	dsseSigner sigstoresigner.Signer
 	bundlePath string
+	attClient  pb.AttestationServiceClient
 }
 
 type r interface {
@@ -73,7 +75,7 @@ func WithBundleOutputPath(bundlePath string) Opt {
 	}
 }
 
-func NewAttestationRenderer(state *crafter.VersionedCraftingState, builderVersion, builderDigest string, signer sigstoresigner.Signer, opts ...Opt) (*AttestationRenderer, error) {
+func NewAttestationRenderer(state *crafter.VersionedCraftingState, attClient pb.AttestationServiceClient, builderVersion, builderDigest string, signer sigstoresigner.Signer, opts ...Opt) (*AttestationRenderer, error) {
 	if state.GetAttestation() == nil {
 		return nil, errors.New("attestation not initialized")
 	}
@@ -85,6 +87,7 @@ func NewAttestationRenderer(state *crafter.VersionedCraftingState, builderVersio
 		dsseSigner: sigdsee.WrapSigner(signer, "application/vnd.in-toto+json"),
 		signer:     signer,
 		renderer:   chainloop.NewChainloopRendererV02(state.GetAttestation(), builderVersion, builderDigest),
+		attClient:  attClient,
 	}
 
 	for _, opt := range opts {
@@ -109,7 +112,7 @@ func (ab *AttestationRenderer) Render(ctx context.Context) (*dsse.Envelope, erro
 	}
 
 	// validate attestation-level policies
-	pv := policies.NewPolicyVerifier(ab.schema, &ab.logger)
+	pv := policies.NewPolicyVerifier(ab.schema, ab.attClient, &ab.logger)
 	policyResults, err := pv.VerifyStatement(ctx, statement)
 	if err != nil {
 		return nil, fmt.Errorf("applying policies to statement: %w", err)

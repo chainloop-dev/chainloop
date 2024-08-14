@@ -147,7 +147,8 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 		return nil, fmt.Errorf("creating signer: %w", err)
 	}
 
-	renderer, err := renderer.NewAttestationRenderer(crafter.CraftingState, action.cliVersion, action.cliDigest, sig,
+	attClient := pb.NewAttestationServiceClient(action.CPConnection)
+	renderer, err := renderer.NewAttestationRenderer(crafter.CraftingState, attClient, action.cliVersion, action.cliDigest, sig,
 		renderer.WithLogger(action.Logger), renderer.WithBundleOutputPath(action.bundlePath))
 	if err != nil {
 		return nil, err

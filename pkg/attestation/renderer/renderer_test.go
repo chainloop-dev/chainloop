@@ -69,7 +69,7 @@ func (s *rendererSuite) SetupTest() {
 
 func (s *rendererSuite) TestRender() {
 	s.Run("generated envelope is always well-formed", func() {
-		renderer, err := NewAttestationRenderer(s.cs, "", "", s.sv)
+		renderer, err := NewAttestationRenderer(s.cs, nil, "", "", s.sv)
 		s.Require().NoError(err)
 
 		envelope, err := renderer.Render(context.TODO())
@@ -82,7 +82,7 @@ func (s *rendererSuite) TestRender() {
 	s.Run("simulates double wrapping bug", func() {
 		doubleWrapper := sigdsee.WrapSigner(s.sv, "application/vnd.in-toto+json")
 
-		renderer, err := NewAttestationRenderer(s.cs, "", "", doubleWrapper)
+		renderer, err := NewAttestationRenderer(s.cs, nil, "", "", doubleWrapper)
 		s.Require().NoError(err)
 
 		envelope, err := renderer.Render(context.TODO())
@@ -99,7 +99,7 @@ func (s *rendererSuite) TestEnvelopeToBundle() {
 		s.Require().NoError(err)
 
 		signer := cosign.NewSigner("", zerolog.Nop())
-		renderer, err := NewAttestationRenderer(s.cs, "", "", signer)
+		renderer, err := NewAttestationRenderer(s.cs, nil, "", "", signer)
 		s.Require().NoError(err)
 
 		bundle, err := renderer.envelopeToBundle(*envelope)
@@ -122,7 +122,7 @@ func (s *rendererSuite) TestEnvelopeToBundle() {
 
 		// 2 certs
 		signer.Chain = []string{cert, "ROOT"}
-		renderer, err := NewAttestationRenderer(s.cs, "", "", signer)
+		renderer, err := NewAttestationRenderer(s.cs, nil, "", "", signer)
 		s.Require().NoError(err)
 
 		bundle, err := renderer.envelopeToBundle(*envelope)
