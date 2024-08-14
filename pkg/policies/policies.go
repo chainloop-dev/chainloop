@@ -181,6 +181,7 @@ func (pv *PolicyVerifier) loadPolicySpec(ctx context.Context, attachment *v1.Pol
 		}
 	}
 
+	pv.logger.Debug().Msgf("loading policy spec %q using %T", ref, loader)
 	spec, err := loader.Load(ctx, attachment)
 	if err != nil {
 		return nil, fmt.Errorf("loading policy spec: %w", err)

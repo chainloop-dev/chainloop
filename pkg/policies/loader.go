@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -72,8 +73,19 @@ type ChainloopLoader struct {
 	Client pb.AttestationServiceClient
 }
 
+var remotePolicyCache = make(map[string]*v1.Policy)
+var cacheMutex sync.Mutex
+
 func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, error) {
 	ref := attachment.GetRef()
+
+	cacheMutex.Lock()
+	defer cacheMutex.Unlock()
+
+	if remotePolicyCache[ref] != nil {
+		return remotePolicyCache[ref], nil
+	}
+
 	parts := strings.SplitN(ref, "://", 2)
 	if len(parts) != 2 || parts[0] != chainloopScheme {
 		return nil, fmt.Errorf("invalid policy reference %q", ref)
@@ -96,6 +108,9 @@ func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachm
 	if err != nil {
 		return nil, fmt.Errorf("loading policy: %w", err)
 	}
+
+	// cache result
+	remotePolicyCache[ref] = resp.GetPolicy()
 
 	return resp.GetPolicy(), nil
 }
