@@ -41,10 +41,10 @@ func (e *EmbeddedLoader) Load(_ context.Context, attachment *v1.PolicyAttachment
 	return attachment.GetEmbedded(), nil
 }
 
-// URLLoader loader loads policies from filesystem and HTTPS references
-type URLLoader struct{}
+// BlobLoader loader loads policies from filesystem and HTTPS references using Cosign's blob package
+type BlobLoader struct{}
 
-func (l *URLLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, error) {
+func (l *BlobLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, error) {
 	reference := attachment.GetRef()
 
 	// look for the referenced policy spec (note: loading by `name` is not supported yet)
