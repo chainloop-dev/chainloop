@@ -21,13 +21,12 @@ import (
 	"os"
 	"testing"
 
+	v12 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/protobuf/encoding/protojson"
-
-	v12 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 )
 
 func (s *testSuite) TestVerifyAttestations() {
@@ -495,6 +494,57 @@ func (s *testSuite) TestLoadPolicySpec() {
 			if tc.expectedCategory != "" {
 				s.Equal(tc.expectedCategory, p.Metadata.Annotations["category"])
 			}
+		})
+	}
+}
+
+func (s *testSuite) TestLoader() {
+	cases := []struct {
+		name     string
+		ref      string
+		expected interface{}
+		wantErr  bool
+	}{
+		{
+			name:     "local ref",
+			ref:      "local-policy.yaml",
+			expected: &BlobLoader{},
+		},
+		{
+			name:     "http ref",
+			ref:      "https://myhost/policy.yaml",
+			expected: &BlobLoader{},
+		},
+		{
+			name:     "env ref",
+			ref:      "env://environmentvar",
+			expected: &BlobLoader{},
+		},
+		{
+			name:     "chainloop ref",
+			ref:      "chainloop://provider/policy",
+			expected: &ChainloopLoader{},
+		},
+		{
+			name:    "empty ref",
+			ref:     "",
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			v := NewPolicyVerifier(nil, nil, &s.logger)
+			att := &v12.PolicyAttachment{
+				Policy: &v12.PolicyAttachment_Ref{Ref: tc.ref},
+			}
+			loader, err := v.getLoader(att)
+			if tc.wantErr {
+				s.Error(err)
+				return
+			}
+			s.NoError(err)
+			s.IsType(tc.expected, loader)
 		})
 	}
 }

@@ -161,6 +161,25 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 
 // LoadPolicySpec loads and validates a policy spec from a contract
 func (pv *PolicyVerifier) loadPolicySpec(ctx context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, error) {
+	loader, err := pv.getLoader(attachment)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get a loader for policy: %w", err)
+	}
+
+	spec, err := loader.Load(ctx, attachment)
+	if err != nil {
+		return nil, fmt.Errorf("loading policy spec: %w", err)
+	}
+
+	// Validate just in case
+	if err = validatePolicy(spec); err != nil {
+		return nil, fmt.Errorf("invalid policy: %w", err)
+	}
+
+	return spec, nil
+}
+
+func (pv *PolicyVerifier) getLoader(attachment *v1.PolicyAttachment) (Loader, error) {
 	ref := attachment.GetRef()
 	emb := attachment.GetEmbedded()
 
@@ -177,22 +196,12 @@ func (pv *PolicyVerifier) loadPolicySpec(ctx context.Context, attachment *v1.Pol
 		if len(parts) == 2 && parts[0] == chainloopScheme {
 			loader = NewChainloopLoader(pv.client)
 		} else {
-			loader = new(URLLoader)
+			loader = new(BlobLoader)
 		}
+		pv.logger.Debug().Msgf("loading policy spec %q using %T", ref, loader)
 	}
 
-	pv.logger.Debug().Msgf("loading policy spec %q using %T", ref, loader)
-	spec, err := loader.Load(ctx, attachment)
-	if err != nil {
-		return nil, fmt.Errorf("loading policy spec: %w", err)
-	}
-
-	// Validate just in case
-	if err = validatePolicy(spec); err != nil {
-		return nil, fmt.Errorf("invalid policy: %w", err)
-	}
-
-	return spec, nil
+	return loader, nil
 }
 
 func validatePolicy(policy *v1.Policy) error {
