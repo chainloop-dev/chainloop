@@ -226,13 +226,9 @@ func (s *testSuite) TestVerifyAttestations() {
 	for _, tc := range cases {
 		s.Run(tc.name, func() {
 			verifier := NewPolicyVerifier(tc.schema, nil, &s.logger)
-			stContent, err := os.ReadFile(tc.statement)
-			s.Require().NoError(err)
-			var statement intoto.Statement
-			err = protojson.Unmarshal(stContent, &statement)
-			s.Require().NoError(err)
+			statement := s.loadStatement(tc.statement)
 
-			res, err := verifier.VerifyStatement(context.TODO(), &statement)
+			res, err := verifier.VerifyStatement(context.TODO(), statement)
 			if tc.wantErr != nil {
 				// #nosec G601
 				s.ErrorAs(err, &tc.wantErr)
@@ -249,6 +245,29 @@ func (s *testSuite) TestVerifyAttestations() {
 			}
 		})
 	}
+}
+
+func (s *testSuite) TestArgumentsInViolations() {
+	schema := &v12.CraftingSchema{
+		Policies: &v12.Policies{
+			Attestation: []*v12.PolicyAttachment{
+				{
+					Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/with_arguments.yaml"},
+					With:   map[string]string{"email_array": "foobar@chainloop.dev"},
+				},
+			},
+		},
+	}
+
+	s.Run("arguments in violations", func() {
+		verifier := NewPolicyVerifier(schema, nil, &s.logger)
+		statement := s.loadStatement("testdata/statement.json")
+
+		res, err := verifier.VerifyStatement(context.TODO(), statement)
+		s.NoError(err)
+		s.Len(res, 1)
+		s.Equal(map[string]string{"email_array": "foobar@chainloop.dev"}, res[0].GetWith())
+	})
 }
 
 func (s *testSuite) TestMaterialSelectionCriteria() {
@@ -617,4 +636,14 @@ func (s *testSuite) SetupTest() {
 
 func TestPolicyVerifier(t *testing.T) {
 	suite.Run(t, new(testSuite))
+}
+
+func (s *testSuite) loadStatement(file string) *intoto.Statement {
+	stContent, err := os.ReadFile(file)
+	s.Require().NoError(err)
+	var statement intoto.Statement
+	err = protojson.Unmarshal(stContent, &statement)
+	s.Require().NoError(err)
+
+	return &statement
 }
