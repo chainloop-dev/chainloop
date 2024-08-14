@@ -51,3 +51,7 @@ data:
     prometheus_integration:
       {{- toYaml .Values.controlplane.prometheus_org_metrics | nindent 6 }}
     {{- end }}
+    {{ if .Values.controlplane.policy_providers }}
+    policy_providers:
+      {{- toYaml .Values.controlplane.policy_providers | nindent 6 }}
+    
