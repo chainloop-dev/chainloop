@@ -426,6 +426,13 @@ var (
 				OnDelete:   schema.SetNull,
 			},
 		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "workflowcontractversion_workflow_contract_versions",
+				Unique:  false,
+				Columns: []*schema.Column{WorkflowContractVersionsColumns[4]},
+			},
+		},
 	}
 	// WorkflowRunsColumns holds the columns for the "workflow_runs" table.
 	WorkflowRunsColumns = []*schema.Column{
