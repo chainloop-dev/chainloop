@@ -171,13 +171,13 @@ func (pv *PolicyVerifier) loadPolicySpec(ctx context.Context, attachment *v1.Pol
 	// Figure out loader to use
 	var loader Loader
 	if emb != nil {
-		loader = &EmbeddedLoader{}
+		loader = new(EmbeddedLoader)
 	} else {
 		parts := strings.SplitN(ref, "://", 2)
 		if len(parts) == 2 && parts[0] == chainloopScheme {
-			loader = &ChainloopLoader{Client: pv.client}
+			loader = NewChainloopLoader(pv.client)
 		} else {
-			loader = &URLLoader{}
+			loader = new(URLLoader)
 		}
 	}
 

@@ -71,16 +71,21 @@ const chainloopScheme = "chainloop"
 // ChainloopLoader loads policies referenced with chainloop://provider/name URLs
 type ChainloopLoader struct {
 	Client pb.AttestationServiceClient
+
+	cacheMutex sync.Mutex
 }
 
 var remotePolicyCache = make(map[string]*v1.Policy)
-var cacheMutex sync.Mutex
+
+func NewChainloopLoader(client pb.AttestationServiceClient) *ChainloopLoader {
+	return &ChainloopLoader{Client: client}
+}
 
 func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, error) {
 	ref := attachment.GetRef()
 
-	cacheMutex.Lock()
-	defer cacheMutex.Unlock()
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
 
 	if remotePolicyCache[ref] != nil {
 		return remotePolicyCache[ref], nil
