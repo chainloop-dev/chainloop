@@ -22,6 +22,7 @@ import (
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
 )
 
@@ -51,5 +52,12 @@ func (WorkflowContractVersion) Edges() []ent.Edge {
 		edge.From("contract", WorkflowContract.Type).
 			Ref("versions").
 			Unique(),
+	}
+}
+
+// Indexes of the WorkflowContractVersion.
+func (WorkflowContractVersion) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Edges("contract"),
 	}
 }
