@@ -179,6 +179,12 @@ controlplane:
   #  prometheus_org_metrics:
   #    - org_name: "read-only-demo"
 
+  ## @extra controlplane.policy_providers List of endpoints providing external policies
+  #  policy_providers:
+  #    - name: my_provider
+  #      default: true
+  #      host: http://my_host:8002/v1/policies
+
   # Database migration
   ## @param controlplane.migration.image.registry [default: REGISTRY_NAME] Image registry
   ## @param controlplane.migration.image.repository [default: REPOSITORY_NAME] Image repository
