@@ -115,6 +115,9 @@ message PolicyEvaluation {
   // The policy violations, if any
   repeated Violation violations = 4;
 
+  // arguments, as they come from the policy attachment
+  map<string, string> with = 7;
+
   message Violation {
     string subject = 1 [(buf.validate.field).required = true];
     string message = 2 [(buf.validate.field).required = true];
