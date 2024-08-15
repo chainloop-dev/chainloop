@@ -134,6 +134,9 @@ func WithLogger(logger log.Logger) NewOpt {
 	}
 }
 
+// NOTE: some of these http errors get automatically translated to gRPC status codes
+// because they implement the gRPC status error interface
+// so it is safe to return either a gRPC status error or a kratos error
 func handleUseCaseErr(err error, l *log.Helper) error {
 	switch {
 	case errors.Is(err, context.Canceled):

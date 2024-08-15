@@ -27,6 +27,7 @@ import (
 	_ "github.com/sigstore/sigstore/pkg/signature/kms/azure"
 	_ "github.com/sigstore/sigstore/pkg/signature/kms/gcp"
 	_ "github.com/sigstore/sigstore/pkg/signature/kms/hashivault"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
@@ -55,18 +56,27 @@ func errorInfo(err error, logger zerolog.Logger) (string, int) {
 		msg = err.Error()
 	} else {
 		msg = st.Message()
-		// Extract message from grpc status if possible
+		// Sanitize error message for validation and other known errors
 		// by default status.fromError(err).Message() returns the whole error chain
 		// i.e "creating API token: creating API token: rpc error: code = AlreadyExists desc = duplicated: name already taken"
-		// We do not want in this case the whole error chain but just the one part of the gRPC response
+		// We do not want to show that in some specific error codes, we just want to show the part of the gRPC response
 		// i.e "duplicated: name already taken"
 		// To do what we perform an additional parsing of the error similar to
 		// https://github.com/grpc/grpc-go/blob/ced812e3287e15a009eab5b271c25750050a2f82/status/status.go#L123
 		type grpcstatus interface{ GRPCStatus() *status.Status }
 		var gs grpcstatus
 		if errors.As(err, &gs) {
+			knownCodes := []codes.Code{
+				codes.AlreadyExists, codes.InvalidArgument, codes.NotFound, codes.PermissionDenied,
+			}
+
 			grpcStatus := gs.GRPCStatus()
-			msg = grpcStatus.Message()
+			for _, code := range knownCodes {
+				if st.Code() == code {
+					msg = grpcStatus.Message()
+					break
+				}
+			}
 		}
 	}
 
