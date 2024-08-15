@@ -50,11 +50,24 @@ func errorInfo(err error, logger zerolog.Logger) (string, int) {
 
 	// Extract message from grpc message if applicable
 	st, ok := status.FromError(err)
+	// It's a regular error
 	if !ok {
-		// Regular error
 		msg = err.Error()
 	} else {
 		msg = st.Message()
+		// Extract message from grpc status if possible
+		// by default status.fromError(err).Message() returns the whole error chain
+		// i.e "creating API token: creating API token: rpc error: code = AlreadyExists desc = duplicated: name already taken"
+		// We do not want in this case the whole error chain but just the one part of the gRPC response
+		// i.e "duplicated: name already taken"
+		// To do what we perform an additional parsing of the error similar to
+		// https://github.com/grpc/grpc-go/blob/ced812e3287e15a009eab5b271c25750050a2f82/status/status.go#L123
+		type grpcstatus interface{ GRPCStatus() *status.Status }
+		var gs grpcstatus
+		if errors.As(err, &gs) {
+			grpcStatus := gs.GRPCStatus()
+			msg = grpcStatus.Message()
+		}
 	}
 
 	// Make overrides
