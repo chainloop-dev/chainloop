@@ -30,7 +30,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontractversion"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -92,7 +91,11 @@ func (r *WorkflowContractRepo) Create(ctx context.Context, opts *biz.ContractCre
 	}
 
 	// Add version
-	version, err := tx.WorkflowContractVersion.Create().SetBody(opts.ContractBody).SetContract(contract).Save(ctx)
+	version, err := tx.WorkflowContractVersion.Create().
+		SetBody(opts.ContractBody).
+		SetRawBody(opts.RawBody.Body).
+		SetRawBodyFormat(opts.RawBody.Format).
+		SetContract(contract).Save(ctx)
 	if err != nil {
 		return nil, rollback(tx, err)
 	}
@@ -193,6 +196,8 @@ func (r *WorkflowContractRepo) Update(ctx context.Context, orgID uuid.UUID, name
 		// TODO: Add pessimist locking to make sure we are incrementing the latest revision
 		lv, err = tx.WorkflowContractVersion.Create().
 			SetBody(opts.ContractBody).
+			SetRawBody(opts.RawBody.Body).
+			SetRawBodyFormat(opts.RawBody.Format).
 			SetContract(contract).
 			SetRevision(lv.Revision + 1).
 			Save(ctx)
@@ -290,13 +295,11 @@ func entContractVersionToBizContractVersion(w *ent.WorkflowContractVersion) (*bi
 	// so we will generate a json representation of the contract to populate the raw_body field in that case
 	// that way clients can always expect a raw_body field to be present
 	if len(rawBody.Body) == 0 {
-		marshaler := protojson.MarshalOptions{Indent: "  "}
-		r, err := marshaler.Marshal(contract)
+		var err error
+		rawBody, err = biz.RawBodyFallback(contract)
 		if err != nil {
-			return nil, fmt.Errorf("failed to marshal contract: %w", err)
+			return nil, fmt.Errorf("failed to generate fallback raw body: %w", err)
 		}
-		rawBody.Format = biz.ContractRawFormatJSON
-		rawBody.Body = r
 	}
 
 	return &biz.WorkflowContractVersion{

@@ -26,6 +26,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/policies"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -77,15 +78,21 @@ type WorkflowContractRepo interface {
 }
 
 type ContractCreateOpts struct {
-	Name         string
-	OrgID        uuid.UUID
-	Description  *string
+	Name        string
+	OrgID       uuid.UUID
+	Description *string
+	// wire representation of the proto contract
 	ContractBody []byte
+	// raw representation of the contract in whatever original format it was (json, yaml, ...)
+	RawBody *ContractRawBody
 }
 
 type ContractUpdateOpts struct {
-	Description  *string
+	Description *string
+	// wire representation of the proto contract
 	ContractBody []byte
+	// raw representation of the contract in whatever original format it was (json, yaml, ...)
+	RawBody *ContractRawBody
 }
 
 type WorkflowContractUseCase struct {
@@ -169,15 +176,20 @@ func (uc *WorkflowContractUseCase) Create(ctx context.Context, opts *WorkflowCon
 		return nil, err
 	}
 
-	rawSchema, err := proto.Marshal(opts.Schema)
+	rawWireSchema, err := proto.Marshal(opts.Schema)
 	if err != nil {
 		return nil, err
+	}
+
+	rawBody, err := RawBodyFallback(opts.Schema)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create raw body: %w", err)
 	}
 
 	// Create a workflow with a unique name if needed
 	args := &ContractCreateOpts{
 		OrgID: orgUUID, Name: opts.Name, Description: opts.Description,
-		ContractBody: rawSchema,
+		ContractBody: rawWireSchema, RawBody: rawBody,
 	}
 
 	var c *WorkflowContract
@@ -196,6 +208,17 @@ func (uc *WorkflowContractUseCase) Create(ctx context.Context, opts *WorkflowCon
 	}
 
 	return c, nil
+}
+
+// fallback value to be used until the value is provided excplitly
+func RawBodyFallback(contract *schemav1.CraftingSchema) (*ContractRawBody, error) {
+	marshaler := protojson.MarshalOptions{Indent: "  "}
+	r, err := marshaler.Marshal(contract)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal contract: %w", err)
+	}
+
+	return &ContractRawBody{Body: r, Format: ContractRawFormatJSON}, nil
 }
 
 func (uc *WorkflowContractUseCase) createWithUniqueName(ctx context.Context, opts *ContractCreateOpts) (*WorkflowContract, error) {
@@ -276,7 +299,13 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name strin
 		return nil, err
 	}
 
-	args := &ContractUpdateOpts{ContractBody: rawSchema, Description: opts.Description}
+	// TODO: this will removed once we parse the raw schema from the API
+	rawBody, err := RawBodyFallback(opts.Schema)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create raw body: %w", err)
+	}
+
+	args := &ContractUpdateOpts{ContractBody: rawSchema, Description: opts.Description, RawBody: rawBody}
 	c, err := uc.repo.Update(ctx, orgUUID, name, args)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update contract: %w", err)
