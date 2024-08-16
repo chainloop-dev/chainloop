@@ -50,6 +50,10 @@ func (e *PolicyError) Error() string {
 	return fmt.Sprintf("policy error: %s", e.err.Error())
 }
 
+func (e *PolicyError) Unwrap() error {
+	return e.err
+}
+
 type PolicyVerifier struct {
 	schema *v1.CraftingSchema
 	logger *zerolog.Logger

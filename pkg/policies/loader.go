@@ -111,7 +111,7 @@ func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachm
 		PolicyName: name,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("loading policy: %w", err)
+		return nil, fmt.Errorf("requesting remote policy (provider: %s, name: %s): %w", provider, name, err)
 	}
 
 	// cache result
