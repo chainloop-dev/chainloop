@@ -81,7 +81,7 @@ type ContractCreateOpts struct {
 	Name        string
 	OrgID       uuid.UUID
 	Description *string
-	// wire representation of the proto contract
+	// wire representation of the proto contract, deprecated
 	ContractBody []byte
 	// raw representation of the contract in whatever original format it was (json, yaml, ...)
 	RawBody *ContractRawBody
