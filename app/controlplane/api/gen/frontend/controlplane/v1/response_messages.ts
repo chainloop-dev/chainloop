@@ -292,7 +292,67 @@ export interface WorkflowContractVersionItem {
   id: string;
   revision: number;
   createdAt?: Date;
+  /**
+   * Deprecated in favor of raw_contract
+   *
+   * @deprecated
+   */
   v1?: CraftingSchema | undefined;
+  rawContract?: WorkflowContractVersionItem_RawBody;
+}
+
+export interface WorkflowContractVersionItem_RawBody {
+  body: Uint8Array;
+  format: WorkflowContractVersionItem_RawBody_Format;
+}
+
+export enum WorkflowContractVersionItem_RawBody_Format {
+  FORMAT_UNSPECIFIED = 0,
+  FORMAT_JSON = 1,
+  FORMAT_YAML = 2,
+  FORMAT_CUE = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function workflowContractVersionItem_RawBody_FormatFromJSON(
+  object: any,
+): WorkflowContractVersionItem_RawBody_Format {
+  switch (object) {
+    case 0:
+    case "FORMAT_UNSPECIFIED":
+      return WorkflowContractVersionItem_RawBody_Format.FORMAT_UNSPECIFIED;
+    case 1:
+    case "FORMAT_JSON":
+      return WorkflowContractVersionItem_RawBody_Format.FORMAT_JSON;
+    case 2:
+    case "FORMAT_YAML":
+      return WorkflowContractVersionItem_RawBody_Format.FORMAT_YAML;
+    case 3:
+    case "FORMAT_CUE":
+      return WorkflowContractVersionItem_RawBody_Format.FORMAT_CUE;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return WorkflowContractVersionItem_RawBody_Format.UNRECOGNIZED;
+  }
+}
+
+export function workflowContractVersionItem_RawBody_FormatToJSON(
+  object: WorkflowContractVersionItem_RawBody_Format,
+): string {
+  switch (object) {
+    case WorkflowContractVersionItem_RawBody_Format.FORMAT_UNSPECIFIED:
+      return "FORMAT_UNSPECIFIED";
+    case WorkflowContractVersionItem_RawBody_Format.FORMAT_JSON:
+      return "FORMAT_JSON";
+    case WorkflowContractVersionItem_RawBody_Format.FORMAT_YAML:
+      return "FORMAT_YAML";
+    case WorkflowContractVersionItem_RawBody_Format.FORMAT_CUE:
+      return "FORMAT_CUE";
+    case WorkflowContractVersionItem_RawBody_Format.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 export interface User {
@@ -1672,7 +1732,7 @@ export const WorkflowContractItem = {
 };
 
 function createBaseWorkflowContractVersionItem(): WorkflowContractVersionItem {
-  return { id: "", revision: 0, createdAt: undefined, v1: undefined };
+  return { id: "", revision: 0, createdAt: undefined, v1: undefined, rawContract: undefined };
 }
 
 export const WorkflowContractVersionItem = {
@@ -1688,6 +1748,9 @@ export const WorkflowContractVersionItem = {
     }
     if (message.v1 !== undefined) {
       CraftingSchema.encode(message.v1, writer.uint32(34).fork()).ldelim();
+    }
+    if (message.rawContract !== undefined) {
+      WorkflowContractVersionItem_RawBody.encode(message.rawContract, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -1727,6 +1790,13 @@ export const WorkflowContractVersionItem = {
 
           message.v1 = CraftingSchema.decode(reader, reader.uint32());
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.rawContract = WorkflowContractVersionItem_RawBody.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1742,6 +1812,9 @@ export const WorkflowContractVersionItem = {
       revision: isSet(object.revision) ? Number(object.revision) : 0,
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
       v1: isSet(object.v1) ? CraftingSchema.fromJSON(object.v1) : undefined,
+      rawContract: isSet(object.rawContract)
+        ? WorkflowContractVersionItem_RawBody.fromJSON(object.rawContract)
+        : undefined,
     };
   },
 
@@ -1751,6 +1824,9 @@ export const WorkflowContractVersionItem = {
     message.revision !== undefined && (obj.revision = Math.round(message.revision));
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
     message.v1 !== undefined && (obj.v1 = message.v1 ? CraftingSchema.toJSON(message.v1) : undefined);
+    message.rawContract !== undefined && (obj.rawContract = message.rawContract
+      ? WorkflowContractVersionItem_RawBody.toJSON(message.rawContract)
+      : undefined);
     return obj;
   },
 
@@ -1764,6 +1840,85 @@ export const WorkflowContractVersionItem = {
     message.revision = object.revision ?? 0;
     message.createdAt = object.createdAt ?? undefined;
     message.v1 = (object.v1 !== undefined && object.v1 !== null) ? CraftingSchema.fromPartial(object.v1) : undefined;
+    message.rawContract = (object.rawContract !== undefined && object.rawContract !== null)
+      ? WorkflowContractVersionItem_RawBody.fromPartial(object.rawContract)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseWorkflowContractVersionItem_RawBody(): WorkflowContractVersionItem_RawBody {
+  return { body: new Uint8Array(0), format: 0 };
+}
+
+export const WorkflowContractVersionItem_RawBody = {
+  encode(message: WorkflowContractVersionItem_RawBody, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.body.length !== 0) {
+      writer.uint32(10).bytes(message.body);
+    }
+    if (message.format !== 0) {
+      writer.uint32(16).int32(message.format);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): WorkflowContractVersionItem_RawBody {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseWorkflowContractVersionItem_RawBody();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.body = reader.bytes();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.format = reader.int32() as any;
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): WorkflowContractVersionItem_RawBody {
+    return {
+      body: isSet(object.body) ? bytesFromBase64(object.body) : new Uint8Array(0),
+      format: isSet(object.format) ? workflowContractVersionItem_RawBody_FormatFromJSON(object.format) : 0,
+    };
+  },
+
+  toJSON(message: WorkflowContractVersionItem_RawBody): unknown {
+    const obj: any = {};
+    message.body !== undefined &&
+      (obj.body = base64FromBytes(message.body !== undefined ? message.body : new Uint8Array(0)));
+    message.format !== undefined && (obj.format = workflowContractVersionItem_RawBody_FormatToJSON(message.format));
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<WorkflowContractVersionItem_RawBody>, I>>(
+    base?: I,
+  ): WorkflowContractVersionItem_RawBody {
+    return WorkflowContractVersionItem_RawBody.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<WorkflowContractVersionItem_RawBody>, I>>(
+    object: I,
+  ): WorkflowContractVersionItem_RawBody {
+    const message = createBaseWorkflowContractVersionItem_RawBody();
+    message.body = object.body ?? new Uint8Array(0);
+    message.format = object.format ?? 0;
     return message;
   },
 };

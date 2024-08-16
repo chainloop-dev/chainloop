@@ -10341,6 +10341,8 @@ type WorkflowContractVersionMutation struct {
 	typ             string
 	id              *uuid.UUID
 	body            *[]byte
+	raw_body        *[]byte
+	raw_body_format *biz.ContractRawFormat
 	revision        *int
 	addrevision     *int
 	created_at      *time.Time
@@ -10490,6 +10492,78 @@ func (m *WorkflowContractVersionMutation) OldBody(ctx context.Context) (v []byte
 // ResetBody resets all changes to the "body" field.
 func (m *WorkflowContractVersionMutation) ResetBody() {
 	m.body = nil
+}
+
+// SetRawBody sets the "raw_body" field.
+func (m *WorkflowContractVersionMutation) SetRawBody(b []byte) {
+	m.raw_body = &b
+}
+
+// RawBody returns the value of the "raw_body" field in the mutation.
+func (m *WorkflowContractVersionMutation) RawBody() (r []byte, exists bool) {
+	v := m.raw_body
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRawBody returns the old "raw_body" field's value of the WorkflowContractVersion entity.
+// If the WorkflowContractVersion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowContractVersionMutation) OldRawBody(ctx context.Context) (v []byte, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRawBody is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRawBody requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRawBody: %w", err)
+	}
+	return oldValue.RawBody, nil
+}
+
+// ResetRawBody resets all changes to the "raw_body" field.
+func (m *WorkflowContractVersionMutation) ResetRawBody() {
+	m.raw_body = nil
+}
+
+// SetRawBodyFormat sets the "raw_body_format" field.
+func (m *WorkflowContractVersionMutation) SetRawBodyFormat(brf biz.ContractRawFormat) {
+	m.raw_body_format = &brf
+}
+
+// RawBodyFormat returns the value of the "raw_body_format" field in the mutation.
+func (m *WorkflowContractVersionMutation) RawBodyFormat() (r biz.ContractRawFormat, exists bool) {
+	v := m.raw_body_format
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRawBodyFormat returns the old "raw_body_format" field's value of the WorkflowContractVersion entity.
+// If the WorkflowContractVersion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowContractVersionMutation) OldRawBodyFormat(ctx context.Context) (v biz.ContractRawFormat, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRawBodyFormat is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRawBodyFormat requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRawBodyFormat: %w", err)
+	}
+	return oldValue.RawBodyFormat, nil
+}
+
+// ResetRawBodyFormat resets all changes to the "raw_body_format" field.
+func (m *WorkflowContractVersionMutation) ResetRawBodyFormat() {
+	m.raw_body_format = nil
 }
 
 // SetRevision sets the "revision" field.
@@ -10657,9 +10731,15 @@ func (m *WorkflowContractVersionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *WorkflowContractVersionMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 5)
 	if m.body != nil {
 		fields = append(fields, workflowcontractversion.FieldBody)
+	}
+	if m.raw_body != nil {
+		fields = append(fields, workflowcontractversion.FieldRawBody)
+	}
+	if m.raw_body_format != nil {
+		fields = append(fields, workflowcontractversion.FieldRawBodyFormat)
 	}
 	if m.revision != nil {
 		fields = append(fields, workflowcontractversion.FieldRevision)
@@ -10677,6 +10757,10 @@ func (m *WorkflowContractVersionMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case workflowcontractversion.FieldBody:
 		return m.Body()
+	case workflowcontractversion.FieldRawBody:
+		return m.RawBody()
+	case workflowcontractversion.FieldRawBodyFormat:
+		return m.RawBodyFormat()
 	case workflowcontractversion.FieldRevision:
 		return m.Revision()
 	case workflowcontractversion.FieldCreatedAt:
@@ -10692,6 +10776,10 @@ func (m *WorkflowContractVersionMutation) OldField(ctx context.Context, name str
 	switch name {
 	case workflowcontractversion.FieldBody:
 		return m.OldBody(ctx)
+	case workflowcontractversion.FieldRawBody:
+		return m.OldRawBody(ctx)
+	case workflowcontractversion.FieldRawBodyFormat:
+		return m.OldRawBodyFormat(ctx)
 	case workflowcontractversion.FieldRevision:
 		return m.OldRevision(ctx)
 	case workflowcontractversion.FieldCreatedAt:
@@ -10711,6 +10799,20 @@ func (m *WorkflowContractVersionMutation) SetField(name string, value ent.Value)
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetBody(v)
+		return nil
+	case workflowcontractversion.FieldRawBody:
+		v, ok := value.([]byte)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRawBody(v)
+		return nil
+	case workflowcontractversion.FieldRawBodyFormat:
+		v, ok := value.(biz.ContractRawFormat)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRawBodyFormat(v)
 		return nil
 	case workflowcontractversion.FieldRevision:
 		v, ok := value.(int)
@@ -10792,6 +10894,12 @@ func (m *WorkflowContractVersionMutation) ResetField(name string) error {
 	switch name {
 	case workflowcontractversion.FieldBody:
 		m.ResetBody()
+		return nil
+	case workflowcontractversion.FieldRawBody:
+		m.ResetRawBody()
+		return nil
+	case workflowcontractversion.FieldRawBodyFormat:
+		m.ResetRawBodyFormat()
 		return nil
 	case workflowcontractversion.FieldRevision:
 		m.ResetRevision()

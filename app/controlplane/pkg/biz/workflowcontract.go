@@ -44,7 +44,21 @@ type WorkflowContractVersion struct {
 	Revision  int
 	CreatedAt *time.Time
 	BodyV1    *schemav1.CraftingSchema
+	RawBody   *ContractRawBody
 }
+
+type ContractRawBody struct {
+	Body   []byte
+	Format ContractRawFormat
+}
+
+type ContractRawFormat string
+
+const (
+	ContractRawFormatJSON ContractRawFormat = "json"
+	ContractRawFormatYAML ContractRawFormat = "yaml"
+	ContractRawFormatCUE  ContractRawFormat = "cue"
+)
 
 type WorkflowContractWithVersion struct {
 	Contract *WorkflowContract
@@ -320,4 +334,12 @@ func (uc *WorkflowContractUseCase) GetPolicy(providerName, policyName, token str
 	}
 
 	return policy, nil
+}
+
+// Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues
+func (ContractRawFormat) Values() (kinds []string) {
+	for _, s := range []ContractRawFormat{ContractRawFormatJSON, ContractRawFormatYAML, ContractRawFormatCUE} {
+		kinds = append(kinds, string(s))
+	}
+	return
 }

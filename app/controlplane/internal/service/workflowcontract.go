@@ -158,12 +158,29 @@ func bizWorkFlowContractToPb(schema *biz.WorkflowContract) *pb.WorkflowContractI
 }
 
 func bizWorkFlowContractVersionToPb(schema *biz.WorkflowContractVersion) *pb.WorkflowContractVersionItem {
+	formatTranslator := func(biz.ContractRawFormat) pb.WorkflowContractVersionItem_RawBody_Format {
+		switch schema.RawBody.Format {
+		case biz.ContractRawFormatJSON:
+			return pb.WorkflowContractVersionItem_RawBody_FORMAT_JSON
+		case biz.ContractRawFormatYAML:
+			return pb.WorkflowContractVersionItem_RawBody_FORMAT_YAML
+		case biz.ContractRawFormatCUE:
+			return pb.WorkflowContractVersionItem_RawBody_FORMAT_CUE
+		}
+
+		return pb.WorkflowContractVersionItem_RawBody_FORMAT_UNSPECIFIED
+	}
+
 	return &pb.WorkflowContractVersionItem{
 		Id:        schema.ID.String(),
 		CreatedAt: timestamppb.New(*schema.CreatedAt),
 		Revision:  int32(schema.Revision),
 		Contract: &pb.WorkflowContractVersionItem_V1{
 			V1: schema.BodyV1,
+		},
+		RawContract: &pb.WorkflowContractVersionItem_RawBody{
+			Body:   schema.RawBody.Body,
+			Format: formatTranslator(schema.RawBody.Format),
 		},
 	}
 }

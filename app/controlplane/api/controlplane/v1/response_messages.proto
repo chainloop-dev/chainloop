@@ -17,10 +17,11 @@ syntax = "proto3";
 
 package controlplane.v1;
 
+import "attestation/v1/crafting_state.proto";
+import "buf/validate/validate.proto";
 import "errors/errors.proto";
 import "google/protobuf/timestamp.proto";
 import "workflowcontract/v1/crafting_schema.proto";
-import "attestation/v1/crafting_state.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
@@ -128,7 +129,24 @@ message WorkflowContractVersionItem {
   int32 revision = 2;
   google.protobuf.Timestamp created_at = 3;
   oneof contract {
-    workflowcontract.v1.CraftingSchema v1 = 4;
+    // Deprecated in favor of raw_contract
+    workflowcontract.v1.CraftingSchema v1 = 4 [deprecated = true];
+  }
+
+  RawBody raw_contract = 5;
+
+  message RawBody {
+    bytes body = 1;
+    Format format = 2 [(buf.validate.field).enum = {
+      not_in: [0]
+    }];
+
+    enum Format {
+      FORMAT_UNSPECIFIED = 0;
+      FORMAT_JSON = 1;
+      FORMAT_YAML = 2;
+      FORMAT_CUE = 3;
+    }
   }
 }
 

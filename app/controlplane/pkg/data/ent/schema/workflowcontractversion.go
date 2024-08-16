@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/google/uuid"
 )
 
@@ -35,7 +36,13 @@ type WorkflowContractVersion struct {
 func (WorkflowContractVersion) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),
+		// binary representation of the contract proto message
+		// deprecated in favor of the raw_body field
 		field.Bytes("body").NotEmpty().Immutable(),
+		// raw_body is the raw representation of the contract in whatever original format it was (json, yaml, ...)
+		// it supersedes the body field
+		field.Bytes("raw_body").NotEmpty().Immutable(),
+		field.Enum("raw_body_format").GoType(biz.ContractRawFormat("")),
 		field.Int("revision").Default(1).Immutable(),
 		field.Time("created_at").
 			Default(time.Now).

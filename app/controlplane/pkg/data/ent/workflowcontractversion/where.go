@@ -7,6 +7,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/google/uuid"
 )
@@ -61,6 +62,11 @@ func Body(v []byte) predicate.WorkflowContractVersion {
 	return predicate.WorkflowContractVersion(sql.FieldEQ(FieldBody, v))
 }
 
+// RawBody applies equality check predicate on the "raw_body" field. It's identical to RawBodyEQ.
+func RawBody(v []byte) predicate.WorkflowContractVersion {
+	return predicate.WorkflowContractVersion(sql.FieldEQ(FieldRawBody, v))
+}
+
 // Revision applies equality check predicate on the "revision" field. It's identical to RevisionEQ.
 func Revision(v int) predicate.WorkflowContractVersion {
 	return predicate.WorkflowContractVersion(sql.FieldEQ(FieldRevision, v))
@@ -109,6 +115,76 @@ func BodyLT(v []byte) predicate.WorkflowContractVersion {
 // BodyLTE applies the LTE predicate on the "body" field.
 func BodyLTE(v []byte) predicate.WorkflowContractVersion {
 	return predicate.WorkflowContractVersion(sql.FieldLTE(FieldBody, v))
+}
+
+// RawBodyEQ applies the EQ predicate on the "raw_body" field.
+func RawBodyEQ(v []byte) predicate.WorkflowContractVersion {
+	return predicate.WorkflowContractVersion(sql.FieldEQ(FieldRawBody, v))
+}
+
+// RawBodyNEQ applies the NEQ predicate on the "raw_body" field.
+func RawBodyNEQ(v []byte) predicate.WorkflowContractVersion {
+	return predicate.WorkflowContractVersion(sql.FieldNEQ(FieldRawBody, v))
+}
+
+// RawBodyIn applies the In predicate on the "raw_body" field.
+func RawBodyIn(vs ...[]byte) predicate.WorkflowContractVersion {
+	return predicate.WorkflowContractVersion(sql.FieldIn(FieldRawBody, vs...))
+}
+
+// RawBodyNotIn applies the NotIn predicate on the "raw_body" field.
+func RawBodyNotIn(vs ...[]byte) predicate.WorkflowContractVersion {
+	return predicate.WorkflowContractVersion(sql.FieldNotIn(FieldRawBody, vs...))
+}
+
+// RawBodyGT applies the GT predicate on the "raw_body" field.
+func RawBodyGT(v []byte) predicate.WorkflowContractVersion {
+	return predicate.WorkflowContractVersion(sql.FieldGT(FieldRawBody, v))
+}
+
+// RawBodyGTE applies the GTE predicate on the "raw_body" field.
+func RawBodyGTE(v []byte) predicate.WorkflowContractVersion {
+	return predicate.WorkflowContractVersion(sql.FieldGTE(FieldRawBody, v))
+}
+
+// RawBodyLT applies the LT predicate on the "raw_body" field.
+func RawBodyLT(v []byte) predicate.WorkflowContractVersion {
+	return predicate.WorkflowContractVersion(sql.FieldLT(FieldRawBody, v))
+}
+
+// RawBodyLTE applies the LTE predicate on the "raw_body" field.
+func RawBodyLTE(v []byte) predicate.WorkflowContractVersion {
+	return predicate.WorkflowContractVersion(sql.FieldLTE(FieldRawBody, v))
+}
+
+// RawBodyFormatEQ applies the EQ predicate on the "raw_body_format" field.
+func RawBodyFormatEQ(v biz.ContractRawFormat) predicate.WorkflowContractVersion {
+	vc := v
+	return predicate.WorkflowContractVersion(sql.FieldEQ(FieldRawBodyFormat, vc))
+}
+
+// RawBodyFormatNEQ applies the NEQ predicate on the "raw_body_format" field.
+func RawBodyFormatNEQ(v biz.ContractRawFormat) predicate.WorkflowContractVersion {
+	vc := v
+	return predicate.WorkflowContractVersion(sql.FieldNEQ(FieldRawBodyFormat, vc))
+}
+
+// RawBodyFormatIn applies the In predicate on the "raw_body_format" field.
+func RawBodyFormatIn(vs ...biz.ContractRawFormat) predicate.WorkflowContractVersion {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.WorkflowContractVersion(sql.FieldIn(FieldRawBodyFormat, v...))
+}
+
+// RawBodyFormatNotIn applies the NotIn predicate on the "raw_body_format" field.
+func RawBodyFormatNotIn(vs ...biz.ContractRawFormat) predicate.WorkflowContractVersion {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.WorkflowContractVersion(sql.FieldNotIn(FieldRawBodyFormat, v...))
 }
 
 // RevisionEQ applies the EQ predicate on the "revision" field.

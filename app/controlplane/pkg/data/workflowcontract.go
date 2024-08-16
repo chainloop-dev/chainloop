@@ -30,6 +30,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontractversion"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -274,13 +275,32 @@ func (r *WorkflowContractRepo) SoftDelete(ctx context.Context, id uuid.UUID) err
 
 func entContractVersionToBizContractVersion(w *ent.WorkflowContractVersion) (*biz.WorkflowContractVersion, error) {
 	contract := &schemav1.CraftingSchema{}
+	// DEPRECATED in favor of raw_body
 	err := proto.Unmarshal(w.Body, contract)
 	if err != nil {
 		return nil, err
 	}
 
+	rawBody := &biz.ContractRawBody{
+		Body:   w.RawBody,
+		Format: w.RawBodyFormat,
+	}
+
+	// contracts that have been stored (and not updated) before the introduction of the raw_body field will have an empty raw_body
+	// so we will generate a json representation of the contract to populate the raw_body field in that case
+	// that way clients can always expect a raw_body field to be present
+	if len(rawBody.Body) == 0 {
+		marshaler := protojson.MarshalOptions{Indent: "  "}
+		r, err := marshaler.Marshal(contract)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal contract: %w", err)
+		}
+		rawBody.Format = biz.ContractRawFormatJSON
+		rawBody.Body = r
+	}
+
 	return &biz.WorkflowContractVersion{
-		ID: w.ID, CreatedAt: toTimePtr(w.CreatedAt), Revision: w.Revision, BodyV1: contract,
+		ID: w.ID, CreatedAt: toTimePtr(w.CreatedAt), Revision: w.Revision, BodyV1: contract, RawBody: rawBody,
 	}, nil
 }
 

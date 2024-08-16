@@ -25,7 +25,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
-	"google.golang.org/protobuf/encoding/protojson"
 )
 
 const formatContract = "schema"
@@ -71,13 +70,7 @@ func encodeContractOutput(run *action.WorkflowContractWithVersionItem) error {
 
 	switch flagOutputFormat {
 	case formatContract:
-		marshaler := protojson.MarshalOptions{Indent: "  "}
-		rawBody, err := marshaler.Marshal(run.Revision.BodyV1)
-		if err != nil {
-			return err
-		}
-		fmt.Fprintln(os.Stdout, string(rawBody))
-
+		fmt.Fprintln(os.Stdout, run.Revision.RawBody.Body)
 		return nil
 	default:
 		return ErrOutputFormatNotImplemented
@@ -86,12 +79,6 @@ func encodeContractOutput(run *action.WorkflowContractWithVersionItem) error {
 
 func contractDescribeTableOutput(contractWithVersion *action.WorkflowContractWithVersionItem) error {
 	revision := contractWithVersion.Revision
-
-	marshaler := protojson.MarshalOptions{Indent: "  "}
-	rawBody, err := marshaler.Marshal(revision.BodyV1)
-	if err != nil {
-		return err
-	}
 
 	c := contractWithVersion.Contract
 	t := newTableWriter()
@@ -108,7 +95,7 @@ func contractDescribeTableOutput(contractWithVersion *action.WorkflowContractWit
 	t.Render()
 
 	vt := newTableWriter()
-	vt.AppendRow(table.Row{string(rawBody)})
+	vt.AppendRow(table.Row{revision.RawBody.Body})
 	vt.Render()
 
 	return nil

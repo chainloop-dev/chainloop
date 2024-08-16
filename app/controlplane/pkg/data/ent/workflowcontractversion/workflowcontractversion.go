@@ -3,10 +3,12 @@
 package workflowcontractversion
 
 import (
+	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/google/uuid"
 )
 
@@ -17,6 +19,10 @@ const (
 	FieldID = "id"
 	// FieldBody holds the string denoting the body field in the database.
 	FieldBody = "body"
+	// FieldRawBody holds the string denoting the raw_body field in the database.
+	FieldRawBody = "raw_body"
+	// FieldRawBodyFormat holds the string denoting the raw_body_format field in the database.
+	FieldRawBodyFormat = "raw_body_format"
 	// FieldRevision holds the string denoting the revision field in the database.
 	FieldRevision = "revision"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -38,6 +44,8 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldBody,
+	FieldRawBody,
+	FieldRawBodyFormat,
 	FieldRevision,
 	FieldCreatedAt,
 }
@@ -66,6 +74,8 @@ func ValidColumn(column string) bool {
 var (
 	// BodyValidator is a validator for the "body" field. It is called by the builders before save.
 	BodyValidator func([]byte) error
+	// RawBodyValidator is a validator for the "raw_body" field. It is called by the builders before save.
+	RawBodyValidator func([]byte) error
 	// DefaultRevision holds the default value on creation for the "revision" field.
 	DefaultRevision int
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
@@ -74,12 +84,27 @@ var (
 	DefaultID func() uuid.UUID
 )
 
+// RawBodyFormatValidator is a validator for the "raw_body_format" field enum values. It is called by the builders before save.
+func RawBodyFormatValidator(rbf biz.ContractRawFormat) error {
+	switch rbf {
+	case "json", "yaml", "cue":
+		return nil
+	default:
+		return fmt.Errorf("workflowcontractversion: invalid enum value for raw_body_format field: %q", rbf)
+	}
+}
+
 // OrderOption defines the ordering options for the WorkflowContractVersion queries.
 type OrderOption func(*sql.Selector)
 
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByRawBodyFormat orders the results by the raw_body_format field.
+func ByRawBodyFormat(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRawBodyFormat, opts...).ToFunc()
 }
 
 // ByRevision orders the results by the revision field.
