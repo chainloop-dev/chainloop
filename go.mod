@@ -69,6 +69,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.6.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.3.1
 	github.com/bufbuild/protovalidate-go v0.6.1
+	github.com/bufbuild/protoyaml-go v0.1.11
 	github.com/casbin/casbin/v2 v2.81.0
 	github.com/casbin/ent-adapter v0.3.0
 	github.com/denisbrodbeck/machineid v1.0.1
@@ -109,7 +110,6 @@ require (
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.11.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/kms v1.30.0 // indirect
-	github.com/bufbuild/protoyaml-go v0.1.11 // indirect
 	github.com/casbin/govaluate v1.1.0 // indirect
 	github.com/cockroachdb/apd/v3 v3.2.1 // indirect
 	github.com/containerd/errdefs v0.1.0 // indirect
