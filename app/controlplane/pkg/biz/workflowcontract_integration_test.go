@@ -17,6 +17,7 @@ package biz_test
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -31,14 +32,16 @@ func (s *workflowContractIntegrationTestSuite) TestUpdate() {
 	ctx := context.Background()
 
 	updatedSchema := &schemav1.CraftingSchema{SchemaVersion: "v1", Runner: &schemav1.CraftingSchema_Runner{Type: schemav1.CraftingSchema_Runner_AZURE_PIPELINE}}
-	updateSchemaRawFormat, err := biz.RawBodyFallback(updatedSchema)
+	updatedSchemaRawFormat, err := biz.SchemaToRawContract(updatedSchema)
 	require.NoError(s.T(), err)
+
+	updatedSchemaInYAML := &biz.Contract{Format: biz.ContractRawFormatYAML, Raw: []byte(`schemaVersion: v1`)}
 
 	testCases := []struct {
 		name                string
 		orgID, contractName string
 		input               *biz.WorkflowContractUpdateOpts
-		inputSchema         *schemav1.CraftingSchema
+		inputSchema         *biz.Contract
 		wantErrMsg          string
 		wantRevision        int
 		wantDescription     string
@@ -58,28 +61,62 @@ func (s *workflowContractIntegrationTestSuite) TestUpdate() {
 			name:         "updating schema bumps revision",
 			orgID:        s.org.ID,
 			contractName: s.contractOrg1.Name,
-			input:        &biz.WorkflowContractUpdateOpts{RawSchema: updateSchemaRawFormat.Raw},
+			input:        &biz.WorkflowContractUpdateOpts{},
+			inputSchema:  updatedSchemaRawFormat,
 			wantRevision: 2,
 		},
 		{
 			name:         "updating with same schema DOES NOT bump revision",
 			orgID:        s.org.ID,
 			contractName: s.contractOrg1.Name,
-			input:        &biz.WorkflowContractUpdateOpts{RawSchema: updateSchemaRawFormat.Raw},
+			input:        &biz.WorkflowContractUpdateOpts{},
+			inputSchema:  updatedSchemaRawFormat,
 			wantRevision: 2,
 		},
 		{
-			name:            "updating description bumps revision",
+			name:            "updating description does not bump revision",
 			orgID:           s.org.ID,
 			contractName:    s.contractOrg1.Name,
 			input:           &biz.WorkflowContractUpdateOpts{Description: toPtrS("new description")},
 			wantDescription: "new description",
 			wantRevision:    2,
 		},
+		{
+			name:         "the format of the contract can be updated to yaml",
+			orgID:        s.org.ID,
+			contractName: s.contractOrg1.Name,
+			input:        &biz.WorkflowContractUpdateOpts{},
+			inputSchema:  updatedSchemaInYAML,
+			wantRevision: 3,
+		},
+		{
+			name:         "it validates the format of the contract",
+			orgID:        s.org.ID,
+			contractName: s.contractOrg1.Name,
+			input: &biz.WorkflowContractUpdateOpts{
+				RawSchema: []byte(`{invalid: yaml`),
+			},
+			wantErrMsg:   "format not found",
+			wantRevision: 3,
+		},
+		{
+			name:         "it validates contract is valid",
+			orgID:        s.org.ID,
+			contractName: s.contractOrg1.Name,
+			input: &biz.WorkflowContractUpdateOpts{
+				RawSchema: []byte(`apiVersion: v12`),
+			},
+			wantErrMsg:   "validation error",
+			wantRevision: 3,
+		},
 	}
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
+			if tc.inputSchema != nil {
+				tc.input.RawSchema = tc.inputSchema.Raw
+			}
+
 			contract, err := s.WorkflowContract.Update(ctx, tc.orgID, tc.contractName, tc.input)
 			if tc.wantErrMsg != "" {
 				s.ErrorContains(err, tc.wantErrMsg)
@@ -91,6 +128,12 @@ func (s *workflowContractIntegrationTestSuite) TestUpdate() {
 				s.Equal(tc.wantDescription, contract.Contract.Description)
 			}
 
+			if tc.inputSchema != nil {
+				s.Equal(tc.inputSchema.Raw, contract.Version.Schema.Raw)
+				s.Equal(tc.inputSchema.Format, contract.Version.Schema.Format)
+			}
+
+			s.NotNil(contract.Version.Schema.Schema)
 			s.Equal(tc.wantRevision, contract.Version.Revision)
 		})
 	}
@@ -194,6 +237,72 @@ func (s *workflowContractIntegrationTestSuite) TestCreate() {
 			}
 		})
 	}
+}
+
+func (s *workflowContractIntegrationTestSuite) TestCreateWithCustomContract() {
+	ctx := context.Background()
+
+	testCases := []struct {
+		name         string
+		contractPath string
+		wantErrMsg   string
+		format       biz.ContractRawFormat
+	}{
+		{
+			name:         "from-cue",
+			contractPath: "testdata/contracts/contract.cue",
+			format:       biz.ContractRawFormatCUE,
+		},
+		{
+			name:         "from-yaml",
+			contractPath: "testdata/contracts/contract.yaml",
+			format:       biz.ContractRawFormatYAML,
+		},
+		{
+			name:         "from-json",
+			contractPath: "testdata/contracts/contract.json",
+			format:       biz.ContractRawFormatJSON,
+		},
+		{
+			name:         "invalid-contract",
+			contractPath: "testdata/contracts/invalid_contract.json",
+			wantErrMsg:   "validation error",
+		},
+		{
+			name:         "invalid-json",
+			contractPath: "testdata/contracts/invalid_format.json",
+			wantErrMsg:   "format not found",
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			d, err := os.ReadFile(tc.contractPath)
+			require.NoError(s.T(), err)
+			contract, err := s.WorkflowContract.Create(ctx, &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: tc.name, RawSchema: d})
+			if tc.wantErrMsg != "" {
+				s.ErrorContains(err, tc.wantErrMsg)
+				return
+			}
+			require.NoError(s.T(), err)
+
+			contractWithVersion, err := s.WorkflowContract.Describe(ctx, s.org.ID, contract.ID.String(), 1)
+			require.NoError(s.T(), err)
+			s.Equal(d, contractWithVersion.Version.Schema.Raw)
+			s.Equal(tc.format, contractWithVersion.Version.Schema.Format)
+			s.NotNil(contractWithVersion.Version.Schema.Schema)
+		})
+	}
+
+	s.Run("not providing contract creates one automatically", func() {
+		contract, err := s.WorkflowContract.Create(ctx, &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: "empty"})
+		require.NoError(s.T(), err)
+		contractWithVersion, err := s.WorkflowContract.Describe(ctx, s.org.ID, contract.ID.String(), 1)
+		require.NoError(s.T(), err)
+		s.Equal(biz.EmptyDefaultContract.Format, biz.ContractRawFormatYAML)
+		s.Equal(biz.EmptyDefaultContract.Raw, contractWithVersion.Version.Schema.Raw)
+		s.NotNil(contractWithVersion.Version.Schema.Schema)
+	})
 }
 
 // Run the tests

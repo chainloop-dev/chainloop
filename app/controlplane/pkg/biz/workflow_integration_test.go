@@ -48,9 +48,10 @@ func (s *workflowIntegrationTestSuite) TestContractLatestAvailable() {
 		require.NoError(s.T(), err)
 
 		c := &v1.CraftingSchema{
-			Runner: &v1.CraftingSchema_Runner{Type: v1.CraftingSchema_Runner_CIRCLECI_BUILD},
+			SchemaVersion: "v1",
+			Runner:        &v1.CraftingSchema_Runner{Type: v1.CraftingSchema_Runner_CIRCLECI_BUILD},
 		}
-		rawSchema, err := biz.RawBodyFallback(c)
+		rawSchema, err := biz.SchemaToRawContract(c)
 		require.NoError(s.T(), err)
 
 		_, err = s.WorkflowContract.Update(ctx, s.org.ID, contract.Name, &biz.WorkflowContractUpdateOpts{RawSchema: rawSchema.Raw})

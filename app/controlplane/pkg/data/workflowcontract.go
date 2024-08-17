@@ -277,39 +277,39 @@ func (r *WorkflowContractRepo) SoftDelete(ctx context.Context, id uuid.UUID) err
 }
 
 func entContractVersionToBizContractVersion(w *ent.WorkflowContractVersion) (*biz.WorkflowContractVersion, error) {
-	contractBody := &biz.ContractBody{
+	contract := &biz.Contract{
 		Raw:    w.RawBody,
 		Format: w.RawBodyFormat,
 	}
 
-	// We have two ways of storing the contract body, the old way is the Body field which is a binary field of the proto message
-	// and the new way which is the raw_body and raw_body_format fields
-	// Regardless of what's stored, we want to make sure we always return the raw_body field
+	// We have two ways of storing the contract body, the old way is the body column which contains the binary representation of the proto message
+	// and the new way which is the raw_body and raw_body_format pairs
+	// Regardless of what's stored, we want to make sure we always return the contract object that contains the raw and binary representation
 	var err error
 	// Scenario 1: contracts that have been stored (and not updated) before the introduction of the raw_body field will have an empty raw_body
 	// so we will generate a json representation of the contract to populate the raw_body field in that case
 	// that way clients can always expect a raw_body field to be present
-	if len(contractBody.Raw) == 0 {
-		contract := &schemav1.CraftingSchema{}
-		if err := proto.Unmarshal(w.Body, contract); err != nil {
+	if len(contract.Raw) == 0 {
+		schema := &schemav1.CraftingSchema{}
+		if err := proto.Unmarshal(w.Body, schema); err != nil {
 			return nil, err
 		}
 
-		contractBody, err = biz.RawBodyFallback(contract)
+		contract, err = biz.SchemaToRawContract(schema)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate fallback raw body: %w", err)
 		}
 		// Scenario 2: contracts that have been updated after the introduction of the raw_body field will have the raw_body field populated
 		// but we also want to keep the Body field populated for backward compatibility
 	} else if w.Body == nil {
-		contractBody, err = biz.UnMarshalAndValidateRawContract(w.RawBody, w.RawBodyFormat)
+		contract, err = biz.UnMarshalAndValidateRawContract(w.RawBody, w.RawBodyFormat)
 		if err != nil {
 			return nil, fmt.Errorf("failed to unmarshal raw body: %w", err)
 		}
 	}
 
 	return &biz.WorkflowContractVersion{
-		ID: w.ID, CreatedAt: toTimePtr(w.CreatedAt), Revision: w.Revision, Contract: contractBody,
+		ID: w.ID, CreatedAt: toTimePtr(w.CreatedAt), Revision: w.Revision, Schema: contract,
 	}, nil
 }
 

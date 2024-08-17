@@ -47,17 +47,17 @@ type WorkflowContractVersion struct {
 	ID        uuid.UUID
 	Revision  int
 	CreatedAt *time.Time
-	Contract  *ContractBody
+	Schema    *Contract
 }
 
-type ContractBody struct {
+type Contract struct {
 	// Raw representation of the contract in yaml, json, or cue
 	// it maintain the format provided by the user
 	Raw []byte
 	// Detected format as provided by the user
 	Format ContractRawFormat
 	// marhalled proto contract
-	Contract *schemav1.CraftingSchema
+	Schema *schemav1.CraftingSchema
 }
 
 type ContractRawFormat string
@@ -89,13 +89,13 @@ type ContractCreateOpts struct {
 	OrgID       uuid.UUID
 	Description *string
 	// raw representation of the contract in whatever original format it was (json, yaml, ...)
-	Contract *ContractBody
+	Contract *Contract
 }
 
 type ContractUpdateOpts struct {
 	Description *string
 	// raw representation of the contract in whatever original format it was (json, yaml, ...)
-	Contract *ContractBody
+	Contract *Contract
 }
 
 type WorkflowContractUseCase struct {
@@ -149,7 +149,7 @@ type WorkflowContractCreateOpts struct {
 }
 
 // empty contract to be used as a fallback
-var emptyContractYAML = &ContractBody{
+var EmptyDefaultContract = &Contract{
 	Raw: []byte("schemaVersion: v1"), Format: ContractRawFormatYAML,
 }
 
@@ -169,13 +169,13 @@ func (uc *WorkflowContractUseCase) Create(ctx context.Context, opts *WorkflowCon
 	}
 
 	// Create an empty contract by default
-	contract := emptyContractYAML
+	contract := EmptyDefaultContract
 
 	// or load it if provided
 	if len(opts.RawSchema) > 0 {
 		c, err := identifyUnMarshalAndValidateRawContract(opts.RawSchema)
 		if err != nil {
-			return nil, fmt.Errorf("failed to validate contract: %w", err)
+			return nil, fmt.Errorf("failed to load contract: %w", err)
 		}
 
 		contract = c
@@ -278,11 +278,11 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name strin
 		return nil, err
 	}
 
-	var contract *ContractBody
+	var contract *Contract
 	if len(opts.RawSchema) > 0 {
 		c, err := identifyUnMarshalAndValidateRawContract(opts.RawSchema)
 		if err != nil {
-			return nil, fmt.Errorf("failed to validate contract: %w", err)
+			return nil, fmt.Errorf("failed to load contract: %w", err)
 		}
 
 		contract = c
@@ -357,7 +357,7 @@ func (ContractRawFormat) Values() (kinds []string) {
 }
 
 // Take the raw contract + format and will unmarshal the contract and validate it
-func UnMarshalAndValidateRawContract(raw []byte, format ContractRawFormat) (*ContractBody, error) {
+func UnMarshalAndValidateRawContract(raw []byte, format ContractRawFormat) (*Contract, error) {
 	validator, err := protovalidate.New()
 	if err != nil {
 		return nil, fmt.Errorf("could not create validator: %w", err)
@@ -399,14 +399,14 @@ func UnMarshalAndValidateRawContract(raw []byte, format ContractRawFormat) (*Con
 		return nil, NewErrValidation(err)
 	}
 
-	return &ContractBody{Raw: raw, Format: format, Contract: contract}, nil
+	return &Contract{Raw: raw, Format: format, Schema: contract}, nil
 }
 
 // Will try to figure out the format of the raw contract and validate it
-func identifyUnMarshalAndValidateRawContract(raw []byte) (*ContractBody, error) {
+func identifyUnMarshalAndValidateRawContract(raw []byte) (*Contract, error) {
 	format, err := identifyFormat(raw)
 	if err != nil {
-		return nil, fmt.Errorf("identify contract format: %w", err)
+		return nil, fmt.Errorf("identify contract: %w", err)
 	}
 
 	return UnMarshalAndValidateRawContract(raw, format)
@@ -414,6 +414,8 @@ func identifyUnMarshalAndValidateRawContract(raw []byte) (*ContractBody, error) 
 
 // It does a best effort to identify the format of the raw contract
 // by going the unmashalling path in the following order: json, cue, yaml
+// NOTE that we are just validating the format, not the content using regular marshalling
+// not even proto marshalling, that comes later once we know the format
 func identifyFormat(raw []byte) (ContractRawFormat, error) {
 	// json marshalling first
 	var sink any
@@ -436,13 +438,13 @@ func identifyFormat(raw []byte) (ContractRawFormat, error) {
 	return "", errors.New("format not found")
 }
 
-// fallback value to be used until the value is provided excplitly
-func RawBodyFallback(contract *schemav1.CraftingSchema) (*ContractBody, error) {
+// generate a default representation of a contract
+func SchemaToRawContract(contract *schemav1.CraftingSchema) (*Contract, error) {
 	marshaler := protojson.MarshalOptions{Indent: "  "}
 	r, err := marshaler.Marshal(contract)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal contract: %w", err)
 	}
 
-	return &ContractBody{Raw: r, Format: ContractRawFormatJSON, Contract: contract}, nil
+	return &Contract{Raw: r, Format: ContractRawFormatJSON, Schema: contract}, nil
 }
