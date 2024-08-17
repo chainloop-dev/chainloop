@@ -272,10 +272,15 @@ func (s *workflowRunIntegrationTestSuite) TestContractInformation() {
 	})
 
 	s.Run("if the contract gets a new revision but it's not used, it shows spread", func() {
+		c := &schemav1.CraftingSchema{
+			Runner: &schemav1.CraftingSchema_Runner{Type: schemav1.CraftingSchema_Runner_CIRCLECI_BUILD},
+		}
+
+		rawContract, err := biz.RawBodyFallback(c)
+		require.NoError(s.T(), err)
+
 		updatedContractRevision, err := s.WorkflowContract.Update(ctx, s.org.ID, s.contractVersion.Contract.Name,
-			&biz.WorkflowContractUpdateOpts{Schema: &schemav1.CraftingSchema{
-				Runner: &schemav1.CraftingSchema_Runner{Type: schemav1.CraftingSchema_Runner_CIRCLECI_BUILD},
-			}})
+			&biz.WorkflowContractUpdateOpts{RawSchema: rawContract.Raw})
 		s.NoError(err)
 		// load the previous version of the contract
 		updatedContractRevision.Version = s.contractVersion.Version

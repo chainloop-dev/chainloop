@@ -47,10 +47,13 @@ func (s *workflowIntegrationTestSuite) TestContractLatestAvailable() {
 		contract, err := s.WorkflowContract.FindByIDInOrg(ctx, s.org.ID, workflow.ContractID.String())
 		require.NoError(s.T(), err)
 
-		_, err = s.WorkflowContract.Update(ctx, s.org.ID, contract.Name,
-			&biz.WorkflowContractUpdateOpts{Schema: &v1.CraftingSchema{
-				Runner: &v1.CraftingSchema_Runner{Type: v1.CraftingSchema_Runner_CIRCLECI_BUILD},
-			}})
+		c := &v1.CraftingSchema{
+			Runner: &v1.CraftingSchema_Runner{Type: v1.CraftingSchema_Runner_CIRCLECI_BUILD},
+		}
+		rawSchema, err := biz.RawBodyFallback(c)
+		require.NoError(s.T(), err)
+
+		_, err = s.WorkflowContract.Update(ctx, s.org.ID, contract.Name, &biz.WorkflowContractUpdateOpts{RawSchema: rawSchema.Raw})
 		s.NoError(err)
 
 		workflow, err := s.Workflow.FindByID(ctx, workflow.ID.String())

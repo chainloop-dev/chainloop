@@ -109,6 +109,7 @@ require (
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.11.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/kms v1.30.0 // indirect
+	github.com/bufbuild/protoyaml-go v0.1.11 // indirect
 	github.com/casbin/govaluate v1.1.0 // indirect
 	github.com/cockroachdb/apd/v3 v3.2.1 // indirect
 	github.com/containerd/errdefs v0.1.0 // indirect

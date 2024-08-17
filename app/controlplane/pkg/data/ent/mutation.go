@@ -10489,9 +10489,22 @@ func (m *WorkflowContractVersionMutation) OldBody(ctx context.Context) (v []byte
 	return oldValue.Body, nil
 }
 
+// ClearBody clears the value of the "body" field.
+func (m *WorkflowContractVersionMutation) ClearBody() {
+	m.body = nil
+	m.clearedFields[workflowcontractversion.FieldBody] = struct{}{}
+}
+
+// BodyCleared returns if the "body" field was cleared in this mutation.
+func (m *WorkflowContractVersionMutation) BodyCleared() bool {
+	_, ok := m.clearedFields[workflowcontractversion.FieldBody]
+	return ok
+}
+
 // ResetBody resets all changes to the "body" field.
 func (m *WorkflowContractVersionMutation) ResetBody() {
 	m.body = nil
+	delete(m.clearedFields, workflowcontractversion.FieldBody)
 }
 
 // SetRawBody sets the "raw_body" field.
@@ -10872,7 +10885,11 @@ func (m *WorkflowContractVersionMutation) AddField(name string, value ent.Value)
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *WorkflowContractVersionMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(workflowcontractversion.FieldBody) {
+		fields = append(fields, workflowcontractversion.FieldBody)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -10885,6 +10902,11 @@ func (m *WorkflowContractVersionMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *WorkflowContractVersionMutation) ClearField(name string) error {
+	switch name {
+	case workflowcontractversion.FieldBody:
+		m.ClearBody()
+		return nil
+	}
 	return fmt.Errorf("unknown WorkflowContractVersion nullable field %s", name)
 }
 

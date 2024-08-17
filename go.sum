@@ -272,6 +272,8 @@ github.com/bufbuild/protocompile v0.6.0 h1:Uu7WiSQ6Yj9DbkdnOe7U4mNKp58y9WDMKDn28
 github.com/bufbuild/protocompile v0.6.0/go.mod h1:YNP35qEYoYGme7QMtz5SBCoN4kL4g12jTtjuzRNdjpE=
 github.com/bufbuild/protovalidate-go v0.6.1 h1:uzW8r0CDvqApUChNj87VzZVoQSKhcVdw5UWOE605UIw=
 github.com/bufbuild/protovalidate-go v0.6.1/go.mod h1:4BR3rKEJiUiTy+sqsusFn2ladOf0kYmA2Reo6BHSBgQ=
+github.com/bufbuild/protoyaml-go v0.1.11 h1:Iyixd6Y5dx6ws6Uh8APgC1lMyvXt710NayoY8cY0Vj8=
+github.com/bufbuild/protoyaml-go v0.1.11/go.mod h1:KCBItkvZOK/zwGueLdH1Wx1RLyFn5rCH7YjQrdty2Wc=
 github.com/buildkite/agent/v3 v3.62.0 h1:yvzSjI8Lgifw883I8m9u8/L/Thxt4cLFd5aWPn3gg70=
 github.com/buildkite/agent/v3 v3.62.0/go.mod h1:jN6SokGXrVNNIpI0BGQ+j5aWeI3gin8F+3zwA5Q6gqM=
 github.com/buildkite/go-pipeline v0.3.2 h1:SW4EaXNwfjow7xDRPGgX0Rcx+dPj5C1kV9LKCLjWGtM=

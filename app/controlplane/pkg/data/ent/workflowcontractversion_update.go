@@ -130,6 +130,9 @@ func (wcvu *WorkflowContractVersionUpdate) sqlSave(ctx context.Context) (n int, 
 			}
 		}
 	}
+	if wcvu.mutation.BodyCleared() {
+		_spec.ClearField(workflowcontractversion.FieldBody, field.TypeBytes)
+	}
 	if value, ok := wcvu.mutation.RawBodyFormat(); ok {
 		_spec.SetField(workflowcontractversion.FieldRawBodyFormat, field.TypeEnum, value)
 	}
@@ -312,6 +315,9 @@ func (wcvuo *WorkflowContractVersionUpdateOne) sqlSave(ctx context.Context) (_no
 				ps[i](selector)
 			}
 		}
+	}
+	if wcvuo.mutation.BodyCleared() {
+		_spec.ClearField(workflowcontractversion.FieldBody, field.TypeBytes)
 	}
 	if value, ok := wcvuo.mutation.RawBodyFormat(); ok {
 		_spec.SetField(workflowcontractversion.FieldRawBodyFormat, field.TypeEnum, value)

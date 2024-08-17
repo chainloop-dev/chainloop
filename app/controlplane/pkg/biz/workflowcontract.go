@@ -17,17 +17,20 @@ package biz
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
+	"cuelang.org/go/cue/cuecontext"
 	"github.com/bufbuild/protovalidate-go"
+	"github.com/bufbuild/protoyaml-go"
 	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/policies"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
+	"gopkg.in/yaml.v2"
 )
 
 type WorkflowContract struct {
@@ -44,13 +47,17 @@ type WorkflowContractVersion struct {
 	ID        uuid.UUID
 	Revision  int
 	CreatedAt *time.Time
-	BodyV1    *schemav1.CraftingSchema
-	RawBody   *ContractRawBody
+	Contract  *ContractBody
 }
 
-type ContractRawBody struct {
-	Body   []byte
+type ContractBody struct {
+	// Raw representation of the contract in yaml, json, or cue
+	// it maintain the format provided by the user
+	Raw []byte
+	// Detected format as provided by the user
 	Format ContractRawFormat
+	// marhalled proto contract
+	Contract *schemav1.CraftingSchema
 }
 
 type ContractRawFormat string
@@ -81,18 +88,14 @@ type ContractCreateOpts struct {
 	Name        string
 	OrgID       uuid.UUID
 	Description *string
-	// wire representation of the proto contract, deprecated
-	ContractBody []byte
 	// raw representation of the contract in whatever original format it was (json, yaml, ...)
-	RawBody *ContractRawBody
+	Contract *ContractBody
 }
 
 type ContractUpdateOpts struct {
 	Description *string
-	// wire representation of the proto contract
-	ContractBody []byte
 	// raw representation of the contract in whatever original format it was (json, yaml, ...)
-	RawBody *ContractRawBody
+	Contract *ContractBody
 }
 
 type WorkflowContractUseCase struct {
@@ -139,10 +142,15 @@ func (uc *WorkflowContractUseCase) FindByNameInOrg(ctx context.Context, orgID, n
 
 type WorkflowContractCreateOpts struct {
 	OrgID, Name string
-	Schema      *schemav1.CraftingSchema
+	RawSchema   []byte
 	Description *string
 	// Make sure that the name is unique in the organization
 	AddUniquePrefix bool
+}
+
+// empty contract to be used as a fallback
+var emptyContractYAML = &ContractBody{
+	Raw: []byte("schemaVersion: v1"), Format: ContractRawFormatYAML,
 }
 
 // we currently only support schema v1
@@ -160,36 +168,23 @@ func (uc *WorkflowContractUseCase) Create(ctx context.Context, opts *WorkflowCon
 		return nil, NewErrValidation(err)
 	}
 
-	// If no schema is provided we create an empty one
-	if opts.Schema == nil {
-		opts.Schema = &schemav1.CraftingSchema{
-			SchemaVersion: "v1",
+	// Create an empty contract by default
+	contract := emptyContractYAML
+
+	// or load it if provided
+	if len(opts.RawSchema) > 0 {
+		c, err := identifyUnMarshalAndValidateRawContract(opts.RawSchema)
+		if err != nil {
+			return nil, fmt.Errorf("failed to validate contract: %w", err)
 		}
-	}
 
-	validator, err := protovalidate.New()
-	if err != nil {
-		return nil, fmt.Errorf("could not create validator: %w", err)
-	}
-
-	if err := validator.Validate(opts.Schema); err != nil {
-		return nil, err
-	}
-
-	rawWireSchema, err := proto.Marshal(opts.Schema)
-	if err != nil {
-		return nil, err
-	}
-
-	rawBody, err := RawBodyFallback(opts.Schema)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create raw body: %w", err)
+		contract = c
 	}
 
 	// Create a workflow with a unique name if needed
 	args := &ContractCreateOpts{
 		OrgID: orgUUID, Name: opts.Name, Description: opts.Description,
-		ContractBody: rawWireSchema, RawBody: rawBody,
+		Contract: contract,
 	}
 
 	var c *WorkflowContract
@@ -208,17 +203,6 @@ func (uc *WorkflowContractUseCase) Create(ctx context.Context, opts *WorkflowCon
 	}
 
 	return c, nil
-}
-
-// fallback value to be used until the value is provided excplitly
-func RawBodyFallback(contract *schemav1.CraftingSchema) (*ContractRawBody, error) {
-	marshaler := protojson.MarshalOptions{Indent: "  "}
-	r, err := marshaler.Marshal(contract)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal contract: %w", err)
-	}
-
-	return &ContractRawBody{Body: r, Format: ContractRawFormatJSON}, nil
 }
 
 func (uc *WorkflowContractUseCase) createWithUniqueName(ctx context.Context, opts *ContractCreateOpts) (*WorkflowContract, error) {
@@ -280,7 +264,7 @@ func (uc *WorkflowContractUseCase) FindVersionByID(ctx context.Context, versionI
 }
 
 type WorkflowContractUpdateOpts struct {
-	Schema      *schemav1.CraftingSchema
+	RawSchema   []byte
 	Description *string
 }
 
@@ -294,18 +278,17 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name strin
 		return nil, err
 	}
 
-	rawSchema, err := proto.Marshal(opts.Schema)
-	if err != nil {
-		return nil, err
+	var contract *ContractBody
+	if len(opts.RawSchema) > 0 {
+		c, err := identifyUnMarshalAndValidateRawContract(opts.RawSchema)
+		if err != nil {
+			return nil, fmt.Errorf("failed to validate contract: %w", err)
+		}
+
+		contract = c
 	}
 
-	// TODO: this will removed once we parse the raw schema from the API
-	rawBody, err := RawBodyFallback(opts.Schema)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create raw body: %w", err)
-	}
-
-	args := &ContractUpdateOpts{ContractBody: rawSchema, Description: opts.Description, RawBody: rawBody}
+	args := &ContractUpdateOpts{Description: opts.Description, Contract: contract}
 	c, err := uc.repo.Update(ctx, orgUUID, name, args)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update contract: %w", err)
@@ -371,4 +354,94 @@ func (ContractRawFormat) Values() (kinds []string) {
 		kinds = append(kinds, string(s))
 	}
 	return
+}
+
+// Take the raw contract + format and will unmarshal the contract and validate it
+func UnMarshalAndValidateRawContract(raw []byte, format ContractRawFormat) (*ContractBody, error) {
+	validator, err := protovalidate.New()
+	if err != nil {
+		return nil, fmt.Errorf("could not create validator: %w", err)
+	}
+
+	contract := &schemav1.CraftingSchema{}
+
+	switch format {
+	case ContractRawFormatJSON:
+		if err := protojson.Unmarshal(raw, contract); err != nil {
+			return nil, NewErrValidation(err)
+		}
+	case ContractRawFormatCUE:
+		ctx := cuecontext.New()
+		v := ctx.CompileBytes(raw)
+		if jsonRawData, err := v.MarshalJSON(); err != nil {
+			return nil, NewErrValidation(err)
+		} else {
+			if err := protojson.Unmarshal(jsonRawData, contract); err != nil {
+				return nil, NewErrValidation(err)
+			}
+		}
+	case ContractRawFormatYAML:
+		// protoyaml allows validating the contract while unmarshalling
+		yamlOpts := protoyaml.UnmarshalOptions{Validator: validator}
+		if err := yamlOpts.Unmarshal(raw, contract); err != nil {
+			return nil, NewErrValidation(err)
+		}
+	}
+
+	// Additional proto validations
+	if err := validator.Validate(contract); err != nil {
+		return nil, NewErrValidation(err)
+	}
+
+	// Custom Validations
+	if err := contract.ValidateUniqueMaterialName(); err != nil {
+		return nil, NewErrValidation(err)
+	}
+
+	return &ContractBody{Raw: raw, Format: format, Contract: contract}, nil
+}
+
+// Will try to figure out the format of the raw contract and validate it
+func identifyUnMarshalAndValidateRawContract(raw []byte) (*ContractBody, error) {
+	format, err := identifyFormat(raw)
+	if err != nil {
+		return nil, fmt.Errorf("identify contract format: %w", err)
+	}
+
+	return UnMarshalAndValidateRawContract(raw, format)
+}
+
+// It does a best effort to identify the format of the raw contract
+// by going the unmashalling path in the following order: json, cue, yaml
+func identifyFormat(raw []byte) (ContractRawFormat, error) {
+	// json marshalling first
+	var sink any
+	if err := json.Unmarshal(raw, &sink); err == nil {
+		return ContractRawFormatJSON, nil
+	}
+
+	// cue marshalling next
+	ctx := cuecontext.New()
+	v := ctx.CompileBytes(raw)
+	if _, err := v.MarshalJSON(); err == nil {
+		return ContractRawFormatCUE, nil
+	}
+
+	// yaml marshalling last
+	if err := yaml.Unmarshal(raw, &sink); err == nil {
+		return ContractRawFormatYAML, nil
+	}
+
+	return "", errors.New("format not found")
+}
+
+// fallback value to be used until the value is provided excplitly
+func RawBodyFallback(contract *schemav1.CraftingSchema) (*ContractBody, error) {
+	marshaler := protojson.MarshalOptions{Indent: "  "}
+	r, err := marshaler.Marshal(contract)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal contract: %w", err)
+	}
+
+	return &ContractBody{Raw: r, Format: ContractRawFormatJSON, Contract: contract}, nil
 }

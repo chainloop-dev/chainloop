@@ -30,6 +30,10 @@ import (
 func (s *workflowContractIntegrationTestSuite) TestUpdate() {
 	ctx := context.Background()
 
+	updatedSchema := &schemav1.CraftingSchema{SchemaVersion: "v1", Runner: &schemav1.CraftingSchema_Runner{Type: schemav1.CraftingSchema_Runner_AZURE_PIPELINE}}
+	updateSchemaRawFormat, err := biz.RawBodyFallback(updatedSchema)
+	require.NoError(s.T(), err)
+
 	testCases := []struct {
 		name                string
 		orgID, contractName string
@@ -54,14 +58,14 @@ func (s *workflowContractIntegrationTestSuite) TestUpdate() {
 			name:         "updating schema bumps revision",
 			orgID:        s.org.ID,
 			contractName: s.contractOrg1.Name,
-			input:        &biz.WorkflowContractUpdateOpts{Schema: &schemav1.CraftingSchema{SchemaVersion: "v123"}},
+			input:        &biz.WorkflowContractUpdateOpts{RawSchema: updateSchemaRawFormat.Raw},
 			wantRevision: 2,
 		},
 		{
 			name:         "updating with same schema DOES NOT bump revision",
 			orgID:        s.org.ID,
 			contractName: s.contractOrg1.Name,
-			input:        &biz.WorkflowContractUpdateOpts{Schema: &schemav1.CraftingSchema{SchemaVersion: "v123"}},
+			input:        &biz.WorkflowContractUpdateOpts{RawSchema: updateSchemaRawFormat.Raw},
 			wantRevision: 2,
 		},
 		{

@@ -117,6 +117,16 @@ func BodyLTE(v []byte) predicate.WorkflowContractVersion {
 	return predicate.WorkflowContractVersion(sql.FieldLTE(FieldBody, v))
 }
 
+// BodyIsNil applies the IsNil predicate on the "body" field.
+func BodyIsNil() predicate.WorkflowContractVersion {
+	return predicate.WorkflowContractVersion(sql.FieldIsNull(FieldBody))
+}
+
+// BodyNotNil applies the NotNil predicate on the "body" field.
+func BodyNotNil() predicate.WorkflowContractVersion {
+	return predicate.WorkflowContractVersion(sql.FieldNotNull(FieldBody))
+}
+
 // RawBodyEQ applies the EQ predicate on the "raw_body" field.
 func RawBodyEQ(v []byte) predicate.WorkflowContractVersion {
 	return predicate.WorkflowContractVersion(sql.FieldEQ(FieldRawBody, v))

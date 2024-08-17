@@ -45,10 +45,9 @@ message WorkflowContractServiceCreateRequest {
       id: "name.dns-1123",
     },
   }];
-  // Ready to support multiple schema versions
-  oneof contract {
-    workflowcontract.v1.CraftingSchema v1 = 2;
-  }
+
+  // Raw representation of the contract in json, yaml or cue
+  bytes raw_contract = 4;
 
   optional string description = 3;
 }
@@ -66,9 +65,8 @@ message WorkflowContractServiceUpdateRequest {
     },
   }];
 
-  oneof contract {
-    workflowcontract.v1.CraftingSchema v1 = 3;
-  }
+  // Raw representation of the contract in json, yaml or cue
+  bytes raw_contract = 5;
 
   optional string description = 4;
 }

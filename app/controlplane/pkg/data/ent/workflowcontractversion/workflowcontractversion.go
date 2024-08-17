@@ -72,8 +72,6 @@ func ValidColumn(column string) bool {
 }
 
 var (
-	// BodyValidator is a validator for the "body" field. It is called by the builders before save.
-	BodyValidator func([]byte) error
 	// RawBodyValidator is a validator for the "raw_body" field. It is called by the builders before save.
 	RawBodyValidator func([]byte) error
 	// DefaultRevision holds the default value on creation for the "revision" field.

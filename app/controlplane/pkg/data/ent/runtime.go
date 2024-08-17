@@ -192,10 +192,6 @@ func init() {
 	workflowcontract.DefaultID = workflowcontractDescID.Default.(func() uuid.UUID)
 	workflowcontractversionFields := schema.WorkflowContractVersion{}.Fields()
 	_ = workflowcontractversionFields
-	// workflowcontractversionDescBody is the schema descriptor for body field.
-	workflowcontractversionDescBody := workflowcontractversionFields[1].Descriptor()
-	// workflowcontractversion.BodyValidator is a validator for the "body" field. It is called by the builders before save.
-	workflowcontractversion.BodyValidator = workflowcontractversionDescBody.Validators[0].(func([]byte) error)
 	// workflowcontractversionDescRawBody is the schema descriptor for raw_body field.
 	workflowcontractversionDescRawBody := workflowcontractversionFields[2].Descriptor()
 	// workflowcontractversion.RawBodyValidator is a validator for the "raw_body" field. It is called by the builders before save.

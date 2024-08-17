@@ -408,7 +408,7 @@ var (
 	// WorkflowContractVersionsColumns holds the columns for the "workflow_contract_versions" table.
 	WorkflowContractVersionsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "body", Type: field.TypeBytes},
+		{Name: "body", Type: field.TypeBytes, Nullable: true},
 		{Name: "raw_body", Type: field.TypeBytes},
 		{Name: "raw_body_format", Type: field.TypeEnum, Enums: []string{"json", "yaml", "cue"}},
 		{Name: "revision", Type: field.TypeInt, Default: 1},

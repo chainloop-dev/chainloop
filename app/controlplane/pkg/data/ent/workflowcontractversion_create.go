@@ -153,14 +153,6 @@ func (wcvc *WorkflowContractVersionCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (wcvc *WorkflowContractVersionCreate) check() error {
-	if _, ok := wcvc.mutation.Body(); !ok {
-		return &ValidationError{Name: "body", err: errors.New(`ent: missing required field "WorkflowContractVersion.body"`)}
-	}
-	if v, ok := wcvc.mutation.Body(); ok {
-		if err := workflowcontractversion.BodyValidator(v); err != nil {
-			return &ValidationError{Name: "body", err: fmt.Errorf(`ent: validator failed for field "WorkflowContractVersion.body": %w`, err)}
-		}
-	}
 	if _, ok := wcvc.mutation.RawBody(); !ok {
 		return &ValidationError{Name: "raw_body", err: errors.New(`ent: missing required field "WorkflowContractVersion.raw_body"`)}
 	}

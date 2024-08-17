@@ -92,9 +92,8 @@ func (r *WorkflowContractRepo) Create(ctx context.Context, opts *biz.ContractCre
 
 	// Add version
 	version, err := tx.WorkflowContractVersion.Create().
-		SetBody(opts.ContractBody).
-		SetRawBody(opts.RawBody.Body).
-		SetRawBodyFormat(opts.RawBody.Format).
+		SetRawBody(opts.Contract.Raw).
+		SetRawBodyFormat(opts.Contract.Format).
 		SetContract(contract).Save(ctx)
 	if err != nil {
 		return nil, rollback(tx, err)
@@ -192,12 +191,11 @@ func (r *WorkflowContractRepo) Update(ctx context.Context, orgID uuid.UUID, name
 	}
 
 	// Create a revision only if we are providing a new contract and it has changed
-	if opts.ContractBody != nil && !bytes.Equal(lv.Body, opts.ContractBody) {
+	if opts.Contract != nil && !bytes.Equal(lv.RawBody, opts.Contract.Raw) {
 		// TODO: Add pessimist locking to make sure we are incrementing the latest revision
 		lv, err = tx.WorkflowContractVersion.Create().
-			SetBody(opts.ContractBody).
-			SetRawBody(opts.RawBody.Body).
-			SetRawBodyFormat(opts.RawBody.Format).
+			SetRawBody(opts.Contract.Raw).
+			SetRawBodyFormat(opts.Contract.Format).
 			SetContract(contract).
 			SetRevision(lv.Revision + 1).
 			Save(ctx)
@@ -279,31 +277,39 @@ func (r *WorkflowContractRepo) SoftDelete(ctx context.Context, id uuid.UUID) err
 }
 
 func entContractVersionToBizContractVersion(w *ent.WorkflowContractVersion) (*biz.WorkflowContractVersion, error) {
-	contract := &schemav1.CraftingSchema{}
-	// DEPRECATED in favor of raw_body
-	err := proto.Unmarshal(w.Body, contract)
-	if err != nil {
-		return nil, err
-	}
-
-	rawBody := &biz.ContractRawBody{
-		Body:   w.RawBody,
+	contractBody := &biz.ContractBody{
+		Raw:    w.RawBody,
 		Format: w.RawBodyFormat,
 	}
 
-	// contracts that have been stored (and not updated) before the introduction of the raw_body field will have an empty raw_body
+	// We have two ways of storing the contract body, the old way is the Body field which is a binary field of the proto message
+	// and the new way which is the raw_body and raw_body_format fields
+	// Regardless of what's stored, we want to make sure we always return the raw_body field
+	var err error
+	// Scenario 1: contracts that have been stored (and not updated) before the introduction of the raw_body field will have an empty raw_body
 	// so we will generate a json representation of the contract to populate the raw_body field in that case
 	// that way clients can always expect a raw_body field to be present
-	if len(rawBody.Body) == 0 {
-		var err error
-		rawBody, err = biz.RawBodyFallback(contract)
+	if len(contractBody.Raw) == 0 {
+		contract := &schemav1.CraftingSchema{}
+		if err := proto.Unmarshal(w.Body, contract); err != nil {
+			return nil, err
+		}
+
+		contractBody, err = biz.RawBodyFallback(contract)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate fallback raw body: %w", err)
+		}
+		// Scenario 2: contracts that have been updated after the introduction of the raw_body field will have the raw_body field populated
+		// but we also want to keep the Body field populated for backward compatibility
+	} else if w.Body == nil {
+		contractBody, err = biz.UnMarshalAndValidateRawContract(w.RawBody, w.RawBodyFormat)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal raw body: %w", err)
 		}
 	}
 
 	return &biz.WorkflowContractVersion{
-		ID: w.ID, CreatedAt: toTimePtr(w.CreatedAt), Revision: w.Revision, BodyV1: contract, RawBody: rawBody,
+		ID: w.ID, CreatedAt: toTimePtr(w.CreatedAt), Revision: w.Revision, Contract: contractBody,
 	}, nil
 }
 

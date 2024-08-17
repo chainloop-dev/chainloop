@@ -37,8 +37,8 @@ func (WorkflowContractVersion) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),
 		// binary representation of the contract proto message
-		// deprecated in favor of the raw_body field
-		field.Bytes("body").NotEmpty().Immutable(),
+		// DEPRECATED in favor of the raw_body field
+		field.Bytes("body").Immutable().Optional(),
 		// raw_body is the raw representation of the contract in whatever original format it was (json, yaml, ...)
 		// it supersedes the body field
 		field.Bytes("raw_body").NotEmpty().Immutable(),
