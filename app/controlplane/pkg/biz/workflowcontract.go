@@ -373,12 +373,13 @@ func UnMarshalAndValidateRawContract(raw []byte, format ContractRawFormat) (*Con
 	case ContractRawFormatCUE:
 		ctx := cuecontext.New()
 		v := ctx.CompileBytes(raw)
-		if jsonRawData, err := v.MarshalJSON(); err != nil {
+		jsonRawData, err := v.MarshalJSON()
+		if err != nil {
 			return nil, NewErrValidation(err)
-		} else {
-			if err := protojson.Unmarshal(jsonRawData, contract); err != nil {
-				return nil, NewErrValidation(err)
-			}
+		}
+
+		if err := protojson.Unmarshal(jsonRawData, contract); err != nil {
+			return nil, NewErrValidation(err)
 		}
 	case ContractRawFormatYAML:
 		// protoyaml allows validating the contract while unmarshalling

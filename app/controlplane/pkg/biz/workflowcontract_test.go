@@ -129,5 +129,4 @@ func TestIdentifyFormat(t *testing.T) {
 			assert.Equal(t, tt.wantFormat, format)
 		})
 	}
-
 }
