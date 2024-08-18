@@ -148,7 +148,7 @@ type WorkflowContractCreateOpts struct {
 	AddUniquePrefix bool
 }
 
-// empty contract to be used as a fallback
+// EmptyDefaultContract is the default contract that will be created if no contract is provided
 var EmptyDefaultContract = &Contract{
 	Raw: []byte("schemaVersion: v1"), Format: ContractRawFormatYAML,
 }
@@ -209,7 +209,7 @@ func (uc *WorkflowContractUseCase) createWithUniqueName(ctx context.Context, opt
 	originalName := opts.Name
 
 	for i := 0; i < RandomNameMaxTries; i++ {
-		// append a suffix
+		// append a suffiEmptyDefaultContractx
 		if i > 0 {
 			var err error
 			opts.Name, err = generateValidDNS1123WithSuffix(originalName)
