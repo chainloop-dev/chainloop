@@ -3626,6 +3626,42 @@ func (m *IntegrationAttachmentMutation) ResetDeletedAt() {
 	delete(m.clearedFields, integrationattachment.FieldDeletedAt)
 }
 
+// SetWorkflowID sets the "workflow_id" field.
+func (m *IntegrationAttachmentMutation) SetWorkflowID(u uuid.UUID) {
+	m.workflow = &u
+}
+
+// WorkflowID returns the value of the "workflow_id" field in the mutation.
+func (m *IntegrationAttachmentMutation) WorkflowID() (r uuid.UUID, exists bool) {
+	v := m.workflow
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldWorkflowID returns the old "workflow_id" field's value of the IntegrationAttachment entity.
+// If the IntegrationAttachment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *IntegrationAttachmentMutation) OldWorkflowID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldWorkflowID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldWorkflowID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldWorkflowID: %w", err)
+	}
+	return oldValue.WorkflowID, nil
+}
+
+// ResetWorkflowID resets all changes to the "workflow_id" field.
+func (m *IntegrationAttachmentMutation) ResetWorkflowID() {
+	m.workflow = nil
+}
+
 // SetIntegrationID sets the "integration" edge to the Integration entity by id.
 func (m *IntegrationAttachmentMutation) SetIntegrationID(id uuid.UUID) {
 	m.integration = &id
@@ -3665,27 +3701,15 @@ func (m *IntegrationAttachmentMutation) ResetIntegration() {
 	m.clearedintegration = false
 }
 
-// SetWorkflowID sets the "workflow" edge to the Workflow entity by id.
-func (m *IntegrationAttachmentMutation) SetWorkflowID(id uuid.UUID) {
-	m.workflow = &id
-}
-
 // ClearWorkflow clears the "workflow" edge to the Workflow entity.
 func (m *IntegrationAttachmentMutation) ClearWorkflow() {
 	m.clearedworkflow = true
+	m.clearedFields[integrationattachment.FieldWorkflowID] = struct{}{}
 }
 
 // WorkflowCleared reports if the "workflow" edge to the Workflow entity was cleared.
 func (m *IntegrationAttachmentMutation) WorkflowCleared() bool {
 	return m.clearedworkflow
-}
-
-// WorkflowID returns the "workflow" edge ID in the mutation.
-func (m *IntegrationAttachmentMutation) WorkflowID() (id uuid.UUID, exists bool) {
-	if m.workflow != nil {
-		return *m.workflow, true
-	}
-	return
 }
 
 // WorkflowIDs returns the "workflow" edge IDs in the mutation.
@@ -3738,7 +3762,7 @@ func (m *IntegrationAttachmentMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *IntegrationAttachmentMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 4)
 	if m.created_at != nil {
 		fields = append(fields, integrationattachment.FieldCreatedAt)
 	}
@@ -3747,6 +3771,9 @@ func (m *IntegrationAttachmentMutation) Fields() []string {
 	}
 	if m.deleted_at != nil {
 		fields = append(fields, integrationattachment.FieldDeletedAt)
+	}
+	if m.workflow != nil {
+		fields = append(fields, integrationattachment.FieldWorkflowID)
 	}
 	return fields
 }
@@ -3762,6 +3789,8 @@ func (m *IntegrationAttachmentMutation) Field(name string) (ent.Value, bool) {
 		return m.Configuration()
 	case integrationattachment.FieldDeletedAt:
 		return m.DeletedAt()
+	case integrationattachment.FieldWorkflowID:
+		return m.WorkflowID()
 	}
 	return nil, false
 }
@@ -3777,6 +3806,8 @@ func (m *IntegrationAttachmentMutation) OldField(ctx context.Context, name strin
 		return m.OldConfiguration(ctx)
 	case integrationattachment.FieldDeletedAt:
 		return m.OldDeletedAt(ctx)
+	case integrationattachment.FieldWorkflowID:
+		return m.OldWorkflowID(ctx)
 	}
 	return nil, fmt.Errorf("unknown IntegrationAttachment field %s", name)
 }
@@ -3806,6 +3837,13 @@ func (m *IntegrationAttachmentMutation) SetField(name string, value ent.Value) e
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDeletedAt(v)
+		return nil
+	case integrationattachment.FieldWorkflowID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetWorkflowID(v)
 		return nil
 	}
 	return fmt.Errorf("unknown IntegrationAttachment field %s", name)
@@ -3879,6 +3917,9 @@ func (m *IntegrationAttachmentMutation) ResetField(name string) error {
 		return nil
 	case integrationattachment.FieldDeletedAt:
 		m.ResetDeletedAt()
+		return nil
+	case integrationattachment.FieldWorkflowID:
+		m.ResetWorkflowID()
 		return nil
 	}
 	return fmt.Errorf("unknown IntegrationAttachment field %s", name)

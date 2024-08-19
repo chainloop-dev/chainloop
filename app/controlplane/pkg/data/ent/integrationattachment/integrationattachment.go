@@ -21,6 +21,8 @@ const (
 	FieldConfiguration = "configuration"
 	// FieldDeletedAt holds the string denoting the deleted_at field in the database.
 	FieldDeletedAt = "deleted_at"
+	// FieldWorkflowID holds the string denoting the workflow_id field in the database.
+	FieldWorkflowID = "workflow_id"
 	// EdgeIntegration holds the string denoting the integration edge name in mutations.
 	EdgeIntegration = "integration"
 	// EdgeWorkflow holds the string denoting the workflow edge name in mutations.
@@ -40,7 +42,7 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "workflow" package.
 	WorkflowInverseTable = "workflows"
 	// WorkflowColumn is the table column denoting the workflow relation/edge.
-	WorkflowColumn = "integration_attachment_workflow"
+	WorkflowColumn = "workflow_id"
 )
 
 // Columns holds all SQL columns for integrationattachment fields.
@@ -49,13 +51,13 @@ var Columns = []string{
 	FieldCreatedAt,
 	FieldConfiguration,
 	FieldDeletedAt,
+	FieldWorkflowID,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "integration_attachments"
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"integration_attachment_integration",
-	"integration_attachment_workflow",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -96,6 +98,11 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByDeletedAt orders the results by the deleted_at field.
 func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDeletedAt, opts...).ToFunc()
+}
+
+// ByWorkflowID orders the results by the workflow_id field.
+func ByWorkflowID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldWorkflowID, opts...).ToFunc()
 }
 
 // ByIntegrationField orders the results by integration field.
