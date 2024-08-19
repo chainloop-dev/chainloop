@@ -357,7 +357,11 @@ func (ContractRawFormat) Values() (kinds []string) {
 }
 
 // Take the raw contract + format and will unmarshal the contract and validate it
-func UnMarshalAndValidateRawContract(raw []byte, format ContractRawFormat) (*Contract, error) {
+func UnmarshalAndValidateRawContract(raw []byte, format ContractRawFormat) (*Contract, error) {
+	if format == "" {
+		return nil, errors.New("format not provided")
+	}
+
 	validator, err := protovalidate.New()
 	if err != nil {
 		return nil, fmt.Errorf("could not create validator: %w", err)
@@ -409,7 +413,7 @@ func identifyUnMarshalAndValidateRawContract(raw []byte) (*Contract, error) {
 		return nil, fmt.Errorf("identify contract: %w", err)
 	}
 
-	return UnMarshalAndValidateRawContract(raw, format)
+	return UnmarshalAndValidateRawContract(raw, format)
 }
 
 // It does a best effort to identify the format of the raw contract

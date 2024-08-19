@@ -301,8 +301,8 @@ func entContractVersionToBizContractVersion(w *ent.WorkflowContractVersion) (*bi
 		}
 		// Scenario 2: contracts that have been updated after the introduction of the raw_body field will have the raw_body field populated
 		// but we also want to keep the Body field populated for backward compatibility
-	} else if w.Body == nil {
-		contract, err = biz.UnMarshalAndValidateRawContract(w.RawBody, w.RawBodyFormat)
+	} else if len(w.Body) == 0 {
+		contract, err = biz.UnmarshalAndValidateRawContract(w.RawBody, w.RawBodyFormat)
 		if err != nil {
 			return nil, fmt.Errorf("failed to unmarshal raw body: %w", err)
 		}
