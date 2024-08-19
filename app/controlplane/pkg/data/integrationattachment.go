@@ -49,16 +49,16 @@ func (r *IntegrationAttachmentRepo) Create(ctx context.Context, integrationID, w
 		return nil, err
 	}
 
-	res := entIntegrationAttachmentToBiz(ia)
+	res := entIntegrationAndAttachmentToBiz(ia)
 	if res != nil {
 		res.IntegrationID = integrationID
 		res.WorkflowID = workflowID
 	}
 
-	return res, nil
+	return res.IntegrationAttachment, nil
 }
 
-func (r *IntegrationAttachmentRepo) List(ctx context.Context, orgID, workflowID uuid.UUID) ([]*biz.IntegrationAttachment, error) {
+func (r *IntegrationAttachmentRepo) List(ctx context.Context, orgID, workflowID uuid.UUID) ([]*biz.IntegrationAndAttachment, error) {
 	wfQuery := orgScopedQuery(r.data.DB, orgID).QueryWorkflows()
 	if workflowID != uuid.Nil {
 		wfQuery = wfQuery.Where(workflow.ID(workflowID))
@@ -72,9 +72,9 @@ func (r *IntegrationAttachmentRepo) List(ctx context.Context, orgID, workflowID 
 		return nil, err
 	}
 
-	result := make([]*biz.IntegrationAttachment, 0, len(res))
+	result := make([]*biz.IntegrationAndAttachment, 0, len(res))
 	for _, r := range res {
-		result = append(result, entIntegrationAttachmentToBiz(r))
+		result = append(result, entIntegrationAndAttachmentToBiz(r))
 	}
 
 	return result, nil
@@ -93,28 +93,39 @@ func (r *IntegrationAttachmentRepo) FindByIDInOrg(ctx context.Context, orgID, id
 		return nil, nil
 	}
 
-	return entIntegrationAttachmentToBiz(integration), nil
+	return entIntegrationAndAttachmentToBiz(integration).IntegrationAttachment, nil
 }
 
 func (r *IntegrationAttachmentRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
 	return r.data.DB.IntegrationAttachment.UpdateOneID(id).SetDeletedAt(time.Now()).Exec(ctx)
 }
 
-func entIntegrationAttachmentToBiz(i *ent.IntegrationAttachment) *biz.IntegrationAttachment {
+func entIntegrationAndAttachmentToBiz(i *ent.IntegrationAttachment) *biz.IntegrationAndAttachment {
 	if i == nil {
 		return nil
 	}
 
-	r := &biz.IntegrationAttachment{ID: i.ID,
-		CreatedAt: toTimePtr(i.CreatedAt), Config: i.Configuration,
-	}
-
-	if i.Edges.Workflow != nil {
-		r.WorkflowID = i.Edges.Workflow.ID
+	r := &biz.IntegrationAndAttachment{
+		IntegrationAttachment: &biz.IntegrationAttachment{
+			ID:         i.ID,
+			CreatedAt:  toTimePtr(i.CreatedAt),
+			Config:     i.Configuration,
+			WorkflowID: i.WorkflowID,
+		},
 	}
 
 	if i.Edges.Integration != nil {
 		r.IntegrationID = i.Edges.Integration.ID
+
+		r.Integration = &biz.Integration{
+			ID:          i.Edges.Integration.ID,
+			Kind:        i.Edges.Integration.Kind,
+			Name:        i.Edges.Integration.Name,
+			Description: i.Edges.Integration.Description,
+			Config:      i.Edges.Integration.Configuration,
+			SecretName:  i.Edges.Integration.SecretName,
+			CreatedAt:   toTimePtr(i.Edges.Integration.CreatedAt),
+		}
 	}
 
 	return r

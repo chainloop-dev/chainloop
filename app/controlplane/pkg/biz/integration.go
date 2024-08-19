@@ -77,7 +77,7 @@ type IntegrationRepo interface {
 
 type IntegrationAttachmentRepo interface {
 	Create(ctx context.Context, integrationID, workflowID uuid.UUID, config []byte) (*IntegrationAttachment, error)
-	List(ctx context.Context, orgID, workflowID uuid.UUID) ([]*IntegrationAttachment, error)
+	List(ctx context.Context, orgID, workflowID uuid.UUID) ([]*IntegrationAndAttachment, error)
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*IntegrationAttachment, error)
 	SoftDelete(ctx context.Context, ID uuid.UUID) error
 }
@@ -314,7 +314,7 @@ func (uc *IntegrationUseCase) Delete(ctx context.Context, orgID, integrationID s
 }
 
 // List attachments returns the list of attachments for a given organization and optionally workflow
-func (uc *IntegrationUseCase) ListAttachments(ctx context.Context, orgID, workflowID string) ([]*IntegrationAttachment, error) {
+func (uc *IntegrationUseCase) ListAttachments(ctx context.Context, orgID, workflowID string) ([]*IntegrationAndAttachment, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
