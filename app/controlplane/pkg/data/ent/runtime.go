@@ -192,16 +192,16 @@ func init() {
 	workflowcontract.DefaultID = workflowcontractDescID.Default.(func() uuid.UUID)
 	workflowcontractversionFields := schema.WorkflowContractVersion{}.Fields()
 	_ = workflowcontractversionFields
-	// workflowcontractversionDescBody is the schema descriptor for body field.
-	workflowcontractversionDescBody := workflowcontractversionFields[1].Descriptor()
-	// workflowcontractversion.BodyValidator is a validator for the "body" field. It is called by the builders before save.
-	workflowcontractversion.BodyValidator = workflowcontractversionDescBody.Validators[0].(func([]byte) error)
+	// workflowcontractversionDescRawBody is the schema descriptor for raw_body field.
+	workflowcontractversionDescRawBody := workflowcontractversionFields[2].Descriptor()
+	// workflowcontractversion.RawBodyValidator is a validator for the "raw_body" field. It is called by the builders before save.
+	workflowcontractversion.RawBodyValidator = workflowcontractversionDescRawBody.Validators[0].(func([]byte) error)
 	// workflowcontractversionDescRevision is the schema descriptor for revision field.
-	workflowcontractversionDescRevision := workflowcontractversionFields[2].Descriptor()
+	workflowcontractversionDescRevision := workflowcontractversionFields[4].Descriptor()
 	// workflowcontractversion.DefaultRevision holds the default value on creation for the revision field.
 	workflowcontractversion.DefaultRevision = workflowcontractversionDescRevision.Default.(int)
 	// workflowcontractversionDescCreatedAt is the schema descriptor for created_at field.
-	workflowcontractversionDescCreatedAt := workflowcontractversionFields[3].Descriptor()
+	workflowcontractversionDescCreatedAt := workflowcontractversionFields[5].Descriptor()
 	// workflowcontractversion.DefaultCreatedAt holds the default value on creation for the created_at field.
 	workflowcontractversion.DefaultCreatedAt = workflowcontractversionDescCreatedAt.Default.(func() time.Time)
 	// workflowcontractversionDescID is the schema descriptor for id field.

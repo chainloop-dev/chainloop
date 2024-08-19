@@ -37,6 +37,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -98,7 +99,7 @@ func (s *crafterSuite) TestInit() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			contract, err := crafter.LoadSchema(tc.contractPath)
+			contract, err := loadSchema(tc.contractPath)
 			require.NoError(s.T(), err)
 
 			runner := crafter.NewRunner(contract.GetRunner().GetType())
@@ -166,7 +167,7 @@ func newInitializedCrafter(t *testing.T, contractPath string, wfMeta *v1.Workflo
 	statePath := fmt.Sprintf("%s/attestation.json", t.TempDir())
 	c, err := crafter.NewCrafter(testingStateManager(t, statePath), nil, opts...)
 	require.NoError(t, err)
-	contract, err := crafter.LoadSchema(contractPath)
+	contract, err := loadSchema(contractPath)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +225,7 @@ func (s *crafterSuite) TestLoadSchema() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			got, err := crafter.LoadSchema(tc.contractPath)
+			got, err := loadSchema(tc.contractPath)
 			if tc.wantErr {
 				s.Error(err)
 				return
@@ -532,4 +533,24 @@ func (s *crafterSuite) TestAddMaterialsAutomatic() {
 			}
 		})
 	}
+}
+
+func loadSchema(path string) (*schemaapi.CraftingSchema, error) {
+	// Extract json formatted data
+	content, err := os.ReadFile(filepath.Clean(path))
+	if err != nil {
+		return nil, err
+	}
+
+	jsonSchemaRaw, err := materials.LoadJSONBytes(content, filepath.Ext(path))
+	if err != nil {
+		return nil, err
+	}
+
+	schema := &schemaapi.CraftingSchema{}
+	if err := protojson.Unmarshal(jsonSchemaRaw, schema); err != nil {
+		return nil, err
+	}
+
+	return schema, nil
 }

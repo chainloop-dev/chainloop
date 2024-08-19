@@ -95,7 +95,7 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 	schema, err := s.contractUseCase.Create(ctx, &biz.WorkflowContractCreateOpts{
 		OrgID: currentOrg.ID,
 		Name:  req.Name, Description: req.Description,
-		Schema: req.GetV1()})
+		RawSchema: req.RawContract})
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -111,8 +111,8 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 
 	schemaWithVersion, err := s.contractUseCase.Update(ctx, currentOrg.ID, req.Name,
 		&biz.WorkflowContractUpdateOpts{
-			Schema:      req.GetV1(),
 			Description: req.Description,
+			RawSchema:   req.RawContract,
 		})
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
@@ -158,12 +158,29 @@ func bizWorkFlowContractToPb(schema *biz.WorkflowContract) *pb.WorkflowContractI
 }
 
 func bizWorkFlowContractVersionToPb(schema *biz.WorkflowContractVersion) *pb.WorkflowContractVersionItem {
+	formatTranslator := func(biz.ContractRawFormat) pb.WorkflowContractVersionItem_RawBody_Format {
+		switch schema.Schema.Format {
+		case biz.ContractRawFormatJSON:
+			return pb.WorkflowContractVersionItem_RawBody_FORMAT_JSON
+		case biz.ContractRawFormatYAML:
+			return pb.WorkflowContractVersionItem_RawBody_FORMAT_YAML
+		case biz.ContractRawFormatCUE:
+			return pb.WorkflowContractVersionItem_RawBody_FORMAT_CUE
+		}
+
+		return pb.WorkflowContractVersionItem_RawBody_FORMAT_UNSPECIFIED
+	}
+
 	return &pb.WorkflowContractVersionItem{
 		Id:        schema.ID.String(),
 		CreatedAt: timestamppb.New(*schema.CreatedAt),
 		Revision:  int32(schema.Revision),
 		Contract: &pb.WorkflowContractVersionItem_V1{
-			V1: schema.BodyV1,
+			V1: schema.Schema.Schema,
+		},
+		RawContract: &pb.WorkflowContractVersionItem_RawBody{
+			Body:   schema.Schema.Raw,
+			Format: formatTranslator(schema.Schema.Format),
 		},
 	}
 }

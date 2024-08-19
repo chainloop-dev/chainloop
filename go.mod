@@ -69,6 +69,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.6.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.3.1
 	github.com/bufbuild/protovalidate-go v0.6.1
+	github.com/bufbuild/protoyaml-go v0.1.11
 	github.com/casbin/casbin/v2 v2.81.0
 	github.com/casbin/ent-adapter v0.3.0
 	github.com/denisbrodbeck/machineid v1.0.1

@@ -19,7 +19,6 @@ import (
 	"context"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 )
 
 type WorkflowContractUpdate struct {
@@ -35,14 +34,12 @@ func (action *WorkflowContractUpdate) Run(name string, description *string, cont
 
 	request := &pb.WorkflowContractServiceUpdateRequest{Name: name, Description: description}
 	if contractPath != "" {
-		contract, err := crafter.LoadSchema(contractPath)
+		rawContract, err := loadFileOrURL(contractPath)
 		if err != nil {
 			action.cfg.Logger.Debug().Err(err).Msg("loading the contract")
 			return nil, err
 		}
-		request.Contract = &pb.WorkflowContractServiceUpdateRequest_V1{
-			V1: contract,
-		}
+		request.RawContract = rawContract
 	}
 
 	resp, err := client.Update(context.Background(), request)

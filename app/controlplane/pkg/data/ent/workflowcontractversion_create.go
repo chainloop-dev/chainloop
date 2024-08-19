@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontract"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontractversion"
 	"github.com/google/uuid"
@@ -25,6 +26,18 @@ type WorkflowContractVersionCreate struct {
 // SetBody sets the "body" field.
 func (wcvc *WorkflowContractVersionCreate) SetBody(b []byte) *WorkflowContractVersionCreate {
 	wcvc.mutation.SetBody(b)
+	return wcvc
+}
+
+// SetRawBody sets the "raw_body" field.
+func (wcvc *WorkflowContractVersionCreate) SetRawBody(b []byte) *WorkflowContractVersionCreate {
+	wcvc.mutation.SetRawBody(b)
+	return wcvc
+}
+
+// SetRawBodyFormat sets the "raw_body_format" field.
+func (wcvc *WorkflowContractVersionCreate) SetRawBodyFormat(brf biz.ContractRawFormat) *WorkflowContractVersionCreate {
+	wcvc.mutation.SetRawBodyFormat(brf)
 	return wcvc
 }
 
@@ -140,12 +153,20 @@ func (wcvc *WorkflowContractVersionCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (wcvc *WorkflowContractVersionCreate) check() error {
-	if _, ok := wcvc.mutation.Body(); !ok {
-		return &ValidationError{Name: "body", err: errors.New(`ent: missing required field "WorkflowContractVersion.body"`)}
+	if _, ok := wcvc.mutation.RawBody(); !ok {
+		return &ValidationError{Name: "raw_body", err: errors.New(`ent: missing required field "WorkflowContractVersion.raw_body"`)}
 	}
-	if v, ok := wcvc.mutation.Body(); ok {
-		if err := workflowcontractversion.BodyValidator(v); err != nil {
-			return &ValidationError{Name: "body", err: fmt.Errorf(`ent: validator failed for field "WorkflowContractVersion.body": %w`, err)}
+	if v, ok := wcvc.mutation.RawBody(); ok {
+		if err := workflowcontractversion.RawBodyValidator(v); err != nil {
+			return &ValidationError{Name: "raw_body", err: fmt.Errorf(`ent: validator failed for field "WorkflowContractVersion.raw_body": %w`, err)}
+		}
+	}
+	if _, ok := wcvc.mutation.RawBodyFormat(); !ok {
+		return &ValidationError{Name: "raw_body_format", err: errors.New(`ent: missing required field "WorkflowContractVersion.raw_body_format"`)}
+	}
+	if v, ok := wcvc.mutation.RawBodyFormat(); ok {
+		if err := workflowcontractversion.RawBodyFormatValidator(v); err != nil {
+			return &ValidationError{Name: "raw_body_format", err: fmt.Errorf(`ent: validator failed for field "WorkflowContractVersion.raw_body_format": %w`, err)}
 		}
 	}
 	if _, ok := wcvc.mutation.Revision(); !ok {
@@ -192,6 +213,14 @@ func (wcvc *WorkflowContractVersionCreate) createSpec() (*WorkflowContractVersio
 	if value, ok := wcvc.mutation.Body(); ok {
 		_spec.SetField(workflowcontractversion.FieldBody, field.TypeBytes, value)
 		_node.Body = value
+	}
+	if value, ok := wcvc.mutation.RawBody(); ok {
+		_spec.SetField(workflowcontractversion.FieldRawBody, field.TypeBytes, value)
+		_node.RawBody = value
+	}
+	if value, ok := wcvc.mutation.RawBodyFormat(); ok {
+		_spec.SetField(workflowcontractversion.FieldRawBodyFormat, field.TypeEnum, value)
+		_node.RawBodyFormat = value
 	}
 	if value, ok := wcvc.mutation.Revision(); ok {
 		_spec.SetField(workflowcontractversion.FieldRevision, field.TypeInt, value)
