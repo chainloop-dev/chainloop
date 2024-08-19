@@ -185,7 +185,7 @@ func (d *FanOutDispatcher) initDispatchQueue(ctx context.Context, orgID, workflo
 		// All the required configuration needed to run the integration
 		queue = append(queue, &dispatchItem{
 			registrationConfig: dbIntegration.Config,
-			attachmentConfig:   attachment.Config,
+			attachmentConfig:   attachment.IntegrationAttachment.Config,
 			credentials:        creds,
 			plugin:             backend,
 		})

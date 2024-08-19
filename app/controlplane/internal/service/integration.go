@@ -237,7 +237,7 @@ func (s *IntegrationsService) ListAttachments(ctx context.Context, req *pb.ListA
 
 	result := make([]*pb.IntegrationAttachmentItem, 0, len(integrations))
 	for _, i := range integrations {
-		r, err := s.bizIntegrationAttachmentToPb(ctx, i, org.ID)
+		r, err := s.bizIntegrationAttachmentToPb(ctx, i.IntegrationAttachment, org.ID)
 		if err != nil {
 			return nil, handleUseCaseErr(err, s.log)
 		}
