@@ -19,8 +19,11 @@ import (
 	"context"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	errors "github.com/go-kratos/kratos/v2/errors"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -91,11 +94,17 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 		return nil, err
 	}
 
+	token, err := usercontext.GetRawToken(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, "invalid token")
+	}
+
 	// Currently supporting only v1 version
 	schema, err := s.contractUseCase.Create(ctx, &biz.WorkflowContractCreateOpts{
 		OrgID: currentOrg.ID,
 		Name:  req.Name, Description: req.Description,
-		Schema: req.GetV1()})
+		Schema: req.GetV1(),
+		Token:  token})
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -109,10 +118,16 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 		return nil, err
 	}
 
+	token, err := usercontext.GetRawToken(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, "invalid token")
+	}
+
 	schemaWithVersion, err := s.contractUseCase.Update(ctx, currentOrg.ID, req.Name,
 		&biz.WorkflowContractUpdateOpts{
 			Schema:      req.GetV1(),
 			Description: req.Description,
+			Token:       token,
 		})
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)

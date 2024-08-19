@@ -66,7 +66,7 @@ func (l *BlobLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*
 	return &spec, nil
 }
 
-const chainloopScheme = "chainloop"
+const ChainloopScheme = "chainloop"
 
 // ChainloopLoader loads policies referenced with chainloop://provider/name URLs
 type ChainloopLoader struct {
@@ -91,20 +91,11 @@ func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachm
 		return remotePolicyCache[ref], nil
 	}
 
-	parts := strings.SplitN(ref, "://", 2)
-	if len(parts) != 2 || parts[0] != chainloopScheme {
+	if !IsProviderScheme(ref) {
 		return nil, fmt.Errorf("invalid policy reference %q", ref)
 	}
 
-	pn := strings.SplitN(parts[1], "/", 2)
-	var (
-		name     = pn[0]
-		provider string
-	)
-	if len(pn) == 2 {
-		provider = pn[0]
-		name = pn[1]
-	}
+	name, provider := ProviderParts(ref)
 
 	resp, err := c.Client.GetPolicy(ctx, &pb.AttestationServiceGetPolicyRequest{
 		Provider:   provider,
@@ -118,4 +109,24 @@ func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachm
 	remotePolicyCache[ref] = resp.GetPolicy()
 
 	return resp.GetPolicy(), nil
+}
+
+// IsProviderScheme takes a policy reference and returns whether it's referencing to an external provider or not
+func IsProviderScheme(ref string) bool {
+	parts := strings.SplitN(ref, "://", 2)
+	return len(parts) == 2 && parts[0] == ChainloopScheme
+}
+
+func ProviderParts(ref string) (string, string) {
+	parts := strings.SplitN(ref, "://", 2)
+	pn := strings.SplitN(parts[1], "/", 2)
+	var (
+		name     = pn[0]
+		provider string
+	)
+	if len(pn) == 2 {
+		provider = pn[0]
+		name = pn[1]
+	}
+	return provider, name
 }

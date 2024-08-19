@@ -24,6 +24,7 @@ import (
 	"github.com/bufbuild/protovalidate-go"
 	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/policies"
+	loader "github.com/chainloop-dev/chainloop/pkg/policies"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
@@ -122,6 +123,9 @@ type WorkflowContractCreateOpts struct {
 	Description *string
 	// Make sure that the name is unique in the organization
 	AddUniquePrefix bool
+
+	// Token to be used for authenticating against remote policy providers
+	Token string
 }
 
 // we currently only support schema v1
@@ -144,6 +148,11 @@ func (uc *WorkflowContractUseCase) Create(ctx context.Context, opts *WorkflowCon
 		opts.Schema = &schemav1.CraftingSchema{
 			SchemaVersion: "v1",
 		}
+	}
+
+	err = uc.validatePolicies(opts.Schema, opts.Token)
+	if err != nil {
+		return nil, fmt.Errorf("invalid policies: %w", err)
 	}
 
 	validator, err := protovalidate.New()
@@ -245,6 +254,9 @@ func (uc *WorkflowContractUseCase) FindVersionByID(ctx context.Context, versionI
 type WorkflowContractUpdateOpts struct {
 	Schema      *schemav1.CraftingSchema
 	Description *string
+
+	// Token to be used for authenticating against remote policy providers
+	Token string
 }
 
 func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name string, opts *WorkflowContractUpdateOpts) (*WorkflowContractWithVersion, error) {
@@ -255,6 +267,11 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name strin
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, err
+	}
+
+	err = uc.validatePolicies(opts.Schema, opts.Token)
+	if err != nil {
+		return nil, fmt.Errorf("invalid policies: %w", err)
 	}
 
 	rawSchema, err := proto.Marshal(opts.Schema)
@@ -271,6 +288,47 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name strin
 	}
 
 	return c, nil
+}
+
+func (uc *WorkflowContractUseCase) validatePolicies(schema *schemav1.CraftingSchema, token string) error {
+	// Validate that externally provided policies exist
+	for _, att := range schema.GetPolicies().GetAttestation() {
+		_, err := uc.findPolicy(att, token)
+		if err != nil {
+			return err
+		}
+	}
+	for _, att := range schema.GetPolicies().GetMaterials() {
+		_, err := uc.findPolicy(att, token)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (uc *WorkflowContractUseCase) findPolicy(att *schemav1.PolicyAttachment, token string) (*schemav1.Policy, error) {
+	if att.GetEmbedded() != nil {
+		return att.GetEmbedded(), nil
+	}
+
+	// if it should come from a provider, check that it's available
+	// chainloop://[provider/]name
+	if loader.IsProviderScheme(att.GetRef()) {
+		provider, name := loader.ProviderParts(att.GetRef())
+		p := uc.policyRegistry.GetProvider(provider)
+		if p == nil {
+			return nil, NewErrNotFound("provider not found")
+		}
+		policy, err := uc.GetPolicy(provider, name, token)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get policy: %w", err)
+		}
+		return policy, nil
+	}
+
+	// Otherwise, don't return an error, as it might consist of a local policy, not available in this context
+	return nil, nil
 }
 
 // Delete soft-deletes the entry

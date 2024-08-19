@@ -198,8 +198,7 @@ func (pv *PolicyVerifier) getLoader(attachment *v1.PolicyAttachment) (Loader, er
 	if emb != nil {
 		loader = new(EmbeddedLoader)
 	} else {
-		parts := strings.SplitN(ref, "://", 2)
-		if len(parts) == 2 && parts[0] == chainloopScheme {
+		if IsProviderScheme(ref) {
 			loader = NewChainloopLoader(pv.client)
 		} else {
 			loader = new(BlobLoader)
