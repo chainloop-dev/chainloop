@@ -169,7 +169,7 @@ var (
 		{Name: "configuration", Type: field.TypeBytes, Nullable: true},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
 		{Name: "integration_attachment_integration", Type: field.TypeUUID},
-		{Name: "integration_attachment_workflow", Type: field.TypeUUID},
+		{Name: "workflow_id", Type: field.TypeUUID},
 	}
 	// IntegrationAttachmentsTable holds the schema information for the "integration_attachments" table.
 	IntegrationAttachmentsTable = &schema.Table{

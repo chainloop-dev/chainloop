@@ -771,6 +771,9 @@ func (wq *WorkflowQuery) loadIntegrationAttachments(ctx context.Context, query *
 		}
 	}
 	query.withFKs = true
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(integrationattachment.FieldWorkflowID)
+	}
 	query.Where(predicate.IntegrationAttachment(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(workflow.IntegrationAttachmentsColumn), fks...))
 	}))
@@ -779,13 +782,10 @@ func (wq *WorkflowQuery) loadIntegrationAttachments(ctx context.Context, query *
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.integration_attachment_workflow
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "integration_attachment_workflow" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
+		fk := n.WorkflowID
+		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "integration_attachment_workflow" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "workflow_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}

@@ -81,7 +81,7 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "integrationattachment" package.
 	IntegrationAttachmentsInverseTable = "integration_attachments"
 	// IntegrationAttachmentsColumn is the table column denoting the integration_attachments relation/edge.
-	IntegrationAttachmentsColumn = "integration_attachment_workflow"
+	IntegrationAttachmentsColumn = "workflow_id"
 	// ReferrersTable is the table that holds the referrers relation/edge. The primary key declared below.
 	ReferrersTable = "referrer_workflows"
 	// ReferrersInverseTable is the table name for the Referrer entity.

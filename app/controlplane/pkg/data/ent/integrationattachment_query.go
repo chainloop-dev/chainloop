@@ -416,7 +416,7 @@ func (iaq *IntegrationAttachmentQuery) sqlAll(ctx context.Context, hooks ...quer
 			iaq.withWorkflow != nil,
 		}
 	)
-	if iaq.withIntegration != nil || iaq.withWorkflow != nil {
+	if iaq.withIntegration != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -494,10 +494,7 @@ func (iaq *IntegrationAttachmentQuery) loadWorkflow(ctx context.Context, query *
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*IntegrationAttachment)
 	for i := range nodes {
-		if nodes[i].integration_attachment_workflow == nil {
-			continue
-		}
-		fk := *nodes[i].integration_attachment_workflow
+		fk := nodes[i].WorkflowID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -514,7 +511,7 @@ func (iaq *IntegrationAttachmentQuery) loadWorkflow(ctx context.Context, query *
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "integration_attachment_workflow" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "workflow_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -550,6 +547,9 @@ func (iaq *IntegrationAttachmentQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != integrationattachment.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if iaq.withWorkflow != nil {
+			_spec.Node.AddColumnOnce(integrationattachment.FieldWorkflowID)
 		}
 	}
 	if ps := iaq.predicates; len(ps) > 0 {

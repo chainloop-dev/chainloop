@@ -38,12 +38,13 @@ func (IntegrationAttachment) Fields() []ent.Field {
 			Annotations(&entsql.Annotation{Default: "CURRENT_TIMESTAMP"}),
 		field.Bytes("configuration").Optional(),
 		field.Time("deleted_at").Optional(),
+		field.UUID("workflow_id", uuid.UUID{}),
 	}
 }
 
 func (IntegrationAttachment) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("integration", Integration.Type).Unique().Required().Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
-		edge.To("workflow", Workflow.Type).Unique().Required().Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
+		edge.To("workflow", Workflow.Type).Field("workflow_id").Unique().Required().Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 	}
 }

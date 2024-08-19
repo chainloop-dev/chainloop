@@ -64,6 +64,20 @@ func (iau *IntegrationAttachmentUpdate) ClearDeletedAt() *IntegrationAttachmentU
 	return iau
 }
 
+// SetWorkflowID sets the "workflow_id" field.
+func (iau *IntegrationAttachmentUpdate) SetWorkflowID(u uuid.UUID) *IntegrationAttachmentUpdate {
+	iau.mutation.SetWorkflowID(u)
+	return iau
+}
+
+// SetNillableWorkflowID sets the "workflow_id" field if the given value is not nil.
+func (iau *IntegrationAttachmentUpdate) SetNillableWorkflowID(u *uuid.UUID) *IntegrationAttachmentUpdate {
+	if u != nil {
+		iau.SetWorkflowID(*u)
+	}
+	return iau
+}
+
 // SetIntegrationID sets the "integration" edge to the Integration entity by ID.
 func (iau *IntegrationAttachmentUpdate) SetIntegrationID(id uuid.UUID) *IntegrationAttachmentUpdate {
 	iau.mutation.SetIntegrationID(id)
@@ -73,12 +87,6 @@ func (iau *IntegrationAttachmentUpdate) SetIntegrationID(id uuid.UUID) *Integrat
 // SetIntegration sets the "integration" edge to the Integration entity.
 func (iau *IntegrationAttachmentUpdate) SetIntegration(i *Integration) *IntegrationAttachmentUpdate {
 	return iau.SetIntegrationID(i.ID)
-}
-
-// SetWorkflowID sets the "workflow" edge to the Workflow entity by ID.
-func (iau *IntegrationAttachmentUpdate) SetWorkflowID(id uuid.UUID) *IntegrationAttachmentUpdate {
-	iau.mutation.SetWorkflowID(id)
-	return iau
 }
 
 // SetWorkflow sets the "workflow" edge to the Workflow entity.
@@ -283,6 +291,20 @@ func (iauo *IntegrationAttachmentUpdateOne) ClearDeletedAt() *IntegrationAttachm
 	return iauo
 }
 
+// SetWorkflowID sets the "workflow_id" field.
+func (iauo *IntegrationAttachmentUpdateOne) SetWorkflowID(u uuid.UUID) *IntegrationAttachmentUpdateOne {
+	iauo.mutation.SetWorkflowID(u)
+	return iauo
+}
+
+// SetNillableWorkflowID sets the "workflow_id" field if the given value is not nil.
+func (iauo *IntegrationAttachmentUpdateOne) SetNillableWorkflowID(u *uuid.UUID) *IntegrationAttachmentUpdateOne {
+	if u != nil {
+		iauo.SetWorkflowID(*u)
+	}
+	return iauo
+}
+
 // SetIntegrationID sets the "integration" edge to the Integration entity by ID.
 func (iauo *IntegrationAttachmentUpdateOne) SetIntegrationID(id uuid.UUID) *IntegrationAttachmentUpdateOne {
 	iauo.mutation.SetIntegrationID(id)
@@ -292,12 +314,6 @@ func (iauo *IntegrationAttachmentUpdateOne) SetIntegrationID(id uuid.UUID) *Inte
 // SetIntegration sets the "integration" edge to the Integration entity.
 func (iauo *IntegrationAttachmentUpdateOne) SetIntegration(i *Integration) *IntegrationAttachmentUpdateOne {
 	return iauo.SetIntegrationID(i.ID)
-}
-
-// SetWorkflowID sets the "workflow" edge to the Workflow entity by ID.
-func (iauo *IntegrationAttachmentUpdateOne) SetWorkflowID(id uuid.UUID) *IntegrationAttachmentUpdateOne {
-	iauo.mutation.SetWorkflowID(id)
-	return iauo
 }
 
 // SetWorkflow sets the "workflow" edge to the Workflow entity.
