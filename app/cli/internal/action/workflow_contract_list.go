@@ -41,6 +41,12 @@ type WorkflowContractVersionItem struct {
 	Revision  int                      `json:"revision"`
 	CreatedAt *time.Time               `json:"createdAt"`
 	BodyV1    *schemav1.CraftingSchema `json:"bodyV1"`
+	RawBody   *ContractRawBody         `json:"rawBody"`
+}
+
+type ContractRawBody struct {
+	Body   string `json:"body"`
+	Format string `json:"format"`
 }
 
 func NewWorkflowContractList(cfg *ActionsOpts) *WorkflowContractList {
@@ -73,5 +79,6 @@ func pbWorkflowContractVersionItemToAction(in *pb.WorkflowContractVersionItem) *
 	return &WorkflowContractVersionItem{
 		Revision: int(in.GetRevision()), ID: in.GetId(), BodyV1: in.GetV1(),
 		CreatedAt: toTimePtr(in.GetCreatedAt().AsTime()),
+		RawBody:   &ContractRawBody{Body: string(in.RawContract.GetBody()), Format: in.RawContract.GetFormat().String()},
 	}
 }

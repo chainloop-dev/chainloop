@@ -169,7 +169,7 @@ var (
 		{Name: "configuration", Type: field.TypeBytes, Nullable: true},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
 		{Name: "integration_attachment_integration", Type: field.TypeUUID},
-		{Name: "integration_attachment_workflow", Type: field.TypeUUID},
+		{Name: "workflow_id", Type: field.TypeUUID},
 	}
 	// IntegrationAttachmentsTable holds the schema information for the "integration_attachments" table.
 	IntegrationAttachmentsTable = &schema.Table{
@@ -408,7 +408,9 @@ var (
 	// WorkflowContractVersionsColumns holds the columns for the "workflow_contract_versions" table.
 	WorkflowContractVersionsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "body", Type: field.TypeBytes},
+		{Name: "body", Type: field.TypeBytes, Nullable: true},
+		{Name: "raw_body", Type: field.TypeBytes},
+		{Name: "raw_body_format", Type: field.TypeEnum, Enums: []string{"json", "yaml", "cue"}},
 		{Name: "revision", Type: field.TypeInt, Default: 1},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "workflow_contract_versions", Type: field.TypeUUID, Nullable: true},
@@ -421,7 +423,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "workflow_contract_versions_workflow_contracts_versions",
-				Columns:    []*schema.Column{WorkflowContractVersionsColumns[4]},
+				Columns:    []*schema.Column{WorkflowContractVersionsColumns[6]},
 				RefColumns: []*schema.Column{WorkflowContractsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -430,7 +432,7 @@ var (
 			{
 				Name:    "workflowcontractversion_workflow_contract_versions",
 				Unique:  false,
-				Columns: []*schema.Column{WorkflowContractVersionsColumns[4]},
+				Columns: []*schema.Column{WorkflowContractVersionsColumns[6]},
 			},
 		},
 	}

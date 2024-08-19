@@ -221,6 +221,41 @@ func (s *testSuite) TestAttachWorkflow() {
 	})
 }
 
+func (s *testSuite) TestListAttachments() {
+	assert := assert.New(s.T())
+	ctx := context.Background()
+
+	s.fanOutIntegration.On("Attach", ctx, mock.Anything).Return(&sdk.AttachmentResponse{
+		Configuration: s.config,
+	}, nil).Once()
+	s.fanOutIntegration.On("ValidateAttachmentRequest", mock.Anything).Return(nil)
+
+	// Attach the integration to the workflow
+	_, err := s.Integration.AttachToWorkflow(ctx, &biz.AttachOpts{
+		OrgID:             s.org.ID,
+		IntegrationID:     s.integration.ID.String(),
+		WorkflowID:        s.workflow.ID.String(),
+		FanOutIntegration: s.fanOutIntegration,
+		AttachmentConfig:  s.configStruct,
+	})
+	assert.NoError(err)
+
+	// List the attachments
+	attachments, err := s.Integration.ListAttachments(ctx, s.org.ID, s.workflow.ID.String())
+	assert.NoError(err)
+	assert.Len(attachments, 1)
+	assert.NotNil(attachments[0].Integration)
+	assert.NotNil(attachments[0].IntegrationAttachment)
+	assert.Equal(s.integration.ID, attachments[0].Integration.ID)
+	assert.Equal(s.integration.Name, attachments[0].Integration.Name)
+	assert.Equal(s.integration.Kind, attachments[0].Integration.Kind)
+	assert.Equal(s.integration.Description, attachments[0].Integration.Description)
+	assert.Equal(s.integration.Config, attachments[0].Integration.Config)
+	assert.Equal(s.integration.SecretName, attachments[0].Integration.SecretName)
+	assert.Equal(s.workflow.ID, attachments[0].WorkflowID)
+	assert.Equal(s.config, attachments[0].IntegrationAttachment.Config)
+}
+
 func (s *testSuite) SetupTest() {
 	t := s.T()
 	assert := assert.New(t)

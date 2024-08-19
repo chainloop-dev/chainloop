@@ -3626,6 +3626,42 @@ func (m *IntegrationAttachmentMutation) ResetDeletedAt() {
 	delete(m.clearedFields, integrationattachment.FieldDeletedAt)
 }
 
+// SetWorkflowID sets the "workflow_id" field.
+func (m *IntegrationAttachmentMutation) SetWorkflowID(u uuid.UUID) {
+	m.workflow = &u
+}
+
+// WorkflowID returns the value of the "workflow_id" field in the mutation.
+func (m *IntegrationAttachmentMutation) WorkflowID() (r uuid.UUID, exists bool) {
+	v := m.workflow
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldWorkflowID returns the old "workflow_id" field's value of the IntegrationAttachment entity.
+// If the IntegrationAttachment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *IntegrationAttachmentMutation) OldWorkflowID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldWorkflowID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldWorkflowID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldWorkflowID: %w", err)
+	}
+	return oldValue.WorkflowID, nil
+}
+
+// ResetWorkflowID resets all changes to the "workflow_id" field.
+func (m *IntegrationAttachmentMutation) ResetWorkflowID() {
+	m.workflow = nil
+}
+
 // SetIntegrationID sets the "integration" edge to the Integration entity by id.
 func (m *IntegrationAttachmentMutation) SetIntegrationID(id uuid.UUID) {
 	m.integration = &id
@@ -3665,27 +3701,15 @@ func (m *IntegrationAttachmentMutation) ResetIntegration() {
 	m.clearedintegration = false
 }
 
-// SetWorkflowID sets the "workflow" edge to the Workflow entity by id.
-func (m *IntegrationAttachmentMutation) SetWorkflowID(id uuid.UUID) {
-	m.workflow = &id
-}
-
 // ClearWorkflow clears the "workflow" edge to the Workflow entity.
 func (m *IntegrationAttachmentMutation) ClearWorkflow() {
 	m.clearedworkflow = true
+	m.clearedFields[integrationattachment.FieldWorkflowID] = struct{}{}
 }
 
 // WorkflowCleared reports if the "workflow" edge to the Workflow entity was cleared.
 func (m *IntegrationAttachmentMutation) WorkflowCleared() bool {
 	return m.clearedworkflow
-}
-
-// WorkflowID returns the "workflow" edge ID in the mutation.
-func (m *IntegrationAttachmentMutation) WorkflowID() (id uuid.UUID, exists bool) {
-	if m.workflow != nil {
-		return *m.workflow, true
-	}
-	return
 }
 
 // WorkflowIDs returns the "workflow" edge IDs in the mutation.
@@ -3738,7 +3762,7 @@ func (m *IntegrationAttachmentMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *IntegrationAttachmentMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 4)
 	if m.created_at != nil {
 		fields = append(fields, integrationattachment.FieldCreatedAt)
 	}
@@ -3747,6 +3771,9 @@ func (m *IntegrationAttachmentMutation) Fields() []string {
 	}
 	if m.deleted_at != nil {
 		fields = append(fields, integrationattachment.FieldDeletedAt)
+	}
+	if m.workflow != nil {
+		fields = append(fields, integrationattachment.FieldWorkflowID)
 	}
 	return fields
 }
@@ -3762,6 +3789,8 @@ func (m *IntegrationAttachmentMutation) Field(name string) (ent.Value, bool) {
 		return m.Configuration()
 	case integrationattachment.FieldDeletedAt:
 		return m.DeletedAt()
+	case integrationattachment.FieldWorkflowID:
+		return m.WorkflowID()
 	}
 	return nil, false
 }
@@ -3777,6 +3806,8 @@ func (m *IntegrationAttachmentMutation) OldField(ctx context.Context, name strin
 		return m.OldConfiguration(ctx)
 	case integrationattachment.FieldDeletedAt:
 		return m.OldDeletedAt(ctx)
+	case integrationattachment.FieldWorkflowID:
+		return m.OldWorkflowID(ctx)
 	}
 	return nil, fmt.Errorf("unknown IntegrationAttachment field %s", name)
 }
@@ -3806,6 +3837,13 @@ func (m *IntegrationAttachmentMutation) SetField(name string, value ent.Value) e
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDeletedAt(v)
+		return nil
+	case integrationattachment.FieldWorkflowID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetWorkflowID(v)
 		return nil
 	}
 	return fmt.Errorf("unknown IntegrationAttachment field %s", name)
@@ -3879,6 +3917,9 @@ func (m *IntegrationAttachmentMutation) ResetField(name string) error {
 		return nil
 	case integrationattachment.FieldDeletedAt:
 		m.ResetDeletedAt()
+		return nil
+	case integrationattachment.FieldWorkflowID:
+		m.ResetWorkflowID()
 		return nil
 	}
 	return fmt.Errorf("unknown IntegrationAttachment field %s", name)
@@ -10300,6 +10341,8 @@ type WorkflowContractVersionMutation struct {
 	typ             string
 	id              *uuid.UUID
 	body            *[]byte
+	raw_body        *[]byte
+	raw_body_format *biz.ContractRawFormat
 	revision        *int
 	addrevision     *int
 	created_at      *time.Time
@@ -10446,9 +10489,94 @@ func (m *WorkflowContractVersionMutation) OldBody(ctx context.Context) (v []byte
 	return oldValue.Body, nil
 }
 
+// ClearBody clears the value of the "body" field.
+func (m *WorkflowContractVersionMutation) ClearBody() {
+	m.body = nil
+	m.clearedFields[workflowcontractversion.FieldBody] = struct{}{}
+}
+
+// BodyCleared returns if the "body" field was cleared in this mutation.
+func (m *WorkflowContractVersionMutation) BodyCleared() bool {
+	_, ok := m.clearedFields[workflowcontractversion.FieldBody]
+	return ok
+}
+
 // ResetBody resets all changes to the "body" field.
 func (m *WorkflowContractVersionMutation) ResetBody() {
 	m.body = nil
+	delete(m.clearedFields, workflowcontractversion.FieldBody)
+}
+
+// SetRawBody sets the "raw_body" field.
+func (m *WorkflowContractVersionMutation) SetRawBody(b []byte) {
+	m.raw_body = &b
+}
+
+// RawBody returns the value of the "raw_body" field in the mutation.
+func (m *WorkflowContractVersionMutation) RawBody() (r []byte, exists bool) {
+	v := m.raw_body
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRawBody returns the old "raw_body" field's value of the WorkflowContractVersion entity.
+// If the WorkflowContractVersion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowContractVersionMutation) OldRawBody(ctx context.Context) (v []byte, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRawBody is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRawBody requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRawBody: %w", err)
+	}
+	return oldValue.RawBody, nil
+}
+
+// ResetRawBody resets all changes to the "raw_body" field.
+func (m *WorkflowContractVersionMutation) ResetRawBody() {
+	m.raw_body = nil
+}
+
+// SetRawBodyFormat sets the "raw_body_format" field.
+func (m *WorkflowContractVersionMutation) SetRawBodyFormat(brf biz.ContractRawFormat) {
+	m.raw_body_format = &brf
+}
+
+// RawBodyFormat returns the value of the "raw_body_format" field in the mutation.
+func (m *WorkflowContractVersionMutation) RawBodyFormat() (r biz.ContractRawFormat, exists bool) {
+	v := m.raw_body_format
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRawBodyFormat returns the old "raw_body_format" field's value of the WorkflowContractVersion entity.
+// If the WorkflowContractVersion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowContractVersionMutation) OldRawBodyFormat(ctx context.Context) (v biz.ContractRawFormat, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRawBodyFormat is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRawBodyFormat requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRawBodyFormat: %w", err)
+	}
+	return oldValue.RawBodyFormat, nil
+}
+
+// ResetRawBodyFormat resets all changes to the "raw_body_format" field.
+func (m *WorkflowContractVersionMutation) ResetRawBodyFormat() {
+	m.raw_body_format = nil
 }
 
 // SetRevision sets the "revision" field.
@@ -10616,9 +10744,15 @@ func (m *WorkflowContractVersionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *WorkflowContractVersionMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 5)
 	if m.body != nil {
 		fields = append(fields, workflowcontractversion.FieldBody)
+	}
+	if m.raw_body != nil {
+		fields = append(fields, workflowcontractversion.FieldRawBody)
+	}
+	if m.raw_body_format != nil {
+		fields = append(fields, workflowcontractversion.FieldRawBodyFormat)
 	}
 	if m.revision != nil {
 		fields = append(fields, workflowcontractversion.FieldRevision)
@@ -10636,6 +10770,10 @@ func (m *WorkflowContractVersionMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case workflowcontractversion.FieldBody:
 		return m.Body()
+	case workflowcontractversion.FieldRawBody:
+		return m.RawBody()
+	case workflowcontractversion.FieldRawBodyFormat:
+		return m.RawBodyFormat()
 	case workflowcontractversion.FieldRevision:
 		return m.Revision()
 	case workflowcontractversion.FieldCreatedAt:
@@ -10651,6 +10789,10 @@ func (m *WorkflowContractVersionMutation) OldField(ctx context.Context, name str
 	switch name {
 	case workflowcontractversion.FieldBody:
 		return m.OldBody(ctx)
+	case workflowcontractversion.FieldRawBody:
+		return m.OldRawBody(ctx)
+	case workflowcontractversion.FieldRawBodyFormat:
+		return m.OldRawBodyFormat(ctx)
 	case workflowcontractversion.FieldRevision:
 		return m.OldRevision(ctx)
 	case workflowcontractversion.FieldCreatedAt:
@@ -10670,6 +10812,20 @@ func (m *WorkflowContractVersionMutation) SetField(name string, value ent.Value)
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetBody(v)
+		return nil
+	case workflowcontractversion.FieldRawBody:
+		v, ok := value.([]byte)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRawBody(v)
+		return nil
+	case workflowcontractversion.FieldRawBodyFormat:
+		v, ok := value.(biz.ContractRawFormat)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRawBodyFormat(v)
 		return nil
 	case workflowcontractversion.FieldRevision:
 		v, ok := value.(int)
@@ -10729,7 +10885,11 @@ func (m *WorkflowContractVersionMutation) AddField(name string, value ent.Value)
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *WorkflowContractVersionMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(workflowcontractversion.FieldBody) {
+		fields = append(fields, workflowcontractversion.FieldBody)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -10742,6 +10902,11 @@ func (m *WorkflowContractVersionMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *WorkflowContractVersionMutation) ClearField(name string) error {
+	switch name {
+	case workflowcontractversion.FieldBody:
+		m.ClearBody()
+		return nil
+	}
 	return fmt.Errorf("unknown WorkflowContractVersion nullable field %s", name)
 }
 
@@ -10751,6 +10916,12 @@ func (m *WorkflowContractVersionMutation) ResetField(name string) error {
 	switch name {
 	case workflowcontractversion.FieldBody:
 		m.ResetBody()
+		return nil
+	case workflowcontractversion.FieldRawBody:
+		m.ResetRawBody()
+		return nil
+	case workflowcontractversion.FieldRawBodyFormat:
+		m.ResetRawBodyFormat()
 		return nil
 	case workflowcontractversion.FieldRevision:
 		m.ResetRevision()

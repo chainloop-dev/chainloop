@@ -2,7 +2,6 @@
 import { grpc } from "@improbable-eng/grpc-web";
 import { BrowserHeaders } from "browser-headers";
 import _m0 from "protobufjs/minimal";
-import { CraftingSchema } from "../../workflowcontract/v1/crafting_schema";
 import { WorkflowContractItem, WorkflowContractVersionItem } from "./response_messages";
 
 export const protobufPackage = "controlplane.v1";
@@ -16,7 +15,8 @@ export interface WorkflowContractServiceListResponse {
 
 export interface WorkflowContractServiceCreateRequest {
   name: string;
-  v1?: CraftingSchema | undefined;
+  /** Raw representation of the contract in json, yaml or cue */
+  rawContract: Uint8Array;
   description?: string | undefined;
 }
 
@@ -26,7 +26,8 @@ export interface WorkflowContractServiceCreateResponse {
 
 export interface WorkflowContractServiceUpdateRequest {
   name: string;
-  v1?: CraftingSchema | undefined;
+  /** Raw representation of the contract in json, yaml or cue */
+  rawContract: Uint8Array;
   description?: string | undefined;
 }
 
@@ -175,7 +176,7 @@ export const WorkflowContractServiceListResponse = {
 };
 
 function createBaseWorkflowContractServiceCreateRequest(): WorkflowContractServiceCreateRequest {
-  return { name: "", v1: undefined, description: undefined };
+  return { name: "", rawContract: new Uint8Array(0), description: undefined };
 }
 
 export const WorkflowContractServiceCreateRequest = {
@@ -183,8 +184,8 @@ export const WorkflowContractServiceCreateRequest = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.v1 !== undefined) {
-      CraftingSchema.encode(message.v1, writer.uint32(18).fork()).ldelim();
+    if (message.rawContract.length !== 0) {
+      writer.uint32(34).bytes(message.rawContract);
     }
     if (message.description !== undefined) {
       writer.uint32(26).string(message.description);
@@ -206,12 +207,12 @@ export const WorkflowContractServiceCreateRequest = {
 
           message.name = reader.string();
           continue;
-        case 2:
-          if (tag !== 18) {
+        case 4:
+          if (tag !== 34) {
             break;
           }
 
-          message.v1 = CraftingSchema.decode(reader, reader.uint32());
+          message.rawContract = reader.bytes();
           continue;
         case 3:
           if (tag !== 26) {
@@ -232,7 +233,7 @@ export const WorkflowContractServiceCreateRequest = {
   fromJSON(object: any): WorkflowContractServiceCreateRequest {
     return {
       name: isSet(object.name) ? String(object.name) : "",
-      v1: isSet(object.v1) ? CraftingSchema.fromJSON(object.v1) : undefined,
+      rawContract: isSet(object.rawContract) ? bytesFromBase64(object.rawContract) : new Uint8Array(0),
       description: isSet(object.description) ? String(object.description) : undefined,
     };
   },
@@ -240,7 +241,8 @@ export const WorkflowContractServiceCreateRequest = {
   toJSON(message: WorkflowContractServiceCreateRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
-    message.v1 !== undefined && (obj.v1 = message.v1 ? CraftingSchema.toJSON(message.v1) : undefined);
+    message.rawContract !== undefined &&
+      (obj.rawContract = base64FromBytes(message.rawContract !== undefined ? message.rawContract : new Uint8Array(0)));
     message.description !== undefined && (obj.description = message.description);
     return obj;
   },
@@ -256,7 +258,7 @@ export const WorkflowContractServiceCreateRequest = {
   ): WorkflowContractServiceCreateRequest {
     const message = createBaseWorkflowContractServiceCreateRequest();
     message.name = object.name ?? "";
-    message.v1 = (object.v1 !== undefined && object.v1 !== null) ? CraftingSchema.fromPartial(object.v1) : undefined;
+    message.rawContract = object.rawContract ?? new Uint8Array(0);
     message.description = object.description ?? undefined;
     return message;
   },
@@ -326,7 +328,7 @@ export const WorkflowContractServiceCreateResponse = {
 };
 
 function createBaseWorkflowContractServiceUpdateRequest(): WorkflowContractServiceUpdateRequest {
-  return { name: "", v1: undefined, description: undefined };
+  return { name: "", rawContract: new Uint8Array(0), description: undefined };
 }
 
 export const WorkflowContractServiceUpdateRequest = {
@@ -334,8 +336,8 @@ export const WorkflowContractServiceUpdateRequest = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.v1 !== undefined) {
-      CraftingSchema.encode(message.v1, writer.uint32(26).fork()).ldelim();
+    if (message.rawContract.length !== 0) {
+      writer.uint32(42).bytes(message.rawContract);
     }
     if (message.description !== undefined) {
       writer.uint32(34).string(message.description);
@@ -357,12 +359,12 @@ export const WorkflowContractServiceUpdateRequest = {
 
           message.name = reader.string();
           continue;
-        case 3:
-          if (tag !== 26) {
+        case 5:
+          if (tag !== 42) {
             break;
           }
 
-          message.v1 = CraftingSchema.decode(reader, reader.uint32());
+          message.rawContract = reader.bytes();
           continue;
         case 4:
           if (tag !== 34) {
@@ -383,7 +385,7 @@ export const WorkflowContractServiceUpdateRequest = {
   fromJSON(object: any): WorkflowContractServiceUpdateRequest {
     return {
       name: isSet(object.name) ? String(object.name) : "",
-      v1: isSet(object.v1) ? CraftingSchema.fromJSON(object.v1) : undefined,
+      rawContract: isSet(object.rawContract) ? bytesFromBase64(object.rawContract) : new Uint8Array(0),
       description: isSet(object.description) ? String(object.description) : undefined,
     };
   },
@@ -391,7 +393,8 @@ export const WorkflowContractServiceUpdateRequest = {
   toJSON(message: WorkflowContractServiceUpdateRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
-    message.v1 !== undefined && (obj.v1 = message.v1 ? CraftingSchema.toJSON(message.v1) : undefined);
+    message.rawContract !== undefined &&
+      (obj.rawContract = base64FromBytes(message.rawContract !== undefined ? message.rawContract : new Uint8Array(0)));
     message.description !== undefined && (obj.description = message.description);
     return obj;
   },
@@ -407,7 +410,7 @@ export const WorkflowContractServiceUpdateRequest = {
   ): WorkflowContractServiceUpdateRequest {
     const message = createBaseWorkflowContractServiceUpdateRequest();
     message.name = object.name ?? "";
-    message.v1 = (object.v1 !== undefined && object.v1 !== null) ? CraftingSchema.fromPartial(object.v1) : undefined;
+    message.rawContract = object.rawContract ?? new Uint8Array(0);
     message.description = object.description ?? undefined;
     return message;
   },
@@ -1185,6 +1188,31 @@ var tsProtoGlobalThis: any = (() => {
   }
   throw "Unable to locate global object";
 })();
+
+function bytesFromBase64(b64: string): Uint8Array {
+  if (tsProtoGlobalThis.Buffer) {
+    return Uint8Array.from(tsProtoGlobalThis.Buffer.from(b64, "base64"));
+  } else {
+    const bin = tsProtoGlobalThis.atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; ++i) {
+      arr[i] = bin.charCodeAt(i);
+    }
+    return arr;
+  }
+}
+
+function base64FromBytes(arr: Uint8Array): string {
+  if (tsProtoGlobalThis.Buffer) {
+    return tsProtoGlobalThis.Buffer.from(arr).toString("base64");
+  } else {
+    const bin: string[] = [];
+    arr.forEach((byte) => {
+      bin.push(String.fromCharCode(byte));
+    });
+    return tsProtoGlobalThis.btoa(bin.join(""));
+  }
+}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

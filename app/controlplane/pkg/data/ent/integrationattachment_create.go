@@ -57,6 +57,12 @@ func (iac *IntegrationAttachmentCreate) SetNillableDeletedAt(t *time.Time) *Inte
 	return iac
 }
 
+// SetWorkflowID sets the "workflow_id" field.
+func (iac *IntegrationAttachmentCreate) SetWorkflowID(u uuid.UUID) *IntegrationAttachmentCreate {
+	iac.mutation.SetWorkflowID(u)
+	return iac
+}
+
 // SetID sets the "id" field.
 func (iac *IntegrationAttachmentCreate) SetID(u uuid.UUID) *IntegrationAttachmentCreate {
 	iac.mutation.SetID(u)
@@ -80,12 +86,6 @@ func (iac *IntegrationAttachmentCreate) SetIntegrationID(id uuid.UUID) *Integrat
 // SetIntegration sets the "integration" edge to the Integration entity.
 func (iac *IntegrationAttachmentCreate) SetIntegration(i *Integration) *IntegrationAttachmentCreate {
 	return iac.SetIntegrationID(i.ID)
-}
-
-// SetWorkflowID sets the "workflow" edge to the Workflow entity by ID.
-func (iac *IntegrationAttachmentCreate) SetWorkflowID(id uuid.UUID) *IntegrationAttachmentCreate {
-	iac.mutation.SetWorkflowID(id)
-	return iac
 }
 
 // SetWorkflow sets the "workflow" edge to the Workflow entity.
@@ -142,6 +142,9 @@ func (iac *IntegrationAttachmentCreate) defaults() {
 func (iac *IntegrationAttachmentCreate) check() error {
 	if _, ok := iac.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "IntegrationAttachment.created_at"`)}
+	}
+	if _, ok := iac.mutation.WorkflowID(); !ok {
+		return &ValidationError{Name: "workflow_id", err: errors.New(`ent: missing required field "IntegrationAttachment.workflow_id"`)}
 	}
 	if len(iac.mutation.IntegrationIDs()) == 0 {
 		return &ValidationError{Name: "integration", err: errors.New(`ent: missing required edge "IntegrationAttachment.integration"`)}
@@ -227,7 +230,7 @@ func (iac *IntegrationAttachmentCreate) createSpec() (*IntegrationAttachment, *s
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.integration_attachment_workflow = &nodes[0]
+		_node.WorkflowID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

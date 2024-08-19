@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,11 +19,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -39,7 +36,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/rs/zerolog"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -161,41 +157,6 @@ func (c *Crafter) Init(ctx context.Context, opts *InitOpts) error {
 
 func (c *Crafter) AlreadyInitialized(ctx context.Context, stateID string) (bool, error) {
 	return c.stateManager.Initialized(ctx, stateID)
-}
-
-func LoadSchema(pathOrURI string) (*schemaapi.CraftingSchema, error) {
-	// Extract json formatted data
-	content, err := loadFileOrURL(pathOrURI)
-	if err != nil {
-		return nil, err
-	}
-
-	jsonSchemaRaw, err := materials.LoadJSONBytes(content, filepath.Ext(pathOrURI))
-	if err != nil {
-		return nil, err
-	}
-
-	schema := &schemaapi.CraftingSchema{}
-	if err := protojson.Unmarshal(jsonSchemaRaw, schema); err != nil {
-		return nil, err
-	}
-
-	validator, err := protovalidate.New()
-	if err != nil {
-		return nil, fmt.Errorf("could not create validator: %w", err)
-	}
-
-	// Proto validations
-	if err := validator.Validate(schema); err != nil {
-		return nil, err
-	}
-
-	// Custom Validations
-	if err := schema.ValidateUniqueMaterialName(); err != nil {
-		return nil, err
-	}
-
-	return schema, nil
 }
 
 // Initialize the temporary file with the content of the schema
@@ -629,27 +590,4 @@ func (c *Crafter) requireStateLoaded() error {
 	}
 
 	return nil
-}
-
-func loadFileOrURL(fileRef string) ([]byte, error) {
-	parts := strings.SplitAfterN(fileRef, "://", 2)
-	if len(parts) == 2 {
-		scheme := parts[0]
-		switch scheme {
-		case "http://":
-			fallthrough
-		case "https://":
-			// #nosec G107
-			resp, err := http.Get(fileRef)
-			if err != nil {
-				return nil, err
-			}
-			defer resp.Body.Close()
-			return io.ReadAll(resp.Body)
-		default:
-			return nil, errors.New("invalid file scheme")
-		}
-	}
-
-	return os.ReadFile(filepath.Clean(fileRef))
 }

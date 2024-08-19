@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontract"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontractversion"
@@ -27,6 +28,20 @@ type WorkflowContractVersionUpdate struct {
 // Where appends a list predicates to the WorkflowContractVersionUpdate builder.
 func (wcvu *WorkflowContractVersionUpdate) Where(ps ...predicate.WorkflowContractVersion) *WorkflowContractVersionUpdate {
 	wcvu.mutation.Where(ps...)
+	return wcvu
+}
+
+// SetRawBodyFormat sets the "raw_body_format" field.
+func (wcvu *WorkflowContractVersionUpdate) SetRawBodyFormat(brf biz.ContractRawFormat) *WorkflowContractVersionUpdate {
+	wcvu.mutation.SetRawBodyFormat(brf)
+	return wcvu
+}
+
+// SetNillableRawBodyFormat sets the "raw_body_format" field if the given value is not nil.
+func (wcvu *WorkflowContractVersionUpdate) SetNillableRawBodyFormat(brf *biz.ContractRawFormat) *WorkflowContractVersionUpdate {
+	if brf != nil {
+		wcvu.SetRawBodyFormat(*brf)
+	}
 	return wcvu
 }
 
@@ -87,6 +102,16 @@ func (wcvu *WorkflowContractVersionUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (wcvu *WorkflowContractVersionUpdate) check() error {
+	if v, ok := wcvu.mutation.RawBodyFormat(); ok {
+		if err := workflowcontractversion.RawBodyFormatValidator(v); err != nil {
+			return &ValidationError{Name: "raw_body_format", err: fmt.Errorf(`ent: validator failed for field "WorkflowContractVersion.raw_body_format": %w`, err)}
+		}
+	}
+	return nil
+}
+
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
 func (wcvu *WorkflowContractVersionUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *WorkflowContractVersionUpdate {
 	wcvu.modifiers = append(wcvu.modifiers, modifiers...)
@@ -94,6 +119,9 @@ func (wcvu *WorkflowContractVersionUpdate) Modify(modifiers ...func(u *sql.Updat
 }
 
 func (wcvu *WorkflowContractVersionUpdate) sqlSave(ctx context.Context) (n int, err error) {
+	if err := wcvu.check(); err != nil {
+		return n, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(workflowcontractversion.Table, workflowcontractversion.Columns, sqlgraph.NewFieldSpec(workflowcontractversion.FieldID, field.TypeUUID))
 	if ps := wcvu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -101,6 +129,12 @@ func (wcvu *WorkflowContractVersionUpdate) sqlSave(ctx context.Context) (n int, 
 				ps[i](selector)
 			}
 		}
+	}
+	if wcvu.mutation.BodyCleared() {
+		_spec.ClearField(workflowcontractversion.FieldBody, field.TypeBytes)
+	}
+	if value, ok := wcvu.mutation.RawBodyFormat(); ok {
+		_spec.SetField(workflowcontractversion.FieldRawBodyFormat, field.TypeEnum, value)
 	}
 	if wcvu.mutation.ContractCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -151,6 +185,20 @@ type WorkflowContractVersionUpdateOne struct {
 	hooks     []Hook
 	mutation  *WorkflowContractVersionMutation
 	modifiers []func(*sql.UpdateBuilder)
+}
+
+// SetRawBodyFormat sets the "raw_body_format" field.
+func (wcvuo *WorkflowContractVersionUpdateOne) SetRawBodyFormat(brf biz.ContractRawFormat) *WorkflowContractVersionUpdateOne {
+	wcvuo.mutation.SetRawBodyFormat(brf)
+	return wcvuo
+}
+
+// SetNillableRawBodyFormat sets the "raw_body_format" field if the given value is not nil.
+func (wcvuo *WorkflowContractVersionUpdateOne) SetNillableRawBodyFormat(brf *biz.ContractRawFormat) *WorkflowContractVersionUpdateOne {
+	if brf != nil {
+		wcvuo.SetRawBodyFormat(*brf)
+	}
+	return wcvuo
 }
 
 // SetContractID sets the "contract" edge to the WorkflowContract entity by ID.
@@ -223,6 +271,16 @@ func (wcvuo *WorkflowContractVersionUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (wcvuo *WorkflowContractVersionUpdateOne) check() error {
+	if v, ok := wcvuo.mutation.RawBodyFormat(); ok {
+		if err := workflowcontractversion.RawBodyFormatValidator(v); err != nil {
+			return &ValidationError{Name: "raw_body_format", err: fmt.Errorf(`ent: validator failed for field "WorkflowContractVersion.raw_body_format": %w`, err)}
+		}
+	}
+	return nil
+}
+
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
 func (wcvuo *WorkflowContractVersionUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *WorkflowContractVersionUpdateOne {
 	wcvuo.modifiers = append(wcvuo.modifiers, modifiers...)
@@ -230,6 +288,9 @@ func (wcvuo *WorkflowContractVersionUpdateOne) Modify(modifiers ...func(u *sql.U
 }
 
 func (wcvuo *WorkflowContractVersionUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowContractVersion, err error) {
+	if err := wcvuo.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(workflowcontractversion.Table, workflowcontractversion.Columns, sqlgraph.NewFieldSpec(workflowcontractversion.FieldID, field.TypeUUID))
 	id, ok := wcvuo.mutation.ID()
 	if !ok {
@@ -254,6 +315,12 @@ func (wcvuo *WorkflowContractVersionUpdateOne) sqlSave(ctx context.Context) (_no
 				ps[i](selector)
 			}
 		}
+	}
+	if wcvuo.mutation.BodyCleared() {
+		_spec.ClearField(workflowcontractversion.FieldBody, field.TypeBytes)
+	}
+	if value, ok := wcvuo.mutation.RawBodyFormat(); ok {
+		_spec.SetField(workflowcontractversion.FieldRawBodyFormat, field.TypeEnum, value)
 	}
 	if wcvuo.mutation.ContractCleared() {
 		edge := &sqlgraph.EdgeSpec{

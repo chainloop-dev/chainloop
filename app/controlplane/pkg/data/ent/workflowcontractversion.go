@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontract"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontractversion"
 	"github.com/google/uuid"
@@ -21,6 +22,10 @@ type WorkflowContractVersion struct {
 	ID uuid.UUID `json:"id,omitempty"`
 	// Body holds the value of the "body" field.
 	Body []byte `json:"body,omitempty"`
+	// RawBody holds the value of the "raw_body" field.
+	RawBody []byte `json:"raw_body,omitempty"`
+	// RawBodyFormat holds the value of the "raw_body_format" field.
+	RawBodyFormat biz.ContractRawFormat `json:"raw_body_format,omitempty"`
 	// Revision holds the value of the "revision" field.
 	Revision int `json:"revision,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -57,10 +62,12 @@ func (*WorkflowContractVersion) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case workflowcontractversion.FieldBody:
+		case workflowcontractversion.FieldBody, workflowcontractversion.FieldRawBody:
 			values[i] = new([]byte)
 		case workflowcontractversion.FieldRevision:
 			values[i] = new(sql.NullInt64)
+		case workflowcontractversion.FieldRawBodyFormat:
+			values[i] = new(sql.NullString)
 		case workflowcontractversion.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
 		case workflowcontractversion.FieldID:
@@ -93,6 +100,18 @@ func (wcv *WorkflowContractVersion) assignValues(columns []string, values []any)
 				return fmt.Errorf("unexpected type %T for field body", values[i])
 			} else if value != nil {
 				wcv.Body = *value
+			}
+		case workflowcontractversion.FieldRawBody:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field raw_body", values[i])
+			} else if value != nil {
+				wcv.RawBody = *value
+			}
+		case workflowcontractversion.FieldRawBodyFormat:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field raw_body_format", values[i])
+			} else if value.Valid {
+				wcv.RawBodyFormat = biz.ContractRawFormat(value.String)
 			}
 		case workflowcontractversion.FieldRevision:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -156,6 +175,12 @@ func (wcv *WorkflowContractVersion) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v, ", wcv.ID))
 	builder.WriteString("body=")
 	builder.WriteString(fmt.Sprintf("%v", wcv.Body))
+	builder.WriteString(", ")
+	builder.WriteString("raw_body=")
+	builder.WriteString(fmt.Sprintf("%v", wcv.RawBody))
+	builder.WriteString(", ")
+	builder.WriteString("raw_body_format=")
+	builder.WriteString(fmt.Sprintf("%v", wcv.RawBodyFormat))
 	builder.WriteString(", ")
 	builder.WriteString("revision=")
 	builder.WriteString(fmt.Sprintf("%v", wcv.Revision))

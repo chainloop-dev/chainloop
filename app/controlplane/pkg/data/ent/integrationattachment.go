@@ -26,11 +26,12 @@ type IntegrationAttachment struct {
 	Configuration []byte `json:"configuration,omitempty"`
 	// DeletedAt holds the value of the "deleted_at" field.
 	DeletedAt time.Time `json:"deleted_at,omitempty"`
+	// WorkflowID holds the value of the "workflow_id" field.
+	WorkflowID uuid.UUID `json:"workflow_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the IntegrationAttachmentQuery when eager-loading is set.
 	Edges                              IntegrationAttachmentEdges `json:"edges"`
 	integration_attachment_integration *uuid.UUID
-	integration_attachment_workflow    *uuid.UUID
 	selectValues                       sql.SelectValues
 }
 
@@ -76,11 +77,9 @@ func (*IntegrationAttachment) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case integrationattachment.FieldCreatedAt, integrationattachment.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
-		case integrationattachment.FieldID:
+		case integrationattachment.FieldID, integrationattachment.FieldWorkflowID:
 			values[i] = new(uuid.UUID)
 		case integrationattachment.ForeignKeys[0]: // integration_attachment_integration
-			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
-		case integrationattachment.ForeignKeys[1]: // integration_attachment_workflow
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			values[i] = new(sql.UnknownType)
@@ -121,19 +120,18 @@ func (ia *IntegrationAttachment) assignValues(columns []string, values []any) er
 			} else if value.Valid {
 				ia.DeletedAt = value.Time
 			}
+		case integrationattachment.FieldWorkflowID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field workflow_id", values[i])
+			} else if value != nil {
+				ia.WorkflowID = *value
+			}
 		case integrationattachment.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field integration_attachment_integration", values[i])
 			} else if value.Valid {
 				ia.integration_attachment_integration = new(uuid.UUID)
 				*ia.integration_attachment_integration = *value.S.(*uuid.UUID)
-			}
-		case integrationattachment.ForeignKeys[1]:
-			if value, ok := values[i].(*sql.NullScanner); !ok {
-				return fmt.Errorf("unexpected type %T for field integration_attachment_workflow", values[i])
-			} else if value.Valid {
-				ia.integration_attachment_workflow = new(uuid.UUID)
-				*ia.integration_attachment_workflow = *value.S.(*uuid.UUID)
 			}
 		default:
 			ia.selectValues.Set(columns[i], values[i])
@@ -189,6 +187,9 @@ func (ia *IntegrationAttachment) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("deleted_at=")
 	builder.WriteString(ia.DeletedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("workflow_id=")
+	builder.WriteString(fmt.Sprintf("%v", ia.WorkflowID))
 	builder.WriteByte(')')
 	return builder.String()
 }

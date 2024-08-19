@@ -19,7 +19,6 @@ package controlplane.v1;
 
 import "buf/validate/validate.proto";
 import "controlplane/v1/response_messages.proto";
-import "workflowcontract/v1/crafting_schema.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
@@ -45,10 +44,9 @@ message WorkflowContractServiceCreateRequest {
       id: "name.dns-1123",
     },
   }];
-  // Ready to support multiple schema versions
-  oneof contract {
-    workflowcontract.v1.CraftingSchema v1 = 2;
-  }
+
+  // Raw representation of the contract in json, yaml or cue
+  bytes raw_contract = 4;
 
   optional string description = 3;
 }
@@ -66,9 +64,8 @@ message WorkflowContractServiceUpdateRequest {
     },
   }];
 
-  oneof contract {
-    workflowcontract.v1.CraftingSchema v1 = 3;
-  }
+  // Raw representation of the contract in json, yaml or cue
+  bytes raw_contract = 5;
 
   optional string description = 4;
 }
