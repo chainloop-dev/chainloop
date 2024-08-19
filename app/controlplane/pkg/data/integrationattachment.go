@@ -49,7 +49,7 @@ func (r *IntegrationAttachmentRepo) Create(ctx context.Context, integrationID, w
 		return nil, err
 	}
 
-	res := entIntegrationAttachmentToBiz(ia)
+	res := entIntegrationAndAttachmentToBiz(ia)
 	if res != nil {
 		res.IntegrationID = integrationID
 		res.WorkflowID = workflowID
@@ -74,7 +74,7 @@ func (r *IntegrationAttachmentRepo) List(ctx context.Context, orgID, workflowID 
 
 	result := make([]*biz.IntegrationAndAttachment, 0, len(res))
 	for _, r := range res {
-		result = append(result, entIntegrationAttachmentToBiz(r))
+		result = append(result, entIntegrationAndAttachmentToBiz(r))
 	}
 
 	return result, nil
@@ -93,14 +93,14 @@ func (r *IntegrationAttachmentRepo) FindByIDInOrg(ctx context.Context, orgID, id
 		return nil, nil
 	}
 
-	return entIntegrationAttachmentToBiz(integration).IntegrationAttachment, nil
+	return entIntegrationAndAttachmentToBiz(integration).IntegrationAttachment, nil
 }
 
 func (r *IntegrationAttachmentRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
 	return r.data.DB.IntegrationAttachment.UpdateOneID(id).SetDeletedAt(time.Now()).Exec(ctx)
 }
 
-func entIntegrationAttachmentToBiz(i *ent.IntegrationAttachment) *biz.IntegrationAndAttachment {
+func entIntegrationAndAttachmentToBiz(i *ent.IntegrationAttachment) *biz.IntegrationAndAttachment {
 	if i == nil {
 		return nil
 	}
