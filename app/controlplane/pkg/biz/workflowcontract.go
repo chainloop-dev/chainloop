@@ -318,7 +318,7 @@ func (uc *WorkflowContractUseCase) findPolicy(att *schemav1.PolicyAttachment, to
 		provider, name := loader.ProviderParts(att.GetRef())
 		p := uc.policyRegistry.GetProvider(provider)
 		if p == nil {
-			return nil, NewErrNotFound("provider not found")
+			return nil, NewErrNotFound("policy provider")
 		}
 		policy, err := uc.GetPolicy(provider, name, token)
 		if err != nil {
