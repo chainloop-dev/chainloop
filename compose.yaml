@@ -3,6 +3,7 @@ name: chainloop-lab
 include:
   - ./devel/compose.yml
 services:
+  # The control plane is the main service
   control-plane:
     image: ghcr.io/chainloop-dev/chainloop/control-plane:v0.96.1
     environment:
@@ -26,6 +27,7 @@ services:
       db-init:
         condition: service_completed_successfully
 
+  # CAS backend for artifact storage
   cas:
     image: ghcr.io/chainloop-dev/chainloop/artifact-cas:v0.96.1
     volumes:
@@ -43,6 +45,7 @@ services:
       vault:
         condition: service_healthy
 
+  # Ensures DB has the proper schema
   db-init:
     image: ghcr.io/chainloop-dev/chainloop/control-plane-migrations:v0.96.1
     depends_on:
@@ -50,6 +53,7 @@ services:
         condition: service_healthy
     command: "migrate apply --url postgres://postgres:@postgresql:5432/controlplane?sslmode=disable --dir file:///migrations"
 
+  # Optional Minio S3 backend. Run it with `--profile optional`
   minio:
     image: quay.io/minio/minio
     ports:
