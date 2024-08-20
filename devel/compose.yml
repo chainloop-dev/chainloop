@@ -26,6 +26,12 @@ services:
       - 8200:8200
     environment:
       - VAULT_DEV_ROOT_TOKEN_ID=notasecret
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "http://127.0.0.1:8200/v1/sys/health" ]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
 
   # OIDC provider for development
   dex:
