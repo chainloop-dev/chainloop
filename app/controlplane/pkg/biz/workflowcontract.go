@@ -27,6 +27,7 @@ import (
 	"github.com/bufbuild/protoyaml-go"
 	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/policies"
+	loader "github.com/chainloop-dev/chainloop/pkg/policies"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -297,6 +298,47 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name strin
 	}
 
 	return c, nil
+}
+
+func (uc *WorkflowContractUseCase) ValidateContractPolicies(rawSchema []byte, token string) error {
+	// Validate that externally provided policies exist
+	c, err := identifyUnMarshalAndValidateRawContract(rawSchema)
+	if err != nil {
+		return NewErrValidation(err)
+	}
+	for _, att := range c.Schema.GetPolicies().GetAttestation() {
+		_, err := uc.findPolicy(att, token)
+		if err != nil {
+			return NewErrValidation(err)
+		}
+	}
+	for _, att := range c.Schema.GetPolicies().GetMaterials() {
+		_, err := uc.findPolicy(att, token)
+		if err != nil {
+			return NewErrValidation(err)
+		}
+	}
+	return nil
+}
+
+func (uc *WorkflowContractUseCase) findPolicy(att *schemav1.PolicyAttachment, token string) (*schemav1.Policy, error) {
+	if att.GetEmbedded() != nil {
+		return att.GetEmbedded(), nil
+	}
+
+	// if it should come from a provider, check that it's available
+	// chainloop://[provider/]name
+	if loader.IsProviderScheme(att.GetRef()) {
+		provider, name := loader.ProviderParts(att.GetRef())
+		policy, err := uc.GetPolicy(provider, name, token)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get policy '%s': %w", name, err)
+		}
+		return policy, nil
+	}
+
+	// Otherwise, don't return an error, as it might consist of a local policy, not available in this context
+	return nil, nil
 }
 
 // Delete soft-deletes the entry

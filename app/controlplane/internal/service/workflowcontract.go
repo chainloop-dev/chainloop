@@ -19,6 +19,7 @@ import (
 	"context"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	errors "github.com/go-kratos/kratos/v2/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -91,6 +92,15 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 		return nil, err
 	}
 
+	token, err := usercontext.GetRawToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = s.contractUseCase.ValidateContractPolicies(req.RawContract, token); err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
 	// Currently supporting only v1 version
 	schema, err := s.contractUseCase.Create(ctx, &biz.WorkflowContractCreateOpts{
 		OrgID: currentOrg.ID,
@@ -107,6 +117,15 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	token, err := usercontext.GetRawToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = s.contractUseCase.ValidateContractPolicies(req.RawContract, token); err != nil {
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	schemaWithVersion, err := s.contractUseCase.Update(ctx, currentOrg.ID, req.Name,
