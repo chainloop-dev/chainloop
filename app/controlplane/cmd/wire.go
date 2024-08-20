@@ -66,10 +66,10 @@ func newDataConf(in *conf.Data_Database) *data.NewConfig {
 	return &data.NewConfig{Driver: in.Driver, Source: in.Source}
 }
 
-func newPolicyProviderConfig(in []*conf.PolicyProvider) []*policies.NewPolicyProviderConfig {
-	out := make([]*policies.NewPolicyProviderConfig, 0, len(in))
+func newPolicyProviderConfig(in []*conf.PolicyProvider) []*policies.NewRegistryConfig {
+	out := make([]*policies.NewRegistryConfig, 0, len(in))
 	for _, p := range in {
-		out = append(out, &policies.NewPolicyProviderConfig{Name: p.Name, Host: p.Host, Default: p.Default})
+		out = append(out, &policies.NewRegistryConfig{Name: p.Name, Host: p.Host, Default: p.Default})
 	}
 	return out
 }

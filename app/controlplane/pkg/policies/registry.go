@@ -19,7 +19,7 @@ import (
 	"fmt"
 )
 
-type NewPolicyProviderConfig struct {
+type NewRegistryConfig struct {
 	Name    string
 	Host    string
 	Default bool
@@ -30,7 +30,7 @@ type Registry struct {
 	providers map[string]*PolicyProvider
 }
 
-func NewRegistry(conf ...*NewPolicyProviderConfig) (*Registry, error) {
+func NewRegistry(conf ...*NewRegistryConfig) (*Registry, error) {
 	r := &Registry{providers: make(map[string]*PolicyProvider)}
 	var hasDefault bool
 

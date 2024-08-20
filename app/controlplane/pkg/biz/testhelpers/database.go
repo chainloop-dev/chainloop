@@ -209,10 +209,10 @@ func NewDataConfig(in *conf.Data) *data.NewConfig {
 	}
 }
 
-func NewPolicyProviderConfig(in *conf.Bootstrap) []*policies.NewPolicyProviderConfig {
-	out := make([]*policies.NewPolicyProviderConfig, 0, len(in.PolicyProviders))
+func NewPolicyProviderConfig(in *conf.Bootstrap) []*policies.NewRegistryConfig {
+	out := make([]*policies.NewRegistryConfig, 0, len(in.PolicyProviders))
 	for _, p := range in.PolicyProviders {
-		out = append(out, &policies.NewPolicyProviderConfig{Name: p.Name, Host: p.Host, Default: p.Default})
+		out = append(out, &policies.NewRegistryConfig{Name: p.Name, Host: p.Host, Default: p.Default})
 	}
 	return out
 }

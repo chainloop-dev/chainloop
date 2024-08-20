@@ -33,7 +33,7 @@ func TestProviderSuite(t *testing.T) {
 
 func (s *providerTestSuite) SetupTest() {
 	var err error
-	s.registry, err = NewRegistry([]*NewPolicyProviderConfig{
+	s.registry, err = NewRegistry([]*NewRegistryConfig{
 		{Name: "p1", Host: "https://p1host"},
 		{Name: "p2", Host: "https://p2host"},
 		{Name: "p3", Host: "https://p3host", Default: true},
@@ -42,7 +42,7 @@ func (s *providerTestSuite) SetupTest() {
 }
 
 func (s *providerTestSuite) TestDuplicateDefault() {
-	_, err := NewRegistry([]*NewPolicyProviderConfig{
+	_, err := NewRegistry([]*NewRegistryConfig{
 		{Name: "p1", Host: "https://p1host"},
 		{Name: "p2", Host: "https://p2host", Default: true},
 		{Name: "p3", Host: "https://p3host", Default: true},
