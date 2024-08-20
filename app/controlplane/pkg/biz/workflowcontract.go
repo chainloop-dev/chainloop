@@ -332,7 +332,7 @@ func (uc *WorkflowContractUseCase) findPolicy(att *schemav1.PolicyAttachment, to
 		provider, name := loader.ProviderParts(att.GetRef())
 		policy, err := uc.GetPolicy(provider, name, token)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get policy: %w", err)
+			return nil, fmt.Errorf("failed to get policy '%s': %w", name, err)
 		}
 		return policy, nil
 	}
