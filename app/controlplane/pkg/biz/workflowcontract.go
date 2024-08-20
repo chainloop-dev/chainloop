@@ -147,9 +147,6 @@ type WorkflowContractCreateOpts struct {
 	Description *string
 	// Make sure that the name is unique in the organization
 	AddUniquePrefix bool
-
-	// Token to be used for authenticating against remote policy providers
-	Token string
 }
 
 // EmptyDefaultContract is the default contract that will be created if no contract is provided
@@ -270,9 +267,6 @@ func (uc *WorkflowContractUseCase) FindVersionByID(ctx context.Context, versionI
 type WorkflowContractUpdateOpts struct {
 	RawSchema   []byte
 	Description *string
-
-	// Token to be used for authenticating against remote policy providers
-	Token string
 }
 
 func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name string, opts *WorkflowContractUpdateOpts) (*WorkflowContractWithVersion, error) {

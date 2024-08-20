@@ -107,8 +107,7 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 	schema, err := s.contractUseCase.Create(ctx, &biz.WorkflowContractCreateOpts{
 		OrgID: currentOrg.ID,
 		Name:  req.Name, Description: req.Description,
-		RawSchema: req.RawContract,
-		Token:     token})
+		RawSchema: req.RawContract})
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -135,7 +134,6 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 		&biz.WorkflowContractUpdateOpts{
 			Description: req.Description,
 			RawSchema:   req.RawContract,
-			Token:       token,
 		})
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
