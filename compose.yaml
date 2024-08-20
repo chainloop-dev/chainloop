@@ -50,9 +50,11 @@ services:
         condition: service_healthy
     command: "migrate apply --url postgres://postgres:@postgresql:5432/controlplane?sslmode=disable --dir file:///migrations"
 
-#  minio:
-#    image: quay.io/minio/minio
-#    ports:
-#      - 9002:9000
-#      - 9003:9001
-#    command: server /data --console-address ":9001"
+  minio:
+    image: quay.io/minio/minio
+    ports:
+      - 9002:9000
+      - 9003:9001
+    command: server /data --console-address ":9001"
+    profiles:
+      - optional
