@@ -99,6 +99,10 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 		return nil, status.Error(codes.Unauthenticated, "invalid token")
 	}
 
+	if err = s.contractUseCase.ValidateContractPolicies(req.RawContract, token); err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid policies")
+	}
+
 	// Currently supporting only v1 version
 	schema, err := s.contractUseCase.Create(ctx, &biz.WorkflowContractCreateOpts{
 		OrgID: currentOrg.ID,
@@ -121,6 +125,10 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 	token, err := usercontext.GetRawToken(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, "invalid token")
+	}
+
+	if err = s.contractUseCase.ValidateContractPolicies(req.RawContract, token); err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid policies")
 	}
 
 	schemaWithVersion, err := s.contractUseCase.Update(ctx, currentOrg.ID, req.Name,

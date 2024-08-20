@@ -182,11 +182,6 @@ func (uc *WorkflowContractUseCase) Create(ctx context.Context, opts *WorkflowCon
 			return nil, fmt.Errorf("failed to load contract: %w", err)
 		}
 
-		err = uc.validatePolicies(c.Schema, opts.Token)
-		if err != nil {
-			return nil, fmt.Errorf("invalid policies: %w", err)
-		}
-
 		contract = c
 	}
 
@@ -297,11 +292,6 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name strin
 			return nil, fmt.Errorf("failed to load contract: %w", err)
 		}
 
-		err = uc.validatePolicies(c.Schema, opts.Token)
-		if err != nil {
-			return nil, fmt.Errorf("invalid policies: %w", err)
-		}
-
 		contract = c
 	}
 
@@ -316,18 +306,22 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name strin
 	return c, nil
 }
 
-func (uc *WorkflowContractUseCase) validatePolicies(schema *schemav1.CraftingSchema, token string) error {
+func (uc *WorkflowContractUseCase) ValidateContractPolicies(rawSchema []byte, token string) error {
 	// Validate that externally provided policies exist
-	for _, att := range schema.GetPolicies().GetAttestation() {
+	c, err := identifyUnMarshalAndValidateRawContract(rawSchema)
+	if err != nil {
+		return NewErrValidation(err)
+	}
+	for _, att := range c.Schema.GetPolicies().GetAttestation() {
 		_, err := uc.findPolicy(att, token)
 		if err != nil {
-			return err
+			return NewErrValidation(err)
 		}
 	}
-	for _, att := range schema.GetPolicies().GetMaterials() {
+	for _, att := range c.Schema.GetPolicies().GetMaterials() {
 		_, err := uc.findPolicy(att, token)
 		if err != nil {
-			return err
+			return NewErrValidation(err)
 		}
 	}
 	return nil
@@ -342,10 +336,6 @@ func (uc *WorkflowContractUseCase) findPolicy(att *schemav1.PolicyAttachment, to
 	// chainloop://[provider/]name
 	if loader.IsProviderScheme(att.GetRef()) {
 		provider, name := loader.ProviderParts(att.GetRef())
-		p := uc.policyRegistry.GetProvider(provider)
-		if p == nil {
-			return nil, NewErrNotFound("policy provider")
-		}
 		policy, err := uc.GetPolicy(provider, name, token)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get policy: %w", err)
