@@ -18,7 +18,6 @@ package policies
 import (
 	"testing"
 
-	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -34,7 +33,7 @@ func TestProviderSuite(t *testing.T) {
 
 func (s *providerTestSuite) SetupTest() {
 	var err error
-	s.registry, err = NewRegistry([]*conf.PolicyProvider{
+	s.registry, err = NewRegistry([]*NewRegistryConfig{
 		{Name: "p1", Host: "https://p1host"},
 		{Name: "p2", Host: "https://p2host"},
 		{Name: "p3", Host: "https://p3host", Default: true},
@@ -43,7 +42,7 @@ func (s *providerTestSuite) SetupTest() {
 }
 
 func (s *providerTestSuite) TestDuplicateDefault() {
-	_, err := NewRegistry([]*conf.PolicyProvider{
+	_, err := NewRegistry([]*NewRegistryConfig{
 		{Name: "p1", Host: "https://p1host"},
 		{Name: "p2", Host: "https://p2host", Default: true},
 		{Name: "p3", Host: "https://p3host", Default: true},

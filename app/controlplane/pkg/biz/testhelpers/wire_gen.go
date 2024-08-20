@@ -8,11 +8,11 @@ package testhelpers
 
 import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/policies"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/policies"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager"
@@ -53,7 +53,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	organizationUseCase := biz.NewOrganizationUseCase(organizationRepo, casBackendUseCase, integrationUseCase, membershipRepo, arg, logger)
 	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, organizationUseCase, logger)
 	workflowContractRepo := data.NewWorkflowContractRepo(dataData, logger)
-	v := NewPolicyProviders(bootstrap)
+	v := NewPolicyProviderConfig(bootstrap)
 	registry, err := policies.NewRegistry(v...)
 	if err != nil {
 		cleanup()
