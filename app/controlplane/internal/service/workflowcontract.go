@@ -22,8 +22,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	errors "github.com/go-kratos/kratos/v2/errors"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -96,11 +94,11 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 
 	token, err := usercontext.GetRawToken(ctx)
 	if err != nil {
-		return nil, status.Error(codes.Unauthenticated, "invalid token")
+		return nil, err
 	}
 
 	if err = s.contractUseCase.ValidateContractPolicies(req.RawContract, token); err != nil {
-		return nil, status.Error(codes.InvalidArgument, "invalid policies")
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	// Currently supporting only v1 version
@@ -123,11 +121,11 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 
 	token, err := usercontext.GetRawToken(ctx)
 	if err != nil {
-		return nil, status.Error(codes.Unauthenticated, "invalid token")
+		return nil, err
 	}
 
 	if err = s.contractUseCase.ValidateContractPolicies(req.RawContract, token); err != nil {
-		return nil, status.Error(codes.InvalidArgument, "invalid policies")
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	schemaWithVersion, err := s.contractUseCase.Update(ctx, currentOrg.ID, req.Name,
