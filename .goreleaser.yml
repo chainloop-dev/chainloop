@@ -101,6 +101,7 @@ dockers:
       - app/controlplane/pkg/data/ent/migrate/migrations
     image_templates:
       - "ghcr.io/chainloop-dev/chainloop/control-plane-migrations:{{ .Tag }}"
+      - "ghcr.io/chainloop-dev/chainloop/control-plane-migrations:latest"
   - dockerfile: app/artifact-cas/Dockerfile.goreleaser
     ids:
       - artifact-cas
