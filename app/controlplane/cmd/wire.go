@@ -23,13 +23,13 @@ package main
 import (
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/policies"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/server"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/ca"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/policies"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/loader"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
@@ -57,12 +57,21 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.Availabl
 			newApp,
 			newProtoValidator,
 			newDataConf,
+			newPolicyProviderConfig,
 		),
 	)
 }
 
 func newDataConf(in *conf.Data_Database) *data.NewConfig {
 	return &data.NewConfig{Driver: in.Driver, Source: in.Source}
+}
+
+func newPolicyProviderConfig(in []*conf.PolicyProvider) []*policies.NewPolicyProviderConfig {
+	out := make([]*policies.NewPolicyProviderConfig, 0, len(in))
+	for _, p := range in {
+		out = append(out, &policies.NewPolicyProviderConfig{Name: p.Name, Host: p.Host, Default: p.Default})
+	}
+	return out
 }
 
 func serviceOpts(l log.Logger) []service.NewOpt {

@@ -24,11 +24,11 @@ import (
 	"testing"
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/policies"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	config "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/policies"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	robotaccount "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	backends "github.com/chainloop-dev/chainloop/pkg/blobmanager"
@@ -49,7 +49,7 @@ func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWrite
 			NewConfData,
 			NewDataConfig,
 			NewPromSpec,
-			NewPolicyProviders,
+			NewPolicyProviderConfig,
 			policies.NewRegistry,
 			authz.NewDatabaseEnforcer,
 			wire.FieldsOf(new(*conf.Data), "Database"),

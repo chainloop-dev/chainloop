@@ -26,7 +26,7 @@ import (
 	"github.com/bufbuild/protovalidate-go"
 	"github.com/bufbuild/protoyaml-go"
 	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/policies"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/policies"
 	loader "github.com/chainloop-dev/chainloop/pkg/policies"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"

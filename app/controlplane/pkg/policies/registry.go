@@ -17,16 +17,20 @@ package policies
 
 import (
 	"fmt"
-
-	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 )
+
+type NewPolicyProviderConfig struct {
+	Name    string
+	Host    string
+	Default bool
+}
 
 // Registry manages policy providers
 type Registry struct {
 	providers map[string]*PolicyProvider
 }
 
-func NewRegistry(conf ...*conf.PolicyProvider) (*Registry, error) {
+func NewRegistry(conf ...*NewPolicyProviderConfig) (*Registry, error) {
 	r := &Registry{providers: make(map[string]*PolicyProvider)}
 	var hasDefault bool
 

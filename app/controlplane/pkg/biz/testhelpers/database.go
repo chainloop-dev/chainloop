@@ -31,6 +31,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/policies"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	robotaccount "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	backends "github.com/chainloop-dev/chainloop/pkg/blobmanager"
@@ -208,8 +209,12 @@ func NewDataConfig(in *conf.Data) *data.NewConfig {
 	}
 }
 
-func NewPolicyProviders(in *conf.Bootstrap) []*conf.PolicyProvider {
-	return in.PolicyProviders
+func NewPolicyProviderConfig(in *conf.Bootstrap) []*policies.NewPolicyProviderConfig {
+	out := make([]*policies.NewPolicyProviderConfig, 0, len(in.PolicyProviders))
+	for _, p := range in.PolicyProviders {
+		out = append(out, &policies.NewPolicyProviderConfig{Name: p.Name, Host: p.Host, Default: p.Default})
+	}
+	return out
 }
 
 func (db *TestDatabase) Close(t *testing.T) {
