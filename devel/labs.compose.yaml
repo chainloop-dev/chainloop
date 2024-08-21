@@ -1,7 +1,7 @@
 name: chainloop-lab
 
 include:
-  - ./devel/compose.yml
+  - ./compose.yml
 services:
   # The control plane is the main service
   control-plane:
@@ -15,9 +15,9 @@ services:
       CP_CAS_KEY_PATH: /devkeys/cas.pem
     volumes:
       # main configuration
-      - ./app/controlplane/configs:/data/conf
+      - ../app/controlplane/configs:/data/conf
       # development keys
-      - ./devel/devkeys:/devkeys
+      - ../devel/devkeys:/devkeys
     ports:
       - 9000:9000
       - 8000:8000
@@ -32,9 +32,9 @@ services:
     image: ghcr.io/chainloop-dev/chainloop/artifact-cas:v0.96.1
     volumes:
       # main configuration
-      - ./app/artifact-cas/configs:/data/conf
+      - ../app/artifact-cas/configs:/data/conf
       # development keys
-      - ./devel/devkeys:/devkeys
+      - ../devel/devkeys:/devkeys
     environment:
       CAS_VAULT_ADDRESS: http://vault:8200
       CAS_PUBLIC_KEY_PATH: /devkeys/cas.pem
