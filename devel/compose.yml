@@ -1,38 +1,9 @@
-# NOTE: This setup is meant to be used for development purposes only.
+# NOTE: By default this file runs a development setup. 
+# To run a labs setup, use `docker-compose -f compose.labs.yml up`
+include:
+  - ./compose.common.yml
+
 services:
-  postgresql:
-    image: docker.io/bitnami/postgresql:16
-    # Expose the port to the host to enable baremetal controlplane development
-    ports:
-      - 5432:5432
-    volumes:
-      - postgresql_data:/bitnami/postgresql
-    environment:
-      - ALLOW_EMPTY_PASSWORD=yes
-      - POSTGRESQL_DATABASE=controlplane
-      - POSTGRESQL_USERNAME=postgres
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "postgres"]
-      interval: 2s
-      retries: 10
-
-  # in memory-only vault for development
-  # note that secrets will get removed when the container is restarted
-  vault:
-    image: docker.io/vault:1.12.3
-    cap_add:
-      - IPC_LOCK
-    ports:
-      - 8200:8200
-    environment:
-      - VAULT_DEV_ROOT_TOKEN_ID=notasecret
-    healthcheck:
-      test: [ "CMD", "wget", "--spider", "http://127.0.0.1:8200/v1/sys/health" ]
-      interval: 10s
-      timeout: 3s
-      retries: 10
-      start_period: 5s
-
   # OIDC provider for development
   dex:
     volumes:
@@ -43,5 +14,3 @@ services:
     ports:
       - "0.0.0.0:5556:5556/tcp"
 
-volumes:
-  postgresql_data:

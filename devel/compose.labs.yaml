@@ -1,8 +1,18 @@
 name: chainloop-lab
 
 include:
-  - ./compose.yml
+  - ./compose.common.yml
 services:
+  # OIDC provider for labs
+  dex:
+    volumes:
+      - ".:/wd"
+    image: docker.io/bitnami/dex:2
+    working_dir: /wd/dex
+    command: "serve config.labs.yaml"
+    ports:
+      - "0.0.0.0:5556:5556/tcp"
+
   # The control plane is the main service
   control-plane:
     image: ghcr.io/chainloop-dev/chainloop/control-plane:latest
