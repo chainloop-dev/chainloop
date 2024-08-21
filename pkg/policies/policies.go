@@ -109,6 +109,7 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 			Annotations:  spec.GetMetadata().GetAnnotations(),
 			Description:  spec.GetMetadata().GetDescription(),
 			With:         policy.GetWith(),
+			Type:         spec.GetSpec().Type,
 		})
 	}
 
@@ -159,6 +160,7 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 			Annotations: spec.GetMetadata().GetAnnotations(),
 			Description: spec.GetMetadata().GetDescription(),
 			With:        policyAtt.GetWith(),
+			Type:        spec.GetSpec().Type,
 		})
 	}
 

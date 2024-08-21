@@ -428,6 +428,7 @@ func (s *testSuite) TestValidInlineMaterial() {
 	s.Require().NoError(err)
 	s.Len(res, 1)
 	s.Equal("made-with-syft", res[0].Name)
+	s.Equal(v12.CraftingSchema_Material_SBOM_SPDX_JSON, res[0].GetType())
 	s.Len(res[0].Violations, 0)
 }
 
