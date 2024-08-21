@@ -272,7 +272,6 @@ func (s *testSuite) TestProviderParts() {
 			s.Equal(tc.name, name)
 		})
 	}
-
 }
 
 func (s *testSuite) TestArgumentsInViolations() {
