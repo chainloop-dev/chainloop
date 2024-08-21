@@ -5,7 +5,7 @@ include:
 services:
   # The control plane is the main service
   control-plane:
-    image: ghcr.io/chainloop-dev/chainloop/control-plane:v0.96.1
+    image: ghcr.io/chainloop-dev/chainloop/control-plane:latest
     environment:
       CP_DB_HOST: postgresql
       CP_DEX_DOMAIN: http://dex:5556/dex
@@ -29,7 +29,7 @@ services:
 
   # CAS backend for artifact storage
   cas:
-    image: ghcr.io/chainloop-dev/chainloop/artifact-cas:v0.96.1
+    image: ghcr.io/chainloop-dev/chainloop/artifact-cas:latest
     volumes:
       # main configuration
       - ../app/artifact-cas/configs:/data/conf
@@ -47,7 +47,7 @@ services:
 
   # Ensures DB has the proper schema
   db-init:
-    image: ghcr.io/chainloop-dev/chainloop/control-plane-migrations:v0.96.1
+    image: ghcr.io/chainloop-dev/chainloop/control-plane-migrations:latest
     depends_on:
       postgresql:
         condition: service_healthy
