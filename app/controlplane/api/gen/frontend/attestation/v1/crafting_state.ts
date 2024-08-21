@@ -113,7 +113,7 @@ export interface PolicyEvaluation {
   /** arguments, as they come from the policy attachment */
   with: { [key: string]: string };
   /** material type, if any, of the evaluated policy */
-  Type: CraftingSchema_Material_MaterialType;
+  type: CraftingSchema_Material_MaterialType;
 }
 
 export interface PolicyEvaluation_AnnotationsEntry {
@@ -1188,7 +1188,7 @@ export const Attestation_EnvVarsEntry = {
 };
 
 function createBasePolicyEvaluation(): PolicyEvaluation {
-  return { name: "", materialName: "", body: "", description: "", annotations: {}, violations: [], with: {}, Type: 0 };
+  return { name: "", materialName: "", body: "", description: "", annotations: {}, violations: [], with: {}, type: 0 };
 }
 
 export const PolicyEvaluation = {
@@ -1214,8 +1214,8 @@ export const PolicyEvaluation = {
     Object.entries(message.with).forEach(([key, value]) => {
       PolicyEvaluation_WithEntry.encode({ key: key as any, value }, writer.uint32(58).fork()).ldelim();
     });
-    if (message.Type !== 0) {
-      writer.uint32(64).int32(message.Type);
+    if (message.type !== 0) {
+      writer.uint32(64).int32(message.type);
     }
     return writer;
   },
@@ -1287,7 +1287,7 @@ export const PolicyEvaluation = {
             break;
           }
 
-          message.Type = reader.int32() as any;
+          message.type = reader.int32() as any;
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1319,7 +1319,7 @@ export const PolicyEvaluation = {
           return acc;
         }, {})
         : {},
-      Type: isSet(object.Type) ? craftingSchema_Material_MaterialTypeFromJSON(object.Type) : 0,
+      type: isSet(object.type) ? craftingSchema_Material_MaterialTypeFromJSON(object.type) : 0,
     };
   },
 
@@ -1346,7 +1346,7 @@ export const PolicyEvaluation = {
         obj.with[k] = v;
       });
     }
-    message.Type !== undefined && (obj.Type = craftingSchema_Material_MaterialTypeToJSON(message.Type));
+    message.type !== undefined && (obj.type = craftingSchema_Material_MaterialTypeToJSON(message.type));
     return obj;
   },
 
@@ -1376,7 +1376,7 @@ export const PolicyEvaluation = {
       }
       return acc;
     }, {});
-    message.Type = object.Type ?? 0;
+    message.type = object.type ?? 0;
     return message;
   },
 };
