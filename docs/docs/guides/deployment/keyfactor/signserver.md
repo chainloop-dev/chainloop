@@ -47,12 +47,10 @@ INF Attestation initialized! now you can check its status or add materials to it
 └───────────────────┴──────────────────────────────────────┘
 
 ➜ chainloop att add --value evidence.txt
-WRN API contacted in insecure mode
 INF material kind detected kind=ARTIFACT
 INF material added to attestation
 
 ➜ chainloop att push --key signserver://localhost:8443/PlainSigner --bundle mybundle.json --signserver-ca-path ../keyfactor/localhost-chain.pem
-WRN API contacted in insecure mode
 INF generating Sigstore bundle mybundle.json
 INF push completed
 ┌───────────────────┬──────────────────────────────────────┐
