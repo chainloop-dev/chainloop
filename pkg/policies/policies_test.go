@@ -247,6 +247,34 @@ func (s *testSuite) TestVerifyAttestations() {
 	}
 }
 
+func (s *testSuite) TestProviderParts() {
+	testCases := []struct {
+		ref  string
+		prov string
+		name string
+	}{
+		{
+			ref:  "chainloop://cyclonedx-freshness",
+			prov: "",
+			name: "cyclonedx-freshness",
+		},
+		{
+			ref:  "chainloop://provider/cyclonedx-freshness",
+			prov: "provider",
+			name: "cyclonedx-freshness",
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			prov, name := ProviderParts(tc.ref)
+			s.Equal(tc.prov, prov)
+			s.Equal(tc.name, name)
+		})
+	}
+
+}
+
 func (s *testSuite) TestArgumentsInViolations() {
 	schema := &v12.CraftingSchema{
 		Policies: &v12.Policies{

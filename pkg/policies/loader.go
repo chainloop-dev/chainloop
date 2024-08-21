@@ -95,7 +95,7 @@ func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachm
 		return nil, fmt.Errorf("invalid policy reference %q", ref)
 	}
 
-	name, provider := ProviderParts(ref)
+	provider, name := ProviderParts(ref)
 
 	resp, err := c.Client.GetPolicy(ctx, &pb.AttestationServiceGetPolicyRequest{
 		Provider:   provider,
