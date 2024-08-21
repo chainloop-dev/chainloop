@@ -5,9 +5,11 @@ title: Use Keyfactor SignServer for attestation signing
 ### Summary
 Chainloop CLI can sign attestations using a preconfigured SignServer instance, by providing a key reference during the signing process:
 
+```shell
+> chainloop attestation push --key signserver://mysignserver/PlainSigner --signserver-ca-path mysignserver-chain.pem
 ```
-chainloop attestation push --key signserver://mysignserver/PlainSigner --signserver-ca-path mysignserver-chain.pem
-```
+
+SignServer is a platform for digitally signing code, documents and timestamps. Check it out at [https://www.signserver.org/about/](https://www.signserver.org/about/).
 
 ### Setting up SignServer 
 If your organization doesn't have it already, you can follow these tutorials for a basic setup of Keyfactor's KPI solutions:
@@ -23,7 +25,7 @@ Once you have it configured, you can reach SignServer signer worker at, for exam
 Note that, at this moment, SignServer authentication is not implemented.
 
 ### Signing Chainloop attestations with SignServer
-Using the CLI options above, Chainloop with prepare the signing In-toto payload and send it to SignServer for signing. The returned signature is then 
+Using the CLI options above, Chainloop will prepare the signed In-toto payload and send it to SignServer for signing. The returned signature is then 
 included in the final attestation and sent to Chainloop Vault for storage.
 
 ![chainloop-signserver-sequence.png](chainloop-signserver-sequence.png)
