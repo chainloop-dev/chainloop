@@ -1,4 +1,4 @@
-issuer: "http://0.0.0.0:5556/dex"
+issuer: "http://dex:5556/dex"
 
 storage:
   type: memory
