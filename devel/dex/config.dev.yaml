@@ -1,4 +1,5 @@
-issuer: http://0.0.0.0:5556/dex
+# this requires adding an entry `127.0.0.1 dex` to /etc/hosts
+issuer: http://dex:5556/dex
 
 storage:
   type: memory

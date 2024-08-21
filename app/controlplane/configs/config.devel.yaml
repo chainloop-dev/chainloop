@@ -18,8 +18,8 @@ server:
 
 certificate_authority:
   file_ca:
-    cert_path: "../../devel/devkeys/ca.pub"
-    key_path: "../../devel/devkeys/ca.pem"
+    cert_path: ${FILE_CA_CERT_PATH:../../devel/devkeys/ca.pub}
+    key_path: ${FILE_CA_KEY_PATH:../../devel/devkeys/ca.pem}
     key_pass: chainloop
 #  ejbca_ca:
 #    server_url: "https://localhost/ejbca"
@@ -55,7 +55,7 @@ data:
 # Development credentials for the SSO authentication roundtrip
 auth:
   oidc:
-    domain: "http://0.0.0.0:5556/dex"
+    domain: ${DEX_DOMAIN:http://dex:5556/dex}
     client_id: "chainloop-dev"
     client_secret: "ZXhhbXBsZS1hcHAtc2VjcmV0"
 
@@ -63,7 +63,7 @@ auth:
   generated_jws_hmac_secret: "developmentKey"
 
   # Private key used to sign the JWTs meant to be consumed by the CAS
-  cas_robot_account_private_key_path: "../../devel/devkeys/cas.pem"
+  cas_robot_account_private_key_path: ${CAS_KEY_PATH:../../devel/devkeys/cas.pem}
   # allow_list:
     # rules: ["@chainloop.local"]
     # selected_routes: ["/controlplane.v1.WorkflowRunService/List"]

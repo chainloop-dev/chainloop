@@ -1,0 +1,64 @@
+name: chainloop-lab
+
+include:
+  - ./compose.yml
+services:
+  # The control plane is the main service
+  control-plane:
+    image: ghcr.io/chainloop-dev/chainloop/control-plane:latest
+    environment:
+      CP_DB_HOST: postgresql
+      CP_DEX_DOMAIN: http://dex:5556/dex
+      CP_VAULT_ADDRESS: http://vault:8200
+      CP_FILE_CA_CERT_PATH: /devkeys/ca.pub
+      CP_FILE_CA_KEY_PATH: /devkeys/ca.pem
+      CP_CAS_KEY_PATH: /devkeys/cas.pem
+    volumes:
+      # main configuration
+      - ../app/controlplane/configs:/data/conf
+      # development keys
+      - ../devel/devkeys:/devkeys
+    ports:
+      - 9000:9000
+      - 8000:8000
+    depends_on:
+      vault:
+        condition: service_started
+      db-init:
+        condition: service_completed_successfully
+
+  # CAS backend for artifact storage
+  cas:
+    image: ghcr.io/chainloop-dev/chainloop/artifact-cas:latest
+    volumes:
+      # main configuration
+      - ../app/artifact-cas/configs:/data/conf
+      # development keys
+      - ../devel/devkeys:/devkeys
+    environment:
+      CAS_VAULT_ADDRESS: http://vault:8200
+      CAS_PUBLIC_KEY_PATH: /devkeys/cas.pem
+    ports:
+      - 9001:9001
+      - 8001:8001
+    depends_on:
+      vault:
+        condition: service_healthy
+
+  # Ensures DB has the proper schema
+  db-init:
+    image: ghcr.io/chainloop-dev/chainloop/control-plane-migrations:latest
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    command: "migrate apply --url postgres://postgres:@postgresql:5432/controlplane?sslmode=disable --dir file:///migrations"
+
+  # Optional Minio S3 backend. Run it with `--profile optional`
+  minio:
+    image: quay.io/minio/minio
+    ports:
+      - 9002:9000
+      - 9003:9001
+    command: server /data --console-address ":9001"
+    profiles:
+      - optional

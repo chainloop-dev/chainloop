@@ -142,7 +142,7 @@ Having these metrics is quite powerful, as they enable you to consider further i
 
 ![grafana-dashboard](./grafana.png)
 
-Here, we can observe how we monitor the latest status of workflows across our CI pipelines and processes.
+Here, we can observe how we monitor the latest status of workflows across our CI pipelines and processes. If you wish to use this dashboard, you can find it at Grafana Labs [here](https://grafana.com/grafana/dashboards/21641-chainloop-organization-metrics/).
 
 And in Alertmanager we can set up alerts based on the metrics we have gathered, for example, if a workflow fails, we can send an alert to the responsible team.
 ```yaml
