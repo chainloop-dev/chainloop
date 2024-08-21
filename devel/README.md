@@ -120,3 +120,44 @@ Running the following command fixes the issue:
 ```
 sudo ln -s $HOME/.docker/run/docker.sock /var/run/docker.sock
 ```
+
+## Labs Environments
+
+For quick testing you can use the provided `compose.labs.yml` file to run the Chainloop components and the auxiliary services.
+
+### 0 - Prerequisites
+
+- Docker and Docker Compose
+- Add entry in `/etc/hosts` for the hostname `dex` pointing to `127.0.0.1`
+
+
+### 1 - Run Containerized Environment
+
+Run the labs environment
+
+```sh
+docker compose -f compose.labs.yml up
+```
+
+
+### 2 - Configure Chainloop CLI
+
+Download Chainloop CLI
+
+```sh
+curl -sfL https://docs.chainloop.dev/install.sh | bash -s
+```
+
+Configure the CLI to point to the local control plane and CAS services.
+
+```sh
+chainloop config save --insecure --control-plane localhost:9000 --artifact-cas localhost:9001
+```
+
+and login
+
+```
+chainloop --insecure auth login 
+```
+
+you are now ready to use the CLI and follow the [quickstart guide](https://docs.chainloop.dev/quickstart) 
