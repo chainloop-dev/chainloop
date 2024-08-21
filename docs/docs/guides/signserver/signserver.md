@@ -1,5 +1,8 @@
 ---
 title: Use Keyfactor SignServer for attestation signing
+categories:
+  - signing
+  - keyfactor
 ---
 
 ### Summary
