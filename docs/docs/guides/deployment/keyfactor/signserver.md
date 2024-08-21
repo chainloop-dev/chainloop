@@ -74,7 +74,10 @@ INF push completed
 └──────────┴─────────────────────────────────────────────────────────────────────────┘
 Attestation Digest: sha256:8b247c21e201e1bd1367add9ee8bfd12c5a0866add39225fda6240c0ef10a64e%
 ```
-Verifying the attestation with the signing cert and root CA (both provided by your organization out-of-band):
+
+### Verifying the attestation
+
+Verifying the attestation requires the signing cert and root CA (both provided by your organization out-of-band):
 ```shell
 ➜ chainloop workflow run describe --digest sha256:8b247c21e201e1bd1367add9ee8bfd12c5a0866add39225fda6240c0ef10a64e --verify true --cert PlainSigner.pem --chain ManagementCA.pem
 ┌──────────────────────────────────────────────────────────────────────────────────────────┐
