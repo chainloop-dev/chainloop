@@ -31,8 +31,9 @@ type Rego struct {
 }
 
 const (
-	inputArgs = "args"
-	mainRule  = "violations"
+	inputArgs          = "args"
+	mainRule           = "violations"
+	deprecatedMainRule = "deny"
 )
 
 // Force interface
@@ -81,7 +82,18 @@ func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte, 
 
 	// If res is nil, it means that the rule hasn't been found
 	if res == nil {
-		return nil, fmt.Errorf("failed to evaluate policy: no '%s' rule found", mainRule)
+		// Try with the deprecated main rule
+		query = rego.Query(fmt.Sprintf("%v.%s\n", parsedModule.Package.Path, deprecatedMainRule))
+		regoEval = rego.New(regoInput, regoFunc, query)
+
+		res, err = regoEval.Eval(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to evaluate policy: %w", err)
+		}
+
+		if res == nil {
+			return nil, fmt.Errorf("failed to evaluate policy: no '%s' rule found", mainRule)
+		}
 	}
 
 	violations := make([]*engine.PolicyViolation, 0)
