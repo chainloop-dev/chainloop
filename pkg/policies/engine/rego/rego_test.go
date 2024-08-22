@@ -65,6 +65,46 @@ func TestRego_VerifyWithValidPolicy(t *testing.T) {
 	})
 }
 
+func TestRego_VerifyWithDeprecatedPolicy(t *testing.T) {
+	regoContent, err := os.ReadFile("testfiles/check_qa_deprecated.rego")
+	require.NoError(t, err)
+
+	r := &Rego{}
+	policy := &engine.Policy{
+		Name:   "check approval",
+		Source: regoContent,
+	}
+
+	t.Run("invalid input", func(t *testing.T) {
+		violations, err := r.Verify(context.TODO(), policy, []byte("{\"foo\": \"bar\"}"), nil)
+		require.NoError(t, err)
+		assert.Len(t, violations, 2)
+		assert.Contains(t, violations, &engine.PolicyViolation{
+			Subject:   policy.Name,
+			Violation: "Container image is not approved",
+		})
+		assert.Contains(t, violations, &engine.PolicyViolation{
+			Subject:   policy.Name,
+			Violation: "Container image is not released",
+		})
+	})
+
+	t.Run("valid input", func(t *testing.T) {
+		violations, err := r.Verify(context.TODO(), policy, []byte(`
+			{
+				"kind": "CONTAINER_IMAGE", 
+				"references": [{
+					"metadata": {"name": "chainloop-platform-qa-approval"},
+					"annotations": {"approval": "true"}
+				}, {
+					"metadata": {"name": "chainloop-platform-release-production"}
+				}]
+			}`), nil)
+		require.NoError(t, err)
+		assert.Len(t, violations, 0)
+	})
+}
+
 func TestRego_VerifyWithArguments(t *testing.T) {
 	regoContent, err := os.ReadFile("testfiles/arguments.rego")
 	require.NoError(t, err)
@@ -137,8 +177,8 @@ func TestRego_VerifyWithComplexArguments(t *testing.T) {
 }
 
 func TestRego_VerifyInvalidPolicy(t *testing.T) {
-	// load policy without a default deny rule
-	regoContent, err := os.ReadFile("testfiles/policy_without_deny.rego")
+	// load policy without a default main rule
+	regoContent, err := os.ReadFile("testfiles/policy_without_violations.rego")
 	require.NoError(t, err)
 
 	r := &Rego{}
@@ -147,9 +187,10 @@ func TestRego_VerifyInvalidPolicy(t *testing.T) {
 		Source: regoContent,
 	}
 
-	t.Run("doesn't eval a deny rule", func(t *testing.T) {
+	t.Run("doesn't eval a main rule", func(t *testing.T) {
 		violations, err := r.Verify(context.TODO(), policy, []byte("{\"foo\": \"bar\"}"), nil)
 		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "no 'violations' nor 'deny' rule found")
 		assert.Len(t, violations, 0)
 	})
 }

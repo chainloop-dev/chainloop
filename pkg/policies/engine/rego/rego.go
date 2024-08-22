@@ -19,7 +19,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
@@ -31,7 +30,11 @@ import (
 type Rego struct {
 }
 
-const inputArgs = "args"
+const (
+	inputArgs          = "args"
+	mainRule           = "violations"
+	deprecatedMainRule = "deny"
+)
 
 // Force interface
 var _ engine.PolicyEngine = (*Rego)(nil)
@@ -67,33 +70,36 @@ func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte, 
 	// add module
 	regoFunc := rego.ParsedModule(parsedModule)
 
-	// add query. Note that the predefined rule to look for is `deny`
-	query := rego.Query(fmt.Sprintf("%v.deny\n", parsedModule.Package.Path))
-
-	regoEval := rego.New(regoInput, regoFunc, query)
-
-	res, err := regoEval.Eval(ctx)
+	// add query. Note that the predefined rule to look for is `violations`
+	res, err := queryRego(ctx, mainRule, parsedModule, regoInput, regoFunc)
 	if err != nil {
-		return nil, fmt.Errorf("failed to evaluate policy: %w", err)
+		return nil, err
 	}
 
 	// If res is nil, it means that the rule hasn't been found
 	if res == nil {
-		return nil, errors.New("failed to evaluate policy: no 'deny' rule found")
+		// Try with the deprecated main rule
+		res, err = queryRego(ctx, deprecatedMainRule, parsedModule, regoInput, regoFunc)
+		if err != nil {
+			return nil, err
+		}
+		if res == nil {
+			return nil, fmt.Errorf("failed to evaluate policy: no '%s' nor '%s' rule found", mainRule, deprecatedMainRule)
+		}
 	}
 
 	violations := make([]*engine.PolicyViolation, 0)
 	for _, exp := range res {
 		for _, val := range exp.Expressions {
-			denyReasons, ok := val.Value.([]interface{})
+			ruleResults, ok := val.Value.([]interface{})
 			if !ok {
 				return nil, fmt.Errorf("failed to evaluate policy expression evaluation result: %s", val.Text)
 			}
 
-			for _, reason := range denyReasons {
-				reasonStr, ok := reason.(string)
+			for _, result := range ruleResults {
+				reasonStr, ok := result.(string)
 				if !ok {
-					return nil, fmt.Errorf("failed to evaluate deny reason: %s", val.Text)
+					return nil, fmt.Errorf("failed to evaluate rule result: %s", val.Text)
 				}
 
 				violations = append(violations, &engine.PolicyViolation{
@@ -105,4 +111,15 @@ func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte, 
 	}
 
 	return violations, nil
+}
+
+func queryRego(ctx context.Context, ruleName string, parsedModule *ast.Module, options ...func(r *rego.Rego)) (rego.ResultSet, error) {
+	query := rego.Query(fmt.Sprintf("%v.%s\n", parsedModule.Package.Path, ruleName))
+	regoEval := rego.New(append(options, query)...)
+	res, err := regoEval.Eval(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to evaluate policy: %w", err)
+	}
+
+	return res, nil
 }

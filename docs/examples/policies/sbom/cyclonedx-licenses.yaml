@@ -12,7 +12,7 @@ spec:
 
     import rego.v1
 
-    deny contains msg if {
+    violations contains msg if {
       count(without_license) > 0
       msg := sprintf("Missing licenses for %s", [components_str])
     }

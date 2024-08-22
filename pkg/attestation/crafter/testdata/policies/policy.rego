@@ -1,5 +1,5 @@
 package main
-deny[msg] {
+violations[msg] {
   not is_workflow
   msg := "incorrect workflow"
 }

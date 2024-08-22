@@ -1,12 +1,12 @@
 package main
 
-deny[msg] {
+violations[msg] {
     not is_workflow
 
     msg := "incorrect workflow"
 }
 
-deny[msg] {
+violations[msg] {
     not is_github
 
     msg := "incorrect runner"

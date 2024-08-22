@@ -34,7 +34,7 @@ spec:
     
     maximum_age = limit * nanosecs_per_day
     
-    deny contains msg if {
+    violations contains msg if {
       sbom_ns = time.parse_rfc3339_ns(input.metadata.timestamp)
       exceeding = time.now_ns() - (sbom_ns + maximum_age)
       exceeding > 0
