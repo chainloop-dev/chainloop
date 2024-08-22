@@ -118,6 +118,9 @@ message PolicyEvaluation {
   // arguments, as they come from the policy attachment
   map<string, string> with = 7;
 
+  // material type, if any, of the evaluated policy
+  workflowcontract.v1.CraftingSchema.Material.MaterialType type = 8;
+
   message Violation {
     string subject = 1 [(buf.validate.field).required = true];
     string message = 2 [(buf.validate.field).required = true];

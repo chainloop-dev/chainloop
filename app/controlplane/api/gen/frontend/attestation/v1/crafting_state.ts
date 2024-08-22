@@ -112,6 +112,8 @@ export interface PolicyEvaluation {
   violations: PolicyEvaluation_Violation[];
   /** arguments, as they come from the policy attachment */
   with: { [key: string]: string };
+  /** material type, if any, of the evaluated policy */
+  type: CraftingSchema_Material_MaterialType;
 }
 
 export interface PolicyEvaluation_AnnotationsEntry {
@@ -1186,7 +1188,7 @@ export const Attestation_EnvVarsEntry = {
 };
 
 function createBasePolicyEvaluation(): PolicyEvaluation {
-  return { name: "", materialName: "", body: "", description: "", annotations: {}, violations: [], with: {} };
+  return { name: "", materialName: "", body: "", description: "", annotations: {}, violations: [], with: {}, type: 0 };
 }
 
 export const PolicyEvaluation = {
@@ -1212,6 +1214,9 @@ export const PolicyEvaluation = {
     Object.entries(message.with).forEach(([key, value]) => {
       PolicyEvaluation_WithEntry.encode({ key: key as any, value }, writer.uint32(58).fork()).ldelim();
     });
+    if (message.type !== 0) {
+      writer.uint32(64).int32(message.type);
+    }
     return writer;
   },
 
@@ -1277,6 +1282,13 @@ export const PolicyEvaluation = {
             message.with[entry7.key] = entry7.value;
           }
           continue;
+        case 8:
+          if (tag !== 64) {
+            break;
+          }
+
+          message.type = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1307,6 +1319,7 @@ export const PolicyEvaluation = {
           return acc;
         }, {})
         : {},
+      type: isSet(object.type) ? craftingSchema_Material_MaterialTypeFromJSON(object.type) : 0,
     };
   },
 
@@ -1333,6 +1346,7 @@ export const PolicyEvaluation = {
         obj.with[k] = v;
       });
     }
+    message.type !== undefined && (obj.type = craftingSchema_Material_MaterialTypeToJSON(message.type));
     return obj;
   },
 
@@ -1362,6 +1376,7 @@ export const PolicyEvaluation = {
       }
       return acc;
     }, {});
+    message.type = object.type ?? 0;
     return message;
   },
 };
