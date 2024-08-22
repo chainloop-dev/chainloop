@@ -63,6 +63,11 @@ jobs:
         with:
           go-version: "1.22.5"
 
+      # install qemu binaries for multiarch builds (needed by goreleaser/buildx)
+      - name: Setup qemu
+        id: qemu
+        uses: docker/setup-qemu-action@v3
+
       - name: Run GoReleaser
         id: release
         uses: goreleaser/goreleaser-action@b508e2e3ef3b19d4e4146d4f8fb3ba9db644a757 # v3.2.0
