@@ -71,28 +71,20 @@ func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte, 
 	regoFunc := rego.ParsedModule(parsedModule)
 
 	// add query. Note that the predefined rule to look for is `violations`
-	query := rego.Query(fmt.Sprintf("%v.%s\n", parsedModule.Package.Path, mainRule))
-
-	regoEval := rego.New(regoInput, regoFunc, query)
-
-	res, err := regoEval.Eval(ctx)
+	res, err := queryRego(ctx, mainRule, parsedModule, regoInput, regoFunc)
 	if err != nil {
-		return nil, fmt.Errorf("failed to evaluate policy: %w", err)
+		return nil, err
 	}
 
 	// If res is nil, it means that the rule hasn't been found
 	if res == nil {
 		// Try with the deprecated main rule
-		query = rego.Query(fmt.Sprintf("%v.%s\n", parsedModule.Package.Path, deprecatedMainRule))
-		regoEval = rego.New(regoInput, regoFunc, query)
-
-		res, err = regoEval.Eval(ctx)
+		res, err = queryRego(ctx, deprecatedMainRule, parsedModule, regoInput, regoFunc)
 		if err != nil {
-			return nil, fmt.Errorf("failed to evaluate policy: %w", err)
+			return nil, err
 		}
-
 		if res == nil {
-			return nil, fmt.Errorf("failed to evaluate policy: no '%s' rule found", mainRule)
+			return nil, fmt.Errorf("failed to evaluate policy: no '%s' nor '%s' rule found", mainRule, deprecatedMainRule)
 		}
 	}
 
@@ -119,4 +111,15 @@ func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte, 
 	}
 
 	return violations, nil
+}
+
+func queryRego(ctx context.Context, ruleName string, parsedModule *ast.Module, options ...func(r *rego.Rego)) (rego.ResultSet, error) {
+	query := rego.Query(fmt.Sprintf("%v.%s\n", parsedModule.Package.Path, ruleName))
+	regoEval := rego.New(append(options, query)...)
+	res, err := regoEval.Eval(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to evaluate policy: %w", err)
+	}
+
+	return res, nil
 }
