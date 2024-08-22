@@ -29,8 +29,8 @@ spec:
     # It supports packages with version. When specified, requires it to be semver, and would also fail when version is lower
     banned_packages := ["log4j@2.14.1"]
 
-    # deny all versions
-    deny contains ref if {
+    # all versions
+    violations contains ref if {
       some i
       comp := input.components[i]
       some j
@@ -41,8 +41,8 @@ spec:
       ref := sprintf("Banned package: %v", [comp.name])
     }
 
-    # deny specific versions
-    deny contains ref if {
+    # specific versions
+    violations contains ref if {
       some i
       comp := input.components[i]
       some j

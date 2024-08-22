@@ -21,7 +21,7 @@ spec:
   embedded: |
     package main
     
-    deny[msg] {
+    violations[msg] {
       has_errors
       msg := "There are errors in the SARIF report"
     }

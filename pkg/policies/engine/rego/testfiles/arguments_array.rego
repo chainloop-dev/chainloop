@@ -2,7 +2,7 @@ package main
 
 import rego.v1
 
-deny contains msg if {
+violations contains msg if {
 	"bar" in input.args.foo
 
 	msg := "foo has bar"

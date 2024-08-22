@@ -1,12 +1,12 @@
 package main
 
-deny[msg] {
+violations[msg] {
 	not is_released
 
 	msg:= "Container image is not released"
 }
 
-deny[msg] {
+violations[msg] {
 	not is_approved
 
 	msg:= "Container image is not approved"

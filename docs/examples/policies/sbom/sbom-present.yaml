@@ -29,7 +29,7 @@ spec:
     import future.keywords.contains
     import future.keywords.in
     
-    deny[msg] {
+    violations[msg] {
       not has_sbom
       msg := "missing SBOM material"
     }

@@ -2,7 +2,7 @@ package main
 
 import future.keywords.in
 
-deny[msg] {
+violations[msg] {
     not made_with_syft
 
     msg := "Not made with syft"

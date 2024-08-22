@@ -137,8 +137,8 @@ func TestRego_VerifyWithComplexArguments(t *testing.T) {
 }
 
 func TestRego_VerifyInvalidPolicy(t *testing.T) {
-	// load policy without a default deny rule
-	regoContent, err := os.ReadFile("testfiles/policy_without_deny.rego")
+	// load policy without a default main rule
+	regoContent, err := os.ReadFile("testfiles/policy_without_violations.rego")
 	require.NoError(t, err)
 
 	r := &Rego{}
@@ -147,7 +147,7 @@ func TestRego_VerifyInvalidPolicy(t *testing.T) {
 		Source: regoContent,
 	}
 
-	t.Run("doesn't eval a deny rule", func(t *testing.T) {
+	t.Run("doesn't eval a main rule", func(t *testing.T) {
 		violations, err := r.Verify(context.TODO(), policy, []byte("{\"foo\": \"bar\"}"), nil)
 		assert.Error(t, err)
 		assert.Len(t, violations, 0)

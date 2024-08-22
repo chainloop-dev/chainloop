@@ -23,7 +23,7 @@ spec:
     
     # Verifies there is a SBOM material, even if not enforced by contract
     
-    deny[msg] {
+    violations[msg] {
       has_vulnerabilities
       msg := "CVE report has vulnerabilities with severity MEDIUM or HIGH"
     }

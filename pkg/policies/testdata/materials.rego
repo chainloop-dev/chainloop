@@ -5,7 +5,7 @@ import future.keywords.contains
 
 # Verifies there is a VEX material, even if not enforced by contract
 
-deny[msg] {
+violations[msg] {
     not has_vex
 
     msg := "missing VEX material"

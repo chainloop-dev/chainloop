@@ -28,7 +28,7 @@ spec:
     
     required_packages := {"glibc", "libcrypto3"}
       
-    deny contains msg if {
+    violations contains msg if {
       count(all_matches) != count(required_packages)
       missing := required_packages - all_matches
       some i

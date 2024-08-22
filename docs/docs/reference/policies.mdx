@@ -92,12 +92,12 @@ In the example above, we can see that, when referenced by the `policy` attribute
   
 ### Rego scripts
 Currently, policy scripts are assumed to be written in [Rego language](https://www.openpolicyagent.org/docs/latest/policy-language/#learning-rego). Other policy engines might be implemented in the future.
-The only requirement of the policy is the existence of one or multiple `deny` rules, which evaluate to a **list of violation strings**.
+The only requirement of the policy is the existence of one or multiple `violations` rules, which evaluate to a **list of violation strings**.
 For example, this policy script:
 ```yaml
 package main
 
-deny[msg] {
+violations[msg] {
   not is_approved
   
   msg:= "Container image is not approved"
@@ -112,7 +112,7 @@ is_approved {
 when evaluated against an attestation, will generate the following output if the expected annotation is not present:
 ```json
 {
-    "deny": [
+    "violations": [
         "Container image is not approved"
     ]
 }

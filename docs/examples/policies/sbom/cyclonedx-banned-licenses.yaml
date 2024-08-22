@@ -28,7 +28,7 @@ spec:
   
     banned_licenses := ["GPL-2.0", "GPL-3.0"]
     
-    deny contains ref if {
+    violations contains ref if {
       some i
       comp := input.components[i]
       some j
