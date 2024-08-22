@@ -569,6 +569,11 @@ func (s *testSuite) TestLoader() {
 			expected: &BlobLoader{},
 		},
 		{
+			name:     "file ref",
+			ref:      "file://local-policy.yaml",
+			expected: &BlobLoader{},
+		},
+		{
 			name:     "http ref",
 			ref:      "https://myhost/policy.yaml",
 			expected: &BlobLoader{},
