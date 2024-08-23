@@ -493,6 +493,17 @@ func (s *testSuite) TestLoadPolicySpec() {
 			expectedCategory: "SBOM",
 		},
 		{
+			name: "by file ref",
+			attachment: &v12.PolicyAttachment{
+				Policy: &v12.PolicyAttachment_Ref{
+					Ref: "file://testdata/sbom_syft.yaml",
+				},
+			},
+			expectedName:     "made-with-syft",
+			expectedDesc:     "This policy checks that the SPDX SBOM was created with syft",
+			expectedCategory: "SBOM",
+		},
+		{
 			name: "embedded invalid",
 			attachment: &v12.PolicyAttachment{
 				Policy: &v12.PolicyAttachment_Embedded{
@@ -555,6 +566,11 @@ func (s *testSuite) TestLoader() {
 		{
 			name:     "local ref",
 			ref:      "local-policy.yaml",
+			expected: &BlobLoader{},
+		},
+		{
+			name:     "file ref",
+			ref:      "file://local-policy.yaml",
 			expected: &BlobLoader{},
 		},
 		{

@@ -45,7 +45,7 @@ materials:
     type: CONTAINER_IMAGE
 policies:
   materials: # policies applied to materials
-    - ref: cyclonedx-licenses.yaml # (1)
+    - ref: file://cyclonedx-licenses.yaml # (1)
   attestation: # policies applied to the whole attestation
     - ref: https://github.com/chainloop/chainloop-dev/blob/main/docs/examples/policies/chainloop-commit.yaml # (2)
 ```
@@ -56,7 +56,7 @@ Here we can see that:
   ```yaml
   policies:
     materials:
-      - ref: cyclonedx-licenses.yaml
+      - ref: file://cyclonedx-licenses.yaml
         selector: # (3)
           name: sbom
   ```
@@ -68,11 +68,11 @@ Finally, note that material policies are evaluated during `chainloop attestation
 
 ### Embedding or referencing policies
 There are two ways to attach a policy to a contract:
-* **By referencing it**, as it can be seen in the examples above. `ref` property admits a local (filesystem) or remote reference (HTTPS). For example:
+* **By referencing it**, as it can be seen in the examples above. `ref` property admits a local `file://`` (filesystem) or remote reference `https://`. For example:
   ```yaml
   policies:
     materials: 
-      - ref: cyclonedx-licenses.yaml # local reference
+      - ref: file://cyclonedx-licenses.yaml # local reference
   ```
   and
   ```yaml

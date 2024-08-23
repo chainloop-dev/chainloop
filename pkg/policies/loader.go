@@ -18,6 +18,7 @@ package policies
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -45,13 +46,28 @@ func (e *EmbeddedLoader) Load(_ context.Context, attachment *v1.PolicyAttachment
 type BlobLoader struct{}
 
 func (l *BlobLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, error) {
+	var (
+		rawData []byte
+		err     error
+	)
+
 	reference := attachment.GetRef()
 
-	// look for the referenced policy spec (note: loading by `name` is not supported yet)
-	// this method understands env, http and https schemes, and defaults to file system.
-	rawData, err := blob.LoadFileOrURL(reference)
-	if err != nil {
-		return nil, fmt.Errorf("loading policy spec: %w", err)
+	// Support file:// references
+	parts := strings.SplitAfterN(reference, "://", 2)
+	if len(parts) == 2 && parts[0] == "file://" {
+		rawData, err = os.ReadFile(filepath.Clean(parts[1]))
+		if err != nil {
+			return nil, fmt.Errorf("loading policy spec: %w", err)
+		}
+	}
+
+	// this method understands env, http and https schemes, and defaults to file system (without scheme).
+	if rawData == nil {
+		rawData, err = blob.LoadFileOrURL(reference)
+		if err != nil {
+			return nil, fmt.Errorf("loading policy spec: %w", err)
+		}
 	}
 
 	jsonContent, err := materials.LoadJSONBytes(rawData, filepath.Ext(reference))
