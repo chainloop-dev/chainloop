@@ -1,9 +1,11 @@
 FROM golang:1.22@sha256:fcae9e0e7313c6467a7c6632ebb5e5fab99bd39bd5eb6ee34a211353e647827a AS builder
+RUN mkdir -p /.config/chainloop
 
 FROM scratch
 
 COPY ./chainloop /
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder --chown=1001:1001 /.config/chainloop /.config/chainloop
 
 USER 1001
 

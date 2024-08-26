@@ -68,6 +68,9 @@ type parsedToken struct {
 	tokenType string
 }
 
+// Environment variable prefix for vipers
+const envPrefix = "CHAINLOOP"
+
 func NewRootCmd(l zerolog.Logger) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:           appName,
@@ -75,15 +78,16 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 		SilenceErrors: true,
 		SilenceUsage:  true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			logger.Debug().Str("path", viper.ConfigFileUsed()).Msg("using config file")
-
 			var err error
 			logger, err = initLogger(l)
 			if err != nil {
 				return err
 			}
 
-			if flagInsecure {
+			logger.Debug().Str("path", viper.ConfigFileUsed()).Msg("using config file")
+
+			insecure := viper.GetBool(confOptions.insecure.viperKey)
+			if insecure {
 				logger.Warn().Msg("API contacted in insecure mode")
 			}
 
@@ -93,14 +97,17 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 			}
 
 			var opts = []grpcconn.Option{
-				grpcconn.WithInsecure(flagInsecure),
+				grpcconn.WithInsecure(insecure),
 			}
 
 			if caFilePath := viper.GetString(confOptions.controlplaneCA.viperKey); caFilePath != "" {
 				opts = append(opts, grpcconn.WithCAFile(caFilePath))
 			}
 
-			conn, err := grpcconn.New(viper.GetString(confOptions.controlplaneAPI.viperKey), apiToken, opts...)
+			controlplaneURL := viper.GetString(confOptions.controlplaneAPI.viperKey)
+			logger.Debug().Msgf("controlplane URL: %s", controlplaneURL)
+			logger.Debug().Msgf("test: %s", viper.GetString("foo-foo.foo"))
+			conn, err := grpcconn.New(controlplaneURL, apiToken, opts...)
 			if err != nil {
 				return err
 			}
@@ -140,25 +147,28 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 
 	rootCmd.PersistentFlags().StringVarP(&flagCfgFile, "config", "c", "", "Path to an existing config file (default is $HOME/.config/chainloop/config.toml)")
 
-	rootCmd.PersistentFlags().String(confOptions.controlplaneAPI.flagName, defaultCPAPI, "URL for the Control Plane API")
-	err := viper.BindPFlag(confOptions.controlplaneAPI.viperKey, rootCmd.PersistentFlags().Lookup(confOptions.controlplaneAPI.flagName))
-	cobra.CheckErr(err)
+	rootCmd.PersistentFlags().String(confOptions.controlplaneAPI.flagName, defaultCPAPI, fmt.Sprintf("URL for the Control Plane API ($%s)", calculateEnvVarName(confOptions.controlplaneAPI.viperKey)))
+	cobra.CheckErr(viper.BindPFlag(confOptions.controlplaneAPI.viperKey, rootCmd.PersistentFlags().Lookup(confOptions.controlplaneAPI.flagName)))
+	cobra.CheckErr(viper.BindEnv(confOptions.controlplaneAPI.viperKey, calculateEnvVarName(confOptions.controlplaneAPI.viperKey)))
 
 	// Custom CAs for the control plane
-	rootCmd.PersistentFlags().String(confOptions.controlplaneCA.flagName, "", "CUSTOM CA file for the Control Plane API (optional)")
-	err = viper.BindPFlag(confOptions.controlplaneCA.viperKey, rootCmd.PersistentFlags().Lookup(confOptions.controlplaneCA.flagName))
-	cobra.CheckErr(err)
+	rootCmd.PersistentFlags().String(confOptions.controlplaneCA.flagName, "", fmt.Sprintf("CUSTOM CA file for the Control Plane API (optional) ($%s)", calculateEnvVarName(confOptions.controlplaneCA.viperKey)))
+	cobra.CheckErr(viper.BindPFlag(confOptions.controlplaneCA.viperKey, rootCmd.PersistentFlags().Lookup(confOptions.controlplaneCA.flagName)))
+	cobra.CheckErr(viper.BindEnv(confOptions.controlplaneCA.viperKey, calculateEnvVarName(confOptions.controlplaneCA.viperKey)))
 
-	rootCmd.PersistentFlags().String(confOptions.CASAPI.flagName, defaultCASAPI, "URL for the Artifacts Content Addressable Storage (CAS)")
-	err = viper.BindPFlag(confOptions.CASAPI.viperKey, rootCmd.PersistentFlags().Lookup(confOptions.CASAPI.flagName))
-	cobra.CheckErr(err)
+	rootCmd.PersistentFlags().String(confOptions.CASAPI.flagName, defaultCASAPI, fmt.Sprintf("URL for the Artifacts Content Addressable Storage API ($%s)", calculateEnvVarName(confOptions.CASAPI.viperKey)))
+	cobra.CheckErr(viper.BindPFlag(confOptions.CASAPI.viperKey, rootCmd.PersistentFlags().Lookup(confOptions.CASAPI.flagName)))
+	cobra.CheckErr(viper.BindEnv(confOptions.CASAPI.viperKey, calculateEnvVarName(confOptions.CASAPI.viperKey)))
 
 	// Custom CAs for the CAS
-	rootCmd.PersistentFlags().String(confOptions.CASCA.flagName, "", "CUSTOM CA file for the Artifacts CAS API (optional)")
-	err = viper.BindPFlag(confOptions.CASCA.viperKey, rootCmd.PersistentFlags().Lookup(confOptions.CASCA.flagName))
-	cobra.CheckErr(err)
+	rootCmd.PersistentFlags().String(confOptions.CASCA.flagName, "", fmt.Sprintf("CUSTOM CA file for the Artifacts CAS API (optional) ($%s)", calculateEnvVarName(confOptions.CASCA.viperKey)))
+	cobra.CheckErr(viper.BindPFlag(confOptions.CASCA.viperKey, rootCmd.PersistentFlags().Lookup(confOptions.CASCA.flagName)))
+	cobra.CheckErr(viper.BindEnv(confOptions.CASCA.viperKey, calculateEnvVarName(confOptions.CASCA.viperKey)))
 
-	rootCmd.PersistentFlags().BoolVarP(&flagInsecure, "insecure", "i", false, "Skip TLS transport during connection to the control plane")
+	rootCmd.PersistentFlags().BoolVarP(&flagInsecure, "insecure", "i", false, fmt.Sprintf("Skip TLS transport during connection to the control plane ($%s)", calculateEnvVarName(confOptions.insecure.viperKey)))
+	cobra.CheckErr(viper.BindPFlag(confOptions.insecure.viperKey, rootCmd.PersistentFlags().Lookup("insecure")))
+	cobra.CheckErr(viper.BindEnv(confOptions.insecure.viperKey, calculateEnvVarName(confOptions.insecure.viperKey)))
+
 	rootCmd.PersistentFlags().BoolVar(&flagDebug, "debug", false, "Enable debug/verbose logging mode")
 	rootCmd.PersistentFlags().StringVarP(&flagOutputFormat, "output", "o", "table", "Output format, valid options are json and table")
 
@@ -172,6 +182,18 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 	)
 
 	return rootCmd
+}
+
+// this could have been done using automatic + prefix but we want to have control and know the values
+//
+//	viper.AutomaticEnv()
+//	viper.SetEnvPrefix(envPrefix)
+//	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
+func calculateEnvVarName(key string) string {
+	// replace - with _ and . with _
+	s := strings.ReplaceAll(key, "-", "_")
+	s = strings.ReplaceAll(s, ".", "_")
+	return fmt.Sprintf("%s_%s", envPrefix, strings.ToUpper(s))
 }
 
 func init() {

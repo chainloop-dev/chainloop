@@ -52,4 +52,4 @@ build_devel:
 .PHONY: build_devel_container_mages
 # build container images for development testing
 build_devel_container_mages:
-	goreleaser release --clean --snapshot --skip-sign --skip-sbom
+	goreleaser release --clean --snapshot --skip sign,sbom

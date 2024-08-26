@@ -21,8 +21,11 @@ import (
 
 // Map of all the possible configuration options that we expect viper to handle
 var confOptions = struct {
-	authToken, controlplaneAPI, CASAPI, controlplaneCA, CASCA *confOpt
+	authToken, controlplaneAPI, CASAPI, controlplaneCA, CASCA, insecure *confOpt
 }{
+	insecure: &confOpt{
+		viperKey: "api-insecure",
+	},
 	authToken: &confOpt{
 		viperKey: "auth.token",
 	},
