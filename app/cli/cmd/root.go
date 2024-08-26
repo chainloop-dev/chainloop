@@ -16,6 +16,7 @@
 package cmd
 
 import (
+	"context"
 	"crypto/sha256"
 	"errors"
 	"fmt"
@@ -23,6 +24,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/adrg/xdg"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
@@ -114,17 +116,33 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 				go func() {
 					defer telemetryWg.Done()
 
-					// For telemetry reasons we parse the token to know the type of token is being used when executing the CLI
-					// Once we have the token type we can send it to the telemetry service by injecting it on the context
-					token, err := parseToken(apiToken)
-					if err != nil {
-						logger.Debug().Err(err).Msg("parsing token for telemetry")
-						return
-					}
+					// Create a context that times out after 1 seconds, this is because posthog has a 10 seconds hardcoded timeout
+					// and we want to finish earlier than that
+					ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+					defer cancel()
+					done := make(chan struct{})
 
-					err = recordCommand(cmd, token)
-					if err != nil {
-						logger.Debug().Err(err).Msg("sending command to telemetry")
+					go func() {
+						// For telemetry reasons we parse the token to know the type of token is being used when executing the CLI
+						// Once we have the token type we can send it to the telemetry service by injecting it on the context
+						token, err := parseToken(apiToken)
+						if err != nil {
+							logger.Debug().Err(err).Msg("parsing token for telemetry")
+							return
+						}
+
+						err = recordCommand(cmd, token)
+						if err != nil {
+							logger.Debug().Err(err).Msg("sending command to telemetry")
+						}
+						close(done)
+					}()
+
+					select {
+					case <-done:
+						// The parsing and recording finished successfully within the timeout
+					case <-ctx.Done():
+						// The operation took more than timeout
 					}
 				}()
 			}
