@@ -133,6 +133,7 @@ export interface PolicyEvaluation_Violation {
 
 export interface Commit {
   hash: string;
+  /** Commit authors might not include email i.e "Flux <>" */
   authorEmail: string;
   authorName: string;
   message: string;

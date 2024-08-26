@@ -129,7 +129,8 @@ message PolicyEvaluation {
 
 message Commit {
   string hash = 1 [(buf.validate.field).string.min_len = 1];
-  string author_email = 2 [(buf.validate.field).string.min_len = 1];
+  // Commit authors might not include email i.e "Flux <>"
+  string author_email = 2;
   string author_name = 3 [(buf.validate.field).string.min_len = 1];
   string message = 4 [(buf.validate.field).string.min_len = 1];
   google.protobuf.Timestamp date = 5;
