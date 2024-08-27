@@ -105,8 +105,6 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 			}
 
 			controlplaneURL := viper.GetString(confOptions.controlplaneAPI.viperKey)
-			logger.Debug().Msgf("controlplane URL: %s", controlplaneURL)
-			logger.Debug().Msgf("test: %s", viper.GetString("foo-foo.foo"))
 			conn, err := grpcconn.New(controlplaneURL, apiToken, opts...)
 			if err != nil {
 				return err
