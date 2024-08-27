@@ -79,5 +79,7 @@ func (WorkflowRun) Indexes() []ent.Index {
 		index.Fields("created_at", "state"),
 		index.Fields("attestation_digest"),
 		index.Edges("workflow"),
+		// DailyRun counts
+		index.Edges("workflow").Fields("created_at"),
 	}
 }
