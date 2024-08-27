@@ -113,7 +113,7 @@ func interactiveAuth(forceHeadless bool) error {
 func headlessAuth(loginURL *url.URL) error {
 	// Remove cli-callback query parameter to indicate the server to show it inline
 	q := loginURL.Query()
-	q.Del("callback")
+	q.Set("callback", "")
 	loginURL.RawQuery = q.Encode()
 	fmt.Printf("To authenticate, click on the following link and paste the result back here\n\n  %s\n\n", loginURL.String())
 
