@@ -299,6 +299,8 @@ export interface WorkflowContractVersionItem {
    */
   v1?: CraftingSchema | undefined;
   rawContract?: WorkflowContractVersionItem_RawBody;
+  /** The name of the contract used for this run */
+  contractName: string;
 }
 
 export interface WorkflowContractVersionItem_RawBody {
@@ -1732,7 +1734,7 @@ export const WorkflowContractItem = {
 };
 
 function createBaseWorkflowContractVersionItem(): WorkflowContractVersionItem {
-  return { id: "", revision: 0, createdAt: undefined, v1: undefined, rawContract: undefined };
+  return { id: "", revision: 0, createdAt: undefined, v1: undefined, rawContract: undefined, contractName: "" };
 }
 
 export const WorkflowContractVersionItem = {
@@ -1751,6 +1753,9 @@ export const WorkflowContractVersionItem = {
     }
     if (message.rawContract !== undefined) {
       WorkflowContractVersionItem_RawBody.encode(message.rawContract, writer.uint32(42).fork()).ldelim();
+    }
+    if (message.contractName !== "") {
+      writer.uint32(50).string(message.contractName);
     }
     return writer;
   },
@@ -1797,6 +1802,13 @@ export const WorkflowContractVersionItem = {
 
           message.rawContract = WorkflowContractVersionItem_RawBody.decode(reader, reader.uint32());
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.contractName = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1815,6 +1827,7 @@ export const WorkflowContractVersionItem = {
       rawContract: isSet(object.rawContract)
         ? WorkflowContractVersionItem_RawBody.fromJSON(object.rawContract)
         : undefined,
+      contractName: isSet(object.contractName) ? String(object.contractName) : "",
     };
   },
 
@@ -1827,6 +1840,7 @@ export const WorkflowContractVersionItem = {
     message.rawContract !== undefined && (obj.rawContract = message.rawContract
       ? WorkflowContractVersionItem_RawBody.toJSON(message.rawContract)
       : undefined);
+    message.contractName !== undefined && (obj.contractName = message.contractName);
     return obj;
   },
 
@@ -1843,6 +1857,7 @@ export const WorkflowContractVersionItem = {
     message.rawContract = (object.rawContract !== undefined && object.rawContract !== null)
       ? WorkflowContractVersionItem_RawBody.fromPartial(object.rawContract)
       : undefined;
+    message.contractName = object.contractName ?? "";
     return message;
   },
 };

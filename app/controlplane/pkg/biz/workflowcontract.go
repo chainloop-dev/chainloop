@@ -45,10 +45,11 @@ type WorkflowContract struct {
 }
 
 type WorkflowContractVersion struct {
-	ID        uuid.UUID
-	Revision  int
-	CreatedAt *time.Time
-	Schema    *Contract
+	ID           uuid.UUID
+	Revision     int
+	CreatedAt    *time.Time
+	Schema       *Contract
+	ContractName string
 }
 
 type Contract struct {

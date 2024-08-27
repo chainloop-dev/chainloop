@@ -108,7 +108,8 @@ func (r *WorkflowContractRepo) Create(ctx context.Context, opts *biz.ContractCre
 }
 
 func (r *WorkflowContractRepo) FindVersionByID(ctx context.Context, versionID uuid.UUID) (*biz.WorkflowContractVersion, error) {
-	version, err := r.data.DB.WorkflowContractVersion.Get(ctx, versionID)
+	// .Get(ctx, versionID) is an alias to .Query().Where(workflowcontractversion.ID(versionID)).Only(ctx)
+	version, err := r.data.DB.WorkflowContractVersion.Query().Where(workflowcontractversion.ID(versionID)).WithContract().Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	} else if version == nil {
@@ -134,7 +135,7 @@ func (r *WorkflowContractRepo) Describe(ctx context.Context, orgID, contractID u
 	// revision 0 means latest
 	version := latestV
 	if revision != 0 {
-		version, err = contract.QueryVersions().Where(workflowcontractversion.RevisionEQ(revision)).Only(ctx)
+		version, err = contract.QueryVersions().Where(workflowcontractversion.RevisionEQ(revision)).WithContract().Only(ctx)
 		if err != nil && !ent.IsNotFound(err) {
 			return nil, err
 		} else if version == nil {
@@ -308,9 +309,15 @@ func entContractVersionToBizContractVersion(w *ent.WorkflowContractVersion) (*bi
 		}
 	}
 
-	return &biz.WorkflowContractVersion{
+	res := &biz.WorkflowContractVersion{
 		ID: w.ID, CreatedAt: toTimePtr(w.CreatedAt), Revision: w.Revision, Schema: contract,
-	}, nil
+	}
+
+	if w.Edges.Contract != nil {
+		res.ContractName = w.Edges.Contract.Name
+	}
+
+	return res, nil
 }
 
 // rollback calls to tx.Rollback and wraps the given error
