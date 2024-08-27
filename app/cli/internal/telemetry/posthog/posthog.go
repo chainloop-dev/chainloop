@@ -19,6 +19,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"log"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry"
 	"github.com/posthog/posthog-go"
@@ -34,8 +36,10 @@ func NewClient(apiKey string, endpointURL string) (*Tracker, error) {
 		return nil, ErrInvalidConfig
 	}
 
+	noopLogger := log.New(io.Discard, "", 0)
 	client, err := posthog.NewWithConfig(apiKey, posthog.Config{
 		Endpoint: endpointURL,
+		Logger:   posthog.StdLogger(noopLogger),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create PostHog client: %w", err)
