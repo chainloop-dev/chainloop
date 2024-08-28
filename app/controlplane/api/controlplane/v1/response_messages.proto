@@ -135,6 +135,9 @@ message WorkflowContractVersionItem {
 
   RawBody raw_contract = 5;
 
+  // The name of the contract used for this run
+  string contract_name = 6;
+
   message RawBody {
     bytes body = 1;
     Format format = 2 [(buf.validate.field).enum = {

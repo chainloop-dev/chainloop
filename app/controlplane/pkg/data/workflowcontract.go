@@ -107,15 +107,24 @@ func (r *WorkflowContractRepo) Create(ctx context.Context, opts *biz.ContractCre
 	return res, nil
 }
 
-func (r *WorkflowContractRepo) FindVersionByID(ctx context.Context, versionID uuid.UUID) (*biz.WorkflowContractVersion, error) {
-	version, err := r.data.DB.WorkflowContractVersion.Get(ctx, versionID)
+func (r *WorkflowContractRepo) FindVersionByID(ctx context.Context, versionID uuid.UUID) (*biz.WorkflowContractWithVersion, error) {
+	// .Get(ctx, versionID) is an alias to .Query().Where(workflowcontractversion.ID(versionID)).Only(ctx)
+	version, err := r.data.DB.WorkflowContractVersion.Query().Where(workflowcontractversion.ID(versionID)).WithContract().Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	} else if version == nil {
 		return nil, nil
 	}
 
-	return entContractVersionToBizContractVersion(version)
+	contractVersion, err := entContractVersionToBizContractVersion(version)
+	if err != nil {
+		return nil, err
+	}
+
+	return &biz.WorkflowContractWithVersion{
+		Contract: entContractToBizContract(version.Edges.Contract, version, nil),
+		Version:  contractVersion,
+	}, nil
 }
 
 func (r *WorkflowContractRepo) Describe(ctx context.Context, orgID, contractID uuid.UUID, revision int) (*biz.WorkflowContractWithVersion, error) {
