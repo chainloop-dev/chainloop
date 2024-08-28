@@ -137,6 +137,9 @@ message Auth {
   string cas_robot_account_private_key_path = 4;
   OIDC oidc = 6;
 
+  // Generates an initial user. Use only for development purposes
+  string dev_user = 7;
+
   message OIDC {
     string domain = 1;
     string client_id = 2;

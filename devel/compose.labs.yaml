@@ -23,6 +23,7 @@ services:
       CP_FILE_CA_CERT_PATH: /devkeys/ca.pub
       CP_FILE_CA_KEY_PATH: /devkeys/ca.pem
       CP_CAS_KEY_PATH: /devkeys/cas.pem
+      CP_DEV_USER: john@chainloop.local
     volumes:
       # main configuration
       - ../app/controlplane/configs:/data/conf
@@ -32,6 +33,8 @@ services:
       - 9000:9000
       - 8000:8000
     depends_on:
+      dex:
+        condition: service_started
       vault:
         condition: service_started
       db-init:

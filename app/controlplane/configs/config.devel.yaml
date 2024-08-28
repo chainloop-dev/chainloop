@@ -54,6 +54,7 @@ data:
 
 # Development credentials for the SSO authentication roundtrip
 auth:
+  dev_user: ${DEV_USER:}
   oidc:
     domain: ${DEX_DOMAIN:http://0.0.0.0:5556/dex}
     client_id: "chainloop-dev"

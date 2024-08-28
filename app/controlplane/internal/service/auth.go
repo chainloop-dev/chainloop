@@ -33,6 +33,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/user"
 	"github.com/chainloop-dev/chainloop/internal/oauth"
 	sl "github.com/chainloop-dev/chainloop/pkg/servicelogger"
+	"github.com/go-kratos/kratos/v2/log"
 	"golang.org/x/oauth2"
 )
 
@@ -52,7 +53,9 @@ const (
 	// default
 	shortLivedDuration = 10 * time.Second
 	// opt-in
-	logLivedDuration = 24 * time.Hour
+	longLivedDuration = 24 * time.Hour
+	// dev only
+	devUserDuration = 30 * longLivedDuration
 )
 
 type oauthHandler struct {
@@ -90,8 +93,16 @@ func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC
 		return nil, fmt.Errorf("failed to create OIDC authenticator: %w", err)
 	}
 
+	svc := newService(opts...)
+	if authConfig.DevUser != "" {
+		err := generateAndLogDevUser(userUC, svc.log, authConfig)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create development user: %w", err)
+		}
+	}
+
 	return &AuthService{
-		service:           newService(opts...),
+		service:           svc,
 		authenticator:     authInst,
 		userUseCase:       userUC,
 		orgUseCase:        orgUC,
@@ -231,7 +242,7 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) (
 	}
 
 	if longLived.Value == "true" {
-		expiration = logLivedDuration
+		expiration = longLivedDuration
 	}
 
 	// Generate user token
@@ -336,6 +347,25 @@ func generateUserJWT(userID, passphrase string, expiration time.Duration) (strin
 
 func setOauthCookie(w http.ResponseWriter, name, value string) {
 	http.SetCookie(w, &http.Cookie{Name: name, Value: value, Path: "/", Expires: time.Now().Add(5 * time.Minute)})
+}
+
+func generateAndLogDevUser(userUC *biz.UserUseCase, log *log.Helper, authConfig *conf.Auth) error {
+	// Create user if needed
+	u, err := userUC.FindOrCreateByEmail(context.Background(), authConfig.DevUser)
+	if err != nil {
+		return sl.LogAndMaskErr(err, log)
+	}
+
+	// Generate user token
+	userToken, err := generateUserJWT(u.ID, authConfig.GeneratedJwsHmacSecret, devUserDuration)
+	if err != nil {
+		return sl.LogAndMaskErr(err, log)
+	}
+
+	log.Info("******************* DEVELOPMENT USER TOKEN *******************")
+	log.Infof("Use chainloop 'auth login --skip-browser' and paste this token to start a headless session: %s", userToken)
+
+	return nil
 }
 
 // DeleteAccount deletes an account
