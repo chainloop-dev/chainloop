@@ -191,10 +191,9 @@ func bizWorkFlowContractVersionToPb(schema *biz.WorkflowContractVersion) *pb.Wor
 	}
 
 	return &pb.WorkflowContractVersionItem{
-		Id:           schema.ID.String(),
-		CreatedAt:    timestamppb.New(*schema.CreatedAt),
-		Revision:     int32(schema.Revision),
-		ContractName: schema.ContractName,
+		Id:        schema.ID.String(),
+		CreatedAt: timestamppb.New(*schema.CreatedAt),
+		Revision:  int32(schema.Revision),
 		Contract: &pb.WorkflowContractVersionItem_V1{
 			V1: schema.Schema.Schema,
 		},

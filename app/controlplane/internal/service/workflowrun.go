@@ -136,14 +136,15 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
-	contractVersion, err := s.workflowContractUseCase.FindVersionByID(ctx, run.ContractVersionID.String())
+	contractAndVersion, err := s.workflowContractUseCase.FindVersionByID(ctx, run.ContractVersionID.String())
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	wr := bizWorkFlowRunToPb(run)
 	wr.Workflow = bizWorkflowToPb(run.Workflow)
-	wr.ContractVersion = bizWorkFlowContractVersionToPb(contractVersion)
+	wr.ContractVersion = bizWorkFlowContractVersionToPb(contractAndVersion.Version)
+	wr.ContractVersion.ContractName = contractAndVersion.Contract.Name
 	res := &pb.WorkflowRunServiceViewResponse_Result{
 		WorkflowRun: wr,
 		Attestation: attestation,

@@ -107,7 +107,7 @@ func (r *WorkflowContractRepo) Create(ctx context.Context, opts *biz.ContractCre
 	return res, nil
 }
 
-func (r *WorkflowContractRepo) FindVersionByID(ctx context.Context, versionID uuid.UUID) (*biz.WorkflowContractVersion, error) {
+func (r *WorkflowContractRepo) FindVersionByID(ctx context.Context, versionID uuid.UUID) (*biz.WorkflowContractWithVersion, error) {
 	// .Get(ctx, versionID) is an alias to .Query().Where(workflowcontractversion.ID(versionID)).Only(ctx)
 	version, err := r.data.DB.WorkflowContractVersion.Query().Where(workflowcontractversion.ID(versionID)).WithContract().Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
@@ -116,7 +116,15 @@ func (r *WorkflowContractRepo) FindVersionByID(ctx context.Context, versionID uu
 		return nil, nil
 	}
 
-	return entContractVersionToBizContractVersion(version)
+	contractVersion, err := entContractVersionToBizContractVersion(version)
+	if err != nil {
+		return nil, err
+	}
+
+	return &biz.WorkflowContractWithVersion{
+		Contract: entContractToBizContract(version.Edges.Contract, version, nil),
+		Version:  contractVersion,
+	}, nil
 }
 
 func (r *WorkflowContractRepo) Describe(ctx context.Context, orgID, contractID uuid.UUID, revision int) (*biz.WorkflowContractWithVersion, error) {
@@ -135,7 +143,7 @@ func (r *WorkflowContractRepo) Describe(ctx context.Context, orgID, contractID u
 	// revision 0 means latest
 	version := latestV
 	if revision != 0 {
-		version, err = contract.QueryVersions().Where(workflowcontractversion.RevisionEQ(revision)).WithContract().Only(ctx)
+		version, err = contract.QueryVersions().Where(workflowcontractversion.RevisionEQ(revision)).Only(ctx)
 		if err != nil && !ent.IsNotFound(err) {
 			return nil, err
 		} else if version == nil {
@@ -309,15 +317,9 @@ func entContractVersionToBizContractVersion(w *ent.WorkflowContractVersion) (*bi
 		}
 	}
 
-	res := &biz.WorkflowContractVersion{
+	return &biz.WorkflowContractVersion{
 		ID: w.ID, CreatedAt: toTimePtr(w.CreatedAt), Revision: w.Revision, Schema: contract,
-	}
-
-	if w.Edges.Contract != nil {
-		res.ContractName = w.Edges.Contract.Name
-	}
-
-	return res, nil
+	}, nil
 }
 
 // rollback calls to tx.Rollback and wraps the given error

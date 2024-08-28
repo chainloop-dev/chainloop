@@ -45,11 +45,10 @@ type WorkflowContract struct {
 }
 
 type WorkflowContractVersion struct {
-	ID           uuid.UUID
-	Revision     int
-	CreatedAt    *time.Time
-	Schema       *Contract
-	ContractName string
+	ID        uuid.UUID
+	Revision  int
+	CreatedAt *time.Time
+	Schema    *Contract
 }
 
 type Contract struct {
@@ -81,7 +80,7 @@ type WorkflowContractRepo interface {
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*WorkflowContract, error)
 	FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*WorkflowContract, error)
 	Describe(ctx context.Context, orgID, contractID uuid.UUID, revision int) (*WorkflowContractWithVersion, error)
-	FindVersionByID(ctx context.Context, versionID uuid.UUID) (*WorkflowContractVersion, error)
+	FindVersionByID(ctx context.Context, versionID uuid.UUID) (*WorkflowContractWithVersion, error)
 	Update(ctx context.Context, orgID uuid.UUID, name string, opts *ContractUpdateOpts) (*WorkflowContractWithVersion, error)
 	SoftDelete(ctx context.Context, contractID uuid.UUID) error
 }
@@ -249,7 +248,7 @@ func (uc *WorkflowContractUseCase) Describe(ctx context.Context, orgID, contract
 	return uc.repo.Describe(ctx, orgUUID, contractUUID, revision)
 }
 
-func (uc *WorkflowContractUseCase) FindVersionByID(ctx context.Context, versionID string) (*WorkflowContractVersion, error) {
+func (uc *WorkflowContractUseCase) FindVersionByID(ctx context.Context, versionID string) (*WorkflowContractWithVersion, error) {
 	versionUUID, err := uuid.Parse(versionID)
 	if err != nil {
 		return nil, err
