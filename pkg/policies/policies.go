@@ -176,6 +176,14 @@ func (pv *PolicyVerifier) loadPolicySpec(ctx context.Context, attachment *v1.Pol
 
 	spec, err := loader.Load(ctx, attachment)
 	if err != nil {
+		// fallback from ChainloopLoader to FileLoader if no scheme is used, to maintain backwards compatibility
+		_, ok := loader.(*ChainloopLoader)
+		scheme, _ := refParts(attachment.GetRef())
+		if ok && scheme == "" {
+			spec, err = new(FileLoader).Load(ctx, attachment)
+		}
+	}
+	if err != nil {
 		return nil, fmt.Errorf("loading policy spec: %w", err)
 	}
 
@@ -196,17 +204,24 @@ func (pv *PolicyVerifier) getLoader(attachment *v1.PolicyAttachment) (Loader, er
 	}
 
 	// Figure out loader to use
-	var loader Loader
 	if emb != nil {
-		loader = new(EmbeddedLoader)
-	} else {
-		if IsProviderScheme(ref) {
-			loader = NewChainloopLoader(pv.client)
-		} else {
-			loader = new(BlobLoader)
-		}
-		pv.logger.Debug().Msgf("loading policy spec %q using %T", ref, loader)
+		return new(EmbeddedLoader), nil
 	}
+
+	var loader Loader
+	scheme, _ := refParts(ref)
+	switch scheme {
+	case chainloopScheme, "":
+		loader = NewChainloopLoader(pv.client)
+	case fileScheme:
+		loader = new(FileLoader)
+	case httpsScheme, httpScheme:
+		loader = new(HttpsLoader)
+	default:
+		return nil, fmt.Errorf("policy scheme not supported: %s", scheme)
+	}
+
+	pv.logger.Debug().Msgf("loading policy spec %q using %T", ref, loader)
 
 	return loader, nil
 }

@@ -18,6 +18,8 @@ package policies
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,8 +28,14 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
-	"github.com/sigstore/cosign/v2/pkg/blob"
 	"google.golang.org/protobuf/encoding/protojson"
+)
+
+const (
+	fileScheme      = "file"
+	httpScheme      = "http"
+	httpsScheme     = "https"
+	chainloopScheme = "chainloop"
 )
 
 // Loader defines the interface for policy loaders from contract attachments
@@ -42,35 +50,57 @@ func (e *EmbeddedLoader) Load(_ context.Context, attachment *v1.PolicyAttachment
 	return attachment.GetEmbedded(), nil
 }
 
-// BlobLoader loader loads policies from filesystem and HTTPS references using Cosign's blob package
-type BlobLoader struct{}
+// FileLoader loader loads policies from filesystem and HTTPS references using Cosign's blob package
+type FileLoader struct{}
 
-func (l *BlobLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, error) {
+func (l *FileLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, error) {
 	var (
 		rawData []byte
 		err     error
 	)
 
-	reference := attachment.GetRef()
-
-	// Support file:// references
-	parts := strings.SplitAfterN(reference, "://", 2)
-	if len(parts) == 2 && parts[0] == "file://" {
-		rawData, err = os.ReadFile(filepath.Clean(parts[1]))
-		if err != nil {
-			return nil, fmt.Errorf("loading policy spec: %w", err)
-		}
+	ref := attachment.GetRef()
+	filePath, err := ensureScheme(ref, fileScheme)
+	if err != nil {
+		return nil, err
 	}
 
-	// this method understands env, http and https schemes, and defaults to file system (without scheme).
-	if rawData == nil {
-		rawData, err = blob.LoadFileOrURL(reference)
-		if err != nil {
-			return nil, fmt.Errorf("loading policy spec: %w", err)
-		}
+	rawData, err = os.ReadFile(filepath.Clean(filePath))
+	if err != nil {
+		return nil, fmt.Errorf("loading policy spec: %w", err)
 	}
 
-	jsonContent, err := materials.LoadJSONBytes(rawData, filepath.Ext(reference))
+	return unmarshalPolicy(rawData, filepath.Ext(ref))
+}
+
+// HttpsLoader loader loads policies from HTTP or HTTPS references
+type HttpsLoader struct{}
+
+func (l *HttpsLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, error) {
+	ref := attachment.GetRef()
+
+	var httpRef string
+	var err error
+	// support both
+	if httpRef, err = ensureScheme(ref, httpScheme, httpsScheme); err != nil {
+		return nil, err
+	}
+
+	resp, err := http.Get(httpRef)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	raw, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return unmarshalPolicy(raw, filepath.Ext(ref))
+}
+
+func unmarshalPolicy(rawData []byte, ext string) (*v1.Policy, error) {
+	jsonContent, err := materials.LoadJSONBytes(rawData, ext)
 	if err != nil {
 		return nil, fmt.Errorf("loading policy spec: %w", err)
 	}
@@ -79,10 +109,9 @@ func (l *BlobLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*
 	if err := protojson.Unmarshal(jsonContent, &spec); err != nil {
 		return nil, fmt.Errorf("unmarshalling policy spec: %w", err)
 	}
+
 	return &spec, nil
 }
-
-const ChainloopScheme = "chainloop"
 
 // ChainloopLoader loads policies referenced with chainloop://provider/name URLs
 type ChainloopLoader struct {
@@ -129,8 +158,8 @@ func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachm
 
 // IsProviderScheme takes a policy reference and returns whether it's referencing to an external provider or not
 func IsProviderScheme(ref string) bool {
-	parts := strings.SplitN(ref, "://", 2)
-	return len(parts) == 1 || len(parts) == 2 && parts[0] == ChainloopScheme
+	scheme, _ := refParts(ref)
+	return scheme == chainloopScheme || scheme == ""
 }
 
 func ProviderParts(ref string) (string, string) {
@@ -152,4 +181,23 @@ func ProviderParts(ref string) (string, string) {
 		name = pn[1]
 	}
 	return provider, name
+}
+
+func ensureScheme(ref string, expected ...string) (string, error) {
+	scheme, id := refParts(ref)
+	for _, ex := range expected {
+		if scheme == ex {
+			return id, nil
+		}
+	}
+
+	return "", fmt.Errorf("unexpected policy reference scheme: %q", scheme)
+}
+
+func refParts(ref string) (string, string) {
+	parts := strings.SplitN(ref, "://", 2)
+	if len(parts) == 2 {
+		return parts[0], parts[1]
+	}
+	return "", parts[0]
 }

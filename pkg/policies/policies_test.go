@@ -608,17 +608,17 @@ func (s *testSuite) TestLoader() {
 		{
 			name:     "file ref",
 			ref:      "file://local-policy.yaml",
-			expected: &BlobLoader{},
+			expected: &FileLoader{},
 		},
 		{
 			name:     "http ref",
 			ref:      "https://myhost/policy.yaml",
-			expected: &BlobLoader{},
+			expected: &HttpsLoader{},
 		},
 		{
-			name:     "env ref",
-			ref:      "env://environmentvar",
-			expected: &BlobLoader{},
+			name:    "invalid ref",
+			ref:     "env://environmentvar",
+			wantErr: true,
 		},
 		{
 			name:     "chainloop ref",
