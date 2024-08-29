@@ -178,8 +178,11 @@ func (pv *PolicyVerifier) loadPolicySpec(ctx context.Context, attachment *v1.Pol
 	if err != nil {
 		// fallback from ChainloopLoader to FileLoader if no scheme is used, to maintain backwards compatibility
 		_, ok := loader.(*ChainloopLoader)
-		scheme, _ := refParts(attachment.GetRef())
+		scheme, id := refParts(attachment.GetRef())
 		if ok && scheme == "" {
+			// prepend file:// to the ref
+			pv.logger.Debug().Msgf("falling back to FileLoader for %s", attachment.GetRef())
+			attachment.Policy = &v1.PolicyAttachment_Ref{Ref: fmt.Sprintf("%s://%s", fileScheme, id)}
 			spec, err = new(FileLoader).Load(ctx, attachment)
 		}
 	}
