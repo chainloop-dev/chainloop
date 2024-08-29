@@ -327,7 +327,7 @@ func (uc *WorkflowContractUseCase) findPolicy(att *schemav1.PolicyAttachment, to
 	}
 
 	// if it should come from a provider, check that it's available
-	// chainloop://[provider/]name
+	// [chainloop://][provider/]name
 	if loader.IsProviderScheme(att.GetRef()) {
 		provider, name := loader.ProviderParts(att.GetRef())
 		policy, err := uc.GetPolicy(provider, name, token)

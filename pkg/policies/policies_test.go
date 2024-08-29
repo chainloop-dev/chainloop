@@ -263,6 +263,16 @@ func (s *testSuite) TestProviderParts() {
 			prov: "provider",
 			name: "cyclonedx-freshness",
 		},
+		{
+			ref:  "provider/cyclonedx-freshness",
+			prov: "provider",
+			name: "cyclonedx-freshness",
+		},
+		{
+			ref:  "cyclonedx-freshness",
+			prov: "",
+			name: "cyclonedx-freshness",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -270,6 +280,44 @@ func (s *testSuite) TestProviderParts() {
 			prov, name := ProviderParts(tc.ref)
 			s.Equal(tc.prov, prov)
 			s.Equal(tc.name, name)
+		})
+	}
+}
+
+func (s *testSuite) TestIsProviderScheme() {
+	testCases := []struct {
+		ref string
+		res bool
+	}{
+		{
+			ref: "chainloop://cyclonedx-freshness",
+			res: true,
+		},
+		{
+			ref: "chainloop://provider/cyclonedx-freshness",
+			res: true,
+		},
+		{
+			ref: "file://mypolicy.yaml",
+			res: false,
+		},
+		{
+			ref: "https://myserver/mypolicy.yaml",
+			res: false,
+		},
+		{
+			ref: "cyclonedx-freshness",
+			res: true,
+		},
+		{
+			ref: "provider/cyclonedx-freshness",
+			res: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.ref, func() {
+			s.Equal(tc.res, IsProviderScheme(tc.ref))
 		})
 	}
 }

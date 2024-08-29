@@ -130,15 +130,22 @@ func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachm
 // IsProviderScheme takes a policy reference and returns whether it's referencing to an external provider or not
 func IsProviderScheme(ref string) bool {
 	parts := strings.SplitN(ref, "://", 2)
-	return len(parts) == 2 && parts[0] == ChainloopScheme
+	return len(parts) == 1 || len(parts) == 2 && parts[0] == ChainloopScheme
 }
 
 func ProviderParts(ref string) (string, string) {
 	parts := strings.SplitN(ref, "://", 2)
-	pn := strings.SplitN(parts[1], "/", 2)
+	var pn []string
+	if len(parts) == 1 {
+		pn = strings.SplitN(parts[0], "/", 2)
+	} else {
+		// ref might contain the chainloop://protocol
+		pn = strings.SplitN(parts[1], "/", 2)
+	}
+
 	var (
-		name     = pn[0]
 		provider string
+		name     = pn[0]
 	)
 	if len(pn) == 2 {
 		provider = pn[0]
