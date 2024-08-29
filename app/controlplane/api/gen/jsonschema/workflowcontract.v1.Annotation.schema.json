@@ -1,0 +1,16 @@
+{
+  "$id": "workflowcontract.v1.Annotation.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "value": {
+      "description": "This value can be set in the contract or provided during the attestation",
+      "type": "string"
+    }
+  },
+  "title": "Annotation",
+  "type": "object"
+}

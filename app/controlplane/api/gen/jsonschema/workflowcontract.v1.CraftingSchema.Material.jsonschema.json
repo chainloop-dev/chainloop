@@ -1,0 +1,57 @@
+{
+  "$id": "workflowcontract.v1.CraftingSchema.Material.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "annotations": {
+      "description": "List of annotations that can be used to add metadata to the material\n this metadata can be used later on by the integrations engine to filter and interpolate data",
+      "items": {
+        "$ref": "workflowcontract.v1.Annotation.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "name": {
+      "type": "string"
+    },
+    "optional": {
+      "type": "boolean"
+    },
+    "output": {
+      "description": "If a material is set as output it will get added to the subject in the statement",
+      "type": "boolean"
+    },
+    "type": {
+      "anyOf": [
+        {
+          "enum": [
+            "MATERIAL_TYPE_UNSPECIFIED",
+            "STRING",
+            "CONTAINER_IMAGE",
+            "ARTIFACT",
+            "SBOM_CYCLONEDX_JSON",
+            "SBOM_SPDX_JSON",
+            "JUNIT_XML",
+            "OPENVEX",
+            "HELM_CHART",
+            "SARIF",
+            "EVIDENCE",
+            "ATTESTATION",
+            "CSAF_VEX",
+            "CSAF_INFORMATIONAL_ADVISORY",
+            "CSAF_SECURITY_ADVISORY",
+            "CSAF_SECURITY_INCIDENT_RESPONSE"
+          ],
+          "title": "Material Type",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ]
+    }
+  },
+  "title": "Material",
+  "type": "object"
+}

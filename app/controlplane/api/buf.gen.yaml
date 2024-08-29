@@ -19,3 +19,5 @@ plugins:
       - outputClientImpl=grpc-web # client implementation it generates
       - esModuleInterop=true # use imports as required in modern ts setups
       - useOptionals=messages # use optional TypeScript properties instead of undefined
+  - plugin: buf.build/bufbuild/protoschema-jsonschema
+    out: ./gen/jsonschema

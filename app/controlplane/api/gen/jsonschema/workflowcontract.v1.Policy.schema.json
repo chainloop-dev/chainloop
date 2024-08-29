@@ -1,0 +1,27 @@
+{
+  "$id": "workflowcontract.v1.Policy.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Represents a policy to be applied to a material or attestation",
+  "patternProperties": {
+    "^(apiVersion)$": {
+      "type": "string"
+    }
+  },
+  "properties": {
+    "api_version": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string"
+    },
+    "metadata": {
+      "$ref": "workflowcontract.v1.Metadata.schema.json"
+    },
+    "spec": {
+      "$ref": "workflowcontract.v1.PolicySpec.schema.json"
+    }
+  },
+  "title": "Policy",
+  "type": "object"
+}

@@ -1,0 +1,25 @@
+{
+  "$id": "workflowcontract.v1.Metadata.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "annotations": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "description": {
+      "type": "string"
+    },
+    "name": {
+      "description": "the name of the policy",
+      "type": "string"
+    }
+  },
+  "title": "Metadata",
+  "type": "object"
+}

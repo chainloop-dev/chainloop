@@ -1,0 +1,49 @@
+{
+  "$id": "workflowcontract.v1.PolicySpec.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "embedded": {
+      "description": "embedded source code (only Rego supported currently)",
+      "type": "string"
+    },
+    "path": {
+      "description": "path to a policy script. It might consist of a URI reference",
+      "type": "string"
+    },
+    "type": {
+      "anyOf": [
+        {
+          "enum": [
+            "MATERIAL_TYPE_UNSPECIFIED",
+            "STRING",
+            "CONTAINER_IMAGE",
+            "ARTIFACT",
+            "SBOM_CYCLONEDX_JSON",
+            "SBOM_SPDX_JSON",
+            "JUNIT_XML",
+            "OPENVEX",
+            "HELM_CHART",
+            "SARIF",
+            "EVIDENCE",
+            "ATTESTATION",
+            "CSAF_VEX",
+            "CSAF_INFORMATIONAL_ADVISORY",
+            "CSAF_SECURITY_ADVISORY",
+            "CSAF_SECURITY_INCIDENT_RESPONSE"
+          ],
+          "title": "Material Type",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "if set, it will match any material supported by Chainloop\n except those not having a direct schema (STRING, ARTIFACT, EVIDENCE), since their format cannot be guessed by the crafter.\n CONTAINER, HELM_CHART are also excluded, but we might implement custom policies for them in the future."
+    }
+  },
+  "title": "Policy Spec",
+  "type": "object"
+}
