@@ -73,10 +73,10 @@ func (l *FileLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*
 	return unmarshalPolicy(rawData, filepath.Ext(ref))
 }
 
-// HttpsLoader loader loads policies from HTTP or HTTPS references
-type HttpsLoader struct{}
+// HTTPSLoader loader loads policies from HTTP or HTTPS references
+type HTTPSLoader struct{}
 
-func (l *HttpsLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, error) {
+func (l *HTTPSLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, error) {
 	ref := attachment.GetRef()
 
 	var httpRef string
@@ -86,6 +86,7 @@ func (l *HttpsLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (
 		return nil, err
 	}
 
+	// #nosec G107
 	resp, err := http.Get(httpRef)
 	if err != nil {
 		return nil, err

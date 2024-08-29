@@ -219,7 +219,7 @@ func (pv *PolicyVerifier) getLoader(attachment *v1.PolicyAttachment) (Loader, er
 	case fileScheme:
 		loader = new(FileLoader)
 	case httpsScheme, httpScheme:
-		loader = new(HttpsLoader)
+		loader = new(HTTPSLoader)
 	default:
 		return nil, fmt.Errorf("policy scheme not supported: %s", scheme)
 	}

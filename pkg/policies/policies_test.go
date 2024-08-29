@@ -613,7 +613,7 @@ func (s *testSuite) TestLoader() {
 		{
 			name:     "http ref",
 			ref:      "https://myhost/policy.yaml",
-			expected: &HttpsLoader{},
+			expected: &HTTPSLoader{},
 		},
 		{
 			name:    "invalid ref",
