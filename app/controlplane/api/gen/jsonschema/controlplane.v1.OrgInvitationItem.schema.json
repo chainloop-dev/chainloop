@@ -1,0 +1,54 @@
+{
+  "$id": "controlplane.v1.OrgInvitationItem.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(createdAt)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "^(receiverEmail)$": {
+      "type": "string"
+    }
+  },
+  "properties": {
+    "created_at": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "id": {
+      "type": "string"
+    },
+    "organization": {
+      "$ref": "controlplane.v1.OrgItem.schema.json"
+    },
+    "receiver_email": {
+      "type": "string"
+    },
+    "role": {
+      "anyOf": [
+        {
+          "enum": [
+            "MEMBERSHIP_ROLE_UNSPECIFIED",
+            "MEMBERSHIP_ROLE_ORG_VIEWER",
+            "MEMBERSHIP_ROLE_ORG_ADMIN",
+            "MEMBERSHIP_ROLE_ORG_OWNER"
+          ],
+          "title": "Membership Role",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ]
+    },
+    "sender": {
+      "$ref": "controlplane.v1.User.schema.json"
+    },
+    "status": {
+      "type": "string"
+    }
+  },
+  "title": "Org Invitation Item",
+  "type": "object"
+}

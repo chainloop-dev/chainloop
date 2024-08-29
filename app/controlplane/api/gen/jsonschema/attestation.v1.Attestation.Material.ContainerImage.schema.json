@@ -1,0 +1,30 @@
+{
+  "$id": "attestation.v1.Attestation.Material.ContainerImage.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(isSubject)$": {
+      "type": "boolean"
+    }
+  },
+  "properties": {
+    "digest": {
+      "type": "string"
+    },
+    "id": {
+      "type": "string"
+    },
+    "is_subject": {
+      "type": "boolean"
+    },
+    "name": {
+      "type": "string"
+    },
+    "tag": {
+      "description": "provided tag",
+      "type": "string"
+    }
+  },
+  "title": "Container Image",
+  "type": "object"
+}

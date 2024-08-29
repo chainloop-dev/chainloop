@@ -1,0 +1,15 @@
+{
+  "$id": "controlplane.v1.ListAttachmentsResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "result": {
+      "items": {
+        "$ref": "controlplane.v1.IntegrationAttachmentItem.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "List Attachments Response",
+  "type": "object"
+}

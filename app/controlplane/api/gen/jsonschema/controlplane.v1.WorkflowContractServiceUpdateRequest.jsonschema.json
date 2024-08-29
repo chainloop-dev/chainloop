@@ -1,0 +1,27 @@
+{
+  "$id": "controlplane.v1.WorkflowContractServiceUpdateRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(raw_contract)$": {
+      "description": "Raw representation of the contract in json, yaml or cue",
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "description": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "rawContract": {
+      "description": "Raw representation of the contract in json, yaml or cue",
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+      "type": "string"
+    }
+  },
+  "title": "Workflow Contract Service Update Request",
+  "type": "object"
+}

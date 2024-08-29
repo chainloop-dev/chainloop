@@ -1,0 +1,42 @@
+{
+  "$id": "attestation.v1.WorkflowMetadata.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(schemaRevision)$": {
+      "type": "string"
+    },
+    "^(workflowId)$": {
+      "type": "string"
+    },
+    "^(workflowRunId)$": {
+      "type": "string"
+    }
+  },
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "organization": {
+      "description": "organization name",
+      "type": "string"
+    },
+    "project": {
+      "type": "string"
+    },
+    "schema_revision": {
+      "type": "string"
+    },
+    "team": {
+      "type": "string"
+    },
+    "workflow_id": {
+      "type": "string"
+    },
+    "workflow_run_id": {
+      "type": "string"
+    }
+  },
+  "title": "Workflow Metadata",
+  "type": "object"
+}

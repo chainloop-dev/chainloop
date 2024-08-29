@@ -1,0 +1,17 @@
+{
+  "$id": "controlplane.v1.WorkflowContractServiceDescribeRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "revision": {
+      "exclusiveMaximum": 2147483648,
+      "minimum": -2147483648,
+      "type": "integer"
+    }
+  },
+  "title": "Workflow Contract Service Describe Request",
+  "type": "object"
+}

@@ -1,0 +1,29 @@
+{
+  "$id": "controlplane.v1.AttestationServiceGetContractRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(contract_revision)$": {
+      "exclusiveMaximum": 2147483648,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "^(workflow_name)$": {
+      "description": "This parameter is not needed by Robot Account since they have the workflowID embedded.\n API Tokens will send the parameter explicitly",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "contractRevision": {
+      "exclusiveMaximum": 2147483648,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "workflowName": {
+      "description": "This parameter is not needed by Robot Account since they have the workflowID embedded.\n API Tokens will send the parameter explicitly",
+      "type": "string"
+    }
+  },
+  "title": "Attestation Service Get Contract Request",
+  "type": "object"
+}

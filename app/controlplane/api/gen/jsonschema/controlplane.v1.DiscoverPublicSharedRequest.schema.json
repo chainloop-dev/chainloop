@@ -1,0 +1,16 @@
+{
+  "$id": "controlplane.v1.DiscoverPublicSharedRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "digest": {
+      "type": "string"
+    },
+    "kind": {
+      "description": "Optional kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...\n Used to filter and resolve ambiguities",
+      "type": "string"
+    }
+  },
+  "title": "Discover Public Shared Request",
+  "type": "object"
+}

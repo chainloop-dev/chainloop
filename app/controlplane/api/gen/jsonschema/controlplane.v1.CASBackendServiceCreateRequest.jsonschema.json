@@ -1,0 +1,32 @@
+{
+  "$id": "controlplane.v1.CASBackendServiceCreateRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "credentials": {
+      "$ref": "google.protobuf.Struct.jsonschema.json",
+      "description": "Arbitrary configuration for the integration"
+    },
+    "default": {
+      "description": "Set as default in your organization",
+      "type": "boolean"
+    },
+    "description": {
+      "description": "Descriptive name",
+      "type": "string"
+    },
+    "location": {
+      "description": "Location, e.g. bucket name, OCI bucket name, ...",
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "provider": {
+      "description": "Type of the backend, OCI, S3, ...",
+      "type": "string"
+    }
+  },
+  "title": "CAS Backend Service Create Request",
+  "type": "object"
+}

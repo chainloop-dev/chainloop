@@ -1,0 +1,45 @@
+{
+  "$id": "controlplane.v1.OrgMetricsServiceTotalsResponse.Result.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(runs_total)$": {
+      "exclusiveMaximum": 2147483648,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "^(runs_total_by_runner_type)$": {
+      "items": {
+        "$ref": "controlplane.v1.MetricsRunnerCount.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "^(runs_total_by_status)$": {
+      "items": {
+        "$ref": "controlplane.v1.MetricsStatusCount.jsonschema.json"
+      },
+      "type": "array"
+    }
+  },
+  "properties": {
+    "runsTotal": {
+      "exclusiveMaximum": 2147483648,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "runsTotalByRunnerType": {
+      "items": {
+        "$ref": "controlplane.v1.MetricsRunnerCount.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "runsTotalByStatus": {
+      "items": {
+        "$ref": "controlplane.v1.MetricsStatusCount.jsonschema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Result",
+  "type": "object"
+}

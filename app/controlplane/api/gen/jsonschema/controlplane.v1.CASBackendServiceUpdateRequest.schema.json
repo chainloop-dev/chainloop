@@ -1,0 +1,25 @@
+{
+  "$id": "controlplane.v1.CASBackendServiceUpdateRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Update a CAS backend is limited to\n - description\n - set is as default\n - rotate credentials",
+  "properties": {
+    "credentials": {
+      "$ref": "google.protobuf.Struct.schema.json",
+      "description": "Credentials, useful for rotation"
+    },
+    "default": {
+      "description": "Set as default in your organization",
+      "type": "boolean"
+    },
+    "description": {
+      "description": "Description",
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    }
+  },
+  "title": "CAS Backend Service Update Request",
+  "type": "object"
+}

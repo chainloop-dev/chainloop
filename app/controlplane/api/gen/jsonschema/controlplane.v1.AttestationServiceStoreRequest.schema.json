@@ -1,0 +1,22 @@
+{
+  "$id": "controlplane.v1.AttestationServiceStoreRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(workflowRunId)$": {
+      "type": "string"
+    }
+  },
+  "properties": {
+    "attestation": {
+      "description": "encoded DSEE envelope",
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+      "type": "string"
+    },
+    "workflow_run_id": {
+      "type": "string"
+    }
+  },
+  "title": "Attestation Service Store Request",
+  "type": "object"
+}

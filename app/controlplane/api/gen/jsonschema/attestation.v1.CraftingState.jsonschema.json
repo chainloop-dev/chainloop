@@ -1,0 +1,27 @@
+{
+  "$id": "attestation.v1.CraftingState.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Intermediate information that will get stored in the system while the run is being executed",
+  "patternProperties": {
+    "^(dry_run)$": {
+      "type": "boolean"
+    },
+    "^(input_schema)$": {
+      "$ref": "workflowcontract.v1.CraftingSchema.jsonschema.json"
+    }
+  },
+  "properties": {
+    "attestation": {
+      "$ref": "attestation.v1.Attestation.jsonschema.json"
+    },
+    "dryRun": {
+      "type": "boolean"
+    },
+    "inputSchema": {
+      "$ref": "workflowcontract.v1.CraftingSchema.jsonschema.json"
+    }
+  },
+  "title": "Crafting State",
+  "type": "object"
+}

@@ -1,0 +1,31 @@
+{
+  "$id": "controlplane.v1.IntegrationAttachmentItem.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(created_at)$": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    }
+  },
+  "properties": {
+    "config": {
+      "description": "Arbitrary configuration for the attachment",
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+      "type": "string"
+    },
+    "createdAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    },
+    "id": {
+      "type": "string"
+    },
+    "integration": {
+      "$ref": "controlplane.v1.RegisteredIntegrationItem.jsonschema.json"
+    },
+    "workflow": {
+      "$ref": "controlplane.v1.WorkflowItem.jsonschema.json"
+    }
+  },
+  "title": "Integration Attachment Item",
+  "type": "object"
+}

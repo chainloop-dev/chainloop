@@ -1,0 +1,23 @@
+{
+  "$id": "controlplane.v1.APITokenServiceCreateRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(expires_in)$": {
+      "$ref": "google.protobuf.Duration.jsonschema.json"
+    }
+  },
+  "properties": {
+    "description": {
+      "type": "string"
+    },
+    "expiresIn": {
+      "$ref": "google.protobuf.Duration.jsonschema.json"
+    },
+    "name": {
+      "type": "string"
+    }
+  },
+  "title": "API Token Service Create Request",
+  "type": "object"
+}

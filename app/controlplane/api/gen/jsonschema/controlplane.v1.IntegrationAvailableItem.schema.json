@@ -1,0 +1,22 @@
+{
+  "$id": "controlplane.v1.IntegrationAvailableItem.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "description": {
+      "type": "string"
+    },
+    "fanout": {
+      "$ref": "controlplane.v1.PluginFanout.schema.json"
+    },
+    "name": {
+      "description": "Integration identifier",
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "title": "Integration Available Item",
+  "type": "object"
+}

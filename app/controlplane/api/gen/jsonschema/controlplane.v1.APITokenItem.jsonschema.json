@@ -1,0 +1,50 @@
+{
+  "$id": "controlplane.v1.APITokenItem.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(created_at)$": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    },
+    "^(expires_at)$": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    },
+    "^(organization_id)$": {
+      "type": "string"
+    },
+    "^(organization_name)$": {
+      "type": "string"
+    },
+    "^(revoked_at)$": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    }
+  },
+  "properties": {
+    "createdAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    },
+    "description": {
+      "type": "string"
+    },
+    "expiresAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    },
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "organizationId": {
+      "type": "string"
+    },
+    "organizationName": {
+      "type": "string"
+    },
+    "revokedAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    }
+  },
+  "title": "API Token Item",
+  "type": "object"
+}

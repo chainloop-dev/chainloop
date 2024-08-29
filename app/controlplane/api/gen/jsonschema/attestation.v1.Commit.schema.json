@@ -1,0 +1,40 @@
+{
+  "$id": "attestation.v1.Commit.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(authorEmail)$": {
+      "description": "Commit authors might not include email i.e \"Flux \u003c\u003e\"",
+      "type": "string"
+    },
+    "^(authorName)$": {
+      "type": "string"
+    }
+  },
+  "properties": {
+    "author_email": {
+      "description": "Commit authors might not include email i.e \"Flux \u003c\u003e\"",
+      "type": "string"
+    },
+    "author_name": {
+      "type": "string"
+    },
+    "date": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "hash": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "remotes": {
+      "items": {
+        "$ref": "attestation.v1.Commit.Remote.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Commit",
+  "type": "object"
+}

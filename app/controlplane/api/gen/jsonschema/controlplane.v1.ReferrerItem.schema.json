@@ -1,0 +1,57 @@
+{
+  "$id": "controlplane.v1.ReferrerItem.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(createdAt)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    }
+  },
+  "properties": {
+    "annotations": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "created_at": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "digest": {
+      "description": "Digest of the referrer, i.e sha256:deadbeef or sha1:beefdead",
+      "type": "string"
+    },
+    "downloadable": {
+      "description": "Whether the referrer is downloadable or not from CAS",
+      "type": "boolean"
+    },
+    "kind": {
+      "description": "Kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...",
+      "type": "string"
+    },
+    "metadata": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "public": {
+      "description": "Whether the referrer is public since it belongs to a public workflow",
+      "type": "boolean"
+    },
+    "references": {
+      "items": {
+        "$ref": "controlplane.v1.ReferrerItem.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Referrer Item",
+  "type": "object"
+}

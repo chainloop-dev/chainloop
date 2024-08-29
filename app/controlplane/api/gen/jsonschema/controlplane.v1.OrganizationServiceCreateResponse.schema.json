@@ -1,0 +1,12 @@
+{
+  "$id": "controlplane.v1.OrganizationServiceCreateResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "result": {
+      "$ref": "controlplane.v1.OrgItem.schema.json"
+    }
+  },
+  "title": "Organization Service Create Response",
+  "type": "object"
+}

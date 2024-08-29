@@ -1,0 +1,17 @@
+{
+  "$id": "controlplane.v1.OrganizationServiceDeleteMembershipRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(membership_id)$": {
+      "type": "string"
+    }
+  },
+  "properties": {
+    "membershipId": {
+      "type": "string"
+    }
+  },
+  "title": "Organization Service Delete Membership Request",
+  "type": "object"
+}

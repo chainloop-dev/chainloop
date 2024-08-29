@@ -1,0 +1,15 @@
+{
+  "$id": "attestation.v1.Attestation.Material.KeyVal.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "value": {
+      "type": "string"
+    }
+  },
+  "title": "Key Val",
+  "type": "object"
+}

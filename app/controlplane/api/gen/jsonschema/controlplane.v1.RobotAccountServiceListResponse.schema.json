@@ -1,0 +1,15 @@
+{
+  "$id": "controlplane.v1.RobotAccountServiceListResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "result": {
+      "items": {
+        "$ref": "controlplane.v1.RobotAccountServiceListResponse.RobotAccountItem.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Robot Account Service List Response",
+  "type": "object"
+}

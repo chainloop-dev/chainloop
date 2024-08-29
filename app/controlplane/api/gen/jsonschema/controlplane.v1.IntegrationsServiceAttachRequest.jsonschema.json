@@ -1,0 +1,31 @@
+{
+  "$id": "controlplane.v1.IntegrationsServiceAttachRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(integration_name)$": {
+      "description": "Name of the registered integration",
+      "type": "string"
+    },
+    "^(workflow_name)$": {
+      "description": "Name of the workflow to attach",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "config": {
+      "$ref": "google.protobuf.Struct.jsonschema.json",
+      "description": "Arbitrary configuration for the integration"
+    },
+    "integrationName": {
+      "description": "Name of the registered integration",
+      "type": "string"
+    },
+    "workflowName": {
+      "description": "Name of the workflow to attach",
+      "type": "string"
+    }
+  },
+  "title": "Integrations Service Attach Request",
+  "type": "object"
+}

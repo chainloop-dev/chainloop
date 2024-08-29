@@ -1,0 +1,8 @@
+{
+  "$id": "controlplane.v1.WorkflowContractServiceListRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {},
+  "title": "Workflow Contract Service List Request",
+  "type": "object"
+}

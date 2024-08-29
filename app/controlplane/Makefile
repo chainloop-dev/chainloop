@@ -10,8 +10,6 @@ config: check-buf-tool
 api: check-buf-tool
 	cd ./plugins/sdk/v1/plugin/api && buf generate
 	cd ./api && buf generate
-	# Remove all json schema that are not part of the workflowcontract since we don't need them
-	find ./api/gen/jsonschema -type f ! -name 'workflowcontract.*' -exec rm {} +
 
 .PHONY: build
 # build

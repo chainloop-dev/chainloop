@@ -1,0 +1,9 @@
+{
+  "$id": "controlplane.v1.AuthServiceDeleteAccountRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "AuthServiceDeleteAccountResponse is the response for the DeleteAccount method.",
+  "properties": {},
+  "title": "Auth Service Delete Account Request",
+  "type": "object"
+}

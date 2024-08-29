@@ -1,0 +1,12 @@
+{
+  "$id": "controlplane.v1.RobotAccountServiceRevokeRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string"
+    }
+  },
+  "title": "Robot Account Service Revoke Request",
+  "type": "object"
+}

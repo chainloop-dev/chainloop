@@ -1,0 +1,15 @@
+{
+  "$id": "controlplane.v1.DailyRunsCountResponse.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "result": {
+      "items": {
+        "$ref": "controlplane.v1.DailyRunsCountResponse.TotalByDay.jsonschema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Daily Runs Count Response",
+  "type": "object"
+}

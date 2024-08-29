@@ -1,0 +1,23 @@
+{
+  "$id": "controlplane.v1.RobotAccountServiceListRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(includeRevoked)$": {
+      "type": "boolean"
+    },
+    "^(workflowId)$": {
+      "type": "string"
+    }
+  },
+  "properties": {
+    "include_revoked": {
+      "type": "boolean"
+    },
+    "workflow_id": {
+      "type": "string"
+    }
+  },
+  "title": "Robot Account Service List Request",
+  "type": "object"
+}

@@ -1,0 +1,18 @@
+{
+  "$id": "controlplane.v1.CursorPaginationRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "cursor": {
+      "type": "string"
+    },
+    "limit": {
+      "description": "Limit pagination to 100",
+      "exclusiveMaximum": 2147483648,
+      "minimum": -2147483648,
+      "type": "integer"
+    }
+  },
+  "title": "Cursor Pagination Request",
+  "type": "object"
+}

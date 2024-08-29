@@ -1,0 +1,46 @@
+{
+  "$id": "controlplane.v1.PluginFanout.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "PluginFanout describes a plugin that can be used to fanout attestation and materials to multiple integrations",
+  "patternProperties": {
+    "^(attachment_schema)$": {
+      "description": "Attachment JSON schema",
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+      "type": "string"
+    },
+    "^(registration_schema)$": {
+      "description": "Registration JSON schema",
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+      "type": "string"
+    },
+    "^(subscribed_materials)$": {
+      "description": "List of materials that the integration is subscribed to",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "properties": {
+    "attachmentSchema": {
+      "description": "Attachment JSON schema",
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+      "type": "string"
+    },
+    "registrationSchema": {
+      "description": "Registration JSON schema",
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+      "type": "string"
+    },
+    "subscribedMaterials": {
+      "description": "List of materials that the integration is subscribed to",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Plugin Fanout",
+  "type": "object"
+}

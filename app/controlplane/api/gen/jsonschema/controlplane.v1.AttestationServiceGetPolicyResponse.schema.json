@@ -1,0 +1,12 @@
+{
+  "$id": "controlplane.v1.AttestationServiceGetPolicyResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "policy": {
+      "$ref": "workflowcontract.v1.Policy.schema.json"
+    }
+  },
+  "title": "Attestation Service Get Policy Response",
+  "type": "object"
+}

@@ -1,0 +1,15 @@
+{
+  "$id": "controlplane.v1.PolicyEvaluations.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "evaluations": {
+      "items": {
+        "$ref": "attestation.v1.PolicyEvaluation.jsonschema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Policy Evaluations",
+  "type": "object"
+}

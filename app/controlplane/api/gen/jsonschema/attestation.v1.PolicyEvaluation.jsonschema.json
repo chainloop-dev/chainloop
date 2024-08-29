@@ -1,0 +1,87 @@
+{
+  "$id": "attestation.v1.PolicyEvaluation.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A policy executed against an attestation or material",
+  "patternProperties": {
+    "^(material_name)$": {
+      "type": "string"
+    }
+  },
+  "properties": {
+    "annotations": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "body": {
+      "description": "The body script of the policy",
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "materialName": {
+      "type": "string"
+    },
+    "name": {
+      "description": "The policy name from the policy spec",
+      "type": "string"
+    },
+    "type": {
+      "anyOf": [
+        {
+          "enum": [
+            "MATERIAL_TYPE_UNSPECIFIED",
+            "STRING",
+            "CONTAINER_IMAGE",
+            "ARTIFACT",
+            "SBOM_CYCLONEDX_JSON",
+            "SBOM_SPDX_JSON",
+            "JUNIT_XML",
+            "OPENVEX",
+            "HELM_CHART",
+            "SARIF",
+            "EVIDENCE",
+            "ATTESTATION",
+            "CSAF_VEX",
+            "CSAF_INFORMATIONAL_ADVISORY",
+            "CSAF_SECURITY_ADVISORY",
+            "CSAF_SECURITY_INCIDENT_RESPONSE"
+          ],
+          "title": "Material Type",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "material type, if any, of the evaluated policy"
+    },
+    "violations": {
+      "description": "The policy violations, if any",
+      "items": {
+        "$ref": "attestation.v1.PolicyEvaluation.Violation.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "with": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "arguments, as they come from the policy attachment",
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    }
+  },
+  "title": "Policy Evaluation",
+  "type": "object"
+}

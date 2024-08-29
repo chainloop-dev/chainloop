@@ -1,0 +1,45 @@
+{
+  "$id": "controlplane.v1.WorkflowRunServiceListRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(workflow_name)$": {
+      "description": "Filters\n by workflow",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "pagination": {
+      "$ref": "controlplane.v1.CursorPaginationRequest.jsonschema.json",
+      "description": "pagination options"
+    },
+    "status": {
+      "anyOf": [
+        {
+          "enum": [
+            "RUN_STATUS_UNSPECIFIED",
+            "RUN_STATUS_INITIALIZED",
+            "RUN_STATUS_SUCCEEDED",
+            "RUN_STATUS_FAILED",
+            "RUN_STATUS_EXPIRED",
+            "RUN_STATUS_CANCELLED"
+          ],
+          "title": "Run Status",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "by run status"
+    },
+    "workflowName": {
+      "description": "Filters\n by workflow",
+      "type": "string"
+    }
+  },
+  "title": "Workflow Run Service List Request",
+  "type": "object"
+}

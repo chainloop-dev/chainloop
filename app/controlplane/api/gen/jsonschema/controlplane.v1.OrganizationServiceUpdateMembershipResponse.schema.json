@@ -1,0 +1,12 @@
+{
+  "$id": "controlplane.v1.OrganizationServiceUpdateMembershipResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "result": {
+      "$ref": "controlplane.v1.OrgMembershipItem.schema.json"
+    }
+  },
+  "title": "Organization Service Update Membership Response",
+  "type": "object"
+}

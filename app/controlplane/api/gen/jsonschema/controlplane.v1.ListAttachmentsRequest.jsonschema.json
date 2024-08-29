@@ -1,0 +1,19 @@
+{
+  "$id": "controlplane.v1.ListAttachmentsRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(workflow_name)$": {
+      "description": "Filter by workflow",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "workflowName": {
+      "description": "Filter by workflow",
+      "type": "string"
+    }
+  },
+  "title": "List Attachments Request",
+  "type": "object"
+}

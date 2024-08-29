@@ -1,0 +1,21 @@
+{
+  "$id": "controlplane.v1.AttestationStateServiceReadResponse.Result.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(attestationState)$": {
+      "$ref": "attestation.v1.CraftingState.schema.json"
+    }
+  },
+  "properties": {
+    "attestation_state": {
+      "$ref": "attestation.v1.CraftingState.schema.json"
+    },
+    "digest": {
+      "description": "digest of the attestation state to implement Optimistic Concurrency Control",
+      "type": "string"
+    }
+  },
+  "title": "Result",
+  "type": "object"
+}

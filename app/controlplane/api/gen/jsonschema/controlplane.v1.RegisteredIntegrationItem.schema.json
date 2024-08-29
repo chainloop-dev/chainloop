@@ -1,0 +1,36 @@
+{
+  "$id": "controlplane.v1.RegisteredIntegrationItem.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(createdAt)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    }
+  },
+  "properties": {
+    "config": {
+      "description": "Arbitrary configuration for the integration",
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+      "type": "string"
+    },
+    "created_at": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "description": {
+      "description": "Description of the registration, used for display purposes",
+      "type": "string"
+    },
+    "id": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string"
+    },
+    "name": {
+      "description": "unique, DNS-like name for the registration",
+      "type": "string"
+    }
+  },
+  "title": "Registered Integration Item",
+  "type": "object"
+}
