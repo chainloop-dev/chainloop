@@ -521,6 +521,7 @@ func (s *testSuite) TestLoadPolicySpec() {
 		attachment       *v12.PolicyAttachment
 		wantErr          bool
 		expectedName     string
+		expectedRef      string
 		expectedDesc     string
 		expectedCategory string
 		expectedRef      string
@@ -529,6 +530,18 @@ func (s *testSuite) TestLoadPolicySpec() {
 			name:       "missing policy",
 			attachment: &v12.PolicyAttachment{},
 			wantErr:    true,
+		},
+		{
+			name: "by ref",
+			attachment: &v12.PolicyAttachment{
+				Policy: &v12.PolicyAttachment_Ref{
+					Ref: "testdata/sbom_syft.yaml",
+				},
+			},
+			expectedName:     "made-with-syft",
+			expectedDesc:     "This policy checks that the SPDX SBOM was created with syft",
+			expectedCategory: "SBOM",
+			expectedRef:      "testdata/sbom_syft.yaml",
 		},
 		{
 			name: "by file ref",

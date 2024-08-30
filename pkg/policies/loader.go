@@ -46,10 +46,10 @@ type Loader interface {
 // EmbeddedLoader returns embedded policies
 type EmbeddedLoader struct{}
 
-const ChainloopLoaderID = "chainloop"
+const chainloopLoaderPrefix = "chainloop://"
 
 func (e *EmbeddedLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, string, error) {
-	return attachment.GetEmbedded(), attachment.GetRef(), nil
+	return attachment.GetEmbedded(), "", nil
 }
 
 // FileLoader loader loads policies from filesystem and HTTPS references using Cosign's blob package

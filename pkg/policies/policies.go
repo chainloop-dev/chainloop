@@ -100,11 +100,15 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
+		var body string
+		if !strings.HasPrefix(ref, chainloopLoaderPrefix) {
+			body = base64.StdEncoding.EncodeToString(script.Source)
+		}
 
 		result = append(result, &v12.PolicyEvaluation{
 			Name:            spec.GetMetadata().GetName(),
 			MaterialName:    material.GetArtifact().GetId(),
-			Body:            base64.StdEncoding.EncodeToString(script.Source),
+			Body:            body,
 			Violations:      engineViolationsToAPIViolations(violations),
 			Annotations:     spec.GetMetadata().GetAnnotations(),
 			Description:     spec.GetMetadata().GetDescription(),
@@ -156,7 +160,7 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 		// We store the body in the attestation unless the policy comes from a remote provider
 		// in which case with the reference it will suffice
 		var body string
-		if !strings.HasPrefix(ChainloopLoaderID, ref) {
+		if !strings.HasPrefix(ref, chainloopLoaderPrefix) {
 			body = base64.StdEncoding.EncodeToString(script.Source)
 		}
 

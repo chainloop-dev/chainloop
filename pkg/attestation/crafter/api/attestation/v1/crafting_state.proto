@@ -106,16 +106,15 @@ message PolicyEvaluation {
 
   string material_name = 2;
 
-  // The policy will be referenced either inline in the body
-  // or through a reference to the provider origin
-  // The body script of the policy
-  string body = 3 [(buf.validate.field).required = true];
+  // the body of the policy. This field will be empty if there is a FQDN reference to the policy
+  string body = 3;
   // fully qualified reference to the policy
   // i.e
   // http://my-domain.com/foo.yaml
   // file://foo.yaml
   // chainloop://my-provider.com/foo@sha256:1234
-  string policy_reference = 10 [(buf.validate.field).required = true];
+  // NOTE: embedded policies will not have a reference
+  string policy_reference = 10;
 
   string description = 5;
   map<string, string> annotations = 6;

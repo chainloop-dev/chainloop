@@ -104,11 +104,7 @@ export interface PolicyEvaluation {
   /** The policy name from the policy spec */
   name: string;
   materialName: string;
-  /**
-   * The policy will be referenced either inline in the body
-   * or through a reference to the provider origin
-   * The body script of the policy
-   */
+  /** the body of the policy. This field will be empty if there is a FQDN reference to the policy */
   body: string;
   /**
    * fully qualified reference to the policy
@@ -116,6 +112,7 @@ export interface PolicyEvaluation {
    * http://my-domain.com/foo.yaml
    * file://foo.yaml
    * chainloop://my-provider.com/foo@sha256:1234
+   * NOTE: embedded policies will not have a reference
    */
   policyReference: string;
   description: string;
