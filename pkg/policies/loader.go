@@ -79,22 +79,20 @@ type HTTPSLoader struct{}
 func (l *HTTPSLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, error) {
 	ref := attachment.GetRef()
 
-	var httpRef string
-	var err error
-	// support both
-	if httpRef, err = ensureScheme(ref, httpScheme, httpsScheme); err != nil {
-		return nil, err
+	// and do not remove the scheme since we need http(s):// to make the request
+	if _, err := ensureScheme(ref, httpScheme, httpsScheme); err != nil {
+		return nil, fmt.Errorf("invalid policy reference %q: %w", ref, err)
 	}
 
 	// #nosec G107
-	resp, err := http.Get(httpRef)
+	resp, err := http.Get(ref)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("requesting remote policy: %w", err)
 	}
 	defer resp.Body.Close()
 	raw, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("reading remote policy: %w", err)
 	}
 
 	return unmarshalPolicy(raw, filepath.Ext(ref))
