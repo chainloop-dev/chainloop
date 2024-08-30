@@ -17,6 +17,8 @@ package policies
 
 import (
 	"fmt"
+
+	"golang.org/x/exp/maps"
 )
 
 type NewRegistryConfig struct {
@@ -63,4 +65,8 @@ func (r *Registry) GetProvider(name string) *PolicyProvider {
 	}
 
 	return r.providers[name]
+}
+
+func (r *Registry) GetProviderNames() []string {
+	return maps.Keys(r.providers)
 }

@@ -30,6 +30,10 @@ func (e GracefulError) Error() string {
 	return e.err.Error()
 }
 
+func (e GracefulError) Unwrap() error {
+	return e.err
+}
+
 func newGracefulError(err error) error {
 	return GracefulError{err}
 }

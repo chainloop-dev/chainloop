@@ -43,7 +43,7 @@ func (s *testSuite) TestVerifyAttestations() {
 			schema: &v12.CraftingSchema{
 				Policies: &v12.Policies{
 					Attestation: []*v12.PolicyAttachment{
-						{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/workflow.yaml"}},
+						{Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/workflow.yaml"}},
 					},
 				},
 			},
@@ -58,7 +58,7 @@ func (s *testSuite) TestVerifyAttestations() {
 			schema: &v12.CraftingSchema{
 				Policies: &v12.Policies{
 					Attestation: []*v12.PolicyAttachment{
-						{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/workflow.yaml"}},
+						{Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/workflow.yaml"}},
 					},
 				},
 			},
@@ -70,7 +70,7 @@ func (s *testSuite) TestVerifyAttestations() {
 			schema: &v12.CraftingSchema{
 				Policies: &v12.Policies{
 					Attestation: []*v12.PolicyAttachment{
-						{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/workflow.yaml"}},
+						{Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/workflow.yaml"}},
 					},
 				},
 			},
@@ -82,7 +82,7 @@ func (s *testSuite) TestVerifyAttestations() {
 			schema: &v12.CraftingSchema{
 				Policies: &v12.Policies{
 					Attestation: []*v12.PolicyAttachment{
-						{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/wrong_policy.yaml"}},
+						{Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/wrong_policy.yaml"}},
 					},
 				},
 			},
@@ -94,7 +94,7 @@ func (s *testSuite) TestVerifyAttestations() {
 			schema: &v12.CraftingSchema{
 				Policies: &v12.Policies{
 					Attestation: []*v12.PolicyAttachment{
-						{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/missing_rego.yaml"}},
+						{Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/missing_rego.yaml"}},
 					},
 				},
 			},
@@ -105,7 +105,7 @@ func (s *testSuite) TestVerifyAttestations() {
 			schema: &v12.CraftingSchema{
 				Policies: &v12.Policies{
 					Attestation: []*v12.PolicyAttachment{
-						{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/workflow_embedded.yaml"}},
+						{Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/workflow_embedded.yaml"}},
 					},
 				},
 			},
@@ -117,7 +117,7 @@ func (s *testSuite) TestVerifyAttestations() {
 			schema: &v12.CraftingSchema{
 				Policies: &v12.Policies{
 					Attestation: []*v12.PolicyAttachment{
-						{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/workflow_embedded.yaml"}},
+						{Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/workflow_embedded.yaml"}},
 					},
 				},
 			},
@@ -130,8 +130,8 @@ func (s *testSuite) TestVerifyAttestations() {
 			schema: &v12.CraftingSchema{
 				Policies: &v12.Policies{
 					Attestation: []*v12.PolicyAttachment{
-						{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/workflow_embedded.yaml"}},
-						{Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/materials.yaml"}},
+						{Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/workflow_embedded.yaml"}},
+						{Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/materials.yaml"}},
 					},
 				},
 			},
@@ -145,7 +145,7 @@ func (s *testSuite) TestVerifyAttestations() {
 				Policies: &v12.Policies{
 					Attestation: []*v12.PolicyAttachment{
 						{
-							Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/with_arguments.yaml"},
+							Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/with_arguments.yaml"},
 							With:   map[string]string{"email": "devel@chainloop.dev"},
 						},
 					},
@@ -161,7 +161,7 @@ func (s *testSuite) TestVerifyAttestations() {
 				Policies: &v12.Policies{
 					Attestation: []*v12.PolicyAttachment{
 						{
-							Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/with_arguments.yaml"},
+							Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/with_arguments.yaml"},
 							With:   map[string]string{"email": "foobar@chainloop.dev"},
 						},
 					},
@@ -177,7 +177,7 @@ func (s *testSuite) TestVerifyAttestations() {
 				Policies: &v12.Policies{
 					Attestation: []*v12.PolicyAttachment{
 						{
-							Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/with_arguments.yaml"},
+							Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/with_arguments.yaml"},
 							With: map[string]string{"email_array": `
 								foobar@chainloop.dev
 								foobaz@chainloop.dev`},
@@ -195,7 +195,7 @@ func (s *testSuite) TestVerifyAttestations() {
 				Policies: &v12.Policies{
 					Attestation: []*v12.PolicyAttachment{
 						{
-							Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/with_arguments.yaml"},
+							Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/with_arguments.yaml"},
 							With:   map[string]string{"email_array": "foobar@chainloop.dev,foobaz@chainloop.dev"},
 						},
 					},
@@ -211,7 +211,7 @@ func (s *testSuite) TestVerifyAttestations() {
 				Policies: &v12.Policies{
 					Attestation: []*v12.PolicyAttachment{
 						{
-							Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/with_arguments.yaml"},
+							Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/with_arguments.yaml"},
 							With:   map[string]string{"email_array": ",,foobar@chainloop.dev,foobaz@chainloop.dev,,"},
 						},
 					},
@@ -263,6 +263,16 @@ func (s *testSuite) TestProviderParts() {
 			prov: "provider",
 			name: "cyclonedx-freshness",
 		},
+		{
+			ref:  "provider/cyclonedx-freshness",
+			prov: "provider",
+			name: "cyclonedx-freshness",
+		},
+		{
+			ref:  "cyclonedx-freshness",
+			prov: "",
+			name: "cyclonedx-freshness",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -274,12 +284,50 @@ func (s *testSuite) TestProviderParts() {
 	}
 }
 
+func (s *testSuite) TestIsProviderScheme() {
+	testCases := []struct {
+		ref string
+		res bool
+	}{
+		{
+			ref: "chainloop://cyclonedx-freshness",
+			res: true,
+		},
+		{
+			ref: "chainloop://provider/cyclonedx-freshness",
+			res: true,
+		},
+		{
+			ref: "file://mypolicy.yaml",
+			res: false,
+		},
+		{
+			ref: "https://myserver/mypolicy.yaml",
+			res: false,
+		},
+		{
+			ref: "cyclonedx-freshness",
+			res: true,
+		},
+		{
+			ref: "provider/cyclonedx-freshness",
+			res: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.ref, func() {
+			s.Equal(tc.res, IsProviderScheme(tc.ref))
+		})
+	}
+}
+
 func (s *testSuite) TestArgumentsInViolations() {
 	schema := &v12.CraftingSchema{
 		Policies: &v12.Policies{
 			Attestation: []*v12.PolicyAttachment{
 				{
-					Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/with_arguments.yaml"},
+					Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/with_arguments.yaml"},
 					With:   map[string]string{"email_array": "foobar@chainloop.dev"},
 				},
 			},
@@ -299,14 +347,14 @@ func (s *testSuite) TestArgumentsInViolations() {
 
 func (s *testSuite) TestMaterialSelectionCriteria() {
 	attNoFilterPolicyTyped := &v12.PolicyAttachment{
-		Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/sbom_syft.yaml"},
+		Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/sbom_syft.yaml"},
 	}
 	attFilteredPolicyTyped := &v12.PolicyAttachment{
-		Policy:   &v12.PolicyAttachment_Ref{Ref: "testdata/sbom_syft.yaml"},
+		Policy:   &v12.PolicyAttachment_Ref{Ref: "file://testdata/sbom_syft.yaml"},
 		Selector: &v12.PolicyAttachment_MaterialSelector{Name: "sbom"},
 	}
 	attFilteredPolicyNotTyped := &v12.PolicyAttachment{
-		Policy:   &v12.PolicyAttachment_Ref{Ref: "testdata/sbom_syft_not_typed.yaml"},
+		Policy:   &v12.PolicyAttachment_Ref{Ref: "file://testdata/sbom_syft_not_typed.yaml"},
 		Selector: &v12.PolicyAttachment_MaterialSelector{Name: "custom-material"},
 	}
 	testcases := []struct {
@@ -407,7 +455,7 @@ func (s *testSuite) TestValidInlineMaterial() {
 		Policies: &v12.Policies{
 			Materials: []*v12.PolicyAttachment{
 				{
-					Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/sbom_syft.yaml"},
+					Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/sbom_syft.yaml"},
 				},
 			},
 			Attestation: nil,
@@ -442,7 +490,7 @@ func (s *testSuite) TestInvalidInlineMaterial() {
 		Policies: &v12.Policies{
 			Materials: []*v12.PolicyAttachment{
 				{
-					Policy: &v12.PolicyAttachment_Ref{Ref: "testdata/sbom_syft.yaml"},
+					Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/sbom_syft.yaml"},
 				},
 			},
 			Attestation: nil,
@@ -480,17 +528,6 @@ func (s *testSuite) TestLoadPolicySpec() {
 			name:       "missing policy",
 			attachment: &v12.PolicyAttachment{},
 			wantErr:    true,
-		},
-		{
-			name: "by ref",
-			attachment: &v12.PolicyAttachment{
-				Policy: &v12.PolicyAttachment_Ref{
-					Ref: "testdata/sbom_syft.yaml",
-				},
-			},
-			expectedName:     "made-with-syft",
-			expectedDesc:     "This policy checks that the SPDX SBOM was created with syft",
-			expectedCategory: "SBOM",
 		},
 		{
 			name: "by file ref",
@@ -564,24 +601,24 @@ func (s *testSuite) TestLoader() {
 		wantErr  bool
 	}{
 		{
-			name:     "local ref",
-			ref:      "local-policy.yaml",
-			expected: &BlobLoader{},
+			name:     "no protocol",
+			ref:      "remote-policy.yaml",
+			expected: &ChainloopLoader{},
 		},
 		{
 			name:     "file ref",
 			ref:      "file://local-policy.yaml",
-			expected: &BlobLoader{},
+			expected: &FileLoader{},
 		},
 		{
 			name:     "http ref",
 			ref:      "https://myhost/policy.yaml",
-			expected: &BlobLoader{},
+			expected: &HTTPSLoader{},
 		},
 		{
-			name:     "env ref",
-			ref:      "env://environmentvar",
-			expected: &BlobLoader{},
+			name:    "invalid ref",
+			ref:     "env://environmentvar",
+			wantErr: true,
 		},
 		{
 			name:     "chainloop ref",

@@ -327,7 +327,7 @@ func (uc *WorkflowContractUseCase) findPolicy(att *schemav1.PolicyAttachment, to
 	}
 
 	// if it should come from a provider, check that it's available
-	// chainloop://[provider/]name
+	// [chainloop://][provider/]name
 	if loader.IsProviderScheme(att.GetRef()) {
 		provider, name := loader.ProviderParts(att.GetRef())
 		policy, err := uc.GetPolicy(provider, name, token)
@@ -373,18 +373,22 @@ func (uc *WorkflowContractUseCase) Delete(ctx context.Context, orgID, contractID
 
 // GetPolicy retrieves a policy from a policy provider
 func (uc *WorkflowContractUseCase) GetPolicy(providerName, policyName, token string) (*schemav1.Policy, error) {
+	if len(uc.policyRegistry.GetProviderNames()) == 0 {
+		return nil, fmt.Errorf("policy providers not configured. Make sure your policy is referenced with file:// or https:// protocol")
+	}
+
 	var provider = uc.policyRegistry.DefaultProvider()
 	if providerName != "" {
 		provider = uc.policyRegistry.GetProvider(providerName)
 	}
 
 	if provider == nil {
-		return nil, NewErrNotFound("policy")
+		return nil, fmt.Errorf("failed to resolve provider: %s. Available providers: %s", providerName, uc.policyRegistry.GetProviderNames())
 	}
 
 	policy, err := provider.Resolve(policyName, token)
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve policy: %w", err)
+		return nil, fmt.Errorf("failed to resolve policy: %w. Available providers: %s", err, uc.policyRegistry.GetProviderNames())
 	}
 
 	return policy, nil
