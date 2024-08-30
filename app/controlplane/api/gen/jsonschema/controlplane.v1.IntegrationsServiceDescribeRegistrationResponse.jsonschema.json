@@ -1,0 +1,12 @@
+{
+  "$id": "controlplane.v1.IntegrationsServiceDescribeRegistrationResponse.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "result": {
+      "$ref": "controlplane.v1.RegisteredIntegrationItem.jsonschema.json"
+    }
+  },
+  "title": "Integrations Service Describe Registration Response",
+  "type": "object"
+}

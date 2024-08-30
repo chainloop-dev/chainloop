@@ -1,0 +1,133 @@
+{
+  "$id": "attestation.v1.Attestation.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(envVars)$": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "List of env variables",
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "^(finishedAt)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "^(initializedAt)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "^(policyEvaluations)$": {
+      "description": "Policies that materials in this attestation were validated against",
+      "items": {
+        "$ref": "attestation.v1.PolicyEvaluation.schema.json"
+      },
+      "type": "array"
+    },
+    "^(runnerType)$": {
+      "anyOf": [
+        {
+          "enum": [
+            "RUNNER_TYPE_UNSPECIFIED",
+            "GITHUB_ACTION",
+            "GITLAB_PIPELINE",
+            "AZURE_PIPELINE",
+            "JENKINS_JOB",
+            "CIRCLECI_BUILD",
+            "DAGGER_PIPELINE"
+          ],
+          "title": "Runner Type",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ]
+    },
+    "^(runnerUrl)$": {
+      "type": "string"
+    }
+  },
+  "properties": {
+    "annotations": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Annotations for the attestation",
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "env_vars": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "List of env variables",
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "finished_at": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "head": {
+      "$ref": "attestation.v1.Commit.schema.json",
+      "description": "Head Commit of the environment where the attestation was executed (optional)"
+    },
+    "initialized_at": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "materials": {
+      "additionalProperties": {
+        "$ref": "attestation.v1.Attestation.Material.schema.json"
+      },
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "policy_evaluations": {
+      "description": "Policies that materials in this attestation were validated against",
+      "items": {
+        "$ref": "attestation.v1.PolicyEvaluation.schema.json"
+      },
+      "type": "array"
+    },
+    "runner_type": {
+      "anyOf": [
+        {
+          "enum": [
+            "RUNNER_TYPE_UNSPECIFIED",
+            "GITHUB_ACTION",
+            "GITLAB_PIPELINE",
+            "AZURE_PIPELINE",
+            "JENKINS_JOB",
+            "CIRCLECI_BUILD",
+            "DAGGER_PIPELINE"
+          ],
+          "title": "Runner Type",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ]
+    },
+    "runner_url": {
+      "type": "string"
+    },
+    "workflow": {
+      "$ref": "attestation.v1.WorkflowMetadata.schema.json"
+    }
+  },
+  "title": "Attestation",
+  "type": "object"
+}

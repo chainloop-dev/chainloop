@@ -1,0 +1,139 @@
+{
+  "$id": "controlplane.v1.WorkflowRunItem.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(contractRevisionLatest)$": {
+      "description": "The latest revision available for this contract at the time of the run",
+      "exclusiveMaximum": 2147483648,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "^(contractRevisionUsed)$": {
+      "description": "The revision of the contract used for this run",
+      "exclusiveMaximum": 2147483648,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "^(contractVersion)$": {
+      "$ref": "controlplane.v1.WorkflowContractVersionItem.schema.json"
+    },
+    "^(createdAt)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "^(finishedAt)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "^(jobUrl)$": {
+      "type": "string"
+    },
+    "^(runnerType)$": {
+      "anyOf": [
+        {
+          "enum": [
+            "RUNNER_TYPE_UNSPECIFIED",
+            "GITHUB_ACTION",
+            "GITLAB_PIPELINE",
+            "AZURE_PIPELINE",
+            "JENKINS_JOB",
+            "CIRCLECI_BUILD",
+            "DAGGER_PIPELINE"
+          ],
+          "title": "Runner Type",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "string runner_type = 8;"
+    }
+  },
+  "properties": {
+    "contract_revision_latest": {
+      "description": "The latest revision available for this contract at the time of the run",
+      "exclusiveMaximum": 2147483648,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "contract_revision_used": {
+      "description": "The revision of the contract used for this run",
+      "exclusiveMaximum": 2147483648,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "contract_version": {
+      "$ref": "controlplane.v1.WorkflowContractVersionItem.schema.json"
+    },
+    "created_at": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "finished_at": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "id": {
+      "type": "string"
+    },
+    "job_url": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "runner_type": {
+      "anyOf": [
+        {
+          "enum": [
+            "RUNNER_TYPE_UNSPECIFIED",
+            "GITHUB_ACTION",
+            "GITLAB_PIPELINE",
+            "AZURE_PIPELINE",
+            "JENKINS_JOB",
+            "CIRCLECI_BUILD",
+            "DAGGER_PIPELINE"
+          ],
+          "title": "Runner Type",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "string runner_type = 8;"
+    },
+    "state": {
+      "description": "TODO: use runStatus enum below\n deprecated field, use status instead",
+      "type": "string"
+    },
+    "status": {
+      "anyOf": [
+        {
+          "enum": [
+            "RUN_STATUS_UNSPECIFIED",
+            "RUN_STATUS_INITIALIZED",
+            "RUN_STATUS_SUCCEEDED",
+            "RUN_STATUS_FAILED",
+            "RUN_STATUS_EXPIRED",
+            "RUN_STATUS_CANCELLED"
+          ],
+          "title": "Run Status",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ]
+    },
+    "workflow": {
+      "$ref": "controlplane.v1.WorkflowItem.schema.json"
+    }
+  },
+  "title": "Workflow Run Item",
+  "type": "object"
+}

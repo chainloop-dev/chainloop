@@ -1,0 +1,16 @@
+{
+  "$id": "controlplane.v1.CertificateChain.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "certificates": {
+      "description": "The PEM-encoded certificate chain, ordered from leaf to intermediate to root as applicable.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Certificate Chain",
+  "type": "object"
+}

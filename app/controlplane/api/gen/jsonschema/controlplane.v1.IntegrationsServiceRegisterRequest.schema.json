@@ -1,0 +1,31 @@
+{
+  "$id": "controlplane.v1.IntegrationsServiceRegisterRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(pluginId)$": {
+      "description": "Kind of integration to register\n This should match the ID of an existing plugin",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "config": {
+      "$ref": "google.protobuf.Struct.schema.json",
+      "description": "Arbitrary configuration for the integration"
+    },
+    "description": {
+      "description": "Description of the registration, used for display purposes",
+      "type": "string"
+    },
+    "name": {
+      "description": "unique, DNS-like name for the registration",
+      "type": "string"
+    },
+    "plugin_id": {
+      "description": "Kind of integration to register\n This should match the ID of an existing plugin",
+      "type": "string"
+    }
+  },
+  "title": "Integrations Service Register Request",
+  "type": "object"
+}

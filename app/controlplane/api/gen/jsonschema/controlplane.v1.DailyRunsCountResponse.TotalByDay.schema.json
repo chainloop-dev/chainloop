@@ -1,0 +1,16 @@
+{
+  "$id": "controlplane.v1.DailyRunsCountResponse.TotalByDay.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "date": {
+      "description": "string format: \"YYYY-MM-DD\"",
+      "type": "string"
+    },
+    "metrics": {
+      "$ref": "controlplane.v1.MetricsStatusCount.schema.json"
+    }
+  },
+  "title": "Total By Day",
+  "type": "object"
+}

@@ -1,0 +1,92 @@
+{
+  "$id": "controlplane.v1.CASBackendItem.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(createdAt)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "^(isInline)$": {
+      "description": "Is it an inline backend?\n inline means that the content is stored in the attestation itself",
+      "type": "boolean"
+    },
+    "^(validatedAt)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "^(validationStatus)$": {
+      "anyOf": [
+        {
+          "enum": [
+            "VALIDATION_STATUS_UNSPECIFIED",
+            "VALIDATION_STATUS_OK",
+            "VALIDATION_STATUS_INVALID"
+          ],
+          "title": "Validation Status",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ]
+    }
+  },
+  "properties": {
+    "created_at": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "default": {
+      "description": "Wether it's the default backend in the organization",
+      "type": "boolean"
+    },
+    "description": {
+      "type": "string"
+    },
+    "id": {
+      "type": "string"
+    },
+    "is_inline": {
+      "description": "Is it an inline backend?\n inline means that the content is stored in the attestation itself",
+      "type": "boolean"
+    },
+    "limits": {
+      "$ref": "controlplane.v1.CASBackendItem.Limits.schema.json",
+      "description": "Limits for this backend"
+    },
+    "location": {
+      "description": "e.g. myregistry.io/myrepo s3 bucket and so on",
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "provider": {
+      "description": "OCI, S3, ...",
+      "type": "string"
+    },
+    "validated_at": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "validation_status": {
+      "anyOf": [
+        {
+          "enum": [
+            "VALIDATION_STATUS_UNSPECIFIED",
+            "VALIDATION_STATUS_OK",
+            "VALIDATION_STATUS_INVALID"
+          ],
+          "title": "Validation Status",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ]
+    }
+  },
+  "title": "CAS Backend Item",
+  "type": "object"
+}

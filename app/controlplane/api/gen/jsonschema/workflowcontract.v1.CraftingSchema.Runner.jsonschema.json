@@ -1,0 +1,31 @@
+{
+  "$id": "workflowcontract.v1.CraftingSchema.Runner.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "anyOf": [
+        {
+          "enum": [
+            "RUNNER_TYPE_UNSPECIFIED",
+            "GITHUB_ACTION",
+            "GITLAB_PIPELINE",
+            "AZURE_PIPELINE",
+            "JENKINS_JOB",
+            "CIRCLECI_BUILD",
+            "DAGGER_PIPELINE"
+          ],
+          "title": "Runner Type",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ]
+    }
+  },
+  "title": "Runner",
+  "type": "object"
+}

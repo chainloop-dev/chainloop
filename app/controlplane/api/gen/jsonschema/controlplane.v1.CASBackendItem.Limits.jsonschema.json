@@ -1,0 +1,39 @@
+{
+  "$id": "controlplane.v1.CASBackendItem.Limits.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(max_bytes)$": {
+      "anyOf": [
+        {
+          "maximum": 9223372036854776000,
+          "minimum": -9223372036854776000,
+          "type": "integer"
+        },
+        {
+          "pattern": "^[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "description": "Max number of bytes allowed to be stored in this backend"
+    }
+  },
+  "properties": {
+    "maxBytes": {
+      "anyOf": [
+        {
+          "maximum": 9223372036854776000,
+          "minimum": -9223372036854776000,
+          "type": "integer"
+        },
+        {
+          "pattern": "^[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "description": "Max number of bytes allowed to be stored in this backend"
+    }
+  },
+  "title": "Limits",
+  "type": "object"
+}

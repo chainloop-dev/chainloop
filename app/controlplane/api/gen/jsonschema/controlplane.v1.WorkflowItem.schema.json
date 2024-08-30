@@ -1,0 +1,70 @@
+{
+  "$id": "controlplane.v1.WorkflowItem.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(contractName)$": {
+      "type": "string"
+    },
+    "^(contractRevisionLatest)$": {
+      "description": "Current, latest revision of the contract",
+      "exclusiveMaximum": 2147483648,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "^(createdAt)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "^(lastRun)$": {
+      "$ref": "controlplane.v1.WorkflowRunItem.schema.json"
+    },
+    "^(runsCount)$": {
+      "exclusiveMaximum": 2147483648,
+      "minimum": -2147483648,
+      "type": "integer"
+    }
+  },
+  "properties": {
+    "contract_name": {
+      "type": "string"
+    },
+    "contract_revision_latest": {
+      "description": "Current, latest revision of the contract",
+      "exclusiveMaximum": 2147483648,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "created_at": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "description": {
+      "type": "string"
+    },
+    "id": {
+      "type": "string"
+    },
+    "last_run": {
+      "$ref": "controlplane.v1.WorkflowRunItem.schema.json"
+    },
+    "name": {
+      "type": "string"
+    },
+    "project": {
+      "type": "string"
+    },
+    "public": {
+      "description": "A public workflow means that any user can\n - access to all its workflow runs\n - their attestation and materials",
+      "type": "boolean"
+    },
+    "runs_count": {
+      "exclusiveMaximum": 2147483648,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "team": {
+      "type": "string"
+    }
+  },
+  "title": "Workflow Item",
+  "type": "object"
+}

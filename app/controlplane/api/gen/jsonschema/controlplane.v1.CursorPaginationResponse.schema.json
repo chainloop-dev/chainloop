@@ -1,0 +1,17 @@
+{
+  "$id": "controlplane.v1.CursorPaginationResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(nextCursor)$": {
+      "type": "string"
+    }
+  },
+  "properties": {
+    "next_cursor": {
+      "type": "string"
+    }
+  },
+  "title": "Cursor Pagination Response",
+  "type": "object"
+}

@@ -1,0 +1,12 @@
+{
+  "$id": "controlplane.v1.WorkflowServiceViewRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string"
+    }
+  },
+  "title": "Workflow Service View Request",
+  "type": "object"
+}

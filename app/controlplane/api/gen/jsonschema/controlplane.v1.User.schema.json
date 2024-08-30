@@ -1,0 +1,23 @@
+{
+  "$id": "controlplane.v1.User.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(createdAt)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    }
+  },
+  "properties": {
+    "created_at": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "email": {
+      "type": "string"
+    },
+    "id": {
+      "type": "string"
+    }
+  },
+  "title": "User",
+  "type": "object"
+}

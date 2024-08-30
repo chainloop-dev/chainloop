@@ -1,0 +1,63 @@
+{
+  "$id": "controlplane.v1.TopWorkflowsByRunsCountRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(numWorkflows)$": {
+      "description": "top x number of runs to return",
+      "exclusiveMaximum": 2147483648,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "^(timeWindow)$": {
+      "anyOf": [
+        {
+          "enum": [
+            "METRICS_TIME_WINDOW_UNSPECIFIED",
+            "METRICS_TIME_WINDOW_LAST_DAY",
+            "METRICS_TIME_WINDOW_LAST_7_DAYS",
+            "METRICS_TIME_WINDOW_LAST_30_DAYS",
+            "METRICS_TIME_WINDOW_LAST_90_DAYS"
+          ],
+          "title": "Metrics Time Window",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ]
+    }
+  },
+  "properties": {
+    "num_workflows": {
+      "description": "top x number of runs to return",
+      "exclusiveMaximum": 2147483648,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "time_window": {
+      "anyOf": [
+        {
+          "enum": [
+            "METRICS_TIME_WINDOW_UNSPECIFIED",
+            "METRICS_TIME_WINDOW_LAST_DAY",
+            "METRICS_TIME_WINDOW_LAST_7_DAYS",
+            "METRICS_TIME_WINDOW_LAST_30_DAYS",
+            "METRICS_TIME_WINDOW_LAST_90_DAYS"
+          ],
+          "title": "Metrics Time Window",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ]
+    }
+  },
+  "title": "Top Workflows By Runs Count Request",
+  "type": "object"
+}

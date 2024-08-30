@@ -1,0 +1,36 @@
+{
+  "$id": "controlplane.v1.OrganizationServiceUpdateMembershipRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(membership_id)$": {
+      "type": "string"
+    }
+  },
+  "properties": {
+    "membershipId": {
+      "type": "string"
+    },
+    "role": {
+      "anyOf": [
+        {
+          "enum": [
+            "MEMBERSHIP_ROLE_UNSPECIFIED",
+            "MEMBERSHIP_ROLE_ORG_VIEWER",
+            "MEMBERSHIP_ROLE_ORG_ADMIN",
+            "MEMBERSHIP_ROLE_ORG_OWNER"
+          ],
+          "title": "Membership Role",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ]
+    }
+  },
+  "title": "Organization Service Update Membership Request",
+  "type": "object"
+}

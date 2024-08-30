@@ -1,0 +1,15 @@
+{
+  "$id": "controlplane.v1.WorkflowContractServiceDescribeResponse.Result.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "contract": {
+      "$ref": "controlplane.v1.WorkflowContractItem.jsonschema.json"
+    },
+    "revision": {
+      "$ref": "controlplane.v1.WorkflowContractVersionItem.jsonschema.json"
+    }
+  },
+  "title": "Result",
+  "type": "object"
+}

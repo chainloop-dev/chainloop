@@ -1,0 +1,12 @@
+{
+  "$id": "controlplane.v1.IntegrationsServiceAttachResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "result": {
+      "$ref": "controlplane.v1.IntegrationAttachmentItem.schema.json"
+    }
+  },
+  "title": "Integrations Service Attach Response",
+  "type": "object"
+}

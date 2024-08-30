@@ -1,0 +1,21 @@
+{
+  "$id": "controlplane.v1.AttestationServiceInitResponse.Result.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(workflowRun)$": {
+      "$ref": "controlplane.v1.WorkflowRunItem.schema.json"
+    }
+  },
+  "properties": {
+    "organization": {
+      "description": "organization name",
+      "type": "string"
+    },
+    "workflow_run": {
+      "$ref": "controlplane.v1.WorkflowRunItem.schema.json"
+    }
+  },
+  "title": "Result",
+  "type": "object"
+}

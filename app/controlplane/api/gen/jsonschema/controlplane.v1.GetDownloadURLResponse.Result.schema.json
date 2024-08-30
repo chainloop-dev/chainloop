@@ -1,0 +1,12 @@
+{
+  "$id": "controlplane.v1.GetDownloadURLResponse.Result.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "url": {
+      "type": "string"
+    }
+  },
+  "title": "Result",
+  "type": "object"
+}

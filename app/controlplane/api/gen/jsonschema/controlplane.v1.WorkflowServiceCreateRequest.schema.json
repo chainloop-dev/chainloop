@@ -1,0 +1,34 @@
+{
+  "$id": "controlplane.v1.WorkflowServiceCreateRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(contractName)$": {
+      "description": "The name of the workflow contract",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "contract_name": {
+      "description": "The name of the workflow contract",
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "project": {
+      "type": "string"
+    },
+    "public": {
+      "type": "boolean"
+    },
+    "team": {
+      "type": "string"
+    }
+  },
+  "title": "Workflow Service Create Request",
+  "type": "object"
+}

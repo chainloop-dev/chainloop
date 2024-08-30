@@ -1,0 +1,54 @@
+{
+  "$id": "controlplane.v1.OrgMembershipItem.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(createdAt)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "^(updatedAt)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    }
+  },
+  "properties": {
+    "created_at": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "current": {
+      "type": "boolean"
+    },
+    "id": {
+      "type": "string"
+    },
+    "org": {
+      "$ref": "controlplane.v1.OrgItem.schema.json"
+    },
+    "role": {
+      "anyOf": [
+        {
+          "enum": [
+            "MEMBERSHIP_ROLE_UNSPECIFIED",
+            "MEMBERSHIP_ROLE_ORG_VIEWER",
+            "MEMBERSHIP_ROLE_ORG_ADMIN",
+            "MEMBERSHIP_ROLE_ORG_OWNER"
+          ],
+          "title": "Membership Role",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ]
+    },
+    "updated_at": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "user": {
+      "$ref": "controlplane.v1.User.schema.json"
+    }
+  },
+  "title": "Org Membership Item",
+  "type": "object"
+}

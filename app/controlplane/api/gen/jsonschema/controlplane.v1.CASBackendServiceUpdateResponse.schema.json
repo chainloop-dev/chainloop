@@ -1,0 +1,12 @@
+{
+  "$id": "controlplane.v1.CASBackendServiceUpdateResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "result": {
+      "$ref": "controlplane.v1.CASBackendItem.schema.json"
+    }
+  },
+  "title": "CAS Backend Service Update Response",
+  "type": "object"
+}

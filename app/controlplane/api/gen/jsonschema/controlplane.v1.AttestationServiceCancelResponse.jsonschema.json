@@ -1,0 +1,8 @@
+{
+  "$id": "controlplane.v1.AttestationServiceCancelResponse.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {},
+  "title": "Attestation Service Cancel Response",
+  "type": "object"
+}

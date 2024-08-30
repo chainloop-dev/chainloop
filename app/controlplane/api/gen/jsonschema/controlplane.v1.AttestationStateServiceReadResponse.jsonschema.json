@@ -1,0 +1,12 @@
+{
+  "$id": "controlplane.v1.AttestationStateServiceReadResponse.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "result": {
+      "$ref": "controlplane.v1.AttestationStateServiceReadResponse.Result.jsonschema.json"
+    }
+  },
+  "title": "Attestation State Service Read Response",
+  "type": "object"
+}

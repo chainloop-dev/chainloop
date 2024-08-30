@@ -1,0 +1,15 @@
+{
+  "$id": "controlplane.v1.APITokenServiceCreateResponse.APITokenFull.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "item": {
+      "$ref": "controlplane.v1.APITokenItem.schema.json"
+    },
+    "jwt": {
+      "type": "string"
+    }
+  },
+  "title": "API Token Full",
+  "type": "object"
+}

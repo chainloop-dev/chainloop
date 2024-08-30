@@ -1,0 +1,20 @@
+{
+  "$id": "controlplane.v1.RobotAccountServiceCreateRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(workflowId)$": {
+      "type": "string"
+    }
+  },
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "workflow_id": {
+      "type": "string"
+    }
+  },
+  "title": "Robot Account Service Create Request",
+  "type": "object"
+}

@@ -1,0 +1,58 @@
+{
+  "$id": "controlplane.v1.AttestationItem.Material.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(embedded_inline)$": {
+      "description": "the content instead if inline",
+      "type": "boolean"
+    },
+    "^(uploaded_to_cas)$": {
+      "description": "it's been uploaded to an actual CAS backend",
+      "type": "boolean"
+    }
+  },
+  "properties": {
+    "annotations": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "embeddedInline": {
+      "description": "the content instead if inline",
+      "type": "boolean"
+    },
+    "filename": {
+      "description": "filename of the artifact that was either uploaded or injected inline in \"value\"",
+      "type": "string"
+    },
+    "hash": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "tag": {
+      "description": "in the case of a container image, the tag of the attested image",
+      "type": "string"
+    },
+    "type": {
+      "description": "Material type, i.e ARTIFACT",
+      "type": "string"
+    },
+    "uploadedToCas": {
+      "description": "it's been uploaded to an actual CAS backend",
+      "type": "boolean"
+    },
+    "value": {
+      "description": "This might be the raw value, the container image name, the filename and so on",
+      "type": "string"
+    }
+  },
+  "title": "Material",
+  "type": "object"
+}

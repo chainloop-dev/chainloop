@@ -1,0 +1,12 @@
+{
+  "$id": "controlplane.v1.ContextServiceCurrentResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "result": {
+      "$ref": "controlplane.v1.ContextServiceCurrentResponse.Result.schema.json"
+    }
+  },
+  "title": "Context Service Current Response",
+  "type": "object"
+}

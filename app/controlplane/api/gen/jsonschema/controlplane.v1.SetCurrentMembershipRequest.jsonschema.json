@@ -1,0 +1,17 @@
+{
+  "$id": "controlplane.v1.SetCurrentMembershipRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(membership_id)$": {
+      "type": "string"
+    }
+  },
+  "properties": {
+    "membershipId": {
+      "type": "string"
+    }
+  },
+  "title": "Set Current Membership Request",
+  "type": "object"
+}

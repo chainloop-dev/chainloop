@@ -1,0 +1,35 @@
+{
+  "$id": "controlplane.v1.MetricsStatusCount.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "count": {
+      "exclusiveMaximum": 2147483648,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "status": {
+      "anyOf": [
+        {
+          "enum": [
+            "RUN_STATUS_UNSPECIFIED",
+            "RUN_STATUS_INITIALIZED",
+            "RUN_STATUS_SUCCEEDED",
+            "RUN_STATUS_FAILED",
+            "RUN_STATUS_EXPIRED",
+            "RUN_STATUS_CANCELLED"
+          ],
+          "title": "Run Status",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ]
+    }
+  },
+  "title": "Metrics Status Count",
+  "type": "object"
+}

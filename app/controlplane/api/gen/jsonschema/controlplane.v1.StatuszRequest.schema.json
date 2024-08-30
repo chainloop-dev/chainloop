@@ -1,0 +1,13 @@
+{
+  "$id": "controlplane.v1.StatuszRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "readiness": {
+      "description": "Parameter that can be used by readiness probes\n The main difference is that readiness probes will take into account that all\n dependent services are up and ready",
+      "type": "boolean"
+    }
+  },
+  "title": "Statusz Request",
+  "type": "object"
+}

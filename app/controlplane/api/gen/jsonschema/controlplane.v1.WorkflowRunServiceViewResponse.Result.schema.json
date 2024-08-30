@@ -1,0 +1,20 @@
+{
+  "$id": "controlplane.v1.WorkflowRunServiceViewResponse.Result.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(workflowRun)$": {
+      "$ref": "controlplane.v1.WorkflowRunItem.schema.json"
+    }
+  },
+  "properties": {
+    "attestation": {
+      "$ref": "controlplane.v1.AttestationItem.schema.json"
+    },
+    "workflow_run": {
+      "$ref": "controlplane.v1.WorkflowRunItem.schema.json"
+    }
+  },
+  "title": "Result",
+  "type": "object"
+}

@@ -1,0 +1,34 @@
+{
+  "$id": "attestation.v1.Attestation.Material.Artifact.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(isSubject)$": {
+      "type": "boolean"
+    }
+  },
+  "properties": {
+    "content": {
+      "description": "Inline content of the artifact.\n This is optional and is used for small artifacts that can be stored inline in the attestation",
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+      "type": "string"
+    },
+    "digest": {
+      "description": "the digest is enough to retrieve the artifact since it's stored in a CAS\n which also has annotated the fileName",
+      "type": "string"
+    },
+    "id": {
+      "description": "ID of the artifact",
+      "type": "string"
+    },
+    "is_subject": {
+      "type": "boolean"
+    },
+    "name": {
+      "description": "filename, use for record purposes",
+      "type": "string"
+    }
+  },
+  "title": "Artifact",
+  "type": "object"
+}

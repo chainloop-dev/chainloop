@@ -1,0 +1,15 @@
+{
+  "$id": "controlplane.v1.AttestationItem.EnvVariable.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "value": {
+      "type": "string"
+    }
+  },
+  "title": "Env Variable",
+  "type": "object"
+}

@@ -1,0 +1,43 @@
+{
+  "$id": "controlplane.v1.WorkflowContractVersionItem.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(contract_name)$": {
+      "description": "The name of the contract used for this run",
+      "type": "string"
+    },
+    "^(created_at)$": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    },
+    "^(raw_contract)$": {
+      "$ref": "controlplane.v1.WorkflowContractVersionItem.RawBody.jsonschema.json"
+    }
+  },
+  "properties": {
+    "contractName": {
+      "description": "The name of the contract used for this run",
+      "type": "string"
+    },
+    "createdAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    },
+    "id": {
+      "type": "string"
+    },
+    "rawContract": {
+      "$ref": "controlplane.v1.WorkflowContractVersionItem.RawBody.jsonschema.json"
+    },
+    "revision": {
+      "exclusiveMaximum": 2147483648,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "v1": {
+      "$ref": "workflowcontract.v1.CraftingSchema.jsonschema.json",
+      "description": "Deprecated in favor of raw_contract"
+    }
+  },
+  "title": "Workflow Contract Version Item",
+  "type": "object"
+}

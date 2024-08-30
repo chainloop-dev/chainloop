@@ -1,0 +1,29 @@
+{
+  "$id": "controlplane.v1.ContextServiceCurrentResponse.Result.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(currentCasBackend)$": {
+      "$ref": "controlplane.v1.CASBackendItem.schema.json"
+    },
+    "^(currentMembership)$": {
+      "$ref": "controlplane.v1.OrgMembershipItem.schema.json"
+    },
+    "^(currentUser)$": {
+      "$ref": "controlplane.v1.User.schema.json"
+    }
+  },
+  "properties": {
+    "current_cas_backend": {
+      "$ref": "controlplane.v1.CASBackendItem.schema.json"
+    },
+    "current_membership": {
+      "$ref": "controlplane.v1.OrgMembershipItem.schema.json"
+    },
+    "current_user": {
+      "$ref": "controlplane.v1.User.schema.json"
+    }
+  },
+  "title": "Result",
+  "type": "object"
+}

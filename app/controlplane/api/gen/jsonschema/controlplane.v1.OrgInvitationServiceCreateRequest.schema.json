@@ -1,0 +1,44 @@
+{
+  "$id": "controlplane.v1.OrgInvitationServiceCreateRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(organizationId)$": {
+      "description": "organization is deprecated and not used anymore",
+      "type": "string"
+    },
+    "^(receiverEmail)$": {
+      "type": "string"
+    }
+  },
+  "properties": {
+    "organization_id": {
+      "description": "organization is deprecated and not used anymore",
+      "type": "string"
+    },
+    "receiver_email": {
+      "type": "string"
+    },
+    "role": {
+      "anyOf": [
+        {
+          "enum": [
+            "MEMBERSHIP_ROLE_UNSPECIFIED",
+            "MEMBERSHIP_ROLE_ORG_VIEWER",
+            "MEMBERSHIP_ROLE_ORG_ADMIN",
+            "MEMBERSHIP_ROLE_ORG_OWNER"
+          ],
+          "title": "Membership Role",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ]
+    }
+  },
+  "title": "Org Invitation Service Create Request",
+  "type": "object"
+}

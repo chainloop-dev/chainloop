@@ -1,0 +1,18 @@
+{
+  "$id": "controlplane.v1.WorkflowRunServiceListResponse.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "pagination": {
+      "$ref": "controlplane.v1.CursorPaginationResponse.jsonschema.json"
+    },
+    "result": {
+      "items": {
+        "$ref": "controlplane.v1.WorkflowRunItem.jsonschema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Workflow Run Service List Response",
+  "type": "object"
+}

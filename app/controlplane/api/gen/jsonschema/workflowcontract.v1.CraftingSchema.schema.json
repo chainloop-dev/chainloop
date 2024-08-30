@@ -1,0 +1,52 @@
+{
+  "$id": "workflowcontract.v1.CraftingSchema.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Schema definition provided by the user to the tool\n that defines the schema of the workflowRun",
+  "patternProperties": {
+    "^(envAllowList)$": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "^(schemaVersion)$": {
+      "description": "Version of the schema, do not confuse with the revision of the content",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "annotations": {
+      "description": "List of annotations that can be used to add metadata to the attestation\n this metadata can be used later on by the integrations engine to filter and interpolate data\n It works in addition to the annotations defined in the materials and the runner",
+      "items": {
+        "$ref": "workflowcontract.v1.Annotation.schema.json"
+      },
+      "type": "array"
+    },
+    "env_allow_list": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "materials": {
+      "items": {
+        "$ref": "workflowcontract.v1.CraftingSchema.Material.schema.json"
+      },
+      "type": "array"
+    },
+    "policies": {
+      "$ref": "workflowcontract.v1.Policies.schema.json",
+      "description": "Policies to apply to this schema"
+    },
+    "runner": {
+      "$ref": "workflowcontract.v1.CraftingSchema.Runner.schema.json"
+    },
+    "schema_version": {
+      "description": "Version of the schema, do not confuse with the revision of the content",
+      "type": "string"
+    }
+  },
+  "title": "Crafting Schema",
+  "type": "object"
+}

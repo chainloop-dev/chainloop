@@ -1,0 +1,20 @@
+{
+  "$id": "controlplane.v1.InfozResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(loginURL)$": {
+      "type": "string"
+    }
+  },
+  "properties": {
+    "login_url": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "title": "Infoz Response",
+  "type": "object"
+}

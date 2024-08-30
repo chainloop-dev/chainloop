@@ -1,0 +1,31 @@
+{
+  "$id": "controlplane.v1.AttestationStateServiceSaveRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(attestation_state)$": {
+      "$ref": "attestation.v1.CraftingState.jsonschema.json"
+    },
+    "^(base_digest)$": {
+      "description": "digest of the attestation state this update was performed on top of\n The digest might be empty the first time",
+      "type": "string"
+    },
+    "^(workflow_run_id)$": {
+      "type": "string"
+    }
+  },
+  "properties": {
+    "attestationState": {
+      "$ref": "attestation.v1.CraftingState.jsonschema.json"
+    },
+    "baseDigest": {
+      "description": "digest of the attestation state this update was performed on top of\n The digest might be empty the first time",
+      "type": "string"
+    },
+    "workflowRunId": {
+      "type": "string"
+    }
+  },
+  "title": "Attestation State Service Save Request",
+  "type": "object"
+}

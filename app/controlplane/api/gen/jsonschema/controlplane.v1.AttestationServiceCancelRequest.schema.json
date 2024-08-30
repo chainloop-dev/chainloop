@@ -1,0 +1,38 @@
+{
+  "$id": "controlplane.v1.AttestationServiceCancelRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(workflowRunId)$": {
+      "type": "string"
+    }
+  },
+  "properties": {
+    "reason": {
+      "type": "string"
+    },
+    "trigger": {
+      "anyOf": [
+        {
+          "enum": [
+            "TRIGGER_TYPE_UNSPECIFIED",
+            "TRIGGER_TYPE_FAILURE",
+            "TRIGGER_TYPE_CANCELLATION"
+          ],
+          "title": "Trigger Type",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ]
+    },
+    "workflow_run_id": {
+      "type": "string"
+    }
+  },
+  "title": "Attestation Service Cancel Request",
+  "type": "object"
+}

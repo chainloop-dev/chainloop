@@ -1,0 +1,35 @@
+{
+  "$id": "controlplane.v1.RobotAccountServiceListResponse.RobotAccountItem.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(createdAt)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "^(revokedAt)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "^(workflowId)$": {
+      "type": "string"
+    }
+  },
+  "properties": {
+    "created_at": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "revoked_at": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "workflow_id": {
+      "type": "string"
+    }
+  },
+  "title": "Robot Account Item",
+  "type": "object"
+}

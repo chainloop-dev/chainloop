@@ -1,0 +1,12 @@
+{
+  "$id": "controlplane.v1.WorkflowServiceCreateResponse.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "result": {
+      "$ref": "controlplane.v1.WorkflowItem.jsonschema.json"
+    }
+  },
+  "title": "Workflow Service Create Response",
+  "type": "object"
+}

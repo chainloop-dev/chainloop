@@ -1,0 +1,26 @@
+{
+  "$id": "controlplane.v1.TopWorkflowsByRunsCountResponse.TotalByStatus.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(runsTotalByStatus)$": {
+      "items": {
+        "$ref": "controlplane.v1.MetricsStatusCount.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "properties": {
+    "runs_total_by_status": {
+      "items": {
+        "$ref": "controlplane.v1.MetricsStatusCount.schema.json"
+      },
+      "type": "array"
+    },
+    "workflow": {
+      "$ref": "controlplane.v1.WorkflowItem.schema.json"
+    }
+  },
+  "title": "Total By Status",
+  "type": "object"
+}

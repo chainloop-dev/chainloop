@@ -1,0 +1,33 @@
+{
+  "$id": "controlplane.v1.WorkflowServiceUpdateRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(contractName)$": {
+      "type": "string"
+    }
+  },
+  "properties": {
+    "contract_name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "project": {
+      "description": "\"optional\" allow us to detect if the value is explicitly set\n and not just the default value",
+      "type": "string"
+    },
+    "public": {
+      "type": "boolean"
+    },
+    "team": {
+      "type": "string"
+    }
+  },
+  "title": "Workflow Service Update Request",
+  "type": "object"
+}

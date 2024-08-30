@@ -1,0 +1,23 @@
+{
+  "$id": "workflowcontract.v1.Policies.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "attestation": {
+      "description": "Policies to be applied to attestation metadata",
+      "items": {
+        "$ref": "workflowcontract.v1.PolicyAttachment.schema.json"
+      },
+      "type": "array"
+    },
+    "materials": {
+      "description": "Policies to be applied to materials",
+      "items": {
+        "$ref": "workflowcontract.v1.PolicyAttachment.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Policies",
+  "type": "object"
+}

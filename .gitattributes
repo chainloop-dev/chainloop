@@ -4,3 +4,4 @@ app/controlplane/pkg/data/ent/migrate/** linguist-generated=false
 app/controlplane/pkg/data/ent/migrate/** linguist-detectable=true
 app/controlplane/pkg/data/ent/schema/* linguist-generated=false
 app/controlplane/pkg/data/ent/schema/* linguist-detectable=true
+app/controlplane/api/gen/jsonschema/** linguist-generated=true

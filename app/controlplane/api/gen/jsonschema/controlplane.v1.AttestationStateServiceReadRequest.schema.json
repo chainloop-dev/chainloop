@@ -1,0 +1,17 @@
+{
+  "$id": "controlplane.v1.AttestationStateServiceReadRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(workflowRunId)$": {
+      "type": "string"
+    }
+  },
+  "properties": {
+    "workflow_run_id": {
+      "type": "string"
+    }
+  },
+  "title": "Attestation State Service Read Request",
+  "type": "object"
+}

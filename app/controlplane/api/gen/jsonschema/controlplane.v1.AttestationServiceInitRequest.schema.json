@@ -1,0 +1,55 @@
+{
+  "$id": "controlplane.v1.AttestationServiceInitRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(contractRevision)$": {
+      "exclusiveMaximum": 2147483648,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "^(jobUrl)$": {
+      "type": "string"
+    },
+    "^(workflowName)$": {
+      "type": "string"
+    }
+  },
+  "properties": {
+    "contract_revision": {
+      "exclusiveMaximum": 2147483648,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "job_url": {
+      "type": "string"
+    },
+    "runner": {
+      "anyOf": [
+        {
+          "enum": [
+            "RUNNER_TYPE_UNSPECIFIED",
+            "GITHUB_ACTION",
+            "GITLAB_PIPELINE",
+            "AZURE_PIPELINE",
+            "JENKINS_JOB",
+            "CIRCLECI_BUILD",
+            "DAGGER_PIPELINE"
+          ],
+          "title": "Runner Type",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ]
+    },
+    "workflow_name": {
+      "type": "string"
+    }
+  },
+  "title": "Attestation Service Init Request",
+  "type": "object"
+}

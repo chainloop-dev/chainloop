@@ -1,0 +1,12 @@
+{
+  "$id": "controlplane.v1.GenerateSigningCertResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "chain": {
+      "$ref": "controlplane.v1.CertificateChain.schema.json"
+    }
+  },
+  "title": "Generate Signing Cert Response",
+  "type": "object"
+}

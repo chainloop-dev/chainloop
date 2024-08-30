@@ -1,0 +1,117 @@
+{
+  "$id": "attestation.v1.Attestation.Material.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(added_at)$": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    },
+    "^(container_image)$": {
+      "$ref": "attestation.v1.Attestation.Material.ContainerImage.jsonschema.json"
+    },
+    "^(inline_cas)$": {
+      "description": "If the material content has been injected inline in the attestation\n leveraging a form of inline CAS",
+      "type": "boolean"
+    },
+    "^(material_type)$": {
+      "anyOf": [
+        {
+          "enum": [
+            "MATERIAL_TYPE_UNSPECIFIED",
+            "STRING",
+            "CONTAINER_IMAGE",
+            "ARTIFACT",
+            "SBOM_CYCLONEDX_JSON",
+            "SBOM_SPDX_JSON",
+            "JUNIT_XML",
+            "OPENVEX",
+            "HELM_CHART",
+            "SARIF",
+            "EVIDENCE",
+            "ATTESTATION",
+            "CSAF_VEX",
+            "CSAF_INFORMATIONAL_ADVISORY",
+            "CSAF_SECURITY_ADVISORY",
+            "CSAF_SECURITY_INCIDENT_RESPONSE"
+          ],
+          "title": "Material Type",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ]
+    },
+    "^(uploaded_to_cas)$": {
+      "description": "Whether the material has been uploaded to the CAS",
+      "type": "boolean"
+    }
+  },
+  "properties": {
+    "addedAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    },
+    "annotations": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Annotations for the material",
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "artifact": {
+      "$ref": "attestation.v1.Attestation.Material.Artifact.jsonschema.json"
+    },
+    "containerImage": {
+      "$ref": "attestation.v1.Attestation.Material.ContainerImage.jsonschema.json"
+    },
+    "inlineCas": {
+      "description": "If the material content has been injected inline in the attestation\n leveraging a form of inline CAS",
+      "type": "boolean"
+    },
+    "materialType": {
+      "anyOf": [
+        {
+          "enum": [
+            "MATERIAL_TYPE_UNSPECIFIED",
+            "STRING",
+            "CONTAINER_IMAGE",
+            "ARTIFACT",
+            "SBOM_CYCLONEDX_JSON",
+            "SBOM_SPDX_JSON",
+            "JUNIT_XML",
+            "OPENVEX",
+            "HELM_CHART",
+            "SARIF",
+            "EVIDENCE",
+            "ATTESTATION",
+            "CSAF_VEX",
+            "CSAF_INFORMATIONAL_ADVISORY",
+            "CSAF_SECURITY_ADVISORY",
+            "CSAF_SECURITY_INCIDENT_RESPONSE"
+          ],
+          "title": "Material Type",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ]
+    },
+    "string": {
+      "$ref": "attestation.v1.Attestation.Material.KeyVal.jsonschema.json"
+    },
+    "uploadedToCas": {
+      "description": "Whether the material has been uploaded to the CAS",
+      "type": "boolean"
+    }
+  },
+  "title": "Material",
+  "type": "object"
+}

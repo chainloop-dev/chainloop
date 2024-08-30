@@ -1,0 +1,19 @@
+{
+  "$id": "controlplane.v1.GenerateSigningCertRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(certificateSigningRequest)$": {
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "certificate_signing_request": {
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+      "type": "string"
+    }
+  },
+  "title": "Generate Signing Cert Request",
+  "type": "object"
+}

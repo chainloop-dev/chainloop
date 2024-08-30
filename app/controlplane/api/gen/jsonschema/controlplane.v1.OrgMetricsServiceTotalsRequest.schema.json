@@ -1,0 +1,51 @@
+{
+  "$id": "controlplane.v1.OrgMetricsServiceTotalsRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(timeWindow)$": {
+      "anyOf": [
+        {
+          "enum": [
+            "METRICS_TIME_WINDOW_UNSPECIFIED",
+            "METRICS_TIME_WINDOW_LAST_DAY",
+            "METRICS_TIME_WINDOW_LAST_7_DAYS",
+            "METRICS_TIME_WINDOW_LAST_30_DAYS",
+            "METRICS_TIME_WINDOW_LAST_90_DAYS"
+          ],
+          "title": "Metrics Time Window",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ]
+    }
+  },
+  "properties": {
+    "time_window": {
+      "anyOf": [
+        {
+          "enum": [
+            "METRICS_TIME_WINDOW_UNSPECIFIED",
+            "METRICS_TIME_WINDOW_LAST_DAY",
+            "METRICS_TIME_WINDOW_LAST_7_DAYS",
+            "METRICS_TIME_WINDOW_LAST_30_DAYS",
+            "METRICS_TIME_WINDOW_LAST_90_DAYS"
+          ],
+          "title": "Metrics Time Window",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ]
+    }
+  },
+  "title": "Org Metrics Service Totals Request",
+  "type": "object"
+}
