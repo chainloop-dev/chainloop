@@ -5,6 +5,10 @@
   "properties": {
     "policy": {
       "$ref": "workflowcontract.v1.Policy.schema.json"
+    },
+    "reference": {
+      "$ref": "controlplane.v1.AttestationServiceGetPolicyResponse.Reference.schema.json",
+      "description": "FQDN of the policy in the provider"
     }
   },
   "title": "Attestation Service Get Policy Response",

@@ -101,7 +101,7 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 			return nil, NewPolicyError(err)
 		}
 		var body string
-		if !strings.HasPrefix(ref, chainloopLoaderPrefix) {
+		if !strings.HasPrefix(ref.GetName(), chainloopLoaderPrefix) {
 			body = base64.StdEncoding.EncodeToString(script.Source)
 		}
 
@@ -160,7 +160,7 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 		// We store the body in the attestation unless the policy comes from a remote provider
 		// in which case with the reference it will suffice
 		var body string
-		if !strings.HasPrefix(ref, chainloopLoaderPrefix) {
+		if !strings.HasPrefix(ref.GetName(), chainloopLoaderPrefix) {
 			body = base64.StdEncoding.EncodeToString(script.Source)
 		}
 
@@ -181,10 +181,10 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 }
 
 // LoadPolicySpec loads and validates a policy spec from a contract
-func (pv *PolicyVerifier) loadPolicySpec(ctx context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, string, error) {
+func (pv *PolicyVerifier) loadPolicySpec(ctx context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, *v12.ResourceDescriptor, error) {
 	loader, err := pv.getLoader(attachment)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to get a loader for policy: %w", err)
+		return nil, nil, fmt.Errorf("failed to get a loader for policy: %w", err)
 	}
 
 	spec, ref, err := loader.Load(ctx, attachment)
@@ -200,12 +200,12 @@ func (pv *PolicyVerifier) loadPolicySpec(ctx context.Context, attachment *v1.Pol
 		}
 	}
 	if err != nil {
-		return nil, "", fmt.Errorf("loading policy spec: %w", err)
+		return nil, nil, fmt.Errorf("loading policy spec: %w", err)
 	}
 
 	// Validate just in case
 	if err = validatePolicy(spec); err != nil {
-		return nil, "", fmt.Errorf("invalid policy: %w", err)
+		return nil, nil, fmt.Errorf("invalid policy: %w", err)
 	}
 
 	return spec, ref, nil

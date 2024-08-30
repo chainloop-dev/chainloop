@@ -18,6 +18,7 @@ syntax = "proto3";
 package attestation.v1;
 
 import "buf/validate/validate.proto";
+import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "workflowcontract/v1/crafting_schema.proto";
 
@@ -114,7 +115,7 @@ message PolicyEvaluation {
   // file://foo.yaml
   // chainloop://my-provider.com/foo@sha256:1234
   // NOTE: embedded policies will not have a reference
-  string policy_reference = 10;
+  ResourceDescriptor policy_reference = 10;
 
   string description = 5;
   map<string, string> annotations = 6;
@@ -165,4 +166,29 @@ message WorkflowMetadata {
   string schema_revision = 7 [(buf.validate.field).string.min_len = 1];
   // organization name
   string organization = 8 [(buf.validate.field).string.min_len = 1];
+}
+
+// Proto representation of the in-toto v1 ResourceDescriptor.
+// https://github.com/in-toto/attestation/blob/main/spec/v1/resource_descriptor.md
+// Validation of all fields is left to the users of this proto.
+message ResourceDescriptor {
+  string name = 1;
+
+  string uri = 2;
+
+  map<string, string> digest = 3;
+
+  bytes content = 4;
+
+  string download_location = 5;
+
+  string media_type = 6;
+
+  // Per the Struct protobuf spec, this type corresponds to
+  // a JSON Object, which is truly a map<string, Value> under the hood.
+  // So, the Struct a) is still consistent with our specification for
+  // the `annotations` field, and b) has native support in some language
+  // bindings making their use easier in implementations.
+  // See: https://pkg.go.dev/google.golang.org/protobuf/types/known/structpb#Struct
+  google.protobuf.Struct annotations = 7;
 }

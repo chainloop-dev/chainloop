@@ -376,7 +376,10 @@ func (s *AttestationService) GetPolicy(ctx context.Context, req *cpAPI.Attestati
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
-	return &cpAPI.AttestationServiceGetPolicyResponse{Policy: remotePolicy.Policy, Reference: remotePolicy.ProviderRef}, nil
+	return &cpAPI.AttestationServiceGetPolicyResponse{Policy: remotePolicy.Policy, Reference: &cpAPI.AttestationServiceGetPolicyResponse_Reference{
+		Url:    remotePolicy.ProviderRef.URL,
+		Digest: remotePolicy.ProviderRef.Digest,
+	}}, nil
 }
 
 func bizAttestationToPb(att *biz.Attestation) (*cpAPI.AttestationItem, error) {

@@ -372,7 +372,7 @@ func (uc *WorkflowContractUseCase) Delete(ctx context.Context, orgID, contractID
 }
 
 type RemotePolicy struct {
-	ProviderRef string
+	ProviderRef *policies.PolicyReference
 	Policy      *schemav1.Policy
 }
 

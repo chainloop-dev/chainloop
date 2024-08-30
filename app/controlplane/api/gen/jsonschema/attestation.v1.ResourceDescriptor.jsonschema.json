@@ -1,0 +1,47 @@
+{
+  "$id": "attestation.v1.ResourceDescriptor.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Proto representation of the in-toto v1 ResourceDescriptor.\n https://github.com/in-toto/attestation/blob/main/spec/v1/resource_descriptor.md\n Validation of all fields is left to the users of this proto.",
+  "patternProperties": {
+    "^(download_location)$": {
+      "type": "string"
+    },
+    "^(media_type)$": {
+      "type": "string"
+    }
+  },
+  "properties": {
+    "annotations": {
+      "$ref": "google.protobuf.Struct.jsonschema.json",
+      "description": "Per the Struct protobuf spec, this type corresponds to\n a JSON Object, which is truly a map\u003cstring, Value\u003e under the hood.\n So, the Struct a) is still consistent with our specification for\n the `annotations` field, and b) has native support in some language\n bindings making their use easier in implementations.\n See: https://pkg.go.dev/google.golang.org/protobuf/types/known/structpb#Struct"
+    },
+    "content": {
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+      "type": "string"
+    },
+    "digest": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "downloadLocation": {
+      "type": "string"
+    },
+    "mediaType": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "uri": {
+      "type": "string"
+    }
+  },
+  "title": "Resource Descriptor",
+  "type": "object"
+}

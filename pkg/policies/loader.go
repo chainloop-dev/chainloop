@@ -27,6 +27,7 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	v12 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -40,7 +41,7 @@ const (
 
 // Loader defines the interface for policy loaders from contract attachments
 type Loader interface {
-	Load(context.Context, *v1.PolicyAttachment) (*v1.Policy, string, error)
+	Load(context.Context, *v1.PolicyAttachment) (*v1.Policy, *v12.ResourceDescriptor, error)
 }
 
 // EmbeddedLoader returns embedded policies
@@ -48,14 +49,14 @@ type EmbeddedLoader struct{}
 
 const chainloopLoaderPrefix = "chainloop://"
 
-func (e *EmbeddedLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, string, error) {
-	return attachment.GetEmbedded(), "", nil
+func (e *EmbeddedLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, *v12.ResourceDescriptor, error) {
+	return attachment.GetEmbedded(), nil, nil
 }
 
 // FileLoader loader loads policies from filesystem and HTTPS references using Cosign's blob package
 type FileLoader struct{}
 
-func (l *FileLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, string, error) {
+func (l *FileLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, *v12.ResourceDescriptor, error) {
 	var (
 		rawData []byte
 		err     error
@@ -64,50 +65,50 @@ func (l *FileLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*
 	ref := attachment.GetRef()
 	filePath, err := ensureScheme(ref, fileScheme)
 	if err != nil {
-		return nil, "", fmt.Errorf("invalid policy reference %q", ref)
+		return nil, nil, fmt.Errorf("invalid policy reference %q", ref)
 	}
 
 	rawData, err = os.ReadFile(filepath.Clean(filePath))
 	if err != nil {
-		return nil, "", fmt.Errorf("loading policy spec: %w", err)
+		return nil, nil, fmt.Errorf("loading policy spec: %w", err)
 	}
 
 	p, err := unmarshalPolicy(rawData, filepath.Ext(ref))
 	if err != nil {
-		return nil, "", fmt.Errorf("unmarshalling policy spec: %w", err)
+		return nil, nil, fmt.Errorf("unmarshalling policy spec: %w", err)
 	}
 
-	return p, ref, nil
+	return p, policyReferenceResourceDescriptor(ref, ""), nil
 }
 
 // HTTPSLoader loader loads policies from HTTP or HTTPS references
 type HTTPSLoader struct{}
 
-func (l *HTTPSLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, string, error) {
+func (l *HTTPSLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, *v12.ResourceDescriptor, error) {
 	ref := attachment.GetRef()
 
 	// and do not remove the scheme since we need http(s):// to make the request
 	if _, err := ensureScheme(ref, httpScheme, httpsScheme); err != nil {
-		return nil, "", fmt.Errorf("invalid policy reference %q: %w", ref, err)
+		return nil, nil, fmt.Errorf("invalid policy reference %q: %w", ref, err)
 	}
 
 	// #nosec G107
 	resp, err := http.Get(ref)
 	if err != nil {
-		return nil, "", fmt.Errorf("requesting remote policy: %w", err)
+		return nil, nil, fmt.Errorf("requesting remote policy: %w", err)
 	}
 	defer resp.Body.Close()
 	raw, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, "", fmt.Errorf("reading remote policy: %w", err)
+		return nil, nil, fmt.Errorf("reading remote policy: %w", err)
 	}
 
 	p, err := unmarshalPolicy(raw, filepath.Ext(ref))
 	if err != nil {
-		return nil, "", fmt.Errorf("unmarshalling policy spec: %w", err)
+		return nil, nil, fmt.Errorf("unmarshalling policy spec: %w", err)
 	}
 
-	return p, ref, nil
+	return p, policyReferenceResourceDescriptor(ref, ""), nil
 }
 
 func unmarshalPolicy(rawData []byte, ext string) (*v1.Policy, error) {
@@ -131,24 +132,29 @@ type ChainloopLoader struct {
 	cacheMutex sync.Mutex
 }
 
-var remotePolicyCache = make(map[string]*pb.AttestationServiceGetPolicyResponse)
+type policyWithReference struct {
+	policy    *v1.Policy
+	reference *v12.ResourceDescriptor
+}
+
+var remotePolicyCache = make(map[string]*policyWithReference)
 
 func NewChainloopLoader(client pb.AttestationServiceClient) *ChainloopLoader {
 	return &ChainloopLoader{Client: client}
 }
 
-func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, string, error) {
+func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, *v12.ResourceDescriptor, error) {
 	ref := attachment.GetRef()
 
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 
 	if v, ok := remotePolicyCache[ref]; ok {
-		return v.GetPolicy(), v.GetReference(), nil
+		return v.policy, v.reference, nil
 	}
 
 	if !IsProviderScheme(ref) {
-		return nil, "", fmt.Errorf("invalid policy reference %q", ref)
+		return nil, nil, fmt.Errorf("invalid policy reference %q", ref)
 	}
 
 	provider, name := ProviderParts(ref)
@@ -158,13 +164,13 @@ func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachm
 		PolicyName: name,
 	})
 	if err != nil {
-		return nil, "", fmt.Errorf("requesting remote policy (provider: %s, name: %s): %w", provider, name, err)
+		return nil, nil, fmt.Errorf("requesting remote policy (provider: %s, name: %s): %w", provider, name, err)
 	}
 
+	reference := policyReferenceResourceDescriptor(resp.Reference.GetUrl(), resp.Reference.GetDigest())
 	// cache result
-	remotePolicyCache[ref] = resp
-
-	return resp.GetPolicy(), resp.GetReference(), nil
+	remotePolicyCache[ref] = &policyWithReference{policy: resp.GetPolicy(), reference: reference}
+	return resp.GetPolicy(), reference, nil
 }
 
 // IsProviderScheme takes a policy reference and returns whether it's referencing to an external provider or not
@@ -211,4 +217,18 @@ func refParts(ref string) (string, string) {
 		return parts[0], parts[1]
 	}
 	return "", parts[0]
+}
+
+func policyReferenceResourceDescriptor(ref, digest string) *v12.ResourceDescriptor {
+	r := &v12.ResourceDescriptor{
+		Name: ref,
+	}
+
+	if digest == "" {
+		return r
+	}
+
+	r.Digest = make(map[string]string)
+	r.Digest["sha256"] = digest
+	return r
 }

@@ -55,7 +55,12 @@ message AttestationServiceGetPolicyRequest {
 message AttestationServiceGetPolicyResponse {
   workflowcontract.v1.Policy policy = 1;
   // FQDN of the policy in the provider
-  string reference = 2;
+  Reference reference = 2;
+
+  message Reference {
+    string url = 1;
+    string digest = 2;
+  }
 }
 
 message AttestationServiceGetContractRequest {

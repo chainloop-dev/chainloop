@@ -521,7 +521,6 @@ func (s *testSuite) TestLoadPolicySpec() {
 		attachment       *v12.PolicyAttachment
 		wantErr          bool
 		expectedName     string
-		expectedRef      string
 		expectedDesc     string
 		expectedCategory string
 		expectedRef      string

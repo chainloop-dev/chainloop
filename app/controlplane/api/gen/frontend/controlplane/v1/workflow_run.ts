@@ -32,7 +32,12 @@ export interface AttestationServiceGetPolicyRequest {
 export interface AttestationServiceGetPolicyResponse {
   policy?: Policy;
   /** FQDN of the policy in the provider */
-  reference: string;
+  reference?: AttestationServiceGetPolicyResponse_Reference;
+}
+
+export interface AttestationServiceGetPolicyResponse_Reference {
+  url: string;
+  digest: string;
 }
 
 export interface AttestationServiceGetContractRequest {
@@ -257,7 +262,7 @@ export const AttestationServiceGetPolicyRequest = {
 };
 
 function createBaseAttestationServiceGetPolicyResponse(): AttestationServiceGetPolicyResponse {
-  return { policy: undefined, reference: "" };
+  return { policy: undefined, reference: undefined };
 }
 
 export const AttestationServiceGetPolicyResponse = {
@@ -265,8 +270,8 @@ export const AttestationServiceGetPolicyResponse = {
     if (message.policy !== undefined) {
       Policy.encode(message.policy, writer.uint32(10).fork()).ldelim();
     }
-    if (message.reference !== "") {
-      writer.uint32(18).string(message.reference);
+    if (message.reference !== undefined) {
+      AttestationServiceGetPolicyResponse_Reference.encode(message.reference, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -290,7 +295,7 @@ export const AttestationServiceGetPolicyResponse = {
             break;
           }
 
-          message.reference = reader.string();
+          message.reference = AttestationServiceGetPolicyResponse_Reference.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -304,14 +309,18 @@ export const AttestationServiceGetPolicyResponse = {
   fromJSON(object: any): AttestationServiceGetPolicyResponse {
     return {
       policy: isSet(object.policy) ? Policy.fromJSON(object.policy) : undefined,
-      reference: isSet(object.reference) ? String(object.reference) : "",
+      reference: isSet(object.reference)
+        ? AttestationServiceGetPolicyResponse_Reference.fromJSON(object.reference)
+        : undefined,
     };
   },
 
   toJSON(message: AttestationServiceGetPolicyResponse): unknown {
     const obj: any = {};
     message.policy !== undefined && (obj.policy = message.policy ? Policy.toJSON(message.policy) : undefined);
-    message.reference !== undefined && (obj.reference = message.reference);
+    message.reference !== undefined && (obj.reference = message.reference
+      ? AttestationServiceGetPolicyResponse_Reference.toJSON(message.reference)
+      : undefined);
     return obj;
   },
 
@@ -328,7 +337,84 @@ export const AttestationServiceGetPolicyResponse = {
     message.policy = (object.policy !== undefined && object.policy !== null)
       ? Policy.fromPartial(object.policy)
       : undefined;
-    message.reference = object.reference ?? "";
+    message.reference = (object.reference !== undefined && object.reference !== null)
+      ? AttestationServiceGetPolicyResponse_Reference.fromPartial(object.reference)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseAttestationServiceGetPolicyResponse_Reference(): AttestationServiceGetPolicyResponse_Reference {
+  return { url: "", digest: "" };
+}
+
+export const AttestationServiceGetPolicyResponse_Reference = {
+  encode(message: AttestationServiceGetPolicyResponse_Reference, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.url !== "") {
+      writer.uint32(10).string(message.url);
+    }
+    if (message.digest !== "") {
+      writer.uint32(18).string(message.digest);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AttestationServiceGetPolicyResponse_Reference {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAttestationServiceGetPolicyResponse_Reference();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.url = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.digest = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AttestationServiceGetPolicyResponse_Reference {
+    return {
+      url: isSet(object.url) ? String(object.url) : "",
+      digest: isSet(object.digest) ? String(object.digest) : "",
+    };
+  },
+
+  toJSON(message: AttestationServiceGetPolicyResponse_Reference): unknown {
+    const obj: any = {};
+    message.url !== undefined && (obj.url = message.url);
+    message.digest !== undefined && (obj.digest = message.digest);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AttestationServiceGetPolicyResponse_Reference>, I>>(
+    base?: I,
+  ): AttestationServiceGetPolicyResponse_Reference {
+    return AttestationServiceGetPolicyResponse_Reference.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<AttestationServiceGetPolicyResponse_Reference>, I>>(
+    object: I,
+  ): AttestationServiceGetPolicyResponse_Reference {
+    const message = createBaseAttestationServiceGetPolicyResponse_Reference();
+    message.url = object.url ?? "";
+    message.digest = object.digest ?? "";
     return message;
   },
 };
