@@ -371,12 +371,12 @@ func (s *AttestationService) GetPolicy(ctx context.Context, req *cpAPI.Attestati
 		return nil, errors.Forbidden("forbidden", "token not found")
 	}
 
-	policy, err := s.workflowContractUseCase.GetPolicy(req.GetProvider(), req.GetPolicyName(), token.Token)
+	remotePolicy, err := s.workflowContractUseCase.GetPolicy(req.GetProvider(), req.GetPolicyName(), token.Token)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
-	return &cpAPI.AttestationServiceGetPolicyResponse{Policy: policy}, nil
+	return &cpAPI.AttestationServiceGetPolicyResponse{Policy: remotePolicy.Policy, Reference: remotePolicy.ProviderRef}, nil
 }
 
 func bizAttestationToPb(att *biz.Attestation) (*cpAPI.AttestationItem, error) {

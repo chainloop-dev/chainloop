@@ -98,19 +98,27 @@ message PolicyEvaluation {
   // The policy name from the policy spec
   string name = 1 [(buf.validate.field) = {
     cel: {
-      message: "must contain only lowercase letters, numbers, and hyphens.",
-      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
-      id: "name.dns-1123",
-    },
+      message: "must contain only lowercase letters, numbers, and hyphens."
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
+      id: "name.dns-1123"
+    }
   }];
 
   string material_name = 2;
 
+  // The policy will be referenced either inline in the body
+  // or through a reference to the provider origin
   // The body script of the policy
   string body = 3 [(buf.validate.field).required = true];
+  // fully qualified reference to the policy
+  // i.e
+  // http://my-domain.com/foo.yaml
+  // file://foo.yaml
+  // chainloop://my-provider.com/foo@sha256:1234
+  string policy_reference = 10 [(buf.validate.field).required = true];
 
   string description = 5;
-  map<string,string> annotations = 6;
+  map<string, string> annotations = 6;
 
   // The policy violations, if any
   repeated Violation violations = 4;

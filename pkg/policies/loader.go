@@ -40,20 +40,22 @@ const (
 
 // Loader defines the interface for policy loaders from contract attachments
 type Loader interface {
-	Load(context.Context, *v1.PolicyAttachment) (*v1.Policy, error)
+	Load(context.Context, *v1.PolicyAttachment) (*v1.Policy, string, error)
 }
 
 // EmbeddedLoader returns embedded policies
 type EmbeddedLoader struct{}
 
-func (e *EmbeddedLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, error) {
-	return attachment.GetEmbedded(), nil
+const ChainloopLoaderID = "chainloop"
+
+func (e *EmbeddedLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, string, error) {
+	return attachment.GetEmbedded(), attachment.GetRef(), nil
 }
 
 // FileLoader loader loads policies from filesystem and HTTPS references using Cosign's blob package
 type FileLoader struct{}
 
-func (l *FileLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, error) {
+func (l *FileLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, string, error) {
 	var (
 		rawData []byte
 		err     error
@@ -62,40 +64,50 @@ func (l *FileLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*
 	ref := attachment.GetRef()
 	filePath, err := ensureScheme(ref, fileScheme)
 	if err != nil {
-		return nil, err
+		return nil, "", fmt.Errorf("invalid policy reference %q", ref)
 	}
 
 	rawData, err = os.ReadFile(filepath.Clean(filePath))
 	if err != nil {
-		return nil, fmt.Errorf("loading policy spec: %w", err)
+		return nil, "", fmt.Errorf("loading policy spec: %w", err)
 	}
 
-	return unmarshalPolicy(rawData, filepath.Ext(ref))
+	p, err := unmarshalPolicy(rawData, filepath.Ext(ref))
+	if err != nil {
+		return nil, "", fmt.Errorf("unmarshalling policy spec: %w", err)
+	}
+
+	return p, ref, nil
 }
 
 // HTTPSLoader loader loads policies from HTTP or HTTPS references
 type HTTPSLoader struct{}
 
-func (l *HTTPSLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, error) {
+func (l *HTTPSLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, string, error) {
 	ref := attachment.GetRef()
 
 	// and do not remove the scheme since we need http(s):// to make the request
 	if _, err := ensureScheme(ref, httpScheme, httpsScheme); err != nil {
-		return nil, fmt.Errorf("invalid policy reference %q: %w", ref, err)
+		return nil, "", fmt.Errorf("invalid policy reference %q: %w", ref, err)
 	}
 
 	// #nosec G107
 	resp, err := http.Get(ref)
 	if err != nil {
-		return nil, fmt.Errorf("requesting remote policy: %w", err)
+		return nil, "", fmt.Errorf("requesting remote policy: %w", err)
 	}
 	defer resp.Body.Close()
 	raw, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("reading remote policy: %w", err)
+		return nil, "", fmt.Errorf("reading remote policy: %w", err)
 	}
 
-	return unmarshalPolicy(raw, filepath.Ext(ref))
+	p, err := unmarshalPolicy(raw, filepath.Ext(ref))
+	if err != nil {
+		return nil, "", fmt.Errorf("unmarshalling policy spec: %w", err)
+	}
+
+	return p, ref, nil
 }
 
 func unmarshalPolicy(rawData []byte, ext string) (*v1.Policy, error) {
@@ -119,24 +131,24 @@ type ChainloopLoader struct {
 	cacheMutex sync.Mutex
 }
 
-var remotePolicyCache = make(map[string]*v1.Policy)
+var remotePolicyCache = make(map[string]*pb.AttestationServiceGetPolicyResponse)
 
 func NewChainloopLoader(client pb.AttestationServiceClient) *ChainloopLoader {
 	return &ChainloopLoader{Client: client}
 }
 
-func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, error) {
+func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, string, error) {
 	ref := attachment.GetRef()
 
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 
-	if remotePolicyCache[ref] != nil {
-		return remotePolicyCache[ref], nil
+	if v, ok := remotePolicyCache[ref]; ok {
+		return v.GetPolicy(), v.GetReference(), nil
 	}
 
 	if !IsProviderScheme(ref) {
-		return nil, fmt.Errorf("invalid policy reference %q", ref)
+		return nil, "", fmt.Errorf("invalid policy reference %q", ref)
 	}
 
 	provider, name := ProviderParts(ref)
@@ -146,13 +158,13 @@ func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachm
 		PolicyName: name,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("requesting remote policy (provider: %s, name: %s): %w", provider, name, err)
+		return nil, "", fmt.Errorf("requesting remote policy (provider: %s, name: %s): %w", provider, name, err)
 	}
 
 	// cache result
-	remotePolicyCache[ref] = resp.GetPolicy()
+	remotePolicyCache[ref] = resp
 
-	return resp.GetPolicy(), nil
+	return resp.GetPolicy(), resp.GetReference(), nil
 }
 
 // IsProviderScheme takes a policy reference and returns whether it's referencing to an external provider or not

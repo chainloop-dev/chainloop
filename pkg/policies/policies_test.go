@@ -523,6 +523,7 @@ func (s *testSuite) TestLoadPolicySpec() {
 		expectedName     string
 		expectedDesc     string
 		expectedCategory string
+		expectedRef      string
 	}{
 		{
 			name:       "missing policy",
@@ -539,6 +540,7 @@ func (s *testSuite) TestLoadPolicySpec() {
 			expectedName:     "made-with-syft",
 			expectedDesc:     "This policy checks that the SPDX SBOM was created with syft",
 			expectedCategory: "SBOM",
+			expectedRef:      "file://testdata/sbom_syft.yaml",
 		},
 		{
 			name: "embedded invalid",
@@ -570,13 +572,14 @@ func (s *testSuite) TestLoadPolicySpec() {
 				},
 			},
 			expectedName: "my-policy",
+			expectedRef:  "",
 		},
 	}
 
 	verifier := NewPolicyVerifier(nil, nil, &s.logger)
 	for _, tc := range cases {
 		s.Run(tc.name, func() {
-			p, err := verifier.loadPolicySpec(context.TODO(), tc.attachment)
+			p, gotRef, err := verifier.loadPolicySpec(context.TODO(), tc.attachment)
 			if tc.wantErr {
 				s.Error(err)
 				return
@@ -586,9 +589,12 @@ func (s *testSuite) TestLoadPolicySpec() {
 			if tc.expectedDesc != "" {
 				s.Equal(tc.expectedDesc, p.Metadata.Description)
 			}
+
 			if tc.expectedCategory != "" {
 				s.Equal(tc.expectedCategory, p.Metadata.Annotations["category"])
 			}
+
+			s.Equal(tc.expectedRef, gotRef)
 		})
 	}
 }

@@ -40,7 +40,6 @@ import (
 
 var (
 	flagCfgFile      string
-	flagInsecure     bool
 	flagDebug        bool
 	flagOutputFormat string
 	actionOpts       *action.ActionsOpts
@@ -73,6 +72,10 @@ type parsedToken struct {
 // Environment variable prefix for vipers
 const envPrefix = "CHAINLOOP"
 
+func apiInsecure() bool {
+	return viper.GetBool(confOptions.insecure.viperKey)
+}
+
 func NewRootCmd(l zerolog.Logger) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:           appName,
@@ -88,8 +91,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 
 			logger.Debug().Str("path", viper.ConfigFileUsed()).Msg("using config file")
 
-			insecure := viper.GetBool(confOptions.insecure.viperKey)
-			if insecure {
+			if apiInsecure() {
 				logger.Warn().Msg("API contacted in insecure mode")
 			}
 
@@ -99,7 +101,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 			}
 
 			var opts = []grpcconn.Option{
-				grpcconn.WithInsecure(insecure),
+				grpcconn.WithInsecure(apiInsecure()),
 			}
 
 			if caFilePath := viper.GetString(confOptions.controlplaneCA.viperKey); caFilePath != "" {
@@ -181,7 +183,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 	cobra.CheckErr(viper.BindPFlag(confOptions.CASCA.viperKey, rootCmd.PersistentFlags().Lookup(confOptions.CASCA.flagName)))
 	cobra.CheckErr(viper.BindEnv(confOptions.CASCA.viperKey, calculateEnvVarName(confOptions.CASCA.viperKey)))
 
-	rootCmd.PersistentFlags().BoolVarP(&flagInsecure, "insecure", "i", false, fmt.Sprintf("Skip TLS transport during connection to the control plane ($%s)", calculateEnvVarName(confOptions.insecure.viperKey)))
+	rootCmd.PersistentFlags().BoolP("insecure", "i", false, fmt.Sprintf("Skip TLS transport during connection to the control plane ($%s)", calculateEnvVarName(confOptions.insecure.viperKey)))
 	cobra.CheckErr(viper.BindPFlag(confOptions.insecure.viperKey, rootCmd.PersistentFlags().Lookup("insecure")))
 	cobra.CheckErr(viper.BindEnv(confOptions.insecure.viperKey, calculateEnvVarName(confOptions.insecure.viperKey)))
 

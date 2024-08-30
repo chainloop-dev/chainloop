@@ -31,6 +31,8 @@ export interface AttestationServiceGetPolicyRequest {
 
 export interface AttestationServiceGetPolicyResponse {
   policy?: Policy;
+  /** FQDN of the policy in the provider */
+  reference: string;
 }
 
 export interface AttestationServiceGetContractRequest {
@@ -255,13 +257,16 @@ export const AttestationServiceGetPolicyRequest = {
 };
 
 function createBaseAttestationServiceGetPolicyResponse(): AttestationServiceGetPolicyResponse {
-  return { policy: undefined };
+  return { policy: undefined, reference: "" };
 }
 
 export const AttestationServiceGetPolicyResponse = {
   encode(message: AttestationServiceGetPolicyResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.policy !== undefined) {
       Policy.encode(message.policy, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.reference !== "") {
+      writer.uint32(18).string(message.reference);
     }
     return writer;
   },
@@ -280,6 +285,13 @@ export const AttestationServiceGetPolicyResponse = {
 
           message.policy = Policy.decode(reader, reader.uint32());
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.reference = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -290,12 +302,16 @@ export const AttestationServiceGetPolicyResponse = {
   },
 
   fromJSON(object: any): AttestationServiceGetPolicyResponse {
-    return { policy: isSet(object.policy) ? Policy.fromJSON(object.policy) : undefined };
+    return {
+      policy: isSet(object.policy) ? Policy.fromJSON(object.policy) : undefined,
+      reference: isSet(object.reference) ? String(object.reference) : "",
+    };
   },
 
   toJSON(message: AttestationServiceGetPolicyResponse): unknown {
     const obj: any = {};
     message.policy !== undefined && (obj.policy = message.policy ? Policy.toJSON(message.policy) : undefined);
+    message.reference !== undefined && (obj.reference = message.reference);
     return obj;
   },
 
@@ -312,6 +328,7 @@ export const AttestationServiceGetPolicyResponse = {
     message.policy = (object.policy !== undefined && object.policy !== null)
       ? Policy.fromPartial(object.policy)
       : undefined;
+    message.reference = object.reference ?? "";
     return message;
   },
 };

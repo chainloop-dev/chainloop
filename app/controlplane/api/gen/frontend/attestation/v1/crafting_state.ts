@@ -104,8 +104,20 @@ export interface PolicyEvaluation {
   /** The policy name from the policy spec */
   name: string;
   materialName: string;
-  /** The body script of the policy */
+  /**
+   * The policy will be referenced either inline in the body
+   * or through a reference to the provider origin
+   * The body script of the policy
+   */
   body: string;
+  /**
+   * fully qualified reference to the policy
+   * i.e
+   * http://my-domain.com/foo.yaml
+   * file://foo.yaml
+   * chainloop://my-provider.com/foo@sha256:1234
+   */
+  policyReference: string;
   description: string;
   annotations: { [key: string]: string };
   /** The policy violations, if any */
@@ -1189,7 +1201,17 @@ export const Attestation_EnvVarsEntry = {
 };
 
 function createBasePolicyEvaluation(): PolicyEvaluation {
-  return { name: "", materialName: "", body: "", description: "", annotations: {}, violations: [], with: {}, type: 0 };
+  return {
+    name: "",
+    materialName: "",
+    body: "",
+    policyReference: "",
+    description: "",
+    annotations: {},
+    violations: [],
+    with: {},
+    type: 0,
+  };
 }
 
 export const PolicyEvaluation = {
@@ -1202,6 +1224,9 @@ export const PolicyEvaluation = {
     }
     if (message.body !== "") {
       writer.uint32(26).string(message.body);
+    }
+    if (message.policyReference !== "") {
+      writer.uint32(82).string(message.policyReference);
     }
     if (message.description !== "") {
       writer.uint32(42).string(message.description);
@@ -1248,6 +1273,13 @@ export const PolicyEvaluation = {
           }
 
           message.body = reader.string();
+          continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.policyReference = reader.string();
           continue;
         case 5:
           if (tag !== 42) {
@@ -1304,6 +1336,7 @@ export const PolicyEvaluation = {
       name: isSet(object.name) ? String(object.name) : "",
       materialName: isSet(object.materialName) ? String(object.materialName) : "",
       body: isSet(object.body) ? String(object.body) : "",
+      policyReference: isSet(object.policyReference) ? String(object.policyReference) : "",
       description: isSet(object.description) ? String(object.description) : "",
       annotations: isObject(object.annotations)
         ? Object.entries(object.annotations).reduce<{ [key: string]: string }>((acc, [key, value]) => {
@@ -1329,6 +1362,7 @@ export const PolicyEvaluation = {
     message.name !== undefined && (obj.name = message.name);
     message.materialName !== undefined && (obj.materialName = message.materialName);
     message.body !== undefined && (obj.body = message.body);
+    message.policyReference !== undefined && (obj.policyReference = message.policyReference);
     message.description !== undefined && (obj.description = message.description);
     obj.annotations = {};
     if (message.annotations) {
@@ -1360,6 +1394,7 @@ export const PolicyEvaluation = {
     message.name = object.name ?? "";
     message.materialName = object.materialName ?? "";
     message.body = object.body ?? "";
+    message.policyReference = object.policyReference ?? "";
     message.description = object.description ?? "";
     message.annotations = Object.entries(object.annotations ?? {}).reduce<{ [key: string]: string }>(
       (acc, [key, value]) => {
