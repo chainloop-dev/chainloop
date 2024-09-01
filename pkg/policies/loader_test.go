@@ -18,6 +18,8 @@ package policies
 import (
 	"testing"
 
+	v12 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
+	crv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -73,5 +75,32 @@ func TestEnsureScheme(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantPath, gotScheme)
 		})
+	}
+}
+
+func TestPolicyReferenceResourceDescriptor(t *testing.T) {
+	testCases := []struct {
+		ref    string
+		digest crv1.Hash
+		want   *v12.ResourceDescriptor
+	}{
+		{
+			ref: "chainloop:///policy.json",
+			digest: crv1.Hash{
+				Algorithm: "sha256",
+				Hex:       "1234",
+			},
+			want: &v12.ResourceDescriptor{
+				Name: "chainloop:///policy.json",
+				Digest: map[string]string{
+					"sha256": "1234",
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		got := policyReferenceResourceDescriptor(tc.ref, tc.digest)
+		assert.Equal(t, tc.want, got)
 	}
 }

@@ -24,24 +24,28 @@ import (
 
 func TestResolveRef(t *testing.T) {
 	testCases := []struct {
+		name        string
 		providerURL string
 		policyName  string
 		digest      string
-		want        string
+		want        *PolicyReference
 		wantErr     bool
 	}{
 		{
+			name:        "valid",
 			providerURL: "https://p1host.com/foo",
 			policyName:  "my-policy",
 			digest:      "my-digest",
-			want:        "chainloop://p1host.com/my-policy@my-digest",
+			want:        &PolicyReference{URL: "chainloop://p1host.com/my-policy", Digest: "my-digest"},
 		},
 		{
+			name:        "missing digest",
 			providerURL: "https://p1host.com/foo",
 			policyName:  "my-policy",
-			want:        "chainloop://p1host.com/my-policy",
+			wantErr:     true,
 		},
 		{
+			name:        "missing schema",
 			providerURL: "p1host.com/foo",
 			policyName:  "my-policy",
 			wantErr:     true,

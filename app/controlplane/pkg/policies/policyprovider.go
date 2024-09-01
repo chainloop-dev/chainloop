@@ -106,6 +106,10 @@ func (p *PolicyProvider) resolveRef(policyName, digest string) (*PolicyReference
 		return nil, fmt.Errorf("invalid policy provider URL")
 	}
 
+	if policyName == "" || digest == "" {
+		return nil, fmt.Errorf("both policy name and digest are mandatory")
+	}
+
 	return &PolicyReference{
 		URL:    fmt.Sprintf("chainloop://%s/%s", uri.Host, policyName),
 		Digest: digest,

@@ -16,9 +16,8 @@
 package policies
 
 import (
+	"bytes"
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
@@ -31,6 +30,7 @@ import (
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	v12 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
+	crv1 "github.com/google/go-containerregistry/pkg/v1"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -81,8 +81,12 @@ func (l *FileLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*
 	}
 
 	// calculate hash of the raw data
-	hash := sha256.Sum256(raw)
-	return p, policyReferenceResourceDescriptor(ref, hex.EncodeToString(hash[:])), nil
+	h, _, err := crv1.SHA256(bytes.NewBuffer(raw))
+	if err != nil {
+		return nil, nil, fmt.Errorf("calculating hash: %w", err)
+	}
+
+	return p, policyReferenceResourceDescriptor(ref, h), nil
 }
 
 // HTTPSLoader loader loads policies from HTTP or HTTPS references
@@ -112,8 +116,13 @@ func (l *HTTPSLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (
 		return nil, nil, fmt.Errorf("unmarshalling policy spec: %w", err)
 	}
 
-	hash := sha256.Sum256(raw)
-	return p, policyReferenceResourceDescriptor(ref, hex.EncodeToString(hash[:])), nil
+	// calculate hash of the raw data
+	h, _, err := crv1.SHA256(bytes.NewBuffer(raw))
+	if err != nil {
+		return nil, nil, fmt.Errorf("calculating hash: %w", err)
+	}
+
+	return p, policyReferenceResourceDescriptor(ref, h), nil
 }
 
 func unmarshalPolicy(rawData []byte, ext string) (*v1.Policy, error) {
@@ -144,8 +153,11 @@ type policyWithReference struct {
 
 var remotePolicyCache = make(map[string]*policyWithReference)
 
-func NewChainloopLoader(client pb.AttestationServiceClient) *ChainloopLoader {
-	return &ChainloopLoader{Client: client}
+func NewChainloopLoader(client pb.AttestationServiceClient) (*ChainloopLoader, error) {
+	if client == nil {
+		return nil, fmt.Errorf("client is nil")
+	}
+	return &ChainloopLoader{Client: client}, nil
 }
 
 func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, *v12.ResourceDescriptor, error) {
@@ -172,7 +184,12 @@ func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachm
 		return nil, nil, fmt.Errorf("requesting remote policy (provider: %s, name: %s): %w", provider, name, err)
 	}
 
-	reference := policyReferenceResourceDescriptor(resp.Reference.GetUrl(), resp.Reference.GetDigest())
+	h, err := crv1.NewHash(resp.Reference.GetDigest())
+	if err != nil {
+		return nil, nil, fmt.Errorf("parsing digest: %w", err)
+	}
+
+	reference := policyReferenceResourceDescriptor(resp.Reference.GetUrl(), h)
 	// cache result
 	remotePolicyCache[ref] = &policyWithReference{policy: resp.GetPolicy(), reference: reference}
 	return resp.GetPolicy(), reference, nil
@@ -224,16 +241,11 @@ func refParts(ref string) (string, string) {
 	return "", parts[0]
 }
 
-func policyReferenceResourceDescriptor(ref, digest string) *v12.ResourceDescriptor {
-	r := &v12.ResourceDescriptor{
+func policyReferenceResourceDescriptor(ref string, digest crv1.Hash) *v12.ResourceDescriptor {
+	return &v12.ResourceDescriptor{
 		Name: ref,
+		Digest: map[string]string{
+			digest.Algorithm: digest.Hex,
+		},
 	}
-
-	if digest == "" {
-		return r
-	}
-
-	r.Digest = make(map[string]string)
-	r.Digest["sha256"] = digest
-	return r
 }
