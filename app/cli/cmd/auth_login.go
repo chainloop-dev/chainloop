@@ -17,7 +17,6 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -25,15 +24,12 @@ import (
 	"net/url"
 	"os/exec"
 	"runtime"
-	"syscall"
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/internal/oauth"
-	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"golang.org/x/term"
 )
 
 type app struct {
@@ -106,35 +102,6 @@ func interactiveAuth(forceHeadless bool) error {
 	if err != nil {
 		return err
 	}
-
-	return nil
-}
-
-func headlessAuth(loginURL *url.URL) error {
-	// Remove cli-callback query parameter to indicate the server to show it inline
-	q := loginURL.Query()
-	q.Set("callback", "")
-	loginURL.RawQuery = q.Encode()
-	fmt.Printf("To authenticate, click on the following link and paste the result back here\n\n  %s\n\n", loginURL.String())
-
-	fmt.Print("Enter Token: ")
-	token, err := term.ReadPassword(syscall.Stdin)
-	if err != nil {
-		return fmt.Errorf("retrieving password from stdin: %w", err)
-	}
-
-	// We just want to check that it is a token, the actual verification will happen when it is sent to the server
-	// To be clear, this is just a best effort sanity check
-	if _, _, err := new(jwt.Parser).ParseUnverified(string(token), &jwt.MapClaims{}); err != nil {
-		return errors.New("invalid token")
-	}
-
-	if err := saveAuthToken(string(token)); err != nil {
-		return fmt.Errorf("storing token in config file: %w", err)
-	}
-
-	fmt.Println("")
-	logger.Info().Msg("login successful!")
 
 	return nil
 }
