@@ -17,6 +17,8 @@ package policies
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
@@ -58,8 +60,8 @@ type FileLoader struct{}
 
 func (l *FileLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, *v12.ResourceDescriptor, error) {
 	var (
-		rawData []byte
-		err     error
+		raw []byte
+		err error
 	)
 
 	ref := attachment.GetRef()
@@ -68,17 +70,19 @@ func (l *FileLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*
 		return nil, nil, fmt.Errorf("invalid policy reference %q", ref)
 	}
 
-	rawData, err = os.ReadFile(filepath.Clean(filePath))
+	raw, err = os.ReadFile(filepath.Clean(filePath))
 	if err != nil {
 		return nil, nil, fmt.Errorf("loading policy spec: %w", err)
 	}
 
-	p, err := unmarshalPolicy(rawData, filepath.Ext(ref))
+	p, err := unmarshalPolicy(raw, filepath.Ext(ref))
 	if err != nil {
 		return nil, nil, fmt.Errorf("unmarshalling policy spec: %w", err)
 	}
 
-	return p, policyReferenceResourceDescriptor(ref, ""), nil
+	// calculate hash of the raw data
+	hash := sha256.Sum256(raw)
+	return p, policyReferenceResourceDescriptor(ref, hex.EncodeToString(hash[:])), nil
 }
 
 // HTTPSLoader loader loads policies from HTTP or HTTPS references
@@ -108,7 +112,8 @@ func (l *HTTPSLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (
 		return nil, nil, fmt.Errorf("unmarshalling policy spec: %w", err)
 	}
 
-	return p, policyReferenceResourceDescriptor(ref, ""), nil
+	hash := sha256.Sum256(raw)
+	return p, policyReferenceResourceDescriptor(ref, hex.EncodeToString(hash[:])), nil
 }
 
 func unmarshalPolicy(rawData []byte, ext string) (*v1.Policy, error) {
