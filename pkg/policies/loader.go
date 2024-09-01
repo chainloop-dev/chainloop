@@ -153,11 +153,8 @@ type policyWithReference struct {
 
 var remotePolicyCache = make(map[string]*policyWithReference)
 
-func NewChainloopLoader(client pb.AttestationServiceClient) (*ChainloopLoader, error) {
-	if client == nil {
-		return nil, fmt.Errorf("client is nil")
-	}
-	return &ChainloopLoader{Client: client}, nil
+func NewChainloopLoader(client pb.AttestationServiceClient) *ChainloopLoader {
+	return &ChainloopLoader{Client: client}
 }
 
 func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, *v12.ResourceDescriptor, error) {

@@ -225,15 +225,11 @@ func (pv *PolicyVerifier) getLoader(attachment *v1.PolicyAttachment) (Loader, er
 	}
 
 	var loader Loader
-	var err error
 	scheme, _ := refParts(ref)
 	switch scheme {
 	// No scheme means chainloop loader
 	case chainloopScheme, "":
-		loader, err = NewChainloopLoader(pv.client)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create chainloop loader: %w", err)
-		}
+		loader = NewChainloopLoader(pv.client)
 	case fileScheme:
 		loader = new(FileLoader)
 	case httpsScheme, httpScheme:
