@@ -330,11 +330,11 @@ func (uc *WorkflowContractUseCase) findPolicy(att *schemav1.PolicyAttachment, to
 	// [chainloop://][provider/]name
 	if loader.IsProviderScheme(att.GetRef()) {
 		provider, name := loader.ProviderParts(att.GetRef())
-		policy, err := uc.GetPolicy(provider, name, token)
+		remotePolicy, err := uc.GetPolicy(provider, name, token)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get policy '%s': %w", name, err)
 		}
-		return policy, nil
+		return remotePolicy.Policy, nil
 	}
 
 	// Otherwise, don't return an error, as it might consist of a local policy, not available in this context
@@ -371,8 +371,13 @@ func (uc *WorkflowContractUseCase) Delete(ctx context.Context, orgID, contractID
 	return uc.repo.SoftDelete(ctx, contractUUID)
 }
 
+type RemotePolicy struct {
+	ProviderRef *policies.PolicyReference
+	Policy      *schemav1.Policy
+}
+
 // GetPolicy retrieves a policy from a policy provider
-func (uc *WorkflowContractUseCase) GetPolicy(providerName, policyName, token string) (*schemav1.Policy, error) {
+func (uc *WorkflowContractUseCase) GetPolicy(providerName, policyName, token string) (*RemotePolicy, error) {
 	if len(uc.policyRegistry.GetProviderNames()) == 0 {
 		return nil, fmt.Errorf("policy providers not configured. Make sure your policy is referenced with file:// or https:// protocol")
 	}
@@ -386,12 +391,12 @@ func (uc *WorkflowContractUseCase) GetPolicy(providerName, policyName, token str
 		return nil, fmt.Errorf("failed to resolve provider: %s. Available providers: %s", providerName, uc.policyRegistry.GetProviderNames())
 	}
 
-	policy, err := provider.Resolve(policyName, token)
+	policy, ref, err := provider.Resolve(policyName, token)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve policy: %w. Available providers: %s", err, uc.policyRegistry.GetProviderNames())
 	}
 
-	return policy, nil
+	return &RemotePolicy{Policy: policy, ProviderRef: ref}, nil
 }
 
 // Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues

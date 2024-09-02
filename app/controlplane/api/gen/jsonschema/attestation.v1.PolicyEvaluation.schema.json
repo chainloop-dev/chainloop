@@ -6,6 +6,10 @@
   "patternProperties": {
     "^(materialName)$": {
       "type": "string"
+    },
+    "^(policyReference)$": {
+      "$ref": "attestation.v1.ResourceDescriptor.schema.json",
+      "description": "fully qualified reference to the policy\n i.e\n http://my-domain.com/foo.yaml\n file://foo.yaml\n chainloop://my-provider.com/foo@sha256:1234\n NOTE: embedded policies will not have a reference"
     }
   },
   "properties": {
@@ -19,7 +23,7 @@
       "type": "object"
     },
     "body": {
-      "description": "The body script of the policy",
+      "description": "the body of the policy. This field will be empty if there is a FQDN reference to the policy",
       "type": "string"
     },
     "description": {
@@ -31,6 +35,10 @@
     "name": {
       "description": "The policy name from the policy spec",
       "type": "string"
+    },
+    "policy_reference": {
+      "$ref": "attestation.v1.ResourceDescriptor.schema.json",
+      "description": "fully qualified reference to the policy\n i.e\n http://my-domain.com/foo.yaml\n file://foo.yaml\n chainloop://my-provider.com/foo@sha256:1234\n NOTE: embedded policies will not have a reference"
     },
     "type": {
       "anyOf": [

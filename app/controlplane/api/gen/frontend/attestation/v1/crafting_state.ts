@@ -1,5 +1,6 @@
 /* eslint-disable */
 import _m0 from "protobufjs/minimal";
+import { Struct } from "../../google/protobuf/struct";
 import { Timestamp } from "../../google/protobuf/timestamp";
 import {
   CraftingSchema,
@@ -104,8 +105,17 @@ export interface PolicyEvaluation {
   /** The policy name from the policy spec */
   name: string;
   materialName: string;
-  /** The body script of the policy */
+  /** the body of the policy. This field will be empty if there is a FQDN reference to the policy */
   body: string;
+  /**
+   * fully qualified reference to the policy
+   * i.e
+   * http://my-domain.com/foo.yaml
+   * file://foo.yaml
+   * chainloop://my-provider.com/foo@sha256:1234
+   * NOTE: embedded policies will not have a reference
+   */
+  policyReference?: ResourceDescriptor;
   description: string;
   annotations: { [key: string]: string };
   /** The policy violations, if any */
@@ -163,6 +173,34 @@ export interface WorkflowMetadata {
   schemaRevision: string;
   /** organization name */
   organization: string;
+}
+
+/**
+ * Proto representation of the in-toto v1 ResourceDescriptor.
+ * https://github.com/in-toto/attestation/blob/main/spec/v1/resource_descriptor.md
+ * Validation of all fields is left to the users of this proto.
+ */
+export interface ResourceDescriptor {
+  name: string;
+  uri: string;
+  digest: { [key: string]: string };
+  content: Uint8Array;
+  downloadLocation: string;
+  mediaType: string;
+  /**
+   * Per the Struct protobuf spec, this type corresponds to
+   * a JSON Object, which is truly a map<string, Value> under the hood.
+   * So, the Struct a) is still consistent with our specification for
+   * the `annotations` field, and b) has native support in some language
+   * bindings making their use easier in implementations.
+   * See: https://pkg.go.dev/google.golang.org/protobuf/types/known/structpb#Struct
+   */
+  annotations?: { [key: string]: any };
+}
+
+export interface ResourceDescriptor_DigestEntry {
+  key: string;
+  value: string;
 }
 
 function createBaseAttestation(): Attestation {
@@ -1189,7 +1227,17 @@ export const Attestation_EnvVarsEntry = {
 };
 
 function createBasePolicyEvaluation(): PolicyEvaluation {
-  return { name: "", materialName: "", body: "", description: "", annotations: {}, violations: [], with: {}, type: 0 };
+  return {
+    name: "",
+    materialName: "",
+    body: "",
+    policyReference: undefined,
+    description: "",
+    annotations: {},
+    violations: [],
+    with: {},
+    type: 0,
+  };
 }
 
 export const PolicyEvaluation = {
@@ -1202,6 +1250,9 @@ export const PolicyEvaluation = {
     }
     if (message.body !== "") {
       writer.uint32(26).string(message.body);
+    }
+    if (message.policyReference !== undefined) {
+      ResourceDescriptor.encode(message.policyReference, writer.uint32(82).fork()).ldelim();
     }
     if (message.description !== "") {
       writer.uint32(42).string(message.description);
@@ -1248,6 +1299,13 @@ export const PolicyEvaluation = {
           }
 
           message.body = reader.string();
+          continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.policyReference = ResourceDescriptor.decode(reader, reader.uint32());
           continue;
         case 5:
           if (tag !== 42) {
@@ -1304,6 +1362,7 @@ export const PolicyEvaluation = {
       name: isSet(object.name) ? String(object.name) : "",
       materialName: isSet(object.materialName) ? String(object.materialName) : "",
       body: isSet(object.body) ? String(object.body) : "",
+      policyReference: isSet(object.policyReference) ? ResourceDescriptor.fromJSON(object.policyReference) : undefined,
       description: isSet(object.description) ? String(object.description) : "",
       annotations: isObject(object.annotations)
         ? Object.entries(object.annotations).reduce<{ [key: string]: string }>((acc, [key, value]) => {
@@ -1329,6 +1388,8 @@ export const PolicyEvaluation = {
     message.name !== undefined && (obj.name = message.name);
     message.materialName !== undefined && (obj.materialName = message.materialName);
     message.body !== undefined && (obj.body = message.body);
+    message.policyReference !== undefined &&
+      (obj.policyReference = message.policyReference ? ResourceDescriptor.toJSON(message.policyReference) : undefined);
     message.description !== undefined && (obj.description = message.description);
     obj.annotations = {};
     if (message.annotations) {
@@ -1360,6 +1421,9 @@ export const PolicyEvaluation = {
     message.name = object.name ?? "";
     message.materialName = object.materialName ?? "";
     message.body = object.body ?? "";
+    message.policyReference = (object.policyReference !== undefined && object.policyReference !== null)
+      ? ResourceDescriptor.fromPartial(object.policyReference)
+      : undefined;
     message.description = object.description ?? "";
     message.annotations = Object.entries(object.annotations ?? {}).reduce<{ [key: string]: string }>(
       (acc, [key, value]) => {
@@ -2010,6 +2074,239 @@ export const WorkflowMetadata = {
     message.workflowRunId = object.workflowRunId ?? "";
     message.schemaRevision = object.schemaRevision ?? "";
     message.organization = object.organization ?? "";
+    return message;
+  },
+};
+
+function createBaseResourceDescriptor(): ResourceDescriptor {
+  return {
+    name: "",
+    uri: "",
+    digest: {},
+    content: new Uint8Array(0),
+    downloadLocation: "",
+    mediaType: "",
+    annotations: undefined,
+  };
+}
+
+export const ResourceDescriptor = {
+  encode(message: ResourceDescriptor, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.uri !== "") {
+      writer.uint32(18).string(message.uri);
+    }
+    Object.entries(message.digest).forEach(([key, value]) => {
+      ResourceDescriptor_DigestEntry.encode({ key: key as any, value }, writer.uint32(26).fork()).ldelim();
+    });
+    if (message.content.length !== 0) {
+      writer.uint32(34).bytes(message.content);
+    }
+    if (message.downloadLocation !== "") {
+      writer.uint32(42).string(message.downloadLocation);
+    }
+    if (message.mediaType !== "") {
+      writer.uint32(50).string(message.mediaType);
+    }
+    if (message.annotations !== undefined) {
+      Struct.encode(Struct.wrap(message.annotations), writer.uint32(58).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ResourceDescriptor {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseResourceDescriptor();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.uri = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          const entry3 = ResourceDescriptor_DigestEntry.decode(reader, reader.uint32());
+          if (entry3.value !== undefined) {
+            message.digest[entry3.key] = entry3.value;
+          }
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.content = reader.bytes();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.downloadLocation = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.mediaType = reader.string();
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.annotations = Struct.unwrap(Struct.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ResourceDescriptor {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      uri: isSet(object.uri) ? String(object.uri) : "",
+      digest: isObject(object.digest)
+        ? Object.entries(object.digest).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+          acc[key] = String(value);
+          return acc;
+        }, {})
+        : {},
+      content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array(0),
+      downloadLocation: isSet(object.downloadLocation) ? String(object.downloadLocation) : "",
+      mediaType: isSet(object.mediaType) ? String(object.mediaType) : "",
+      annotations: isObject(object.annotations) ? object.annotations : undefined,
+    };
+  },
+
+  toJSON(message: ResourceDescriptor): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.uri !== undefined && (obj.uri = message.uri);
+    obj.digest = {};
+    if (message.digest) {
+      Object.entries(message.digest).forEach(([k, v]) => {
+        obj.digest[k] = v;
+      });
+    }
+    message.content !== undefined &&
+      (obj.content = base64FromBytes(message.content !== undefined ? message.content : new Uint8Array(0)));
+    message.downloadLocation !== undefined && (obj.downloadLocation = message.downloadLocation);
+    message.mediaType !== undefined && (obj.mediaType = message.mediaType);
+    message.annotations !== undefined && (obj.annotations = message.annotations);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ResourceDescriptor>, I>>(base?: I): ResourceDescriptor {
+    return ResourceDescriptor.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ResourceDescriptor>, I>>(object: I): ResourceDescriptor {
+    const message = createBaseResourceDescriptor();
+    message.name = object.name ?? "";
+    message.uri = object.uri ?? "";
+    message.digest = Object.entries(object.digest ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = String(value);
+      }
+      return acc;
+    }, {});
+    message.content = object.content ?? new Uint8Array(0);
+    message.downloadLocation = object.downloadLocation ?? "";
+    message.mediaType = object.mediaType ?? "";
+    message.annotations = object.annotations ?? undefined;
+    return message;
+  },
+};
+
+function createBaseResourceDescriptor_DigestEntry(): ResourceDescriptor_DigestEntry {
+  return { key: "", value: "" };
+}
+
+export const ResourceDescriptor_DigestEntry = {
+  encode(message: ResourceDescriptor_DigestEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ResourceDescriptor_DigestEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseResourceDescriptor_DigestEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ResourceDescriptor_DigestEntry {
+    return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? String(object.value) : "" };
+  },
+
+  toJSON(message: ResourceDescriptor_DigestEntry): unknown {
+    const obj: any = {};
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ResourceDescriptor_DigestEntry>, I>>(base?: I): ResourceDescriptor_DigestEntry {
+    return ResourceDescriptor_DigestEntry.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ResourceDescriptor_DigestEntry>, I>>(
+    object: I,
+  ): ResourceDescriptor_DigestEntry {
+    const message = createBaseResourceDescriptor_DigestEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
     return message;
   },
 };

@@ -68,14 +68,14 @@ func NewPolicyVerifier(schema *v1.CraftingSchema, client v13.AttestationServiceC
 func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Attestation_Material, artifactPath string) ([]*v12.PolicyEvaluation, error) {
 	result := make([]*v12.PolicyEvaluation, 0)
 
-	policies, err := pv.requiredPoliciesForMaterial(ctx, material)
+	attachments, err := pv.requiredPoliciesForMaterial(ctx, material)
 	if err != nil {
 		return nil, NewPolicyError(err)
 	}
 
-	for _, policy := range policies {
+	for _, attachment := range attachments {
 		// 1. load the policy spec
-		spec, err := pv.loadPolicySpec(ctx, policy)
+		spec, ref, err := pv.loadPolicySpec(ctx, attachment)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
@@ -96,20 +96,25 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 
 		// verify the policy
 		ng := getPolicyEngine(spec)
-		violations, err := ng.Verify(ctx, script, subject, getInputArguments(policy.GetWith()))
+		violations, err := ng.Verify(ctx, script, subject, getInputArguments(attachment.GetWith()))
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
+		var body string
+		if !IsProviderScheme(ref.GetName()) {
+			body = base64.StdEncoding.EncodeToString(script.Source)
+		}
 
 		result = append(result, &v12.PolicyEvaluation{
-			Name:         spec.GetMetadata().GetName(),
-			MaterialName: material.GetArtifact().GetId(),
-			Body:         base64.StdEncoding.EncodeToString(script.Source),
-			Violations:   engineViolationsToAPIViolations(violations),
-			Annotations:  spec.GetMetadata().GetAnnotations(),
-			Description:  spec.GetMetadata().GetDescription(),
-			With:         policy.GetWith(),
-			Type:         spec.GetSpec().Type,
+			Name:            spec.GetMetadata().GetName(),
+			MaterialName:    material.GetArtifact().GetId(),
+			Body:            body,
+			Violations:      engineViolationsToAPIViolations(violations),
+			Annotations:     spec.GetMetadata().GetAnnotations(),
+			Description:     spec.GetMetadata().GetDescription(),
+			With:            attachment.GetWith(),
+			Type:            spec.GetSpec().Type,
+			PolicyReference: ref,
 		})
 	}
 
@@ -122,7 +127,7 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 	policies := pv.schema.GetPolicies().GetAttestation()
 	for _, policyAtt := range policies {
 		// 1. load the policy spec
-		spec, err := pv.loadPolicySpec(ctx, policyAtt)
+		spec, ref, err := pv.loadPolicySpec(ctx, policyAtt)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
@@ -152,15 +157,23 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 			return nil, NewPolicyError(err)
 		}
 
+		// We store the body in the attestation unless the policy comes from a remote provider
+		// in which case with the reference it will suffice
+		var body string
+		if !IsProviderScheme(ref.GetName()) {
+			body = base64.StdEncoding.EncodeToString(script.Source)
+		}
+
 		// 5. Store result in the attestation itself (for the renderer to include them in the predicate)
 		result = append(result, &v12.PolicyEvaluation{
-			Name:        spec.Metadata.Name,
-			Body:        base64.StdEncoding.EncodeToString(script.Source),
-			Violations:  policyViolationsToAttestationViolations(res),
-			Annotations: spec.GetMetadata().GetAnnotations(),
-			Description: spec.GetMetadata().GetDescription(),
-			With:        policyAtt.GetWith(),
-			Type:        spec.GetSpec().Type,
+			Name:            spec.Metadata.Name,
+			Body:            body,
+			Violations:      policyViolationsToAttestationViolations(res),
+			Annotations:     spec.GetMetadata().GetAnnotations(),
+			Description:     spec.GetMetadata().GetDescription(),
+			With:            policyAtt.GetWith(),
+			Type:            spec.GetSpec().Type,
+			PolicyReference: ref,
 		})
 	}
 
@@ -168,13 +181,13 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 }
 
 // LoadPolicySpec loads and validates a policy spec from a contract
-func (pv *PolicyVerifier) loadPolicySpec(ctx context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, error) {
+func (pv *PolicyVerifier) loadPolicySpec(ctx context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, *v12.ResourceDescriptor, error) {
 	loader, err := pv.getLoader(attachment)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get a loader for policy: %w", err)
+		return nil, nil, fmt.Errorf("failed to get a loader for policy: %w", err)
 	}
 
-	spec, err := loader.Load(ctx, attachment)
+	spec, ref, err := loader.Load(ctx, attachment)
 	if err != nil {
 		// fallback from ChainloopLoader to FileLoader if no scheme is used, to maintain backwards compatibility
 		_, ok := loader.(*ChainloopLoader)
@@ -183,19 +196,19 @@ func (pv *PolicyVerifier) loadPolicySpec(ctx context.Context, attachment *v1.Pol
 			// prepend file:// to the ref
 			pv.logger.Debug().Msgf("falling back to FileLoader for %s", attachment.GetRef())
 			attachment.Policy = &v1.PolicyAttachment_Ref{Ref: fmt.Sprintf("%s://%s", fileScheme, id)}
-			spec, err = new(FileLoader).Load(ctx, attachment)
+			spec, ref, err = new(FileLoader).Load(ctx, attachment)
 		}
 	}
 	if err != nil {
-		return nil, fmt.Errorf("loading policy spec: %w", err)
+		return nil, nil, fmt.Errorf("loading policy spec: %w", err)
 	}
 
 	// Validate just in case
 	if err = validatePolicy(spec); err != nil {
-		return nil, fmt.Errorf("invalid policy: %w", err)
+		return nil, nil, fmt.Errorf("invalid policy: %w", err)
 	}
 
-	return spec, nil
+	return spec, ref, nil
 }
 
 func (pv *PolicyVerifier) getLoader(attachment *v1.PolicyAttachment) (Loader, error) {
@@ -214,6 +227,7 @@ func (pv *PolicyVerifier) getLoader(attachment *v1.PolicyAttachment) (Loader, er
 	var loader Loader
 	scheme, _ := refParts(ref)
 	switch scheme {
+	// No scheme means chainloop loader
 	case chainloopScheme, "":
 		loader = NewChainloopLoader(pv.client)
 	case fileScheme:
@@ -344,7 +358,7 @@ func (pv *PolicyVerifier) requiredPoliciesForMaterial(ctx context.Context, mater
 
 	for _, policyAtt := range policies {
 		// load the policy spec
-		spec, err := pv.loadPolicySpec(ctx, policyAtt)
+		spec, _, err := pv.loadPolicySpec(ctx, policyAtt)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load policy spec: %w", err)
 		}

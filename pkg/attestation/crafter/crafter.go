@@ -556,6 +556,7 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 	if err != nil {
 		return fmt.Errorf("error applying policies to material: %w", err)
 	}
+
 	// log policy violations
 	policies.LogPolicyViolations(policyResults, c.Logger)
 	// store policy results

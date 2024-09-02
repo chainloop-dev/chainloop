@@ -286,38 +286,38 @@ func (s *testSuite) TestProviderParts() {
 
 func (s *testSuite) TestIsProviderScheme() {
 	testCases := []struct {
-		ref string
-		res bool
+		ref  string
+		want bool
 	}{
 		{
-			ref: "chainloop://cyclonedx-freshness",
-			res: true,
+			ref:  "chainloop://cyclonedx-freshness",
+			want: true,
 		},
 		{
-			ref: "chainloop://provider/cyclonedx-freshness",
-			res: true,
+			ref:  "chainloop://provider/cyclonedx-freshness",
+			want: true,
 		},
 		{
-			ref: "file://mypolicy.yaml",
-			res: false,
+			ref:  "file://mypolicy.yaml",
+			want: false,
 		},
 		{
-			ref: "https://myserver/mypolicy.yaml",
-			res: false,
+			ref:  "https://myserver/mypolicy.yaml",
+			want: false,
 		},
 		{
-			ref: "cyclonedx-freshness",
-			res: true,
+			ref:  "cyclonedx-freshness",
+			want: true,
 		},
 		{
-			ref: "provider/cyclonedx-freshness",
-			res: true,
+			ref:  "provider/cyclonedx-freshness",
+			want: true,
 		},
 	}
 
 	for _, tc := range testCases {
 		s.Run(tc.ref, func() {
-			s.Equal(tc.res, IsProviderScheme(tc.ref))
+			s.Equal(tc.want, IsProviderScheme(tc.ref))
 		})
 	}
 }
@@ -523,6 +523,7 @@ func (s *testSuite) TestLoadPolicySpec() {
 		expectedName     string
 		expectedDesc     string
 		expectedCategory string
+		expectedRef      *v1.ResourceDescriptor
 	}{
 		{
 			name:       "missing policy",
@@ -539,6 +540,12 @@ func (s *testSuite) TestLoadPolicySpec() {
 			expectedName:     "made-with-syft",
 			expectedDesc:     "This policy checks that the SPDX SBOM was created with syft",
 			expectedCategory: "SBOM",
+			expectedRef: &v1.ResourceDescriptor{
+				Name: "file://testdata/sbom_syft.yaml",
+				Digest: map[string]string{
+					"sha256": "24c4bd4f56b470d7436ed0c5a340483fff9ad058033f94b164f5efc59aba5136",
+				},
+			},
 		},
 		{
 			name: "embedded invalid",
@@ -570,13 +577,14 @@ func (s *testSuite) TestLoadPolicySpec() {
 				},
 			},
 			expectedName: "my-policy",
+			expectedRef:  nil,
 		},
 	}
 
 	verifier := NewPolicyVerifier(nil, nil, &s.logger)
 	for _, tc := range cases {
 		s.Run(tc.name, func() {
-			p, err := verifier.loadPolicySpec(context.TODO(), tc.attachment)
+			p, gotRef, err := verifier.loadPolicySpec(context.TODO(), tc.attachment)
 			if tc.wantErr {
 				s.Error(err)
 				return
@@ -586,9 +594,12 @@ func (s *testSuite) TestLoadPolicySpec() {
 			if tc.expectedDesc != "" {
 				s.Equal(tc.expectedDesc, p.Metadata.Description)
 			}
+
 			if tc.expectedCategory != "" {
 				s.Equal(tc.expectedCategory, p.Metadata.Annotations["category"])
 			}
+
+			s.Equal(tc.expectedRef, gotRef)
 		})
 	}
 }

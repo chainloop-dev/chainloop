@@ -54,6 +54,13 @@ message AttestationServiceGetPolicyRequest {
 
 message AttestationServiceGetPolicyResponse {
   workflowcontract.v1.Policy policy = 1;
+  // FQDN of the policy in the provider
+  Reference reference = 2;
+
+  message Reference {
+    string url = 1;
+    string digest = 2;
+  }
 }
 
 message AttestationServiceGetContractRequest {
@@ -124,12 +131,12 @@ message WorkflowRunServiceListRequest {
   // Filters
   // by workflow
   string workflow_name = 1 [(buf.validate.field) = {
-    ignore_empty: true,
+    ignore_empty: true
     cel: {
-      message: "must contain only lowercase letters, numbers, and hyphens.",
-      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
-      id: "name.dns-1123",
-    },
+      message: "must contain only lowercase letters, numbers, and hyphens."
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
+      id: "name.dns-1123"
+    }
   }];
   // by run status
   RunStatus status = 3;
