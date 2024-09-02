@@ -67,7 +67,7 @@ func (l *FileLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*
 	ref := attachment.GetRef()
 	filePath, err := ensureScheme(ref, fileScheme)
 	if err != nil {
-		return nil, nil, fmt.Errorf("invalid policy reference %q", ref)
+		return nil, nil, err
 	}
 
 	raw, err = os.ReadFile(filepath.Clean(filePath))

@@ -101,7 +101,7 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 			return nil, NewPolicyError(err)
 		}
 		var body string
-		if !strings.HasPrefix(ref.GetName(), chainloopLoaderPrefix) {
+		if !IsProviderScheme(ref.GetName()) {
 			body = base64.StdEncoding.EncodeToString(script.Source)
 		}
 
@@ -160,7 +160,7 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 		// We store the body in the attestation unless the policy comes from a remote provider
 		// in which case with the reference it will suffice
 		var body string
-		if !strings.HasPrefix(ref.GetName(), chainloopLoaderPrefix) {
+		if !IsProviderScheme(ref.GetName()) {
 			body = base64.StdEncoding.EncodeToString(script.Source)
 		}
 
