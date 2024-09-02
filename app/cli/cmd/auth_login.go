@@ -25,7 +25,6 @@ import (
 	"net/url"
 	"os/exec"
 	"runtime"
-	"syscall"
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
@@ -33,7 +32,6 @@ import (
 	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"golang.org/x/term"
 )
 
 type app struct {
@@ -118,7 +116,7 @@ func headlessAuth(loginURL *url.URL) error {
 	fmt.Printf("To authenticate, click on the following link and paste the result back here\n\n  %s\n\n", loginURL.String())
 
 	fmt.Print("Enter Token: ")
-	token, err := term.ReadPassword(syscall.Stdin)
+	token, err := readPasswordFromTerminal()
 	if err != nil {
 		return fmt.Errorf("retrieving password from stdin: %w", err)
 	}
