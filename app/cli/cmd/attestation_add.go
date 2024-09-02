@@ -72,7 +72,7 @@ func newAttestationAddCmd() *cobra.Command {
 					ActionsOpts:        actionOpts,
 					CASURI:             viper.GetString(confOptions.CASAPI.viperKey),
 					CASCAPath:          viper.GetString(confOptions.CASCA.viperKey),
-					ConnectionInsecure: flagInsecure,
+					ConnectionInsecure: apiInsecure(),
 					RegistryServer:     registryServer,
 					RegistryUsername:   registryUsername,
 					RegistryPassword:   registryPassword,

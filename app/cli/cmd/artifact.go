@@ -46,12 +46,12 @@ func wrappedArtifactConn(cpConn *grpc.ClientConn, role pb.CASCredentialsServiceG
 		return nil, err
 	}
 
-	if flagInsecure {
+	if apiInsecure() {
 		logger.Warn().Msg("API contacted in insecure mode")
 	}
 
 	var opts = []grpcconn.Option{
-		grpcconn.WithInsecure(flagInsecure),
+		grpcconn.WithInsecure(apiInsecure()),
 	}
 
 	if caFilePath := viper.GetString(confOptions.CASCA.viperKey); caFilePath != "" {
