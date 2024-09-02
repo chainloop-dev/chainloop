@@ -49,8 +49,6 @@ type Loader interface {
 // EmbeddedLoader returns embedded policies
 type EmbeddedLoader struct{}
 
-const chainloopLoaderPrefix = "chainloop://"
-
 func (e *EmbeddedLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, *v12.ResourceDescriptor, error) {
 	return attachment.GetEmbedded(), nil, nil
 }
