@@ -393,6 +393,10 @@ func (uc *WorkflowContractUseCase) GetPolicy(providerName, policyName, token str
 
 	policy, ref, err := provider.Resolve(policyName, token)
 	if err != nil {
+		if errors.Is(err, policies.ErrNotFound) {
+			return nil, NewErrNotFound(fmt.Sprintf("policy %q", policyName))
+		}
+
 		return nil, fmt.Errorf("failed to resolve policy: %w. Available providers: %s", err, uc.policyRegistry.GetProviderNames())
 	}
 

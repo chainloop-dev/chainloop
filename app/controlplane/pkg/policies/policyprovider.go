@@ -42,6 +42,8 @@ type PolicyReference struct {
 	Digest string
 }
 
+var ErrNotFound = fmt.Errorf("policy not found")
+
 // Resolve calls the remote provider for retrieving a policy
 func (p *PolicyProvider) Resolve(policyName string, token string) (*schemaapi.Policy, *PolicyReference, error) {
 	if policyName == "" || token == "" {
@@ -60,7 +62,12 @@ func (p *PolicyProvider) Resolve(policyName string, token string) (*schemaapi.Po
 	if err != nil {
 		return nil, nil, fmt.Errorf("error executing policy request: %w", err)
 	}
+
 	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusNotFound {
+			return nil, nil, ErrNotFound
+		}
+
 		return nil, nil, fmt.Errorf("expected status code 200 but got %d", resp.StatusCode)
 	}
 
