@@ -142,3 +142,115 @@ func TestPolicyAttachment(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateRefs(t *testing.T) {
+	testCases := []struct {
+		name          string
+		ref           string
+		wantErrString string
+	}{
+		{
+			name:          "empty",
+			ref:           "",
+			wantErrString: "empty",
+		},
+		{
+			name: "valid absolute file path",
+			ref:  "file://path/to/file.yaml",
+		},
+		{
+			name: "valid relative file path",
+			ref:  "file://../path/to/file.yaml",
+		},
+		{
+			name: "valid file path with digest",
+			ref:  "file://path/to/file.yaml@sha256:b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c",
+		},
+		{
+			name:          "invalid sha256",
+			ref:           "file://path/to/file.yaml@sha256:deadbeef",
+			wantErrString: "invalid digest",
+		},
+		{
+			name:          "invalid sha256 prefix missing",
+			ref:           "file://path/to/file.yaml@b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c",
+			wantErrString: "invalid digest",
+		},
+		{
+			name:          "file with no extension",
+			ref:           "file://path/to/file",
+			wantErrString: "missing extension",
+		},
+		{
+			name: "valid http URL",
+			ref:  "http://example.com/path/to/file.yaml",
+		},
+		{
+			name: "valid https URL",
+			ref:  "https://example.com/path/to/file.yaml",
+		},
+		{
+			name:          "invalid http with sha256",
+			ref:           "https://example.com/path/to/file.yaml@sha256:deafbeef",
+			wantErrString: "invalid digest",
+		},
+		{
+			name:          "http URL with no extension",
+			ref:           "https://example.com/path/to/file",
+			wantErrString: "missing extension",
+		},
+		{
+			name: "valid chainloop protocol",
+			ref:  "chainloop://policy-name",
+		},
+		{
+			name: "valid chainloop protocol with provider and policy name",
+			ref:  "chainloop://foo/policy-name",
+		},
+		{
+			name: "valid implicit protocol with just policy name",
+			ref:  "policy-name",
+		},
+		{
+			name: "valid implicit protocol with both provider and policy name",
+			ref:  "foo/policy-name",
+		},
+		{
+			name:          "invalid provider name",
+			ref:           "fooBar/policy-name",
+			wantErrString: "invalid provider name",
+		},
+		{
+			name:          "invalid policy name",
+			ref:           "foobar/policy_name",
+			wantErrString: "invalid policy name",
+		},
+		{
+			name:          "invalid digest",
+			ref:           "foobar/policy_name@foobar",
+			wantErrString: "invalid digest",
+		},
+		{
+			name: "chainloop provider with valid digest",
+			ref:  "foobar/policy-name@sha256:b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c",
+		},
+		{
+			name:          "unsupported protocol",
+			ref:           "unsupported://foobar/policy_name",
+			wantErrString: "unsupported protocol",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := v1.ValidatePolicyAttachmentRef(tc.ref)
+			if tc.wantErrString != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.wantErrString)
+				return
+			}
+
+			require.NoError(t, err)
+		})
+	}
+}

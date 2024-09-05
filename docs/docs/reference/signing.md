@@ -51,5 +51,5 @@ The following methods are work in progress and **not yet supported**.
 
 | Method                                                                         | Signing                                                   | Verifying                                                                               |
 |--------------------------------------------------------------------------------|-----------------------------------------------------------|-----------------------------------------------------------------------------------------|
-| Ephemeral (file based CA) with verification bundle stored in the control plane | No key needed                                             | No verification material needed (will be automatically downloaded from Chainloop Vault) | 
+| Ephemeral (file based CA) with verification bundle stored in the control plane | No key needed                                             | No verification material needed (will be automatically downloaded from Chainloop Evidence Store) | 
 | x509 certificate                                                               | `--key privatekey --cert cert.pem --cert-chain chain.pem` | `--cert cert.pem --cert-chain chain.pem`                                                | 

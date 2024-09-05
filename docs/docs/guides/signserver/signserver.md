@@ -28,8 +28,7 @@ Once you have it configured, you can reach SignServer signer worker at, for exam
 Note that, at this moment, SignServer authentication is not implemented.
 
 ### Signing Chainloop attestations with SignServer
-Using the CLI options above, Chainloop will prepare the signed In-toto payload and send it to SignServer for signing. The returned signature is then 
-included in the final attestation and sent to Chainloop Vault for storage.
+Using the CLI options above, Chainloop will prepare the signed In-toto payload and send it to SignServer for signing. The returned signature is then included in the final attestation and sent to Chainloop Evidence Store for storage.
 
 ![chainloop-signserver-sequence.png](chainloop-signserver-sequence.png)
 

@@ -7,7 +7,7 @@ Daggerized version of [Chainloop](https://docs.chainloop.dev) that can be used t
 ## Prerequisites
 
 - This module requires existing familiarity with Chainloop and its attestation process. Please refer to [this guide](https://docs.chainloop.dev/getting-started/attestation-crafting) to learn more.
-- You need a `token` (aka workflow robot account) [previously generated](https://docs.chainloop.dev/getting-started/workflow-definition#robot-account-creation) by your Chainloop administrator.
+ You need an `API Token` [previously generated](https://docs.chainloop.dev/getting-started/workflow-definition#api-token-creation) by your Chainloop administrator.
 
 ## Attestation Crafting
 
@@ -63,17 +63,6 @@ dagger call -m github.com/chainloop-dev/chainloop \
 Initialize an attestation using the Chainloop token stored in the `CHAINLOOP_TOKEN` environment variable.
 
 > NOTE: `--token` can be provided only by referencing an environment variable (env:MY_VAR), not by value
-
-```sh
-# Initialize the attestation and get its ID
-dagger call -m github.com/chainloop-dev/chainloop \
-  init \
-  --token env:CHAINLOOP_TOKEN \
-  --repository /path/to/repo \ # optional flag to automatically attest a Git repository
-  --contract-revision 1 # optional flag to specify the revision of the Workflow Contract (default `latest`)
-```
-
-If the token passed is an API Token and not a Robot Account, the name of the workflow needs to be pass as well.
 
 ```sh
 # Initialize the attestation and get its ID

@@ -6,7 +6,7 @@ categories:
 ---
 
 ### Summary
-Chainloop Vault can be configured to generate signing certs by using EJBCA as the certificate authority, when signing in "key-less" mode:
+Chainloop Evidence Store can be configured to generate signing certs by using EJBCA as the certificate authority, when signing in "key-less" mode:
 EJBCA is a popular open source PKI, check it out at https://www.ejbca.org/.
 
 ### Prerequisites:

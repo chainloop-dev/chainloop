@@ -16,8 +16,14 @@
 package v1
 
 import (
+	"errors"
 	"fmt"
+	"net/url"
+	"path/filepath"
 	"strings"
+
+	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
+	"k8s.io/apimachinery/pkg/util/validation"
 )
 
 // CraftingMaterialInValidationOrder all type of CraftingMaterial that are available for automatic
@@ -64,6 +70,98 @@ func (schema *CraftingSchema) ValidateUniqueMaterialName() error {
 		}
 
 		materialNames[m.Name] = true
+	}
+
+	return nil
+}
+
+func (schema *CraftingSchema) ValidatePolicyAttachments() error {
+	attachments := append(schema.GetPolicies().GetAttestation(), schema.GetPolicies().GetMaterials()...)
+
+	for _, att := range attachments {
+		if err := ValidatePolicyAttachmentRef(att.GetRef()); err != nil {
+			return fmt.Errorf("invalid reference %q: %w", att.GetRef(), err)
+		}
+	}
+
+	return nil
+}
+
+func ValidatePolicyAttachmentRef(ref string) error {
+	if ref == "" {
+		return fmt.Errorf("reference is empty")
+	}
+
+	// validate the optional digest format
+	parts := strings.SplitN(ref, "@", 2)
+	if len(parts) > 1 {
+		rawDigest := parts[1]
+		if _, err := cr_v1.NewHash(rawDigest); err != nil {
+			return fmt.Errorf("invalid digest, want policy-ref@sha256:[hex]: %w", err)
+		}
+
+		// remove it @sha256: suffix
+		ref = strings.TrimSuffix(ref, fmt.Sprintf("@%s", parts[1]))
+	}
+
+	u, err := url.Parse(ref)
+	if err != nil {
+		return fmt.Errorf("invalid reference: %w", err)
+	}
+
+	switch u.Scheme {
+	case "http", "https", "file":
+		if u.Path == "" {
+			return fmt.Errorf("path is empty")
+		} else if filepath.Ext(u.Path) == "" {
+			return fmt.Errorf("missing extension")
+		}
+	case "chainloop", "": // empty scheme means chainloop
+		// split the path into provider name and policy name
+		// chainloop://provider-name/policy-name
+		// chainloop://policy-name
+		// NOTE that the provider name is optional
+		// remove chainloop://
+		refValue := strings.TrimPrefix(ref, "chainloop://")
+		parts := strings.SplitN(refValue, "/", 2)
+		// This will be used when the policy is a chainloop policy
+		// provided by a remote policy provider
+		var providerName, policyName string
+
+		if len(parts) == 1 {
+			policyName = parts[0]
+		} else {
+			providerName = parts[0]
+			policyName = parts[1]
+		}
+
+		if err := validateIsDNS1123(policyName); err != nil {
+			return fmt.Errorf("invalid policy name: %w", err)
+		}
+
+		if providerName != "" {
+			if err := validateIsDNS1123(providerName); err != nil {
+				return fmt.Errorf("invalid provider name: %w", err)
+			}
+		}
+	default:
+		return fmt.Errorf("unsupported protocol: %s", u.Scheme)
+	}
+
+	return nil
+}
+
+func validateIsDNS1123(name string) error {
+	// The same validation done by Kubernetes for their namespace name
+	// https://github.com/kubernetes/apimachinery/blob/fa98d6eaedb4caccd69fc07d90bbb6a1e551f00f/pkg/api/validation/generic.go#L63
+	err := validation.IsDNS1123Label(name)
+	if len(err) > 0 {
+		errMsg := ""
+		for _, e := range err {
+			errMsg += fmt.Sprintf("%q: %s\n", name, e)
+		}
+
+		return errors.New(errMsg)
 	}
 
 	return nil
