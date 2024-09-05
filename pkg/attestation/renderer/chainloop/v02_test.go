@@ -65,7 +65,7 @@ func TestRenderV02(t *testing.T) {
 			require.NoError(t, err)
 			err = protojson.Unmarshal(stateRaw, state)
 			require.NoError(t, err)
-			renderer := NewChainloopRendererV02(state.Attestation, "dev", "sha256:59e14f1a9de709cdd0e91c36b33e54fcca95f7dba1dc7169a7f81986e02108e5")
+			renderer := NewChainloopRendererV02(state.Attestation, state.InputSchema, "dev", "sha256:59e14f1a9de709cdd0e91c36b33e54fcca95f7dba1dc7169a7f81986e02108e5", nil, nil)
 
 			// Compare result
 			statement, err := renderer.Statement(context.TODO())

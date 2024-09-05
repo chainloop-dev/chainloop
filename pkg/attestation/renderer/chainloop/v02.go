@@ -120,6 +120,10 @@ func (r *RendererV02) Statement(ctx context.Context) (*intoto.Statement, error) 
 // filling PolicyEvaluations, and serializing it again to a structpb.Struct object, using JSON as an intermediate representation.
 // Note that this is needed because intoto predicates are generic structpb.Struct
 func addPolicyResults(statement *intoto.Statement, policyResults []*v1.PolicyEvaluation) error {
+	if len(policyResults) == 0 {
+		return nil
+	}
+
 	predicate := statement.Predicate
 	// marshall to json
 	jsonPredicate, err := protojson.Marshal(predicate)
