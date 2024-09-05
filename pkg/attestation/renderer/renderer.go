@@ -178,11 +178,15 @@ func addPolicyResults(statement *intoto.Statement, policyResults []*v1.PolicyEva
 		return fmt.Errorf("unmarshalling predicate: %w", err)
 	}
 
-	// insert policy evaluations
+	// insert policy evaluations for attestation
 	if p.PolicyEvaluations == nil {
-		p.PolicyEvaluations = make(map[string][]*v1.PolicyEvaluation)
+		p.PolicyEvaluations = make(map[string][]*chainloop.PolicyEvaluation)
 	}
-	p.PolicyEvaluations[AttPolicyEvaluation] = policyResults
+	attEvaluations := make([]*chainloop.PolicyEvaluation, 0, len(policyResults))
+	for _, ev := range policyResults {
+		attEvaluations = append(attEvaluations, chainloop.RenderEvaluation(ev))
+	}
+	p.PolicyEvaluations[AttPolicyEvaluation] = attEvaluations
 
 	// marshall back to JSON
 	jsonPredicate, err = json.Marshal(p)

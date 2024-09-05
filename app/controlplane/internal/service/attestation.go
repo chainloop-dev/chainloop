@@ -29,7 +29,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
-	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 
@@ -414,11 +413,35 @@ func bizAttestationToPb(att *biz.Attestation) (*cpAPI.AttestationItem, error) {
 
 // extract policy evaluations in form of a Go map of arrays, into a map of protobuf messages
 // (needed to be added to the response message)
-func extractPolicyEvaluations(in map[string][]*v1.PolicyEvaluation) map[string]*cpAPI.PolicyEvaluations {
+func extractPolicyEvaluations(in map[string][]*chainloop.PolicyEvaluation) map[string]*cpAPI.PolicyEvaluations {
 	res := make(map[string]*cpAPI.PolicyEvaluations)
 	for k, v := range in {
+		evaluations := make([]*cpAPI.PolicyEvaluation, 0, len(v))
+		for _, ev := range v {
+			violations := make([]*cpAPI.PolicyViolation, 0, len(ev.Violations))
+			for _, vi := range ev.Violations {
+				violations = append(violations, &cpAPI.PolicyViolation{
+					Subject: vi.Subject,
+					Message: vi.Message,
+				})
+			}
+			evaluations = append(evaluations, &cpAPI.PolicyEvaluation{
+				Name:         ev.Name,
+				MaterialName: ev.MaterialName,
+				Body:         ev.Body,
+				Annotations:  ev.Annotations,
+				Description:  ev.Description,
+				With:         ev.With,
+				Type:         ev.Type,
+				Violations:   violations,
+				PolicyReference: &cpAPI.PolicyReference{
+					Name:   ev.PolicyReference.Name,
+					Digest: ev.PolicyReference.Digest,
+				},
+			})
+		}
 		res[k] = &cpAPI.PolicyEvaluations{
-			Evaluations: v,
+			Evaluations: evaluations,
 		}
 	}
 

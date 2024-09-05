@@ -38,7 +38,24 @@ type ProvenancePredicateV02 struct {
 	*ProvenancePredicateCommon
 	Materials []*intoto.ResourceDescriptor `json:"materials,omitempty"`
 	// Map materials and policies
-	PolicyEvaluations map[string][]*v1.PolicyEvaluation `json:"policy_evaluations,omitempty"`
+	PolicyEvaluations map[string][]*PolicyEvaluation `json:"policy_evaluations,omitempty"`
+}
+
+type PolicyEvaluation struct {
+	Name            string                     `json:"name"`
+	MaterialName    string                     `json:"material_name,omitempty"`
+	Body            string                     `json:"body,omitempty"`
+	PolicyReference *intoto.ResourceDescriptor `json:"policy_reference,omitempty"`
+	Description     string                     `json:"description,omitempty"`
+	Annotations     map[string]string          `json:"annotations,omitempty"`
+	Violations      []*PolicyViolation         `json:"violations,omitempty"`
+	With            map[string]string          `json:"with,omitempty"`
+	Type            string                     `json:"type"`
+}
+
+type PolicyViolation struct {
+	Subject string `json:"subject"`
+	Message string `json:"message"`
 }
 
 type RendererV02 struct {
@@ -173,13 +190,40 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 }
 
 // collect all policy evaluations grouped by material
-func policyEvaluationsFromMaterials(att *v1.Attestation) map[string][]*v1.PolicyEvaluation {
-	result := map[string][]*v1.PolicyEvaluation{}
+func policyEvaluationsFromMaterials(att *v1.Attestation) map[string][]*PolicyEvaluation {
+	result := map[string][]*PolicyEvaluation{}
 	for _, p := range att.GetPolicyEvaluations() {
-		result[p.MaterialName] = append(result[p.MaterialName], p)
+		result[p.MaterialName] = append(result[p.MaterialName], RenderEvaluation(p))
 	}
 
 	return result
+}
+
+func RenderEvaluation(ev *v1.PolicyEvaluation) *PolicyEvaluation {
+	// Map violations
+	violations := make([]*PolicyViolation, 0)
+	for _, vi := range ev.Violations {
+		violations = append(violations, &PolicyViolation{
+			Subject: vi.Subject,
+			Message: vi.Message,
+		})
+	}
+	return &PolicyEvaluation{
+		Name:         ev.Name,
+		MaterialName: ev.MaterialName,
+		Body:         ev.Body,
+		Annotations:  ev.Annotations,
+		Description:  ev.Description,
+		With:         ev.With,
+		Type:         ev.Type.String(),
+		Violations:   violations,
+		PolicyReference: &intoto.ResourceDescriptor{
+			Name: ev.ReferenceName,
+			Digest: map[string]string{
+				"sha256": ev.ReferenceDigest,
+			},
+		},
+	}
 }
 
 func outputMaterials(att *v1.Attestation, onlyOutput bool) ([]*intoto.ResourceDescriptor, error) {
@@ -274,7 +318,7 @@ func (p *ProvenancePredicateV02) GetMaterials() []*NormalizedMaterial {
 	return res
 }
 
-func (p *ProvenancePredicateV02) GetPolicyEvaluations() map[string][]*v1.PolicyEvaluation {
+func (p *ProvenancePredicateV02) GetPolicyEvaluations() map[string][]*PolicyEvaluation {
 	return p.PolicyEvaluations
 }
 

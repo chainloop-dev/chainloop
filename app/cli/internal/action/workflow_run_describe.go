@@ -56,7 +56,7 @@ type WorkflowRunAttestationItem struct {
 	// Digest in CAS backend
 	Digest string `json:"digest"`
 	// Policy violations
-	PolicyEvaluations map[string]*pb.PolicyEvaluations `json:"policy_evaluations,omitempty"`
+	PolicyEvaluations map[string][]*PolicyEvaluation `json:"policy_evaluations,omitempty"`
 }
 
 type Material struct {
@@ -79,6 +79,28 @@ type EnvVar struct {
 type Annotation struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
+}
+
+type PolicyEvaluation struct {
+	Name            string             `json:"name"`
+	MaterialName    string             `json:"material_name,omitempty"`
+	Body            string             `json:"body,omitempty"`
+	Description     string             `json:"description,omitempty"`
+	Annotations     map[string]string  `json:"annotations,omitempty"`
+	Violations      []*PolicyViolation `json:"violations,omitempty"`
+	PolicyReference *PolicyReference   `json:"policy_reference,omitempty"`
+	With            map[string]string  `json:"with,omitempty"`
+	Type            string             `json:"type"`
+}
+
+type PolicyViolation struct {
+	Subject string `json:"subject"`
+	Message string `json:"message"`
+}
+
+type PolicyReference struct {
+	Name   string            `json:"name"`
+	Digest map[string]string `json:"digest"`
 }
 
 func (i *WorkflowRunAttestationItem) Statement() *intoto.Statement {
@@ -171,6 +193,15 @@ func (action *WorkflowRunDescribe) Run(ctx context.Context, opts *WorkflowRunDes
 		})
 	}
 
+	evaluations := make(map[string][]*PolicyEvaluation)
+	for k, v := range attestation.GetPolicyEvaluations() {
+		evs := make([]*PolicyEvaluation, 0)
+		for _, ev := range v.Evaluations {
+			evs = append(evs, policyEvaluationPBToAction(ev))
+		}
+		evaluations[k] = evs
+	}
+
 	item.Attestation = &WorkflowRunAttestationItem{
 		Envelope:          envelope,
 		statement:         statement,
@@ -178,10 +209,38 @@ func (action *WorkflowRunDescribe) Run(ctx context.Context, opts *WorkflowRunDes
 		Materials:         materials,
 		Annotations:       annotations,
 		Digest:            attestation.DigestInCasBackend,
-		PolicyEvaluations: attestation.PolicyEvaluations,
+		PolicyEvaluations: evaluations,
 	}
 
 	return item, nil
+}
+
+func policyEvaluationPBToAction(in *pb.PolicyEvaluation) *PolicyEvaluation {
+	var pr *PolicyReference
+	if in.PolicyReference != nil {
+		pr = &PolicyReference{
+			Name:   in.PolicyReference.Name,
+			Digest: in.PolicyReference.Digest,
+		}
+	}
+	violations := make([]*PolicyViolation, 0, len(in.Violations))
+	for _, v := range in.Violations {
+		violations = append(violations, &PolicyViolation{
+			Subject: v.Subject,
+			Message: v.Message,
+		})
+	}
+	return &PolicyEvaluation{
+		Name:            in.Name,
+		MaterialName:    in.MaterialName,
+		Body:            in.Body,
+		Description:     in.Description,
+		Annotations:     in.Annotations,
+		With:            in.With,
+		Type:            in.Type,
+		PolicyReference: pr,
+		Violations:      violations,
+	}
 }
 
 func materialPBToAction(in *pb.AttestationItem_Material) *Material {

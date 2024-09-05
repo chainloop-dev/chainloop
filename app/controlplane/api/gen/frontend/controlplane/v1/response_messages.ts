@@ -1,7 +1,6 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
-import { PolicyEvaluation } from "../../attestation/v1/crafting_state";
 import { Timestamp } from "../../google/protobuf/timestamp";
 import {
   CraftingSchema,
@@ -276,6 +275,43 @@ export interface AttestationItem_Material_AnnotationsEntry {
 
 export interface PolicyEvaluations {
   evaluations: PolicyEvaluation[];
+}
+
+export interface PolicyEvaluation {
+  name: string;
+  materialName: string;
+  body: string;
+  annotations: { [key: string]: string };
+  description: string;
+  with: { [key: string]: string };
+  type: string;
+  violations: PolicyViolation[];
+  policyReference?: PolicyReference;
+}
+
+export interface PolicyEvaluation_AnnotationsEntry {
+  key: string;
+  value: string;
+}
+
+export interface PolicyEvaluation_WithEntry {
+  key: string;
+  value: string;
+}
+
+export interface PolicyViolation {
+  subject: string;
+  message: string;
+}
+
+export interface PolicyReference {
+  name: string;
+  digest: { [key: string]: string };
+}
+
+export interface PolicyReference_DigestEntry {
+  key: string;
+  value: string;
 }
 
 export interface WorkflowContractItem {
@@ -1602,6 +1638,594 @@ export const PolicyEvaluations = {
   fromPartial<I extends Exact<DeepPartial<PolicyEvaluations>, I>>(object: I): PolicyEvaluations {
     const message = createBasePolicyEvaluations();
     message.evaluations = object.evaluations?.map((e) => PolicyEvaluation.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBasePolicyEvaluation(): PolicyEvaluation {
+  return {
+    name: "",
+    materialName: "",
+    body: "",
+    annotations: {},
+    description: "",
+    with: {},
+    type: "",
+    violations: [],
+    policyReference: undefined,
+  };
+}
+
+export const PolicyEvaluation = {
+  encode(message: PolicyEvaluation, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.materialName !== "") {
+      writer.uint32(18).string(message.materialName);
+    }
+    if (message.body !== "") {
+      writer.uint32(26).string(message.body);
+    }
+    Object.entries(message.annotations).forEach(([key, value]) => {
+      PolicyEvaluation_AnnotationsEntry.encode({ key: key as any, value }, writer.uint32(34).fork()).ldelim();
+    });
+    if (message.description !== "") {
+      writer.uint32(42).string(message.description);
+    }
+    Object.entries(message.with).forEach(([key, value]) => {
+      PolicyEvaluation_WithEntry.encode({ key: key as any, value }, writer.uint32(58).fork()).ldelim();
+    });
+    if (message.type !== "") {
+      writer.uint32(66).string(message.type);
+    }
+    for (const v of message.violations) {
+      PolicyViolation.encode(v!, writer.uint32(74).fork()).ldelim();
+    }
+    if (message.policyReference !== undefined) {
+      PolicyReference.encode(message.policyReference, writer.uint32(82).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PolicyEvaluation {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePolicyEvaluation();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.materialName = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.body = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          const entry4 = PolicyEvaluation_AnnotationsEntry.decode(reader, reader.uint32());
+          if (entry4.value !== undefined) {
+            message.annotations[entry4.key] = entry4.value;
+          }
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          const entry7 = PolicyEvaluation_WithEntry.decode(reader, reader.uint32());
+          if (entry7.value !== undefined) {
+            message.with[entry7.key] = entry7.value;
+          }
+          continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.type = reader.string();
+          continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.violations.push(PolicyViolation.decode(reader, reader.uint32()));
+          continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.policyReference = PolicyReference.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PolicyEvaluation {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      materialName: isSet(object.materialName) ? String(object.materialName) : "",
+      body: isSet(object.body) ? String(object.body) : "",
+      annotations: isObject(object.annotations)
+        ? Object.entries(object.annotations).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+          acc[key] = String(value);
+          return acc;
+        }, {})
+        : {},
+      description: isSet(object.description) ? String(object.description) : "",
+      with: isObject(object.with)
+        ? Object.entries(object.with).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+          acc[key] = String(value);
+          return acc;
+        }, {})
+        : {},
+      type: isSet(object.type) ? String(object.type) : "",
+      violations: Array.isArray(object?.violations)
+        ? object.violations.map((e: any) => PolicyViolation.fromJSON(e))
+        : [],
+      policyReference: isSet(object.policyReference) ? PolicyReference.fromJSON(object.policyReference) : undefined,
+    };
+  },
+
+  toJSON(message: PolicyEvaluation): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.materialName !== undefined && (obj.materialName = message.materialName);
+    message.body !== undefined && (obj.body = message.body);
+    obj.annotations = {};
+    if (message.annotations) {
+      Object.entries(message.annotations).forEach(([k, v]) => {
+        obj.annotations[k] = v;
+      });
+    }
+    message.description !== undefined && (obj.description = message.description);
+    obj.with = {};
+    if (message.with) {
+      Object.entries(message.with).forEach(([k, v]) => {
+        obj.with[k] = v;
+      });
+    }
+    message.type !== undefined && (obj.type = message.type);
+    if (message.violations) {
+      obj.violations = message.violations.map((e) => e ? PolicyViolation.toJSON(e) : undefined);
+    } else {
+      obj.violations = [];
+    }
+    message.policyReference !== undefined &&
+      (obj.policyReference = message.policyReference ? PolicyReference.toJSON(message.policyReference) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PolicyEvaluation>, I>>(base?: I): PolicyEvaluation {
+    return PolicyEvaluation.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<PolicyEvaluation>, I>>(object: I): PolicyEvaluation {
+    const message = createBasePolicyEvaluation();
+    message.name = object.name ?? "";
+    message.materialName = object.materialName ?? "";
+    message.body = object.body ?? "";
+    message.annotations = Object.entries(object.annotations ?? {}).reduce<{ [key: string]: string }>(
+      (acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key] = String(value);
+        }
+        return acc;
+      },
+      {},
+    );
+    message.description = object.description ?? "";
+    message.with = Object.entries(object.with ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = String(value);
+      }
+      return acc;
+    }, {});
+    message.type = object.type ?? "";
+    message.violations = object.violations?.map((e) => PolicyViolation.fromPartial(e)) || [];
+    message.policyReference = (object.policyReference !== undefined && object.policyReference !== null)
+      ? PolicyReference.fromPartial(object.policyReference)
+      : undefined;
+    return message;
+  },
+};
+
+function createBasePolicyEvaluation_AnnotationsEntry(): PolicyEvaluation_AnnotationsEntry {
+  return { key: "", value: "" };
+}
+
+export const PolicyEvaluation_AnnotationsEntry = {
+  encode(message: PolicyEvaluation_AnnotationsEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PolicyEvaluation_AnnotationsEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePolicyEvaluation_AnnotationsEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PolicyEvaluation_AnnotationsEntry {
+    return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? String(object.value) : "" };
+  },
+
+  toJSON(message: PolicyEvaluation_AnnotationsEntry): unknown {
+    const obj: any = {};
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PolicyEvaluation_AnnotationsEntry>, I>>(
+    base?: I,
+  ): PolicyEvaluation_AnnotationsEntry {
+    return PolicyEvaluation_AnnotationsEntry.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<PolicyEvaluation_AnnotationsEntry>, I>>(
+    object: I,
+  ): PolicyEvaluation_AnnotationsEntry {
+    const message = createBasePolicyEvaluation_AnnotationsEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
+    return message;
+  },
+};
+
+function createBasePolicyEvaluation_WithEntry(): PolicyEvaluation_WithEntry {
+  return { key: "", value: "" };
+}
+
+export const PolicyEvaluation_WithEntry = {
+  encode(message: PolicyEvaluation_WithEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PolicyEvaluation_WithEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePolicyEvaluation_WithEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PolicyEvaluation_WithEntry {
+    return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? String(object.value) : "" };
+  },
+
+  toJSON(message: PolicyEvaluation_WithEntry): unknown {
+    const obj: any = {};
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PolicyEvaluation_WithEntry>, I>>(base?: I): PolicyEvaluation_WithEntry {
+    return PolicyEvaluation_WithEntry.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<PolicyEvaluation_WithEntry>, I>>(object: I): PolicyEvaluation_WithEntry {
+    const message = createBasePolicyEvaluation_WithEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
+    return message;
+  },
+};
+
+function createBasePolicyViolation(): PolicyViolation {
+  return { subject: "", message: "" };
+}
+
+export const PolicyViolation = {
+  encode(message: PolicyViolation, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.subject !== "") {
+      writer.uint32(10).string(message.subject);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PolicyViolation {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePolicyViolation();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.subject = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PolicyViolation {
+    return {
+      subject: isSet(object.subject) ? String(object.subject) : "",
+      message: isSet(object.message) ? String(object.message) : "",
+    };
+  },
+
+  toJSON(message: PolicyViolation): unknown {
+    const obj: any = {};
+    message.subject !== undefined && (obj.subject = message.subject);
+    message.message !== undefined && (obj.message = message.message);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PolicyViolation>, I>>(base?: I): PolicyViolation {
+    return PolicyViolation.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<PolicyViolation>, I>>(object: I): PolicyViolation {
+    const message = createBasePolicyViolation();
+    message.subject = object.subject ?? "";
+    message.message = object.message ?? "";
+    return message;
+  },
+};
+
+function createBasePolicyReference(): PolicyReference {
+  return { name: "", digest: {} };
+}
+
+export const PolicyReference = {
+  encode(message: PolicyReference, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    Object.entries(message.digest).forEach(([key, value]) => {
+      PolicyReference_DigestEntry.encode({ key: key as any, value }, writer.uint32(18).fork()).ldelim();
+    });
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PolicyReference {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePolicyReference();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          const entry2 = PolicyReference_DigestEntry.decode(reader, reader.uint32());
+          if (entry2.value !== undefined) {
+            message.digest[entry2.key] = entry2.value;
+          }
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PolicyReference {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      digest: isObject(object.digest)
+        ? Object.entries(object.digest).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+          acc[key] = String(value);
+          return acc;
+        }, {})
+        : {},
+    };
+  },
+
+  toJSON(message: PolicyReference): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    obj.digest = {};
+    if (message.digest) {
+      Object.entries(message.digest).forEach(([k, v]) => {
+        obj.digest[k] = v;
+      });
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PolicyReference>, I>>(base?: I): PolicyReference {
+    return PolicyReference.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<PolicyReference>, I>>(object: I): PolicyReference {
+    const message = createBasePolicyReference();
+    message.name = object.name ?? "";
+    message.digest = Object.entries(object.digest ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = String(value);
+      }
+      return acc;
+    }, {});
+    return message;
+  },
+};
+
+function createBasePolicyReference_DigestEntry(): PolicyReference_DigestEntry {
+  return { key: "", value: "" };
+}
+
+export const PolicyReference_DigestEntry = {
+  encode(message: PolicyReference_DigestEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PolicyReference_DigestEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePolicyReference_DigestEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PolicyReference_DigestEntry {
+    return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? String(object.value) : "" };
+  },
+
+  toJSON(message: PolicyReference_DigestEntry): unknown {
+    const obj: any = {};
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PolicyReference_DigestEntry>, I>>(base?: I): PolicyReference_DigestEntry {
+    return PolicyReference_DigestEntry.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<PolicyReference_DigestEntry>, I>>(object: I): PolicyReference_DigestEntry {
+    const message = createBasePolicyReference_DigestEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
     return message;
   },
 };

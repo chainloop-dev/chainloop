@@ -115,7 +115,8 @@ message PolicyEvaluation {
   // file://foo.yaml
   // chainloop://my-provider.com/foo@sha256:1234
   // NOTE: embedded policies will not have a reference
-  ResourceDescriptor policy_reference = 10;
+  string reference_digest = 10;
+  string reference_name = 11;
 
   string description = 5;
   map<string, string> annotations = 6;

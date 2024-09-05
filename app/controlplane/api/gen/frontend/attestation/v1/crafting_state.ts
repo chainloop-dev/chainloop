@@ -115,7 +115,8 @@ export interface PolicyEvaluation {
    * chainloop://my-provider.com/foo@sha256:1234
    * NOTE: embedded policies will not have a reference
    */
-  policyReference?: ResourceDescriptor;
+  referenceDigest: string;
+  referenceName: string;
   description: string;
   annotations: { [key: string]: string };
   /** The policy violations, if any */
@@ -1231,7 +1232,8 @@ function createBasePolicyEvaluation(): PolicyEvaluation {
     name: "",
     materialName: "",
     body: "",
-    policyReference: undefined,
+    referenceDigest: "",
+    referenceName: "",
     description: "",
     annotations: {},
     violations: [],
@@ -1251,8 +1253,11 @@ export const PolicyEvaluation = {
     if (message.body !== "") {
       writer.uint32(26).string(message.body);
     }
-    if (message.policyReference !== undefined) {
-      ResourceDescriptor.encode(message.policyReference, writer.uint32(82).fork()).ldelim();
+    if (message.referenceDigest !== "") {
+      writer.uint32(82).string(message.referenceDigest);
+    }
+    if (message.referenceName !== "") {
+      writer.uint32(90).string(message.referenceName);
     }
     if (message.description !== "") {
       writer.uint32(42).string(message.description);
@@ -1305,7 +1310,14 @@ export const PolicyEvaluation = {
             break;
           }
 
-          message.policyReference = ResourceDescriptor.decode(reader, reader.uint32());
+          message.referenceDigest = reader.string();
+          continue;
+        case 11:
+          if (tag !== 90) {
+            break;
+          }
+
+          message.referenceName = reader.string();
           continue;
         case 5:
           if (tag !== 42) {
@@ -1362,7 +1374,8 @@ export const PolicyEvaluation = {
       name: isSet(object.name) ? String(object.name) : "",
       materialName: isSet(object.materialName) ? String(object.materialName) : "",
       body: isSet(object.body) ? String(object.body) : "",
-      policyReference: isSet(object.policyReference) ? ResourceDescriptor.fromJSON(object.policyReference) : undefined,
+      referenceDigest: isSet(object.referenceDigest) ? String(object.referenceDigest) : "",
+      referenceName: isSet(object.referenceName) ? String(object.referenceName) : "",
       description: isSet(object.description) ? String(object.description) : "",
       annotations: isObject(object.annotations)
         ? Object.entries(object.annotations).reduce<{ [key: string]: string }>((acc, [key, value]) => {
@@ -1388,8 +1401,8 @@ export const PolicyEvaluation = {
     message.name !== undefined && (obj.name = message.name);
     message.materialName !== undefined && (obj.materialName = message.materialName);
     message.body !== undefined && (obj.body = message.body);
-    message.policyReference !== undefined &&
-      (obj.policyReference = message.policyReference ? ResourceDescriptor.toJSON(message.policyReference) : undefined);
+    message.referenceDigest !== undefined && (obj.referenceDigest = message.referenceDigest);
+    message.referenceName !== undefined && (obj.referenceName = message.referenceName);
     message.description !== undefined && (obj.description = message.description);
     obj.annotations = {};
     if (message.annotations) {
@@ -1421,9 +1434,8 @@ export const PolicyEvaluation = {
     message.name = object.name ?? "";
     message.materialName = object.materialName ?? "";
     message.body = object.body ?? "";
-    message.policyReference = (object.policyReference !== undefined && object.policyReference !== null)
-      ? ResourceDescriptor.fromPartial(object.policyReference)
-      : undefined;
+    message.referenceDigest = object.referenceDigest ?? "";
+    message.referenceName = object.referenceName ?? "";
     message.description = object.description ?? "";
     message.annotations = Object.entries(object.annotations ?? {}).reduce<{ [key: string]: string }>(
       (acc, [key, value]) => {
