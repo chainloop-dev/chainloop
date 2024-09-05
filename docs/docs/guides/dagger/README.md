@@ -17,7 +17,7 @@ Daggerized version of [Chainloop](https://docs.chainloop.dev) that can be used t
 
 
 - This module requires existing familiarity with Chainloop and its attestation process. Please refer to [this guide](https://docs.chainloop.dev/getting-started/attestation-crafting) to learn more.
-- You need an `API Token` [previously generated](https://docs.chainloop.dev/getting-started/workflow-definition#api-token-creation) by your Chainloop administrator.
+- You need a `token` (aka workflow robot account) [previously generated](https://docs.chainloop.dev/getting-started/workflow-definition#robot-account-creation) by your Chainloop administrator.
 
 ## Attestation Crafting
 
@@ -83,6 +83,18 @@ dagger call -m github.com/chainloop-dev/chainloop \
   --contract-revision 1 # optional flag to specify the revision of the Workflow Contract (default `latest`)
 ```
 
+If the token passed is an API Token and not a Robot Account, the name of the workflow needs to be pass as well.
+
+```sh
+# Initialize the attestation and get its ID
+dagger call -m github.com/chainloop-dev/chainloop \
+  init \
+  --token env:CHAINLOOP_TOKEN \
+  --repository /path/to/repo \ # optional flag to automatically attest a Git repository
+  --contract-revision 1 \ # optional flag to specify the revision of the Workflow Contract (default `latest`)
+  --workflow-name the-name-of-the-workflow
+```
+
 #### 2 - Get the status ([docs](https://docs.chainloop.dev/getting-started/attestation-crafting#inspecting-the-crafting-status))
 
 Resuming a previous attestation
@@ -120,6 +132,16 @@ dagger call -m github.com/chainloop-dev/chainloop \
 dagger call -m github.com/chainloop-dev/chainloop \
   resume --token env:CHAINLOOP_TOKEN --attestation-id $ATTESTATION_ID \
   add-raw-evidence --name my-container-image --value ghcr.io/chainloop-dev/chainloop/control-plane
+```
+
+If you're attesting materials that don't belong to the target contract, you can allow Chainloop to figure out its type and if discovered, it will be added to the attestation.
+In order to do that, don't pass the `--name`, just provide the path to the file.
+
+```sh
+# Provide a material only through its path
+dagger call -m github.com/chainloop-dev/chainloop \
+  resume --token env:CHAINLOOP_TOKEN --attestation-id $ATTESTATION_ID \
+  add-file-evidence --path ./path/to/sbom.json
 ```
 
 In some cases, you might be providing a private container image as a piece of evidence. In this case, you'll also need to preload the container registry credentials.
