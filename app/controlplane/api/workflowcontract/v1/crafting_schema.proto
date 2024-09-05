@@ -197,10 +197,18 @@ message PolicySpec {
     string embedded = 2;
 
     option (buf.validate.oneof).required = true;
-  };
+  }
 
   // if set, it will match any material supported by Chainloop
   // except those not having a direct schema (STRING, ARTIFACT, EVIDENCE), since their format cannot be guessed by the crafter.
   // CONTAINER, HELM_CHART are also excluded, but we might implement custom policies for them in the future.
-  CraftingSchema.Material.MaterialType type = 3 [(buf.validate.field).enum = { not_in: [1, 2, 3, 10, 11]}];
+  CraftingSchema.Material.MaterialType type = 3 [(buf.validate.field).enum = {
+    not_in: [
+      1,
+      2,
+      3,
+      10,
+      11
+    ]
+  }];
 }
