@@ -304,8 +304,9 @@ func (uc *WorkflowContractUseCase) ValidateContractPolicies(rawSchema []byte, to
 	// Validate that externally provided policies exist
 	c, err := identifyUnMarshalAndValidateRawContract(rawSchema)
 	if err != nil {
-		return NewErrValidation(err)
+		return err
 	}
+
 	for _, att := range c.Schema.GetPolicies().GetAttestation() {
 		_, err := uc.findPolicy(att, token)
 		if err != nil {
@@ -423,39 +424,39 @@ func UnmarshalAndValidateRawContract(raw []byte, format ContractRawFormat) (*Con
 	switch format {
 	case ContractRawFormatJSON:
 		if err := protojson.Unmarshal(raw, contract); err != nil {
-			return nil, err
+			return nil, NewErrValidation(err)
 		}
 	case ContractRawFormatCUE:
 		ctx := cuecontext.New()
 		v := ctx.CompileBytes(raw)
 		jsonRawData, err := v.MarshalJSON()
 		if err != nil {
-			return nil, err
+			return nil, NewErrValidation(err)
 		}
 
 		if err := protojson.Unmarshal(jsonRawData, contract); err != nil {
-			return nil, err
+			return nil, NewErrValidation(err)
 		}
 	case ContractRawFormatYAML:
 		// protoyaml allows validating the contract while unmarshalling
 		yamlOpts := protoyaml.UnmarshalOptions{Validator: validator}
 		if err := yamlOpts.Unmarshal(raw, contract); err != nil {
-			return nil, err
+			return nil, NewErrValidation(err)
 		}
 	}
 
 	// Additional proto validations
 	if err := validator.Validate(contract); err != nil {
-		return nil, err
+		return nil, NewErrValidation(err)
 	}
 
 	// Custom Validations
 	if err := contract.ValidateUniqueMaterialName(); err != nil {
-		return nil, err
+		return nil, NewErrValidation(err)
 	}
 
 	if err := contract.ValidatePolicyAttachments(); err != nil {
-		return nil, err
+		return nil, NewErrValidation(err)
 	}
 
 	return &Contract{Raw: raw, Format: format, Schema: contract}, nil
