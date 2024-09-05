@@ -53,7 +53,7 @@ curl -sfL https://raw.githubusercontent.com/chainloop-dev/chainloop/main/docs/st
 
 ### Deploy Chainloop (optional)
 
-Downloading the CLI is everything you need to give Chainloop a try, since, by default, it points to a [running instance of Chainloop](https://docs.chainloop.dev/chainloop-cloud).
+Downloading the CLI is everything you need to give Chainloop a try, since, by default, it points to a [running instance of Chainloop](https://app.chainloop.dev).
 
 You can also **run your own Chainloop instance** on your Kubernetes cluster by leveraging [this Helm Chart](./deployment/chainloop/).
 
