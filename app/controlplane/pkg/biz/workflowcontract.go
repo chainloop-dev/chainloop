@@ -423,35 +423,39 @@ func UnmarshalAndValidateRawContract(raw []byte, format ContractRawFormat) (*Con
 	switch format {
 	case ContractRawFormatJSON:
 		if err := protojson.Unmarshal(raw, contract); err != nil {
-			return nil, NewErrValidation(err)
+			return nil, err
 		}
 	case ContractRawFormatCUE:
 		ctx := cuecontext.New()
 		v := ctx.CompileBytes(raw)
 		jsonRawData, err := v.MarshalJSON()
 		if err != nil {
-			return nil, NewErrValidation(err)
+			return nil, err
 		}
 
 		if err := protojson.Unmarshal(jsonRawData, contract); err != nil {
-			return nil, NewErrValidation(err)
+			return nil, err
 		}
 	case ContractRawFormatYAML:
 		// protoyaml allows validating the contract while unmarshalling
 		yamlOpts := protoyaml.UnmarshalOptions{Validator: validator}
 		if err := yamlOpts.Unmarshal(raw, contract); err != nil {
-			return nil, NewErrValidation(err)
+			return nil, err
 		}
 	}
 
 	// Additional proto validations
 	if err := validator.Validate(contract); err != nil {
-		return nil, NewErrValidation(err)
+		return nil, err
 	}
 
 	// Custom Validations
 	if err := contract.ValidateUniqueMaterialName(); err != nil {
-		return nil, NewErrValidation(err)
+		return nil, err
+	}
+
+	if err := contract.ValidatePolicyAttachments(); err != nil {
+		return nil, err
 	}
 
 	return &Contract{Raw: raw, Format: format, Schema: contract}, nil
