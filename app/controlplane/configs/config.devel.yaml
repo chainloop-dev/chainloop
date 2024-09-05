@@ -30,10 +30,6 @@ certificate_authority:
 #    certificate_profile_name: "PlainSigner"
 #    end_entity_profile_name: "PlainSigner"
 #    certificate_authority_name: "ManagementCA"
-#  file_ca:
-#    cert_path: ${FILE_CA_CERT_PATH:../../devel/devkeys/ca.pub}
-#    key_path: ${FILE_CA_KEY_PATH:../../devel/devkeys/ca.pem}
-#    key_pass: chainloop
 
 # Directory where the plugins are located
 # NOTE: plugins have the form of chainloop-plugin-<name>
