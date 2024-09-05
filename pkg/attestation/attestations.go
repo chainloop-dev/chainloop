@@ -18,10 +18,13 @@ package attestation
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 
+	"cuelang.org/go/cue/cuecontext"
 	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
+	"sigs.k8s.io/yaml"
 )
 
 // JSONEnvelopeWithDigest returns the JSON content of the envelope and its digest.
@@ -37,4 +40,31 @@ func JSONEnvelopeWithDigest(envelope *dsse.Envelope) ([]byte, cr_v1.Hash, error)
 	}
 
 	return jsonContent, h, nil
+}
+
+// LoadJSONBytes Extracts raw data in JSON format from different sources, i.e cue or yaml files
+func LoadJSONBytes(rawData []byte, extension string) ([]byte, error) {
+	var jsonRawData []byte
+	var err error
+
+	switch extension {
+	case ".yaml", ".yml":
+		jsonRawData, err = yaml.YAMLToJSON(rawData)
+		if err != nil {
+			return nil, err
+		}
+	case ".cue":
+		ctx := cuecontext.New()
+		v := ctx.CompileBytes(rawData)
+		jsonRawData, err = v.MarshalJSON()
+		if err != nil {
+			return nil, err
+		}
+	case ".json":
+		jsonRawData = rawData
+	default:
+		return nil, errors.New("unsupported file format")
+	}
+
+	return jsonRawData, nil
 }

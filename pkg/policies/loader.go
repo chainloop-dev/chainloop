@@ -28,8 +28,8 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	v12 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
-	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -124,7 +124,7 @@ func (l *HTTPSLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (
 }
 
 func unmarshalPolicy(rawData []byte, ext string) (*v1.Policy, error) {
-	jsonContent, err := materials.LoadJSONBytes(rawData, ext)
+	jsonContent, err := attestation.LoadJSONBytes(rawData, ext)
 	if err != nil {
 		return nil, fmt.Errorf("loading policy spec: %w", err)
 	}

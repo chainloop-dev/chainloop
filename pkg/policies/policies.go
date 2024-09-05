@@ -122,6 +122,9 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 	return result, nil
 }
 
+type PolicyEvaluation struct {
+}
+
 // VerifyStatement verifies that the statement is compliant with the policies present in the schema
 func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto.Statement) ([]*v12.PolicyEvaluation, error) {
 	result := make([]*v12.PolicyEvaluation, 0)

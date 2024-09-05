@@ -16,6 +16,7 @@
 package chainloop
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"testing"
@@ -67,7 +68,7 @@ func TestRenderV02(t *testing.T) {
 			renderer := NewChainloopRendererV02(state.Attestation, "dev", "sha256:59e14f1a9de709cdd0e91c36b33e54fcca95f7dba1dc7169a7f81986e02108e5")
 
 			// Compare result
-			statement, err := renderer.Statement()
+			statement, err := renderer.Statement(context.TODO())
 			require.NoError(t, err)
 			rawStatement, err := json.MarshalIndent(statement, "", "  ")
 			require.NoError(t, err)
