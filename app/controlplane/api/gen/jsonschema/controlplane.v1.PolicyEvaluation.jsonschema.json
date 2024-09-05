@@ -1,0 +1,59 @@
+{
+  "$id": "controlplane.v1.PolicyEvaluation.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(material_name)$": {
+      "type": "string"
+    },
+    "^(policy_reference)$": {
+      "$ref": "controlplane.v1.PolicyReference.jsonschema.json"
+    }
+  },
+  "properties": {
+    "annotations": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "body": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "materialName": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "policyReference": {
+      "$ref": "controlplane.v1.PolicyReference.jsonschema.json"
+    },
+    "type": {
+      "type": "string"
+    },
+    "violations": {
+      "items": {
+        "$ref": "controlplane.v1.PolicyViolation.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "with": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    }
+  },
+  "title": "Policy Evaluation",
+  "type": "object"
+}

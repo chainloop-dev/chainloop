@@ -1,0 +1,15 @@
+{
+  "$id": "controlplane.v1.PolicyViolation.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "message": {
+      "type": "string"
+    },
+    "subject": {
+      "type": "string"
+    }
+  },
+  "title": "Policy Violation",
+  "type": "object"
+}
