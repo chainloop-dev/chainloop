@@ -17,7 +17,6 @@ syntax = "proto3";
 
 package controlplane.v1;
 
-import "attestation/v1/crafting_state.proto";
 import "buf/validate/validate.proto";
 import "errors/errors.proto";
 import "google/protobuf/timestamp.proto";
