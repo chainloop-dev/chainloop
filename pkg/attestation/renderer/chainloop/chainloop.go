@@ -20,12 +20,13 @@ import (
 	"fmt"
 	"time"
 
+	craftingpb "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
-	"github.com/secure-systems-lab/go-securesystemslib/dsse"
-	"google.golang.org/protobuf/encoding/protojson"
-
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
 	intoto "github.com/in-toto/attestation/go/v1"
+	"github.com/secure-systems-lab/go-securesystemslib/dsse"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // TODO: Figure out a more appropriate meaning
@@ -177,6 +178,9 @@ func ExtractPredicate(envelope *dsse.Envelope) (NormalizablePredicate, error) {
 }
 
 func extractPredicate(statement *intoto.Statement, v *ProvenancePredicateV02) error {
+	// Fix Policy Type field in old statements, converting from Enum int to its string representation.
+	fixPolicyTypeField(statement)
+
 	jsonPredicate, err := protojson.Marshal(statement.Predicate)
 	if err != nil {
 		return fmt.Errorf("un-marshaling predicate: %w", err)
@@ -187,6 +191,23 @@ func extractPredicate(statement *intoto.Statement, v *ProvenancePredicateV02) er
 	}
 
 	return nil
+}
+
+func fixPolicyTypeField(statement *intoto.Statement) {
+	evs := statement.GetPredicate().GetFields()["policy_evaluations"]
+	if evs == nil {
+		return
+	}
+	for _, v := range evs.GetStructValue().GetFields() {
+		for _, p := range v.GetListValue().GetValues() {
+			typeField := p.GetStructValue().GetFields()["type"]
+			if numberField, ok := typeField.GetKind().(*structpb.Value_NumberValue); ok {
+				// it's an old statement, let's fix it
+				typeField = structpb.NewStringValue(craftingpb.CraftingSchema_Material_MaterialType_name[int32(numberField.NumberValue)])
+				p.GetStructValue().Fields["type"] = typeField
+			}
+		}
+	}
 }
 
 // Implement NormalizablePredicate interface
