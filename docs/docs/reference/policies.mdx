@@ -89,22 +89,62 @@ There are two ways to attach a policy to a contract:
 </CodeBlock>
 
 In the example above, we can see that, when referenced by the `policy` attribute (1), a full policy can be embedded in the contract.
-  
+
+### Policy arguments
+Policies may accept arguments to customize its behaviour. See this policy that matches a "quality" score against a "threshold" argument:
+```yaml
+# quality.yaml
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: quality
+  description: Checks for components without licenses
+  annotations:
+    category: sbom
+spec:
+  type: SBOM_CYCLONEDX_JSON
+  embedded: |
+    package main
+
+    import rego.v1
+
+    default threshold := 5
+    threshold := to_number(input.args.threshold) # (1)
+
+    violations contains msg if {
+      input.score < threshold
+      msg := sprintf("quality threshold not met %d < %d", [input.score, threshold])
+    }
+```
+
+It can be instantiated with a custom `threshold` parameter, by adding a `with` property in the policy attachment in the contract:
+```yaml
+policies:
+  materials:
+    - ref: file://quality.yaml
+      with:
+        threshold: 6 (1)
+```
+(1) This is interpreted as a string, that's why we need to add `to_number` in the policy script
+
 ### Rego scripts
 Currently, policy scripts are assumed to be written in [Rego language](https://www.openpolicyagent.org/docs/latest/policy-language/#learning-rego). Other policy engines might be implemented in the future.
-The only requirement of the policy is the existence of one or multiple `violations` rules, which evaluate to a **list of violation strings**.
+The only requirement of the policy is the existence of one or multiple `violations` rules, which evaluate to a **set of violation messages**.
 For example, this policy script:
 ```yaml
 package main
 
-violations[msg] {
+import rego.v1
+
+violations contains msg if {
   not is_approved
   
   msg:= "Container image is not approved"
 }
 
-is_approved {
-  input.predicate.materials[_].annotations["chainloop.material.type"] == "CONTAINER_IMAGE"
+is_approved if {
+  some material in input.predicate.materials
+  material.annotations["chainloop.material.type"] == "CONTAINER_IMAGE"
   
   input.predicate.annotations.approval == "true"
 }
