@@ -47,7 +47,7 @@ func NewPolicyError(err error) *PolicyError {
 }
 
 func (e *PolicyError) Error() string {
-	return fmt.Sprintf("policy error: %s", e.err.Error())
+	return e.err.Error()
 }
 
 func (e *PolicyError) Unwrap() error {
@@ -200,12 +200,12 @@ func (pv *PolicyVerifier) loadPolicySpec(ctx context.Context, attachment *v1.Pol
 		}
 	}
 	if err != nil {
-		return nil, nil, fmt.Errorf("loading policy spec: %w", err)
+		return nil, nil, err
 	}
 
 	// Validate just in case
 	if err = validatePolicy(spec); err != nil {
-		return nil, nil, fmt.Errorf("invalid policy: %w", err)
+		return nil, nil, err
 	}
 
 	return spec, ref, nil
@@ -360,7 +360,7 @@ func (pv *PolicyVerifier) requiredPoliciesForMaterial(ctx context.Context, mater
 		// load the policy spec
 		spec, _, err := pv.loadPolicySpec(ctx, policyAtt)
 		if err != nil {
-			return nil, fmt.Errorf("failed to load policy spec: %w", err)
+			return nil, fmt.Errorf("failed to load policy attachment %q: %w", policyAtt.GetRef(), err)
 		}
 
 		specType := spec.GetSpec().GetType()

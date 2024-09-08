@@ -548,6 +548,30 @@ func (s *testSuite) TestLoadPolicySpec() {
 			},
 		},
 		{
+			name: "by file ref with valid digest",
+			attachment: &v12.PolicyAttachment{
+				Policy: &v12.PolicyAttachment_Ref{
+					Ref: "file://testdata/sbom_syft.yaml@sha256:24c4bd4f56b470d7436ed0c5a340483fff9ad058033f94b164f5efc59aba5136",
+				},
+			},
+			expectedName: "made-with-syft",
+			expectedRef: &v1.ResourceDescriptor{
+				Name: "file://testdata/sbom_syft.yaml",
+				Digest: map[string]string{
+					"sha256": "24c4bd4f56b470d7436ed0c5a340483fff9ad058033f94b164f5efc59aba5136",
+				},
+			},
+		},
+		{
+			name: "by file ref with invalid digest",
+			attachment: &v12.PolicyAttachment{
+				Policy: &v12.PolicyAttachment_Ref{
+					Ref: "file://testdata/sbom_syft.yaml@sha256:deadbeef",
+				},
+			},
+			wantErr: true,
+		},
+		{
 			name: "embedded invalid",
 			attachment: &v12.PolicyAttachment{
 				Policy: &v12.PolicyAttachment_Embedded{
