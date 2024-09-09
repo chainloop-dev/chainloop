@@ -23,6 +23,7 @@ import (
 	"net/url"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -50,7 +51,19 @@ func (p *PolicyProvider) Resolve(policyName string, token string) (*schemaapi.Po
 		return nil, nil, fmt.Errorf("both policyname and token are mandatory")
 	}
 
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/%s", p.host, policyName), nil)
+	// the policy name might include a digest in the form of <name>@sha256:<digest>
+	policyName, digest := policies.ExtractDigest(policyName)
+	// craft the URL
+	uri, err := url.Parse(fmt.Sprintf("%s/%s", p.host, policyName))
+	if err != nil {
+		return nil, nil, fmt.Errorf("error parsing policy provider URL: %w", err)
+	}
+
+	if digest != "" {
+		uri.RawQuery = fmt.Sprintf("digest=%s", digest)
+	}
+
+	req, err := http.NewRequest("GET", uri.String(), nil)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error creating policy request: %w", err)
 	}

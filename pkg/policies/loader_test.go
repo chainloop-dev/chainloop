@@ -104,3 +104,29 @@ func TestPolicyReferenceResourceDescriptor(t *testing.T) {
 		assert.Equal(t, tc.want, got)
 	}
 }
+
+func TestExtractNameAndDigestFromRef(t *testing.T) {
+	testCases := []struct {
+		ref  string
+		want []string
+	}{
+		{
+			ref:  "chainloop://policy.json@sha256:1234",
+			want: []string{"chainloop://policy.json", "sha256:1234"},
+		},
+		{
+			ref:  "chainloop://policy.json",
+			want: []string{"chainloop://policy.json", ""},
+		},
+		{
+			ref:  "",
+			want: []string{"", ""},
+		},
+	}
+
+	for _, tc := range testCases {
+		gotName, gotDigest := ExtractDigest(tc.ref)
+		assert.Equal(t, tc.want[0], gotName)
+		assert.Equal(t, tc.want[1], gotDigest)
+	}
+}

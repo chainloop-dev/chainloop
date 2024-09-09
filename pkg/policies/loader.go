@@ -62,7 +62,8 @@ func (l *FileLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*
 		err error
 	)
 
-	ref := attachment.GetRef()
+	// First remove the digest if present
+	ref, wantDigest := ExtractDigest(attachment.GetRef())
 	filePath, err := ensureScheme(ref, fileScheme)
 	if err != nil {
 		return nil, nil, err
@@ -73,7 +74,7 @@ func (l *FileLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*
 		return nil, nil, fmt.Errorf("loading policy spec: %w", err)
 	}
 
-	p, err := unmarshalPolicy(raw, filepath.Ext(ref))
+	p, err := unmarshalPolicy(raw, filepath.Ext(filePath))
 	if err != nil {
 		return nil, nil, fmt.Errorf("unmarshalling policy spec: %w", err)
 	}
@@ -84,6 +85,11 @@ func (l *FileLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*
 		return nil, nil, fmt.Errorf("calculating hash: %w", err)
 	}
 
+	// compare it with the wanted digest if needed
+	if wantDigest != "" && h.String() != wantDigest {
+		return nil, nil, fmt.Errorf("digest mismatch: got %s, want %s", h.String(), wantDigest)
+	}
+
 	return p, policyReferenceResourceDescriptor(ref, h), nil
 }
 
@@ -91,7 +97,7 @@ func (l *FileLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*
 type HTTPSLoader struct{}
 
 func (l *HTTPSLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, *v12.ResourceDescriptor, error) {
-	ref := attachment.GetRef()
+	ref, wantDigest := ExtractDigest(attachment.GetRef())
 
 	// and do not remove the scheme since we need http(s):// to make the request
 	if _, err := ensureScheme(ref, httpScheme, httpsScheme); err != nil {
@@ -118,6 +124,11 @@ func (l *HTTPSLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (
 	h, _, err := crv1.SHA256(bytes.NewBuffer(raw))
 	if err != nil {
 		return nil, nil, fmt.Errorf("calculating hash: %w", err)
+	}
+
+	// compare it with the wanted digest if needed
+	if wantDigest != "" && h.String() != wantDigest {
+		return nil, nil, fmt.Errorf("digest mismatch: got %s, want %s", h.String(), wantDigest)
 	}
 
 	return p, policyReferenceResourceDescriptor(ref, h), nil
@@ -243,4 +254,13 @@ func policyReferenceResourceDescriptor(ref string, digest crv1.Hash) *v12.Resour
 			digest.Algorithm: digest.Hex,
 		},
 	}
+}
+
+func ExtractDigest(ref string) (string, string) {
+	parts := strings.SplitN(ref, "@", 2)
+	if len(parts) == 2 {
+		return parts[0], parts[1]
+	}
+
+	return parts[0], ""
 }
