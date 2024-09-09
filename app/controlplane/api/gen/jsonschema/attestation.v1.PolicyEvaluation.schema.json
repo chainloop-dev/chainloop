@@ -7,9 +7,12 @@
     "^(materialName)$": {
       "type": "string"
     },
-    "^(policyReference)$": {
-      "$ref": "attestation.v1.ResourceDescriptor.schema.json",
-      "description": "fully qualified reference to the policy\n i.e\n http://my-domain.com/foo.yaml\n file://foo.yaml\n chainloop://my-provider.com/foo@sha256:1234\n NOTE: embedded policies will not have a reference"
+    "^(referenceDigest)$": {
+      "description": "fully qualified reference to the policy\n i.e\n http://my-domain.com/foo.yaml\n file://foo.yaml\n chainloop://my-provider.com/foo@sha256:1234\n NOTE: embedded policies will not have a reference",
+      "type": "string"
+    },
+    "^(referenceName)$": {
+      "type": "string"
     }
   },
   "properties": {
@@ -36,9 +39,12 @@
       "description": "The policy name from the policy spec",
       "type": "string"
     },
-    "policy_reference": {
-      "$ref": "attestation.v1.ResourceDescriptor.schema.json",
-      "description": "fully qualified reference to the policy\n i.e\n http://my-domain.com/foo.yaml\n file://foo.yaml\n chainloop://my-provider.com/foo@sha256:1234\n NOTE: embedded policies will not have a reference"
+    "reference_digest": {
+      "description": "fully qualified reference to the policy\n i.e\n http://my-domain.com/foo.yaml\n file://foo.yaml\n chainloop://my-provider.com/foo@sha256:1234\n NOTE: embedded policies will not have a reference",
+      "type": "string"
+    },
+    "reference_name": {
+      "type": "string"
     },
     "type": {
       "anyOf": [

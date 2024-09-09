@@ -16,6 +16,7 @@
 package chainloop
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -23,35 +24,64 @@ import (
 	"strings"
 	"time"
 
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/pkg/policies"
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
 	intoto "github.com/in-toto/attestation/go/v1"
+	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // Replace custom material type with https://github.com/in-toto/attestation/blob/main/spec/v1.0/resource_descriptor.md
 const PredicateTypeV02 = "chainloop.dev/attestation/v0.2"
+const AttPolicyEvaluation = "CHAINLOOP.ATTESTATION"
 
 type ProvenancePredicateV02 struct {
 	*ProvenancePredicateCommon
 	Materials []*intoto.ResourceDescriptor `json:"materials,omitempty"`
 	// Map materials and policies
-	PolicyEvaluations map[string][]*v1.PolicyEvaluation `json:"policy_evaluations,omitempty"`
+	PolicyEvaluations map[string][]*PolicyEvaluation `json:"policy_evaluations,omitempty"`
+}
+
+type PolicyEvaluation struct {
+	Name            string                     `json:"name"`
+	MaterialName    string                     `json:"material_name,omitempty"`
+	Body            string                     `json:"body,omitempty"`
+	PolicyReference *intoto.ResourceDescriptor `json:"policy_reference,omitempty"`
+	Description     string                     `json:"description,omitempty"`
+	Annotations     map[string]string          `json:"annotations,omitempty"`
+	Violations      []*PolicyViolation         `json:"violations,omitempty"`
+	With            map[string]string          `json:"with,omitempty"`
+	Type            string                     `json:"type"`
+}
+
+type PolicyViolation struct {
+	Subject string `json:"subject"`
+	Message string `json:"message"`
 }
 
 type RendererV02 struct {
 	*RendererCommon
+	schema    *schemaapi.CraftingSchema
+	attClient pb.AttestationServiceClient
+	logger    *zerolog.Logger
 }
 
-func NewChainloopRendererV02(att *v1.Attestation, builderVersion, builderDigest string) *RendererV02 {
-	return &RendererV02{&RendererCommon{
-		PredicateTypeV02, att, &builderInfo{builderVersion, builderDigest}},
+func NewChainloopRendererV02(att *v1.Attestation, schema *schemaapi.CraftingSchema, builderVersion, builderDigest string, attClient pb.AttestationServiceClient, logger *zerolog.Logger) *RendererV02 {
+	return &RendererV02{
+		&RendererCommon{
+			PredicateTypeV02, att, &builderInfo{builderVersion, builderDigest},
+		},
+		schema,
+		attClient,
+		logger,
 	}
 }
 
-func (r *RendererV02) Statement() (*intoto.Statement, error) {
+func (r *RendererV02) Statement(ctx context.Context) (*intoto.Statement, error) {
 	subject, err := r.subject()
 	if err != nil {
 		return nil, fmt.Errorf("error creating subject: %w", err)
@@ -69,7 +99,71 @@ func (r *RendererV02) Statement() (*intoto.Statement, error) {
 		Predicate:     predicate,
 	}
 
+	// validate attestation-level policies
+	pv := policies.NewPolicyVerifier(r.schema, r.attClient, r.logger)
+	policyResults, err := pv.VerifyStatement(ctx, statement)
+	if err != nil {
+		return nil, fmt.Errorf("applying policies to statement: %w", err)
+	}
+	// log policy violations
+	policies.LogPolicyViolations(policyResults, r.logger)
+
+	// insert attestation level policy results into statement
+	if err = addPolicyResults(statement, policyResults); err != nil {
+		return nil, fmt.Errorf("adding policy results to statement: %w", err)
+	}
+
 	return statement, nil
+}
+
+// addPolicyResults adds policy evaluation results to the statement. It does it by deserializing the predicate from a structpb.Struct,
+// filling PolicyEvaluations, and serializing it again to a structpb.Struct object, using JSON as an intermediate representation.
+// Note that this is needed because intoto predicates are generic structpb.Struct
+func addPolicyResults(statement *intoto.Statement, policyResults []*v1.PolicyEvaluation) error {
+	if len(policyResults) == 0 {
+		return nil
+	}
+
+	predicate := statement.Predicate
+	// marshall to json
+	jsonPredicate, err := protojson.Marshal(predicate)
+	if err != nil {
+		return fmt.Errorf("marshalling predicate: %w", err)
+	}
+
+	// unmarshall to our typed predicate object
+	var p ProvenancePredicateV02
+	err = json.Unmarshal(jsonPredicate, &p)
+	if err != nil {
+		return fmt.Errorf("unmarshalling predicate: %w", err)
+	}
+
+	// insert policy evaluations for attestation
+	if p.PolicyEvaluations == nil {
+		p.PolicyEvaluations = make(map[string][]*PolicyEvaluation)
+	}
+	attEvaluations := make([]*PolicyEvaluation, 0, len(policyResults))
+	for _, ev := range policyResults {
+		attEvaluations = append(attEvaluations, renderEvaluation(ev))
+	}
+	p.PolicyEvaluations[AttPolicyEvaluation] = attEvaluations
+
+	// marshall back to JSON
+	jsonPredicate, err = json.Marshal(p)
+	if err != nil {
+		return fmt.Errorf("marshalling predicate: %w", err)
+	}
+
+	// finally unmarshal from JSON to structpb.Struct.
+	var finalPredicate structpb.Struct
+	err = protojson.Unmarshal(jsonPredicate, &finalPredicate)
+	if err != nil {
+		return fmt.Errorf("unmarshalling predicate: %w", err)
+	}
+
+	statement.Predicate = &finalPredicate
+
+	return nil
 }
 
 func commitAnnotations(c *v1.Commit) (*structpb.Struct, error) {
@@ -173,13 +267,40 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 }
 
 // collect all policy evaluations grouped by material
-func policyEvaluationsFromMaterials(att *v1.Attestation) map[string][]*v1.PolicyEvaluation {
-	result := map[string][]*v1.PolicyEvaluation{}
+func policyEvaluationsFromMaterials(att *v1.Attestation) map[string][]*PolicyEvaluation {
+	result := map[string][]*PolicyEvaluation{}
 	for _, p := range att.GetPolicyEvaluations() {
-		result[p.MaterialName] = append(result[p.MaterialName], p)
+		result[p.MaterialName] = append(result[p.MaterialName], renderEvaluation(p))
 	}
 
 	return result
+}
+
+func renderEvaluation(ev *v1.PolicyEvaluation) *PolicyEvaluation {
+	// Map violations
+	violations := make([]*PolicyViolation, 0)
+	for _, vi := range ev.Violations {
+		violations = append(violations, &PolicyViolation{
+			Subject: vi.Subject,
+			Message: vi.Message,
+		})
+	}
+	return &PolicyEvaluation{
+		Name:         ev.Name,
+		MaterialName: ev.MaterialName,
+		Body:         ev.Body,
+		Annotations:  ev.Annotations,
+		Description:  ev.Description,
+		With:         ev.With,
+		Type:         ev.Type.String(),
+		Violations:   violations,
+		PolicyReference: &intoto.ResourceDescriptor{
+			Name: ev.ReferenceName,
+			Digest: map[string]string{
+				"sha256": ev.ReferenceDigest,
+			},
+		},
+	}
 }
 
 func outputMaterials(att *v1.Attestation, onlyOutput bool) ([]*intoto.ResourceDescriptor, error) {
@@ -274,7 +395,7 @@ func (p *ProvenancePredicateV02) GetMaterials() []*NormalizedMaterial {
 	return res
 }
 
-func (p *ProvenancePredicateV02) GetPolicyEvaluations() map[string][]*v1.PolicyEvaluation {
+func (p *ProvenancePredicateV02) GetPolicyEvaluations() map[string][]*PolicyEvaluation {
 	return p.PolicyEvaluations
 }
 

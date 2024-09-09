@@ -17,7 +17,6 @@ syntax = "proto3";
 
 package controlplane.v1;
 
-import "attestation/v1/crafting_state.proto";
 import "buf/validate/validate.proto";
 import "errors/errors.proto";
 import "google/protobuf/timestamp.proto";
@@ -111,7 +110,29 @@ message AttestationItem {
 }
 
 message PolicyEvaluations {
-  repeated attestation.v1.PolicyEvaluation evaluations = 1;
+  repeated PolicyEvaluation evaluations = 1;
+}
+
+message PolicyEvaluation {
+  string name = 1;
+  string material_name = 2;
+  string body = 3;
+  map<string, string> annotations = 4;
+  string description = 5;
+  map<string, string> with = 7;
+  string type = 8;
+  repeated PolicyViolation violations = 9;
+  PolicyReference policy_reference = 10;
+}
+
+message PolicyViolation {
+  string subject = 1;
+  string message = 2;
+}
+
+message PolicyReference {
+  string name = 1;
+  map<string, string> digest = 2;
 }
 
 message WorkflowContractItem {

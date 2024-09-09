@@ -114,11 +114,15 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 			Description:     spec.GetMetadata().GetDescription(),
 			With:            attachment.GetWith(),
 			Type:            spec.GetSpec().Type,
-			PolicyReference: ref,
+			ReferenceName:   ref.Name,
+			ReferenceDigest: ref.Digest["sha256"],
 		})
 	}
 
 	return result, nil
+}
+
+type PolicyEvaluation struct {
 }
 
 // VerifyStatement verifies that the statement is compliant with the policies present in the schema
@@ -173,8 +177,8 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 			Description:     spec.GetMetadata().GetDescription(),
 			With:            policyAtt.GetWith(),
 			Type:            spec.GetSpec().Type,
-			PolicyReference: ref,
-		})
+			ReferenceName:   ref.Name,
+			ReferenceDigest: ref.Digest["sha256"]})
 	}
 
 	return result, nil

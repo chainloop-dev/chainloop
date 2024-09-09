@@ -5,7 +5,7 @@
   "properties": {
     "evaluations": {
       "items": {
-        "$ref": "attestation.v1.PolicyEvaluation.schema.json"
+        "$ref": "controlplane.v1.PolicyEvaluation.schema.json"
       },
       "type": "array"
     }

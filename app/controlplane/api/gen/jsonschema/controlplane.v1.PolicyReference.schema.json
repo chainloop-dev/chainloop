@@ -1,0 +1,21 @@
+{
+  "$id": "controlplane.v1.PolicyReference.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "digest": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "name": {
+      "type": "string"
+    }
+  },
+  "title": "Policy Reference",
+  "type": "object"
+}
