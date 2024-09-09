@@ -23,7 +23,7 @@ linters:
     - unconvert
     - dogsled
     - goconst
-    - exportloopref
+    - copyloopvar
     - gocyclo
     - goprintffuncname
     # Can't enable it for now, it crashes https://github.com/ent/ent/pull/3315
