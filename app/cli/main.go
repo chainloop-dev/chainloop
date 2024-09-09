@@ -99,7 +99,6 @@ func errorInfo(err error, logger zerolog.Logger) (string, int) {
 			exitCode = 0
 		}
 	}
-
 	return msg, exitCode
 }
 
