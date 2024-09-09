@@ -7,7 +7,7 @@ init: init-api-tools
 	go install github.com/vektra/mockery/v2@v2.43.2
 	# using binary release for atlas, since ent schema handler is not included
 	# in the community version anymore https://github.com/ariga/atlas/issues/2388#issuecomment-1864287189
-	curl -sSf https://atlasgo.sh | ATLAS_VERSION=v0.25.0 sh -s -- -y
+	curl -sSf https://atlasgo.sh | ATLAS_VERSION=v0.27.0 sh -s -- -y
 
 # initialize API tooling
 .PHONY: init-api-tools
