@@ -182,6 +182,20 @@ func TestValidateRefs(t *testing.T) {
 			wantErrString: "missing extension",
 		},
 		{
+			name: "file with no path",
+			ref:  "file://file.yaml",
+		},
+		{
+			name:          "file with no path and no extension",
+			ref:           "file://file",
+			wantErrString: "missing extension",
+		},
+		{
+			name:          "file with no path nor host",
+			ref:           "file://",
+			wantErrString: "invalid file reference",
+		},
+		{
 			name: "valid http URL",
 			ref:  "http://example.com/path/to/file.yaml",
 		},
