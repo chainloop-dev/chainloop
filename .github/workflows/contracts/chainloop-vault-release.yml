@@ -5,3 +5,6 @@ materials:
   - type: ARTIFACT
     name: goreleaser-output
     output: true
+policies:
+  attestation:
+    - ref: source-commit

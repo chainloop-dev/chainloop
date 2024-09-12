@@ -12,3 +12,8 @@ materials:
   - type: SBOM_SPDX_JSON
     name: sbom-spdx
     output: false
+policies:
+  attestation:
+    - ref: source-commit
+  materials:
+    - ref: sbom-present

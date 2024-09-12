@@ -11,3 +11,6 @@ materials:
   - type: CONTAINER_IMAGE
     name: artifact-cas-image
     output: true
+policies:
+  attestation:
+    - ref: source-commit
