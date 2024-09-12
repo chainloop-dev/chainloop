@@ -10,4 +10,6 @@ policies:
     - ref: source-commit
   materials:
     - ref: sarif-vulns
+      with:
+        severity: MEDIUM
     - ref: check-sarif-cves-in-kev
