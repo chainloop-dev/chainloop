@@ -425,7 +425,8 @@ func extractPolicyEvaluations(in map[string][]*chainloop.PolicyEvaluation) map[s
 					Message: vi.Message,
 				})
 			}
-			evaluations = append(evaluations, &cpAPI.PolicyEvaluation{
+
+			eval := &cpAPI.PolicyEvaluation{
 				Name:         ev.Name,
 				MaterialName: ev.MaterialName,
 				Body:         ev.Body,
@@ -434,12 +435,18 @@ func extractPolicyEvaluations(in map[string][]*chainloop.PolicyEvaluation) map[s
 				With:         ev.With,
 				Type:         ev.Type,
 				Violations:   violations,
-				PolicyReference: &cpAPI.PolicyReference{
+			}
+
+			if ev.PolicyReference != nil {
+				eval.PolicyReference = &cpAPI.PolicyReference{
 					Name:   ev.PolicyReference.Name,
 					Digest: ev.PolicyReference.Digest,
-				},
-			})
+				}
+			}
+
+			evaluations = append(evaluations, eval)
 		}
+
 		res[k] = &cpAPI.PolicyEvaluations{
 			Evaluations: evaluations,
 		}
