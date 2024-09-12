@@ -5,3 +5,8 @@ materials:
   - type: SARIF
     name: sarif-results
     output: true
+policies:
+  attestation:
+    - ref: source-commit
+  materials:
+    - ref: sbom-present
