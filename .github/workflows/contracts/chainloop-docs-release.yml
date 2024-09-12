@@ -17,3 +17,9 @@ policies:
     - ref: source-commit
   materials:
     - ref: sbom-present
+    - ref: cyclonedx-banned-licenses
+      with:
+        licenses: AGPL-1.0-only, AGPL-1.0-or-later, AGPL-3.0-only, AGPL-3.0-or-later
+    - ref: cyclonedx-banned-components
+      with:
+        components: log4j@2.14.1
