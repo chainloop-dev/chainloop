@@ -23,7 +23,6 @@ jobs:
       packages: write # to push container images
       pull-requests: write
     env:
-      CHAINLOOP_VERSION: 0.90.1
       CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
       CONTAINER_IMAGE_CP: ghcr.io/chainloop-dev/chainloop/control-plane:${{ github.ref_name }}
       CONTAINER_IMAGE_CAS: ghcr.io/chainloop-dev/chainloop/artifact-cas:${{ github.ref_name }}
@@ -37,7 +36,7 @@ jobs:
 
       - name: Install Chainloop
         run: |
-          curl -sfL https://raw.githubusercontent.com/chainloop-dev/chainloop/01ad13af08950b7bfbc83569bea207aeb4e1a285/docs/static/install.sh | bash -s -- --version v${{ env.CHAINLOOP_VERSION }}
+          curl -sfL https://raw.githubusercontent.com/chainloop-dev/chainloop/01ad13af08950b7bfbc83569bea207aeb4e1a285/docs/static/install.sh | bash -s
 
       - name: Download jq
         run: |
