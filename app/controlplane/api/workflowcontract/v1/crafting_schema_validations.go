@@ -110,7 +110,19 @@ func ValidatePolicyAttachmentRef(ref string) error {
 	}
 
 	switch u.Scheme {
-	case "http", "https", "file":
+	case "file":
+		// file URLs like file://my-policy.yaml are parsed as only Host with empty path
+		path := u.Path
+		if path == "" {
+			path = u.Host
+		}
+		if path == "" {
+			return fmt.Errorf("invalid file reference %q", u.String())
+		}
+		if filepath.Ext(path) == "" {
+			return fmt.Errorf("missing extension")
+		}
+	case "http", "https":
 		if u.Path == "" {
 			return fmt.Errorf("path is empty")
 		} else if filepath.Ext(u.Path) == "" {
