@@ -9,4 +9,5 @@ policies:
   attestation:
     - ref: source-commit
   materials:
-    - ref: sbom-present
+    - ref: sarif-vulns
+    - ref: check-sarif-cves-in-kev
