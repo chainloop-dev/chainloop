@@ -165,7 +165,6 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 		violations := make([]*engine.PolicyViolation, 0)
 		var body strings.Builder
 		for _, script := range scripts {
-
 			pv.logger.Info().Msgf("evaluating policy '%s' on attestation", policy.Metadata.Name)
 			// 4. verify the policy
 			ng := getPolicyEngine(policy)
