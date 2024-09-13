@@ -306,6 +306,34 @@ export interface Metadata_AnnotationsEntry {
 }
 
 export interface PolicySpec {
+  /**
+   * path to a policy script. It might consist of a URI reference
+   *
+   * @deprecated
+   */
+  path?:
+    | string
+    | undefined;
+  /**
+   * embedded source code (only Rego supported currently)
+   *
+   * @deprecated
+   */
+  embedded?:
+    | string
+    | undefined;
+  /**
+   * if set, it will match any material supported by Chainloop
+   * except those not having a direct schema (STRING, ARTIFACT, EVIDENCE), since their format cannot be guessed by the crafter.
+   * CONTAINER, HELM_CHART are also excluded, but we might implement custom policies for them in the future.
+   *
+   * @deprecated
+   */
+  type: CraftingSchema_Material_MaterialType;
+  policies: PolicySpecV2[];
+}
+
+export interface PolicySpecV2 {
   /** path to a policy script. It might consist of a URI reference */
   path?:
     | string
@@ -319,7 +347,7 @@ export interface PolicySpec {
    * except those not having a direct schema (STRING, ARTIFACT, EVIDENCE), since their format cannot be guessed by the crafter.
    * CONTAINER, HELM_CHART are also excluded, but we might implement custom policies for them in the future.
    */
-  type: CraftingSchema_Material_MaterialType;
+  kind: CraftingSchema_Material_MaterialType;
 }
 
 function createBaseCraftingSchema(): CraftingSchema {
@@ -1329,7 +1357,7 @@ export const Metadata_AnnotationsEntry = {
 };
 
 function createBasePolicySpec(): PolicySpec {
-  return { path: undefined, embedded: undefined, type: 0 };
+  return { path: undefined, embedded: undefined, type: 0, policies: [] };
 }
 
 export const PolicySpec = {
@@ -1342,6 +1370,9 @@ export const PolicySpec = {
     }
     if (message.type !== 0) {
       writer.uint32(24).int32(message.type);
+    }
+    for (const v of message.policies) {
+      PolicySpecV2.encode(v!, writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -1374,6 +1405,13 @@ export const PolicySpec = {
 
           message.type = reader.int32() as any;
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.policies.push(PolicySpecV2.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1388,6 +1426,7 @@ export const PolicySpec = {
       path: isSet(object.path) ? String(object.path) : undefined,
       embedded: isSet(object.embedded) ? String(object.embedded) : undefined,
       type: isSet(object.type) ? craftingSchema_Material_MaterialTypeFromJSON(object.type) : 0,
+      policies: Array.isArray(object?.policies) ? object.policies.map((e: any) => PolicySpecV2.fromJSON(e)) : [],
     };
   },
 
@@ -1396,6 +1435,11 @@ export const PolicySpec = {
     message.path !== undefined && (obj.path = message.path);
     message.embedded !== undefined && (obj.embedded = message.embedded);
     message.type !== undefined && (obj.type = craftingSchema_Material_MaterialTypeToJSON(message.type));
+    if (message.policies) {
+      obj.policies = message.policies.map((e) => e ? PolicySpecV2.toJSON(e) : undefined);
+    } else {
+      obj.policies = [];
+    }
     return obj;
   },
 
@@ -1408,6 +1452,91 @@ export const PolicySpec = {
     message.path = object.path ?? undefined;
     message.embedded = object.embedded ?? undefined;
     message.type = object.type ?? 0;
+    message.policies = object.policies?.map((e) => PolicySpecV2.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBasePolicySpecV2(): PolicySpecV2 {
+  return { path: undefined, embedded: undefined, kind: 0 };
+}
+
+export const PolicySpecV2 = {
+  encode(message: PolicySpecV2, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.path !== undefined) {
+      writer.uint32(10).string(message.path);
+    }
+    if (message.embedded !== undefined) {
+      writer.uint32(18).string(message.embedded);
+    }
+    if (message.kind !== 0) {
+      writer.uint32(24).int32(message.kind);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PolicySpecV2 {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePolicySpecV2();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.path = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.embedded = reader.string();
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.kind = reader.int32() as any;
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PolicySpecV2 {
+    return {
+      path: isSet(object.path) ? String(object.path) : undefined,
+      embedded: isSet(object.embedded) ? String(object.embedded) : undefined,
+      kind: isSet(object.kind) ? craftingSchema_Material_MaterialTypeFromJSON(object.kind) : 0,
+    };
+  },
+
+  toJSON(message: PolicySpecV2): unknown {
+    const obj: any = {};
+    message.path !== undefined && (obj.path = message.path);
+    message.embedded !== undefined && (obj.embedded = message.embedded);
+    message.kind !== undefined && (obj.kind = craftingSchema_Material_MaterialTypeToJSON(message.kind));
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PolicySpecV2>, I>>(base?: I): PolicySpecV2 {
+    return PolicySpecV2.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<PolicySpecV2>, I>>(object: I): PolicySpecV2 {
+    const message = createBasePolicySpecV2();
+    message.path = object.path ?? undefined;
+    message.embedded = object.embedded ?? undefined;
+    message.kind = object.kind ?? 0;
     return message;
   },
 };

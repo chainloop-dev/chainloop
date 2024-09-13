@@ -668,7 +668,10 @@ type PolicySpec struct {
 	// if set, it will match any material supported by Chainloop
 	// except those not having a direct schema (STRING, ARTIFACT, EVIDENCE), since their format cannot be guessed by the crafter.
 	// CONTAINER, HELM_CHART are also excluded, but we might implement custom policies for them in the future.
-	Type CraftingSchema_Material_MaterialType `protobuf:"varint,3,opt,name=type,proto3,enum=workflowcontract.v1.CraftingSchema_Material_MaterialType" json:"type,omitempty"`
+	//
+	// Deprecated: Marked as deprecated in workflowcontract/v1/crafting_schema.proto.
+	Type     CraftingSchema_Material_MaterialType `protobuf:"varint,3,opt,name=type,proto3,enum=workflowcontract.v1.CraftingSchema_Material_MaterialType" json:"type,omitempty"`
+	Policies []*PolicySpecV2                      `protobuf:"bytes,4,rep,name=policies,proto3" json:"policies,omitempty"`
 }
 
 func (x *PolicySpec) Reset() {
@@ -710,6 +713,7 @@ func (m *PolicySpec) GetSource() isPolicySpec_Source {
 	return nil
 }
 
+// Deprecated: Marked as deprecated in workflowcontract/v1/crafting_schema.proto.
 func (x *PolicySpec) GetPath() string {
 	if x, ok := x.GetSource().(*PolicySpec_Path); ok {
 		return x.Path
@@ -717,6 +721,7 @@ func (x *PolicySpec) GetPath() string {
 	return ""
 }
 
+// Deprecated: Marked as deprecated in workflowcontract/v1/crafting_schema.proto.
 func (x *PolicySpec) GetEmbedded() string {
 	if x, ok := x.GetSource().(*PolicySpec_Embedded); ok {
 		return x.Embedded
@@ -724,11 +729,19 @@ func (x *PolicySpec) GetEmbedded() string {
 	return ""
 }
 
+// Deprecated: Marked as deprecated in workflowcontract/v1/crafting_schema.proto.
 func (x *PolicySpec) GetType() CraftingSchema_Material_MaterialType {
 	if x != nil {
 		return x.Type
 	}
 	return CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED
+}
+
+func (x *PolicySpec) GetPolicies() []*PolicySpecV2 {
+	if x != nil {
+		return x.Policies
+	}
+	return nil
 }
 
 type isPolicySpec_Source interface {
@@ -737,17 +750,115 @@ type isPolicySpec_Source interface {
 
 type PolicySpec_Path struct {
 	// path to a policy script. It might consist of a URI reference
+	//
+	// Deprecated: Marked as deprecated in workflowcontract/v1/crafting_schema.proto.
 	Path string `protobuf:"bytes,1,opt,name=path,proto3,oneof"`
 }
 
 type PolicySpec_Embedded struct {
 	// embedded source code (only Rego supported currently)
+	//
+	// Deprecated: Marked as deprecated in workflowcontract/v1/crafting_schema.proto.
 	Embedded string `protobuf:"bytes,2,opt,name=embedded,proto3,oneof"`
 }
 
 func (*PolicySpec_Path) isPolicySpec_Source() {}
 
 func (*PolicySpec_Embedded) isPolicySpec_Source() {}
+
+type PolicySpecV2 struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Types that are assignable to Source:
+	//
+	//	*PolicySpecV2_Path
+	//	*PolicySpecV2_Embedded
+	Source isPolicySpecV2_Source `protobuf_oneof:"source"`
+	// if set, it will match any material supported by Chainloop
+	// except those not having a direct schema (STRING, ARTIFACT, EVIDENCE), since their format cannot be guessed by the crafter.
+	// CONTAINER, HELM_CHART are also excluded, but we might implement custom policies for them in the future.
+	Kind CraftingSchema_Material_MaterialType `protobuf:"varint,3,opt,name=kind,proto3,enum=workflowcontract.v1.CraftingSchema_Material_MaterialType" json:"kind,omitempty"`
+}
+
+func (x *PolicySpecV2) Reset() {
+	*x = PolicySpecV2{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_workflowcontract_v1_crafting_schema_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *PolicySpecV2) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PolicySpecV2) ProtoMessage() {}
+
+func (x *PolicySpecV2) ProtoReflect() protoreflect.Message {
+	mi := &file_workflowcontract_v1_crafting_schema_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PolicySpecV2.ProtoReflect.Descriptor instead.
+func (*PolicySpecV2) Descriptor() ([]byte, []int) {
+	return file_workflowcontract_v1_crafting_schema_proto_rawDescGZIP(), []int{7}
+}
+
+func (m *PolicySpecV2) GetSource() isPolicySpecV2_Source {
+	if m != nil {
+		return m.Source
+	}
+	return nil
+}
+
+func (x *PolicySpecV2) GetPath() string {
+	if x, ok := x.GetSource().(*PolicySpecV2_Path); ok {
+		return x.Path
+	}
+	return ""
+}
+
+func (x *PolicySpecV2) GetEmbedded() string {
+	if x, ok := x.GetSource().(*PolicySpecV2_Embedded); ok {
+		return x.Embedded
+	}
+	return ""
+}
+
+func (x *PolicySpecV2) GetKind() CraftingSchema_Material_MaterialType {
+	if x != nil {
+		return x.Kind
+	}
+	return CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED
+}
+
+type isPolicySpecV2_Source interface {
+	isPolicySpecV2_Source()
+}
+
+type PolicySpecV2_Path struct {
+	// path to a policy script. It might consist of a URI reference
+	Path string `protobuf:"bytes,1,opt,name=path,proto3,oneof"`
+}
+
+type PolicySpecV2_Embedded struct {
+	// embedded source code (only Rego supported currently)
+	Embedded string `protobuf:"bytes,2,opt,name=embedded,proto3,oneof"`
+}
+
+func (*PolicySpecV2_Path) isPolicySpecV2_Source() {}
+
+func (*PolicySpecV2_Embedded) isPolicySpecV2_Source() {}
 
 type CraftingSchema_Runner struct {
 	state         protoimpl.MessageState
@@ -760,7 +871,7 @@ type CraftingSchema_Runner struct {
 func (x *CraftingSchema_Runner) Reset() {
 	*x = CraftingSchema_Runner{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_workflowcontract_v1_crafting_schema_proto_msgTypes[7]
+		mi := &file_workflowcontract_v1_crafting_schema_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -773,7 +884,7 @@ func (x *CraftingSchema_Runner) String() string {
 func (*CraftingSchema_Runner) ProtoMessage() {}
 
 func (x *CraftingSchema_Runner) ProtoReflect() protoreflect.Message {
-	mi := &file_workflowcontract_v1_crafting_schema_proto_msgTypes[7]
+	mi := &file_workflowcontract_v1_crafting_schema_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -814,7 +925,7 @@ type CraftingSchema_Material struct {
 func (x *CraftingSchema_Material) Reset() {
 	*x = CraftingSchema_Material{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_workflowcontract_v1_crafting_schema_proto_msgTypes[8]
+		mi := &file_workflowcontract_v1_crafting_schema_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -827,7 +938,7 @@ func (x *CraftingSchema_Material) String() string {
 func (*CraftingSchema_Material) ProtoMessage() {}
 
 func (x *CraftingSchema_Material) ProtoReflect() protoreflect.Message {
-	mi := &file_workflowcontract_v1_crafting_schema_proto_msgTypes[8]
+	mi := &file_workflowcontract_v1_crafting_schema_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -890,7 +1001,7 @@ type PolicyAttachment_MaterialSelector struct {
 func (x *PolicyAttachment_MaterialSelector) Reset() {
 	*x = PolicyAttachment_MaterialSelector{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_workflowcontract_v1_crafting_schema_proto_msgTypes[10]
+		mi := &file_workflowcontract_v1_crafting_schema_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -903,7 +1014,7 @@ func (x *PolicyAttachment_MaterialSelector) String() string {
 func (*PolicyAttachment_MaterialSelector) ProtoMessage() {}
 
 func (x *PolicyAttachment_MaterialSelector) ProtoReflect() protoreflect.Message {
-	mi := &file_workflowcontract_v1_crafting_schema_proto_msgTypes[10]
+	mi := &file_workflowcontract_v1_crafting_schema_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1096,23 +1207,39 @@ var file_workflowcontract_v1_crafting_schema_proto_rawDesc = []byte{
 	0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20,
 	0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75,
 	0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02,
-	0x38, 0x01, 0x22, 0xaf, 0x01, 0x0a, 0x0a, 0x50, 0x6f, 0x6c, 0x69, 0x63, 0x79, 0x53, 0x70, 0x65,
-	0x63, 0x12, 0x14, 0x0a, 0x04, 0x70, 0x61, 0x74, 0x68, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x48,
-	0x00, 0x52, 0x04, 0x70, 0x61, 0x74, 0x68, 0x12, 0x1c, 0x0a, 0x08, 0x65, 0x6d, 0x62, 0x65, 0x64,
-	0x64, 0x65, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x48, 0x00, 0x52, 0x08, 0x65, 0x6d, 0x62,
-	0x65, 0x64, 0x64, 0x65, 0x64, 0x12, 0x5c, 0x0a, 0x04, 0x74, 0x79, 0x70, 0x65, 0x18, 0x03, 0x20,
-	0x01, 0x28, 0x0e, 0x32, 0x39, 0x2e, 0x77, 0x6f, 0x72, 0x6b, 0x66, 0x6c, 0x6f, 0x77, 0x63, 0x6f,
-	0x6e, 0x74, 0x72, 0x61, 0x63, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x72, 0x61, 0x66, 0x74, 0x69,
-	0x6e, 0x67, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x4d, 0x61, 0x74, 0x65, 0x72, 0x69, 0x61,
-	0x6c, 0x2e, 0x4d, 0x61, 0x74, 0x65, 0x72, 0x69, 0x61, 0x6c, 0x54, 0x79, 0x70, 0x65, 0x42, 0x0d,
-	0xba, 0x48, 0x0a, 0x82, 0x01, 0x07, 0x22, 0x05, 0x01, 0x02, 0x03, 0x0a, 0x0b, 0x52, 0x04, 0x74,
-	0x79, 0x70, 0x65, 0x42, 0x0f, 0x0a, 0x06, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x12, 0x05, 0xba,
-	0x48, 0x02, 0x08, 0x01, 0x42, 0x4d, 0x5a, 0x4b, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63,
-	0x6f, 0x6d, 0x2f, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x6c, 0x6f, 0x6f, 0x70, 0x2d, 0x64, 0x65, 0x76,
-	0x2f, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x6c, 0x6f, 0x6f, 0x70, 0x2f, 0x61, 0x70, 0x70, 0x2f, 0x63,
-	0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2f, 0x61, 0x70, 0x69, 0x2f,
-	0x77, 0x6f, 0x72, 0x6b, 0x66, 0x6c, 0x6f, 0x77, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x63, 0x74,
-	0x2f, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x38, 0x01, 0x22, 0xf1, 0x01, 0x0a, 0x0a, 0x50, 0x6f, 0x6c, 0x69, 0x63, 0x79, 0x53, 0x70, 0x65,
+	0x63, 0x12, 0x18, 0x0a, 0x04, 0x70, 0x61, 0x74, 0x68, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42,
+	0x02, 0x18, 0x01, 0x48, 0x00, 0x52, 0x04, 0x70, 0x61, 0x74, 0x68, 0x12, 0x20, 0x0a, 0x08, 0x65,
+	0x6d, 0x62, 0x65, 0x64, 0x64, 0x65, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x42, 0x02, 0x18,
+	0x01, 0x48, 0x00, 0x52, 0x08, 0x65, 0x6d, 0x62, 0x65, 0x64, 0x64, 0x65, 0x64, 0x12, 0x5e, 0x0a,
+	0x04, 0x74, 0x79, 0x70, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x39, 0x2e, 0x77, 0x6f,
+	0x72, 0x6b, 0x66, 0x6c, 0x6f, 0x77, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x63, 0x74, 0x2e, 0x76,
+	0x31, 0x2e, 0x43, 0x72, 0x61, 0x66, 0x74, 0x69, 0x6e, 0x67, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61,
+	0x2e, 0x4d, 0x61, 0x74, 0x65, 0x72, 0x69, 0x61, 0x6c, 0x2e, 0x4d, 0x61, 0x74, 0x65, 0x72, 0x69,
+	0x61, 0x6c, 0x54, 0x79, 0x70, 0x65, 0x42, 0x0f, 0xba, 0x48, 0x0a, 0x82, 0x01, 0x07, 0x22, 0x05,
+	0x01, 0x02, 0x03, 0x0a, 0x0b, 0x18, 0x01, 0x52, 0x04, 0x74, 0x79, 0x70, 0x65, 0x12, 0x3d, 0x0a,
+	0x08, 0x70, 0x6f, 0x6c, 0x69, 0x63, 0x69, 0x65, 0x73, 0x18, 0x04, 0x20, 0x03, 0x28, 0x0b, 0x32,
+	0x21, 0x2e, 0x77, 0x6f, 0x72, 0x6b, 0x66, 0x6c, 0x6f, 0x77, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x61,
+	0x63, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x6f, 0x6c, 0x69, 0x63, 0x79, 0x53, 0x70, 0x65, 0x63,
+	0x56, 0x32, 0x52, 0x08, 0x70, 0x6f, 0x6c, 0x69, 0x63, 0x69, 0x65, 0x73, 0x42, 0x08, 0x0a, 0x06,
+	0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x22, 0xb1, 0x01, 0x0a, 0x0c, 0x50, 0x6f, 0x6c, 0x69, 0x63,
+	0x79, 0x53, 0x70, 0x65, 0x63, 0x56, 0x32, 0x12, 0x14, 0x0a, 0x04, 0x70, 0x61, 0x74, 0x68, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x09, 0x48, 0x00, 0x52, 0x04, 0x70, 0x61, 0x74, 0x68, 0x12, 0x1c, 0x0a,
+	0x08, 0x65, 0x6d, 0x62, 0x65, 0x64, 0x64, 0x65, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x48,
+	0x00, 0x52, 0x08, 0x65, 0x6d, 0x62, 0x65, 0x64, 0x64, 0x65, 0x64, 0x12, 0x5c, 0x0a, 0x04, 0x6b,
+	0x69, 0x6e, 0x64, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x39, 0x2e, 0x77, 0x6f, 0x72, 0x6b,
+	0x66, 0x6c, 0x6f, 0x77, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x63, 0x74, 0x2e, 0x76, 0x31, 0x2e,
+	0x43, 0x72, 0x61, 0x66, 0x74, 0x69, 0x6e, 0x67, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x4d,
+	0x61, 0x74, 0x65, 0x72, 0x69, 0x61, 0x6c, 0x2e, 0x4d, 0x61, 0x74, 0x65, 0x72, 0x69, 0x61, 0x6c,
+	0x54, 0x79, 0x70, 0x65, 0x42, 0x0d, 0xba, 0x48, 0x0a, 0x82, 0x01, 0x07, 0x22, 0x05, 0x01, 0x02,
+	0x03, 0x0a, 0x0b, 0x52, 0x04, 0x6b, 0x69, 0x6e, 0x64, 0x42, 0x0f, 0x0a, 0x06, 0x73, 0x6f, 0x75,
+	0x72, 0x63, 0x65, 0x12, 0x05, 0xba, 0x48, 0x02, 0x08, 0x01, 0x42, 0x4d, 0x5a, 0x4b, 0x67, 0x69,
+	0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x6c, 0x6f,
+	0x6f, 0x70, 0x2d, 0x64, 0x65, 0x76, 0x2f, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x6c, 0x6f, 0x6f, 0x70,
+	0x2f, 0x61, 0x70, 0x70, 0x2f, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x70, 0x6c, 0x61, 0x6e,
+	0x65, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x77, 0x6f, 0x72, 0x6b, 0x66, 0x6c, 0x6f, 0x77, 0x63, 0x6f,
+	0x6e, 0x74, 0x72, 0x61, 0x63, 0x74, 0x2f, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x33,
 }
 
 var (
@@ -1128,7 +1255,7 @@ func file_workflowcontract_v1_crafting_schema_proto_rawDescGZIP() []byte {
 }
 
 var file_workflowcontract_v1_crafting_schema_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_workflowcontract_v1_crafting_schema_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_workflowcontract_v1_crafting_schema_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_workflowcontract_v1_crafting_schema_proto_goTypes = []interface{}{
 	(CraftingSchema_Runner_RunnerType)(0),     // 0: workflowcontract.v1.CraftingSchema.Runner.RunnerType
 	(CraftingSchema_Material_MaterialType)(0), // 1: workflowcontract.v1.CraftingSchema.Material.MaterialType
@@ -1139,34 +1266,37 @@ var file_workflowcontract_v1_crafting_schema_proto_goTypes = []interface{}{
 	(*Policy)(nil),                            // 6: workflowcontract.v1.Policy
 	(*Metadata)(nil),                          // 7: workflowcontract.v1.Metadata
 	(*PolicySpec)(nil),                        // 8: workflowcontract.v1.PolicySpec
-	(*CraftingSchema_Runner)(nil),             // 9: workflowcontract.v1.CraftingSchema.Runner
-	(*CraftingSchema_Material)(nil),           // 10: workflowcontract.v1.CraftingSchema.Material
-	nil,                                       // 11: workflowcontract.v1.PolicyAttachment.WithEntry
-	(*PolicyAttachment_MaterialSelector)(nil), // 12: workflowcontract.v1.PolicyAttachment.MaterialSelector
-	nil, // 13: workflowcontract.v1.Metadata.AnnotationsEntry
+	(*PolicySpecV2)(nil),                      // 9: workflowcontract.v1.PolicySpecV2
+	(*CraftingSchema_Runner)(nil),             // 10: workflowcontract.v1.CraftingSchema.Runner
+	(*CraftingSchema_Material)(nil),           // 11: workflowcontract.v1.CraftingSchema.Material
+	nil,                                       // 12: workflowcontract.v1.PolicyAttachment.WithEntry
+	(*PolicyAttachment_MaterialSelector)(nil), // 13: workflowcontract.v1.PolicyAttachment.MaterialSelector
+	nil, // 14: workflowcontract.v1.Metadata.AnnotationsEntry
 }
 var file_workflowcontract_v1_crafting_schema_proto_depIdxs = []int32{
-	10, // 0: workflowcontract.v1.CraftingSchema.materials:type_name -> workflowcontract.v1.CraftingSchema.Material
-	9,  // 1: workflowcontract.v1.CraftingSchema.runner:type_name -> workflowcontract.v1.CraftingSchema.Runner
+	11, // 0: workflowcontract.v1.CraftingSchema.materials:type_name -> workflowcontract.v1.CraftingSchema.Material
+	10, // 1: workflowcontract.v1.CraftingSchema.runner:type_name -> workflowcontract.v1.CraftingSchema.Runner
 	3,  // 2: workflowcontract.v1.CraftingSchema.annotations:type_name -> workflowcontract.v1.Annotation
 	4,  // 3: workflowcontract.v1.CraftingSchema.policies:type_name -> workflowcontract.v1.Policies
 	5,  // 4: workflowcontract.v1.Policies.materials:type_name -> workflowcontract.v1.PolicyAttachment
 	5,  // 5: workflowcontract.v1.Policies.attestation:type_name -> workflowcontract.v1.PolicyAttachment
 	6,  // 6: workflowcontract.v1.PolicyAttachment.embedded:type_name -> workflowcontract.v1.Policy
-	12, // 7: workflowcontract.v1.PolicyAttachment.selector:type_name -> workflowcontract.v1.PolicyAttachment.MaterialSelector
-	11, // 8: workflowcontract.v1.PolicyAttachment.with:type_name -> workflowcontract.v1.PolicyAttachment.WithEntry
+	13, // 7: workflowcontract.v1.PolicyAttachment.selector:type_name -> workflowcontract.v1.PolicyAttachment.MaterialSelector
+	12, // 8: workflowcontract.v1.PolicyAttachment.with:type_name -> workflowcontract.v1.PolicyAttachment.WithEntry
 	7,  // 9: workflowcontract.v1.Policy.metadata:type_name -> workflowcontract.v1.Metadata
 	8,  // 10: workflowcontract.v1.Policy.spec:type_name -> workflowcontract.v1.PolicySpec
-	13, // 11: workflowcontract.v1.Metadata.annotations:type_name -> workflowcontract.v1.Metadata.AnnotationsEntry
+	14, // 11: workflowcontract.v1.Metadata.annotations:type_name -> workflowcontract.v1.Metadata.AnnotationsEntry
 	1,  // 12: workflowcontract.v1.PolicySpec.type:type_name -> workflowcontract.v1.CraftingSchema.Material.MaterialType
-	0,  // 13: workflowcontract.v1.CraftingSchema.Runner.type:type_name -> workflowcontract.v1.CraftingSchema.Runner.RunnerType
-	1,  // 14: workflowcontract.v1.CraftingSchema.Material.type:type_name -> workflowcontract.v1.CraftingSchema.Material.MaterialType
-	3,  // 15: workflowcontract.v1.CraftingSchema.Material.annotations:type_name -> workflowcontract.v1.Annotation
-	16, // [16:16] is the sub-list for method output_type
-	16, // [16:16] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	9,  // 13: workflowcontract.v1.PolicySpec.policies:type_name -> workflowcontract.v1.PolicySpecV2
+	1,  // 14: workflowcontract.v1.PolicySpecV2.kind:type_name -> workflowcontract.v1.CraftingSchema.Material.MaterialType
+	0,  // 15: workflowcontract.v1.CraftingSchema.Runner.type:type_name -> workflowcontract.v1.CraftingSchema.Runner.RunnerType
+	1,  // 16: workflowcontract.v1.CraftingSchema.Material.type:type_name -> workflowcontract.v1.CraftingSchema.Material.MaterialType
+	3,  // 17: workflowcontract.v1.CraftingSchema.Material.annotations:type_name -> workflowcontract.v1.Annotation
+	18, // [18:18] is the sub-list for method output_type
+	18, // [18:18] is the sub-list for method input_type
+	18, // [18:18] is the sub-list for extension type_name
+	18, // [18:18] is the sub-list for extension extendee
+	0,  // [0:18] is the sub-list for field type_name
 }
 
 func init() { file_workflowcontract_v1_crafting_schema_proto_init() }
@@ -1260,7 +1390,7 @@ func file_workflowcontract_v1_crafting_schema_proto_init() {
 			}
 		}
 		file_workflowcontract_v1_crafting_schema_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CraftingSchema_Runner); i {
+			switch v := v.(*PolicySpecV2); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1272,6 +1402,18 @@ func file_workflowcontract_v1_crafting_schema_proto_init() {
 			}
 		}
 		file_workflowcontract_v1_crafting_schema_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*CraftingSchema_Runner); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_workflowcontract_v1_crafting_schema_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*CraftingSchema_Material); i {
 			case 0:
 				return &v.state
@@ -1283,7 +1425,7 @@ func file_workflowcontract_v1_crafting_schema_proto_init() {
 				return nil
 			}
 		}
-		file_workflowcontract_v1_crafting_schema_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
+		file_workflowcontract_v1_crafting_schema_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*PolicyAttachment_MaterialSelector); i {
 			case 0:
 				return &v.state
@@ -1304,13 +1446,17 @@ func file_workflowcontract_v1_crafting_schema_proto_init() {
 		(*PolicySpec_Path)(nil),
 		(*PolicySpec_Embedded)(nil),
 	}
+	file_workflowcontract_v1_crafting_schema_proto_msgTypes[7].OneofWrappers = []interface{}{
+		(*PolicySpecV2_Path)(nil),
+		(*PolicySpecV2_Embedded)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_workflowcontract_v1_crafting_schema_proto_rawDesc,
 			NumEnums:      2,
-			NumMessages:   12,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

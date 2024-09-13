@@ -1,0 +1,13 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: multikind
+  description: multikind policy
+  annotations:
+    category: SBOM
+spec:
+  policies:
+    - kind: SBOM_SPDX_JSON
+      path: testdata/sbom_syft.rego
+    - kind: ATTESTATION
+      path: testdata/workflow.rego

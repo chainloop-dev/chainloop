@@ -1,5 +1,5 @@
 {
-  "$id": "workflowcontract.v1.PolicySpec.schema.json",
+  "$id": "workflowcontract.v1.PolicySpecV2.jsonschema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
@@ -7,17 +7,7 @@
       "description": "embedded source code (only Rego supported currently)",
       "type": "string"
     },
-    "path": {
-      "description": "path to a policy script. It might consist of a URI reference",
-      "type": "string"
-    },
-    "policies": {
-      "items": {
-        "$ref": "workflowcontract.v1.PolicySpecV2.schema.json"
-      },
-      "type": "array"
-    },
-    "type": {
+    "kind": {
       "anyOf": [
         {
           "enum": [
@@ -48,8 +38,12 @@
         }
       ],
       "description": "if set, it will match any material supported by Chainloop\n except those not having a direct schema (STRING, ARTIFACT, EVIDENCE), since their format cannot be guessed by the crafter.\n CONTAINER, HELM_CHART are also excluded, but we might implement custom policies for them in the future."
+    },
+    "path": {
+      "description": "path to a policy script. It might consist of a URI reference",
+      "type": "string"
     }
   },
-  "title": "Policy Spec",
+  "title": "Policy Spec V2",
   "type": "object"
 }
