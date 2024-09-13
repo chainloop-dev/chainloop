@@ -211,6 +211,12 @@ message PolicySpec {
   }, deprecated = true];
 
   repeated PolicySpecV2 policies = 4;
+
+  option (buf.validate.message).cel = {
+    id: "policyspec",
+    message: "either spec source or policies fields must be provided",
+    expression: "has(this.path) || has(this.embedded) || size(this.policies) > 0",
+  };
 }
 
 message PolicySpecV2 {
