@@ -39,6 +39,11 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine/rego"
 )
 
+const (
+	beginPolicySep = "\n-----BEGIN POLICY-----\n"
+	endPolicySep   = "\n-----END POLICY-----\n"
+)
+
 type PolicyError struct {
 	err error
 }
@@ -93,31 +98,22 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 			return nil, NewPolicyError(err)
 		}
 
-		violations := make([]*engine.PolicyViolation, 0)
-		var body strings.Builder
-		for _, script := range scripts {
-			pv.logger.Info().Msgf("evaluating policy '%s' against material '%s'", policy.Metadata.Name, material.GetArtifact().GetId())
+		pv.logger.Info().Msgf("evaluating policy '%s' against material '%s'", policy.Metadata.Name, material.GetArtifact().GetId())
 
-			// verify the policy
-			ng := getPolicyEngine(policy)
-			res, err := ng.Verify(ctx, script, subject, getInputArguments(attachment.GetWith()))
-			if err != nil {
-				return nil, NewPolicyError(err)
-			}
+		violations, scriptBody, err := pv.executeScript(ctx, policy, scripts, subject, attachment)
+		if err != nil {
+			return nil, NewPolicyError(err)
+		}
 
-			if !IsProviderScheme(ref.GetName()) {
-				body.WriteString("\n-----BEGIN POLICY-----\n")
-				body.WriteString(base64.StdEncoding.EncodeToString(script.Source))
-				body.WriteString("\n-----END POLICY-----\n")
-			}
-
-			violations = append(violations, res...)
+		var body string
+		if !IsProviderScheme(ref.GetName()) {
+			body = scriptBody.String()
 		}
 
 		result = append(result, &v12.PolicyEvaluation{
 			Name:            policy.GetMetadata().GetName(),
 			MaterialName:    material.GetArtifact().GetId(),
-			Body:            body.String(),
+			Body:            body,
 			Violations:      engineViolationsToAPIViolations(violations),
 			Annotations:     policy.GetMetadata().GetAnnotations(),
 			Description:     policy.GetMetadata().GetDescription(),
@@ -129,9 +125,6 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 	}
 
 	return result, nil
-}
-
-type PolicyEvaluation struct {
 }
 
 // VerifyStatement verifies that the statement is compliant with the policies present in the schema
@@ -162,32 +155,22 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 			return nil, NewPolicyError(err)
 		}
 
-		violations := make([]*engine.PolicyViolation, 0)
-		var body strings.Builder
-		for _, script := range scripts {
-			pv.logger.Info().Msgf("evaluating policy '%s' on attestation", policy.Metadata.Name)
-			// 4. verify the policy
-			ng := getPolicyEngine(policy)
-			res, err := ng.Verify(ctx, script, material, getInputArguments(policyAtt.GetWith()))
-			if err != nil {
-				return nil, NewPolicyError(err)
-			}
+		pv.logger.Info().Msgf("evaluating policy '%s' on attestation", policy.Metadata.Name)
 
-			// We store the body in the attestation unless the policy comes from a remote provider
-			// in which case with the reference it will suffice
-			if !IsProviderScheme(ref.GetName()) {
-				body.WriteString("\n-----BEGIN POLICY-----\n")
-				body.WriteString(base64.StdEncoding.EncodeToString(script.Source))
-				body.WriteString("\n-----END POLICY-----\n")
-			}
+		violations, scriptBody, err := pv.executeScript(ctx, policy, scripts, material, policyAtt)
+		if err != nil {
+			return nil, NewPolicyError(err)
+		}
 
-			violations = append(violations, res...)
+		var body string
+		if !IsProviderScheme(ref.GetName()) {
+			body = scriptBody.String()
 		}
 
 		// 5. Store result in the attestation itself (for the renderer to include them in the predicate)
 		result = append(result, &v12.PolicyEvaluation{
 			Name:            policy.Metadata.Name,
-			Body:            body.String(),
+			Body:            body,
 			Violations:      policyViolationsToAttestationViolations(violations),
 			Annotations:     policy.GetMetadata().GetAnnotations(),
 			Description:     policy.GetMetadata().GetDescription(),
@@ -198,6 +181,28 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 	}
 
 	return result, nil
+}
+
+func (pv *PolicyVerifier) executeScript(ctx context.Context, policy *v1.Policy, scripts []*engine.Policy, material []byte, att *v1.PolicyAttachment) ([]*engine.PolicyViolation, *strings.Builder, error) {
+	violations := make([]*engine.PolicyViolation, 0)
+	var body strings.Builder
+
+	for _, script := range scripts {
+		// verify the policy
+		ng := getPolicyEngine(policy)
+		res, err := ng.Verify(ctx, script, material, getInputArguments(att.GetWith()))
+		if err != nil {
+			return nil, nil, NewPolicyError(err)
+		}
+
+		body.WriteString(beginPolicySep)
+		body.WriteString(base64.StdEncoding.EncodeToString(script.Source))
+		body.WriteString(endPolicySep)
+
+		violations = append(violations, res...)
+	}
+
+	return violations, &body, nil
 }
 
 // LoadPolicySpec loads and validates a policy spec from a contract
