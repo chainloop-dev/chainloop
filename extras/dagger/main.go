@@ -415,7 +415,7 @@ func (att *Attestation) reset(ctx context.Context,
 
 /// standalone API calls
 
-// Initialize a new attestation
+// Create a new workflow
 func (m *Chainloop) WorkflowCreate(
 	ctx context.Context,
 	// Chainloop API token
