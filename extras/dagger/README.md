@@ -165,7 +165,18 @@ dagger call -m github.com/chainloop-dev/chainloop \
   mark-canceled --reason "nothing to see here"
 ```
 
-### Pointing to a different Chainloop Instance
+## CLI operations
+
+This module also provides access to the underlying Chainloop CLI by exposing some of its commands
+
+### Workflow Creation
+
+```sh
+ dagger call -m github.com/chainloop-dev/chainloop \
+   workflow-create --token env:CHAINLOOP_TOKEN --name [your-workflow-name] --project [its-project]
+```
+
+## Pointing to a different Chainloop Instance
 
 By default, this dagger module points to Chainloop's upstream instance, but if you want to point to your own instance, you can do it by running the with-instance command just right after `dagger call`
 
@@ -181,6 +192,7 @@ init --token env:CHAINLOOP_TOKEN --workflow-name test-from-dagger-2 attestation-
 ```
 
 Please run `dagger call with-instance -h` for more information on the available options.
+
 
 ## Documentation
 
