@@ -32,6 +32,28 @@ spec:
   path: my-script.rego
 ```
 
+### Supporting multiple material types
+Policies can also accept multiple material types. This is specially useful when a material can be speficied in multiple format types, but from the user perspective, we still want to maintain one single policy.
+
+For example, this policy would check for vulnerabilities in SARIF, CycloneDX and CSAF formats:
+```yaml
+...
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: cve-policy
+spec:
+  policies:
+    - kind: SBOM_CYCLONEDX_JSON
+      path: cves-cyclonedx.rego
+    - kind: CSAF_SECURITY_ADVISORY
+      path: cves-csaf-sa.rego
+    - kind: SARIF
+      path: cves-sarif.rego
+```
+In these cases, Chainloop will choose the right script to execute, but externally it would be seen as a single policy.
+
+
 ## Applying policies to contracts
 When defining a contract, a new `policies` section can be specified. Policies can be applied to any material, but also to the attestation statement as a whole.
 ```yaml
