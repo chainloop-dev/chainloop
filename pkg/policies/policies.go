@@ -39,10 +39,6 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine/rego"
 )
 
-const (
-	policySep = "\n-----POLICY SEPARATOR-----\n"
-)
-
 type PolicyError struct {
 	err error
 }
