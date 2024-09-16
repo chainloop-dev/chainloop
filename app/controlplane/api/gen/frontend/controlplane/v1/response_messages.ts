@@ -280,6 +280,7 @@ export interface PolicyEvaluations {
 export interface PolicyEvaluation {
   name: string;
   materialName: string;
+  /** @deprecated */
   body: string;
   sources: string[];
   annotations: { [key: string]: string };

@@ -116,7 +116,7 @@ message PolicyEvaluations {
 message PolicyEvaluation {
   string name = 1;
   string material_name = 2;
-  string body = 3;
+  string body = 3 [deprecated = true];
   repeated string sources = 11;
   map<string, string> annotations = 4;
   string description = 5;
