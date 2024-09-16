@@ -280,7 +280,9 @@ export interface PolicyEvaluations {
 export interface PolicyEvaluation {
   name: string;
   materialName: string;
+  /** @deprecated */
   body: string;
+  sources: string[];
   annotations: { [key: string]: string };
   description: string;
   with: { [key: string]: string };
@@ -1647,6 +1649,7 @@ function createBasePolicyEvaluation(): PolicyEvaluation {
     name: "",
     materialName: "",
     body: "",
+    sources: [],
     annotations: {},
     description: "",
     with: {},
@@ -1666,6 +1669,9 @@ export const PolicyEvaluation = {
     }
     if (message.body !== "") {
       writer.uint32(26).string(message.body);
+    }
+    for (const v of message.sources) {
+      writer.uint32(90).string(v!);
     }
     Object.entries(message.annotations).forEach(([key, value]) => {
       PolicyEvaluation_AnnotationsEntry.encode({ key: key as any, value }, writer.uint32(34).fork()).ldelim();
@@ -1715,6 +1721,13 @@ export const PolicyEvaluation = {
           }
 
           message.body = reader.string();
+          continue;
+        case 11:
+          if (tag !== 90) {
+            break;
+          }
+
+          message.sources.push(reader.string());
           continue;
         case 4:
           if (tag !== 34) {
@@ -1778,6 +1791,7 @@ export const PolicyEvaluation = {
       name: isSet(object.name) ? String(object.name) : "",
       materialName: isSet(object.materialName) ? String(object.materialName) : "",
       body: isSet(object.body) ? String(object.body) : "",
+      sources: Array.isArray(object?.sources) ? object.sources.map((e: any) => String(e)) : [],
       annotations: isObject(object.annotations)
         ? Object.entries(object.annotations).reduce<{ [key: string]: string }>((acc, [key, value]) => {
           acc[key] = String(value);
@@ -1804,6 +1818,11 @@ export const PolicyEvaluation = {
     message.name !== undefined && (obj.name = message.name);
     message.materialName !== undefined && (obj.materialName = message.materialName);
     message.body !== undefined && (obj.body = message.body);
+    if (message.sources) {
+      obj.sources = message.sources.map((e) => e);
+    } else {
+      obj.sources = [];
+    }
     obj.annotations = {};
     if (message.annotations) {
       Object.entries(message.annotations).forEach(([k, v]) => {
@@ -1837,6 +1856,7 @@ export const PolicyEvaluation = {
     message.name = object.name ?? "";
     message.materialName = object.materialName ?? "";
     message.body = object.body ?? "";
+    message.sources = object.sources?.map((e) => e) || [];
     message.annotations = Object.entries(object.annotations ?? {}).reduce<{ [key: string]: string }>(
       (acc, [key, value]) => {
         if (value !== undefined) {

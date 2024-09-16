@@ -50,6 +50,7 @@ type PolicyEvaluation struct {
 	Name            string                     `json:"name"`
 	MaterialName    string                     `json:"material_name,omitempty"`
 	Body            string                     `json:"body,omitempty"`
+	Sources         []string                   `json:"sources,omitempty"`
 	PolicyReference *intoto.ResourceDescriptor `json:"policy_reference,omitempty"`
 	Description     string                     `json:"description,omitempty"`
 	Annotations     map[string]string          `json:"annotations,omitempty"`
@@ -289,6 +290,7 @@ func renderEvaluation(ev *v1.PolicyEvaluation) *PolicyEvaluation {
 		Name:         ev.Name,
 		MaterialName: ev.MaterialName,
 		Body:         ev.Body,
+		Sources:      ev.Sources,
 		Annotations:  ev.Annotations,
 		Description:  ev.Description,
 		With:         ev.With,

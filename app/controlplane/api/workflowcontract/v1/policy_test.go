@@ -74,7 +74,7 @@ func TestValidatePolicy(t *testing.T) {
 			policy: &v1.Policy{ApiVersion: "workflowcontract.chainloop.dev/v1", Kind: "Policy",
 				Metadata: &v1.Metadata{Name: "my-policy"}, Spec: &v1.PolicySpec{}},
 			wantErr:   true,
-			violation: "spec.source",
+			violation: "spec source or policies",
 		},
 		{
 			desc: "correct spec",
@@ -87,6 +87,13 @@ func TestValidatePolicy(t *testing.T) {
 			policy: &v1.Policy{ApiVersion: "workflowcontract.chainloop.dev/v1", Kind: "Policy",
 				Metadata: &v1.Metadata{Name: "my-policy"}, Spec: &v1.PolicySpec{Source: &v1.PolicySpec_Path{Path: "policy.rego"}, Type: v1.CraftingSchema_Material_ATTESTATION}},
 			wantErr: false,
+		},
+		{
+			desc: "multi-kind spec",
+			policy: &v1.Policy{ApiVersion: "workflowcontract.chainloop.dev/v1", Kind: "Policy",
+				Metadata: &v1.Metadata{Name: "my-policy"}, Spec: &v1.PolicySpec{Policies: []*v1.PolicySpecV2{
+					{Kind: v1.CraftingSchema_Material_JUNIT_XML, Source: &v1.PolicySpecV2_Path{Path: "policy.rego"}},
+				}}},
 		},
 	}
 

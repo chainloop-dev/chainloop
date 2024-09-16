@@ -357,6 +357,8 @@ func (s *testSuite) TestMaterialSelectionCriteria() {
 		Policy:   &v12.PolicyAttachment_Ref{Ref: "file://testdata/sbom_syft_not_typed.yaml"},
 		Selector: &v12.PolicyAttachment_MaterialSelector{Name: "custom-material"},
 	}
+	attMultikind := &v12.PolicyAttachment{Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/multi-kind.yaml"}}
+
 	testcases := []struct {
 		name     string
 		policies []*v12.PolicyAttachment
@@ -422,6 +424,32 @@ func (s *testSuite) TestMaterialSelectionCriteria() {
 					},
 				},
 				MaterialType: v12.CraftingSchema_Material_ATTESTATION},
+			result: 0,
+		},
+		{
+			name:     "multi-kind policy",
+			policies: []*v12.PolicyAttachment{attMultikind},
+			material: &v1.Attestation_Material{
+				M: &v1.Attestation_Material_Artifact_{
+					Artifact: &v1.Attestation_Material_Artifact{
+						Id: "custom-material",
+					},
+				},
+				MaterialType: v12.CraftingSchema_Material_ATTESTATION,
+			},
+			result: 1,
+		},
+		{
+			name:     "multi-kind policy with no matches",
+			policies: []*v12.PolicyAttachment{attMultikind},
+			material: &v1.Attestation_Material{
+				M: &v1.Attestation_Material_Artifact_{
+					Artifact: &v1.Attestation_Material_Artifact{
+						Id: "custom-material",
+					},
+				},
+				MaterialType: v12.CraftingSchema_Material_SARIF,
+			},
 			result: 0,
 		},
 	}

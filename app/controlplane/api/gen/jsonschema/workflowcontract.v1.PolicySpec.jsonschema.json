@@ -11,6 +11,12 @@
       "description": "path to a policy script. It might consist of a URI reference",
       "type": "string"
     },
+    "policies": {
+      "items": {
+        "$ref": "workflowcontract.v1.PolicySpecV2.jsonschema.json"
+      },
+      "type": "array"
+    },
     "type": {
       "anyOf": [
         {

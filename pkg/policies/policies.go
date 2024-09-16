@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/bufbuild/protovalidate-go"
@@ -74,14 +75,14 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 	}
 
 	for _, attachment := range attachments {
-		// 1. load the policy spec
-		spec, ref, err := pv.loadPolicySpec(ctx, attachment)
+		// 1. load the policy policy
+		policy, ref, err := pv.loadPolicySpec(ctx, attachment)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
 
-		// load the policy script (rego)
-		script, err := LoadPolicyScriptFromSpec(spec)
+		// load the policy scripts (rego)
+		scripts, err := LoadPolicyScriptsFromSpec(policy, material.MaterialType)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
@@ -92,28 +93,27 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 			return nil, NewPolicyError(err)
 		}
 
-		pv.logger.Info().Msgf("evaluating policy '%s' against material '%s'", spec.Metadata.Name, material.GetArtifact().GetId())
+		pv.logger.Info().Msgf("evaluating policy '%s' against material '%s'", policy.Metadata.Name, material.GetArtifact().GetId())
 
-		// verify the policy
-		ng := getPolicyEngine(spec)
-		violations, err := ng.Verify(ctx, script, subject, getInputArguments(attachment.GetWith()))
+		violations, sources, err := pv.executeScripts(ctx, policy, scripts, subject, attachment)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
-		var body string
+
+		var evaluationSources []string
 		if !IsProviderScheme(ref.GetName()) {
-			body = base64.StdEncoding.EncodeToString(script.Source)
+			evaluationSources = sources
 		}
 
 		result = append(result, &v12.PolicyEvaluation{
-			Name:            spec.GetMetadata().GetName(),
+			Name:            policy.GetMetadata().GetName(),
 			MaterialName:    material.GetArtifact().GetId(),
-			Body:            body,
+			Sources:         evaluationSources,
 			Violations:      engineViolationsToAPIViolations(violations),
-			Annotations:     spec.GetMetadata().GetAnnotations(),
-			Description:     spec.GetMetadata().GetDescription(),
+			Annotations:     policy.GetMetadata().GetAnnotations(),
+			Description:     policy.GetMetadata().GetDescription(),
 			With:            attachment.GetWith(),
-			Type:            spec.GetSpec().Type,
+			Type:            material.GetMaterialType(),
 			ReferenceName:   ref.Name,
 			ReferenceDigest: ref.Digest["sha256"],
 		})
@@ -122,66 +122,80 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 	return result, nil
 }
 
-type PolicyEvaluation struct {
-}
-
 // VerifyStatement verifies that the statement is compliant with the policies present in the schema
 func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto.Statement) ([]*v12.PolicyEvaluation, error) {
 	result := make([]*v12.PolicyEvaluation, 0)
 	policies := pv.schema.GetPolicies().GetAttestation()
 	for _, policyAtt := range policies {
 		// 1. load the policy spec
-		spec, ref, err := pv.loadPolicySpec(ctx, policyAtt)
+		policy, ref, err := pv.loadPolicySpec(ctx, policyAtt)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
 
-		// it's expected statements can only be validated by policy of type ATTESTATION
-		if spec.GetSpec().GetType() != v1.CraftingSchema_Material_ATTESTATION {
+		// it's expected statements can only be validated by policies of type ATTESTATION
+		types := getPolicyTypes(policy)
+		if !slices.Contains(types, v1.CraftingSchema_Material_ATTESTATION) {
 			continue
 		}
 
-		// 2. load the policy script (rego)
-		script, err := LoadPolicyScriptFromSpec(spec)
+		// 2. load the policy scripts (rego)
+		scripts, err := LoadPolicyScriptsFromSpec(policy, v1.CraftingSchema_Material_ATTESTATION)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
-
-		pv.logger.Info().Msgf("evaluating policy '%s' on attestation", spec.Metadata.Name)
 
 		material, err := protojson.Marshal(statement)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
 
-		// 4. verify the policy
-		ng := getPolicyEngine(spec)
-		res, err := ng.Verify(ctx, script, material, getInputArguments(policyAtt.GetWith()))
+		pv.logger.Info().Msgf("evaluating policy '%s' on attestation", policy.Metadata.Name)
+
+		violations, sources, err := pv.executeScripts(ctx, policy, scripts, material, policyAtt)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
 
-		// We store the body in the attestation unless the policy comes from a remote provider
-		// in which case with the reference it will suffice
-		var body string
+		var evaluationSources []string
 		if !IsProviderScheme(ref.GetName()) {
-			body = base64.StdEncoding.EncodeToString(script.Source)
+			evaluationSources = sources
 		}
 
 		// 5. Store result in the attestation itself (for the renderer to include them in the predicate)
 		result = append(result, &v12.PolicyEvaluation{
-			Name:            spec.Metadata.Name,
-			Body:            body,
-			Violations:      policyViolationsToAttestationViolations(res),
-			Annotations:     spec.GetMetadata().GetAnnotations(),
-			Description:     spec.GetMetadata().GetDescription(),
+			Name:            policy.Metadata.Name,
+			Sources:         evaluationSources,
+			Violations:      policyViolationsToAttestationViolations(violations),
+			Annotations:     policy.GetMetadata().GetAnnotations(),
+			Description:     policy.GetMetadata().GetDescription(),
 			With:            policyAtt.GetWith(),
-			Type:            spec.GetSpec().Type,
+			Type:            policy.GetSpec().Type,
 			ReferenceName:   ref.Name,
 			ReferenceDigest: ref.Digest["sha256"]})
 	}
 
 	return result, nil
+}
+
+func (pv *PolicyVerifier) executeScripts(ctx context.Context, policy *v1.Policy, scripts []*engine.Policy, material []byte, att *v1.PolicyAttachment) ([]*engine.PolicyViolation, []string, error) {
+	violations := make([]*engine.PolicyViolation, 0)
+	sources := make([]string, 0)
+
+	for _, script := range scripts {
+		// verify the policy
+		ng := getPolicyEngine(policy)
+		res, err := ng.Verify(ctx, script, material, getInputArguments(att.GetWith()))
+		if err != nil {
+			return nil, nil, NewPolicyError(err)
+		}
+
+		sources = append(sources, base64.StdEncoding.EncodeToString(script.Source))
+
+		violations = append(violations, res...)
+	}
+
+	return violations, sources, nil
 }
 
 // LoadPolicySpec loads and validates a policy spec from a contract
@@ -367,12 +381,12 @@ func (pv *PolicyVerifier) requiredPoliciesForMaterial(ctx context.Context, mater
 			return nil, fmt.Errorf("failed to load policy attachment %q: %w", policyAtt.GetRef(), err)
 		}
 
-		specType := spec.GetSpec().GetType()
 		materialType := material.GetMaterialType()
 		filteredName := policyAtt.GetSelector().GetName()
+		specTypes := getPolicyTypes(spec)
 
 		// if spec has a type, and it's different to the material type, skip
-		if specType != v1.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED && specType != materialType {
+		if len(specTypes) > 0 && !slices.Contains(specTypes, materialType) {
 			// types don't match, continue
 			continue
 		}
@@ -383,7 +397,7 @@ func (pv *PolicyVerifier) requiredPoliciesForMaterial(ctx context.Context, mater
 		}
 
 		// no type nor name to match, we can't guess anything
-		if specType == v1.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED && filteredName == "" {
+		if len(specTypes) == 0 && filteredName == "" {
 			continue
 		}
 
@@ -391,6 +405,21 @@ func (pv *PolicyVerifier) requiredPoliciesForMaterial(ctx context.Context, mater
 	}
 
 	return result, nil
+}
+
+func getPolicyTypes(p *v1.Policy) []v1.CraftingSchema_Material_MaterialType {
+	policyTypes := make([]v1.CraftingSchema_Material_MaterialType, 0)
+	v1Type := p.GetSpec().GetType()
+	if v1Type != v1.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED {
+		policyTypes = append(policyTypes, v1Type)
+	} else {
+		for _, branch := range p.GetSpec().GetPolicies() {
+			if branch.GetKind() != v1.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED {
+				policyTypes = append(policyTypes, branch.GetKind())
+			}
+		}
+	}
+	return policyTypes
 }
 
 // getPolicyEngine returns a PolicyEngine implementation to evaluate a given policy.
@@ -409,12 +438,58 @@ func policyViolationsToAttestationViolations(violations []*engine.PolicyViolatio
 	return
 }
 
-// LoadPolicyScriptFromSpec loads a policy referenced from the spec
-func LoadPolicyScriptFromSpec(spec *v1.Policy) (*engine.Policy, error) {
+// LoadPolicyScriptsFromSpec loads all policy script that matches a given material type. It matches if:
+// * the policy kind is unspecified, meaning that it was forced by name selector
+// * the policy kind is specified, and it's equal to the material type
+func LoadPolicyScriptsFromSpec(policy *v1.Policy, kind v1.CraftingSchema_Material_MaterialType) ([]*engine.Policy, error) {
+	scripts := make([]*engine.Policy, 0)
+
+	if policy.GetSpec().GetSource() != nil {
+		script, err := loadLegacyPolicyScript(policy.GetSpec())
+		if err != nil {
+			return nil, fmt.Errorf("failed to load policy script: %w", err)
+		}
+		scripts = append(scripts, &engine.Policy{Source: script, Name: policy.GetMetadata().GetName()})
+	} else {
+		// multi-kind policies
+		specs := policy.GetSpec().GetPolicies()
+		for _, spec := range specs {
+			if spec.GetKind() == v1.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED || spec.GetKind() == kind {
+				script, err := loadPolicyScript(spec)
+				if err != nil {
+					return nil, fmt.Errorf("failed to load policy script: %w", err)
+				}
+				scripts = append(scripts, &engine.Policy{Source: script, Name: policy.GetMetadata().GetName()})
+			}
+		}
+	}
+
+	return scripts, nil
+}
+
+func loadPolicyScript(spec *v1.PolicySpecV2) ([]byte, error) {
 	var content []byte
 	var err error
+	switch source := spec.GetSource().(type) {
+	case *v1.PolicySpecV2_Embedded:
+		content = []byte(source.Embedded)
+	case *v1.PolicySpecV2_Path:
+		content, err = blob.LoadFileOrURL(source.Path)
+		if err != nil {
+			return nil, fmt.Errorf("loading policy content: %w", err)
+		}
+	default:
+		return nil, fmt.Errorf("policy spec is empty")
+	}
 
-	switch source := spec.GetSpec().GetSource().(type) {
+	return content, nil
+}
+
+func loadLegacyPolicyScript(spec *v1.PolicySpec) ([]byte, error) {
+	// legacy policies
+	var content []byte
+	var err error
+	switch source := spec.GetSource().(type) {
 	case *v1.PolicySpec_Embedded:
 		content = []byte(source.Embedded)
 	case *v1.PolicySpec_Path:
@@ -426,10 +501,7 @@ func LoadPolicyScriptFromSpec(spec *v1.Policy) (*engine.Policy, error) {
 		return nil, fmt.Errorf("policy spec is empty")
 	}
 
-	return &engine.Policy{
-		Name:   spec.GetMetadata().GetName(),
-		Source: content,
-	}, nil
+	return content, nil
 }
 
 func LogPolicyViolations(evaluations []*v12.PolicyEvaluation, logger *zerolog.Logger) {

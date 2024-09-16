@@ -105,8 +105,14 @@ export interface PolicyEvaluation {
   /** The policy name from the policy spec */
   name: string;
   materialName: string;
-  /** the body of the policy. This field will be empty if there is a FQDN reference to the policy */
+  /**
+   * the body of the policy. This field will be empty if there is a FQDN reference to the policy
+   *
+   * @deprecated
+   */
   body: string;
+  /** Base64 representation of run scripts. It might be empty if there is a FQDN reference to the policy */
+  sources: string[];
   /**
    * fully qualified reference to the policy
    * i.e
@@ -1232,6 +1238,7 @@ function createBasePolicyEvaluation(): PolicyEvaluation {
     name: "",
     materialName: "",
     body: "",
+    sources: [],
     referenceDigest: "",
     referenceName: "",
     description: "",
@@ -1252,6 +1259,9 @@ export const PolicyEvaluation = {
     }
     if (message.body !== "") {
       writer.uint32(26).string(message.body);
+    }
+    for (const v of message.sources) {
+      writer.uint32(98).string(v!);
     }
     if (message.referenceDigest !== "") {
       writer.uint32(82).string(message.referenceDigest);
@@ -1304,6 +1314,13 @@ export const PolicyEvaluation = {
           }
 
           message.body = reader.string();
+          continue;
+        case 12:
+          if (tag !== 98) {
+            break;
+          }
+
+          message.sources.push(reader.string());
           continue;
         case 10:
           if (tag !== 82) {
@@ -1374,6 +1391,7 @@ export const PolicyEvaluation = {
       name: isSet(object.name) ? String(object.name) : "",
       materialName: isSet(object.materialName) ? String(object.materialName) : "",
       body: isSet(object.body) ? String(object.body) : "",
+      sources: Array.isArray(object?.sources) ? object.sources.map((e: any) => String(e)) : [],
       referenceDigest: isSet(object.referenceDigest) ? String(object.referenceDigest) : "",
       referenceName: isSet(object.referenceName) ? String(object.referenceName) : "",
       description: isSet(object.description) ? String(object.description) : "",
@@ -1401,6 +1419,11 @@ export const PolicyEvaluation = {
     message.name !== undefined && (obj.name = message.name);
     message.materialName !== undefined && (obj.materialName = message.materialName);
     message.body !== undefined && (obj.body = message.body);
+    if (message.sources) {
+      obj.sources = message.sources.map((e) => e);
+    } else {
+      obj.sources = [];
+    }
     message.referenceDigest !== undefined && (obj.referenceDigest = message.referenceDigest);
     message.referenceName !== undefined && (obj.referenceName = message.referenceName);
     message.description !== undefined && (obj.description = message.description);
@@ -1434,6 +1457,7 @@ export const PolicyEvaluation = {
     message.name = object.name ?? "";
     message.materialName = object.materialName ?? "";
     message.body = object.body ?? "";
+    message.sources = object.sources?.map((e) => e) || [];
     message.referenceDigest = object.referenceDigest ?? "";
     message.referenceName = object.referenceName ?? "";
     message.description = object.description ?? "";

@@ -108,7 +108,11 @@ message PolicyEvaluation {
   string material_name = 2;
 
   // the body of the policy. This field will be empty if there is a FQDN reference to the policy
-  string body = 3;
+  string body = 3 [deprecated = true];
+
+  // Base64 representation of run scripts. It might be empty if there is a FQDN reference to the policy
+  repeated string sources = 12;
+
   // fully qualified reference to the policy
   // i.e
   // http://my-domain.com/foo.yaml
