@@ -40,8 +40,7 @@ import (
 )
 
 const (
-	beginPolicySep = "\n-----BEGIN POLICY-----\n"
-	endPolicySep   = "\n-----END POLICY-----\n"
+	policySep = "\n-----POLICY SEPARATOR-----\n"
 )
 
 type PolicyError struct {
@@ -100,20 +99,20 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 
 		pv.logger.Info().Msgf("evaluating policy '%s' against material '%s'", policy.Metadata.Name, material.GetArtifact().GetId())
 
-		violations, scriptBody, err := pv.executeScript(ctx, policy, scripts, subject, attachment)
+		violations, sources, err := pv.executeScripts(ctx, policy, scripts, subject, attachment)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
 
-		var body string
+		var evaluationSources []string
 		if !IsProviderScheme(ref.GetName()) {
-			body = scriptBody.String()
+			evaluationSources = sources
 		}
 
 		result = append(result, &v12.PolicyEvaluation{
 			Name:            policy.GetMetadata().GetName(),
 			MaterialName:    material.GetArtifact().GetId(),
-			Body:            body,
+			Sources:         evaluationSources,
 			Violations:      engineViolationsToAPIViolations(violations),
 			Annotations:     policy.GetMetadata().GetAnnotations(),
 			Description:     policy.GetMetadata().GetDescription(),
@@ -157,20 +156,20 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 
 		pv.logger.Info().Msgf("evaluating policy '%s' on attestation", policy.Metadata.Name)
 
-		violations, scriptBody, err := pv.executeScript(ctx, policy, scripts, material, policyAtt)
+		violations, sources, err := pv.executeScripts(ctx, policy, scripts, material, policyAtt)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
 
-		var body string
+		var evaluationSources []string
 		if !IsProviderScheme(ref.GetName()) {
-			body = scriptBody.String()
+			evaluationSources = sources
 		}
 
 		// 5. Store result in the attestation itself (for the renderer to include them in the predicate)
 		result = append(result, &v12.PolicyEvaluation{
 			Name:            policy.Metadata.Name,
-			Body:            body,
+			Sources:         evaluationSources,
 			Violations:      policyViolationsToAttestationViolations(violations),
 			Annotations:     policy.GetMetadata().GetAnnotations(),
 			Description:     policy.GetMetadata().GetDescription(),
@@ -183,9 +182,9 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 	return result, nil
 }
 
-func (pv *PolicyVerifier) executeScript(ctx context.Context, policy *v1.Policy, scripts []*engine.Policy, material []byte, att *v1.PolicyAttachment) ([]*engine.PolicyViolation, *strings.Builder, error) {
+func (pv *PolicyVerifier) executeScripts(ctx context.Context, policy *v1.Policy, scripts []*engine.Policy, material []byte, att *v1.PolicyAttachment) ([]*engine.PolicyViolation, []string, error) {
 	violations := make([]*engine.PolicyViolation, 0)
-	var body strings.Builder
+	sources := make([]string, 0)
 
 	for _, script := range scripts {
 		// verify the policy
@@ -195,14 +194,12 @@ func (pv *PolicyVerifier) executeScript(ctx context.Context, policy *v1.Policy, 
 			return nil, nil, NewPolicyError(err)
 		}
 
-		body.WriteString(beginPolicySep)
-		body.WriteString(base64.StdEncoding.EncodeToString(script.Source))
-		body.WriteString(endPolicySep)
+		sources = append(sources, base64.StdEncoding.EncodeToString(script.Source))
 
 		violations = append(violations, res...)
 	}
 
-	return violations, &body, nil
+	return violations, sources, nil
 }
 
 // LoadPolicySpec loads and validates a policy spec from a contract

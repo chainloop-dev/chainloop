@@ -46,6 +46,13 @@
     "referenceName": {
       "type": "string"
     },
+    "sources": {
+      "description": "Base64 representation of run scripts. It might be empty if there is a FQDN reference to the policy",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
     "type": {
       "anyOf": [
         {
