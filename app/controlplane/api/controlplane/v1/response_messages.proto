@@ -117,6 +117,7 @@ message PolicyEvaluation {
   string name = 1;
   string material_name = 2;
   string body = 3;
+  repeated string sources = 11;
   map<string, string> annotations = 4;
   string description = 5;
   map<string, string> with = 7;

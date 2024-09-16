@@ -35,6 +35,12 @@
     "policyReference": {
       "$ref": "controlplane.v1.PolicyReference.jsonschema.json"
     },
+    "sources": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
     "type": {
       "type": "string"
     },

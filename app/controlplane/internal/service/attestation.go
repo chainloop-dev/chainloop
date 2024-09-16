@@ -430,6 +430,7 @@ func extractPolicyEvaluations(in map[string][]*chainloop.PolicyEvaluation) map[s
 				Name:         ev.Name,
 				MaterialName: ev.MaterialName,
 				Body:         ev.Body,
+				Sources:      ev.Sources,
 				Annotations:  ev.Annotations,
 				Description:  ev.Description,
 				With:         ev.With,
