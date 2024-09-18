@@ -17,7 +17,10 @@ var execOpts = dagger.ContainerWithExecOpts{
 	UseEntrypoint: true,
 }
 
-type Chainloop struct{}
+type Chainloop struct {
+	// +private
+	Instance InstanceInfo
+}
 
 // A Chainloop attestation
 // https://docs.chainloop.dev/how-does-it-work/#contract-based-attestation
@@ -31,6 +34,7 @@ type Attestation struct {
 
 	// +private
 	RegistryAuth RegistryAuth
+	Client       *Chainloop
 }
 
 // Configuration for a container registry client
@@ -41,6 +45,20 @@ type RegistryAuth struct {
 	Username string
 	// Password to use when authenticating to the registry
 	Password *dagger.Secret
+}
+
+// Configuration for a Chainloop instance
+type InstanceInfo struct {
+	// hostname for the Control Plane API i.e mycontrolplane:443
+	ControlplaneAPI string
+	// path to a custom CA for the Control Plane API
+	ControlplaneCAPath *dagger.File
+	// hostname for the cas API i.e myCAS:443
+	CASAPI string
+	// path to a custom CA for the CAS API
+	CASCAPath *dagger.File
+	// Password to use when authenticating to the registry
+	Insecure bool
 }
 
 // Initialize a new attestation
@@ -60,6 +78,7 @@ func (m *Chainloop) Init(
 	att := &Attestation{
 		Token:      token,
 		repository: repository,
+		Client:     m,
 	}
 	// Append the contract revision to the args if provided
 	args := []string{
@@ -102,6 +121,7 @@ func (m *Chainloop) Resume(
 	return &Attestation{
 		AttestationID: attestationID,
 		Token:         token,
+		Client:        m,
 	}
 }
 
@@ -146,6 +166,34 @@ func (att *Attestation) WithRegistryAuth(
 	att.RegistryAuth.Username = username
 	att.RegistryAuth.Password = password
 	return att
+}
+
+// Configure the Chainloop instance to use
+func (m *Chainloop) WithInstance(
+	_ context.Context,
+	// Example: "api.controlplane.company.com:443"
+	controlplaneAPI string,
+	// Example: "api.cas.company.com:443"
+	casAPI string,
+	// Path to custom CA certificate for the CAS API
+	// +optional
+	casCA *dagger.File,
+	// Path to custom CA certificate for the Control Plane API
+	// +optional
+	controlplaneCA *dagger.File,
+	// Whether to skip TLS verification
+	// +optional
+	insecure bool,
+) *Chainloop {
+	m.Instance = InstanceInfo{
+		ControlplaneAPI:    controlplaneAPI,
+		CASAPI:             casAPI,
+		Insecure:           insecure,
+		CASCAPath:          casCA,
+		ControlplaneCAPath: controlplaneCA,
+	}
+
+	return m
 }
 
 // Add a raw string piece of evidence to the attestation
@@ -255,6 +303,26 @@ func (att *Attestation) Container(
 
 	if pw := att.RegistryAuth.Password; pw != nil {
 		ctr = ctr.WithSecretVariable("CHAINLOOP_REGISTRY_PASSWORD", pw)
+	}
+
+	if api := att.Client.Instance.ControlplaneAPI; api != "" {
+		ctr = ctr.WithEnvVariable("CHAINLOOP_CONTROL_PLANE_API", api)
+	}
+
+	if ca := att.Client.Instance.ControlplaneCAPath; ca != nil {
+		ctr = ctr.WithFile("/controlplane-ca.pem", ca).WithEnvVariable("CHAINLOOP_CONTROL_PLANE_API_CA", "/controlplane-ca.pem")
+	}
+
+	if ca := att.Client.Instance.CASCAPath; ca != nil {
+		ctr = ctr.WithFile("/cas-ca.pem", ca).WithEnvVariable("CHAINLOOP_ARTIFACT_CAS_API_CA", "/cas-ca.pem")
+	}
+
+	if cas := att.Client.Instance.CASAPI; cas != "" {
+		ctr = ctr.WithEnvVariable("CHAINLOOP_ARTIFACT_CAS_API", cas)
+	}
+
+	if att.Client.Instance.Insecure {
+		ctr = ctr.WithEnvVariable("CHAINLOOP_API_INSECURE", "true")
 	}
 
 	// Cache TTL
