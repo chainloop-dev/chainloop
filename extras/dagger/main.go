@@ -428,6 +428,9 @@ func (m *Chainloop) WorkflowCreate(
 	team string,
 	// +optional
 	description string,
+	// name of an existing contract
+	// +optional
+	contractName string,
 	// Set workflow as public so other organizations can see it
 	// +optional
 	public bool,
@@ -442,6 +445,7 @@ func (m *Chainloop) WorkflowCreate(
 			"--project", project,
 			"--team", team,
 			"--description", description,
+			"--contract", contractName,
 			"--public", fmt.Sprintf("%t", public),
 			"--skip-if-exists", fmt.Sprintf("%t", skipIfExists),
 		}, execOpts).
