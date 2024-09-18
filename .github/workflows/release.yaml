@@ -43,6 +43,12 @@ jobs:
           tag=$(echo -n ${{github.ref}} | cut -d / -f3)
           gh release download $tag -D /tmp/github-release
           for entry in $(ls /tmp/github-release); do
+            # If the name is cas.cyclonedx.json, controlplane.cyclonedx.json or cli.cyclonedx.json, we need to add the attestation with the correct name
+            if [[ $entry =~ ^(cas|controlplane|cli)\.cyclonedx\.json$ ]]; then
+              name=$(echo -n "${entry%.json}" | sed 's/\./-/g')
+              chainloop attestation add --value "/tmp/github-release/$entry" --name "$name"
+              continue
+            fi
             chainloop attestation add --value "/tmp/github-release/$entry"
           done
           

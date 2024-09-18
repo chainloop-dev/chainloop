@@ -26,6 +26,7 @@ jobs:
       CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
       CONTAINER_IMAGE_CP: ghcr.io/chainloop-dev/chainloop/control-plane:${{ github.ref_name }}
       CONTAINER_IMAGE_CAS: ghcr.io/chainloop-dev/chainloop/artifact-cas:${{ github.ref_name }}
+      CONTAINER_IMAGE_CLI: ghcr.io/chainloop-dev/chainloop/cli:${{ github.ref_name }}
       GH_TOKEN: ${{ github.token }}
       CHAINLOOP_WORKFLOW_NAME: "chainloop-vault-build-and-package"
     steps:
@@ -94,6 +95,13 @@ jobs:
           format: cyclonedx-json
           artifact-name: cas.cyclonedx.json
           output-file: /tmp/sbom.cas.cyclonedx.json
+
+      - uses: anchore/sbom-action@c6aed38a4323b393d05372c58a74c39ae8386d02 # v0.15.6
+        with:
+          image: ${{ env.CONTAINER_IMAGE_CLI }}
+          format: cyclonedx-json
+          artifact-name: cli.cyclonedx.json
+          output-file: /tmp/sbom.cli.cyclonedx.json
 
       - name: Add Attestation from Goreleaser Output
         run: |
