@@ -270,6 +270,44 @@ func (att *Attestation) Debug() *dagger.Container {
 	return att.Container(0).Terminal()
 }
 
+func cliContainer(ttl int, token *dagger.Secret, instance InstanceInfo) *dagger.Container {
+	ctr := dag.Container().
+		From(fmt.Sprintf("ghcr.io/chainloop-dev/chainloop/cli:%s", chainloopVersion)).
+		WithEntrypoint([]string{"/chainloop"}). // Be explicit to prepare for possible API change
+		WithEnvVariable("CHAINLOOP_DAGGER_CLIENT", chainloopVersion).
+		WithUser("").                                                                                     // Our images come with pre-defined user set, so we need to reset it
+		WithEnvVariable("DAGGER_CACHE_KEY", time.Now().Truncate(time.Duration(ttl)*time.Second).String()) // Cache TTL
+
+	if token != nil {
+		ctr = ctr.WithSecretVariable("CHAINLOOP_TOKEN", token)
+	}
+
+	if api := instance.ControlplaneAPI; api != "" {
+		ctr = ctr.WithEnvVariable("CHAINLOOP_CONTROL_PLANE_API", api)
+	}
+
+	if ca := instance.ControlplaneCAPath; ca != nil {
+		ctr = ctr.WithFile("/controlplane-ca.pem", ca).WithEnvVariable("CHAINLOOP_CONTROL_PLANE_API_CA", "/controlplane-ca.pem")
+	}
+
+	if ca := instance.CASCAPath; ca != nil {
+		ctr = ctr.WithFile("/cas-ca.pem", ca).WithEnvVariable("CHAINLOOP_ARTIFACT_CAS_API_CA", "/cas-ca.pem")
+	}
+
+	if cas := instance.CASAPI; cas != "" {
+		ctr = ctr.WithEnvVariable("CHAINLOOP_ARTIFACT_CAS_API", cas)
+	}
+
+	if instance.Insecure {
+		ctr = ctr.WithEnvVariable("CHAINLOOP_API_INSECURE", "true")
+	}
+
+	// Cache TTL
+	ctr = ctr.WithEnvVariable("DAGGER_CACHE_KEY", time.Now().Truncate(time.Duration(ttl)*time.Second).String())
+
+	return ctr
+}
+
 // Build an ephemeral container with everything needed to process the attestation
 func (att *Attestation) Container(
 	// Cache TTL for chainloop commands, in seconds
@@ -278,17 +316,7 @@ func (att *Attestation) Container(
 	// +default=0
 	ttl int,
 ) *dagger.Container {
-	ctr := dag.
-		Container().
-		From(fmt.Sprintf("ghcr.io/chainloop-dev/chainloop/cli:%s", chainloopVersion)).
-		WithEntrypoint([]string{"/chainloop"}). // Be explicit to prepare for possible API change
-		WithEnvVariable("CHAINLOOP_DAGGER_CLIENT", chainloopVersion).
-		WithUser("") // Our images come with pre-defined user set, so we need to reset it
-
-	if att.Token != nil {
-		ctr = ctr.WithSecretVariable("CHAINLOOP_TOKEN", att.Token)
-	}
-
+	ctr := cliContainer(ttl, att.Token, att.Client.Instance)
 	if att.repository != nil {
 		ctr = ctr.WithDirectory(".", att.repository)
 	}
@@ -304,29 +332,6 @@ func (att *Attestation) Container(
 	if pw := att.RegistryAuth.Password; pw != nil {
 		ctr = ctr.WithSecretVariable("CHAINLOOP_REGISTRY_PASSWORD", pw)
 	}
-
-	if api := att.Client.Instance.ControlplaneAPI; api != "" {
-		ctr = ctr.WithEnvVariable("CHAINLOOP_CONTROL_PLANE_API", api)
-	}
-
-	if ca := att.Client.Instance.ControlplaneCAPath; ca != nil {
-		ctr = ctr.WithFile("/controlplane-ca.pem", ca).WithEnvVariable("CHAINLOOP_CONTROL_PLANE_API_CA", "/controlplane-ca.pem")
-	}
-
-	if ca := att.Client.Instance.CASCAPath; ca != nil {
-		ctr = ctr.WithFile("/cas-ca.pem", ca).WithEnvVariable("CHAINLOOP_ARTIFACT_CAS_API_CA", "/cas-ca.pem")
-	}
-
-	if cas := att.Client.Instance.CASAPI; cas != "" {
-		ctr = ctr.WithEnvVariable("CHAINLOOP_ARTIFACT_CAS_API", cas)
-	}
-
-	if att.Client.Instance.Insecure {
-		ctr = ctr.WithEnvVariable("CHAINLOOP_API_INSECURE", "true")
-	}
-
-	// Cache TTL
-	ctr = ctr.WithEnvVariable("DAGGER_CACHE_KEY", time.Now().Truncate(time.Duration(ttl)*time.Second).String())
 
 	return ctr
 }
@@ -406,4 +411,43 @@ func (att *Attestation) reset(ctx context.Context,
 		WithExec(args, execOpts).
 		Sync(ctx)
 	return err
+}
+
+/// standalone API calls
+
+// Create a new workflow
+func (m *Chainloop) WorkflowCreate(
+	ctx context.Context,
+	// Chainloop API token
+	token *dagger.Secret,
+	// Workflow name
+	name string,
+	// Workflow project
+	project string,
+	// +optional
+	team string,
+	// +optional
+	description string,
+	// name of an existing contract
+	// +optional
+	contractName string,
+	// Set workflow as public so other organizations can see it
+	// +optional
+	public bool,
+	// If the workflow already exists, skip the creation and return success
+	// +optional
+	skipIfExists bool,
+) (string, error) {
+	return cliContainer(0, token, m.Instance).
+		WithExec([]string{
+			"workflow", "create",
+			"--name", name,
+			"--project", project,
+			"--team", team,
+			"--description", description,
+			"--contract", contractName,
+			"--public", fmt.Sprintf("%t", public),
+			"--skip-if-exists", fmt.Sprintf("%t", skipIfExists),
+		}, execOpts).
+		Stdout(ctx)
 }
