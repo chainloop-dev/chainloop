@@ -270,7 +270,7 @@ func (att *Attestation) Debug() *dagger.Container {
 	return att.Container(0).Terminal()
 }
 
-func cliContainer(ttl int, token *dagger.Secret) *dagger.Container {
+func cliContainer(ttl int, token *dagger.Secret, instance InstanceInfo) *dagger.Container {
 	ctr := dag.Container().
 		From(fmt.Sprintf("ghcr.io/chainloop-dev/chainloop/cli:%s", chainloopVersion)).
 		WithEntrypoint([]string{"/chainloop"}). // Be explicit to prepare for possible API change
@@ -281,6 +281,29 @@ func cliContainer(ttl int, token *dagger.Secret) *dagger.Container {
 	if token != nil {
 		ctr = ctr.WithSecretVariable("CHAINLOOP_TOKEN", token)
 	}
+
+	if api := instance.ControlplaneAPI; api != "" {
+		ctr = ctr.WithEnvVariable("CHAINLOOP_CONTROL_PLANE_API", api)
+	}
+
+	if ca := instance.ControlplaneCAPath; ca != nil {
+		ctr = ctr.WithFile("/controlplane-ca.pem", ca).WithEnvVariable("CHAINLOOP_CONTROL_PLANE_API_CA", "/controlplane-ca.pem")
+	}
+
+	if ca := instance.CASCAPath; ca != nil {
+		ctr = ctr.WithFile("/cas-ca.pem", ca).WithEnvVariable("CHAINLOOP_ARTIFACT_CAS_API_CA", "/cas-ca.pem")
+	}
+
+	if cas := instance.CASAPI; cas != "" {
+		ctr = ctr.WithEnvVariable("CHAINLOOP_ARTIFACT_CAS_API", cas)
+	}
+
+	if instance.Insecure {
+		ctr = ctr.WithEnvVariable("CHAINLOOP_API_INSECURE", "true")
+	}
+
+	// Cache TTL
+	ctr = ctr.WithEnvVariable("DAGGER_CACHE_KEY", time.Now().Truncate(time.Duration(ttl)*time.Second).String())
 
 	return ctr
 }
@@ -293,7 +316,7 @@ func (att *Attestation) Container(
 	// +default=0
 	ttl int,
 ) *dagger.Container {
-	ctr := cliContainer(ttl, att.Token)
+	ctr := cliContainer(ttl, att.Token, att.Client.Instance)
 	if att.repository != nil {
 		ctr = ctr.WithDirectory(".", att.repository)
 	}
@@ -309,29 +332,6 @@ func (att *Attestation) Container(
 	if pw := att.RegistryAuth.Password; pw != nil {
 		ctr = ctr.WithSecretVariable("CHAINLOOP_REGISTRY_PASSWORD", pw)
 	}
-
-	if api := att.Client.Instance.ControlplaneAPI; api != "" {
-		ctr = ctr.WithEnvVariable("CHAINLOOP_CONTROL_PLANE_API", api)
-	}
-
-	if ca := att.Client.Instance.ControlplaneCAPath; ca != nil {
-		ctr = ctr.WithFile("/controlplane-ca.pem", ca).WithEnvVariable("CHAINLOOP_CONTROL_PLANE_API_CA", "/controlplane-ca.pem")
-	}
-
-	if ca := att.Client.Instance.CASCAPath; ca != nil {
-		ctr = ctr.WithFile("/cas-ca.pem", ca).WithEnvVariable("CHAINLOOP_ARTIFACT_CAS_API_CA", "/cas-ca.pem")
-	}
-
-	if cas := att.Client.Instance.CASAPI; cas != "" {
-		ctr = ctr.WithEnvVariable("CHAINLOOP_ARTIFACT_CAS_API", cas)
-	}
-
-	if att.Client.Instance.Insecure {
-		ctr = ctr.WithEnvVariable("CHAINLOOP_API_INSECURE", "true")
-	}
-
-	// Cache TTL
-	ctr = ctr.WithEnvVariable("DAGGER_CACHE_KEY", time.Now().Truncate(time.Duration(ttl)*time.Second).String())
 
 	return ctr
 }
@@ -438,7 +438,7 @@ func (m *Chainloop) WorkflowCreate(
 	// +optional
 	skipIfExists bool,
 ) (string, error) {
-	return cliContainer(0, token).
+	return cliContainer(0, token, m.Instance).
 		WithExec([]string{
 			"workflow", "create",
 			"--name", name,

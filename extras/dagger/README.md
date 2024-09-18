@@ -193,7 +193,6 @@ init --token env:CHAINLOOP_TOKEN --workflow-name test-from-dagger-2 attestation-
 
 Please run `dagger call with-instance -h` for more information on the available options.
 
-
 ## Documentation
 
 To learn more, please visit the Chainloop project's documentation website, https://docs.chainloop.dev where you will find a getting started guide, FAQ, examples, and more.
