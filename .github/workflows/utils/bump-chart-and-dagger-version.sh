@@ -6,7 +6,7 @@ set -e
 
 die () {
     echo >&2 "$@"
-    echo "usage: bump.sh [chartPath] [version] [isCanary]"
+    echo "usage: bump.sh [chartPath] [daggerPath] [version] [isCanary]"
     exit 1
 }
 
@@ -15,10 +15,11 @@ if [[ -n "${DEBUG}" ]]; then
     set -x
 fi
 
-[ "$#" -ge 2 ] || die "At least 2 arguments required, $# provided"
+[ "$#" -ge 3 ] || die "At least 3 arguments required, $# provided"
 
 chart_yaml="${1}/Chart.yaml"
 values_yaml="${1}/values.yaml"
+dagger_main="${2}/main.go"
 semVer="${2}"
 
 ## Changes in Chart.yaml
@@ -48,3 +49,7 @@ sed -i "s/:v[0-9\.]*/:${semVer}/g" "${chart_yaml}"
 
 ## Changes images in Values.yaml
 sed -i "s/tag: .*/tag: \"${semVer}\"/g" "${values_yaml}"
+
+## Update Dagger version
+sed -i "s/chainloopVersion = \"v[0-9\.]*\"/chainloopVersion = \"${semVer}\"/" "${dagger_main}"
+

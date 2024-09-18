@@ -117,18 +117,18 @@ jobs:
           CHAINLOOP_SIGNING_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
           CHAINLOOP_SIGNING_KEY: ${{ secrets.COSIGN_KEY }}
 
-      - name: Bump Chart Version
-        run: .github/workflows/utils/bump-chart-version.sh deployment/chainloop ${{ github.ref_name }}
+      - name: Bump Chart and Dagger Version
+        run: .github/workflows/utils/bump-chart-and-dagger-version.sh deployment/chainloop extras/dagger ${{ github.ref_name }}
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38 # v5.0.2
         with:
-          commit-message: Bump Chart Version ${{ github.ref_name }}
+          commit-message: Bump Chart and Dagger Version ${{ github.ref_name }}
           signoff: true
           base: main
-          title: Bump Helm Chart Version => ${{ github.ref_name }}
+          title: Bump Helm Chart and Dagger Version => ${{ github.ref_name }}
           body: |
-            A new Chainloop release is available! Bumping Helm Chart reference to ${{ github.ref_name }}
+            A new Chainloop release is available! Bumping Helm Chart reference and Dagger version to ${{ github.ref_name }}
           labels: |
             automated
             helm
