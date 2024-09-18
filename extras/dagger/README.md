@@ -8,6 +8,7 @@ Daggerized version of [Chainloop](https://docs.chainloop.dev) that can be used t
 
 - This module requires existing familiarity with Chainloop and its attestation process. Please refer to [this guide](https://docs.chainloop.dev/getting-started/attestation-crafting) to learn more.
  You need an `API Token` [previously generated](https://docs.chainloop.dev/getting-started/workflow-definition#api-token-creation) by your Chainloop administrator.
+- By default, this dagger module points to Chainloop's upstream instance, to point to your own instance, see the section below.
 
 ## Attestation Crafting
 
@@ -163,6 +164,23 @@ dagger call -m github.com/chainloop-dev/chainloop \
   resume --token env:CHAINLOOP_TOKEN --attestation-id $ATTESTATION_ID \
   mark-canceled --reason "nothing to see here"
 ```
+
+### Pointing to a different Chainloop Instance
+
+By default, this dagger module points to Chainloop's upstream instance, but if you want to point to your own instance, you can do it by running the with-instance command just right after `dagger call`
+
+```sh
+dagger call with-instance --controlplane-api api.cp.chainloop.dev:443 --cas-api api.cas.chainloop.dev:443 [SUBCOMMAND]
+```
+
+example initializing an attestation
+
+```sh
+dagger call with-instance --controlplane-api api.cp.chainloop.dev:443 --cas-api api.cas.chainloop.dev:443 \
+init --token env:CHAINLOOP_TOKEN --workflow-name test-from-dagger-2 attestation-id
+```
+
+Please run `dagger call with-instance -h` for more information on the available options.
 
 ## Documentation
 
