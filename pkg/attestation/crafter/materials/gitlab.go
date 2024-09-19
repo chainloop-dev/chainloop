@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"slices"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
@@ -27,6 +28,8 @@ import (
 	"github.com/rs/zerolog"
 	"gitlab.com/gitlab-org/security-products/analyzers/report/v5"
 )
+
+var supportedTypes = []string{"sast", "dast", "api_fuzzing", "coverage_fuzzing", "secret_detection", "dependency_scanning", "container_scanning", "container_scanning_for_registry", "cluster_image_scanning"}
 
 type GitlabCrafter struct {
 	*crafterCommon
@@ -60,7 +63,7 @@ func (i *GitlabCrafter) validate(filePath string) error {
 		return fmt.Errorf("error unmarshalling report file: %w", err)
 	}
 
-	if glReport.Scan.Type == "" {
+	if !slices.Contains(supportedTypes, string(glReport.Scan.Type)) {
 		return fmt.Errorf("error loading Gitlab report. Missing scan type")
 	}
 
