@@ -20,7 +20,7 @@ fi
 chart_yaml="${1}/Chart.yaml"
 values_yaml="${1}/values.yaml"
 dagger_main="${2}/main.go"
-semVer="${2}"
+semVer="${3}"
 
 ## Changes in Chart.yaml
 # If we are bumping to a canary version, we want to 
