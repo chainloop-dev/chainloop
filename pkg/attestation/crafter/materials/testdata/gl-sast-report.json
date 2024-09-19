@@ -1,0 +1,150 @@
+{
+  "version": "15.1.4",
+  "vulnerabilities": [
+    {
+      "id": ":SKIP:",
+      "category": "sast",
+      "name": "Use of a broken or risky cryptographic algorithm",
+      "description": "Cryptographic algorithms provide many different modes of operation, only some of which provide\nmessage integrity. Without message integrity it could be possible for an adversary to attempt\nto tamper with the ciphertext which could lead to compromising the encryption key. Newer\nalgorithms\napply message integrity to validate ciphertext has not been tampered with.\n\nInstead of using an algorithm that requires configuring a cipher mode, an algorithm\nthat has built-in message integrity should be used. Consider using `ChaCha20Poly1305` or\n`AES-256-GCM` instead.\n\nFor older applications that don't have support for `ChaCha20Poly1305`, `AES-256-GCM` is\nrecommended, however it has many drawbacks:\n  - Slower than `ChaCha20Poly1305`.\n  - Catastrophic failure if nonce values are reused.\n\nExample using `ChaCha20Poly1305`:\n```\npublic encrypt() throws Exception {\n    chaChaEncryption(\"Secret text to encrypt\".getBytes(StandardCharsets.UTF_8));\n}\n\npublic SecureRandom getSecureRandomDRBG() throws NoSuchAlgorithmException {\n// Use DRBG according to\nhttp://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-90Ar1.pdf\n    return SecureRandom.getInstance(\"DRBG\",\n            // Security strength in bits (default is 128)\n            DrbgParameters.instantiation(256,\n                // Set prediction resistance and re-seeding\n                DrbgParameters.Capability.PR_AND_RESEED,\n                // Set the personalization string (optional, not necessary)\n                \"some_personalization_string\".getBytes()\n            )\n    );\n}\n\npublic Cipher getChaCha20Poly1305(int mode, byte[] ivKey, byte[] secretKey) throws\nNoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,\nInvalidAlgorithmParameterException  {\n    // Get a DRBG random number generator instance\n    SecureRandom random = getSecureRandomDRBG();\n    // Create a ChaCha20-Poly1305 cipher instance\n    Cipher chaChaCipher = Cipher.getInstance(\"ChaCha20-Poly1305/None/NoPadding\");\n    // Create our parameterSpec using our ivKey\n    AlgorithmParameterSpec parameterSpec = new IvParameterSpec(ivKey);\n    // Create a SecretKeySpec using our secretKey\n    SecretKeySpec secretKeySpec = new SecretKeySpec(secretKey, \"ChaCha20\");\n    // Initialize and return the cipher for the provided mode\n    chaChaCipher.init(mode, secretKeySpec, parameterSpec, random);\n    return chaChaCipher;\n}\n\npublic void chaChaEncryption(byte[] plainText) throws NoSuchAlgorithmException,\nNoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException {\n    // Get a DRBG random number generator instance\n    SecureRandom random = getSecureRandomDRBG();\n    // Create secretKey\n    byte[] secretKey = new byte[32];\n    random.nextBytes(secretKey);\n    // Create an IV Key\n    byte[] ivKey = new byte[12];\n    random.nextBytes(ivKey);\n\n    // Create a chaCha encryption cipher instance\n    Cipher chaChaEncryptor = getChaCha20Poly1305(Cipher.ENCRYPT_MODE, ivKey, secretKey);\n\n    // Encrypt the text using ChaCha20Poly1305\n    byte[] cipherText = null;\n    try {\n        cipherText = chaChaEncryptor.doFinal(plainText);\n    } catch (IllegalBlockSizeException | BadPaddingException e) {\n        System.out.println(\"failed to encrypt text\");\n        return;\n    }\n    System.out.println(\"encrypted: \" + Base64.getEncoder().encodeToString(cipherText));\n\n     // Create a chaCha decryption cipher instance\n    Cipher chaChaDecryptor = getChaCha20Poly1305(Cipher.DECRYPT_MODE, ivKey, secretKey);\n\n    // Decrypt the text\n    byte[] decryptedText = null;\n    try {\n        decryptedText = chaChaDecryptor.doFinal(cipherText);\n    } catch (IllegalBlockSizeException | BadPaddingException e) {\n        System.out.println(\"failed to decrypt text\");\n        return;\n    }\n    System.out.println(\"decrypted: \" + new String(decryptedText, StandardCharsets.UTF_8));\n}\n```\n\nFor more information on Java Cryptography see:\nhttps://docs.oracle.com/en/java/javase/15/security/java-cryptography-architecture-jca-reference-guide.html\n",
+      "cve": "semgrep_id:find_sec_bugs.CIPHER_INTEGRITY-1:29:29",
+      "severity": "Medium",
+      "scanner": {
+        "id": "semgrep",
+        "name": "Semgrep"
+      },
+      "location": {
+        "file": "src/main/java/com/gitlab/security_products/tests/App.java",
+        "start_line": 29
+      },
+      "identifiers": [
+        {
+          "type": "semgrep_id",
+          "name": "find_sec_bugs.CIPHER_INTEGRITY-1",
+          "value": "find_sec_bugs.CIPHER_INTEGRITY-1"
+        },
+        {
+          "type": "cwe",
+          "name": "CWE-327",
+          "value": "327",
+          "url": "https://cwe.mitre.org/data/definitions/327.html"
+        },
+        {
+          "type": "owasp",
+          "name": "A02:2021 - Cryptographic Failures",
+          "value": "A02:2021"
+        },
+        {
+          "type": "owasp",
+          "name": "A3:2017 - Sensitive Data Exposure",
+          "value": "A3:2017"
+        },
+        {
+          "type": "find_sec_bugs_type",
+          "name": "Find Security Bugs-CIPHER_INTEGRITY",
+          "value": "CIPHER_INTEGRITY"
+        }
+      ],
+      "tracking": {
+        "type": "source",
+        "items": [
+          {
+            "file": "src/main/java/com/gitlab/security_products/tests/App.java",
+            "line_start": 29,
+            "line_end": 29,
+            "signatures": [
+              {
+                "algorithm": "scope_offset",
+                "value": "src/main/java/com/gitlab/security_products/tests/App.java|App[0]|insecureCypher[0]:2"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": ":SKIP:",
+      "category": "sast",
+      "name": "Use of a broken or risky cryptographic algorithm",
+      "description": "Cryptographic algorithms provide many different modes of operation, only some of which provide\nmessage integrity. Without message integrity it could be possible for an adversary to attempt\nto tamper with the ciphertext which could lead to compromising the encryption key. Newer\nalgorithms\napply message integrity to validate ciphertext has not been tampered with.\n\nInstead of using an algorithm that requires configuring a cipher mode, an algorithm\nthat has built-in message integrity should be used. Consider using `ChaCha20Poly1305` or\n`AES-256-GCM` instead.\n\nFor older applications that don't have support for `ChaCha20Poly1305`, `AES-256-GCM` is\nrecommended, however it has many drawbacks:\n  - Slower than `ChaCha20Poly1305`.\n  - Catastrophic failure if nonce values are reused.\n\nExample using `ChaCha20Poly1305`:\n```\npublic encrypt() throws Exception {\n    chaChaEncryption(\"Secret text to encrypt\".getBytes(StandardCharsets.UTF_8));\n}\n\npublic SecureRandom getSecureRandomDRBG() throws NoSuchAlgorithmException {\n    // Use DRBG according to\nhttp://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-90Ar1.pdf\n    return SecureRandom.getInstance(\"DRBG\",\n            // Security strength in bits (default is 128)\n            DrbgParameters.instantiation(256,\n                // Set prediction resistance and re-seeding\n                DrbgParameters.Capability.PR_AND_RESEED,\n                // Set the personalization string (optional, not necessary)\n                \"some_personalization_string\".getBytes()\n            )\n    );\n}\n\npublic Cipher getChaCha20Poly1305(int mode, byte[] ivKey, byte[] secretKey) throws\nNoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,\nInvalidAlgorithmParameterException  {\n    // Get a DRBG random number generator instance\n    SecureRandom random = getSecureRandomDRBG();\n    // Create a ChaCha20-Poly1305 cipher instance\n    Cipher chaChaCipher = Cipher.getInstance(\"ChaCha20-Poly1305/None/NoPadding\");\n    // Create our parameterSpec using our ivKey\n    AlgorithmParameterSpec parameterSpec = new IvParameterSpec(ivKey);\n    // Create a SecretKeySpec using our secretKey\n    SecretKeySpec secretKeySpec = new SecretKeySpec(secretKey, \"ChaCha20\");\n    // Initialize and return the cipher for the provided mode\n    chaChaCipher.init(mode, secretKeySpec, parameterSpec, random);\n    return chaChaCipher;\n}\n\npublic void chaChaEncryption(byte[] plainText) throws NoSuchAlgorithmException,\nNoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException {\n    // Get a DRBG random number generator instance\n    SecureRandom random = getSecureRandomDRBG();\n    // Create secretKey\n    byte[] secretKey = new byte[32];\n    random.nextBytes(secretKey);\n    // Create an IV Key\n    byte[] ivKey = new byte[12];\n    random.nextBytes(ivKey);\n\n    // Create a chaCha encryption cipher instance\n    Cipher chaChaEncryptor = getChaCha20Poly1305(Cipher.ENCRYPT_MODE, ivKey, secretKey);\n\n    // Encrypt the text using ChaCha20Poly1305\n    byte[] cipherText = null;\n    try {\n        cipherText = chaChaEncryptor.doFinal(plainText);\n    } catch (IllegalBlockSizeException | BadPaddingException e) {\n        System.out.println(\"failed to encrypt text\");\n        return;\n    }\n    System.out.println(\"encrypted: \" + Base64.getEncoder().encodeToString(cipherText));\n\n     // Create a chaCha decryption cipher instance\n    Cipher chaChaDecryptor = getChaCha20Poly1305(Cipher.DECRYPT_MODE, ivKey, secretKey);\n\n    // Decrypt the text\n    byte[] decryptedText = null;\n    try {\n        decryptedText = chaChaDecryptor.doFinal(cipherText);\n    } catch (IllegalBlockSizeException | BadPaddingException e) {\n        System.out.println(\"failed to decrypt text\");\n        return;\n    }\n    System.out.println(\"decrypted: \" + new String(decryptedText, StandardCharsets.UTF_8));\n}\n```\n\nFor more information on Java Cryptography see:\nhttps://docs.oracle.com/en/java/javase/15/security/java-cryptography-architecture-jca-reference-guide.html\n",
+      "cve": "semgrep_id:find_sec_bugs.ECB_MODE-1:29:29",
+      "severity": "Medium",
+      "scanner": {
+        "id": "semgrep",
+        "name": "Semgrep"
+      },
+      "location": {
+        "file": "src/main/java/com/gitlab/security_products/tests/App.java",
+        "start_line": 29
+      },
+      "identifiers": [
+        {
+          "type": "semgrep_id",
+          "name": "find_sec_bugs.ECB_MODE-1",
+          "value": "find_sec_bugs.ECB_MODE-1"
+        },
+        {
+          "type": "cwe",
+          "name": "CWE-327",
+          "value": "327",
+          "url": "https://cwe.mitre.org/data/definitions/327.html"
+        },
+        {
+          "type": "owasp",
+          "name": "A02:2021 - Cryptographic Failures",
+          "value": "A02:2021"
+        },
+        {
+          "type": "owasp",
+          "name": "A3:2017 - Sensitive Data Exposure",
+          "value": "A3:2017"
+        },
+        {
+          "type": "find_sec_bugs_type",
+          "name": "Find Security Bugs-ECB_MODE",
+          "value": "ECB_MODE"
+        }
+      ],
+      "tracking": {
+        "type": "source",
+        "items": [
+          {
+            "file": "src/main/java/com/gitlab/security_products/tests/App.java",
+            "line_start": 29,
+            "line_end": 29,
+            "signatures": [
+              {
+                "algorithm": "scope_offset",
+                "value": "src/main/java/com/gitlab/security_products/tests/App.java|App[0]|insecureCypher[0]:2"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "dependency_files": null,
+  "scan": {
+    "analyzer": {
+      "id": "semgrep",
+      "name": "Semgrep",
+      "url": "https://gitlab.com/gitlab-org/security-products/analyzers/semgrep",
+      "vendor": {
+        "name": "GitLab"
+      },
+      "version": ":SKIP:"
+    },
+    "scanner": {
+      "id": "semgrep",
+      "name": "Semgrep",
+      "url": "https://github.com/returntocorp/semgrep",
+      "vendor": {
+        "name": "GitLab"
+      },
+      "version": ":SKIP:"
+    },
+    "type": "sast",
+    "start_time": "2021-09-15T08:36:08",
+    "end_time": "2021-09-15T08:36:25",
+    "status": "success"
+  }
+}

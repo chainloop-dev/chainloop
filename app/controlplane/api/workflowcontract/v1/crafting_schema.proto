@@ -104,6 +104,8 @@ message CraftingSchema {
       CSAF_INFORMATIONAL_ADVISORY = 13;
       CSAF_SECURITY_ADVISORY = 14;
       CSAF_SECURITY_INCIDENT_RESPONSE = 15;
+      // Gitlab Application Security Reports https://docs.gitlab.com/ee/user/application_security/
+      GITLAB_SECURITY_REPORT = 16;
     }
   }
 }

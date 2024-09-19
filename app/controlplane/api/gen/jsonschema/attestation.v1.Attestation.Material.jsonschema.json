@@ -32,7 +32,8 @@
             "CSAF_VEX",
             "CSAF_INFORMATIONAL_ADVISORY",
             "CSAF_SECURITY_ADVISORY",
-            "CSAF_SECURITY_INCIDENT_RESPONSE"
+            "CSAF_SECURITY_INCIDENT_RESPONSE",
+            "GITLAB_SECURITY_REPORT"
           ],
           "title": "Material Type",
           "type": "string"
@@ -92,7 +93,8 @@
             "CSAF_VEX",
             "CSAF_INFORMATIONAL_ADVISORY",
             "CSAF_SECURITY_ADVISORY",
-            "CSAF_SECURITY_INCIDENT_RESPONSE"
+            "CSAF_SECURITY_INCIDENT_RESPONSE",
+            "GITLAB_SECURITY_REPORT"
           ],
           "title": "Material Type",
           "type": "string"
