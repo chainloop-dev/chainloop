@@ -176,7 +176,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestCreate() {
 		}
 	})
 
-	s.T().Run("and the email address is downcased", func(t *testing.T) {
+	s.Run("and the email address is downcased", func() {
 		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, s.user.ID, "WasCamelCase@cyberdyne.io")
 		s.NoError(err)
 		s.Equal("wascamelcase@cyberdyne.io", invite.ReceiverEmail)

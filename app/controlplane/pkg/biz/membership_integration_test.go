@@ -46,7 +46,7 @@ func (s *membershipIntegrationTestSuite) TestByOrg() {
 	_, err = s.Membership.Create(ctx, sharedOrg.ID, user2.ID, biz.WithCurrentMembership())
 	s.NoError(err)
 
-	s.T().Run("org 1", func(t *testing.T) {
+	s.Run("org 1", func() {
 		memberships, err := s.Membership.ByOrg(ctx, userOrg.ID)
 		s.NoError(err)
 		s.Len(memberships, 1)
@@ -55,7 +55,7 @@ func (s *membershipIntegrationTestSuite) TestByOrg() {
 		s.Equal(memberships[0].Role, authz.RoleViewer)
 	})
 
-	s.T().Run("shared org", func(t *testing.T) {
+	s.Run("shared org", func() {
 		memberships, err := s.Membership.ByOrg(ctx, sharedOrg.ID)
 		s.NoError(err)
 		s.Len(memberships, 2)
