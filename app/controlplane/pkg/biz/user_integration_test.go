@@ -29,6 +29,24 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+func (s *userIntegrationTestSuite) TestFindOrCreateByEmail() {
+	// It will create a new user
+	u, err := s.User.FindOrCreateByEmail(context.Background(), "user1@user.com")
+	s.NoError(err)
+	s.Equal("user1@user.com", u.Email)
+
+	// running it again has the same ID
+	u2, err := s.User.FindOrCreateByEmail(context.Background(), "user1@user.com")
+	s.NoError(err)
+	s.Equal(u2.ID, u.ID)
+
+	// It will downcase the email
+	// running it again has the same ID
+	u3, err := s.User.FindOrCreateByEmail(context.Background(), "WAS-UPPERCASE@user.com")
+	s.NoError(err)
+	s.Equal("was-uppercase@user.com", u3.Email)
+}
+
 /*
 User mapping:
 - userOne -> userOne org
