@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -174,6 +174,12 @@ func (s *OrgInvitationIntegrationTestSuite) TestCreate() {
 			s.NoError(err)
 			s.Equal(r, invite.Role)
 		}
+	})
+
+	s.Run("and the email address is downcased", func() {
+		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, s.user.ID, "WasCamelCase@cyberdyne.io")
+		s.NoError(err)
+		s.Equal("wascamelcase@cyberdyne.io", invite.ReceiverEmail)
 	})
 }
 

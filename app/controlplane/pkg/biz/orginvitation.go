@@ -18,6 +18,7 @@ package biz
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
@@ -73,6 +74,8 @@ func WithInvitationRole(r authz.Role) InvitationCreateOpt {
 }
 
 func (uc *OrgInvitationUseCase) Create(ctx context.Context, orgID, senderID, receiverEmail string, createOpts ...InvitationCreateOpt) (*OrgInvitation, error) {
+	receiverEmail = strings.ToLower(receiverEmail)
+
 	// 1 - Static Validation
 	if receiverEmail == "" {
 		return nil, NewErrValidationStr("receiver email is required")

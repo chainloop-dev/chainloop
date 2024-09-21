@@ -18,6 +18,7 @@ package biz
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
@@ -99,6 +100,9 @@ func (uc *UserUseCase) DeleteUser(ctx context.Context, userID string) error {
 // to the organizations defined in the configuration. If disableAutoOnboarding is set to true, it will
 // skip the auto-onboarding process.
 func (uc *UserUseCase) FindOrCreateByEmail(ctx context.Context, email string, disableAutoOnboarding ...bool) (*User, error) {
+	// emails are case-insensitive
+	email = strings.ToLower(email)
+
 	u, err := uc.userRepo.FindByEmail(ctx, email)
 	if err != nil {
 		return nil, err
