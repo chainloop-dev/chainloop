@@ -1,0 +1,27 @@
+{
+  "$id": "workflowcontract.v1.PolicyGroup.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Represents a group or policies",
+  "patternProperties": {
+    "^(api_version)$": {
+      "type": "string"
+    }
+  },
+  "properties": {
+    "apiVersion": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string"
+    },
+    "metadata": {
+      "$ref": "workflowcontract.v1.Metadata.jsonschema.json"
+    },
+    "spec": {
+      "$ref": "workflowcontract.v1.PolicyGroup.PolicyGroupSpec.jsonschema.json"
+    }
+  },
+  "title": "Policy Group",
+  "type": "object"
+}

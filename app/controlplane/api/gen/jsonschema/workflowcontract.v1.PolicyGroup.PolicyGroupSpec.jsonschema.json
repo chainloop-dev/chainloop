@@ -1,0 +1,12 @@
+{
+  "$id": "workflowcontract.v1.PolicyGroup.PolicyGroupSpec.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "policies": {
+      "$ref": "workflowcontract.v1.PolicyGroup.PolicyGroupPolicies.jsonschema.json"
+    }
+  },
+  "title": "Policy Group Spec",
+  "type": "object"
+}

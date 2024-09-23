@@ -37,6 +37,9 @@ message CraftingSchema {
   // Policies to apply to this schema
   Policies policies = 6;
 
+  // Policy groups to apply to this schema
+  repeated PolicyGroupAttachment policy_groups = 7;
+
   message Runner {
     RunnerType type = 1 [
       (buf.validate.field).enum = {
@@ -245,3 +248,39 @@ message PolicySpecV2 {
     ]
   }];
 }
+
+// Represents a group attachment in a contract
+message PolicyGroupAttachment {
+  // Group reference, it might be an URL or a provider reference
+  string ref = 1 [(buf.validate.field).string.min_len = 1];
+
+  // Group arguments. They will override the defaults defined in the group
+  map<string, string> with = 2;
+}
+
+// Represents a group or policies
+message PolicyGroup {
+  string api_version = 1 [(buf.validate.field).string.const = "workflowcontract.chainloop.dev/v1"];
+  string kind = 2 [(buf.validate.field).string.const = "PolicyGroup"];
+
+  Metadata metadata = 3 [(buf.validate.field).required = true];
+  PolicyGroupSpec spec = 4 [(buf.validate.field).required = true];
+
+  message PolicyGroupSpec {
+    PolicyGroupPolicies policies = 1;
+  }
+  message PolicyGroupPolicies {
+    repeated GroupPolicyReference materials = 1;
+    repeated GroupPolicyReference attestation = 2;
+  }
+
+  message GroupPolicyReference {
+    string ref = 1 [(buf.validate.field).string.min_len = 1];
+
+    // optional arguments for policy. They will be overriden by any argument with the same name applied to the group attachment
+    map<string, string> with = 5;
+  }
+}
+
+
+

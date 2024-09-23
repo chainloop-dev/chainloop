@@ -1,0 +1,22 @@
+{
+  "$id": "workflowcontract.v1.PolicyGroup.GroupPolicyReference.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "ref": {
+      "type": "string"
+    },
+    "with": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "optional arguments for policy. They will be overriden by any argument with the same name applied to the group attachment",
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    }
+  },
+  "title": "Group Policy Reference",
+  "type": "object"
+}
