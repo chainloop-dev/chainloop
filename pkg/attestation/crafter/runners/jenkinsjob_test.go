@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -82,7 +82,8 @@ func (s *jenkinsJobSuite) TestListEnvVars() {
 		{"BUILD_URL", false},
 		{"GIT_BRANCH", true},
 		{"GIT_COMMIT", true},
-		{"AGENT_WORKDIR", false},
+		{"AGENT_WORKDIR", true},
+		{"WORKSPACE", false},
 		{"NODE_NAME", false},
 	}, s.runner.ListEnvVars())
 }
@@ -98,7 +99,7 @@ func (s *jenkinsJobSuite) TestResolveEnvVars() {
 	os.Unsetenv("GIT_COMMIT")
 	resolvedEnvVars, errors = s.runner.ResolveEnvVars()
 	s.Empty(errors)
-	s.Equal(reuiredJenkinsJobTestingEnvVars, resolvedEnvVars)
+	s.Equal(requiredJenkinsJobTestingEnvVars, resolvedEnvVars)
 }
 
 func (s *jenkinsJobSuite) TestRunURI() {
@@ -119,19 +120,19 @@ func (s *jenkinsJobSuite) SetupTest() {
 }
 
 var jenkinsJobTestingEnvVars = map[string]string{
-	"JOB_NAME":      "some-jenkins-job",
-	"BUILD_URL":     "http://some-build-url/",
-	"AGENT_WORKDIR": "/home/sample/agent",
-	"NODE_NAME":     "some-node",
-	"GIT_BRANCH":    "somebranch",
-	"GIT_COMMIT":    "somecommit",
+	"JOB_NAME":   "some-jenkins-job",
+	"BUILD_URL":  "http://some-build-url/",
+	"WORKSPACE":  "/home/sample/agent",
+	"NODE_NAME":  "some-node",
+	"GIT_BRANCH": "somebranch",
+	"GIT_COMMIT": "somecommit",
 }
 
-var reuiredJenkinsJobTestingEnvVars = map[string]string{
-	"JOB_NAME":      "some-jenkins-job",
-	"BUILD_URL":     "http://some-build-url/",
-	"AGENT_WORKDIR": "/home/sample/agent",
-	"NODE_NAME":     "some-node",
+var requiredJenkinsJobTestingEnvVars = map[string]string{
+	"JOB_NAME":  "some-jenkins-job",
+	"BUILD_URL": "http://some-build-url/",
+	"WORKSPACE": "/home/sample/agent",
+	"NODE_NAME": "some-node",
 }
 
 // Run the tests
