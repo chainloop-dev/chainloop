@@ -5,13 +5,13 @@
   "properties": {
     "attestation": {
       "items": {
-        "$ref": "workflowcontract.v1.PolicyGroup.GroupPolicyReference.jsonschema.json"
+        "$ref": "workflowcontract.v1.PolicyAttachment.jsonschema.json"
       },
       "type": "array"
     },
     "materials": {
       "items": {
-        "$ref": "workflowcontract.v1.PolicyGroup.GroupPolicyReference.jsonschema.json"
+        "$ref": "workflowcontract.v1.PolicyAttachment.jsonschema.json"
       },
       "type": "array"
     }

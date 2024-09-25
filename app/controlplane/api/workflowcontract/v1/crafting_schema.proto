@@ -260,6 +260,7 @@ message PolicyGroup {
   message PolicyGroupSpec {
     PolicyGroupPolicies policies = 1;
   }
+
   message PolicyGroupPolicies {
     repeated PolicyAttachment materials = 1;
     repeated PolicyAttachment attestation = 2;

@@ -32,6 +32,7 @@ import (
 	v12 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -74,23 +75,13 @@ func (l *FileLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*
 		return nil, nil, fmt.Errorf("loading policy spec: %w", err)
 	}
 
-	p, err := unmarshalPolicy(raw, filepath.Ext(filePath))
+	var policy v1.Policy
+	d, err := unmarshallResource(raw, ref, wantDigest, &policy)
 	if err != nil {
 		return nil, nil, fmt.Errorf("unmarshalling policy spec: %w", err)
 	}
 
-	// calculate hash of the raw data
-	h, _, err := crv1.SHA256(bytes.NewBuffer(raw))
-	if err != nil {
-		return nil, nil, fmt.Errorf("calculating hash: %w", err)
-	}
-
-	// compare it with the wanted digest if needed
-	if wantDigest != "" && h.String() != wantDigest {
-		return nil, nil, fmt.Errorf("digest mismatch: got %s, want %s", h.String(), wantDigest)
-	}
-
-	return p, policyReferenceResourceDescriptor(ref, h), nil
+	return &policy, d, nil
 }
 
 // HTTPSLoader loader loads policies from HTTP or HTTPS references
@@ -115,37 +106,13 @@ func (l *HTTPSLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (
 		return nil, nil, fmt.Errorf("reading remote policy: %w", err)
 	}
 
-	p, err := unmarshalPolicy(raw, filepath.Ext(ref))
+	var policy v1.Policy
+	d, err := unmarshallResource(raw, ref, wantDigest, &policy)
 	if err != nil {
 		return nil, nil, fmt.Errorf("unmarshalling policy spec: %w", err)
 	}
 
-	// calculate hash of the raw data
-	h, _, err := crv1.SHA256(bytes.NewBuffer(raw))
-	if err != nil {
-		return nil, nil, fmt.Errorf("calculating hash: %w", err)
-	}
-
-	// compare it with the wanted digest if needed
-	if wantDigest != "" && h.String() != wantDigest {
-		return nil, nil, fmt.Errorf("digest mismatch: got %s, want %s", h.String(), wantDigest)
-	}
-
-	return p, policyReferenceResourceDescriptor(ref, h), nil
-}
-
-func unmarshalPolicy(rawData []byte, ext string) (*v1.Policy, error) {
-	jsonContent, err := attestation.LoadJSONBytes(rawData, ext)
-	if err != nil {
-		return nil, fmt.Errorf("loading policy spec: %w", err)
-	}
-
-	var spec v1.Policy
-	if err := protojson.Unmarshal(jsonContent, &spec); err != nil {
-		return nil, fmt.Errorf("unmarshalling policy spec: %w", err)
-	}
-
-	return &spec, nil
+	return &policy, d, nil
 }
 
 // ChainloopLoader loads policies referenced with chainloop://provider/name URLs
@@ -199,6 +166,30 @@ func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachm
 	// cache result
 	remotePolicyCache[ref] = &policyWithReference{policy: resp.GetPolicy(), reference: reference}
 	return resp.GetPolicy(), reference, nil
+}
+
+func unmarshallResource(raw []byte, ref string, digest string, dest proto.Message) (*v12.ResourceDescriptor, error) {
+	jsonContent, err := attestation.LoadJSONBytes(raw, filepath.Ext(ref))
+	if err != nil {
+		return nil, fmt.Errorf("loading resource spec: %w", err)
+	}
+
+	if err := protojson.Unmarshal(jsonContent, dest); err != nil {
+		return nil, fmt.Errorf("unmarshalling policy spec: %w", err)
+	}
+
+	// calculate hash of the raw data
+	h, _, err := crv1.SHA256(bytes.NewBuffer(raw))
+	if err != nil {
+		return nil, fmt.Errorf("calculating hash: %w", err)
+	}
+
+	// compare it with the wanted digest if needed
+	if digest != "" && h.String() != digest {
+		return nil, fmt.Errorf("digest mismatch: got %s, want %s", h.String(), digest)
+	}
+
+	return policyReferenceResourceDescriptor(ref, h), nil
 }
 
 // IsProviderScheme takes a policy reference and returns whether it's referencing to an external provider or not
