@@ -70,7 +70,7 @@ func (i *OCIImageCrafter) Craft(_ context.Context, imageRef string) (*api.Attest
 		Tag: ref.Identifier(),
 	}
 
-	// If the signature tag exists, add it to the material
+	// If the signature digest exists, add it to the material
 	if signDigest != "" {
 		containerImage.SignatureDigest = signDigest
 	}
