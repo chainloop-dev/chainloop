@@ -5,6 +5,10 @@
   "patternProperties": {
     "^(is_subject)$": {
       "type": "boolean"
+    },
+    "^(signature_digest)$": {
+      "description": "Digest of the found signature for the image",
+      "type": "string"
     }
   },
   "properties": {
@@ -18,6 +22,10 @@
       "type": "boolean"
     },
     "name": {
+      "type": "string"
+    },
+    "signatureDigest": {
+      "description": "Digest of the found signature for the image",
       "type": "string"
     },
     "tag": {

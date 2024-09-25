@@ -355,6 +355,10 @@ func outputMaterials(att *v1.Attestation, onlyOutput bool) ([]*intoto.ResourceDe
 			if tag := mdef.GetContainerImage().GetTag(); tag != "" {
 				annotationsM[annotationContainerTag] = tag
 			}
+
+			if sigDigest := mdef.GetContainerImage().GetSignatureDigest(); sigDigest != "" {
+				annotationsM[annotationContainerSignatureDigest] = sigDigest
+			}
 		}
 
 		// Custom annotations, it does not override the built-in ones

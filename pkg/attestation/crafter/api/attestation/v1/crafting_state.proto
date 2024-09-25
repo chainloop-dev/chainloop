@@ -65,6 +65,8 @@ message Attestation {
       bool is_subject = 4;
       // provided tag
       string tag = 5;
+      // Digest of the found signature for the image
+      string signature_digest = 6;
     }
 
     message Artifact {
