@@ -373,6 +373,7 @@ func getMaterialContent(material *v12.Attestation_Material, artifactPath string)
 func (pv *PolicyVerifier) requiredPoliciesForMaterial(ctx context.Context, material *v12.Attestation_Material) ([]*v1.PolicyAttachment, error) {
 	result := make([]*v1.PolicyAttachment, 0)
 	policies := pv.schema.GetPolicies().GetMaterials()
+	pv.schema.GetPolicyGroups()[0].GetRef()
 
 	for _, policyAtt := range policies {
 		// load the policy spec

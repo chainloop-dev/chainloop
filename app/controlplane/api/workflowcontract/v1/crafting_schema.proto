@@ -135,15 +135,6 @@ message PolicyAttachment {
     // meant to be used to embed the policy in the contract
     Policy embedded = 2;
 
-    //    TODO: reference to a policy already known by chainloop
-    //      string name = 2 [(buf.validate.field) = {
-    //        cel: {
-    //          message: "must contain only lowercase letters, numbers, and hyphens.",
-    //          expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
-    //          id: "name.dns-1123",
-    //        },
-    //      }];
-
     option (buf.validate.oneof).required = true;
   }
 
@@ -270,15 +261,8 @@ message PolicyGroup {
     PolicyGroupPolicies policies = 1;
   }
   message PolicyGroupPolicies {
-    repeated GroupPolicyReference materials = 1;
-    repeated GroupPolicyReference attestation = 2;
-  }
-
-  message GroupPolicyReference {
-    string ref = 1 [(buf.validate.field).string.min_len = 1];
-
-    // optional arguments for policy. They will be overriden by any argument with the same name applied to the group attachment
-    map<string, string> with = 5;
+    repeated PolicyAttachment materials = 1;
+    repeated PolicyAttachment attestation = 2;
   }
 }
 
