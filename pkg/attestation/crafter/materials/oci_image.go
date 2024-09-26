@@ -30,8 +30,14 @@ import (
 	cosigntypes "github.com/sigstore/cosign/v2/pkg/types"
 )
 
-// CosignSignatureProvider is the signature provider for Cosign signatures.
-const CosignSignatureProvider SignatureProvider = "cosign"
+const (
+	cosignSignatureProvider SignatureProvider = "cosign"
+	notarySignatureProvider SignatureProvider = "notary"
+
+	// notarySignatureMimeType is the MIME type for Notary signatures on OCI artifacts.
+	// https://github.com/notaryproject/specifications/blob/main/specs/signature-specification.md#oci-signatures
+	notarySignatureMimeType = "application/vnd.cncf.notary.signature"
+)
 
 // SignatureProvider is the type for the signature provider of a container image.
 type SignatureProvider string
@@ -154,7 +160,7 @@ func (i *OCIImageCrafter) checkForSignatureTag(originalRef name.Reference, origi
 	// Try fetching the signature tag
 	if desc, err := remote.Head(newRef, remote.WithAuthFromKeychain(i.keychain)); err == nil {
 		i.logger.Debug().Str("name", newRef.String()).Msg("image signature found")
-		return &ContainerSignatureInfo{digest: desc.Digest.String(), provider: CosignSignatureProvider}
+		return &ContainerSignatureInfo{digest: desc.Digest.String(), provider: cosignSignatureProvider}
 	}
 
 	return nil
@@ -178,8 +184,14 @@ func (i *OCIImageCrafter) checkForSignatureReferrers(originalRef name.Reference,
 	for _, m := range manifest.Manifests {
 		// Check if the artifact is a Cosign signature
 		if m.ArtifactType == cosigntypes.SimpleSigningMediaType {
-			i.logger.Debug().Str("digest", m.Digest.String()).Msg("found signature artifact using referrers API")
-			return &ContainerSignatureInfo{digest: m.Digest.String(), provider: CosignSignatureProvider}
+			i.logger.Debug().Str("digest", m.Digest.String()).Msg("found Cosign signature artifact using referrers API")
+			return &ContainerSignatureInfo{digest: m.Digest.String(), provider: cosignSignatureProvider}
+		}
+
+		// Check if the artifact is a Notary signature
+		if m.ArtifactType == notarySignatureMimeType {
+			i.logger.Debug().Str("digest", m.Digest.String()).Msg("found Notary signature artifact using referrers API")
+			return &ContainerSignatureInfo{digest: m.Digest.String(), provider: notarySignatureProvider}
 		}
 	}
 
