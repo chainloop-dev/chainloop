@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
@@ -28,6 +29,18 @@ import (
 	"github.com/rs/zerolog"
 	cosigntypes "github.com/sigstore/cosign/v2/pkg/types"
 )
+
+// CosignSignatureProvider is the signature provider for Cosign signatures.
+const CosignSignatureProvider SignatureProvider = "cosign"
+
+// SignatureProvider is the type for the signature provider of a container image.
+type SignatureProvider string
+
+// ContainerSignatureInfo holds the digest and signature provider for a container image.
+type ContainerSignatureInfo struct {
+	digest   string
+	provider SignatureProvider
+}
 
 type OCIImageCrafter struct {
 	*crafterCommon
@@ -63,7 +76,7 @@ func (i *OCIImageCrafter) Craft(_ context.Context, imageRef string) (*api.Attest
 	i.logger.Debug().Str("name", repoName).Str("digest", remoteRef.DigestStr()).Msg("container image resolved")
 
 	// Check if the signature tag exists for the image digest
-	signDigest := i.CheckForSignature(ref, descriptor)
+	signatureInfo := i.checkForSignature(ref, descriptor)
 
 	containerImage := &api.Attestation_Material_ContainerImage{
 		Id: i.input.Name, Name: repoName, Digest: remoteRef.DigestStr(), IsSubject: i.input.Output,
@@ -71,8 +84,9 @@ func (i *OCIImageCrafter) Craft(_ context.Context, imageRef string) (*api.Attest
 	}
 
 	// If the signature digest exists, add it to the material
-	if signDigest != "" {
-		containerImage.SignatureDigest = signDigest
+	if signatureInfo != nil {
+		containerImage.SignatureDigest = signatureInfo.digest
+		containerImage.SignatureProvider = string(signatureInfo.provider)
 	}
 
 	return &api.Attestation_Material{
@@ -81,53 +95,93 @@ func (i *OCIImageCrafter) Craft(_ context.Context, imageRef string) (*api.Attest
 	}, nil
 }
 
-// CheckForSignature checks if the signature tag exists for the image digest.
-// It first checks for a tag with the signature digest and, if not found, uses the referrers API to check for related material.
-func (i *OCIImageCrafter) CheckForSignature(originalRef name.Reference, originalDesc *remote.Descriptor) string {
+// checkForSignature checks for a signature for the given image reference.
+// Right now it checks for Cosign signatures only by tag or referrers API.
+func (i *OCIImageCrafter) checkForSignature(originalRef name.Reference, originalDesc *remote.Descriptor) *ContainerSignatureInfo {
+	var wg sync.WaitGroup
+	resultChan := make(chan *ContainerSignatureInfo, 1)
+
+	// Launch parallel goroutines for signature checks
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		if sigInfo := i.checkForSignatureTag(originalRef, originalDesc); sigInfo != nil {
+			select {
+			case resultChan <- sigInfo:
+			default:
+				// Channel already closed, result obtained from another source
+			}
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		if sigInfo := i.checkForSignatureReferrers(originalRef, originalDesc); sigInfo != nil {
+			select {
+			case resultChan <- sigInfo:
+			default:
+				// Channel already closed, result obtained from another source
+			}
+		}
+	}()
+
+	go func() {
+		wg.Wait()
+		close(resultChan)
+	}()
+
+	// Return the first valid signature result
+	for sigInfo := range resultChan {
+		return sigInfo
+	}
+
+	i.logger.Debug().Str("name", originalRef.String()).Msg("image signature not found")
+	return nil
+}
+
+// checkForSignatureTag checks for a signature tag.
+func (i *OCIImageCrafter) checkForSignatureTag(originalRef name.Reference, originalDesc *remote.Descriptor) *ContainerSignatureInfo {
 	trimmedDigest := strings.TrimPrefix(originalDesc.Digest.String(), "sha256:")
 	newTag := fmt.Sprintf("sha256-%s.sig", trimmedDigest)
 
 	// Create new reference for the signature tag
 	newRef, err := name.NewTag(fmt.Sprintf("%s:%s", originalRef.Context().Name(), newTag))
 	if err != nil {
-		i.logger.Error().Err(err).Msg("failed to create new tag reference")
-		return ""
+		i.logger.Debug().Err(err).Msg("failed to create new tag reference")
+		return nil
 	}
 
 	// Try fetching the signature tag
-	if desc, err := remote.Head(newRef); err == nil {
+	if desc, err := remote.Head(newRef, remote.WithAuthFromKeychain(i.keychain)); err == nil {
 		i.logger.Debug().Str("name", newRef.String()).Msg("image signature found")
-		return strings.TrimPrefix(desc.Digest.String(), "sha256:")
+		return &ContainerSignatureInfo{digest: desc.Digest.String(), provider: CosignSignatureProvider}
 	}
 
-	i.logger.Debug().Err(err).Str("name", newRef.String()).Msg("image signature not found")
-
-	// Use the referrers API to look for related materials if the tag is not found
-	return i.checkReferrersForSignature(originalRef, originalDesc)
+	return nil
 }
 
-// checkReferrersForSignature uses the referrers API to find a matching signature artifact.
-func (i *OCIImageCrafter) checkReferrersForSignature(originalRef name.Reference, originalDesc *remote.Descriptor) string {
+// checkForSignatureReferrers checks for a signature using the referrers API.
+func (i *OCIImageCrafter) checkForSignatureReferrers(originalRef name.Reference, originalDesc *remote.Descriptor) *ContainerSignatureInfo {
 	ref := originalRef.Context().Digest(originalDesc.Digest.String())
 	index, err := remote.Referrers(ref, remote.WithAuthFromKeychain(i.keychain))
 	if err != nil {
-		i.logger.Error().Err(err).Msg("failed to fetch referrers")
-		return ""
+		i.logger.Debug().Err(err).Msg("failed to fetch referrers")
+		return nil
 	}
 
 	manifest, err := index.IndexManifest()
 	if err != nil {
-		i.logger.Error().Err(err).Msg("failed to fetch manifest")
-		return ""
+		i.logger.Debug().Err(err).Msg("failed to fetch manifest")
+		return nil
 	}
 
 	for _, m := range manifest.Manifests {
 		// Check if the artifact is a Cosign signature
 		if m.ArtifactType == cosigntypes.SimpleSigningMediaType {
 			i.logger.Debug().Str("digest", m.Digest.String()).Msg("found signature artifact using referrers API")
-			return strings.TrimPrefix(m.Digest.String(), "sha256:")
+			return &ContainerSignatureInfo{digest: m.Digest.String(), provider: CosignSignatureProvider}
 		}
 	}
 
-	return ""
+	return nil
 }

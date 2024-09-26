@@ -239,12 +239,13 @@ const (
 )
 
 var (
-	AnnotationMaterialType             = prefixed("material.type")
-	AnnotationMaterialName             = prefixed("material.name")
-	AnnotationMaterialCAS              = prefixed("material.cas")
-	annotationMaterialInlineCAS        = prefixed("material.cas.inline")
-	annotationContainerTag             = prefixed("material.image.tag")
-	annotationContainerSignatureDigest = prefixed("material.image.signature.digest")
+	AnnotationMaterialType               = prefixed("material.type")
+	AnnotationMaterialName               = prefixed("material.name")
+	AnnotationMaterialCAS                = prefixed("material.cas")
+	annotationMaterialInlineCAS          = prefixed("material.cas.inline")
+	annotationContainerTag               = prefixed("material.image.tag")
+	annotationContainerSignatureDigest   = prefixed("material.image.signature.digest")
+	annotationContainerSignatureProvider = prefixed("material.image.signature.provider")
 )
 
 func prefixed(name string) string {

@@ -67,6 +67,8 @@ message Attestation {
       string tag = 5;
       // Digest of the found signature for the image
       string signature_digest = 6;
+      // The provider in charge of the signature
+      string signature_provider = 7;
     }
 
     message Artifact {

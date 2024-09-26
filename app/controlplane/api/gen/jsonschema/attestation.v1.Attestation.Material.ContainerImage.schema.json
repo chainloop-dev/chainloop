@@ -9,6 +9,10 @@
     "^(signatureDigest)$": {
       "description": "Digest of the found signature for the image",
       "type": "string"
+    },
+    "^(signatureProvider)$": {
+      "description": "The provider in charge of the signature",
+      "type": "string"
     }
   },
   "properties": {
@@ -26,6 +30,10 @@
     },
     "signature_digest": {
       "description": "Digest of the found signature for the image",
+      "type": "string"
+    },
+    "signature_provider": {
+      "description": "The provider in charge of the signature",
       "type": "string"
     },
     "tag": {
