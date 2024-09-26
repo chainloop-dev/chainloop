@@ -280,12 +280,12 @@ func (s *crafterSuite) TestResolveEnvVars() {
 			},
 			expectedEnvVars: map[string]string{
 				// Missing var: GIT_BRANCH
-				"CUSTOM_VAR_1":  "custom_value_1",
-				"CUSTOM_VAR_2":  "custom_value_2",
-				"JOB_NAME":      "some-job",
-				"BUILD_URL":     "http://some-url",
-				"AGENT_WORKDIR": "/some/home/dir",
-				"NODE_NAME":     "some-node",
+				"CUSTOM_VAR_1": "custom_value_1",
+				"CUSTOM_VAR_2": "custom_value_2",
+				"JOB_NAME":     "some-job",
+				"BUILD_URL":    "http://some-url",
+				"WORKSPACE":    "/some/home/dir",
+				"NODE_NAME":    "some-node",
 			},
 		}, {
 			name:          "all optional jenkins variable with no error",
@@ -298,14 +298,14 @@ func (s *crafterSuite) TestResolveEnvVars() {
 				"CUSTOM_VAR_2": "custom_value_2",
 			},
 			expectedEnvVars: map[string]string{
-				"GIT_BRANCH":    "some-branch", // optional var 1
-				"GIT_COMMIT":    "some-commit", // optional var 2
-				"CUSTOM_VAR_1":  "custom_value_1",
-				"CUSTOM_VAR_2":  "custom_value_2",
-				"JOB_NAME":      "some-job",
-				"BUILD_URL":     "http://some-url",
-				"AGENT_WORKDIR": "/some/home/dir",
-				"NODE_NAME":     "some-node",
+				"GIT_BRANCH":   "some-branch", // optional var 1
+				"GIT_COMMIT":   "some-commit", // optional var 2
+				"CUSTOM_VAR_1": "custom_value_1",
+				"CUSTOM_VAR_2": "custom_value_2",
+				"JOB_NAME":     "some-job",
+				"BUILD_URL":    "http://some-url",
+				"WORKSPACE":    "/some/home/dir",
+				"NODE_NAME":    "some-node",
 			},
 		},
 	}
@@ -324,7 +324,7 @@ func (s *crafterSuite) TestResolveEnvVars() {
 				contract = "testdata/contracts/jenkins_with_env_vars.yaml"
 				s.T().Setenv("JOB_NAME", "some-job")
 				s.T().Setenv("BUILD_URL", "http://some-url")
-				s.T().Setenv("AGENT_WORKDIR", "/some/home/dir")
+				s.T().Setenv("WORKSPACE", "/some/home/dir")
 				s.T().Setenv("NODE_NAME", "some-node")
 				s.T().Setenv("JENKINS_HOME", "/some/home/dir")
 				runner = runners.NewJenkinsJob()
