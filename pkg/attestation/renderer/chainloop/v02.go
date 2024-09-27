@@ -363,6 +363,10 @@ func outputMaterials(att *v1.Attestation, onlyOutput bool) ([]*intoto.ResourceDe
 			if sigProvider := mdef.GetContainerImage().GetSignatureProvider(); sigProvider != "" {
 				annotationsM[annotationContainerSignatureProvider] = sigProvider
 			}
+
+			if sigPayload := mdef.GetContainerImage().GetSignaturePayload(); sigPayload != "" {
+				annotationsM[annotationContainerSignaturePayload] = sigPayload
+			}
 		}
 
 		// Custom annotations, it does not override the built-in ones

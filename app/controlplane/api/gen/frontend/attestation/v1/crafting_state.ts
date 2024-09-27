@@ -79,6 +79,8 @@ export interface Attestation_Material_ContainerImage {
   signatureDigest: string;
   /** The provider in charge of the signature */
   signatureProvider: string;
+  /** Base64 encoded signature payload, aka the OCI Signature Manifest */
+  signaturePayload: string;
 }
 
 export interface Attestation_Material_Artifact {
@@ -943,7 +945,16 @@ export const Attestation_Material_KeyVal = {
 };
 
 function createBaseAttestation_Material_ContainerImage(): Attestation_Material_ContainerImage {
-  return { id: "", name: "", digest: "", isSubject: false, tag: "", signatureDigest: "", signatureProvider: "" };
+  return {
+    id: "",
+    name: "",
+    digest: "",
+    isSubject: false,
+    tag: "",
+    signatureDigest: "",
+    signatureProvider: "",
+    signaturePayload: "",
+  };
 }
 
 export const Attestation_Material_ContainerImage = {
@@ -968,6 +979,9 @@ export const Attestation_Material_ContainerImage = {
     }
     if (message.signatureProvider !== "") {
       writer.uint32(58).string(message.signatureProvider);
+    }
+    if (message.signaturePayload !== "") {
+      writer.uint32(66).string(message.signaturePayload);
     }
     return writer;
   },
@@ -1028,6 +1042,13 @@ export const Attestation_Material_ContainerImage = {
 
           message.signatureProvider = reader.string();
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.signaturePayload = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1046,6 +1067,7 @@ export const Attestation_Material_ContainerImage = {
       tag: isSet(object.tag) ? String(object.tag) : "",
       signatureDigest: isSet(object.signatureDigest) ? String(object.signatureDigest) : "",
       signatureProvider: isSet(object.signatureProvider) ? String(object.signatureProvider) : "",
+      signaturePayload: isSet(object.signaturePayload) ? String(object.signaturePayload) : "",
     };
   },
 
@@ -1058,6 +1080,7 @@ export const Attestation_Material_ContainerImage = {
     message.tag !== undefined && (obj.tag = message.tag);
     message.signatureDigest !== undefined && (obj.signatureDigest = message.signatureDigest);
     message.signatureProvider !== undefined && (obj.signatureProvider = message.signatureProvider);
+    message.signaturePayload !== undefined && (obj.signaturePayload = message.signaturePayload);
     return obj;
   },
 
@@ -1078,6 +1101,7 @@ export const Attestation_Material_ContainerImage = {
     message.tag = object.tag ?? "";
     message.signatureDigest = object.signatureDigest ?? "";
     message.signatureProvider = object.signatureProvider ?? "";
+    message.signaturePayload = object.signaturePayload ?? "";
     return message;
   },
 };

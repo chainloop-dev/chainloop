@@ -17,6 +17,7 @@ package materials
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"strings"
 	"sync"
@@ -25,27 +26,32 @@ import (
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/rs/zerolog"
 	cosigntypes "github.com/sigstore/cosign/v2/pkg/types"
 )
 
 const (
-	cosignSignatureProvider SignatureProvider = "cosign"
-	notarySignatureProvider SignatureProvider = "notary"
+	cosignSignatureProvider signatureProvider = "cosign"
+	notarySignatureProvider signatureProvider = "notary"
 
 	// notarySignatureMimeType is the MIME type for Notary signatures on OCI artifacts.
 	// https://github.com/notaryproject/specifications/blob/main/specs/signature-specification.md#oci-signatures
 	notarySignatureMimeType = "application/vnd.cncf.notary.signature"
 )
 
-// SignatureProvider is the type for the signature provider of a container image.
-type SignatureProvider string
+// signatureProvider is the type for the signature provider of a container image.
+type signatureProvider string
 
-// ContainerSignatureInfo holds the digest and signature provider for a container image.
-type ContainerSignatureInfo struct {
-	digest   string
-	provider SignatureProvider
+// containerSignatureInfo holds the digest and signature provider for a container image.
+type containerSignatureInfo struct {
+	// digest is the digest of the OCI artifact containing the signature.
+	digest string
+	// provider is the signature provider.
+	provider signatureProvider
+	// payload is the base64-encoded OCI artifact manifest containing the signature evidence.
+	payload string
 }
 
 type OCIImageCrafter struct {
@@ -93,6 +99,7 @@ func (i *OCIImageCrafter) Craft(_ context.Context, imageRef string) (*api.Attest
 	if signatureInfo != nil {
 		containerImage.SignatureDigest = signatureInfo.digest
 		containerImage.SignatureProvider = string(signatureInfo.provider)
+		containerImage.SignaturePayload = signatureInfo.payload
 	}
 
 	return &api.Attestation_Material{
@@ -103,9 +110,9 @@ func (i *OCIImageCrafter) Craft(_ context.Context, imageRef string) (*api.Attest
 
 // checkForSignature checks for a signature for the given image reference.
 // Right now it checks for Cosign signatures only by tag or referrers API.
-func (i *OCIImageCrafter) checkForSignature(originalRef name.Reference, originalDesc *remote.Descriptor) *ContainerSignatureInfo {
+func (i *OCIImageCrafter) checkForSignature(originalRef name.Reference, originalDesc *remote.Descriptor) *containerSignatureInfo {
 	var wg sync.WaitGroup
-	resultChan := make(chan *ContainerSignatureInfo, 1)
+	resultChan := make(chan *containerSignatureInfo, 1)
 
 	// Launch parallel goroutines for signature checks
 	wg.Add(2)
@@ -145,29 +152,31 @@ func (i *OCIImageCrafter) checkForSignature(originalRef name.Reference, original
 	return nil
 }
 
-// checkForSignatureTag checks for a signature tag.
-func (i *OCIImageCrafter) checkForSignatureTag(originalRef name.Reference, originalDesc *remote.Descriptor) *ContainerSignatureInfo {
+// checkForSignatureTag checks for a signature tag associated with the image digest.
+func (i *OCIImageCrafter) checkForSignatureTag(originalRef name.Reference, originalDesc *remote.Descriptor) *containerSignatureInfo {
 	trimmedDigest := strings.TrimPrefix(originalDesc.Digest.String(), "sha256:")
 	newTag := fmt.Sprintf("sha256-%s.sig", trimmedDigest)
 
-	// Create new reference for the signature tag
 	newRef, err := name.NewTag(fmt.Sprintf("%s:%s", originalRef.Context().Name(), newTag))
 	if err != nil {
 		i.logger.Debug().Err(err).Msg("failed to create new tag reference")
 		return nil
 	}
 
-	// Try fetching the signature tag
-	if desc, err := remote.Head(newRef, remote.WithAuthFromKeychain(i.keychain)); err == nil {
+	desc, err := remote.Get(newRef, remote.WithAuthFromKeychain(i.keychain))
+	if err == nil {
 		i.logger.Debug().Str("name", newRef.String()).Msg("image signature found")
-		return &ContainerSignatureInfo{digest: desc.Digest.String(), provider: cosignSignatureProvider}
+		return &containerSignatureInfo{
+			digest:   desc.Digest.String(),
+			provider: cosignSignatureProvider,
+			payload:  base64.StdEncoding.EncodeToString(desc.Manifest),
+		}
 	}
-
 	return nil
 }
 
 // checkForSignatureReferrers checks for a signature using the referrers API.
-func (i *OCIImageCrafter) checkForSignatureReferrers(originalRef name.Reference, originalDesc *remote.Descriptor) *ContainerSignatureInfo {
+func (i *OCIImageCrafter) checkForSignatureReferrers(originalRef name.Reference, originalDesc *remote.Descriptor) *containerSignatureInfo {
 	ref := originalRef.Context().Digest(originalDesc.Digest.String())
 	index, err := remote.Referrers(ref, remote.WithAuthFromKeychain(i.keychain))
 	if err != nil {
@@ -181,19 +190,34 @@ func (i *OCIImageCrafter) checkForSignatureReferrers(originalRef name.Reference,
 		return nil
 	}
 
-	for _, m := range manifest.Manifests {
-		// Check if the artifact is a Cosign signature
+	return i.findSignatureInManifest(manifest.Manifests, originalRef)
+}
+
+// findSignatureInManifest scans the manifests to identify and retrieve signature information.
+func (i *OCIImageCrafter) findSignatureInManifest(manifests []v1.Descriptor, originalRef name.Reference) *containerSignatureInfo {
+	for _, m := range manifests {
 		if m.ArtifactType == cosigntypes.SimpleSigningMediaType {
 			i.logger.Debug().Str("digest", m.Digest.String()).Msg("found Cosign signature artifact using referrers API")
-			return &ContainerSignatureInfo{digest: m.Digest.String(), provider: cosignSignatureProvider}
+			return i.fetchSignatureManifest(originalRef, m.Digest.String(), cosignSignatureProvider)
 		}
-
-		// Check if the artifact is a Notary signature
 		if m.ArtifactType == notarySignatureMimeType {
 			i.logger.Debug().Str("digest", m.Digest.String()).Msg("found Notary signature artifact using referrers API")
-			return &ContainerSignatureInfo{digest: m.Digest.String(), provider: notarySignatureProvider}
+			return i.fetchSignatureManifest(originalRef, m.Digest.String(), notarySignatureProvider)
 		}
 	}
-
 	return nil
+}
+
+// fetchSignatureManifest retrieves and base64-encodes the signature manifest.
+func (i *OCIImageCrafter) fetchSignatureManifest(originalRef name.Reference, digest string, provider signatureProvider) *containerSignatureInfo {
+	signatureManifest, err := remote.Get(originalRef.Context().Digest(digest), remote.WithAuthFromKeychain(i.keychain))
+	if err != nil {
+		i.logger.Debug().Err(err).Msg("failed to fetch signature manifest")
+		return nil
+	}
+	return &containerSignatureInfo{
+		digest:   digest,
+		provider: provider,
+		payload:  base64.StdEncoding.EncodeToString(signatureManifest.Manifest),
+	}
 }

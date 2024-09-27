@@ -246,6 +246,7 @@ var (
 	annotationContainerTag               = prefixed("material.image.tag")
 	annotationContainerSignatureDigest   = prefixed("material.image.signature.digest")
 	annotationContainerSignatureProvider = prefixed("material.image.signature.provider")
+	annotationContainerSignaturePayload  = prefixed("material.image.signature.payload")
 )
 
 func prefixed(name string) string {
