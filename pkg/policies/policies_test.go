@@ -762,7 +762,7 @@ func (s *testSuite) TestInputArguments() {
 
 	for _, tc := range cases {
 		s.Run(tc.name, func() {
-			actual := getInputArguments(tc.inputs)
+			actual := getInputArguments(tc.inputs, make(map[string]string))
 			s.Equal(tc.expected, actual)
 		})
 	}
