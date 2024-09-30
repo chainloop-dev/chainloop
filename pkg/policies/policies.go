@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"slices"
 	"strings"
@@ -270,7 +271,13 @@ func validateResource(m proto.Message) error {
 
 func getInputArguments(inputs map[string]string, overrides map[string]string) map[string]any {
 	args := make(map[string]any)
-	for k, v := range inputs {
+
+	allInputs := make(map[string]string)
+	// Override inputs into a new map
+	maps.Copy(allInputs, inputs)
+	maps.Copy(allInputs, overrides)
+
+	for k, v := range allInputs {
 		// look for override
 		ov := overrides[k]
 		if ov != "" {
@@ -436,16 +443,6 @@ func getPolicyTypes(p *v1.Policy) []v1.CraftingSchema_Material_MaterialType {
 func getPolicyEngine(_ *v1.Policy) engine.PolicyEngine {
 	// Currently, only Rego is supported
 	return new(rego.Rego)
-}
-
-func policyViolationsToAttestationViolations(violations []*engine.PolicyViolation) (pvs []*v12.PolicyEvaluation_Violation) {
-	for _, violation := range violations {
-		pvs = append(pvs, &v12.PolicyEvaluation_Violation{
-			Subject: violation.Subject,
-			Message: violation.Violation,
-		})
-	}
-	return
 }
 
 // LoadPolicyScriptsFromSpec loads all policy script that matches a given material type. It matches if:

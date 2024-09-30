@@ -226,7 +226,7 @@ func (s *testSuite) TestVerifyAttestations() {
 	for _, tc := range cases {
 		s.Run(tc.name, func() {
 			verifier := NewPolicyVerifier(tc.schema, nil, &s.logger)
-			statement := s.loadStatement(tc.statement)
+			statement := loadStatement(tc.statement, &s.Suite)
 
 			res, err := verifier.VerifyStatement(context.TODO(), statement)
 			if tc.wantErr != nil {
@@ -336,7 +336,7 @@ func (s *testSuite) TestArgumentsInViolations() {
 
 	s.Run("arguments in violations", func() {
 		verifier := NewPolicyVerifier(schema, nil, &s.logger)
-		statement := s.loadStatement("testdata/statement.json")
+		statement := loadStatement("testdata/statement.json", &s.Suite)
 
 		res, err := verifier.VerifyStatement(context.TODO(), statement)
 		s.NoError(err)
@@ -714,9 +714,10 @@ func (s *testSuite) TestLoader() {
 
 func (s *testSuite) TestInputArguments() {
 	cases := []struct {
-		name     string
-		inputs   map[string]string
-		expected map[string]any
+		name      string
+		inputs    map[string]string
+		overrides map[string]string
+		expected  map[string]any
 	}{
 		{
 			name:     "string input",
@@ -758,11 +759,23 @@ func (s *testSuite) TestInputArguments() {
 			inputs:   map[string]string{"foo": "bar1,bar2,bar3", "bar": "baz", "foos": "bar1\nbar2\nbar3\n"},
 			expected: map[string]any{"foo": []string{"bar1", "bar2", "bar3"}, "bar": "baz", "foos": []string{"bar1", "bar2", "bar3"}},
 		},
+		{
+			name:      "overrides",
+			inputs:    map[string]string{"foo": "bar"},
+			overrides: map[string]string{"foo": "baz"},
+			expected:  map[string]any{"foo": "baz"},
+		},
+		{
+			name:      "overrides with empty policy input",
+			inputs:    nil,
+			overrides: map[string]string{"foo": "baz"},
+			expected:  map[string]any{"foo": "baz"},
+		},
 	}
 
 	for _, tc := range cases {
 		s.Run(tc.name, func() {
-			actual := getInputArguments(tc.inputs, make(map[string]string))
+			actual := getInputArguments(tc.inputs, tc.overrides)
 			s.Equal(tc.expected, actual)
 		})
 	}
@@ -782,7 +795,7 @@ func TestPolicyVerifier(t *testing.T) {
 	suite.Run(t, new(testSuite))
 }
 
-func (s *testSuite) loadStatement(file string) *intoto.Statement {
+func loadStatement(file string, s *suite.Suite) *intoto.Statement {
 	stContent, err := os.ReadFile(file)
 	s.Require().NoError(err)
 	var statement intoto.Statement

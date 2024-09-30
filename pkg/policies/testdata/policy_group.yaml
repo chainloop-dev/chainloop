@@ -1,0 +1,14 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: PolicyGroup
+metadata:
+  name: sbom-quality
+  description: This policy group applies a number of SBOM-related policies
+  annotations:
+    category: SBOM
+spec:
+  policies:
+    attestation:
+      - ref: file://testdata/with_arguments.yaml
+    materials:
+      - ref: file://testdata/sbom_syft.yaml
+

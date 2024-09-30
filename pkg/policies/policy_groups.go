@@ -86,7 +86,7 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 			}
 
 			ev, err := pgv.evaluatePolicyAttachment(ctx, attachment, material,
-				&evalOpts{kind: v1.CraftingSchema_Material_ATTESTATION, overrides: attachment.GetWith()},
+				&evalOpts{kind: v1.CraftingSchema_Material_ATTESTATION, overrides: groupAtt.GetWith()},
 			)
 			if err != nil {
 				return nil, NewPolicyError(err)
