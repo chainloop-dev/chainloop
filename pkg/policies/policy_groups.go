@@ -91,8 +91,8 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 			result = append(result, ev)
 		}
 	}
-	//TODO implement me
-	panic("implement me")
+
+	return result, nil
 }
 
 func (pgv *PolicyGroupVerifier) requiredPolicyGroupsForMaterial(ctx context.Context, material *api.Attestation_Material) ([]*v1.PolicyAttachment, error) {
