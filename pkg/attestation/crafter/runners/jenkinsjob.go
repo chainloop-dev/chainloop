@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -55,7 +55,10 @@ func (r *JenkinsJob) ListEnvVars() []*EnvVarDefinition {
 		{"GIT_COMMIT", true},
 
 		// Some info about the agent
-		{"AGENT_WORKDIR", false},
+		// We've found this one to be optional
+		{"AGENT_WORKDIR", true},
+		// Workspace is required as long as the jobs run inside a `node` block
+		{"WORKSPACE", false},
 		{"NODE_NAME", false},
 	}
 }

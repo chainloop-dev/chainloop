@@ -65,6 +65,12 @@ message Attestation {
       bool is_subject = 4;
       // provided tag
       string tag = 5;
+      // Digest of the found signature for the image
+      string signature_digest = 6;
+      // The provider in charge of the signature
+      string signature_provider = 7;
+      // Base64 encoded signature payload, aka the OCI Signature Manifest
+      string signature = 8;
     }
 
     message Artifact {
