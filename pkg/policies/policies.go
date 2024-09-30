@@ -89,7 +89,9 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 			return nil, NewPolicyError(err)
 		}
 
-		ev, err := pv.evaluatePolicyAttachment(ctx, attachment, subject, material.MaterialType, material.GetArtifact().GetId())
+		ev, err := pv.evaluatePolicyAttachment(ctx, attachment, subject,
+			&evalOpts{kind: material.MaterialType, name: material.GetArtifact().GetId()},
+		)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
@@ -100,7 +102,13 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 	return result, nil
 }
 
-func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachment *v1.PolicyAttachment, material []byte, kind v1.CraftingSchema_Material_MaterialType, name string) (*v12.PolicyEvaluation, error) {
+type evalOpts struct {
+	name        string
+	kind        v1.CraftingSchema_Material_MaterialType
+	defaultArgs map[string]string
+}
+
+func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachment *v1.PolicyAttachment, material []byte, opts *evalOpts) (*v12.PolicyEvaluation, error) {
 	// 1. load the policy policy
 	policy, ref, err := pv.loadPolicySpec(ctx, attachment)
 	if err != nil {
@@ -108,13 +116,13 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 	}
 
 	// load the policy scripts (rego)
-	scripts, err := LoadPolicyScriptsFromSpec(policy, kind)
+	scripts, err := LoadPolicyScriptsFromSpec(policy, opts.kind)
 	if err != nil {
 		return nil, NewPolicyError(err)
 	}
 
-	if name != "" {
-		pv.logger.Info().Msgf("evaluating policy %s against %s", policy.Metadata.Name, name)
+	if opts.name != "" {
+		pv.logger.Info().Msgf("evaluating policy %s against %s", policy.Metadata.Name, opts.name)
 	} else {
 		pv.logger.Info().Msgf("evaluating policy %s against attestation", policy.Metadata.Name)
 	}
@@ -131,13 +139,13 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 
 	return &v12.PolicyEvaluation{
 		Name:            policy.GetMetadata().GetName(),
-		MaterialName:    name,
+		MaterialName:    opts.name,
 		Sources:         evaluationSources,
 		Violations:      engineViolationsToAPIViolations(violations),
 		Annotations:     policy.GetMetadata().GetAnnotations(),
 		Description:     policy.GetMetadata().GetDescription(),
 		With:            attachment.GetWith(),
-		Type:            kind,
+		Type:            opts.kind,
 		ReferenceName:   ref.Name,
 		ReferenceDigest: ref.Digest["sha256"],
 	}, nil
@@ -153,7 +161,7 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 			return nil, NewPolicyError(err)
 		}
 
-		ev, err := pv.evaluatePolicyAttachment(ctx, policyAtt, material, v1.CraftingSchema_Material_ATTESTATION, "")
+		ev, err := pv.evaluatePolicyAttachment(ctx, policyAtt, material, &evalOpts{kind: v1.CraftingSchema_Material_ATTESTATION})
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
