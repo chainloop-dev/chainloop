@@ -83,7 +83,13 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 	}
 
 	for _, attachment := range attachments {
-		ev, err := pv.evaluatePolicyAttachment(ctx, attachment, material, artifactPath)
+		// Load material content
+		subject, err := getMaterialContent(material, artifactPath)
+		if err != nil {
+			return nil, NewPolicyError(err)
+		}
+
+		ev, err := pv.evaluatePolicyAttachment(ctx, attachment, subject, material.MaterialType, material.GetArtifact().GetId())
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
@@ -94,7 +100,7 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 	return result, nil
 }
 
-func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachment *v1.PolicyAttachment, material *v12.Attestation_Material, path string) (*v12.PolicyEvaluation, error) {
+func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachment *v1.PolicyAttachment, material []byte, kind v1.CraftingSchema_Material_MaterialType, name string) (*v12.PolicyEvaluation, error) {
 	// 1. load the policy policy
 	policy, ref, err := pv.loadPolicySpec(ctx, attachment)
 	if err != nil {
@@ -102,20 +108,18 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 	}
 
 	// load the policy scripts (rego)
-	scripts, err := LoadPolicyScriptsFromSpec(policy, material.MaterialType)
+	scripts, err := LoadPolicyScriptsFromSpec(policy, kind)
 	if err != nil {
 		return nil, NewPolicyError(err)
 	}
 
-	// Load material content
-	subject, err := getMaterialContent(material, path)
-	if err != nil {
-		return nil, NewPolicyError(err)
+	if name != "" {
+		pv.logger.Info().Msgf("evaluating policy %s against %s", policy.Metadata.Name, name)
+	} else {
+		pv.logger.Info().Msgf("evaluating policy %s against attestation", policy.Metadata.Name)
 	}
 
-	pv.logger.Info().Msgf("evaluating policy '%s' against material '%s'", policy.Metadata.Name, material.GetArtifact().GetId())
-
-	violations, sources, err := pv.executeScripts(ctx, policy, scripts, subject, attachment)
+	violations, sources, err := pv.executeScripts(ctx, policy, scripts, material, attachment)
 	if err != nil {
 		return nil, NewPolicyError(err)
 	}
@@ -127,13 +131,13 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 
 	return &v12.PolicyEvaluation{
 		Name:            policy.GetMetadata().GetName(),
-		MaterialName:    material.GetArtifact().GetId(),
+		MaterialName:    name,
 		Sources:         evaluationSources,
 		Violations:      engineViolationsToAPIViolations(violations),
 		Annotations:     policy.GetMetadata().GetAnnotations(),
 		Description:     policy.GetMetadata().GetDescription(),
 		With:            attachment.GetWith(),
-		Type:            material.GetMaterialType(),
+		Type:            kind,
 		ReferenceName:   ref.Name,
 		ReferenceDigest: ref.Digest["sha256"],
 	}, nil
@@ -144,52 +148,17 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 	result := make([]*v12.PolicyEvaluation, 0)
 	policies := pv.schema.GetPolicies().GetAttestation()
 	for _, policyAtt := range policies {
-		// 1. load the policy spec
-		policy, ref, err := pv.loadPolicySpec(ctx, policyAtt)
-		if err != nil {
-			return nil, NewPolicyError(err)
-		}
-
-		// it's expected statements can only be validated by policies of type ATTESTATION
-		types := getPolicyTypes(policy)
-		if !slices.Contains(types, v1.CraftingSchema_Material_ATTESTATION) {
-			continue
-		}
-
-		// 2. load the policy scripts (rego)
-		scripts, err := LoadPolicyScriptsFromSpec(policy, v1.CraftingSchema_Material_ATTESTATION)
-		if err != nil {
-			return nil, NewPolicyError(err)
-		}
-
 		material, err := protojson.Marshal(statement)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
 
-		pv.logger.Info().Msgf("evaluating policy '%s' on attestation", policy.Metadata.Name)
-
-		violations, sources, err := pv.executeScripts(ctx, policy, scripts, material, policyAtt)
+		ev, err := pv.evaluatePolicyAttachment(ctx, policyAtt, material, v1.CraftingSchema_Material_ATTESTATION, "")
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
 
-		var evaluationSources []string
-		if !IsProviderScheme(ref.GetName()) {
-			evaluationSources = sources
-		}
-
-		// 5. Store result in the attestation itself (for the renderer to include them in the predicate)
-		result = append(result, &v12.PolicyEvaluation{
-			Name:            policy.Metadata.Name,
-			Sources:         evaluationSources,
-			Violations:      policyViolationsToAttestationViolations(violations),
-			Annotations:     policy.GetMetadata().GetAnnotations(),
-			Description:     policy.GetMetadata().GetDescription(),
-			With:            policyAtt.GetWith(),
-			Type:            policy.GetSpec().Type,
-			ReferenceName:   ref.Name,
-			ReferenceDigest: ref.Digest["sha256"]})
+		result = append(result, ev)
 	}
 
 	return result, nil

@@ -24,6 +24,7 @@ import (
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 type PolicyGroupVerifier struct {
@@ -51,7 +52,13 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 	}
 
 	for _, attachment := range attachments {
-		ev, err := pgv.evaluatePolicyAttachment(ctx, attachment, material, path)
+		// Load material content
+		subject, err := getMaterialContent(material, path)
+		if err != nil {
+			return nil, NewPolicyError(err)
+		}
+
+		ev, err := pgv.evaluatePolicyAttachment(ctx, attachment, subject, material.MaterialType, path)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
@@ -63,6 +70,27 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 }
 
 func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *intoto.Statement) ([]*api.PolicyEvaluation, error) {
+	result := make([]*api.PolicyEvaluation, 0)
+	attachments := pgv.schema.GetPolicyGroups()
+	for _, groupAtt := range attachments {
+		group, _, err := pgv.loadPolicyGroup(ctx, groupAtt)
+		if err != nil {
+			return nil, NewPolicyError(err)
+		}
+		for _, attachment := range group.GetSpec().GetPolicies().GetAttestation() {
+			material, err := protojson.Marshal(statement)
+			if err != nil {
+				return nil, NewPolicyError(err)
+			}
+
+			ev, err := pgv.evaluatePolicyAttachment(ctx, attachment, material, v1.CraftingSchema_Material_ATTESTATION, "")
+			if err != nil {
+				return nil, NewPolicyError(err)
+			}
+
+			result = append(result, ev)
+		}
+	}
 	//TODO implement me
 	panic("implement me")
 }
