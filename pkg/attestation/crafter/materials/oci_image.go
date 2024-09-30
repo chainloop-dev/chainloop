@@ -98,8 +98,8 @@ func (i *OCIImageCrafter) Craft(_ context.Context, imageRef string) (*api.Attest
 	// If the signature digest exists, add it to the material
 	if signatureInfo != nil {
 		containerImage.SignatureDigest = signatureInfo.digest
+		containerImage.Signature = signatureInfo.payload
 		containerImage.SignatureProvider = string(signatureInfo.provider)
-		containerImage.SignaturePayload = signatureInfo.payload
 	}
 
 	return &api.Attestation_Material{

@@ -70,7 +70,7 @@ message Attestation {
       // The provider in charge of the signature
       string signature_provider = 7;
       // Base64 encoded signature payload, aka the OCI Signature Manifest
-      string signature_payload = 8;
+      string signature = 8;
     }
 
     message Artifact {

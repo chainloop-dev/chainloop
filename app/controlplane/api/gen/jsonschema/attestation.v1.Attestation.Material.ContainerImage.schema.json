@@ -10,10 +10,6 @@
       "description": "Digest of the found signature for the image",
       "type": "string"
     },
-    "^(signaturePayload)$": {
-      "description": "Base64 encoded signature payload, aka the OCI Signature Manifest",
-      "type": "string"
-    },
     "^(signatureProvider)$": {
       "description": "The provider in charge of the signature",
       "type": "string"
@@ -32,12 +28,12 @@
     "name": {
       "type": "string"
     },
-    "signature_digest": {
-      "description": "Digest of the found signature for the image",
+    "signature": {
+      "description": "Base64 encoded signature payload, aka the OCI Signature Manifest",
       "type": "string"
     },
-    "signature_payload": {
-      "description": "Base64 encoded signature payload, aka the OCI Signature Manifest",
+    "signature_digest": {
+      "description": "Digest of the found signature for the image",
       "type": "string"
     },
     "signature_provider": {

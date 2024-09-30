@@ -357,15 +357,15 @@ func outputMaterials(att *v1.Attestation, onlyOutput bool) ([]*intoto.ResourceDe
 			}
 
 			if sigDigest := mdef.GetContainerImage().GetSignatureDigest(); sigDigest != "" {
-				annotationsM[annotationContainerSignatureDigest] = sigDigest
+				annotationsM[annotationSignatureDigest] = sigDigest
 			}
 
 			if sigProvider := mdef.GetContainerImage().GetSignatureProvider(); sigProvider != "" {
-				annotationsM[annotationContainerSignatureProvider] = sigProvider
+				annotationsM[annotationSignatureProvider] = sigProvider
 			}
 
-			if sigPayload := mdef.GetContainerImage().GetSignaturePayload(); sigPayload != "" {
-				annotationsM[annotationContainerSignaturePayload] = sigPayload
+			if sigPayload := mdef.GetContainerImage().GetSignature(); sigPayload != "" {
+				annotationsM[annotationMaterialSignature] = sigPayload
 			}
 		}
 
