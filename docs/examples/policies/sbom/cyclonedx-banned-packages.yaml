@@ -20,36 +20,37 @@ metadata:
   annotations:
     category: sbom
 spec:
-  type: SBOM_CYCLONEDX_JSON
-  embedded: |
-    package main
+  policies:
+    - kind: SBOM_CYCLONEDX_JSON
+      embedded: |
+        package main
+        
+        import rego.v1
+        
+        # It supports packages with version. When specified, requires it to be semver, and would also fail when version is lower
+        banned_packages := ["log4j@2.14.1"]
     
-    import rego.v1
+        # all versions
+        violations contains ref if {
+          some i
+          comp := input.components[i]
+          some j
+          banned := banned_packages[j]
+          nv := split(banned, "@")
+          not nv[1]
+          comp.name == nv[0]
+          ref := sprintf("Banned package: %v", [comp.name])
+        }
     
-    # It supports packages with version. When specified, requires it to be semver, and would also fail when version is lower
-    banned_packages := ["log4j@2.14.1"]
-
-    # all versions
-    violations contains ref if {
-      some i
-      comp := input.components[i]
-      some j
-      banned := banned_packages[j]
-      nv := split(banned, "@")
-      not nv[1]
-      comp.name == nv[0]
-      ref := sprintf("Banned package: %v", [comp.name])
-    }
-
-    # specific versions
-    violations contains ref if {
-      some i
-      comp := input.components[i]
-      some j
-      banned := banned_packages[j]
-      nv := split(banned, "@")
-      comp.name == nv[0]
-      result := semver.compare(comp.version, nv[1])
-      result <= 0
-      ref := sprintf("Banned package: %v %v", [comp.name, comp.version])
-    }
+        # specific versions
+        violations contains ref if {
+          some i
+          comp := input.components[i]
+          some j
+          banned := banned_packages[j]
+          nv := split(banned, "@")
+          comp.name == nv[0]
+          result := semver.compare(comp.version, nv[1])
+          result <= 0
+          ref := sprintf("Banned package: %v %v", [comp.name, comp.version])
+        }

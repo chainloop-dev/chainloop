@@ -20,19 +20,20 @@ metadata:
   annotations:
     category: sbom
 spec:
-  type: SBOM_CYCLONEDX_JSON
-  embedded: |
-    package main
-    
-    import rego.v1
-  
-    banned_licenses := ["GPL-2.0", "GPL-3.0"]
-    
-    violations contains ref if {
-      some i
-      comp := input.components[i]
-      some j
-      license := comp.licenses[j].license
-      license.name == banned_licenses[_]
-      ref := sprintf("Forbidden license %v for %v (%v)", [license.name, comp.name, comp["bom-ref"]])
-    }
+  policies:
+    - kind: SBOM_CYCLONEDX_JSON
+      embedded: |
+        package main
+        
+        import rego.v1
+      
+        banned_licenses := ["GPL-2.0", "GPL-3.0"]
+        
+        violations contains ref if {
+          some i
+          comp := input.components[i]
+          some j
+          license := comp.licenses[j].license
+          license.name == banned_licenses[_]
+          ref := sprintf("Forbidden license %v for %v (%v)", [license.name, comp.name, comp["bom-ref"]])
+        }
