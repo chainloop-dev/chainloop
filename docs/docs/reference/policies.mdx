@@ -23,17 +23,19 @@ In this particular example, we see:
 * policies have a name (cyclonedx-licenses)
 * they can be optionally applied to a specific type of material (check [the documentation](./operator/contract#material-schema) for the supported types). If no type is specified, a material name will need to be provided explicitly in the contract.
 * they have a policy script that it's evaluated against the material (in this case a CycloneDX SBOM report). Currently, only [Rego](https://www.openpolicyagent.org/docs/latest/policy-language/#learning-rego) policies are supported.
+* there can be multiple scripts, each associated with a different material type.
 
 Policy scripts could also be specified in a detached form:
 ```yaml
 ...
 spec:
-  type: SBOM_CYCLONEDX_JSON
-  path: my-script.rego
+  policies:
+  - kind: SBOM_CYCLONEDX_JSON
+    path: my-script.rego
 ```
 
 ### Supporting multiple material types
-Policies can also accept multiple material types. This is specially useful when a material can be speficied in multiple format types, but from the user perspective, we still want to maintain one single policy.
+Policies can accept multiple material types. This is specially useful when a material can be specified in multiple format types, but from the user perspective, we still want to maintain one single policy.
 
 For example, this policy would check for vulnerabilities in SARIF, CycloneDX and CSAF formats:
 ```yaml
@@ -52,7 +54,7 @@ spec:
       path: cves-sarif.rego
 ```
 In these cases, Chainloop will choose the right script to execute, but externally it would be seen as a single policy.
-
+If more than one path is executed (because they might have the same `kind`), the evaluation result will be the sum of all evaluations.
 
 ## Applying policies to contracts
 When defining a contract, a new `policies` section can be specified. Policies can be applied to any material, but also to the attestation statement as a whole.
@@ -108,11 +110,22 @@ There are two ways to attach a policy to a contract:
 
 * If preferred, authors could create self-contained contracts **embedding policy specifications**. The main advantage of this method is that it ensures that the policy source cannot be changed, as it's stored and versioned within the contract:
 
-<CodeBlock language="yaml" title="cyclonedx-licenses.yaml" showLineNumbers>
-  {PolicyYAML}
-</CodeBlock>
+  ```yaml
+    policies:
+      materials:
+        - embedded: # (1)
+            # Put full policy spec here
+            apiVersion: workflowcontract.chainloop.dev/v1
+            kind: Policy
+            metadata:
+              name: cve-policy
+            spec:
+              policies:
+              - kind: SBOM_CYCLONEDX_JSON
+                path: cves-cyclonedx.rego
+  ```
 
-In the example above, we can see that, when referenced by the `policy` attribute (1), a full policy can be embedded in the contract.
+In the example above, we can see that, when referenced by the `embedded` attribute (1), a full policy can be embedded in the contract.
 
 ### Policy arguments
 Policies may accept arguments to customize its behaviour. See this policy that matches a "quality" score against a "threshold" argument:
