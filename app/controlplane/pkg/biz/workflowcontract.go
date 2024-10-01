@@ -308,17 +308,21 @@ func (uc *WorkflowContractUseCase) ValidateContractPolicies(rawSchema []byte, to
 	}
 
 	for _, att := range c.Schema.GetPolicies().GetAttestation() {
-		_, err := uc.findPolicy(att, token)
-		if err != nil {
+		if _, err := uc.findPolicy(att, token); err != nil {
 			return NewErrValidation(err)
 		}
 	}
 	for _, att := range c.Schema.GetPolicies().GetMaterials() {
-		_, err := uc.findPolicy(att, token)
-		if err != nil {
+		if _, err := uc.findPolicy(att, token); err != nil {
 			return NewErrValidation(err)
 		}
 	}
+	for _, gatt := range c.Schema.GetPolicyGroups() {
+		if _, err := uc.findPolicyGroup(gatt, token); err != nil {
+			return NewErrValidation(err)
+		}
+	}
+
 	return nil
 }
 
@@ -336,6 +340,22 @@ func (uc *WorkflowContractUseCase) findPolicy(att *schemav1.PolicyAttachment, to
 			return nil, err
 		}
 		return remotePolicy.Policy, nil
+	}
+
+	// Otherwise, don't return an error, as it might consist of a local policy, not available in this context
+	return nil, nil
+}
+
+func (uc *WorkflowContractUseCase) findPolicyGroup(att *schemav1.PolicyGroupAttachment, token string) (*schemav1.PolicyGroup, error) {
+	// if it should come from a provider, check that it's available
+	// [chainloop://][provider/]name
+	if loader.IsProviderScheme(att.GetRef()) {
+		provider, name := loader.ProviderParts(att.GetRef())
+		remoteGroup, err := uc.GetPolicyGroup(provider, name, token)
+		if err != nil {
+			return nil, err
+		}
+		return remoteGroup.PolicyGroup, nil
 	}
 
 	// Otherwise, don't return an error, as it might consist of a local policy, not available in this context
@@ -377,19 +397,16 @@ type RemotePolicy struct {
 	Policy      *schemav1.Policy
 }
 
+type RemotePolicyGroup struct {
+	ProviderRef *policies.PolicyReference
+	PolicyGroup *schemav1.PolicyGroup
+}
+
 // GetPolicy retrieves a policy from a policy provider
 func (uc *WorkflowContractUseCase) GetPolicy(providerName, policyName, token string) (*RemotePolicy, error) {
-	if len(uc.policyRegistry.GetProviderNames()) == 0 {
-		return nil, fmt.Errorf("policy providers not configured. Make sure your policy is referenced with file:// or https:// protocol")
-	}
-
-	var provider = uc.policyRegistry.DefaultProvider()
-	if providerName != "" {
-		provider = uc.policyRegistry.GetProvider(providerName)
-	}
-
-	if provider == nil {
-		return nil, fmt.Errorf("failed to resolve provider: %s. Available providers: %s", providerName, uc.policyRegistry.GetProviderNames())
+	provider, err := uc.findProvider(providerName)
+	if err != nil {
+		return nil, err
 	}
 
 	policy, ref, err := provider.Resolve(policyName, token)
@@ -402,6 +419,41 @@ func (uc *WorkflowContractUseCase) GetPolicy(providerName, policyName, token str
 	}
 
 	return &RemotePolicy{Policy: policy, ProviderRef: ref}, nil
+}
+
+func (uc *WorkflowContractUseCase) GetPolicyGroup(providerName, groupName, token string) (*RemotePolicyGroup, error) {
+	provider, err := uc.findProvider(providerName)
+	if err != nil {
+		return nil, err
+	}
+
+	policy, ref, err := provider.ResolveGroup(groupName, token)
+	if err != nil {
+		if errors.Is(err, policies.ErrNotFound) {
+			return nil, NewErrNotFound(fmt.Sprintf("policy group %q", groupName))
+		}
+
+		return nil, fmt.Errorf("failed to resolve policy: %w. Available providers: %s", err, uc.policyRegistry.GetProviderNames())
+	}
+
+	return &RemotePolicyGroup{PolicyGroup: policy, ProviderRef: ref}, nil
+}
+
+func (uc *WorkflowContractUseCase) findProvider(providerName string) (*policies.PolicyProvider, error) {
+	if len(uc.policyRegistry.GetProviderNames()) == 0 {
+		return nil, fmt.Errorf("policy providers not configured. Make sure your policy group is referenced with file:// or https:// protocol")
+	}
+
+	var provider = uc.policyRegistry.DefaultProvider()
+	if providerName != "" {
+		provider = uc.policyRegistry.GetProvider(providerName)
+	}
+
+	if provider == nil {
+		return nil, fmt.Errorf("failed to resolve provider: %s. Available providers: %s", providerName, uc.policyRegistry.GetProviderNames())
+	}
+
+	return provider, nil
 }
 
 // Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues

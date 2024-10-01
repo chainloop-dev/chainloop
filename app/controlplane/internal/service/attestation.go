@@ -375,9 +375,26 @@ func (s *AttestationService) GetPolicy(ctx context.Context, req *cpAPI.Attestati
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
-	return &cpAPI.AttestationServiceGetPolicyResponse{Policy: remotePolicy.Policy, Reference: &cpAPI.AttestationServiceGetPolicyResponse_Reference{
+	return &cpAPI.AttestationServiceGetPolicyResponse{Policy: remotePolicy.Policy, Reference: &cpAPI.RemotePolicyReference{
 		Url:    remotePolicy.ProviderRef.URL,
 		Digest: remotePolicy.ProviderRef.Digest,
+	}}, nil
+}
+
+func (s *AttestationService) GetPolicyGroup(ctx context.Context, req *cpAPI.AttestationServiceGetPolicyGroupRequest) (*cpAPI.AttestationServiceGetPolicyGroupResponse, error) {
+	token, ok := attjwtmiddleware.FromJWTAuthContext(ctx)
+	if !ok {
+		return nil, errors.Forbidden("forbidden", "token not found")
+	}
+
+	remoteGroup, err := s.workflowContractUseCase.GetPolicyGroup(req.GetProvider(), req.GetGroupName(), token.Token)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	return &cpAPI.AttestationServiceGetPolicyGroupResponse{Group: remoteGroup.PolicyGroup, Reference: &cpAPI.RemotePolicyReference{
+		Url:    remoteGroup.ProviderRef.URL,
+		Digest: remoteGroup.ProviderRef.Digest,
 	}}, nil
 }
 

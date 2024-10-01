@@ -40,6 +40,7 @@ const (
 	AttestationService_GetUploadCreds_FullMethodName = "/controlplane.v1.AttestationService/GetUploadCreds"
 	AttestationService_Cancel_FullMethodName         = "/controlplane.v1.AttestationService/Cancel"
 	AttestationService_GetPolicy_FullMethodName      = "/controlplane.v1.AttestationService/GetPolicy"
+	AttestationService_GetPolicyGroup_FullMethodName = "/controlplane.v1.AttestationService/GetPolicyGroup"
 )
 
 // AttestationServiceClient is the client API for AttestationService service.
@@ -55,6 +56,7 @@ type AttestationServiceClient interface {
 	Cancel(ctx context.Context, in *AttestationServiceCancelRequest, opts ...grpc.CallOption) (*AttestationServiceCancelResponse, error)
 	// Get policies from remote providers
 	GetPolicy(ctx context.Context, in *AttestationServiceGetPolicyRequest, opts ...grpc.CallOption) (*AttestationServiceGetPolicyResponse, error)
+	GetPolicyGroup(ctx context.Context, in *AttestationServiceGetPolicyGroupRequest, opts ...grpc.CallOption) (*AttestationServiceGetPolicyGroupResponse, error)
 }
 
 type attestationServiceClient struct {
@@ -119,6 +121,15 @@ func (c *attestationServiceClient) GetPolicy(ctx context.Context, in *Attestatio
 	return out, nil
 }
 
+func (c *attestationServiceClient) GetPolicyGroup(ctx context.Context, in *AttestationServiceGetPolicyGroupRequest, opts ...grpc.CallOption) (*AttestationServiceGetPolicyGroupResponse, error) {
+	out := new(AttestationServiceGetPolicyGroupResponse)
+	err := c.cc.Invoke(ctx, AttestationService_GetPolicyGroup_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AttestationServiceServer is the server API for AttestationService service.
 // All implementations must embed UnimplementedAttestationServiceServer
 // for forward compatibility
@@ -132,6 +143,7 @@ type AttestationServiceServer interface {
 	Cancel(context.Context, *AttestationServiceCancelRequest) (*AttestationServiceCancelResponse, error)
 	// Get policies from remote providers
 	GetPolicy(context.Context, *AttestationServiceGetPolicyRequest) (*AttestationServiceGetPolicyResponse, error)
+	GetPolicyGroup(context.Context, *AttestationServiceGetPolicyGroupRequest) (*AttestationServiceGetPolicyGroupResponse, error)
 	mustEmbedUnimplementedAttestationServiceServer()
 }
 
@@ -156,6 +168,9 @@ func (UnimplementedAttestationServiceServer) Cancel(context.Context, *Attestatio
 }
 func (UnimplementedAttestationServiceServer) GetPolicy(context.Context, *AttestationServiceGetPolicyRequest) (*AttestationServiceGetPolicyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPolicy not implemented")
+}
+func (UnimplementedAttestationServiceServer) GetPolicyGroup(context.Context, *AttestationServiceGetPolicyGroupRequest) (*AttestationServiceGetPolicyGroupResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPolicyGroup not implemented")
 }
 func (UnimplementedAttestationServiceServer) mustEmbedUnimplementedAttestationServiceServer() {}
 
@@ -278,6 +293,24 @@ func _AttestationService_GetPolicy_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AttestationService_GetPolicyGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AttestationServiceGetPolicyGroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AttestationServiceServer).GetPolicyGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AttestationService_GetPolicyGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AttestationServiceServer).GetPolicyGroup(ctx, req.(*AttestationServiceGetPolicyGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AttestationService_ServiceDesc is the grpc.ServiceDesc for AttestationService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -308,6 +341,10 @@ var AttestationService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetPolicy",
 			Handler:    _AttestationService_GetPolicy_Handler,
+		},
+		{
+			MethodName: "GetPolicyGroup",
+			Handler:    _AttestationService_GetPolicyGroup_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
