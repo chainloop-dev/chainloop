@@ -244,9 +244,6 @@ message PolicySpecV2 {
 message PolicyGroupAttachment {
   // Group reference, it might be an URL or a provider reference
   string ref = 1 [(buf.validate.field).string.min_len = 1];
-
-  // Group arguments. They will override the defaults defined in the group
-  map<string, string> with = 2;
 }
 
 // Represents a group or policies

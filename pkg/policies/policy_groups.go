@@ -59,7 +59,7 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 		}
 
 		ev, err := pgv.evaluatePolicyAttachment(ctx, attachment, subject,
-			&evalOpts{kind: material.MaterialType, name: material.GetArtifact().GetId(), overrides: attachment.GetWith()},
+			&evalOpts{kind: material.MaterialType, name: material.GetArtifact().GetId()},
 		)
 		if err != nil {
 			return nil, NewPolicyError(err)
@@ -86,7 +86,7 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 			}
 
 			ev, err := pgv.evaluatePolicyAttachment(ctx, attachment, material,
-				&evalOpts{kind: v1.CraftingSchema_Material_ATTESTATION, overrides: groupAtt.GetWith()},
+				&evalOpts{kind: v1.CraftingSchema_Material_ATTESTATION},
 			)
 			if err != nil {
 				return nil, NewPolicyError(err)

@@ -200,20 +200,6 @@ func (s *groupsTestSuite) TestVerifyAttestations() {
 			npolicies:  1,
 			violations: 1,
 		},
-		{
-			name: "test attestation with arguments",
-			schema: &v1.CraftingSchema{
-				PolicyGroups: []*v1.PolicyGroupAttachment{
-					{
-						Ref:  "file://testdata/policy_group.yaml",
-						With: map[string]string{"email": "devel@chainloop.dev"},
-					},
-				},
-			},
-			statement:  "testdata/statement.json",
-			npolicies:  1,
-			violations: 0,
-		},
 	}
 	for _, tc := range cases {
 		s.Run(tc.name, func() {
