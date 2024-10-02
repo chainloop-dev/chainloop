@@ -714,10 +714,9 @@ func (s *testSuite) TestLoader() {
 
 func (s *testSuite) TestInputArguments() {
 	cases := []struct {
-		name      string
-		inputs    map[string]string
-		overrides map[string]string
-		expected  map[string]any
+		name     string
+		inputs   map[string]string
+		expected map[string]any
 	}{
 		{
 			name:     "string input",
@@ -759,23 +758,11 @@ func (s *testSuite) TestInputArguments() {
 			inputs:   map[string]string{"foo": "bar1,bar2,bar3", "bar": "baz", "foos": "bar1\nbar2\nbar3\n"},
 			expected: map[string]any{"foo": []string{"bar1", "bar2", "bar3"}, "bar": "baz", "foos": []string{"bar1", "bar2", "bar3"}},
 		},
-		{
-			name:      "overrides",
-			inputs:    map[string]string{"foo": "bar"},
-			overrides: map[string]string{"foo": "baz"},
-			expected:  map[string]any{"foo": "baz"},
-		},
-		{
-			name:      "overrides with empty policy input",
-			inputs:    nil,
-			overrides: map[string]string{"foo": "baz"},
-			expected:  map[string]any{"foo": "baz"},
-		},
 	}
 
 	for _, tc := range cases {
 		s.Run(tc.name, func() {
-			actual := getInputArguments(tc.inputs, tc.overrides)
+			actual := getInputArguments(tc.inputs)
 			s.Equal(tc.expected, actual)
 		})
 	}

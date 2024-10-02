@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"maps"
 	"os"
 	"slices"
 	"strings"
@@ -104,9 +103,8 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 }
 
 type evalOpts struct {
-	name      string
-	kind      v1.CraftingSchema_Material_MaterialType
-	overrides map[string]string
+	name string
+	kind v1.CraftingSchema_Material_MaterialType
 }
 
 func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachment *v1.PolicyAttachment, material []byte, opts *evalOpts) (*v12.PolicyEvaluation, error) {
@@ -128,7 +126,7 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		pv.logger.Info().Msgf("evaluating policy %s against attestation", policy.Metadata.Name)
 	}
 
-	violations, sources, err := pv.executeScripts(ctx, policy, scripts, material, attachment, opts.overrides)
+	violations, sources, err := pv.executeScripts(ctx, policy, scripts, material, attachment)
 	if err != nil {
 		return nil, NewPolicyError(err)
 	}
@@ -173,14 +171,14 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 	return result, nil
 }
 
-func (pv *PolicyVerifier) executeScripts(ctx context.Context, policy *v1.Policy, scripts []*engine.Policy, material []byte, att *v1.PolicyAttachment, overrides map[string]string) ([]*engine.PolicyViolation, []string, error) {
+func (pv *PolicyVerifier) executeScripts(ctx context.Context, policy *v1.Policy, scripts []*engine.Policy, material []byte, att *v1.PolicyAttachment) ([]*engine.PolicyViolation, []string, error) {
 	violations := make([]*engine.PolicyViolation, 0)
 	sources := make([]string, 0)
 
 	for _, script := range scripts {
 		// verify the policy
 		ng := getPolicyEngine(policy)
-		res, err := ng.Verify(ctx, script, material, getInputArguments(att.GetWith(), overrides))
+		res, err := ng.Verify(ctx, script, material, getInputArguments(att.GetWith()))
 		if err != nil {
 			return nil, nil, NewPolicyError(err)
 		}
@@ -269,20 +267,10 @@ func validateResource(m proto.Message) error {
 	return nil
 }
 
-func getInputArguments(inputs map[string]string, overrides map[string]string) map[string]any {
+func getInputArguments(inputs map[string]string) map[string]any {
 	args := make(map[string]any)
 
-	allInputs := make(map[string]string)
-	// Override inputs into a new map
-	maps.Copy(allInputs, inputs)
-	maps.Copy(allInputs, overrides)
-
-	for k, v := range allInputs {
-		// look for override
-		ov := overrides[k]
-		if ov != "" {
-			v = ov
-		}
+	for k, v := range inputs {
 		// scan for multiple values
 		lines := strings.Split(strings.TrimRight(v, "\n"), "\n")
 		value := getValue(lines)
