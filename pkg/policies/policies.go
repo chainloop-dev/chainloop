@@ -278,11 +278,6 @@ func getInputArguments(inputs map[string]string, overrides map[string]string) ma
 	maps.Copy(allInputs, overrides)
 
 	for k, v := range allInputs {
-		// look for override
-		ov := overrides[k]
-		if ov != "" {
-			v = ov
-		}
 		// scan for multiple values
 		lines := strings.Split(strings.TrimRight(v, "\n"), "\n")
 		value := getValue(lines)
