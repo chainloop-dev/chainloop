@@ -521,26 +521,26 @@ chainloop config save \
 
 ### Control Plane
 
-| Name                                           | Description                                                                                     | Value             |
-| ---------------------------------------------- | ----------------------------------------------------------------------------------------------- | ----------------- |
-| `controlplane.replicaCount`                    | Number of replicas                                                                              | `2`               |
-| `controlplane.image.registry`                  | Image registry                                                                                  | `REGISTRY_NAME`   |
-| `controlplane.image.repository`                | Image repository                                                                                | `REPOSITORY_NAME` |
-| `controlplane.containerPorts.http`             | controlplane HTTP container port                                                                | `8000`            |
-| `controlplane.containerPorts.grpc`             | controlplane gRPC container port                                                                | `9000`            |
-| `controlplane.containerPorts.metrics`          | controlplane prometheus metrics container port                                                  | `5000`            |
-| `controlplane.tls.existingSecret`              | Existing secret name containing TLS certificate to be used by the controlplane grpc server      | `""`              |
-| `controlplane.pluginsDir`                      | Directory where to look for plugins                                                             | `/plugins`        |
-| `controlplane.referrerSharedIndex`             | Configure the shared, public index API endpoint that can be used to discover metadata referrers |                   |
-| `controlplane.referrerSharedIndex.enabled`     | Enable index API endpoint                                                                       | `false`           |
-| `controlplane.referrerSharedIndex.allowedOrgs` | List of UUIDs of organizations that are allowed to publish to the shared index                  | `[]`              |
-| `controlplane.onboarding.name`                 | Name of the organization to onboard                                                             |                   |
-| `controlplane.onboarding.role`                 | Role of the organization to onboard                                                             |                   |
-| `controlplane.prometheus_org_metrics`          | List of organizations to expose metrics for using Prometheus                                    |                   |
-| `controlplane.policy_providers`                | List of endpoints providing external policies                                                   |                   |
-| `controlplane.migration.image.registry`        | Image registry                                                                                  | `REGISTRY_NAME`   |
-| `controlplane.migration.image.repository`      | Image repository                                                                                | `REPOSITORY_NAME` |
-| `controlplane.migration.ssl`                   | Connect to the database using SSL (required fro AWS RDS, etc)                                   | `false`           |
+| Name                                           | Description                                                                                                                                                                                                                                                    | Value             |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `controlplane.replicaCount`                    | Number of replicas                                                                                                                                                                                                                                             | `2`               |
+| `controlplane.image.registry`                  | Image registry                                                                                                                                                                                                                                                 | `REGISTRY_NAME`   |
+| `controlplane.image.repository`                | Image repository                                                                                                                                                                                                                                               | `REPOSITORY_NAME` |
+| `controlplane.containerPorts.http`             | controlplane HTTP container port                                                                                                                                                                                                                               | `8000`            |
+| `controlplane.containerPorts.grpc`             | controlplane gRPC container port                                                                                                                                                                                                                               | `9000`            |
+| `controlplane.containerPorts.metrics`          | controlplane prometheus metrics container port                                                                                                                                                                                                                 | `5000`            |
+| `controlplane.tls.existingSecret`              | Existing secret name containing TLS certificate to be used by the controlplane grpc server. NOTE: When it's set it will disable secret creation. The secret must contains 2 keys: tls.crt and tls.key respectively containing the certificate and private key. | `""`              |
+| `controlplane.pluginsDir`                      | Directory where to look for plugins                                                                                                                                                                                                                            | `/plugins`        |
+| `controlplane.referrerSharedIndex`             | Configure the shared, public index API endpoint that can be used to discover metadata referrers                                                                                                                                                                |                   |
+| `controlplane.referrerSharedIndex.enabled`     | Enable index API endpoint                                                                                                                                                                                                                                      | `false`           |
+| `controlplane.referrerSharedIndex.allowedOrgs` | List of UUIDs of organizations that are allowed to publish to the shared index                                                                                                                                                                                 | `[]`              |
+| `controlplane.onboarding.name`                 | Name of the organization to onboard                                                                                                                                                                                                                            |                   |
+| `controlplane.onboarding.role`                 | Role of the organization to onboard                                                                                                                                                                                                                            |                   |
+| `controlplane.prometheus_org_metrics`          | List of organizations to expose metrics for using Prometheus                                                                                                                                                                                                   |                   |
+| `controlplane.policy_providers`                | List of endpoints providing external policies                                                                                                                                                                                                                  |                   |
+| `controlplane.migration.image.registry`        | Image registry                                                                                                                                                                                                                                                 | `REGISTRY_NAME`   |
+| `controlplane.migration.image.repository`      | Image repository                                                                                                                                                                                                                                               | `REPOSITORY_NAME` |
+| `controlplane.migration.ssl`                   | Connect to the database using SSL (required fro AWS RDS, etc)                                                                                                                                                                                                  | `false`           |
 
 ### Control Plane Database
 
@@ -714,15 +714,15 @@ chainloop config save \
 
 ### Artifact Content Addressable (CAS) API
 
-| Name                         | Description                                                                       | Value             |
-| ---------------------------- | --------------------------------------------------------------------------------- | ----------------- |
-| `cas.replicaCount`           | Number of replicas                                                                | `2`               |
-| `cas.image.registry`         | Image registry                                                                    | `REGISTRY_NAME`   |
-| `cas.image.repository`       | Image repository                                                                  | `REPOSITORY_NAME` |
-| `cas.containerPorts.http`    | controlplane HTTP container port                                                  | `8000`            |
-| `cas.containerPorts.grpc`    | controlplane gRPC container port                                                  | `9000`            |
-| `cas.containerPorts.metrics` | controlplane prometheus metrics container port                                    | `5000`            |
-| `cas.tls.existingSecret`     | Existing secret name containing TLS certificate to be used by the cas grpc server | `""`              |
+| Name                         | Description                                                                                                                                                                                                                                           | Value             |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `cas.replicaCount`           | Number of replicas                                                                                                                                                                                                                                    | `2`               |
+| `cas.image.registry`         | Image registry                                                                                                                                                                                                                                        | `REGISTRY_NAME`   |
+| `cas.image.repository`       | Image repository                                                                                                                                                                                                                                      | `REPOSITORY_NAME` |
+| `cas.containerPorts.http`    | controlplane HTTP container port                                                                                                                                                                                                                      | `8000`            |
+| `cas.containerPorts.grpc`    | controlplane gRPC container port                                                                                                                                                                                                                      | `9000`            |
+| `cas.containerPorts.metrics` | controlplane prometheus metrics container port                                                                                                                                                                                                        | `5000`            |
+| `cas.tls.existingSecret`     | Existing secret name containing TLS certificate to be used by the cas grpc server. NOTE: When it's set it will disable secret creation. The secret must contains 2 keys: tls.crt and tls.key respectively containing the certificate and private key. | `""`              |
 
 ### CAS Networking
 

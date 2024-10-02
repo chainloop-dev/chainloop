@@ -154,9 +154,7 @@ controlplane:
   ## TLS configuration
   ##
   tls:
-    ## @param controlplane.tls.existingSecret Existing secret name containing TLS certificate to be used by the controlplane grpc server
-    ## NOTE: When it's set it will disable secret creation. The secret must contains 2 keys: tls.crt and tls.key respectively containing the certificate and private key.
-    ##
+    ## @param controlplane.tls.existingSecret Existing secret name containing TLS certificate to be used by the controlplane grpc server. NOTE: When it's set it will disable secret creation. The secret must contains 2 keys: tls.crt and tls.key respectively containing the certificate and private key.
     existingSecret: ""
 
   ## @param controlplane.pluginsDir Directory where to look for plugins
@@ -932,9 +930,7 @@ cas:
   ## TLS configuration
   ##
   tls:
-    ## @param cas.tls.existingSecret Existing secret name containing TLS certificate to be used by the cas grpc server
-    ## NOTE: When it's set it will disable secret creation. The secret must contains 2 keys: tls.crt and tls.key respectively containing the certificate and private key.
-    ##
+    ## @param cas.tls.existingSecret Existing secret name containing TLS certificate to be used by the cas grpc server. NOTE: When it's set it will disable secret creation. The secret must contains 2 keys: tls.crt and tls.key respectively containing the certificate and private key.
     existingSecret: ""
 
   ## @skip cas.serviceAccount
