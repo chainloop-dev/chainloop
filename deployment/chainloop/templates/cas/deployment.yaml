@@ -156,7 +156,7 @@ spec:
         {{- if include "cas.tls-secret-name" .  }}
         - name: server-certs
           secret:
-            secretName: {{ .Values.cas.tls.existingSecret  }}
+            secretName: {{ include "cas.tls-secret-name" .  }}
         {{- end }}
         {{- if eq "gcpSecretManager" .Values.secretsBackend.backend  }}
         - name: gcp-secretmanager-serviceaccountkey
