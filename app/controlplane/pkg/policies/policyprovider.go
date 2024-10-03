@@ -35,8 +35,8 @@ type PolicyProvider struct {
 }
 
 type ProviderResponse struct {
-	Response map[string]any `json:"policy"`
-	Digest   string         `json:"digest"`
+	Data   map[string]any `json:"data"`
+	Digest string         `json:"digest"`
 }
 
 type PolicyReference struct {
@@ -131,7 +131,7 @@ func (p *PolicyProvider) queryProvider(path string, digest string, token string,
 	}
 
 	// extract the policy payload from the query response
-	jsonPolicy, err := json.Marshal(response.Response)
+	jsonPolicy, err := json.Marshal(response.Data)
 	if err != nil {
 		return nil, fmt.Errorf("error marshalling policy response: %w", err)
 	}
