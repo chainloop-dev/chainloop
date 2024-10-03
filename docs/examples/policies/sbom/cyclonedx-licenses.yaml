@@ -6,21 +6,22 @@ metadata:
   annotations:
     category: sbom
 spec:
-  type: SBOM_CYCLONEDX_JSON
-  embedded: |
-    package main
-
-    import rego.v1
-
-    violations contains msg if {
-      count(without_license) > 0
-      msg := sprintf("Missing licenses for %s", [components_str])
-    }
-
-    components_str := concat(", ", [comp.purl | some comp in without_license])
-
-    without_license contains comp if {
-      some comp in input.components
-      not comp.licenses
-    }
+  policies:
+  - kind: SBOM_CYCLONEDX_JSON
+    embedded: |
+      package main
+  
+      import rego.v1
+  
+      violations contains msg if {
+        count(without_license) > 0
+        msg := sprintf("Missing licenses for %s", [components_str])
+      }
+  
+      components_str := concat(", ", [comp.purl | some comp in without_license])
+  
+      without_license contains comp if {
+        some comp in input.components
+        not comp.licenses
+      }
 

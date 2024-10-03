@@ -20,19 +20,20 @@ metadata:
   annotations:
     category: sbom
 spec:
-  type: SBOM_SPDX_JSON
-  embedded: |
-    package main
-
-    import future.keywords.in
-    
-    violations[msg] {
-      not made_with_syft
-
-      msg := "Not made with syft"
-    }
-
-    made_with_syft {
-      some creator in input.creationInfo.creators
-      contains(creator, "syft")
-    }
+  policies:
+  - kind: SBOM_SPDX_JSON
+    embedded: |
+      package main
+  
+      import future.keywords.in
+      
+      violations[msg] {
+        not made_with_syft
+  
+        msg := "Not made with syft"
+      }
+  
+      made_with_syft {
+        some creator in input.creationInfo.creators
+        contains(creator, "syft")
+      }

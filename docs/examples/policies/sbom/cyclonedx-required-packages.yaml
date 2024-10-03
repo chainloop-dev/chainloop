@@ -20,24 +20,25 @@ metadata:
   annotations:
     category: sbom
 spec:
-  type: SBOM_CYCLONEDX_JSON
-  embedded: |
-    package main
-    
-    import rego.v1
-    
-    required_packages := {"glibc", "libcrypto3"}
-      
-    violations contains msg if {
-      count(all_matches) != count(required_packages)
-      missing := required_packages - all_matches
-      some i
-      msg := sprintf("missing package: %v", [missing[i]])
-    }
-      
-    all_matches contains name if {
-      some i
-      comp := input.components[i]
-      comp.name == required_packages[_]
-      name := comp.name
-    }
+  policies:
+    - kind: SBOM_CYCLONEDX_JSON
+      embedded: |
+        package main
+        
+        import rego.v1
+        
+        required_packages := {"glibc", "libcrypto3"}
+          
+        violations contains msg if {
+          count(all_matches) != count(required_packages)
+          missing := required_packages - all_matches
+          some i
+          msg := sprintf("missing package: %v", [missing[i]])
+        }
+          
+        all_matches contains name if {
+          some i
+          comp := input.components[i]
+          comp.name == required_packages[_]
+          name := comp.name
+        }
