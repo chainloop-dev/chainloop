@@ -10,6 +10,13 @@
       },
       "type": "array"
     },
+    "^(policyGroups)$": {
+      "description": "Policy groups to apply to this schema",
+      "items": {
+        "$ref": "workflowcontract.v1.PolicyGroupAttachment.schema.json"
+      },
+      "type": "array"
+    },
     "^(schemaVersion)$": {
       "description": "Version of the schema, do not confuse with the revision of the content",
       "type": "string"
@@ -38,6 +45,13 @@
     "policies": {
       "$ref": "workflowcontract.v1.Policies.schema.json",
       "description": "Policies to apply to this schema"
+    },
+    "policy_groups": {
+      "description": "Policy groups to apply to this schema",
+      "items": {
+        "$ref": "workflowcontract.v1.PolicyGroupAttachment.schema.json"
+      },
+      "type": "array"
     },
     "runner": {
       "$ref": "workflowcontract.v1.CraftingSchema.Runner.schema.json"

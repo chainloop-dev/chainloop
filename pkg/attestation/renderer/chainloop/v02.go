@@ -83,6 +83,8 @@ func NewChainloopRendererV02(att *v1.Attestation, schema *schemaapi.CraftingSche
 }
 
 func (r *RendererV02) Statement(ctx context.Context) (*intoto.Statement, error) {
+	var evaluations []*v1.PolicyEvaluation
+
 	subject, err := r.subject()
 	if err != nil {
 		return nil, fmt.Errorf("error creating subject: %w", err)
@@ -100,17 +102,26 @@ func (r *RendererV02) Statement(ctx context.Context) (*intoto.Statement, error) 
 		Predicate:     predicate,
 	}
 
+	// Validate policy groups
+	pgv := policies.NewPolicyGroupVerifier(r.schema, r.attClient, r.logger)
+	policyGroupResults, err := pgv.VerifyStatement(ctx, statement)
+	if err != nil {
+		return nil, fmt.Errorf("error applying policy groups to statement: %w", err)
+	}
+	evaluations = append(evaluations, policyGroupResults...)
+
 	// validate attestation-level policies
 	pv := policies.NewPolicyVerifier(r.schema, r.attClient, r.logger)
 	policyResults, err := pv.VerifyStatement(ctx, statement)
 	if err != nil {
 		return nil, fmt.Errorf("applying policies to statement: %w", err)
 	}
+	evaluations = append(evaluations, policyResults...)
 	// log policy violations
-	policies.LogPolicyViolations(policyResults, r.logger)
+	policies.LogPolicyViolations(evaluations, r.logger)
 
 	// insert attestation level policy results into statement
-	if err = addPolicyResults(statement, policyResults); err != nil {
+	if err = addPolicyResults(statement, evaluations); err != nil {
 		return nil, fmt.Errorf("adding policy results to statement: %w", err)
 	}
 

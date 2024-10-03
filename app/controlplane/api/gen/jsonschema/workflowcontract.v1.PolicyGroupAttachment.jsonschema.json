@@ -1,0 +1,14 @@
+{
+  "$id": "workflowcontract.v1.PolicyGroupAttachment.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Represents a group attachment in a contract",
+  "properties": {
+    "ref": {
+      "description": "Group reference, it might be an URL or a provider reference",
+      "type": "string"
+    }
+  },
+  "title": "Policy Group Attachment",
+  "type": "object"
+}
