@@ -427,7 +427,7 @@ func (uc *WorkflowContractUseCase) GetPolicyGroup(providerName, groupName, token
 		return nil, err
 	}
 
-	policy, ref, err := provider.ResolveGroup(groupName, token)
+	group, ref, err := provider.ResolveGroup(groupName, token)
 	if err != nil {
 		if errors.Is(err, policies.ErrNotFound) {
 			return nil, NewErrNotFound(fmt.Sprintf("policy group %q", groupName))
@@ -436,7 +436,7 @@ func (uc *WorkflowContractUseCase) GetPolicyGroup(providerName, groupName, token
 		return nil, fmt.Errorf("failed to resolve policy: %w. Available providers: %s", err, uc.policyRegistry.GetProviderNames())
 	}
 
-	return &RemotePolicyGroup{PolicyGroup: policy, ProviderRef: ref}, nil
+	return &RemotePolicyGroup{PolicyGroup: group, ProviderRef: ref}, nil
 }
 
 func (uc *WorkflowContractUseCase) findProvider(providerName string) (*policies.PolicyProvider, error) {

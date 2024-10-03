@@ -152,6 +152,9 @@ func (pgv *PolicyGroupVerifier) getGroupLoader(attachment *v1.PolicyGroupAttachm
 	var loader GroupLoader
 	scheme, _ := refParts(ref)
 	switch scheme {
+	// No scheme means chainloop loader
+	case chainloopScheme, "":
+		loader = NewChainloopGroupLoader(pgv.client)
 	case fileScheme:
 		loader = new(FileGroupLoader)
 	case httpsScheme, httpScheme:

@@ -22,9 +22,12 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	v12 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
+	crv1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
 // GroupLoader defines the interface for policy loaders from contract attachments
@@ -91,4 +94,57 @@ func (l *HTTPSGroupLoader) Load(_ context.Context, attachment *v1.PolicyGroupAtt
 	}
 
 	return &group, d, nil
+}
+
+// ChainloopGroupLoader loads groups referenced with chainloop://provider/name URLs
+type ChainloopGroupLoader struct {
+	Client pb.AttestationServiceClient
+
+	cacheMutex sync.Mutex
+}
+
+type groupWithReference struct {
+	group     *v1.PolicyGroup
+	reference *v12.ResourceDescriptor
+}
+
+var remoteGroupCache = make(map[string]*groupWithReference)
+
+func NewChainloopGroupLoader(client pb.AttestationServiceClient) *ChainloopGroupLoader {
+	return &ChainloopGroupLoader{Client: client}
+}
+
+func (c *ChainloopGroupLoader) Load(ctx context.Context, attachment *v1.PolicyGroupAttachment) (*v1.PolicyGroup, *v12.ResourceDescriptor, error) {
+	ref := attachment.GetRef()
+
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+
+	if v, ok := remoteGroupCache[ref]; ok {
+		return v.group, v.reference, nil
+	}
+
+	if !IsProviderScheme(ref) {
+		return nil, nil, fmt.Errorf("invalid group reference %q", ref)
+	}
+
+	provider, name := ProviderParts(ref)
+
+	resp, err := c.Client.GetPolicyGroup(ctx, &pb.AttestationServiceGetPolicyGroupRequest{
+		Provider:  provider,
+		GroupName: name,
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("requesting remote group (provider: %s, name: %s): %w", provider, name, err)
+	}
+
+	h, err := crv1.NewHash(resp.Reference.GetDigest())
+	if err != nil {
+		return nil, nil, fmt.Errorf("parsing digest: %w", err)
+	}
+
+	reference := policyReferenceResourceDescriptor(resp.Reference.GetUrl(), h)
+	// cache result
+	remoteGroupCache[ref] = &groupWithReference{group: resp.GetGroup(), reference: reference}
+	return resp.GetGroup(), reference, nil
 }
