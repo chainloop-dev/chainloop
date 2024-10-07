@@ -28,10 +28,15 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+const (
+	policiesEndpoint = "policies"
+	groupsEndpoint   = "groups"
+)
+
 // PolicyProvider represents an external policy provider
 type PolicyProvider struct {
-	name, host, uri string
-	isDefault       bool
+	name, url string
+	isDefault bool
 }
 
 type ProviderResponse struct {
@@ -56,10 +61,9 @@ func (p *PolicyProvider) Resolve(policyName string, token string) (*schemaapi.Po
 	policyName, digest := policies.ExtractDigest(policyName)
 
 	var policy schemaapi.Policy
-	// old, deprecated
-	endpoint := fmt.Sprintf("%s/%s", p.host, policyName)
-	if p.uri != "" {
-		endpoint = fmt.Sprintf("%s/policies/%s", p.uri, policyName)
+	endpoint, err := url.JoinPath(p.url, policiesEndpoint, policyName)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to resolve policy: %w", err)
 	}
 	ref, err := p.queryProvider(endpoint, digest, token, &policy)
 	if err != nil {
@@ -79,9 +83,13 @@ func (p *PolicyProvider) ResolveGroup(groupName string, token string) (*schemaap
 	policyName, digest := policies.ExtractDigest(groupName)
 
 	var group schemaapi.PolicyGroup
-	ref, err := p.queryProvider(fmt.Sprintf("%s/groups/%s", p.uri, policyName), digest, token, &group)
+	endpoint, err := url.JoinPath(p.url, groupsEndpoint, policyName)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to resolve policy: %w", err)
+		return nil, nil, fmt.Errorf("failed to resolve group: %w", err)
+	}
+	ref, err := p.queryProvider(endpoint, digest, token, &group)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to resolve group: %w", err)
 	}
 
 	return &group, ref, nil
@@ -150,7 +158,7 @@ func (p *PolicyProvider) queryProvider(path string, digest string, token string,
 
 func (p *PolicyProvider) resolveRef(path, digest string) (*PolicyReference, error) {
 	// Extract hostname from the policy provider URL
-	uri, err := url.Parse(p.host)
+	uri, err := url.Parse(p.url)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing policy provider URL: %w", err)
 	}

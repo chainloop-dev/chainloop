@@ -17,6 +17,7 @@ package policies
 
 import (
 	"fmt"
+	"strings"
 
 	"golang.org/x/exp/maps"
 )
@@ -42,10 +43,13 @@ func NewRegistry(conf ...*NewRegistryConfig) (*Registry, error) {
 			return nil, fmt.Errorf("duplicate default policy")
 		}
 		hasDefault = hasDefault || p.Default
+		// For backwards compatibility, if host is provided, we get the URI from it, by extracting "/policies" suffix
+		if p.URL == "" && p.Host != "" {
+			p.URL, _ = strings.CutSuffix(p.Host, fmt.Sprintf("/%s", policiesEndpoint))
+		}
 		r.providers[p.Name] = &PolicyProvider{
 			name:      p.Name,
-			host:      p.Host,
-			uri:       p.URL,
+			url:       p.URL,
 			isDefault: p.Default,
 		}
 	}

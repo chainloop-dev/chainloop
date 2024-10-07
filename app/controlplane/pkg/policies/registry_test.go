@@ -73,3 +73,41 @@ func (s *providerTestSuite) TestGetProvider() {
 		})
 	}
 }
+
+func (s *providerTestSuite) TestHostAndUrlCompatibility() {
+	cases := []struct {
+		name        string
+		host        string
+		url         string
+		expectedURL string
+	}{
+		{
+			name:        "only host",
+			host:        "http://myhost/v1/policies",
+			expectedURL: "http://myhost/v1",
+		},
+		{
+			name:        "only url",
+			url:         "http://myhost/v1",
+			expectedURL: "http://myhost/v1",
+		},
+		{
+			name:        "both",
+			host:        "http://myhost/v1/policies",
+			url:         "http://myhost/v1",
+			expectedURL: "http://myhost/v1",
+		},
+	}
+	for _, c := range cases {
+		s.Run(c.name, func() {
+			r, err := NewRegistry(&NewRegistryConfig{
+				Name: c.name,
+				Host: c.host,
+				URL:  c.url,
+			})
+
+			s.Require().NoError(err)
+			s.Equal(c.expectedURL, r.providers[c.name].url)
+		})
+	}
+}
