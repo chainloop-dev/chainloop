@@ -144,7 +144,7 @@ func (i *ZAPCrafter) isZipFile(filePath string) error {
 
 	// Detect the content type of the entire file
 	contentType := http.DetectContentType(fileData)
-	if contentType != "application/zip" && contentType != "application/x-gzip" {
+	if contentType != "application/zip" {
 		return fmt.Errorf("file is not a valid zip archive, detected content type: %s", contentType)
 	}
 
