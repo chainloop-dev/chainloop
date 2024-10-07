@@ -135,6 +135,8 @@ export enum CraftingSchema_Material_MaterialType {
   CSAF_SECURITY_INCIDENT_RESPONSE = 15,
   /** GITLAB_SECURITY_REPORT - Gitlab Application Security Reports https://docs.gitlab.com/ee/user/application_security/ */
   GITLAB_SECURITY_REPORT = 16,
+  /** ZAP_DAST_ZIP - ZAP DAST report in zip format: https://www.zaproxy.org */
+  ZAP_DAST_ZIP = 17,
   UNRECOGNIZED = -1,
 }
 
@@ -191,6 +193,9 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 16:
     case "GITLAB_SECURITY_REPORT":
       return CraftingSchema_Material_MaterialType.GITLAB_SECURITY_REPORT;
+    case 17:
+    case "ZAP_DAST_ZIP":
+      return CraftingSchema_Material_MaterialType.ZAP_DAST_ZIP;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -234,6 +239,8 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "CSAF_SECURITY_INCIDENT_RESPONSE";
     case CraftingSchema_Material_MaterialType.GITLAB_SECURITY_REPORT:
       return "GITLAB_SECURITY_REPORT";
+    case CraftingSchema_Material_MaterialType.ZAP_DAST_ZIP:
+      return "ZAP_DAST_ZIP";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

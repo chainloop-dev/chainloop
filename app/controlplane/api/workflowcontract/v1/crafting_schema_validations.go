@@ -43,6 +43,7 @@ var CraftingMaterialInValidationOrder = []CraftingSchema_Material_MaterialType{
 	CraftingSchema_Material_CONTAINER_IMAGE,
 	CraftingSchema_Material_SARIF,
 	CraftingSchema_Material_ATTESTATION,
+	CraftingSchema_Material_ZAP_DAST_ZIP,
 	CraftingSchema_Material_ARTIFACT,
 	CraftingSchema_Material_STRING,
 }
