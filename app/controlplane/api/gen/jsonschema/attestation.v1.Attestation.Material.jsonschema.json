@@ -33,7 +33,8 @@
             "CSAF_INFORMATIONAL_ADVISORY",
             "CSAF_SECURITY_ADVISORY",
             "CSAF_SECURITY_INCIDENT_RESPONSE",
-            "GITLAB_SECURITY_REPORT"
+            "GITLAB_SECURITY_REPORT",
+            "ZAP_DAST_ZIP"
           ],
           "title": "Material Type",
           "type": "string"
@@ -94,7 +95,8 @@
             "CSAF_INFORMATIONAL_ADVISORY",
             "CSAF_SECURITY_ADVISORY",
             "CSAF_SECURITY_INCIDENT_RESPONSE",
-            "GITLAB_SECURITY_REPORT"
+            "GITLAB_SECURITY_REPORT",
+            "ZAP_DAST_ZIP"
           ],
           "title": "Material Type",
           "type": "string"

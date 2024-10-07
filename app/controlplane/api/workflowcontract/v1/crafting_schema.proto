@@ -109,6 +109,8 @@ message CraftingSchema {
       CSAF_SECURITY_INCIDENT_RESPONSE = 15;
       // Gitlab Application Security Reports https://docs.gitlab.com/ee/user/application_security/
       GITLAB_SECURITY_REPORT = 16;
+      // ZAP DAST report in zip format: https://www.zaproxy.org
+      ZAP_DAST_ZIP = 17;
     }
   }
 }
