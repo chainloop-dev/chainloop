@@ -27,7 +27,6 @@ import (
 
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -72,7 +71,7 @@ func TestNewZAPCraft(t *testing.T) {
 		{
 			name:     "invalid ZAP format",
 			filePath: "./testdata/sbom.cyclonedx.json",
-			wantErr:  "invalid zip file: file is not a valid zip archive, detected content type",
+			wantErr:  "can't open the zip file",
 		},
 		{
 			name:     "invalid path",
@@ -82,7 +81,7 @@ func TestNewZAPCraft(t *testing.T) {
 		{
 			name:     "invalid artifact type",
 			filePath: "./testdata/simple.txt",
-			wantErr:  "invalid zip file: file is not a valid zip archive, detected content type",
+			wantErr:  "can't open the zip file",
 		},
 		{
 			name:     "missing ZAP json report",
@@ -106,10 +105,10 @@ func TestNewZAPCraft(t *testing.T) {
 			// Mock uploader
 			uploader := mUploader.NewUploader(t)
 			if tc.wantErr == "" {
-				uploader.On("UploadFile", context.TODO(), mock.Anything).
+				uploader.On("UploadFile", context.TODO(), tc.filePath).
 					Return(&casclient.UpDownStatus{
 						Digest:   "deadbeef",
-						Filename: "zap_dast_report.json",
+						Filename: "zap_scan.zip",
 					}, nil)
 			}
 
@@ -129,7 +128,7 @@ func TestNewZAPCraft(t *testing.T) {
 
 			// // The result includes the digest reference
 			assert.Equal(got.GetArtifact(), &attestationApi.Attestation_Material_Artifact{
-				Id: "test", Digest: "sha256:f61aa70510cb53530158c78dd2d50da90ec8190c11020fe4fafb42e1cce47b69", Name: "zap_dast_report.json",
+				Id: "test", Digest: "sha256:7aa1273cbc367cd13cc7be0e97a939df47f9b35e1fc45b4b81b6152569b3565c", Name: "zap_scan.zip",
 			})
 		})
 	}
