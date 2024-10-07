@@ -24,6 +24,7 @@ import (
 type NewRegistryConfig struct {
 	Name    string
 	Host    string
+	URL     string
 	Default bool
 }
 
@@ -44,6 +45,7 @@ func NewRegistry(conf ...*NewRegistryConfig) (*Registry, error) {
 		r.providers[p.Name] = &PolicyProvider{
 			name:      p.Name,
 			host:      p.Host,
+			uri:       p.URL,
 			isDefault: p.Default,
 		}
 	}

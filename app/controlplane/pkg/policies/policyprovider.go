@@ -30,8 +30,8 @@ import (
 
 // PolicyProvider represents an external policy provider
 type PolicyProvider struct {
-	name, host string
-	isDefault  bool
+	name, host, uri string
+	isDefault       bool
 }
 
 type ProviderResponse struct {
@@ -56,7 +56,12 @@ func (p *PolicyProvider) Resolve(policyName string, token string) (*schemaapi.Po
 	policyName, digest := policies.ExtractDigest(policyName)
 
 	var policy schemaapi.Policy
-	ref, err := p.queryProvider(fmt.Sprintf("%s/policies/%s", p.host, policyName), digest, token, &policy)
+	// old, deprecated
+	endpoint := fmt.Sprintf("%s/%s", p.host, policyName)
+	if p.uri != "" {
+		endpoint = fmt.Sprintf("%s/policies/%s", p.uri, policyName)
+	}
+	ref, err := p.queryProvider(endpoint, digest, token, &policy)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to resolve policy: %w", err)
 	}
@@ -74,7 +79,7 @@ func (p *PolicyProvider) ResolveGroup(groupName string, token string) (*schemaap
 	policyName, digest := policies.ExtractDigest(groupName)
 
 	var group schemaapi.PolicyGroup
-	ref, err := p.queryProvider(fmt.Sprintf("%s/groups/%s", p.host, policyName), digest, token, &group)
+	ref, err := p.queryProvider(fmt.Sprintf("%s/groups/%s", p.uri, policyName), digest, token, &group)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to resolve policy: %w", err)
 	}
