@@ -1,0 +1,42 @@
+{
+  "detailedVulnerabilities": [
+    {
+      "projectVersionPathSummary": {
+        "projectName": "Add-on Profiles",
+        "versionName": "AOP-Release-HEAD",
+        "projectVersionPath": "Add-on Profiles AOP-Release-HEAD",
+        "level": 1,
+        "adjustedLabel": ""
+      },
+      "producerProjectId": "f13d11ef-1a89-4e63-952f-c9308cd4f5dd",
+      "producerVersionId": "6e8a0fdf-32a5-4621-923a-1d3e8ae8481a",
+      "producerChannelVersionId": "887db0a8-c375-4fb5-b586-f9f40ea93b6e",
+      "producerProjectName": "Angular",
+      "producerVersion": "1.4.7",
+      "producerChannelVersionExternalNamespace": "npmjs",
+      "producerChannelVersionExternalId": "angular/1.4.7",
+      "producerChannelVersionName": "1.4.7",
+      "vulnerabilityId": "BDSA-2017-2907",
+      "description": "A web page created by AngularJS is vulnerable to a cross-site scripting (XSS) attack when opened in Firefox or Safari browsers if inert document is utilized in that web page. By leveraging this issue, an attacker is able to insert JavaScript code and steal a victim's session cookies and craft other attacks.",
+      "createdDate": "2018-03-01T15:14:48.287Z",
+      "updatedDate": "2022-04-26T14:08:28.421Z",
+      "baseScore": 9.6,
+      "exploitabilitySubscore": 2.8,
+      "impactSubscore": 6.0,
+      "vulnerabilitySource": "BDSA",
+      "remediationStatus": "NEW",
+      "remediationCreatedAt": "2024-07-02T15:37:22.887Z",
+      "remediationUpdatedAt": "2024-07-02T15:37:22.887Z",
+      "severity": "HIGH",
+      "overallScore": 8.3,
+      "cweIds": ["CWE-79"],
+      "solutionAvailable": true,
+      "workaroundAvailable": false,
+      "exploitAvailable": false,
+      "cvssVersion": "CVSS 3.x",
+      "reachable": false,
+      "bdsaTags": [],
+      "versionBomMatchTypes": ["FILE_EXACT_FILE_MATCH"]
+    }
+  ]
+}

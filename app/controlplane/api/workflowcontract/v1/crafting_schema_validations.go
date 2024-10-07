@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -40,10 +40,11 @@ var CraftingMaterialInValidationOrder = []CraftingSchema_Material_MaterialType{
 	CraftingSchema_Material_GITLAB_SECURITY_REPORT,
 	CraftingSchema_Material_JUNIT_XML,
 	CraftingSchema_Material_HELM_CHART,
-	CraftingSchema_Material_CONTAINER_IMAGE,
 	CraftingSchema_Material_SARIF,
+	CraftingSchema_Material_BLACKDUCK_SCA_JSON,
 	CraftingSchema_Material_ATTESTATION,
 	CraftingSchema_Material_ZAP_DAST_ZIP,
+	CraftingSchema_Material_CONTAINER_IMAGE,
 	CraftingSchema_Material_ARTIFACT,
 	CraftingSchema_Material_STRING,
 }

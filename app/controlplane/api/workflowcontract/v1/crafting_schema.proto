@@ -69,10 +69,10 @@ message CraftingSchema {
     string name = 2 [(buf.validate.field) = {
       // NOTE: validations can not be shared yet https://github.com/bufbuild/protovalidate/issues/51
       cel: {
-        message: "must contain only lowercase letters, numbers, and hyphens.",
-        expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
-        id: "name.dns-1123",
-      },
+        message: "must contain only lowercase letters, numbers, and hyphens."
+        expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
+        id: "name.dns-1123"
+      }
     }];
     bool optional = 3;
     // If a material is set as output it will get added to the subject in the statement
@@ -109,8 +109,8 @@ message CraftingSchema {
       CSAF_SECURITY_INCIDENT_RESPONSE = 15;
       // Gitlab Application Security Reports https://docs.gitlab.com/ee/user/application_security/
       GITLAB_SECURITY_REPORT = 16;
-      // ZAP DAST report in zip format: https://www.zaproxy.org
       ZAP_DAST_ZIP = 17;
+      BLACKDUCK_SCA_JSON = 18;
     }
   }
 }
@@ -176,10 +176,10 @@ message Metadata {
   // the name of the policy
   string name = 3 [(buf.validate.field) = {
     cel: {
-      message: "must contain only lowercase letters, numbers, and hyphens.",
-      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
-      id: "name.dns-1123",
-    },
+      message: "must contain only lowercase letters, numbers, and hyphens."
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
+      id: "name.dns-1123"
+    }
   }];
 
   string description = 4;
@@ -198,22 +198,25 @@ message PolicySpec {
   // if set, it will match any material supported by Chainloop
   // except those not having a direct schema (STRING, ARTIFACT, EVIDENCE), since their format cannot be guessed by the crafter.
   // CONTAINER, HELM_CHART are also excluded, but we might implement custom policies for them in the future.
-  CraftingSchema.Material.MaterialType type = 3 [(buf.validate.field).enum = {
-    not_in: [
-      1,
-      2,
-      3,
-      10,
-      11
-    ]
-  }, deprecated = true];
+  CraftingSchema.Material.MaterialType type = 3 [
+    (buf.validate.field).enum = {
+      not_in: [
+        1,
+        2,
+        3,
+        10,
+        11
+      ]
+    },
+    deprecated = true
+  ];
 
   repeated PolicySpecV2 policies = 4;
 
   option (buf.validate.message).cel = {
-    id: "policyspec",
-    message: "either spec source or policies fields must be provided",
-    expression: "has(this.path) || has(this.embedded) || size(this.policies) > 0",
+    id: "policyspec"
+    message: "either spec source or policies fields must be provided"
+    expression: "has(this.path) || has(this.embedded) || size(this.policies) > 0"
   };
 }
 
@@ -265,6 +268,3 @@ message PolicyGroup {
     repeated PolicyAttachment attestation = 2;
   }
 }
-
-
-

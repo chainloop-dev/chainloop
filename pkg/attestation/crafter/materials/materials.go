@@ -189,6 +189,8 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 		crafter, err = NewGitlabCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_ZAP_DAST_ZIP:
 		crafter, err = NewZAPCrafter(materialSchema, casBackend, logger)
+	case schemaapi.CraftingSchema_Material_BLACKDUCK_SCA_JSON:
+		crafter, err = NewBlackduckSCAJSONCrafter(materialSchema, casBackend, logger)
 	default:
 		return nil, fmt.Errorf("material of type %q not supported yet", materialSchema.Type)
 	}
