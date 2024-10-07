@@ -83,6 +83,7 @@ func (s *providerTestSuite) TestHostAndUrlCompatibility() {
 		host        string
 		url         string
 		expectedURL string
+		wantErr     bool
 	}{
 		{
 			name:        "only host",
@@ -95,10 +96,10 @@ func (s *providerTestSuite) TestHostAndUrlCompatibility() {
 			expectedURL: "http://myhost/v1",
 		},
 		{
-			name:        "both",
-			host:        "http://myhost/v1/policies",
-			url:         "http://myhost/v1",
-			expectedURL: "http://myhost/v1",
+			name:    "both",
+			host:    "http://myhost/v1/policies",
+			url:     "http://myhost/v1",
+			wantErr: true,
 		},
 	}
 	for _, c := range cases {
@@ -108,6 +109,10 @@ func (s *providerTestSuite) TestHostAndUrlCompatibility() {
 				Host: c.host,
 				URL:  c.url,
 			})
+			if c.wantErr {
+				s.Error(err)
+				return
+			}
 
 			s.Require().NoError(err)
 			s.Equal(c.expectedURL, r.providers[c.name].url)

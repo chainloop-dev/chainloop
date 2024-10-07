@@ -24,7 +24,8 @@ import (
 )
 
 type NewRegistryConfig struct {
-	Name    string
+	Name string
+	// Host is deprecated. Use URL instead
 	Host    string
 	URL     string
 	Default bool
@@ -47,8 +48,12 @@ func NewRegistry(logger log.Logger, conf ...*NewRegistryConfig) (*Registry, erro
 			return nil, fmt.Errorf("duplicate default policy")
 		}
 		hasDefault = hasDefault || p.Default
+		if p.URL != "" && p.Host != "" {
+			// both provided. return err as it's ambiguous
+			return nil, fmt.Errorf("wrong configuration for policy provider. Either URL or host (deprecated) must be provided, but not both")
+		}
 		// For backwards compatibility, if host is provided, we get the URI from it, by extracting "/policies" suffix
-		if p.URL == "" && p.Host != "" {
+		if p.Host != "" {
 			endPoint, _ := strings.CutSuffix(p.Host, fmt.Sprintf("/%s", policiesEndpoint))
 			lh.Warnf("the policy provider '%s' is using a deprecated 'host' configuration with value '%s'. Please use 'url' instead. Configuring 'url' with value '%s'", p.Name, p.Host, endPoint)
 			p.URL = endPoint
