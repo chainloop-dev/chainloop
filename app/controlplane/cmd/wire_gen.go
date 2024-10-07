@@ -92,7 +92,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	workflowContractRepo := data.NewWorkflowContractRepo(dataData, logger)
 	v3 := bootstrap.PolicyProviders
 	v4 := newPolicyProviderConfig(v3)
-	registry, err := policies.NewRegistry(v4...)
+	registry, err := policies.NewRegistry(logger, v4...)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
