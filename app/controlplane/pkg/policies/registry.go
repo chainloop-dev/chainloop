@@ -50,7 +50,7 @@ func NewRegistry(logger log.Logger, conf ...*NewRegistryConfig) (*Registry, erro
 		// For backwards compatibility, if host is provided, we get the URI from it, by extracting "/policies" suffix
 		if p.URL == "" && p.Host != "" {
 			endPoint, _ := strings.CutSuffix(p.Host, fmt.Sprintf("/%s", policiesEndpoint))
-			lh.Warnf("the policy provider %s is using a deprecated 'host' configuration. Please use 'url' instead. Configuring 'url' with value %s", p.Name, endPoint)
+			lh.Warnf("the policy provider '%s' is using a deprecated 'host' configuration with value '%s'. Please use 'url' instead. Configuring 'url' with value '%s'", p.Name, p.Host, endPoint)
 			p.URL = endPoint
 		}
 		r.providers[p.Name] = &PolicyProvider{
