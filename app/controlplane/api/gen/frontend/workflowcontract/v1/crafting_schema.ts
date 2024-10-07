@@ -137,6 +137,8 @@ export enum CraftingSchema_Material_MaterialType {
   GITLAB_SECURITY_REPORT = 16,
   ZAP_DAST_ZIP = 17,
   BLACKDUCK_SCA_JSON = 18,
+  /** TWISTCTL_SCAN_JSON - Twistcli scan output in json format: https://www.twistlock.com */
+  TWISTCTL_SCAN_JSON = 19,
   UNRECOGNIZED = -1,
 }
 
@@ -199,6 +201,9 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 18:
     case "BLACKDUCK_SCA_JSON":
       return CraftingSchema_Material_MaterialType.BLACKDUCK_SCA_JSON;
+    case 19:
+    case "TWISTCTL_SCAN_JSON":
+      return CraftingSchema_Material_MaterialType.TWISTCTL_SCAN_JSON;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -246,6 +251,8 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "ZAP_DAST_ZIP";
     case CraftingSchema_Material_MaterialType.BLACKDUCK_SCA_JSON:
       return "BLACKDUCK_SCA_JSON";
+    case CraftingSchema_Material_MaterialType.TWISTCTL_SCAN_JSON:
+      return "TWISTCTL_SCAN_JSON";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

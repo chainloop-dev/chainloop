@@ -1,0 +1,61 @@
+{
+	"results": [
+		{
+			"id": "sha256:32f5f1703cfd6cc2ede7c1615ea8bccfa51d7ec50f0abaddc04662b9a3516ba3",
+			"name": "docker.io/library/nginx:1.27.1",
+			"distro": "BusyBox",
+			"distroRelease": "1.27.1",
+			"digest": "sha256:32f5f1703cfd6cc2ede7c1615ea8bccfa51d7ec50f0abaddc04662b9a3516ba3",
+			"collections": [
+				"All"
+			],
+			"packages": [
+				{
+					"type": "os",
+					"name": "zlib",
+					"version": "1.3.1-r1",
+					"licenses": [
+						"Zlib"
+					]
+				}
+			],
+			"applications": [
+				{
+					"name": "nginx",
+					"version": "1.27.1",
+					"path": "/usr/sbin/nginx"
+				}
+			],
+			"complianceDistribution": {
+				"critical": 0,
+				"high": 0,
+				"medium": 0,
+				"low": 0,
+				"total": 0
+			},
+			"complianceScanPassed": true,
+			"vulnerabilities": [],
+			"vulnerabilityDistribution": {
+				"critical": 0,
+				"high": 0,
+				"medium": 0,
+				"low": 1,
+				"total": 1
+			},
+			"vulnerabilityScanPassed": true,
+			"history": [
+				{
+					"created": "2024-09-06T22:20:07Z",
+					"instruction": "ADD file:5758h129317201c84a204a6e551231235d785a7cade40b2fb99f01fe122482e283 in / "
+				},
+				{
+					"created": "2024-10-04T20:43:40Z",
+					"instruction": "CMD [\"nginx\" \"-g\" \"daemon off;\"]"
+				}
+			],
+			"scanTime": "2023-11-04T18:40:20.181754364Z",
+			"scanID": "670053a6690a95362b898790"
+		}
+	],
+	"consoleURL": "https://app.prismacloud.io/compute?computeState=/monitor/vulnerabilities/images/ci?search%3Dsha256%32f5f1703cfd6cc2ede7c1615ea8bccfa51d7ec50f0abaddc04662b9a3516ba3"
+}
