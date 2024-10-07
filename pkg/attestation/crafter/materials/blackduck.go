@@ -17,6 +17,7 @@ package materials
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -42,10 +43,26 @@ func NewBlackduckSCAJSONCrafter(materialSchema *schemaapi.CraftingSchema_Materia
 	}, nil
 }
 
+type blackduckRequiredFields struct {
+	DetailedVulnerabilities            any `json:"detailedVulnerabilities"`
+	DetailedProjectVersionCustomFields any `json:"detailedProjectVersionCustomFields"`
+	DetailedCodeLocations              any `json:"detailedCodeLocations"`
+}
+
 func (i *BlackduckSCAJSONCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
-	_, err := os.ReadFile(filePath)
+	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("can't open the file: %w", err)
+	}
+
+	var doc blackduckRequiredFields
+	if err := json.Unmarshal(data, &doc); err != nil {
+		i.logger.Debug().Err(err).Msgf("error decoding file: %s", filePath)
+		return nil, fmt.Errorf("invalid Blackduck SCA scan: %w", ErrInvalidMaterialType)
+	}
+
+	if doc.DetailedCodeLocations == nil || doc.DetailedProjectVersionCustomFields == nil || doc.DetailedVulnerabilities == nil {
+		return nil, fmt.Errorf("invalid Blackduck SCA scan: %w", ErrInvalidMaterialType)
 	}
 
 	return uploadAndCraft(ctx, i.input, i.backend, filePath, i.logger)

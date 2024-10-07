@@ -29,7 +29,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCyclonedxJSONCraft(t *testing.T) {
+func TestBlackduckJSONCraft(t *testing.T) {
 	testCases := []struct {
 		name         string
 		filePath     string
@@ -43,7 +43,7 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 			wantErr:  "no such file or directory",
 		},
 		{
-			name:     "invalid sbom format",
+			name:     "unrecognized json type",
 			filePath: "./testdata/sbom-spdx.json",
 			wantErr:  "unexpected material type",
 		},
@@ -53,24 +53,24 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 			wantErr:  "unexpected material type",
 		},
 		{
-			name:         "1.4 version",
-			filePath:     "./testdata/sbom.cyclonedx.json",
-			wantDigest:   "sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c",
-			wantFilename: "sbom.cyclonedx.json",
+			name:     "missing fields",
+			filePath: "./testdata/blackduck_sca_missing_fields.json",
+			wantErr:  "unexpected material type",
 		},
 		{
-			name:         "1.5 version",
-			filePath:     "./testdata/sbom.cyclonedx-1.5.json",
-			wantDigest:   "sha256:5ca3508f02893b0419b266927f66c7b9dd8b11dbea7faf7cdb9169df8f69d8e3",
-			wantFilename: "sbom.cyclonedx-1.5.json",
+			name:         "valid report",
+			filePath:     "./testdata/blackduck_sca.json",
+			wantDigest:   "sha256:62d3c6f91c3988db5f76d0f5e915e850771651f12aee97da35a5e65b65d27d09",
+			wantFilename: "blackduck_sca.json",
 		},
 	}
 
 	assert := assert.New(t)
 	schema := &contractAPI.CraftingSchema_Material{
 		Name: "test",
-		Type: contractAPI.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
+		Type: contractAPI.CraftingSchema_Material_BLACKDUCK_SCA_JSON,
 	}
+
 	l := zerolog.Nop()
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -82,7 +82,7 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 			}
 
 			backend := &casclient.CASBackend{Uploader: uploader}
-			crafter, err := materials.NewCyclonedxJSONCrafter(schema, backend, &l)
+			crafter, err := materials.NewBlackduckSCAJSONCrafter(schema, backend, &l)
 			require.NoError(t, err)
 
 			got, err := crafter.Craft(context.TODO(), tc.filePath)
@@ -92,7 +92,7 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			assert.Equal(contractAPI.CraftingSchema_Material_SBOM_CYCLONEDX_JSON.String(), got.MaterialType.String())
+			assert.Equal(contractAPI.CraftingSchema_Material_BLACKDUCK_SCA_JSON.String(), got.MaterialType.String())
 			assert.True(got.UploadedToCas)
 
 			// The result includes the digest reference
