@@ -21,8 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
-	"os"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
@@ -36,8 +34,6 @@ const (
 	zapReportFileName = "report_json.json"
 	// zapProgramName is the name of the program that generated the ZAP report
 	zapProgramName = "ZAP"
-	// outputFileName is the name of the fixed JSON report file
-	outputFileName = "zap_dast_report.json"
 )
 
 // zapJSON is the structure of the ZAP report JSON with the values being checked
@@ -63,11 +59,6 @@ func NewZAPCrafter(materialSchema *schemaapi.CraftingSchema_Material, backend *c
 
 // Craft will extract the ZAP JSON report from the zip file and upload it to the CAS
 func (i *ZAPCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
-	err := i.isZipFile(filePath)
-	if err != nil {
-		return nil, fmt.Errorf("invalid zip file: %w", err)
-	}
-
 	archive, err := zip.OpenReader(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("can't open the zip file: %w", err)
@@ -113,40 +104,6 @@ func (i *ZAPCrafter) Craft(ctx context.Context, filePath string) (*api.Attestati
 		return nil, fmt.Errorf("invalid ZAP report file: %w", ErrInvalidMaterialType)
 	}
 
-	// Write the raw JSON report to a fixed file name
-	tempFile, err := os.Create(outputFileName)
-	if err != nil {
-		return nil, fmt.Errorf("can't create fixed file: %w", err)
-	}
-	// Clean up the fixed file after use
-	defer os.Remove(outputFileName)
-
-	if _, err = tempFile.Write(rawZapReport); err != nil {
-		return nil, fmt.Errorf("can't write to fixed file: %w", err)
-	}
-
-	// Close the file to ensure the data is written
-	if err = tempFile.Close(); err != nil {
-		return nil, fmt.Errorf("can't close the fixed file: %w", err)
-	}
-
 	// Call uploadAndCraft with the path of the JSON report file
-	return uploadAndCraft(ctx, i.input, i.backend, outputFileName, i.logger)
-}
-
-// isZipFile checks if the file is a valid zip archive
-func (i *ZAPCrafter) isZipFile(filePath string) error {
-	// Open the file and check the content type
-	fileData, err := os.ReadFile(filePath)
-	if err != nil {
-		return fmt.Errorf("can't read the file: %w", err)
-	}
-
-	// Detect the content type of the entire file
-	contentType := http.DetectContentType(fileData)
-	if contentType != "application/zip" {
-		return fmt.Errorf("file is not a valid zip archive, detected content type: %s", contentType)
-	}
-
-	return nil
+	return uploadAndCraft(ctx, i.input, i.backend, filePath, i.logger)
 }
