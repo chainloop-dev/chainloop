@@ -1,0 +1,23 @@
+{
+  "$id": "controlplane.v1.AttestationServiceGetPolicyGroupRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(groupName)$": {
+      "description": "Group name (it must exist in the provider)",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "group_name": {
+      "description": "Group name (it must exist in the provider)",
+      "type": "string"
+    },
+    "provider": {
+      "description": "Provider name. If not set, the default provider will be used",
+      "type": "string"
+    }
+  },
+  "title": "Attestation Service Get Policy Group Request",
+  "type": "object"
+}

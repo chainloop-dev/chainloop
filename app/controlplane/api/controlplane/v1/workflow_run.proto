@@ -36,6 +36,7 @@ service AttestationService {
 
   // Get policies from remote providers
   rpc GetPolicy(AttestationServiceGetPolicyRequest) returns (AttestationServiceGetPolicyResponse);
+  rpc GetPolicyGroup(AttestationServiceGetPolicyGroupRequest) returns (AttestationServiceGetPolicyGroupResponse);
 }
 
 // Administrative service for the operator
@@ -55,12 +56,26 @@ message AttestationServiceGetPolicyRequest {
 message AttestationServiceGetPolicyResponse {
   workflowcontract.v1.Policy policy = 1;
   // FQDN of the policy in the provider
-  Reference reference = 2;
+  RemotePolicyReference reference = 2;
+}
 
-  message Reference {
-    string url = 1;
-    string digest = 2;
-  }
+message RemotePolicyReference {
+  string url = 1;
+  string digest = 2;
+}
+
+message AttestationServiceGetPolicyGroupRequest {
+  // Provider name. If not set, the default provider will be used
+  string provider = 1;
+
+  // Group name (it must exist in the provider)
+  string group_name = 2 [(buf.validate.field).string.min_len = 1];
+}
+
+message AttestationServiceGetPolicyGroupResponse {
+  workflowcontract.v1.PolicyGroup group = 1;
+  // FQDN of the policy in the provider
+  RemotePolicyReference reference = 2;
 }
 
 message AttestationServiceGetContractRequest {

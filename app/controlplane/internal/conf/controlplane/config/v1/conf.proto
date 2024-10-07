@@ -80,7 +80,10 @@ message PolicyProvider {
   }];
   // default policies will be used for schema-less references eg `my-policy`. Only one provider can be the default one
   bool default = 2;
-  string host = 3 [(buf.validate.field).string.uri = true];
+  // Host points to the policy API. Deprecated: use `url` instead if you want to provide both policies and groups.
+  string host = 3 [(buf.validate.field).string.uri = true, deprecated = true];
+  // URL of the provider API, it will be used both for policies and groups. Example: https://my-server/policy-api
+  string url = 4; // Note. Validations not applied not to break compatibility with current deployments
 }
 
 // Configuration used to enable a shared index API endpoint that can be used to discover metadata referrers

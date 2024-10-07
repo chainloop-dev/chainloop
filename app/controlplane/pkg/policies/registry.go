@@ -17,13 +17,17 @@ package policies
 
 import (
 	"fmt"
+	"strings"
 
+	"github.com/go-kratos/kratos/v2/log"
 	"golang.org/x/exp/maps"
 )
 
 type NewRegistryConfig struct {
-	Name    string
+	Name string
+	// Host is deprecated. Use URL instead
 	Host    string
+	URL     string
 	Default bool
 }
 
@@ -32,7 +36,10 @@ type Registry struct {
 	providers map[string]*PolicyProvider
 }
 
-func NewRegistry(conf ...*NewRegistryConfig) (*Registry, error) {
+func NewRegistry(logger log.Logger, conf ...*NewRegistryConfig) (*Registry, error) {
+	lh := log.NewHelper(logger)
+
+	lh.Info("Configuring policy providers")
 	r := &Registry{providers: make(map[string]*PolicyProvider)}
 	var hasDefault bool
 
@@ -41,9 +48,19 @@ func NewRegistry(conf ...*NewRegistryConfig) (*Registry, error) {
 			return nil, fmt.Errorf("duplicate default policy")
 		}
 		hasDefault = hasDefault || p.Default
+		if p.URL != "" && p.Host != "" {
+			// both provided. return err as it's ambiguous
+			return nil, fmt.Errorf("wrong configuration for policy provider. Either URL or host (deprecated) must be provided, but not both")
+		}
+		// For backwards compatibility, if host is provided, we get the URI from it, by extracting "/policies" suffix
+		if p.Host != "" {
+			endPoint, _ := strings.CutSuffix(p.Host, fmt.Sprintf("/%s", policiesEndpoint))
+			lh.Warnf("the policy provider '%s' is using a deprecated 'host' configuration with value '%s'. Please use 'url' instead. Configuring 'url' with value '%s'", p.Name, p.Host, endPoint)
+			p.URL = endPoint
+		}
 		r.providers[p.Name] = &PolicyProvider{
 			name:      p.Name,
-			host:      p.Host,
+			url:       p.URL,
 			isDefault: p.Default,
 		}
 	}

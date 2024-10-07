@@ -83,4 +83,4 @@ prometheus_integration:
 policy_providers:
   - name: chainloop
     default: true
-    host: http://localhost:8002/v1/policies
+    url: http://localhost:8002/v1

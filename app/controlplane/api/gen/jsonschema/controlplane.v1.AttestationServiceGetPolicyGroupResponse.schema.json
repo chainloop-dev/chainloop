@@ -1,16 +1,16 @@
 {
-  "$id": "controlplane.v1.AttestationServiceGetPolicyResponse.schema.json",
+  "$id": "controlplane.v1.AttestationServiceGetPolicyGroupResponse.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
-    "policy": {
-      "$ref": "workflowcontract.v1.Policy.schema.json"
+    "group": {
+      "$ref": "workflowcontract.v1.PolicyGroup.schema.json"
     },
     "reference": {
       "$ref": "controlplane.v1.RemotePolicyReference.schema.json",
       "description": "FQDN of the policy in the provider"
     }
   },
-  "title": "Attestation Service Get Policy Response",
+  "title": "Attestation Service Get Policy Group Response",
   "type": "object"
 }

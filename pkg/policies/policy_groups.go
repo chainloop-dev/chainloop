@@ -17,6 +17,7 @@ package policies
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	v13 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
@@ -149,9 +150,16 @@ func (pgv *PolicyGroupVerifier) loadPolicyGroup(ctx context.Context, attachment 
 func (pgv *PolicyGroupVerifier) getGroupLoader(attachment *v1.PolicyGroupAttachment) (GroupLoader, error) {
 	ref := attachment.GetRef()
 
+	if ref == "" {
+		return nil, errors.New("policy group must be referenced in the attachment")
+	}
+
 	var loader GroupLoader
 	scheme, _ := refParts(ref)
 	switch scheme {
+	// No scheme means chainloop loader
+	case chainloopScheme, "":
+		loader = NewChainloopGroupLoader(pgv.client)
 	case fileScheme:
 		loader = new(FileGroupLoader)
 	case httpsScheme, httpScheme:

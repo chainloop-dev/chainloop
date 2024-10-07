@@ -7,6 +7,7 @@ import {
   craftingSchema_Runner_RunnerTypeFromJSON,
   craftingSchema_Runner_RunnerTypeToJSON,
   Policy,
+  PolicyGroup,
 } from "../../workflowcontract/v1/crafting_schema";
 import { CursorPaginationRequest, CursorPaginationResponse } from "./pagination";
 import {
@@ -32,12 +33,25 @@ export interface AttestationServiceGetPolicyRequest {
 export interface AttestationServiceGetPolicyResponse {
   policy?: Policy;
   /** FQDN of the policy in the provider */
-  reference?: AttestationServiceGetPolicyResponse_Reference;
+  reference?: RemotePolicyReference;
 }
 
-export interface AttestationServiceGetPolicyResponse_Reference {
+export interface RemotePolicyReference {
   url: string;
   digest: string;
+}
+
+export interface AttestationServiceGetPolicyGroupRequest {
+  /** Provider name. If not set, the default provider will be used */
+  provider: string;
+  /** Group name (it must exist in the provider) */
+  groupName: string;
+}
+
+export interface AttestationServiceGetPolicyGroupResponse {
+  group?: PolicyGroup;
+  /** FQDN of the policy in the provider */
+  reference?: RemotePolicyReference;
 }
 
 export interface AttestationServiceGetContractRequest {
@@ -271,7 +285,7 @@ export const AttestationServiceGetPolicyResponse = {
       Policy.encode(message.policy, writer.uint32(10).fork()).ldelim();
     }
     if (message.reference !== undefined) {
-      AttestationServiceGetPolicyResponse_Reference.encode(message.reference, writer.uint32(18).fork()).ldelim();
+      RemotePolicyReference.encode(message.reference, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -295,7 +309,7 @@ export const AttestationServiceGetPolicyResponse = {
             break;
           }
 
-          message.reference = AttestationServiceGetPolicyResponse_Reference.decode(reader, reader.uint32());
+          message.reference = RemotePolicyReference.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -309,18 +323,15 @@ export const AttestationServiceGetPolicyResponse = {
   fromJSON(object: any): AttestationServiceGetPolicyResponse {
     return {
       policy: isSet(object.policy) ? Policy.fromJSON(object.policy) : undefined,
-      reference: isSet(object.reference)
-        ? AttestationServiceGetPolicyResponse_Reference.fromJSON(object.reference)
-        : undefined,
+      reference: isSet(object.reference) ? RemotePolicyReference.fromJSON(object.reference) : undefined,
     };
   },
 
   toJSON(message: AttestationServiceGetPolicyResponse): unknown {
     const obj: any = {};
     message.policy !== undefined && (obj.policy = message.policy ? Policy.toJSON(message.policy) : undefined);
-    message.reference !== undefined && (obj.reference = message.reference
-      ? AttestationServiceGetPolicyResponse_Reference.toJSON(message.reference)
-      : undefined);
+    message.reference !== undefined &&
+      (obj.reference = message.reference ? RemotePolicyReference.toJSON(message.reference) : undefined);
     return obj;
   },
 
@@ -338,18 +349,18 @@ export const AttestationServiceGetPolicyResponse = {
       ? Policy.fromPartial(object.policy)
       : undefined;
     message.reference = (object.reference !== undefined && object.reference !== null)
-      ? AttestationServiceGetPolicyResponse_Reference.fromPartial(object.reference)
+      ? RemotePolicyReference.fromPartial(object.reference)
       : undefined;
     return message;
   },
 };
 
-function createBaseAttestationServiceGetPolicyResponse_Reference(): AttestationServiceGetPolicyResponse_Reference {
+function createBaseRemotePolicyReference(): RemotePolicyReference {
   return { url: "", digest: "" };
 }
 
-export const AttestationServiceGetPolicyResponse_Reference = {
-  encode(message: AttestationServiceGetPolicyResponse_Reference, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const RemotePolicyReference = {
+  encode(message: RemotePolicyReference, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.url !== "") {
       writer.uint32(10).string(message.url);
     }
@@ -359,10 +370,10 @@ export const AttestationServiceGetPolicyResponse_Reference = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): AttestationServiceGetPolicyResponse_Reference {
+  decode(input: _m0.Reader | Uint8Array, length?: number): RemotePolicyReference {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAttestationServiceGetPolicyResponse_Reference();
+    const message = createBaseRemotePolicyReference();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -389,32 +400,183 @@ export const AttestationServiceGetPolicyResponse_Reference = {
     return message;
   },
 
-  fromJSON(object: any): AttestationServiceGetPolicyResponse_Reference {
+  fromJSON(object: any): RemotePolicyReference {
     return {
       url: isSet(object.url) ? String(object.url) : "",
       digest: isSet(object.digest) ? String(object.digest) : "",
     };
   },
 
-  toJSON(message: AttestationServiceGetPolicyResponse_Reference): unknown {
+  toJSON(message: RemotePolicyReference): unknown {
     const obj: any = {};
     message.url !== undefined && (obj.url = message.url);
     message.digest !== undefined && (obj.digest = message.digest);
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<AttestationServiceGetPolicyResponse_Reference>, I>>(
-    base?: I,
-  ): AttestationServiceGetPolicyResponse_Reference {
-    return AttestationServiceGetPolicyResponse_Reference.fromPartial(base ?? {});
+  create<I extends Exact<DeepPartial<RemotePolicyReference>, I>>(base?: I): RemotePolicyReference {
+    return RemotePolicyReference.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<AttestationServiceGetPolicyResponse_Reference>, I>>(
-    object: I,
-  ): AttestationServiceGetPolicyResponse_Reference {
-    const message = createBaseAttestationServiceGetPolicyResponse_Reference();
+  fromPartial<I extends Exact<DeepPartial<RemotePolicyReference>, I>>(object: I): RemotePolicyReference {
+    const message = createBaseRemotePolicyReference();
     message.url = object.url ?? "";
     message.digest = object.digest ?? "";
+    return message;
+  },
+};
+
+function createBaseAttestationServiceGetPolicyGroupRequest(): AttestationServiceGetPolicyGroupRequest {
+  return { provider: "", groupName: "" };
+}
+
+export const AttestationServiceGetPolicyGroupRequest = {
+  encode(message: AttestationServiceGetPolicyGroupRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.provider !== "") {
+      writer.uint32(10).string(message.provider);
+    }
+    if (message.groupName !== "") {
+      writer.uint32(18).string(message.groupName);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AttestationServiceGetPolicyGroupRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAttestationServiceGetPolicyGroupRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.provider = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.groupName = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AttestationServiceGetPolicyGroupRequest {
+    return {
+      provider: isSet(object.provider) ? String(object.provider) : "",
+      groupName: isSet(object.groupName) ? String(object.groupName) : "",
+    };
+  },
+
+  toJSON(message: AttestationServiceGetPolicyGroupRequest): unknown {
+    const obj: any = {};
+    message.provider !== undefined && (obj.provider = message.provider);
+    message.groupName !== undefined && (obj.groupName = message.groupName);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AttestationServiceGetPolicyGroupRequest>, I>>(
+    base?: I,
+  ): AttestationServiceGetPolicyGroupRequest {
+    return AttestationServiceGetPolicyGroupRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<AttestationServiceGetPolicyGroupRequest>, I>>(
+    object: I,
+  ): AttestationServiceGetPolicyGroupRequest {
+    const message = createBaseAttestationServiceGetPolicyGroupRequest();
+    message.provider = object.provider ?? "";
+    message.groupName = object.groupName ?? "";
+    return message;
+  },
+};
+
+function createBaseAttestationServiceGetPolicyGroupResponse(): AttestationServiceGetPolicyGroupResponse {
+  return { group: undefined, reference: undefined };
+}
+
+export const AttestationServiceGetPolicyGroupResponse = {
+  encode(message: AttestationServiceGetPolicyGroupResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.group !== undefined) {
+      PolicyGroup.encode(message.group, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.reference !== undefined) {
+      RemotePolicyReference.encode(message.reference, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AttestationServiceGetPolicyGroupResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAttestationServiceGetPolicyGroupResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.group = PolicyGroup.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.reference = RemotePolicyReference.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AttestationServiceGetPolicyGroupResponse {
+    return {
+      group: isSet(object.group) ? PolicyGroup.fromJSON(object.group) : undefined,
+      reference: isSet(object.reference) ? RemotePolicyReference.fromJSON(object.reference) : undefined,
+    };
+  },
+
+  toJSON(message: AttestationServiceGetPolicyGroupResponse): unknown {
+    const obj: any = {};
+    message.group !== undefined && (obj.group = message.group ? PolicyGroup.toJSON(message.group) : undefined);
+    message.reference !== undefined &&
+      (obj.reference = message.reference ? RemotePolicyReference.toJSON(message.reference) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AttestationServiceGetPolicyGroupResponse>, I>>(
+    base?: I,
+  ): AttestationServiceGetPolicyGroupResponse {
+    return AttestationServiceGetPolicyGroupResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<AttestationServiceGetPolicyGroupResponse>, I>>(
+    object: I,
+  ): AttestationServiceGetPolicyGroupResponse {
+    const message = createBaseAttestationServiceGetPolicyGroupResponse();
+    message.group = (object.group !== undefined && object.group !== null)
+      ? PolicyGroup.fromPartial(object.group)
+      : undefined;
+    message.reference = (object.reference !== undefined && object.reference !== null)
+      ? RemotePolicyReference.fromPartial(object.reference)
+      : undefined;
     return message;
   },
 };
@@ -1834,6 +1996,10 @@ export interface AttestationService {
     request: DeepPartial<AttestationServiceGetPolicyRequest>,
     metadata?: grpc.Metadata,
   ): Promise<AttestationServiceGetPolicyResponse>;
+  GetPolicyGroup(
+    request: DeepPartial<AttestationServiceGetPolicyGroupRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<AttestationServiceGetPolicyGroupResponse>;
 }
 
 export class AttestationServiceClientImpl implements AttestationService {
@@ -1847,6 +2013,7 @@ export class AttestationServiceClientImpl implements AttestationService {
     this.GetUploadCreds = this.GetUploadCreds.bind(this);
     this.Cancel = this.Cancel.bind(this);
     this.GetPolicy = this.GetPolicy.bind(this);
+    this.GetPolicyGroup = this.GetPolicyGroup.bind(this);
   }
 
   GetContract(
@@ -1899,6 +2066,17 @@ export class AttestationServiceClientImpl implements AttestationService {
     return this.rpc.unary(
       AttestationServiceGetPolicyDesc,
       AttestationServiceGetPolicyRequest.fromPartial(request),
+      metadata,
+    );
+  }
+
+  GetPolicyGroup(
+    request: DeepPartial<AttestationServiceGetPolicyGroupRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<AttestationServiceGetPolicyGroupResponse> {
+    return this.rpc.unary(
+      AttestationServiceGetPolicyGroupDesc,
+      AttestationServiceGetPolicyGroupRequest.fromPartial(request),
       metadata,
     );
   }
@@ -2034,6 +2212,29 @@ export const AttestationServiceGetPolicyDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = AttestationServiceGetPolicyResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const AttestationServiceGetPolicyGroupDesc: UnaryMethodDefinitionish = {
+  methodName: "GetPolicyGroup",
+  service: AttestationServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return AttestationServiceGetPolicyGroupRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = AttestationServiceGetPolicyGroupResponse.decode(data);
       return {
         ...value,
         toObject() {

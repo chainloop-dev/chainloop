@@ -92,7 +92,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	workflowContractRepo := data.NewWorkflowContractRepo(dataData, logger)
 	v3 := bootstrap.PolicyProviders
 	v4 := newPolicyProviderConfig(v3)
-	registry, err := policies.NewRegistry(v4...)
+	registry, err := policies.NewRegistry(logger, v4...)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -267,7 +267,7 @@ func newDataConf(in *conf.Data_Database) *data.NewConfig {
 func newPolicyProviderConfig(in []*conf.PolicyProvider) []*policies.NewRegistryConfig {
 	out := make([]*policies.NewRegistryConfig, 0, len(in))
 	for _, p := range in {
-		out = append(out, &policies.NewRegistryConfig{Name: p.Name, Host: p.Host, Default: p.Default})
+		out = append(out, &policies.NewRegistryConfig{Name: p.Name, Host: p.Host, Default: p.Default, URL: p.Url})
 	}
 	return out
 }

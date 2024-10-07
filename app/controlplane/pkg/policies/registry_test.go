@@ -16,24 +16,27 @@
 package policies
 
 import (
+	"io"
 	"testing"
 
+	"github.com/go-kratos/kratos/v2/log"
 	"github.com/stretchr/testify/suite"
 )
 
 type providerTestSuite struct {
 	suite.Suite
+	logger log.Logger
 
 	registry *Registry
 }
 
 func TestProviderSuite(t *testing.T) {
-	suite.Run(t, new(providerTestSuite))
+	suite.Run(t, &providerTestSuite{logger: log.NewStdLogger(io.Discard)})
 }
 
 func (s *providerTestSuite) SetupTest() {
 	var err error
-	s.registry, err = NewRegistry([]*NewRegistryConfig{
+	s.registry, err = NewRegistry(s.logger, []*NewRegistryConfig{
 		{Name: "p1", Host: "https://p1host"},
 		{Name: "p2", Host: "https://p2host"},
 		{Name: "p3", Host: "https://p3host", Default: true},
@@ -42,7 +45,7 @@ func (s *providerTestSuite) SetupTest() {
 }
 
 func (s *providerTestSuite) TestDuplicateDefault() {
-	_, err := NewRegistry([]*NewRegistryConfig{
+	_, err := NewRegistry(s.logger, []*NewRegistryConfig{
 		{Name: "p1", Host: "https://p1host"},
 		{Name: "p2", Host: "https://p2host", Default: true},
 		{Name: "p3", Host: "https://p3host", Default: true},
@@ -70,6 +73,49 @@ func (s *providerTestSuite) TestGetProvider() {
 				return
 			}
 			s.Equal(c.expected, p.name)
+		})
+	}
+}
+
+func (s *providerTestSuite) TestHostAndUrlCompatibility() {
+	cases := []struct {
+		name        string
+		host        string
+		url         string
+		expectedURL string
+		wantErr     bool
+	}{
+		{
+			name:        "only host",
+			host:        "http://myhost/v1/policies",
+			expectedURL: "http://myhost/v1",
+		},
+		{
+			name:        "only url",
+			url:         "http://myhost/v1",
+			expectedURL: "http://myhost/v1",
+		},
+		{
+			name:    "both",
+			host:    "http://myhost/v1/policies",
+			url:     "http://myhost/v1",
+			wantErr: true,
+		},
+	}
+	for _, c := range cases {
+		s.Run(c.name, func() {
+			r, err := NewRegistry(s.logger, &NewRegistryConfig{
+				Name: c.name,
+				Host: c.host,
+				URL:  c.url,
+			})
+			if c.wantErr {
+				s.Error(err)
+				return
+			}
+
+			s.Require().NoError(err)
+			s.Equal(c.expectedURL, r.providers[c.name].url)
 		})
 	}
 }

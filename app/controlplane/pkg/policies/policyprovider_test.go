@@ -54,7 +54,7 @@ func TestResolveRef(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.providerURL, func(t *testing.T) {
-			provider := &PolicyProvider{host: tc.providerURL}
+			provider := &PolicyProvider{url: tc.providerURL}
 
 			got, err := provider.resolveRef(tc.policyName, tc.digest)
 			if tc.wantErr {

@@ -69,7 +69,7 @@ func newDataConf(in *conf.Data_Database) *data.NewConfig {
 func newPolicyProviderConfig(in []*conf.PolicyProvider) []*policies.NewRegistryConfig {
 	out := make([]*policies.NewRegistryConfig, 0, len(in))
 	for _, p := range in {
-		out = append(out, &policies.NewRegistryConfig{Name: p.Name, Host: p.Host, Default: p.Default})
+		out = append(out, &policies.NewRegistryConfig{Name: p.Name, Host: p.Host, Default: p.Default, URL: p.Url})
 	}
 	return out
 }
