@@ -17,6 +17,7 @@ package service
 
 import (
 	"context"
+	"os"
 	"sort"
 
 	pb "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
@@ -45,5 +46,9 @@ func (s *StatusService) Infoz(_ context.Context, _ *pb.InfozRequest) (*pb.InfozR
 
 	sort.Strings(backends)
 
-	return &pb.InfozResponse{Version: s.version, Backends: backends}, nil
+	return &pb.InfozResponse{
+		Version:      s.version,
+		ChartVersion: os.Getenv("CHART_VERSION"),
+		Backends:     backends,
+	}, nil
 }

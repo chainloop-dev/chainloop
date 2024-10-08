@@ -20,6 +20,8 @@ export interface StatuszRequest {
 export interface InfozResponse {
   loginUrl: string;
   version: string;
+  /** Version of the helm chart used during deployment */
+  chartVersion: string;
 }
 
 export interface StatuszResponse {
@@ -126,7 +128,7 @@ export const StatuszRequest = {
 };
 
 function createBaseInfozResponse(): InfozResponse {
-  return { loginUrl: "", version: "" };
+  return { loginUrl: "", version: "", chartVersion: "" };
 }
 
 export const InfozResponse = {
@@ -136,6 +138,9 @@ export const InfozResponse = {
     }
     if (message.version !== "") {
       writer.uint32(18).string(message.version);
+    }
+    if (message.chartVersion !== "") {
+      writer.uint32(26).string(message.chartVersion);
     }
     return writer;
   },
@@ -161,6 +166,13 @@ export const InfozResponse = {
 
           message.version = reader.string();
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.chartVersion = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -174,6 +186,7 @@ export const InfozResponse = {
     return {
       loginUrl: isSet(object.loginURL) ? String(object.loginURL) : "",
       version: isSet(object.version) ? String(object.version) : "",
+      chartVersion: isSet(object.chartVersion) ? String(object.chartVersion) : "",
     };
   },
 
@@ -181,6 +194,7 @@ export const InfozResponse = {
     const obj: any = {};
     message.loginUrl !== undefined && (obj.loginURL = message.loginUrl);
     message.version !== undefined && (obj.version = message.version);
+    message.chartVersion !== undefined && (obj.chartVersion = message.chartVersion);
     return obj;
   },
 
@@ -192,6 +206,7 @@ export const InfozResponse = {
     const message = createBaseInfozResponse();
     message.loginUrl = object.loginUrl ?? "";
     message.version = object.version ?? "";
+    message.chartVersion = object.chartVersion ?? "";
     return message;
   },
 };

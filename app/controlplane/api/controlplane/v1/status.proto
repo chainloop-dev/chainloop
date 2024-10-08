@@ -17,34 +17,33 @@ syntax = "proto3";
 
 package controlplane.v1;
 
-option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 import "google/api/annotations.proto";
 
+option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
+
 service StatusService {
-	rpc Infoz (InfozRequest) returns (InfozResponse) {
-		option (google.api.http) = {
-            get: "/infoz"
-        };
-	}
-	rpc Statusz (StatuszRequest) returns (StatuszResponse) {
-		option (google.api.http) = {
-            get: "/statusz"
-        };
-	}
+  rpc Infoz(InfozRequest) returns (InfozResponse) {
+    option (google.api.http) = {get: "/infoz"};
+  }
+  rpc Statusz(StatuszRequest) returns (StatuszResponse) {
+    option (google.api.http) = {get: "/statusz"};
+  }
 }
 
-message InfozRequest { }
+message InfozRequest {}
 
 message StatuszRequest {
-	// Parameter that can be used by readiness probes
-	// The main difference is that readiness probes will take into account that all
-	// dependent services are up and ready
-	bool readiness = 1;
+  // Parameter that can be used by readiness probes
+  // The main difference is that readiness probes will take into account that all
+  // dependent services are up and ready
+  bool readiness = 1;
 }
 
 message InfozResponse {
-	string login_url = 1 [json_name="loginURL"];;
-	string version = 2;
+  string login_url = 1 [json_name = "loginURL"];
+  string version = 2;
+  // Version of the helm chart used during deployment
+  string chart_version = 3;
 }
 
 message StatuszResponse {}

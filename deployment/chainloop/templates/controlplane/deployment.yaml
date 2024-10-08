@@ -118,6 +118,8 @@ spec:
           lifecycle: {{- include "common.tplvalues.render" (dict "value" .Values.controlplane.lifecycleHooks "context" $) | nindent 12 }}
           {{- end }}
           env:
+            - name: CHART_VERSION
+              value: {{ .Chart.Version }}
             {{- if .Values.controlplane.extraEnvVars }}
             {{- include "common.tplvalues.render" (dict "value" .Values.controlplane.extraEnvVars "context" $) | nindent 12 }}
             {{- end }}

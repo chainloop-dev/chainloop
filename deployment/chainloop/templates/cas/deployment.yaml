@@ -104,6 +104,8 @@ spec:
           lifecycle: {{- include "common.tplvalues.render" (dict "value" .Values.cas.lifecycleHooks "context" $) | nindent 12 }}
           {{- end }}
           env:
+            - name: CHART_VERSION
+              value: {{ .Chart.Version }}
             {{- if .Values.cas.extraEnvVars }}
             {{- include "common.tplvalues.render" (dict "value" .Values.cas.extraEnvVars "context" $) | nindent 12 }}
             {{- end }}

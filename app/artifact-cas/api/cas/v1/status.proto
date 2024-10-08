@@ -34,6 +34,8 @@ message InfozRequest {}
 
 message InfozResponse {
   string version = 1;
+  // Version of the helm chart used during deployment
+  string chart_version = 3;
   repeated string backends = 2;
 }
 
