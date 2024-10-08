@@ -3,11 +3,19 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
+    "^(chartVersion)$": {
+      "description": "Version of the helm chart used during deployment",
+      "type": "string"
+    },
     "^(loginURL)$": {
       "type": "string"
     }
   },
   "properties": {
+    "chart_version": {
+      "description": "Version of the helm chart used during deployment",
+      "type": "string"
+    },
     "login_url": {
       "type": "string"
     },

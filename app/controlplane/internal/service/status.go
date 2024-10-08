@@ -17,6 +17,7 @@ package service
 
 import (
 	"context"
+	"os"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
@@ -44,5 +45,9 @@ func (s *StatusService) Statusz(ctx context.Context, r *pb.StatuszRequest) (*pb.
 }
 
 func (s *StatusService) Infoz(_ context.Context, _ *pb.InfozRequest) (*pb.InfozResponse, error) {
-	return &pb.InfozResponse{LoginUrl: s.loginURL, Version: s.version}, nil
+	return &pb.InfozResponse{
+		LoginUrl:     s.loginURL,
+		Version:      s.version,
+		ChartVersion: os.Getenv("CHART_VERSION"),
+	}, nil
 }
