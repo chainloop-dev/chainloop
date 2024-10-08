@@ -123,18 +123,21 @@ Development teams on the other hand, just need to integrate Chainloop's jargon-f
 
 Chainloop supports the collection of the following pieces of evidence types:
 
-- [Container Image Reference](https://github.com/opencontainers/image-spec)
 - [CycloneDX SBOM](https://github.com/CycloneDX/specification)
 - [SPDX SBOM](https://spdx.dev/specifications/)
 - [OpenVEX](https://github.com/openvex)
 - [SARIF](https://docs.oasis-open.org/sarif/sarif/v2.1.0/)
-- [JUnit](https://www.ibm.com/docs/en/developer-for-zos/14.1?topic=formats-junit-xml-format)
+- [Container Image Reference](https://github.com/opencontainers/image-spec)
 - [Helm Chart](https://helm.sh/docs/topics/charts/)
+- [BlackDuck SCA](https://www.blackduck.com/software-composition-analysis-tools/black-duck-sca.html)
+- [ZAP DAST](https://github.com/marketplace/actions/zap-baseline-scan)
+- [PrismaCloud Twistcli Scan](https://docs.prismacloud.io/en/compute-edition/30/admin-guide/tools/twistcli-scan-images)
 - [CSAF Security Incident Report](https://docs.oasis-open.org/csaf/csaf/v2.0/os/csaf-v2.0-os.html#42-profile-2-security-incident-response)
 - [CSAF Informational Advisory](https://docs.oasis-open.org/csaf/csaf/v2.0/os/csaf-v2.0-os.html#43-profile-3-informational-advisory)
 - [CSAF Security Advisory](https://docs.oasis-open.org/csaf/csaf/v2.0/os/csaf-v2.0-os.html#44-profile-4-security-advisory)
 - [CSAF VEX](https://docs.oasis-open.org/csaf/csaf/v2.0/os/csaf-v2.0-os.html#45-profile-5-vex)
 - [Gitlab Security report](https://docs.gitlab.com/ee/user/application_security/)
+- [JUnit](https://www.ibm.com/docs/en/developer-for-zos/14.1?topic=formats-junit-xml-format)
 - Attestation: existing Chainloop attestations.
 - Artifact Type: It represents a software artifact.
 - Custom Evidence Type: Custom piece of evidence that doesn't fit in any other category, for instance, an approval report in json format, etc.

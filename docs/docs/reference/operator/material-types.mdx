@@ -1,0 +1,17 @@
+---
+title: Material Types
+---
+
+import MaterialsTable from "../../partials/_materials-table.mdx";
+import CodeBlock from "@theme/CodeBlock";
+import ContractYAML from "!!raw-loader!/examples/contracts/skynet/contract.yaml";
+
+Chainloop supports the following pieces of evidence types that can be attached during the attestation process.
+
+<MaterialsTable />
+
+See below an example on how to use them in your contract or refer to [this guide](/reference/operator/contract#contract-schema) to learn more about how to use them.
+
+    <CodeBlock language="yaml" title="skynet.contract.yaml" showLineNumbers>
+      {ContractYAML}
+    </CodeBlock>
