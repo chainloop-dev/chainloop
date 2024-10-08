@@ -42,7 +42,7 @@ var CraftingMaterialInValidationOrder = []CraftingSchema_Material_MaterialType{
 	CraftingSchema_Material_HELM_CHART,
 	CraftingSchema_Material_SARIF,
 	CraftingSchema_Material_BLACKDUCK_SCA_JSON,
-	CraftingSchema_Material_TWISTCTL_SCAN_JSON,
+	CraftingSchema_Material_TWISTCLI_SCAN_JSON,
 	CraftingSchema_Material_ATTESTATION,
 	CraftingSchema_Material_ZAP_DAST_ZIP,
 	CraftingSchema_Material_CONTAINER_IMAGE,

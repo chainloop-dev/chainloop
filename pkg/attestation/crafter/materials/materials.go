@@ -191,8 +191,8 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 		crafter, err = NewZAPCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_BLACKDUCK_SCA_JSON:
 		crafter, err = NewBlackduckSCAJSONCrafter(materialSchema, casBackend, logger)
-	case schemaapi.CraftingSchema_Material_TWISTCTL_SCAN_JSON:
-		crafter, err = NewTwistCTLScanCrafter(materialSchema, casBackend, logger)
+	case schemaapi.CraftingSchema_Material_TWISTCLI_SCAN_JSON:
+		crafter, err = NewTwistCLIScanCrafter(materialSchema, casBackend, logger)
 	default:
 		return nil, fmt.Errorf("material of type %q not supported yet", materialSchema.Type)
 	}
