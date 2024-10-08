@@ -1,7 +1,7 @@
 schemaVersion: v1
 policies:
   materials:
-    - ref: sbom-licenses
+    - ref: sbom-with-licenses
     - ref: sbom-freshness
     - ref: sbom-banned-licenses
       with:
