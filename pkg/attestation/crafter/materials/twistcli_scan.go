@@ -28,42 +28,42 @@ import (
 	"github.com/rs/zerolog"
 )
 
-type twistCTLScanResult struct {
+type twistCLIScanResult struct {
 	Results    any    `json:"results"`
 	ConsoleURL string `json:"consoleURL"`
 }
 
-type TwistCTLScanCrafter struct {
+type TwistCLIScanCrafter struct {
 	backend *casclient.CASBackend
 	*crafterCommon
 }
 
-func NewTwistCTLScanCrafter(materialSchema *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, l *zerolog.Logger) (*TwistCTLScanCrafter, error) {
-	if materialSchema.Type != schemaapi.CraftingSchema_Material_TWISTCTL_SCAN_JSON {
+func NewTwistCLIScanCrafter(materialSchema *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, l *zerolog.Logger) (*TwistCLIScanCrafter, error) {
+	if materialSchema.Type != schemaapi.CraftingSchema_Material_TWISTCLI_SCAN_JSON {
 		return nil, fmt.Errorf("material type is not a twistcli scan")
 	}
 
-	return &TwistCTLScanCrafter{
+	return &TwistCLIScanCrafter{
 		backend:       backend,
 		crafterCommon: &crafterCommon{logger: l, input: materialSchema},
 	}, nil
 }
 
-func (i *TwistCTLScanCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
+func (i *TwistCLIScanCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
 	f, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("can't open the file: %w", err)
 	}
 
-	var v twistCTLScanResult
+	var v twistCLIScanResult
 	if err := json.Unmarshal(f, &v); err != nil {
 		i.logger.Debug().Err(err).Msg("error decoding file")
-		return nil, fmt.Errorf("invalid twistctl scan file: %w", ErrInvalidMaterialType)
+		return nil, fmt.Errorf("invalid twistcli scan file: %w", ErrInvalidMaterialType)
 	}
 
 	// Check the unmarshalled JSON contains a results and consoleURL fields
 	if v.Results == nil || v.ConsoleURL == "" {
-		return nil, fmt.Errorf("invalid twistctl scan file: %w", ErrInvalidMaterialType)
+		return nil, fmt.Errorf("invalid twistcli scan file: %w", ErrInvalidMaterialType)
 	}
 
 	return uploadAndCraft(ctx, i.input, i.backend, filePath, i.logger)

@@ -111,8 +111,8 @@ message CraftingSchema {
       GITLAB_SECURITY_REPORT = 16;
       ZAP_DAST_ZIP = 17;
       BLACKDUCK_SCA_JSON = 18;
-      // Twistcli scan output in json format: https://www.twistlock.com
-      TWISTCTL_SCAN_JSON = 19;
+      // Twistcli scan output in json format: https://docs.prismacloud.io/en/compute-edition/30/admin-guide/tools/twistcli-scan-images
+      TWISTCLI_SCAN_JSON = 19;
     }
   }
 }

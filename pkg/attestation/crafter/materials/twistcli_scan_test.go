@@ -30,7 +30,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestTwistCTLScanCrafter(t *testing.T) {
+func TestTwistCLIScanCrafter(t *testing.T) {
 	testCases := []struct {
 		name    string
 		input   *contractAPI.CraftingSchema_Material
@@ -39,7 +39,7 @@ func TestTwistCTLScanCrafter(t *testing.T) {
 		{
 			name: "happy path",
 			input: &contractAPI.CraftingSchema_Material{
-				Type: contractAPI.CraftingSchema_Material_TWISTCTL_SCAN_JSON,
+				Type: contractAPI.CraftingSchema_Material_TWISTCLI_SCAN_JSON,
 			},
 		},
 		{
@@ -62,7 +62,7 @@ func TestTwistCTLScanCrafter(t *testing.T) {
 	}
 }
 
-func TestTwistCTLScanCraft(t *testing.T) {
+func TestTwistCLIScanCraft(t *testing.T) {
 	testCases := []struct {
 		name     string
 		filePath string
@@ -85,14 +85,14 @@ func TestTwistCTLScanCraft(t *testing.T) {
 		},
 		{
 			name:     "valid artifact type",
-			filePath: "./testdata/twistctl_scan.json",
+			filePath: "./testdata/twistcli_scan.json",
 		},
 	}
 
 	assert := assert.New(t)
 	schema := &contractAPI.CraftingSchema_Material{
 		Name: "test",
-		Type: contractAPI.CraftingSchema_Material_TWISTCTL_SCAN_JSON,
+		Type: contractAPI.CraftingSchema_Material_TWISTCLI_SCAN_JSON,
 	}
 	l := zerolog.Nop()
 	for _, tc := range testCases {
@@ -108,7 +108,7 @@ func TestTwistCTLScanCraft(t *testing.T) {
 			}
 
 			backend := &casclient.CASBackend{Uploader: uploader}
-			crafter, err := materials.NewTwistCTLScanCrafter(schema, backend, &l)
+			crafter, err := materials.NewTwistCLIScanCrafter(schema, backend, &l)
 			require.NoError(t, err)
 
 			got, err := crafter.Craft(context.TODO(), tc.filePath)
@@ -118,12 +118,12 @@ func TestTwistCTLScanCraft(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			assert.Equal(contractAPI.CraftingSchema_Material_TWISTCTL_SCAN_JSON.String(), got.MaterialType.String())
+			assert.Equal(contractAPI.CraftingSchema_Material_TWISTCLI_SCAN_JSON.String(), got.MaterialType.String())
 			assert.True(got.UploadedToCas)
 
 			// // The result includes the digest reference
 			assert.Equal(got.GetArtifact(), &attestationApi.Attestation_Material_Artifact{
-				Id: "test", Digest: "sha256:91bae460738dfa58dda12edb54929b39005d415e778ed806477675038513908c", Name: "twistctl_scan.json",
+				Id: "test", Digest: "sha256:91bae460738dfa58dda12edb54929b39005d415e778ed806477675038513908c", Name: "twistcli_scan.json",
 			})
 		})
 	}
