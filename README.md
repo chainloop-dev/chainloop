@@ -121,7 +121,9 @@ Development teams on the other hand, just need to integrate Chainloop's jargon-f
 
 ## Supported Pieces of Evidence / Materials
 
-Chainloop supports the collection of the following pieces of evidence types:
+During the attestation process, you can attach different pieces of evidence and artifacts that will get uploaded to the [Content Addressable Storage](https://docs.chainloop.dev/reference/operator/cas-backend/) (if applicable) and referenced in a signed in-toto attestation.
+
+Chainloop supports the collection of the following list of evidence types. For the full list please refer to [this page](https://docs.chainloop.dev/reference/operator/material-types)
 
 - [CycloneDX SBOM](https://github.com/CycloneDX/specification)
 - [SPDX SBOM](https://spdx.dev/specifications/)
@@ -143,7 +145,6 @@ Chainloop supports the collection of the following pieces of evidence types:
 - Custom Evidence Type: Custom piece of evidence that doesn't fit in any other category, for instance, an approval report in json format, etc.
 - Key-Value metadata pairs
 
-During the attestation process, these pieces of evidence will get uploaded to the [Content Addressable Storage](https://docs.chainloop.dev/reference/operator/cas-backend/) (if applicable) and referenced in a [SLSA](https://slsa.dev) attestation.
 
 ## Documentation
 
