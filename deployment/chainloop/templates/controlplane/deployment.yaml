@@ -119,7 +119,7 @@ spec:
           {{- end }}
           env:
             - name: CHART_VERSION
-              value: {{ .Chart.Version }}
+              value: {{ .Chart.Version | quote }}
             {{- if .Values.controlplane.extraEnvVars }}
             {{- include "common.tplvalues.render" (dict "value" .Values.controlplane.extraEnvVars "context" $) | nindent 12 }}
             {{- end }}
