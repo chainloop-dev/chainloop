@@ -28,6 +28,8 @@ export interface AttestationServiceGetPolicyRequest {
   provider: string;
   /** Policy name (it must exist in the provider) */
   policyName: string;
+  /** The org owning this policy */
+  orgName: string;
 }
 
 export interface AttestationServiceGetPolicyResponse {
@@ -46,6 +48,8 @@ export interface AttestationServiceGetPolicyGroupRequest {
   provider: string;
   /** Group name (it must exist in the provider) */
   groupName: string;
+  /** The org owning this group */
+  orgName: string;
 }
 
 export interface AttestationServiceGetPolicyGroupResponse {
@@ -201,7 +205,7 @@ export interface AttestationServiceGetUploadCredsResponse_Result {
 }
 
 function createBaseAttestationServiceGetPolicyRequest(): AttestationServiceGetPolicyRequest {
-  return { provider: "", policyName: "" };
+  return { provider: "", policyName: "", orgName: "" };
 }
 
 export const AttestationServiceGetPolicyRequest = {
@@ -211,6 +215,9 @@ export const AttestationServiceGetPolicyRequest = {
     }
     if (message.policyName !== "") {
       writer.uint32(18).string(message.policyName);
+    }
+    if (message.orgName !== "") {
+      writer.uint32(26).string(message.orgName);
     }
     return writer;
   },
@@ -236,6 +243,13 @@ export const AttestationServiceGetPolicyRequest = {
 
           message.policyName = reader.string();
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.orgName = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -249,6 +263,7 @@ export const AttestationServiceGetPolicyRequest = {
     return {
       provider: isSet(object.provider) ? String(object.provider) : "",
       policyName: isSet(object.policyName) ? String(object.policyName) : "",
+      orgName: isSet(object.orgName) ? String(object.orgName) : "",
     };
   },
 
@@ -256,6 +271,7 @@ export const AttestationServiceGetPolicyRequest = {
     const obj: any = {};
     message.provider !== undefined && (obj.provider = message.provider);
     message.policyName !== undefined && (obj.policyName = message.policyName);
+    message.orgName !== undefined && (obj.orgName = message.orgName);
     return obj;
   },
 
@@ -271,6 +287,7 @@ export const AttestationServiceGetPolicyRequest = {
     const message = createBaseAttestationServiceGetPolicyRequest();
     message.provider = object.provider ?? "";
     message.policyName = object.policyName ?? "";
+    message.orgName = object.orgName ?? "";
     return message;
   },
 };
@@ -427,7 +444,7 @@ export const RemotePolicyReference = {
 };
 
 function createBaseAttestationServiceGetPolicyGroupRequest(): AttestationServiceGetPolicyGroupRequest {
-  return { provider: "", groupName: "" };
+  return { provider: "", groupName: "", orgName: "" };
 }
 
 export const AttestationServiceGetPolicyGroupRequest = {
@@ -437,6 +454,9 @@ export const AttestationServiceGetPolicyGroupRequest = {
     }
     if (message.groupName !== "") {
       writer.uint32(18).string(message.groupName);
+    }
+    if (message.orgName !== "") {
+      writer.uint32(26).string(message.orgName);
     }
     return writer;
   },
@@ -462,6 +482,13 @@ export const AttestationServiceGetPolicyGroupRequest = {
 
           message.groupName = reader.string();
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.orgName = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -475,6 +502,7 @@ export const AttestationServiceGetPolicyGroupRequest = {
     return {
       provider: isSet(object.provider) ? String(object.provider) : "",
       groupName: isSet(object.groupName) ? String(object.groupName) : "",
+      orgName: isSet(object.orgName) ? String(object.orgName) : "",
     };
   },
 
@@ -482,6 +510,7 @@ export const AttestationServiceGetPolicyGroupRequest = {
     const obj: any = {};
     message.provider !== undefined && (obj.provider = message.provider);
     message.groupName !== undefined && (obj.groupName = message.groupName);
+    message.orgName !== undefined && (obj.orgName = message.orgName);
     return obj;
   },
 
@@ -497,6 +526,7 @@ export const AttestationServiceGetPolicyGroupRequest = {
     const message = createBaseAttestationServiceGetPolicyGroupRequest();
     message.provider = object.provider ?? "";
     message.groupName = object.groupName ?? "";
+    message.orgName = object.orgName ?? "";
     return message;
   },
 };

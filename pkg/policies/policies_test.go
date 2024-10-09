@@ -252,34 +252,64 @@ func (s *testSuite) TestProviderParts() {
 		ref  string
 		prov string
 		name string
+		org  string
 	}{
 		{
 			ref:  "chainloop://cyclonedx-freshness",
 			prov: "",
+			org:  "",
 			name: "cyclonedx-freshness",
 		},
 		{
-			ref:  "chainloop://provider/cyclonedx-freshness",
+			ref:  "chainloop://provider:cyclonedx-freshness",
 			prov: "provider",
+			org:  "",
 			name: "cyclonedx-freshness",
 		},
 		{
-			ref:  "provider/cyclonedx-freshness",
+			ref:  "provider:cyclonedx-freshness",
 			prov: "provider",
+			org:  "",
 			name: "cyclonedx-freshness",
 		},
 		{
 			ref:  "cyclonedx-freshness",
 			prov: "",
+			org:  "",
+			name: "cyclonedx-freshness",
+		},
+		{
+			ref:  "chainloop://builtin:myorg/cyclonedx-freshness",
+			prov: "builtin",
+			org:  "myorg",
+			name: "cyclonedx-freshness",
+		},
+		{
+			ref:  "chainloop://myorg/cyclonedx-freshness",
+			prov: "",
+			org:  "myorg",
+			name: "cyclonedx-freshness",
+		},
+		{
+			ref:  "builtin:myorg/cyclonedx-freshness",
+			prov: "builtin",
+			org:  "myorg",
+			name: "cyclonedx-freshness",
+		},
+		{
+			ref:  "myorg/cyclonedx-freshness",
+			prov: "",
+			org:  "myorg",
 			name: "cyclonedx-freshness",
 		},
 	}
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			prov, name := ProviderParts(tc.ref)
-			s.Equal(tc.prov, prov)
-			s.Equal(tc.name, name)
+			ref := ProviderParts(tc.ref)
+			s.Equal(tc.prov, ref.Provider)
+			s.Equal(tc.name, ref.Name)
+			s.Equal(tc.org, ref.OrgName)
 		})
 	}
 }

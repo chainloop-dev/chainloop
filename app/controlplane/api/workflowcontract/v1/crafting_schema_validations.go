@@ -108,13 +108,21 @@ func ValidatePolicyAttachmentRef(ref string) error {
 		ref = strings.TrimSuffix(ref, fmt.Sprintf("@%s", parts[1]))
 	}
 
-	u, err := url.Parse(ref)
-	if err != nil {
-		return fmt.Errorf("invalid reference: %w", err)
+	var scheme, refValue string
+	refParts := strings.SplitN(ref, "://", 2)
+	if len(refParts) == 2 {
+		scheme = refParts[0]
+		refValue = refParts[1]
+	} else {
+		refValue = refParts[0]
 	}
 
-	switch u.Scheme {
+	switch scheme {
 	case "file":
+		u, err := url.Parse(ref)
+		if err != nil {
+			return fmt.Errorf("invalid reference: %w", err)
+		}
 		// file URLs like file://my-policy.yaml are parsed as only Host with empty path
 		path := u.Path
 		if path == "" {
@@ -127,6 +135,10 @@ func ValidatePolicyAttachmentRef(ref string) error {
 			return fmt.Errorf("missing extension")
 		}
 	case "http", "https":
+		u, err := url.Parse(ref)
+		if err != nil {
+			return fmt.Errorf("invalid reference: %w", err)
+		}
 		if u.Path == "" {
 			return fmt.Errorf("path is empty")
 		} else if filepath.Ext(u.Path) == "" {
@@ -134,21 +146,24 @@ func ValidatePolicyAttachmentRef(ref string) error {
 		}
 	case "chainloop", "": // empty scheme means chainloop
 		// split the path into provider name and policy name
-		// chainloop://provider-name/policy-name
+		// chainloop://provider-name:org_name/policy-name
 		// chainloop://policy-name
 		// NOTE that the provider name is optional
-		// remove chainloop://
-		refValue := strings.TrimPrefix(ref, "chainloop://")
-		parts := strings.SplitN(refValue, "/", 2)
+		parts := strings.SplitN(refValue, ":", 2)
 		// This will be used when the policy is a chainloop policy
 		// provided by a remote policy provider
-		var providerName, policyName string
+		var providerName, policyName, orgName string
 
 		if len(parts) == 1 {
 			policyName = parts[0]
 		} else {
 			providerName = parts[0]
 			policyName = parts[1]
+		}
+		scoped := strings.SplitN(policyName, "/", 2)
+		if len(scoped) == 2 {
+			orgName = scoped[0]
+			policyName = scoped[1]
 		}
 
 		if err := validateIsDNS1123(policyName); err != nil {
@@ -160,8 +175,13 @@ func ValidatePolicyAttachmentRef(ref string) error {
 				return fmt.Errorf("invalid provider name: %w", err)
 			}
 		}
+		if orgName != "" {
+			if err := validateIsDNS1123(orgName); err != nil {
+				return fmt.Errorf("invalid organization name: %w", err)
+			}
+		}
 	default:
-		return fmt.Errorf("unsupported protocol: %s", u.Scheme)
+		return fmt.Errorf("unsupported protocol: %s", scheme)
 	}
 
 	return nil

@@ -219,7 +219,7 @@ func TestValidateRefs(t *testing.T) {
 		},
 		{
 			name: "valid chainloop protocol with provider and policy name",
-			ref:  "chainloop://foo/policy-name",
+			ref:  "chainloop://foo:policy-name",
 		},
 		{
 			name: "valid implicit protocol with just policy name",
@@ -227,26 +227,26 @@ func TestValidateRefs(t *testing.T) {
 		},
 		{
 			name: "valid implicit protocol with both provider and policy name",
-			ref:  "foo/policy-name",
+			ref:  "foo:policy-name",
 		},
 		{
 			name:          "invalid provider name",
-			ref:           "fooBar/policy-name",
+			ref:           "fooBar:policy-name",
 			wantErrString: "invalid provider name",
 		},
 		{
 			name:          "invalid policy name",
-			ref:           "foobar/policy_name",
+			ref:           "foobar:policy_name",
 			wantErrString: "invalid policy name",
 		},
 		{
 			name:          "invalid digest",
-			ref:           "foobar/policy_name@foobar",
+			ref:           "foobar:policy_name@foobar",
 			wantErrString: "invalid digest",
 		},
 		{
 			name: "chainloop provider with valid digest",
-			ref:  "foobar/policy-name@sha256:b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c",
+			ref:  "foobar:policy-name@sha256:b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c",
 		},
 		{
 			name:          "unsupported protocol",

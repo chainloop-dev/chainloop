@@ -128,14 +128,15 @@ func (c *ChainloopGroupLoader) Load(ctx context.Context, attachment *v1.PolicyGr
 		return nil, nil, fmt.Errorf("invalid group reference %q", ref)
 	}
 
-	provider, name := ProviderParts(ref)
+	providerRef := ProviderParts(ref)
 
 	resp, err := c.Client.GetPolicyGroup(ctx, &pb.AttestationServiceGetPolicyGroupRequest{
-		Provider:  provider,
-		GroupName: name,
+		Provider:  providerRef.Provider,
+		GroupName: providerRef.Name,
+		OrgName:   providerRef.OrgName,
 	})
 	if err != nil {
-		return nil, nil, fmt.Errorf("requesting remote group (provider: %s, name: %s): %w", provider, name, err)
+		return nil, nil, fmt.Errorf("requesting remote group (provider: %s, name: %s): %w", providerRef.Provider, providerRef.Name, err)
 	}
 
 	h, err := crv1.NewHash(resp.Reference.GetDigest())
