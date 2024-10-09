@@ -279,13 +279,13 @@ func (s *testSuite) TestProviderParts() {
 			name: "cyclonedx-freshness",
 		},
 		{
-			ref:  "ref://builtin:myorg/cyclonedx-freshness",
+			ref:  "chainloop://builtin:myorg/cyclonedx-freshness",
 			prov: "builtin",
 			org:  "myorg",
 			name: "cyclonedx-freshness",
 		},
 		{
-			ref:  "ref://myorg/cyclonedx-freshness",
+			ref:  "chainloop://myorg/cyclonedx-freshness",
 			prov: "",
 			org:  "myorg",
 			name: "cyclonedx-freshness",
