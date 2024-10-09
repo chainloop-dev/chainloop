@@ -252,55 +252,46 @@ func (s *testSuite) TestProviderParts() {
 		ref  string
 		prov string
 		name string
-		org  string
 	}{
 		{
 			ref:  "chainloop://cyclonedx-freshness",
 			prov: "",
-			org:  "",
 			name: "cyclonedx-freshness",
 		},
 		{
 			ref:  "chainloop://provider:cyclonedx-freshness",
 			prov: "provider",
-			org:  "",
 			name: "cyclonedx-freshness",
 		},
 		{
 			ref:  "provider:cyclonedx-freshness",
 			prov: "provider",
-			org:  "",
 			name: "cyclonedx-freshness",
 		},
 		{
 			ref:  "cyclonedx-freshness",
 			prov: "",
-			org:  "",
 			name: "cyclonedx-freshness",
 		},
 		{
 			ref:  "ref://builtin:myorg/cyclonedx-freshness",
 			prov: "builtin",
-			org:  "myorg",
-			name: "cyclonedx-freshness",
+			name: "myorg/cyclonedx-freshness",
 		},
 		{
 			ref:  "ref://myorg/cyclonedx-freshness",
 			prov: "",
-			org:  "myorg",
-			name: "cyclonedx-freshness",
+			name: "myorg/cyclonedx-freshness",
 		},
 		{
 			ref:  "builtin:myorg/cyclonedx-freshness",
 			prov: "builtin",
-			org:  "myorg",
-			name: "cyclonedx-freshness",
+			name: "myorg/cyclonedx-freshness",
 		},
 		{
 			ref:  "myorg/cyclonedx-freshness",
 			prov: "",
-			org:  "myorg",
-			name: "cyclonedx-freshness",
+			name: "myorg/cyclonedx-freshness",
 		},
 	}
 
@@ -309,7 +300,6 @@ func (s *testSuite) TestProviderParts() {
 			ref := ProviderParts(tc.ref)
 			s.Equal(tc.prov, ref.Provider)
 			s.Equal(tc.name, ref.Name)
-			s.Equal(tc.org, ref.OrgName)
 		})
 	}
 }

@@ -200,7 +200,7 @@ func IsProviderScheme(ref string) bool {
 
 // ProviderRef represents a policy provider reference
 type ProviderRef struct {
-	Provider, OrgName, Name string
+	Provider, Name string
 }
 
 // ProviderParts returns the provider information for a given reference
@@ -216,7 +216,6 @@ func ProviderParts(ref string) *ProviderRef {
 
 	var (
 		provider string
-		orgName  string
 		name     = pn[0]
 	)
 
@@ -224,17 +223,10 @@ func ProviderParts(ref string) *ProviderRef {
 		provider = pn[0]
 		name = pn[1]
 	}
-	scoped := strings.SplitN(name, "/", 2)
-	if len(scoped) == 2 {
-		// the policy is scoped to a specific org
-		orgName = scoped[0]
-		name = scoped[1]
-	}
 
 	return &ProviderRef{
 		Provider: provider,
 		Name:     name,
-		OrgName:  orgName,
 	}
 }
 
