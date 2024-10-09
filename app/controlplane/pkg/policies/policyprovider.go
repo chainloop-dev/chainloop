@@ -108,7 +108,7 @@ func (p *PolicyProvider) queryProvider(path, digest, orgName, token string, out 
 	}
 
 	if orgName != "" {
-		uri.Query().Set("org", orgName)
+		query.Set("org", orgName)
 	}
 
 	uri.RawQuery = query.Encode()
