@@ -1,0 +1,20 @@
+import data  from './materials.json'
+
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>ID</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody >
+    {data.sort((a, b) => (a.id > b.id ? +1 : -1)).map((type, index) => (
+      <tr key={index}>
+        <td> <a href={type.link} target="_blank"> {type.name} </a></td>
+        <td> {type.id} </td>
+        <td> {type.description} </td>
+      </tr>
+    ))}
+  </tbody>
+</table>
