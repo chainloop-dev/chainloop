@@ -147,14 +147,14 @@ func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachm
 		return nil, nil, fmt.Errorf("invalid policy reference %q", ref)
 	}
 
-	provider, name := ProviderParts(ref)
+	providerRef := ProviderParts(ref)
 
 	resp, err := c.Client.GetPolicy(ctx, &pb.AttestationServiceGetPolicyRequest{
-		Provider:   provider,
-		PolicyName: name,
+		Provider:   providerRef.Provider,
+		PolicyName: providerRef.Name,
 	})
 	if err != nil {
-		return nil, nil, fmt.Errorf("requesting remote policy (provider: %s, name: %s): %w", provider, name, err)
+		return nil, nil, fmt.Errorf("requesting remote policy (provider: %s, name: %s): %w", providerRef.Provider, providerRef.Name, err)
 	}
 
 	h, err := crv1.NewHash(resp.Reference.GetDigest())
@@ -198,25 +198,44 @@ func IsProviderScheme(ref string) bool {
 	return scheme == chainloopScheme || scheme == ""
 }
 
-func ProviderParts(ref string) (string, string) {
+// ProviderRef represents a policy provider reference
+type ProviderRef struct {
+	Provider, OrgName, Name string
+}
+
+// ProviderParts returns the provider information for a given reference
+func ProviderParts(ref string) *ProviderRef {
 	parts := strings.SplitN(ref, "://", 2)
 	var pn []string
 	if len(parts) == 1 {
-		pn = strings.SplitN(parts[0], "/", 2)
+		pn = strings.SplitN(parts[0], ":", 2)
 	} else {
 		// ref might contain the chainloop://protocol
-		pn = strings.SplitN(parts[1], "/", 2)
+		pn = strings.SplitN(parts[1], ":", 2)
 	}
 
 	var (
 		provider string
+		orgName  string
 		name     = pn[0]
 	)
+
 	if len(pn) == 2 {
 		provider = pn[0]
 		name = pn[1]
 	}
-	return provider, name
+	scoped := strings.SplitN(name, "/", 2)
+	if len(scoped) == 2 {
+		// the policy is scoped to a specific org
+		orgName = scoped[0]
+		name = scoped[1]
+	}
+
+	return &ProviderRef{
+		Provider: provider,
+		Name:     name,
+		OrgName:  orgName,
+	}
 }
 
 func ensureScheme(ref string, expected ...string) (string, error) {

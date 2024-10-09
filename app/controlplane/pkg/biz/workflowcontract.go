@@ -332,10 +332,10 @@ func (uc *WorkflowContractUseCase) findPolicy(att *schemav1.PolicyAttachment, to
 	}
 
 	// if it should come from a provider, check that it's available
-	// [chainloop://][provider/]name
+	// [chainloop://][provider:][org_name/]name
 	if loader.IsProviderScheme(att.GetRef()) {
-		provider, name := loader.ProviderParts(att.GetRef())
-		remotePolicy, err := uc.GetPolicy(provider, name, token)
+		pr := loader.ProviderParts(att.GetRef())
+		remotePolicy, err := uc.GetPolicy(pr.Provider, pr.Name, token)
 		if err != nil {
 			return nil, err
 		}
@@ -350,8 +350,8 @@ func (uc *WorkflowContractUseCase) findPolicyGroup(att *schemav1.PolicyGroupAtta
 	// if it should come from a provider, check that it's available
 	// [chainloop://][provider/]name
 	if loader.IsProviderScheme(att.GetRef()) {
-		provider, name := loader.ProviderParts(att.GetRef())
-		remoteGroup, err := uc.GetPolicyGroup(provider, name, token)
+		pr := loader.ProviderParts(att.GetRef())
+		remoteGroup, err := uc.GetPolicyGroup(pr.Provider, pr.Name, token)
 		if err != nil {
 			return nil, err
 		}
