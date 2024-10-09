@@ -91,7 +91,7 @@ func newAttestationInitCmd() *cobra.Command {
 				logger.Warn().Msg("DEPRECATION WARNING: --project not set, this will be required in the near future")
 			}
 
-			return encodeOutput(res, simpleStatusTable)
+			return encodeOutput(res, fullStatusTable)
 		},
 	}
 

@@ -81,8 +81,8 @@ func attestationStatusTableOutput(status *action.AttestationStatusResult, full b
 	gt.AppendSeparator()
 	meta := status.WorkflowMeta
 	gt.AppendRow(table.Row{"Attestation ID", status.AttestationID})
+	gt.AppendRow(table.Row{"Organization", meta.Organization})
 	gt.AppendRow(table.Row{"Name", meta.Name})
-	gt.AppendRow(table.Row{"Team", meta.Team})
 	gt.AppendRow(table.Row{"Project", meta.Project})
 	gt.AppendRow(table.Row{"Contract Revision", meta.ContractRevision})
 	if status.RunnerContext.JobURL != "" {
