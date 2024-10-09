@@ -6,6 +6,9 @@
     "^(contractName)$": {
       "description": "The name of the workflow contract",
       "type": "string"
+    },
+    "^(projectName)$": {
+      "type": "string"
     }
   },
   "properties": {
@@ -19,7 +22,7 @@
     "name": {
       "type": "string"
     },
-    "project": {
+    "project_name": {
       "type": "string"
     },
     "public": {

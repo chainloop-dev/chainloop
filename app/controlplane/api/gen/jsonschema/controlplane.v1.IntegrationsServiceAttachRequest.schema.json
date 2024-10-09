@@ -7,6 +7,10 @@
       "description": "Name of the registered integration",
       "type": "string"
     },
+    "^(projectName)$": {
+      "description": "project name",
+      "type": "string"
+    },
     "^(workflowName)$": {
       "description": "Name of the workflow to attach",
       "type": "string"
@@ -19,6 +23,10 @@
     },
     "integration_name": {
       "description": "Name of the registered integration",
+      "type": "string"
+    },
+    "project_name": {
+      "description": "project name",
       "type": "string"
     },
     "workflow_name": {

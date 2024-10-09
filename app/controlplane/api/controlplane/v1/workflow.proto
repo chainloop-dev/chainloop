@@ -34,20 +34,20 @@ message WorkflowServiceCreateRequest {
   string name = 1 [(buf.validate.field) = {
     // NOTE: validations can not be shared yet https://github.com/bufbuild/protovalidate/issues/51
     cel: {
-      message: "must contain only lowercase letters, numbers, and hyphens.",
-      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
-      id: "name.dns-1123",
-    },
+      message: "must contain only lowercase letters, numbers, and hyphens."
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
+      id: "name.dns-1123"
+    }
   }];
-  string project = 2 [(buf.validate.field).string = {min_len: 1}];
+  string project_name = 2 [(buf.validate.field).string = {min_len: 1}];
   // The name of the workflow contract
   string contract_name = 3 [(buf.validate.field) = {
-    ignore_empty: true,
+    ignore_empty: true
     cel: {
-      message: "must contain only lowercase letters, numbers, and hyphens.",
-      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
-      id: "name.dns-1123",
-    },
+      message: "must contain only lowercase letters, numbers, and hyphens."
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
+      id: "name.dns-1123"
+    }
   }];
   string team = 4;
   string description = 5;
@@ -58,23 +58,23 @@ message WorkflowServiceUpdateRequest {
   string name = 1 [(buf.validate.field) = {
     // NOTE: validations can not be shared yet https://github.com/bufbuild/protovalidate/issues/51
     cel: {
-      message: "must contain only lowercase letters, numbers, and hyphens.",
-      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
-      id: "name.dns-1123",
-    },
+      message: "must contain only lowercase letters, numbers, and hyphens."
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
+      id: "name.dns-1123"
+    }
   }];
   // "optional" allow us to detect if the value is explicitly set
   // and not just the default value
-  optional string project = 3;
+  string project_name = 3 [(buf.validate.field).string = {min_len: 1}];
   optional string team = 4;
   optional bool public = 5;
   optional string description = 6;
   optional string contract_name = 7 [(buf.validate.field) = {
     cel: {
-      message: "must contain only lowercase letters, numbers, and hyphens.",
-      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
-      id: "name.dns-1123",
-    },
+      message: "must contain only lowercase letters, numbers, and hyphens."
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
+      id: "name.dns-1123"
+    }
   }];
 }
 
@@ -90,11 +90,13 @@ message WorkflowServiceDeleteRequest {
   string name = 1 [(buf.validate.field) = {
     // NOTE: validations can not be shared yet https://github.com/bufbuild/protovalidate/issues/51
     cel: {
-      message: "must contain only lowercase letters, numbers, and hyphens.",
-      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
-      id: "name.dns-1123",
-    },
+      message: "must contain only lowercase letters, numbers, and hyphens."
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
+      id: "name.dns-1123"
+    }
   }];
+
+  string project_name = 2 [(buf.validate.field).string = {min_len: 1}];
 }
 
 message WorkflowServiceDeleteResponse {}
@@ -108,11 +110,12 @@ message WorkflowServiceViewRequest {
   string name = 1 [(buf.validate.field) = {
     // NOTE: validations can not be shared yet https://github.com/bufbuild/protovalidate/issues/51
     cel: {
-      message: "must contain only lowercase letters, numbers, and hyphens.",
-      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
-      id: "name.dns-1123",
-    },
+      message: "must contain only lowercase letters, numbers, and hyphens."
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
+      id: "name.dns-1123"
+    }
   }];
+  string project_name = 2 [(buf.validate.field).string = {min_len: 1}];
 }
 
 message WorkflowServiceViewResponse {

@@ -21,15 +21,15 @@ import (
 )
 
 func newWorkflowDeleteCmd() *cobra.Command {
-	var name string
+	var name, projectName string
 
 	cmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Delete an existing workflow",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := action.NewWorkflowDelete(actionOpts).Run(name)
+			err := action.NewWorkflowDelete(actionOpts).Run(name, projectName)
 			if err == nil {
-				logger.Info().Msg("Workload deleted!")
+				logger.Info().Msg("Workflow deleted!")
 			}
 			return err
 		},
@@ -37,6 +37,9 @@ func newWorkflowDeleteCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&name, "name", "", "workflow name")
 	cobra.CheckErr(cmd.MarkFlagRequired("name"))
+
+	cmd.Flags().StringVar(&projectName, "project", "", "project name")
+	cobra.CheckErr(cmd.MarkFlagRequired("project"))
 
 	return cmd
 }

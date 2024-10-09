@@ -21,13 +21,13 @@ import (
 )
 
 func newWorkflowDescribeCmd() *cobra.Command {
-	var workflowName string
+	var workflowName, projectName string
 
 	cmd := &cobra.Command{
 		Use:   "describe",
 		Short: "Describe an existing workflow",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			wf, err := action.NewWorkflowDescribe(actionOpts).Run(cmd.Context(), workflowName)
+			wf, err := action.NewWorkflowDescribe(actionOpts).Run(cmd.Context(), workflowName, projectName)
 			if err != nil {
 				return err
 			}
@@ -39,5 +39,7 @@ func newWorkflowDescribeCmd() *cobra.Command {
 	cmd.Flags().StringVar(&workflowName, "name", "", "workflow name")
 	cobra.CheckErr(cmd.MarkFlagRequired("name"))
 
+	cmd.Flags().StringVar(&projectName, "project", "", "project name")
+	cobra.CheckErr(cmd.MarkFlagRequired("project"))
 	return cmd
 }

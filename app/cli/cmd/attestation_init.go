@@ -29,6 +29,7 @@ func newAttestationInitCmd() *cobra.Command {
 		contractRevision  int
 		attestationDryRun bool
 		workflowName      string
+		projectName       string
 	)
 
 	cmd := &cobra.Command{
@@ -37,14 +38,14 @@ func newAttestationInitCmd() *cobra.Command {
 		Annotations: map[string]string{
 			useAPIToken: "true",
 		},
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			if workflowName == "" {
-				return errors.New("workflow name is required, set it via --name flag")
+				return errors.New("workflow name is required, set it via --workflow flag")
 			}
 
 			return nil
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			a, err := action.NewAttestationInit(
 				&action.AttestationInitOpts{
 					ActionsOpts:    actionOpts,
@@ -58,7 +59,7 @@ func newAttestationInitCmd() *cobra.Command {
 			}
 
 			// Initialize it
-			attestationID, err := a.Run(cmd.Context(), contractRevision, workflowName)
+			attestationID, err := a.Run(cmd.Context(), contractRevision, projectName, workflowName)
 			if err != nil {
 				if errors.Is(err, action.ErrAttestationAlreadyExist) {
 					return err
@@ -86,6 +87,10 @@ func newAttestationInitCmd() *cobra.Command {
 				logger.Info().Msg("The attestation is being crafted in dry-run mode. It will not get stored once rendered")
 			}
 
+			if projectName == "" {
+				logger.Warn().Msg("DEPRECATION WARNING: --project not set, this will be required in the near future")
+			}
+
 			return encodeOutput(res, simpleStatusTable)
 		},
 	}
@@ -96,10 +101,10 @@ func newAttestationInitCmd() *cobra.Command {
 	cmd.Flags().IntVar(&contractRevision, "contract-revision", 0, "revision of the contract to retrieve, \"latest\" by default")
 	cmd.Flags().BoolVar(&useAttestationRemoteState, "remote-state", false, "Store the attestation state remotely")
 
-	// workflow-name has been replaced by --name flag
-	cmd.Flags().StringVar(&workflowName, "workflow-name", "", "name of the workflow to run the attestation")
-	cobra.CheckErr(cmd.Flags().MarkHidden("workflow-name"))
+	// name has been replaced by --workflow flag
+	cmd.Flags().StringVar(&workflowName, "workflow", "", "name of the workflow to run the attestation")
 	cmd.Flags().StringVar(&workflowName, "name", "", "name of the workflow to run the attestation")
-
+	cobra.CheckErr(cmd.Flags().MarkDeprecated("name", "please use --workflow instead"))
+	cmd.Flags().StringVar(&projectName, "project", "", "name of the project of this workflow")
 	return cmd
 }

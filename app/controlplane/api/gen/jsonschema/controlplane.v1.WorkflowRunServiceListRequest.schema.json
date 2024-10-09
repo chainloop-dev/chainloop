@@ -3,6 +3,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
+    "^(projectName)$": {
+      "type": "string"
+    },
     "^(workflowName)$": {
       "description": "Filters\n by workflow",
       "type": "string"
@@ -12,6 +15,9 @@
     "pagination": {
       "$ref": "controlplane.v1.CursorPaginationRequest.schema.json",
       "description": "pagination options"
+    },
+    "project_name": {
+      "type": "string"
     },
     "status": {
       "anyOf": [

@@ -70,7 +70,7 @@ func NewAttestationInit(cfg *AttestationInitOpts) (*AttestationInit, error) {
 }
 
 // returns the attestation ID
-func (action *AttestationInit) Run(ctx context.Context, contractRevision int, workflowName string) (string, error) {
+func (action *AttestationInit) Run(ctx context.Context, contractRevision int, projectName, workflowName string) (string, error) {
 	if action.dryRun && action.useRemoteState {
 		return "", errors.New("remote state is not compatible with dry-run mode")
 	}
@@ -89,6 +89,7 @@ func (action *AttestationInit) Run(ctx context.Context, contractRevision int, wo
 	contractResp, err := client.GetContract(ctx, &pb.AttestationServiceGetContractRequest{
 		ContractRevision: int32(contractRevision),
 		WorkflowName:     workflowName,
+		ProjectName:      projectName,
 	})
 	if err != nil {
 		return "", err
@@ -127,6 +128,7 @@ func (action *AttestationInit) Run(ctx context.Context, contractRevision int, wo
 				ContractRevision: int32(contractRevision),
 				// send the workflow name explicitly provided by the user to detect that functional case
 				WorkflowName: workflowName,
+				ProjectName:  projectName,
 			},
 		)
 		if err != nil {

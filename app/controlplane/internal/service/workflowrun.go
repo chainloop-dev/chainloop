@@ -67,7 +67,7 @@ func (s *WorkflowRunService) List(ctx context.Context, req *pb.WorkflowRunServic
 
 	// by workflow
 	if req.GetWorkflowName() != "" {
-		wf, err := s.workflowUseCase.FindByNameInOrg(ctx, currentOrg.ID, req.GetWorkflowName())
+		wf, err := s.workflowUseCase.FindByNameInOrg(ctx, currentOrg.ID, req.GetProjectName(), req.GetWorkflowName())
 		if err != nil {
 			return nil, handleUseCaseErr(err, s.log)
 		} else if wf == nil {

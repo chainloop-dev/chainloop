@@ -60,11 +60,9 @@ export interface AttestationServiceGetPolicyGroupResponse {
 
 export interface AttestationServiceGetContractRequest {
   contractRevision: number;
-  /**
-   * This parameter is not needed by Robot Account since they have the workflowID embedded.
-   * API Tokens will send the parameter explicitly
-   */
   workflowName: string;
+  /** optional for now for compatibility with the CLI */
+  projectName: string;
 }
 
 export interface AttestationServiceGetContractResponse {
@@ -81,6 +79,8 @@ export interface AttestationServiceInitRequest {
   jobUrl: string;
   runner: CraftingSchema_Runner_RunnerType;
   workflowName: string;
+  /** optional for now for compatibility with the CLI */
+  projectName: string;
 }
 
 export interface AttestationServiceInitResponse {
@@ -166,6 +166,7 @@ export interface WorkflowRunServiceListRequest {
    * by workflow
    */
   workflowName: string;
+  projectName: string;
   /** by run status */
   status: RunStatus;
   /** pagination options */
@@ -612,7 +613,7 @@ export const AttestationServiceGetPolicyGroupResponse = {
 };
 
 function createBaseAttestationServiceGetContractRequest(): AttestationServiceGetContractRequest {
-  return { contractRevision: 0, workflowName: "" };
+  return { contractRevision: 0, workflowName: "", projectName: "" };
 }
 
 export const AttestationServiceGetContractRequest = {
@@ -622,6 +623,9 @@ export const AttestationServiceGetContractRequest = {
     }
     if (message.workflowName !== "") {
       writer.uint32(18).string(message.workflowName);
+    }
+    if (message.projectName !== "") {
+      writer.uint32(26).string(message.projectName);
     }
     return writer;
   },
@@ -647,6 +651,13 @@ export const AttestationServiceGetContractRequest = {
 
           message.workflowName = reader.string();
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.projectName = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -660,6 +671,7 @@ export const AttestationServiceGetContractRequest = {
     return {
       contractRevision: isSet(object.contractRevision) ? Number(object.contractRevision) : 0,
       workflowName: isSet(object.workflowName) ? String(object.workflowName) : "",
+      projectName: isSet(object.projectName) ? String(object.projectName) : "",
     };
   },
 
@@ -667,6 +679,7 @@ export const AttestationServiceGetContractRequest = {
     const obj: any = {};
     message.contractRevision !== undefined && (obj.contractRevision = Math.round(message.contractRevision));
     message.workflowName !== undefined && (obj.workflowName = message.workflowName);
+    message.projectName !== undefined && (obj.projectName = message.projectName);
     return obj;
   },
 
@@ -682,6 +695,7 @@ export const AttestationServiceGetContractRequest = {
     const message = createBaseAttestationServiceGetContractRequest();
     message.contractRevision = object.contractRevision ?? 0;
     message.workflowName = object.workflowName ?? "";
+    message.projectName = object.projectName ?? "";
     return message;
   },
 };
@@ -833,7 +847,7 @@ export const AttestationServiceGetContractResponse_Result = {
 };
 
 function createBaseAttestationServiceInitRequest(): AttestationServiceInitRequest {
-  return { contractRevision: 0, jobUrl: "", runner: 0, workflowName: "" };
+  return { contractRevision: 0, jobUrl: "", runner: 0, workflowName: "", projectName: "" };
 }
 
 export const AttestationServiceInitRequest = {
@@ -849,6 +863,9 @@ export const AttestationServiceInitRequest = {
     }
     if (message.workflowName !== "") {
       writer.uint32(34).string(message.workflowName);
+    }
+    if (message.projectName !== "") {
+      writer.uint32(42).string(message.projectName);
     }
     return writer;
   },
@@ -888,6 +905,13 @@ export const AttestationServiceInitRequest = {
 
           message.workflowName = reader.string();
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.projectName = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -903,6 +927,7 @@ export const AttestationServiceInitRequest = {
       jobUrl: isSet(object.jobUrl) ? String(object.jobUrl) : "",
       runner: isSet(object.runner) ? craftingSchema_Runner_RunnerTypeFromJSON(object.runner) : 0,
       workflowName: isSet(object.workflowName) ? String(object.workflowName) : "",
+      projectName: isSet(object.projectName) ? String(object.projectName) : "",
     };
   },
 
@@ -912,6 +937,7 @@ export const AttestationServiceInitRequest = {
     message.jobUrl !== undefined && (obj.jobUrl = message.jobUrl);
     message.runner !== undefined && (obj.runner = craftingSchema_Runner_RunnerTypeToJSON(message.runner));
     message.workflowName !== undefined && (obj.workflowName = message.workflowName);
+    message.projectName !== undefined && (obj.projectName = message.projectName);
     return obj;
   },
 
@@ -927,6 +953,7 @@ export const AttestationServiceInitRequest = {
     message.jobUrl = object.jobUrl ?? "";
     message.runner = object.runner ?? 0;
     message.workflowName = object.workflowName ?? "";
+    message.projectName = object.projectName ?? "";
     return message;
   },
 };
@@ -1402,13 +1429,16 @@ export const AttestationServiceCancelResponse = {
 };
 
 function createBaseWorkflowRunServiceListRequest(): WorkflowRunServiceListRequest {
-  return { workflowName: "", status: 0, pagination: undefined };
+  return { workflowName: "", projectName: "", status: 0, pagination: undefined };
 }
 
 export const WorkflowRunServiceListRequest = {
   encode(message: WorkflowRunServiceListRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.workflowName !== "") {
       writer.uint32(10).string(message.workflowName);
+    }
+    if (message.projectName !== "") {
+      writer.uint32(34).string(message.projectName);
     }
     if (message.status !== 0) {
       writer.uint32(24).int32(message.status);
@@ -1432,6 +1462,13 @@ export const WorkflowRunServiceListRequest = {
           }
 
           message.workflowName = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.projectName = reader.string();
           continue;
         case 3:
           if (tag !== 24) {
@@ -1459,6 +1496,7 @@ export const WorkflowRunServiceListRequest = {
   fromJSON(object: any): WorkflowRunServiceListRequest {
     return {
       workflowName: isSet(object.workflowName) ? String(object.workflowName) : "",
+      projectName: isSet(object.projectName) ? String(object.projectName) : "",
       status: isSet(object.status) ? runStatusFromJSON(object.status) : 0,
       pagination: isSet(object.pagination) ? CursorPaginationRequest.fromJSON(object.pagination) : undefined,
     };
@@ -1467,6 +1505,7 @@ export const WorkflowRunServiceListRequest = {
   toJSON(message: WorkflowRunServiceListRequest): unknown {
     const obj: any = {};
     message.workflowName !== undefined && (obj.workflowName = message.workflowName);
+    message.projectName !== undefined && (obj.projectName = message.projectName);
     message.status !== undefined && (obj.status = runStatusToJSON(message.status));
     message.pagination !== undefined &&
       (obj.pagination = message.pagination ? CursorPaginationRequest.toJSON(message.pagination) : undefined);
@@ -1482,6 +1521,7 @@ export const WorkflowRunServiceListRequest = {
   ): WorkflowRunServiceListRequest {
     const message = createBaseWorkflowRunServiceListRequest();
     message.workflowName = object.workflowName ?? "";
+    message.projectName = object.projectName ?? "";
     message.status = object.status ?? 0;
     message.pagination = (object.pagination !== undefined && object.pagination !== null)
       ? CursorPaginationRequest.fromPartial(object.pagination)

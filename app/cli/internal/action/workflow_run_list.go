@@ -63,9 +63,9 @@ func NewWorkflowRunList(cfg *ActionsOpts) *WorkflowRunList {
 }
 
 type WorkflowRunListOpts struct {
-	WorkflowName string
-	Pagination   *PaginationOpts
-	Status       string
+	WorkflowName, ProjectName string
+	Pagination                *PaginationOpts
+	Status                    string
 }
 type PaginationOpts struct {
 	Limit      int
@@ -76,6 +76,7 @@ func (action *WorkflowRunList) Run(opts *WorkflowRunListOpts) (*PaginatedWorkflo
 	client := pb.NewWorkflowRunServiceClient(action.cfg.CPConnection)
 	req := &pb.WorkflowRunServiceListRequest{
 		WorkflowName: opts.WorkflowName,
+		ProjectName:  opts.ProjectName,
 		Pagination: &pb.CursorPaginationRequest{
 			Limit:  int32(opts.Pagination.Limit),
 			Cursor: opts.Pagination.NextCursor,

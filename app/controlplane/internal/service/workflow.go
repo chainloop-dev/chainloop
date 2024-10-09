@@ -49,7 +49,7 @@ func (s *WorkflowService) Create(ctx context.Context, req *pb.WorkflowServiceCre
 	createOpts := &biz.WorkflowCreateOpts{
 		OrgID:        currentOrg.ID,
 		Name:         req.GetName(),
-		Project:      req.GetProject(),
+		Project:      req.GetProjectName(),
 		Team:         req.GetTeam(),
 		ContractName: req.GetContractName(),
 		Description:  req.GetDescription(),
@@ -70,7 +70,7 @@ func (s *WorkflowService) Update(ctx context.Context, req *pb.WorkflowServiceUpd
 		return nil, err
 	}
 
-	wf, err := s.useCase.FindByNameInOrg(ctx, currentOrg.ID, req.Name)
+	wf, err := s.useCase.FindByNameInOrg(ctx, currentOrg.ID, req.ProjectName, req.Name)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -89,7 +89,6 @@ func (s *WorkflowService) Update(ctx context.Context, req *pb.WorkflowServiceUpd
 	}
 
 	updateOpts := &biz.WorkflowUpdateOpts{
-		Project:     req.Project,
 		Team:        req.Team,
 		Public:      req.Public,
 		Description: req.Description,
@@ -129,7 +128,7 @@ func (s *WorkflowService) Delete(ctx context.Context, req *pb.WorkflowServiceDel
 		return nil, err
 	}
 
-	wf, err := s.useCase.FindByNameInOrg(ctx, currentOrg.ID, req.Name)
+	wf, err := s.useCase.FindByNameInOrg(ctx, currentOrg.ID, req.ProjectName, req.Name)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -149,7 +148,7 @@ func (s *WorkflowService) View(ctx context.Context, req *pb.WorkflowServiceViewR
 
 	var wf *biz.Workflow
 
-	wf, err = s.useCase.FindByNameInOrg(ctx, currentOrg.ID, req.Name)
+	wf, err = s.useCase.FindByNameInOrg(ctx, currentOrg.ID, req.ProjectName, req.Name)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}

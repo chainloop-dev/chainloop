@@ -45,7 +45,7 @@ type WorkflowRepo interface {
 	Update(ctx context.Context, id uuid.UUID, opts *WorkflowUpdateOpts) (*Workflow, error)
 	List(ctx context.Context, orgID uuid.UUID) ([]*Workflow, error)
 	GetOrgScoped(ctx context.Context, orgID, workflowID uuid.UUID) (*Workflow, error)
-	GetOrgScopedByName(ctx context.Context, orgID uuid.UUID, workflowName string) (*Workflow, error)
+	GetOrgScopedByProjectAndName(ctx context.Context, orgID uuid.UUID, projectName, workflowName string) (*Workflow, error)
 	IncRunsCounter(ctx context.Context, workflowID uuid.UUID) error
 	FindByID(ctx context.Context, workflowID uuid.UUID) (*Workflow, error)
 	SoftDelete(ctx context.Context, workflowID uuid.UUID) error
@@ -61,8 +61,8 @@ type WorkflowCreateOpts struct {
 }
 
 type WorkflowUpdateOpts struct {
-	Project, Team, Description, ContractID *string
-	Public                                 *bool
+	Team, Description, ContractID *string
+	Public                        *bool
 }
 
 type WorkflowUseCase struct {
@@ -133,12 +133,6 @@ func (uc *WorkflowUseCase) Update(ctx context.Context, orgID, workflowID string,
 	workflowUUID, err := uuid.Parse(workflowID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
-	}
-
-	if opts.Project != nil && *opts.Project != "" {
-		if err := ValidateIsDNS1123(*opts.Project); err != nil {
-			return nil, NewErrValidation(err)
-		}
 	}
 
 	// make sure that the workflow is for the provided org
@@ -228,7 +222,7 @@ func (uc *WorkflowUseCase) FindByIDInOrg(ctx context.Context, orgID, workflowID 
 	return wf, nil
 }
 
-func (uc *WorkflowUseCase) FindByNameInOrg(ctx context.Context, orgID, workflowName string) (*Workflow, error) {
+func (uc *WorkflowUseCase) FindByNameInOrg(ctx context.Context, orgID, projectName, workflowName string) (*Workflow, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -238,7 +232,9 @@ func (uc *WorkflowUseCase) FindByNameInOrg(ctx context.Context, orgID, workflowN
 		return nil, NewErrValidationStr("empty workflow name")
 	}
 
-	wf, err := uc.wfRepo.GetOrgScopedByName(ctx, orgUUID, workflowName)
+	// TODO: validate the project name
+
+	wf, err := uc.wfRepo.GetOrgScopedByProjectAndName(ctx, orgUUID, projectName, workflowName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get workflow: %w", err)
 	}
