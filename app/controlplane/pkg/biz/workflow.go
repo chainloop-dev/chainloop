@@ -232,8 +232,7 @@ func (uc *WorkflowUseCase) FindByNameInOrg(ctx context.Context, orgID, projectNa
 		return nil, NewErrValidationStr("empty workflow name")
 	}
 
-	// TODO: validate the project name
-
+	// TODO: enforce projectName
 	wf, err := uc.wfRepo.GetOrgScopedByProjectAndName(ctx, orgUUID, projectName, workflowName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get workflow: %w", err)
