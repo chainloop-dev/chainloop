@@ -166,6 +166,7 @@ export interface WorkflowRunServiceListRequest {
    * by workflow
    */
   workflowName: string;
+  /** Not required since filtering by workflow and project is optional */
   projectName: string;
   /** by run status */
   status: RunStatus;

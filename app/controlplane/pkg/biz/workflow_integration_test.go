@@ -71,7 +71,7 @@ func (s *workflowIntegrationTestSuite) TestView() {
 	})
 
 	s.Run("finds by name in org", func() {
-		wf, err := s.Workflow.FindByNameInOrg(context.TODO(), s.org.ID, s.wf.Name)
+		wf, err := s.Workflow.FindByNameInOrg(context.TODO(), s.org.ID, s.wf.Project, s.wf.Name)
 		s.NoError(err)
 		s.Equal(s.wf.ID, wf.ID)
 	})
@@ -80,7 +80,7 @@ func (s *workflowIntegrationTestSuite) TestView() {
 		org2, err := s.Organization.CreateWithRandomName(context.Background())
 		require.NoError(s.T(), err)
 
-		_, err = s.Workflow.FindByNameInOrg(context.TODO(), org2.ID, s.wf.Name)
+		_, err = s.Workflow.FindByNameInOrg(context.TODO(), org2.ID, s.wf.Project, s.wf.Name)
 		s.Error(err)
 	})
 }
@@ -238,12 +238,6 @@ func (s *workflowIntegrationTestSuite) TestUpdate() {
 			wantErrMsg: "no updates provided",
 		},
 		{
-			name:       "invalid Project",
-			wantErr:    true,
-			wantErrMsg: "RFC 1123",
-			updates:    &biz.WorkflowUpdateOpts{Project: toPtrS(" no no ")},
-		},
-		{
 			name:    "update description",
 			updates: &biz.WorkflowUpdateOpts{Description: toPtrS("new description")},
 			want:    &biz.Workflow{Description: "new description", Team: team, Project: project, Public: false},
@@ -255,8 +249,8 @@ func (s *workflowIntegrationTestSuite) TestUpdate() {
 		},
 		{
 			name:    "update all options",
-			updates: &biz.WorkflowUpdateOpts{Project: toPtrS("new-project"), Team: toPtrS("new team"), Public: toPtrBool(true)},
-			want:    &biz.Workflow{Description: description, Team: "new team", Project: "new-project", Public: true},
+			updates: &biz.WorkflowUpdateOpts{Team: toPtrS("new team"), Public: toPtrBool(true)},
+			want:    &biz.Workflow{Description: description, Team: "new team", Project: "test-project", Public: true},
 		},
 		{
 			name:    "can update contract",
@@ -270,8 +264,8 @@ func (s *workflowIntegrationTestSuite) TestUpdate() {
 		},
 		{
 			name:    "but other opts can",
-			updates: &biz.WorkflowUpdateOpts{Team: toPtrS(""), Project: toPtrS(""), Description: toPtrS("")},
-			want:    &biz.Workflow{Team: "", Project: "", Description: ""},
+			updates: &biz.WorkflowUpdateOpts{Team: toPtrS(""), Description: toPtrS("")},
+			want:    &biz.Workflow{Team: "", Project: "test-project", Description: ""},
 		},
 	}
 

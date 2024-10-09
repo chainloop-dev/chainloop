@@ -162,11 +162,19 @@ message WorkflowRunServiceListRequest {
     }
   }];
 
-  string project_name = 4 [(buf.validate.field).string.uuid = true];
+  // Not required since filtering by workflow and project is optional
+  string project_name = 4;
   // by run status
   RunStatus status = 3;
   // pagination options
   CursorPaginationRequest pagination = 2;
+
+  // Custom validation to ensure project_name is set if workflow_name is set
+  option (buf.validate.message).cel = {
+    id: "workflow_project_dependency"
+    expression: "!(this.workflow_name != '' && this.project_name == '')"
+    message: "project_name must be set if workflow_name is set"
+  };
 }
 
 message WorkflowRunServiceListResponse {

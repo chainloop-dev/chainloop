@@ -4,6 +4,7 @@
   "additionalProperties": false,
   "patternProperties": {
     "^(projectName)$": {
+      "description": "Not required since filtering by workflow and project is optional",
       "type": "string"
     },
     "^(workflowName)$": {
@@ -17,6 +18,7 @@
       "description": "pagination options"
     },
     "project_name": {
+      "description": "Not required since filtering by workflow and project is optional",
       "type": "string"
     },
     "status": {
