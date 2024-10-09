@@ -31,6 +31,9 @@ import (
 const (
 	policiesEndpoint = "policies"
 	groupsEndpoint   = "groups"
+
+	digestParam  = "digest"
+	orgNameParam = "organization_name"
 )
 
 // PolicyProvider represents an external policy provider
@@ -104,11 +107,11 @@ func (p *PolicyProvider) queryProvider(path, digest, orgName, token string, out 
 
 	query := uri.Query()
 	if digest != "" {
-		query.Set("digest", digest)
+		query.Set(digestParam, digest)
 	}
 
 	if orgName != "" {
-		query.Set("org", orgName)
+		query.Set(orgNameParam, orgName)
 	}
 
 	uri.RawQuery = query.Encode()
