@@ -335,7 +335,7 @@ func (uc *WorkflowContractUseCase) findPolicy(att *schemav1.PolicyAttachment, to
 	// [chainloop://][provider:][org_name/]name
 	if loader.IsProviderScheme(att.GetRef()) {
 		pr := loader.ProviderParts(att.GetRef())
-		remotePolicy, err := uc.GetPolicy(pr.Provider, pr.Name, token)
+		remotePolicy, err := uc.GetPolicy(pr.Provider, pr.Name, pr.OrgName, token)
 		if err != nil {
 			return nil, err
 		}
@@ -351,7 +351,7 @@ func (uc *WorkflowContractUseCase) findPolicyGroup(att *schemav1.PolicyGroupAtta
 	// [chainloop://][provider/]name
 	if loader.IsProviderScheme(att.GetRef()) {
 		pr := loader.ProviderParts(att.GetRef())
-		remoteGroup, err := uc.GetPolicyGroup(pr.Provider, pr.Name, token)
+		remoteGroup, err := uc.GetPolicyGroup(pr.Provider, pr.Name, pr.OrgName, token)
 		if err != nil {
 			return nil, err
 		}
@@ -403,13 +403,13 @@ type RemotePolicyGroup struct {
 }
 
 // GetPolicy retrieves a policy from a policy provider
-func (uc *WorkflowContractUseCase) GetPolicy(providerName, policyName, token string) (*RemotePolicy, error) {
+func (uc *WorkflowContractUseCase) GetPolicy(providerName, policyName, orgName, token string) (*RemotePolicy, error) {
 	provider, err := uc.findProvider(providerName)
 	if err != nil {
 		return nil, err
 	}
 
-	policy, ref, err := provider.Resolve(policyName, token)
+	policy, ref, err := provider.Resolve(policyName, orgName, token)
 	if err != nil {
 		if errors.Is(err, policies.ErrNotFound) {
 			return nil, NewErrNotFound(fmt.Sprintf("policy %q", policyName))
@@ -421,13 +421,13 @@ func (uc *WorkflowContractUseCase) GetPolicy(providerName, policyName, token str
 	return &RemotePolicy{Policy: policy, ProviderRef: ref}, nil
 }
 
-func (uc *WorkflowContractUseCase) GetPolicyGroup(providerName, groupName, token string) (*RemotePolicyGroup, error) {
+func (uc *WorkflowContractUseCase) GetPolicyGroup(providerName, groupName, orgName, token string) (*RemotePolicyGroup, error) {
 	provider, err := uc.findProvider(providerName)
 	if err != nil {
 		return nil, err
 	}
 
-	group, ref, err := provider.ResolveGroup(groupName, token)
+	group, ref, err := provider.ResolveGroup(groupName, orgName, token)
 	if err != nil {
 		if errors.Is(err, policies.ErrNotFound) {
 			return nil, NewErrNotFound(fmt.Sprintf("policy group %q", groupName))

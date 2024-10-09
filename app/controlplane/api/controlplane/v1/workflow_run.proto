@@ -51,6 +51,9 @@ message AttestationServiceGetPolicyRequest {
 
   // Policy name (it must exist in the provider)
   string policy_name = 2 [(buf.validate.field).string.min_len = 1];
+
+  // The org owning this policy
+  string org_name = 3;
 }
 
 message AttestationServiceGetPolicyResponse {
@@ -70,6 +73,9 @@ message AttestationServiceGetPolicyGroupRequest {
 
   // Group name (it must exist in the provider)
   string group_name = 2 [(buf.validate.field).string.min_len = 1];
+
+  // The org owning this group
+  string org_name = 3;
 }
 
 message AttestationServiceGetPolicyGroupResponse {

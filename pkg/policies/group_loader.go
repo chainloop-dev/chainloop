@@ -133,6 +133,7 @@ func (c *ChainloopGroupLoader) Load(ctx context.Context, attachment *v1.PolicyGr
 	resp, err := c.Client.GetPolicyGroup(ctx, &pb.AttestationServiceGetPolicyGroupRequest{
 		Provider:  providerRef.Provider,
 		GroupName: providerRef.Name,
+		OrgName:   providerRef.OrgName,
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("requesting remote group (provider: %s, name: %s): %w", providerRef.Provider, providerRef.Name, err)

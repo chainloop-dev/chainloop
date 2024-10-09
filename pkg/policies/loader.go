@@ -152,6 +152,7 @@ func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachm
 	resp, err := c.Client.GetPolicy(ctx, &pb.AttestationServiceGetPolicyRequest{
 		Provider:   providerRef.Provider,
 		PolicyName: providerRef.Name,
+		OrgName:    providerRef.OrgName,
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("requesting remote policy (provider: %s, name: %s): %w", providerRef.Provider, providerRef.Name, err)

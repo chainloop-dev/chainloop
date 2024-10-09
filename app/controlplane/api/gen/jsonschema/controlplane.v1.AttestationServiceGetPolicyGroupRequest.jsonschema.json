@@ -6,11 +6,19 @@
     "^(group_name)$": {
       "description": "Group name (it must exist in the provider)",
       "type": "string"
+    },
+    "^(org_name)$": {
+      "description": "The org owning this group",
+      "type": "string"
     }
   },
   "properties": {
     "groupName": {
       "description": "Group name (it must exist in the provider)",
+      "type": "string"
+    },
+    "orgName": {
+      "description": "The org owning this group",
       "type": "string"
     },
     "provider": {

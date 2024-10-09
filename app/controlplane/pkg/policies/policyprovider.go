@@ -52,7 +52,7 @@ type PolicyReference struct {
 var ErrNotFound = fmt.Errorf("policy not found")
 
 // Resolve calls the remote provider for retrieving a policy
-func (p *PolicyProvider) Resolve(policyName string, token string) (*schemaapi.Policy, *PolicyReference, error) {
+func (p *PolicyProvider) Resolve(policyName, orgName, token string) (*schemaapi.Policy, *PolicyReference, error) {
 	if policyName == "" || token == "" {
 		return nil, nil, fmt.Errorf("both policyname and token are mandatory")
 	}
@@ -65,7 +65,7 @@ func (p *PolicyProvider) Resolve(policyName string, token string) (*schemaapi.Po
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to resolve policy: %w", err)
 	}
-	ref, err := p.queryProvider(endpoint, digest, token, &policy)
+	ref, err := p.queryProvider(endpoint, digest, orgName, token, &policy)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to resolve policy: %w", err)
 	}
@@ -74,7 +74,7 @@ func (p *PolicyProvider) Resolve(policyName string, token string) (*schemaapi.Po
 }
 
 // ResolveGroup calls remote provider for retrieving a policy group definition
-func (p *PolicyProvider) ResolveGroup(groupName string, token string) (*schemaapi.PolicyGroup, *PolicyReference, error) {
+func (p *PolicyProvider) ResolveGroup(groupName, orgName, token string) (*schemaapi.PolicyGroup, *PolicyReference, error) {
 	if groupName == "" || token == "" {
 		return nil, nil, fmt.Errorf("both policyname and token are mandatory")
 	}
@@ -87,7 +87,7 @@ func (p *PolicyProvider) ResolveGroup(groupName string, token string) (*schemaap
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to resolve group: %w", err)
 	}
-	ref, err := p.queryProvider(endpoint, digest, token, &group)
+	ref, err := p.queryProvider(endpoint, digest, orgName, token, &group)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to resolve group: %w", err)
 	}
@@ -95,16 +95,23 @@ func (p *PolicyProvider) ResolveGroup(groupName string, token string) (*schemaap
 	return &group, ref, nil
 }
 
-func (p *PolicyProvider) queryProvider(path string, digest string, token string, out proto.Message) (*PolicyReference, error) {
+func (p *PolicyProvider) queryProvider(path, digest, orgName, token string, out proto.Message) (*PolicyReference, error) {
 	// craft the URL
 	uri, err := url.Parse(path)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing policy provider URL: %w", err)
 	}
 
+	query := uri.Query()
 	if digest != "" {
-		uri.RawQuery = fmt.Sprintf("digest=%s", digest)
+		query.Set("digest", digest)
 	}
+
+	if orgName != "" {
+		uri.Query().Set("org", orgName)
+	}
+
+	uri.RawQuery = query.Encode()
 
 	req, err := http.NewRequest("GET", uri.String(), nil)
 	if err != nil {

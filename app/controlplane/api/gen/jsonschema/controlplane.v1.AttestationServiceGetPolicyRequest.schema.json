@@ -3,12 +3,20 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
+    "^(orgName)$": {
+      "description": "The org owning this policy",
+      "type": "string"
+    },
     "^(policyName)$": {
       "description": "Policy name (it must exist in the provider)",
       "type": "string"
     }
   },
   "properties": {
+    "org_name": {
+      "description": "The org owning this policy",
+      "type": "string"
+    },
     "policy_name": {
       "description": "Policy name (it must exist in the provider)",
       "type": "string"
