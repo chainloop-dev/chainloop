@@ -38,7 +38,7 @@ func newAttestationInitCmd() *cobra.Command {
 		Annotations: map[string]string{
 			useAPIToken: "true",
 		},
-		PreRunE: func(cmd *cobra.Command, _ []string) error {
+		PreRunE: func(_ *cobra.Command, _ []string) error {
 			if workflowName == "" {
 				return errors.New("workflow name is required, set it via --workflow flag")
 			}
