@@ -49,7 +49,7 @@ jobs:
 
       - name: Initialize Attestation
         run: |
-          chainloop attestation init --workflow-name $CHAINLOOP_WORKFLOW_NAME
+          chainloop attestation init --workflow $CHAINLOOP_WORKFLOW_NAME
 
       - name: Docker login to Github Packages
         uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2.2.0

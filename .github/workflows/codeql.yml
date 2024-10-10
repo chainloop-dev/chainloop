@@ -41,7 +41,7 @@ jobs:
       - name: Initialize Attestation
         if: ${{ github.event_name != 'pull_request' }}
         run: |
-          chainloop attestation init --workflow-name $CHAINLOOP_WORKFLOW_NAME
+          chainloop attestation init --workflow $CHAINLOOP_WORKFLOW_NAME
 
       - name: Set up Go
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
