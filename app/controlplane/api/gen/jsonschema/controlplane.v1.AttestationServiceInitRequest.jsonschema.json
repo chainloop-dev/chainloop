@@ -11,6 +11,10 @@
     "^(job_url)$": {
       "type": "string"
     },
+    "^(project_name)$": {
+      "description": "optional for now for compatibility with the CLI",
+      "type": "string"
+    },
     "^(workflow_name)$": {
       "type": "string"
     }
@@ -22,6 +26,10 @@
       "type": "integer"
     },
     "jobUrl": {
+      "type": "string"
+    },
+    "projectName": {
+      "description": "optional for now for compatibility with the CLI",
       "type": "string"
     },
     "runner": {

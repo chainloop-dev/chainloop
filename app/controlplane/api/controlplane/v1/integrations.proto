@@ -67,18 +67,20 @@ message IntegrationsServiceAttachRequest {
   // Name of the workflow to attach
   string workflow_name = 1 [(buf.validate.field) = {
     cel: {
-      message: "must contain only lowercase letters, numbers, and hyphens.",
-      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
-      id: "name.dns-1123",
-    },
+      message: "must contain only lowercase letters, numbers, and hyphens."
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
+      id: "name.dns-1123"
+    }
   }];
+  // project name
+  string project_name = 3 [(buf.validate.field).string = {min_len: 1}];
   // Name of the registered integration
   string integration_name = 2 [(buf.validate.field) = {
     cel: {
-      message: "must contain only lowercase letters, numbers, and hyphens.",
-      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
-      id: "name.dns-1123",
-    },
+      message: "must contain only lowercase letters, numbers, and hyphens."
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
+      id: "name.dns-1123"
+    }
   }];
   // Arbitrary configuration for the integration
   google.protobuf.Struct config = 4 [(buf.validate.field).required = true];
@@ -122,10 +124,10 @@ message IntegrationsServiceListRegistrationsResponse {
 message IntegrationsServiceDescribeRegistrationRequest {
   string name = 1 [(buf.validate.field) = {
     cel: {
-      message: "must contain only lowercase letters, numbers, and hyphens.",
-      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
-      id: "name.dns-1123",
-    },
+      message: "must contain only lowercase letters, numbers, and hyphens."
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
+      id: "name.dns-1123"
+    }
   }];
 }
 
@@ -142,13 +144,14 @@ message IntegrationsServiceDetachResponse {}
 message ListAttachmentsRequest {
   // Filter by workflow
   string workflow_name = 1 [(buf.validate.field) = {
-    ignore_empty: true,
+    ignore_empty: true
     cel: {
-      message: "must contain only lowercase letters, numbers, and hyphens.",
-      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
-      id: "name.dns-1123",
-    },
+      message: "must contain only lowercase letters, numbers, and hyphens."
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
+      id: "name.dns-1123"
+    }
   }];
+  string project_name = 2 [(buf.validate.field).string = {min_len: 1}];
 }
 
 message ListAttachmentsResponse {
@@ -179,10 +182,10 @@ message IntegrationAttachmentItem {
 message IntegrationsServiceDeregisterRequest {
   string name = 1 [(buf.validate.field) = {
     cel: {
-      message: "must contain only lowercase letters, numbers, and hyphens.",
-      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
-      id: "name.dns-1123",
-    },
+      message: "must contain only lowercase letters, numbers, and hyphens."
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
+      id: "name.dns-1123"
+    }
   }];
 }
 

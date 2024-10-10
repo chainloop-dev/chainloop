@@ -29,6 +29,8 @@ export interface IntegrationsServiceRegisterResponse {
 export interface IntegrationsServiceAttachRequest {
   /** Name of the workflow to attach */
   workflowName: string;
+  /** project name */
+  projectName: string;
   /** Name of the registered integration */
   integrationName: string;
   /** Arbitrary configuration for the integration */
@@ -89,6 +91,7 @@ export interface IntegrationsServiceDetachResponse {
 export interface ListAttachmentsRequest {
   /** Filter by workflow */
   workflowName: string;
+  projectName: string;
 }
 
 export interface ListAttachmentsResponse {
@@ -288,13 +291,16 @@ export const IntegrationsServiceRegisterResponse = {
 };
 
 function createBaseIntegrationsServiceAttachRequest(): IntegrationsServiceAttachRequest {
-  return { workflowName: "", integrationName: "", config: undefined };
+  return { workflowName: "", projectName: "", integrationName: "", config: undefined };
 }
 
 export const IntegrationsServiceAttachRequest = {
   encode(message: IntegrationsServiceAttachRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.workflowName !== "") {
       writer.uint32(10).string(message.workflowName);
+    }
+    if (message.projectName !== "") {
+      writer.uint32(26).string(message.projectName);
     }
     if (message.integrationName !== "") {
       writer.uint32(18).string(message.integrationName);
@@ -318,6 +324,13 @@ export const IntegrationsServiceAttachRequest = {
           }
 
           message.workflowName = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.projectName = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
@@ -345,6 +358,7 @@ export const IntegrationsServiceAttachRequest = {
   fromJSON(object: any): IntegrationsServiceAttachRequest {
     return {
       workflowName: isSet(object.workflowName) ? String(object.workflowName) : "",
+      projectName: isSet(object.projectName) ? String(object.projectName) : "",
       integrationName: isSet(object.integrationName) ? String(object.integrationName) : "",
       config: isObject(object.config) ? object.config : undefined,
     };
@@ -353,6 +367,7 @@ export const IntegrationsServiceAttachRequest = {
   toJSON(message: IntegrationsServiceAttachRequest): unknown {
     const obj: any = {};
     message.workflowName !== undefined && (obj.workflowName = message.workflowName);
+    message.projectName !== undefined && (obj.projectName = message.projectName);
     message.integrationName !== undefined && (obj.integrationName = message.integrationName);
     message.config !== undefined && (obj.config = message.config);
     return obj;
@@ -369,6 +384,7 @@ export const IntegrationsServiceAttachRequest = {
   ): IntegrationsServiceAttachRequest {
     const message = createBaseIntegrationsServiceAttachRequest();
     message.workflowName = object.workflowName ?? "";
+    message.projectName = object.projectName ?? "";
     message.integrationName = object.integrationName ?? "";
     message.config = object.config ?? undefined;
     return message;
@@ -1101,13 +1117,16 @@ export const IntegrationsServiceDetachResponse = {
 };
 
 function createBaseListAttachmentsRequest(): ListAttachmentsRequest {
-  return { workflowName: "" };
+  return { workflowName: "", projectName: "" };
 }
 
 export const ListAttachmentsRequest = {
   encode(message: ListAttachmentsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.workflowName !== "") {
       writer.uint32(10).string(message.workflowName);
+    }
+    if (message.projectName !== "") {
+      writer.uint32(18).string(message.projectName);
     }
     return writer;
   },
@@ -1126,6 +1145,13 @@ export const ListAttachmentsRequest = {
 
           message.workflowName = reader.string();
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.projectName = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1136,12 +1162,16 @@ export const ListAttachmentsRequest = {
   },
 
   fromJSON(object: any): ListAttachmentsRequest {
-    return { workflowName: isSet(object.workflowName) ? String(object.workflowName) : "" };
+    return {
+      workflowName: isSet(object.workflowName) ? String(object.workflowName) : "",
+      projectName: isSet(object.projectName) ? String(object.projectName) : "",
+    };
   },
 
   toJSON(message: ListAttachmentsRequest): unknown {
     const obj: any = {};
     message.workflowName !== undefined && (obj.workflowName = message.workflowName);
+    message.projectName !== undefined && (obj.projectName = message.projectName);
     return obj;
   },
 
@@ -1152,6 +1182,7 @@ export const ListAttachmentsRequest = {
   fromPartial<I extends Exact<DeepPartial<ListAttachmentsRequest>, I>>(object: I): ListAttachmentsRequest {
     const message = createBaseListAttachmentsRequest();
     message.workflowName = object.workflowName ?? "";
+    message.projectName = object.projectName ?? "";
     return message;
   },
 };

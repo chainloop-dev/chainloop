@@ -5,6 +5,10 @@
   "patternProperties": {
     "^(contractName)$": {
       "type": "string"
+    },
+    "^(projectName)$": {
+      "description": "\"optional\" allow us to detect if the value is explicitly set\n and not just the default value",
+      "type": "string"
     }
   },
   "properties": {
@@ -17,7 +21,7 @@
     "name": {
       "type": "string"
     },
-    "project": {
+    "project_name": {
       "description": "\"optional\" allow us to detect if the value is explicitly set\n and not just the default value",
       "type": "string"
     },

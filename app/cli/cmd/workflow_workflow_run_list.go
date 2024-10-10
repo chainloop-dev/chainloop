@@ -31,7 +31,7 @@ func newWorkflowWorkflowRunListCmd() *cobra.Command {
 		DefaultLimit: 20,
 	}
 
-	var workflowName, status string
+	var workflowName, projectName, status string
 
 	cmd := &cobra.Command{
 		Use:     "list",
@@ -48,6 +48,7 @@ func newWorkflowWorkflowRunListCmd() *cobra.Command {
 			res, err := action.NewWorkflowRunList(actionOpts).Run(
 				&action.WorkflowRunListOpts{
 					WorkflowName: workflowName,
+					ProjectName:  projectName,
 					Pagination: &action.PaginationOpts{
 						Limit:      paginationOpts.Limit,
 						NextCursor: paginationOpts.NextCursor,
@@ -79,6 +80,7 @@ func newWorkflowWorkflowRunListCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&workflowName, "workflow", "", "workflow name")
+	cmd.Flags().StringVar(&projectName, "project", "", "project name")
 	cmd.Flags().BoolVar(&full, "full", false, "full report")
 	cmd.Flags().StringVar(&status, "status", "", fmt.Sprintf("filter by workflow run status: %v", listAvailableWorkflowStatusFlag()))
 	// Add pagination flags

@@ -86,9 +86,9 @@ message AttestationServiceGetPolicyGroupResponse {
 
 message AttestationServiceGetContractRequest {
   int32 contract_revision = 1;
-  // This parameter is not needed by Robot Account since they have the workflowID embedded.
-  // API Tokens will send the parameter explicitly
-  string workflow_name = 2;
+  string workflow_name = 2 [(buf.validate.field).string.min_len = 1];
+  // optional for now for compatibility with the CLI
+  string project_name = 3;
 }
 
 message AttestationServiceGetContractResponse {
@@ -105,6 +105,8 @@ message AttestationServiceInitRequest {
   string job_url = 2;
   workflowcontract.v1.CraftingSchema.Runner.RunnerType runner = 3;
   string workflow_name = 4;
+  // optional for now for compatibility with the CLI
+  string project_name = 5;
 }
 
 message AttestationServiceInitResponse {
@@ -159,10 +161,20 @@ message WorkflowRunServiceListRequest {
       id: "name.dns-1123"
     }
   }];
+
+  // Not required since filtering by workflow and project is optional
+  string project_name = 4;
   // by run status
   RunStatus status = 3;
   // pagination options
   CursorPaginationRequest pagination = 2;
+
+  // Custom validation to ensure project_name is set if workflow_name is set
+  option (buf.validate.message).cel = {
+    id: "workflow_project_dependency"
+    expression: "!(this.workflow_name != '' && this.project_name == '')"
+    message: "project_name must be set if workflow_name is set"
+  };
 }
 
 message WorkflowRunServiceListResponse {

@@ -101,7 +101,7 @@ func (s *AttestationService) GetContract(ctx context.Context, req *cpAPI.Attesta
 		return nil, err
 	}
 
-	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, robotAccount.WorkflowID, req.GetWorkflowName(), "")
+	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, req.GetProjectName(), req.GetWorkflowName(), "")
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -130,7 +130,7 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		return nil, err
 	}
 
-	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, robotAccount.WorkflowID, req.GetWorkflowName(), "")
+	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, req.GetProjectName(), req.GetWorkflowName(), "")
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -186,7 +186,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	}
 
 	// This will make sure the provided workflowRunID belongs to the org encoded in the robot account
-	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, robotAccount.WorkflowID, "", req.WorkflowRunId)
+	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, "", "", req.WorkflowRunId)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -293,7 +293,7 @@ func (s *AttestationService) Cancel(ctx context.Context, req *cpAPI.AttestationS
 	}
 
 	// This will make sure the provided workflowRunID belongs to the org encoded in the robot account
-	if _, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, robotAccount.WorkflowID, "", req.WorkflowRunId); err != nil {
+	if _, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, "", "", req.WorkflowRunId); err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
@@ -511,20 +511,14 @@ func extractMaterials(in []*chainloop.NormalizedMaterial) ([]*cpAPI.AttestationI
 	return res, nil
 }
 
-// Cascade-based way of retrieving the workflow from the robot-account, the workflow_name or the run_ID
-func (s *AttestationService) findWorkflowFromTokenOrNameOrRunID(ctx context.Context, orgID string, workflowID, workflowName, runID string) (*biz.Workflow, error) {
+func (s *AttestationService) findWorkflowFromTokenOrNameOrRunID(ctx context.Context, orgID string, projectName, workflowName, runID string) (*biz.Workflow, error) {
 	if orgID == "" {
 		return nil, biz.NewErrValidationStr("orgID must be provided")
 	}
 
-	// This is the case of the workflowID encoded in the robot account
-	if workflowID != "" {
-		return s.workflowUseCase.FindByIDInOrg(ctx, orgID, workflowID)
-	}
-
 	// This is the case when the workflow if found by name
 	if workflowName != "" {
-		return s.workflowUseCase.FindByNameInOrg(ctx, orgID, workflowName)
+		return s.workflowUseCase.FindByNameInOrg(ctx, orgID, projectName, workflowName)
 	}
 
 	// This is the case when the workflow is found by its reference to the run

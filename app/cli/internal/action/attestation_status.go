@@ -52,7 +52,7 @@ type AttestationResultRunnerContext struct {
 }
 
 type AttestationStatusWorkflowMeta struct {
-	WorkflowID, Name, Team, Project, ContractRevision string
+	WorkflowID, Name, Team, Project, ContractRevision, Organization string
 }
 
 type AttestationStatusResultMaterial struct {
@@ -94,6 +94,7 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 		WorkflowMeta: &AttestationStatusWorkflowMeta{
 			WorkflowID:       workflowMeta.GetWorkflowId(),
 			Name:             workflowMeta.GetName(),
+			Organization:     workflowMeta.GetOrganization(),
 			Project:          workflowMeta.GetProject(),
 			Team:             workflowMeta.GetTeam(),
 			ContractRevision: workflowMeta.GetSchemaRevision(),

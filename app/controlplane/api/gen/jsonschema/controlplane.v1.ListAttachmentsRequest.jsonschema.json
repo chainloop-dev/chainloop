@@ -3,12 +3,18 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
+    "^(project_name)$": {
+      "type": "string"
+    },
     "^(workflow_name)$": {
       "description": "Filter by workflow",
       "type": "string"
     }
   },
   "properties": {
+    "projectName": {
+      "type": "string"
+    },
     "workflowName": {
       "description": "Filter by workflow",
       "type": "string"

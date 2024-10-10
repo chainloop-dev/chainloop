@@ -2,8 +2,16 @@
   "$id": "controlplane.v1.WorkflowServiceDeleteRequest.jsonschema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
+  "patternProperties": {
+    "^(project_name)$": {
+      "type": "string"
+    }
+  },
   "properties": {
     "name": {
+      "type": "string"
+    },
+    "projectName": {
       "type": "string"
     }
   },

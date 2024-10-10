@@ -121,7 +121,7 @@ func (s *IntegrationsService) Attach(ctx context.Context, req *pb.IntegrationsSe
 		return nil, fmt.Errorf("loading integration: %w", err)
 	}
 
-	wf, err := s.workflowUC.FindByNameInOrg(ctx, org.ID, req.WorkflowName)
+	wf, err := s.workflowUC.FindByNameInOrg(ctx, org.ID, req.ProjectName, req.WorkflowName)
 	if err != nil {
 		if biz.IsNotFound(err) {
 			return nil, errors.NotFound("not found", err.Error())
@@ -220,7 +220,7 @@ func (s *IntegrationsService) ListAttachments(ctx context.Context, req *pb.ListA
 	// Translate workflow name to ID
 	var workflowID string
 	if req.GetWorkflowName() != "" {
-		wf, err := s.workflowUC.FindByNameInOrg(ctx, org.ID, req.GetWorkflowName())
+		wf, err := s.workflowUC.FindByNameInOrg(ctx, org.ID, req.GetProjectName(), req.GetWorkflowName())
 		if err != nil {
 			if biz.IsNotFound(err) {
 				return nil, errors.NotFound("not found", err.Error())

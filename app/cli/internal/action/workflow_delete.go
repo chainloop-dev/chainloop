@@ -29,9 +29,9 @@ func NewWorkflowDelete(cfg *ActionsOpts) *WorkflowDelete {
 	return &WorkflowDelete{cfg}
 }
 
-func (action *WorkflowDelete) Run(name string) error {
+func (action *WorkflowDelete) Run(name, projectName string) error {
 	client := pb.NewWorkflowServiceClient(action.cfg.CPConnection)
-	if _, err := client.Delete(context.Background(), &pb.WorkflowServiceDeleteRequest{Name: name}); err != nil {
+	if _, err := client.Delete(context.Background(), &pb.WorkflowServiceDeleteRequest{Name: name, ProjectName: projectName}); err != nil {
 		return err
 	}
 

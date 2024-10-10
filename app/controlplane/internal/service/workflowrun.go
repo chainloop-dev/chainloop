@@ -66,8 +66,8 @@ func (s *WorkflowRunService) List(ctx context.Context, req *pb.WorkflowRunServic
 	filters := &biz.RunListFilters{}
 
 	// by workflow
-	if req.GetWorkflowName() != "" {
-		wf, err := s.workflowUseCase.FindByNameInOrg(ctx, currentOrg.ID, req.GetWorkflowName())
+	if req.GetWorkflowName() != "" && req.GetProjectName() != "" {
+		wf, err := s.workflowUseCase.FindByNameInOrg(ctx, currentOrg.ID, req.GetProjectName(), req.GetWorkflowName())
 		if err != nil {
 			return nil, handleUseCaseErr(err, s.log)
 		} else if wf == nil {

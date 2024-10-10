@@ -8,8 +8,11 @@
       "minimum": -2147483648,
       "type": "integer"
     },
+    "^(projectName)$": {
+      "description": "optional for now for compatibility with the CLI",
+      "type": "string"
+    },
     "^(workflowName)$": {
-      "description": "This parameter is not needed by Robot Account since they have the workflowID embedded.\n API Tokens will send the parameter explicitly",
       "type": "string"
     }
   },
@@ -19,8 +22,11 @@
       "minimum": -2147483648,
       "type": "integer"
     },
+    "project_name": {
+      "description": "optional for now for compatibility with the CLI",
+      "type": "string"
+    },
     "workflow_name": {
-      "description": "This parameter is not needed by Robot Account since they have the workflowID embedded.\n API Tokens will send the parameter explicitly",
       "type": "string"
     }
   },
