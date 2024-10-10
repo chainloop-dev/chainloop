@@ -60,7 +60,7 @@ func (r *APITokenRepo) Create(ctx context.Context, name string, description *str
 }
 
 func (r *APITokenRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.APIToken, error) {
-	token, err := r.data.DB.APIToken.Get(ctx, id)
+	token, err := r.data.DB.APIToken.Query().Where(apitoken.ID(id)).WithOrganization().Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, fmt.Errorf("getting APIToken: %w", err)
 	} else if token == nil {
@@ -124,7 +124,7 @@ func (r *APITokenRepo) Revoke(ctx context.Context, orgID, id uuid.UUID) error {
 }
 
 func entAPITokenToBiz(t *ent.APIToken) *biz.APIToken {
-	return &biz.APIToken{
+	result := &biz.APIToken{
 		ID:             t.ID,
 		Name:           t.Name,
 		Description:    t.Description,
@@ -133,4 +133,11 @@ func entAPITokenToBiz(t *ent.APIToken) *biz.APIToken {
 		RevokedAt:      toTimePtr(t.RevokedAt),
 		OrganizationID: t.OrganizationID,
 	}
+
+	// Add organization name if present
+	if t.Edges.Organization != nil {
+		result.OrganizationName = t.Edges.Organization.Name
+	}
+
+	return result
 }
