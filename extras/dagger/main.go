@@ -74,6 +74,9 @@ func (m *Chainloop) Init(
 	repository *dagger.Directory,
 	// Workflow name to be used for the attestation
 	workflowName string,
+	// Project name to be used for the attestation
+	// +optional
+	projectName string,
 ) (*Attestation, error) {
 	att := &Attestation{
 		Token:      token,
@@ -82,7 +85,7 @@ func (m *Chainloop) Init(
 	}
 	// Append the contract revision to the args if provided
 	args := []string{
-		"attestation", "init", "--remote-state", "-o", "json", "--name", workflowName,
+		"attestation", "init", "--remote-state", "-o", "json", "--workflow", workflowName, "--project", projectName,
 	}
 
 	if contractRevision != "" {
