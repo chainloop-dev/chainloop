@@ -20,7 +20,7 @@ permissions: read-all
 jobs:
   chainloop_init:
     name: Chainloop Init
-    uses: chainloop-dev/labs/.github/workflows/chainloop_init.yml@dfc395be86c9254f42de204584a032d5c1f99706
+    uses: chainloop-dev/labs/.github/workflows/chainloop_init.yml@edd4d30e954a4a456dd770f3b7c5e6871c84a661
     secrets:
       api_token: ${{ secrets.CHAINLOOP_TOKEN }}
     with:
@@ -86,7 +86,7 @@ jobs:
 
   chainloop_push:
     name: Chainloop Push
-    uses: chainloop-dev/labs/.github/workflows/chainloop_push.yml@dfc395be86c9254f42de204584a032d5c1f99706
+    uses: chainloop-dev/labs/.github/workflows/chainloop_push.yml@edd4d30e954a4a456dd770f3b7c5e6871c84a661
     needs:
       - analysis
     secrets:
