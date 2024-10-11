@@ -363,6 +363,14 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
+				Name:    "workflow_name_project_organization_id",
+				Unique:  true,
+				Columns: []*schema.Column{WorkflowsColumns[1], WorkflowsColumns[2], WorkflowsColumns[9]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "deleted_at IS NULL",
+				},
+			},
+			{
 				Name:    "workflow_name_organization_id",
 				Unique:  true,
 				Columns: []*schema.Column{WorkflowsColumns[1], WorkflowsColumns[9]},
