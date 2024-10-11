@@ -10,7 +10,7 @@ jobs:
   onboard_workflow:
     name: Onboard Chainloop Workflow
     # TODO: pin
-    uses: chainloop-dev/labs/.github/workflows/chainloop_onboard.yml@main
+    uses: chainloop-dev/labs/.github/workflows/chainloop_onboard.yml@edd4d30e954a4a456dd770f3b7c5e6871c84a661
     with:
       project: "chainloop"
       workflow_name: "chainloop-vault-release"
