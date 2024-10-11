@@ -26,6 +26,7 @@ jobs:
     with:
       chainloop_labs_branch: dfc395be86c9254f42de204584a032d5c1f99706
       workflow_name: "chainloop-vault-scorecards"
+      project_name: "chainloop"
 
   analysis:
     name: Scorecard analysis
@@ -94,5 +95,4 @@ jobs:
       signing_key_password: ${{ secrets.COSIGN_PASSWORD }}
     with:
       attestation_name: "scorecards"
-      chainloop_labs_branch: dfc395be86c9254f42de204584a032d5c1f99706
       workflow_name: "chainloop-vault-scorecards"

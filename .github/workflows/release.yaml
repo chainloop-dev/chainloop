@@ -9,7 +9,8 @@ jobs:
   # be ignored and the process will continue. For this to work it's using a pre-created API Token
   onboard_workflow:
     name: Onboard Chainloop Workflow
-    uses: chainloop-dev/labs/.github/workflows/chainloop_onboard.yml@4173e015dbd5dc2a8802555c268da63d57bbe576
+    # TODO: pin
+    uses: chainloop-dev/labs/.github/workflows/chainloop_onboard.yml@edd4d30e954a4a456dd770f3b7c5e6871c84a661
     with:
       project: "chainloop"
       workflow_name: "chainloop-vault-release"
@@ -26,6 +27,7 @@ jobs:
     env:
       CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
       CHAINLOOP_WORKFLOW_NAME: ${{ needs.onboard_workflow.outputs.workflow_name }}
+      CHAINLOOP_PROJECT: ${{ needs.onboard_workflow.outputs.project_name }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -36,7 +38,7 @@ jobs:
 
       - name: Initialize Attestation
         run: |
-          chainloop attestation init --workflow ${CHAINLOOP_WORKFLOW_NAME}
+          chainloop attestation init --workflow ${CHAINLOOP_WORKFLOW_NAME} --project ${CHAINLOOP_PROJECT}
 
       - name: Attest all assets
         run: |

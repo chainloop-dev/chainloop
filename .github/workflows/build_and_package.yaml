@@ -29,6 +29,7 @@ jobs:
       CONTAINER_IMAGE_CLI: ghcr.io/chainloop-dev/chainloop/cli:${{ github.ref_name }}
       GH_TOKEN: ${{ github.token }}
       CHAINLOOP_WORKFLOW_NAME: "chainloop-vault-build-and-package"
+      CHAINLOOP_PROJECT: "chainloop"
     steps:
       - name: Install Cosign
         uses: sigstore/cosign-installer@ef6a6b364bbad08abd36a5f8af60b595d12702f8 # main
@@ -49,7 +50,7 @@ jobs:
 
       - name: Initialize Attestation
         run: |
-          chainloop attestation init --workflow $CHAINLOOP_WORKFLOW_NAME
+          chainloop attestation init --workflow $CHAINLOOP_WORKFLOW_NAME --project $CHAINLOOP_PROJECT
 
       - name: Docker login to Github Packages
         uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2.2.0
