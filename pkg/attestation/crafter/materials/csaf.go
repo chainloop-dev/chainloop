@@ -102,14 +102,22 @@ func (i *CSAFCrafter) Craft(ctx context.Context, filepath string) (*api.Attestat
 	}
 
 	// Validate the CSAF file against the specified category.
-	document, docExists := v.(map[string]interface{})["document"]
-	if docExists {
-		documentMap, docMapOk := document.(map[string]interface{})
-		category, categoryExists := documentMap["category"].(string)
+	// First check that the content is a map with a `document` root
+	doc, ok := v.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("invalid CSAF file: %w", ErrInvalidMaterialType)
+	}
 
-		if docMapOk && categoryExists && category != "" && category != i.category {
-			return nil, fmt.Errorf("invalid CSAF category field in file, expected: %v", i.category)
-		}
+	// Map its content
+	documentMap, ok := doc["document"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("invalid CSAF file: %w", ErrInvalidMaterialType)
+	}
+
+	// extract category: not mandatory but if it comes we check it
+	category, categoryExists := documentMap["category"].(string)
+	if categoryExists && category != "" && category != i.category {
+		return nil, fmt.Errorf("invalid CSAF category field in file, expected: %v", i.category)
 	}
 
 	// The validator will try in cascade the different schemas since CSAF specification
