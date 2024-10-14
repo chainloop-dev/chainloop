@@ -5,12 +5,12 @@ title: Policies
 import PolicyYAML from "!!raw-loader!/examples/policies/sbom/cyclonedx-licenses.yaml";
 import CodeBlock from "@theme/CodeBlock";
 
-Starting with Chainloop [0.93.8](https://github.com/chainloop-dev/chainloop/releases/tag/v0.93.8), operators can attach policies to contracts. 
-These policies will be evaluated against the different materials and the statement metadata, if required. The result of the evaluation is informed as a list of possible violations and added to the attestation statement
-before signing and sending it to Chainloop. 
+You can use policies to implement control gates and security checks in your attestations.
 
-Currently, policy violations won't block `attestation push` commands, but instead, we chose to include them in the attestation so that they can 
-be used for building server side control gates.
+Operators can attach policies to workflow contracts. Those policies will be evaluated against the different materials and the statement metadata. The result of the evaluation is informed as a list of possible violations and added to the attestation statement
+before signing and sending it to Chainloop.
+
+Currently, policy violations won't block `attestation push` commands. Instead, Chainloop will include them in the attestation so that they can be used for building server side control gates.
 
 ## Policy specification
 A policy can be defined in a YAML document, like this:
@@ -21,8 +21,8 @@ A policy can be defined in a YAML document, like this:
 
 In this particular example, we see:
 * policies have a name (cyclonedx-licenses)
-* they can be optionally applied to a specific type of material (check [the documentation](./operator/contract#material-schema) for the supported types). If no type is specified, a material name will need to be provided explicitly in the contract.
-* they have a policy script that it's evaluated against the material (in this case a CycloneDX SBOM report). Currently, only [Rego](https://www.openpolicyagent.org/docs/latest/policy-language/#learning-rego) policies are supported.
+* they can be optionally applied to a specific type of material (check [the documentation](./operator/contract#material-schema) for the supported types). If no type is specified, a material name will need to be explicitly set in the contract, through selectors.
+* they have a policy script that it's evaluated against the material (in this case a CycloneDX SBOM report). Currently, only [Rego](https://www.openpolicyagent.org/docs/latest/policy-language/#learning-rego) language is supported.
 * there can be multiple scripts, each associated with a different material type.
 
 Policy scripts could also be specified in a detached form:
@@ -128,7 +128,7 @@ There are two ways to attach a policy to a contract:
 In the example above, we can see that, when referenced by the `embedded` attribute (1), a full policy can be embedded in the contract.
 
 ### Policy arguments
-Policies may accept arguments to customize its behaviour. See this policy that matches a "quality" score against a "threshold" argument:
+Policies may accept arguments to customize its behaviour. For example, this policy matches a "quality" score against a "threshold" argument:
 ```yaml
 # quality.yaml
 apiVersion: workflowcontract.chainloop.dev/v1
@@ -180,7 +180,9 @@ For example
   ```
 
 ## Policy scripts format (REGO)
-Currently, policy scripts are assumed to be written in [Rego language](https://www.openpolicyagent.org/docs/latest/policy-language/#learning-rego). Other policy engines might be implemented in the future.
+> NOTE: Policies output format is evolving. Although the example below is still valid, in future Chainloop versions, policy output will be required to provide additional fields. Check [this how-to](rego-how-to.mdx) to start using the new format.
+
+Currently, policy scripts are required to be written in [Rego language](https://www.openpolicyagent.org/docs/latest/policy-language/#learning-rego). Other policy engines might be implemented in the future.
 The only requirement of the policy is the existence of one or multiple `violations` rules, which evaluate to a **set of violation messages**.
 For example, this policy script:
 ```yaml
