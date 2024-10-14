@@ -24,17 +24,42 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
 	"github.com/open-policy-agent/opa/ast"
 	"github.com/open-policy-agent/opa/rego"
+	"golang.org/x/exp/maps"
 )
 
 // Rego policy checker for chainloop attestations and materials
 type Rego struct {
+	// OperatingMode defines the mode of running the policy engine
+	// by restricting or not the operations allowed by the compiler
+	OperatingMode EnvironmentMode
 }
 
+// EnvironmentMode defines the mode of running the policy engine
+type EnvironmentMode int32
+
 const (
-	inputArgs          = "args"
-	mainRule           = "violations"
-	deprecatedMainRule = "deny"
+	// EnvironmentModeRestrictive restricts operations that the compiler can do
+	EnvironmentModeRestrictive EnvironmentMode = 0
+	// EnvironmentModePermissive allows all operations on the compiler
+	EnvironmentModePermissive EnvironmentMode = 1
+	inputArgs                                 = "args"
+	mainRule                                  = "violations"
+	deprecatedMainRule                        = "deny"
 )
+
+// builtinFuncNotAllowed is a list of builtin functions that are not allowed in the compiler
+var builtinFuncNotAllowed = []*ast.Builtin{
+	ast.OPARuntime,
+	ast.RegoParseModule,
+	ast.Trace,
+}
+
+// allowedNetworkDomains is a list of network domains that are allowed for the compiler to access
+// when using http.send built-in function
+var allowedNetworkDomains = []string{
+	"chainloop.dev",
+	"cisa.gov",
+}
 
 // Force interface
 var _ engine.PolicyEngine = (*Rego)(nil)
@@ -71,7 +96,7 @@ func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte, 
 	regoFunc := rego.ParsedModule(parsedModule)
 
 	// add query. Note that the predefined rule to look for is `violations`
-	res, err := queryRego(ctx, mainRule, parsedModule, regoInput, regoFunc)
+	res, err := queryRego(ctx, mainRule, parsedModule, regoInput, regoFunc, rego.Capabilities(loadEnvironmentCapabilities(r.OperatingMode)))
 	if err != nil {
 		return nil, err
 	}
@@ -111,6 +136,40 @@ func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte, 
 	}
 
 	return violations, nil
+}
+
+// loadEnvironmentCapabilities loads the capabilities of the environment
+// based on the mode of operation, defaulting to EnvironmentModeRestrictive if not provided.
+func loadEnvironmentCapabilities(mode EnvironmentMode) *ast.Capabilities {
+	capabilities := ast.CapabilitiesForThisVersion()
+	var builtins []*ast.Builtin
+
+	switch mode {
+	case EnvironmentModeRestrictive:
+		// Copy all builtins functions
+		localBuiltIns := make(map[string]*ast.Builtin, len(ast.BuiltinMap))
+		maps.Copy(localBuiltIns, ast.BuiltinMap)
+
+		// Remove not allowed builtins
+		for _, notAllowed := range builtinFuncNotAllowed {
+			delete(localBuiltIns, notAllowed.Name)
+		}
+
+		// Convert map to slice
+		builtins = make([]*ast.Builtin, 0, len(localBuiltIns))
+		for _, builtin := range localBuiltIns {
+			builtins = append(builtins, builtin)
+		}
+
+		// Allow specific network domains
+		capabilities.AllowNet = allowedNetworkDomains
+
+	case EnvironmentModePermissive:
+		builtins = capabilities.Builtins
+	}
+
+	capabilities.Builtins = builtins
+	return capabilities
 }
 
 func queryRego(ctx context.Context, ruleName string, parsedModule *ast.Module, options ...func(r *rego.Rego)) (rego.ResultSet, error) {

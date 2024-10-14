@@ -194,3 +194,23 @@ func TestRego_VerifyInvalidPolicy(t *testing.T) {
 		assert.Len(t, violations, 0)
 	})
 }
+
+func TestRego_WithForbiddenBuiltInFunctions(t *testing.T) {
+	regoContent, err := os.ReadFile("testfiles/forbidden_functions.rego")
+	require.NoError(t, err)
+
+	r := &Rego{}
+	policy := &engine.Policy{
+		Name:   "policy",
+		Source: regoContent,
+	}
+
+	t.Run("forbidden functions", func(t *testing.T) {
+		violations, err := r.Verify(context.TODO(), policy, []byte(`{}`), nil)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "rego_type_error: undefined function opa.runtime")
+		assert.Contains(t, err.Error(), "rego_type_error: undefined function trace")
+		assert.Contains(t, err.Error(), "rego_type_error: undefined function rego.parse_module")
+		assert.Len(t, violations, 0)
+	})
+}
