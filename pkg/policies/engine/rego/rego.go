@@ -31,15 +31,15 @@ type Rego struct {
 }
 
 const (
-	inputArgs          = "args"
-	mainRule           = "violations"
-	deprecatedMainRule = "deny"
+	inputArgs  = "args"
+	mainRule   = "violations"
+	resultRule = "result"
 )
 
 // Force interface
 var _ engine.PolicyEngine = (*Rego)(nil)
 
-func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte, args map[string]any) ([]*engine.PolicyViolation, error) {
+func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte, args map[string]any) (*engine.EvaluationResult, error) {
 	policyString := string(policy.Source)
 	parsedModule, err := ast.ParseModule(policy.Name, policyString)
 	if err != nil {
@@ -71,23 +71,31 @@ func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte, 
 	regoFunc := rego.ParsedModule(parsedModule)
 
 	// add query. Note that the predefined rule to look for is `violations`
-	res, err := queryRego(ctx, mainRule, parsedModule, regoInput, regoFunc)
+	res, err := queryRego(ctx, resultRule, parsedModule, regoInput, regoFunc)
+	if err != nil {
+		return nil, err
+	}
+
+	// If `result` has been found, parse it
+	if res != nil {
+		return parseResultRule(res, policy)
+	}
+
+	// query for `violations` rule
+	res, err = queryRego(ctx, mainRule, parsedModule, regoInput, regoFunc)
 	if err != nil {
 		return nil, err
 	}
 
 	// If res is nil, it means that the rule hasn't been found
 	if res == nil {
-		// Try with the deprecated main rule
-		res, err = queryRego(ctx, deprecatedMainRule, parsedModule, regoInput, regoFunc)
-		if err != nil {
-			return nil, err
-		}
-		if res == nil {
-			return nil, fmt.Errorf("failed to evaluate policy: no '%s' nor '%s' rule found", mainRule, deprecatedMainRule)
-		}
+		return nil, fmt.Errorf("failed to evaluate policy: neither '%s' nor '%s' rule found", resultRule, mainRule)
 	}
 
+	return parseViolationsRule(res, policy)
+}
+
+func parseViolationsRule(res rego.ResultSet, policy *engine.Policy) (*engine.EvaluationResult, error) {
 	violations := make([]*engine.PolicyViolation, 0)
 	for _, exp := range res {
 		for _, val := range exp.Expressions {
@@ -110,7 +118,26 @@ func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte, 
 		}
 	}
 
-	return violations, nil
+	return &engine.EvaluationResult{
+		Violations: violations,
+		Passed:     len(violations) == 0,
+		Message:    "",
+	}, nil
+}
+
+func parseResultRule(res rego.ResultSet, policy *engine.Policy) (*engine.EvaluationResult, error) {
+	for _, exp := range res {
+		for _, val := range exp.Expressions {
+			ruleResult, ok := val.Value.(*engine.EvaluationResult)
+			if !ok {
+				return nil, fmt.Errorf("failed to evaluate policy expression evaluation result: %s", val.Text)
+			}
+
+			return ruleResult, nil
+		}
+	}
+
+	return nil, fmt.Errorf("failed to evaluate policy result")
 }
 
 func queryRego(ctx context.Context, ruleName string, parsedModule *ast.Module, options ...func(r *rego.Rego)) (rego.ResultSet, error) {
