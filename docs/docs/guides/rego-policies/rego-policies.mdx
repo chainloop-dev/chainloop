@@ -1,0 +1,50 @@
+---
+title: Writing Chainloop Rego policies
+categories:
+  - policies
+---
+
+import PolicyTemplate from "!!raw-loader!/examples/policies/policy-template.rego";
+import CodeBlock from "@theme/CodeBlock";
+
+Chainloop policies consists of a YAML document with some metadata and a Rego script which holds the policy logic.
+You can check [this document](/reference/policies) for a quick reference on policies. Read the following sections for a better understanding
+on how to write Rego code for your Chainloop policies.
+
+### Rego language
+
+[Rego language](https://www.openpolicyagent.org/docs/latest/policy-language/), from [Open Policy Agent](https://www.openpolicyagent.org/) initiative, has become the de-facto standard for writing software supply chain policies.
+It's a rule-oriented language, suitable for non-programmers that want to communicate and enforce business and security requirements in their pipelines.
+
+### Chainloop Rego implementation
+A typical Chainloop Rego policy looks like this:
+
+<CodeBlock language="go" title="policy-template.rego" showLineNumbers>
+    {PolicyTemplate}
+</CodeBlock>
+
+In the above template we can see there is a common section (1). Chainloop will look for the main rule `result`, if present. Older versions of Chainloop will only check for a `violations` rule.
+`result` object has essentially three fields (2):
+* `passed`: whether the policy evaluation passed successfully. Its default value is `false`, just to avoid false positives. If its value is `true`, it means that the input was compliant with the policy results.
+* `violations`: will hold the list of policy violations for a given input. Note that in this case, `passed` will be set `false`, denoting that the input didn't pass the policy.
+* `message`: if, for some reason, the input couldn't be evaluated (the format was invalid, or some other prerequisites were not met), `passed` will be set to `false`, and `message` will contain the reason this policy wasn't evaluated.
+Note that in this case, `violations` list will be empty (because it was not evaluated)
+
+Note that there is no need to modify the common section. Policy developers will only need to fill in the `valid_input` and `violations` rules:
+* `valid_input` would fail if some preconditions were not met, like the input format. For example, for a policy that checks CycloneDX version, a `valid_input` rule would look like:
+
+```go
+# It's a valid input if format is CycloneDX and has specVersion field
+valid_input if {
+    input.bomFormat == "CycloneDX"
+    input.specVersion
+}
+```
+* `violations` would return the list of policy violations, given that `valid_input` evaluates to true. If we wanted the CycloneDX report to be version `1.5`:
+```go
+violations contains msg if {
+    valid_input
+    input.specVersion != "1.5"
+    msg := sprintf("wrong CycloneDX version. Expected 1.5, but it was %s", [input.specVersion])
+}
+```
