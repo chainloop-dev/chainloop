@@ -96,7 +96,7 @@ func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte, 
 	regoFunc := rego.ParsedModule(parsedModule)
 
 	// add query. Note that the predefined rule to look for is `violations`
-	res, err := queryRego(ctx, mainRule, parsedModule, regoInput, regoFunc, rego.Capabilities(loadEnvironmentCapabilities(r.OperatingMode)))
+	res, err := queryRego(ctx, mainRule, parsedModule, regoInput, regoFunc, rego.Capabilities(r.OperatingMode.Capabilities()))
 	if err != nil {
 		return nil, err
 	}
@@ -138,13 +138,24 @@ func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte, 
 	return violations, nil
 }
 
-// loadEnvironmentCapabilities loads the capabilities of the environment
-// based on the mode of operation, defaulting to EnvironmentModeRestrictive if not provided.
-func loadEnvironmentCapabilities(mode EnvironmentMode) *ast.Capabilities {
-	capabilities := ast.CapabilitiesForThisVersion()
-	var builtins []*ast.Builtin
+func queryRego(ctx context.Context, ruleName string, parsedModule *ast.Module, options ...func(r *rego.Rego)) (rego.ResultSet, error) {
+	query := rego.Query(fmt.Sprintf("%v.%s\n", parsedModule.Package.Path, ruleName))
+	regoEval := rego.New(append(options, query)...)
+	res, err := regoEval.Eval(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to evaluate policy: %w", err)
+	}
 
-	switch mode {
+	return res, nil
+}
+
+// Capabilities returns the capabilities of the environment based on the mode of operation
+// defaulting to EnvironmentModeRestrictive if not provided.
+func (em EnvironmentMode) Capabilities() *ast.Capabilities {
+	capabilities := ast.CapabilitiesForThisVersion()
+	var enabledBuiltin []*ast.Builtin
+
+	switch em {
 	case EnvironmentModeRestrictive:
 		// Copy all builtins functions
 		localBuiltIns := make(map[string]*ast.Builtin, len(ast.BuiltinMap))
@@ -156,29 +167,18 @@ func loadEnvironmentCapabilities(mode EnvironmentMode) *ast.Capabilities {
 		}
 
 		// Convert map to slice
-		builtins = make([]*ast.Builtin, 0, len(localBuiltIns))
+		enabledBuiltin = make([]*ast.Builtin, 0, len(localBuiltIns))
 		for _, builtin := range localBuiltIns {
-			builtins = append(builtins, builtin)
+			enabledBuiltin = append(enabledBuiltin, builtin)
 		}
 
 		// Allow specific network domains
 		capabilities.AllowNet = allowedNetworkDomains
 
 	case EnvironmentModePermissive:
-		builtins = capabilities.Builtins
+		enabledBuiltin = capabilities.Builtins
 	}
 
-	capabilities.Builtins = builtins
+	capabilities.Builtins = enabledBuiltin
 	return capabilities
-}
-
-func queryRego(ctx context.Context, ruleName string, parsedModule *ast.Module, options ...func(r *rego.Rego)) (rego.ResultSet, error) {
-	query := rego.Query(fmt.Sprintf("%v.%s\n", parsedModule.Package.Path, ruleName))
-	regoEval := rego.New(append(options, query)...)
-	res, err := regoEval.Eval(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to evaluate policy: %w", err)
-	}
-
-	return res, nil
 }
