@@ -95,29 +95,37 @@ func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte, 
 	// add module
 	regoFunc := rego.ParsedModule(parsedModule)
 
-	// add query. Note that the predefined rule to look for is `violations`
-	res, err := queryRego(ctx, resultRule, parsedModule, regoInput, regoFunc, rego.Capabilities(r.OperatingMode.Capabilities()))
-	if err != nil {
-		return nil, err
+	var res rego.ResultSet
+	// Function to execute the query with appropriate parameters
+	executeQuery := func(rule string, strict bool) error {
+		if strict {
+			res, err = queryRego(ctx, rule, parsedModule, regoInput, regoFunc, rego.Capabilities(r.OperatingMode.Capabilities()), rego.StrictBuiltinErrors(true))
+		} else {
+			res, err = queryRego(ctx, rule, parsedModule, regoInput, regoFunc, rego.Capabilities(r.OperatingMode.Capabilities()))
+		}
+		return err
 	}
 
-	// If `result` has been found, parse it
-	if res != nil {
-		return parseResultRule(res, policy)
-	}
-
-	// query for `violations` rule
-	res, err = queryRego(ctx, violationsRule, parsedModule, regoInput, regoFunc, rego.Capabilities(r.OperatingMode.Capabilities()))
-	if err != nil {
+	// Try the main rule first
+	if err := executeQuery(resultRule, r.OperatingMode == EnvironmentModeRestrictive); err != nil {
 		return nil, err
 	}
 
 	// If res is nil, it means that the rule hasn't been found
 	if res == nil {
-		return nil, fmt.Errorf("failed to evaluate policy: neither '%s' nor '%s' rule found", resultRule, violationsRule)
+		// Try with the deprecated main rule
+		if err := executeQuery(violationsRule, r.OperatingMode == EnvironmentModeRestrictive); err != nil {
+			return nil, err
+		}
+
+		if res == nil {
+			return nil, fmt.Errorf("failed to evaluate policy: neither '%s' nor '%s' rule found", resultRule, violationsRule)
+		}
+
+		return parseViolationsRule(res, policy)
 	}
 
-	return parseViolationsRule(res, policy)
+	return parseResultRule(res, policy)
 }
 
 func parseViolationsRule(res rego.ResultSet, policy *engine.Policy) (*engine.EvaluationResult, error) {
