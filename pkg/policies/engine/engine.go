@@ -26,7 +26,7 @@ type PolicyEngine interface {
 
 type EvaluationResult struct {
 	Violations []*PolicyViolation
-	Passed     bool
+	Skipped    bool
 	Message    string
 }
 
@@ -35,7 +35,7 @@ type PolicyViolation struct {
 	Subject, Violation string
 }
 
-// Policy represents a loaded policy in any of the supported technologies.
+// Policy represents a loaded policy in any of the supported engines.
 type Policy struct {
 	// the source code for this policy
 	Source []byte `json:"module"`

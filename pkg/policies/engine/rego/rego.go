@@ -31,9 +31,9 @@ type Rego struct {
 }
 
 const (
-	inputArgs  = "args"
-	mainRule   = "violations"
-	resultRule = "result"
+	inputArgs      = "args"
+	violationsRule = "violations"
+	resultRule     = "result"
 )
 
 // Force interface
@@ -82,14 +82,14 @@ func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte, 
 	}
 
 	// query for `violations` rule
-	res, err = queryRego(ctx, mainRule, parsedModule, regoInput, regoFunc)
+	res, err = queryRego(ctx, violationsRule, parsedModule, regoInput, regoFunc)
 	if err != nil {
 		return nil, err
 	}
 
 	// If res is nil, it means that the rule hasn't been found
 	if res == nil {
-		return nil, fmt.Errorf("failed to evaluate policy: neither '%s' nor '%s' rule found", resultRule, mainRule)
+		return nil, fmt.Errorf("failed to evaluate policy: neither '%s' nor '%s' rule found", resultRule, violationsRule)
 	}
 
 	return parseViolationsRule(res, policy)
@@ -120,24 +120,49 @@ func parseViolationsRule(res rego.ResultSet, policy *engine.Policy) (*engine.Eva
 
 	return &engine.EvaluationResult{
 		Violations: violations,
-		Passed:     len(violations) == 0,
+		Skipped:    false, // best effort
 		Message:    "",
 	}, nil
 }
 
 func parseResultRule(res rego.ResultSet, policy *engine.Policy) (*engine.EvaluationResult, error) {
+	result := &engine.EvaluationResult{Violations: make([]*engine.PolicyViolation, 0)}
 	for _, exp := range res {
 		for _, val := range exp.Expressions {
-			ruleResult, ok := val.Value.(*engine.EvaluationResult)
+			ruleResult, ok := val.Value.(map[string]any)
 			if !ok {
-				return nil, fmt.Errorf("failed to evaluate policy expression evaluation result: %s", val.Text)
+				return nil, fmt.Errorf("failed to evaluate policy evaluation result: %s", val.Text)
 			}
 
-			return ruleResult, nil
+			skipped, ok := ruleResult["skipped"].(bool)
+			if !ok {
+				return nil, fmt.Errorf("failed to evaluate 'skipped' field in policy evaluation result: %s", val.Text)
+			}
+
+			message, ok := ruleResult["message"].(string)
+			if !ok {
+				return nil, fmt.Errorf("failed to evaluate 'message' field in policy evaluation result: %s", val.Text)
+			}
+
+			violations, ok := ruleResult["violations"].([]any)
+			if !ok {
+				return nil, fmt.Errorf("failed to evaluate 'violations' field in policy evaluation result: %s", val.Text)
+			}
+
+			result.Skipped = skipped
+			result.Message = message
+
+			for _, violation := range violations {
+				vs, ok := violation.(string)
+				if !ok {
+					return nil, fmt.Errorf("failed to evaluate violation in policy evaluation result: %s", val.Text)
+				}
+				result.Violations = append(result.Violations, &engine.PolicyViolation{Subject: policy.Name, Violation: vs})
+			}
 		}
 	}
 
-	return nil, fmt.Errorf("failed to evaluate policy result")
+	return result, nil
 }
 
 func queryRego(ctx context.Context, ruleName string, parsedModule *ast.Module, options ...func(r *rego.Rego)) (rego.ResultSet, error) {

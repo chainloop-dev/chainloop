@@ -798,6 +798,41 @@ func (s *testSuite) TestInputArguments() {
 	}
 }
 
+func (s *testSuite) TestNewResultFormat() {
+	schema := &v12.CraftingSchema{
+		Materials: []*v12.CraftingSchema_Material{
+			{
+				Name: "sbom",
+				Type: v12.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
+			},
+		},
+		Policies: &v12.Policies{
+			Materials: []*v12.PolicyAttachment{
+				{
+					Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/policy_result_format.yaml"},
+				},
+			},
+			Attestation: nil,
+		},
+	}
+	material := &v1.Attestation_Material{
+		M: &v1.Attestation_Material_Artifact_{Artifact: &v1.Attestation_Material_Artifact{
+			Content: []byte("{\"specVersion\": \"1.4\"}"),
+		}},
+		MaterialType: v12.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
+		InlineCas:    true,
+	}
+
+	verifier := NewPolicyVerifier(schema, nil, &s.logger)
+
+	res, err := verifier.VerifyMaterial(context.TODO(), material, "")
+	s.Require().NoError(err)
+	s.Len(res, 1)
+	s.Len(res[0].Violations, 1)
+	s.Equal("wrong CycloneDX version. Expected 1.5, but it was 1.4", res[0].Violations[0].Message)
+	s.Len(res[0].Sources, 1)
+}
+
 type testSuite struct {
 	suite.Suite
 

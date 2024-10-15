@@ -126,9 +126,15 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		pv.logger.Info().Msgf("evaluating policy %s against attestation", policy.Metadata.Name)
 	}
 
-	violations, sources, err := pv.executeScripts(ctx, policy, scripts, material, attachment)
-	if err != nil {
-		return nil, NewPolicyError(err)
+	sources := make([]string, 0)
+	evalResults := make([]*engine.EvaluationResult, 0)
+	for _, script := range scripts {
+		r, err := pv.executeScript(ctx, policy, script, material, attachment)
+		if err != nil {
+			return nil, NewPolicyError(err)
+		}
+		evalResults = append(evalResults, r)
+		sources = append(sources, base64.StdEncoding.EncodeToString(script.Source))
 	}
 
 	var evaluationSources []string
@@ -140,7 +146,7 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		Name:            policy.GetMetadata().GetName(),
 		MaterialName:    opts.name,
 		Sources:         evaluationSources,
-		Violations:      engineViolationsToAPIViolations(violations),
+		Violations:      engineEvaluationsToAPIViolations(evalResults),
 		Annotations:     policy.GetMetadata().GetAnnotations(),
 		Description:     policy.GetMetadata().GetDescription(),
 		With:            attachment.GetWith(),
@@ -171,24 +177,15 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 	return result, nil
 }
 
-func (pv *PolicyVerifier) executeScripts(ctx context.Context, policy *v1.Policy, scripts []*engine.Policy, material []byte, att *v1.PolicyAttachment) ([]*engine.PolicyViolation, []string, error) {
-	violations := make([]*engine.PolicyViolation, 0)
-	sources := make([]string, 0)
-
-	for _, script := range scripts {
-		// verify the policy
-		ng := getPolicyEngine(policy)
-		res, err := ng.Verify(ctx, script, material, getInputArguments(att.GetWith()))
-		if err != nil {
-			return nil, nil, NewPolicyError(err)
-		}
-
-		sources = append(sources, base64.StdEncoding.EncodeToString(script.Source))
-
-		violations = append(violations, res...)
+func (pv *PolicyVerifier) executeScript(ctx context.Context, policy *v1.Policy, script *engine.Policy, material []byte, att *v1.PolicyAttachment) (*engine.EvaluationResult, error) {
+	// verify the policy
+	ng := getPolicyEngine(policy)
+	res, err := ng.Verify(ctx, script, material, getInputArguments(att.GetWith()))
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute policy : %w", err)
 	}
 
-	return violations, sources, nil
+	return res, nil
 }
 
 // LoadPolicySpec loads and validates a policy spec from a contract
@@ -305,13 +302,15 @@ func getValue(values []string) any {
 	return lines[0]
 }
 
-func engineViolationsToAPIViolations(input []*engine.PolicyViolation) []*v12.PolicyEvaluation_Violation {
+func engineEvaluationsToAPIViolations(results []*engine.EvaluationResult) []*v12.PolicyEvaluation_Violation {
 	res := make([]*v12.PolicyEvaluation_Violation, 0)
-	for _, v := range input {
-		res = append(res, &v12.PolicyEvaluation_Violation{
-			Subject: v.Subject,
-			Message: v.Violation,
-		})
+	for _, r := range results {
+		for _, v := range r.Violations {
+			res = append(res, &v12.PolicyEvaluation_Violation{
+				Subject: v.Subject,
+				Message: v.Violation,
+			})
+		}
 	}
 
 	return res

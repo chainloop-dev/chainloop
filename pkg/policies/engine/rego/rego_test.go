@@ -38,7 +38,7 @@ func TestRego_VerifyWithValidPolicy(t *testing.T) {
 	t.Run("invalid input", func(t *testing.T) {
 		result, err := r.Verify(context.TODO(), policy, []byte("{\"foo\": \"bar\"}"), nil)
 		require.NoError(t, err)
-		assert.False(t, result.Passed)
+		assert.False(t, result.Skipped)
 		assert.Len(t, result.Violations, 2)
 		assert.Contains(t, result.Violations, &engine.PolicyViolation{
 			Subject:   policy.Name,
@@ -62,7 +62,7 @@ func TestRego_VerifyWithValidPolicy(t *testing.T) {
 				}]
 			}`), nil)
 		require.NoError(t, err)
-		assert.True(t, result.Passed)
+		assert.False(t, result.Skipped)
 		assert.Len(t, result.Violations, 0)
 	})
 }
@@ -153,5 +153,43 @@ func TestRego_VerifyInvalidPolicy(t *testing.T) {
 		_, err := r.Verify(context.TODO(), policy, []byte("{\"foo\": \"bar\"}"), nil)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "neither 'result' nor 'violations' rule found")
+	})
+}
+
+func TestRego_ResultFormat(t *testing.T) {
+	regoContent, err := os.ReadFile("testfiles/result_format.rego")
+	require.NoError(t, err)
+
+	r := &Rego{}
+	policy := &engine.Policy{
+		Name:   "result-output",
+		Source: regoContent,
+	}
+
+	t.Run("empty input", func(t *testing.T) {
+		_, err := r.Verify(context.TODO(), policy, []byte{}, nil)
+		assert.Error(t, err)
+	})
+
+	t.Run("invalid input", func(t *testing.T) {
+		result, err := r.Verify(context.TODO(), policy, []byte("{\"foo\": \"bar\"}"), nil)
+		require.NoError(t, err)
+		assert.True(t, result.Skipped)
+		assert.Equal(t, "invalid input", result.Message)
+	})
+
+	t.Run("valid input, no violations", func(t *testing.T) {
+		result, err := r.Verify(context.TODO(), policy, []byte("{\"specVersion\": \"1.5\"}"), nil)
+		require.NoError(t, err)
+		assert.False(t, result.Skipped)
+		assert.Len(t, result.Violations, 0)
+	})
+
+	t.Run("valid input, violations", func(t *testing.T) {
+		result, err := r.Verify(context.TODO(), policy, []byte("{\"specVersion\": \"1.4\"}"), nil)
+		require.NoError(t, err)
+		assert.False(t, result.Skipped)
+		assert.Len(t, result.Violations, 1)
+		assert.Equal(t, "wrong CycloneDX version. Expected 1.5, but it was 1.4", result.Violations[0].Violation)
 	})
 }
