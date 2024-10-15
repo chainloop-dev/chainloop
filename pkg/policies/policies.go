@@ -507,8 +507,11 @@ func loadLegacyPolicyScript(spec *v1.PolicySpec) ([]byte, error) {
 	return content, nil
 }
 
-func LogPolicyViolations(evaluations []*v12.PolicyEvaluation, logger *zerolog.Logger) {
+func LogPolicyEvaluations(evaluations []*v12.PolicyEvaluation, logger *zerolog.Logger) {
 	for _, policyEval := range evaluations {
+		if policyEval.Skipped {
+			logger.Warn().Msgf("policy evaluation skipped (%s): %s", policyEval.Name, policyEval.Messages)
+		}
 		if len(policyEval.Violations) > 0 {
 			subject := policyEval.MaterialName
 			if subject == "" {

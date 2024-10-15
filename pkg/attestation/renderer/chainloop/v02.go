@@ -118,7 +118,7 @@ func (r *RendererV02) Statement(ctx context.Context) (*intoto.Statement, error) 
 	}
 	evaluations = append(evaluations, policyResults...)
 	// log policy violations
-	policies.LogPolicyViolations(evaluations, r.logger)
+	policies.LogPolicyEvaluations(evaluations, r.logger)
 
 	// insert attestation level policy results into statement
 	if err = addPolicyResults(statement, evaluations); err != nil {
