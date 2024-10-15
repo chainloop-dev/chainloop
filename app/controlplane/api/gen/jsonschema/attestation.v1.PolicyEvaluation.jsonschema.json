@@ -35,6 +35,13 @@
     "materialName": {
       "type": "string"
     },
+    "messages": {
+      "description": "Evaluation messages, intended to communicate evaluation errors (invalid input)",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
     "name": {
       "description": "The policy name from the policy spec",
       "type": "string"
@@ -45,6 +52,10 @@
     },
     "referenceName": {
       "type": "string"
+    },
+    "skipped": {
+      "description": "whether this evaluation was skipped or not (because of an invalid input, for example)",
+      "type": "boolean"
     },
     "sources": {
       "description": "Base64 representation of run scripts. It might be empty if there is a FQDN reference to the policy",

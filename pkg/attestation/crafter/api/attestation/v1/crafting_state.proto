@@ -140,6 +140,12 @@ message PolicyEvaluation {
   // material type, if any, of the evaluated policy
   workflowcontract.v1.CraftingSchema.Material.MaterialType type = 8;
 
+  // whether this evaluation was skipped or not (because of an invalid input, for example)
+  bool skipped = 13;
+
+  // Evaluation messages, intended to communicate evaluation errors (invalid input)
+  repeated string messages = 14;
+
   message Violation {
     string subject = 1 [(buf.validate.field).required = true];
     string message = 2 [(buf.validate.field).required = true];

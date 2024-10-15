@@ -128,12 +128,23 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 
 	sources := make([]string, 0)
 	evalResults := make([]*engine.EvaluationResult, 0)
+	skipped := true
+	messages := make([]string, 0)
 	for _, script := range scripts {
 		r, err := pv.executeScript(ctx, policy, script, material, attachment)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
+
+		// Gather merged results
 		evalResults = append(evalResults, r)
+
+		if r.Message != "" {
+			messages = append(messages, r.Message)
+		}
+
+		// Skipped = false if any of the evaluations was not skipped
+		skipped = skipped && r.Skipped
 		sources = append(sources, base64.StdEncoding.EncodeToString(script.Source))
 	}
 
@@ -142,10 +153,12 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		evaluationSources = sources
 	}
 
+	// Merge multi-kind results
 	return &v12.PolicyEvaluation{
-		Name:            policy.GetMetadata().GetName(),
-		MaterialName:    opts.name,
-		Sources:         evaluationSources,
+		Name:         policy.GetMetadata().GetName(),
+		MaterialName: opts.name,
+		Sources:      evaluationSources,
+		// merge all violations
 		Violations:      engineEvaluationsToAPIViolations(evalResults),
 		Annotations:     policy.GetMetadata().GetAnnotations(),
 		Description:     policy.GetMetadata().GetDescription(),
@@ -153,6 +166,10 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		Type:            opts.kind,
 		ReferenceName:   ref.Name,
 		ReferenceDigest: ref.Digest["sha256"],
+		// Merged "skipped"
+		Skipped: skipped,
+		// Merged error "messages"
+		Messages: messages,
 	}, nil
 }
 
