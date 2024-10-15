@@ -196,21 +196,37 @@ func TestRego_VerifyInvalidPolicy(t *testing.T) {
 }
 
 func TestRego_WithRestrictiveMOde(t *testing.T) {
-	regoContent, err := os.ReadFile("testfiles/restrictive_mode.rego")
-	require.NoError(t, err)
-
-	r := &Rego{}
-	policy := &engine.Policy{
-		Name:   "policy",
-		Source: regoContent,
-	}
-
 	t.Run("forbidden functions", func(t *testing.T) {
+		regoContent, err := os.ReadFile("testfiles/restrictive_mode.rego")
+		require.NoError(t, err)
+
+		r := &Rego{}
+		policy := &engine.Policy{
+			Name:   "policy",
+			Source: regoContent,
+		}
+
 		violations, err := r.Verify(context.TODO(), policy, []byte(`{}`), nil)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "rego_type_error: undefined function opa.runtime")
 		assert.Contains(t, err.Error(), "rego_type_error: undefined function trace")
 		assert.Contains(t, err.Error(), "rego_type_error: undefined function rego.parse_module")
+		assert.Len(t, violations, 0)
+	})
+
+	t.Run("forbidden network requests", func(t *testing.T) {
+		regoContent, err := os.ReadFile("testfiles/restrictive_mode_networking.rego")
+		require.NoError(t, err)
+
+		r := &Rego{}
+		policy := &engine.Policy{
+			Name:   "policy",
+			Source: regoContent,
+		}
+
+		violations, err := r.Verify(context.TODO(), policy, []byte(`{}`), nil)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "eval_builtin_error: http.send: unallowed host: example.com")
 		assert.Len(t, violations, 0)
 	})
 }
@@ -227,7 +243,7 @@ func TestRego_WithPermissiveMode(t *testing.T) {
 		Source: regoContent,
 	}
 
-	t.Run("forbidden functions", func(t *testing.T) {
+	t.Run("allowed functions", func(t *testing.T) {
 		violations, err := r.Verify(context.TODO(), policy, []byte(`{}`), nil)
 		assert.Error(t, err)
 		assert.NotContains(t, err.Error(), "rego_type_error: undefined function opa.runtime")
