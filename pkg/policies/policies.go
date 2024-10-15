@@ -418,7 +418,10 @@ func getPolicyTypes(p *v1.Policy) []v1.CraftingSchema_Material_MaterialType {
 // getPolicyEngine returns a PolicyEngine implementation to evaluate a given policy.
 func getPolicyEngine(_ *v1.Policy) engine.PolicyEngine {
 	// Currently, only Rego is supported
-	return new(rego.Rego)
+	return &rego.Rego{
+		// Set the default operating mode to restrictive
+		OperatingMode: rego.EnvironmentModeRestrictive,
+	}
 }
 
 // LoadPolicyScriptsFromSpec loads all policy script that matches a given material type. It matches if:
