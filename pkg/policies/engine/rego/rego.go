@@ -95,19 +95,29 @@ func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte, 
 	// add module
 	regoFunc := rego.ParsedModule(parsedModule)
 
-	// add query. Note that the predefined rule to look for is `violations`
-	res, err := queryRego(ctx, mainRule, parsedModule, regoInput, regoFunc, rego.Capabilities(r.OperatingMode.Capabilities()))
-	if err != nil {
+	var res rego.ResultSet
+	// Function to execute the query with appropriate parameters
+	executeQuery := func(rule string, strict bool) error {
+		if strict {
+			res, err = queryRego(ctx, rule, parsedModule, regoInput, regoFunc, rego.Capabilities(r.OperatingMode.Capabilities()), rego.StrictBuiltinErrors(true))
+		} else {
+			res, err = queryRego(ctx, rule, parsedModule, regoInput, regoFunc, rego.Capabilities(r.OperatingMode.Capabilities()))
+		}
+		return err
+	}
+
+	// Try the main rule first
+	if err := executeQuery(mainRule, r.OperatingMode == EnvironmentModeRestrictive); err != nil {
 		return nil, err
 	}
 
 	// If res is nil, it means that the rule hasn't been found
 	if res == nil {
 		// Try with the deprecated main rule
-		res, err = queryRego(ctx, deprecatedMainRule, parsedModule, regoInput, regoFunc)
-		if err != nil {
+		if err := executeQuery(deprecatedMainRule, r.OperatingMode == EnvironmentModeRestrictive); err != nil {
 			return nil, err
 		}
+
 		if res == nil {
 			return nil, fmt.Errorf("failed to evaluate policy: no '%s' nor '%s' rule found", mainRule, deprecatedMainRule)
 		}
