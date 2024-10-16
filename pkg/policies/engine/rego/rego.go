@@ -171,14 +171,14 @@ func parseResultRule(res rego.ResultSet, policy *engine.Policy) (*engine.Evaluat
 				return nil, engine.ResultFormatError{Field: mainRule}
 			}
 
-			skipped, ok := ruleResult["skipped"].(bool)
-			if !ok {
-				return nil, engine.ResultFormatError{Field: "skipped"}
+			var skipped bool
+			if val, ok := ruleResult["skipped"].(bool); ok {
+				skipped = val
 			}
 
-			reason, ok := ruleResult["skip_reason"].(string)
-			if !ok {
-				return nil, engine.ResultFormatError{Field: "skip_reason"}
+			var reason string
+			if val, ok := ruleResult["skip_reason"].(string); ok {
+				reason = val
 			}
 
 			violations, ok := ruleResult["violations"].([]any)
