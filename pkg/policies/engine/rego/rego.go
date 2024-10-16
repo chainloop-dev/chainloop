@@ -172,9 +172,14 @@ func parseResultRule(res rego.ResultSet, policy *engine.Policy) (*engine.Evaluat
 			}
 
 			var skipped bool
-			skipped, _ = ruleResult["skipped"].(bool)
+			if val, ok := ruleResult["skipped"].(bool); ok {
+				skipped = val
+			}
+
 			var reason string
-			reason, _ = ruleResult["skip_reason"].(string)
+			if val, ok := ruleResult["skip_reason"].(string); ok {
+				reason = val
+			}
 
 			violations, ok := ruleResult["violations"].([]any)
 			if !ok {
