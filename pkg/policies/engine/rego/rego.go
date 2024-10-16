@@ -135,13 +135,13 @@ func parseViolationsRule(res rego.ResultSet, policy *engine.Policy) (*engine.Eva
 		for _, val := range exp.Expressions {
 			ruleResults, ok := val.Value.([]interface{})
 			if !ok {
-				return nil, fmt.Errorf("failed to evaluate policy expression evaluation result: %s", val.Text)
+				return nil, engine.ResultFormatError{Field: deprecatedRule}
 			}
 
 			for _, result := range ruleResults {
 				reasonStr, ok := result.(string)
 				if !ok {
-					return nil, fmt.Errorf("failed to evaluate rule result: %s", val.Text)
+					return nil, engine.ResultFormatError{Field: deprecatedRule}
 				}
 
 				violations = append(violations, &engine.PolicyViolation{
