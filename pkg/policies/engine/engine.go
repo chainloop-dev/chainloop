@@ -17,6 +17,7 @@ package engine
 
 import (
 	"context"
+	"fmt"
 )
 
 type PolicyEngine interface {
@@ -41,4 +42,12 @@ type Policy struct {
 	Source []byte `json:"module"`
 	// The unique policy name
 	Name string `json:"name"`
+}
+
+type ResultFormatError struct {
+	Field string
+}
+
+func (e ResultFormatError) Error() string {
+	return fmt.Sprintf("Policy result format error: %s not found or wrong format", e.Field)
 }

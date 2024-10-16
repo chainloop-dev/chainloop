@@ -165,22 +165,22 @@ func parseResultRule(res rego.ResultSet, policy *engine.Policy) (*engine.Evaluat
 		for _, val := range exp.Expressions {
 			ruleResult, ok := val.Value.(map[string]any)
 			if !ok {
-				return nil, fmt.Errorf("failed to evaluate policy evaluation result: %s", val.Text)
+				return nil, engine.ResultFormatError{Field: mainRule}
 			}
 
 			skipped, ok := ruleResult["skipped"].(bool)
 			if !ok {
-				return nil, fmt.Errorf("failed to evaluate 'skipped' field in policy evaluation result: %s", val.Text)
+				return nil, engine.ResultFormatError{Field: "skipped"}
 			}
 
 			reason, ok := ruleResult["skip_reason"].(string)
 			if !ok {
-				return nil, fmt.Errorf("failed to evaluate 'skip_reason' field in policy evaluation result: %s", val.Text)
+				return nil, engine.ResultFormatError{Field: "skip_reason"}
 			}
 
 			violations, ok := ruleResult["violations"].([]any)
 			if !ok {
-				return nil, fmt.Errorf("failed to evaluate 'violations' field in policy evaluation result: %s", val.Text)
+				return nil, engine.ResultFormatError{Field: "violations"}
 			}
 
 			result.Skipped = skipped
