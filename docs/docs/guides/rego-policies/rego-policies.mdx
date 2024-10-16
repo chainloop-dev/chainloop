@@ -66,3 +66,27 @@ When evaluated against an attestation, The policy will generate an output simila
 ```
 
 Make sure you test your policies in [the Rego Playground](https://play.openpolicyagent.org/).
+
+#### Chainloop policy
+Once we have our Rego logic for our policy, we can create a Chainloop policy like this:
+
+```yaml
+# cyclonedx-version.yaml
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: cyclonedx-version
+spec:
+  policies:
+    - kind: SBOM_CYCLONEDX_JSON
+      name: cyclonedx-version.rego
+```
+
+and finally attach it to a contract:
+```yaml
+schemaVersion: v1
+policies:
+  materials:
+    - ref: file://cyclonedx-version.yaml
+```
+Check our [policies reference](/reference/policies) for more information on how to attach policies to contracts.
