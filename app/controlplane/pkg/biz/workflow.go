@@ -40,6 +40,14 @@ type Workflow struct {
 	Public bool
 }
 
+// WorkflowRef is a reference to a workflow
+// With combination of the name and the project, it should be unique
+type WorkflowRef struct {
+	ID          uuid.UUID
+	Name        string
+	ProjectName string
+}
+
 type WorkflowRepo interface {
 	Create(ctx context.Context, opts *WorkflowCreateOpts) (*Workflow, error)
 	Update(ctx context.Context, id uuid.UUID, opts *WorkflowUpdateOpts) (*Workflow, error)

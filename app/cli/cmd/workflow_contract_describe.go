@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -87,7 +88,7 @@ func contractDescribeTableOutput(contractWithVersion *action.WorkflowContractWit
 	t.AppendSeparator()
 	t.AppendRow(table.Row{"Description", c.Description})
 	t.AppendSeparator()
-	t.AppendRow(table.Row{"Associated Workflows", strings.Join(c.Workflows, ", ")})
+	t.AppendRow(table.Row{"Associated Workflows", stringifyAssociatedWorkflows(contractWithVersion)})
 	t.AppendSeparator()
 	t.AppendRow(table.Row{"Revision number", revision.Revision})
 	t.AppendSeparator()
@@ -99,4 +100,19 @@ func contractDescribeTableOutput(contractWithVersion *action.WorkflowContractWit
 	vt.Render()
 
 	return nil
+}
+
+// stringifyAssociatedWorkflows returns a string representation of the associated workflows by combining
+// the project name the workflow belongs to and workflow name
+func stringifyAssociatedWorkflows(contractWithRevision *action.WorkflowContractWithVersionItem) string {
+	contract := contractWithRevision.Contract
+
+	workflows := make([]string, 0, len(contract.WorkflowRefs))
+	for _, w := range contract.WorkflowRefs {
+		workflows = append(workflows, fmt.Sprintf("%s/%s", w.ProjectName, w.Name))
+	}
+	// sort the workflows
+	sort.Strings(workflows)
+
+	return strings.Join(workflows, "\n")
 }

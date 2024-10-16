@@ -173,3 +173,8 @@ func bizWorkflowToPb(wf *biz.Workflow) *pb.WorkflowItem {
 
 	return item
 }
+
+// bizWorkflowRunToPb converts a biz.WorkflowRun to a pb.WorkflowRun.
+func bizWorkflowRefToPb(wf *biz.WorkflowRef) *pb.WorkflowRef {
+	return &pb.WorkflowRef{Id: wf.ID.String(), Name: wf.Name, ProjectName: wf.ProjectName}
+}
