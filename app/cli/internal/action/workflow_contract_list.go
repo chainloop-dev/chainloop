@@ -28,12 +28,19 @@ type WorkflowContractList struct {
 }
 
 type WorkflowContractItem struct {
-	Name           string     `json:"name"`
-	Description    string     `json:"description,omitempty"`
-	ID             string     `json:"id"`
-	LatestRevision int        `json:"latestRevision,omitempty"`
-	CreatedAt      *time.Time `json:"createdAt"`
-	Workflows      []string   `json:"workflows,omitempty"`
+	Name           string         `json:"name"`
+	Description    string         `json:"description,omitempty"`
+	ID             string         `json:"id"`
+	LatestRevision int            `json:"latestRevision,omitempty"`
+	CreatedAt      *time.Time     `json:"createdAt"`
+	Workflows      []string       `json:"workflows,omitempty"` // TODO: remove this field after all clients are updated
+	WorkflowRefs   []*WorkflowRef `json:"workflowRefs,omitempty"`
+}
+
+type WorkflowRef struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	ProjectName string `json:"projectName"`
 }
 
 type WorkflowContractVersionItem struct {
@@ -69,9 +76,14 @@ func (action *WorkflowContractList) Run() ([]*WorkflowContractItem, error) {
 }
 
 func pbWorkflowContractItemToAction(in *pb.WorkflowContractItem) *WorkflowContractItem {
+	// nolint:prealloc
+	var workflowRefs []*WorkflowRef
+	for _, w := range in.WorkflowRefs {
+		workflowRefs = append(workflowRefs, pbWorkflowRefToAction(w))
+	}
 	return &WorkflowContractItem{
 		Name: in.GetName(), ID: in.GetId(), LatestRevision: int(in.GetLatestRevision()),
-		CreatedAt: toTimePtr(in.GetCreatedAt().AsTime()), Workflows: in.WorkflowNames, Description: in.GetDescription(),
+		CreatedAt: toTimePtr(in.GetCreatedAt().AsTime()), Workflows: in.WorkflowNames, WorkflowRefs: workflowRefs, Description: in.GetDescription(),
 	}
 }
 
@@ -81,4 +93,8 @@ func pbWorkflowContractVersionItemToAction(in *pb.WorkflowContractVersionItem) *
 		CreatedAt: toTimePtr(in.GetCreatedAt().AsTime()),
 		RawBody:   &ContractRawBody{Body: string(in.RawContract.GetBody()), Format: in.RawContract.GetFormat().String()},
 	}
+}
+
+func pbWorkflowRefToAction(in *pb.WorkflowRef) *WorkflowRef {
+	return &WorkflowRef{ID: in.GetId(), Name: in.GetName(), ProjectName: in.GetProjectName()}
 }

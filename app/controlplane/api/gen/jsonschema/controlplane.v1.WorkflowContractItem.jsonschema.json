@@ -17,6 +17,12 @@
         "type": "string"
       },
       "type": "array"
+    },
+    "^(workflow_refs)$": {
+      "items": {
+        "$ref": "controlplane.v1.WorkflowRef.jsonschema.json"
+      },
+      "type": "array"
     }
   },
   "properties": {
@@ -41,6 +47,12 @@
       "description": "Workflows associated with this contract",
       "items": {
         "type": "string"
+      },
+      "type": "array"
+    },
+    "workflowRefs": {
+      "items": {
+        "$ref": "controlplane.v1.WorkflowRef.jsonschema.json"
       },
       "type": "array"
     }

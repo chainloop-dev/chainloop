@@ -143,7 +143,20 @@ message WorkflowContractItem {
   google.protobuf.Timestamp created_at = 3;
   int32 latest_revision = 4;
   // Workflows associated with this contract
-  repeated string workflow_names = 5;
+  repeated string workflow_names = 5 [deprecated = true];
+  repeated WorkflowRef workflow_refs = 7;
+}
+
+message WorkflowRef {
+  string id = 1 [(buf.validate.field).string.uuid = true];
+  string name = 2 [(buf.validate.field) = {
+    cel: {
+      message: "must contain only lowercase letters, numbers, and hyphens.",
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
+      id: "name-dns-1123",
+    },
+  }];
+  string project_name = 3 [(buf.validate.field).string = {min_len: 1}];
 }
 
 message WorkflowContractVersionItem {
