@@ -24,23 +24,27 @@ A typical Chainloop Rego policy looks like this:
 </CodeBlock>
 
 In the above template we can see there is a common section (1). Chainloop will look for the main rule `result`, if present. Older versions of Chainloop will only check for a `violations` rule.
-`result` object has essentially three fields (2):
-* `passed`: whether the policy evaluation passed successfully. Its default value is `false`, just to avoid false positives. If its value is `true`, it means that the input was compliant with the policy results.
-* `violations`: will hold the list of policy violations for a given input. Note that in this case, `passed` will be set `false`, denoting that the input didn't pass the policy.
-* `message`: if, for some reason, the input couldn't be evaluated (the format was invalid, or some other prerequisites were not met), `passed` will be set to `false`, and `message` will contain the reason this policy wasn't evaluated.
-Note that in this case, `violations` list will be empty (because it was not evaluated)
+`result` object has essentially three fields:
+* `skipped`: whether the policy evaluation was skipped. This property would be set to true when the input, for whatever reason, cannot be evaluated (unexpected format, etc.). This property is useful to avoid false positives.
+* `skip_reason`: if the policy evaluation was skipped, this property will contain some informative explanation of why this policy wasn't evaluated.
+* `violations`: will hold the list of policy violations for a given input. Note that in this case, `skipped` will be set `false`, denoting that the input was evaluated against the policy, and it didn't pass.
 
 Note that there is no need to modify the common section. Policy developers will only need to fill in the `valid_input` and `violations` rules:
-* `valid_input` would fail if some preconditions were not met, like the input format. For example, for a policy that checks CycloneDX version, a `valid_input` rule would look like:
+* `valid_input` would fail if some preconditions were not met, like the input format.
+
+### Example
+
+Let's say we want to write a policy that checks our SBOM in CycloneDX format to match a specific version. A `valid_input` rule would look like this:
 
 ```go
-# It's a valid input if format is CycloneDX and has specVersion field
+# It's a valid input if format is CycloneDX and has specVersion field that we can check later
 valid_input if {
     input.bomFormat == "CycloneDX"
     input.specVersion
 }
 ```
-* `violations` would return the list of policy violations, given that `valid_input` evaluates to true. If we wanted the CycloneDX report to be version `1.5`:
+
+`violations` rule would return the list of policy violations, given that `valid_input` evaluates to `true`. If we wanted the CycloneDX report to be version `1.5`:
 ```go
 violations contains msg if {
     valid_input
@@ -48,3 +52,17 @@ violations contains msg if {
     msg := sprintf("wrong CycloneDX version. Expected 1.5, but it was %s", [input.specVersion])
 }
 ```
+
+When evaluated against an attestation, The policy will generate an output similar to this:
+```json
+{
+    "result": {
+        "skipped": false,
+        "violations": [
+            "wrong CycloneDX version. Expected 1.5, but it was 1.4"
+        ]
+    }
+}
+```
+
+Make sure you test your policies in [the Rego Playground](https://play.openpolicyagent.org/).

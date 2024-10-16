@@ -2,30 +2,32 @@ package main
 
 import rego.v1
 
-# Common section (1)
+# (1)
+################################
+# Common section do NOT change #
+################################
 
-# Main rule (2)
+# (2)
 result := {
-    "passed": passed,
-    "violations": violations,
-    "message": message,
+	"skipped": skipped,
+	"violations": violations,
+	"skip_reason": skip_reason,
 }
 
-default message := ""
+default skip_reason := ""
 
-message := m if {
-    not valid_input
-    m := "invalid input"
+skip_reason := m if {
+	not valid_input
+	m := "invalid input"
 }
 
-default passed := false
+default skipped := true
 
-passed if {
-    valid_input
-    count(violations) == 0
-}
+skipped := false if valid_input
 
-# End of common section
+########################################
+# EO Common section, custom code below #
+########################################
 
 # Validates if the input is valid and can be understood by this policy (3)
 valid_input if {
