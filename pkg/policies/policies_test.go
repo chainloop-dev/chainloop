@@ -821,6 +821,13 @@ func (s *testSuite) TestNewResultFormat() {
 			expectSkipped: true,
 			expectReasons: []string{"invalid input"},
 		},
+		{
+			name:          "skip multiple",
+			policy:        "file://testdata/policy_result_skipped.yaml",
+			material:      "{}",
+			expectSkipped: true,
+			expectReasons: []string{"this one is skipped", "this is also skipped"},
+		},
 	}
 
 	for _, tc := range cases {
