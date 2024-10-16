@@ -5,12 +5,12 @@ title: Policies
 import PolicyYAML from "!!raw-loader!/examples/policies/sbom/cyclonedx-licenses.yaml";
 import CodeBlock from "@theme/CodeBlock";
 
-Starting with Chainloop [0.93.8](https://github.com/chainloop-dev/chainloop/releases/tag/v0.93.8), operators can attach policies to contracts. 
-These policies will be evaluated against the different materials and the statement metadata, if required. The result of the evaluation is informed as a list of possible violations and added to the attestation statement
-before signing and sending it to Chainloop. 
+You can use policies to implement control gates and security checks in your attestations.
 
-Currently, policy violations won't block `attestation push` commands, but instead, we chose to include them in the attestation so that they can 
-be used for building server side control gates.
+Operators can attach policies to workflow contracts. Those policies will be evaluated against the different materials and the statement metadata. The result of the evaluation is informed as a list of possible violations and added to the attestation statement
+before signing and sending it to Chainloop.
+
+Currently, policy violations won't block `attestation push` commands. Instead, Chainloop will include them in the attestation so that they can be used for building server side control gates.
 
 ## Policy specification
 A policy can be defined in a YAML document, like this:
@@ -21,8 +21,8 @@ A policy can be defined in a YAML document, like this:
 
 In this particular example, we see:
 * policies have a name (cyclonedx-licenses)
-* they can be optionally applied to a specific type of material (check [the documentation](./operator/contract#material-schema) for the supported types). If no type is specified, a material name will need to be provided explicitly in the contract.
-* they have a policy script that it's evaluated against the material (in this case a CycloneDX SBOM report). Currently, only [Rego](https://www.openpolicyagent.org/docs/latest/policy-language/#learning-rego) policies are supported.
+* they can be optionally applied to a specific type of material (check [the documentation](./operator/contract#material-schema) for the supported types). If no type is specified, a material name will need to be explicitly set in the contract, through selectors.
+* they have a policy script that it's evaluated against the material (in this case a CycloneDX SBOM report). Currently, only [Rego](https://www.openpolicyagent.org/docs/latest/policy-language/#learning-rego) language is supported.
 * there can be multiple scripts, each associated with a different material type.
 
 Policy scripts could also be specified in a detached form:
@@ -128,7 +128,7 @@ There are two ways to attach a policy to a contract:
 In the example above, we can see that, when referenced by the `embedded` attribute (1), a full policy can be embedded in the contract.
 
 ### Policy arguments
-Policies may accept arguments to customize its behaviour. See this policy that matches a "quality" score against a "threshold" argument:
+Policies may accept arguments to customize its behaviour. For example, this policy matches a "quality" score against a "threshold" argument:
 ```yaml
 # quality.yaml
 apiVersion: workflowcontract.chainloop.dev/v1
@@ -179,39 +179,10 @@ For example
       - ref: https://raw.githubusercontent.com/chainloop-dev/chainloop/main/docs/examples/policies/sbom/cyclonedx-banned-licenses.yaml@sha256:5b40425cb7bcba16ac47e3d8a8d3af7288afeeb632096994e741decedd5d38b3
   ```
 
-## Policy scripts format (REGO)
-Currently, policy scripts are assumed to be written in [Rego language](https://www.openpolicyagent.org/docs/latest/policy-language/#learning-rego). Other policy engines might be implemented in the future.
-The only requirement of the policy is the existence of one or multiple `violations` rules, which evaluate to a **set of violation messages**.
-For example, this policy script:
-```yaml
-package main
+## How to write a Chainloop policy
+Check [this how-to](/guides/rego-policies) to know how you can write Chainloop policies in [Rego language](https://www.openpolicyagent.org/docs/latest/policy-language/#learning-rego).
 
-import rego.v1
-
-violations contains msg if {
-  not is_approved
-  
-  msg:= "Container image is not approved"
-}
-
-is_approved if {
-  some material in input.predicate.materials
-  material.annotations["chainloop.material.type"] == "CONTAINER_IMAGE"
-  
-  input.predicate.annotations.approval == "true"
-}
-```
-when evaluated against an attestation, will generate the following output if the expected annotation is not present:
-```json
-{
-    "violations": [
-        "Container image is not approved"
-    ]
-}
-```
-Make sure you test your policies in https://play.openpolicyagent.org/, since you might get different results when using Rego V1 syntax, as there are [some breaking changes](https://www.openpolicyagent.org/docs/latest/opa-1/).
-
-## Policy engine constraints (REGO)
+## Policy engine constraints (Rego)
 To ensure the policy engine work as pure and as fast as possible, we have deactivated some of the OPA built-in functions. The following functions are not allowed in the policy scripts:
 - `opa.runtime`
 - `rego.parse_module`
