@@ -129,7 +129,7 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 	sources := make([]string, 0)
 	evalResults := make([]*engine.EvaluationResult, 0)
 	skipped := true
-	messages := make([]string, 0)
+	reasons := make([]string, 0)
 	for _, script := range scripts {
 		r, err := pv.executeScript(ctx, policy, script, material, attachment)
 		if err != nil {
@@ -139,8 +139,8 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		// Gather merged results
 		evalResults = append(evalResults, r)
 
-		if r.Message != "" {
-			messages = append(messages, r.Message)
+		if r.SkipReason != "" {
+			reasons = append(reasons, r.SkipReason)
 		}
 
 		// Skipped = false if any of the evaluations was not skipped
@@ -151,6 +151,11 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 	var evaluationSources []string
 	if !IsProviderScheme(ref.GetName()) {
 		evaluationSources = sources
+	}
+
+	// Only inform skip reasons if it's skipped
+	if !skipped {
+		reasons = []string{}
 	}
 
 	// Merge multi-kind results
@@ -168,8 +173,8 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		ReferenceDigest: ref.Digest["sha256"],
 		// Merged "skipped"
 		Skipped: skipped,
-		// Merged error "messages"
-		Messages: messages,
+		// Merged "skip_reason"
+		SkipReasons: reasons,
 	}, nil
 }
 
@@ -509,14 +514,15 @@ func loadLegacyPolicyScript(spec *v1.PolicySpec) ([]byte, error) {
 
 func LogPolicyEvaluations(evaluations []*v12.PolicyEvaluation, logger *zerolog.Logger) {
 	for _, policyEval := range evaluations {
+		subject := policyEval.MaterialName
+		if subject == "" {
+			subject = "statement"
+		}
+
 		if policyEval.Skipped {
-			logger.Warn().Msgf("policy evaluation skipped (%s): %s", policyEval.Name, policyEval.Messages)
+			logger.Warn().Msgf("policy evaluation skipped (%s) for %s. Reasons: %s", policyEval.Name, subject, policyEval.SkipReasons)
 		}
 		if len(policyEval.Violations) > 0 {
-			subject := policyEval.MaterialName
-			if subject == "" {
-				subject = "statement"
-			}
 			logger.Warn().Msgf("found policy violations (%s) for %s", policyEval.Name, subject)
 			for _, v := range policyEval.Violations {
 				logger.Warn().Msgf(" - %s", v.Message)

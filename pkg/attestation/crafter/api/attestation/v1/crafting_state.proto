@@ -144,7 +144,7 @@ message PolicyEvaluation {
   bool skipped = 13;
 
   // Evaluation messages, intended to communicate evaluation errors (invalid input)
-  repeated string messages = 14;
+  repeated string skip_reasons = 14;
 
   message Violation {
     string subject = 1 [(buf.validate.field).required = true];

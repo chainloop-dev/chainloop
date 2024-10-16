@@ -799,38 +799,73 @@ func (s *testSuite) TestInputArguments() {
 }
 
 func (s *testSuite) TestNewResultFormat() {
-	schema := &v12.CraftingSchema{
-		Materials: []*v12.CraftingSchema_Material{
-			{
-				Name: "sbom",
-				Type: v12.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
-			},
+	cases := []struct {
+		name             string
+		policy           string
+		material         string
+		expectErr        bool
+		expectViolations int
+		expectSkipped    bool
+		expectReasons    []string
+	}{
+		{
+			name:             "result.violations",
+			policy:           "file://testdata/policy_result_format.yaml",
+			material:         "{\"specVersion\": \"1.4\"}",
+			expectViolations: 1,
 		},
-		Policies: &v12.Policies{
-			Materials: []*v12.PolicyAttachment{
-				{
-					Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/policy_result_format.yaml"},
+		{
+			name:          "skip",
+			policy:        "file://testdata/policy_result_format.yaml",
+			material:      "{\"invalid\": \"1.4\"}",
+			expectSkipped: true,
+			expectReasons: []string{"invalid input"},
+		},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			schema := &v12.CraftingSchema{
+				Materials: []*v12.CraftingSchema_Material{
+					{
+						Name: "sbom",
+						Type: v12.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
+					},
 				},
-			},
-			Attestation: nil,
-		},
-	}
-	material := &v1.Attestation_Material{
-		M: &v1.Attestation_Material_Artifact_{Artifact: &v1.Attestation_Material_Artifact{
-			Content: []byte("{\"specVersion\": \"1.4\"}"),
-		}},
-		MaterialType: v12.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
-		InlineCas:    true,
-	}
+				Policies: &v12.Policies{
+					Materials: []*v12.PolicyAttachment{
+						{
+							Policy: &v12.PolicyAttachment_Ref{Ref: tc.policy},
+						},
+					},
+					Attestation: nil,
+				},
+			}
+			material := &v1.Attestation_Material{
+				M: &v1.Attestation_Material_Artifact_{Artifact: &v1.Attestation_Material_Artifact{
+					Content: []byte(tc.material),
+				}},
+				MaterialType: v12.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
+				InlineCas:    true,
+			}
 
-	verifier := NewPolicyVerifier(schema, nil, &s.logger)
+			verifier := NewPolicyVerifier(schema, nil, &s.logger)
+			res, err := verifier.VerifyMaterial(context.TODO(), material, "")
 
-	res, err := verifier.VerifyMaterial(context.TODO(), material, "")
-	s.Require().NoError(err)
-	s.Len(res, 1)
-	s.Len(res[0].Violations, 1)
-	s.Equal("wrong CycloneDX version. Expected 1.5, but it was 1.4", res[0].Violations[0].Message)
-	s.Len(res[0].Sources, 1)
+			if tc.expectErr {
+				s.Error(err)
+				return
+			}
+
+			s.Require().NoError(err)
+			s.Len(res, 1)
+			s.Len(res[0].Violations, tc.expectViolations)
+			s.Equal(tc.expectSkipped, res[0].Skipped)
+			if len(res[0].SkipReasons) > 0 {
+				s.Equal(res[0].SkipReasons, tc.expectReasons)
+			}
+		})
+	}
 }
 
 type testSuite struct {

@@ -27,7 +27,7 @@ type PolicyEngine interface {
 type EvaluationResult struct {
 	Violations []*PolicyViolation
 	Skipped    bool
-	Message    string
+	SkipReason string
 }
 
 // PolicyViolation represents a policy failure

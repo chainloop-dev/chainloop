@@ -16,18 +16,12 @@ spec:
         result := {
           "skipped": skipped,
           "violations": violations,
-          "message": message,
+          "skip_reason": skip_reason,
         }
       
-        default message := ""
+        default skip_reason := ""
         
-        message := m if {
-          valid_input
-          count(violations) > 0
-          m := "there were violations"
-        }
-      
-        message := m if {
+        skip_reason := m if {
           not valid_input
           m := "invalid input"
         }

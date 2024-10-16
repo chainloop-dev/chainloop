@@ -175,7 +175,7 @@ func TestRego_ResultFormat(t *testing.T) {
 		result, err := r.Verify(context.TODO(), policy, []byte("{\"foo\": \"bar\"}"), nil)
 		require.NoError(t, err)
 		assert.True(t, result.Skipped)
-		assert.Equal(t, "invalid input", result.Message)
+		assert.Equal(t, "invalid input", result.SkipReason)
 	})
 
 	t.Run("valid input, no violations", func(t *testing.T) {

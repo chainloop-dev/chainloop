@@ -43,8 +43,8 @@ const (
 	// EnvironmentModePermissive allows all operations on the compiler
 	EnvironmentModePermissive EnvironmentMode = 1
 	inputArgs                                 = "args"
-	violationsRule                            = "violations"
-	resultRule                                = "result"
+	deprecatedRule                            = "violations"
+	mainRule                                  = "result"
 )
 
 // builtinFuncNotAllowed is a list of builtin functions that are not allowed in the compiler
@@ -107,19 +107,19 @@ func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte, 
 	}
 
 	// Try the main rule first
-	if err := executeQuery(resultRule, r.OperatingMode == EnvironmentModeRestrictive); err != nil {
+	if err := executeQuery(mainRule, r.OperatingMode == EnvironmentModeRestrictive); err != nil {
 		return nil, err
 	}
 
 	// If res is nil, it means that the rule hasn't been found
 	if res == nil {
 		// Try with the deprecated main rule
-		if err := executeQuery(violationsRule, r.OperatingMode == EnvironmentModeRestrictive); err != nil {
+		if err := executeQuery(deprecatedRule, r.OperatingMode == EnvironmentModeRestrictive); err != nil {
 			return nil, err
 		}
 
 		if res == nil {
-			return nil, fmt.Errorf("failed to evaluate policy: neither '%s' nor '%s' rule found", resultRule, violationsRule)
+			return nil, fmt.Errorf("failed to evaluate policy: neither '%s' nor '%s' rule found", mainRule, deprecatedRule)
 		}
 
 		return parseViolationsRule(res, policy)
@@ -154,7 +154,7 @@ func parseViolationsRule(res rego.ResultSet, policy *engine.Policy) (*engine.Eva
 	return &engine.EvaluationResult{
 		Violations: violations,
 		Skipped:    false, // best effort
-		Message:    "",
+		SkipReason: "",
 	}, nil
 }
 
@@ -172,9 +172,9 @@ func parseResultRule(res rego.ResultSet, policy *engine.Policy) (*engine.Evaluat
 				return nil, fmt.Errorf("failed to evaluate 'skipped' field in policy evaluation result: %s", val.Text)
 			}
 
-			message, ok := ruleResult["message"].(string)
+			reason, ok := ruleResult["skip_reason"].(string)
 			if !ok {
-				return nil, fmt.Errorf("failed to evaluate 'message' field in policy evaluation result: %s", val.Text)
+				return nil, fmt.Errorf("failed to evaluate 'skip_reason' field in policy evaluation result: %s", val.Text)
 			}
 
 			violations, ok := ruleResult["violations"].([]any)
@@ -183,7 +183,7 @@ func parseResultRule(res rego.ResultSet, policy *engine.Policy) (*engine.Evaluat
 			}
 
 			result.Skipped = skipped
-			result.Message = message
+			result.SkipReason = reason
 
 			for _, violation := range violations {
 				vs, ok := violation.(string)
