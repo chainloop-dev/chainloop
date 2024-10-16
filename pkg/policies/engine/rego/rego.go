@@ -129,6 +129,8 @@ func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte, 
 	return parseResultRule(res, policy)
 }
 
+// Parse deprecated list of violations.
+// TODO: Remove this path once `result` rule is consolidated
 func parseViolationsRule(res rego.ResultSet, policy *engine.Policy) (*engine.EvaluationResult, error) {
 	violations := make([]*engine.PolicyViolation, 0)
 	for _, exp := range res {
@@ -159,6 +161,7 @@ func parseViolationsRule(res rego.ResultSet, policy *engine.Policy) (*engine.Eva
 	}, nil
 }
 
+// parse `result` rule
 func parseResultRule(res rego.ResultSet, policy *engine.Policy) (*engine.EvaluationResult, error) {
 	result := &engine.EvaluationResult{Violations: make([]*engine.PolicyViolation, 0)}
 	for _, exp := range res {
