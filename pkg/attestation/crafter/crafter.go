@@ -569,7 +569,7 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 	c.CraftingState.Attestation.PolicyEvaluations = append(c.CraftingState.Attestation.PolicyEvaluations, policyResults...)
 
 	// log policy violations
-	policies.LogPolicyViolations(c.CraftingState.Attestation.PolicyEvaluations, c.Logger)
+	policies.LogPolicyEvaluations(c.CraftingState.Attestation.PolicyEvaluations, c.Logger)
 
 	// 5 - Attach it to state
 	if c.CraftingState.Attestation.Materials == nil {

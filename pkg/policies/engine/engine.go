@@ -17,11 +17,18 @@ package engine
 
 import (
 	"context"
+	"fmt"
 )
 
 type PolicyEngine interface {
 	// Verify verifies an input against a policy
-	Verify(ctx context.Context, policy *Policy, input []byte, args map[string]any) ([]*PolicyViolation, error)
+	Verify(ctx context.Context, policy *Policy, input []byte, args map[string]any) (*EvaluationResult, error)
+}
+
+type EvaluationResult struct {
+	Violations []*PolicyViolation
+	Skipped    bool
+	SkipReason string
 }
 
 // PolicyViolation represents a policy failure
@@ -29,10 +36,18 @@ type PolicyViolation struct {
 	Subject, Violation string
 }
 
-// Policy represents a loaded policy in any of the supported technologies.
+// Policy represents a loaded policy in any of the supported engines.
 type Policy struct {
 	// the source code for this policy
 	Source []byte `json:"module"`
 	// The unique policy name
 	Name string `json:"name"`
+}
+
+type ResultFormatError struct {
+	Field string
+}
+
+func (e ResultFormatError) Error() string {
+	return fmt.Sprintf("Policy result format error: %s not found or wrong format", e.Field)
 }

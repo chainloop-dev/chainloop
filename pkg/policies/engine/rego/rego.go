@@ -43,8 +43,8 @@ const (
 	// EnvironmentModePermissive allows all operations on the compiler
 	EnvironmentModePermissive EnvironmentMode = 1
 	inputArgs                                 = "args"
-	mainRule                                  = "violations"
-	deprecatedMainRule                        = "deny"
+	deprecatedRule                            = "violations"
+	mainRule                                  = "result"
 )
 
 // builtinFuncNotAllowed is a list of builtin functions that are not allowed in the compiler
@@ -64,7 +64,7 @@ var allowedNetworkDomains = []string{
 // Force interface
 var _ engine.PolicyEngine = (*Rego)(nil)
 
-func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte, args map[string]any) ([]*engine.PolicyViolation, error) {
+func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte, args map[string]any) (*engine.EvaluationResult, error) {
 	policyString := string(policy.Source)
 	parsedModule, err := ast.ParseModule(policy.Name, policyString)
 	if err != nil {
@@ -112,29 +112,38 @@ func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte, 
 	}
 
 	// If res is nil, it means that the rule hasn't been found
+	// TODO: Remove when this deprecated rule is not used anymore
 	if res == nil {
 		// Try with the deprecated main rule
-		if err := executeQuery(deprecatedMainRule, r.OperatingMode == EnvironmentModeRestrictive); err != nil {
+		if err := executeQuery(deprecatedRule, r.OperatingMode == EnvironmentModeRestrictive); err != nil {
 			return nil, err
 		}
 
 		if res == nil {
-			return nil, fmt.Errorf("failed to evaluate policy: no '%s' nor '%s' rule found", mainRule, deprecatedMainRule)
+			return nil, fmt.Errorf("failed to evaluate policy: neither '%s' nor '%s' rule found", mainRule, deprecatedRule)
 		}
+
+		return parseViolationsRule(res, policy)
 	}
 
+	return parseResultRule(res, policy)
+}
+
+// Parse deprecated list of violations.
+// TODO: Remove this path once `result` rule is consolidated
+func parseViolationsRule(res rego.ResultSet, policy *engine.Policy) (*engine.EvaluationResult, error) {
 	violations := make([]*engine.PolicyViolation, 0)
 	for _, exp := range res {
 		for _, val := range exp.Expressions {
 			ruleResults, ok := val.Value.([]interface{})
 			if !ok {
-				return nil, fmt.Errorf("failed to evaluate policy expression evaluation result: %s", val.Text)
+				return nil, engine.ResultFormatError{Field: deprecatedRule}
 			}
 
 			for _, result := range ruleResults {
 				reasonStr, ok := result.(string)
 				if !ok {
-					return nil, fmt.Errorf("failed to evaluate rule result: %s", val.Text)
+					return nil, engine.ResultFormatError{Field: deprecatedRule}
 				}
 
 				violations = append(violations, &engine.PolicyViolation{
@@ -145,7 +154,52 @@ func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte, 
 		}
 	}
 
-	return violations, nil
+	return &engine.EvaluationResult{
+		Violations: violations,
+		Skipped:    false, // best effort
+		SkipReason: "",
+	}, nil
+}
+
+// parse `result` rule
+func parseResultRule(res rego.ResultSet, policy *engine.Policy) (*engine.EvaluationResult, error) {
+	result := &engine.EvaluationResult{Violations: make([]*engine.PolicyViolation, 0)}
+	for _, exp := range res {
+		for _, val := range exp.Expressions {
+			ruleResult, ok := val.Value.(map[string]any)
+			if !ok {
+				return nil, engine.ResultFormatError{Field: mainRule}
+			}
+
+			skipped, ok := ruleResult["skipped"].(bool)
+			if !ok {
+				return nil, engine.ResultFormatError{Field: "skipped"}
+			}
+
+			reason, ok := ruleResult["skip_reason"].(string)
+			if !ok {
+				return nil, engine.ResultFormatError{Field: "skip_reason"}
+			}
+
+			violations, ok := ruleResult["violations"].([]any)
+			if !ok {
+				return nil, engine.ResultFormatError{Field: "violations"}
+			}
+
+			result.Skipped = skipped
+			result.SkipReason = reason
+
+			for _, violation := range violations {
+				vs, ok := violation.(string)
+				if !ok {
+					return nil, fmt.Errorf("failed to evaluate violation in policy evaluation result: %s", val.Text)
+				}
+				result.Violations = append(result.Violations, &engine.PolicyViolation{Subject: policy.Name, Violation: vs})
+			}
+		}
+	}
+
+	return result, nil
 }
 
 func queryRego(ctx context.Context, ruleName string, parsedModule *ast.Module, options ...func(r *rego.Rego)) (rego.ResultSet, error) {

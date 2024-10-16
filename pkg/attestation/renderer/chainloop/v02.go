@@ -57,6 +57,8 @@ type PolicyEvaluation struct {
 	Violations      []*PolicyViolation         `json:"violations,omitempty"`
 	With            map[string]string          `json:"with,omitempty"`
 	Type            string                     `json:"type"`
+	Skipped         bool                       `json:"skipped"`
+	SkipReasons     []string                   `json:"skip_reasons,omitempty"`
 }
 
 type PolicyViolation struct {
@@ -118,7 +120,7 @@ func (r *RendererV02) Statement(ctx context.Context) (*intoto.Statement, error) 
 	}
 	evaluations = append(evaluations, policyResults...)
 	// log policy violations
-	policies.LogPolicyViolations(evaluations, r.logger)
+	policies.LogPolicyEvaluations(evaluations, r.logger)
 
 	// insert attestation level policy results into statement
 	if err = addPolicyResults(statement, evaluations); err != nil {
@@ -313,6 +315,8 @@ func renderEvaluation(ev *v1.PolicyEvaluation) *PolicyEvaluation {
 				"sha256": ev.ReferenceDigest,
 			},
 		},
+		SkipReasons: ev.SkipReasons,
+		Skipped:     ev.Skipped,
 	}
 }
 

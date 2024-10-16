@@ -137,6 +137,10 @@ export interface PolicyEvaluation {
   with: { [key: string]: string };
   /** material type, if any, of the evaluated policy */
   type: CraftingSchema_Material_MaterialType;
+  /** whether this evaluation was skipped or not (because of an invalid input, for example) */
+  skipped: boolean;
+  /** Evaluation messages, intended to communicate evaluation errors (invalid input) */
+  skipReasons: string[];
 }
 
 export interface PolicyEvaluation_AnnotationsEntry {
@@ -1300,6 +1304,8 @@ function createBasePolicyEvaluation(): PolicyEvaluation {
     violations: [],
     with: {},
     type: 0,
+    skipped: false,
+    skipReasons: [],
   };
 }
 
@@ -1337,6 +1343,12 @@ export const PolicyEvaluation = {
     });
     if (message.type !== 0) {
       writer.uint32(64).int32(message.type);
+    }
+    if (message.skipped === true) {
+      writer.uint32(104).bool(message.skipped);
+    }
+    for (const v of message.skipReasons) {
+      writer.uint32(114).string(v!);
     }
     return writer;
   },
@@ -1431,6 +1443,20 @@ export const PolicyEvaluation = {
 
           message.type = reader.int32() as any;
           continue;
+        case 13:
+          if (tag !== 104) {
+            break;
+          }
+
+          message.skipped = reader.bool();
+          continue;
+        case 14:
+          if (tag !== 114) {
+            break;
+          }
+
+          message.skipReasons.push(reader.string());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1465,6 +1491,8 @@ export const PolicyEvaluation = {
         }, {})
         : {},
       type: isSet(object.type) ? craftingSchema_Material_MaterialTypeFromJSON(object.type) : 0,
+      skipped: isSet(object.skipped) ? Boolean(object.skipped) : false,
+      skipReasons: Array.isArray(object?.skipReasons) ? object.skipReasons.map((e: any) => String(e)) : [],
     };
   },
 
@@ -1499,6 +1527,12 @@ export const PolicyEvaluation = {
       });
     }
     message.type !== undefined && (obj.type = craftingSchema_Material_MaterialTypeToJSON(message.type));
+    message.skipped !== undefined && (obj.skipped = message.skipped);
+    if (message.skipReasons) {
+      obj.skipReasons = message.skipReasons.map((e) => e);
+    } else {
+      obj.skipReasons = [];
+    }
     return obj;
   },
 
@@ -1532,6 +1566,8 @@ export const PolicyEvaluation = {
       return acc;
     }, {});
     message.type = object.type ?? 0;
+    message.skipped = object.skipped ?? false;
+    message.skipReasons = object.skipReasons?.map((e) => e) || [];
     return message;
   },
 };

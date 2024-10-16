@@ -13,6 +13,13 @@
     },
     "^(reference_name)$": {
       "type": "string"
+    },
+    "^(skip_reasons)$": {
+      "description": "Evaluation messages, intended to communicate evaluation errors (invalid input)",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
     }
   },
   "properties": {
@@ -45,6 +52,17 @@
     },
     "referenceName": {
       "type": "string"
+    },
+    "skipReasons": {
+      "description": "Evaluation messages, intended to communicate evaluation errors (invalid input)",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "skipped": {
+      "description": "whether this evaluation was skipped or not (because of an invalid input, for example)",
+      "type": "boolean"
     },
     "sources": {
       "description": "Base64 representation of run scripts. It might be empty if there is a FQDN reference to the policy",
