@@ -112,6 +112,7 @@ func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte, 
 	}
 
 	// If res is nil, it means that the rule hasn't been found
+	// TODO: Remove when this deprecated rule is not used anymore
 	if res == nil {
 		// Try with the deprecated main rule
 		if err := executeQuery(deprecatedRule, r.OperatingMode == EnvironmentModeRestrictive); err != nil {
