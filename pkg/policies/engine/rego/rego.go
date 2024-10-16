@@ -57,8 +57,8 @@ var builtinFuncNotAllowed = []*ast.Builtin{
 // allowedNetworkDomains is a list of network domains that are allowed for the compiler to access
 // when using http.send built-in function
 var allowedNetworkDomains = []string{
-	"chainloop.dev",
-	"cisa.gov",
+	"www.chainloop.dev",
+	"www.cisa.gov",
 }
 
 // Force interface
