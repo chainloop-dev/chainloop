@@ -126,9 +126,26 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		pv.logger.Info().Msgf("evaluating policy %s against attestation", policy.Metadata.Name)
 	}
 
-	violations, sources, err := pv.executeScripts(ctx, policy, scripts, material, attachment)
-	if err != nil {
-		return nil, NewPolicyError(err)
+	sources := make([]string, 0)
+	evalResults := make([]*engine.EvaluationResult, 0)
+	skipped := true
+	reasons := make([]string, 0)
+	for _, script := range scripts {
+		r, err := pv.executeScript(ctx, policy, script, material, attachment)
+		if err != nil {
+			return nil, NewPolicyError(err)
+		}
+
+		// Gather merged results
+		evalResults = append(evalResults, r)
+
+		if r.SkipReason != "" {
+			reasons = append(reasons, r.SkipReason)
+		}
+
+		// Skipped = false if any of the evaluations was not skipped
+		skipped = skipped && r.Skipped
+		sources = append(sources, base64.StdEncoding.EncodeToString(script.Source))
 	}
 
 	var evaluationSources []string
@@ -136,17 +153,28 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		evaluationSources = sources
 	}
 
+	// Only inform skip reasons if it's skipped
+	if !skipped {
+		reasons = []string{}
+	}
+
+	// Merge multi-kind results
 	return &v12.PolicyEvaluation{
-		Name:            policy.GetMetadata().GetName(),
-		MaterialName:    opts.name,
-		Sources:         evaluationSources,
-		Violations:      engineViolationsToAPIViolations(violations),
+		Name:         policy.GetMetadata().GetName(),
+		MaterialName: opts.name,
+		Sources:      evaluationSources,
+		// merge all violations
+		Violations:      engineEvaluationsToAPIViolations(evalResults),
 		Annotations:     policy.GetMetadata().GetAnnotations(),
 		Description:     policy.GetMetadata().GetDescription(),
 		With:            attachment.GetWith(),
 		Type:            opts.kind,
 		ReferenceName:   ref.Name,
 		ReferenceDigest: ref.Digest["sha256"],
+		// Merged "skipped"
+		Skipped: skipped,
+		// Merged "skip_reason"
+		SkipReasons: reasons,
 	}, nil
 }
 
@@ -171,24 +199,15 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 	return result, nil
 }
 
-func (pv *PolicyVerifier) executeScripts(ctx context.Context, policy *v1.Policy, scripts []*engine.Policy, material []byte, att *v1.PolicyAttachment) ([]*engine.PolicyViolation, []string, error) {
-	violations := make([]*engine.PolicyViolation, 0)
-	sources := make([]string, 0)
-
-	for _, script := range scripts {
-		// verify the policy
-		ng := getPolicyEngine(policy)
-		res, err := ng.Verify(ctx, script, material, getInputArguments(att.GetWith()))
-		if err != nil {
-			return nil, nil, NewPolicyError(err)
-		}
-
-		sources = append(sources, base64.StdEncoding.EncodeToString(script.Source))
-
-		violations = append(violations, res...)
+func (pv *PolicyVerifier) executeScript(ctx context.Context, policy *v1.Policy, script *engine.Policy, material []byte, att *v1.PolicyAttachment) (*engine.EvaluationResult, error) {
+	// verify the policy
+	ng := getPolicyEngine(policy)
+	res, err := ng.Verify(ctx, script, material, getInputArguments(att.GetWith()))
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute policy : %w", err)
 	}
 
-	return violations, sources, nil
+	return res, nil
 }
 
 // LoadPolicySpec loads and validates a policy spec from a contract
@@ -305,13 +324,15 @@ func getValue(values []string) any {
 	return lines[0]
 }
 
-func engineViolationsToAPIViolations(input []*engine.PolicyViolation) []*v12.PolicyEvaluation_Violation {
+func engineEvaluationsToAPIViolations(results []*engine.EvaluationResult) []*v12.PolicyEvaluation_Violation {
 	res := make([]*v12.PolicyEvaluation_Violation, 0)
-	for _, v := range input {
-		res = append(res, &v12.PolicyEvaluation_Violation{
-			Subject: v.Subject,
-			Message: v.Violation,
-		})
+	for _, r := range results {
+		for _, v := range r.Violations {
+			res = append(res, &v12.PolicyEvaluation_Violation{
+				Subject: v.Subject,
+				Message: v.Violation,
+			})
+		}
 	}
 
 	return res
@@ -419,7 +440,10 @@ func getPolicyTypes(p *v1.Policy) []v1.CraftingSchema_Material_MaterialType {
 // getPolicyEngine returns a PolicyEngine implementation to evaluate a given policy.
 func getPolicyEngine(_ *v1.Policy) engine.PolicyEngine {
 	// Currently, only Rego is supported
-	return new(rego.Rego)
+	return &rego.Rego{
+		// Set the default operating mode to restrictive
+		OperatingMode: rego.EnvironmentModeRestrictive,
+	}
 }
 
 // LoadPolicyScriptsFromSpec loads all policy script that matches a given material type. It matches if:
@@ -488,13 +512,17 @@ func loadLegacyPolicyScript(spec *v1.PolicySpec) ([]byte, error) {
 	return content, nil
 }
 
-func LogPolicyViolations(evaluations []*v12.PolicyEvaluation, logger *zerolog.Logger) {
+func LogPolicyEvaluations(evaluations []*v12.PolicyEvaluation, logger *zerolog.Logger) {
 	for _, policyEval := range evaluations {
+		subject := policyEval.MaterialName
+		if subject == "" {
+			subject = "statement"
+		}
+
+		if policyEval.Skipped {
+			logger.Warn().Msgf("policy evaluation skipped (%s) for %s. Reasons: %s", policyEval.Name, subject, policyEval.SkipReasons)
+		}
 		if len(policyEval.Violations) > 0 {
-			subject := policyEval.MaterialName
-			if subject == "" {
-				subject = "statement"
-			}
 			logger.Warn().Msgf("found policy violations (%s) for %s", policyEval.Name, subject)
 			for _, v := range policyEval.Violations {
 				logger.Warn().Msgf(" - %s", v.Message)

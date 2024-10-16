@@ -57,6 +57,10 @@ func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Materia
 	}
 	defer result.r.Close()
 
+	if result.size == 0 {
+		return nil, fmt.Errorf("%w: %w", ErrBaseUploadAndCraft, errors.New("file is empty"))
+	}
+
 	l.Debug().Str("filename", result.filename).Str("digest", result.digest).Str("path", artifactPath).
 		Str("size", bytefmt.ByteSize(uint64(result.size))).
 		Str("max_size", bytefmt.ByteSize(uint64(backend.MaxSize))).

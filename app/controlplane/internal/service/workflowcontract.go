@@ -166,12 +166,21 @@ func (s *WorkflowContractService) Delete(ctx context.Context, req *pb.WorkflowCo
 }
 
 func bizWorkFlowContractToPb(schema *biz.WorkflowContract) *pb.WorkflowContractItem {
+	// nolint:prealloc
+	var workflowNames []string
+	workflowRefs := make([]*pb.WorkflowRef, 0, len(schema.WorkflowRefs))
+	for _, ref := range schema.WorkflowRefs {
+		workflowRefs = append(workflowRefs, bizWorkflowRefToPb(ref))
+		workflowNames = append(workflowNames, ref.Name)
+	}
+
 	return &pb.WorkflowContractItem{
 		Id:             schema.ID.String(),
 		CreatedAt:      timestamppb.New(*schema.CreatedAt),
 		Name:           schema.Name,
 		LatestRevision: int32(schema.LatestRevision),
-		WorkflowNames:  schema.WorkflowNames,
+		WorkflowNames:  workflowNames,
+		WorkflowRefs:   workflowRefs,
 		Description:    schema.Description,
 	}
 }

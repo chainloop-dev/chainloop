@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -126,6 +126,24 @@ func TestCSAFCraft(t *testing.T) {
 		{
 			name:     "invalid artifact type",
 			filePath: "./testdata/simple.txt",
+			wantErr:  "unexpected material type",
+			schema: &contractAPI.CraftingSchema_Material{
+				Name: "test",
+				Type: contractAPI.CraftingSchema_Material_CSAF_VEX,
+			},
+		},
+		{
+			name:     "empty json array",
+			filePath: "./testdata/empty_array.json",
+			wantErr:  "unexpected material type",
+			schema: &contractAPI.CraftingSchema_Material{
+				Name: "test",
+				Type: contractAPI.CraftingSchema_Material_CSAF_VEX,
+			},
+		},
+		{
+			name:     "empty file",
+			filePath: "./testdata/empty.txt",
 			wantErr:  "unexpected material type",
 			schema: &contractAPI.CraftingSchema_Material{
 				Name: "test",

@@ -322,8 +322,19 @@ export interface WorkflowContractItem {
   description: string;
   createdAt?: Date;
   latestRevision: number;
-  /** Workflows associated with this contract */
+  /**
+   * Workflows associated with this contract
+   *
+   * @deprecated
+   */
   workflowNames: string[];
+  workflowRefs: WorkflowRef[];
+}
+
+export interface WorkflowRef {
+  id: string;
+  name: string;
+  projectName: string;
 }
 
 export interface WorkflowContractVersionItem {
@@ -2251,7 +2262,15 @@ export const PolicyReference_DigestEntry = {
 };
 
 function createBaseWorkflowContractItem(): WorkflowContractItem {
-  return { id: "", name: "", description: "", createdAt: undefined, latestRevision: 0, workflowNames: [] };
+  return {
+    id: "",
+    name: "",
+    description: "",
+    createdAt: undefined,
+    latestRevision: 0,
+    workflowNames: [],
+    workflowRefs: [],
+  };
 }
 
 export const WorkflowContractItem = {
@@ -2273,6 +2292,9 @@ export const WorkflowContractItem = {
     }
     for (const v of message.workflowNames) {
       writer.uint32(42).string(v!);
+    }
+    for (const v of message.workflowRefs) {
+      WorkflowRef.encode(v!, writer.uint32(58).fork()).ldelim();
     }
     return writer;
   },
@@ -2326,6 +2348,13 @@ export const WorkflowContractItem = {
 
           message.workflowNames.push(reader.string());
           continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.workflowRefs.push(WorkflowRef.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2343,6 +2372,9 @@ export const WorkflowContractItem = {
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
       latestRevision: isSet(object.latestRevision) ? Number(object.latestRevision) : 0,
       workflowNames: Array.isArray(object?.workflowNames) ? object.workflowNames.map((e: any) => String(e)) : [],
+      workflowRefs: Array.isArray(object?.workflowRefs)
+        ? object.workflowRefs.map((e: any) => WorkflowRef.fromJSON(e))
+        : [],
     };
   },
 
@@ -2357,6 +2389,11 @@ export const WorkflowContractItem = {
       obj.workflowNames = message.workflowNames.map((e) => e);
     } else {
       obj.workflowNames = [];
+    }
+    if (message.workflowRefs) {
+      obj.workflowRefs = message.workflowRefs.map((e) => e ? WorkflowRef.toJSON(e) : undefined);
+    } else {
+      obj.workflowRefs = [];
     }
     return obj;
   },
@@ -2373,6 +2410,91 @@ export const WorkflowContractItem = {
     message.createdAt = object.createdAt ?? undefined;
     message.latestRevision = object.latestRevision ?? 0;
     message.workflowNames = object.workflowNames?.map((e) => e) || [];
+    message.workflowRefs = object.workflowRefs?.map((e) => WorkflowRef.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseWorkflowRef(): WorkflowRef {
+  return { id: "", name: "", projectName: "" };
+}
+
+export const WorkflowRef = {
+  encode(message: WorkflowRef, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.name !== "") {
+      writer.uint32(18).string(message.name);
+    }
+    if (message.projectName !== "") {
+      writer.uint32(26).string(message.projectName);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): WorkflowRef {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseWorkflowRef();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.projectName = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): WorkflowRef {
+    return {
+      id: isSet(object.id) ? String(object.id) : "",
+      name: isSet(object.name) ? String(object.name) : "",
+      projectName: isSet(object.projectName) ? String(object.projectName) : "",
+    };
+  },
+
+  toJSON(message: WorkflowRef): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    message.name !== undefined && (obj.name = message.name);
+    message.projectName !== undefined && (obj.projectName = message.projectName);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<WorkflowRef>, I>>(base?: I): WorkflowRef {
+    return WorkflowRef.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<WorkflowRef>, I>>(object: I): WorkflowRef {
+    const message = createBaseWorkflowRef();
+    message.id = object.id ?? "";
+    message.name = object.name ?? "";
+    message.projectName = object.projectName ?? "";
     return message;
   },
 };

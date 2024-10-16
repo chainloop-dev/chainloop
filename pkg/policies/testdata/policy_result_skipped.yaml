@@ -1,0 +1,31 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: policy-result-skipped
+  description: Policy with new result format
+  annotations:
+    category: SBOM
+spec:
+  policies:
+    - kind: SBOM_CYCLONEDX_JSON
+      embedded: |
+        package main
+          
+        import rego.v1
+        
+        result := {
+          "skipped": true,
+          "violations": [],
+          "skip_reason": "this one is skipped",
+        }
+    - kind: SBOM_CYCLONEDX_JSON
+      embedded: |
+        package main
+        
+        import rego.v1
+        
+        result := {
+          "skipped": true,
+          "violations": [],
+          "skip_reason": "this is also skipped",
+        }

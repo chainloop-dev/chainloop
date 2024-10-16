@@ -212,3 +212,15 @@ when evaluated against an attestation, will generate the following output if the
 }
 ```
 Make sure you test your policies in https://play.openpolicyagent.org/, since you might get different results when using Rego V1 syntax, as there are [some breaking changes](https://www.openpolicyagent.org/docs/latest/opa-1/).
+
+## Policy engine constraints (REGO)
+To ensure the policy engine work as pure and as fast as possible, we have deactivated some of the OPA built-in functions. The following functions are not allowed in the policy scripts:
+- `opa.runtime`
+- `rego.parse_module`
+- `trace`
+
+Also `http.send` has been isolated so only requests to the following domains are allowed:
+- `chainloop.dev`
+- `cisa.gov`
+
+This prevents unexpected behavior and potential remote exploits, particularly since these policies are evaluated client-side.
