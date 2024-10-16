@@ -195,7 +195,7 @@ func TestRego_VerifyInvalidPolicy(t *testing.T) {
 	})
 }
 
-func TestRego_WithRestrictiveMOde(t *testing.T) {
+func TestRego_WithRestrictiveMode(t *testing.T) {
 	t.Run("forbidden functions", func(t *testing.T) {
 		regoContent, err := os.ReadFile("testfiles/restrictive_mode.rego")
 		require.NoError(t, err)
@@ -228,6 +228,20 @@ func TestRego_WithRestrictiveMOde(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "eval_builtin_error: http.send: unallowed host: example.com")
 		assert.Len(t, violations, 0)
+	})
+
+	t.Run("allowed network requests", func(t *testing.T) {
+		regoContent, err := os.ReadFile("testfiles/restricted_mode_networking_allowed_host.rego")
+		require.NoError(t, err)
+
+		r := &Rego{}
+		policy := &engine.Policy{
+			Name:   "policy",
+			Source: regoContent,
+		}
+
+		_, err = r.Verify(context.TODO(), policy, []byte(`{}`), nil)
+		assert.NoError(t, err)
 	})
 }
 
