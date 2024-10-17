@@ -91,6 +91,8 @@ type PolicyEvaluation struct {
 	PolicyReference *PolicyReference   `json:"policy_reference,omitempty"`
 	With            map[string]string  `json:"with,omitempty"`
 	Type            string             `json:"type"`
+	Skipped         bool               `json:"skipped"`
+	SkipReasons     []string           `json:"skip_reasons,omitempty"`
 }
 
 type PolicyViolation struct {
@@ -240,6 +242,8 @@ func policyEvaluationPBToAction(in *pb.PolicyEvaluation) *PolicyEvaluation {
 		Type:            in.Type,
 		PolicyReference: pr,
 		Violations:      violations,
+		Skipped:         in.Skipped,
+		SkipReasons:     in.SkipReasons,
 	}
 }
 

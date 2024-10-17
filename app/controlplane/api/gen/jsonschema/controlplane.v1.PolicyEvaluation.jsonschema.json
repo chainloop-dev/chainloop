@@ -8,6 +8,12 @@
     },
     "^(policy_reference)$": {
       "$ref": "controlplane.v1.PolicyReference.jsonschema.json"
+    },
+    "^(skip_reasons)$": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
     }
   },
   "properties": {
@@ -34,6 +40,15 @@
     },
     "policyReference": {
       "$ref": "controlplane.v1.PolicyReference.jsonschema.json"
+    },
+    "skipReasons": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "skipped": {
+      "type": "boolean"
     },
     "sources": {
       "items": {

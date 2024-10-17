@@ -453,6 +453,8 @@ func extractPolicyEvaluations(in map[string][]*chainloop.PolicyEvaluation) map[s
 				With:         ev.With,
 				Type:         ev.Type,
 				Violations:   violations,
+				Skipped:      ev.Skipped,
+				SkipReasons:  ev.SkipReasons,
 			}
 
 			if ev.PolicyReference != nil {
