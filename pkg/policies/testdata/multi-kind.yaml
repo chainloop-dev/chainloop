@@ -8,6 +8,6 @@ metadata:
 spec:
   policies:
     - kind: SBOM_SPDX_JSON
-      path: testdata/sbom_syft.rego
+      path: sbom_syft.rego
     - kind: ATTESTATION
-      path: testdata/workflow.rego
+      path: workflow.rego

@@ -4,4 +4,4 @@ metadata:
   name: materials
 spec:
   type: ATTESTATION
-  path: testdata/materials.rego
+  path: materials.rego

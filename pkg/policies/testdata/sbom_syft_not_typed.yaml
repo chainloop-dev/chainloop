@@ -3,4 +3,4 @@ kind: Policy
 metadata:
   name: made-with-syft
 spec:
-  path: testdata/sbom_syft.rego
+  path: sbom_syft.rego

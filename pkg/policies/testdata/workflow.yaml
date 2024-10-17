@@ -4,4 +4,4 @@ metadata:
   name: workflow
 spec:
   type: ATTESTATION
-  path: testdata/workflow.rego
+  path: workflow.rego
