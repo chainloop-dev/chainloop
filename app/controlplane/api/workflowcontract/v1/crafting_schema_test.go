@@ -245,8 +245,20 @@ func TestValidateRefs(t *testing.T) {
 			wantErrString: "invalid digest",
 		},
 		{
+			name: "valid digest",
+			ref:  "foobar:policy-name@sha256:133d39edc0f0d32780dd9c940951df0910ef53e6fd64942801ba6fb76494bbf9",
+		},
+		{
 			name: "chainloop provider with valid digest",
 			ref:  "foobar:policy-name@sha256:b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c",
+		},
+		{
+			name: "custom policy with valid digest",
+			ref:  "readonly-demo/policy-name@sha256:b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c",
+		},
+		{
+			name: "builtin policy with valid digest",
+			ref:  "policy-name@sha256:b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c",
 		},
 		{
 			name:          "unsupported protocol",
