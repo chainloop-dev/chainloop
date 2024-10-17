@@ -289,6 +289,8 @@ export interface PolicyEvaluation {
   type: string;
   violations: PolicyViolation[];
   policyReference?: PolicyReference;
+  skipped: boolean;
+  skipReasons: string[];
 }
 
 export interface PolicyEvaluation_AnnotationsEntry {
@@ -1667,6 +1669,8 @@ function createBasePolicyEvaluation(): PolicyEvaluation {
     type: "",
     violations: [],
     policyReference: undefined,
+    skipped: false,
+    skipReasons: [],
   };
 }
 
@@ -1701,6 +1705,12 @@ export const PolicyEvaluation = {
     }
     if (message.policyReference !== undefined) {
       PolicyReference.encode(message.policyReference, writer.uint32(82).fork()).ldelim();
+    }
+    if (message.skipped === true) {
+      writer.uint32(96).bool(message.skipped);
+    }
+    for (const v of message.skipReasons) {
+      writer.uint32(106).string(v!);
     }
     return writer;
   },
@@ -1788,6 +1798,20 @@ export const PolicyEvaluation = {
 
           message.policyReference = PolicyReference.decode(reader, reader.uint32());
           continue;
+        case 12:
+          if (tag !== 96) {
+            break;
+          }
+
+          message.skipped = reader.bool();
+          continue;
+        case 13:
+          if (tag !== 106) {
+            break;
+          }
+
+          message.skipReasons.push(reader.string());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1821,6 +1845,8 @@ export const PolicyEvaluation = {
         ? object.violations.map((e: any) => PolicyViolation.fromJSON(e))
         : [],
       policyReference: isSet(object.policyReference) ? PolicyReference.fromJSON(object.policyReference) : undefined,
+      skipped: isSet(object.skipped) ? Boolean(object.skipped) : false,
+      skipReasons: Array.isArray(object?.skipReasons) ? object.skipReasons.map((e: any) => String(e)) : [],
     };
   },
 
@@ -1855,6 +1881,12 @@ export const PolicyEvaluation = {
     }
     message.policyReference !== undefined &&
       (obj.policyReference = message.policyReference ? PolicyReference.toJSON(message.policyReference) : undefined);
+    message.skipped !== undefined && (obj.skipped = message.skipped);
+    if (message.skipReasons) {
+      obj.skipReasons = message.skipReasons.map((e) => e);
+    } else {
+      obj.skipReasons = [];
+    }
     return obj;
   },
 
@@ -1889,6 +1921,8 @@ export const PolicyEvaluation = {
     message.policyReference = (object.policyReference !== undefined && object.policyReference !== null)
       ? PolicyReference.fromPartial(object.policyReference)
       : undefined;
+    message.skipped = object.skipped ?? false;
+    message.skipReasons = object.skipReasons?.map((e) => e) || [];
     return message;
   },
 };

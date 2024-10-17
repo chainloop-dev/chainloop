@@ -124,6 +124,8 @@ message PolicyEvaluation {
   string type = 8;
   repeated PolicyViolation violations = 9;
   PolicyReference policy_reference = 10;
+  bool skipped = 12;
+  repeated string skip_reasons = 13;
 }
 
 message PolicyViolation {
