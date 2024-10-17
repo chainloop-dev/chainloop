@@ -249,10 +249,11 @@ func (s *testSuite) TestVerifyAttestations() {
 
 func (s *testSuite) TestProviderParts() {
 	testCases := []struct {
-		ref  string
-		prov string
-		name string
-		org  string
+		ref    string
+		prov   string
+		name   string
+		org    string
+		digest string
 	}{
 		{
 			ref:  "chainloop://cyclonedx-freshness",
@@ -301,6 +302,29 @@ func (s *testSuite) TestProviderParts() {
 			prov: "",
 			org:  "myorg",
 			name: "cyclonedx-freshness",
+		},
+		{
+			ref:  "myorg/cyclonedx-freshness@sha256:123123123",
+			org:  "myorg",
+			name: "cyclonedx-freshness@sha256:123123123",
+		},
+		{
+			ref:  "builtin:myorg/cyclonedx-freshness@sha256:123123123",
+			prov: "builtin",
+			org:  "myorg",
+			name: "cyclonedx-freshness@sha256:123123123",
+		},
+		{
+			ref:  "chainloop://builtin:myorg/cyclonedx-freshness@sha256:123123123",
+			prov: "builtin",
+			org:  "myorg",
+			name: "cyclonedx-freshness@sha256:123123123",
+		},
+		{
+			ref:  "chainloop://myorg/cyclonedx-freshness@sha256:123123123",
+			prov: "",
+			org:  "myorg",
+			name: "cyclonedx-freshness@sha256:123123123",
 		},
 	}
 

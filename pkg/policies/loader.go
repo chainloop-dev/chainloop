@@ -205,7 +205,19 @@ type ProviderRef struct {
 }
 
 // ProviderParts returns the provider information for a given reference
-func ProviderParts(ref string) *ProviderRef {
+func ProviderParts(reference string) *ProviderRef {
+	var ref, digest string
+	// first of all, remove the @sha256 suffix to make the parsing easier
+	withDigest := strings.SplitN(reference, "@sha256:", 2)
+
+	if len(withDigest) > 1 {
+		// it has digest
+		ref = withDigest[0]
+		digest = withDigest[1]
+	} else {
+		ref = reference
+	}
+
 	parts := strings.SplitN(ref, "://", 2)
 	var pn []string
 	if len(parts) == 1 {
@@ -230,6 +242,11 @@ func ProviderParts(ref string) *ProviderRef {
 		// the policy is scoped to a specific org
 		orgName = scoped[0]
 		name = scoped[1]
+	}
+
+	// return the digest back
+	if digest != "" {
+		name = fmt.Sprintf("%s@sha256:%s", name, digest)
 	}
 
 	return &ProviderRef{
