@@ -625,7 +625,7 @@ func (s *testSuite) TestLoadPolicySpec() {
 			expectedRef: &v1.ResourceDescriptor{
 				Name: "file://testdata/sbom_syft.yaml",
 				Digest: map[string]string{
-					"sha256": "24c4bd4f56b470d7436ed0c5a340483fff9ad058033f94b164f5efc59aba5136",
+					"sha256": "81b7fbe4c6ef2182fd042a28fa7f3b3971879d18994147cb812b8fe87a4e04e5",
 				},
 			},
 		},
@@ -633,14 +633,14 @@ func (s *testSuite) TestLoadPolicySpec() {
 			name: "by file ref with valid digest",
 			attachment: &v12.PolicyAttachment{
 				Policy: &v12.PolicyAttachment_Ref{
-					Ref: "file://testdata/sbom_syft.yaml@sha256:24c4bd4f56b470d7436ed0c5a340483fff9ad058033f94b164f5efc59aba5136",
+					Ref: "file://testdata/sbom_syft.yaml@sha256:81b7fbe4c6ef2182fd042a28fa7f3b3971879d18994147cb812b8fe87a4e04e5",
 				},
 			},
 			expectedName: "made-with-syft",
 			expectedRef: &v1.ResourceDescriptor{
 				Name: "file://testdata/sbom_syft.yaml",
 				Digest: map[string]string{
-					"sha256": "24c4bd4f56b470d7436ed0c5a340483fff9ad058033f94b164f5efc59aba5136",
+					"sha256": "81b7fbe4c6ef2182fd042a28fa7f3b3971879d18994147cb812b8fe87a4e04e5",
 				},
 			},
 		},

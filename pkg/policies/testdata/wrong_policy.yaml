@@ -3,4 +3,4 @@ kind: Policy
 metadata:
   name: wrong_policy
 spec:
-  path: testdata/wrong_policy.rego
+  path: wrong_policy.rego

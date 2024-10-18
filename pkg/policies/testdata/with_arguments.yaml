@@ -4,4 +4,4 @@ metadata:
   name: workflow
 spec:
   type: ATTESTATION
-  path: testdata/with_arguments.rego
+  path: with_arguments.rego

@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -114,8 +115,15 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		return nil, NewPolicyError(err)
 	}
 
+	var basePath string
+	// if it's a file://, let's calculate the base path for loading referenced policies, from the loader ref
+	if ref != nil {
+		// calculate the file path if it's a file:// reference
+		basePath, _ = ensureScheme(attachment.GetRef(), fileScheme)
+	}
+
 	// load the policy scripts (rego)
-	scripts, err := LoadPolicyScriptsFromSpec(policy, opts.kind)
+	scripts, err := LoadPolicyScriptsFromSpec(policy, opts.kind, basePath)
 	if err != nil {
 		return nil, NewPolicyError(err)
 	}
@@ -449,11 +457,11 @@ func getPolicyEngine(_ *v1.Policy) engine.PolicyEngine {
 // LoadPolicyScriptsFromSpec loads all policy script that matches a given material type. It matches if:
 // * the policy kind is unspecified, meaning that it was forced by name selector
 // * the policy kind is specified, and it's equal to the material type
-func LoadPolicyScriptsFromSpec(policy *v1.Policy, kind v1.CraftingSchema_Material_MaterialType) ([]*engine.Policy, error) {
+func LoadPolicyScriptsFromSpec(policy *v1.Policy, kind v1.CraftingSchema_Material_MaterialType, basePath string) ([]*engine.Policy, error) {
 	scripts := make([]*engine.Policy, 0)
 
 	if policy.GetSpec().GetSource() != nil {
-		script, err := loadLegacyPolicyScript(policy.GetSpec())
+		script, err := loadLegacyPolicyScript(policy.GetSpec(), basePath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load policy script: %w", err)
 		}
@@ -463,7 +471,7 @@ func LoadPolicyScriptsFromSpec(policy *v1.Policy, kind v1.CraftingSchema_Materia
 		specs := policy.GetSpec().GetPolicies()
 		for _, spec := range specs {
 			if spec.GetKind() == v1.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED || spec.GetKind() == kind {
-				script, err := loadPolicyScript(spec)
+				script, err := loadPolicyScript(spec, basePath)
 				if err != nil {
 					return nil, fmt.Errorf("failed to load policy script: %w", err)
 				}
@@ -475,14 +483,16 @@ func LoadPolicyScriptsFromSpec(policy *v1.Policy, kind v1.CraftingSchema_Materia
 	return scripts, nil
 }
 
-func loadPolicyScript(spec *v1.PolicySpecV2) ([]byte, error) {
+func loadPolicyScript(spec *v1.PolicySpecV2, basePath string) ([]byte, error) {
 	var content []byte
 	var err error
 	switch source := spec.GetSource().(type) {
 	case *v1.PolicySpecV2_Embedded:
 		content = []byte(source.Embedded)
 	case *v1.PolicySpecV2_Path:
-		content, err = blob.LoadFileOrURL(source.Path)
+		// path relative to policy folder
+		scriptPath := filepath.Join(filepath.Dir(basePath), source.Path)
+		content, err = blob.LoadFileOrURL(scriptPath)
 		if err != nil {
 			return nil, fmt.Errorf("loading policy content: %w", err)
 		}
@@ -493,7 +503,7 @@ func loadPolicyScript(spec *v1.PolicySpecV2) ([]byte, error) {
 	return content, nil
 }
 
-func loadLegacyPolicyScript(spec *v1.PolicySpec) ([]byte, error) {
+func loadLegacyPolicyScript(spec *v1.PolicySpec, basePath string) ([]byte, error) {
 	// legacy policies
 	var content []byte
 	var err error
@@ -501,7 +511,9 @@ func loadLegacyPolicyScript(spec *v1.PolicySpec) ([]byte, error) {
 	case *v1.PolicySpec_Embedded:
 		content = []byte(source.Embedded)
 	case *v1.PolicySpec_Path:
-		content, err = blob.LoadFileOrURL(source.Path)
+		// path relative to policy folder
+		scriptPath := filepath.Join(filepath.Dir(basePath), source.Path)
+		content, err = blob.LoadFileOrURL(scriptPath)
 		if err != nil {
 			return nil, fmt.Errorf("loading policy content: %w", err)
 		}
