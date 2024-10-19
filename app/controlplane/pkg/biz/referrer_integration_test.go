@@ -402,9 +402,9 @@ func (s *referrerIntegrationTestSuite) SetupTest() {
 	s.org2UUID, err = uuid.Parse(s.org2.ID)
 	require.NoError(s.T(), err)
 
-	s.workflow1, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "wf", Team: "team", OrgID: s.org1.ID})
+	s.workflow1, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "wf", Team: "team", OrgID: s.org1.ID, Project: "test"})
 	require.NoError(s.T(), err)
-	s.workflow2, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "wf-from-org-2", Team: "team", OrgID: s.org2.ID})
+	s.workflow2, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "wf-from-org-2", Team: "team", OrgID: s.org2.ID, Project: "test"})
 	require.NoError(s.T(), err)
 
 	// user 1 has access to org 1 and 2

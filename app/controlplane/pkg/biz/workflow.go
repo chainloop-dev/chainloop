@@ -86,6 +86,8 @@ func NewWorkflowUsecase(wfr WorkflowRepo, schemaUC *WorkflowContractUseCase, log
 func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts) (*Workflow, error) {
 	if opts.Name == "" {
 		return nil, errors.New("workflow name is required")
+	} else if opts.Project == "" {
+		return nil, errors.New("project name is required")
 	}
 
 	// validate format of the name and the project

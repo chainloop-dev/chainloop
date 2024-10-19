@@ -74,8 +74,9 @@ func (s *robotAccountTestSuite) SetupTest() {
 	s.NoError(err)
 
 	wf, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{
-		Name:  "myworkflow",
-		OrgID: s.org.ID,
+		Name:    "myworkflow",
+		Project: "myproject",
+		OrgID:   s.org.ID,
 	})
 	s.NoError(err)
 	s.ra, err = s.RobotAccount.Create(ctx, "myRobotAccount", s.org.ID, wf.ID.String())

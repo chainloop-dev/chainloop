@@ -221,16 +221,6 @@ func ProjectHasSuffix(v string) predicate.Workflow {
 	return predicate.Workflow(sql.FieldHasSuffix(FieldProject, v))
 }
 
-// ProjectIsNil applies the IsNil predicate on the "project" field.
-func ProjectIsNil() predicate.Workflow {
-	return predicate.Workflow(sql.FieldIsNull(FieldProject))
-}
-
-// ProjectNotNil applies the NotNil predicate on the "project" field.
-func ProjectNotNil() predicate.Workflow {
-	return predicate.Workflow(sql.FieldNotNull(FieldProject))
-}
-
 // ProjectEqualFold applies the EqualFold predicate on the "project" field.
 func ProjectEqualFold(v string) predicate.Workflow {
 	return predicate.Workflow(sql.FieldEqualFold(FieldProject, v))
