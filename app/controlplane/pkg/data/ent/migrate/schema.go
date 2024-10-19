@@ -371,14 +371,6 @@ var (
 				},
 			},
 			{
-				Name:    "workflow_name_organization_id",
-				Unique:  true,
-				Columns: []*schema.Column{WorkflowsColumns[1], WorkflowsColumns[9]},
-				Annotation: &entsql.IndexAnnotation{
-					Where: "deleted_at IS NULL",
-				},
-			},
-			{
 				Name:    "workflow_organization_id_id",
 				Unique:  true,
 				Columns: []*schema.Column{WorkflowsColumns[9], WorkflowsColumns[0]},

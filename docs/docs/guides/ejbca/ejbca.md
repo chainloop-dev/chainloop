@@ -55,7 +55,7 @@ Using the following command (note that no `key` is provided), the following sequ
 
 #### Crafting and signing an attestation.
 ```shell
-> chainloop att init --replace --name mywf
+> chainloop att init --workflow mywf --project myproject
 INF Attestation initialized! now you can check its status or add materials to it
 ┌───────────────────┬──────────────────────────────────────┐
 │ Initialized At    │ 25 Jun 24 10:49 UTC                  │

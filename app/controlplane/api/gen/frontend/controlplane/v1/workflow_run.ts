@@ -61,7 +61,6 @@ export interface AttestationServiceGetPolicyGroupResponse {
 export interface AttestationServiceGetContractRequest {
   contractRevision: number;
   workflowName: string;
-  /** optional for now for compatibility with the CLI */
   projectName: string;
 }
 
@@ -79,7 +78,6 @@ export interface AttestationServiceInitRequest {
   jobUrl: string;
   runner: CraftingSchema_Runner_RunnerType;
   workflowName: string;
-  /** optional for now for compatibility with the CLI */
   projectName: string;
 }
 

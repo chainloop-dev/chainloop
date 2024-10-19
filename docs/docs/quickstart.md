@@ -53,7 +53,7 @@ This quickstart will guide you through the process of installing the Chainloop C
     We'll start with the [initialization](/getting-started/attestation-crafting#initialization) of an attestation for our previously created workflow (`mywf`)
 
     ```bash
-    chainloop att init --name mywf
+    chainloop att init --workflow mywf --project myproject
     ```
 
     Once attestation is initiated, we can start [adding materials](/getting-started/attestation-crafting#adding-materials) to it. 

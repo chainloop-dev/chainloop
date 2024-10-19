@@ -17,6 +17,7 @@ jobs:
       CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_WF_RELEASE }}
       # The name of the workflow registered in Chainloop control plane
       CHAINLOOP_WORKFLOW_NAME: build-and-test
+      CHAINLOOP_PROJECT_NAME: skynet
     name: "Release binary and container images"
     runs-on: ubuntu-latest
     permissions:
@@ -35,7 +36,7 @@ jobs:
 
       - name: Initialize Attestation
         run: |
-          chainloop attestation init --name $CHAINLOOP_WORKFLOW_NAME
+          chainloop attestation init --workflow $CHAINLOOP_WORKFLOW_NAME --project $CHAINLOOP_PROJECT_NAME
 
       - name: Set up Go
         uses: actions/setup-go@v3

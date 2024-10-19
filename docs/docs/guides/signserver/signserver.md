@@ -36,7 +36,7 @@ This is an example of a Chainloop session integrated with SignServer:
 
 Crafting and signing an attestation.
 ```shell
-➜ chainloop att init --name mywf
+➜ chainloop att init --workflow mywf --project myproject
 INF Attestation initialized! now you can check its status or add materials to it
 ┌───────────────────┬──────────────────────────────────────┐
 │ Initialized At    │ 18 Jun 24 09:10 UTC                  │

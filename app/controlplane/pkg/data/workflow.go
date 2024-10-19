@@ -165,13 +165,9 @@ func (r *WorkflowRepo) GetOrgScoped(ctx context.Context, orgID, workflowID uuid.
 
 // GetOrgScopedByName Gets a workflow by name making sure it belongs to a given org
 func (r *WorkflowRepo) GetOrgScopedByProjectAndName(ctx context.Context, orgID uuid.UUID, projectName, workflowName string) (*biz.Workflow, error) {
-	q := orgScopedQuery(r.data.DB, orgID).QueryWorkflows().Where(workflow.Name(workflowName), workflow.DeletedAtIsNil())
-	// TODO: make it mandatory
-	if projectName != "" {
-		q = q.Where(workflow.Project(projectName))
-	}
-
-	wf, err := q.WithContract().WithOrganization().
+	wf, err := orgScopedQuery(r.data.DB, orgID).QueryWorkflows().
+		Where(workflow.Project(projectName), workflow.Name(workflowName), workflow.DeletedAtIsNil()).
+		WithContract().WithOrganization().
 		Order(ent.Desc(workflow.FieldCreatedAt)).
 		Only(ctx)
 

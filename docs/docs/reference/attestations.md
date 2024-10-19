@@ -11,7 +11,7 @@ Not all pieces of evidences need to to be registered as a material on the contra
 its value and a new flag `--kind`, which determines that type of material you’re attesting, example:
 
 ```bash
-$ chainloop attestation init --name wf-test
+$ chainloop attestation init --workflow wf-test --project core
 INF Attestation initialized! now you can check its status or add materials to it
 ┌───────────────────┬──────────────────────────────────────┐
 │ Initialized At    │ 21 May 24 07:23 UTC                  │
@@ -97,7 +97,7 @@ In order to let the auto-discovery work, don’t set `--name` nor `--kind`, let 
 Example of usage. Given the following contract:
 
 ```bash
-$ chainloop attestation init --name wf-test
+$ chainloop attestation init --workflow wf-test --project core
 INF Attestation initialized! now you can check its status or add materials to it
 ┌───────────────────┬──────────────────────────────────────┐
 │ Initialized At    │ 22 May 24 13:38 UTC                  │
