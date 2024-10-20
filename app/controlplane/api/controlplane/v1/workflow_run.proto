@@ -26,6 +26,7 @@ option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/con
 
 // This service is used by the CLI to generate attestation
 service AttestationService {
+  rpc FindOrCreateWorkflow(FindOrCreateWorkflowRequest) returns (FindOrCreateWorkflowResponse);
   rpc GetContract(AttestationServiceGetContractRequest) returns (AttestationServiceGetContractResponse);
   rpc Init(AttestationServiceInitRequest) returns (AttestationServiceInitResponse);
   rpc Store(AttestationServiceStoreRequest) returns (AttestationServiceStoreResponse);
@@ -43,6 +44,17 @@ service AttestationService {
 service WorkflowRunService {
   rpc List(WorkflowRunServiceListRequest) returns (WorkflowRunServiceListResponse);
   rpc View(WorkflowRunServiceViewRequest) returns (WorkflowRunServiceViewResponse);
+}
+
+message FindOrCreateWorkflowRequest {
+  string workflow_name = 4 [(buf.validate.field).string.min_len = 1];
+  string project_name = 5 [(buf.validate.field).string.min_len = 1];
+  // name of an existing contract, if not set, a new contract will be created
+  string contract_name = 6;
+}
+
+message FindOrCreateWorkflowResponse {
+  WorkflowItem result = 1;
 }
 
 message AttestationServiceGetPolicyRequest {

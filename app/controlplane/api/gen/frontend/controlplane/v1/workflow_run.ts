@@ -23,6 +23,17 @@ import {
 
 export const protobufPackage = "controlplane.v1";
 
+export interface FindOrCreateWorkflowRequest {
+  workflowName: string;
+  projectName: string;
+  /** name of an existing contract, if not set, a new contract will be created */
+  contractName: string;
+}
+
+export interface FindOrCreateWorkflowResponse {
+  result?: WorkflowItem;
+}
+
 export interface AttestationServiceGetPolicyRequest {
   /** Provider name. If not set, the default provider will be used */
   provider: string;
@@ -203,6 +214,148 @@ export interface AttestationServiceGetUploadCredsResponse_Result {
   token: string;
   backend?: CASBackendItem;
 }
+
+function createBaseFindOrCreateWorkflowRequest(): FindOrCreateWorkflowRequest {
+  return { workflowName: "", projectName: "", contractName: "" };
+}
+
+export const FindOrCreateWorkflowRequest = {
+  encode(message: FindOrCreateWorkflowRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.workflowName !== "") {
+      writer.uint32(34).string(message.workflowName);
+    }
+    if (message.projectName !== "") {
+      writer.uint32(42).string(message.projectName);
+    }
+    if (message.contractName !== "") {
+      writer.uint32(50).string(message.contractName);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): FindOrCreateWorkflowRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFindOrCreateWorkflowRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.workflowName = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.projectName = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.contractName = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FindOrCreateWorkflowRequest {
+    return {
+      workflowName: isSet(object.workflowName) ? String(object.workflowName) : "",
+      projectName: isSet(object.projectName) ? String(object.projectName) : "",
+      contractName: isSet(object.contractName) ? String(object.contractName) : "",
+    };
+  },
+
+  toJSON(message: FindOrCreateWorkflowRequest): unknown {
+    const obj: any = {};
+    message.workflowName !== undefined && (obj.workflowName = message.workflowName);
+    message.projectName !== undefined && (obj.projectName = message.projectName);
+    message.contractName !== undefined && (obj.contractName = message.contractName);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FindOrCreateWorkflowRequest>, I>>(base?: I): FindOrCreateWorkflowRequest {
+    return FindOrCreateWorkflowRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<FindOrCreateWorkflowRequest>, I>>(object: I): FindOrCreateWorkflowRequest {
+    const message = createBaseFindOrCreateWorkflowRequest();
+    message.workflowName = object.workflowName ?? "";
+    message.projectName = object.projectName ?? "";
+    message.contractName = object.contractName ?? "";
+    return message;
+  },
+};
+
+function createBaseFindOrCreateWorkflowResponse(): FindOrCreateWorkflowResponse {
+  return { result: undefined };
+}
+
+export const FindOrCreateWorkflowResponse = {
+  encode(message: FindOrCreateWorkflowResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.result !== undefined) {
+      WorkflowItem.encode(message.result, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): FindOrCreateWorkflowResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFindOrCreateWorkflowResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.result = WorkflowItem.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FindOrCreateWorkflowResponse {
+    return { result: isSet(object.result) ? WorkflowItem.fromJSON(object.result) : undefined };
+  },
+
+  toJSON(message: FindOrCreateWorkflowResponse): unknown {
+    const obj: any = {};
+    message.result !== undefined && (obj.result = message.result ? WorkflowItem.toJSON(message.result) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FindOrCreateWorkflowResponse>, I>>(base?: I): FindOrCreateWorkflowResponse {
+    return FindOrCreateWorkflowResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<FindOrCreateWorkflowResponse>, I>>(object: I): FindOrCreateWorkflowResponse {
+    const message = createBaseFindOrCreateWorkflowResponse();
+    message.result = (object.result !== undefined && object.result !== null)
+      ? WorkflowItem.fromPartial(object.result)
+      : undefined;
+    return message;
+  },
+};
 
 function createBaseAttestationServiceGetPolicyRequest(): AttestationServiceGetPolicyRequest {
   return { provider: "", policyName: "", orgName: "" };
@@ -2036,6 +2189,10 @@ export const AttestationServiceGetUploadCredsResponse_Result = {
 
 /** This service is used by the CLI to generate attestation */
 export interface AttestationService {
+  FindOrCreateWorkflow(
+    request: DeepPartial<FindOrCreateWorkflowRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<FindOrCreateWorkflowResponse>;
   GetContract(
     request: DeepPartial<AttestationServiceGetContractRequest>,
     metadata?: grpc.Metadata,
@@ -2076,6 +2233,7 @@ export class AttestationServiceClientImpl implements AttestationService {
 
   constructor(rpc: Rpc) {
     this.rpc = rpc;
+    this.FindOrCreateWorkflow = this.FindOrCreateWorkflow.bind(this);
     this.GetContract = this.GetContract.bind(this);
     this.Init = this.Init.bind(this);
     this.Store = this.Store.bind(this);
@@ -2083,6 +2241,17 @@ export class AttestationServiceClientImpl implements AttestationService {
     this.Cancel = this.Cancel.bind(this);
     this.GetPolicy = this.GetPolicy.bind(this);
     this.GetPolicyGroup = this.GetPolicyGroup.bind(this);
+  }
+
+  FindOrCreateWorkflow(
+    request: DeepPartial<FindOrCreateWorkflowRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<FindOrCreateWorkflowResponse> {
+    return this.rpc.unary(
+      AttestationServiceFindOrCreateWorkflowDesc,
+      FindOrCreateWorkflowRequest.fromPartial(request),
+      metadata,
+    );
   }
 
   GetContract(
@@ -2152,6 +2321,29 @@ export class AttestationServiceClientImpl implements AttestationService {
 }
 
 export const AttestationServiceDesc = { serviceName: "controlplane.v1.AttestationService" };
+
+export const AttestationServiceFindOrCreateWorkflowDesc: UnaryMethodDefinitionish = {
+  methodName: "FindOrCreateWorkflow",
+  service: AttestationServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return FindOrCreateWorkflowRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = FindOrCreateWorkflowResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
 
 export const AttestationServiceGetContractDesc: UnaryMethodDefinitionish = {
   methodName: "GetContract",

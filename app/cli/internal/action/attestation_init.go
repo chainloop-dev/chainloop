@@ -70,7 +70,7 @@ func NewAttestationInit(cfg *AttestationInitOpts) (*AttestationInit, error) {
 }
 
 // returns the attestation ID
-func (action *AttestationInit) Run(ctx context.Context, contractRevision int, projectName, workflowName string) (string, error) {
+func (action *AttestationInit) Run(ctx context.Context, contractRevision int, projectName, workflowName, newWorkflowContractName string) (string, error) {
 	if action.dryRun && action.useRemoteState {
 		return "", errors.New("remote state is not compatible with dry-run mode")
 	}
@@ -85,7 +85,18 @@ func (action *AttestationInit) Run(ctx context.Context, contractRevision int, pr
 
 	action.Logger.Debug().Msg("Retrieving attestation definition")
 	client := pb.NewAttestationServiceClient(action.ActionsOpts.CPConnection)
-	// get information of the workflow
+	// 1 - Find or create the workflow
+	workflowsResp, err := client.FindOrCreateWorkflow(ctx, &pb.FindOrCreateWorkflowRequest{
+		ProjectName:  projectName,
+		WorkflowName: workflowName,
+		ContractName: newWorkflowContractName,
+	})
+	if err != nil {
+		return "", err
+	}
+	workflow := workflowsResp.GetResult()
+
+	// 2 - Get contract
 	contractResp, err := client.GetContract(ctx, &pb.AttestationServiceGetContractRequest{
 		ContractRevision: int32(contractRevision),
 		WorkflowName:     workflowName,
@@ -95,10 +106,7 @@ func (action *AttestationInit) Run(ctx context.Context, contractRevision int, pr
 		return "", err
 	}
 
-	workflow := contractResp.GetResult().GetWorkflow()
 	contractVersion := contractResp.Result.GetContract()
-	contract := contractResp.GetResult().GetContract().GetV1()
-
 	workflowMeta := &clientAPI.WorkflowMetadata{
 		WorkflowId:     workflow.GetId(),
 		Name:           workflow.GetName(),
@@ -110,7 +118,7 @@ func (action *AttestationInit) Run(ctx context.Context, contractRevision int, pr
 	action.Logger.Debug().Msg("workflow contract and metadata retrieved from the control plane")
 
 	// Auto discover the runner context and enforce against the one in the contract if needed
-	discoveredRunner, err := crafter.DiscoverAndEnforceRunner(contract.GetRunner().GetType(), action.dryRun, action.Logger)
+	discoveredRunner, err := crafter.DiscoverAndEnforceRunner(contractVersion.GetV1().GetRunner().GetType(), action.dryRun, action.Logger)
 	if err != nil {
 		return "", ErrRunnerContextNotFound{err.Error()}
 	}

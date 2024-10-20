@@ -95,18 +95,13 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 		return nil, NewErrValidation(err)
 	}
 
-	if opts.Project != "" {
-		if err := ValidateIsDNS1123(opts.Project); err != nil {
-			return nil, NewErrValidation(err)
-		}
+	if err := ValidateIsDNS1123(opts.Project); err != nil {
+		return nil, NewErrValidation(err)
 	}
 
 	// If the name is not provided for the contract we come up with one based on the workflow info
 	if opts.ContractName == "" {
-		opts.ContractName = opts.Name
-		if opts.Project != "" {
-			opts.ContractName = fmt.Sprintf("%s-%s", opts.Project, opts.Name)
-		}
+		opts.ContractName = fmt.Sprintf("%s-%s", opts.Project, opts.Name)
 	}
 
 	contract, err := uc.findOrCreateContract(ctx, opts.OrgID, opts.ContractName)

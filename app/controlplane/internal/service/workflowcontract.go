@@ -92,13 +92,16 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 		return nil, err
 	}
 
+	// we need this token to forward it to the provider service next
 	token, err := usercontext.GetRawToken(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = s.contractUseCase.ValidateContractPolicies(req.RawContract, token); err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+	if len(req.RawContract) != 0 {
+		if err = s.contractUseCase.ValidateContractPolicies(req.RawContract, token); err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
 	}
 
 	// Currently supporting only v1 version

@@ -25,11 +25,12 @@ import (
 
 func newAttestationInitCmd() *cobra.Command {
 	var (
-		force             bool
-		contractRevision  int
-		attestationDryRun bool
-		workflowName      string
-		projectName       string
+		force                   bool
+		contractRevision        int
+		attestationDryRun       bool
+		workflowName            string
+		projectName             string
+		newWorkflowcontractName string
 	)
 
 	cmd := &cobra.Command{
@@ -59,7 +60,7 @@ func newAttestationInitCmd() *cobra.Command {
 			}
 
 			// Initialize it
-			attestationID, err := a.Run(cmd.Context(), contractRevision, projectName, workflowName)
+			attestationID, err := a.Run(cmd.Context(), contractRevision, projectName, workflowName, newWorkflowcontractName)
 			if err != nil {
 				if errors.Is(err, action.ErrAttestationAlreadyExist) {
 					return err
@@ -110,6 +111,7 @@ func newAttestationInitCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&projectName, "project", "", "name of the project of this workflow")
 	cobra.CheckErr(cmd.MarkFlagRequired("project"))
+	cmd.Flags().StringVar(&newWorkflowcontractName, "contract", "", "name of an existing contract to attach it to the auto-created workflow (it doesn't update an existing one)")
 
 	return cmd
 }
