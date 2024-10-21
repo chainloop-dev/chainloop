@@ -107,6 +107,9 @@ func newAttestationInitCmd() *cobra.Command {
 	cobra.CheckErr(cmd.Flags().MarkDeprecated("name", "please use --workflow instead"))
 	cmd.Flags().StringVar(&workflowName, "workflow-name", "", "name of the workflow to run the attestation")
 	cobra.CheckErr(cmd.Flags().MarkDeprecated("workflow-name", "please use --workflow instead"))
+
 	cmd.Flags().StringVar(&projectName, "project", "", "name of the project of this workflow")
+	cobra.CheckErr(cmd.MarkFlagRequired("project"))
+
 	return cmd
 }

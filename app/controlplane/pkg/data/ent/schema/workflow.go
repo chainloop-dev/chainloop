@@ -35,7 +35,7 @@ type Workflow struct {
 func (Workflow) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("name").Immutable(),
-		field.String("project").Optional(),
+		field.String("project"),
 		field.String("team").Optional(),
 		field.Int("runs_count").Default(0),
 		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),
@@ -71,11 +71,6 @@ func (Workflow) Edges() []ent.Edge {
 func (Workflow) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("name", "project").Edges("organization").Unique().Annotations(
-			entsql.IndexWhere("deleted_at IS NULL"),
-		),
-		// DEPRECATED, will be replaced by the above index
-		// names are unique within a organization and affects only to non-deleted items
-		index.Fields("name").Edges("organization").Unique().Annotations(
 			entsql.IndexWhere("deleted_at IS NULL"),
 		),
 		index.Fields("organization_id", "id").Unique().Annotations(

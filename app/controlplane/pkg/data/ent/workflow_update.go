@@ -50,12 +50,6 @@ func (wu *WorkflowUpdate) SetNillableProject(s *string) *WorkflowUpdate {
 	return wu
 }
 
-// ClearProject clears the value of the "project" field.
-func (wu *WorkflowUpdate) ClearProject() *WorkflowUpdate {
-	wu.mutation.ClearProject()
-	return wu
-}
-
 // SetTeam sets the "team" field.
 func (wu *WorkflowUpdate) SetTeam(s string) *WorkflowUpdate {
 	wu.mutation.SetTeam(s)
@@ -401,9 +395,6 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := wu.mutation.Project(); ok {
 		_spec.SetField(workflow.FieldProject, field.TypeString, value)
 	}
-	if wu.mutation.ProjectCleared() {
-		_spec.ClearField(workflow.FieldProject, field.TypeString)
-	}
 	if value, ok := wu.mutation.Team(); ok {
 		_spec.SetField(workflow.FieldTeam, field.TypeString, value)
 	}
@@ -702,12 +693,6 @@ func (wuo *WorkflowUpdateOne) SetNillableProject(s *string) *WorkflowUpdateOne {
 	if s != nil {
 		wuo.SetProject(*s)
 	}
-	return wuo
-}
-
-// ClearProject clears the value of the "project" field.
-func (wuo *WorkflowUpdateOne) ClearProject() *WorkflowUpdateOne {
-	wuo.mutation.ClearProject()
 	return wuo
 }
 
@@ -1085,9 +1070,6 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 	}
 	if value, ok := wuo.mutation.Project(); ok {
 		_spec.SetField(workflow.FieldProject, field.TypeString, value)
-	}
-	if wuo.mutation.ProjectCleared() {
-		_spec.ClearField(workflow.FieldProject, field.TypeString)
 	}
 	if value, ok := wuo.mutation.Team(); ok {
 		_spec.SetField(workflow.FieldTeam, field.TypeString, value)

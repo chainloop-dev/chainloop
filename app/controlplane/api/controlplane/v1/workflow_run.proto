@@ -87,8 +87,7 @@ message AttestationServiceGetPolicyGroupResponse {
 message AttestationServiceGetContractRequest {
   int32 contract_revision = 1;
   string workflow_name = 2 [(buf.validate.field).string.min_len = 1];
-  // optional for now for compatibility with the CLI
-  string project_name = 3;
+  string project_name = 3 [(buf.validate.field).string.min_len = 1];
 }
 
 message AttestationServiceGetContractResponse {
@@ -104,9 +103,8 @@ message AttestationServiceInitRequest {
   int32 contract_revision = 1;
   string job_url = 2;
   workflowcontract.v1.CraftingSchema.Runner.RunnerType runner = 3;
-  string workflow_name = 4;
-  // optional for now for compatibility with the CLI
-  string project_name = 5;
+  string workflow_name = 4 [(buf.validate.field).string.min_len = 1];
+  string project_name = 5 [(buf.validate.field).string.min_len = 1];
 }
 
 message AttestationServiceInitResponse {

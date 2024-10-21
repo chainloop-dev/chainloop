@@ -214,7 +214,7 @@ func (s *OrgIntegrationTestSuite) SetupTest() {
 	assert.NoError(err)
 
 	// Workflow + contract
-	_, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test-workflow", OrgID: s.org.ID})
+	_, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test-workflow", OrgID: s.org.ID, Project: "test-project"})
 	assert.NoError(err)
 
 	// check integration, OCI repository and workflow and contracts are present in the db

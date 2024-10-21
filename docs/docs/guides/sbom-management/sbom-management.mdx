@@ -79,7 +79,7 @@ Although the workflow run process can be complex, we will highlight the three mo
 Before adding and sending SBOMs to Chainloop, initiating the attestation process is necessary.
 ```bash
 # --name sbom-cdx is an example of the name of the workflow registered in Chainloop's control plane
-chainloop attestation init --name sbom-cdx
+chainloop attestation init --workflow sbom-cdx --project my-project
 ```
 ### Generating SBOMs
 Generate SBOM with Syft. Running this command locally will probably generate an empty SBOM, but it should be good enough in our example.

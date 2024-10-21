@@ -221,11 +221,11 @@ func (s *dispatcherTestSuite) SetupTest() {
 	assert.NoError(s.T(), err)
 
 	// Workflow
-	s.workflow, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test-workflow", OrgID: s.org.ID})
+	s.workflow, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test-workflow", OrgID: s.org.ID, Project: "test-project"})
 	assert.NoError(s.T(), err)
 
 	// Workflow
-	s.emptyWorkflow, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "empty-workflow", OrgID: s.org.ID})
+	s.emptyWorkflow, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "empty-workflow", OrgID: s.org.ID, Project: "test-project"})
 	assert.NoError(s.T(), err)
 
 	customImplementation := mockedSDK.NewFanOutPlugin(s.T())

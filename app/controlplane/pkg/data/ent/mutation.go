@@ -8446,22 +8446,9 @@ func (m *WorkflowMutation) OldProject(ctx context.Context) (v string, err error)
 	return oldValue.Project, nil
 }
 
-// ClearProject clears the value of the "project" field.
-func (m *WorkflowMutation) ClearProject() {
-	m.project = nil
-	m.clearedFields[workflow.FieldProject] = struct{}{}
-}
-
-// ProjectCleared returns if the "project" field was cleared in this mutation.
-func (m *WorkflowMutation) ProjectCleared() bool {
-	_, ok := m.clearedFields[workflow.FieldProject]
-	return ok
-}
-
 // ResetProject resets all changes to the "project" field.
 func (m *WorkflowMutation) ResetProject() {
 	m.project = nil
-	delete(m.clearedFields, workflow.FieldProject)
 }
 
 // SetTeam sets the "team" field.
@@ -9289,9 +9276,6 @@ func (m *WorkflowMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *WorkflowMutation) ClearedFields() []string {
 	var fields []string
-	if m.FieldCleared(workflow.FieldProject) {
-		fields = append(fields, workflow.FieldProject)
-	}
 	if m.FieldCleared(workflow.FieldTeam) {
 		fields = append(fields, workflow.FieldTeam)
 	}
@@ -9315,9 +9299,6 @@ func (m *WorkflowMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *WorkflowMutation) ClearField(name string) error {
 	switch name {
-	case workflow.FieldProject:
-		m.ClearProject()
-		return nil
 	case workflow.FieldTeam:
 		m.ClearTeam()
 		return nil

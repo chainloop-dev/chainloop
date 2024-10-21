@@ -51,7 +51,7 @@ chainloop workflow list --token <your-token>
 API Tokens can be used to perform attestations, the only requirement is that the operator should create a workflow prior to run the attestation and an api token. Example:
 
 ```bash
-$ chainloop attestation init --name release-demo-wf --token $API_TOKEN
+$ chainloop attestation init --workflow release-demo-wf --project core --token $API_TOKEN
 INF Attestation initialized! now you can check its status or add materials to it
 ┌───────────────────┬──────────────────────────────────────┐
 │ Initialized At    │ 13 May 24 12:23 UTC                  │

@@ -75,7 +75,6 @@ func (m *Chainloop) Init(
 	// Workflow name to be used for the attestation
 	workflowName string,
 	// Project name to be used for the attestation
-	// +optional
 	projectName string,
 ) (*Attestation, error) {
 	att := &Attestation{

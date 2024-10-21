@@ -9,7 +9,6 @@
       "type": "integer"
     },
     "^(projectName)$": {
-      "description": "optional for now for compatibility with the CLI",
       "type": "string"
     },
     "^(workflowName)$": {
@@ -23,7 +22,6 @@
       "type": "integer"
     },
     "project_name": {
-      "description": "optional for now for compatibility with the CLI",
       "type": "string"
     },
     "workflow_name": {

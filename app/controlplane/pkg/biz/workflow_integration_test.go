@@ -89,25 +89,31 @@ func (s *workflowIntegrationTestSuite) TestCreateDuplicatedName() {
 	ctx := context.Background()
 
 	const workflowName = "name"
-	existingWorkflow, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: workflowName})
+	existingWorkflow, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: workflowName, Project: "project"})
 	require.NoError(s.T(), err)
 
-	s.Run("can't create a workflow with the same name", func() {
-		_, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: workflowName})
-		s.ErrorContains(err, "name already taken")
+	s.Run("can't create a workflow with the same name in the same project", func() {
+		_, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: workflowName, Project: "project"})
+		s.ErrorContains(err, "already exists")
+	})
+
+	s.Run("but can do it in another project", func() {
+		_, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: workflowName, Project: "another-project"})
+		s.NoError(err)
 	})
 
 	s.Run("but if we delete it we can", func() {
 		err = s.Workflow.Delete(ctx, s.org.ID, existingWorkflow.ID.String())
 		require.NoError(s.T(), err)
 
-		_, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: workflowName})
+		_, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: workflowName, Project: "project"})
 		require.NoError(s.T(), err)
 	})
 }
 
 func (s *workflowIntegrationTestSuite) TestCreate() {
 	ctx := context.Background()
+	const project = "project"
 	testCases := []struct {
 		name       string
 		opts       *biz.WorkflowCreateOpts
@@ -115,22 +121,27 @@ func (s *workflowIntegrationTestSuite) TestCreate() {
 	}{
 		{
 			name:       "org missing",
-			opts:       &biz.WorkflowCreateOpts{Name: "name"},
+			opts:       &biz.WorkflowCreateOpts{Name: "name", Project: project},
 			wantErrMsg: "required",
 		},
 		{
 			name:       "name missing",
-			opts:       &biz.WorkflowCreateOpts{OrgID: s.org.ID},
+			opts:       &biz.WorkflowCreateOpts{OrgID: s.org.ID, Project: project},
+			wantErrMsg: "required",
+		},
+		{
+			name:       "project missing",
+			opts:       &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name"},
 			wantErrMsg: "required",
 		},
 		{
 			name:       "invalid name",
-			opts:       &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "this/not/valid"},
+			opts:       &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "this/not/valid", Project: project},
 			wantErrMsg: "RFC 1123",
 		},
 		{
 			name:       "another invalid name",
-			opts:       &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "this-not Valid"},
+			opts:       &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "this-not Valid", Project: project},
 			wantErrMsg: "RFC 1123",
 		},
 		{
@@ -140,11 +151,11 @@ func (s *workflowIntegrationTestSuite) TestCreate() {
 		},
 		{
 			name: "non-existing contract will create it",
-			opts: &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name", ContractName: uuid.Generate().String()},
+			opts: &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name", ContractName: uuid.Generate().String(), Project: project},
 		},
 		{
-			name: "can create it with just the name and the org",
-			opts: &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name2"},
+			name: "can create it with just the name, the project and the org",
+			opts: &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name2", Project: project},
 		},
 		{
 			name: "with all items",
@@ -184,7 +195,7 @@ func (s *workflowIntegrationTestSuite) TestUpdate() {
 
 	org2, err := s.Organization.CreateWithRandomName(context.Background())
 	require.NoError(s.T(), err)
-	workflow, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: name, OrgID: s.org.ID})
+	workflow, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: name, OrgID: s.org.ID, Project: project})
 	require.NoError(s.T(), err)
 
 	// Create two contracts in two different orgs

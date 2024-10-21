@@ -57,7 +57,7 @@ release:
 
   before_script:
     # Initialize attestation
-    - ./chainloop att init
+    - chainloop att init --token $CHAINLOOP_TOKEN --workflow build-and-test --project skynet
 
     # Install Syft
     - wget --no-verbose https://raw.githubusercontent.com/anchore/syft/main/install.sh -O - | sh -s -- -b /usr/local/bin
@@ -79,11 +79,11 @@ release:
     - syft packages registry.gitlab.com/chainloop-dev/integration-demo:$CI_COMMIT_REF_NAME -o cyclonedx-json --file sbom.cyclonedx.json
 
     # Add attestation
-    - ./chainloop attestation add --name sbom --value sbom.cyclonedx.json
-    - ./chainloop attestation add --name image --value registry.gitlab.com/chainloop-dev/integration-demo:$CI_COMMIT_REF_NAME
+    - chainloop attestation add --name sbom --value sbom.cyclonedx.json
+    - chainloop attestation add --name image --value registry.gitlab.com/chainloop-dev/integration-demo:$CI_COMMIT_REF_NAME
 
     # Finish attestation
-    - ./chainloop attestation push --key env://CHAINLOOP_SIGNING_KEY --graceful-exit=false
+    - chainloop attestation push --key env://CHAINLOOP_SIGNING_KEY
 
   after_script:
-    - ./chainloop attestation reset || true
+    - chainloop attestation reset || true

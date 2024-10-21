@@ -86,6 +86,8 @@ func NewWorkflowUsecase(wfr WorkflowRepo, schemaUC *WorkflowContractUseCase, log
 func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts) (*Workflow, error) {
 	if opts.Name == "" {
 		return nil, errors.New("workflow name is required")
+	} else if opts.Project == "" {
+		return nil, errors.New("project name is required")
 	}
 
 	// validate format of the name and the project
@@ -118,8 +120,7 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 	wf, err := uc.wfRepo.Create(ctx, opts)
 	if err != nil {
 		if IsErrAlreadyExists(err) {
-			// mask the error but return a custom error
-			return nil, NewErrAlreadyExistsStr("name already taken")
+			return nil, NewErrAlreadyExistsStr(fmt.Sprintf("workflow %q in project %q already exists", opts.Name, opts.Project))
 		}
 
 		return nil, fmt.Errorf("failed to create workflow: %w", err)
@@ -238,9 +239,10 @@ func (uc *WorkflowUseCase) FindByNameInOrg(ctx context.Context, orgID, projectNa
 
 	if workflowName == "" {
 		return nil, NewErrValidationStr("empty workflow name")
+	} else if projectName == "" {
+		return nil, NewErrValidationStr("empty project name")
 	}
 
-	// TODO: enforce projectName
 	wf, err := uc.wfRepo.GetOrgScopedByProjectAndName(ctx, orgUUID, projectName, workflowName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get workflow: %w", err)

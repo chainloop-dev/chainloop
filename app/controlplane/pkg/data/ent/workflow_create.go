@@ -39,14 +39,6 @@ func (wc *WorkflowCreate) SetProject(s string) *WorkflowCreate {
 	return wc
 }
 
-// SetNillableProject sets the "project" field if the given value is not nil.
-func (wc *WorkflowCreate) SetNillableProject(s *string) *WorkflowCreate {
-	if s != nil {
-		wc.SetProject(*s)
-	}
-	return wc
-}
-
 // SetTeam sets the "team" field.
 func (wc *WorkflowCreate) SetTeam(s string) *WorkflowCreate {
 	wc.mutation.SetTeam(s)
@@ -284,6 +276,9 @@ func (wc *WorkflowCreate) defaults() {
 func (wc *WorkflowCreate) check() error {
 	if _, ok := wc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Workflow.name"`)}
+	}
+	if _, ok := wc.mutation.Project(); !ok {
+		return &ValidationError{Name: "project", err: errors.New(`ent: missing required field "Workflow.project"`)}
 	}
 	if _, ok := wc.mutation.RunsCount(); !ok {
 		return &ValidationError{Name: "runs_count", err: errors.New(`ent: missing required field "Workflow.runs_count"`)}

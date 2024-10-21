@@ -337,12 +337,12 @@ func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, 
 	assert.NoError(err)
 
 	// Workflow
-	s.workflowOrg1, err = suite.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test-workflow", OrgID: s.org.ID})
+	s.workflowOrg1, err = suite.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test-workflow", OrgID: s.org.ID, Project: "test-project"})
 	assert.NoError(err)
-	s.workflowOrg2, err = suite.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test-workflow", OrgID: s.org2.ID})
+	s.workflowOrg2, err = suite.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test-workflow", OrgID: s.org2.ID, Project: "test-project"})
 	assert.NoError(err)
 	// Public workflow
-	s.workflowPublicOrg2, err = suite.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test-public-workflow", OrgID: s.org2.ID, Public: true})
+	s.workflowPublicOrg2, err = suite.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test-public-workflow", OrgID: s.org2.ID, Public: true, Project: "test-project"})
 	assert.NoError(err)
 
 	// Find contract revision
