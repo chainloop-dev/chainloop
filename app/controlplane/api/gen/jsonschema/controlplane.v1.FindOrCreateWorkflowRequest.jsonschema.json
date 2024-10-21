@@ -1,0 +1,31 @@
+{
+  "$id": "controlplane.v1.FindOrCreateWorkflowRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(contract_name)$": {
+      "description": "name of an existing contract, if not set, a new contract will be created",
+      "type": "string"
+    },
+    "^(project_name)$": {
+      "type": "string"
+    },
+    "^(workflow_name)$": {
+      "type": "string"
+    }
+  },
+  "properties": {
+    "contractName": {
+      "description": "name of an existing contract, if not set, a new contract will be created",
+      "type": "string"
+    },
+    "projectName": {
+      "type": "string"
+    },
+    "workflowName": {
+      "type": "string"
+    }
+  },
+  "title": "Find Or Create Workflow Request",
+  "type": "object"
+}

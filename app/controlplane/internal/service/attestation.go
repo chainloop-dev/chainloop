@@ -544,9 +544,37 @@ func checkAuthRequirements(attToken *usercontext.RobotAccount, workflowName stri
 	// For API tokens we do not support explicit workflowName. It is inside the token
 	if attToken.ProviderKey == attjwtmiddleware.APITokenProviderKey && workflowName == "" {
 		return errors.BadRequest("bad request", "when using an API Token, workflow name is required as parameter")
-	} else if attToken.ProviderKey == attjwtmiddleware.RobotAccountProviderKey && workflowName != "" {
-		return errors.BadRequest("bad request", "workflow name is not compatible with robot-account based attestations")
 	}
 
 	return nil
+}
+
+func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAPI.FindOrCreateWorkflowRequest) (*cpAPI.FindOrCreateWorkflowResponse, error) {
+	apiToken := usercontext.CurrentRobotAccount(ctx)
+	if apiToken == nil {
+		return nil, errors.NotFound("not found", "neither robot account nor API token found")
+	}
+
+	if wf, err := s.workflowUseCase.FindByNameInOrg(ctx, apiToken.OrgID, req.GetProjectName(), req.GetWorkflowName()); err != nil {
+		if !biz.IsNotFound(err) {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+	} else if wf != nil { // It exists, return it
+		return &cpAPI.FindOrCreateWorkflowResponse{Result: bizWorkflowToPb(wf)}, nil
+	}
+
+	// It doesn't exist, let's create it
+	createOpts := &biz.WorkflowCreateOpts{
+		OrgID:        apiToken.OrgID,
+		Name:         req.GetWorkflowName(),
+		Project:      req.GetProjectName(),
+		ContractName: req.GetContractName(),
+	}
+
+	wf, err := s.workflowUseCase.Create(ctx, createOpts)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	return &cpAPI.FindOrCreateWorkflowResponse{Result: bizWorkflowToPb(wf)}, nil
 }

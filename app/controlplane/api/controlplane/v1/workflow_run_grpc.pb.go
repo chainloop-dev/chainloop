@@ -34,19 +34,21 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	AttestationService_GetContract_FullMethodName    = "/controlplane.v1.AttestationService/GetContract"
-	AttestationService_Init_FullMethodName           = "/controlplane.v1.AttestationService/Init"
-	AttestationService_Store_FullMethodName          = "/controlplane.v1.AttestationService/Store"
-	AttestationService_GetUploadCreds_FullMethodName = "/controlplane.v1.AttestationService/GetUploadCreds"
-	AttestationService_Cancel_FullMethodName         = "/controlplane.v1.AttestationService/Cancel"
-	AttestationService_GetPolicy_FullMethodName      = "/controlplane.v1.AttestationService/GetPolicy"
-	AttestationService_GetPolicyGroup_FullMethodName = "/controlplane.v1.AttestationService/GetPolicyGroup"
+	AttestationService_FindOrCreateWorkflow_FullMethodName = "/controlplane.v1.AttestationService/FindOrCreateWorkflow"
+	AttestationService_GetContract_FullMethodName          = "/controlplane.v1.AttestationService/GetContract"
+	AttestationService_Init_FullMethodName                 = "/controlplane.v1.AttestationService/Init"
+	AttestationService_Store_FullMethodName                = "/controlplane.v1.AttestationService/Store"
+	AttestationService_GetUploadCreds_FullMethodName       = "/controlplane.v1.AttestationService/GetUploadCreds"
+	AttestationService_Cancel_FullMethodName               = "/controlplane.v1.AttestationService/Cancel"
+	AttestationService_GetPolicy_FullMethodName            = "/controlplane.v1.AttestationService/GetPolicy"
+	AttestationService_GetPolicyGroup_FullMethodName       = "/controlplane.v1.AttestationService/GetPolicyGroup"
 )
 
 // AttestationServiceClient is the client API for AttestationService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AttestationServiceClient interface {
+	FindOrCreateWorkflow(ctx context.Context, in *FindOrCreateWorkflowRequest, opts ...grpc.CallOption) (*FindOrCreateWorkflowResponse, error)
 	GetContract(ctx context.Context, in *AttestationServiceGetContractRequest, opts ...grpc.CallOption) (*AttestationServiceGetContractResponse, error)
 	Init(ctx context.Context, in *AttestationServiceInitRequest, opts ...grpc.CallOption) (*AttestationServiceInitResponse, error)
 	Store(ctx context.Context, in *AttestationServiceStoreRequest, opts ...grpc.CallOption) (*AttestationServiceStoreResponse, error)
@@ -65,6 +67,15 @@ type attestationServiceClient struct {
 
 func NewAttestationServiceClient(cc grpc.ClientConnInterface) AttestationServiceClient {
 	return &attestationServiceClient{cc}
+}
+
+func (c *attestationServiceClient) FindOrCreateWorkflow(ctx context.Context, in *FindOrCreateWorkflowRequest, opts ...grpc.CallOption) (*FindOrCreateWorkflowResponse, error) {
+	out := new(FindOrCreateWorkflowResponse)
+	err := c.cc.Invoke(ctx, AttestationService_FindOrCreateWorkflow_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *attestationServiceClient) GetContract(ctx context.Context, in *AttestationServiceGetContractRequest, opts ...grpc.CallOption) (*AttestationServiceGetContractResponse, error) {
@@ -134,6 +145,7 @@ func (c *attestationServiceClient) GetPolicyGroup(ctx context.Context, in *Attes
 // All implementations must embed UnimplementedAttestationServiceServer
 // for forward compatibility
 type AttestationServiceServer interface {
+	FindOrCreateWorkflow(context.Context, *FindOrCreateWorkflowRequest) (*FindOrCreateWorkflowResponse, error)
 	GetContract(context.Context, *AttestationServiceGetContractRequest) (*AttestationServiceGetContractResponse, error)
 	Init(context.Context, *AttestationServiceInitRequest) (*AttestationServiceInitResponse, error)
 	Store(context.Context, *AttestationServiceStoreRequest) (*AttestationServiceStoreResponse, error)
@@ -151,6 +163,9 @@ type AttestationServiceServer interface {
 type UnimplementedAttestationServiceServer struct {
 }
 
+func (UnimplementedAttestationServiceServer) FindOrCreateWorkflow(context.Context, *FindOrCreateWorkflowRequest) (*FindOrCreateWorkflowResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FindOrCreateWorkflow not implemented")
+}
 func (UnimplementedAttestationServiceServer) GetContract(context.Context, *AttestationServiceGetContractRequest) (*AttestationServiceGetContractResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetContract not implemented")
 }
@@ -183,6 +198,24 @@ type UnsafeAttestationServiceServer interface {
 
 func RegisterAttestationServiceServer(s grpc.ServiceRegistrar, srv AttestationServiceServer) {
 	s.RegisterService(&AttestationService_ServiceDesc, srv)
+}
+
+func _AttestationService_FindOrCreateWorkflow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FindOrCreateWorkflowRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AttestationServiceServer).FindOrCreateWorkflow(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AttestationService_FindOrCreateWorkflow_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AttestationServiceServer).FindOrCreateWorkflow(ctx, req.(*FindOrCreateWorkflowRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _AttestationService_GetContract_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -318,6 +351,10 @@ var AttestationService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "controlplane.v1.AttestationService",
 	HandlerType: (*AttestationServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "FindOrCreateWorkflow",
+			Handler:    _AttestationService_FindOrCreateWorkflow_Handler,
+		},
 		{
 			MethodName: "GetContract",
 			Handler:    _AttestationService_GetContract_Handler,
