@@ -85,7 +85,7 @@ jobs:
 
   chainloop_push:
     name: Chainloop Push
-    uses: chainloop-dev/labs/.github/workflows/chainloop_push.yml@64839eb68c20fefda46929c6c6e893cdf0537619
+    uses: chainloop-dev/labs/.github/workflows/chainloop_push.yml@25c77318e739c60e86d3dfe7e864f51c665972dd
     needs:
       - analysis
     secrets:
