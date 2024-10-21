@@ -15,7 +15,6 @@ jobs:
     secrets:
       api_token: ${{ secrets.CHAINLOOP_TOKEN }}
     with:
-      chainloop_labs_branch: dfc395be86c9254f42de204584a032d5c1f99706
       workflow_name: "chainloop-docs-release"
       project_name: "chainloop"
 
@@ -93,5 +92,4 @@ jobs:
       signing_key_password: ${{ secrets.COSIGN_PASSWORD }}
     with:
       attestation_name: "docs"
-      chainloop_labs_branch: dfc395be86c9254f42de204584a032d5c1f99706
       workflow_name: "chainloop-docs-release"
