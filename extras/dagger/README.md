@@ -73,7 +73,7 @@ dagger call -m github.com/chainloop-dev/chainloop \
   --workflow-name the-name-of-the-workflow \
   --project-name the-name-of-the-project \
   --repository /path/to/repo \ # optional flag to automatically attest a Git repository \
-  --contract-revision 1 \ # optional flag to specify the revision of the Workflow Contract (default `latest`)
+  --contract-name my-existing-contract \ # optional flag to specify an existing contract that will be used during the creation of a workflow
 ```
 
 #### 2 - Get the status ([docs](https://docs.chainloop.dev/getting-started/attestation-crafting#inspecting-the-crafting-status))
