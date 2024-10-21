@@ -90,3 +90,15 @@ policies:
     - ref: file://cyclonedx-version.yaml
 ```
 Check our [policies reference](/reference/policies) for more information on how to attach policies to contracts.
+
+## Policy engine constraints (Rego)
+To ensure the policy engine work as pure and as fast as possible, we have deactivated some of the OPA built-in functions. The following functions are not allowed in the policy scripts:
+- `opa.runtime`
+- `rego.parse_module`
+- `trace`
+
+Also `http.send` has been isolated so only requests to the following domains are allowed:
+- `chainloop.dev`
+- `cisa.gov`
+
+This prevents unexpected behavior and potential remote exploits, particularly since these policies are evaluated client-side.
