@@ -308,12 +308,12 @@ func (uc *WorkflowContractUseCase) ValidateContractPolicies(rawSchema []byte, to
 	}
 
 	for _, att := range c.Schema.GetPolicies().GetAttestation() {
-		if _, err := uc.findPolicy(att, token); err != nil {
+		if _, err := uc.findAndValidatePolicy(att, token); err != nil {
 			return NewErrValidation(err)
 		}
 	}
 	for _, att := range c.Schema.GetPolicies().GetMaterials() {
-		if _, err := uc.findPolicy(att, token); err != nil {
+		if _, err := uc.findAndValidatePolicy(att, token); err != nil {
 			return NewErrValidation(err)
 		}
 	}
@@ -326,9 +326,11 @@ func (uc *WorkflowContractUseCase) ValidateContractPolicies(rawSchema []byte, to
 	return nil
 }
 
-func (uc *WorkflowContractUseCase) findPolicy(att *schemav1.PolicyAttachment, token string) (*schemav1.Policy, error) {
+func (uc *WorkflowContractUseCase) findAndValidatePolicy(att *schemav1.PolicyAttachment, token string) (*schemav1.Policy, error) {
+	var policy *schemav1.Policy
+
 	if att.GetEmbedded() != nil {
-		return att.GetEmbedded(), nil
+		policy = att.GetEmbedded()
 	}
 
 	// if it should come from a provider, check that it's available
@@ -339,11 +341,22 @@ func (uc *WorkflowContractUseCase) findPolicy(att *schemav1.PolicyAttachment, to
 		if err != nil {
 			return nil, err
 		}
-		return remotePolicy.Policy, nil
+		policy = remotePolicy.Policy
 	}
 
-	// Otherwise, don't return an error, as it might consist of a local policy, not available in this context
-	return nil, nil
+	if policy != nil {
+		// validate policy arguments
+		with := att.GetWith()
+		for k, input := range policy.GetSpec().GetInputs() {
+			_, ok := with[k]
+			if !ok && input.Required {
+				return nil, NewErrValidation(fmt.Errorf("missing required input %q", k))
+			}
+		}
+	}
+
+	// return policy or nil, as it might not be available in this context
+	return policy, nil
 }
 
 func (uc *WorkflowContractUseCase) findPolicyGroup(att *schemav1.PolicyGroupAttachment, token string) (*schemav1.PolicyGroup, error) {
