@@ -21,7 +21,7 @@ A brief description of the different stages
 During this stage, the crafting tool will contact the control plane to
 
 - Signal the intent of starting an attestation.
-- Retrieve the associated workflow contract.
+- Retrieve or create the associated workflow contract
 - If the contract has a specified runner context type, check that we are compliant with it.
 - Initialize environment variables, explicitly stated in the contract and other contextual information.
 
@@ -80,10 +80,13 @@ $ export CHAINLOOP_TOKEN=deadbeef
 `chainloop attestation init` supports the following options
 
 - `--token` token provided by the SecOps team. Alternatively, you can set the `CHAINLOOP_TOKEN` environment variable (required).
-- `--workflow` name of the workflow to run the attestation (required).
+- `--workflow` name of the workflow to run the attestation (required). **It will create the workflow if it doesn't exist**
 - `--project` name of the project of the workflow  (required).
-- `--revision` of the contract (default: `latest`).
 - `--dry-run`; do not store the attestation in the Control plane, and do not fail if the runner context or required env variables can not be resolved. Useful for development (default: `false`).
+
+:::tip
+If the workflow with name `--workflow` in project `--project` doesn't exist, it will be created with the default contract (or with the contract specified by `--contract`).
+:::
 
 To initialize a new crafting process just run `attestation init` and the system will retrieve the latest version (if no specific revision is set via the `--revision` flag) of the contract.
 
@@ -91,6 +94,7 @@ To initialize a new crafting process just run `attestation init` and the system 
 $ chainloop attestation init --workflow build-and-test --project skynet
 ```
 
+```
 INF Attestation initialized! now you can check its status or add materials to it
 ┌───────────────────┬──────────────────────────────────────┐
 │ Initialized At    │ 02 Nov 22 10:04 UTC                  │
