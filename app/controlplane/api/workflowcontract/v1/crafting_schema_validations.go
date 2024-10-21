@@ -83,8 +83,11 @@ func (schema *CraftingSchema) ValidatePolicyAttachments() error {
 	attachments := append(schema.GetPolicies().GetAttestation(), schema.GetPolicies().GetMaterials()...)
 
 	for _, att := range attachments {
-		if err := ValidatePolicyAttachmentRef(att.GetRef()); err != nil {
-			return fmt.Errorf("invalid reference %q: %w", att.GetRef(), err)
+		// Validate refs.
+		if att.GetRef() != "" {
+			if err := ValidatePolicyAttachmentRef(att.GetRef()); err != nil {
+				return fmt.Errorf("invalid reference %q: %w", att.GetRef(), err)
+			}
 		}
 	}
 

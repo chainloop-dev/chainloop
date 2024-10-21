@@ -1,0 +1,15 @@
+{
+  "$id": "workflowcontract.v1.PolicyInput.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "description": {
+      "type": "string"
+    },
+    "required": {
+      "type": "boolean"
+    }
+  },
+  "title": "Policy Input",
+  "type": "object"
+}

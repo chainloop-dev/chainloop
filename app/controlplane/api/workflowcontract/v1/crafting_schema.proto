@@ -215,11 +215,19 @@ message PolicySpec {
 
   repeated PolicySpecV2 policies = 4;
 
+  // Describe the supported inputs
+  map<string, PolicyInput> inputs = 5;
+
   option (buf.validate.message).cel = {
     id: "policyspec"
     message: "either spec source or policies fields must be provided"
     expression: "has(this.path) || has(this.embedded) || size(this.policies) > 0"
   };
+}
+
+message PolicyInput {
+  string description = 1;
+  bool required = 2;
 }
 
 message PolicySpecV2 {

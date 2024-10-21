@@ -7,6 +7,16 @@
       "description": "embedded source code (only Rego supported currently)",
       "type": "string"
     },
+    "inputs": {
+      "additionalProperties": {
+        "$ref": "workflowcontract.v1.PolicyInput.jsonschema.json"
+      },
+      "description": "Describe the supported inputs",
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
     "path": {
       "description": "path to a policy script. It might consist of a URI reference",
       "type": "string"
