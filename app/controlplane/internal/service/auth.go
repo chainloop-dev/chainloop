@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/mail"
 	"net/url"
 	"time"
 
@@ -208,6 +209,24 @@ func loginHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) (int
 // Extract custom claims
 type upstreamOIDCclaims struct {
 	Email string `json:"email"`
+	// This value is present  in the case of Microsoft Entra IDp
+	// It might show the user's proxy email used during login
+	// https://learn.microsoft.com/en-us/entra/identity/authentication/howto-authentication-use-email-signin
+	// https://learn.microsoft.com/en-us/entra/identity-platform/id-token-claims-reference
+	PreferredUsername string `json:"preferred_username"`
+}
+
+// Will retrieve the email from the preferred username if it's a valid email
+// or fallback to the email field
+func (c *upstreamOIDCclaims) preferredEmail() string {
+	if c.PreferredUsername != "" {
+		// validate that this is an email since according to the Entra spec this might be a phone or username
+		if _, err := mail.ParseAddress(c.PreferredUsername); err == nil {
+			return c.PreferredUsername
+		}
+	}
+
+	return c.Email
 }
 
 type errorWithCode struct {
@@ -224,7 +243,7 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) (
 	}
 
 	// Create user if needed
-	u, err := svc.userUseCase.FindOrCreateByEmail(ctx, claims.Email)
+	u, err := svc.userUseCase.FindOrCreateByEmail(ctx, claims.preferredEmail())
 	if err != nil {
 		return http.StatusInternalServerError, sl.LogAndMaskErr(err, svc.log)
 	}
