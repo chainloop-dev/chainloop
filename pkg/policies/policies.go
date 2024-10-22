@@ -109,9 +109,13 @@ type evalOpts struct {
 }
 
 func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachment *v1.PolicyAttachment, material []byte, opts *evalOpts) (*v12.PolicyEvaluation, error) {
-	// 1. load the policy policy
+	// load the policy policy
 	policy, ref, err := pv.loadPolicySpec(ctx, attachment)
 	if err != nil {
+		return nil, NewPolicyError(err)
+	}
+
+	if err := pv.validatePolicyArguments(policy, attachment); err != nil {
 		return nil, NewPolicyError(err)
 	}
 
@@ -184,6 +188,23 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		// Merged "skip_reason"
 		SkipReasons: reasons,
 	}, nil
+}
+
+func (pv *PolicyVerifier) validatePolicyArguments(policy *v1.Policy, attachment *v1.PolicyAttachment) error {
+	inputs := policy.GetSpec().GetInputs()
+	args := attachment.GetWith()
+	for k, input := range inputs {
+		if _, ok := args[k]; !ok && input.Required {
+			return fmt.Errorf("missing required input %q for policy %q", k, policy.GetMetadata().GetName())
+		}
+	}
+	for k, _ := range args {
+		if _, ok := inputs[k]; !ok {
+			pv.logger.Warn().Msgf("policy argument %q will be ignored for policy %q", k, policy.GetMetadata().GetName())
+		}
+	}
+
+	return nil
 }
 
 // VerifyStatement verifies that the statement is compliant with the policies present in the schema
