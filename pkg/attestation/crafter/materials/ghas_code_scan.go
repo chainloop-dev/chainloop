@@ -65,7 +65,7 @@ func (i *GHASCodeScanCrafter) Craft(ctx context.Context, filePath string) (*api.
 		alert := alerts[0]
 		// All code scan alerts have a tool. If this doesn't have it, it might be a different scan (secrets, dependencies ...)
 		if alert.GetTool() == nil {
-			return nil, fmt.Errorf("tool field not found in GHAS code scan: %w", ErrInvalidMaterialType)
+			return nil, fmt.Errorf("'tool' field not found in GHAS code scan: %w", ErrInvalidMaterialType)
 		}
 	}
 

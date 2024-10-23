@@ -65,7 +65,7 @@ func (i *GHASDependencyScanCrafter) Craft(ctx context.Context, filePath string) 
 		alert := alerts[0]
 		// All dependabot scan alerts have a dependency. If this doesn't have it, it might be a different scan (secrets, code scan ...)
 		if alert.Dependency == nil {
-			return nil, fmt.Errorf("tool field not found in GHAS dependency scan: %w", ErrInvalidMaterialType)
+			return nil, fmt.Errorf("'dependency' field not found in GHAS dependency scan: %w", ErrInvalidMaterialType)
 		}
 	}
 

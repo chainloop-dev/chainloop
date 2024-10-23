@@ -66,7 +66,7 @@ func (i *GHASSecretScanCrafter) Craft(ctx context.Context, filePath string) (*ap
 		// All secret scan alerts have a secret type. If this doesn't have it, it might be a different scan (code, dependencies ...)
 		// check https://docs.github.com/en/code-security/secret-scanning/introduction/supported-secret-scanning-patterns#supported-secrets for the different values
 		if alert.SecretType == nil {
-			return nil, fmt.Errorf("secret type field not found in GHAS secret scan: %w", ErrInvalidMaterialType)
+			return nil, fmt.Errorf("'secret type' field not found in GHAS secret scan: %w", ErrInvalidMaterialType)
 		}
 	}
 
