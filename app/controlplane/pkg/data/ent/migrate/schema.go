@@ -271,6 +271,38 @@ var (
 		Columns:    OrganizationsColumns,
 		PrimaryKey: []*schema.Column{OrganizationsColumns[0]},
 	}
+	// ProjectsColumns holds the columns for the "projects" table.
+	ProjectsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "organization_id", Type: field.TypeUUID},
+	}
+	// ProjectsTable holds the schema information for the "projects" table.
+	ProjectsTable = &schema.Table{
+		Name:       "projects",
+		Columns:    ProjectsColumns,
+		PrimaryKey: []*schema.Column{ProjectsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "projects_organizations_projects",
+				Columns:    []*schema.Column{ProjectsColumns[4]},
+				RefColumns: []*schema.Column{OrganizationsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "project_name_organization_id",
+				Unique:  true,
+				Columns: []*schema.Column{ProjectsColumns[1], ProjectsColumns[4]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "deleted_at IS NULL",
+				},
+			},
+		},
+	}
 	// ReferrersColumns holds the columns for the "referrers" table.
 	ReferrersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
@@ -593,6 +625,7 @@ var (
 		MembershipsTable,
 		OrgInvitationsTable,
 		OrganizationsTable,
+		ProjectsTable,
 		ReferrersTable,
 		RobotAccountsTable,
 		UsersTable,
@@ -619,6 +652,7 @@ func init() {
 	MembershipsTable.ForeignKeys[1].RefTable = UsersTable
 	OrgInvitationsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	OrgInvitationsTable.ForeignKeys[1].RefTable = UsersTable
+	ProjectsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	RobotAccountsTable.ForeignKeys[0].RefTable = WorkflowsTable
 	WorkflowsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	WorkflowsTable.ForeignKeys[1].RefTable = WorkflowContractsTable

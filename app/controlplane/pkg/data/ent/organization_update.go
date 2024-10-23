@@ -16,6 +16,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/membership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontract"
 	"github.com/google/uuid"
@@ -123,6 +124,21 @@ func (ou *OrganizationUpdate) AddAPITokens(a ...*APIToken) *OrganizationUpdate {
 		ids[i] = a[i].ID
 	}
 	return ou.AddAPITokenIDs(ids...)
+}
+
+// AddProjectIDs adds the "projects" edge to the Project entity by IDs.
+func (ou *OrganizationUpdate) AddProjectIDs(ids ...uuid.UUID) *OrganizationUpdate {
+	ou.mutation.AddProjectIDs(ids...)
+	return ou
+}
+
+// AddProjects adds the "projects" edges to the Project entity.
+func (ou *OrganizationUpdate) AddProjects(p ...*Project) *OrganizationUpdate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return ou.AddProjectIDs(ids...)
 }
 
 // Mutation returns the OrganizationMutation object of the builder.
@@ -254,6 +270,27 @@ func (ou *OrganizationUpdate) RemoveAPITokens(a ...*APIToken) *OrganizationUpdat
 		ids[i] = a[i].ID
 	}
 	return ou.RemoveAPITokenIDs(ids...)
+}
+
+// ClearProjects clears all "projects" edges to the Project entity.
+func (ou *OrganizationUpdate) ClearProjects() *OrganizationUpdate {
+	ou.mutation.ClearProjects()
+	return ou
+}
+
+// RemoveProjectIDs removes the "projects" edge to Project entities by IDs.
+func (ou *OrganizationUpdate) RemoveProjectIDs(ids ...uuid.UUID) *OrganizationUpdate {
+	ou.mutation.RemoveProjectIDs(ids...)
+	return ou
+}
+
+// RemoveProjects removes "projects" edges to Project entities.
+func (ou *OrganizationUpdate) RemoveProjects(p ...*Project) *OrganizationUpdate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return ou.RemoveProjectIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -568,6 +605,51 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if ou.mutation.ProjectsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   organization.ProjectsTable,
+			Columns: []string{organization.ProjectsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ou.mutation.RemovedProjectsIDs(); len(nodes) > 0 && !ou.mutation.ProjectsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   organization.ProjectsTable,
+			Columns: []string{organization.ProjectsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ou.mutation.ProjectsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   organization.ProjectsTable,
+			Columns: []string{organization.ProjectsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	_spec.AddModifiers(ou.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, ou.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -678,6 +760,21 @@ func (ouo *OrganizationUpdateOne) AddAPITokens(a ...*APIToken) *OrganizationUpda
 		ids[i] = a[i].ID
 	}
 	return ouo.AddAPITokenIDs(ids...)
+}
+
+// AddProjectIDs adds the "projects" edge to the Project entity by IDs.
+func (ouo *OrganizationUpdateOne) AddProjectIDs(ids ...uuid.UUID) *OrganizationUpdateOne {
+	ouo.mutation.AddProjectIDs(ids...)
+	return ouo
+}
+
+// AddProjects adds the "projects" edges to the Project entity.
+func (ouo *OrganizationUpdateOne) AddProjects(p ...*Project) *OrganizationUpdateOne {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return ouo.AddProjectIDs(ids...)
 }
 
 // Mutation returns the OrganizationMutation object of the builder.
@@ -809,6 +906,27 @@ func (ouo *OrganizationUpdateOne) RemoveAPITokens(a ...*APIToken) *OrganizationU
 		ids[i] = a[i].ID
 	}
 	return ouo.RemoveAPITokenIDs(ids...)
+}
+
+// ClearProjects clears all "projects" edges to the Project entity.
+func (ouo *OrganizationUpdateOne) ClearProjects() *OrganizationUpdateOne {
+	ouo.mutation.ClearProjects()
+	return ouo
+}
+
+// RemoveProjectIDs removes the "projects" edge to Project entities by IDs.
+func (ouo *OrganizationUpdateOne) RemoveProjectIDs(ids ...uuid.UUID) *OrganizationUpdateOne {
+	ouo.mutation.RemoveProjectIDs(ids...)
+	return ouo
+}
+
+// RemoveProjects removes "projects" edges to Project entities.
+func (ouo *OrganizationUpdateOne) RemoveProjects(p ...*Project) *OrganizationUpdateOne {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return ouo.RemoveProjectIDs(ids...)
 }
 
 // Where appends a list predicates to the OrganizationUpdate builder.
@@ -1146,6 +1264,51 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(apitoken.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if ouo.mutation.ProjectsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   organization.ProjectsTable,
+			Columns: []string{organization.ProjectsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ouo.mutation.RemovedProjectsIDs(); len(nodes) > 0 && !ouo.mutation.ProjectsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   organization.ProjectsTable,
+			Columns: []string{organization.ProjectsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ouo.mutation.ProjectsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   organization.ProjectsTable,
+			Columns: []string{organization.ProjectsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

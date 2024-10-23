@@ -20,6 +20,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/membership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/orginvitation"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/referrer"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/user"
@@ -95,6 +96,7 @@ func checkColumn(table, column string) error {
 			membership.Table:              membership.ValidColumn,
 			orginvitation.Table:           orginvitation.ValidColumn,
 			organization.Table:            organization.ValidColumn,
+			project.Table:                 project.ValidColumn,
 			referrer.Table:                referrer.ValidColumn,
 			robotaccount.Table:            robotaccount.ValidColumn,
 			user.Table:                    user.ValidColumn,
