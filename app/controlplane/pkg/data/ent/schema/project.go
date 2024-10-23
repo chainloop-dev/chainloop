@@ -51,6 +51,7 @@ func (Project) Fields() []ent.Field {
 func (Project) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("organization", Organization.Type).Field("organization_id").Ref("projects").Unique().Required(),
+		edge.To("workflows", Workflow.Type),
 	}
 }
 

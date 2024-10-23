@@ -243,6 +243,7 @@ func (r *WorkflowRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Workflo
 	return entWFToBizWF(ctx, workflow, lastRun)
 }
 
+// Soft delete workflow, attachments and related projects (if applicable)
 func (r *WorkflowRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
 	tx, err := r.data.DB.Tx(ctx)
 	if err != nil {
@@ -255,8 +256,20 @@ func (r *WorkflowRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
 	}
 
 	// Soft delete workflow
-	if err := tx.Workflow.UpdateOneID(id).SetDeletedAt(time.Now()).Exec(ctx); err != nil {
+	wf, err := tx.Workflow.UpdateOneID(id).SetDeletedAt(time.Now()).Save(ctx)
+	if err != nil {
 		return err
+	}
+
+	// Soft delete project if it has no more workflows
+	// TODO: in the future, we'll handle this separately through explicit user action
+	if wfTotal, err := wf.QueryProject().QueryWorkflows().Where(workflow.DeletedAtIsNil()).Count(ctx); err != nil {
+		return err
+	} else if wfTotal == 0 {
+		// soft deleted project if it has no more workflows
+		if err := tx.Project.UpdateOneID(wf.ProjectID).SetDeletedAt(time.Now()).Exec(ctx); err != nil {
+			return err
+		}
 	}
 
 	return tx.Commit()

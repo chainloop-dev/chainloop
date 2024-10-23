@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/google/uuid"
 )
 
@@ -82,6 +83,21 @@ func (pc *ProjectCreate) SetNillableID(u *uuid.UUID) *ProjectCreate {
 // SetOrganization sets the "organization" edge to the Organization entity.
 func (pc *ProjectCreate) SetOrganization(o *Organization) *ProjectCreate {
 	return pc.SetOrganizationID(o.ID)
+}
+
+// AddWorkflowIDs adds the "workflows" edge to the Workflow entity by IDs.
+func (pc *ProjectCreate) AddWorkflowIDs(ids ...uuid.UUID) *ProjectCreate {
+	pc.mutation.AddWorkflowIDs(ids...)
+	return pc
+}
+
+// AddWorkflows adds the "workflows" edges to the Workflow entity.
+func (pc *ProjectCreate) AddWorkflows(w ...*Workflow) *ProjectCreate {
+	ids := make([]uuid.UUID, len(w))
+	for i := range w {
+		ids[i] = w[i].ID
+	}
+	return pc.AddWorkflowIDs(ids...)
 }
 
 // Mutation returns the ProjectMutation object of the builder.
@@ -206,6 +222,22 @@ func (pc *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.OrganizationID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := pc.mutation.WorkflowsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   project.WorkflowsTable,
+			Columns: []string{project.WorkflowsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

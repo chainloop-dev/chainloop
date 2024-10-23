@@ -6425,6 +6425,9 @@ type ProjectMutation struct {
 	clearedFields       map[string]struct{}
 	organization        *uuid.UUID
 	clearedorganization bool
+	workflows           map[uuid.UUID]struct{}
+	removedworkflows    map[uuid.UUID]struct{}
+	clearedworkflows    bool
 	done                bool
 	oldValue            func(context.Context) (*Project, error)
 	predicates          []predicate.Project
@@ -6718,6 +6721,60 @@ func (m *ProjectMutation) ResetOrganization() {
 	m.clearedorganization = false
 }
 
+// AddWorkflowIDs adds the "workflows" edge to the Workflow entity by ids.
+func (m *ProjectMutation) AddWorkflowIDs(ids ...uuid.UUID) {
+	if m.workflows == nil {
+		m.workflows = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.workflows[ids[i]] = struct{}{}
+	}
+}
+
+// ClearWorkflows clears the "workflows" edge to the Workflow entity.
+func (m *ProjectMutation) ClearWorkflows() {
+	m.clearedworkflows = true
+}
+
+// WorkflowsCleared reports if the "workflows" edge to the Workflow entity was cleared.
+func (m *ProjectMutation) WorkflowsCleared() bool {
+	return m.clearedworkflows
+}
+
+// RemoveWorkflowIDs removes the "workflows" edge to the Workflow entity by IDs.
+func (m *ProjectMutation) RemoveWorkflowIDs(ids ...uuid.UUID) {
+	if m.removedworkflows == nil {
+		m.removedworkflows = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.workflows, ids[i])
+		m.removedworkflows[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedWorkflows returns the removed IDs of the "workflows" edge to the Workflow entity.
+func (m *ProjectMutation) RemovedWorkflowsIDs() (ids []uuid.UUID) {
+	for id := range m.removedworkflows {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// WorkflowsIDs returns the "workflows" edge IDs in the mutation.
+func (m *ProjectMutation) WorkflowsIDs() (ids []uuid.UUID) {
+	for id := range m.workflows {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetWorkflows resets all changes to the "workflows" edge.
+func (m *ProjectMutation) ResetWorkflows() {
+	m.workflows = nil
+	m.clearedworkflows = false
+	m.removedworkflows = nil
+}
+
 // Where appends a list predicates to the ProjectMutation builder.
 func (m *ProjectMutation) Where(ps ...predicate.Project) {
 	m.predicates = append(m.predicates, ps...)
@@ -6911,9 +6968,12 @@ func (m *ProjectMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ProjectMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.organization != nil {
 		edges = append(edges, project.EdgeOrganization)
+	}
+	if m.workflows != nil {
+		edges = append(edges, project.EdgeWorkflows)
 	}
 	return edges
 }
@@ -6926,27 +6986,47 @@ func (m *ProjectMutation) AddedIDs(name string) []ent.Value {
 		if id := m.organization; id != nil {
 			return []ent.Value{*id}
 		}
+	case project.EdgeWorkflows:
+		ids := make([]ent.Value, 0, len(m.workflows))
+		for id := range m.workflows {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ProjectMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
+	if m.removedworkflows != nil {
+		edges = append(edges, project.EdgeWorkflows)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *ProjectMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case project.EdgeWorkflows:
+		ids := make([]ent.Value, 0, len(m.removedworkflows))
+		for id := range m.removedworkflows {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ProjectMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedorganization {
 		edges = append(edges, project.EdgeOrganization)
+	}
+	if m.clearedworkflows {
+		edges = append(edges, project.EdgeWorkflows)
 	}
 	return edges
 }
@@ -6957,6 +7037,8 @@ func (m *ProjectMutation) EdgeCleared(name string) bool {
 	switch name {
 	case project.EdgeOrganization:
 		return m.clearedorganization
+	case project.EdgeWorkflows:
+		return m.clearedworkflows
 	}
 	return false
 }
@@ -6978,6 +7060,9 @@ func (m *ProjectMutation) ResetEdge(name string) error {
 	switch name {
 	case project.EdgeOrganization:
 		m.ResetOrganization()
+		return nil
+	case project.EdgeWorkflows:
+		m.ResetWorkflows()
 		return nil
 	}
 	return fmt.Errorf("unknown Project edge %s", name)
