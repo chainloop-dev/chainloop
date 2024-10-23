@@ -12,6 +12,3 @@ UPDATE "workflows" SET project_id = projects.id FROM "projects"
   WHERE workflows.project_old = projects.name AND workflows.organization_id = projects.organization_id;
 ALTER TABLE "workflows" ALTER COLUMN "project_id" SET NOT NULL;
 
--- Cleanup the redundant columns
-ALTER TABLE "workflows" DROP COLUMN "project_old";
-
