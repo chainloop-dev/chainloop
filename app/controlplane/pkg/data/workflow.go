@@ -288,11 +288,11 @@ func entWFToBizWF(ctx context.Context, w *ent.Workflow, r *ent.WorkflowRun) (*bi
 	if project := w.Edges.Project; project != nil {
 		wf.Project = project.Name
 	} else {
-		if project, err := w.QueryProject().Only(ctx); err != nil {
+		project, err := w.QueryProject().Only(ctx)
+		if err != nil {
 			return nil, err
-		} else {
-			wf.Project = project.Name
 		}
+		wf.Project = project.Name
 	}
 
 	if wf.Project == "" {
