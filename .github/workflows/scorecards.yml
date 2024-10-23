@@ -90,8 +90,6 @@ jobs:
       - analysis
     secrets:
       api_token: ${{ secrets.CHAINLOOP_TOKEN }}
-      signing_key: ${{ secrets.COSIGN_KEY }}
-      signing_key_password: ${{ secrets.COSIGN_PASSWORD }}
     with:
       attestation_name: "scorecards"
       workflow_name: "chainloop-vault-scorecards"

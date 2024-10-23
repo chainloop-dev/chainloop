@@ -88,8 +88,6 @@ jobs:
       - deploy_docs
     secrets:
       api_token: ${{ secrets.CHAINLOOP_TOKEN }}
-      signing_key: ${{ secrets.COSIGN_KEY }}
-      signing_key_password: ${{ secrets.COSIGN_PASSWORD }}
     with:
       attestation_name: "docs"
       workflow_name: "chainloop-docs-release"
