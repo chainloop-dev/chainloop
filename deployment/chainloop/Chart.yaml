@@ -7,9 +7,9 @@ description: Chainloop is an open source software supply chain control plane, a 
 
 type: application
 # Bump the patch (not minor, not major) version on each change in the Chart Source code
-version: 1.111.0
+version: 1.112.0
 # Do not update appVersion, this is handled automatically by the release process
-appVersion: v0.97.1
+appVersion: v0.97.2
 
 dependencies:
   - name: common
@@ -32,11 +32,11 @@ dependencies:
 
 annotations:
     images: |
-        - image: ghcr.io/chainloop-dev/chainloop/artifact-cas:v0.97.1
+        - image: ghcr.io/chainloop-dev/chainloop/artifact-cas:v0.97.2
           name: artifact-cas
-        - image: ghcr.io/chainloop-dev/chainloop/control-plane:v0.97.1
+        - image: ghcr.io/chainloop-dev/chainloop/control-plane:v0.97.2
           name: control-plane
-        - image: ghcr.io/chainloop-dev/chainloop/control-plane-migrations:v0.97.1
+        - image: ghcr.io/chainloop-dev/chainloop/control-plane-migrations:v0.97.2
           name: control-plane-migrations
-        - image: ghcr.io/chainloop-dev/chainloop/cli:v0.97.1
+        - image: ghcr.io/chainloop-dev/chainloop/cli:v0.97.2
           name: cli
