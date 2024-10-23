@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"time"
 
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casbackend"
@@ -22,6 +24,7 @@ type CASMappingCreate struct {
 	config
 	mutation *CASMappingMutation
 	hooks    []Hook
+	conflict []sql.ConflictOption
 }
 
 // SetDigest sets the "digest" field.
@@ -189,6 +192,7 @@ func (cmc *CASMappingCreate) createSpec() (*CASMapping, *sqlgraph.CreateSpec) {
 		_node = &CASMapping{config: cmc.config}
 		_spec = sqlgraph.NewCreateSpec(casmapping.Table, sqlgraph.NewFieldSpec(casmapping.FieldID, field.TypeUUID))
 	)
+	_spec.OnConflict = cmc.conflict
 	if id, ok := cmc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
@@ -255,11 +259,153 @@ func (cmc *CASMappingCreate) createSpec() (*CASMapping, *sqlgraph.CreateSpec) {
 	return _node, _spec
 }
 
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.CASMapping.Create().
+//		SetDigest(v).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.CASMappingUpsert) {
+//			SetDigest(v+v).
+//		}).
+//		Exec(ctx)
+func (cmc *CASMappingCreate) OnConflict(opts ...sql.ConflictOption) *CASMappingUpsertOne {
+	cmc.conflict = opts
+	return &CASMappingUpsertOne{
+		create: cmc,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.CASMapping.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (cmc *CASMappingCreate) OnConflictColumns(columns ...string) *CASMappingUpsertOne {
+	cmc.conflict = append(cmc.conflict, sql.ConflictColumns(columns...))
+	return &CASMappingUpsertOne{
+		create: cmc,
+	}
+}
+
+type (
+	// CASMappingUpsertOne is the builder for "upsert"-ing
+	//  one CASMapping node.
+	CASMappingUpsertOne struct {
+		create *CASMappingCreate
+	}
+
+	// CASMappingUpsert is the "OnConflict" setter.
+	CASMappingUpsert struct {
+		*sql.UpdateSet
+	}
+)
+
+// UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
+// Using this option is equivalent to using:
+//
+//	client.CASMapping.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(casmapping.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *CASMappingUpsertOne) UpdateNewValues() *CASMappingUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.ID(); exists {
+			s.SetIgnore(casmapping.FieldID)
+		}
+		if _, exists := u.create.mutation.Digest(); exists {
+			s.SetIgnore(casmapping.FieldDigest)
+		}
+		if _, exists := u.create.mutation.CreatedAt(); exists {
+			s.SetIgnore(casmapping.FieldCreatedAt)
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.CASMapping.Create().
+//	    OnConflict(sql.ResolveWithIgnore()).
+//	    Exec(ctx)
+func (u *CASMappingUpsertOne) Ignore() *CASMappingUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *CASMappingUpsertOne) DoNothing() *CASMappingUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the CASMappingCreate.OnConflict
+// documentation for more info.
+func (u *CASMappingUpsertOne) Update(set func(*CASMappingUpsert)) *CASMappingUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&CASMappingUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// Exec executes the query.
+func (u *CASMappingUpsertOne) Exec(ctx context.Context) error {
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for CASMappingCreate.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *CASMappingUpsertOne) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// Exec executes the UPSERT query and returns the inserted/updated ID.
+func (u *CASMappingUpsertOne) ID(ctx context.Context) (id uuid.UUID, err error) {
+	if u.create.driver.Dialect() == dialect.MySQL {
+		// In case of "ON CONFLICT", there is no way to get back non-numeric ID
+		// fields from the database since MySQL does not support the RETURNING clause.
+		return id, errors.New("ent: CASMappingUpsertOne.ID is not supported by MySQL driver. Use CASMappingUpsertOne.Exec instead")
+	}
+	node, err := u.create.Save(ctx)
+	if err != nil {
+		return id, err
+	}
+	return node.ID, nil
+}
+
+// IDX is like ID, but panics if an error occurs.
+func (u *CASMappingUpsertOne) IDX(ctx context.Context) uuid.UUID {
+	id, err := u.ID(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
 // CASMappingCreateBulk is the builder for creating many CASMapping entities in bulk.
 type CASMappingCreateBulk struct {
 	config
 	err      error
 	builders []*CASMappingCreate
+	conflict []sql.ConflictOption
 }
 
 // Save creates the CASMapping entities in the database.
@@ -289,6 +435,7 @@ func (cmcb *CASMappingCreateBulk) Save(ctx context.Context) ([]*CASMapping, erro
 					_, err = mutators[i+1].Mutate(root, cmcb.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
+					spec.OnConflict = cmcb.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
 					if err = sqlgraph.BatchCreate(ctx, cmcb.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
@@ -335,6 +482,126 @@ func (cmcb *CASMappingCreateBulk) Exec(ctx context.Context) error {
 // ExecX is like Exec, but panics if an error occurs.
 func (cmcb *CASMappingCreateBulk) ExecX(ctx context.Context) {
 	if err := cmcb.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.CASMapping.CreateBulk(builders...).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.CASMappingUpsert) {
+//			SetDigest(v+v).
+//		}).
+//		Exec(ctx)
+func (cmcb *CASMappingCreateBulk) OnConflict(opts ...sql.ConflictOption) *CASMappingUpsertBulk {
+	cmcb.conflict = opts
+	return &CASMappingUpsertBulk{
+		create: cmcb,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.CASMapping.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (cmcb *CASMappingCreateBulk) OnConflictColumns(columns ...string) *CASMappingUpsertBulk {
+	cmcb.conflict = append(cmcb.conflict, sql.ConflictColumns(columns...))
+	return &CASMappingUpsertBulk{
+		create: cmcb,
+	}
+}
+
+// CASMappingUpsertBulk is the builder for "upsert"-ing
+// a bulk of CASMapping nodes.
+type CASMappingUpsertBulk struct {
+	create *CASMappingCreateBulk
+}
+
+// UpdateNewValues updates the mutable fields using the new values that
+// were set on create. Using this option is equivalent to using:
+//
+//	client.CASMapping.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(casmapping.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *CASMappingUpsertBulk) UpdateNewValues() *CASMappingUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.ID(); exists {
+				s.SetIgnore(casmapping.FieldID)
+			}
+			if _, exists := b.mutation.Digest(); exists {
+				s.SetIgnore(casmapping.FieldDigest)
+			}
+			if _, exists := b.mutation.CreatedAt(); exists {
+				s.SetIgnore(casmapping.FieldCreatedAt)
+			}
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.CASMapping.Create().
+//		OnConflict(sql.ResolveWithIgnore()).
+//		Exec(ctx)
+func (u *CASMappingUpsertBulk) Ignore() *CASMappingUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *CASMappingUpsertBulk) DoNothing() *CASMappingUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the CASMappingCreateBulk.OnConflict
+// documentation for more info.
+func (u *CASMappingUpsertBulk) Update(set func(*CASMappingUpsert)) *CASMappingUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&CASMappingUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// Exec executes the query.
+func (u *CASMappingUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
+	for i, b := range u.create.builders {
+		if len(b.conflict) != 0 {
+			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the CASMappingCreateBulk instead", i)
+		}
+	}
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for CASMappingCreateBulk.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *CASMappingUpsertBulk) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

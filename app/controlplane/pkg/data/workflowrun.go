@@ -236,7 +236,7 @@ func entWrToBizWr(wr *ent.WorkflowRun) *biz.WorkflowRun {
 	}
 
 	if wf := wr.Edges.Workflow; wf != nil {
-		w, _ := entWFToBizWF(wf, nil)
+		w, _ := entWFToBizWF(context.TODO(), wf, nil)
 		r.Workflow = w
 	}
 

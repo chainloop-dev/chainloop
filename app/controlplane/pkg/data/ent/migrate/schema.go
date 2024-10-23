@@ -364,7 +364,6 @@ var (
 	WorkflowsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "name", Type: field.TypeString},
-		{Name: "project", Type: field.TypeString},
 		{Name: "team", Type: field.TypeString, Nullable: true},
 		{Name: "runs_count", Type: field.TypeInt, Default: 0},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
@@ -373,6 +372,7 @@ var (
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "organization_id", Type: field.TypeUUID},
 		{Name: "workflow_contract", Type: field.TypeUUID},
+		{Name: "project_id", Type: field.TypeUUID},
 	}
 	// WorkflowsTable holds the schema information for the "workflows" table.
 	WorkflowsTable = &schema.Table{
@@ -382,22 +382,28 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "workflows_organizations_workflows",
-				Columns:    []*schema.Column{WorkflowsColumns[9]},
+				Columns:    []*schema.Column{WorkflowsColumns[8]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "workflows_workflow_contracts_contract",
-				Columns:    []*schema.Column{WorkflowsColumns[10]},
+				Columns:    []*schema.Column{WorkflowsColumns[9]},
 				RefColumns: []*schema.Column{WorkflowContractsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "workflows_projects_project",
+				Columns:    []*schema.Column{WorkflowsColumns[10]},
+				RefColumns: []*schema.Column{ProjectsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "workflow_name_project_organization_id",
+				Name:    "workflow_name_organization_id_project_id",
 				Unique:  true,
-				Columns: []*schema.Column{WorkflowsColumns[1], WorkflowsColumns[2], WorkflowsColumns[9]},
+				Columns: []*schema.Column{WorkflowsColumns[1], WorkflowsColumns[8], WorkflowsColumns[10]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "deleted_at IS NULL",
 				},
@@ -405,7 +411,7 @@ var (
 			{
 				Name:    "workflow_organization_id_id",
 				Unique:  true,
-				Columns: []*schema.Column{WorkflowsColumns[9], WorkflowsColumns[0]},
+				Columns: []*schema.Column{WorkflowsColumns[8], WorkflowsColumns[0]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "deleted_at IS NULL",
 				},
@@ -656,6 +662,7 @@ func init() {
 	RobotAccountsTable.ForeignKeys[0].RefTable = WorkflowsTable
 	WorkflowsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	WorkflowsTable.ForeignKeys[1].RefTable = WorkflowContractsTable
+	WorkflowsTable.ForeignKeys[2].RefTable = ProjectsTable
 	WorkflowContractsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	WorkflowContractVersionsTable.ForeignKeys[0].RefTable = WorkflowContractsTable
 	WorkflowRunsTable.ForeignKeys[0].RefTable = WorkflowsTable

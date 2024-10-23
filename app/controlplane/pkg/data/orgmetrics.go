@@ -155,7 +155,7 @@ func (repo *OrgMetricsRepo) TopWorkflowsByRunsCount(ctx context.Context, orgID u
 				return nil, err
 			}
 
-			wfRes, err := entWFToBizWF(wf, nil)
+			wfRes, err := entWFToBizWF(ctx, wf, nil)
 			if err != nil {
 				return nil, fmt.Errorf("converting entity: %w", err)
 			}

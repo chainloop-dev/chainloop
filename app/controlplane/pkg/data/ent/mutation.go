@@ -8900,7 +8900,6 @@ type WorkflowMutation struct {
 	typ                            string
 	id                             *uuid.UUID
 	name                           *string
-	project                        *string
 	team                           *string
 	runs_count                     *int
 	addruns_count                  *int
@@ -8922,6 +8921,8 @@ type WorkflowMutation struct {
 	integration_attachments        map[uuid.UUID]struct{}
 	removedintegration_attachments map[uuid.UUID]struct{}
 	clearedintegration_attachments bool
+	project                        *uuid.UUID
+	clearedproject                 bool
 	referrers                      map[uuid.UUID]struct{}
 	removedreferrers               map[uuid.UUID]struct{}
 	clearedreferrers               bool
@@ -9068,42 +9069,6 @@ func (m *WorkflowMutation) OldName(ctx context.Context) (v string, err error) {
 // ResetName resets all changes to the "name" field.
 func (m *WorkflowMutation) ResetName() {
 	m.name = nil
-}
-
-// SetProject sets the "project" field.
-func (m *WorkflowMutation) SetProject(s string) {
-	m.project = &s
-}
-
-// Project returns the value of the "project" field in the mutation.
-func (m *WorkflowMutation) Project() (r string, exists bool) {
-	v := m.project
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldProject returns the old "project" field's value of the Workflow entity.
-// If the Workflow object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *WorkflowMutation) OldProject(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldProject is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldProject requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldProject: %w", err)
-	}
-	return oldValue.Project, nil
-}
-
-// ResetProject resets all changes to the "project" field.
-func (m *WorkflowMutation) ResetProject() {
-	m.project = nil
 }
 
 // SetTeam sets the "team" field.
@@ -9366,6 +9331,42 @@ func (m *WorkflowMutation) OldOrganizationID(ctx context.Context) (v uuid.UUID, 
 // ResetOrganizationID resets all changes to the "organization_id" field.
 func (m *WorkflowMutation) ResetOrganizationID() {
 	m.organization = nil
+}
+
+// SetProjectID sets the "project_id" field.
+func (m *WorkflowMutation) SetProjectID(u uuid.UUID) {
+	m.project = &u
+}
+
+// ProjectID returns the value of the "project_id" field in the mutation.
+func (m *WorkflowMutation) ProjectID() (r uuid.UUID, exists bool) {
+	v := m.project
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProjectID returns the old "project_id" field's value of the Workflow entity.
+// If the Workflow object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowMutation) OldProjectID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProjectID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProjectID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProjectID: %w", err)
+	}
+	return oldValue.ProjectID, nil
+}
+
+// ResetProjectID resets all changes to the "project_id" field.
+func (m *WorkflowMutation) ResetProjectID() {
+	m.project = nil
 }
 
 // SetDescription sets the "description" field.
@@ -9645,6 +9646,33 @@ func (m *WorkflowMutation) ResetIntegrationAttachments() {
 	m.removedintegration_attachments = nil
 }
 
+// ClearProject clears the "project" edge to the Project entity.
+func (m *WorkflowMutation) ClearProject() {
+	m.clearedproject = true
+	m.clearedFields[workflow.FieldProjectID] = struct{}{}
+}
+
+// ProjectCleared reports if the "project" edge to the Project entity was cleared.
+func (m *WorkflowMutation) ProjectCleared() bool {
+	return m.clearedproject
+}
+
+// ProjectIDs returns the "project" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ProjectID instead. It exists only for internal usage by the builders.
+func (m *WorkflowMutation) ProjectIDs() (ids []uuid.UUID) {
+	if id := m.project; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetProject resets all changes to the "project" edge.
+func (m *WorkflowMutation) ResetProject() {
+	m.project = nil
+	m.clearedproject = false
+}
+
 // AddReferrerIDs adds the "referrers" edge to the Referrer entity by ids.
 func (m *WorkflowMutation) AddReferrerIDs(ids ...uuid.UUID) {
 	if m.referrers == nil {
@@ -9737,9 +9765,6 @@ func (m *WorkflowMutation) Fields() []string {
 	if m.name != nil {
 		fields = append(fields, workflow.FieldName)
 	}
-	if m.project != nil {
-		fields = append(fields, workflow.FieldProject)
-	}
 	if m.team != nil {
 		fields = append(fields, workflow.FieldTeam)
 	}
@@ -9758,6 +9783,9 @@ func (m *WorkflowMutation) Fields() []string {
 	if m.organization != nil {
 		fields = append(fields, workflow.FieldOrganizationID)
 	}
+	if m.project != nil {
+		fields = append(fields, workflow.FieldProjectID)
+	}
 	if m.description != nil {
 		fields = append(fields, workflow.FieldDescription)
 	}
@@ -9771,8 +9799,6 @@ func (m *WorkflowMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case workflow.FieldName:
 		return m.Name()
-	case workflow.FieldProject:
-		return m.Project()
 	case workflow.FieldTeam:
 		return m.Team()
 	case workflow.FieldRunsCount:
@@ -9785,6 +9811,8 @@ func (m *WorkflowMutation) Field(name string) (ent.Value, bool) {
 		return m.Public()
 	case workflow.FieldOrganizationID:
 		return m.OrganizationID()
+	case workflow.FieldProjectID:
+		return m.ProjectID()
 	case workflow.FieldDescription:
 		return m.Description()
 	}
@@ -9798,8 +9826,6 @@ func (m *WorkflowMutation) OldField(ctx context.Context, name string) (ent.Value
 	switch name {
 	case workflow.FieldName:
 		return m.OldName(ctx)
-	case workflow.FieldProject:
-		return m.OldProject(ctx)
 	case workflow.FieldTeam:
 		return m.OldTeam(ctx)
 	case workflow.FieldRunsCount:
@@ -9812,6 +9838,8 @@ func (m *WorkflowMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldPublic(ctx)
 	case workflow.FieldOrganizationID:
 		return m.OldOrganizationID(ctx)
+	case workflow.FieldProjectID:
+		return m.OldProjectID(ctx)
 	case workflow.FieldDescription:
 		return m.OldDescription(ctx)
 	}
@@ -9829,13 +9857,6 @@ func (m *WorkflowMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetName(v)
-		return nil
-	case workflow.FieldProject:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetProject(v)
 		return nil
 	case workflow.FieldTeam:
 		v, ok := value.(string)
@@ -9878,6 +9899,13 @@ func (m *WorkflowMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetOrganizationID(v)
+		return nil
+	case workflow.FieldProjectID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProjectID(v)
 		return nil
 	case workflow.FieldDescription:
 		v, ok := value.(string)
@@ -9974,9 +10002,6 @@ func (m *WorkflowMutation) ResetField(name string) error {
 	case workflow.FieldName:
 		m.ResetName()
 		return nil
-	case workflow.FieldProject:
-		m.ResetProject()
-		return nil
 	case workflow.FieldTeam:
 		m.ResetTeam()
 		return nil
@@ -9995,6 +10020,9 @@ func (m *WorkflowMutation) ResetField(name string) error {
 	case workflow.FieldOrganizationID:
 		m.ResetOrganizationID()
 		return nil
+	case workflow.FieldProjectID:
+		m.ResetProjectID()
+		return nil
 	case workflow.FieldDescription:
 		m.ResetDescription()
 		return nil
@@ -10004,7 +10032,7 @@ func (m *WorkflowMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *WorkflowMutation) AddedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 7)
 	if m.robotaccounts != nil {
 		edges = append(edges, workflow.EdgeRobotaccounts)
 	}
@@ -10019,6 +10047,9 @@ func (m *WorkflowMutation) AddedEdges() []string {
 	}
 	if m.integration_attachments != nil {
 		edges = append(edges, workflow.EdgeIntegrationAttachments)
+	}
+	if m.project != nil {
+		edges = append(edges, workflow.EdgeProject)
 	}
 	if m.referrers != nil {
 		edges = append(edges, workflow.EdgeReferrers)
@@ -10056,6 +10087,10 @@ func (m *WorkflowMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case workflow.EdgeProject:
+		if id := m.project; id != nil {
+			return []ent.Value{*id}
+		}
 	case workflow.EdgeReferrers:
 		ids := make([]ent.Value, 0, len(m.referrers))
 		for id := range m.referrers {
@@ -10068,7 +10103,7 @@ func (m *WorkflowMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *WorkflowMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 7)
 	if m.removedrobotaccounts != nil {
 		edges = append(edges, workflow.EdgeRobotaccounts)
 	}
@@ -10118,7 +10153,7 @@ func (m *WorkflowMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *WorkflowMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 7)
 	if m.clearedrobotaccounts {
 		edges = append(edges, workflow.EdgeRobotaccounts)
 	}
@@ -10133,6 +10168,9 @@ func (m *WorkflowMutation) ClearedEdges() []string {
 	}
 	if m.clearedintegration_attachments {
 		edges = append(edges, workflow.EdgeIntegrationAttachments)
+	}
+	if m.clearedproject {
+		edges = append(edges, workflow.EdgeProject)
 	}
 	if m.clearedreferrers {
 		edges = append(edges, workflow.EdgeReferrers)
@@ -10154,6 +10192,8 @@ func (m *WorkflowMutation) EdgeCleared(name string) bool {
 		return m.clearedcontract
 	case workflow.EdgeIntegrationAttachments:
 		return m.clearedintegration_attachments
+	case workflow.EdgeProject:
+		return m.clearedproject
 	case workflow.EdgeReferrers:
 		return m.clearedreferrers
 	}
@@ -10169,6 +10209,9 @@ func (m *WorkflowMutation) ClearEdge(name string) error {
 		return nil
 	case workflow.EdgeContract:
 		m.ClearContract()
+		return nil
+	case workflow.EdgeProject:
+		m.ClearProject()
 		return nil
 	}
 	return fmt.Errorf("unknown Workflow unique edge %s", name)
@@ -10192,6 +10235,9 @@ func (m *WorkflowMutation) ResetEdge(name string) error {
 		return nil
 	case workflow.EdgeIntegrationAttachments:
 		m.ResetIntegrationAttachments()
+		return nil
+	case workflow.EdgeProject:
+		m.ResetProject()
 		return nil
 	case workflow.EdgeReferrers:
 		m.ResetReferrers()

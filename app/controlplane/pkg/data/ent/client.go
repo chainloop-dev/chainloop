@@ -2548,6 +2548,22 @@ func (c *WorkflowClient) QueryIntegrationAttachments(w *Workflow) *IntegrationAt
 	return query
 }
 
+// QueryProject queries the project edge of a Workflow.
+func (c *WorkflowClient) QueryProject(w *Workflow) *ProjectQuery {
+	query := (&ProjectClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := w.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(workflow.Table, workflow.FieldID, id),
+			sqlgraph.To(project.Table, project.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, workflow.ProjectTable, workflow.ProjectColumn),
+		)
+		fromV = sqlgraph.Neighbors(w.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryReferrers queries the referrers edge of a Workflow.
 func (c *WorkflowClient) QueryReferrers(w *Workflow) *ReferrerQuery {
 	query := (&ReferrerClient{config: c.config}).Query()

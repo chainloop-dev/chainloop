@@ -61,11 +61,6 @@ func Name(v string) predicate.Workflow {
 	return predicate.Workflow(sql.FieldEQ(FieldName, v))
 }
 
-// Project applies equality check predicate on the "project" field. It's identical to ProjectEQ.
-func Project(v string) predicate.Workflow {
-	return predicate.Workflow(sql.FieldEQ(FieldProject, v))
-}
-
 // Team applies equality check predicate on the "team" field. It's identical to TeamEQ.
 func Team(v string) predicate.Workflow {
 	return predicate.Workflow(sql.FieldEQ(FieldTeam, v))
@@ -94,6 +89,11 @@ func Public(v bool) predicate.Workflow {
 // OrganizationID applies equality check predicate on the "organization_id" field. It's identical to OrganizationIDEQ.
 func OrganizationID(v uuid.UUID) predicate.Workflow {
 	return predicate.Workflow(sql.FieldEQ(FieldOrganizationID, v))
+}
+
+// ProjectID applies equality check predicate on the "project_id" field. It's identical to ProjectIDEQ.
+func ProjectID(v uuid.UUID) predicate.Workflow {
+	return predicate.Workflow(sql.FieldEQ(FieldProjectID, v))
 }
 
 // Description applies equality check predicate on the "description" field. It's identical to DescriptionEQ.
@@ -164,71 +164,6 @@ func NameEqualFold(v string) predicate.Workflow {
 // NameContainsFold applies the ContainsFold predicate on the "name" field.
 func NameContainsFold(v string) predicate.Workflow {
 	return predicate.Workflow(sql.FieldContainsFold(FieldName, v))
-}
-
-// ProjectEQ applies the EQ predicate on the "project" field.
-func ProjectEQ(v string) predicate.Workflow {
-	return predicate.Workflow(sql.FieldEQ(FieldProject, v))
-}
-
-// ProjectNEQ applies the NEQ predicate on the "project" field.
-func ProjectNEQ(v string) predicate.Workflow {
-	return predicate.Workflow(sql.FieldNEQ(FieldProject, v))
-}
-
-// ProjectIn applies the In predicate on the "project" field.
-func ProjectIn(vs ...string) predicate.Workflow {
-	return predicate.Workflow(sql.FieldIn(FieldProject, vs...))
-}
-
-// ProjectNotIn applies the NotIn predicate on the "project" field.
-func ProjectNotIn(vs ...string) predicate.Workflow {
-	return predicate.Workflow(sql.FieldNotIn(FieldProject, vs...))
-}
-
-// ProjectGT applies the GT predicate on the "project" field.
-func ProjectGT(v string) predicate.Workflow {
-	return predicate.Workflow(sql.FieldGT(FieldProject, v))
-}
-
-// ProjectGTE applies the GTE predicate on the "project" field.
-func ProjectGTE(v string) predicate.Workflow {
-	return predicate.Workflow(sql.FieldGTE(FieldProject, v))
-}
-
-// ProjectLT applies the LT predicate on the "project" field.
-func ProjectLT(v string) predicate.Workflow {
-	return predicate.Workflow(sql.FieldLT(FieldProject, v))
-}
-
-// ProjectLTE applies the LTE predicate on the "project" field.
-func ProjectLTE(v string) predicate.Workflow {
-	return predicate.Workflow(sql.FieldLTE(FieldProject, v))
-}
-
-// ProjectContains applies the Contains predicate on the "project" field.
-func ProjectContains(v string) predicate.Workflow {
-	return predicate.Workflow(sql.FieldContains(FieldProject, v))
-}
-
-// ProjectHasPrefix applies the HasPrefix predicate on the "project" field.
-func ProjectHasPrefix(v string) predicate.Workflow {
-	return predicate.Workflow(sql.FieldHasPrefix(FieldProject, v))
-}
-
-// ProjectHasSuffix applies the HasSuffix predicate on the "project" field.
-func ProjectHasSuffix(v string) predicate.Workflow {
-	return predicate.Workflow(sql.FieldHasSuffix(FieldProject, v))
-}
-
-// ProjectEqualFold applies the EqualFold predicate on the "project" field.
-func ProjectEqualFold(v string) predicate.Workflow {
-	return predicate.Workflow(sql.FieldEqualFold(FieldProject, v))
-}
-
-// ProjectContainsFold applies the ContainsFold predicate on the "project" field.
-func ProjectContainsFold(v string) predicate.Workflow {
-	return predicate.Workflow(sql.FieldContainsFold(FieldProject, v))
 }
 
 // TeamEQ applies the EQ predicate on the "team" field.
@@ -466,6 +401,26 @@ func OrganizationIDNotIn(vs ...uuid.UUID) predicate.Workflow {
 	return predicate.Workflow(sql.FieldNotIn(FieldOrganizationID, vs...))
 }
 
+// ProjectIDEQ applies the EQ predicate on the "project_id" field.
+func ProjectIDEQ(v uuid.UUID) predicate.Workflow {
+	return predicate.Workflow(sql.FieldEQ(FieldProjectID, v))
+}
+
+// ProjectIDNEQ applies the NEQ predicate on the "project_id" field.
+func ProjectIDNEQ(v uuid.UUID) predicate.Workflow {
+	return predicate.Workflow(sql.FieldNEQ(FieldProjectID, v))
+}
+
+// ProjectIDIn applies the In predicate on the "project_id" field.
+func ProjectIDIn(vs ...uuid.UUID) predicate.Workflow {
+	return predicate.Workflow(sql.FieldIn(FieldProjectID, vs...))
+}
+
+// ProjectIDNotIn applies the NotIn predicate on the "project_id" field.
+func ProjectIDNotIn(vs ...uuid.UUID) predicate.Workflow {
+	return predicate.Workflow(sql.FieldNotIn(FieldProjectID, vs...))
+}
+
 // DescriptionEQ applies the EQ predicate on the "description" field.
 func DescriptionEQ(v string) predicate.Workflow {
 	return predicate.Workflow(sql.FieldEQ(FieldDescription, v))
@@ -648,6 +603,29 @@ func HasIntegrationAttachments() predicate.Workflow {
 func HasIntegrationAttachmentsWith(preds ...predicate.IntegrationAttachment) predicate.Workflow {
 	return predicate.Workflow(func(s *sql.Selector) {
 		step := newIntegrationAttachmentsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasProject applies the HasEdge predicate on the "project" edge.
+func HasProject() predicate.Workflow {
+	return predicate.Workflow(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, ProjectTable, ProjectColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasProjectWith applies the HasEdge predicate on the "project" edge with a given conditions (other predicates).
+func HasProjectWith(preds ...predicate.Project) predicate.Workflow {
+	return predicate.Workflow(func(s *sql.Selector) {
+		step := newProjectStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

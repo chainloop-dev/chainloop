@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontract"
 	"github.com/google/uuid"
@@ -22,8 +23,6 @@ type Workflow struct {
 	ID uuid.UUID `json:"id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
-	// Project holds the value of the "project" field.
-	Project string `json:"project,omitempty"`
 	// Team holds the value of the "team" field.
 	Team string `json:"team,omitempty"`
 	// RunsCount holds the value of the "runs_count" field.
@@ -36,6 +35,8 @@ type Workflow struct {
 	Public bool `json:"public,omitempty"`
 	// OrganizationID holds the value of the "organization_id" field.
 	OrganizationID uuid.UUID `json:"organization_id,omitempty"`
+	// ProjectID holds the value of the "project_id" field.
+	ProjectID uuid.UUID `json:"project_id,omitempty"`
 	// Description holds the value of the "description" field.
 	Description string `json:"description,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -57,11 +58,13 @@ type WorkflowEdges struct {
 	Contract *WorkflowContract `json:"contract,omitempty"`
 	// IntegrationAttachments holds the value of the integration_attachments edge.
 	IntegrationAttachments []*IntegrationAttachment `json:"integration_attachments,omitempty"`
+	// Project holds the value of the project edge.
+	Project *Project `json:"project,omitempty"`
 	// Referrers holds the value of the referrers edge.
 	Referrers []*Referrer `json:"referrers,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [6]bool
+	loadedTypes [7]bool
 }
 
 // RobotaccountsOrErr returns the Robotaccounts value or an error if the edge
@@ -113,10 +116,21 @@ func (e WorkflowEdges) IntegrationAttachmentsOrErr() ([]*IntegrationAttachment, 
 	return nil, &NotLoadedError{edge: "integration_attachments"}
 }
 
+// ProjectOrErr returns the Project value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e WorkflowEdges) ProjectOrErr() (*Project, error) {
+	if e.Project != nil {
+		return e.Project, nil
+	} else if e.loadedTypes[5] {
+		return nil, &NotFoundError{label: project.Label}
+	}
+	return nil, &NotLoadedError{edge: "project"}
+}
+
 // ReferrersOrErr returns the Referrers value or an error if the edge
 // was not loaded in eager-loading.
 func (e WorkflowEdges) ReferrersOrErr() ([]*Referrer, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[6] {
 		return e.Referrers, nil
 	}
 	return nil, &NotLoadedError{edge: "referrers"}
@@ -131,11 +145,11 @@ func (*Workflow) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case workflow.FieldRunsCount:
 			values[i] = new(sql.NullInt64)
-		case workflow.FieldName, workflow.FieldProject, workflow.FieldTeam, workflow.FieldDescription:
+		case workflow.FieldName, workflow.FieldTeam, workflow.FieldDescription:
 			values[i] = new(sql.NullString)
 		case workflow.FieldCreatedAt, workflow.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
-		case workflow.FieldID, workflow.FieldOrganizationID:
+		case workflow.FieldID, workflow.FieldOrganizationID, workflow.FieldProjectID:
 			values[i] = new(uuid.UUID)
 		case workflow.ForeignKeys[0]: // workflow_contract
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
@@ -165,12 +179,6 @@ func (w *Workflow) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
 				w.Name = value.String
-			}
-		case workflow.FieldProject:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field project", values[i])
-			} else if value.Valid {
-				w.Project = value.String
 			}
 		case workflow.FieldTeam:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -207,6 +215,12 @@ func (w *Workflow) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field organization_id", values[i])
 			} else if value != nil {
 				w.OrganizationID = *value
+			}
+		case workflow.FieldProjectID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field project_id", values[i])
+			} else if value != nil {
+				w.ProjectID = *value
 			}
 		case workflow.FieldDescription:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -259,6 +273,11 @@ func (w *Workflow) QueryIntegrationAttachments() *IntegrationAttachmentQuery {
 	return NewWorkflowClient(w.config).QueryIntegrationAttachments(w)
 }
 
+// QueryProject queries the "project" edge of the Workflow entity.
+func (w *Workflow) QueryProject() *ProjectQuery {
+	return NewWorkflowClient(w.config).QueryProject(w)
+}
+
 // QueryReferrers queries the "referrers" edge of the Workflow entity.
 func (w *Workflow) QueryReferrers() *ReferrerQuery {
 	return NewWorkflowClient(w.config).QueryReferrers(w)
@@ -290,9 +309,6 @@ func (w *Workflow) String() string {
 	builder.WriteString("name=")
 	builder.WriteString(w.Name)
 	builder.WriteString(", ")
-	builder.WriteString("project=")
-	builder.WriteString(w.Project)
-	builder.WriteString(", ")
 	builder.WriteString("team=")
 	builder.WriteString(w.Team)
 	builder.WriteString(", ")
@@ -310,6 +326,9 @@ func (w *Workflow) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("organization_id=")
 	builder.WriteString(fmt.Sprintf("%v", w.OrganizationID))
+	builder.WriteString(", ")
+	builder.WriteString("project_id=")
+	builder.WriteString(fmt.Sprintf("%v", w.ProjectID))
 	builder.WriteString(", ")
 	builder.WriteString("description=")
 	builder.WriteString(w.Description)

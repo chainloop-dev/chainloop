@@ -35,7 +35,6 @@ type Workflow struct {
 func (Workflow) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("name").Immutable(),
-		field.String("project"),
 		field.String("team").Optional(),
 		field.Int("runs_count").Default(0),
 		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),
@@ -49,6 +48,7 @@ func (Workflow) Fields() []ent.Field {
 		// public means that the workflow runs, attestations and materials are reachable
 		field.Bool("public").Default(false),
 		field.UUID("organization_id", uuid.UUID{}),
+		field.UUID("project_id", uuid.UUID{}),
 		field.String("description").Optional(),
 	}
 }
@@ -62,6 +62,7 @@ func (Workflow) Edges() []ent.Edge {
 		edge.To("contract", WorkflowContract.Type).Unique().Required(),
 		edge.From("integration_attachments", IntegrationAttachment.Type).
 			Ref("workflow"),
+		edge.To("project", Project.Type).Unique().Field("project_id").Required(),
 
 		// M2M. referrer can be part of multiple workflows
 		edge.From("referrers", Referrer.Type).Ref("workflows"),
@@ -70,7 +71,7 @@ func (Workflow) Edges() []ent.Edge {
 
 func (Workflow) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("name", "project").Edges("organization").Unique().Annotations(
+		index.Fields("name").Edges("organization", "project").Unique().Annotations(
 			entsql.IndexWhere("deleted_at IS NULL"),
 		),
 		index.Fields("organization_id", "id").Unique().Annotations(

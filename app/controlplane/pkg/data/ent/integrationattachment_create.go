@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"time"
 
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/integration"
@@ -21,6 +23,7 @@ type IntegrationAttachmentCreate struct {
 	config
 	mutation *IntegrationAttachmentMutation
 	hooks    []Hook
+	conflict []sql.ConflictOption
 }
 
 // SetCreatedAt sets the "created_at" field.
@@ -183,6 +186,7 @@ func (iac *IntegrationAttachmentCreate) createSpec() (*IntegrationAttachment, *s
 		_node = &IntegrationAttachment{config: iac.config}
 		_spec = sqlgraph.NewCreateSpec(integrationattachment.Table, sqlgraph.NewFieldSpec(integrationattachment.FieldID, field.TypeUUID))
 	)
+	_spec.OnConflict = iac.conflict
 	if id, ok := iac.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
@@ -236,11 +240,254 @@ func (iac *IntegrationAttachmentCreate) createSpec() (*IntegrationAttachment, *s
 	return _node, _spec
 }
 
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.IntegrationAttachment.Create().
+//		SetCreatedAt(v).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.IntegrationAttachmentUpsert) {
+//			SetCreatedAt(v+v).
+//		}).
+//		Exec(ctx)
+func (iac *IntegrationAttachmentCreate) OnConflict(opts ...sql.ConflictOption) *IntegrationAttachmentUpsertOne {
+	iac.conflict = opts
+	return &IntegrationAttachmentUpsertOne{
+		create: iac,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.IntegrationAttachment.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (iac *IntegrationAttachmentCreate) OnConflictColumns(columns ...string) *IntegrationAttachmentUpsertOne {
+	iac.conflict = append(iac.conflict, sql.ConflictColumns(columns...))
+	return &IntegrationAttachmentUpsertOne{
+		create: iac,
+	}
+}
+
+type (
+	// IntegrationAttachmentUpsertOne is the builder for "upsert"-ing
+	//  one IntegrationAttachment node.
+	IntegrationAttachmentUpsertOne struct {
+		create *IntegrationAttachmentCreate
+	}
+
+	// IntegrationAttachmentUpsert is the "OnConflict" setter.
+	IntegrationAttachmentUpsert struct {
+		*sql.UpdateSet
+	}
+)
+
+// SetConfiguration sets the "configuration" field.
+func (u *IntegrationAttachmentUpsert) SetConfiguration(v []byte) *IntegrationAttachmentUpsert {
+	u.Set(integrationattachment.FieldConfiguration, v)
+	return u
+}
+
+// UpdateConfiguration sets the "configuration" field to the value that was provided on create.
+func (u *IntegrationAttachmentUpsert) UpdateConfiguration() *IntegrationAttachmentUpsert {
+	u.SetExcluded(integrationattachment.FieldConfiguration)
+	return u
+}
+
+// ClearConfiguration clears the value of the "configuration" field.
+func (u *IntegrationAttachmentUpsert) ClearConfiguration() *IntegrationAttachmentUpsert {
+	u.SetNull(integrationattachment.FieldConfiguration)
+	return u
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (u *IntegrationAttachmentUpsert) SetDeletedAt(v time.Time) *IntegrationAttachmentUpsert {
+	u.Set(integrationattachment.FieldDeletedAt, v)
+	return u
+}
+
+// UpdateDeletedAt sets the "deleted_at" field to the value that was provided on create.
+func (u *IntegrationAttachmentUpsert) UpdateDeletedAt() *IntegrationAttachmentUpsert {
+	u.SetExcluded(integrationattachment.FieldDeletedAt)
+	return u
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (u *IntegrationAttachmentUpsert) ClearDeletedAt() *IntegrationAttachmentUpsert {
+	u.SetNull(integrationattachment.FieldDeletedAt)
+	return u
+}
+
+// SetWorkflowID sets the "workflow_id" field.
+func (u *IntegrationAttachmentUpsert) SetWorkflowID(v uuid.UUID) *IntegrationAttachmentUpsert {
+	u.Set(integrationattachment.FieldWorkflowID, v)
+	return u
+}
+
+// UpdateWorkflowID sets the "workflow_id" field to the value that was provided on create.
+func (u *IntegrationAttachmentUpsert) UpdateWorkflowID() *IntegrationAttachmentUpsert {
+	u.SetExcluded(integrationattachment.FieldWorkflowID)
+	return u
+}
+
+// UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
+// Using this option is equivalent to using:
+//
+//	client.IntegrationAttachment.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(integrationattachment.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *IntegrationAttachmentUpsertOne) UpdateNewValues() *IntegrationAttachmentUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.ID(); exists {
+			s.SetIgnore(integrationattachment.FieldID)
+		}
+		if _, exists := u.create.mutation.CreatedAt(); exists {
+			s.SetIgnore(integrationattachment.FieldCreatedAt)
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.IntegrationAttachment.Create().
+//	    OnConflict(sql.ResolveWithIgnore()).
+//	    Exec(ctx)
+func (u *IntegrationAttachmentUpsertOne) Ignore() *IntegrationAttachmentUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *IntegrationAttachmentUpsertOne) DoNothing() *IntegrationAttachmentUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the IntegrationAttachmentCreate.OnConflict
+// documentation for more info.
+func (u *IntegrationAttachmentUpsertOne) Update(set func(*IntegrationAttachmentUpsert)) *IntegrationAttachmentUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&IntegrationAttachmentUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetConfiguration sets the "configuration" field.
+func (u *IntegrationAttachmentUpsertOne) SetConfiguration(v []byte) *IntegrationAttachmentUpsertOne {
+	return u.Update(func(s *IntegrationAttachmentUpsert) {
+		s.SetConfiguration(v)
+	})
+}
+
+// UpdateConfiguration sets the "configuration" field to the value that was provided on create.
+func (u *IntegrationAttachmentUpsertOne) UpdateConfiguration() *IntegrationAttachmentUpsertOne {
+	return u.Update(func(s *IntegrationAttachmentUpsert) {
+		s.UpdateConfiguration()
+	})
+}
+
+// ClearConfiguration clears the value of the "configuration" field.
+func (u *IntegrationAttachmentUpsertOne) ClearConfiguration() *IntegrationAttachmentUpsertOne {
+	return u.Update(func(s *IntegrationAttachmentUpsert) {
+		s.ClearConfiguration()
+	})
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (u *IntegrationAttachmentUpsertOne) SetDeletedAt(v time.Time) *IntegrationAttachmentUpsertOne {
+	return u.Update(func(s *IntegrationAttachmentUpsert) {
+		s.SetDeletedAt(v)
+	})
+}
+
+// UpdateDeletedAt sets the "deleted_at" field to the value that was provided on create.
+func (u *IntegrationAttachmentUpsertOne) UpdateDeletedAt() *IntegrationAttachmentUpsertOne {
+	return u.Update(func(s *IntegrationAttachmentUpsert) {
+		s.UpdateDeletedAt()
+	})
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (u *IntegrationAttachmentUpsertOne) ClearDeletedAt() *IntegrationAttachmentUpsertOne {
+	return u.Update(func(s *IntegrationAttachmentUpsert) {
+		s.ClearDeletedAt()
+	})
+}
+
+// SetWorkflowID sets the "workflow_id" field.
+func (u *IntegrationAttachmentUpsertOne) SetWorkflowID(v uuid.UUID) *IntegrationAttachmentUpsertOne {
+	return u.Update(func(s *IntegrationAttachmentUpsert) {
+		s.SetWorkflowID(v)
+	})
+}
+
+// UpdateWorkflowID sets the "workflow_id" field to the value that was provided on create.
+func (u *IntegrationAttachmentUpsertOne) UpdateWorkflowID() *IntegrationAttachmentUpsertOne {
+	return u.Update(func(s *IntegrationAttachmentUpsert) {
+		s.UpdateWorkflowID()
+	})
+}
+
+// Exec executes the query.
+func (u *IntegrationAttachmentUpsertOne) Exec(ctx context.Context) error {
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for IntegrationAttachmentCreate.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *IntegrationAttachmentUpsertOne) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// Exec executes the UPSERT query and returns the inserted/updated ID.
+func (u *IntegrationAttachmentUpsertOne) ID(ctx context.Context) (id uuid.UUID, err error) {
+	if u.create.driver.Dialect() == dialect.MySQL {
+		// In case of "ON CONFLICT", there is no way to get back non-numeric ID
+		// fields from the database since MySQL does not support the RETURNING clause.
+		return id, errors.New("ent: IntegrationAttachmentUpsertOne.ID is not supported by MySQL driver. Use IntegrationAttachmentUpsertOne.Exec instead")
+	}
+	node, err := u.create.Save(ctx)
+	if err != nil {
+		return id, err
+	}
+	return node.ID, nil
+}
+
+// IDX is like ID, but panics if an error occurs.
+func (u *IntegrationAttachmentUpsertOne) IDX(ctx context.Context) uuid.UUID {
+	id, err := u.ID(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
 // IntegrationAttachmentCreateBulk is the builder for creating many IntegrationAttachment entities in bulk.
 type IntegrationAttachmentCreateBulk struct {
 	config
 	err      error
 	builders []*IntegrationAttachmentCreate
+	conflict []sql.ConflictOption
 }
 
 // Save creates the IntegrationAttachment entities in the database.
@@ -270,6 +517,7 @@ func (iacb *IntegrationAttachmentCreateBulk) Save(ctx context.Context) ([]*Integ
 					_, err = mutators[i+1].Mutate(root, iacb.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
+					spec.OnConflict = iacb.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
 					if err = sqlgraph.BatchCreate(ctx, iacb.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
@@ -316,6 +564,179 @@ func (iacb *IntegrationAttachmentCreateBulk) Exec(ctx context.Context) error {
 // ExecX is like Exec, but panics if an error occurs.
 func (iacb *IntegrationAttachmentCreateBulk) ExecX(ctx context.Context) {
 	if err := iacb.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.IntegrationAttachment.CreateBulk(builders...).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.IntegrationAttachmentUpsert) {
+//			SetCreatedAt(v+v).
+//		}).
+//		Exec(ctx)
+func (iacb *IntegrationAttachmentCreateBulk) OnConflict(opts ...sql.ConflictOption) *IntegrationAttachmentUpsertBulk {
+	iacb.conflict = opts
+	return &IntegrationAttachmentUpsertBulk{
+		create: iacb,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.IntegrationAttachment.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (iacb *IntegrationAttachmentCreateBulk) OnConflictColumns(columns ...string) *IntegrationAttachmentUpsertBulk {
+	iacb.conflict = append(iacb.conflict, sql.ConflictColumns(columns...))
+	return &IntegrationAttachmentUpsertBulk{
+		create: iacb,
+	}
+}
+
+// IntegrationAttachmentUpsertBulk is the builder for "upsert"-ing
+// a bulk of IntegrationAttachment nodes.
+type IntegrationAttachmentUpsertBulk struct {
+	create *IntegrationAttachmentCreateBulk
+}
+
+// UpdateNewValues updates the mutable fields using the new values that
+// were set on create. Using this option is equivalent to using:
+//
+//	client.IntegrationAttachment.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(integrationattachment.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *IntegrationAttachmentUpsertBulk) UpdateNewValues() *IntegrationAttachmentUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.ID(); exists {
+				s.SetIgnore(integrationattachment.FieldID)
+			}
+			if _, exists := b.mutation.CreatedAt(); exists {
+				s.SetIgnore(integrationattachment.FieldCreatedAt)
+			}
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.IntegrationAttachment.Create().
+//		OnConflict(sql.ResolveWithIgnore()).
+//		Exec(ctx)
+func (u *IntegrationAttachmentUpsertBulk) Ignore() *IntegrationAttachmentUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *IntegrationAttachmentUpsertBulk) DoNothing() *IntegrationAttachmentUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the IntegrationAttachmentCreateBulk.OnConflict
+// documentation for more info.
+func (u *IntegrationAttachmentUpsertBulk) Update(set func(*IntegrationAttachmentUpsert)) *IntegrationAttachmentUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&IntegrationAttachmentUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetConfiguration sets the "configuration" field.
+func (u *IntegrationAttachmentUpsertBulk) SetConfiguration(v []byte) *IntegrationAttachmentUpsertBulk {
+	return u.Update(func(s *IntegrationAttachmentUpsert) {
+		s.SetConfiguration(v)
+	})
+}
+
+// UpdateConfiguration sets the "configuration" field to the value that was provided on create.
+func (u *IntegrationAttachmentUpsertBulk) UpdateConfiguration() *IntegrationAttachmentUpsertBulk {
+	return u.Update(func(s *IntegrationAttachmentUpsert) {
+		s.UpdateConfiguration()
+	})
+}
+
+// ClearConfiguration clears the value of the "configuration" field.
+func (u *IntegrationAttachmentUpsertBulk) ClearConfiguration() *IntegrationAttachmentUpsertBulk {
+	return u.Update(func(s *IntegrationAttachmentUpsert) {
+		s.ClearConfiguration()
+	})
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (u *IntegrationAttachmentUpsertBulk) SetDeletedAt(v time.Time) *IntegrationAttachmentUpsertBulk {
+	return u.Update(func(s *IntegrationAttachmentUpsert) {
+		s.SetDeletedAt(v)
+	})
+}
+
+// UpdateDeletedAt sets the "deleted_at" field to the value that was provided on create.
+func (u *IntegrationAttachmentUpsertBulk) UpdateDeletedAt() *IntegrationAttachmentUpsertBulk {
+	return u.Update(func(s *IntegrationAttachmentUpsert) {
+		s.UpdateDeletedAt()
+	})
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (u *IntegrationAttachmentUpsertBulk) ClearDeletedAt() *IntegrationAttachmentUpsertBulk {
+	return u.Update(func(s *IntegrationAttachmentUpsert) {
+		s.ClearDeletedAt()
+	})
+}
+
+// SetWorkflowID sets the "workflow_id" field.
+func (u *IntegrationAttachmentUpsertBulk) SetWorkflowID(v uuid.UUID) *IntegrationAttachmentUpsertBulk {
+	return u.Update(func(s *IntegrationAttachmentUpsert) {
+		s.SetWorkflowID(v)
+	})
+}
+
+// UpdateWorkflowID sets the "workflow_id" field to the value that was provided on create.
+func (u *IntegrationAttachmentUpsertBulk) UpdateWorkflowID() *IntegrationAttachmentUpsertBulk {
+	return u.Update(func(s *IntegrationAttachmentUpsert) {
+		s.UpdateWorkflowID()
+	})
+}
+
+// Exec executes the query.
+func (u *IntegrationAttachmentUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
+	for i, b := range u.create.builders {
+		if len(b.conflict) != 0 {
+			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the IntegrationAttachmentCreateBulk instead", i)
+		}
+	}
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for IntegrationAttachmentCreateBulk.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *IntegrationAttachmentUpsertBulk) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
