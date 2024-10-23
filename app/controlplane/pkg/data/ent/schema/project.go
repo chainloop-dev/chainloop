@@ -23,6 +23,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/google/uuid"
 )
 
@@ -35,7 +36,7 @@ type Project struct {
 func (Project) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),
-		field.String("name").Immutable(),
+		field.String("name").Immutable().Validate(biz.ValidateIsDNS1123),
 		field.Time("created_at").
 			Default(time.Now).
 			Immutable().
