@@ -1,0 +1,75 @@
+[
+  {
+    "number": 850,
+    "rule": {
+      "id": "@microsoft/sdl/no-html-method",
+      "severity": "warning",
+      "description": "Direct calls to method `html()` often (e.g. in jQuery framework) manipulate DOM without any sanitization and should be avoided. Use document.createElement() or similar methods instead.",
+      "name": "",
+      "full_description": "",
+      "help": ""
+    },
+    "created_at": "2024-10-08T22:00:15Z",
+    "updated_at": "2024-10-11T17:10:07Z",
+    "state": "open",
+    "url": "https://my-repo",
+    "html_url": "https://my-repo/view",
+    "most_recent_instance": {
+      "ref": "refs/tags/DEV",
+      "category": "",
+      "environment": "{}",
+      "state": "open",
+      "commit_sha": "SHA",
+      "message": {
+        "text": "Do not write to DOM directly using jQuery html() method"
+      },
+      "location": {
+        "path": "src/js/jquery-3.5.1.js",
+        "start_line": 10388,
+        "end_line": 10388,
+        "start_column": 4,
+        "end_column": 13
+      },
+      "classifications": [
+        "library"
+      ]
+    }
+  },
+  {
+    "number": 849,
+    "rule": {
+      "id": "@microsoft/sdl/no-inner-html",
+      "severity": "warning",
+      "description": "Assignments to [innerHTML](https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML)/[outerHTML](https://developer.mozilla.org/en-US/docs/Web/API/Element/outerHTML) properties or calls to [insertAdjacentHTML](https://developer.mozilla.org/en-US/docs/Web/API/Element/insertAdjacentHTML) method manipulate DOM directly without any sanitization and should be avoided. Use document.createElement() or similar methods instead.",
+      "name": "",
+      "full_description": "",
+      "help": ""
+    },
+    "created_at": "2024-10-08T22:00:15Z",
+    "updated_at": "2024-10-11T17:10:07Z",
+    "state": "open",
+    "url": "https://my-repo",
+    "html_url": "https://my-repo/view",
+    "most_recent_instance": {
+      "ref": "refs/tags/DEV",
+      "analysis_key": "(default)",
+      "category": "",
+      "environment": "{}",
+      "state": "open",
+      "commit_sha": "SHA",
+      "message": {
+        "text": "Do not write to DOM directly using innerHTML/outerHTML property"
+      },
+      "location": {
+        "path": "src/js/jquery-3.5.1.js",
+        "start_line": 10291,
+        "end_line": 10291,
+        "start_column": 2,
+        "end_column": 47
+      },
+      "classifications": [
+        "library"
+      ]
+    }
+  }
+]
